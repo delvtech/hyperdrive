@@ -349,7 +349,7 @@ $$ 110,000 \cdot \frac{22,222}{122,222} = 19999.83$$
 
 Let $p^{-1} = 0.96$ (the price of one bond is 0.96 base), $d = 182.5$ (6 months remaining), and $t(d) = \frac{182.5}{365} = 0.5$. 
    
-We can calculate the rate as $r = \frac{1 - 0.96}{0.96 \cdot 0.5} = 0.8\overline{3}$.
+We can calculate the rate as $r = \frac{1 - 0.96}{0.96 \cdot 0.5} = 0.08\overline{3}$.
    
 ### 8. Calculating Bond Reserves
 
