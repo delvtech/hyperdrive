@@ -33,7 +33,7 @@ Given $d$ days until maturity, $\tau(d) = \frac{t(d)}{t_{stretch}}$.
 The AMM quotes the price of bonds in terms of base using the share reserves $z$, the bond reserves $y$, and a given amount of days until maturity $d$:
 
 $$
-p = (\frac{y}{\mu z})^{\tau(d)}
+p = (\frac{y}{\mu z})^{-\tau(d)}
 $$
 
 ## Add Liquidity
@@ -56,7 +56,7 @@ y_{new} = y_{old} \cdot \frac {z+\Delta z}{z}$$
 Upon initialization, either the initializer will either explicitly set the value of the bond reserves or they will provide a target interest rate that is used along with the share reserves to solve for the bond reserves:
 
 $$
-y = \mu z \cdot p^{\frac{1}{\tau(d)}} = \mu z \cdot (1 - r
+y = \mu z \cdot p^{\frac{-1}{\tau(d)}} = \mu z \cdot (1 - r
 \cdot t(d))^{\frac{1}{\tau(d)}}
 $$
 
@@ -326,7 +326,7 @@ $$ \Delta l = \frac{\Delta z \cdot l}{z - b_z} = \frac{20,000 \cdot 100,000}{100
 
 The depositor was credited with 22,222. We confirm there's no loss on immediate withdraw:
 
-$$ (z-b_z) \c_dot \frac {\Delta l}{l} = 110,000 \cdot \frac{22,222}{122,222} = 19999.83$$
+$$ (z-b_z) \cdot \frac {\Delta l}{l} = 110,000 \cdot \frac{22,222}{122,222} = 19999.83$$
 
 
 ### 2. Removing Liquidity
@@ -368,5 +368,12 @@ Let:
 - $\tau(d) = \frac{t(d)}{t_{stretch}} = 0.02253584403$ (this follows from the choice of the other values)
 
 $$
-y = 1.5 \cdot 100,000 \cdot (1 - 0.05 \cdot 0.5)^{\frac{1}{0.02253584403}} = 48773.6
+y = 1.5 \cdot 100,000 \cdot (1 - 0.05 \cdot 0.5)^{\frac{-1}{0.02253584403}} = 461315.17
 $$
+
+
+Then we have that the midpoint price is:
+
+$$ p = (\frac{461315.17}{150000})^{-0.02253584403} = 0.975 $$
+
+This gives an interest rate of just over 5%, because the purchase price of the bond is slighly less than 0.025 cents earned by the bond over the period.
