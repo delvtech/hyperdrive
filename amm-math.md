@@ -297,6 +297,42 @@ The accounts payable will be decreased by $\Delta y$. In the event that the acco
 Note: Refer to Example 6 below
 :::
 
+### Virtual Reserve Calculations
+
+Hyperdrive's bond reserves are entirely virtual. Instead of actually holding bonds, it has the potential to mint new bonds at a fixed APR defined by the YieldSpace invariant using the base and bond reserves. With this in mind, we need a way to compute the bond reserves required for the pool to target a given APR.
+
+Let $p$ denote the spot price of bonds in terms of base quoted by the AMM and $d$ denote a number of days until maturity. Then the APR $r$ can be defined as:
+
+$$
+r = \frac{1 - p}{p \cdot t(d)}
+$$
+
+:::warning
+**Note:** Refer to example 7 below
+:::
+
+We can reformulate the equation for $r$ in terms of $p$ into an equation of $p$ in terms of $r$ as:
+
+$$
+p = 1 - r \cdot t(d)
+$$
+
+Combining this with our other expression for $p$, we find that:
+
+$$
+(\frac{y}{\mu z})^{-\tau(d)} = 1 - r \cdot t(d)
+$$
+
+Solving this for the bond reserves $y$, we find that the bond reserves need to target a rate of $r$ are given by:
+
+$$
+y = \mu z \cdot (1 - r \cdot t(d))^{\frac{-1}{\tau(d)}}
+$$
+
+:::warning
+**Note:** Refer to example 8 below
+:::
+
 ## Appendix
 
 ### Invariants
@@ -377,3 +413,5 @@ Then we have that the midpoint price is:
 $$ p = (\frac{461315.17}{150000})^{-0.02253584403} = 0.975 $$
 
 This gives an interest rate of just over 5%, because the purchase price of the bond is slighly less than 0.025 cents earned by the bond over the period.
+
+$$ r = \frac{1 - p}{p \cdot t(d)} = \frac {0.025}{0.975 \cdot 0.5} = 0.05128205128 $$ 
