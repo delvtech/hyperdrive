@@ -44,12 +44,16 @@ Suppose an LP supplies $\Delta x$ base tokens. The amount of shares the LP is pr
 
 The share reserves are updated as $z = z + \Delta z$.
 
+Consider as motivating fact:
+
+$$ \frac{y_{old}}{z_{old}} = \frac{y_{new}}{z_{new}} \implies p_{old} = p_{new} \implies r_{old} = r_{new} $$
+
 Since we can calculate the current spot price from the reserves and share prices and the current APR from the current spot price, we can calculate the current pool APR $r$. We can substitute the updated share reserves $z = z + \Delta z$ to calculate the new bond reserves:
 
 $$
 y_{new} = y_{old} \cdot \frac {z+\Delta z}{z}$$
 
-For the initialization the y reserve should either be set by the initializer of the smart contracts or they should provide a target interest rate or corresponding bond price then directly solve:
+Upon initialization, either the initializer will either explicitly set the value of the bond reserves or they will provide a target interest rate that is used along with the share reserves to solve for the bond reserves:
 
 $$
 y = \mu z \cdot p^{\frac{1}{\tau(d)}} = \mu z \cdot (1 - r
@@ -314,15 +318,15 @@ Let:
 
 Then we calculate the new y as 
 
-$$ y_{new} = 150,000 \cdot \frac{100,000 - 10000+ 20,000}{100,000 - 10000} = 183,333$$
+$$ y_{new} = \frac{y_{old} \cdot (z + \Delta z)}{z} = \frac{150,000 \cdot (100,000 + 20,000)}{100,000} = 180,000 $$
 
 The new LP shares are:
 
-$$ l_{new} = 100,000 \cdot \frac{100,000 - 10000+ 20,000}{100,000 - 10000} = 122,222 $$
+$$ \Delta l = \frac{\Delta z \cdot l}{z - b_z} = \frac{20,000 \cdot 100,000}{100,000 - 10,000} = 22,222.\overline{2} $$
 
 The depositor was credited with 22,222. We confirm there's no loss on immediate withdraw:
 
-$$ 110,000 \cdot \frac{22,222}{122,222} = 19999.83$$
+$$ (z-b_z) \c_dot \frac {\Delta l}{l} = 110,000 \cdot \frac{22,222}{122,222} = 19999.83$$
 
 
 ### 2. Removing Liquidity
