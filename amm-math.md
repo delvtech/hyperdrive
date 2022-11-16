@@ -212,11 +212,11 @@ The trader will be charged $\Delta y$ bonds and sent $\Delta x$ base.
 
 ## Open Short
 
-Suppose a trader requests to short $\Delta y$ bonds maturing in $d_b$ days. The AMM will commit to pay the trader $\Delta x$ base when the trader closes the short where $\Delta x$ is priced by the AMM curve.
+Suppose a trader requests to short $\Delta y$ bonds maturing in $d_b$ days. The AMM will commit to pay the trader $\Delta z$ base when the trader closes the short where $\Delta z$ is priced by the AMM curve.
 
 ### Pricing
 
-Using the pricing calculation outlined in the "Sell" section, the pricing model will output the number of shares $\Delta z$ that the bonds are worth. $\Delta x = c \cdot \Delta z$ and the system will store the agreed upon price in terms of base to ensure that LPs reclaim any interest generated while the short is open.
+Using the pricing calculation outlined in the "Sell" section, the pricing model will output the number of shares $\Delta z$ that the bonds are worth. $\Delta x = c \cdot \Delta z$ and the system will store the agreed upon price.
 
 ### Accounting
 
@@ -231,9 +231,9 @@ The bond buffer will be updated as $b_y = b_y + \Delta y$.
 
 For the remainder of the accounting, we'll consider the accounting to be indexed by the trader and the block timestamp at the time of opening the short.
 
-The trader will add $\Delta y - c \cdot \Delta z$ base to their margin account to cover the maximum loss scenario.
+The trader will add $ \frac{\Delta y}{c} - \Delta z$ base to their margin account to cover the maximum loss scenario.
 
-The accounts receivable will be increased by $\Delta x$.
+The accounts receivable will be increased by $\Delta z$.
 
 The accounts payable will be increased by $\Delta y$.
 
@@ -243,11 +243,11 @@ The accounts payable will be increased by $\Delta y$.
 
 ## Close Short
 
-Suppose a trader requests to close $\Delta y$ bonds of a short position that matures in $d$ days. Then the trader will purchase the $\Delta y$ bonds for the market price of $\Delta x$ base. These bonds will then be sold back to the AMM for the price that was agreed to when the short was opened.
+Suppose a trader requests to close $\Delta y$ bonds of a short position that matures in $d$ days. Then the trader will purchase the $\Delta y$ bonds for the market price of $\Delta z$ shares. These bonds will then be sold back to the AMM for the price that was agreed to when the short was opened.
 
 ### Pricing
 
-We must solve the YieldSpace invariant to find $\Delta x$. We'll immediately convert from base to shares for internal accounting as $\Delta z = \frac{\Delta x}{c}$. We'll start with solving for the shares that will be paid for the bonds without fees $\Delta z'$. The YieldSpace invariant is given by:
+We must solve the YieldSpace invariant to find $\Delta z$. We'll start with solving for the shares that will be paid for the bonds without fees $\Delta z'$. The YieldSpace invariant is given by:
 
 $$
 \frac{c}{\mu} \cdot (\mu \cdot (z + \Delta z'))^{1 - \tau(d)} + (2y + cz - \Delta y) ^ {1 - \tau(d)} = k
@@ -265,7 +265,7 @@ $$
 f = \phi \cdot (1 - p^{-1}) \cdot \Delta y
 $$
 
-Now that we have $\Delta z'$ and $f$, we have that $\Delta x = c \cdot \Delta z' + f$. From this, we have that $\Delta z = \Delta z' + \frac{f}{c}$.
+Now that we have $\Delta z'$ and $f$, we can calculate that $\Delta z = \Delta z' + \frac{f}{c}$.
 
 ### Accounting
 
@@ -279,7 +279,7 @@ The bond buffer will be updated as $b_y = b_y - \Delta y$.
 
 For the remainder of the accounting, we'll consider the accounting to be indexed by the trader and the block timestamp at the time of opening the short.
 
-The accounts receivable will be decreased by $\Delta x$.
+The accounts receivable will be decreased by $\Delta z$.
 
 The accounts payable will be decreased by $\Delta y$. In the event that the accounts payable balance reaches zero, the margin held for this positions plus the accounts receivable should be sent to the trader.
 
