@@ -108,7 +108,7 @@ Next we update the trader's LP balance so that $l_t = l_t - \Delta l$ and the gl
 
 The share reserves are updated as $z = z - \Delta z$. 
 
-The $y$ reserves are updated to maintain the current APR. Using the formula in the introduction we simply preserve the reserve ratio to preserve the price.
+The $y$ reserves are updated to maintain the current APR. Using the formula in the introduction, we simply preserve the reserve ratio to preserve the price.
 
 $$
 y_{new} = \frac{y_{old}(z - \Delta z)}{z}
