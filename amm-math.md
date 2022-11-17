@@ -142,10 +142,10 @@ $$
 \Delta y' = y - (k - \frac{c}{\mu} \cdot (z + \Delta z)^{1-\tau(d_b)})^{\frac{1}{1-\tau(d_b)}}
 $$
 
-The fees for the purchase, $f$ are paid in bonds and are given by:
+The fees for the purchase we charge on the interest implied by this purchase the face value of the bonds minus what was paid, $f$ are paid in bonds and are given by:
 
 $$
-f = \phi \cdot (p - 1) \cdot \Delta x
+f = \phi \cdot (\Delta y' - \Delta x)
 $$
 
 Now that we have $\Delta y'$ and $f$, we have that $\Delta y = \Delta y' - f$. 
@@ -189,7 +189,7 @@ $$
 The fees for the sale, $f$, will be paid in the base asset and are given by:
 
 $$
-f = \phi \cdot (1 - p^{-1}) \cdot \Delta y
+f = \phi \cdot (\Delta y - \Delta x) 
 $$
 
 Now that we have $\Delta z'$ and $f$, we can say that:
@@ -272,7 +272,7 @@ $$
 Computing the fee for this purchase is more complicated than for other trades because attempting to use the same method yields a potentially intractable algebra problem (TODO: Continute trying to solve this). With this in mind, the following is a good approximation of the other fee calculations. 
 
 $$
-f = \phi \cdot (1 - p^{-1}) \cdot \Delta y
+f = \phi \cdot (\Delta y - \Delta x) 
 $$
 
 Now that we have $\Delta z'$ and $f$, we have that $\Delta x = c \cdot \Delta z' + f$. From this, we have that $\Delta z = \Delta z' + \frac{f}{c}$.
