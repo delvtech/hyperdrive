@@ -297,6 +297,8 @@ The accounts payable will be decreased by $\Delta y$. In the event that the acco
 Note: Refer to Example 6 below
 :::
 
+## Appendix
+
 ### Virtual Reserve Calculations
 
 Hyperdrive's bond reserves are entirely virtual. Instead of actually holding bonds, it has the potential to mint new bonds at a fixed APR defined by the YieldSpace invariant using the base and bond reserves. With this in mind, we need a way to compute the bond reserves required for the pool to target a given APR.
