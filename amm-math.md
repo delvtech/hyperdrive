@@ -212,7 +212,7 @@ The trader will be charged $\Delta y$ bonds and sent $\Delta x$ base.
 
 ## Open Short
 
-Suppose a trader requests to short $\Delta y$ bonds maturing in $d_b$ days. The AMM will commit to pay the trader $\Delta z$ base when the trader closes the short where $\Delta z$ is priced by the AMM curve.
+Suppose a trader requests to short $\Delta y$ bonds maturing in $d_b$ days. The AMM will commit to pay the trader $\Delta z$ shares which will be converted to base when the trader closes the short where $\Delta z$ is priced by the AMM curve.
 
 ### Pricing
 
@@ -231,7 +231,7 @@ The bond buffer will be updated as $b_y = b_y + \Delta y$.
 
 For the remainder of the accounting, we'll consider the accounting to be indexed by the trader and the block timestamp at the time of opening the short.
 
-The trader will add $ \frac{\Delta y}{c} - \Delta z$ base to their margin account to cover the maximum loss scenario.
+The trader will add base which will be converted to $ \frac{\Delta y}{c} - \Delta z$ shares in their margin account to cover the maximum loss scenario.
 
 The accounts receivable will be increased by $\Delta z$.
 
