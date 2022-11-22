@@ -241,7 +241,7 @@ The bond buffer will be updated as $b_y = b_y + \Delta y$.
 
 For the remainder of the accounting, we'll consider the accounting to be indexed by the trader and the block timestamp at the time of opening the short.
 
-The trader will add base which will be converted to $ \frac{\Delta y}{c} - \Delta z$ shares in their margin account to cover the maximum loss scenario.
+The trader will add base which will be converted to $\frac{\Delta y}{c} - \Delta z$ shares in their margin account to cover the maximum loss scenario.
 
 The accounts receivable will be increased by $\Delta z$.
 
