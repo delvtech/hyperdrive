@@ -54,13 +54,23 @@ $$
 
 ### LP Tokens
 
-When the LP token supply is equal to zero, the choice of LP tokens is arbitrary since the new LP will hold all of the LP tokens. In this case, the LP will receive LP tokens $\Delta l = \Delta x$. In all other cases, we must utilize an LP token calculation that ensures fairness for previous LPs. New LPs should be able to withdraw exactly the amount of base they contributed at the time of providing liquidity. Therefore, we need the new LP's maximum withdrawal amount to equal the capital that they put in.
+When the LP token supply is equal to zero, the choice of LP tokens is arbitrary since the new LP will hold all of the LP tokens. In this case, the LP will receive LP tokens $\Delta l = \Delta x$. In all other cases, we must utilize an LP token calculation that ensures fairness for previous LPs. 
 
 From the "Remove Liquidity" section, the amount withdrawn for a given amount of LP tokens $\Delta l$ is:
 
 $$
+c \cdot (z - b_z) \cdot \frac{\Delta l}{l}
+$$
+
+However, we need the LP share to be derived from the total value backing the LP and not just the amount available to withdraw.  To do this, we zero out $b_z$ giving us:
+
+$$
 c \cdot z \cdot \frac{\Delta l}{l}
 $$
+
+:::info:::
+**Note:** Zeroing out the z buffer protects existing LPs from an attack where someone longs, LPs a large amount, sells the bond and removes their LP for a profit at the expense of LPs. The side effect of this is that new LPs shares are diluted by the existing open positions.  
+:::
 
 Substituting in $z = z + \Delta z$ and $l = l + \Delta l$ and setting this equal to $c \cdot \Delta z$, we get:
 
@@ -91,7 +101,7 @@ Suppose a trader attempts to withdraw liquidity for an amount of LP tokens $\Del
 Since this AMM uses a virtual reserves system for the bond reserves, an LP can only ever withdraw base assets. LP withdrawals are executed pro-rata given the amount $\Delta l$ of LP tokens being withdrawn. From this, the amount of base withdrawn by redeeming $\Delta l$ LP tokens is:
 
 $$
-\Delta x = c \cdot \Delta z = c \cdot z \cdot \frac{\Delta l}{l}
+\Delta x = c \cdot \Delta z = c \cdot (z - b_z) \cdot \frac{\Delta l}{l}
 $$
 
 #### LP tokens
