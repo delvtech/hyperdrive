@@ -4,7 +4,7 @@ name: test
 
 jobs:
   check:
-    name: foundry
+    name: solidity
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
