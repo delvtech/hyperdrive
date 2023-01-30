@@ -1,0 +1,27 @@
+on: [push]
+
+name: lint
+
+jobs:
+  build:
+    name: solidity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: install node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 14.x
+
+      - name: install packages
+        uses: borales/actions-yarn@v4
+        with:
+          cmd: install # will run `yarn install` command
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # if needed
+
+      - name: lint
+        uses: borales/actions-yarn@v4
+        with:
+          cmd: lint

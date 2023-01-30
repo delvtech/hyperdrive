@@ -1,0 +1,41 @@
+{
+    "name": "hyperdrive",
+    "version": "1.0.0",
+    "description": "Hyperdrive Smart Contracts",
+    "engines": {
+        "node": "^14"
+    },
+    "scripts": {
+        "build": "forge build",
+        "clean": "forge clean",
+        "lint": "yarn solhint && yarn style-check && yarn spell-check && echo \"done\"",
+        "prettier": "npx prettier --write .",
+        "test": "forge test",
+        "solhint": "npx solhint -f table contracts/*.sol contracts/**/*.sol",
+        "spell-check": "npx cspell ./**/**/**.sol --gitignore",
+        "style-check": "npx prettier --check .",
+        "postinstall": "patch-package --patch-dir .patches",
+        "prepare": "husky install"
+    },
+    "_moduleAliases": {
+        "test": "./test"
+    },
+    "lint-staged": {
+        "**/**/*.sol": [
+            "npx prettier --write"
+        ]
+    },
+    "author": "",
+    "license": "Apache-2.0",
+    "devDependencies": {
+        "coveralls": "^3.1.1",
+        "cspell": "^6.1.1",
+        "husky": "^8.0.0",
+        "lint-staged": "^13.0.0",
+        "patch-package": "^6.4.7",
+        "prettier": "^2.6.2",
+        "prettier-plugin-solidity": "^1.0.0-beta.19",
+        "solhint": "^3.3.7",
+        "solhint-plugin-prettier": "0.0.5"
+    }
+}
