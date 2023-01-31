@@ -4,6 +4,12 @@ pragma solidity ^0.8.15;
 import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
 import { YieldSpaceMath } from "contracts/libraries/YieldSpaceMath.sol";
 
+// FIXME:
+//
+// The matrix of uses of flat+curve includes cases that should never occur.
+// In particular, if isBondOut && t > 0 or isBondIn && t > 0, then the flat
+// part refers to base tokens and the model doesn't make sense.
+//
 /// @notice Math for the Hyperdrive pricing model.
 /// @author Element Finance
 library HyperdriveMath {
@@ -23,20 +29,38 @@ library HyperdriveMath {
         uint256 c,
         uint256 mu,
         bool isBondOut
-    ) internal pure returns (uint256 result) {
+    ) internal pure returns (
+        uint256 poolBaseDelta,
+        uint256 poolBondDelta,
+        uint256 userDelta
+    ) {
         uint256 flat = amountIn.mulDown(t);
-        uint256 curve = YieldSpaceMath.calculateOutGivenIn(
+        uint256 curveIn = amountIn.mulDown(FixedPointMath.ONE_18.sub(t))
+        // FIXME: Update the reserves first.
+        uint256 curveOut = YieldSpaceMath.calculateOutGivenIn(
             shareReserves,
             bondReserves,
             bondReserveAdjustment,
-            amountIn.mulDown(FixedPointMath.ONE_18.sub(t)),
+            curveIn,
             FixedPointMath.ONE_18,
             s,
             c,
             mu,
             isBondOut
         );
-        return flat.add(curve);
+        if (isBondOut) {
+            return (
+                amountIn,
+                curveOut,
+                flat.add(curveOut)
+            );
+        } else {
+            return (
+                flat.add(curveOut),
+                curveIn,
+                flat.add(curveOut)
+            );
+        }
     }
 
     function calculateInGivenOut(
@@ -48,20 +72,38 @@ library HyperdriveMath {
         uint256 s,
         uint256 c,
         uint256 mu,
-        bool isBondOut
-    ) internal pure returns (uint256 result) {
+        bool isBondIn
+    ) internal pure returns (
+        uint256 poolBaseDelta,
+        uint256 poolBondDelta,
+        uint256 userDelta
+    ) {
         uint256 flat = amountOut.mulDown(t);
-        uint256 curve = YieldSpaceMath.calculateInGivenOut(
+        uint256 curveOut = amountIn.mulDown(FixedPointMath.ONE_18.sub(t))
+        // FIXME: Update the reserves first.
+        uint256 curveIn = YieldSpaceMath.calculateInGivenOut(
             shareReserves,
             bondReserves,
             bondReserveAdjustment,
-            amountOut.mulDown(FixedPointMath.ONE_18.sub(t)),
+            curveOut,
             FixedPointMath.ONE_18,
             s,
             c,
             mu,
-            isBondOut
+            isBondIn
         );
-        return flat.add(curve);
+        if (isBondIn) {
+            return (
+                amountOut,
+                curveIn,
+                flat.add(curveIn)
+            );
+        } else {
+            return (
+                flat.add(curveIn),
+                curveIn,
+                flat.add(curveIn)
+            );
+        }
     }
 }
