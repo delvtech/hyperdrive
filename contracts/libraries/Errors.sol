@@ -10,4 +10,9 @@ library ElementError {
     error FixedPointMath_InvalidExponent();
     error FixedPointMath_NegativeOrZeroInput();
     error FixedPointMath_NegativeInput();
+
+    /// ######################
+    /// ### HyperdriveMath ###
+    /// ######################
+    error HyperdriveMath_BaseWithNonzeroTime();
 }
