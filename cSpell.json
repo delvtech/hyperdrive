@@ -58,6 +58,8 @@
         "mstore",
         "Multicall",
         "multitoken",
+        "mintable",
+        "Mintable",
         "nomiclabs",
         "Numberish",
         "openzepplin",
