@@ -1,18 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.13;
 
-import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import { IERC20Mintable } from "contracts/interfaces/IERC20Mintable.sol";
+import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import { IERC1155Mintable } from "contracts/interfaces/IERC1155Mintable.sol";
 
-contract ERC20Mintable is ERC20, IERC20Mintable {
+contract ERC1155Mintable is ERC1155, IERC1155Mintable {
     address public admin;
 
     event AdminChanged(address indexed newAdmin);
 
-    constructor(
-        string memory _name,
-        string memory _symbol
-    ) ERC20(_name, _symbol) {
+    constructor(string memory _uri) ERC1155(_uri) {
         admin = msg.sender;
     }
 
@@ -39,15 +36,27 @@ contract ERC20Mintable is ERC20, IERC20Mintable {
 
     /// @notice Allows the admin to mint tokens to a specified address.
     /// @param _target The target of the tokens.
+    /// @param _id The ID of the token to mint.
     /// @param _amount The amount to send to the target.
-    function mint(address _target, uint256 _amount) external onlyAdmin {
-        _mint(_target, _amount);
+    /// @param _data Extra data. This is unused in this contract.
+    function mint(
+        address _target,
+        uint256 _id,
+        uint256 _amount,
+        bytes memory _data
+    ) external onlyAdmin {
+        _mint(_target, _id, _amount, _data);
     }
 
     /// @notice Allows the admin to burn tokens from a specified address.
     /// @param _source The source of the tokens.
+    /// @param _id The ID of the token to burn.
     /// @param _amount The amount to burn from the receiver.
-    function burn(address _source, uint256 _amount) external onlyAdmin {
-        _burn(_source, _amount);
+    function burn(
+        address _source,
+        uint256 _id,
+        uint256 _amount
+    ) external onlyAdmin {
+        _burn(_source, _id, _amount);
     }
 }

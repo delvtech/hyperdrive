@@ -6,6 +6,9 @@ library ElementError {
     /// ### Hyperdrive ###
     /// ##################
     error PoolAlreadyInitialized();
+    error ZeroAmount();
+    error BaseBufferExceedsShareReserves();
+    error BondBufferExceedsBondReserves();
 
     /// ######################
     /// ### FixedPointMath ###

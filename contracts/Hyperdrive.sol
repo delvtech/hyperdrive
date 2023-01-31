@@ -6,12 +6,15 @@ import { ElementError } from "contracts/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/libraries/HyperdriveMath.sol";
 import { IERC20Mintable } from "contracts/interfaces/IERC20Mintable.sol";
+import { IERC1155Mintable } from "contracts/interfaces/IERC1155Mintable.sol";
 
 contract Hyperdrive {
     /// Tokens ///
 
     IERC20 public immutable baseToken;
     IERC20Mintable public immutable lpToken;
+    IERC1155Mintable public immutable longToken;
+    IERC1155Mintable public immutable shortToken;
 
     /// Time ///
 
@@ -20,26 +23,40 @@ contract Hyperdrive {
 
     /// Market state ///
 
+    uint256 public lpSupply;
+
+    // TODO: These should both be uint128 and share a slot.
     uint256 public shareReserves;
     uint256 public bondReserves;
+
     uint256 public baseBuffer;
     uint256 public bondBuffer;
+
     uint256 public sharePrice;
     uint256 public immutable initialSharePrice;
 
     /// @notice Initializes a Hyperdrive pool.
-    /// @param _baseToken The base asset of this Hyperdrive instance.
-    /// @param _lpToken The LP token of this Hyperdrive instance.
+    /// @param _baseToken The base token contract.
+    /// @param _lpToken The LP token contract.
+    /// @param _lpToken The long token contract.
+    /// @param _lpToken The short token contract.
     /// @param _termLength The length of the terms supported by this Hyperdrive in seconds.
     /// @param _timeStretch The time stretch of the pool.
     constructor(
         IERC20 _baseToken,
         IERC20Mintable _lpToken,
+        IERC1155Mintable _longToken,
+        IERC1155Mintable _shortToken,
         uint256 _termLength,
         uint256 _timeStretch
     ) {
+        // Initialize the token addresses.
         baseToken = _baseToken;
         lpToken = _lpToken;
+        longToken = _longToken;
+        shortToken = _shortToken;
+
+        // Initialize the time configurations.
         termLength = _termLength;
         timeStretch = _timeStretch;
 
@@ -74,5 +91,63 @@ contract Hyperdrive {
 
         // Mint LP tokens for the initializer.
         lpToken.mint(msg.sender, _contribution);
+    }
+
+    /// @notice Opens a long position that whose with a term length starting in
+    ///         the current block.
+    /// @param _amount The amount of base to use when trading.
+    function openLong(uint256 _amount) external {
+        if (_amount == 0) {
+            revert ElementError.ZeroAmount();
+        }
+
+        // Take custody of the base that is being traded into the contract.
+        baseToken.transferFrom(msg.sender, address(this), _amount);
+
+        // Calculate the pool and user deltas using the trading function.
+        (
+            uint256 poolBaseDelta,
+            uint256 poolBondDelta,
+            uint256 bondsPurchased
+        ) = HyperdriveMath.calculateOutGivenIn(
+                shareReserves,
+                bondReserves,
+                lpSupply,
+                _amount,
+                FixedPointMath.ONE_18,
+                timeStretch,
+                sharePrice,
+                initialSharePrice,
+                true
+            );
+
+        // Apply the trading deltas to the reserves.
+        shareReserves += poolBaseDelta;
+        bondReserves -= poolBondDelta;
+
+        // Increase the base buffer by the number of bonds purchased to ensure
+        // that the pool can fully redeem the newly purchased bonds.
+        baseBuffer += bondsPurchased;
+
+        // TODO: We should fuzz test this and other trading functions to ensure
+        // that the APR never goes below zero. If it does, we may need to
+        // enforce additional invariants.
+        //
+        // Ensure that the base reserves are greater than the base buffer and
+        // that the bond reserves are greater than the bond buffer.
+        if (sharePrice * shareReserves >= baseBuffer) {
+            revert ElementError.BaseBufferExceedsShareReserves();
+        }
+        if (bondReserves >= bondBuffer) {
+            revert ElementError.BondBufferExceedsBondReserves();
+        }
+
+        // Mint the bonds to the trader.
+        longToken.mint(
+            msg.sender,
+            block.timestamp,
+            bondsPurchased,
+            new bytes(0)
+        );
     }
 }
