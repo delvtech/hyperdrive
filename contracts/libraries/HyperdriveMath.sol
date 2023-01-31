@@ -5,11 +5,9 @@ import { ElementError } from "contracts/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
 import { YieldSpaceMath } from "contracts/libraries/YieldSpaceMath.sol";
 
-// FIXME:
-//
-// The matrix of uses of flat+curve includes cases that should never occur.
-// In particular, if isBondOut && t > 0 or isBondIn && t > 0, then the flat
-// part refers to base tokens and the model doesn't make sense.
+// FIXME: The matrix of uses of flat+curve includes cases that should never
+// occur. In particular, if isBondOut && t > 0 or isBondIn && t > 0, then the
+// flat part refers to base tokens and the model doesn't make sense.
 //
 /// @notice Math for the Hyperdrive pricing model.
 /// @author Element Finance
