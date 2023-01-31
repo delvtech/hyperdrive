@@ -84,7 +84,7 @@ library FixedPointMath {
         // -> ln(x^y) = y * ln(x)
         // -> e^(y * ln(x)) = x^y
 
-        int256 y_int256 = int256(y);
+        int256 y_int256 = int256(y); // solhint-disable-line var-name-mixedcase
 
         // Compute y*ln(x)
         // Any overflow for x will be caught in _ln() in the initial bounds check
@@ -119,12 +119,12 @@ library FixedPointMath {
             // x is now in the range (-42, 136) * 1e18. Convert to (-42, 136) * 2**96
             // for more intermediate precision and a binary basis. This base conversion
             // is a multiplication by 1e18 / 2**96 = 5**18 / 2**78.
-            x = (x << 78) / 5**18;
+            x = (x << 78) / 5 ** 18;
 
             // Reduce range of x to (-½ ln 2, ½ ln 2) * 2**96 by factoring out powers of two
             // such that exp(x) = exp(x') * 2**k, where k is an integer.
             // Solving this gives k = round(x / log(2)) and x' = x - k * log(2).
-            int256 k = ((x << 96) / 54916777467707473351141471128 + 2**95) >>
+            int256 k = ((x << 96) / 54916777467707473351141471128 + 2 ** 95) >>
                 96;
             x = x - k * 54916777467707473351141471128;
             // k is in the range [-61, 195].

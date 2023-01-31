@@ -22,7 +22,7 @@ library HyperdriveMath {
     /// @param shareReserves The share reserves of the AMM.
     /// @param bondReserves The bonds reserves of the AMM.
     /// @param bondReserveAdjustment The bond reserves are adjusted to improve
-    ///        the capital efficieny of the AMM. Otherwise, the APR would be 0%
+    ///        the capital efficiency of the AMM. Otherwise, the APR would be 0%
     ///        when share_reserves = bond_reserves, which would ensure that half
     ///        of the pool reserves couldn't be used to provide liquidity.
     /// @param amountIn The amount of the asset that is provided.
@@ -42,11 +42,15 @@ library HyperdriveMath {
         uint256 c,
         uint256 mu,
         bool isBondOut
-    ) internal pure returns (
-        uint256 poolBaseDelta,
-        uint256 poolBondDelta,
-        uint256 userDelta
-    ) {
+    )
+        internal
+        pure
+        returns (
+            uint256 poolBaseDelta,
+            uint256 poolBondDelta,
+            uint256 userDelta
+        )
+    {
         // TODO: See if this is actually true.
         //
         // This pricing model only supports the purchasing of bonds when t = 1.
@@ -67,11 +71,7 @@ library HyperdriveMath {
                 mu,
                 isBondOut
             );
-            return (
-                amountIn,
-                amountOut,
-                amountOut,
-            );
+            return (amountIn, amountOut, amountOut);
         } else {
             // Since we are trading bonds, it's possible that t < 1. We consider
             // (1-t)*amountIn of the bonds to be fully matured and t*amountIn of
@@ -93,11 +93,7 @@ library HyperdriveMath {
                 mu,
                 isBondOut
             );
-            return (
-                flat.add(curveOut),
-                curveIn,
-                flat.add(curveOut)
-            );
+            return (flat.add(curveOut), curveIn, flat.add(curveOut));
         }
     }
 
@@ -106,16 +102,16 @@ library HyperdriveMath {
     /// @param shareReserves The share reserves of the AMM.
     /// @param bondReserves The bonds reserves of the AMM.
     /// @param bondReserveAdjustment The bond reserves are adjusted to improve
-    ///        the capital efficieny of the AMM. Otherwise, the APR would be 0%
+    ///        the capital efficiency of the AMM. Otherwise, the APR would be 0%
     ///        when share_reserves = bond_reserves, which would ensure that half
     ///        of the pool reserves couldn't be used to provide liquidity.
-    /// @param amountIn The amount of the asset that is provided.
+    /// @param amountOut The amount of the asset that is received.
     /// @param t The amount of time until maturity in seconds.
     /// @param s The time stretch parameter.
     /// @param c The share price.
     /// @param mu The initial share price.
-    /// @param isBondOut A flag that specifies whether bonds are the asset being
-    ///        received or the asset being provided.
+    /// @param isBondIn A flag that specifies whether bonds are the asset being
+    ///        provided or the asset being received.
     function calculateInGivenOut(
         uint256 shareReserves,
         uint256 bondReserves,
@@ -126,11 +122,15 @@ library HyperdriveMath {
         uint256 c,
         uint256 mu,
         bool isBondIn
-    ) internal pure returns (
-        uint256 poolBaseDelta,
-        uint256 poolBondDelta,
-        uint256 userDelta
-    ) {
+    )
+        internal
+        pure
+        returns (
+            uint256 poolBaseDelta,
+            uint256 poolBondDelta,
+            uint256 userDelta
+        )
+    {
         // TODO: See if this is actually true.
         //
         // This pricing model only supports the selling of bonds when t = 1.
@@ -144,18 +144,14 @@ library HyperdriveMath {
                 shareReserves,
                 bondReserves,
                 bondReserveAdjustment,
-                amountIn,
+                amountOut,
                 FixedPointMath.ONE_18,
                 s,
                 c,
                 mu,
                 isBondIn
             );
-            return (
-                amountOut,
-                amountIn,
-                amountIn,
-            );
+            return (amountOut, amountIn, amountIn);
         } else {
             // Since we are trading bonds, it's possible that t < 1. We consider
             // (1-t)*amountIn of the bonds to be fully matured and t*amountIn of
@@ -163,7 +159,7 @@ library HyperdriveMath {
             // one-to-one (on the "flat" part of the curve) and the newly minted
             // bonds are traded on a YieldSpace curve configured to t = 1.
             uint256 flat = amountOut.mulDown(FixedPointMath.ONE_18.sub(t));
-            uint256 curveOut = amountIn.mulDown(t);
+            uint256 curveOut = amountOut.mulDown(t);
             uint256 curveIn = YieldSpaceMath.calculateInGivenOut(
                 // Credit the share reserves by the flat trade.
                 shareReserves.add(flat.divDown(c)),
@@ -177,11 +173,7 @@ library HyperdriveMath {
                 mu,
                 isBondIn
             );
-            return (
-                flat.add(curveIn),
-                curveIn,
-                flat.add(curveIn)
-            );
+            return (flat.add(curveIn), curveIn, flat.add(curveIn));
         }
     }
 }
