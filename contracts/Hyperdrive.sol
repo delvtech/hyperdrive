@@ -117,11 +117,8 @@ contract Hyperdrive is ERC20 {
 
         // Calculate the pool and user deltas using the trading function.
         uint256 shareAmount = _baseAmount.divDown(sharePrice);
-        (
-            ,
-            uint256 poolBondDelta,
-            uint256 bondProceeds
-        ) = HyperdriveMath.calculateOutGivenIn(
+        (, uint256 poolBondDelta, uint256 bondProceeds) = HyperdriveMath
+            .calculateOutGivenIn(
                 shareReserves,
                 bondReserves,
                 totalSupply(),
@@ -220,11 +217,8 @@ contract Hyperdrive is ERC20 {
         }
 
         // Calculate the pool and user deltas using the trading function.
-        (
-            uint256 poolShareDelta,
-            ,
-            uint256 shareProceeds
-        ) = HyperdriveMath.calculateOutGivenIn(
+        (uint256 poolShareDelta, , uint256 shareProceeds) = HyperdriveMath
+            .calculateOutGivenIn(
                 shareReserves,
                 bondReserves,
                 totalSupply(),
@@ -234,10 +228,15 @@ contract Hyperdrive is ERC20 {
                 sharePrice,
                 initialSharePrice,
                 false
-        );
+            );
 
         // Take custody of the maximum amount the trader can lose on the short.
-        bool success = baseToken.transferFrom(msg.sender, address(this), _bondAmount - shareProceeds);
+        uint256 baseProceeds = shareProceeds.mulDown(sharePrice);
+        bool success = baseToken.transferFrom(
+            msg.sender,
+            address(this),
+            _bondAmount - baseProceeds
+        );
         if (!success) {
             revert ElementError.TransferFailed();
         }
