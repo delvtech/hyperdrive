@@ -94,8 +94,7 @@ contract Hyperdrive is ERC20 {
         _mint(msg.sender, _contribution);
     }
 
-    /// @notice Opens a long position that whose with a term length starting in
-    ///         the current block.
+    /// @notice Opens a long position.
     /// @param _amount The amount of base to use when trading.
     function openLong(uint256 _amount) external {
         if (_amount == 0) {
@@ -116,7 +115,7 @@ contract Hyperdrive is ERC20 {
         (
             uint256 poolBaseDelta,
             uint256 poolBondDelta,
-            uint256 bondsPurchased
+            uint256 bondProceeds
         ) = HyperdriveMath.calculateOutGivenIn(
                 shareReserves,
                 bondReserves,
@@ -129,20 +128,21 @@ contract Hyperdrive is ERC20 {
                 true
             );
 
-        // Apply the trading deltas to the reserves.
+        // Apply the trading deltas to the reserves and increase the base buffer
+        // by the number of bonds purchased to ensure that the pool can fully
+        // redeem the newly purchased bonds.
         shareReserves += poolBaseDelta;
         bondReserves -= poolBondDelta;
-
-        // Increase the base buffer by the number of bonds purchased to ensure
-        // that the pool can fully redeem the newly purchased bonds.
-        baseBuffer += bondsPurchased;
+        baseBuffer += bondProceeds;
 
         // TODO: We should fuzz test this and other trading functions to ensure
         // that the APR never goes below zero. If it does, we may need to
         // enforce additional invariants.
         //
-        // Ensure that the base reserves are greater than the base buffer and
-        // that the bond reserves are greater than the bond buffer.
+        // Since the base buffer may have increased relative to the base
+        // reserves and the bond reserves decreased, we must ensure that the
+        // base reserves are greater than the base buffer and that the bond
+        // reserves are greater than the bond buffer.
         if (sharePrice * shareReserves >= baseBuffer) {
             revert ElementError.BaseBufferExceedsShareReserves();
         }
@@ -150,12 +150,55 @@ contract Hyperdrive is ERC20 {
             revert ElementError.BondBufferExceedsBondReserves();
         }
 
-        // Mint the bonds to the trader.
-        longToken.mint(
-            msg.sender,
-            block.timestamp,
-            bondsPurchased,
-            new bytes(0)
-        );
+        // Mint the bonds to the trader with a mint time set to the current block.
+        longToken.mint(msg.sender, block.timestamp, bondProceeds, new bytes(0));
+    }
+
+    /// @notice Closes a long position with a specified mint time.
+    /// @param _mintTime The mint time of the longs to close.
+    /// @param _amount The amount of longs to close.
+    function closeLong(uint256 _mintTime, uint256 _amount) external {
+        if (_amount == 0) {
+            revert ElementError.ZeroAmount();
+        }
+
+        // Burn the trader's long tokens.
+        longToken.burn(msg.sender, _mintTime, _amount);
+
+        // Calculate the pool and user deltas using the trading function.
+        uint256 timeElapsed = block.timestamp - _mintTime;
+        uint256 timeRemaining = timeElapsed < termLength
+            ? (termLength - timeElapsed) * FixedPointMath.ONE_18
+            : 0;
+        (
+            uint256 poolBaseDelta,
+            uint256 poolBondDelta,
+            uint256 baseProceeds
+        ) = HyperdriveMath.calculateOutGivenIn(
+                shareReserves,
+                bondReserves,
+                totalSupply(),
+                _amount,
+                timeRemaining,
+                timeStretch,
+                sharePrice,
+                initialSharePrice,
+                false
+            );
+
+        // Apply the trading deltas to the reserves and decrease the base buffer
+        // by the amount of bonds sold. Since the difference between the base
+        // reserves and the base buffer stays the same or gets larger and the
+        // difference between the bond reserves and the bond buffer increases,
+        // we don't need to check that the reserves are larger than the buffers.
+        shareReserves -= poolBaseDelta;
+        bondReserves += poolBondDelta;
+        baseBuffer -= _amount;
+
+        // Transfer the base returned to the trader.
+        bool success = baseToken.transfer(msg.sender, baseProceeds);
+        if (!success) {
+            revert ElementError.TransferFailed();
+        }
     }
 }
