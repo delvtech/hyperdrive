@@ -152,25 +152,29 @@ contract Hyperdrive is ERC20 {
             revert ElementError.BondBufferExceedsBondReserves();
         }
 
-        // Mint the bonds to the trader with a mint time set to the current block.
-        longToken.mint(msg.sender, block.timestamp, bondProceeds, new bytes(0));
+        // Mint the bonds to the trader with an ID of the maturity time.
+        longToken.mint(
+            msg.sender,
+            block.timestamp + termLength,
+            bondProceeds,
+            new bytes(0)
+        );
     }
 
-    /// @notice Closes a long position with a specified mint time.
-    /// @param _mintTime The mint time of the bonds to close.
+    /// @notice Closes a long position with a specified maturity time.
+    /// @param _maturityTime The maturity time of the bonds to close.
     /// @param _bondAmount The amount of bonds to close.
-    function closeLong(uint256 _mintTime, uint256 _bondAmount) external {
+    function closeLong(uint256 _maturityTime, uint256 _bondAmount) external {
         if (_bondAmount == 0) {
             revert ElementError.ZeroAmount();
         }
 
         // Burn the bonds that are being closed.
-        longToken.burn(msg.sender, _mintTime, _bondAmount);
+        longToken.burn(msg.sender, _maturityTime, _bondAmount);
 
         // Calculate the pool and user deltas using the trading function.
-        uint256 timeElapsed = block.timestamp - _mintTime;
-        uint256 timeRemaining = timeElapsed < termLength
-            ? (termLength - timeElapsed) * FixedPointMath.ONE_18
+        uint256 timeRemaining = block.timestamp < _maturityTime
+            ? (_maturityTime - block.timestamp) * FixedPointMath.ONE_18
             : 0;
         (
             uint256 poolShareDelta,
