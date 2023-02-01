@@ -8,6 +8,8 @@ import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/libraries/HyperdriveMath.sol";
 import { IERC1155Mintable } from "contracts/interfaces/IERC1155Mintable.sol";
 
+/// @notice A fixed-rate AMM that mints bonds on demand for longs and shorts.
+/// @author Element Finance
 contract Hyperdrive is ERC20 {
     using FixedPointMath for uint256;
 
@@ -24,7 +26,7 @@ contract Hyperdrive is ERC20 {
 
     /// Market state ///
 
-    // TODO: These should both be uint128 and share a slot.
+    // TODO: Can we make these uint128?
     uint256 public shareReserves;
     uint256 public bondReserves;
 
@@ -57,7 +59,7 @@ contract Hyperdrive is ERC20 {
         timeStretch = _timeStretch;
 
         // TODO: This isn't correct. This will need to be updated when asset
-        // delegation is implemented.
+        // delgation is implemented.
         initialSharePrice = FixedPointMath.ONE_18;
         sharePrice = FixedPointMath.ONE_18;
     }
@@ -260,35 +262,43 @@ contract Hyperdrive is ERC20 {
             revert ElementError.BaseBufferExceedsShareReserves();
         }
 
-        // Mint the short tokens to the trader.
+        // Mint the short tokens to the trader. The ID is a concatenation of the
+        // current share price and the maturity time of the shorts.
         shortToken.mint(
             msg.sender,
-            block.timestamp + termLength,
+            (sharePrice << 32) | (block.timestamp + termLength),
             _bondAmount,
             new bytes(0)
         );
     }
 
-    // TODO: Make sure that the correct amount of variable interest is given to
-    // the shorter.
-    //
     /// @notice Closes a short position with a specified maturity time.
-    /// @param _maturityTime The maturity time of the shorts to close.
+    /// @param _key The key of the shorts to close. The short key is a
+    ///        concatenation of the share price when the short was opened and
+    ///        the maturity time of the short.
     /// @param _bondAmount The amount of shorts to close.
-    function closeShort(uint256 _maturityTime, uint256 _bondAmount) external {
+    function closeShort(uint256 _key, uint256 _bondAmount) external {
         if (_bondAmount == 0) {
             revert ElementError.ZeroAmount();
         }
 
         // Burn the shorts that are being closed.
-        shortToken.burn(msg.sender, _maturityTime, _bondAmount);
+        shortToken.burn(msg.sender, _key, _bondAmount);
+
+        // Deserialize the key into the share price at the time the short was
+        // opened and the maturity time of the short.
+        uint256 openSharePrice = _key >> 32;
+        uint256 maturityTime = _key & ((1 << 32) - 1);
 
         // Calculate the pool and user deltas using the trading function.
-        uint256 timeRemaining = block.timestamp < _maturityTime
-            ? (_maturityTime - block.timestamp) * FixedPointMath.ONE_18
+        uint256 timeRemaining = block.timestamp < maturityTime
+            ? (maturityTime - block.timestamp) * FixedPointMath.ONE_18
             : 0;
-        (uint256 poolShareDelta, uint256 poolBondDelta, uint256 shareObligation) = HyperdriveMath
-            .calculateInGivenOut(
+        (
+            uint256 poolShareDelta,
+            uint256 poolBondDelta,
+            uint256 sharePayment
+        ) = HyperdriveMath.calculateInGivenOut(
                 shareReserves,
                 bondReserves,
                 totalSupply(),
@@ -300,6 +310,28 @@ contract Hyperdrive is ERC20 {
                 false
             );
 
-        // FIXME: Finish the shorting function.
+        // Apply the trading deltas to the reserves. Since the share reserves
+        // are increased and the base buffer doesn't change, we don't need to
+        // check that the base reserves are greater than the base buffer.
+        shareReserves += poolShareDelta;
+        bondReserves -= poolBondDelta;
+
+        // Transfer the profit to the shorter. This includes the proceeds from
+        // the short sale as well as the variable interest that was collected
+        // on the face value of the bonds.
+        uint256 saleProceeds = _bondAmount.sub(
+            sharePrice.mulDown(sharePayment)
+        );
+        uint256 interestProceeds = sharePrice
+            .divDown(openSharePrice)
+            .sub(FixedPointMath.ONE_18)
+            .mulDown(_bondAmount);
+        bool success = baseToken.transfer(
+            msg.sender,
+            saleProceeds.add(interestProceeds)
+        );
+        if (!success) {
+            revert ElementError.TransferFailed();
+        }
     }
 }
