@@ -15,38 +15,61 @@ contract Hyperdrive is ERC20 {
 
     /// Tokens ///
 
+    // @dev The base asset.
     IERC20 public immutable baseToken;
+
+    // @dev A mintable ERC1155 token that is used to record long balances.
+    //      Hyperdrive must be able to mint short tokens for trading to occur.
     IERC1155Mintable public immutable longToken;
+
+    // @dev A mintable ERC1155 token that is used to record short balances.
+    //      Hyperdrive must be able to mint short tokens for trading to occur.
     IERC1155Mintable public immutable shortToken;
 
     /// Time ///
 
-    uint256 public immutable termLength;
+    // @dev The amount of seconds that elapse before a bond can be redeemed.
+    uint256 public immutable positionDuration;
+
+    // @dev A parameter that decreases slippage around a target rate.
     uint256 public immutable timeStretch;
 
     /// Market state ///
 
-    // TODO: Can we make these uint128?
+    // @dev The share price at the time the pool was created.
+    uint256 public immutable initialSharePrice;
+
+    // @dev The current share price.
+    uint256 public sharePrice;
+
+    // @dev The share reserves. The share reserves multiplied by the share price
+    //      give the base reserves, so shares are a mechanism of ensuring that
+    //      interest is properly awarded over time.
     uint256 public shareReserves;
+
+    // @dev The bond reserves. In Hyperdrive, the bond reserves aren't backed by
+    //      pre-minted bonds and are instead used as a virtual value that
+    //      ensures that the spot rate changes according to the laws of supply
+    //      and demand.
     uint256 public bondReserves;
 
+    // @dev The base buffer stores the amount of outstanding obligations to bond
+    //      holders. This is required to maintain solvency since the bond
+    //      reserves are virtual and bonds are minted on demand.
     uint256 public baseBuffer;
-    uint256 public bondBuffer;
-
-    uint256 public sharePrice;
-    uint256 public immutable initialSharePrice;
 
     /// @notice Initializes a Hyperdrive pool.
     /// @param _baseToken The base token contract.
     /// @param _longToken The long token contract.
     /// @param _shortToken The short token contract.
-    /// @param _termLength The length of the terms supported by this Hyperdrive in seconds.
+    /// @param _positionDuration The time in seconds that elaspes before bonds
+    ///        can be redeemed one-to-one for base.
     /// @param _timeStretch The time stretch of the pool.
     constructor(
         IERC20 _baseToken,
         IERC1155Mintable _longToken,
         IERC1155Mintable _shortToken,
-        uint256 _termLength,
+        uint256 _positionDuration,
         uint256 _timeStretch
     ) ERC20("Hyperdrive LP", "hLP") {
         // Initialize the token addresses.
@@ -55,7 +78,7 @@ contract Hyperdrive is ERC20 {
         shortToken = _shortToken;
 
         // Initialize the time configurations.
-        termLength = _termLength;
+        positionDuration = _positionDuration;
         timeStretch = _timeStretch;
 
         // TODO: This isn't correct. This will need to be updated when asset
@@ -90,7 +113,7 @@ contract Hyperdrive is ERC20 {
             initialSharePrice,
             sharePrice,
             _apr,
-            termLength,
+            positionDuration,
             timeStretch
         );
 
@@ -150,14 +173,11 @@ contract Hyperdrive is ERC20 {
         if (sharePrice * shareReserves >= baseBuffer) {
             revert ElementError.BaseBufferExceedsShareReserves();
         }
-        if (bondReserves >= bondBuffer) {
-            revert ElementError.BondBufferExceedsBondReserves();
-        }
 
         // Mint the bonds to the trader with an ID of the maturity time.
         longToken.mint(
             msg.sender,
-            block.timestamp + termLength,
+            block.timestamp + positionDuration,
             bondProceeds,
             new bytes(0)
         );
@@ -251,7 +271,6 @@ contract Hyperdrive is ERC20 {
         // by the amount of bonds that were shorted.
         shareReserves -= poolShareDelta;
         bondReserves += _bondAmount;
-        bondBuffer += _bondAmount;
 
         // The bond buffer is increased by the same amount as the bond buffer,
         // so there is no need to check that the bond reserves is greater than
@@ -266,7 +285,7 @@ contract Hyperdrive is ERC20 {
         // current share price and the maturity time of the shorts.
         shortToken.mint(
             msg.sender,
-            (sharePrice << 32) | (block.timestamp + termLength),
+            (sharePrice << 32) | (block.timestamp + positionDuration),
             _bondAmount,
             new bytes(0)
         );
