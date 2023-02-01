@@ -1,18 +1,17 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.13;
 
+import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { ElementError } from "contracts/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/libraries/HyperdriveMath.sol";
-import { IERC20Mintable } from "contracts/interfaces/IERC20Mintable.sol";
 import { IERC1155Mintable } from "contracts/interfaces/IERC1155Mintable.sol";
 
-contract Hyperdrive {
+contract Hyperdrive is ERC20 {
     /// Tokens ///
 
     IERC20 public immutable baseToken;
-    IERC20Mintable public immutable lpToken;
     IERC1155Mintable public immutable longToken;
     IERC1155Mintable public immutable shortToken;
 
@@ -22,8 +21,6 @@ contract Hyperdrive {
     uint256 public immutable timeStretch;
 
     /// Market state ///
-
-    uint256 public lpSupply;
 
     // TODO: These should both be uint128 and share a slot.
     uint256 public shareReserves;
@@ -37,22 +34,19 @@ contract Hyperdrive {
 
     /// @notice Initializes a Hyperdrive pool.
     /// @param _baseToken The base token contract.
-    /// @param _lpToken The LP token contract.
-    /// @param _lpToken The long token contract.
-    /// @param _lpToken The short token contract.
+    /// @param _longToken The long token contract.
+    /// @param _shortToken The short token contract.
     /// @param _termLength The length of the terms supported by this Hyperdrive in seconds.
     /// @param _timeStretch The time stretch of the pool.
     constructor(
         IERC20 _baseToken,
-        IERC20Mintable _lpToken,
         IERC1155Mintable _longToken,
         IERC1155Mintable _shortToken,
         uint256 _termLength,
         uint256 _timeStretch
-    ) {
+    ) ERC20("Hyperdrive LP", "hLP") {
         // Initialize the token addresses.
         baseToken = _baseToken;
-        lpToken = _lpToken;
         longToken = _longToken;
         shortToken = _shortToken;
 
@@ -76,7 +70,14 @@ contract Hyperdrive {
         }
 
         // Pull the contribution into the contract.
-        baseToken.transferFrom(msg.sender, address(this), _contribution);
+        bool success = baseToken.transferFrom(
+            msg.sender,
+            address(this),
+            _contribution
+        );
+        if (!success) {
+            revert ElementError.TransferFailed();
+        }
 
         // Update the reserves.
         shareReserves = _contribution;
@@ -90,7 +91,7 @@ contract Hyperdrive {
         );
 
         // Mint LP tokens for the initializer.
-        lpToken.mint(msg.sender, _contribution);
+        _mint(msg.sender, _contribution);
     }
 
     /// @notice Opens a long position that whose with a term length starting in
@@ -102,7 +103,14 @@ contract Hyperdrive {
         }
 
         // Take custody of the base that is being traded into the contract.
-        baseToken.transferFrom(msg.sender, address(this), _amount);
+        bool success = baseToken.transferFrom(
+            msg.sender,
+            address(this),
+            _amount
+        );
+        if (!success) {
+            revert ElementError.TransferFailed();
+        }
 
         // Calculate the pool and user deltas using the trading function.
         (
@@ -112,7 +120,7 @@ contract Hyperdrive {
         ) = HyperdriveMath.calculateOutGivenIn(
                 shareReserves,
                 bondReserves,
-                lpSupply,
+                totalSupply(),
                 _amount,
                 FixedPointMath.ONE_18,
                 timeStretch,

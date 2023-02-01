@@ -9,6 +9,7 @@ library ElementError {
     error ZeroAmount();
     error BaseBufferExceedsShareReserves();
     error BondBufferExceedsBondReserves();
+    error TransferFailed();
 
     /// ######################
     /// ### FixedPointMath ###
