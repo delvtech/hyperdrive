@@ -9,6 +9,8 @@ import { HyperdriveMath } from "contracts/libraries/HyperdriveMath.sol";
 import { IERC1155Mintable } from "contracts/interfaces/IERC1155Mintable.sol";
 
 contract Hyperdrive is ERC20 {
+    using FixedPointMath for uint256;
+
     /// Tokens ///
 
     IERC20 public immutable baseToken;
@@ -94,11 +96,10 @@ contract Hyperdrive is ERC20 {
         _mint(msg.sender, _contribution);
     }
 
-    /// @notice Opens a long position that whose with a term length starting in
-    ///         the current block.
-    /// @param _amount The amount of base to use when trading.
-    function openLong(uint256 _amount) external {
-        if (_amount == 0) {
+    /// @notice Opens a long position.
+    /// @param _baseAmount The amount of base to use when trading.
+    function openLong(uint256 _baseAmount) external {
+        if (_baseAmount == 0) {
             revert ElementError.ZeroAmount();
         }
 
@@ -106,7 +107,7 @@ contract Hyperdrive is ERC20 {
         bool success = baseToken.transferFrom(
             msg.sender,
             address(this),
-            _amount
+            _baseAmount
         );
         if (!success) {
             revert ElementError.TransferFailed();
@@ -114,14 +115,14 @@ contract Hyperdrive is ERC20 {
 
         // Calculate the pool and user deltas using the trading function.
         (
-            uint256 poolBaseDelta,
+            uint256 poolShareDelta,
             uint256 poolBondDelta,
-            uint256 bondsPurchased
+            uint256 bondProceeds
         ) = HyperdriveMath.calculateOutGivenIn(
                 shareReserves,
                 bondReserves,
                 totalSupply(),
-                _amount,
+                _baseAmount.divDown(sharePrice),
                 FixedPointMath.ONE_18,
                 timeStretch,
                 sharePrice,
@@ -129,20 +130,21 @@ contract Hyperdrive is ERC20 {
                 true
             );
 
-        // Apply the trading deltas to the reserves.
-        shareReserves += poolBaseDelta;
+        // Apply the trading deltas to the reserves and increase the base buffer
+        // by the number of bonds purchased to ensure that the pool can fully
+        // redeem the newly purchased bonds.
+        shareReserves += poolShareDelta;
         bondReserves -= poolBondDelta;
-
-        // Increase the base buffer by the number of bonds purchased to ensure
-        // that the pool can fully redeem the newly purchased bonds.
-        baseBuffer += bondsPurchased;
+        baseBuffer += bondProceeds;
 
         // TODO: We should fuzz test this and other trading functions to ensure
         // that the APR never goes below zero. If it does, we may need to
         // enforce additional invariants.
         //
-        // Ensure that the base reserves are greater than the base buffer and
-        // that the bond reserves are greater than the bond buffer.
+        // Since the base buffer may have increased relative to the base
+        // reserves and the bond reserves decreased, we must ensure that the
+        // base reserves are greater than the base buffer and that the bond
+        // reserves are greater than the bond buffer.
         if (sharePrice * shareReserves >= baseBuffer) {
             revert ElementError.BaseBufferExceedsShareReserves();
         }
@@ -150,12 +152,62 @@ contract Hyperdrive is ERC20 {
             revert ElementError.BondBufferExceedsBondReserves();
         }
 
-        // Mint the bonds to the trader.
+        // Mint the bonds to the trader with an ID of the maturity time.
         longToken.mint(
             msg.sender,
-            block.timestamp,
-            bondsPurchased,
+            block.timestamp + termLength,
+            bondProceeds,
             new bytes(0)
         );
+    }
+
+    /// @notice Closes a long position with a specified mint time.
+    /// @param _maturityTime The maturity time of the longs to close.
+    /// @param _bondAmount The amount of longs to close.
+    function closeLong(uint256 _maturityTime, uint256 _bondAmount) external {
+        if (_bondAmount == 0) {
+            revert ElementError.ZeroAmount();
+        }
+
+        // Burn the bonds that are being closed.
+        longToken.burn(msg.sender, _maturityTime, _bondAmount);
+
+        // Calculate the pool and user deltas using the trading function.
+        uint256 timeRemaining = block.timestamp < _maturityTime
+            ? (_maturityTime - block.timestamp) * FixedPointMath.ONE_18
+            : 0;
+        (
+            uint256 poolShareDelta,
+            uint256 poolBondDelta,
+            uint256 shareProceeds
+        ) = HyperdriveMath.calculateOutGivenIn(
+                shareReserves,
+                bondReserves,
+                totalSupply(),
+                _bondAmount,
+                timeRemaining,
+                timeStretch,
+                sharePrice,
+                initialSharePrice,
+                false
+            );
+
+        // Apply the trading deltas to the reserves and decrease the base buffer
+        // by the amount of bonds sold. Since the difference between the base
+        // reserves and the base buffer stays the same or gets larger and the
+        // difference between the bond reserves and the bond buffer increases,
+        // we don't need to check that the reserves are larger than the buffers.
+        shareReserves -= poolShareDelta;
+        bondReserves += poolBondDelta;
+        baseBuffer -= _bondAmount;
+
+        // Transfer the base returned to the trader.
+        bool success = baseToken.transfer(
+            msg.sender,
+            shareProceeds.mulDown(sharePrice)
+        );
+        if (!success) {
+            revert ElementError.TransferFailed();
+        }
     }
 }
