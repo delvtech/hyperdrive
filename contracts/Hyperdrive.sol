@@ -9,6 +9,8 @@ import { HyperdriveMath } from "contracts/libraries/HyperdriveMath.sol";
 import { IERC1155Mintable } from "contracts/interfaces/IERC1155Mintable.sol";
 
 contract Hyperdrive is ERC20 {
+    using FixedPointMath for uint256;
+
     /// Tokens ///
 
     IERC20 public immutable baseToken;
@@ -113,14 +115,14 @@ contract Hyperdrive is ERC20 {
 
         // Calculate the pool and user deltas using the trading function.
         (
-            uint256 poolBaseDelta,
+            uint256 poolShareDelta,
             uint256 poolBondDelta,
             uint256 bondProceeds
         ) = HyperdriveMath.calculateOutGivenIn(
                 shareReserves,
                 bondReserves,
                 totalSupply(),
-                _amount,
+                _amount.divDown(sharePrice),
                 FixedPointMath.ONE_18,
                 timeStretch,
                 sharePrice,
@@ -131,7 +133,7 @@ contract Hyperdrive is ERC20 {
         // Apply the trading deltas to the reserves and increase the base buffer
         // by the number of bonds purchased to ensure that the pool can fully
         // redeem the newly purchased bonds.
-        shareReserves += poolBaseDelta;
+        shareReserves += poolShareDelta;
         bondReserves -= poolBondDelta;
         baseBuffer += bondProceeds;
 
@@ -171,9 +173,9 @@ contract Hyperdrive is ERC20 {
             ? (termLength - timeElapsed) * FixedPointMath.ONE_18
             : 0;
         (
-            uint256 poolBaseDelta,
+            uint256 poolShareDelta,
             uint256 poolBondDelta,
-            uint256 baseProceeds
+            uint256 shareProceeds
         ) = HyperdriveMath.calculateOutGivenIn(
                 shareReserves,
                 bondReserves,
@@ -191,12 +193,15 @@ contract Hyperdrive is ERC20 {
         // reserves and the base buffer stays the same or gets larger and the
         // difference between the bond reserves and the bond buffer increases,
         // we don't need to check that the reserves are larger than the buffers.
-        shareReserves -= poolBaseDelta;
+        shareReserves -= poolShareDelta;
         bondReserves += poolBondDelta;
         baseBuffer -= _amount;
 
         // Transfer the base returned to the trader.
-        bool success = baseToken.transfer(msg.sender, baseProceeds);
+        bool success = baseToken.transfer(
+            msg.sender,
+            shareProceeds.mulDown(sharePrice)
+        );
         if (!success) {
             revert ElementError.TransferFailed();
         }
