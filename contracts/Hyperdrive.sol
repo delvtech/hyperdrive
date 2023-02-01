@@ -96,6 +96,8 @@ contract Hyperdrive is ERC20 {
         _mint(msg.sender, _contribution);
     }
 
+    /// Long ///
+
     /// @notice Opens a long position.
     /// @param _baseAmount The amount of base to use when trading.
     function openLong(uint256 _baseAmount) external {
@@ -114,15 +116,13 @@ contract Hyperdrive is ERC20 {
         }
 
         // Calculate the pool and user deltas using the trading function.
-        (
-            uint256 poolShareDelta,
-            uint256 poolBondDelta,
-            uint256 bondProceeds
-        ) = HyperdriveMath.calculateOutGivenIn(
+        uint256 shareAmount = _baseAmount.divDown(sharePrice);
+        (, uint256 poolBondDelta, uint256 bondProceeds) = HyperdriveMath
+            .calculateOutGivenIn(
                 shareReserves,
                 bondReserves,
                 totalSupply(),
-                _baseAmount.divDown(sharePrice),
+                shareAmount,
                 FixedPointMath.ONE_18,
                 timeStretch,
                 sharePrice,
@@ -133,7 +133,7 @@ contract Hyperdrive is ERC20 {
         // Apply the trading deltas to the reserves and increase the base buffer
         // by the number of bonds purchased to ensure that the pool can fully
         // redeem the newly purchased bonds.
-        shareReserves += poolShareDelta;
+        shareReserves += shareAmount;
         bondReserves -= poolBondDelta;
         baseBuffer += bondProceeds;
 
@@ -161,9 +161,9 @@ contract Hyperdrive is ERC20 {
         );
     }
 
-    /// @notice Closes a long position with a specified mint time.
-    /// @param _maturityTime The maturity time of the longs to close.
-    /// @param _bondAmount The amount of longs to close.
+    /// @notice Closes a long position with a specified maturity time.
+    /// @param _maturityTime The maturity time of the bonds to close.
+    /// @param _bondAmount The amount of bonds to close.
     function closeLong(uint256 _maturityTime, uint256 _bondAmount) external {
         if (_bondAmount == 0) {
             revert ElementError.ZeroAmount();
@@ -209,5 +209,63 @@ contract Hyperdrive is ERC20 {
         if (!success) {
             revert ElementError.TransferFailed();
         }
+    }
+
+    /// Short ///
+
+    /// @notice Opens a short position.
+    /// @param _bondAmount The amount of bonds to short.
+    function openShort(uint256 _bondAmount) external {
+        if (_bondAmount == 0) {
+            revert ElementError.ZeroAmount();
+        }
+
+        // Calculate the pool and user deltas using the trading function.
+        (uint256 poolShareDelta, , uint256 shareProceeds) = HyperdriveMath
+            .calculateOutGivenIn(
+                shareReserves,
+                bondReserves,
+                totalSupply(),
+                _bondAmount,
+                FixedPointMath.ONE_18,
+                timeStretch,
+                sharePrice,
+                initialSharePrice,
+                false
+            );
+
+        // Take custody of the maximum amount the trader can lose on the short.
+        uint256 baseProceeds = shareProceeds.mulDown(sharePrice);
+        bool success = baseToken.transferFrom(
+            msg.sender,
+            address(this),
+            _bondAmount - baseProceeds
+        );
+        if (!success) {
+            revert ElementError.TransferFailed();
+        }
+
+        // Apply the trading deltas to the reserves and increase the bond buffer
+        // by the amount of bonds that were shorted.
+        shareReserves -= poolShareDelta;
+        bondReserves += _bondAmount;
+        bondBuffer += _bondAmount;
+
+        // The bond buffer is increased by the same amount as the bond buffer,
+        // so there is no need to check that the bond reserves is greater than
+        // or equal to the bond buffer. Since the share reserves are reduced,
+        // we need to verify that the base reserves are greater than or equal
+        // to the base buffer.
+        if (sharePrice * shareReserves >= baseBuffer) {
+            revert ElementError.BaseBufferExceedsShareReserves();
+        }
+
+        // Mint the short tokens to the trader.
+        shortToken.mint(
+            msg.sender,
+            block.timestamp + termLength,
+            _bondAmount,
+            new bytes(0)
+        );
     }
 }
