@@ -1,4 +1,6 @@
 cache/
 out/
+forge-cache/
+
 node_modules/
 yarn-error.log

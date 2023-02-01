@@ -14,6 +14,30 @@ import { YieldSpaceMath } from "contracts/libraries/YieldSpaceMath.sol";
 library HyperdriveMath {
     using FixedPointMath for uint256;
 
+    // TODO: This isn't accurate when the LP tokens aren't equal to 2y + x.
+    //
+    // TODO: Comment this function.
+    function calculateBondReserves(
+        uint256 shareReserves,
+        uint256 initialSharePrice,
+        uint256 sharePrice,
+        uint256 apr,
+        uint256 termLength,
+        uint256 timeStretch
+    ) internal pure returns (uint256 bondReserves) {
+        uint256 t = termLength.divDown(365 days * FixedPointMath.ONE_18);
+        uint256 tau = t.divDown(timeStretch);
+        uint256 lhs = shareReserves / 2;
+        uint256 rhs;
+        {
+            uint256 rhsInner = FixedPointMath.ONE_18.add(apr.mulDown(t)).pow(
+                FixedPointMath.ONE_18.divDown(tau)
+            );
+            rhs = initialSharePrice.mulDown(rhsInner).sub(sharePrice);
+        }
+        return lhs.mulDown(rhs);
+    }
+
     /// @dev Calculates the amount of an asset that must be provided to receive
     ///      a specified amount of the other asset given the current AMM
     //       reserves.

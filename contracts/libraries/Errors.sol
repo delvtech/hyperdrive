@@ -2,6 +2,15 @@
 pragma solidity ^0.8.15;
 
 library ElementError {
+    /// ##################
+    /// ### Hyperdrive ###
+    /// ##################
+    error PoolAlreadyInitialized();
+    error ZeroAmount();
+    error BaseBufferExceedsShareReserves();
+    error BondBufferExceedsBondReserves();
+    error TransferFailed();
+
     /// ######################
     /// ### FixedPointMath ###
     /// ######################
