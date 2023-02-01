@@ -97,9 +97,9 @@ contract Hyperdrive is ERC20 {
     }
 
     /// @notice Opens a long position.
-    /// @param _amount The amount of base to use when trading.
-    function openLong(uint256 _amount) external {
-        if (_amount == 0) {
+    /// @param _baseAmount The amount of base to use when trading.
+    function openLong(uint256 _baseAmount) external {
+        if (_baseAmount == 0) {
             revert ElementError.ZeroAmount();
         }
 
@@ -107,7 +107,7 @@ contract Hyperdrive is ERC20 {
         bool success = baseToken.transferFrom(
             msg.sender,
             address(this),
-            _amount
+            _baseAmount
         );
         if (!success) {
             revert ElementError.TransferFailed();
@@ -122,7 +122,7 @@ contract Hyperdrive is ERC20 {
                 shareReserves,
                 bondReserves,
                 totalSupply(),
-                _amount.divDown(sharePrice),
+                _baseAmount.divDown(sharePrice),
                 FixedPointMath.ONE_18,
                 timeStretch,
                 sharePrice,
@@ -158,14 +158,14 @@ contract Hyperdrive is ERC20 {
 
     /// @notice Closes a long position with a specified mint time.
     /// @param _mintTime The mint time of the longs to close.
-    /// @param _amount The amount of longs to close.
-    function closeLong(uint256 _mintTime, uint256 _amount) external {
-        if (_amount == 0) {
+    /// @param _bondAmount The amount of longs to close.
+    function closeLong(uint256 _mintTime, uint256 _bondAmount) external {
+        if (_bondAmount == 0) {
             revert ElementError.ZeroAmount();
         }
 
-        // Burn the trader's long tokens.
-        longToken.burn(msg.sender, _mintTime, _amount);
+        // Burn the bonds that are being closed.
+        longToken.burn(msg.sender, _mintTime, _bondAmount);
 
         // Calculate the pool and user deltas using the trading function.
         uint256 timeElapsed = block.timestamp - _mintTime;
@@ -180,7 +180,7 @@ contract Hyperdrive is ERC20 {
                 shareReserves,
                 bondReserves,
                 totalSupply(),
-                _amount,
+                _bondAmount,
                 timeRemaining,
                 timeStretch,
                 sharePrice,
@@ -195,7 +195,7 @@ contract Hyperdrive is ERC20 {
         // we don't need to check that the reserves are larger than the buffers.
         shareReserves -= poolShareDelta;
         bondReserves += poolBondDelta;
-        baseBuffer -= _amount;
+        baseBuffer -= _bondAmount;
 
         // Transfer the base returned to the trader.
         bool success = baseToken.transfer(
