@@ -327,9 +327,15 @@ contract Hyperdrive is ERC20 {
                 initialSharePrice
             );
 
-        // Calculate the proceeds of closing the shorts. This includes the
-        // trading proceeds as well as the variable interest that accrued on
-        // the face value of the bonds shorted while the short was open.
+        // Apply the trading deltas to the reserves. Since the share reserves
+        // increase or stay the same, there is no need to check that the share
+        // reserves are greater than or equal to the base buffer.
+        shareReserves += poolShareDelta;
+        bondReserves -= poolBondDelta;
+
+        // Transfer the profit to the shorter. This includes the proceeds from
+        // the short sale as well as the variable interest that was collected
+        // on the face value of the bonds.
         uint256 tradingProceeds = _bondAmount.sub(
             sharePrice.mulDown(sharePayment)
         );
@@ -337,25 +343,9 @@ contract Hyperdrive is ERC20 {
             .divDown(openSharePrice)
             .sub(FixedPointMath.ONE_18)
             .mulDown(_bondAmount);
-
-        // TODO: Add a comment about the interest that was generated.
-        // Apply the trading deltas to the reserves.
-        shareReserves += poolShareDelta;
-        shareReserves -= interestProceeds.divDown(sharePrice);
-        bondReserves -= poolBondDelta;
-
-        // Since the share reserves are reduced, we need to verify that the base
-        // reserves are greater than or equal to the base buffer.
-        if (sharePrice * shareReserves >= baseBuffer) {
-            revert ElementError.BaseBufferExceedsShareReserves();
-        }
-
-        // Transfer the profit to the shorter. This includes the proceeds from
-        // the short sale as well as the variable interest that was collected
-        // on the face value of the bonds.
         bool success = baseToken.transfer(
             msg.sender,
-            saleProceeds.add(interestProceeds)
+            tradingProceeds.add(interestProceeds)
         );
         if (!success) {
             revert ElementError.TransferFailed();

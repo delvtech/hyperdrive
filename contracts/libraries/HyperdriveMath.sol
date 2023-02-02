@@ -190,7 +190,7 @@ library HyperdriveMath {
             timeStretch,
             sharePrice,
             initialSharePrice,
-            isBondIn
+            false
         );
         return (flat.add(curveIn), curveIn, flat.add(curveIn));
     }
