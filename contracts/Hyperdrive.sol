@@ -9,7 +9,7 @@ import { HyperdriveMath } from "contracts/libraries/HyperdriveMath.sol";
 import { IERC1155Mintable } from "contracts/interfaces/IERC1155Mintable.sol";
 
 /// @notice A fixed-rate AMM that mints bonds on demand for longs and shorts.
-/// @author Element Finance
+/// @author Delve Labs
 contract Hyperdrive is ERC20 {
     using FixedPointMath for uint256;
 
@@ -272,11 +272,8 @@ contract Hyperdrive is ERC20 {
         shareReserves -= poolShareDelta;
         bondReserves += _bondAmount;
 
-        // The bond buffer is increased by the same amount as the bond buffer,
-        // so there is no need to check that the bond reserves is greater than
-        // or equal to the bond buffer. Since the share reserves are reduced,
-        // we need to verify that the base reserves are greater than or equal
-        // to the base buffer.
+        // Since the share reserves are reduced, we need to verify that the base
+        // reserves are greater than or equal to the base buffer.
         if (sharePrice * shareReserves >= baseBuffer) {
             revert ElementError.BaseBufferExceedsShareReserves();
         }
@@ -329,22 +326,32 @@ contract Hyperdrive is ERC20 {
                 false
             );
 
-        // Apply the trading deltas to the reserves. Since the share reserves
-        // are increased and the base buffer doesn't change, we don't need to
-        // check that the base reserves are greater than the base buffer.
-        shareReserves += poolShareDelta;
-        bondReserves -= poolBondDelta;
-
-        // Transfer the profit to the shorter. This includes the proceeds from
-        // the short sale as well as the variable interest that was collected
-        // on the face value of the bonds.
-        uint256 saleProceeds = _bondAmount.sub(
+        // Calculate the proceeds of closing the shorts. This includes the
+        // trading proceeds as well as the variable interest that accrued on
+        // the face value of the bonds shorted while the short was open.
+        uint256 tradingProceeds = _bondAmount.sub(
             sharePrice.mulDown(sharePayment)
         );
         uint256 interestProceeds = sharePrice
             .divDown(openSharePrice)
             .sub(FixedPointMath.ONE_18)
             .mulDown(_bondAmount);
+
+        // TODO: Add a comment about the interest that was generated.
+        // Apply the trading deltas to the reserves.
+        shareReserves += poolShareDelta;
+        shareReserves -= interestProceeds.divDown(sharePrice);
+        bondReserves -= poolBondDelta;
+
+        // Since the share reserves are reduced, we need to verify that the base
+        // reserves are greater than or equal to the base buffer.
+        if (sharePrice * shareReserves >= baseBuffer) {
+            revert ElementError.BaseBufferExceedsShareReserves();
+        }
+
+        // Transfer the profit to the shorter. This includes the proceeds from
+        // the short sale as well as the variable interest that was collected
+        // on the face value of the bonds.
         bool success = baseToken.transfer(
             msg.sender,
             saleProceeds.add(interestProceeds)
