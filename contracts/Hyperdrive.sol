@@ -8,43 +8,68 @@ import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/libraries/HyperdriveMath.sol";
 import { IERC1155Mintable } from "contracts/interfaces/IERC1155Mintable.sol";
 
+/// @notice A fixed-rate AMM that mints bonds on demand for longs and shorts.
+/// @author Delve
 contract Hyperdrive is ERC20 {
     using FixedPointMath for uint256;
 
     /// Tokens ///
 
+    // @dev The base asset.
     IERC20 public immutable baseToken;
+
+    // @dev A mintable ERC1155 token that is used to record long balances.
+    //      Hyperdrive must be able to mint short tokens for trading to occur.
     IERC1155Mintable public immutable longToken;
+
+    // @dev A mintable ERC1155 token that is used to record short balances.
+    //      Hyperdrive must be able to mint short tokens for trading to occur.
     IERC1155Mintable public immutable shortToken;
 
     /// Time ///
 
-    uint256 public immutable termLength;
+    // @dev The amount of seconds that elapse before a bond can be redeemed.
+    uint256 public immutable positionDuration;
+
+    // @dev A parameter that decreases slippage around a target rate.
     uint256 public immutable timeStretch;
 
     /// Market state ///
 
-    // TODO: These should both be uint128 and share a slot.
+    // @dev The share price at the time the pool was created.
+    uint256 public immutable initialSharePrice;
+
+    // @dev The current share price.
+    uint256 public sharePrice;
+
+    // @dev The share reserves. The share reserves multiplied by the share price
+    //      give the base reserves, so shares are a mechanism of ensuring that
+    //      interest is properly awarded over time.
     uint256 public shareReserves;
+
+    // @dev The bond reserves. In Hyperdrive, the bond reserves aren't backed by
+    //      pre-minted bonds and are instead used as a virtual value that
+    //      ensures that the spot rate changes according to the laws of supply
+    //      and demand.
     uint256 public bondReserves;
 
+    // @dev The base buffer stores the amount of outstanding obligations to bond
+    //      holders. This is required to maintain solvency since the bond
+    //      reserves are virtual and bonds are minted on demand.
     uint256 public baseBuffer;
-    uint256 public bondBuffer;
-
-    uint256 public sharePrice;
-    uint256 public immutable initialSharePrice;
 
     /// @notice Initializes a Hyperdrive pool.
     /// @param _baseToken The base token contract.
     /// @param _longToken The long token contract.
     /// @param _shortToken The short token contract.
-    /// @param _termLength The length of the terms supported by this Hyperdrive in seconds.
+    /// @param _positionDuration The time in seconds that elaspes before bonds
+    ///        can be redeemed one-to-one for base.
     /// @param _timeStretch The time stretch of the pool.
     constructor(
         IERC20 _baseToken,
         IERC1155Mintable _longToken,
         IERC1155Mintable _shortToken,
-        uint256 _termLength,
+        uint256 _positionDuration,
         uint256 _timeStretch
     ) ERC20("Hyperdrive LP", "hLP") {
         // Initialize the token addresses.
@@ -53,14 +78,16 @@ contract Hyperdrive is ERC20 {
         shortToken = _shortToken;
 
         // Initialize the time configurations.
-        termLength = _termLength;
+        positionDuration = _positionDuration;
         timeStretch = _timeStretch;
 
         // TODO: This isn't correct. This will need to be updated when asset
-        // delegation is implemented.
+        // delgation is implemented.
         initialSharePrice = FixedPointMath.ONE_18;
         sharePrice = FixedPointMath.ONE_18;
     }
+
+    /// LP ///
 
     /// @notice Allows the first LP to initialize the market with a target APR.
     /// @param _contribution The amount of base asset to contribute.
@@ -88,7 +115,7 @@ contract Hyperdrive is ERC20 {
             initialSharePrice,
             sharePrice,
             _apr,
-            termLength,
+            positionDuration,
             timeStretch
         );
 
@@ -148,28 +175,25 @@ contract Hyperdrive is ERC20 {
         if (sharePrice * shareReserves >= baseBuffer) {
             revert ElementError.BaseBufferExceedsShareReserves();
         }
-        if (bondReserves >= bondBuffer) {
-            revert ElementError.BondBufferExceedsBondReserves();
-        }
 
         // Mint the bonds to the trader with an ID of the maturity time.
         longToken.mint(
             msg.sender,
-            block.timestamp + termLength,
+            block.timestamp + positionDuration,
             bondProceeds,
             new bytes(0)
         );
     }
 
     /// @notice Closes a long position with a specified maturity time.
-    /// @param _maturityTime The maturity time of the bonds to close.
-    /// @param _bondAmount The amount of bonds to close.
+    /// @param _maturityTime The maturity time of the longs to close.
+    /// @param _bondAmount The amount of longs to close.
     function closeLong(uint256 _maturityTime, uint256 _bondAmount) external {
         if (_bondAmount == 0) {
             revert ElementError.ZeroAmount();
         }
 
-        // Burn the bonds that are being closed.
+        // Burn the longs that are being closed.
         longToken.burn(msg.sender, _maturityTime, _bondAmount);
 
         // Calculate the pool and user deltas using the trading function.
@@ -249,23 +273,106 @@ contract Hyperdrive is ERC20 {
         // by the amount of bonds that were shorted.
         shareReserves -= poolShareDelta;
         bondReserves += _bondAmount;
-        bondBuffer += _bondAmount;
 
-        // The bond buffer is increased by the same amount as the bond buffer,
-        // so there is no need to check that the bond reserves is greater than
-        // or equal to the bond buffer. Since the share reserves are reduced,
-        // we need to verify that the base reserves are greater than or equal
-        // to the base buffer.
+        // Since the share reserves are reduced, we need to verify that the base
+        // reserves are greater than or equal to the base buffer.
         if (sharePrice * shareReserves >= baseBuffer) {
             revert ElementError.BaseBufferExceedsShareReserves();
         }
 
-        // Mint the short tokens to the trader.
+        // Mint the short tokens to the trader. The ID is a concatenation of the
+        // current share price and the maturity time of the shorts.
         shortToken.mint(
             msg.sender,
-            block.timestamp + termLength,
+            encodeShortKey(sharePrice, block.timestamp + positionDuration),
             _bondAmount,
             new bytes(0)
         );
+    }
+
+    /// @notice Closes a short position with a specified maturity time.
+    /// @param _key The key of the shorts to close. The short key is a
+    ///        concatenation of the share price when the short was opened and
+    ///        the maturity time of the short.
+    /// @param _bondAmount The amount of shorts to close.
+    function closeShort(uint256 _key, uint256 _bondAmount) external {
+        if (_bondAmount == 0) {
+            revert ElementError.ZeroAmount();
+        }
+
+        // Burn the shorts that are being closed.
+        shortToken.burn(msg.sender, _key, _bondAmount);
+
+        // Get the open share price and maturity time from the short key.
+        (uint256 openSharePrice, uint256 maturityTime) = decodeShortKey(_key);
+
+        // Calculate the pool and user deltas using the trading function.
+        uint256 timeRemaining = block.timestamp < maturityTime
+            ? (maturityTime - block.timestamp) * FixedPointMath.ONE_18
+            : 0;
+        (
+            uint256 poolShareDelta,
+            uint256 poolBondDelta,
+            uint256 sharePayment
+        ) = HyperdriveMath.calculateInGivenOut(
+                shareReserves,
+                bondReserves,
+                totalSupply(),
+                _bondAmount,
+                timeRemaining,
+                timeStretch,
+                sharePrice,
+                initialSharePrice
+            );
+
+        // Apply the trading deltas to the reserves. Since the share reserves
+        // increase or stay the same, there is no need to check that the share
+        // reserves are greater than or equal to the base buffer.
+        shareReserves += poolShareDelta;
+        bondReserves -= poolBondDelta;
+
+        // Transfer the profit to the shorter. This includes the proceeds from
+        // the short sale as well as the variable interest that was collected
+        // on the face value of the bonds.
+        uint256 tradingProceeds = _bondAmount.sub(
+            sharePrice.mulDown(sharePayment)
+        );
+        uint256 interestProceeds = sharePrice
+            .divDown(openSharePrice)
+            .sub(FixedPointMath.ONE_18)
+            .mulDown(_bondAmount);
+        bool success = baseToken.transfer(
+            msg.sender,
+            tradingProceeds.add(interestProceeds)
+        );
+        if (!success) {
+            revert ElementError.TransferFailed();
+        }
+    }
+
+    /// Utilities ///
+
+    /// @notice Serializes a share price and a maturity time into a short key.
+    /// @param _openSharePrice The share price when the short was opened.
+    /// @param _maturityTime The maturity time of the bond that was shorted.
+    /// @return key The serialized short key.
+    function encodeShortKey(
+        uint256 _openSharePrice,
+        uint256 _maturityTime
+    ) public pure returns (uint256 key) {
+        return (_openSharePrice << 32) | _maturityTime;
+    }
+
+    /// @notice Deserializes a short key into the opening share price and
+    ///         maturity time.
+    /// @param _key The serialized short key.
+    /// @return openSharePrice The share price when the short was opened.
+    /// @return maturityTime The maturity time of the bond that was shorted.
+    function decodeShortKey(
+        uint256 _key
+    ) public pure returns (uint256 openSharePrice, uint256 maturityTime) {
+        openSharePrice = _key >> 32; // most significant 224 bits
+        maturityTime = _key & 0xffffffff; // least significant 32 bits
+        return (openSharePrice, maturityTime);
     }
 }
