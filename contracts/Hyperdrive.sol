@@ -284,7 +284,7 @@ contract Hyperdrive is ERC20 {
         // current share price and the maturity time of the shorts.
         shortToken.mint(
             msg.sender,
-            (sharePrice << 32) | (block.timestamp + positionDuration),
+            encodeShortKey(sharePrice, block.timestamp + positionDuration),
             _bondAmount,
             new bytes(0)
         );
@@ -303,10 +303,8 @@ contract Hyperdrive is ERC20 {
         // Burn the shorts that are being closed.
         shortToken.burn(msg.sender, _key, _bondAmount);
 
-        // Deserialize the key into the share price at the time the short was
-        // opened and the maturity time of the short.
-        uint256 openSharePrice = _key >> 32;
-        uint256 maturityTime = _key & ((1 << 32) - 1);
+        // Get the open share price and maturity time from the short key.
+        (uint256 openSharePrice, uint256 maturityTime) = decodeShortKey(_key);
 
         // Calculate the pool and user deltas using the trading function.
         uint256 timeRemaining = block.timestamp < maturityTime
@@ -350,5 +348,31 @@ contract Hyperdrive is ERC20 {
         if (!success) {
             revert ElementError.TransferFailed();
         }
+    }
+
+    /// Utilities ///
+
+    /// @notice Serializes a share price and a maturity time into a short key.
+    /// @param _openSharePrice The share price when the short was opened.
+    /// @param _maturityTime The maturity time of the bond that was shorted.
+    /// @return key The serialized short key.
+    function encodeShortKey(
+        uint256 _openSharePrice,
+        uint256 _maturityTime
+    ) public pure returns (uint256 key) {
+        return (_openSharePrice << 32) | _maturityTime;
+    }
+
+    /// @notice Deserializes a short key into the opening share price and
+    ///         maturity time.
+    /// @param _key The serialized short key.
+    /// @return openSharePrice The share price when the short was opened.
+    /// @return maturityTime The maturity time of the bond that was shorted.
+    function decodeShortKey(
+        uint256 _key
+    ) public pure returns (uint256 openSharePrice, uint256 maturityTime) {
+        openSharePrice = _key >> 32; // most significant 224 bits
+        maturityTime = _key & 0xffffffff; // least significant 32 bits
+        return (openSharePrice, maturityTime);
     }
 }
