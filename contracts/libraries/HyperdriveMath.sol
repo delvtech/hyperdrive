@@ -131,8 +131,8 @@ library HyperdriveMath {
         }
     }
 
-    /// @dev Calculates the amount of an asset that will be received given a
-    ///      specified amount of the other asset given the current AMM reserves.
+    /// @dev Calculates the amount of base that must be provided to receive a
+    ///      specified amount of bonds.
     /// @param shareReserves The share reserves of the AMM.
     /// @param bondReserves The bonds reserves of the AMM.
     /// @param bondReserveAdjustment The bond reserves are adjusted to improve
@@ -144,8 +144,6 @@ library HyperdriveMath {
     /// @param timeStretch The time stretch parameter.
     /// @param sharePrice The share price.
     /// @param initialSharePrice The initial share price.
-    /// @param isBondIn A flag that specifies whether bonds are the asset being
-    ///        provided or the asset being received.
     /// @return poolShareDelta The delta that should be applied to the pool's
     ///         share reserves.
     /// @return poolBondDelta The delta that should be applied to the pool's
@@ -159,8 +157,7 @@ library HyperdriveMath {
         uint256 timeRemaining,
         uint256 timeStretch,
         uint256 sharePrice,
-        uint256 initialSharePrice,
-        bool isBondIn
+        uint256 initialSharePrice
     )
         internal
         pure
@@ -170,55 +167,31 @@ library HyperdriveMath {
             uint256 userDelta
         )
     {
-        // TODO: See if this is actually true.
-        //
-        // This pricing model only supports the selling of bonds when
+        // Since we are buying bonds, it's possible that timeRemaining < 1.
+        // We consider (1-timeRemaining)*amountOut of the bonds being
+        // purchased to be fully matured and timeRemaining*amountOut of the
+        // bonds to be newly minted. The fully matured bonds are redeemed
+        // one-to-one to base (our result is given in shares, so we divide
+        // the one-to-one redemption by the share price) and the newly
+        // minted bonds are traded on a YieldSpace curve configured to
         // timeRemaining = 1.
-        if (isBondIn && timeRemaining < 1) {
-            revert ElementError.HyperdriveMath_BaseWithNonzeroTime();
-        }
-        if (isBondIn) {
-            // If bonds are being sold, then the entire trade occurs on the
-            // curved portion since timeRemaining = 1.
-            uint256 amountIn = YieldSpaceMath.calculateInGivenOut(
-                shareReserves,
-                bondReserves,
-                bondReserveAdjustment,
-                amountOut,
-                FixedPointMath.ONE_18,
-                timeStretch,
-                sharePrice,
-                initialSharePrice,
-                isBondIn
-            );
-            return (amountOut, amountIn, amountIn);
-        } else {
-            // Since we are buying bonds, it's possible that timeRemaining < 1.
-            // We consider (1-timeRemaining)*amountOut of the bonds being
-            // purchased to be fully matured and timeRemaining*amountOut of the
-            // bonds to be newly minted. The fully matured bonds are redeemed
-            // one-to-one to base (our result is given in shares, so we divide
-            // the one-to-one redemption by the share price) and the newly
-            // minted bonds are traded on a YieldSpace curve configured to
-            // timeRemaining = 1.
-            uint256 flat = amountOut
-                .mulDown(FixedPointMath.ONE_18.sub(timeRemaining))
-                .divDown(sharePrice);
-            uint256 curveOut = amountOut.mulDown(timeRemaining);
-            uint256 curveIn = YieldSpaceMath.calculateInGivenOut(
-                // Credit the share reserves by the flat trade.
-                shareReserves.add(flat.divDown(sharePrice)),
-                // Debit the bond reserves by the flat trade.
-                bondReserves.sub(flat),
-                bondReserveAdjustment,
-                curveOut,
-                FixedPointMath.ONE_18,
-                timeStretch,
-                sharePrice,
-                initialSharePrice,
-                isBondIn
-            );
-            return (flat.add(curveIn), curveIn, flat.add(curveIn));
-        }
+        uint256 flat = amountOut
+            .mulDown(FixedPointMath.ONE_18.sub(timeRemaining))
+            .divDown(sharePrice);
+        uint256 curveOut = amountOut.mulDown(timeRemaining);
+        uint256 curveIn = YieldSpaceMath.calculateInGivenOut(
+            // Credit the share reserves by the flat trade.
+            shareReserves.add(flat.divDown(sharePrice)),
+            // Debit the bond reserves by the flat trade.
+            bondReserves.sub(flat),
+            bondReserveAdjustment,
+            curveOut,
+            FixedPointMath.ONE_18,
+            timeStretch,
+            sharePrice,
+            initialSharePrice,
+            isBondIn
+        );
+        return (flat.add(curveIn), curveIn, flat.add(curveIn));
     }
 }

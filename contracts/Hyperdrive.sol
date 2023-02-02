@@ -9,7 +9,7 @@ import { HyperdriveMath } from "contracts/libraries/HyperdriveMath.sol";
 import { IERC1155Mintable } from "contracts/interfaces/IERC1155Mintable.sol";
 
 /// @notice A fixed-rate AMM that mints bonds on demand for longs and shorts.
-/// @author Delve Labs
+/// @author Delve
 contract Hyperdrive is ERC20 {
     using FixedPointMath for uint256;
 
@@ -86,6 +86,8 @@ contract Hyperdrive is ERC20 {
         initialSharePrice = FixedPointMath.ONE_18;
         sharePrice = FixedPointMath.ONE_18;
     }
+
+    /// LP ///
 
     /// @notice Allows the first LP to initialize the market with a target APR.
     /// @param _contribution The amount of base asset to contribute.
@@ -322,8 +324,7 @@ contract Hyperdrive is ERC20 {
                 timeRemaining,
                 timeStretch,
                 sharePrice,
-                initialSharePrice,
-                false
+                initialSharePrice
             );
 
         // Calculate the proceeds of closing the shorts. This includes the
