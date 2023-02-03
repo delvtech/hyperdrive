@@ -28,3 +28,8 @@ We have several linters. Solhint is a Solidity linter that checks for best
 practices and style, prettier is a Solidity formatter that checks for formatting
 and style, and cSpell is a spell checker. To run all three, run `yarn lint`.
 If you want to automatically format the code, run `yarn prettier`.
+
+# Disclaimer
+
+The language used in this codebase is for coding convenience only, and is not
+intended to, and does not, have any particular legal or regulatory significance.

@@ -1,7 +1,13 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.15;
 
-library ElementError {
+/// @author Delve
+/// @title HyperdriveError
+/// @notice A library containing the errors used in the Hyperdrive system.
+/// @custom:disclaimer The language used in this code is for coding convenience
+///                    only, and is not intended to, and does not, have any
+///                    particular legal or regulatory significance.
+library HyperdriveError {
     /// ##################
     /// ### Hyperdrive ###
     /// ##################

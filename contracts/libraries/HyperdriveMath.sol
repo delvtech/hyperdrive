@@ -1,7 +1,7 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.15;
 
-import { ElementError } from "contracts/libraries/Errors.sol";
+import { HyperdriveError } from "contracts/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
 import { YieldSpaceMath } from "contracts/libraries/YieldSpaceMath.sol";
 
@@ -9,8 +9,12 @@ import { YieldSpaceMath } from "contracts/libraries/YieldSpaceMath.sol";
 // occur. In particular, if isBondOut && t < 1 or isBondIn && t < 1, then the
 // flat part refers to base tokens and the model doesn't make sense.
 //
+/// @author Delve
+/// @title Hyperdrive
 /// @notice Math for the Hyperdrive pricing model.
-/// @author Element Finance
+/// @custom:disclaimer The language used in this code is for coding convenience
+///                    only, and is not intended to, and does not, have any
+///                    particular legal or regulatory significance.
 library HyperdriveMath {
     using FixedPointMath for uint256;
 
@@ -85,7 +89,7 @@ library HyperdriveMath {
         // This pricing model only supports the purchasing of bonds when
         // timeRemaining = 1.
         if (isBondOut && timeRemaining < 1) {
-            revert ElementError.HyperdriveMath_BaseWithNonzeroTime();
+            revert HyperdriveError.HyperdriveMath_BaseWithNonzeroTime();
         }
         if (isBondOut) {
             // If bonds are being purchased, then the entire trade occurs on the

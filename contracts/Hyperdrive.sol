@@ -3,13 +3,17 @@ pragma solidity ^0.8.13;
 
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { ElementError } from "contracts/libraries/Errors.sol";
+import { HyperdriveError } from "contracts/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/libraries/HyperdriveMath.sol";
 import { IERC1155Mintable } from "contracts/interfaces/IERC1155Mintable.sol";
 
-/// @notice A fixed-rate AMM that mints bonds on demand for longs and shorts.
 /// @author Delve
+/// @title Hyperdrive
+/// @notice A fixed-rate AMM that mints bonds on demand for longs and shorts.
+/// @custom:disclaimer The language used in this code is for coding convenience
+///                    only, and is not intended to, and does not, have any
+///                    particular legal or regulatory significance.
 contract Hyperdrive is ERC20 {
     using FixedPointMath for uint256;
 
@@ -94,8 +98,8 @@ contract Hyperdrive is ERC20 {
     /// @param _apr The target APR.
     function initialize(uint256 _contribution, uint256 _apr) external {
         // Ensure that the pool hasn't been initialized yet.
-        if (shareReserves > 0) {
-            revert ElementError.PoolAlreadyInitialized();
+        if (shareReserves > 0 || bond_reserves > 0) {
+            revert HyperdriveError.PoolAlreadyInitialized();
         }
 
         // Pull the contribution into the contract.
@@ -105,13 +109,13 @@ contract Hyperdrive is ERC20 {
             _contribution
         );
         if (!success) {
-            revert ElementError.TransferFailed();
+            revert HyperdriveError.TransferFailed();
         }
 
         // Update the reserves.
-        shareReserves = _contribution;
+        shareReserves = _contribution; // TODO: Update when using non-trivial share price.
         bondReserves = HyperdriveMath.calculateBondReserves(
-            _contribution,
+            _contribution, // TODO: Update when using non-trivial share price.
             initialSharePrice,
             sharePrice,
             _apr,
@@ -129,7 +133,7 @@ contract Hyperdrive is ERC20 {
     /// @param _baseAmount The amount of base to use when trading.
     function openLong(uint256 _baseAmount) external {
         if (_baseAmount == 0) {
-            revert ElementError.ZeroAmount();
+            revert HyperdriveError.ZeroAmount();
         }
 
         // Take custody of the base that is being traded into the contract.
@@ -139,7 +143,7 @@ contract Hyperdrive is ERC20 {
             _baseAmount
         );
         if (!success) {
-            revert ElementError.TransferFailed();
+            revert HyperdriveError.TransferFailed();
         }
 
         // Calculate the pool and user deltas using the trading function.
@@ -173,7 +177,7 @@ contract Hyperdrive is ERC20 {
         // base reserves are greater than the base buffer and that the bond
         // reserves are greater than the bond buffer.
         if (sharePrice * shareReserves >= baseBuffer) {
-            revert ElementError.BaseBufferExceedsShareReserves();
+            revert HyperdriveError.BaseBufferExceedsShareReserves();
         }
 
         // Mint the bonds to the trader with an ID of the maturity time.
@@ -190,7 +194,7 @@ contract Hyperdrive is ERC20 {
     /// @param _bondAmount The amount of longs to close.
     function closeLong(uint256 _maturityTime, uint256 _bondAmount) external {
         if (_bondAmount == 0) {
-            revert ElementError.ZeroAmount();
+            revert HyperdriveError.ZeroAmount();
         }
 
         // Burn the longs that are being closed.
@@ -231,7 +235,7 @@ contract Hyperdrive is ERC20 {
             shareProceeds.mulDown(sharePrice)
         );
         if (!success) {
-            revert ElementError.TransferFailed();
+            revert HyperdriveError.TransferFailed();
         }
     }
 
@@ -241,7 +245,7 @@ contract Hyperdrive is ERC20 {
     /// @param _bondAmount The amount of bonds to short.
     function openShort(uint256 _bondAmount) external {
         if (_bondAmount == 0) {
-            revert ElementError.ZeroAmount();
+            revert HyperdriveError.ZeroAmount();
         }
 
         // Calculate the pool and user deltas using the trading function.
@@ -266,7 +270,7 @@ contract Hyperdrive is ERC20 {
             _bondAmount - baseProceeds
         );
         if (!success) {
-            revert ElementError.TransferFailed();
+            revert HyperdriveError.TransferFailed();
         }
 
         // Apply the trading deltas to the reserves and increase the bond buffer
@@ -277,7 +281,7 @@ contract Hyperdrive is ERC20 {
         // Since the share reserves are reduced, we need to verify that the base
         // reserves are greater than or equal to the base buffer.
         if (sharePrice * shareReserves >= baseBuffer) {
-            revert ElementError.BaseBufferExceedsShareReserves();
+            revert HyperdriveError.BaseBufferExceedsShareReserves();
         }
 
         // Mint the short tokens to the trader. The ID is a concatenation of the
@@ -297,7 +301,7 @@ contract Hyperdrive is ERC20 {
     /// @param _bondAmount The amount of shorts to close.
     function closeShort(uint256 _key, uint256 _bondAmount) external {
         if (_bondAmount == 0) {
-            revert ElementError.ZeroAmount();
+            revert HyperdriveError.ZeroAmount();
         }
 
         // Burn the shorts that are being closed.
@@ -346,7 +350,7 @@ contract Hyperdrive is ERC20 {
             tradingProceeds.add(interestProceeds)
         );
         if (!success) {
-            revert ElementError.TransferFailed();
+            revert HyperdriveError.TransferFailed();
         }
     }
 
