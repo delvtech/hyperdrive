@@ -34,7 +34,7 @@ library HyperdriveMath {
         uint256 positionDuration,
         uint256 timeStretch
     ) internal pure returns (uint256 apr) {
-        uint256 t = termLength.divDown(365 days * FixedPointMath.ONE_18);
+        uint256 t = positionDuration.divDown(365 days * FixedPointMath.ONE_18);
         uint256 tau = t.divDown(timeStretch);
         // ((y + s) / (mu * z)) ** -tau
         uint256 spotPrice = initialSharePrice
@@ -42,7 +42,8 @@ library HyperdriveMath {
             .divDown(bondReserves.add(lpTotalSupply))
             .pow(tau);
         // (1 - p) / (p * t)
-        return FixedPointMath.ONE_18.sub(spotPrice).divDown(spotPrice.mulDown(t));
+        return
+            FixedPointMath.ONE_18.sub(spotPrice).divDown(spotPrice.mulDown(t));
     }
 
     // TODO: There is likely a more efficient formulation for when the rate is
@@ -73,7 +74,9 @@ library HyperdriveMath {
             FixedPointMath.ONE_18.divDown(tau)
         );
         // mu * z * (1 + apr * t) ** (1 / tau)
-        uint256 lhs = initialSharePrice.mulDown(shareReserves).mulDown(rhsInner);
+        uint256 lhs = initialSharePrice.mulDown(shareReserves).mulDown(
+            interestFactor
+        );
         // mu * z * (1 + apr * t) ** (1 / tau) - s
         return lhs.sub(lpTotalSupply);
     }

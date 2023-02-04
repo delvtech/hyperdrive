@@ -142,13 +142,6 @@ contract Hyperdrive is MultiToken {
             revert HyperdriveError.TransferFailed();
         }
 
-        // TODO: Use an LP allocation scheme that is less naive and is actually
-        //       fair.
-        // Calculate the amount of LP shares that the supplier should receive.
-        uint256 sharesDelta = _contribution.divDown(sharePrice);
-        uint256 lpShares = sharesDelta.mulDown(totalSupply[0])
-            .divDown(shareReserves.add(shortsOutstanding.divDown(sharePrice)).minus(longsOutstanding.divDown(sharePrice)));
-
         // Calculate the pool's APR prior to updating the share reserves so that
         // we can compute the bond reserves update.
         uint256 apr = HyperdriveMath.calculateAPRFromReserves(
@@ -158,7 +151,17 @@ contract Hyperdrive is MultiToken {
             initialSharePrice,
             positionDuration,
             timeStretch
-        ),
+        );
+
+        // TODO: Use an LP allocation scheme that is less naive and is actually
+        //       fair.
+        // Calculate the amount of LP shares that the supplier should receive.
+        uint256 sharesDelta = _contribution.divDown(sharePrice);
+        uint256 lpShares = sharesDelta.mulDown(totalSupply[0]).divDown(
+            shareReserves.add(shortsOutstanding.divDown(sharePrice)).sub(
+                longsOutstanding.divDown(sharePrice)
+            )
+        );
 
         // Update the reserves.
         shareReserves += sharesDelta;
@@ -173,6 +176,55 @@ contract Hyperdrive is MultiToken {
 
         // Mint LP shares to the supplier.
         _mint(0, msg.sender, lpShares);
+    }
+
+    // TODO: Consider if some MEV protection is necessary for the LP.
+    //
+    /// @notice Allows an LP to burn shares and withdraw from the pool.
+    /// @param _shares The LP shares to burn.
+    function removeLiquidity(uint256 _shares) external {
+        if (_shares == 0) {
+            revert HyperdriveError.ZeroAmount();
+        }
+
+        // Calculate the pool's APR prior to updating the share reserves and LP
+        // total supply so that we can compute the bond reserves update.
+        uint256 apr = HyperdriveMath.calculateAPRFromReserves(
+            shareReserves,
+            bondReserves,
+            totalSupply[0],
+            initialSharePrice,
+            positionDuration,
+            timeStretch
+        );
+
+        // Calculate the amount of base that should be withdrawn.
+        uint256 shareProceeds = shareReserves
+            .sub(longsOutstanding.divDown(sharePrice))
+            .mulDown(_shares.divDown(totalSupply[0]));
+
+        // Burn the LP shares.
+        _burn(0, msg.sender, _shares);
+
+        // Update the reserves.
+        shareReserves -= shareProceeds;
+        bondReserves = HyperdriveMath.calculateBondReserves(
+            shareReserves,
+            totalSupply[0],
+            initialSharePrice,
+            apr,
+            positionDuration,
+            timeStretch
+        );
+
+        // Transfer the base proceeds to the LP.
+        bool success = baseToken.transfer(
+            msg.sender,
+            shareProceeds.mulDown(sharePrice)
+        );
+        if (!success) {
+            revert HyperdriveError.TransferFailed();
+        }
     }
 
     /// Long ///
