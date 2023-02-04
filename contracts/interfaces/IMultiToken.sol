@@ -26,10 +26,10 @@ interface IMultiToken {
 
     function symbol(uint256 id) external view returns (string memory);
 
-    function isApprovedForAll(address owner, address spender)
-        external
-        view
-        returns (bool);
+    function isApprovedForAll(
+        address owner,
+        address spender
+    ) external view returns (bool);
 
     function perTokenApprovals(
         uint256 tokenId,
@@ -37,10 +37,10 @@ interface IMultiToken {
         address spender
     ) external view returns (uint256);
 
-    function balanceOf(uint256 tokenId, address owner)
-        external
-        view
-        returns (uint256);
+    function balanceOf(
+        uint256 tokenId,
+        address owner
+    ) external view returns (uint256);
 
     function transferFrom(
         uint256 tokenID,

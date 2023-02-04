@@ -20,7 +20,7 @@ contract ERC20Forwarder is IERC20 {
     // A mapping to track the permit signature nonces
     mapping(address => uint256) public nonces;
     // EIP712
-    bytes32 public DOMAIN_SEPARATOR;
+    bytes32 public immutable DOMAIN_SEPARATOR; // solhint-disable-line var-name-mixedcase
     bytes32 public constant PERMIT_TYPEHASH =
         keccak256(
             "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
@@ -86,12 +86,10 @@ contract ERC20Forwarder is IERC20 {
     /// @param owner The account who's tokens would be spent
     /// @param spender The account who might be able to spend tokens
     /// @return The amount of the owner's tokens the spender can spend
-    function allowance(address owner, address spender)
-        external
-        view
-        override
-        returns (uint256)
-    {
+    function allowance(
+        address owner,
+        address spender
+    ) external view override returns (uint256) {
         // If the owner is approved for all they can spend an unlimited amount
         if (token.isApprovedForAll(owner, spender)) {
             return type(uint256).max;
@@ -121,11 +119,10 @@ contract ERC20Forwarder is IERC20 {
     /// @param amount The amount of token to transfer
     /// @return True if transfer successful, false if not. The contract also reverts
     ///         on failed transfer so only true is possible.
-    function transfer(address recipient, uint256 amount)
-        external
-        override
-        returns (bool)
-    {
+    function transfer(
+        address recipient,
+        uint256 amount
+    ) external override returns (bool) {
         token.transferFromBridge(
             tokenId,
             msg.sender,
@@ -184,9 +181,10 @@ contract ERC20Forwarder is IERC20 {
         bytes32 s
     ) external {
         // Require that the signature is not expired
-        if (block.timestamp > deadline) revert ElementError.ExpiredDeadline();
+        if (block.timestamp > deadline)
+            revert HyperdriveError.ExpiredDeadline();
         // Require that the owner is not zero
-        if (owner == address(0)) revert ElementError.RestrictedZeroAddress();
+        if (owner == address(0)) revert HyperdriveError.RestrictedZeroAddress();
 
         bytes32 structHash = keccak256(
             abi.encodePacked(
@@ -207,7 +205,7 @@ contract ERC20Forwarder is IERC20 {
 
         // Check that the signature is valid
         address signer = ecrecover(structHash, v, r, s);
-        if (signer != owner) revert ElementError.InvalidSignature();
+        if (signer != owner) revert HyperdriveError.InvalidSignature();
 
         // Increment the signature nonce
         nonces[owner]++;

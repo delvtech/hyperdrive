@@ -85,7 +85,7 @@ contract MultiToken is IMultiToken {
         // If the caller does not match the address hash, we revert because it is not
         // allowed to access permission-ed methods.
         if (msg.sender != _deriveForwarderAddress(tokenID)) {
-            revert ElementError.InvalidERC20Bridge();
+            revert HyperdriveError.InvalidERC20Bridge();
         }
         // Execute the following function
         _;
@@ -94,11 +94,9 @@ contract MultiToken is IMultiToken {
     /// @notice Derive the ERC20 forwarder address for a provided `tokenId`.
     /// @param tokenId Token Id of the token whose forwader contract address need to drived.
     /// @return Address of the ERC20 forwarder contract.
-    function _deriveForwarderAddress(uint256 tokenId)
-        internal
-        view
-        returns (address)
-    {
+    function _deriveForwarderAddress(
+        uint256 tokenId
+    ) internal view returns (address) {
         // Get the salt which is used by the deploying contract
         bytes32 salt = keccak256(abi.encode(address(this), tokenId));
         // Preform the hash which determines the address of a create2 deployment
@@ -112,13 +110,9 @@ contract MultiToken is IMultiToken {
     ///         by this contract.
     /// @param id The pool id to load the name of
     /// @return Returns the name of this token
-    function name(uint256 id)
-        external
-        view
-        virtual
-        override
-        returns (string memory)
-    {
+    function name(
+        uint256 id
+    ) external view virtual override returns (string memory) {
         return _name[id];
     }
 
@@ -126,13 +120,9 @@ contract MultiToken is IMultiToken {
     ///         by this contract.
     /// @param id The pool id to load the name of
     /// @return Returns the symbol of this token
-    function symbol(uint256 id)
-        external
-        view
-        virtual
-        override
-        returns (string memory)
-    {
+    function symbol(
+        uint256 id
+    ) external view virtual override returns (string memory) {
         return _symbol[id];
     }
 
@@ -283,11 +273,7 @@ contract MultiToken is IMultiToken {
     /// @param from The address who's balance to decrease
     /// @param amount The number of tokens to remove
     /// @dev Must be used from inheriting contracts
-    function _burn(
-        uint256 tokenID,
-        address from,
-        uint256 amount
-    ) internal {
+    function _burn(uint256 tokenID, address from, uint256 amount) internal {
         // Decrement from the source and supply
         balanceOf[tokenID][from] -= amount;
         totalSupply[tokenID] -= amount;
@@ -308,11 +294,11 @@ contract MultiToken is IMultiToken {
     ) external {
         // Checks for inconsistent addresses
         if (from == address(0) || to == address(0))
-            revert ElementError.RestrictedZeroAddress();
+            revert HyperdriveError.RestrictedZeroAddress();
 
         // Check for inconsistent length
         if (ids.length != values.length)
-            revert ElementError.BatchInputLengthMismatch();
+            revert HyperdriveError.BatchInputLengthMismatch();
 
         // Call internal transfer for each asset
         for (uint256 i = 0; i < ids.length; i++) {
@@ -343,9 +329,10 @@ contract MultiToken is IMultiToken {
         bytes32 s
     ) external {
         // Require that the signature is not expired
-        if (block.timestamp > deadline) revert ElementError.ExpiredDeadline();
+        if (block.timestamp > deadline)
+            revert HyperdriveError.ExpiredDeadline();
         // Require that the owner is not zero
-        if (owner == address(0)) revert ElementError.RestrictedZeroAddress();
+        if (owner == address(0)) revert HyperdriveError.RestrictedZeroAddress();
 
         bytes32 structHash = keccak256(
             abi.encodePacked(
@@ -366,7 +353,7 @@ contract MultiToken is IMultiToken {
 
         // Check that the signature is valid
         address signer = ecrecover(structHash, v, r, s);
-        if (signer != owner) revert ElementError.InvalidSignature();
+        if (signer != owner) revert HyperdriveError.InvalidSignature();
 
         // Increment the signature nonce
         nonces[owner]++;

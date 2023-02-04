@@ -11,11 +11,23 @@ library HyperdriveError {
     /// ##################
     /// ### Hyperdrive ###
     /// ##################
-    error PoolAlreadyInitialized();
-    error ZeroAmount();
+    error AssetIDCorruption();
     error BaseBufferExceedsShareReserves();
     error BondBufferExceedsBondReserves();
+    error InvalidMaturityTime();
+    error InvalidShortID();
+    error PoolAlreadyInitialized();
     error TransferFailed();
+    error ZeroAmount();
+
+    /// ######################
+    /// ### ERC20Forwarder ###
+    /// ######################
+    error BatchInputLengthMismatch();
+    error ExpiredDeadline();
+    error InvalidSignature();
+    error InvalidERC20Bridge();
+    error RestrictedZeroAddress();
 
     /// ######################
     /// ### FixedPointMath ###

@@ -28,10 +28,10 @@ contract ForwarderFactory is IForwarderFactory {
     /// @param tokenId The id of the sub token from the multitoken which we are creating
     ///                 an interface for.
     /// @return returns the address of the deployed forwarder
-    function create(IMultiToken token, uint256 tokenId)
-        external
-        returns (ERC20Forwarder)
-    {
+    function create(
+        IMultiToken token,
+        uint256 tokenId
+    ) external returns (ERC20Forwarder) {
         // Set the transient state variables before deploy
         _tokenId = tokenId;
         _token = token;
@@ -58,11 +58,10 @@ contract ForwarderFactory is IForwarderFactory {
     /// @param token The multitoken which the forwarder should link to
     /// @param tokenId The id of the sub token from the multitoken
     /// @return The expected address of the forwarder
-    function getForwarder(IMultiToken token, uint256 tokenId)
-        public
-        view
-        returns (address)
-    {
+    function getForwarder(
+        IMultiToken token,
+        uint256 tokenId
+    ) public view returns (address) {
         // Get the salt and hash to predict the address
         bytes32 salt = keccak256(abi.encode(token, tokenId));
         bytes32 addressBytes = keccak256(
