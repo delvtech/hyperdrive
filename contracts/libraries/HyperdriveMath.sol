@@ -18,37 +18,70 @@ import { YieldSpaceMath } from "contracts/libraries/YieldSpaceMath.sol";
 library HyperdriveMath {
     using FixedPointMath for uint256;
 
-    // TODO: This isn't accurate when the LP tokens aren't equal to 2y + x.
-    //
-    // TODO: Comment this function.
-    function calculateBondReserves(
+    /// @dev Calculates the APR from the pool's reserves.
+    /// @param shareReserves The pool's share reserves.
+    /// @param bondReserves The pool's bond reserves.
+    /// @param lpTotalSupply The pool's total supply of LP shares.
+    /// @param initialSharePrice The pool's initial share price.
+    /// @param positionDuration The amount of time until maturity in seconds.
+    /// @param timeStretch The time stretch parameter.
+    /// @param apr The pool's APR.
+    function calculateAPRFromReserves(
         uint256 shareReserves,
+        uint256 bondReserves,
+        uint256 lpTotalSupply,
         uint256 initialSharePrice,
-        uint256 sharePrice,
-        uint256 apr,
-        uint256 termLength,
+        uint256 positionDuration,
         uint256 timeStretch
-    ) internal pure returns (uint256 bondReserves) {
+    ) internal pure returns (uint256 apr) {
         uint256 t = termLength.divDown(365 days * FixedPointMath.ONE_18);
         uint256 tau = t.divDown(timeStretch);
-        uint256 lhs = shareReserves / 2;
-        uint256 rhs;
-        {
-            uint256 rhsInner = FixedPointMath.ONE_18.add(apr.mulDown(t)).pow(
-                FixedPointMath.ONE_18.divDown(tau)
-            );
-            rhs = initialSharePrice.mulDown(rhsInner).sub(sharePrice);
-        }
-        return lhs.mulDown(rhs);
+        // ((y + s) / (mu * z)) ** -tau
+        uint256 spotPrice = initialSharePrice
+            .mulDown(shareReserves)
+            .divDown(bondReserves.add(lpTotalSupply))
+            .pow(tau);
+        // (1 - p) / (p * t)
+        return FixedPointMath.ONE_18.sub(spotPrice).divDown(spotPrice.mulDown(t));
     }
 
-    /// @dev Calculates the amount of an asset that must be provided to receive
-    ///      a specified amount of the other asset given the current AMM
-    //       reserves.
+    // TODO: There is likely a more efficient formulation for when the rate is
+    // based on the existing share and bond reserves.
+    //
+    /// @dev Calculates the bond reserves that will make the pool have a
+    ///      specified APR.
+    /// @param shareReserves The pool's share reserves.
+    /// @param lpTotalSupply The pool's total supply of LP shares.
+    /// @param initialSharePrice The pool's initial share price.
+    /// @param apr The pool's APR.
+    /// @param positionDuration The amount of time until maturity in seconds.
+    /// @param timeStretch The time stretch parameter.
+    /// @return bondReserves The bond reserves that make the pool have a
+    ///         specified APR.
+    function calculateBondReserves(
+        uint256 shareReserves,
+        uint256 lpTotalSupply,
+        uint256 initialSharePrice,
+        uint256 apr,
+        uint256 positionDuration,
+        uint256 timeStretch
+    ) internal pure returns (uint256 bondReserves) {
+        uint256 t = positionDuration.divDown(365 days * FixedPointMath.ONE_18);
+        uint256 tau = t.divDown(timeStretch);
+        // (1 + apr * t) ** (1 / tau)
+        uint256 interestFactor = FixedPointMath.ONE_18.add(apr.mulDown(t)).pow(
+            FixedPointMath.ONE_18.divDown(tau)
+        );
+        // mu * z * (1 + apr * t) ** (1 / tau)
+        uint256 lhs = initialSharePrice.mulDown(shareReserves).mulDown(rhsInner);
+        // mu * z * (1 + apr * t) ** (1 / tau) - s
+        return lhs.sub(lpTotalSupply);
+    }
+
     /// @dev Calculates the amount of an asset that will be received given a
     ///      specified amount of the other asset given the current AMM reserves.
-    /// @param shareReserves The share reserves of the AMM.
-    /// @param bondReserves The bonds reserves of the AMM.
+    /// @param shareReserves The pool's share reserves
+    /// @param bondReserves The pool's bonds reserves.
     /// @param bondReserveAdjustment The bond reserves are adjusted to improve
     ///        the capital efficiency of the AMM. Otherwise, the APR would be 0%
     ///        when share_reserves = bond_reserves, which would ensure that half
@@ -137,8 +170,8 @@ library HyperdriveMath {
 
     /// @dev Calculates the amount of base that must be provided to receive a
     ///      specified amount of bonds.
-    /// @param shareReserves The share reserves of the AMM.
-    /// @param bondReserves The bonds reserves of the AMM.
+    /// @param shareReserves The pool's share reserves.
+    /// @param bondReserves The pool's bonds reserves.
     /// @param bondReserveAdjustment The bond reserves are adjusted to improve
     ///        the capital efficiency of the AMM. Otherwise, the APR would be 0%
     ///        when share_reserves = bond_reserves, which would ensure that half

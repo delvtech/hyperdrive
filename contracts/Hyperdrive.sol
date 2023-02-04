@@ -87,7 +87,7 @@ contract Hyperdrive is MultiToken {
     /// LP ///
 
     /// @notice Allows the first LP to initialize the market with a target APR.
-    /// @param _contribution The amount of base asset to contribute.
+    /// @param _contribution The amount of base to supply.
     /// @param _apr The target APR.
     function initialize(uint256 _contribution, uint256 _apr) external {
         // Ensure that the pool hasn't been initialized yet.
@@ -95,7 +95,7 @@ contract Hyperdrive is MultiToken {
             revert HyperdriveError.PoolAlreadyInitialized();
         }
 
-        // Pull the contribution into the contract.
+        // Take custody of the base being supplied.
         bool success = baseToken.transferFrom(
             msg.sender,
             address(this),
@@ -105,19 +105,74 @@ contract Hyperdrive is MultiToken {
             revert HyperdriveError.TransferFailed();
         }
 
+        // Calculate the amount of LP shares the initializer receives.
+        uint256 lpShares = shareReserves;
+
         // Update the reserves.
-        shareReserves = _contribution; // TODO: Update when using non-trivial share price.
+        shareReserves = _contribution.divDown(sharePrice);
         bondReserves = HyperdriveMath.calculateBondReserves(
-            _contribution, // TODO: Update when using non-trivial share price.
+            shareReserves,
+            lpShares,
             initialSharePrice,
-            sharePrice,
             _apr,
             positionDuration,
             timeStretch
         );
 
-        // Mint LP tokens for the initializer.
-        _mint(0, msg.sender, _contribution);
+        // Mint LP shares to the initializer.
+        _mint(0, msg.sender, lpShares);
+    }
+
+    // TODO: Add slippage protection.
+    //
+    /// @notice Allows LPs to supply liquidity for LP shares.
+    /// @param _contribution The amount of base to supply.
+    function addLiquidty(uint256 _contribution) external {
+        if (_contribution == 0) {
+            revert HyperdriveError.ZeroAmount();
+        }
+
+        // Take custody of the base being supplied.
+        bool success = baseToken.transferFrom(
+            msg.sender,
+            address(this),
+            _contribution
+        );
+        if (!success) {
+            revert HyperdriveError.TransferFailed();
+        }
+
+        // TODO: Use an LP allocation scheme that is less naive and is actually
+        //       fair.
+        // Calculate the amount of LP shares that the supplier should receive.
+        uint256 sharesDelta = _contribution.divDown(sharePrice);
+        uint256 lpShares = sharesDelta.mulDown(totalSupply[0])
+            .divDown(shareReserves.add(shortsOutstanding.divDown(sharePrice)).minus(longsOutstanding.divDown(sharePrice)));
+
+        // Calculate the pool's APR prior to updating the share reserves so that
+        // we can compute the bond reserves update.
+        uint256 apr = HyperdriveMath.calculateAPRFromReserves(
+            shareReserves,
+            bondReserves,
+            totalSupply[0],
+            initialSharePrice,
+            positionDuration,
+            timeStretch
+        ),
+
+        // Update the reserves.
+        shareReserves += sharesDelta;
+        bondReserves = HyperdriveMath.calculateBondReserves(
+            shareReserves,
+            totalSupply[0] + lpShares,
+            initialSharePrice,
+            apr,
+            positionDuration,
+            timeStretch
+        );
+
+        // Mint LP shares to the supplier.
+        _mint(0, msg.sender, lpShares);
     }
 
     /// Long ///
