@@ -5,8 +5,12 @@ import "contracts/libraries/FixedPointMath.sol";
 
 // FIXME: This doesn't compute the fee but maybe it should.
 //
-/// @notice YieldSpace math library.
-/// @author Element Finance
+/// @author Delve
+/// @title YieldSpaceMath
+/// @notice Math for the YieldSpace pricing model.
+/// @custom:disclaimer The language used in this code is for coding convenience
+///                    only, and is not intended to, and does not, have any
+///                    particular legal or regulatory significance.
 library YieldSpaceMath {
     using FixedPointMath for uint256;
 
