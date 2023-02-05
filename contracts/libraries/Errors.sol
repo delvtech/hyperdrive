@@ -2,12 +2,12 @@
 pragma solidity ^0.8.15;
 
 /// @author Delve
-/// @title HyperdriveError
-/// @notice A library containing the errors used in the Hyperdrive system.
+/// @title Errors
+/// @notice A library containing the errors used in this codebase.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-library HyperdriveError {
+library Errors {
     /// ##################
     /// ### Hyperdrive ###
     /// ##################
@@ -15,9 +15,9 @@ library HyperdriveError {
     error BaseBufferExceedsShareReserves();
     error BondBufferExceedsBondReserves();
     error InvalidMaturityTime();
-    error InvalidShortID();
     error PoolAlreadyInitialized();
     error TransferFailed();
+    error UnexpectedAssetId();
     error ZeroAmount();
 
     /// ######################

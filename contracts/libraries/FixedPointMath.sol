@@ -14,7 +14,7 @@ library FixedPointMath {
         // Fixed Point addition is the same as regular checked addition
 
         uint256 c = a + b;
-        if (c < a) revert HyperdriveError.FixedPointMath_AddOverflow();
+        if (c < a) revert Errors.FixedPointMath_AddOverflow();
         return c;
     }
 
@@ -22,7 +22,7 @@ library FixedPointMath {
     function sub(uint256 a, uint256 b) internal pure returns (uint256) {
         // Fixed Point addition is the same as regular checked addition
 
-        if (b > a) revert HyperdriveError.FixedPointMath_SubOverflow();
+        if (b > a) revert Errors.FixedPointMath_SubOverflow();
         uint256 c = a - b;
         return c;
     }
@@ -114,7 +114,7 @@ library FixedPointMath {
             // When the result is > (2**255 - 1) / 1e18 we can not represent it
             // as an int256. This happens when x >= floor(log((2**255 -1) / 1e18) * 1e18) ~ 135.
             if (x >= 135305999368893231589)
-                revert HyperdriveError.FixedPointMath_InvalidExponent();
+                revert Errors.FixedPointMath_InvalidExponent();
 
             // x is now in the range (-42, 136) * 1e18. Convert to (-42, 136) * 2**96
             // for more intermediate precision and a binary basis. This base conversion
@@ -170,7 +170,7 @@ library FixedPointMath {
     /// @dev Reverts if x is negative
     /// @dev Credit to Remco (https://github.com/recmo/experiment-solexp/blob/main/src/FixedPointMathLib.sol)
     function ln(int256 x) internal pure returns (int256) {
-        if (x <= 0) revert HyperdriveError.FixedPointMath_NegativeOrZeroInput();
+        if (x <= 0) revert Errors.FixedPointMath_NegativeOrZeroInput();
         return _ln(x);
     }
 
@@ -179,7 +179,7 @@ library FixedPointMath {
         unchecked {
             // Intentionally allowing ln(0) to pass bc the function will return 0
             // to pow() so that pow(0,1)=0 without a branch
-            if (x < 0) revert HyperdriveError.FixedPointMath_NegativeInput();
+            if (x < 0) revert Errors.FixedPointMath_NegativeInput();
 
             // We want to convert x from 10**18 fixed point to 2**96 fixed point.
             // We do this by multiplying by 2**96 / 10**18.

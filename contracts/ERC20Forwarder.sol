@@ -181,10 +181,9 @@ contract ERC20Forwarder is IERC20 {
         bytes32 s
     ) external {
         // Require that the signature is not expired
-        if (block.timestamp > deadline)
-            revert HyperdriveError.ExpiredDeadline();
+        if (block.timestamp > deadline) revert Errors.ExpiredDeadline();
         // Require that the owner is not zero
-        if (owner == address(0)) revert HyperdriveError.RestrictedZeroAddress();
+        if (owner == address(0)) revert Errors.RestrictedZeroAddress();
 
         bytes32 structHash = keccak256(
             abi.encodePacked(
@@ -205,7 +204,7 @@ contract ERC20Forwarder is IERC20 {
 
         // Check that the signature is valid
         address signer = ecrecover(structHash, v, r, s);
-        if (signer != owner) revert HyperdriveError.InvalidSignature();
+        if (signer != owner) revert Errors.InvalidSignature();
 
         // Increment the signature nonce
         nonces[owner]++;

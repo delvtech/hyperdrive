@@ -3,7 +3,8 @@ pragma solidity ^0.8.13;
 
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { HyperdriveError } from "contracts/libraries/Errors.sol";
+import { AssetId } from "contracts/libraries/AssetId.sol";
+import { Errors } from "contracts/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/libraries/HyperdriveMath.sol";
 import { MultiToken } from "contracts/MultiToken.sol";
@@ -92,7 +93,7 @@ contract Hyperdrive is MultiToken {
     function initialize(uint256 _contribution, uint256 _apr) external {
         // Ensure that the pool hasn't been initialized yet.
         if (shareReserves > 0 || bondReserves > 0) {
-            revert HyperdriveError.PoolAlreadyInitialized();
+            revert Errors.PoolAlreadyInitialized();
         }
 
         // Take custody of the base being supplied.
@@ -102,7 +103,7 @@ contract Hyperdrive is MultiToken {
             _contribution
         );
         if (!success) {
-            revert HyperdriveError.TransferFailed();
+            revert Errors.TransferFailed();
         }
 
         // Calculate the amount of LP shares the initializer receives.
@@ -129,7 +130,7 @@ contract Hyperdrive is MultiToken {
     /// @param _contribution The amount of base to supply.
     function addLiquidty(uint256 _contribution) external {
         if (_contribution == 0) {
-            revert HyperdriveError.ZeroAmount();
+            revert Errors.ZeroAmount();
         }
 
         // Take custody of the base being supplied.
@@ -139,7 +140,7 @@ contract Hyperdrive is MultiToken {
             _contribution
         );
         if (!success) {
-            revert HyperdriveError.TransferFailed();
+            revert Errors.TransferFailed();
         }
 
         // Calculate the pool's APR prior to updating the share reserves so that
@@ -147,7 +148,7 @@ contract Hyperdrive is MultiToken {
         uint256 apr = HyperdriveMath.calculateAPRFromReserves(
             shareReserves,
             bondReserves,
-            totalSupply[0],
+            totalSupply[AssetId._LP_ASSET_ID],
             initialSharePrice,
             positionDuration,
             timeStretch
@@ -158,7 +159,7 @@ contract Hyperdrive is MultiToken {
         uint256 lpShares = HyperdriveMath.calculateLpSharesOutForSharesIn(
             shares,
             shareReserves,
-            totalSupply[0], // lp total supply
+            totalSupply[AssetId._LP_ASSET_ID],
             longsOutstanding,
             shortsOutstanding,
             sharePrice
@@ -168,7 +169,7 @@ contract Hyperdrive is MultiToken {
         shareReserves += shares;
         bondReserves = HyperdriveMath.calculateBondReserves(
             shareReserves,
-            totalSupply[0] + lpShares,
+            totalSupply[AssetId._LP_ASSET_ID] + lpShares,
             initialSharePrice,
             apr,
             positionDuration,
@@ -176,7 +177,7 @@ contract Hyperdrive is MultiToken {
         );
 
         // Mint LP shares to the supplier.
-        _mint(0, msg.sender, lpShares);
+        _mint(AssetId._LP_ASSET_ID, msg.sender, lpShares);
     }
 
     // TODO: Consider if some MEV protection is necessary for the LP.
@@ -185,7 +186,7 @@ contract Hyperdrive is MultiToken {
     /// @param _shares The LP shares to burn.
     function removeLiquidity(uint256 _shares) external {
         if (_shares == 0) {
-            revert HyperdriveError.ZeroAmount();
+            revert Errors.ZeroAmount();
         }
 
         // Calculate the pool's APR prior to updating the share reserves and LP
@@ -193,7 +194,7 @@ contract Hyperdrive is MultiToken {
         uint256 apr = HyperdriveMath.calculateAPRFromReserves(
             shareReserves,
             bondReserves,
-            totalSupply[0], // lp total supply
+            totalSupply[AssetId._LP_ASSET_ID],
             initialSharePrice,
             positionDuration,
             timeStretch
@@ -203,19 +204,19 @@ contract Hyperdrive is MultiToken {
         uint256 shareProceeds = HyperdriveMath.calculateSharesOutForLpSharesIn(
             _shares,
             shareReserves,
-            totalSupply[0], // lp total supply
+            totalSupply[AssetId._LP_ASSET_ID],
             longsOutstanding,
             sharePrice
         );
 
         // Burn the LP shares.
-        _burn(0, msg.sender, _shares);
+        _burn(AssetId._LP_ASSET_ID, msg.sender, _shares);
 
         // Update the reserves.
         shareReserves -= shareProceeds;
         bondReserves = HyperdriveMath.calculateBondReserves(
             shareReserves,
-            totalSupply[0],
+            totalSupply[AssetId._LP_ASSET_ID],
             initialSharePrice,
             apr,
             positionDuration,
@@ -228,7 +229,7 @@ contract Hyperdrive is MultiToken {
             shareProceeds.mulDown(sharePrice)
         );
         if (!success) {
-            revert HyperdriveError.TransferFailed();
+            revert Errors.TransferFailed();
         }
     }
 
@@ -238,7 +239,7 @@ contract Hyperdrive is MultiToken {
     /// @param _baseAmount The amount of base to use when trading.
     function openLong(uint256 _baseAmount) external {
         if (_baseAmount == 0) {
-            revert HyperdriveError.ZeroAmount();
+            revert Errors.ZeroAmount();
         }
 
         // Take custody of the base that is being traded into the contract.
@@ -248,7 +249,7 @@ contract Hyperdrive is MultiToken {
             _baseAmount
         );
         if (!success) {
-            revert HyperdriveError.TransferFailed();
+            revert Errors.TransferFailed();
         }
 
         // Calculate the pool and user deltas using the trading function.
@@ -257,7 +258,7 @@ contract Hyperdrive is MultiToken {
             .calculateOutGivenIn(
                 shareReserves,
                 bondReserves,
-                totalSupply[0], // lp total supply
+                totalSupply[AssetId._LP_ASSET_ID],
                 shareAmount,
                 FixedPointMath.ONE_18,
                 timeStretch,
@@ -280,7 +281,7 @@ contract Hyperdrive is MultiToken {
         // reserves and the bond reserves decreased, we must ensure that the
         // base reserves are greater than the longsOutstanding.
         if (sharePrice * shareReserves >= longsOutstanding) {
-            revert HyperdriveError.BaseBufferExceedsShareReserves();
+            revert Errors.BaseBufferExceedsShareReserves();
         }
 
         // Mint the bonds to the trader with an ID of the maturity time.
@@ -292,7 +293,7 @@ contract Hyperdrive is MultiToken {
     /// @param _bondAmount The amount of longs to close.
     function closeLong(uint32 _maturityTime, uint256 _bondAmount) external {
         if (_bondAmount == 0) {
-            revert HyperdriveError.ZeroAmount();
+            revert Errors.ZeroAmount();
         }
 
         // Burn the longs that are being closed.
@@ -311,7 +312,7 @@ contract Hyperdrive is MultiToken {
         ) = HyperdriveMath.calculateOutGivenIn(
                 shareReserves,
                 bondReserves,
-                totalSupply[0], // lp total supply
+                totalSupply[AssetId._LP_ASSET_ID],
                 _bondAmount,
                 timeRemaining,
                 timeStretch,
@@ -334,7 +335,7 @@ contract Hyperdrive is MultiToken {
             shareProceeds.mulDown(sharePrice)
         );
         if (!success) {
-            revert HyperdriveError.TransferFailed();
+            revert Errors.TransferFailed();
         }
     }
 
@@ -344,7 +345,7 @@ contract Hyperdrive is MultiToken {
     /// @param _bondAmount The amount of bonds to short.
     function openShort(uint256 _bondAmount) external {
         if (_bondAmount == 0) {
-            revert HyperdriveError.ZeroAmount();
+            revert Errors.ZeroAmount();
         }
 
         // Calculate the pool and user deltas using the trading function.
@@ -352,7 +353,7 @@ contract Hyperdrive is MultiToken {
             .calculateOutGivenIn(
                 shareReserves,
                 bondReserves,
-                totalSupply[0], // lp total supply
+                totalSupply[AssetId._LP_ASSET_ID],
                 _bondAmount,
                 FixedPointMath.ONE_18,
                 timeStretch,
@@ -369,7 +370,7 @@ contract Hyperdrive is MultiToken {
             _bondAmount - baseProceeds
         );
         if (!success) {
-            revert HyperdriveError.TransferFailed();
+            revert Errors.TransferFailed();
         }
 
         // Apply the trading deltas to the reserves and increase the bond buffer
@@ -381,13 +382,17 @@ contract Hyperdrive is MultiToken {
         // Since the share reserves are reduced, we need to verify that the base
         // reserves are greater than or equal to the amount of longs outstanding.
         if (sharePrice * shareReserves >= longsOutstanding) {
-            revert HyperdriveError.BaseBufferExceedsShareReserves();
+            revert Errors.BaseBufferExceedsShareReserves();
         }
 
         // Mint the short tokens to the trader. The ID is a concatenation of the
         // current share price and the maturity time of the shorts.
         _mint(
-            encodeAssetId(true, sharePrice, block.timestamp + positionDuration),
+            AssetId.encodeAssetId(
+                AssetId.AssetIdPrefix.Short,
+                sharePrice,
+                block.timestamp + positionDuration
+            ),
             msg.sender,
             _bondAmount
         );
@@ -398,18 +403,18 @@ contract Hyperdrive is MultiToken {
     /// @param _bondAmount The amount of shorts to close.
     function closeShort(uint256 _assetId, uint256 _bondAmount) external {
         if (_bondAmount == 0) {
-            revert HyperdriveError.ZeroAmount();
+            revert Errors.ZeroAmount();
         }
 
         // Ensure that the asset ID refers to a short and get the open share
         // price and maturity time from the short key.
         (
-            bool identifier,
+            AssetId.AssetIdPrefix prefix,
             uint256 openSharePrice,
             uint256 maturityTime
-        ) = decodeAssetId(_assetId);
-        if (!identifier) {
-            revert HyperdriveError.InvalidShortID();
+        ) = AssetId.decodeAssetId(_assetId);
+        if (prefix != AssetId.AssetIdPrefix.Short) {
+            revert Errors.UnexpectedAssetId();
         }
 
         // Burn the shorts that are being closed.
@@ -427,7 +432,7 @@ contract Hyperdrive is MultiToken {
         ) = HyperdriveMath.calculateBaseInGivenBondsOut(
                 shareReserves,
                 bondReserves,
-                totalSupply[0], // lp total supply
+                totalSupply[AssetId._LP_ASSET_ID],
                 _bondAmount,
                 timeRemaining,
                 timeStretch,
@@ -456,76 +461,7 @@ contract Hyperdrive is MultiToken {
             tradingProceeds.add(interestProceeds)
         );
         if (!success) {
-            revert HyperdriveError.TransferFailed();
+            revert Errors.TransferFailed();
         }
-    }
-
-    /// Utilities ///
-
-    /// @notice Encodes an identifier, data, and a timestamp into an asset ID.
-    ///         Asset IDs are used so that LP, long, and short tokens can all be
-    ///         represented in a single MultiToken instance. The zero asset ID
-    ///         indicates the LP token.
-    /// @param _identifier A one bit identifier indicating long or short tokens.
-    ///         0 -> long and 1 -> short.
-    /// @param _data Data associated with the asset. This is an efficient way of
-    ///        fingerprinting data as the user can supply this data, and the
-    ///        token balance ensures that the data is associated with the asset.
-    /// @param _timestamp A timestamp associated with the asset.
-    /// @return id The asset ID.
-    function encodeAssetId(
-        bool _identifier,
-        uint256 _data,
-        uint256 _timestamp
-    ) public pure returns (uint256 id) {
-        // Ensure that _data is a 223 bit number.
-        if (
-            _data > 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffff
-        ) {
-            revert HyperdriveError.AssetIDCorruption();
-        }
-        // [identifier: 1 bit][data: 223 bits][timestamp: 32 bits]
-        assembly {
-            id := or(
-                or(shl(0xff, _identifier), shl(0x20, _data)),
-                mod(_timestamp, 0x20)
-            )
-        }
-        return id;
-    }
-
-    /// @notice Decodes an asset ID into an identifier, extra data, and a
-    ///         timestamp.
-    /// @param _id The asset ID.
-    /// @return identifier A one bit identifier indicating long or short tokens:
-    ///         0 -> long and 1 -> short.
-    /// @return data Data associated with the asset. This is an efficient way of
-    ///        fingerprinting data as the user can supply this data, and the
-    ///        token balance ensures that the data is associated with the asset.
-    /// @return timestamp_ A timestamp associated with the asset.
-    function decodeAssetId(
-        uint256 _id
-    ) public pure returns (bool identifier, uint256 data, uint256 timestamp_) {
-        // [identifier: 1 bit][data: 223 bits][timestamp: 32 bits]
-        assembly {
-            identifier := shr(0xff, _id)
-            data := and(
-                shr(0x20, _id),
-                0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffff
-            )
-            timestamp_ := and(shr(0x20, _id), 0xffffffff)
-        }
-        // In the case of shorts, extra data is the share price at which the
-        // short was opened. Hyperdrive assumes that the yield source accrues
-        // non-negative interest, so an opening share price less than the fixed
-        // point multiplicative identity indicates corruption. In the case of
-        // longs, the extra data is unused.
-        if (
-            (!identifier && data > 0) ||
-            (identifier && data < FixedPointMath.ONE_18)
-        ) {
-            revert HyperdriveError.AssetIDCorruption();
-        }
-        return (identifier, data, timestamp_);
     }
 }
