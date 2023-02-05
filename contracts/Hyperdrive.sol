@@ -153,18 +153,18 @@ contract Hyperdrive is MultiToken {
             timeStretch
         );
 
-        // TODO: Use an LP allocation scheme that is less naive and is actually
-        //       fair.
         // Calculate the amount of LP shares that the supplier should receive.
-        uint256 sharesDelta = _contribution.divDown(sharePrice);
-        uint256 lpShares = sharesDelta.mulDown(totalSupply[0]).divDown(
-            shareReserves.add(shortsOutstanding.divDown(sharePrice)).sub(
-                longsOutstanding.divDown(sharePrice)
-            )
+        uint256 shares = _contribution.divDown(sharePrice);
+        uint256 lpShares = HyperdriveMath.calculateLpSharesOutForSharesIn(
+            _shares,
+            shareReserves,
+            totalSupply[0], // lp total supply
+            longsOutstanding,
+            sharePrice
         );
 
         // Update the reserves.
-        shareReserves += sharesDelta;
+        shareReserves += shares;
         bondReserves = HyperdriveMath.calculateBondReserves(
             shareReserves,
             totalSupply[0] + lpShares,
@@ -192,16 +192,20 @@ contract Hyperdrive is MultiToken {
         uint256 apr = HyperdriveMath.calculateAPRFromReserves(
             shareReserves,
             bondReserves,
-            totalSupply[0],
+            totalSupply[0], // lp total supply
             initialSharePrice,
             positionDuration,
             timeStretch
         );
 
         // Calculate the amount of base that should be withdrawn.
-        uint256 shareProceeds = shareReserves
-            .sub(longsOutstanding.divDown(sharePrice))
-            .mulDown(_shares.divDown(totalSupply[0]));
+        uint256 shareProceeds = HyperdriveMath.calculateSharesOutForLpSharesIn(
+            _shares,
+            shareReserves,
+            totalSupply[0], // lp total supply
+            longsOutstanding,
+            sharePrice
+        );
 
         // Burn the LP shares.
         _burn(0, msg.sender, _shares);
@@ -419,7 +423,7 @@ contract Hyperdrive is MultiToken {
             uint256 poolShareDelta,
             uint256 poolBondDelta,
             uint256 sharePayment
-        ) = HyperdriveMath.calculateInGivenOut(
+        ) = HyperdriveMath.calculateBaseInGivenBondsOut(
                 shareReserves,
                 bondReserves,
                 totalSupply[0], // lp total supply
@@ -459,9 +463,10 @@ contract Hyperdrive is MultiToken {
 
     /// @notice Encodes an identifier, data, and a timestamp into an asset ID.
     ///         Asset IDs are used so that LP, long, and short tokens can all be
-    ///         represented in a single MultiToken instance. An asset ID of zero
+    ///         represented in a single MultiToken instance. The zero asset ID
     ///         indicates the LP token.
     /// @param _identifier A one bit identifier indicating long or short tokens.
+    ///         0 -> long and 1 -> short.
     /// @param _data Data associated with the asset. This is an efficient way of
     ///        fingerprinting data as the user can supply this data, and the
     ///        token balance ensures that the data is associated with the asset.
@@ -491,7 +496,8 @@ contract Hyperdrive is MultiToken {
     /// @notice Decodes an asset ID into an identifier, extra data, and a
     ///         timestamp.
     /// @param _id The asset ID.
-    /// @return identifier A one bit identifier indicating long or short tokens.
+    /// @return identifier A one bit identifier indicating long or short tokens:
+    ///         0 -> long and 1 -> short.
     /// @return data Data associated with the asset. This is an efficient way of
     ///        fingerprinting data as the user can supply this data, and the
     ///        token balance ensures that the data is associated with the asset.
@@ -508,9 +514,11 @@ contract Hyperdrive is MultiToken {
             )
             timestamp_ := and(shr(0x20, _id), 0xffffffff)
         }
-        // Ensure that the extra data is greater than or equal to the fixed
-        // point multiplicative identity if the asset is a short and zero
-        // otherwise.
+        // In the case of shorts, extra data is the share price at which the
+        // short was opened. Hyperdrive assumes that the yield source accrues
+        // non-negative interest, so an opening share price less than the fixed
+        // point multiplicative identity indicates corruption. In the case of
+        // longs, the extra data is unused.
         if (
             (!identifier && data > 0) ||
             (identifier && data < FixedPointMath.ONE_18)

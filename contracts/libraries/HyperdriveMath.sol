@@ -189,7 +189,7 @@ library HyperdriveMath {
     /// @return poolBondDelta The delta that should be applied to the pool's
     ///         bond reserves.
     /// @return userDelta The amount of assets the user should receive.
-    function calculateInGivenOut(
+    function calculateBaseInGivenBondsOut(
         uint256 shareReserves,
         uint256 bondReserves,
         uint256 bondReserveAdjustment,
@@ -233,5 +233,58 @@ library HyperdriveMath {
             false
         );
         return (flat.add(curveIn), curveIn, flat.add(curveIn));
+    }
+
+    // TODO: Use an allocation scheme that doesn't punish early LPs.
+    //
+    /// @dev Calculates the amount of LP shares that should be awarded for
+    ///      supplying a specified amount of base shares to the pool.
+    /// @param _shares The amount of base shares supplied to the pool.
+    /// @param _shareReserves The pool's share reserves.
+    /// @param _lpTotalSupply The pool's total supply of LP shares.
+    /// @param _longsOutstanding The amount of long positions outstanding.
+    /// @param _shortsOutstanding The amount of short positions outstanding.
+    /// @param _sharePrice The pool's share price.
+    /// @return The amount of LP shares awarded.
+    function calculateLpSharesOutForSharesIn(
+        uint256 _shares,
+        uint256 _shareReserves,
+        uint256 _lpTotalSupply,
+        uint256 _longsOutstanding,
+        uint256 _shortsOutstanding,
+        uint256 _sharePrice
+    ) internal pure returns (uint256) {
+        // (d_z * l) / (z + b_y / c - b_x / c)
+        return
+            _shares.mulDown(_lpTotalSupply).divDown(
+                _shareReserves.add(_shortsOutstanding.divDown(_sharePrice)).sub(
+                    _longsOutstanding.divDown(_sharePrice)
+                )
+            );
+    }
+
+    // TODO: Use a withdrawal scheme that gives LPs exposure to the open trades
+    //       that they facilitated.
+    //
+    /// @dev Calculates the amount of base shares released from burning a
+    ///      a specified amount of LP shares from the pool.
+    /// @param _shares The amount of LP shares burned from the pool.
+    /// @param _shareReserves The pool's share reserves.
+    /// @param _lpTotalSupply The pool's total supply of LP shares.
+    /// @param _longsOutstanding The amount of long positions outstanding.
+    /// @param _sharePrice The pool's share price.
+    /// @return The amount of base shares released.
+    function calculateSharesOutForLpSharesIn(
+        uint256 _shares,
+        uint256 _shareReserves,
+        uint256 _lpTotalSupply,
+        uint256 _longsOutstanding,
+        uint256 _sharePrice
+    ) internal pure returns (uint256) {
+        // (z - b_x / c) * (d_l / l)
+        return
+            _shareReserves.sub(_longsOutstanding.divDown(_sharePrice)).mulDown(
+                _shares.divDown(_lpTotalSupply)
+            );
     }
 }
