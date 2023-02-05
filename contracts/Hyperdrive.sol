@@ -156,10 +156,11 @@ contract Hyperdrive is MultiToken {
         // Calculate the amount of LP shares that the supplier should receive.
         uint256 shares = _contribution.divDown(sharePrice);
         uint256 lpShares = HyperdriveMath.calculateLpSharesOutForSharesIn(
-            _shares,
+            shares,
             shareReserves,
             totalSupply[0], // lp total supply
             longsOutstanding,
+            shortsOutstanding,
             sharePrice
         );
 
