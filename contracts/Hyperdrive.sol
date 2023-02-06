@@ -366,7 +366,8 @@ contract Hyperdrive is MultiToken {
         uint256 timeRemaining = block.timestamp < maturityTime
             ? (maturityTime - block.timestamp).divDown(positionDuration) // use divDown to scale to fixed point
             : 0;
-        (, uint256 poolBondDelta, uint256 shareProceeds) = HyperdriveMath.calculateOutGivenIn(
+        (, uint256 poolBondDelta, uint256 shareProceeds) = HyperdriveMath
+            .calculateOutGivenIn(
                 shareReserves,
                 bondReserves,
                 totalSupply[AssetId._LP_ASSET_ID],
@@ -519,11 +520,10 @@ contract Hyperdrive is MultiToken {
         // Transfer the profit to the shorter. This includes the proceeds from
         // the short sale as well as the variable interest that was collected
         // on the face value of the bonds.
-        uint256 shortProceeds = sharePrice.mulDown(_bondAmount.divDown(openSharePrice).sub(sharePayment));
-        bool success = baseToken.transfer(
-            msg.sender,
-            tradingProceeds.add(interestProceeds)
+        uint256 shortProceeds = sharePrice.mulDown(
+            _bondAmount.divDown(openSharePrice).sub(sharePayment)
         );
+        bool success = baseToken.transfer(msg.sender, shortProceeds);
         if (!success) {
             revert Errors.TransferFailed();
         }
@@ -559,9 +559,10 @@ contract Hyperdrive is MultiToken {
         // withdrawal shares. The accounting for these proceeds is identical
         // to the close short accounting because LPs take the short position
         // when longs are opened.
-        uint256 withdrawalProportion = longWithdrawalSharesOutstanding < _bondAmount ?
-            longWithdrawalSharesOutstanding.divDown(_bondAmount) :
-            FixedPointMath.ONE_18;
+        uint256 withdrawalProportion = longWithdrawalSharesOutstanding <
+            _bondAmount
+            ? longWithdrawalSharesOutstanding.divDown(_bondAmount)
+            : FixedPointMath.ONE_18;
         uint256 withdrawalProceeds = sharePrice
             .mulDown(_bondAmount.divDown(_openSharePrice).sub(_shareProceeds))
             .mulDown(withdrawalProportion);
@@ -570,7 +571,9 @@ contract Hyperdrive is MultiToken {
         // Apply the trading deltas to the reserves. These updates reflect
         // the fact that some of the reserves will be attributed to the
         // withdrawal pool.
-        shareReserves -= _shareProceeds.add(withdrawalProceeds.divDown(sharePrice));
+        shareReserves -= _shareProceeds.add(
+            withdrawalProceeds.divDown(sharePrice)
+        );
         bondReserves = HyperdriveMath.calculateBondReserves(
             shareReserves,
             totalSupply[AssetId._LP_ASSET_ID],
