@@ -540,7 +540,8 @@ contract Hyperdrive is MultiToken {
     /// @param _poolBondDelta The amount of bonds that the pool would be
     ///        decreased by if we didn't need to account for the withdrawal
     ///        pool.
-    /// @param _shareProceeds The proceeds in shares from closing the long.
+    /// @param _shareProceeds The proceeds in shares received from closing the
+    ///        long.
     /// @param _openSharePrice The share price at the time the long was opened.
     function _applyCloseLong(
         uint256 _bondAmount,
@@ -592,16 +593,14 @@ contract Hyperdrive is MultiToken {
         );
     }
 
-    // FIXME: Update comment.
-    //
-    /// @dev Applies the trading deltas from a closed long to the reserves and
+    /// @dev Applies the trading deltas from a closed short to the reserves and
     ///      the withdrawal pool.
-    /// @param _bondAmount The amount of longs that were closed.
+    /// @param _bondAmount The amount of shorts that were closed.
     /// @param _poolBondDelta The amount of bonds that the pool would be
     ///        decreased by if we didn't need to account for the withdrawal
     ///        pool.
-    /// @param _shareProceeds The proceeds in shares from closing the long.
-    /// @param _openSharePrice The share price at the time the long was opened.
+    /// @param _sharePayment The payment in shares required to close the short.
+    /// @param _openSharePrice The share price at the time the short was opened.
     function _applyCloseShort(
         uint256 _bondAmount,
         uint256 _poolBondDelta,
@@ -626,8 +625,9 @@ contract Hyperdrive is MultiToken {
             _bondAmount
             ? shortWithdrawalSharesOutstanding
             : _bondAmount;
-        uint256 withdrawalProceeds = sharePrice.mulDown(_sharePayment)
-            .mulDown(withdrawalAmount.divDown(_bondAmount));
+        uint256 withdrawalProceeds = sharePrice.mulDown(_sharePayment).mulDown(
+            withdrawalAmount.divDown(_bondAmount)
+        );
         shortWithdrawalSharesOutstanding -= withdrawalAmount;
         shortWithdrawalShareProceeds += withdrawalProceeds;
 
