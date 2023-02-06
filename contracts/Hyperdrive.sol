@@ -558,13 +558,14 @@ contract Hyperdrive is MultiToken {
         // withdrawal shares. The accounting for these proceeds is identical
         // to the close short accounting because LPs take the short position
         // when longs are opened.
-        uint256 withdrawalProportion = longWithdrawalSharesOutstanding <
+        uint256 withdrawalAmount = longWithdrawalSharesOutstanding <
             _bondAmount
-            ? longWithdrawalSharesOutstanding.divDown(_bondAmount)
-            : FixedPointMath.ONE_18;
+            ? longWithdrawalSharesOutstanding
+            : _bondAmount;
         uint256 withdrawalProceeds = sharePrice
             .mulDown(_bondAmount.divDown(_openSharePrice).sub(_shareProceeds))
-            .mulDown(withdrawalProportion);
+            .mulDown(withdrawalAmount.divDown(_bondAmount));
+        longWithdrawalSharesOutstanding -= withdrawalAmount;
         longWithdrawalShareProceeds += withdrawalProceeds;
 
         // Apply the trading deltas to the reserves. These updates reflect
