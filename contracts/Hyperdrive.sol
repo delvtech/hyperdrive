@@ -517,12 +517,7 @@ contract Hyperdrive is MultiToken {
         // reserves increase or stay the same, there is no need to check that
         // the share reserves are greater than or equal to the base buffer.
         if (shortWithdrawalSharesOutstanding > 0) {
-            _applyCloseShort(
-                _bondAmount,
-                poolBondDelta,
-                sharePayment,
-                openSharePrice
-            );
+            _applyCloseShort(_bondAmount, poolBondDelta, sharePayment);
         } else {
             shareReserves += poolShareDelta;
             bondReserves -= poolBondDelta;
@@ -611,12 +606,10 @@ contract Hyperdrive is MultiToken {
     ///        decreased by if we didn't need to account for the withdrawal
     ///        pool.
     /// @param _sharePayment The payment in shares required to close the short.
-    /// @param _openSharePrice The share price at the time the short was opened.
     function _applyCloseShort(
         uint256 _bondAmount,
         uint256 _poolBondDelta,
-        uint256 _sharePayment,
-        uint256 _openSharePrice
+        uint256 _sharePayment
     ) internal {
         // Calculate the effect that the trade has on the pool's APR.
         uint256 apr = HyperdriveMath.calculateAPRFromReserves(
