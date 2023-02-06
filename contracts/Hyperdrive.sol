@@ -314,20 +314,38 @@ contract Hyperdrive is MultiToken {
         }
 
         // Mint the bonds to the trader with an ID of the maturity time.
-        _mint(block.timestamp + positionDuration, msg.sender, bondProceeds);
+        _mint(
+            AssetId.encodeAssetId(
+                AssetIdPrefix.Long,
+                shareAmount,
+                block.timestamp + positionDuration
+            ),
+            msg.sender,
+            bondProceeds
+        );
     }
 
     /// @notice Closes a long position with a specified maturity time.
-    /// @param _maturityTime The maturity time of the longs to close.
+    /// @param _assetId The asset ID of the long.
     /// @param _bondAmount The amount of longs to close.
-    function closeLong(uint32 _maturityTime, uint256 _bondAmount) external {
+    function closeLong(uint256 _assetId, uint256 _bondAmount) external {
         if (_bondAmount == 0) {
             revert Errors.ZeroAmount();
         }
 
+        // Ensure that the asset ID refers to a long and get the open share
+        // amount and maturity time from the asset ID.
+        (
+            AssetId.AssetIdPrefix prefix,
+            uint256 openShareAmount,
+            uint256 maturityTime
+        ) = AssetId.decodeAssetId(_assetId);
+        if (prefix != AssetId.AssetIdPrefix.Long) {
+            revert Errors.UnexpectedAssetId();
+        }
+
         // Burn the longs that are being closed.
-        uint256 maturityTime = uint32(_maturityTime);
-        _burn(maturityTime, msg.sender, _bondAmount);
+        _burn(_assetId, msg.sender, _bondAmount);
         longsOutstanding -= _bondAmount;
 
         // Calculate the pool and user deltas using the trading function.
