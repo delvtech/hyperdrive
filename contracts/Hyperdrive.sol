@@ -56,6 +56,12 @@ contract Hyperdrive is MultiToken {
     // @notice The amount of shorts that are still open.
     uint256 public shortsOutstanding;
 
+    // @notice The amount of long withdrawal shares that haven't been paid out.
+    uint256 public longWithdrawalSharesOutstanding;
+
+    // @notice The amount of short withdrawal shares that haven't been paid out.
+    uint256 public shortWithdrawalSharesOutstanding;
+
     /// @notice Initializes a Hyperdrive pool.
     /// @param _linkerCodeHash The hash of the ERC20 linker contract's
     ///        constructor code.
@@ -200,12 +206,19 @@ contract Hyperdrive is MultiToken {
             timeStretch
         );
 
-        // Calculate the amount of base that should be withdrawn.
-        uint256 shareProceeds = HyperdriveMath.calculateSharesOutForLpSharesIn(
+        // Calculate the withdrawal proceeds of the LP. This includes the base,
+        // long withdrawal shares, and short withdrawal shares that they will
+        // receive.
+        (
+            uint256 shareProceeds,
+            uint256 longWithdrawalShares,
+            uint256 shortWithdrawalShares
+        ) = HyperdriveMath.calculateSharesOutForLpSharesIn(
             _shares,
             shareReserves,
             totalSupply[AssetId._LP_ASSET_ID],
             longsOutstanding,
+            shortsOutstanding,
             sharePrice
         );
 
@@ -222,6 +235,22 @@ contract Hyperdrive is MultiToken {
             positionDuration,
             timeStretch
         );
+
+        // TODO: Update this when we implement tranches.
+        //
+        // Mint the long and short withdrawal tokens.
+        _mint(
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.LongWithdrawalShare, 0, 0),
+            msg.sender,
+            longWithdrawalShares
+        );
+        longWithdrawalSharesOutstanding += longWithdrawalShares;
+        _mint(
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.ShortWithdrawalShare, 0, 0),
+            msg.sender,
+            shortWithdrawalShares
+        );
+        shortWithdrawalSharesOutstanding += shortWithdrawalShares;
 
         // Transfer the base proceeds to the LP.
         bool success = baseToken.transfer(
