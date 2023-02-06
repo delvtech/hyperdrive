@@ -383,7 +383,9 @@ contract Hyperdrive is MultiToken {
         // If there are outstanding long withdrawal shares, we attribute a
         // proportional amount of the proceeds to the withdrawal pool and the
         // active LPs. Otherwise, we use simplified accounting that has the same
-        // behavior but is more gas efficient.
+        // behavior but is more gas efficient. Since the difference between the
+        // base reserves and the longs outstanding stays the same or gets
+        // larger, we don't need to verify the reserves invariants.
         if (longWithdrawalSharesOutstanding > 0) {
             _applyCloseLong(
                 _bondAmount,
@@ -392,9 +394,6 @@ contract Hyperdrive is MultiToken {
                 _openSharePrice
             );
         } else {
-            // Apply the trading deltas to the reserves. Since the difference
-            // between the base reserves and the longs outstanding stays the same or
-            // gets larger, we don't need to verify the reserves invariants.
             shareReserves -= shareProceeds;
             bondReserves += poolBondDelta;
         }
@@ -511,11 +510,23 @@ contract Hyperdrive is MultiToken {
                 initialSharePrice
             );
 
-        // Apply the trading deltas to the reserves. Since the share reserves
-        // increase or stay the same, there is no need to check that the share
-        // reserves are greater than or equal to the base buffer.
-        shareReserves += poolShareDelta;
-        bondReserves -= poolBondDelta;
+        // If there are outstanding short withdrawal shares, we attribute a
+        // proportional amount of the proceeds to the withdrawal pool and the
+        // active LPs. Otherwise, we special case the accounting which gives
+        // identical results in a more gas efficient manner. Since the share
+        // reserves increase or stay the same, there is no need to check that
+        // the share reserves are greater than or equal to the base buffer.
+        if (shortWithdrawalSharesOutstanding > 0) {
+            _applyCloseShort(
+                _bondAmount,
+                poolBondDelta,
+                sharePayment,
+                openSharePrice
+            );
+        } else {
+            shareReserves += poolShareDelta;
+            bondReserves -= poolBondDelta;
+        }
 
         // Transfer the profit to the shorter. This includes the proceeds from
         // the short sale as well as the variable interest that was collected
