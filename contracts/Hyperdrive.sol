@@ -558,8 +558,7 @@ contract Hyperdrive is MultiToken {
         // withdrawal shares. The accounting for these proceeds is identical
         // to the close short accounting because LPs take the short position
         // when longs are opened.
-        uint256 withdrawalAmount = longWithdrawalSharesOutstanding <
-            _bondAmount
+        uint256 withdrawalAmount = longWithdrawalSharesOutstanding < _bondAmount
             ? longWithdrawalSharesOutstanding
             : _bondAmount;
         uint256 withdrawalProceeds = sharePrice
