@@ -21,7 +21,7 @@ library AssetId {
         Long,
         Short,
         LongWithdrawalShare,
-        ShortWithdrawalShare,
+        ShortWithdrawalShare
     }
 
     /// @dev Encodes an identifier, data, and a timestamp into an asset ID.

@@ -213,14 +213,14 @@ contract Hyperdrive is MultiToken {
             uint256 shareProceeds,
             uint256 longWithdrawalShares,
             uint256 shortWithdrawalShares
-        ) = HyperdriveMath.calculateSharesOutForLpSharesIn(
-            _shares,
-            shareReserves,
-            totalSupply[AssetId._LP_ASSET_ID],
-            longsOutstanding,
-            shortsOutstanding,
-            sharePrice
-        );
+        ) = HyperdriveMath.calculateOutForLpSharesIn(
+                _shares,
+                shareReserves,
+                totalSupply[AssetId._LP_ASSET_ID],
+                longsOutstanding,
+                shortsOutstanding,
+                sharePrice
+            );
 
         // Burn the LP shares.
         _burn(AssetId._LP_ASSET_ID, msg.sender, _shares);
@@ -240,13 +240,21 @@ contract Hyperdrive is MultiToken {
         //
         // Mint the long and short withdrawal tokens.
         _mint(
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.LongWithdrawalShare, 0, 0),
+            AssetId.encodeAssetId(
+                AssetId.AssetIdPrefix.LongWithdrawalShare,
+                0,
+                0
+            ),
             msg.sender,
             longWithdrawalShares
         );
         longWithdrawalSharesOutstanding += longWithdrawalShares;
         _mint(
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.ShortWithdrawalShare, 0, 0),
+            AssetId.encodeAssetId(
+                AssetId.AssetIdPrefix.ShortWithdrawalShare,
+                0,
+                0
+            ),
             msg.sender,
             shortWithdrawalShares
         );
@@ -316,7 +324,7 @@ contract Hyperdrive is MultiToken {
         // Mint the bonds to the trader with an ID of the maturity time.
         _mint(
             AssetId.encodeAssetId(
-                AssetIdPrefix.Long,
+                AssetId.AssetIdPrefix.Long,
                 shareAmount,
                 block.timestamp + positionDuration
             ),
@@ -368,13 +376,40 @@ contract Hyperdrive is MultiToken {
                 false
             );
 
-        // Apply the trading deltas to the reserves and decrease the base buffer
-        // by the amount of bonds sold. Since the difference between the base
-        // reserves and the longs outstanding stays the same or gets larger and
-        // the difference between the bond reserves and the bond buffer increases,
-        // we don't need to check that the reserves are larger than the buffers.
-        shareReserves -= poolShareDelta;
-        bondReserves += poolBondDelta;
+        // TODO: Comment this.
+        if (longWithdrawalSharesOutstanding > 0) {
+            uint256 apr = HyperdriveMath.calculateAPRFromReserves(
+                sharePayment.sub(poolShareDelta),
+                bondReserves.add(poolBondDelta),
+                totalSupply[_LP_ASSET_ID],
+                initialSharePrice,
+                positionDuration,
+                timeStretch
+            );
+
+            uint256 withdrawalProportion = longWithdrawalSharesOutstanding < _bondAmount ?
+                longWithdrawalSharesOutstanding.divDown(_bondAmount) :
+                FixedPointMath.ONE_18;
+            uint256 lpPnl = sharePrice.mulDown(openShareAmount.sub(shareProceeds)).mulDown(withdrawalProportion);
+
+            shareReserves -= poolShareDelta.add(lpPnl);
+            bondReserves = HyperdriveMath.calculateBondReserves(
+                shareReserves,
+                totalSupply[_LP_ASSET_ID],
+                initialSharePrice,
+                apr,
+                positionDuration,
+                timeStretch
+            );
+
+            // FIXME: We need to give the lpPnl to the withdrawal pool.
+        } else {
+            // Apply the trading deltas to the reserves. Since the difference
+            // between the base reserves and the longs outstanding stays the same or
+            // gets larger, we don't need to verify the reserves invariants.
+            shareReserves -= poolShareDelta;
+            bondReserves += poolBondDelta;
+        }
 
         // Transfer the base returned to the trader.
         bool success = baseToken.transfer(

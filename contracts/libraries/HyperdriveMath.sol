@@ -285,25 +285,25 @@ library HyperdriveMath {
         uint256 _longsOutstanding,
         uint256 _shortsOutstanding,
         uint256 _sharePrice
-    ) internal pure returns (
-        uint256 shares,
-        uint256 longWithdrawalShares,
-        uint256 shortWithdrawalShares
-    ) {
+    )
+        internal
+        pure
+        returns (
+            uint256 shares,
+            uint256 longWithdrawalShares,
+            uint256 shortWithdrawalShares
+        )
+    {
         // d_l / l
-        uint256 poolFactor = _shares.divDown(_lpTotalSupply)
+        uint256 poolFactor = _shares.divDown(_lpTotalSupply);
         // (z - b_x / c) * (d_l / l)
-        shares = _shareReserves.sub(_longsOutstanding.divDown(_sharePrice)).mulDown(
-            poolFactor
-        );
+        shares = _shareReserves
+            .sub(_longsOutstanding.divDown(_sharePrice))
+            .mulDown(poolFactor);
         // longsOutstanding * (d_l / l)
         longWithdrawalShares = _longsOutstanding.mulDown(poolFactor);
         // shortsOutstanding * (d_l / l)
         shortWithdrawalShares = _shortsOutstanding.mulDown(poolFactor);
-        return (
-            shares,
-            longWithdrawalShares,
-            shortWithdrawalShares
-        );
+        return (shares, longWithdrawalShares, shortWithdrawalShares);
     }
 }
