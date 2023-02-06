@@ -65,7 +65,7 @@ contract Hyperdrive is MultiToken {
     // @notice The proceeds that have accrued to the long withdrawal shares.
     uint256 public longWithdrawalShareProceeds;
 
-    // @notice The proceeds that have accrued to the long withdrawal shares.
+    // @notice The proceeds that have accrued to the short withdrawal shares.
     uint256 public shortWithdrawalShareProceeds;
 
     /// @notice Initializes a Hyperdrive pool.
@@ -213,8 +213,8 @@ contract Hyperdrive is MultiToken {
         );
 
         // Calculate the withdrawal proceeds of the LP. This includes the base,
-        // long withdrawal shares, and short withdrawal shares that they will
-        // receive.
+        // long withdrawal shares, and short withdrawal shares that the LP
+        // receives.
         (
             uint256 shareProceeds,
             uint256 longWithdrawalShares,
@@ -381,9 +381,8 @@ contract Hyperdrive is MultiToken {
 
         // If there are outstanding long withdrawal shares, we attribute a
         // proportional amount of the proceeds to the withdrawal pool and the
-        // active LPs. If there aren't any outstanding  long withdrawal shares,
-        // then we update the reserves in a more straightforward manner to save
-        // gas.
+        // active LPs. Otherwise, we special case the accounting which gives
+        // identical results in a more gas efficient manner.
         if (longWithdrawalSharesOutstanding > 0) {
             _applyCloseLong(
                 _bondAmount,
