@@ -519,13 +519,7 @@ contract Hyperdrive is MultiToken {
         // Transfer the profit to the shorter. This includes the proceeds from
         // the short sale as well as the variable interest that was collected
         // on the face value of the bonds.
-        uint256 tradingProceeds = _bondAmount.sub(
-            sharePrice.mulDown(sharePayment)
-        );
-        uint256 interestProceeds = sharePrice
-            .divDown(_openSharePrice)
-            .sub(FixedPointMath.ONE_18)
-            .mulDown(_bondAmount);
+        uint256 shortProceeds = sharePrice.mulDown(_bondAmount.divDown(openSharePrice).sub(sharePayment));
         bool success = baseToken.transfer(
             msg.sender,
             tradingProceeds.add(interestProceeds)
