@@ -1,7 +1,7 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.15;
 
-import { HyperdriveError } from "contracts/libraries/Errors.sol";
+import { Errors } from "contracts/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
 import { YieldSpaceMath } from "contracts/libraries/YieldSpaceMath.sol";
 
@@ -125,7 +125,7 @@ library HyperdriveMath {
         // This pricing model only supports the purchasing of bonds when
         // timeRemaining = 1.
         if (_isBondOut && _timeRemaining < 1) {
-            revert HyperdriveError.HyperdriveMath_BaseWithNonzeroTime();
+            revert Errors.HyperdriveMath_BaseWithNonzeroTime();
         }
         if (_isBondOut) {
             // If bonds are being purchased, then the entire trade occurs on the

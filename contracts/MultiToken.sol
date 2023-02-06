@@ -85,7 +85,7 @@ contract MultiToken is IMultiToken {
         // If the caller does not match the address hash, we revert because it is not
         // allowed to access permission-ed methods.
         if (msg.sender != _deriveForwarderAddress(tokenID)) {
-            revert HyperdriveError.InvalidERC20Bridge();
+            revert Errors.InvalidERC20Bridge();
         }
         // Execute the following function
         _;
@@ -294,11 +294,11 @@ contract MultiToken is IMultiToken {
     ) external {
         // Checks for inconsistent addresses
         if (from == address(0) || to == address(0))
-            revert HyperdriveError.RestrictedZeroAddress();
+            revert Errors.RestrictedZeroAddress();
 
         // Check for inconsistent length
         if (ids.length != values.length)
-            revert HyperdriveError.BatchInputLengthMismatch();
+            revert Errors.BatchInputLengthMismatch();
 
         // Call internal transfer for each asset
         for (uint256 i = 0; i < ids.length; i++) {
@@ -329,10 +329,9 @@ contract MultiToken is IMultiToken {
         bytes32 s
     ) external {
         // Require that the signature is not expired
-        if (block.timestamp > deadline)
-            revert HyperdriveError.ExpiredDeadline();
+        if (block.timestamp > deadline) revert Errors.ExpiredDeadline();
         // Require that the owner is not zero
-        if (owner == address(0)) revert HyperdriveError.RestrictedZeroAddress();
+        if (owner == address(0)) revert Errors.RestrictedZeroAddress();
 
         bytes32 structHash = keccak256(
             abi.encodePacked(
@@ -353,7 +352,7 @@ contract MultiToken is IMultiToken {
 
         // Check that the signature is valid
         address signer = ecrecover(structHash, v, r, s);
-        if (signer != owner) revert HyperdriveError.InvalidSignature();
+        if (signer != owner) revert Errors.InvalidSignature();
 
         // Increment the signature nonce
         nonces[owner]++;
