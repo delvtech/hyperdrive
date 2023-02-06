@@ -11,9 +11,7 @@ library Errors {
     /// ##################
     /// ### Hyperdrive ###
     /// ##################
-    error AssetIDCorruption();
     error BaseBufferExceedsShareReserves();
-    error BondBufferExceedsBondReserves();
     error InvalidMaturityTime();
     error PoolAlreadyInitialized();
     error TransferFailed();
@@ -42,4 +40,9 @@ library Errors {
     /// ### HyperdriveMath ###
     /// ######################
     error HyperdriveMath_BaseWithNonzeroTime();
+
+    /// ###############
+    /// ### AssetId ###
+    /// ###############
+    error AssetIDCorruption();
 }
