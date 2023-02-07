@@ -399,31 +399,32 @@ contract Hyperdrive is MultiToken {
     }
 
     /// @notice Closes a short position with a specified maturity time.
-    /// @param _assetId The asset ID of the short.
+    /// @param _openSharePrice The opening share price of the short.
+    /// @param _maturityTime The maturity time of the short.
     /// @param _bondAmount The amount of shorts to close.
-    function closeShort(uint256 _assetId, uint256 _bondAmount) external {
+    function closeShort(
+        uint256 _openSharePrice,
+        uint32 _maturityTime,
+        uint256 _bondAmount
+    ) external {
         if (_bondAmount == 0) {
             revert Errors.ZeroAmount();
         }
 
-        // Ensure that the asset ID refers to a short and get the open share
-        // price and maturity time from the short key.
-        (
-            AssetId.AssetIdPrefix prefix,
-            uint256 openSharePrice,
-            uint256 maturityTime
-        ) = AssetId.decodeAssetId(_assetId);
-        if (prefix != AssetId.AssetIdPrefix.Short) {
-            revert Errors.UnexpectedAssetId();
-        }
-
         // Burn the shorts that are being closed.
-        _burn(_assetId, msg.sender, _bondAmount);
+        uint256 assetId = AssetId.encodeAssetId(
+            AssetId.AssetIdPrefix.Short,
+            _openSharePrice,
+            _maturityTime
+        );
+        _burn(assetId, msg.sender, _bondAmount);
         shortsOutstanding -= _bondAmount;
 
         // Calculate the pool and user deltas using the trading function.
-        uint256 timeRemaining = block.timestamp < maturityTime
-            ? (maturityTime - block.timestamp).divDown(positionDuration) // use divDown to scale to fixed point
+        uint256 timeRemaining = block.timestamp < uint256(_maturityTime)
+            ? (uint256(_maturityTime) - block.timestamp).divDown(
+                positionDuration
+            ) // use divDown to scale to fixed point
             : 0;
         (
             uint256 poolShareDelta,
@@ -453,7 +454,7 @@ contract Hyperdrive is MultiToken {
             sharePrice.mulDown(sharePayment)
         );
         uint256 interestProceeds = sharePrice
-            .divDown(openSharePrice)
+            .divDown(_openSharePrice)
             .sub(FixedPointMath.ONE_18)
             .mulDown(_bondAmount);
         bool success = baseToken.transfer(

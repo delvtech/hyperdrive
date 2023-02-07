@@ -51,42 +51,4 @@ library AssetId {
         }
         return id;
     }
-
-    /// @dev Decodes an asset ID into an identifier, extra data, and a timestamp.
-    /// @param _id The asset ID.
-    /// TODO: Update this comment when we make the range more restrictive.
-    /// @return prefix A one byte prefix that specifies the asset type.
-    /// @return data Data associated with the asset. This is an efficient way of
-    ///        fingerprinting data as the user can supply this data, and the
-    ///        token balance ensures that the data is associated with the asset.
-    /// @return timestamp_ A timestamp associated with the asset.
-    function decodeAssetId(
-        uint256 _id
-    )
-        internal
-        pure
-        returns (AssetIdPrefix prefix, uint256 data, uint256 timestamp_)
-    {
-        // [identifier: 8 bits][data: 216 bits][timestamp: 32 bits]
-        assembly {
-            prefix := shr(0xf8, _id)
-            data := and(
-                shr(0x20, _id),
-                0xffffffffffffffffffffffffffffffffffffffffffffffffffffff
-            )
-            timestamp_ := and(shr(0x20, _id), 0xffffffff)
-        }
-        // In the case of shorts, extra data is the share price at which the
-        // short was opened. Hyperdrive assumes that the yield source accrues
-        // non-negative interest, so an opening share price less than the fixed
-        // point multiplicative identity indicates corruption. In the case of
-        // longs, the extra data is unused.
-        if (
-            (prefix == AssetIdPrefix.Long && data > 0) ||
-            (prefix == AssetIdPrefix.Short && data < FixedPointMath.ONE_18)
-        ) {
-            revert Errors.AssetIDCorruption();
-        }
-        return (prefix, data, timestamp_);
-    }
 }
