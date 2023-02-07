@@ -17,7 +17,8 @@
         devShell = with pkgs;
           mkShell {
             SOLC_VERSION = "0.8.15";
-            buildInputs = [ foundry.defaultPackage.${system} solc-select yarn ];
+            buildInputs =
+              [ foundry.defaultPackage.${system} solc-select yarn nodejs-14_x ];
             shellHook = ''
               solc-select install $SOLC_VERSION
             '';

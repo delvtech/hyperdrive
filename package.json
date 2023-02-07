@@ -15,7 +15,7 @@
         "spell-check": "npx cspell ./**/**/**.sol --gitignore",
         "style-check": "npx prettier --check .",
         "postinstall": "patch-package --patch-dir .patches",
-        "prepare": "husky install"
+        "configure-husky": "npx husky install && npx husky add .husky/pre-commit \"npx --no-install lint-staged\""
     },
     "_moduleAliases": {
         "test": "./test"
@@ -24,6 +24,11 @@
         "**/**/*.sol": [
             "npx prettier --write"
         ]
+    },
+    "husky": {
+        "hooks": {
+            "pre-commit": "lint-staged"
+        }
     },
     "author": "",
     "license": "Apache-2.0",
