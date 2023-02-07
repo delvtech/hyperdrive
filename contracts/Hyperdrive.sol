@@ -382,8 +382,8 @@ contract Hyperdrive is MultiToken {
 
         // If there are outstanding long withdrawal shares, we attribute a
         // proportional amount of the proceeds to the withdrawal pool and the
-        // active LPs. Otherwise, we special case the accounting which gives
-        // identical results in a more gas efficient manner.
+        // active LPs. Otherwise, we use simplified accounting that has the same
+        // behavior but is more gas efficient.
         if (longWithdrawalSharesOutstanding > 0) {
             _applyCloseLong(
                 _bondAmount,
@@ -519,7 +519,10 @@ contract Hyperdrive is MultiToken {
 
         // Transfer the profit to the shorter. This includes the proceeds from
         // the short sale as well as the variable interest that was collected
-        // on the face value of the bonds.
+        // on the face value of the bonds. The math for the short's proceeds is
+        // given by:
+        //
+        // c * (dy / c_0 - dz)
         uint256 shortProceeds = sharePrice.mulDown(
             _bondAmount.divDown(_openSharePrice).sub(sharePayment)
         );
@@ -558,7 +561,10 @@ contract Hyperdrive is MultiToken {
         // Apply the LP proceeds from the trade proportionally to the long
         // withdrawal shares. The accounting for these proceeds is identical
         // to the close short accounting because LPs take the short position
-        // when longs are opened.
+        // when longs are opened. The math for the withdrawal proceeds is given
+        // by:
+        //
+        // c * (dy / c_0 - dz) * (min(b_x, dy) / dy)
         uint256 withdrawalAmount = longWithdrawalSharesOutstanding < _bondAmount
             ? longWithdrawalSharesOutstanding
             : _bondAmount;
@@ -570,7 +576,9 @@ contract Hyperdrive is MultiToken {
 
         // Apply the trading deltas to the reserves. These updates reflect
         // the fact that some of the reserves will be attributed to the
-        // withdrawal pool.
+        // withdrawal pool. The math for the share reserves update is given by:
+        //
+        // z -= dz + (dy / c_0 - dz) * (min(b_x, dy) / dy)
         shareReserves -= _shareProceeds.add(
             withdrawalProceeds.divDown(sharePrice)
         );
