@@ -129,6 +129,9 @@ library HyperdriveMath {
         if (_isBondOut && _timeRemaining < 1) {
             revert Errors.HyperdriveMath_BaseWithNonzeroTime();
         }
+
+        uint256 oneDivT = FixedPointMath.ONE_18.divDown(_timeStretch);
+
         if (_isBondOut) {
             // If bonds are being purchased, then the entire trade occurs on the
             // curved portion since t = 1.
@@ -138,7 +141,7 @@ library HyperdriveMath {
                 _bondReserveAdjustment,
                 _amountIn,
                 FixedPointMath.ONE_18,
-                _timeStretch,
+                oneDivT,
                 _sharePrice,
                 _initialSharePrice,
                 _isBondOut
@@ -164,7 +167,7 @@ library HyperdriveMath {
                 _bondReserveAdjustment,
                 curveIn,
                 FixedPointMath.ONE_18,
-                _timeStretch,
+                oneDivT,
                 _sharePrice,
                 _initialSharePrice,
                 _isBondOut
@@ -221,6 +224,7 @@ library HyperdriveMath {
             .mulDown(FixedPointMath.ONE_18.sub(_timeRemaining))
             .divDown(_sharePrice);
         uint256 curveOut = _amountOut.mulDown(_timeRemaining);
+        uint256 oneDivT = FixedPointMath.ONE_18.divDown(_timeStretch);
         uint256 curveIn = YieldSpaceMath.calculateInGivenOut(
             // Credit the share reserves by the flat trade.
             _shareReserves.add(flat.divDown(_sharePrice)),
@@ -229,7 +233,7 @@ library HyperdriveMath {
             _bondReserveAdjustment,
             curveOut,
             FixedPointMath.ONE_18,
-            _timeStretch,
+            oneDivT,
             _sharePrice,
             _initialSharePrice,
             false
