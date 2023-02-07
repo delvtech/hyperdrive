@@ -340,31 +340,32 @@ contract Hyperdrive is MultiToken {
     }
 
     /// @notice Closes a long position with a specified maturity time.
-    /// @param _assetId The asset ID of the long.
+    /// @param _openSharePrice The opening share price of the short.
+    /// @param _maturityTime The maturity time of the short.
     /// @param _bondAmount The amount of longs to close.
-    function closeLong(uint256 _assetId, uint256 _bondAmount) external {
+    function closeLong(
+        uint256 _openSharePrice,
+        uint32 _maturityTime,
+        uint256 _bondAmount
+    ) external {
         if (_bondAmount == 0) {
             revert Errors.ZeroAmount();
         }
 
-        // Ensure that the asset ID refers to a long and get the open share
-        // amount and maturity time from the asset ID.
-        (
-            AssetId.AssetIdPrefix prefix,
-            uint256 openSharePrice,
-            uint256 maturityTime
-        ) = AssetId.decodeAssetId(_assetId);
-        if (prefix != AssetId.AssetIdPrefix.Long) {
-            revert Errors.UnexpectedAssetId();
-        }
-
         // Burn the longs that are being closed.
-        _burn(_assetId, msg.sender, _bondAmount);
+        uint256 assetId = AssetId.encodeAssetId(
+            AssetId.AssetIdPrefix.Long,
+            _openSharePrice,
+            _maturityTime
+        );
+        _burn(assetId, msg.sender, _bondAmount);
         longsOutstanding -= _bondAmount;
 
         // Calculate the pool and user deltas using the trading function.
-        uint256 timeRemaining = block.timestamp < maturityTime
-            ? (maturityTime - block.timestamp).divDown(positionDuration) // use divDown to scale to fixed point
+        uint256 timeRemaining = block.timestamp < uint256(_maturityTime)
+            ? (uint256(_maturityTime) - block.timestamp).divDown(
+                positionDuration
+            ) // use divDown to scale to fixed point
             : 0;
         (, uint256 poolBondDelta, uint256 shareProceeds) = HyperdriveMath
             .calculateOutGivenIn(
@@ -388,7 +389,7 @@ contract Hyperdrive is MultiToken {
                 _bondAmount,
                 poolBondDelta,
                 shareProceeds,
-                openSharePrice
+                _openSharePrice
             );
         } else {
             // Apply the trading deltas to the reserves. Since the difference
@@ -520,7 +521,7 @@ contract Hyperdrive is MultiToken {
         // the short sale as well as the variable interest that was collected
         // on the face value of the bonds.
         uint256 shortProceeds = sharePrice.mulDown(
-            _bondAmount.divDown(openSharePrice).sub(sharePayment)
+            _bondAmount.divDown(_openSharePrice).sub(sharePayment)
         );
         bool success = baseToken.transfer(msg.sender, shortProceeds);
         if (!success) {
