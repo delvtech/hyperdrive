@@ -34,6 +34,10 @@ library HyperdriveMath {
         uint256 _positionDuration,
         uint256 _timeStretch
     ) internal pure returns (uint256 apr) {
+
+        // NOTE: The calculation here is automatically scaled in the divDown
+        // operation and presumes _positionDuration input as described in the
+        // Hyperdrive constructor.
         uint256 t = _positionDuration.divDown(365 days);
         uint256 tau = t.divDown(_timeStretch);
         // ((y + s) / (mu * z)) ** -tau
@@ -67,6 +71,10 @@ library HyperdriveMath {
         uint256 _positionDuration,
         uint256 _timeStretch
     ) internal pure returns (uint256 bondReserves) {
+
+        // NOTE: The calculation here is automatically scaled in the divDown
+        // operation and presumes _positionDuration input as described in the
+        // Hyperdrive constructor.
         uint256 t = _positionDuration.divDown(365 days);
         uint256 tau = t.divDown(_timeStretch);
         // (1 + apr * t) ** (1 / tau)
