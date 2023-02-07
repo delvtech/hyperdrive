@@ -1,37 +1,23 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.13;
 
-import { ERC20PresetFixedSupply } from "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
-import { Test } from "forge-std/Test.sol";
-import { ForwarderFactory } from "contracts/ForwarderFactory.sol";
-import { Hyperdrive } from "contracts/Hyperdrive.sol";
+import "forge-std/console.sol";
 
-contract HyperdriveTest is Test {
-    address alice = address(uint160(uint256(keccak256("alice"))));
+import { HyperdriveTest } from "./Test.sol";
 
-    ERC20PresetFixedSupply baseToken;
-    Hyperdrive hyperdrive;
+contract HyperdriveScenarioTest is HyperdriveTest {
+    function setUp() public override {
+        super.setUp();
+    }
 
-    function setUp() public {
-        vm.prank(alice);
+    function test_initialize() public {
+        show();
+        vm.startPrank(alice);
 
-        // Instantiate the tokens.
-        bytes32 linkerCodeHash = bytes32(0);
-        ForwarderFactory forwarderFactory = new ForwarderFactory();
-        baseToken = new ERC20PresetFixedSupply(
-            "DAI Stablecoin",
-            "DAI",
-            10.0e18,
-            alice
-        );
+        hyperdrive.initialize(1000e18, 0.05e18);
+        vm.stopPrank();
+        show();
 
-        // Instantiate Hyperdrive.
-        hyperdrive = new Hyperdrive(
-            linkerCodeHash,
-            address(forwarderFactory),
-            baseToken,
-            365 days,
-            22.186877016851916266e18
-        );
+
     }
 }
