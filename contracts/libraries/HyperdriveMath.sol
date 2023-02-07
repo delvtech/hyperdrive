@@ -34,7 +34,7 @@ library HyperdriveMath {
         uint256 _positionDuration,
         uint256 _timeStretch
     ) internal pure returns (uint256 apr) {
-        uint256 t = _positionDuration.divDown(365 days * FixedPointMath.ONE_18);
+        uint256 t = _positionDuration.divDown(365 days);
         uint256 tau = t.divDown(_timeStretch);
         // ((y + s) / (mu * z)) ** -tau
         uint256 spotPrice = _initialSharePrice
