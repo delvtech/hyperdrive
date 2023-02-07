@@ -67,7 +67,7 @@ library HyperdriveMath {
         uint256 _positionDuration,
         uint256 _timeStretch
     ) internal pure returns (uint256 bondReserves) {
-        uint256 t = _positionDuration.divDown(365 days * FixedPointMath.ONE_18);
+        uint256 t = _positionDuration.divDown(365 days);
         uint256 tau = t.divDown(_timeStretch);
         // (1 + apr * t) ** (1 / tau)
         uint256 interestFactor = FixedPointMath.ONE_18.add(_apr.mulDown(t)).pow(
