@@ -130,6 +130,7 @@ library HyperdriveMath {
             revert Errors.HyperdriveMath_BaseWithNonzeroTime();
         }
 
+        // 1/timestretch necessary for YieldSpaceMath
         uint256 oneDivT = FixedPointMath.ONE_18.divDown(_timeStretch);
 
         if (_isBondOut) {
@@ -224,6 +225,7 @@ library HyperdriveMath {
             .mulDown(FixedPointMath.ONE_18.sub(_timeRemaining))
             .divDown(_sharePrice);
         uint256 curveOut = _amountOut.mulDown(_timeRemaining);
+        // 1/timestretch necessary for YieldSpaceMath
         uint256 oneDivT = FixedPointMath.ONE_18.divDown(_timeStretch);
         uint256 curveIn = YieldSpaceMath.calculateInGivenOut(
             // Credit the share reserves by the flat trade.
