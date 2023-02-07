@@ -303,7 +303,7 @@ contract Hyperdrive is MultiToken {
 
         // Calculate the pool and user deltas using the trading function.
         uint256 timeRemaining = block.timestamp < maturityTime
-            ? (maturityTime - block.timestamp) * FixedPointMath.ONE_18
+            ? (maturityTime - block.timestamp).divDown(positionDuration) // use divDown to scale to fixed point
             : 0;
         (
             uint256 poolShareDelta,
@@ -423,7 +423,7 @@ contract Hyperdrive is MultiToken {
 
         // Calculate the pool and user deltas using the trading function.
         uint256 timeRemaining = block.timestamp < maturityTime
-            ? (maturityTime - block.timestamp) * FixedPointMath.ONE_18
+            ? (maturityTime - block.timestamp).divDown(positionDuration) // use divDown to scale to fixed point
             : 0;
         (
             uint256 poolShareDelta,
