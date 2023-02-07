@@ -512,10 +512,10 @@ contract Hyperdrive is MultiToken {
 
         // If there are outstanding short withdrawal shares, we attribute a
         // proportional amount of the proceeds to the withdrawal pool and the
-        // active LPs. Otherwise, we special case the accounting which gives
-        // identical results in a more gas efficient manner. Since the share
-        // reserves increase or stay the same, there is no need to check that
-        // the share reserves are greater than or equal to the base buffer.
+        // active LPs. Otherwise, we use simplified accounting that has the same
+        // behavior but is more gas efficient. Since the share reserves increase
+        // or stay the same, there is no need to check that the share reserves
+        // are greater than or equal to the base buffer.
         if (shortWithdrawalSharesOutstanding > 0) {
             _applyCloseShort(_bondAmount, poolBondDelta, sharePayment);
         } else {
@@ -624,7 +624,10 @@ contract Hyperdrive is MultiToken {
         // Apply the LP proceeds from the trade proportionally to the short
         // withdrawal pool. The accounting for these proceeds is identical
         // to the close long accounting because LPs take on a long position when
-        // shorts are opened.
+        // shorts are opened. The math for the withdrawal proceeds is given
+        // by:
+        //
+        // c * dz * (min(b_y, dy) / dy)
         uint256 withdrawalAmount = shortWithdrawalSharesOutstanding <
             _bondAmount
             ? shortWithdrawalSharesOutstanding
@@ -637,7 +640,9 @@ contract Hyperdrive is MultiToken {
 
         // Apply the trading deltas to the reserves. These updates reflect
         // the fact that some of the reserves will be attributed to the
-        // withdrawal pool.
+        // withdrawal pool. The math for the share reserves update is given by:
+        //
+        // z += dz - dz * (min(b_y, dy) / dy)
         shareReserves += _sharePayment.sub(
             withdrawalProceeds.divDown(sharePrice)
         );
