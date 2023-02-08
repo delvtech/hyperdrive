@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.15;
 
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -323,7 +323,7 @@ contract Hyperdrive is MultiToken {
         // Since the base buffer may have increased relative to the base
         // reserves and the bond reserves decreased, we must ensure that the
         // base reserves are greater than the longsOutstanding.
-        if (sharePrice * shareReserves >= longsOutstanding) {
+        if (sharePrice.mulDown(shareReserves) < longsOutstanding) {
             revert Errors.BaseBufferExceedsShareReserves();
         }
 
@@ -450,7 +450,7 @@ contract Hyperdrive is MultiToken {
 
         // Since the share reserves are reduced, we need to verify that the base
         // reserves are greater than or equal to the amount of longs outstanding.
-        if (sharePrice * shareReserves >= longsOutstanding) {
+        if (sharePrice.mulDown(shareReserves) < longsOutstanding) {
             revert Errors.BaseBufferExceedsShareReserves();
         }
 

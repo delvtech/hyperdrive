@@ -12,6 +12,7 @@ build and test the smart contracts and uses several node.js packages to lint and
 prettify the source code. Proceed through the following steps to set up the repository:
 - [Install forge](https://github.com/foundry-rs/foundry#installatio://github.com/foundry-rs/foundry#installation)
 - [Install yarn](https://yarnpkg.com/getting-started/install)
+- Install lib/forge-std dependencies by running `forge install` from the project root
 - Install node.js dependencies by running `yarn` from the project root
 
 ## Build
