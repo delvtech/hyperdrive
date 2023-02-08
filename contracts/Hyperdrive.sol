@@ -280,7 +280,7 @@ contract Hyperdrive is MultiToken {
         // Since the base buffer may have increased relative to the base
         // reserves and the bond reserves decreased, we must ensure that the
         // base reserves are greater than the longsOutstanding.
-        if (sharePrice.mulDown(shareReserves) >= longsOutstanding) {
+        if (sharePrice.mulDown(shareReserves) < longsOutstanding) {
             revert Errors.BaseBufferExceedsShareReserves();
         }
 
@@ -381,7 +381,7 @@ contract Hyperdrive is MultiToken {
 
         // Since the share reserves are reduced, we need to verify that the base
         // reserves are greater than or equal to the amount of longs outstanding.
-        if (sharePrice.mulDown(shareReserves) >= longsOutstanding) {
+        if (sharePrice.mulDown(shareReserves) < longsOutstanding) {
             revert Errors.BaseBufferExceedsShareReserves();
         }
 
