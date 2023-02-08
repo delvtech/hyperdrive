@@ -46,9 +46,34 @@ library AssetId {
         assembly {
             id := or(
                 or(shl(0xf8, _prefix), shl(0x20, _data)),
-                mod(_timestamp, 0x20)
+                // ensure max timestamp is 0xffffffff
+                // valid until Sun Feb 07 2106 06:28:15
+                mod(_timestamp, shl(0x21, 1))
             )
         }
         return id;
+    }
+
+    /// @dev Decodes an encoded asset ID into it's constituent parts of an
+    ///      identifier, data and a timestamp.
+    /// @param _id The asset ID.
+    /// @return _prefix A one byte prefix that specifies the asset type.
+    /// @return _data Data associated with the asset. This is an efficient way of
+    ///          fingerprinting data as the user can supply this data, and the
+    ///          token balance ensures that the data is associated with the asset.
+    /// @return _timestamp A timestamp associated with the asset.
+    function decodeAssetId(
+        uint256 _id
+    )
+        internal
+        view
+        returns (AssetIdPrefix _prefix, uint256 _data, uint256 _timestamp)
+    {
+        // [identifier: 8 bits][data: 216 bits][timestamp: 32 bits]
+        assembly {
+            _prefix := shr(0xf8, _id) // shr 248 bits
+            _data := shr(0x28, shl(0x8, _id)) // shl 8 bits, shr 40 bits
+            _timestamp := and(0xffffffff, _id) // 32 bit-mask
+        }
     }
 }
