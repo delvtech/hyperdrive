@@ -19,7 +19,9 @@ library AssetId {
     // range.
     enum AssetIdPrefix {
         Long,
-        Short
+        Short,
+        LongWithdrawalShare,
+        ShortWithdrawalShare
     }
 
     /// @dev Encodes an identifier, data, and a timestamp into an asset ID.

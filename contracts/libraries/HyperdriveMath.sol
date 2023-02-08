@@ -256,7 +256,7 @@ library HyperdriveMath {
         uint256 _shortsOutstanding,
         uint256 _sharePrice
     ) internal pure returns (uint256) {
-        // (d_z * l) / (z + b_y / c - b_x / c)
+        // (dz * l) / (z + b_y / c - b_x / c)
         return
             _shares.mulDown(_lpTotalSupply).divDown(
                 _shareReserves.add(_shortsOutstanding.divDown(_sharePrice)).sub(
@@ -265,28 +265,45 @@ library HyperdriveMath {
             );
     }
 
-    // TODO: Use a withdrawal scheme that gives LPs exposure to the open trades
-    //       that they facilitated.
-    //
     /// @dev Calculates the amount of base shares released from burning a
     ///      a specified amount of LP shares from the pool.
     /// @param _shares The amount of LP shares burned from the pool.
     /// @param _shareReserves The pool's share reserves.
     /// @param _lpTotalSupply The pool's total supply of LP shares.
     /// @param _longsOutstanding The amount of long positions outstanding.
+    /// @param _shortsOutstanding The amount of short positions outstanding.
     /// @param _sharePrice The pool's share price.
-    /// @return The amount of base shares released.
-    function calculateSharesOutForLpSharesIn(
+    /// @return shares The amount of base shares released.
+    /// @return longWithdrawalShares The amount of long withdrawal shares
+    ///         received.
+    /// @return shortWithdrawalShares The amount of short withdrawal shares
+    ///         received.
+    function calculateOutForLpSharesIn(
         uint256 _shares,
         uint256 _shareReserves,
         uint256 _lpTotalSupply,
         uint256 _longsOutstanding,
+        uint256 _shortsOutstanding,
         uint256 _sharePrice
-    ) internal pure returns (uint256) {
-        // (z - b_x / c) * (d_l / l)
-        return
-            _shareReserves.sub(_longsOutstanding.divDown(_sharePrice)).mulDown(
-                _shares.divDown(_lpTotalSupply)
-            );
+    )
+        internal
+        pure
+        returns (
+            uint256 shares,
+            uint256 longWithdrawalShares,
+            uint256 shortWithdrawalShares
+        )
+    {
+        // dl / l
+        uint256 poolFactor = _shares.divDown(_lpTotalSupply);
+        // (z - b_x / c) * (dl / l)
+        shares = _shareReserves
+            .sub(_longsOutstanding.divDown(_sharePrice))
+            .mulDown(poolFactor);
+        // longsOutstanding * (dl / l)
+        longWithdrawalShares = _longsOutstanding.mulDown(poolFactor);
+        // shortsOutstanding * (dl / l)
+        shortWithdrawalShares = _shortsOutstanding.mulDown(poolFactor);
+        return (shares, longWithdrawalShares, shortWithdrawalShares);
     }
 }
