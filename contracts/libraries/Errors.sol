@@ -36,11 +36,6 @@ library Errors {
     error FixedPointMath_NegativeOrZeroInput();
     error FixedPointMath_NegativeInput();
 
-    /// ######################
-    /// ### HyperdriveMath ###
-    /// ######################
-    error HyperdriveMath_BaseWithNonzeroTime();
-
     /// ###############
     /// ### AssetId ###
     /// ###############

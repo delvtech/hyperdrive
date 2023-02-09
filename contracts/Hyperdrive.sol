@@ -499,7 +499,7 @@ contract Hyperdrive is MultiToken {
             uint256 poolShareDelta,
             uint256 poolBondDelta,
             uint256 sharePayment
-        ) = HyperdriveMath.calculateBaseInGivenBondsOut(
+        ) = HyperdriveMath.calculateSharesInGivenBondsOut(
                 shareReserves,
                 bondReserves,
                 totalSupply[AssetId._LP_ASSET_ID],
