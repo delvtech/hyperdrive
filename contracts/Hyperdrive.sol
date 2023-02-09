@@ -57,6 +57,18 @@ contract Hyperdrive is MultiToken {
     // @notice The amount of shorts that are still open.
     uint256 public shortsOutstanding;
 
+    // @notice The amount of long withdrawal shares that haven't been paid out.
+    uint256 public longWithdrawalSharesOutstanding;
+
+    // @notice The amount of short withdrawal shares that haven't been paid out.
+    uint256 public shortWithdrawalSharesOutstanding;
+
+    // @notice The proceeds that have accrued to the long withdrawal shares.
+    uint256 public longWithdrawalShareProceeds;
+
+    // @notice The proceeds that have accrued to the short withdrawal shares.
+    uint256 public shortWithdrawalShareProceeds;
+
     /// @notice Initializes a Hyperdrive pool.
     /// @param _linkerCodeHash The hash of the ERC20 linker contract's
     ///        constructor code.
@@ -204,14 +216,21 @@ contract Hyperdrive is MultiToken {
             timeStretch
         );
 
-        // Calculate the amount of base that should be withdrawn.
-        uint256 shareProceeds = HyperdriveMath.calculateSharesOutForLpSharesIn(
-            _shares,
-            shareReserves,
-            totalSupply[AssetId._LP_ASSET_ID],
-            longsOutstanding,
-            _pricePerShare()
-        );
+        // Calculate the withdrawal proceeds of the LP. This includes the base,
+        // long withdrawal shares, and short withdrawal shares that the LP
+        // receives.
+        (
+            uint256 shareProceeds,
+            uint256 longWithdrawalShares,
+            uint256 shortWithdrawalShares
+        ) = HyperdriveMath.calculateOutForLpSharesIn(
+                _shares,
+                shareReserves,
+                totalSupply[AssetId._LP_ASSET_ID],
+                longsOutstanding,
+                shortsOutstanding,
+                pricePerShare()
+            );
 
         // Burn the LP shares.
         _burn(AssetId._LP_ASSET_ID, msg.sender, _shares);
@@ -226,6 +245,30 @@ contract Hyperdrive is MultiToken {
             positionDuration,
             timeStretch
         );
+
+        // TODO: Update this when we implement tranches.
+        //
+        // Mint the long and short withdrawal tokens.
+        _mint(
+            AssetId.encodeAssetId(
+                AssetId.AssetIdPrefix.LongWithdrawalShare,
+                0,
+                0
+            ),
+            msg.sender,
+            longWithdrawalShares
+        );
+        longWithdrawalSharesOutstanding += longWithdrawalShares;
+        _mint(
+            AssetId.encodeAssetId(
+                AssetId.AssetIdPrefix.ShortWithdrawalShare,
+                0,
+                0
+            ),
+            msg.sender,
+            shortWithdrawalShares
+        );
+        shortWithdrawalSharesOutstanding += shortWithdrawalShares;
 
         // Withdraw the shares from the 
         // TODO - Good destination support.
@@ -286,34 +329,50 @@ contract Hyperdrive is MultiToken {
         }
 
         // Mint the bonds to the trader with an ID of the maturity time.
-        _mint(block.timestamp + positionDuration, msg.sender, bondProceeds);
+        _mint(
+            AssetId.encodeAssetId(
+                AssetId.AssetIdPrefix.Long,
+                sharePrice,
+                block.timestamp + positionDuration
+            ),
+            msg.sender,
+            bondProceeds
+        );
     }
 
     /// @notice Closes a long position with a specified maturity time.
-    /// @param _maturityTime The maturity time of the longs to close.
+    /// @param _openSharePrice The opening share price of the short.
+    /// @param _maturityTime The maturity time of the short.
     /// @param _bondAmount The amount of longs to close.
-    function closeLong(uint32 _maturityTime, uint256 _bondAmount) external {
+    function closeLong(
+        uint256 _openSharePrice,
+        uint32 _maturityTime,
+        uint256 _bondAmount
+    ) external {
         if (_bondAmount == 0) {
             revert Errors.ZeroAmount();
         }
 
         // Burn the longs that are being closed.
-        uint256 maturityTime = uint32(_maturityTime);
-        _burn(maturityTime, msg.sender, _bondAmount);
+        uint256 assetId = AssetId.encodeAssetId(
+            AssetId.AssetIdPrefix.Long,
+            _openSharePrice,
+            _maturityTime
+        );
+        _burn(assetId, msg.sender, _bondAmount);
         longsOutstanding -= _bondAmount;
 
         // Load the price per share
         uint256 sharePrice = _pricePerShare();
 
         // Calculate the pool and user deltas using the trading function.
-        uint256 timeRemaining = block.timestamp < maturityTime
-            ? (maturityTime - block.timestamp).divDown(positionDuration) // use divDown to scale to fixed point
+        uint256 timeRemaining = block.timestamp < uint256(_maturityTime)
+            ? (uint256(_maturityTime) - block.timestamp).divDown(
+                positionDuration
+            ) // use divDown to scale to fixed point
             : 0;
-        (
-            uint256 poolShareDelta,
-            uint256 poolBondDelta,
-            uint256 shareProceeds
-        ) = HyperdriveMath.calculateOutGivenIn(
+        (, uint256 poolBondDelta, uint256 shareProceeds) = HyperdriveMath
+            .calculateOutGivenIn(
                 shareReserves,
                 bondReserves,
                 totalSupply[AssetId._LP_ASSET_ID],
@@ -325,17 +384,32 @@ contract Hyperdrive is MultiToken {
                 false
             );
 
-        // Apply the trading deltas to the reserves and decrease the base buffer
-        // by the amount of bonds sold. Since the difference between the base
-        // reserves and the longs outstanding stays the same or gets larger and
-        // the difference between the bond reserves and the bond buffer increases,
-        // we don't need to check that the reserves are larger than the buffers.
-        shareReserves -= poolShareDelta;
-        bondReserves += poolBondDelta;
+        // If there are outstanding long withdrawal shares, we attribute a
+        // proportional amount of the proceeds to the withdrawal pool and the
+        // active LPs. Otherwise, we use simplified accounting that has the same
+        // behavior but is more gas efficient. Since the difference between the
+        // base reserves and the longs outstanding stays the same or gets
+        // larger, we don't need to verify the reserves invariants.
+        if (longWithdrawalSharesOutstanding > 0) {
+            _applyCloseLong(
+                _bondAmount,
+                poolBondDelta,
+                shareProceeds,
+                _openSharePrice
+            );
+        } else {
+            shareReserves -= shareProceeds;
+            bondReserves += poolBondDelta;
+        }
 
-        // Withdraw from the yield source for the user
-        // TODO - Good destination support
-        withdraw(shareProceeds, msg.sender);
+        // Transfer the base returned to the trader.
+        bool success = baseToken.transfer(
+            msg.sender,
+            shareProceeds.mulDown(sharePrice)
+        );
+        if (!success) {
+            revert Errors.TransferFailed();
+        }
     }
 
     /// Short ///
@@ -430,7 +504,7 @@ contract Hyperdrive is MultiToken {
             uint256 poolShareDelta,
             uint256 poolBondDelta,
             uint256 sharePayment
-        ) = HyperdriveMath.calculateBaseInGivenBondsOut(
+        ) = HyperdriveMath.calculateSharesInGivenBondsOut(
                 shareReserves,
                 bondReserves,
                 totalSupply[AssetId._LP_ASSET_ID],
@@ -441,24 +515,150 @@ contract Hyperdrive is MultiToken {
                 initialSharePrice
             );
 
-        // Apply the trading deltas to the reserves. Since the share reserves
-        // increase or stay the same, there is no need to check that the share
-        // reserves are greater than or equal to the base buffer.
-        shareReserves += poolShareDelta;
-        bondReserves -= poolBondDelta;
+        // If there are outstanding short withdrawal shares, we attribute a
+        // proportional amount of the proceeds to the withdrawal pool and the
+        // active LPs. Otherwise, we use simplified accounting that has the same
+        // behavior but is more gas efficient. Since the share reserves increase
+        // or stay the same, there is no need to check that the share reserves
+        // are greater than or equal to the base buffer.
+        if (shortWithdrawalSharesOutstanding > 0) {
+            _applyCloseShort(_bondAmount, poolBondDelta, sharePayment);
+        } else {
+            shareReserves += poolShareDelta;
+            bondReserves -= poolBondDelta;
+        }
 
         // Convert the bonds to current shares
         uint256 _bondsInShares = _bondAmount.divDown(sharePrice); 
         // Transfer the profit to the shorter. This includes the proceeds from
         // the short sale as well as the variable interest that was collected
-        // on the face value of the bonds.
-        uint256 tradingProceeds = _bondsInShares.sub(sharePayment);
-        uint256 interestProceeds = sharePrice
-            .divDown(_openSharePrice)
-            .sub(FixedPointMath.ONE_18)
-            .mulDown(_bondsInShares);
+        // on the face value of the bonds. The math for the short's proceeds is
+        // given by:
+        //
+        // c * (dy / c_0 - dz)
+        uint256 shortProceeds = (_bondsInShares.mulDown(
+            sharePrice.divDown(_openSharePrice)).sub(sharePayment)
+        );
         // Withdraw from the reserves
         // TODO - Better destination support
-        withdraw(tradingProceeds + interestProceeds, msg.sender);
+        withdraw(shortProceeds, msg.sender);
+    }
+
+    /// Helpers ///
+
+    /// @dev Applies the trading deltas from a closed long to the reserves and
+    ///      the withdrawal pool.
+    /// @param _bondAmount The amount of longs that were closed.
+    /// @param _poolBondDelta The amount of bonds that the pool would be
+    ///        decreased by if we didn't need to account for the withdrawal
+    ///        pool.
+    /// @param _shareProceeds The proceeds in shares received from closing the
+    ///        long.
+    /// @param _openSharePrice The share price at the time the long was opened.
+    function _applyCloseLong(
+        uint256 _bondAmount,
+        uint256 _poolBondDelta,
+        uint256 _shareProceeds,
+        uint256 _openSharePrice
+    ) internal {
+        // Calculate the effect that the trade has on the pool's APR.
+        uint256 apr = HyperdriveMath.calculateAPRFromReserves(
+            shareReserves.sub(_shareProceeds),
+            bondReserves.add(_poolBondDelta),
+            totalSupply[AssetId._LP_ASSET_ID],
+            initialSharePrice,
+            positionDuration,
+            timeStretch
+        );
+
+        // Apply the LP proceeds from the trade proportionally to the long
+        // withdrawal shares. The accounting for these proceeds is identical
+        // to the close short accounting because LPs take the short position
+        // when longs are opened. The math for the withdrawal proceeds is given
+        // by:
+        //
+        // c * (dy / c_0 - dz) * (min(b_x, dy) / dy)
+        uint256 withdrawalAmount = longWithdrawalSharesOutstanding < _bondAmount
+            ? longWithdrawalSharesOutstanding
+            : _bondAmount;
+        uint256 withdrawalProceeds = sharePrice
+            .mulDown(_bondAmount.divDown(_openSharePrice).sub(_shareProceeds))
+            .mulDown(withdrawalAmount.divDown(_bondAmount));
+        longWithdrawalSharesOutstanding -= withdrawalAmount;
+        longWithdrawalShareProceeds += withdrawalProceeds;
+
+        // Apply the trading deltas to the reserves. These updates reflect
+        // the fact that some of the reserves will be attributed to the
+        // withdrawal pool. The math for the share reserves update is given by:
+        //
+        // z -= dz + (dy / c_0 - dz) * (min(b_x, dy) / dy)
+        shareReserves -= _shareProceeds.add(
+            withdrawalProceeds.divDown(sharePrice)
+        );
+        bondReserves = HyperdriveMath.calculateBondReserves(
+            shareReserves,
+            totalSupply[AssetId._LP_ASSET_ID],
+            initialSharePrice,
+            apr,
+            positionDuration,
+            timeStretch
+        );
+    }
+
+    /// @dev Applies the trading deltas from a closed short to the reserves and
+    ///      the withdrawal pool.
+    /// @param _bondAmount The amount of shorts that were closed.
+    /// @param _poolBondDelta The amount of bonds that the pool would be
+    ///        decreased by if we didn't need to account for the withdrawal
+    ///        pool.
+    /// @param _sharePayment The payment in shares required to close the short.
+    function _applyCloseShort(
+        uint256 _bondAmount,
+        uint256 _poolBondDelta,
+        uint256 _sharePayment
+    ) internal {
+        // Calculate the effect that the trade has on the pool's APR.
+        uint256 apr = HyperdriveMath.calculateAPRFromReserves(
+            shareReserves.add(_sharePayment),
+            bondReserves.sub(_poolBondDelta),
+            totalSupply[AssetId._LP_ASSET_ID],
+            initialSharePrice,
+            positionDuration,
+            timeStretch
+        );
+
+        // Apply the LP proceeds from the trade proportionally to the short
+        // withdrawal pool. The accounting for these proceeds is identical
+        // to the close long accounting because LPs take on a long position when
+        // shorts are opened. The math for the withdrawal proceeds is given
+        // by:
+        //
+        // c * dz * (min(b_y, dy) / dy)
+        uint256 withdrawalAmount = shortWithdrawalSharesOutstanding <
+            _bondAmount
+            ? shortWithdrawalSharesOutstanding
+            : _bondAmount;
+        uint256 withdrawalProceeds = sharePrice.mulDown(_sharePayment).mulDown(
+            withdrawalAmount.divDown(_bondAmount)
+        );
+        shortWithdrawalSharesOutstanding -= withdrawalAmount;
+        shortWithdrawalShareProceeds += withdrawalProceeds;
+
+        // Apply the trading deltas to the reserves. These updates reflect
+        // the fact that some of the reserves will be attributed to the
+        // withdrawal pool. The math for the share reserves update is given by:
+        //
+        // z += dz - dz * (min(b_y, dy) / dy)
+        shareReserves += _sharePayment.sub(
+            withdrawalProceeds.divDown(sharePrice)
+        );
+        bondReserves = HyperdriveMath.calculateBondReserves(
+            shareReserves,
+            totalSupply[AssetId._LP_ASSET_ID],
+            initialSharePrice,
+            apr,
+            positionDuration,
+            timeStretch
+        );
     }
 }

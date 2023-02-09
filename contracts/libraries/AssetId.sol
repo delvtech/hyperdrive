@@ -19,7 +19,9 @@ library AssetId {
     // range.
     enum AssetIdPrefix {
         Long,
-        Short
+        Short,
+        LongWithdrawalShare,
+        ShortWithdrawalShare
     }
 
     /// @dev Encodes an identifier, data, and a timestamp into an asset ID.
@@ -66,7 +68,7 @@ library AssetId {
         uint256 _id
     )
         internal
-        view
+        pure
         returns (AssetIdPrefix _prefix, uint256 _data, uint256 _timestamp)
     {
         // [identifier: 8 bits][data: 216 bits][timestamp: 32 bits]
