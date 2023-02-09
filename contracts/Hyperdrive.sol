@@ -145,7 +145,7 @@ contract Hyperdrive is MultiToken {
         // Mint LP shares to the initializer.
         // TODO - Should we index the lp share and virtual reserve to shares or to underlying?
         //        I think in the case where price per share < 1 there may be a problem.
-        _mint(0, msg.sender, shares);
+        _mint(AssetId._LP_ASSET_ID, msg.sender, shares);
     }
 
     // TODO: Add slippage protection.
@@ -171,7 +171,7 @@ contract Hyperdrive is MultiToken {
             timeStretch
         );
 
-        // Compute the number of LP shares to mint for this many shares added
+        // Calculate the amount of LP shares that the supplier should receive.
         uint256 lpShares = HyperdriveMath.calculateLpSharesOutForSharesIn(
             shares,
             shareReserves,
@@ -270,7 +270,7 @@ contract Hyperdrive is MultiToken {
         );
         shortWithdrawalSharesOutstanding += shortWithdrawalShares;
 
-        // Withdraw the shares from the 
+        // Withdraw the shares from the yield source
         // TODO - Good destination support.
         withdraw(shareProceeds, msg.sender);
     }
@@ -556,7 +556,7 @@ contract Hyperdrive is MultiToken {
     /// @param _shareProceeds The proceeds in shares received from closing the
     ///        long.
     /// @param _openSharePrice The share price at the time the long was opened.
-    /// @param _sharePrice The the share price now
+    /// @param _sharePrice The current share price
     function _applyCloseLong(
         uint256 _bondAmount,
         uint256 _poolBondDelta,
@@ -615,7 +615,7 @@ contract Hyperdrive is MultiToken {
     ///        decreased by if we didn't need to account for the withdrawal
     ///        pool.
     /// @param _sharePayment The payment in shares required to close the short.
-    /// @param _sharePrice The the share price now
+    /// @param _sharePrice The current share price
     function _applyCloseShort(
         uint256 _bondAmount,
         uint256 _poolBondDelta,
