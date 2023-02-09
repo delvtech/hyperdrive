@@ -15,6 +15,10 @@ import { MultiToken } from "contracts/MultiToken.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
+
+// TODO - Here we give default implementations of the virtual methods to not break tests
+//        we should move to an abstract contract to prevent this from being deployed w/o
+//        real implementations.
 contract Hyperdrive is MultiToken {
     using FixedPointMath for uint256;
 
@@ -35,9 +39,6 @@ contract Hyperdrive is MultiToken {
 
     // @dev The share price at the time the pool was created.
     uint256 public immutable initialSharePrice;
-
-    // @dev The current share price.
-    uint256 public sharePrice;
 
     // @dev The share reserves. The share reserves multiplied by the share price
     //      give the base reserves, so shares are a mechanism of ensuring that
@@ -74,7 +75,7 @@ contract Hyperdrive is MultiToken {
     /// @param _linkerFactory The factory which is used to deploy the ERC20
     ///        linker contracts.
     /// @param _baseToken The base token contract.
-    /// @param _positionDuration The time in seconds that elaspes before bonds
+    /// @param _positionDuration The time in seconds that elapses before bonds
     ///        can be redeemed one-to-one for base.
     /// @param _timeStretch The time stretch of the pool.
     constructor(
@@ -82,7 +83,8 @@ contract Hyperdrive is MultiToken {
         address _linkerFactory,
         IERC20 _baseToken,
         uint256 _positionDuration,
-        uint256 _timeStretch
+        uint256 _timeStretch,
+        uint256 _initialPricePerShare
     ) MultiToken(_linkerCodeHash, _linkerFactory) {
         // Initialize the base token address.
         baseToken = _baseToken;
@@ -91,11 +93,41 @@ contract Hyperdrive is MultiToken {
         positionDuration = _positionDuration;
         timeStretch = _timeStretch;
 
-        // TODO: This isn't correct. This will need to be updated when asset
-        // delgation is implemented.
-        initialSharePrice = FixedPointMath.ONE_18;
-        sharePrice = FixedPointMath.ONE_18;
+        initialSharePrice = _initialPricePerShare;
     }
+
+    /// Yield Source ///
+    // In order to deploy a yield source implement must be written which implements the following methods
+
+    ///@notice Transfers amount of 'token' from the user and commits it to the yield source.
+    ///@param amount The amount of token to transfer
+    ///@return sharesMinted The shares this deposit creates
+    ///@return pricePerShare The price per share at time of deposit
+    function deposit(
+        uint256 amount
+    ) internal virtual returns (uint256 sharesMinted, uint256 pricePerShare) {}
+
+    ///@notice Withdraws shares from the yield source and sends the resulting tokens to the destination
+    ///@param shares The shares to withdraw from the yieldsource
+    ///@param destination The address which is where to send the resulting tokens
+    ///@return amountWithdrawn the amount of 'token' produced by this withdraw
+    ///@return pricePerShare The price per share on withdraw.
+    function withdraw(
+        uint256 shares,
+        address destination
+    )
+        internal
+        virtual
+        returns (uint256 amountWithdrawn, uint256 pricePerShare)
+    {}
+
+    ///@notice Loads the price per share from the yield source
+    ///@return pricePerShare The current price per share
+    function _pricePerShare()
+        internal
+        virtual
+        returns (uint256 pricePerShare)
+    {}
 
     /// LP ///
 
@@ -108,32 +140,25 @@ contract Hyperdrive is MultiToken {
             revert Errors.PoolAlreadyInitialized();
         }
 
-        // Take custody of the base being supplied.
-        bool success = baseToken.transferFrom(
-            msg.sender,
-            address(this),
-            _contribution
-        );
-        if (!success) {
-            revert Errors.TransferFailed();
-        }
+        // Deposit for the user, this transfers from them.
+        (uint256 shares, uint256 pricePerShare) = deposit(_contribution);
 
-        // Calculate the amount of LP shares the initializer receives.
-        uint256 lpShares = shareReserves;
-
-        // Update the reserves.
-        shareReserves = _contribution.divDown(sharePrice);
+        // Set the state variables.
+        shareReserves = shares;
+        // We calculate the implied bond reserve from the share price
         bondReserves = HyperdriveMath.calculateBondReserves(
-            shareReserves,
-            lpShares,
-            initialSharePrice,
+            shares,
+            shares,
+            pricePerShare,
             _apr,
             positionDuration,
             timeStretch
         );
 
         // Mint LP shares to the initializer.
-        _mint(0, msg.sender, lpShares);
+        // TODO - Should we index the lp share and virtual reserve to shares or to underlying?
+        //        I think in the case where price per share < 1 there may be a problem.
+        _mint(AssetId._LP_ASSET_ID, msg.sender, shares);
     }
 
     // TODO: Add slippage protection.
@@ -145,15 +170,8 @@ contract Hyperdrive is MultiToken {
             revert Errors.ZeroAmount();
         }
 
-        // Take custody of the base being supplied.
-        bool success = baseToken.transferFrom(
-            msg.sender,
-            address(this),
-            _contribution
-        );
-        if (!success) {
-            revert Errors.TransferFailed();
-        }
+        // Deposit for the user, this call also transfers from them
+        (uint256 shares, uint256 pricePerShare) = deposit(_contribution);
 
         // Calculate the pool's APR prior to updating the share reserves so that
         // we can compute the bond reserves update.
@@ -167,14 +185,13 @@ contract Hyperdrive is MultiToken {
         );
 
         // Calculate the amount of LP shares that the supplier should receive.
-        uint256 shares = _contribution.divDown(sharePrice);
         uint256 lpShares = HyperdriveMath.calculateLpSharesOutForSharesIn(
             shares,
             shareReserves,
             totalSupply[AssetId._LP_ASSET_ID],
             longsOutstanding,
             shortsOutstanding,
-            sharePrice
+            pricePerShare
         );
 
         // Update the reserves.
@@ -225,7 +242,7 @@ contract Hyperdrive is MultiToken {
                 totalSupply[AssetId._LP_ASSET_ID],
                 longsOutstanding,
                 shortsOutstanding,
-                sharePrice
+                _pricePerShare()
             );
 
         // Burn the LP shares.
@@ -266,14 +283,9 @@ contract Hyperdrive is MultiToken {
         );
         shortWithdrawalSharesOutstanding += shortWithdrawalShares;
 
-        // Transfer the base proceeds to the LP.
-        bool success = baseToken.transfer(
-            msg.sender,
-            shareProceeds.mulDown(sharePrice)
-        );
-        if (!success) {
-            revert Errors.TransferFailed();
-        }
+        // Withdraw the shares from the yield source
+        // TODO - Good destination support.
+        withdraw(shareProceeds, msg.sender);
     }
 
     /// Long ///
@@ -295,6 +307,8 @@ contract Hyperdrive is MultiToken {
             revert Errors.TransferFailed();
         }
 
+        // Load price per share from the yield source
+        uint256 sharePrice = _pricePerShare();
         // Calculate the pool and user deltas using the trading function.
         uint256 shareAmount = _baseAmount.divDown(sharePrice);
         (, uint256 poolBondDelta, uint256 bondProceeds) = HyperdriveMath
@@ -361,6 +375,9 @@ contract Hyperdrive is MultiToken {
         _burn(assetId, msg.sender, _bondAmount);
         longsOutstanding -= _bondAmount;
 
+        // Load the price per share
+        uint256 sharePrice = _pricePerShare();
+
         // Calculate the pool and user deltas using the trading function.
         uint256 timeRemaining = block.timestamp < uint256(_maturityTime)
             ? (uint256(_maturityTime) - block.timestamp).divDown(
@@ -391,7 +408,8 @@ contract Hyperdrive is MultiToken {
                 _bondAmount,
                 poolBondDelta,
                 shareProceeds,
-                _openSharePrice
+                _openSharePrice,
+                sharePrice
             );
         } else {
             shareReserves -= shareProceeds;
@@ -417,6 +435,9 @@ contract Hyperdrive is MultiToken {
             revert Errors.ZeroAmount();
         }
 
+        // Load the share price at the current block
+        uint256 sharePrice = _pricePerShare();
+
         // Calculate the pool and user deltas using the trading function.
         (uint256 poolShareDelta, , uint256 shareProceeds) = HyperdriveMath
             .calculateOutGivenIn(
@@ -432,15 +453,9 @@ contract Hyperdrive is MultiToken {
             );
 
         // Take custody of the maximum amount the trader can lose on the short.
+        // And deposit it into the yield source
         uint256 baseProceeds = shareProceeds.mulDown(sharePrice);
-        bool success = baseToken.transferFrom(
-            msg.sender,
-            address(this),
-            _bondAmount - baseProceeds
-        );
-        if (!success) {
-            revert Errors.TransferFailed();
-        }
+        deposit(_bondAmount - baseProceeds);
 
         // Apply the trading deltas to the reserves and increase the bond buffer
         // by the amount of bonds that were shorted.
@@ -489,6 +504,9 @@ contract Hyperdrive is MultiToken {
         _burn(assetId, msg.sender, _bondAmount);
         shortsOutstanding -= _bondAmount;
 
+        // Load the share price
+        uint256 sharePrice = _pricePerShare();
+
         // Calculate the pool and user deltas using the trading function.
         uint256 timeRemaining = block.timestamp < uint256(_maturityTime)
             ? (uint256(_maturityTime) - block.timestamp).divDown(
@@ -517,25 +535,33 @@ contract Hyperdrive is MultiToken {
         // or stay the same, there is no need to check that the share reserves
         // are greater than or equal to the base buffer.
         if (shortWithdrawalSharesOutstanding > 0) {
-            _applyCloseShort(_bondAmount, poolBondDelta, sharePayment);
+            _applyCloseShort(
+                _bondAmount,
+                poolBondDelta,
+                sharePayment,
+                sharePrice
+            );
         } else {
             shareReserves += poolShareDelta;
             bondReserves -= poolBondDelta;
         }
 
+        // Convert the bonds to current shares
+        uint256 _bondsInShares = _bondAmount.divDown(sharePrice);
         // Transfer the profit to the shorter. This includes the proceeds from
         // the short sale as well as the variable interest that was collected
         // on the face value of the bonds. The math for the short's proceeds is
         // given by:
         //
         // c * (dy / c_0 - dz)
-        uint256 shortProceeds = sharePrice.mulDown(
-            _bondAmount.divDown(_openSharePrice).sub(sharePayment)
+        uint256 shortProceeds = (
+            _bondsInShares.mulDown(sharePrice.divDown(_openSharePrice)).sub(
+                sharePayment
+            )
         );
-        bool success = baseToken.transfer(msg.sender, shortProceeds);
-        if (!success) {
-            revert Errors.TransferFailed();
-        }
+        // Withdraw from the reserves
+        // TODO - Better destination support
+        withdraw(shortProceeds, msg.sender);
     }
 
     /// Helpers ///
@@ -549,11 +575,13 @@ contract Hyperdrive is MultiToken {
     /// @param _shareProceeds The proceeds in shares received from closing the
     ///        long.
     /// @param _openSharePrice The share price at the time the long was opened.
+    /// @param _sharePrice The current share price
     function _applyCloseLong(
         uint256 _bondAmount,
         uint256 _poolBondDelta,
         uint256 _shareProceeds,
-        uint256 _openSharePrice
+        uint256 _openSharePrice,
+        uint256 _sharePrice
     ) internal {
         // Calculate the effect that the trade has on the pool's APR.
         uint256 apr = HyperdriveMath.calculateAPRFromReserves(
@@ -575,7 +603,7 @@ contract Hyperdrive is MultiToken {
         uint256 withdrawalAmount = longWithdrawalSharesOutstanding < _bondAmount
             ? longWithdrawalSharesOutstanding
             : _bondAmount;
-        uint256 withdrawalProceeds = sharePrice
+        uint256 withdrawalProceeds = _sharePrice
             .mulDown(_bondAmount.divDown(_openSharePrice).sub(_shareProceeds))
             .mulDown(withdrawalAmount.divDown(_bondAmount));
         longWithdrawalSharesOutstanding -= withdrawalAmount;
@@ -587,7 +615,7 @@ contract Hyperdrive is MultiToken {
         //
         // z -= dz + (dy / c_0 - dz) * (min(b_x, dy) / dy)
         shareReserves -= _shareProceeds.add(
-            withdrawalProceeds.divDown(sharePrice)
+            withdrawalProceeds.divDown(_sharePrice)
         );
         bondReserves = HyperdriveMath.calculateBondReserves(
             shareReserves,
@@ -606,10 +634,12 @@ contract Hyperdrive is MultiToken {
     ///        decreased by if we didn't need to account for the withdrawal
     ///        pool.
     /// @param _sharePayment The payment in shares required to close the short.
+    /// @param _sharePrice The current share price
     function _applyCloseShort(
         uint256 _bondAmount,
         uint256 _poolBondDelta,
-        uint256 _sharePayment
+        uint256 _sharePayment,
+        uint256 _sharePrice
     ) internal {
         // Calculate the effect that the trade has on the pool's APR.
         uint256 apr = HyperdriveMath.calculateAPRFromReserves(
@@ -632,7 +662,7 @@ contract Hyperdrive is MultiToken {
             _bondAmount
             ? shortWithdrawalSharesOutstanding
             : _bondAmount;
-        uint256 withdrawalProceeds = sharePrice.mulDown(_sharePayment).mulDown(
+        uint256 withdrawalProceeds = _sharePrice.mulDown(_sharePayment).mulDown(
             withdrawalAmount.divDown(_bondAmount)
         );
         shortWithdrawalSharesOutstanding -= withdrawalAmount;
@@ -644,7 +674,7 @@ contract Hyperdrive is MultiToken {
         //
         // z += dz - dz * (min(b_y, dy) / dy)
         shareReserves += _sharePayment.sub(
-            withdrawalProceeds.divDown(sharePrice)
+            withdrawalProceeds.divDown(_sharePrice)
         );
         bondReserves = HyperdriveMath.calculateBondReserves(
             shareReserves,
