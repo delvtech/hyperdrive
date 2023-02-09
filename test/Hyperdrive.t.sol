@@ -31,6 +31,7 @@ contract HyperdriveTest is Test {
             linkerCodeHash,
             address(forwarderFactory),
             baseToken,
+            1 days,
             365 days,
             22.186877016851916266e18,
             FixedPointMath.ONE_18

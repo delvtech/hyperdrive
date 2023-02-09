@@ -29,6 +29,9 @@ contract Hyperdrive is MultiToken {
 
     /// Time ///
 
+    // @dev The amount of seconds between share price checkpoints.
+    uint256 public immutable checkpointDuration;
+
     // @dev The amount of seconds that elapse before a bond can be redeemed.
     uint256 public immutable positionDuration;
 
@@ -40,33 +43,38 @@ contract Hyperdrive is MultiToken {
     // @dev The share price at the time the pool was created.
     uint256 public immutable initialSharePrice;
 
-    // @dev The share reserves. The share reserves multiplied by the share price
-    //      give the base reserves, so shares are a mechanism of ensuring that
-    //      interest is properly awarded over time.
+    // TODO: We'll likely need to add more information to these checkpoints.
+    //
+    /// @dev Checkpoints of historical share prices.
+    mapping(uint256 => uint256) public checkpoints;
+
+    /// @dev The share reserves. The share reserves multiplied by the share price
+    ///      give the base reserves, so shares are a mechanism of ensuring that
+    ///      interest is properly awarded over time.
     uint256 public shareReserves;
 
-    // @dev The bond reserves. In Hyperdrive, the bond reserves aren't backed by
-    //      pre-minted bonds and are instead used as a virtual value that
-    //      ensures that the spot rate changes according to the laws of supply
-    //      and demand.
+    /// @dev The bond reserves. In Hyperdrive, the bond reserves aren't backed by
+    ///      pre-minted bonds and are instead used as a virtual value that
+    ///      ensures that the spot rate changes according to the laws of supply
+    ///      and demand.
     uint256 public bondReserves;
 
-    // @notice The amount of longs that are still open.
+    /// @notice The amount of longs that are still open.
     uint256 public longsOutstanding;
 
-    // @notice The amount of shorts that are still open.
+    /// @notice The amount of shorts that are still open.
     uint256 public shortsOutstanding;
 
-    // @notice The amount of long withdrawal shares that haven't been paid out.
+    /// @notice The amount of long withdrawal shares that haven't been paid out.
     uint256 public longWithdrawalSharesOutstanding;
 
-    // @notice The amount of short withdrawal shares that haven't been paid out.
+    /// @notice The amount of short withdrawal shares that haven't been paid out.
     uint256 public shortWithdrawalSharesOutstanding;
 
-    // @notice The proceeds that have accrued to the long withdrawal shares.
+    /// @notice The proceeds that have accrued to the long withdrawal shares.
     uint256 public longWithdrawalShareProceeds;
 
-    // @notice The proceeds that have accrued to the short withdrawal shares.
+    /// @notice The proceeds that have accrued to the short withdrawal shares.
     uint256 public shortWithdrawalShareProceeds;
 
     /// @notice Initializes a Hyperdrive pool.
@@ -75,13 +83,16 @@ contract Hyperdrive is MultiToken {
     /// @param _linkerFactory The factory which is used to deploy the ERC20
     ///        linker contracts.
     /// @param _baseToken The base token contract.
-    /// @param _positionDuration The time in seconds that elapses before bonds
+    /// @param _checkpointDuration The time in seconds between share price
+    ///        checkpoints.
+    /// @param _positionDuration The time in seconds that elaspes before bonds
     ///        can be redeemed one-to-one for base.
     /// @param _timeStretch The time stretch of the pool.
     constructor(
         bytes32 _linkerCodeHash,
         address _linkerFactory,
         IERC20 _baseToken,
+        uint256 _checkpointDuration,
         uint256 _positionDuration,
         uint256 _timeStretch,
         uint256 _initialPricePerShare
@@ -89,11 +100,20 @@ contract Hyperdrive is MultiToken {
         // Initialize the base token address.
         baseToken = _baseToken;
 
+        // FIXME: Ensure that the position duration is a multiple of the
+        // checkpoint duration.
+        //
         // Initialize the time configurations.
+        checkpointDuration = _checkpointDuration;
         positionDuration = _positionDuration;
         timeStretch = _timeStretch;
 
+        // Initialize the share prices.
         initialSharePrice = _initialPricePerShare;
+        // TODO: Use the update checkpoint helper function.
+        checkpoints[
+            block.timestamp - (block.timestamp % checkpointDuration)
+        ] = sharePrice;
     }
 
     /// Yield Source ///
@@ -297,11 +317,25 @@ contract Hyperdrive is MultiToken {
             revert Errors.ZeroAmount();
         }
 
-        // Take custody of the base that is being traded into the contract.
+        // Perform a checkpoint and compute the amount of interest the long
+        // would have paid had they opened at the beginning of the checkpoint.
+        // To ensure that our PnL accounting works correctly, longs must pay for
+        // this backdated interest.
+        (uint256 latestCheckpoint, uint256 openSharePrice) = _checkpoint();
+        // (c_1 - c_0) * (dx / c_0) = (c_1 / c_0 - 1) * dx
+        uint256 owedInterest = (sharePrice.divDown(openSharePrice) -
+            FixedPointMath.ONE_18).mulDown(_baseAmount);
+        uint256 maturityDate = latestCheckpoint + positionDuration;
+        uint256 timeRemaining = (maturityDate - block.timestamp).divDown(
+            positionDuration
+        );
+
+        // Take custody of the base that is being traded into the contract and
+        // the interest owed on the backdated bonds.
         bool success = baseToken.transferFrom(
             msg.sender,
             address(this),
-            _baseAmount
+            _baseAmount.add(owedInterest)
         );
         if (!success) {
             revert Errors.TransferFailed();
@@ -317,7 +351,7 @@ contract Hyperdrive is MultiToken {
                 bondReserves,
                 totalSupply[AssetId._LP_ASSET_ID],
                 shareAmount,
-                FixedPointMath.ONE_18,
+                timeRemaining,
                 timeStretch,
                 sharePrice,
                 initialSharePrice,
@@ -365,6 +399,9 @@ contract Hyperdrive is MultiToken {
         if (_bondAmount == 0) {
             revert Errors.ZeroAmount();
         }
+
+        // Perform a checkpoint.
+        _checkpoint();
 
         // Burn the longs that are being closed.
         uint256 assetId = AssetId.encodeAssetId(
@@ -684,5 +721,22 @@ contract Hyperdrive is MultiToken {
             positionDuration,
             timeStretch
         );
+    }
+
+    // TODO: We need to pay out the withdrawal pools in this function.
+    //
+    // TODO: Comment this.
+    function _checkpoint()
+        internal
+        returns (uint256 latestCheckpoint, uint256 openSharePrice)
+    {
+        latestCheckpoint =
+            block.timestamp -
+            (block.timestamp % checkpointDuration);
+        if (checkpoints[latestCheckpoint] == 0) {
+            checkpoints[latestCheckpoint] = sharePrice;
+            return (latestCheckpoint, sharePrice);
+        }
+        return (latestCheckpoint, checkpoints[latestCheckpoint]);
     }
 }
