@@ -320,6 +320,92 @@ library HyperdriveMath {
             .pow(tau);
     }
 
+    /// @dev Calculates the fees for the curve portion of hyperdrive calcOutGivenIn
+    /// @param _positionDuration The amount of time until maturity in seconds.
+    /// @param _timeRemaining The amount of time until maturity in seconds.
+    /// @param _spotPrice The price without slippage of bonds in terms of shares.
+    /// @param _feePercent The fee parameter.
+    /// @param _sharePrice The current price of shares in terms of base.
+    /// @param _amountIn The given amount in, either in terms of shares or bonds.
+    /// @param _isBaseIn If the user will supply base.
+    /// @return fee The fee amount to charge.
+    function calcFeesOutGivenIn(
+        uint256 _positionDuration,
+        uint256 _timeRemaining,
+        uint256 _spotPrice,
+        uint256 _feePercent,
+        uint256 _sharePrice,
+        uint256 _amountIn,
+        bool _isBaseIn
+    ) internal pure returns (uint256 fee) {
+        uint256 normalized_time = _timeRemaining
+            .mulDown(FixedPointMath.ONE_18)
+            .divDown(_positionDuration);
+
+        // TODO: if bonds are out, this is a long, which only happens at t = 1, so we can get rid of normalized_time
+        if (_isBaseIn) {
+            // fee = ((1 / p) - 1) * phi * c * d_z * t
+            uint256 _price = (FixedPointMath.ONE_18.divDown(_spotPrice)).sub(
+                FixedPointMath.ONE_18
+            );
+            fee = _price
+                .mulDown(_feePercent)
+                .mulDown(_sharePrice)
+                .mulDown(_amountIn)
+                .mulDown(normalized_time);
+        } else {
+            // 'bond' in
+            // fee = (1 - p) * phi * d_y * t
+            uint256 _price = (FixedPointMath.ONE_18.sub(_spotPrice));
+            fee = _price.mulDown(_feePercent).mulDown(_amountIn).mulDown(
+                normalized_time
+            );
+        }
+    }
+
+    /// @dev Calculates the fees for the curve portion of hyperdrive calcInGivenOut
+    /// @param _positionDuration The amount of time until maturity in seconds.
+    /// @param _timeRemaining The amount of time until maturity in seconds.
+    /// @param _spotPrice The price without slippage of bonds in terms of shares.
+    /// @param _feePercent The fee parameter.
+    /// @param _sharePrice The current price of shares in terms of base.
+    /// @param _amountOut The given amount out, either in terms of shares or bonds.
+    /// @param _isBondsOut If the user will receive bonds.
+    /// @return fee The fee amount to charge.
+    function calcFeesInGivenOut(
+        uint256 _positionDuration,
+        uint256 _timeRemaining,
+        uint256 _spotPrice,
+        uint256 _feePercent,
+        uint256 _sharePrice,
+        uint256 _amountOut,
+        bool _isBondsOut
+    ) internal pure returns (uint256 fee) {
+        uint256 normalized_time = _timeRemaining
+            .mulDown(FixedPointMath.ONE_18)
+            .divDown(_positionDuration);
+
+        // TODO: if bonds are out, this is a long, which only happens at t = 1, so we can get rid of normalized_time
+        if (_isBondsOut) {
+            // fee = (p - 1) * phi * c * d_z * t
+            uint256 _price = _spotPrice.sub(FixedPointMath.ONE_18);
+            fee = _price
+                .mulDown(_feePercent)
+                .mulDown(_sharePrice)
+                .mulDown(_amountOut)
+                .mulDown(normalized_time);
+        } else {
+            // base out
+            // fee = (1 - (1 / p)) * phi * d_y * t
+            uint256 _price = FixedPointMath.ONE_18.sub(
+                FixedPointMath.ONE_18.divDown(_spotPrice)
+            );
+            fee = _price.mulDown(_feePercent).mulDown(_amountOut).mulDown(
+                normalized_time
+            );
+        }
+    }
+
     // TODO: Use an allocation scheme that doesn't punish early LPs.
     //
     /// @dev Calculates the amount of LP shares that should be awarded for
