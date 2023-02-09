@@ -20,6 +20,7 @@ library HyperdriveMath {
     /// @param _lpTotalSupply The pool's total supply of LP shares.
     /// @param _initialSharePrice The pool's initial share price.
     /// @param _positionDuration The amount of time until maturity in seconds.
+    /// @param _timeRemaining The amount of time remaining until maturity in seconds.
     /// @param _timeStretch The time stretch parameter.
     /// @return apr The pool's APR.
     function calculateAPRFromReserves(
@@ -28,16 +29,18 @@ library HyperdriveMath {
         uint256 _lpTotalSupply,
         uint256 _initialSharePrice,
         uint256 _positionDuration,
+        uint256 _timeRemaining,
         uint256 _timeStretch
     ) internal pure returns (uint256 apr) {
-        // NOTE: This calculation is automatically scaled in the divDown operation
-        uint256 t = _positionDuration.divDown(365 days);
-        uint256 tau = t.mulDown(_timeStretch);
-        // ((y + s) / (mu * z)) ** -tau
-        uint256 spotPrice = _initialSharePrice
-            .mulDown(_shareReserves)
-            .divDown(_bondReserves.add(_lpTotalSupply))
-            .pow(tau);
+        uint256 spotPrice = calcSpotPrice(
+            _positionDuration,
+            _positionDuration, // pass full time remaining
+            _timeStretch,
+            _initialSharePrice,
+            _shareReserves,
+            _bondReserves,
+            _lpTotalSupply
+        );
         // (1 - p) / (p * t)
         return
             FixedPointMath.ONE_18.sub(spotPrice).divDown(spotPrice.mulDown(t));
