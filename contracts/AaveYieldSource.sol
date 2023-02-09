@@ -6,20 +6,24 @@ import "./libraries/FixedPointMath.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface Pool {
-    function supply(address asset, uint256 amount, address onBehalfOf, uint16 referralCode) external;
+    function supply(
+        address asset,
+        uint256 amount,
+        address onBehalfOf,
+        uint16 referralCode
+    ) external;
+
     function withdraw(address asset, uint256 amount, address to) external;
 }
 
 contract AaveYieldSource is Hyperdrive {
-
     using FixedPointMath for uint256;
-    
-    // The aave deployment details, the a token for this asset and the aave pool
-    IERC20 immutable aToken;
-    Pool immutable pool;
-    // The shares created by this pool, starts at 1 to one with deposits and increases
-    uint256 totalShares;
 
+    // The aave deployment details, the a token for this asset and the aave pool
+    IERC20 public immutable aToken;
+    Pool public immutable pool;
+    // The shares created by this pool, starts at 1 to one with deposits and increases
+    uint256 public totalShares;
 
     /// @notice Initializes a Hyperdrive pool.
     /// @param _linkerCodeHash The hash of the ERC20 linker contract's
@@ -38,16 +42,27 @@ contract AaveYieldSource is Hyperdrive {
         uint256 _timeStretch,
         IERC20 _aToken,
         Pool _pool
-    ) Hyperdrive(_linkerCodeHash, _linkerFactory, _baseToken, _positionDuration, _timeStretch, FixedPointMath.ONE_18) {
+    )
+        Hyperdrive(
+            _linkerCodeHash,
+            _linkerFactory,
+            _baseToken,
+            _positionDuration,
+            _timeStretch,
+            FixedPointMath.ONE_18
+        )
+    {
         aToken = _aToken;
         pool = _pool;
     }
 
-    ///@notice Transfers amount of 'token' from the user and commits it to the yield source. 
+    ///@notice Transfers amount of 'token' from the user and commits it to the yield source.
     ///@param amount The amount of token to transfer
     ///@return sharesMinted The shares this deposit creates
     ///@return pricePerShare The price per share at time of deposit
-    function deposit(uint256 amount) internal override returns(uint256 sharesMinted, uint256 pricePerShare) {
+    function deposit(
+        uint256 amount
+    ) internal override returns (uint256 sharesMinted, uint256 pricePerShare) {
         // Transfer from user
         bool success = baseToken.transferFrom(
             msg.sender,
@@ -70,7 +85,7 @@ contract AaveYieldSource is Hyperdrive {
         } else {
             uint256 newShares = totalShares.mulDown(amount.divDown(assets));
             totalShares += newShares;
-            return(newShares, amount.divDown(newShares));
+            return (newShares, amount.divDown(newShares));
         }
     }
 
@@ -79,7 +94,14 @@ contract AaveYieldSource is Hyperdrive {
     ///@param destination The address which is where to send the resulting tokens
     ///@return amountWithdrawn the amount of 'token' produced by this withdraw
     ///@return pricePerShare The price per share on withdraw.
-    function withdraw(uint256 shares, address destination) internal override returns(uint256 amountWithdrawn, uint256 pricePerShare) {
+    function withdraw(
+        uint256 shares,
+        address destination
+    )
+        internal
+        override
+        returns (uint256 amountWithdrawn, uint256 pricePerShare)
+    {
         // Load the balance of this contract
         uint256 assets = aToken.balanceOf(address(this));
         // The withdraw is the percent of shares the user has times the total assets
@@ -87,15 +109,20 @@ contract AaveYieldSource is Hyperdrive {
         // Now we call aave to fulfill this for the user
         pool.withdraw(address(baseToken), withdrawValue, destination);
         // Return the amount and implied share price
-        return(withdrawValue, shares.divDown(withdrawValue));
+        return (withdrawValue, shares.divDown(withdrawValue));
     }
 
     ///@notice Loads the price per share from the yield source
     ///@return pricePerShare The current price per share
-    function _pricePerShare() internal view override returns(uint256 pricePerShare) {
+    function _pricePerShare()
+        internal
+        view
+        override
+        returns (uint256 pricePerShare)
+    {
         // Load the balance of this contract
         uint256 assets = aToken.balanceOf(address(this));
         // Price per share is assets divided by shares
-        return(assets.divDown(totalShares));
+        return (assets.divDown(totalShares));
     }
 }

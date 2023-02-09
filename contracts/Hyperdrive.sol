@@ -17,7 +17,7 @@ import { MultiToken } from "contracts/MultiToken.sol";
 ///                    particular legal or regulatory significance.
 
 // TODO - Here we give default implementations of the virtual methods to not break tests
-//        we should move to an abstract contract to prevent this from being deployed w/o 
+//        we should move to an abstract contract to prevent this from being deployed w/o
 //        real implementations.
 contract Hyperdrive is MultiToken {
     using FixedPointMath for uint256;
@@ -98,23 +98,36 @@ contract Hyperdrive is MultiToken {
 
     /// Yield Source ///
     // In order to deploy a yield source implement must be written which implements the following methods
-    
-    ///@notice Transfers amount of 'token' from the user and commits it to the yield source. 
+
+    ///@notice Transfers amount of 'token' from the user and commits it to the yield source.
     ///@param amount The amount of token to transfer
     ///@return sharesMinted The shares this deposit creates
     ///@return pricePerShare The price per share at time of deposit
-    function deposit(uint256 amount) internal virtual returns(uint256 sharesMinted, uint256 pricePerShare) {}
+    function deposit(
+        uint256 amount
+    ) internal virtual returns (uint256 sharesMinted, uint256 pricePerShare) {}
 
     ///@notice Withdraws shares from the yield source and sends the resulting tokens to the destination
     ///@param shares The shares to withdraw from the yieldsource
     ///@param destination The address which is where to send the resulting tokens
     ///@return amountWithdrawn the amount of 'token' produced by this withdraw
     ///@return pricePerShare The price per share on withdraw.
-    function withdraw(uint256 shares, address destination) internal virtual returns(uint256 amountWithdrawn, uint256 pricePerShare) {}
+    function withdraw(
+        uint256 shares,
+        address destination
+    )
+        internal
+        virtual
+        returns (uint256 amountWithdrawn, uint256 pricePerShare)
+    {}
 
     ///@notice Loads the price per share from the yield source
     ///@return pricePerShare The current price per share
-    function _pricePerShare() internal virtual returns(uint256 pricePerShare) {}
+    function _pricePerShare()
+        internal
+        virtual
+        returns (uint256 pricePerShare)
+    {}
 
     /// LP ///
 
@@ -439,7 +452,6 @@ contract Hyperdrive is MultiToken {
                 false
             );
 
-
         // Take custody of the maximum amount the trader can lose on the short.
         // And deposit it into the yield source
         uint256 baseProceeds = shareProceeds.mulDown(sharePrice);
@@ -523,22 +535,29 @@ contract Hyperdrive is MultiToken {
         // or stay the same, there is no need to check that the share reserves
         // are greater than or equal to the base buffer.
         if (shortWithdrawalSharesOutstanding > 0) {
-            _applyCloseShort(_bondAmount, poolBondDelta, sharePayment, sharePrice);
+            _applyCloseShort(
+                _bondAmount,
+                poolBondDelta,
+                sharePayment,
+                sharePrice
+            );
         } else {
             shareReserves += poolShareDelta;
             bondReserves -= poolBondDelta;
         }
 
         // Convert the bonds to current shares
-        uint256 _bondsInShares = _bondAmount.divDown(sharePrice); 
+        uint256 _bondsInShares = _bondAmount.divDown(sharePrice);
         // Transfer the profit to the shorter. This includes the proceeds from
         // the short sale as well as the variable interest that was collected
         // on the face value of the bonds. The math for the short's proceeds is
         // given by:
         //
         // c * (dy / c_0 - dz)
-        uint256 shortProceeds = (_bondsInShares.mulDown(
-            sharePrice.divDown(_openSharePrice)).sub(sharePayment)
+        uint256 shortProceeds = (
+            _bondsInShares.mulDown(sharePrice.divDown(_openSharePrice)).sub(
+                sharePayment
+            )
         );
         // Withdraw from the reserves
         // TODO - Better destination support
