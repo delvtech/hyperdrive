@@ -229,7 +229,7 @@ contract Hyperdrive is MultiToken {
                 totalSupply[AssetId._LP_ASSET_ID],
                 longsOutstanding,
                 shortsOutstanding,
-                pricePerShare()
+                _pricePerShare()
             );
 
         // Burn the LP shares.
@@ -395,7 +395,8 @@ contract Hyperdrive is MultiToken {
                 _bondAmount,
                 poolBondDelta,
                 shareProceeds,
-                _openSharePrice
+                _openSharePrice,
+                sharePrice
             );
         } else {
             shareReserves -= shareProceeds;
@@ -522,7 +523,7 @@ contract Hyperdrive is MultiToken {
         // or stay the same, there is no need to check that the share reserves
         // are greater than or equal to the base buffer.
         if (shortWithdrawalSharesOutstanding > 0) {
-            _applyCloseShort(_bondAmount, poolBondDelta, sharePayment);
+            _applyCloseShort(_bondAmount, poolBondDelta, sharePayment, sharePrice);
         } else {
             shareReserves += poolShareDelta;
             bondReserves -= poolBondDelta;
@@ -555,11 +556,13 @@ contract Hyperdrive is MultiToken {
     /// @param _shareProceeds The proceeds in shares received from closing the
     ///        long.
     /// @param _openSharePrice The share price at the time the long was opened.
+    /// @param _sharePrice The the share price now
     function _applyCloseLong(
         uint256 _bondAmount,
         uint256 _poolBondDelta,
         uint256 _shareProceeds,
-        uint256 _openSharePrice
+        uint256 _openSharePrice,
+        uint256 _sharePrice
     ) internal {
         // Calculate the effect that the trade has on the pool's APR.
         uint256 apr = HyperdriveMath.calculateAPRFromReserves(
@@ -581,7 +584,7 @@ contract Hyperdrive is MultiToken {
         uint256 withdrawalAmount = longWithdrawalSharesOutstanding < _bondAmount
             ? longWithdrawalSharesOutstanding
             : _bondAmount;
-        uint256 withdrawalProceeds = sharePrice
+        uint256 withdrawalProceeds = _sharePrice
             .mulDown(_bondAmount.divDown(_openSharePrice).sub(_shareProceeds))
             .mulDown(withdrawalAmount.divDown(_bondAmount));
         longWithdrawalSharesOutstanding -= withdrawalAmount;
@@ -593,7 +596,7 @@ contract Hyperdrive is MultiToken {
         //
         // z -= dz + (dy / c_0 - dz) * (min(b_x, dy) / dy)
         shareReserves -= _shareProceeds.add(
-            withdrawalProceeds.divDown(sharePrice)
+            withdrawalProceeds.divDown(_sharePrice)
         );
         bondReserves = HyperdriveMath.calculateBondReserves(
             shareReserves,
@@ -612,10 +615,12 @@ contract Hyperdrive is MultiToken {
     ///        decreased by if we didn't need to account for the withdrawal
     ///        pool.
     /// @param _sharePayment The payment in shares required to close the short.
+    /// @param _sharePrice The the share price now
     function _applyCloseShort(
         uint256 _bondAmount,
         uint256 _poolBondDelta,
-        uint256 _sharePayment
+        uint256 _sharePayment,
+        uint256 _sharePrice
     ) internal {
         // Calculate the effect that the trade has on the pool's APR.
         uint256 apr = HyperdriveMath.calculateAPRFromReserves(
@@ -638,7 +643,7 @@ contract Hyperdrive is MultiToken {
             _bondAmount
             ? shortWithdrawalSharesOutstanding
             : _bondAmount;
-        uint256 withdrawalProceeds = sharePrice.mulDown(_sharePayment).mulDown(
+        uint256 withdrawalProceeds = _sharePrice.mulDown(_sharePayment).mulDown(
             withdrawalAmount.divDown(_bondAmount)
         );
         shortWithdrawalSharesOutstanding -= withdrawalAmount;
@@ -650,7 +655,7 @@ contract Hyperdrive is MultiToken {
         //
         // z += dz - dz * (min(b_y, dy) / dy)
         shareReserves += _sharePayment.sub(
-            withdrawalProceeds.divDown(sharePrice)
+            withdrawalProceeds.divDown(_sharePrice)
         );
         bondReserves = HyperdriveMath.calculateBondReserves(
             shareReserves,
