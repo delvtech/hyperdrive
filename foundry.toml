@@ -16,7 +16,7 @@ optimizer = true
 # The number of optimizer runs
 optimizer_runs = 7500
 # Whether or not to use the Yul intermediate representation compilation pipeline
-via_ir = true
+via_ir = false
 
 remappings = ['forge-std=lib/forge-std/src', '@openzeppelin/=node_modules/@openzeppelin']
 # gas limit - max u64

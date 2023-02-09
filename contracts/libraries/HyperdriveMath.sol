@@ -124,7 +124,7 @@ library HyperdriveMath {
             uint256 userDelta
         )
     {
-        uint256 flat = _amountIn.mulDown(
+        userDelta = _amountIn.mulDown(
             FixedPointMath.ONE_18.sub(_timeRemaining)
         );
         if (_isBondOut) {
@@ -132,25 +132,21 @@ library HyperdriveMath {
             // purchased to be fully matured and we use the remaining
             // timeRemaining*amountIn shares to purchase newly minted bonds on a
             // YieldSpace curve configured to timeRemaining = 1.
-            uint256 curveIn = _amountIn.mulDown(_timeRemaining);
-            uint256 curveOut = YieldSpaceMath.calculateOutGivenIn(
+            poolBondDelta = YieldSpaceMath.calculateOutGivenIn(
                 // Credit the share reserves by the flat trade.
-                _shareReserves.add(flat),
+                _shareReserves.add(userDelta),
                 // Debit the bond reserves by the flat trade.
-                _bondReserves.sub(flat.mulDown(_sharePrice)),
+                _bondReserves.sub(userDelta.mulDown(_sharePrice)),
                 _bondReserveAdjustment,
-                curveIn,
+                _amountIn.mulDown(_timeRemaining), // curveIn
                 FixedPointMath.ONE_18,
                 _timeStretch,
                 _sharePrice,
                 _initialSharePrice,
                 _isBondOut
             );
-            return (
-                _amountIn,
-                curveOut,
-                flat.mulDown(_sharePrice).add(curveOut)
-            );
+            userDelta = userDelta.mulDown(_sharePrice).add(poolBondDelta);
+            poolShareDelta = _amountIn;
         } else {
             // We consider (1-timeRemaining)*amountIn of the bonds to be fully
             // matured and timeRemaining*amountIn of the bonds to be newly
@@ -158,25 +154,27 @@ library HyperdriveMath {
             // (our result is given in shares, so we divide the one-to-one
             // redemption by the share price) and the newly minted bonds are
             // traded on a YieldSpace curve configured to timeRemaining = 1.
-            flat = flat.divDown(_sharePrice);
-            uint256 curveIn = _amountIn.mulDown(_timeRemaining).divDown(
+            userDelta = userDelta.divDown(_sharePrice);
+            poolBondDelta = _amountIn.mulDown(_timeRemaining).divDown(
                 _sharePrice
             );
-            uint256 curveOut = YieldSpaceMath.calculateOutGivenIn(
-                // Debit the share reserves by the flat trade.
-                _shareReserves.sub(flat),
-                // Credit the bond reserves by the flat trade.
-                _bondReserves.add(flat.mulDown(_sharePrice)),
-                _bondReserveAdjustment,
-                curveIn,
-                FixedPointMath.ONE_18,
-                _timeStretch,
-                _sharePrice,
-                _initialSharePrice,
-                _isBondOut
+            userDelta = userDelta.add(
+                // curveOut
+                YieldSpaceMath.calculateOutGivenIn(
+                    // Debit the share reserves by the flat trade.
+                    _shareReserves.sub(userDelta),
+                    // Credit the bond reserves by the flat trade.
+                    _bondReserves.add(userDelta.mulDown(_sharePrice)),
+                    _bondReserveAdjustment,
+                    poolBondDelta, // curveIn
+                    FixedPointMath.ONE_18,
+                    _timeStretch,
+                    _sharePrice,
+                    _initialSharePrice,
+                    _isBondOut
+                )
             );
-            uint256 shareDelta = flat.add(curveOut);
-            return (shareDelta, curveIn, shareDelta);
+            poolShareDelta = userDelta;
         }
     }
 
@@ -224,26 +222,24 @@ library HyperdriveMath {
         // the one-to-one redemption by the share price) and the newly
         // minted bonds are traded on a YieldSpace curve configured to
         // timeRemaining = 1.
-        uint256 flat = _amountOut
+        userDelta = _amountOut
             .mulDown(FixedPointMath.ONE_18.sub(_timeRemaining))
             .divDown(_sharePrice);
-        uint256 curveOut = _amountOut.mulDown(_timeRemaining).divDown(
-            _sharePrice
-        );
-        uint256 curveIn = YieldSpaceMath.calculateInGivenOut(
+        poolBondDelta = _amountOut.mulDown(_timeRemaining).divDown(_sharePrice);
+        userDelta += YieldSpaceMath.calculateInGivenOut(
             // Credit the share reserves by the flat trade.
-            _shareReserves.add(flat),
+            _shareReserves.add(userDelta),
             // Debit the bond reserves by the flat trade.
-            _bondReserves.sub(flat.mulDown(_sharePrice)),
+            _bondReserves.sub(userDelta.mulDown(_sharePrice)),
             _bondReserveAdjustment,
-            curveOut,
+            poolBondDelta,
             FixedPointMath.ONE_18,
             _timeStretch,
             _sharePrice,
             _initialSharePrice,
             false
         );
-        return (flat.add(curveIn), curveOut, flat.add(curveIn));
+        poolShareDelta = userDelta;
     }
 
     // TODO: Use an allocation scheme that doesn't punish early LPs.
