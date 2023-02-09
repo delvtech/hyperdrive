@@ -129,10 +129,13 @@ library HyperdriveMath {
     /// @param _amountIn The amount to be traded. This quantity is denominated
     ///        in shares if bonds are being traded out and bonds if shares are
     ///        being traded out.
-    /// @param _timeRemaining The amount of time until maturity in seconds.
+    /// @param _positionDuration The amount of time until maturity in seconds.
+    /// @param _timeRemaining The amount of time remaining until maturity in seconds.
     /// @param _timeStretch The time stretch parameter.
     /// @param _sharePrice The share price.
     /// @param _initialSharePrice The initial share price.
+    /// @param _curveFeePercent The fee parameter for the curve portion of the hyperdrive trade equation.
+    /// @param _flatFeePercent The fee parameter for the flat portion of the hyperdrive trade equation.
     /// @param _isBondOut A flag that specifies whether bonds are the asset being
     ///        received or the asset being provided.
     /// @return poolShareDelta The delta that should be applied to the pool's
@@ -145,10 +148,13 @@ library HyperdriveMath {
         uint256 _bondReserves,
         uint256 _bondReserveAdjustment,
         uint256 _amountIn,
+        uint256 _positionDuration,
         uint256 _timeRemaining,
         uint256 _timeStretch,
         uint256 _sharePrice,
         uint256 _initialSharePrice,
+        uint256 _curveFeePercent,
+        uint256 _flatFeePercent,
         bool _isBondOut
     )
         internal
@@ -186,10 +192,33 @@ library HyperdriveMath {
                 _initialSharePrice,
                 _isBondOut
             );
+
+            uint256 spotPrice = calcSpotPrice(
+                _positionDuration,
+                _timeRemaining,
+                _timeStretch,
+                _initialSharePrice,
+                _shareReserves,
+                _bondReserves,
+                _bondReserveAdjustment
+            );
+
+            uint256 curveFee = calcFeesOutGivenIn(
+                _positionDuration,
+                _timeRemaining,
+                spotPrice,
+                _curveFeePercent,
+                _sharePrice,
+                _amountIn,
+                _isBondOut
+            );
+
+            uint256 flatWithFee = flat.sub(flat.mulDown(_flatFeePercent));
+            uint256 curveOutWithFee = curveOut.sub(curveFee);
             return (
                 _amountIn,
-                curveOut,
-                flat.mulDown(_sharePrice).add(curveOut)
+                curveOutWithFee,
+                flatWithFee.mulDown(_sharePrice).add(curveOutWithFee)
             );
         } else {
             // We consider (1-timeRemaining)*amountIn of the bonds to be fully
@@ -220,7 +249,31 @@ library HyperdriveMath {
                 _initialSharePrice,
                 _isBondOut
             );
-            uint256 shareDelta = flat.add(curveOut);
+
+            uint256 spotPrice = calcSpotPrice(
+                _positionDuration,
+                _timeRemaining,
+                _timeStretch,
+                _initialSharePrice,
+                _shareReserves,
+                _bondReserves,
+                _bondReserveAdjustment
+            );
+
+            uint256 curveFee = calcFeesOutGivenIn(
+                _positionDuration,
+                _timeRemaining,
+                spotPrice,
+                _curveFeePercent,
+                _sharePrice,
+                _amountIn,
+                _isBondOut
+            );
+
+            uint256 flatWithFee = flat.sub(flat.mulDown(_flatFeePercent));
+            uint256 curveOutWithFee = curveOut.sub(curveFee);
+            uint256 shareDelta = flatWithFee.add(curveOutWithFee);
+
             return (shareDelta, curveIn, shareDelta);
         }
     }

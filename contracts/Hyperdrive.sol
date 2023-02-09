@@ -72,6 +72,12 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
     /// @notice The proceeds that have accrued to the short withdrawal shares.
     uint256 public shortWithdrawalShareProceeds;
 
+    // @notice the fee paramater to apply to the curve portion of the hyperdrive trade equation.
+    uint256 public curveFee;
+
+    // @notice the fee paramater to apply to the flat portion of the hyperdrive trade equation.
+    uint256 public flatFee;
+
     /// @notice Initializes a Hyperdrive pool.
     /// @param _linkerCodeHash The hash of the ERC20 linker contract's
     ///        constructor code.
@@ -92,7 +98,10 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         uint256 _initialSharePrice,
         uint256 _checkpointsPerTerm,
         uint256 _checkpointDuration,
-        uint256 _timeStretch
+        uint256 _timeStretch,
+        uint256 _positionDuration,
+        uint256 _curveFee,
+        uint256 _flatFee
     ) MultiToken(_linkerCodeHash, _linkerFactory) {
         // Initialize the base token address.
         baseToken = _baseToken;
@@ -104,6 +113,13 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
 
         // Initialize the share prices.
         initialSharePrice = _initialSharePrice;
+        // TODO: This isn't correct. This will need to be updated when asset
+        // delgation is implemented.
+        initialSharePrice = FixedPointMath.ONE_18;
+
+        // TODO: Update these.  Hardcode to 10% each for now.
+        curveFee = FixedPointMath.ONE_18 / 10;
+        flatFee = FixedPointMath.ONE_18 / 10;
     }
 
     /// Yield Source ///
@@ -440,6 +456,8 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
                 timeStretch,
                 sharePrice,
                 initialSharePrice,
+                curveFee,
+                flatFee,
                 true
             );
 
@@ -505,10 +523,13 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
                 bondReserves,
                 totalSupply[AssetId._LP_ASSET_ID],
                 _bondAmount,
+                positionDuration,
                 timeRemaining,
                 timeStretch,
                 sharePrice,
                 initialSharePrice,
+                curveFee,
+                flatFee,
                 false
             );
 
@@ -576,6 +597,8 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
                 timeStretch,
                 sharePrice,
                 initialSharePrice,
+                curveFee,
+                flatFee,
                 false
             );
 
