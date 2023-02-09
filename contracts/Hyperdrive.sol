@@ -198,6 +198,7 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
             totalSupply[AssetId._LP_ASSET_ID],
             initialSharePrice,
             positionDuration,
+            positionDuration, // pass full time remaining for pool APR
             timeStretch
         );
 
@@ -259,6 +260,7 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
             totalSupply[AssetId._LP_ASSET_ID],
             initialSharePrice,
             positionDuration,
+            positionDuration, // pass full time remaining for pool APR
             timeStretch
         );
 

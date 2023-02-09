@@ -34,13 +34,19 @@ library HyperdriveMath {
     ) internal pure returns (uint256 apr) {
         uint256 spotPrice = calcSpotPrice(
             _positionDuration,
-            _positionDuration, // pass full time remaining
+            _timeRemaining,
             _timeStretch,
             _initialSharePrice,
             _shareReserves,
             _bondReserves,
             _lpTotalSupply
         );
+
+        // normalized time
+        uint256 t = _timeRemaining.mulDown(FixedPointMath.ONE_18).divDown(
+            _positionDuration
+        );
+
         // (1 - p) / (p * t)
         return
             FixedPointMath.ONE_18.sub(spotPrice).divDown(spotPrice.mulDown(t));
