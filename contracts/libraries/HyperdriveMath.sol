@@ -290,6 +290,36 @@ library HyperdriveMath {
         return (flat.add(curveIn), curveOut, flat.add(curveIn));
     }
 
+    /// @dev Calculates the spot price without slippage of bonds in terms of shares.
+    /// @param _positionDuration The amount of time until maturity in seconds.
+    /// @param _timeRemaining The amount of time remaining until maturity in seconds.
+    /// @param _timeStretch The time stretch parameter.
+    /// @param _initialSharePrice The initial share price.
+    /// @param _shareReserves The pool's share reserves.
+    /// @param _bondReserves The pool's bond reserves.
+    /// @param _lpTotalSupply The pool's total supply of LP shares.
+    /// @return spotPrice The spot price of bonds in terms of shares.
+    function calcSpotPrice(
+        uint256 _positionDuration,
+        uint256 _timeRemaining,
+        uint256 _timeStretch,
+        uint256 _initialSharePrice,
+        uint256 _shareReserves,
+        uint256 _bondReserves,
+        uint256 _lpTotalSupply
+    ) internal pure returns (uint256 spotPrice) {
+        // normalized time
+        uint256 t = _timeRemaining.mulDown(FixedPointMath.ONE_18).divDown(
+            _positionDuration
+        );
+        uint256 tau = t.divDown(_timeStretch);
+        // ((y + s) / (mu * z)) ** -tau
+        spotPrice = _initialSharePrice
+            .mulDown(_shareReserves)
+            .divDown(_bondReserves.add(_lpTotalSupply))
+            .pow(tau);
+    }
+
     // TODO: Use an allocation scheme that doesn't punish early LPs.
     //
     /// @dev Calculates the amount of LP shares that should be awarded for
