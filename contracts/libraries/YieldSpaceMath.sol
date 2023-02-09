@@ -104,7 +104,7 @@ library YieldSpaceMath {
 
     function _calculateOutGivenInBondOut(
         YieldSpaceArgs memory _args
-    ) internal pure returns (uint256) {
+    ) private pure returns (uint256) {
         (
             uint256 oneMinusT,
             uint256 cDivMu,
@@ -133,7 +133,7 @@ library YieldSpaceMath {
 
     function _calculateOutGivenInBondIn(
         YieldSpaceArgs memory _args
-    ) internal pure returns (uint256) {
+    ) private pure returns (uint256) {
         (
             uint256 oneMinusT,
             uint256 cDivMu,
@@ -159,7 +159,7 @@ library YieldSpaceMath {
 
     function _calculateInGivenOutBondIn(
         YieldSpaceArgs memory _args
-    ) internal pure returns (uint256) {
+    ) private pure returns (uint256) {
         (
             uint256 oneMinusT,
             uint256 cDivMu,
@@ -187,7 +187,7 @@ library YieldSpaceMath {
 
     function _calculateInGivenOutBondOut(
         YieldSpaceArgs memory _args
-    ) internal pure returns (uint256) {
+    ) private pure returns (uint256) {
         (
             uint256 oneMinusT,
             uint256 cDivMu,
@@ -215,7 +215,7 @@ library YieldSpaceMath {
     function _internalYieldSpaceCalculations(
         YieldSpaceArgs memory _args
     )
-        internal
+        private
         pure
         returns (
             uint256 oneMinusT,
