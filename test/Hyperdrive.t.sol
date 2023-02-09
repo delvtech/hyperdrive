@@ -31,10 +31,14 @@ contract HyperdriveTest is Test {
             linkerCodeHash,
             address(forwarderFactory),
             baseToken,
-            1 days,
             365 days,
+<<<<<<< HEAD
             22.186877016851916266e18,
             FixedPointMath.ONE_18
+=======
+            1 days,
+            22.186877016851916266e18
+>>>>>>> 08a3149 (Wrote checkpointing logic without making it zombie-proof)
         );
     }
 }

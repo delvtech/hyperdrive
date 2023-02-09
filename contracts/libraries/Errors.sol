@@ -12,6 +12,7 @@ library Errors {
     /// ### Hyperdrive ###
     /// ##################
     error BaseBufferExceedsShareReserves();
+    error InvalidCheckpointDuration();
     error InvalidMaturityTime();
     error PoolAlreadyInitialized();
     error TransferFailed();

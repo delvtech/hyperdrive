@@ -83,33 +83,35 @@ contract Hyperdrive is MultiToken {
     /// @param _linkerFactory The factory which is used to deploy the ERC20
     ///        linker contracts.
     /// @param _baseToken The base token contract.
-    /// @param _checkpointDuration The time in seconds between share price
-    ///        checkpoints.
+    /// @param _initialSharePrice The initial share price.
     /// @param _positionDuration The time in seconds that elaspes before bonds
     ///        can be redeemed one-to-one for base.
+    /// @param _checkpointDuration The time in seconds between share price
+    ///        checkpoints. Position duration must be a multiple of checkpoint
+    ///        duration.
     /// @param _timeStretch The time stretch of the pool.
     constructor(
         bytes32 _linkerCodeHash,
         address _linkerFactory,
         IERC20 _baseToken,
-        uint256 _checkpointDuration,
-        uint256 _positionDuration,
-        uint256 _timeStretch,
         uint256 _initialPricePerShare
+        uint256 _positionDuration,
+        uint256 _checkpointDuration,
+        uint256 _timeStretch
     ) MultiToken(_linkerCodeHash, _linkerFactory) {
         // Initialize the base token address.
         baseToken = _baseToken;
 
-        // FIXME: Ensure that the position duration is a multiple of the
-        // checkpoint duration.
-        //
         // Initialize the time configurations.
-        checkpointDuration = _checkpointDuration;
+        if (_positionDuration % _checkpointDuration != 0) {
+            revert Errors.InvalidCheckpointDuration();
+        }
         positionDuration = _positionDuration;
+        checkpointDuration = _checkpointDuration;
         timeStretch = _timeStretch;
 
         // Initialize the share prices.
-        initialSharePrice = _initialPricePerShare;
+        initialSharePrice = _initialSharePrice;
         // TODO: Use the update checkpoint helper function.
         checkpoints[
             block.timestamp - (block.timestamp % checkpointDuration)
@@ -161,15 +163,21 @@ contract Hyperdrive is MultiToken {
         }
 
         // Deposit for the user, this transfers from them.
-        (uint256 shares, uint256 pricePerShare) = deposit(_contribution);
+        (uint256 shares, uint256 sharePrice) = deposit(_contribution);
 
-        // Set the state variables.
+        // Create an initial checkpoint.
+        _checkpoint();
+
+        // Calculate the amount of LP shares the initializer receives.
+        uint256 lpShares = shareReserves;
+
+        // Update the reserves. The bond reserves are calculated so that the
+        // pool is initialized with the target APR.
         shareReserves = shares;
-        // We calculate the implied bond reserve from the share price
         bondReserves = HyperdriveMath.calculateBondReserves(
             shares,
             shares,
-            pricePerShare,
+            sharePrice,
             _apr,
             positionDuration,
             timeStretch
@@ -317,33 +325,29 @@ contract Hyperdrive is MultiToken {
             revert Errors.ZeroAmount();
         }
 
-        // Perform a checkpoint and compute the amount of interest the long
-        // would have paid had they opened at the beginning of the checkpoint.
-        // To ensure that our PnL accounting works correctly, longs must pay for
-        // this backdated interest.
-        (uint256 latestCheckpoint, uint256 openSharePrice) = _checkpoint();
-        // (c_1 - c_0) * (dx / c_0) = (c_1 / c_0 - 1) * dx
-        uint256 owedInterest = (sharePrice.divDown(openSharePrice) -
-            FixedPointMath.ONE_18).mulDown(_baseAmount);
-        uint256 maturityDate = latestCheckpoint + positionDuration;
-        uint256 timeRemaining = (maturityDate - block.timestamp).divDown(
-            positionDuration
-        );
+        // Perform a checkpoint.
+        (uint256 latestCheckpoint, ) = _checkpoint();
 
         // Take custody of the base that is being traded into the contract and
-        // the interest owed on the backdated bonds.
+        //
         bool success = baseToken.transferFrom(
             msg.sender,
             address(this),
-            _baseAmount.add(owedInterest)
+            _baseAmount
         );
         if (!success) {
             revert Errors.TransferFailed();
         }
 
-        // Load price per share from the yield source
+        // Calculate the pool and user deltas using the trading function. We
+        // backdate the bonds purchased to the beginning of the checkpoint. We
+        // reduce the purchasing power of the longs by the amount of interest
+        // earned in shares.
         uint256 sharePrice = _pricePerShare();
-        // Calculate the pool and user deltas using the trading function.
+        uint256 maturityTime = latestCheckpoint + positionDuration;
+        uint256 timeRemaining = (maturityTime - block.timestamp).divDown(
+            positionDuration
+        );
         uint256 shareAmount = _baseAmount.divDown(sharePrice);
         (, uint256 poolBondDelta, uint256 bondProceeds) = HyperdriveMath
             .calculateOutGivenIn(
@@ -380,7 +384,7 @@ contract Hyperdrive is MultiToken {
             AssetId.encodeAssetId(
                 AssetId.AssetIdPrefix.Long,
                 sharePrice,
-                block.timestamp + positionDuration
+                maturityTime
             ),
             msg.sender,
             bondProceeds
@@ -412,10 +416,8 @@ contract Hyperdrive is MultiToken {
         _burn(assetId, msg.sender, _bondAmount);
         longsOutstanding -= _bondAmount;
 
-        // Load the price per share
-        uint256 sharePrice = _pricePerShare();
-
         // Calculate the pool and user deltas using the trading function.
+        uint256 sharePrice = _pricePerShare();
         uint256 timeRemaining = block.timestamp < uint256(_maturityTime)
             ? (uint256(_maturityTime) - block.timestamp).divDown(
                 positionDuration
@@ -434,6 +436,9 @@ contract Hyperdrive is MultiToken {
                 false
             );
 
+        // FIXME: This behavior may need to be revised when we update the
+        //        automatic closing flow.
+        //
         // If there are outstanding long withdrawal shares, we attribute a
         // proportional amount of the proceeds to the withdrawal pool and the
         // active LPs. Otherwise, we use simplified accounting that has the same
@@ -441,12 +446,20 @@ contract Hyperdrive is MultiToken {
         // base reserves and the longs outstanding stays the same or gets
         // larger, we don't need to verify the reserves invariants.
         if (longWithdrawalSharesOutstanding > 0) {
+            // Since longs are backdated to the beginning of the checkpoint and
+            // interest only begins accruing when the longs are opened, we
+            // exclude the first checkpoint from LP withdrawal payouts. For most
+            // pools the difference will not be meaningful, and in edge cases,
+            // fees can be tuned to offset the problem.
+            uint256 openSharePrice = checkpoints[
+                (_maturityTime - positionDuration) + checkpointDuration
+            ];
             _applyCloseLong(
                 _bondAmount,
                 poolBondDelta,
                 shareProceeds,
-                _openSharePrice,
-                sharePrice
+                sharePrice,
+                openSharePrice
             );
         } else {
             shareReserves -= shareProceeds;
@@ -472,30 +485,48 @@ contract Hyperdrive is MultiToken {
             revert Errors.ZeroAmount();
         }
 
-        // Load the share price at the current block
-        uint256 sharePrice = _pricePerShare();
+        // Perform a checkpoint and compute the amount of interest the short
+        // would have received if they opened at the beginning of the checkpoint.
+        // Since the short will receive interest from the beginning of the
+        // checkpoint, they will receive this backdated interest back at closing.
+        (uint256 latestCheckpoint, uint256 openSharePrice) = _checkpoint();
 
-        // Calculate the pool and user deltas using the trading function.
+        // Calculate the pool and user deltas using the trading function. We
+        // backdate the bonds sold to the beginning of the checkpoint.
+        uint256 sharePrice = _pricePerShare();
+        uint256 maturityTime = latestCheckpoint + positionDuration;
+        uint256 timeRemaining = (maturityTime - block.timestamp).divDown(
+            positionDuration
+        );
         (uint256 poolShareDelta, , uint256 shareProceeds) = HyperdriveMath
             .calculateOutGivenIn(
                 shareReserves,
                 bondReserves,
                 totalSupply[AssetId._LP_ASSET_ID],
                 _bondAmount,
-                FixedPointMath.ONE_18,
+                timeRemaining,
                 timeStretch,
                 sharePrice,
                 initialSharePrice,
                 false
             );
 
-        // Take custody of the maximum amount the trader can lose on the short.
-        // And deposit it into the yield source
+        // Take custody of the maximum amount the trader can lose on the short
+        // and the extra interest the short will receive at closing (since the
+        // proceeds of the trades are calculated using the checkpoint's open
+        // share price). This extra interest can be calculated as:
+        //
+        // interest = (c_1 - c_0) * (dy / c_0)
+        //          = (c_1 / c_0 - 1) * dy
+        uint256 owedInterest = (sharePrice.divDown(openSharePrice) -
+            FixedPointMath.ONE_18).mulDown(_bondAmount);
         uint256 baseProceeds = shareProceeds.mulDown(sharePrice);
-        deposit(_bondAmount - baseProceeds);
+        deposit((_bondAmount - baseProceeds) + owedInterest); // max_loss + interest
 
         // Apply the trading deltas to the reserves and increase the bond buffer
-        // by the amount of bonds that were shorted.
+        // by the amount of bonds that were shorted. We don't need to add the
+        // margin or pre-paid interest to the reserves because of the way that
+        // the close short accounting works.
         shareReserves -= poolShareDelta;
         bondReserves += _bondAmount;
         shortsOutstanding += _bondAmount;
@@ -512,7 +543,7 @@ contract Hyperdrive is MultiToken {
             AssetId.encodeAssetId(
                 AssetId.AssetIdPrefix.Short,
                 sharePrice,
-                block.timestamp + positionDuration
+                maturityTime
             ),
             msg.sender,
             _bondAmount
@@ -531,6 +562,9 @@ contract Hyperdrive is MultiToken {
         if (_bondAmount == 0) {
             revert Errors.ZeroAmount();
         }
+
+        // Perform a checkpoint.
+        _checkpoint();
 
         // Burn the shorts that are being closed.
         uint256 assetId = AssetId.encodeAssetId(
@@ -565,6 +599,9 @@ contract Hyperdrive is MultiToken {
                 initialSharePrice
             );
 
+        // FIXME: This behavior may need to be revised when we update the
+        //        automatic closing flow.
+        //
         // If there are outstanding short withdrawal shares, we attribute a
         // proportional amount of the proceeds to the withdrawal pool and the
         // active LPs. Otherwise, we use simplified accounting that has the same
@@ -583,19 +620,22 @@ contract Hyperdrive is MultiToken {
             bondReserves -= poolBondDelta;
         }
 
-        // Convert the bonds to current shares
-        uint256 _bondsInShares = _bondAmount.divDown(sharePrice);
+        // TODO: Double check this math.
+        //
         // Transfer the profit to the shorter. This includes the proceeds from
         // the short sale as well as the variable interest that was collected
-        // on the face value of the bonds. The math for the short's proceeds is
-        // given by:
+        // on the face value of the bonds. The math for the short's proceeds in
+        // base is given by:
         //
-        // c * (dy / c_0 - dz)
-        uint256 shortProceeds = (
-            _bondsInShares.mulDown(sharePrice.divDown(_openSharePrice)).sub(
-                sharePayment
-            )
-        );
+        // proceeds = dy - c * dz + (c - c_0) * (dy / c_0)
+        //          = dy - c * dz + (c / c_0) * dy - dy
+        //          = (c / c_0) * dy - c * dz
+        //          = c * (dy / c_0 - dz)
+        //
+        // To convert to proceeds in shares, we simply divide by the current
+        // share price.
+        uint256 openSharePrice = checkpoints[_maturityTime - positionDuration];
+        uint256 shortProceeds = _bondAmount.divDown(openSharePrice).sub(sharePayment);
         // Withdraw from the reserves
         // TODO - Better destination support
         withdraw(shortProceeds, msg.sender);
@@ -611,14 +651,14 @@ contract Hyperdrive is MultiToken {
     ///        pool.
     /// @param _shareProceeds The proceeds in shares received from closing the
     ///        long.
+    /// @param _sharePrice The current share price.
     /// @param _openSharePrice The share price at the time the long was opened.
-    /// @param _sharePrice The current share price
     function _applyCloseLong(
         uint256 _bondAmount,
         uint256 _poolBondDelta,
         uint256 _shareProceeds,
-        uint256 _openSharePrice,
-        uint256 _sharePrice
+        uint256 _sharePrice,
+        uint256 _openSharePrice
     ) internal {
         // Calculate the effect that the trade has on the pool's APR.
         uint256 apr = HyperdriveMath.calculateAPRFromReserves(
@@ -636,7 +676,7 @@ contract Hyperdrive is MultiToken {
         // when longs are opened. The math for the withdrawal proceeds is given
         // by:
         //
-        // c * (dy / c_0 - dz) * (min(b_x, dy) / dy)
+        // proceeds = c * (dy / c_0 - dz) * (min(b_x, dy) / dy)
         uint256 withdrawalAmount = longWithdrawalSharesOutstanding < _bondAmount
             ? longWithdrawalSharesOutstanding
             : _bondAmount;
@@ -694,7 +734,7 @@ contract Hyperdrive is MultiToken {
         // shorts are opened. The math for the withdrawal proceeds is given
         // by:
         //
-        // c * dz * (min(b_y, dy) / dy)
+        // proceeds = c * dz * (min(b_y, dy) / dy)
         uint256 withdrawalAmount = shortWithdrawalSharesOutstanding <
             _bondAmount
             ? shortWithdrawalSharesOutstanding
@@ -725,7 +765,9 @@ contract Hyperdrive is MultiToken {
 
     // TODO: We need to pay out the withdrawal pools in this function.
     //
-    // TODO: Comment this.
+    /// @dev Creates a new checkpoint if necessary.
+    /// @return latestCheckpoint The latest checkpoint time.
+    /// @return openSharePrice The open share price of the latest checkpoint.
     function _checkpoint()
         internal
         returns (uint256 latestCheckpoint, uint256 openSharePrice)
