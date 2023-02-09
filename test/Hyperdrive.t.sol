@@ -5,6 +5,7 @@ import { ERC20PresetFixedSupply } from "@openzeppelin/contracts/token/ERC20/pres
 import { Test } from "forge-std/Test.sol";
 import { ForwarderFactory } from "contracts/ForwarderFactory.sol";
 import { Hyperdrive } from "contracts/Hyperdrive.sol";
+import "contracts/libraries/FixedPointMath.sol";
 
 contract HyperdriveTest is Test {
     address alice = address(uint160(uint256(keccak256("alice"))));
@@ -31,7 +32,8 @@ contract HyperdriveTest is Test {
             address(forwarderFactory),
             baseToken,
             365 days,
-            22.186877016851916266e18
+            22.186877016851916266e18,
+            FixedPointMath.ONE_18
         );
     }
 }
