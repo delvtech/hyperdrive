@@ -124,14 +124,14 @@ library HyperdriveMath {
             uint256 userDelta
         )
     {
+        uint256 flat = _amountIn.mulDown(
+            FixedPointMath.ONE_18.sub(_timeRemaining)
+        );
         if (_isBondOut) {
             // We consider (1-timeRemaining)*amountIn of the bonds being
             // purchased to be fully matured and we use the remaining
             // timeRemaining*amountIn shares to purchase newly minted bonds on a
             // YieldSpace curve configured to timeRemaining = 1.
-            uint256 flat = _amountIn.mulDown(
-                FixedPointMath.ONE_18.sub(_timeRemaining)
-            );
             uint256 curveIn = _amountIn.mulDown(_timeRemaining);
             uint256 curveOut = YieldSpaceMath.calculateOutGivenIn(
                 // Credit the share reserves by the flat trade.
@@ -158,9 +158,7 @@ library HyperdriveMath {
             // (our result is given in shares, so we divide the one-to-one
             // redemption by the share price) and the newly minted bonds are
             // traded on a YieldSpace curve configured to timeRemaining = 1.
-            uint256 flat = _amountIn
-                .mulDown(FixedPointMath.ONE_18.sub(_timeRemaining))
-                .divDown(_sharePrice);
+            flat = flat.divDown(_sharePrice);
             uint256 curveIn = _amountIn.mulDown(_timeRemaining).divDown(
                 _sharePrice
             );
