@@ -27,9 +27,7 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
 
       - name: Run coverage
-        run: |
-          forge coverage --report lcov
-          lcov --remove lcov.info 'test/*' 'script/*' > lcov.info
+        run: forge coverage --report lcov
 
       - name: Upload to codecov
         uses: codecov/codecov-action@v3
