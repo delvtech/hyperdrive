@@ -27,7 +27,10 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
 
       - name: Run coverage
-        run: forge coverage --report lcov
+        run: |
+          forge coverage --report lcov
+          sudo apt-get install lcov
+          lcov --remove lcov.info  -o lcov.info 'test/*' 'script/*'
 
       - name: Upload to codecov
         uses: codecov/codecov-action@v3
