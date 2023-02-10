@@ -1,10 +1,8 @@
 on: [push]
 
-name: coverage
-
 jobs:
   check:
-    name: Foundry project
+    name: coverage
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -27,4 +25,16 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
 
       - name: Run coverage
-        run: forge coverage >> $GITHUB_STEP_SUMMARY
+        run: forge coverage --report lcov
+
+      - name: Setup LCOV
+          uses: hrishikesh-kadam/setup-lcov@v1
+
+      - name: Report code coverage
+        uses: zgosalvez/github-actions-report-lcov@v3
+        with:
+          coverage-files: lcov.info
+          artifact-name: code-coverage-report
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+        # run: lcov --remove lcov.info  -o lcov.info 'test/*' 'script/*'
