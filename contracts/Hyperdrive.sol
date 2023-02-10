@@ -84,22 +84,21 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
     /// @param _linkerFactory The address of the factory which is used to deploy
     ///        the ERC20 linker contracts.
     /// @param _baseToken The base token contract.
-    /// @param _initialSharePrice The initial share price.
     /// @param _checkpointsPerTerm The number of checkpoints that elaspes before
     ///        bonds can be redeemed one-to-one for base.
     /// @param _checkpointDuration The time in seconds between share price
     ///        checkpoints. Position duration must be a multiple of checkpoint
     ///        duration.
     /// @param _timeStretch The time stretch of the pool.
+    /// @param _initialPricePerShare The initial share price.
     constructor(
         bytes32 _linkerCodeHash,
         address _linkerFactory,
         IERC20 _baseToken,
-        uint256 _initialSharePrice,
         uint256 _checkpointsPerTerm,
         uint256 _checkpointDuration,
         uint256 _timeStretch,
-        uint256 _positionDuration,
+        uint256 _initialPricePerShare,
         uint256 _curveFee,
         uint256 _flatFee
     ) MultiToken(_linkerCodeHash, _linkerFactory) {
@@ -111,11 +110,7 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         checkpointDuration = _checkpointDuration;
         timeStretch = _timeStretch;
 
-        // Initialize the share prices.
-        initialSharePrice = _initialSharePrice;
-        // TODO: This isn't correct. This will need to be updated when asset
-        // delgation is implemented.
-        initialSharePrice = FixedPointMath.ONE_18;
+        initialSharePrice = _initialPricePerShare;
 
         // TODO: Update these.  Hardcode to 10% each for now.
         curveFee = FixedPointMath.ONE_18 / 10;
