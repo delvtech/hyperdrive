@@ -133,15 +133,18 @@ library HyperdriveMath {
             // timeRemaining*amountIn shares to purchase newly minted bonds on a
             // YieldSpace curve configured to timeRemaining = 1.
             uint256 curveIn = _amountIn.mulDown(_timeRemaining);
+
+            // Credit the share reserves by the flat trade.
+            _shareReserves = _shareReserves.add(flat);
+            // Debit the bond reserves by the flat trade.
+            _bondReserves = _bondReserves.sub(flat.mulDown(_sharePrice));
+
             uint256 curveOut = YieldSpaceMath.calculateOutGivenIn(
-                // Credit the share reserves by the flat trade.
-                _shareReserves.add(flat),
-                // Debit the bond reserves by the flat trade.
-                _bondReserves.sub(flat.mulDown(_sharePrice)),
+                _shareReserves,
+                _bondReserves,
                 _bondReserveAdjustment,
                 curveIn,
-                FixedPointMath.ONE_18,
-                _timeStretch,
+                FixedPointMath.ONE_18.sub(_timeStretch),
                 _sharePrice,
                 _initialSharePrice,
                 _isBondOut
@@ -162,15 +165,18 @@ library HyperdriveMath {
             uint256 curveIn = _amountIn.mulDown(_timeRemaining).divDown(
                 _sharePrice
             );
+
+            // Debit the share reserves by the flat trade.
+            _shareReserves = _shareReserves.sub(flat);
+            // Credit the bond reserves by the flat trade.
+            _bondReserves = _bondReserves.add(flat.mulDown(_sharePrice));
+
             uint256 curveOut = YieldSpaceMath.calculateOutGivenIn(
-                // Debit the share reserves by the flat trade.
-                _shareReserves.sub(flat),
-                // Credit the bond reserves by the flat trade.
-                _bondReserves.add(flat.mulDown(_sharePrice)),
+                _shareReserves,
+                _bondReserves,
                 _bondReserveAdjustment,
                 curveIn,
-                FixedPointMath.ONE_18,
-                _timeStretch,
+                FixedPointMath.ONE_18.sub(_timeStretch),
                 _sharePrice,
                 _initialSharePrice,
                 _isBondOut
@@ -230,15 +236,17 @@ library HyperdriveMath {
         uint256 curveOut = _amountOut.mulDown(_timeRemaining).divDown(
             _sharePrice
         );
+
+        // Credit the share reserves by the flat trade.
+        _shareReserves = _shareReserves.add(flat);
+        // Debit the bond reserves by the flat trade.
+        _bondReserves = _bondReserves.sub(flat.mulDown(_sharePrice));
         uint256 curveIn = YieldSpaceMath.calculateInGivenOut(
-            // Credit the share reserves by the flat trade.
-            _shareReserves.add(flat),
-            // Debit the bond reserves by the flat trade.
-            _bondReserves.sub(flat.mulDown(_sharePrice)),
+            _shareReserves,
+            _bondReserves,
             _bondReserveAdjustment,
             curveOut,
-            FixedPointMath.ONE_18,
-            _timeStretch,
+            FixedPointMath.ONE_18.sub(_timeStretch),
             _sharePrice,
             _initialSharePrice,
             false
