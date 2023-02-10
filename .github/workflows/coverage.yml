@@ -1,4 +1,4 @@
-on: [push]
+on: ["push", "pull_request"]
 
 name: hyperdrive
 
@@ -32,10 +32,8 @@ jobs:
           sudo apt-get install lcov
           lcov --remove lcov.info  -o lcov.info 'test/*' 'script/*'
 
-      - name: Upload to codecov
-        uses: codecov/codecov-action@v3
+      - name: Coveralls
+        uses: coverallsapp/github-action@master
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./lcov.info
-          fail_ci_if_error: true
-          verbose: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: "./lcov.info"
