@@ -1,5 +1,7 @@
 on: [push]
 
+name: hyperdrive
+
 jobs:
   check:
     name: coverage
@@ -36,5 +38,3 @@ jobs:
           coverage-files: lcov.info
           artifact-name: code-coverage-report
           github-token: ${{ secrets.GITHUB_TOKEN }}
-
-        # run: lcov --remove lcov.info  -o lcov.info 'test/*' 'script/*'
