@@ -37,7 +37,7 @@ If you want to automatically format the code, run `yarn prettier`.
 The language used in this codebase is for coding convenience only, and is not
 intended to, and does not, have any particular legal or regulatory significance.
 
-# Coverage
+## Coverage
 
 <a href="https://codecov.io/gh/element-fi/hyperdrive" > 
 <img src="https://codecov.io/gh/element-fi/hyperdrive/branch/main/graphs/sunburst.svg?token=I35ZGDABCS"/> 
