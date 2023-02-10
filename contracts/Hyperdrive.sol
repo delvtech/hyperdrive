@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.15;
+pragma solidity ^0.8.18;
 
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -357,11 +357,12 @@ contract Hyperdrive is MultiToken {
     /// @param _openSharePrice The opening share price of the short.
     /// @param _maturityTime The maturity time of the short.
     /// @param _bondAmount The amount of longs to close.
+    /// @return The amount of underlying the user receives
     function closeLong(
         uint256 _openSharePrice,
         uint32 _maturityTime,
         uint256 _bondAmount
-    ) external {
+    ) external returns(uint256) {
         if (_bondAmount == 0) {
             revert Errors.ZeroAmount();
         }
@@ -424,6 +425,8 @@ contract Hyperdrive is MultiToken {
         if (!success) {
             revert Errors.TransferFailed();
         }
+
+        return(shareProceeds.mulDown(sharePrice));
     }
 
     /// Short ///
