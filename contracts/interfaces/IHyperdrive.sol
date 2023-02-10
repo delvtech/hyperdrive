@@ -4,11 +4,9 @@ pragma solidity ^0.8.15;
 import "./IMultiToken.sol";
 
 interface IHyperdrive is IMultiToken {
-
     function closeLong(
         uint256 _openSharePrice,
         uint32 _maturityTime,
         uint256 _bondAmount
-    ) external returns(uint256);
-
+    ) external returns (uint256);
 }

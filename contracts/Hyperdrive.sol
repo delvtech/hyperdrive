@@ -362,7 +362,7 @@ contract Hyperdrive is MultiToken {
         uint256 _openSharePrice,
         uint32 _maturityTime,
         uint256 _bondAmount
-    ) external returns(uint256) {
+    ) external returns (uint256) {
         if (_bondAmount == 0) {
             revert Errors.ZeroAmount();
         }
@@ -426,7 +426,7 @@ contract Hyperdrive is MultiToken {
             revert Errors.TransferFailed();
         }
 
-        return(shareProceeds.mulDown(sharePrice));
+        return (shareProceeds.mulDown(sharePrice));
     }
 
     /// Short ///

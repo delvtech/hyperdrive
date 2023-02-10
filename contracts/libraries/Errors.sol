@@ -41,7 +41,6 @@ library Errors {
     /// ###############
     error AssetIDCorruption();
 
-
     /// #####################
     /// ### StableWrapper ###
     /// #####################

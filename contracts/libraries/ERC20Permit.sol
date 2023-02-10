@@ -77,12 +77,10 @@ abstract contract ERC20Permit is IERC20Permit {
     /// @param amount The amount user token to send
     /// @return returns true on success, reverts on failure so cannot return false.
     /// @dev transfers to this contract address or 0 will fail
-    function transfer(address recipient, uint256 amount)
-        public
-        virtual
-        override
-        returns (bool)
-    {
+    function transfer(
+        address recipient,
+        uint256 amount
+    ) public virtual override returns (bool) {
         // We forward this call to 'transferFrom'
         return transferFrom(msg.sender, recipient, amount);
     }
@@ -159,12 +157,10 @@ abstract contract ERC20Permit is IERC20Permit {
     /// @param account The account which will be approve to transfer tokens
     /// @param amount The approval amount, if set to uint256.max the allowance does not go down on transfers.
     /// @return returns true for compatibility with the ERC20 standard
-    function approve(address account, uint256 amount)
-        public
-        virtual
-        override
-        returns (bool)
-    {
+    function approve(
+        address account,
+        uint256 amount
+    ) public virtual override returns (bool) {
         // Set the senders allowance for account to amount
         allowance[msg.sender][account] = amount;
         // Emit an event to track approvals
