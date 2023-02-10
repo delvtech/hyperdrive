@@ -15,7 +15,7 @@ import { MultiToken } from "contracts/MultiToken.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-
+//
 // TODO - Here we give default implementations of the virtual methods to not break tests
 //        we should move to an abstract contract to prevent this from being deployed w/o
 //        real implementations.
@@ -64,6 +64,12 @@ contract Hyperdrive is MultiToken {
 
     /// @notice The amount of shorts that are still open.
     uint256 public shortsOutstanding;
+
+    /// @notice The amount of longs that have matured but have not been closed.
+    uint256 public longsMatured;
+
+    /// @notice The amount of shorts that have matured but have not been closed.
+    uint256 public shortsMatured;
 
     /// @notice The amount of long withdrawal shares that haven't been paid out.
     uint256 public longWithdrawalSharesOutstanding;
@@ -744,6 +750,7 @@ contract Hyperdrive is MultiToken {
     function _checkpoint(
         uint256 _sharePrice
     ) internal returns (uint256 latestCheckpoint, uint256 openSharePrice) {
+        // Return early if the checkpoint has already been updated.
         latestCheckpoint =
             block.timestamp -
             (block.timestamp % checkpointDuration);
@@ -751,6 +758,101 @@ contract Hyperdrive is MultiToken {
             checkpoints[latestCheckpoint] = _sharePrice;
             return (latestCheckpoint, _sharePrice);
         }
+
+        // Pay out the long withdrawal pool for longs that have matured.
+        uint256 newlyMaturedLongs = totalSupply[
+            AssetId.encodeAssetId(
+                AssetId.AssetIdPrefix.Long,
+                0,
+                latestCheckpoint
+            )
+        ];
+        if (newlyMaturedLongs > 0) {
+            // Since longs are backdated to the beginning of the checkpoint and
+            // interest only begins accruing when the longs are opened, we
+            // exclude the first checkpoint from LP withdrawal payouts. For most
+            // pools the difference will not be meaningful, and in edge cases,
+            // fees can be tuned to offset the problem.
+            uint256 openSharePrice = checkpoints[
+                (latestCheckpoint - positionDuration) + checkpointDuration
+            ];
+            _applyMaturedLongsPayout(
+                newlyMaturedLongs,
+                _sharePrice,
+                openSharePrice
+            );
+        }
+
+        // Pay out the short withdrawal pool for shorts that have matured.
+        if (
+            totalSupply[
+                AssetId.encodeAssetId(
+                    AssetId.AssetIdPrefix.Short,
+                    0,
+                    latestCheckpoint
+                )
+            ] > 0
+        ) {
+            // FIXME
+        }
+
         return (latestCheckpoint, checkpoints[latestCheckpoint]);
+    }
+
+    // FIXME: Update longsMatured here and elsewhere.
+    //
+    /// @dev Pays out the profits from matured longs to the withdrawal pool.
+    /// @param _bondAmount The amount of longs that have matured.
+    /// @param _sharePrice The current share price.
+    /// @param _openSharePrice The share price when the longs were opened.
+    function _applyMaturedLongsPayout(
+        uint256 _bondAmount,
+        uint256 _sharePrice,
+        uint256 _openSharePrice
+    ) internal {
+        // Calculate the current pool APR.
+        uint256 apr = HyperdriveMath.calculateAPRFromReserves(
+            shareReserves,
+            bondReserves,
+            totalSupply[AssetId._LP_ASSET_ID],
+            initialSharePrice,
+            positionDuration,
+            timeStretch
+        );
+
+        // Apply the LP proceeds from the trade proportionally to the long
+        // withdrawal shares. The accounting for these proceeds is identical
+        // to the close short accounting because LPs take the short position
+        // when longs are opened; however, we can make some simplifications
+        // since the longs have matured. The math for the withdrawal proceeds is
+        // given by:
+        //
+        // proceeds = c * (dy / c_0 - dy / c) * (min(b_x, dy) / dy)
+        //          = (c / c_0 - 1) * dy * (min(b_x, dy) / dy)
+        //          = (c / c_0 - 1) * min(b_x, dy)
+        uint256 withdrawalAmount = longWithdrawalSharesOutstanding < _bondAmount
+            ? longWithdrawalSharesOutstanding
+            : _bondAmount;
+        uint256 withdrawalProceeds = (
+            _sharePrice.divDown(_openSharePrice).sub(FixedPointMath.ONE_18)
+        ).mulDown(withdrawalAmount);
+        longWithdrawalSharesOutstanding -= withdrawalAmount;
+        longWithdrawalShareProceeds += withdrawalProceeds;
+
+        // Apply the withdrawal payouts to the reserves. These updates reflect
+        // the fact that some of the reserves will be attributed to the
+        // withdrawal pool. The math for the share reserves update is given by:
+        //
+        // z -= (c / c_0 - 1) * min(b_x, dy) / c
+        //    = (1 / c_0 - 1 / c_1) * min(b_x, dy)
+        shareReserves -= withdrawalProceeds.divDown(_sharePrice);
+        bondReserves = HyperdriveMath.calculateBondReserves(
+            shareReserves,
+            totalSupply[AssetId._LP_ASSET_ID],
+            initialSharePrice,
+            apr,
+            positionDuration,
+            timeStretch
+        );
     }
 }
