@@ -27,18 +27,14 @@ contract HyperdriveTest is Test {
         );
 
         // Instantiate Hyperdrive.
-        hyperdrive = new Hyperdrive(
-            linkerCodeHash,
-            address(forwarderFactory),
-            baseToken,
-            365 days,
-<<<<<<< HEAD
-            22.186877016851916266e18,
-            FixedPointMath.ONE_18
-=======
-            1 days,
-            22.186877016851916266e18
->>>>>>> 08a3149 (Wrote checkpointing logic without making it zombie-proof)
-        );
+        hyperdrive = new Hyperdrive({
+            _linkerCodeHash: linkerCodeHash,
+            _linkerFactoryAddress: address(forwarderFactory),
+            _baseToken: baseToken,
+            _initialSharePrice: FixedPointMath.ONE_18,
+            _positionDuration: 365 days,
+            _checkpointDuration: 1 days,
+            _timeStretch: 22.186877016851916266e18
+        });
     }
 }

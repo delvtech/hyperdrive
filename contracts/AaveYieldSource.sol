@@ -33,12 +33,16 @@ contract AaveYieldSource is Hyperdrive {
     /// @param _baseToken The base token contract.
     /// @param _positionDuration The time in seconds that elapses before bonds
     ///        can be redeemed one-to-one for base.
+    /// @param _checkpointDuration The time in seconds between share price
+    ///        checkpoints. Position duration must be a multiple of checkpoint
+    ///        duration.
     /// @param _timeStretch The time stretch of the pool.
     constructor(
         bytes32 _linkerCodeHash,
         address _linkerFactory,
         IERC20 _baseToken,
         uint256 _positionDuration,
+        uint256 _checkpointDuration,
         uint256 _timeStretch,
         IERC20 _aToken,
         Pool _pool
@@ -47,9 +51,10 @@ contract AaveYieldSource is Hyperdrive {
             _linkerCodeHash,
             _linkerFactory,
             _baseToken,
+            FixedPointMath.ONE_18,
             _positionDuration,
-            _timeStretch,
-            FixedPointMath.ONE_18
+            _checkpointDuration,
+            _timeStretch
         )
     {
         aToken = _aToken;
@@ -59,10 +64,10 @@ contract AaveYieldSource is Hyperdrive {
     ///@notice Transfers amount of 'token' from the user and commits it to the yield source.
     ///@param amount The amount of token to transfer
     ///@return sharesMinted The shares this deposit creates
-    ///@return pricePerShare The price per share at time of deposit
+    ///@return sharePrice The share price at time of deposit
     function deposit(
         uint256 amount
-    ) internal override returns (uint256 sharesMinted, uint256 pricePerShare) {
+    ) internal override returns (uint256 sharesMinted, uint256 sharePrice) {
         // Transfer from user
         bool success = baseToken.transferFrom(
             msg.sender,
@@ -93,15 +98,11 @@ contract AaveYieldSource is Hyperdrive {
     ///@param shares The shares to withdraw from the yieldsource
     ///@param destination The address which is where to send the resulting tokens
     ///@return amountWithdrawn the amount of 'token' produced by this withdraw
-    ///@return pricePerShare The price per share on withdraw.
+    ///@return sharePrice The share price on withdraw.
     function withdraw(
         uint256 shares,
         address destination
-    )
-        internal
-        override
-        returns (uint256 amountWithdrawn, uint256 pricePerShare)
-    {
+    ) internal override returns (uint256 amountWithdrawn, uint256 sharePrice) {
         // Load the balance of this contract
         uint256 assets = aToken.balanceOf(address(this));
         // The withdraw is the percent of shares the user has times the total assets
@@ -112,17 +113,17 @@ contract AaveYieldSource is Hyperdrive {
         return (withdrawValue, shares.divDown(withdrawValue));
     }
 
-    ///@notice Loads the price per share from the yield source
-    ///@return pricePerShare The current price per share
-    function _pricePerShare()
+    ///@notice Loads the share price from the yield source.
+    ///@return sharePrice The current share price.
+    function pricePerShare()
         internal
         view
         override
-        returns (uint256 pricePerShare)
+        returns (uint256 sharePrice)
     {
         // Load the balance of this contract
         uint256 assets = aToken.balanceOf(address(this));
-        // Price per share is assets divided by shares
+        // The share price is assets divided by shares
         return (assets.divDown(totalShares));
     }
 }
