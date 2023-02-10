@@ -111,9 +111,7 @@ contract StableWrapper is ERC20Permit {
             // Update the user account
             deposited -= amount;
             forceClosed -= receivedAmount;
-            userAccounts[msg.sender][assetId] =
-                forceClosed <<
-                (128 + deposited);
+            userAccounts[msg.sender][assetId] = (forceClosed << 128) + deposited;
         }
 
         // We require that this won't make the position unbacked
