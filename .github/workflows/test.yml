@@ -1,10 +1,8 @@
 on: [push]
 
-name: test
-
 jobs:
   check:
-    name: solidity
+    name: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
