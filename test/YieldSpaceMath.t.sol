@@ -12,8 +12,7 @@ contract YieldSpaceMathTest is Test {
                 62.38101813e18, // bondReserves
                 119.1741606776616e18, // bondReserveAdjustment
                 5.03176076e18, // amountOut
-                0.08065076081220067e18, // t
-                1e18, // s
+                1e18 - 0.08065076081220067e18, // t
                 1e18, // c
                 1e18, // mu
                 true // isBondIn
@@ -29,8 +28,7 @@ contract YieldSpaceMathTest is Test {
                 56.92761678068477e18, // bondReserves
                 119.1741606776616e18, // bondReserveAdjustment
                 5.500250311701939e18, // amountOut
-                0.08065076081220067e18, // t
-                1e18, // s
+                1e18 - 0.08065076081220067e18, // t
                 1e18, // c
                 1e18, // mu
                 false // isBondIn
