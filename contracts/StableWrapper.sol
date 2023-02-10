@@ -167,7 +167,7 @@ contract StableWrapper is ERC20Permit {
             deposited
         );
         // Store the user account update
-        userAccounts[user][assetId] = receivedAmount << (128 + deposited);
+        userAccounts[user][assetId] = (receivedAmount << 128) + deposited;
     }
 
     /// @notice Burns a caller's erc20 and transfers the result from the contract's token balance.
