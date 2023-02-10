@@ -35,13 +35,3 @@ jobs:
         files: ./lcov.info
         fail_ci_if_error: true
 
-
-      # - name: Setup LCOV
-      #     uses: hrishikesh-kadam/setup-lcov@v1
-
-      # - name: Report code coverage
-      #   uses: zgosalvez/github-actions-report-lcov@v3
-      #   with:
-      #     coverage-files: lcov.info
-      #     artifact-name: code-coverage-report
-      #     github-token: ${{ secrets.GITHUB_TOKEN }}
