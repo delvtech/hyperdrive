@@ -1,6 +1,6 @@
 ignore:
-    - "test"
-    - "script"
+  - "test"
+  - "script"
 comment:
   layout: "reach, diff, flags, files"
   behavior: default
