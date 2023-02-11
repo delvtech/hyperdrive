@@ -37,6 +37,10 @@ contract MockHyperdrive is Hyperdrive {
 
     error InvalidSharePrice();
 
+    function getSharePrice() external view returns (uint256) {
+        return _sharePrice;
+    }
+
     function setSharePrice(uint256 sharePrice) external {
         if (sharePrice <= _sharePrice) {
             revert InvalidSharePrice();

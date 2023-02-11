@@ -5,13 +5,17 @@ import { Test } from "forge-std/Test.sol";
 import { ForwarderFactory } from "contracts/ForwarderFactory.sol";
 import { ForwarderFactory } from "contracts/ForwarderFactory.sol";
 import { AssetId } from "contracts/libraries/AssetId.sol";
+import { Errors } from "contracts/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/libraries/HyperdriveMath.sol";
 import { ERC20Mintable } from "test/mocks/ERC20Mintable.sol";
 import { MockHyperdrive } from "test/mocks/MockHyperdrive.sol";
 
 contract HyperdriveTest is Test {
+    using FixedPointMath for uint256;
+
     address alice = address(uint160(uint256(keccak256("alice"))));
+    address bob = address(uint160(uint256(keccak256("bob"))));
 
     ERC20Mintable baseToken;
     MockHyperdrive hyperdrive;
@@ -36,13 +40,13 @@ contract HyperdriveTest is Test {
 
     // FIXME: It would be good to fuzz this. We should also try this with
     // different values for initial share price and share price.
-    function test_initialize() external {
-        // Mint some base for Alice and approve the Hyperdrive contract.
+    function test_initialization_success() external {
+        // Initialize Hyperdrive.
+        vm.stopPrank();
+        vm.startPrank(alice);
         uint256 contribution = 1000.0e18;
         baseToken.mint(contribution);
         baseToken.approve(address(hyperdrive), contribution);
-
-        // Initialize Hyperdrive.
         uint256 apr = 0.5e18;
         hyperdrive.initialize(contribution, apr);
 
@@ -58,8 +62,31 @@ contract HyperdriveTest is Test {
         );
         assertApproxEqAbs(poolApr, apr, 1.0e3);
 
-        // FIXME: Ensure that Alice received the right amount of LP shares.
+        // Ensure that Alice's base balance has been depleted and that Alice
+        // received some LP tokens.
+        assertEq(baseToken.balanceOf(alice), 0);
+        assertEq(
+            hyperdrive.totalSupply(AssetId._LP_ASSET_ID),
+            contribution.divDown(hyperdrive.getSharePrice())
+        );
+    }
 
-        // FIXME: Have Bob try to initialize and ensure that it fails.
+    function test_initialization_failure() external {
+        // Initialize the pool with Alice.
+        vm.stopPrank();
+        vm.startPrank(alice);
+        uint256 apr = 0.5e18;
+        uint256 contribution = 1000.0e18;
+        baseToken.mint(contribution);
+        baseToken.approve(address(hyperdrive), contribution);
+        hyperdrive.initialize(contribution, apr);
+
+        // Attempt to initialize the pool a second time. This should fail.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        baseToken.mint(contribution);
+        baseToken.approve(address(hyperdrive), contribution);
+        vm.expectRevert(Errors.PoolAlreadyInitialized.selector);
+        hyperdrive.initialize(contribution, apr);
     }
 }
