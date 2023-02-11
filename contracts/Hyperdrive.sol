@@ -159,7 +159,9 @@ contract Hyperdrive is MultiToken {
         (uint256 shares, uint256 sharePrice) = deposit(_contribution);
 
         // Create an initial checkpoint.
-        _checkpoint(sharePrice);
+        uint256 latestCheckpoint = block.timestamp -
+            (block.timestamp % checkpointDuration);
+        _checkpoint(latestCheckpoint, sharePrice);
 
         // Update the reserves. The bond reserves are calculated so that the
         // pool is initialized with the target APR.
@@ -321,7 +323,9 @@ contract Hyperdrive is MultiToken {
         (uint256 shares, uint256 sharePrice) = deposit(_baseAmount);
 
         // Perform a checkpoint.
-        (uint256 latestCheckpoint, ) = _checkpoint(sharePrice);
+        uint256 latestCheckpoint = block.timestamp -
+            (block.timestamp % checkpointDuration);
+        _checkpoint(latestCheckpoint, sharePrice);
 
         // Calculate the pool and user deltas using the trading function. We
         // backdate the bonds purchased to the beginning of the checkpoint. We
@@ -388,7 +392,9 @@ contract Hyperdrive is MultiToken {
 
         // Perform a checkpoint.
         uint256 sharePrice = pricePerShare();
-        _checkpoint(sharePrice);
+        uint256 latestCheckpoint = block.timestamp -
+            (block.timestamp % checkpointDuration);
+        _checkpoint(latestCheckpoint, sharePrice);
 
         // Burn the longs that are being closed.
         uint256 assetId = AssetId.encodeAssetId(
@@ -446,9 +452,9 @@ contract Hyperdrive is MultiToken {
         // Since the short will receive interest from the beginning of the
         // checkpoint, they will receive this backdated interest back at closing.
         uint256 sharePrice = pricePerShare();
-        (uint256 latestCheckpoint, uint256 openSharePrice) = _checkpoint(
-            sharePrice
-        );
+        uint256 latestCheckpoint = block.timestamp -
+            (block.timestamp % checkpointDuration);
+        uint256 openSharePrice = _checkpoint(latestCheckpoint, sharePrice);
 
         // Calculate the pool and user deltas using the trading function. We
         // backdate the bonds sold to the beginning of the checkpoint.
@@ -523,7 +529,9 @@ contract Hyperdrive is MultiToken {
 
         // Perform a checkpoint.
         uint256 sharePrice = pricePerShare();
-        _checkpoint(sharePrice);
+        uint256 latestCheckpoint = block.timestamp -
+            (block.timestamp % checkpointDuration);
+        _checkpoint(latestCheckpoint, sharePrice);
 
         // Burn the shorts that are being closed.
         uint256 assetId = AssetId.encodeAssetId(
@@ -590,8 +598,38 @@ contract Hyperdrive is MultiToken {
     /// Checkpoint ///
 
     /// @notice Allows anyone to mint a new checkpoint.
-    function checkpoint() external {
-        _checkpoint(pricePerShare());
+    /// @param _checkpointTime The time of the checkpoint to create.
+    function checkpoint(uint256 _checkpointTime) external {
+        // If the checkpoint has already been set, return early.
+        if (checkpoints[_checkpointTime] != 0) {
+            return;
+        }
+
+        // If the checkpoint time isn't divisible by the checkpoint duration
+        // or is in the future, it's an invalid checkpoint and we should
+        // revert.
+        uint256 latestCheckpoint = block.timestamp -
+            (block.timestamp % checkpointDuration);
+        if (
+            _checkpointTime % checkpointDuration == 0 ||
+            latestCheckpoint < _checkpointTime
+        ) {
+            revert Errors.InvalidCheckpointTime();
+        }
+
+        // If the checkpoint time is the latest checkpoint, we use the current
+        // share price. Otherwise, we use a linear search to find the closest
+        // share price and use that to perform the checkpoint.
+        if (latestCheckpoint == _checkpointTime) {
+            _checkpoint(latestCheckpoint, pricePerShare());
+        } else {
+            for (uint256 time = _checkpointTime; ; time += checkpointDuration) {
+                uint256 closestSharePrice = checkpoints[time];
+                if (closestSharePrice != 0) {
+                    _checkpoint(_checkpointTime, closestSharePrice);
+                }
+            }
+        }
     }
 
     /// Helpers ///
@@ -893,19 +931,17 @@ contract Hyperdrive is MultiToken {
     }
 
     /// @dev Creates a new checkpoint if necessary.
+    /// @param _checkpointTime The time of the checkpoint to create.
     /// @param _sharePrice The current share price.
-    /// @return latestCheckpoint The latest checkpoint time.
     /// @return openSharePrice The open share price of the latest checkpoint.
     function _checkpoint(
+        uint256 _checkpointTime,
         uint256 _sharePrice
-    ) internal returns (uint256 latestCheckpoint, uint256 openSharePrice) {
+    ) internal returns (uint256 openSharePrice) {
         // Return early if the checkpoint has already been updated.
-        latestCheckpoint =
-            block.timestamp -
-            (block.timestamp % checkpointDuration);
-        if (checkpoints[latestCheckpoint] == 0) {
-            checkpoints[latestCheckpoint] = _sharePrice;
-            return (latestCheckpoint, _sharePrice);
+        if (checkpoints[_checkpointTime] == 0) {
+            checkpoints[_checkpointTime] = _sharePrice;
+            return _sharePrice;
         }
 
         // Pay out the long withdrawal pool for longs that have matured.
@@ -913,14 +949,14 @@ contract Hyperdrive is MultiToken {
             AssetId.encodeAssetId(
                 AssetId.AssetIdPrefix.Long,
                 0,
-                latestCheckpoint
+                _checkpointTime
             )
         ];
         if (maturedLongsAmount > 0) {
             _applyMaturedLongsPayout(
                 maturedLongsAmount,
                 _sharePrice,
-                latestCheckpoint
+                _checkpointTime
             );
         }
 
@@ -929,13 +965,13 @@ contract Hyperdrive is MultiToken {
             AssetId.encodeAssetId(
                 AssetId.AssetIdPrefix.Short,
                 0,
-                latestCheckpoint
+                _checkpointTime
             )
         ];
         if (maturedShortsAmount > 0) {
             _applyMaturedShortsPayout(maturedShortsAmount);
         }
 
-        return (latestCheckpoint, checkpoints[latestCheckpoint]);
+        return checkpoints[_checkpointTime];
     }
 }
