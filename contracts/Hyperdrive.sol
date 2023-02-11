@@ -285,11 +285,7 @@ contract Hyperdrive is MultiToken {
         //
         // Mint the long and short withdrawal tokens.
         _mint(
-            AssetId.encodeAssetId(
-                AssetId.AssetIdPrefix.LongWithdrawalShare,
-                0,
-                0
-            ),
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.LongWithdrawalShare, 0),
             msg.sender,
             longWithdrawalShares
         );
@@ -297,7 +293,6 @@ contract Hyperdrive is MultiToken {
         _mint(
             AssetId.encodeAssetId(
                 AssetId.AssetIdPrefix.ShortWithdrawalShare,
-                0,
                 0
             ),
             msg.sender,
@@ -367,25 +362,16 @@ contract Hyperdrive is MultiToken {
 
         // Mint the bonds to the trader with an ID of the maturity time.
         _mint(
-            AssetId.encodeAssetId(
-                AssetId.AssetIdPrefix.Long,
-                sharePrice,
-                maturityTime
-            ),
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
             msg.sender,
             bondProceeds
         );
     }
 
     /// @notice Closes a long position with a specified maturity time.
-    /// @param _openSharePrice The opening share price of the short.
     /// @param _maturityTime The maturity time of the short.
     /// @param _bondAmount The amount of longs to close.
-    function closeLong(
-        uint256 _openSharePrice,
-        uint32 _maturityTime,
-        uint256 _bondAmount
-    ) external {
+    function closeLong(uint32 _maturityTime, uint256 _bondAmount) external {
         if (_bondAmount == 0) {
             revert Errors.ZeroAmount();
         }
@@ -399,7 +385,6 @@ contract Hyperdrive is MultiToken {
         // Burn the longs that are being closed.
         uint256 assetId = AssetId.encodeAssetId(
             AssetId.AssetIdPrefix.Long,
-            _openSharePrice,
             _maturityTime
         );
         _burn(assetId, msg.sender, _bondAmount);
@@ -504,25 +489,16 @@ contract Hyperdrive is MultiToken {
         // Mint the short tokens to the trader. The ID is a concatenation of the
         // current share price and the maturity time of the shorts.
         _mint(
-            AssetId.encodeAssetId(
-                AssetId.AssetIdPrefix.Short,
-                sharePrice,
-                maturityTime
-            ),
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, maturityTime),
             msg.sender,
             _bondAmount
         );
     }
 
     /// @notice Closes a short position with a specified maturity time.
-    /// @param _openSharePrice The opening share price of the short.
     /// @param _maturityTime The maturity time of the short.
     /// @param _bondAmount The amount of shorts to close.
-    function closeShort(
-        uint256 _openSharePrice,
-        uint32 _maturityTime,
-        uint256 _bondAmount
-    ) external {
+    function closeShort(uint32 _maturityTime, uint256 _bondAmount) external {
         if (_bondAmount == 0) {
             revert Errors.ZeroAmount();
         }
@@ -536,7 +512,6 @@ contract Hyperdrive is MultiToken {
         // Burn the shorts that are being closed.
         uint256 assetId = AssetId.encodeAssetId(
             AssetId.AssetIdPrefix.Short,
-            _openSharePrice,
             _maturityTime
         );
         _burn(assetId, msg.sender, _bondAmount);
@@ -930,6 +905,11 @@ contract Hyperdrive is MultiToken {
         );
     }
 
+    // TODO: If we find that this checkpointing flow is too heavy (which is
+    // quite possible), we can store the share price and update some key metrics
+    // about matured positions and add a poking system that performs the rest of
+    // the computation.
+    //
     /// @dev Creates a new checkpoint if necessary.
     /// @param _checkpointTime The time of the checkpoint to create.
     /// @param _sharePrice The current share price.
@@ -946,11 +926,7 @@ contract Hyperdrive is MultiToken {
 
         // Pay out the long withdrawal pool for longs that have matured.
         uint256 maturedLongsAmount = totalSupply[
-            AssetId.encodeAssetId(
-                AssetId.AssetIdPrefix.Long,
-                0,
-                _checkpointTime
-            )
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _checkpointTime)
         ];
         if (maturedLongsAmount > 0) {
             _applyMaturedLongsPayout(
@@ -962,11 +938,7 @@ contract Hyperdrive is MultiToken {
 
         // Pay out the short withdrawal pool for shorts that have matured.
         uint256 maturedShortsAmount = totalSupply[
-            AssetId.encodeAssetId(
-                AssetId.AssetIdPrefix.Short,
-                0,
-                _checkpointTime
-            )
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _checkpointTime)
         ];
         if (maturedShortsAmount > 0) {
             _applyMaturedShortsPayout(maturedShortsAmount);
