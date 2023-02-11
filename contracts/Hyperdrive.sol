@@ -15,7 +15,7 @@ import { MultiToken } from "contracts/MultiToken.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract Hyperdrive is MultiToken {
+abstract contract Hyperdrive is MultiToken {
     using FixedPointMath for uint256;
 
     /// Tokens ///
@@ -109,7 +109,6 @@ contract Hyperdrive is MultiToken {
     }
 
     /// Yield Source ///
-    // In order to deploy a yield source implement must be written which implements the following methods
 
     /// @notice Transfers base from the user and commits it to the yield source.
     /// @param amount The amount of base to deposit.
@@ -117,7 +116,7 @@ contract Hyperdrive is MultiToken {
     /// @return sharePrice The share price at time of deposit.
     function deposit(
         uint256 amount
-    ) internal virtual returns (uint256 sharesMinted, uint256 sharePrice) {}
+    ) internal virtual returns (uint256 sharesMinted, uint256 sharePrice);
 
     /// @notice Withdraws shares from the yield source and sends the base
     ///         released to the destination.
@@ -128,11 +127,11 @@ contract Hyperdrive is MultiToken {
     function withdraw(
         uint256 shares,
         address destination
-    ) internal virtual returns (uint256 amountWithdrawn, uint256 sharePrice) {}
+    ) internal virtual returns (uint256 amountWithdrawn, uint256 sharePrice);
 
     ///@notice Loads the share price from the yield source
     ///@return sharePrice The current share price.
-    function pricePerShare() internal virtual returns (uint256 sharePrice) {}
+    function pricePerShare() internal virtual returns (uint256 sharePrice);
 
     /// LP ///
 
@@ -159,7 +158,7 @@ contract Hyperdrive is MultiToken {
         bondReserves = HyperdriveMath.calculateBondReserves(
             shares,
             shares,
-            sharePrice,
+            initialSharePrice,
             _apr,
             positionDuration,
             timeStretch

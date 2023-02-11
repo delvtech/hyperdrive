@@ -10,7 +10,7 @@
         "clean": "forge clean",
         "lint": "yarn solhint && yarn style-check && yarn spell-check && echo \"done\"",
         "prettier": "npx prettier --write .",
-        "test": "forge test",
+        "test": "forge test -vvv",
         "solhint": "npx solhint -f table contracts/*.sol contracts/**/*.sol",
         "spell-check": "npx cspell ./**/**/**.sol --gitignore",
         "style-check": "npx prettier --check .",
