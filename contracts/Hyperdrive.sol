@@ -43,8 +43,6 @@ contract Hyperdrive is MultiToken {
     // @dev The share price at the time the pool was created.
     uint256 public immutable initialSharePrice;
 
-    // TODO: We'll likely need to add more information to these checkpoints.
-    //
     /// @dev Checkpoints of historical share prices.
     mapping(uint256 => uint256) public checkpoints;
 
@@ -589,6 +587,13 @@ contract Hyperdrive is MultiToken {
         withdraw(shortProceeds, msg.sender);
     }
 
+    /// Checkpoint ///
+
+    /// @notice Allows anyone to mint a new checkpoint.
+    function checkpoint() external {
+        _checkpoint(pricePerShare());
+    }
+
     /// Helpers ///
 
     /// @dev Applies the trading deltas from a closed long to the reserves and
@@ -887,8 +892,6 @@ contract Hyperdrive is MultiToken {
         );
     }
 
-    // TODO: Create a publicly accessible checkpoint flow.
-    //
     /// @dev Creates a new checkpoint if necessary.
     /// @param _sharePrice The current share price.
     /// @return latestCheckpoint The latest checkpoint time.
