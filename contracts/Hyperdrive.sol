@@ -305,6 +305,57 @@ contract Hyperdrive is MultiToken {
         withdraw(shareProceeds, msg.sender);
     }
 
+    /// @notice Redeems long and short withdrawal shares.
+    /// @param _longWithdrawalShares The long withdrawal shares to redeem.
+    /// @param _shortWithdrawalShares The short withdrawal shares to redeem.
+    function redeemWithdrawalShares(
+        uint256 _longWithdrawalShares,
+        uint256 _shortWithdrawalShares
+    ) external {
+        uint256 baseProceeds = 0;
+
+        // Redeem the long withdrawal shares.
+        if (_longWithdrawalShares > 0) {
+            // Burn the long withdrawal shares.
+            uint256 assetId = AssetId.encodeAssetId(
+                AssetId.AssetIdPrefix.LongWithdrawalShare,
+                0
+            );
+            _burn(assetId, msg.sender, _longWithdrawalShares);
+
+            // Calculate the base released from the withdrawal shares.
+            uint256 withdrawalShareProportion = _longWithdrawalShares.mulDown(
+                totalSupply[assetId].sub(longWithdrawalSharesOutstanding)
+            );
+            baseProceeds += longWithdrawalShareProceeds.mulDown(
+                withdrawalShareProportion
+            );
+        }
+
+        // Redeem the short withdrawal shares.
+        if (_shortWithdrawalShares > 0) {
+            // Burn the short withdrawal shares.
+            uint256 assetId = AssetId.encodeAssetId(
+                AssetId.AssetIdPrefix.ShortWithdrawalShare,
+                0
+            );
+            _burn(assetId, msg.sender, _longWithdrawalShares);
+
+            // Calculate the base released from the withdrawal shares.
+            uint256 withdrawalShareProportion = _shortWithdrawalShares.mulDown(
+                totalSupply[assetId].sub(shortWithdrawalSharesOutstanding)
+            );
+            baseProceeds += shortWithdrawalShareProceeds.mulDown(
+                withdrawalShareProportion
+            );
+        }
+
+        // Withdraw the funds released by redeeming the withdrawal shares.
+        // TODO: Better destination support.
+        uint256 shareProceeds = baseProceeds.divDown(pricePerShare());
+        withdraw(shareProceeds, msg.sender);
+    }
+
     /// Long ///
 
     /// @notice Opens a long position.
