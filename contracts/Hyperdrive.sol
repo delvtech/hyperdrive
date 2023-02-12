@@ -977,7 +977,10 @@ contract Hyperdrive is MultiToken {
 
         // Pay out the long withdrawal pool for longs that have matured.
         uint256 maturedLongsAmount = totalSupply[
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _checkpointTime)
+            AssetId.encodeAssetId(
+                AssetId.AssetIdPrefix.Long,
+                _checkpointTime - positionDuration
+            )
         ];
         if (maturedLongsAmount > 0) {
             _applyMaturedLongsPayout(
@@ -989,7 +992,10 @@ contract Hyperdrive is MultiToken {
 
         // Pay out the short withdrawal pool for shorts that have matured.
         uint256 maturedShortsAmount = totalSupply[
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _checkpointTime)
+            AssetId.encodeAssetId(
+                AssetId.AssetIdPrefix.Short,
+                _checkpointTime - positionDuration
+            )
         ];
         if (maturedShortsAmount > 0) {
             _applyMaturedShortsPayout(maturedShortsAmount);

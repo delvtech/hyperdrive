@@ -6,3 +6,6 @@ node_modules/
 yarn-error.log
 
 .direnv
+
+# Vim
+remappings.txt
