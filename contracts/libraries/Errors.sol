@@ -41,5 +41,5 @@ library Errors {
     /// ###############
     /// ### AssetId ###
     /// ###############
-    error AssetIDCorruption();
+    error InvalidTimestamp();
 }

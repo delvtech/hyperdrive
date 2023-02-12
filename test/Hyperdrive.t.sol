@@ -235,4 +235,80 @@ contract HyperdriveTest is Test {
         assertEq(shortsOutstandingAfter, shortsOutstandingBefore);
         assertEq(shortsMaturedAfter, shortsMaturedBefore);
     }
+
+    /// Close Long ///
+
+    function test_close_long_zero_amount() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Purchase some bonds.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        uint256 baseAmount = 10e18;
+        baseToken.mint(baseAmount);
+        baseToken.approve(address(hyperdrive), baseAmount);
+        hyperdrive.openLong(baseAmount);
+
+        // Attempt to close zero longs. This should fail.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        vm.expectRevert(Errors.ZeroAmount.selector);
+        uint256 maturityTime = (block.timestamp - (block.timestamp % 1 days)) +
+            365 days;
+        hyperdrive.closeLong(maturityTime, 0);
+    }
+
+    function test_close_long_invalid_amount() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Purchase some bonds.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        uint256 baseAmount = 10e18;
+        baseToken.mint(baseAmount);
+        baseToken.approve(address(hyperdrive), baseAmount);
+        hyperdrive.openLong(baseAmount);
+
+        // Attempt to close too many longs. This should fail.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        uint256 maturityTime = (block.timestamp - (block.timestamp % 1 days)) +
+            365 days;
+        uint256 bondAmount = hyperdrive.balanceOf(
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
+            bob
+        );
+        vm.expectRevert(stdError.arithmeticError);
+        hyperdrive.closeLong(maturityTime, bondAmount + 1);
+    }
+
+    function test_close_long_invalid_timestamp() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Purchase some bonds.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        uint256 baseAmount = 10e18;
+        baseToken.mint(baseAmount);
+        baseToken.approve(address(hyperdrive), baseAmount);
+        hyperdrive.openLong(baseAmount);
+
+        // Attempt to use a timestamp greater than the maximum range.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        vm.expectRevert(Errors.InvalidTimestamp.selector);
+        hyperdrive.closeLong(uint256(type(uint248).max) + 1, 1);
+    }
 }
