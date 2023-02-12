@@ -1,7 +1,7 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.15;
 
-import "contracts/libraries/FixedPointMath.sol";
+import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
 
 // FIXME: This doesn't compute the fee but maybe it should.
 //

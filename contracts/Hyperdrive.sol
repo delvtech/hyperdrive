@@ -131,7 +131,7 @@ abstract contract Hyperdrive is MultiToken {
 
     ///@notice Loads the share price from the yield source
     ///@return sharePrice The current share price.
-    function pricePerShare() internal virtual returns (uint256 sharePrice);
+    function pricePerShare() internal view virtual returns (uint256 sharePrice);
 
     /// LP ///
 
@@ -650,6 +650,46 @@ abstract contract Hyperdrive is MultiToken {
                 }
             }
         }
+    }
+
+    /// Getters ///
+
+    /// @notice Gets info about the pool's reserves and other state that is
+    ///         important to evaluate potential trades.
+    /// @return shareReserves_ The share reserves.
+    /// @return bondReserves_ The bond reserves.
+    /// @return lpTotalSupply The total supply of LP shares.
+    /// @return sharePrice The share price.
+    /// @return longsOutstanding_ The longs that haven't been closed.
+    /// @return longsMatured_ The longs that haven't been closed but have
+    ///         matured.
+    /// @return shortsOutstanding_ The shorts that haven't been closed.
+    /// @return shortsMatured_ The shorts that haven't been closed. but have
+    ///         matured.
+    function getPoolInfo()
+        external
+        view
+        returns (
+            uint256 shareReserves_,
+            uint256 bondReserves_,
+            uint256 lpTotalSupply,
+            uint256 sharePrice,
+            uint256 longsOutstanding_,
+            uint256 longsMatured_,
+            uint256 shortsOutstanding_,
+            uint256 shortsMatured_
+        )
+    {
+        return (
+            shareReserves,
+            bondReserves,
+            totalSupply[AssetId._LP_ASSET_ID],
+            pricePerShare(),
+            longsOutstanding,
+            longsMatured,
+            shortsOutstanding,
+            shortsMatured
+        );
     }
 
     /// Helpers ///
