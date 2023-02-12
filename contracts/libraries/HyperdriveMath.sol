@@ -20,7 +20,6 @@ library HyperdriveMath {
     /// @param _lpTotalSupply The pool's total supply of LP shares.
     /// @param _initialSharePrice The pool's initial share price.
     /// @param _positionDuration The amount of time until maturity in seconds.
-    /// @param _timeRemaining The amount of time remaining until maturity in seconds.
     /// @param _timeStretch The time stretch parameter.
     /// @return apr The pool's APR.
     function calculateAPRFromReserves(
@@ -29,27 +28,27 @@ library HyperdriveMath {
         uint256 _lpTotalSupply,
         uint256 _initialSharePrice,
         uint256 _positionDuration,
-        uint256 _timeRemaining,
         uint256 _timeStretch
     ) internal pure returns (uint256 apr) {
         uint256 spotPrice = calcSpotPrice(
-            _positionDuration,
-            _timeRemaining,
-            _timeStretch,
-            _initialSharePrice,
             _shareReserves,
             _bondReserves,
-            _lpTotalSupply
+            _lpTotalSupply,
+            _initialSharePrice,
+            _positionDuration,
+            365 days,
+            _timeStretch
         );
 
-        // normalized time
-        uint256 t = _timeRemaining.mulDown(FixedPointMath.ONE_18).divDown(
-            _positionDuration
-        );
+        // We are interested calculating an APR for new positions.  Because the price will converge
+        // to 1 after positionDuration days, we scale to a year to get the annualized rate.
+        uint256 annualizedTime = _positionDuration.divDown(365 days);
 
-        // (1 - p) / (p * t)
+        // r = (1 - p) / (p * t)
         return
-            FixedPointMath.ONE_18.sub(spotPrice).divDown(spotPrice.mulDown(t));
+            FixedPointMath.ONE_18.sub(spotPrice).divDown(
+                spotPrice.mulDown(annualizedTime)
+            );
     }
 
     /// @dev Calculates the initial bond reserves assuming that the initial LP
@@ -89,10 +88,10 @@ library HyperdriveMath {
     ///      specified APR.
     /// @param _shareReserves The pool's share reserves.
     /// @param _lpTotalSupply The pool's total supply of LP shares.
-    /// @param _initialSharePrice The pool's initial share price.
-    /// @param _apr The pool's APR.
+    /// @param _initialSharePrice The pool's initial share price as an 18 fixed-point number.
+    /// @param _apr The pool's APR as an 18 fixed-point number.
     /// @param _positionDuration The amount of time until maturity in seconds.
-    /// @param _timeStretch The time stretch parameter.
+    /// @param _timeStretch The time stretch parameter as an 18 fixed-point number.
     /// @return bondReserves The bond reserves that make the pool have a
     ///         specified APR.
     function calculateBondReserves(
@@ -103,13 +102,17 @@ library HyperdriveMath {
         uint256 _positionDuration,
         uint256 _timeStretch
     ) internal pure returns (uint256 bondReserves) {
-        // NOTE: Using divDown to convert to fixed point format.
+        // tau is a fixed point number
+        uint256 tau = FixedPointMath.ONE_18.divDown(_timeStretch);
+
+        // annualized time t as a fixed point number
         uint256 t = _positionDuration.divDown(365 days);
-        uint256 tau = t.mulDown(_timeStretch);
+
         // (1 + apr * t) ** (1 / tau)
         uint256 interestFactor = FixedPointMath.ONE_18.add(_apr.mulDown(t)).pow(
             FixedPointMath.ONE_18.divDown(tau)
         );
+
         // mu * z * (1 + apr * t) ** (1 / tau)
         uint256 lhs = _initialSharePrice.mulDown(_shareReserves).mulDown(
             interestFactor
@@ -204,8 +207,8 @@ library HyperdriveMath {
             );
 
             uint256 curveFee = calcFeesOutGivenIn(
-                _positionDuration,
                 _timeRemaining,
+                _positionDuration,
                 spotPrice,
                 _curveFeePercent,
                 _sharePrice,
@@ -261,8 +264,8 @@ library HyperdriveMath {
             );
 
             uint256 curveFee = calcFeesOutGivenIn(
-                _positionDuration,
                 _timeRemaining,
+                _positionDuration,
                 spotPrice,
                 _curveFeePercent,
                 _sharePrice,
@@ -353,28 +356,29 @@ library HyperdriveMath {
     }
 
     /// @dev Calculates the spot price without slippage of bonds in terms of shares.
-    /// @param _positionDuration The amount of time until maturity in seconds.
-    /// @param _timeRemaining The amount of time remaining until maturity in seconds.
-    /// @param _timeStretch The time stretch parameter.
-    /// @param _initialSharePrice The initial share price.
     /// @param _shareReserves The pool's share reserves.
     /// @param _bondReserves The pool's bond reserves.
     /// @param _lpTotalSupply The pool's total supply of LP shares.
-    /// @return spotPrice The spot price of bonds in terms of shares.
+    /// @param _initialSharePrice The initial share price as an 18 fixed-point value.
+    /// @param _timeRemaining The amount of time remaining until maturity in seconds.
+    /// @param _positionDuration The amount of time until maturity in seconds.
+    /// @param _timeStretch The time stretch parameter as an 18 fixed-point value.
+    /// @return spotPrice The spot price of bonds in terms of shares as an 18 fixed-point value.
     function calcSpotPrice(
-        uint256 _positionDuration,
-        uint256 _timeRemaining,
-        uint256 _timeStretch,
-        uint256 _initialSharePrice,
         uint256 _shareReserves,
         uint256 _bondReserves,
-        uint256 _lpTotalSupply
+        uint256 _lpTotalSupply,
+        uint256 _initialSharePrice,
+        uint256 _timeRemaining,
+        uint256 _positionDuration,
+        uint256 _timeStretch
     ) internal pure returns (uint256 spotPrice) {
-        // normalized time
-        uint256 t = _timeRemaining.mulDown(FixedPointMath.ONE_18).divDown(
-            _positionDuration
-        );
+        // fixed-point normalized time
+        uint256 t = _timeRemaining.divDown(_positionDuration);
+
+        // fixed-point tau
         uint256 tau = t.divDown(_timeStretch);
+
         // ((y + s) / (mu * z)) ** -tau
         spotPrice = _initialSharePrice
             .mulDown(_shareReserves)
@@ -383,8 +387,8 @@ library HyperdriveMath {
     }
 
     /// @dev Calculates the fees for the curve portion of hyperdrive calcOutGivenIn
-    /// @param _positionDuration The amount of time until maturity in seconds.
     /// @param _timeRemaining The amount of time until maturity in seconds.
+    /// @param _positionDuration The amount of time until maturity in seconds.
     /// @param _spotPrice The price without slippage of bonds in terms of shares.
     /// @param _feePercent The fee parameter.
     /// @param _sharePrice The current price of shares in terms of base.
@@ -392,8 +396,8 @@ library HyperdriveMath {
     /// @param _isBaseIn If the user will supply base.
     /// @return fee The fee amount to charge.
     function calcFeesOutGivenIn(
-        uint256 _positionDuration,
         uint256 _timeRemaining,
+        uint256 _positionDuration,
         uint256 _spotPrice,
         uint256 _feePercent,
         uint256 _sharePrice,
@@ -404,7 +408,6 @@ library HyperdriveMath {
             .mulDown(FixedPointMath.ONE_18)
             .divDown(_positionDuration);
 
-        // TODO: if bonds are out, this is a long, which only happens at t = 1, so we can get rid of normalized_time
         if (_isBaseIn) {
             // fee = ((1 / p) - 1) * phi * c * d_z * t
             uint256 _price = (FixedPointMath.ONE_18.divDown(_spotPrice)).sub(
@@ -426,38 +429,28 @@ library HyperdriveMath {
     }
 
     /// @dev Calculates the fees for the curve portion of hyperdrive calcInGivenOut
-    /// @param _positionDuration The amount of time until maturity in seconds.
     /// @param _timeRemaining The amount of time until maturity in seconds.
+    /// @param _positionDuration The amount of time until maturity in seconds.
     /// @param _spotPrice The price without slippage of bonds in terms of shares.
     /// @param _feePercent The fee parameter.
     /// @param _sharePrice The current price of shares in terms of base.
     /// @param _amountOut The given amount out, either in terms of shares or bonds.
-    /// @param _isBondsOut If the user will receive bonds.
+    /// @param _isBaseOut If the user will receive bonds.
     /// @return fee The fee amount to charge.
     function calcFeesInGivenOut(
-        uint256 _positionDuration,
         uint256 _timeRemaining,
+        uint256 _positionDuration,
         uint256 _spotPrice,
         uint256 _feePercent,
         uint256 _sharePrice,
         uint256 _amountOut,
-        bool _isBondsOut
+        bool _isBaseOut
     ) internal pure returns (uint256 fee) {
         uint256 normalized_time = _timeRemaining
             .mulDown(FixedPointMath.ONE_18)
             .divDown(_positionDuration);
 
-        // TODO: if bonds are out, this is a long, which only happens at t = 1, so we can get rid of normalized_time
-        if (_isBondsOut) {
-            // fee = (p - 1) * phi * c * d_z * t
-            uint256 _price = _spotPrice.sub(FixedPointMath.ONE_18);
-            fee = _price
-                .mulDown(_feePercent)
-                .mulDown(_sharePrice)
-                .mulDown(_amountOut)
-                .mulDown(normalized_time);
-        } else {
-            // base out
+        if (_isBaseOut) {
             // fee = (1 - (1 / p)) * phi * d_y * t
             uint256 _price = FixedPointMath.ONE_18.sub(
                 FixedPointMath.ONE_18.divDown(_spotPrice)
@@ -465,6 +458,15 @@ library HyperdriveMath {
             fee = _price.mulDown(_feePercent).mulDown(_amountOut).mulDown(
                 normalized_time
             );
+        } else {
+            // bonds out
+            // fee = (p - 1) * phi * c * d_z * t
+            uint256 _price = _spotPrice.sub(FixedPointMath.ONE_18);
+            fee = _price
+                .mulDown(_feePercent)
+                .mulDown(_sharePrice)
+                .mulDown(_amountOut)
+                .mulDown(normalized_time);
         }
     }
 
