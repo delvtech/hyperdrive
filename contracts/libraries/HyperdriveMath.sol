@@ -5,10 +5,6 @@ import { Errors } from "contracts/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
 import { YieldSpaceMath } from "contracts/libraries/YieldSpaceMath.sol";
 
-// FIXME: The matrix of uses of flat+curve includes cases that should never
-// occur. In particular, if isBondOut && t < 1 or isBondIn && t < 1, then the
-// flat part refers to base tokens and the model doesn't make sense.
-//
 /// @author Delve
 /// @title Hyperdrive
 /// @notice Math for the Hyperdrive pricing model.
