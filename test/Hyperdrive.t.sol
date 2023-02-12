@@ -90,8 +90,7 @@ contract HyperdriveTest is Test {
         // Initialize the pool with Alice.
         initialize(alice, apr, contribution);
 
-        // Ensure that the pool's APR is approximately equal to the target APR
-        // within 15 decimals of precision.
+        // Ensure that the pool's APR is approximately equal to the target APR.
         uint256 poolApr = HyperdriveMath.calculateAPRFromReserves(
             hyperdrive.shareReserves(),
             hyperdrive.bondReserves(),
@@ -100,7 +99,7 @@ contract HyperdriveTest is Test {
             hyperdrive.positionDuration(),
             hyperdrive.timeStretch()
         );
-        assertApproxEqAbs(poolApr, apr, 1e3);
+        assertApproxEqAbs(poolApr, apr, 1e1); // 17 decimals of precision
 
         // Ensure that Alice's base balance has been depleted and that Alice
         // received some LP tokens.
@@ -108,7 +107,7 @@ contract HyperdriveTest is Test {
         assertEq(baseToken.balanceOf(address(hyperdrive)), contribution);
         assertEq(
             hyperdrive.totalSupply(AssetId._LP_ASSET_ID),
-            contribution.divDown(hyperdrive.getSharePrice())
+            contribution + hyperdrive.bondReserves()
         );
     }
 
@@ -146,11 +145,7 @@ contract HyperdriveTest is Test {
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
 
-        // TODO: The bond reserves are too large. We should special case
-        // initialization and see if that fixes the problem.
-        //
-        // Attempt to purchase more bonds than exist in the reserves. This
-        // should fail.
+        // Attempt to purchase more bonds than exist. This should fail.
         vm.stopPrank();
         vm.startPrank(bob);
         uint256 baseAmount = hyperdrive.bondReserves();
@@ -187,7 +182,7 @@ contract HyperdriveTest is Test {
         // Purchase a small amount of bonds.
         vm.stopPrank();
         vm.startPrank(bob);
-        uint256 baseAmount = 100e18;
+        uint256 baseAmount = 10e18;
         baseToken.mint(baseAmount);
         baseToken.approve(address(hyperdrive), baseAmount);
         hyperdrive.openLong(baseAmount);

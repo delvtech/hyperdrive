@@ -47,9 +47,39 @@ library HyperdriveMath {
             FixedPointMath.ONE_18.sub(spotPrice).divDown(spotPrice.mulDown(t));
     }
 
-    // TODO: There is likely a more efficient formulation for when the rate is
-    // based on the existing share and bond reserves.
-    //
+    /// @dev Calculates the initial bond reserves assuming that the initial LP
+    ///      receives LP shares amounting to c * z + y.
+    /// @param _shareReserves The pool's share reserves.
+    /// @param _sharePrice The pool's share price.
+    /// @param _initialSharePrice The pool's initial share price.
+    /// @param _apr The pool's APR.
+    /// @param _positionDuration The amount of time until maturity in seconds.
+    /// @param _timeStretch The time stretch parameter.
+    /// @return bondReserves The bond reserves that make the pool have a
+    ///         specified APR.
+    function calculateInitialBondReserves(
+        uint256 _shareReserves,
+        uint256 _sharePrice,
+        uint256 _initialSharePrice,
+        uint256 _apr,
+        uint256 _positionDuration,
+        uint256 _timeStretch
+    ) internal pure returns (uint256 bondReserves) {
+        // NOTE: Using divDown to convert to fixed point format.
+        uint256 t = _positionDuration.divDown(365 days);
+        uint256 tau = t.mulDown(_timeStretch);
+        // mu * (1 + apr * t) ** (1 / tau) - c
+        uint256 rhs = _initialSharePrice
+            .mulDown(
+                FixedPointMath.ONE_18.add(_apr.mulDown(t)).pow(
+                    FixedPointMath.ONE_18.divDown(tau)
+                )
+            )
+            .sub(_sharePrice);
+        // (z / 2) * (mu * (1 + apr * t) ** (1 / tau) - c)
+        return _shareReserves.divDown(2 * FixedPointMath.ONE_18).mulDown(rhs);
+    }
+
     /// @dev Calculates the bond reserves that will make the pool have a
     ///      specified APR.
     /// @param _shareReserves The pool's share reserves.

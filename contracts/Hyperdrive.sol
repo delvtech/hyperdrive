@@ -155,9 +155,9 @@ abstract contract Hyperdrive is MultiToken {
         // Update the reserves. The bond reserves are calculated so that the
         // pool is initialized with the target APR.
         shareReserves = shares;
-        bondReserves = HyperdriveMath.calculateBondReserves(
+        bondReserves = HyperdriveMath.calculateInitialBondReserves(
             shares,
-            shares,
+            sharePrice,
             initialSharePrice,
             _apr,
             positionDuration,
@@ -167,7 +167,11 @@ abstract contract Hyperdrive is MultiToken {
         // Mint LP shares to the initializer.
         // TODO - Should we index the lp share and virtual reserve to shares or to underlying?
         //        I think in the case where price per share < 1 there may be a problem.
-        _mint(AssetId._LP_ASSET_ID, msg.sender, shares);
+        _mint(
+            AssetId._LP_ASSET_ID,
+            msg.sender,
+            sharePrice.mulDown(shares).add(bondReserves)
+        );
     }
 
     // TODO: Add slippage protection.
