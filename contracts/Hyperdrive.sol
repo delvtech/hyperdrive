@@ -971,16 +971,15 @@ contract Hyperdrive is MultiToken {
     ) internal returns (uint256 openSharePrice) {
         // Return early if the checkpoint has already been updated.
         if (checkpoints[_checkpointTime] == 0) {
-            checkpoints[_checkpointTime] = _sharePrice;
-            return _sharePrice;
+            return checkpoints[_checkpointTime];
         }
+
+        // Create the share price checkpoint.
+        checkpoints[_checkpointTime] = _sharePrice;
 
         // Pay out the long withdrawal pool for longs that have matured.
         uint256 maturedLongsAmount = totalSupply[
-            AssetId.encodeAssetId(
-                AssetId.AssetIdPrefix.Long,
-                _checkpointTime - positionDuration
-            )
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _checkpointTime)
         ];
         if (maturedLongsAmount > 0) {
             _applyMaturedLongsPayout(
@@ -992,10 +991,7 @@ contract Hyperdrive is MultiToken {
 
         // Pay out the short withdrawal pool for shorts that have matured.
         uint256 maturedShortsAmount = totalSupply[
-            AssetId.encodeAssetId(
-                AssetId.AssetIdPrefix.Short,
-                _checkpointTime - positionDuration
-            )
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _checkpointTime)
         ];
         if (maturedShortsAmount > 0) {
             _applyMaturedShortsPayout(maturedShortsAmount);
