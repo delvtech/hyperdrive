@@ -151,8 +151,8 @@ library HyperdriveMath {
         uint256 _bondReserves,
         uint256 _bondReserveAdjustment,
         uint256 _amountIn,
-        uint256 _positionDuration,
         uint256 _timeRemaining,
+        uint256 _positionDuration,
         uint256 _timeStretch,
         uint256 _sharePrice,
         uint256 _initialSharePrice,
@@ -197,13 +197,13 @@ library HyperdriveMath {
             );
 
             uint256 spotPrice = calcSpotPrice(
-                _positionDuration,
-                _timeRemaining,
-                _timeStretch,
-                _initialSharePrice,
                 _shareReserves,
                 _bondReserves,
-                _bondReserveAdjustment
+                _bondReserveAdjustment,
+                _initialSharePrice,
+                _timeRemaining,
+                _positionDuration,
+                _timeStretch
             );
 
             uint256 curveFee = calcFeesOutGivenIn(
@@ -254,13 +254,13 @@ library HyperdriveMath {
             );
 
             uint256 spotPrice = calcSpotPrice(
-                _positionDuration,
-                _timeRemaining,
-                _timeStretch,
-                _initialSharePrice,
                 _shareReserves,
                 _bondReserves,
-                _bondReserveAdjustment
+                _bondReserveAdjustment,
+                _initialSharePrice,
+                _timeRemaining,
+                _positionDuration,
+                _timeStretch,
             );
 
             uint256 curveFee = calcFeesOutGivenIn(
@@ -404,26 +404,24 @@ library HyperdriveMath {
         uint256 _amountIn,
         bool _isBaseIn
     ) internal pure returns (uint256 fee) {
-        uint256 normalized_time = _timeRemaining
-            .mulDown(FixedPointMath.ONE_18)
-            .divDown(_positionDuration);
+        // fixed point number, goes from 1 -> 0 over position duration
+        uint256 normalizedTime = _timeRemaining.divDown(_positionDuration);
 
         if (_isBaseIn) {
             // fee = ((1 / p) - 1) * phi * c * d_z * t
-            uint256 _price = (FixedPointMath.ONE_18.divDown(_spotPrice)).sub(
-                FixedPointMath.ONE_18
-            );
-            fee = _price
+            uint256 _pricePart = (FixedPointMath.ONE_18.divDown(_spotPrice))
+                .sub(FixedPointMath.ONE_18);
+            fee = _pricePart
                 .mulDown(_feePercent)
                 .mulDown(_sharePrice)
                 .mulDown(_amountIn)
-                .mulDown(normalized_time);
+                .mulDown(normalizedTime);
         } else {
             // 'bond' in
             // fee = (1 - p) * phi * d_y * t
-            uint256 _price = (FixedPointMath.ONE_18.sub(_spotPrice));
-            fee = _price.mulDown(_feePercent).mulDown(_amountIn).mulDown(
-                normalized_time
+            uint256 _pricePart = (FixedPointMath.ONE_18.sub(_spotPrice));
+            fee = _pricePart.mulDown(_feePercent).mulDown(_amountIn).mulDown(
+                normalizedTime
             );
         }
     }
@@ -446,27 +444,25 @@ library HyperdriveMath {
         uint256 _amountOut,
         bool _isBaseOut
     ) internal pure returns (uint256 fee) {
-        uint256 normalized_time = _timeRemaining
-            .mulDown(FixedPointMath.ONE_18)
-            .divDown(_positionDuration);
+        // fixed point number, goes from 1 -> 0 over position duration
+        uint256 normalizedTime = _timeRemaining.divDown(_positionDuration);
 
         if (_isBaseOut) {
-            // fee = (1 - (1 / p)) * phi * d_y * t
-            uint256 _price = FixedPointMath.ONE_18.sub(
-                FixedPointMath.ONE_18.divDown(_spotPrice)
-            );
-            fee = _price.mulDown(_feePercent).mulDown(_amountOut).mulDown(
-                normalized_time
-            );
+            // fee = ((1 / p) - 1) * phi * c * d_z
+            uint256 _pricePart = (FixedPointMath.ONE_18.divDown(_spotPrice))
+                .sub(FixedPointMath.ONE_18);
+            fee = _pricePart
+                .mulDown(_feePercent)
+                .mulDown(_amountOut)
+                .mulDown(_sharePrice)
+                .mulDown(normalizedTime);
         } else {
             // bonds out
-            // fee = (p - 1) * phi * c * d_z * t
-            uint256 _price = _spotPrice.sub(FixedPointMath.ONE_18);
-            fee = _price
-                .mulDown(_feePercent)
-                .mulDown(_sharePrice)
-                .mulDown(_amountOut)
-                .mulDown(normalized_time);
+            // fee = (1 - p) * phi * d_y * t
+            uint256 _pricePart = FixedPointMath.ONE_18.sub(_spotPrice);
+            fee = _pricePart.mulDown(_feePercent).mulDown(_amountOut).mulDown(
+                normalizedTime
+            );
         }
     }
 

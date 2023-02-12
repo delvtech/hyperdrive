@@ -91,6 +91,8 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
     ///        duration.
     /// @param _timeStretch The time stretch of the pool.
     /// @param _initialPricePerShare The initial share price.
+    /// @param _curveFee The fee parameter for the curve portion of the hyperdrive trade equation.
+    /// @param _flatFee The fee parameter for the flat portion of the hyperdrive trade equation.
     constructor(
         bytes32 _linkerCodeHash,
         address _linkerFactory,
@@ -112,9 +114,8 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
 
         initialSharePrice = _initialPricePerShare;
 
-        // TODO: Update these.  Hardcode to 10% each for now.
-        curveFee = FixedPointMath.ONE_18 / 10;
-        flatFee = FixedPointMath.ONE_18 / 10;
+        curveFee = _curveFee;
+        flatFee = _flatFee;
     }
 
     /// Yield Source ///
@@ -209,7 +210,6 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
             totalSupply[AssetId._LP_ASSET_ID],
             initialSharePrice,
             positionDuration,
-            positionDuration, // pass full time remaining for pool APR
             timeStretch
         );
 
@@ -271,7 +271,6 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
             totalSupply[AssetId._LP_ASSET_ID],
             initialSharePrice,
             positionDuration,
-            positionDuration, // pass full time remaining for pool APR
             timeStretch
         );
 
@@ -518,8 +517,8 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
                 bondReserves,
                 totalSupply[AssetId._LP_ASSET_ID],
                 _bondAmount,
-                positionDuration,
                 timeRemaining,
+                positionDuration,
                 timeStretch,
                 sharePrice,
                 initialSharePrice,

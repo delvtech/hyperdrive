@@ -37,6 +37,8 @@ contract AaveYieldSource is Hyperdrive {
     ///        checkpoints. Position duration must be a multiple of checkpoint
     ///        duration.
     /// @param _timeStretch The time stretch of the pool.
+    /// @param _curveFee The fee parameter for the curve portion of the hyperdrive trade equation.
+    /// @param _flatFee The fee parameter for the flat portion of the hyperdrive trade equation.
     constructor(
         bytes32 _linkerCodeHash,
         address _linkerFactory,
@@ -45,16 +47,20 @@ contract AaveYieldSource is Hyperdrive {
         uint256 _checkpointDuration,
         uint256 _timeStretch,
         IERC20 _aToken,
-        Pool _pool
+        Pool _pool,
+        uint256 _curveFee,
+        uint256 _flatFee
     )
         Hyperdrive(
             _linkerCodeHash,
             _linkerFactory,
             _baseToken,
             FixedPointMath.ONE_18,
-            _positionDuration,
             _checkpointDuration,
-            _timeStretch
+            _timeStretch,
+            FixedPointMath.ONE_18,
+            _curveFee,
+            _flatFee
         )
     {
         aToken = _aToken;
