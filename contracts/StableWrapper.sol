@@ -71,7 +71,7 @@ contract BondWrapper is ERC20Permit {
     ///         sale vs the erc20 tokens minted by its deposit. Optionally also burns the ERC20 wrapper
     ///         from the user, if enabled it will transfer both the delta of sale value and the value of
     ///         the burned token.
-    /// @param openSharePrice The bond which was used as collateral 's opening share price.
+    /// @param openSharePrice The bond which was used as collateral's opening share price.
     /// @param expiryTime The bond's expiry time
     /// @param amount The amount of bonds to redeem
     /// @param andBurn If true it will burn the number of erc20 minted by this deposited bond
