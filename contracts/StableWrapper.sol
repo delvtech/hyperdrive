@@ -7,9 +7,9 @@ import "./libraries/ERC20Permit.sol";
 import "./libraries/Errors.sol";
 import "contracts/libraries/AssetId.sol";
 
-contract StableWrapper is ERC20Permit {
+contract BondWrapper is ERC20Permit {
     // The multitoken of the bond
-    IHyperdrive public immutable bond;
+    IHyperdrive public immutable hyperdrive;
     // The underlying token from the bond
     IERC20 public immutable token;
     // The basis points [ie out of 10000] which will be minted for a bond deposit
@@ -20,20 +20,20 @@ contract StableWrapper is ERC20Permit {
     mapping(address => mapping(uint256 => uint256)) userAccounts;
 
     /// @notice Constructs the contract and initializes the variables.
-    /// @param _bond The hyperdrive contract.
+    /// @param _hyperdrive The hyperdrive contract.
     /// @param _token The underlying token of the bonds.
     /// @param _mintPercent How many tokens will be minted per bond.
     /// @param name_ The ERC20 name.
     /// @param symbol_ The ERC20 symbol.
     constructor(
-        IHyperdrive _bond,
+        IHyperdrive _hyperdrive,
         IERC20 _token,
         uint256 _mintPercent,
         string memory name_,
         string memory symbol_
     ) ERC20Permit(name_, symbol_) {
         // Set the immutables
-        bond = _bond;
+        bond = _hyperdrive;
         token = _token;
         mintPercent = _mintPercent;
     }
@@ -57,7 +57,7 @@ contract StableWrapper is ERC20Permit {
         // Must not be expired
         if (expiryTime <= block.timestamp) revert Errors.BondExpired();
         // Transfer from the user
-        bond.transferFrom(assetId, msg.sender, address(this), amount);
+        hyperdrive.transferFrom(assetId, msg.sender, address(this), amount);
 
         // Mint them the tokens for their deposit
         uint256 mintAmount = (amount * mintPercent) / 10000;
@@ -98,7 +98,7 @@ contract StableWrapper is ERC20Permit {
         uint256 receivedAmount;
         if (forceClosed == 0) {
             // Close the bond [selling if earlier than the expiration]
-            receivedAmount = bond.closeLong(
+            receivedAmount = hyperdrive.closeLong(
                 openSharePrice,
                 uint32(expiryTime),
                 amount
@@ -161,7 +161,7 @@ contract StableWrapper is ERC20Permit {
         if (expiryTime > block.timestamp) revert Errors.BondNotExpired();
 
         // Close the long
-        uint256 receivedAmount = bond.closeLong(
+        uint256 receivedAmount = hyperdrive.closeLong(
             openSharePrice,
             uint32(expiryTime),
             deposited

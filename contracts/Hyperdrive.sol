@@ -8,6 +8,7 @@ import { Errors } from "contracts/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/libraries/HyperdriveMath.sol";
 import { MultiToken } from "contracts/MultiToken.sol";
+import {IHyperdrive} from "contracts/interfaces/IHyperdrive.sol";
 
 /// @author Delve
 /// @title Hyperdrive
@@ -19,7 +20,7 @@ import { MultiToken } from "contracts/MultiToken.sol";
 // TODO - Here we give default implementations of the virtual methods to not break tests
 //        we should move to an abstract contract to prevent this from being deployed w/o
 //        real implementations.
-contract Hyperdrive is MultiToken {
+contract Hyperdrive is MultiToken, IHyperdrive {
     using FixedPointMath for uint256;
 
     /// Tokens ///
