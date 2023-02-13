@@ -665,11 +665,7 @@ abstract contract Hyperdrive is MultiToken {
     /// @return lpTotalSupply The total supply of LP shares.
     /// @return sharePrice The share price.
     /// @return longsOutstanding_ The longs that haven't been closed.
-    /// @return longsMatured_ The longs that haven't been closed but have
-    ///         matured.
     /// @return shortsOutstanding_ The shorts that haven't been closed.
-    /// @return shortsMatured_ The shorts that haven't been closed. but have
-    ///         matured.
     function getPoolInfo()
         external
         view
@@ -679,9 +675,7 @@ abstract contract Hyperdrive is MultiToken {
             uint256 lpTotalSupply,
             uint256 sharePrice,
             uint256 longsOutstanding_,
-            uint256 longsMatured_,
-            uint256 shortsOutstanding_,
-            uint256 shortsMatured_
+            uint256 shortsOutstanding_
         )
     {
         return (
@@ -690,9 +684,7 @@ abstract contract Hyperdrive is MultiToken {
             totalSupply[AssetId._LP_ASSET_ID],
             pricePerShare(),
             longsOutstanding,
-            longsMatured,
-            shortsOutstanding,
-            shortsMatured
+            shortsOutstanding
         );
     }
 

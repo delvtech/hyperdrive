@@ -169,9 +169,7 @@ contract HyperdriveTest is Test {
             uint256 lpTotalSupplyBefore,
             uint256 sharePriceBefore,
             uint256 longsOutstandingBefore,
-            uint256 longsMaturedBefore,
-            uint256 shortsOutstandingBefore,
-            uint256 shortsMaturedBefore
+            uint256 shortsOutstandingBefore
         ) = hyperdrive.getPoolInfo();
 
         // TODO: Small base amounts result in higher than quoted APRs. We should
@@ -219,9 +217,7 @@ contract HyperdriveTest is Test {
             uint256 lpTotalSupplyAfter,
             uint256 sharePriceAfter,
             uint256 longsOutstandingAfter,
-            uint256 longsMaturedAfter,
-            uint256 shortsOutstandingAfter,
-            uint256 shortsMaturedAfter
+            uint256 shortsOutstandingAfter
         ) = hyperdrive.getPoolInfo();
         assertEq(
             shareReservesAfter,
@@ -231,9 +227,7 @@ contract HyperdriveTest is Test {
         assertEq(lpTotalSupplyAfter, lpTotalSupplyBefore);
         assertEq(sharePriceAfter, sharePriceBefore);
         assertEq(longsOutstandingAfter, longsOutstandingBefore + bondAmount);
-        assertEq(longsMaturedAfter, longsMaturedBefore);
         assertEq(shortsOutstandingAfter, shortsOutstandingBefore);
-        assertEq(shortsMaturedAfter, shortsMaturedBefore);
     }
 
     /// Close Long ///
@@ -334,9 +328,7 @@ contract HyperdriveTest is Test {
             uint256 lpTotalSupplyBefore,
             uint256 sharePriceBefore,
             uint256 longsOutstandingBefore,
-            uint256 longsMaturedBefore,
-            uint256 shortsOutstandingBefore,
-            uint256 shortsMaturedBefore
+            uint256 shortsOutstandingBefore
         ) = hyperdrive.getPoolInfo();
 
         // Immediately close the bonds.
@@ -374,9 +366,7 @@ contract HyperdriveTest is Test {
             uint256 lpTotalSupplyAfter,
             uint256 sharePriceAfter,
             uint256 longsOutstandingAfter,
-            uint256 longsMaturedAfter,
-            uint256 shortsOutstandingAfter,
-            uint256 shortsMaturedAfter
+            uint256 shortsOutstandingAfter
         ) = hyperdrive.getPoolInfo();
         assertEq(
             shareReservesAfter,
@@ -386,9 +376,7 @@ contract HyperdriveTest is Test {
         assertEq(lpTotalSupplyAfter, lpTotalSupplyBefore);
         assertEq(sharePriceAfter, sharePriceBefore);
         assertEq(longsOutstandingAfter, longsOutstandingBefore - bondAmount);
-        assertEq(longsMaturedAfter, longsMaturedBefore);
         assertEq(shortsOutstandingAfter, shortsOutstandingBefore);
-        assertEq(shortsMaturedAfter, shortsMaturedBefore);
     }
 
     // TODO: Clean up these tests.
@@ -416,9 +404,7 @@ contract HyperdriveTest is Test {
             uint256 lpTotalSupplyBefore,
             uint256 sharePriceBefore,
             uint256 longsOutstandingBefore,
-            uint256 longsMaturedBefore,
-            uint256 shortsOutstandingBefore,
-            uint256 shortsMaturedBefore
+            uint256 shortsOutstandingBefore
         ) = hyperdrive.getPoolInfo();
 
         // The term passes.
@@ -457,21 +443,17 @@ contract HyperdriveTest is Test {
             uint256 lpTotalSupplyAfter,
             uint256 sharePriceAfter,
             uint256 longsOutstandingAfter,
-            uint256 longsMaturedAfter,
-            uint256 shortsOutstandingAfter,
-            uint256 shortsMaturedAfter
+            uint256 shortsOutstandingAfter
         ) = hyperdrive.getPoolInfo();
         assertEq(
             shareReservesAfter,
-            shareReservesBefore - baseProceeds.divDown(sharePriceBefore)
+            shareReservesBefore - bondAmount.divDown(sharePriceBefore)
         );
         assertEq(bondReservesAfter, bondReservesBefore);
         assertEq(lpTotalSupplyAfter, lpTotalSupplyBefore);
         assertEq(sharePriceAfter, sharePriceBefore);
         assertEq(longsOutstandingAfter, longsOutstandingBefore - bondAmount);
-        assertEq(longsMaturedAfter, longsMaturedBefore);
         assertEq(shortsOutstandingAfter, shortsOutstandingBefore);
-        assertEq(shortsMaturedAfter, shortsMaturedBefore);
     }
 
     /// Open Short ///
@@ -521,9 +503,7 @@ contract HyperdriveTest is Test {
             uint256 lpTotalSupplyBefore,
             uint256 sharePriceBefore,
             uint256 longsOutstandingBefore,
-            uint256 longsMaturedBefore,
-            uint256 shortsOutstandingBefore,
-            uint256 shortsMaturedBefore
+            uint256 shortsOutstandingBefore
         ) = hyperdrive.getPoolInfo();
 
         // Short a small amount of bonds.
@@ -574,9 +554,7 @@ contract HyperdriveTest is Test {
             uint256 lpTotalSupplyAfter,
             uint256 sharePriceAfter,
             uint256 longsOutstandingAfter,
-            uint256 longsMaturedAfter,
-            uint256 shortsOutstandingAfter,
-            uint256 shortsMaturedAfter
+            uint256 shortsOutstandingAfter
         ) = hyperdrive.getPoolInfo();
         assertEq(
             shareReservesAfter,
@@ -586,8 +564,6 @@ contract HyperdriveTest is Test {
         assertEq(lpTotalSupplyAfter, lpTotalSupplyBefore);
         assertEq(sharePriceAfter, sharePriceBefore);
         assertEq(longsOutstandingAfter, longsOutstandingBefore);
-        assertEq(longsMaturedAfter, longsMaturedBefore);
         assertEq(shortsOutstandingAfter, shortsOutstandingBefore + bondAmount);
-        assertEq(shortsMaturedAfter, shortsMaturedBefore);
     }
 }
