@@ -45,8 +45,8 @@ library Errors {
     /// ### StableWrapper ###
     /// #####################
 
-    error BondExpired();
+    error BondMatured();
     error InsufficientPrice();
     error AlreadyClosed();
-    error BondNotExpired();
+    error BondNotMatured();
 }
