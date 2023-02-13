@@ -566,4 +566,226 @@ contract HyperdriveTest is Test {
         assertEq(longsOutstandingAfter, longsOutstandingBefore);
         assertEq(shortsOutstandingAfter, shortsOutstandingBefore + bondAmount);
     }
+
+    /// Close Short ///
+
+    function test_close_short_zero_amount() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Open a short..
+        vm.stopPrank();
+        vm.startPrank(bob);
+        uint256 bondAmount = 10e18;
+        baseToken.mint(bondAmount);
+        baseToken.approve(address(hyperdrive), bondAmount);
+        hyperdrive.openShort(bondAmount);
+
+        // Attempt to close zero shorts. This should fail.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        vm.expectRevert(Errors.ZeroAmount.selector);
+        uint256 maturityTime = (block.timestamp - (block.timestamp % 1 days)) +
+            365 days;
+        hyperdrive.closeShort(maturityTime, 0);
+    }
+
+    function test_close_short_invalid_amount() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Purchase some bonds.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        uint256 bondAmount = 10e18;
+        baseToken.mint(bondAmount);
+        baseToken.approve(address(hyperdrive), bondAmount);
+        hyperdrive.openShort(bondAmount);
+
+        // Attempt to close too many shorts. This should fail.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        uint256 maturityTime = (block.timestamp - (block.timestamp % 1 days)) +
+            365 days;
+        vm.expectRevert(stdError.arithmeticError);
+        hyperdrive.closeShort(maturityTime, bondAmount + 1);
+    }
+
+    function test_close_short_invalid_timestamp() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Open a short.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        uint256 bondAmount = 10e18;
+        baseToken.mint(bondAmount);
+        baseToken.approve(address(hyperdrive), bondAmount);
+        hyperdrive.openShort(bondAmount);
+
+        // Attempt to use a timestamp greater than the maximum range.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        vm.expectRevert(Errors.InvalidTimestamp.selector);
+        hyperdrive.closeShort(uint256(type(uint248).max) + 1, 1);
+    }
+
+    function test_close_short_immediately() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Purchase some bonds.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        uint256 bondAmount = 10e18;
+        baseToken.mint(bondAmount);
+        baseToken.approve(address(hyperdrive), bondAmount);
+        hyperdrive.openShort(bondAmount);
+
+        // Get the reserves before closing the long.
+        (
+            uint256 shareReservesBefore,
+            uint256 bondReservesBefore,
+            uint256 lpTotalSupplyBefore,
+            uint256 sharePriceBefore,
+            uint256 longsOutstandingBefore,
+            uint256 shortsOutstandingBefore
+        ) = hyperdrive.getPoolInfo();
+
+        // Immediately close the bonds.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        uint256 maturityTime = (block.timestamp - (block.timestamp % 1 days)) +
+            365 days;
+        hyperdrive.closeShort(maturityTime, bondAmount);
+
+        // TODO: Bob receives more base than he started with. Fees should take
+        // care of this, but this should be investigating nonetheless.
+        //
+        // Verify that all of Bob's bonds were burned and that he has
+        // approximately as much base as he started with.
+        uint256 baseAmount = baseToken.balanceOf(bob);
+        assertEq(
+            hyperdrive.balanceOf(
+                AssetId.encodeAssetId(
+                    AssetId.AssetIdPrefix.Short,
+                    maturityTime
+                ),
+                bob
+            ),
+            0
+        );
+        assertApproxEqAbs(baseAmount, bondAmount, 1e10);
+
+        // Verify that the reserves were updated correctly. Since this trade
+        // happens at the beginning of the term, the bond reserves should be
+        // increased by the full amount.
+        (
+            uint256 shareReservesAfter,
+            uint256 bondReservesAfter,
+            uint256 lpTotalSupplyAfter,
+            uint256 sharePriceAfter,
+            uint256 longsOutstandingAfter,
+            uint256 shortsOutstandingAfter
+        ) = hyperdrive.getPoolInfo();
+        assertApproxEqAbs(
+            shareReservesAfter,
+            shareReservesBefore + baseAmount.divDown(sharePriceBefore)
+        );
+        assertEq(bondReservesAfter, bondReservesBefore - bondAmount);
+        assertEq(lpTotalSupplyAfter, lpTotalSupplyBefore);
+        assertEq(sharePriceAfter, sharePriceBefore);
+        assertEq(longsOutstandingAfter, longsOutstandingBefore);
+        assertEq(shortsOutstandingAfter, shortsOutstandingBefore - bondAmount);
+    }
+
+    // TODO: Clean up these tests.
+    function test_close_short_redeem() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Purchase some bonds.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        uint256 bondAmount = 10e18;
+        baseToken.mint(bondAmount);
+        baseToken.approve(address(hyperdrive), bondAmount);
+        hyperdrive.openShort(bondAmount);
+        uint256 maturityTime = (block.timestamp - (block.timestamp % 1 days)) +
+            365 days;
+
+        // Get the reserves before closing the long.
+        (
+            uint256 shareReservesBefore,
+            uint256 bondReservesBefore,
+            uint256 lpTotalSupplyBefore,
+            uint256 sharePriceBefore,
+            uint256 longsOutstandingBefore,
+            uint256 shortsOutstandingBefore
+        ) = hyperdrive.getPoolInfo();
+
+        // The term passes.
+        vm.warp(block.timestamp + 365 days);
+
+        // Get the base balance before closing the short.
+        uint256 baseBalanceBefore = baseToken.balanceOf(bob);
+
+        // Redeem the bonds
+        vm.stopPrank();
+        vm.startPrank(bob);
+        hyperdrive.closeShort(maturityTime, bondAmount);
+
+        // TODO: Investigate this more to see if there are any irregularities
+        // like there are with the long redemption test.
+        //
+        // Verify that all of Bob's bonds were burned and that he has
+        // approximately as much base as he started with.
+        uint256 baseBalanceAfter = baseToken.balanceOf(bob);
+        assertEq(
+            hyperdrive.balanceOf(
+                AssetId.encodeAssetId(
+                    AssetId.AssetIdPrefix.Short,
+                    maturityTime
+                ),
+                bob
+            ),
+            0
+        );
+        assertApproxEqAbs(baseBalanceAfter, baseBalanceBefore, 1e10);
+
+        // Verify that the reserves were updated correctly. Since this trade
+        // is a redemption, there should be no changes to the bond reserves.
+        (
+            uint256 shareReservesAfter,
+            uint256 bondReservesAfter,
+            uint256 lpTotalSupplyAfter,
+            uint256 sharePriceAfter,
+            uint256 longsOutstandingAfter,
+            uint256 shortsOutstandingAfter
+        ) = hyperdrive.getPoolInfo();
+        assertEq(
+            shareReservesAfter,
+            shareReservesBefore + bondAmount.divDown(sharePriceBefore)
+        );
+        assertEq(bondReservesAfter, bondReservesBefore);
+        assertEq(lpTotalSupplyAfter, lpTotalSupplyBefore);
+        assertEq(sharePriceAfter, sharePriceBefore);
+        assertEq(longsOutstandingAfter, longsOutstandingBefore);
+        assertEq(shortsOutstandingAfter, shortsOutstandingBefore - bondAmount);
+    }
 }
