@@ -151,7 +151,7 @@ contract Hyperdrive is MultiToken {
         // Create an initial checkpoint.
         uint256 latestCheckpoint = block.timestamp -
             (block.timestamp % checkpointDuration);
-        _checkpoint(latestCheckpoint, sharePrice);
+        _applyCheckpoint(latestCheckpoint, sharePrice);
 
         // Update the reserves. The bond reserves are calculated so that the
         // pool is initialized with the target APR.
@@ -182,6 +182,11 @@ contract Hyperdrive is MultiToken {
 
         // Deposit for the user, this call also transfers from them
         (uint256 shares, uint256 sharePrice) = deposit(_contribution);
+
+        // Perform a checkpoint.
+        uint256 latestCheckpoint = block.timestamp -
+            (block.timestamp % checkpointDuration);
+        _applyCheckpoint(latestCheckpoint, sharePrice);
 
         // Calculate the pool's APR prior to updating the share reserves so that
         // we can compute the bond reserves update.
@@ -228,6 +233,12 @@ contract Hyperdrive is MultiToken {
             revert Errors.ZeroAmount();
         }
 
+        // Perform a checkpoint.
+        uint256 sharePrice = pricePerShare();
+        uint256 latestCheckpoint = block.timestamp -
+            (block.timestamp % checkpointDuration);
+        _applyCheckpoint(latestCheckpoint, sharePrice);
+
         // Calculate the pool's APR prior to updating the share reserves and LP
         // total supply so that we can compute the bond reserves update.
         uint256 apr = HyperdriveMath.calculateAPRFromReserves(
@@ -252,7 +263,7 @@ contract Hyperdrive is MultiToken {
                 totalSupply[AssetId._LP_ASSET_ID],
                 longsOutstanding,
                 shortsOutstanding,
-                pricePerShare()
+                sharePrice
             );
 
         // Burn the LP shares.
@@ -301,6 +312,11 @@ contract Hyperdrive is MultiToken {
         uint256 _shortWithdrawalShares
     ) external {
         uint256 baseProceeds = 0;
+
+        // Perform a checkpoint.
+        uint256 latestCheckpoint = block.timestamp -
+            (block.timestamp % checkpointDuration);
+        _applyCheckpoint(latestCheckpoint, pricePerShare());
 
         // Redeem the long withdrawal shares.
         if (_longWithdrawalShares > 0) {
@@ -359,7 +375,7 @@ contract Hyperdrive is MultiToken {
         // Perform a checkpoint.
         uint256 latestCheckpoint = block.timestamp -
             (block.timestamp % checkpointDuration);
-        _checkpoint(latestCheckpoint, sharePrice);
+        _applyCheckpoint(latestCheckpoint, sharePrice);
 
         // Calculate the pool and user deltas using the trading function. We
         // backdate the bonds purchased to the beginning of the checkpoint. We
@@ -419,7 +435,7 @@ contract Hyperdrive is MultiToken {
         uint256 sharePrice = pricePerShare();
         uint256 latestCheckpoint = block.timestamp -
             (block.timestamp % checkpointDuration);
-        _checkpoint(latestCheckpoint, sharePrice);
+        _applyCheckpoint(latestCheckpoint, sharePrice);
 
         // Burn the longs that are being closed.
         uint256 assetId = AssetId.encodeAssetId(
@@ -449,8 +465,8 @@ contract Hyperdrive is MultiToken {
 
         // If the position hasn't matured, apply the accounting updates that
         // result from closing the long to the reserves and pay out the
-        // withdrawal pool if necessary. Matured positions have already been
-        // accounted for.
+        // withdrawal pool if necessary. If the position has reached maturity,
+        // create a checkpoint at the maturity time if necessary.
         if (block.timestamp < _maturityTime) {
             _applyCloseLong(
                 _bondAmount,
@@ -459,6 +475,8 @@ contract Hyperdrive is MultiToken {
                 sharePrice,
                 _maturityTime
             );
+        } else {
+            checkpoint(_maturityTime);
         }
 
         // Withdraw the profit to the trader.
@@ -482,7 +500,7 @@ contract Hyperdrive is MultiToken {
         uint256 sharePrice = pricePerShare();
         uint256 latestCheckpoint = block.timestamp -
             (block.timestamp % checkpointDuration);
-        uint256 openSharePrice = _checkpoint(latestCheckpoint, sharePrice);
+        uint256 openSharePrice = _applyCheckpoint(latestCheckpoint, sharePrice);
 
         // Calculate the pool and user deltas using the trading function. We
         // backdate the bonds sold to the beginning of the checkpoint.
@@ -550,7 +568,7 @@ contract Hyperdrive is MultiToken {
         uint256 sharePrice = pricePerShare();
         uint256 latestCheckpoint = block.timestamp -
             (block.timestamp % checkpointDuration);
-        _checkpoint(latestCheckpoint, sharePrice);
+        _applyCheckpoint(latestCheckpoint, sharePrice);
 
         // Burn the shorts that are being closed.
         uint256 assetId = AssetId.encodeAssetId(
@@ -579,8 +597,8 @@ contract Hyperdrive is MultiToken {
 
         // If the position hasn't matured, apply the accounting updates that
         // result from closing the short to the reserves and pay out the
-        // withdrawal pool if necessary. Matured positions have already been
-        // accounted for.
+        // withdrawal pool if necessary. If the position has reached maturity,
+        // create a checkpoint at the maturity time if necessary.
         if (block.timestamp < _maturityTime) {
             _applyCloseShort(
                 _bondAmount,
@@ -588,6 +606,8 @@ contract Hyperdrive is MultiToken {
                 sharePayment,
                 sharePrice
             );
+        } else {
+            checkpoint(_maturityTime);
         }
 
         // TODO: Double check this math.
@@ -620,7 +640,7 @@ contract Hyperdrive is MultiToken {
 
     /// @notice Allows anyone to mint a new checkpoint.
     /// @param _checkpointTime The time of the checkpoint to create.
-    function checkpoint(uint256 _checkpointTime) external {
+    function checkpoint(uint256 _checkpointTime) public {
         // If the checkpoint has already been set, return early.
         if (checkpoints[_checkpointTime] != 0) {
             return;
@@ -641,13 +661,16 @@ contract Hyperdrive is MultiToken {
         // If the checkpoint time is the latest checkpoint, we use the current
         // share price. Otherwise, we use a linear search to find the closest
         // share price and use that to perform the checkpoint.
-        if (latestCheckpoint == _checkpointTime) {
-            _checkpoint(latestCheckpoint, pricePerShare());
+        if (_checkpointTime == latestCheckpoint) {
+            _applyCheckpoint(latestCheckpoint, pricePerShare());
         } else {
             for (uint256 time = _checkpointTime; ; time += checkpointDuration) {
                 uint256 closestSharePrice = checkpoints[time];
+                if (time == latestCheckpoint) {
+                    closestSharePrice = pricePerShare();
+                }
                 if (closestSharePrice != 0) {
-                    _checkpoint(_checkpointTime, closestSharePrice);
+                    _applyCheckpoint(_checkpointTime, closestSharePrice);
                 }
             }
         }
@@ -827,7 +850,7 @@ contract Hyperdrive is MultiToken {
     /// @param _checkpointTime The time of the checkpoint to create.
     /// @param _sharePrice The current share price.
     /// @return openSharePrice The open share price of the latest checkpoint.
-    function _checkpoint(
+    function _applyCheckpoint(
         uint256 _checkpointTime,
         uint256 _sharePrice
     ) internal returns (uint256 openSharePrice) {
