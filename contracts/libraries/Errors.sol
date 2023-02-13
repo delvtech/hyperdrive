@@ -42,7 +42,7 @@ library Errors {
     error AssetIDCorruption();
 
     /// #####################
-    /// ### StableWrapper ###
+    /// ### BondWrapper ###
     /// #####################
 
     error BondMatured();
