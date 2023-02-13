@@ -30,7 +30,7 @@ library HyperdriveMath {
         uint256 _positionDuration,
         uint256 _timeStretch
     ) internal pure returns (uint256 apr) {
-        uint256 spotPrice = calcSpotPrice(
+        uint256 spotPrice = calculateSpotPrice(
             _shareReserves,
             _bondReserves,
             _lpTotalSupply,
@@ -196,7 +196,7 @@ library HyperdriveMath {
                 _isBondOut
             );
 
-            uint256 spotPrice = calcSpotPrice(
+            uint256 spotPrice = calculateSpotPrice(
                 _shareReserves,
                 _bondReserves,
                 _bondReserveAdjustment,
@@ -206,7 +206,7 @@ library HyperdriveMath {
                 _timeStretch
             );
 
-            uint256 curveFee = calcFeesOutGivenIn(
+            uint256 curveFee = calculateFeesOutGivenIn(
                 _timeRemaining,
                 _positionDuration,
                 spotPrice,
@@ -253,17 +253,17 @@ library HyperdriveMath {
                 _isBondOut
             );
 
-            uint256 spotPrice = calcSpotPrice(
+            uint256 spotPrice = calculateSpotPrice(
                 _shareReserves,
                 _bondReserves,
                 _bondReserveAdjustment,
                 _initialSharePrice,
                 _timeRemaining,
                 _positionDuration,
-                _timeStretch,
+                _timeStretch
             );
 
-            uint256 curveFee = calcFeesOutGivenIn(
+            uint256 curveFee = calculateFeesOutGivenIn(
                 _timeRemaining,
                 _positionDuration,
                 spotPrice,
@@ -364,7 +364,7 @@ library HyperdriveMath {
     /// @param _positionDuration The amount of time until maturity in seconds.
     /// @param _timeStretch The time stretch parameter as an 18 fixed-point value.
     /// @return spotPrice The spot price of bonds in terms of shares as an 18 fixed-point value.
-    function calcSpotPrice(
+    function calculateSpotPrice(
         uint256 _shareReserves,
         uint256 _bondReserves,
         uint256 _lpTotalSupply,
@@ -395,7 +395,7 @@ library HyperdriveMath {
     /// @param _amountIn The given amount in, either in terms of shares or bonds.
     /// @param _isBaseIn If the user will supply base.
     /// @return fee The fee amount to charge.
-    function calcFeesOutGivenIn(
+    function calculateFeesOutGivenIn(
         uint256 _timeRemaining,
         uint256 _positionDuration,
         uint256 _spotPrice,
@@ -435,7 +435,7 @@ library HyperdriveMath {
     /// @param _amountOut The given amount out, either in terms of shares or bonds.
     /// @param _isBaseOut If the user will receive bonds.
     /// @return fee The fee amount to charge.
-    function calcFeesInGivenOut(
+    function calculateFeesInGivenOut(
         uint256 _timeRemaining,
         uint256 _positionDuration,
         uint256 _spotPrice,

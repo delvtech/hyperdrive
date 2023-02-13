@@ -12,7 +12,7 @@ contract HyperdriveMathTest is Test {
 
     function test__calcSpotPrice() public {
         assertEq(
-            HyperdriveMath.calcSpotPrice(
+            HyperdriveMath.calculateSpotPrice(
                 1 ether, // shareReserves
                 1 ether, // bondReserves
                 0 ether, // lpTotalSupply
@@ -25,7 +25,7 @@ contract HyperdriveMathTest is Test {
         );
 
         assertApproxEqAbs(
-            HyperdriveMath.calcSpotPrice(
+            HyperdriveMath.calculateSpotPrice(
                 1.1 ether, // shareReserves
                 1 ether, // bondReserves
                 0 ether, // lpTotalSupply
@@ -70,7 +70,7 @@ contract HyperdriveMathTest is Test {
 
     function test__calcFeesInGivenOut() public {
         assertEq(
-            HyperdriveMath.calcFeesInGivenOut(
+            HyperdriveMath.calculateFeesInGivenOut(
                 365 days, // timeRemaining
                 365 days, // positionDuration
                 0.9 ether, // spotPrice
@@ -83,7 +83,7 @@ contract HyperdriveMathTest is Test {
         );
 
         assertEq(
-            HyperdriveMath.calcFeesInGivenOut(
+            HyperdriveMath.calculateFeesInGivenOut(
                 365 days, // timeRemaining
                 365 days, // positionDuration
                 0.9 ether, // spotPrice
@@ -98,7 +98,7 @@ contract HyperdriveMathTest is Test {
 
     function test__calcFeesOutGivenIn() public {
         assertEq(
-            HyperdriveMath.calcFeesOutGivenIn(
+            HyperdriveMath.calculateFeesOutGivenIn(
                 365 days, // timeRemaining
                 365 days, // positionDuration
                 0.9 ether, // spotPrice
@@ -111,7 +111,7 @@ contract HyperdriveMathTest is Test {
         );
 
         assertEq(
-            HyperdriveMath.calcFeesOutGivenIn(
+            HyperdriveMath.calculateFeesOutGivenIn(
                 365 days, // timeRemaining
                 365 days, // positionDuration
                 0.9 ether, // spotPrice
