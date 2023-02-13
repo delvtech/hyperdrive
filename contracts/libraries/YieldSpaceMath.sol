@@ -34,7 +34,10 @@ library YieldSpaceMath {
         uint256 _mu,
         bool _isBondOut
     ) internal pure returns (uint256) {
+        // c / mu
         uint256 cDivMu = _c.divDown(_mu);
+        // Adjust the bond reserve, optionally shifts the curve around the
+        // inflection point
         _bondReserves = _bondReserves.add(_bondReserveAdjustment);
         uint256 k = _k(
             cDivMu,
@@ -115,15 +118,15 @@ library YieldSpaceMath {
         }
     }
 
-    /// @dev Helper function
+    /// @dev Helper function to derive invariant constant k
     ///
-    /// (
-    ///   c/mu
-    ///   * (mu*shareReserves)^(1-t)
-    ///   + bondReserves^(1-t)
-    ///   - c/mu
-    ///   * (mu*(shareReserves + amountIn))^(1-t) )^(1 / (1 - t)
-    /// )
+    /// k = c/mu * (mu*shareReserves)^(1-t) + bondReserves^(1-t)
+    ///
+    /// @param _cDivMu Normalized price of shares in terms of base
+    /// @param _mu Normalization factor -- starts as c at initialization
+    /// @param _shareReserves Yield bearing vault shares reserve amount, unit is shares
+    /// @param _stretchedTimeElapsed Amount of time elapsed since term start
+    /// @param _bondReserves Bond reserves amount, unit is the face value in underlying
     /// returns k
     function _k(
         uint256 _cDivMu,
