@@ -134,11 +134,13 @@ library HyperdriveMath {
             // YieldSpace curve configured to timeRemaining = 1.
             uint256 curveIn = _amountIn.mulDown(_timeRemaining);
 
-            // Credit the share reserves by the flat trade.
+            // TODO: Revisit this assumption. It seems like LPs can bake this into the 
+            // fee schedule rather than adding a hidden fee.
+            //
+            // Calculate the curved part of the trade assuming that the flat part of 
+            // the trade was applied to the share and bond reserves.
             _shareReserves = _shareReserves.add(flat);
-            // Debit the bond reserves by the flat trade.
             _bondReserves = _bondReserves.sub(flat.mulDown(_sharePrice));
-
             uint256 curveOut = YieldSpaceMath.calculateOutGivenIn(
                 _shareReserves,
                 _bondReserves,
