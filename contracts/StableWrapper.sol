@@ -44,18 +44,18 @@ contract BondWrapper is ERC20Permit {
     /// @param amount The amount of bonds to mint
     function mint(
         uint256 openSharePrice,
-        uint256  maturityTime,
+        uint256 maturityTime,
         uint256 amount
     ) external {
         // Encode the asset ID
         uint256 assetId = AssetId.encodeAssetId(
             AssetId.AssetIdPrefix.Long,
             openSharePrice,
-             maturityTime
+            maturityTime
         );
 
         // Must not be  matured
-        if ( maturityTime <= block.timestamp) revert Errors.BondMatured();
+        if (maturityTime <= block.timestamp) revert Errors.BondMatured();
         // Transfer from the user
         hyperdrive.transferFrom(assetId, msg.sender, address(this), amount);
 
@@ -77,7 +77,7 @@ contract BondWrapper is ERC20Permit {
     /// @param andBurn If true it will burn the number of erc20 minted by this deposited bond
     function close(
         uint256 openSharePrice,
-        uint256  maturityTime,
+        uint256 maturityTime,
         uint256 amount,
         bool andBurn
     ) external {
@@ -85,7 +85,7 @@ contract BondWrapper is ERC20Permit {
         uint256 assetId = AssetId.encodeAssetId(
             AssetId.AssetIdPrefix.Long,
             openSharePrice,
-             maturityTime
+            maturityTime
         );
 
         // We unload the variables from storage on the user account
@@ -100,7 +100,7 @@ contract BondWrapper is ERC20Permit {
             // Close the bond [selling if earlier than the expiration]
             receivedAmount = hyperdrive.closeLong(
                 openSharePrice,
-                uint32( maturityTime),
+                uint32(maturityTime),
                 amount
             );
             // Update the user account data, note this sub is safe because the top bits are zero.
@@ -111,7 +111,9 @@ contract BondWrapper is ERC20Permit {
             // Update the user account
             deposited -= amount;
             forceClosed -= receivedAmount;
-            userAccounts[msg.sender][assetId] = (forceClosed << 128) + deposited;
+            userAccounts[msg.sender][assetId] =
+                (forceClosed << 128) +
+                deposited;
         }
 
         // We require that this won't make the position unbacked
@@ -141,13 +143,13 @@ contract BondWrapper is ERC20Permit {
     function forceClose(
         address user,
         uint256 openSharePrice,
-        uint256  maturityTime
+        uint256 maturityTime
     ) public {
         // Encode the asset ID
         uint256 assetId = AssetId.encodeAssetId(
             AssetId.AssetIdPrefix.Long,
             openSharePrice,
-             maturityTime
+            maturityTime
         );
         // We unload the variables from storage on the user account
         uint256 userAccount = userAccounts[user][assetId];
@@ -161,12 +163,12 @@ contract BondWrapper is ERC20Permit {
         // Note - This check is to prevent people from being able to liquate arbitrary positions and
         //        interfere with other users positions. No new borrows can be done from these bonds
         //        because no new borrows are allowed from  matured assets.
-        if ( maturityTime > block.timestamp) revert Errors.BondNotMatured();
+        if (maturityTime > block.timestamp) revert Errors.BondNotMatured();
 
         // Close the long
         uint256 receivedAmount = hyperdrive.closeLong(
             openSharePrice,
-            uint32( maturityTime),
+            uint32(maturityTime),
             deposited
         );
         // Store the user account update
@@ -192,10 +194,10 @@ contract BondWrapper is ERC20Permit {
     function forceCloseAndRedeem(
         address user,
         uint256 openSharePrice,
-        uint256  maturityTime,
+        uint256 maturityTime,
         uint256 amount
     ) external {
-        forceClose(user, openSharePrice,  maturityTime);
+        forceClose(user, openSharePrice, maturityTime);
         redeem(amount);
     }
 }

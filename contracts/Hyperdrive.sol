@@ -8,7 +8,7 @@ import { Errors } from "contracts/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/libraries/HyperdriveMath.sol";
 import { MultiToken } from "contracts/MultiToken.sol";
-import {IHyperdrive} from "contracts/interfaces/IHyperdrive.sol";
+import { IHyperdrive } from "contracts/interfaces/IHyperdrive.sol";
 
 /// @author Delve
 /// @title Hyperdrive
