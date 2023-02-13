@@ -5,6 +5,8 @@ forge-cache/
 node_modules/
 yarn-error.log
 
+# nix/shell extension - https://direnv.net/
 .direnv
 
+# code coverage
 lcov.info
