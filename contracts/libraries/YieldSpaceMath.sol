@@ -140,7 +140,7 @@ library YieldSpaceMath {
                 FixedPointMath.ONE_18.divDown(_stretchedTimeElapsed)
             );
             // (((mu * shareReserves)^(1-t) + bondReserves^(1-t) - (bondReserves - amountOut)^(1-t) ) / (c / mu))^(1 / (1 - t)) / mu
-            newShareReserves = rhs.divDown(_mu);
+            newShareReserves = newShareReserves.divDown(_mu);
             // NOTE: newShareReserves - shareReserves >= 0, but I think avoiding a complex number in the step above ensures this never happens
             // sharesIn = (((c / mu) * (mu * shareReserves)^(1-t) + bondReserves^(1-t) - (bondReserves - bondOut)^(1-t) ) / (c / mu))^(1 / (1 - t)) / mu - shareReserves
             return newShareReserves.sub(_shareReserves);
