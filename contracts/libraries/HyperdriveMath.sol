@@ -280,9 +280,7 @@ library HyperdriveMath {
     /// @param _shareReserves The pool's share reserves.
     /// @param _lpTotalSupply The pool's total supply of LP shares.
     /// @param _longsOutstanding The amount of longs that haven't been closed.
-    /// @param _longsMatured The amount of outstanding longs that have matured.
     /// @param _shortsOutstanding The amount of shorts that haven't been closed.
-    /// @param _shortsMatured The amount of outstanding shorts that have matured.
     /// @param _sharePrice The pool's share price.
     /// @return shares The amount of base shares released.
     /// @return longWithdrawalShares The amount of long withdrawal shares
@@ -294,9 +292,7 @@ library HyperdriveMath {
         uint256 _shareReserves,
         uint256 _lpTotalSupply,
         uint256 _longsOutstanding,
-        uint256 _longsMatured,
         uint256 _shortsOutstanding,
-        uint256 _shortsMatured,
         uint256 _sharePrice
     )
         internal
@@ -313,13 +309,10 @@ library HyperdriveMath {
         shares = _shareReserves
             .sub(_longsOutstanding.divDown(_sharePrice))
             .mulDown(poolFactor);
-        // (longsOutstanding - longsMatured) * (dl / l)
-        longWithdrawalShares = (_longsOutstanding.sub(_longsMatured)).mulDown(
-            poolFactor
-        );
-        // (shortsOutstanding - shortsMatured) * (dl / l)
-        shortWithdrawalShares = (_shortsOutstanding.sub(_shortsMatured))
-            .mulDown(poolFactor);
+        // longsOutstanding * (dl / l)
+        longWithdrawalShares = _longsOutstanding.mulDown(poolFactor);
+        // shortsOutstanding * (dl / l)
+        shortWithdrawalShares = _shortsOutstanding.mulDown(poolFactor);
         return (shares, longWithdrawalShares, shortWithdrawalShares);
     }
 }

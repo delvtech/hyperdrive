@@ -15,10 +15,6 @@ import { MultiToken } from "contracts/MultiToken.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-//
-// TODO - Here we give default implementations of the virtual methods to not break tests
-//        we should move to an abstract contract to prevent this from being deployed w/o
-//        real implementations.
 contract Hyperdrive is MultiToken {
     using FixedPointMath for uint256;
 
@@ -62,12 +58,6 @@ contract Hyperdrive is MultiToken {
 
     /// @notice The amount of shorts that are still open.
     uint256 public shortsOutstanding;
-
-    /// @notice The amount of longs that have matured but have not been closed.
-    uint256 public longsMatured;
-
-    /// @notice The amount of shorts that have matured but have not been closed.
-    uint256 public shortsMatured;
 
     /// @notice The amount of long withdrawal shares that haven't been paid out.
     uint256 public longWithdrawalSharesOutstanding;
@@ -261,9 +251,7 @@ contract Hyperdrive is MultiToken {
                 shareReserves,
                 totalSupply[AssetId._LP_ASSET_ID],
                 longsOutstanding,
-                longsMatured,
                 shortsOutstanding,
-                shortsMatured,
                 pricePerShare()
             );
 
@@ -459,15 +447,19 @@ contract Hyperdrive is MultiToken {
                 false
             );
 
-        // Apply the accounting updates that result from closing the long to the
-        // reserves and pay out the withdrawal pool if necessary.
-        _applyCloseLong(
-            _bondAmount,
-            poolBondDelta,
-            shareProceeds,
-            sharePrice,
-            _maturityTime
-        );
+        // If the position hasn't matured, apply the accounting updates that
+        // result from closing the long to the reserves and pay out the
+        // withdrawal pool if necessary. Matured positions have already been
+        // accounted for.
+        if (block.timestamp < _maturityTime) {
+            _applyCloseLong(
+                _bondAmount,
+                poolBondDelta,
+                shareProceeds,
+                sharePrice,
+                _maturityTime
+            );
+        }
 
         // Withdraw the profit to the trader.
         // TODO: Better destination support.
@@ -585,15 +577,18 @@ contract Hyperdrive is MultiToken {
                 initialSharePrice
             );
 
-        // Apply the accounting updates that result from closing the short to
-        // the reserves and pay out the withdrawal pool if necessary.
-        _applyCloseShort(
-            _bondAmount,
-            poolBondDelta,
-            sharePayment,
-            sharePrice,
-            _maturityTime
-        );
+        // If the position hasn't matured, apply the accounting updates that
+        // result from closing the short to the reserves and pay out the
+        // withdrawal pool if necessary. Matured positions have already been
+        // accounted for.
+        if (block.timestamp < _maturityTime) {
+            _applyCloseShort(
+                _bondAmount,
+                poolBondDelta,
+                sharePayment,
+                sharePrice
+            );
+        }
 
         // TODO: Double check this math.
         //
@@ -680,17 +675,13 @@ contract Hyperdrive is MultiToken {
         // Reduce the amount of outstanding longs.
         longsOutstanding -= _bondAmount;
 
-        // If there are outstanding long withdrawal shares and the bonds haven't
-        // matured yet, we attribute a proportional amount of the proceeds to
-        // the withdrawal pool and the active LPs. Otherwise, we use simplified
-        // accounting that has the same behavior but is more gas efficient.
-        // Since the difference between the base reserves and the longs
-        // outstanding stays the same or gets larger, we don't need to verify
-        // the reserves invariants.
-        if (
-            longWithdrawalSharesOutstanding > 0 &&
-            _maturityTime > block.timestamp
-        ) {
+        // If there are outstanding long withdrawal shares, we attribute a
+        // proportional amount of the proceeds to the withdrawal pool and the
+        // active LPs. Otherwise, we use simplified accounting that has the same
+        // behavior but is more gas efficient. Since the difference between the
+        // base reserves and the longs outstanding stays the same or gets
+        // larger, we don't need to verify the reserves invariants.
+        if (longWithdrawalSharesOutstanding > 0) {
             // Calculate the effect that the trade has on the pool's APR.
             uint256 apr = HyperdriveMath.calculateAPRFromReserves(
                 shareReserves.sub(_shareProceeds),
@@ -749,82 +740,8 @@ contract Hyperdrive is MultiToken {
                 timeStretch
             );
         } else {
-            if (_maturityTime <= block.timestamp) {
-                longsMatured -= _bondAmount;
-            }
             shareReserves -= _shareProceeds;
             bondReserves += _poolBondDelta;
-        }
-    }
-
-    /// @dev Pays out the profits from matured longs to the withdrawal pool.
-    /// @param _bondAmount The amount of longs that have matured.
-    /// @param _sharePrice The current share price.
-    /// @param _maturityTime The maturity time of the longs.
-    function _applyMaturedLongsPayout(
-        uint256 _bondAmount,
-        uint256 _sharePrice,
-        uint256 _maturityTime
-    ) internal {
-        // Increase the amount of longs that have matured.
-        longsMatured += _bondAmount;
-
-        if (longWithdrawalSharesOutstanding > 0) {
-            // Calculate the current pool APR.
-            uint256 apr = HyperdriveMath.calculateAPRFromReserves(
-                shareReserves,
-                bondReserves,
-                totalSupply[AssetId._LP_ASSET_ID],
-                initialSharePrice,
-                positionDuration,
-                timeStretch
-            );
-
-            // TODO: We could have a helper function for this.
-            //
-            // Since longs are backdated to the beginning of the checkpoint and
-            // interest only begins accruing when the longs are opened, we
-            // exclude the first checkpoint from LP withdrawal payouts. For most
-            // pools the difference will not be meaningful, and in edge cases,
-            // fees can be tuned to offset the problem.
-            uint256 openSharePrice = checkpoints[
-                (_maturityTime - positionDuration) + checkpointDuration
-            ];
-
-            // Apply the LP proceeds from the trade proportionally to the long
-            // withdrawal shares. The accounting for these proceeds is identical
-            // to the close short accounting because LPs take the short position
-            // when longs are opened; however, we can make some simplifications
-            // since the longs have matured. The math for the withdrawal proceeds is
-            // given by:
-            //
-            // proceeds = c * (dy / c_0 - dy / c) * (min(b_x, dy) / dy)
-            //          = (c / c_0 - 1) * dy * (min(b_x, dy) / dy)
-            //          = (c / c_0 - 1) * min(b_x, dy)
-            uint256 withdrawalAmount = longWithdrawalSharesOutstanding <
-                _bondAmount
-                ? longWithdrawalSharesOutstanding
-                : _bondAmount;
-            uint256 withdrawalProceeds = (
-                _sharePrice.divDown(openSharePrice).sub(FixedPointMath.ONE_18)
-            ).mulDown(withdrawalAmount);
-            longWithdrawalSharesOutstanding -= withdrawalAmount;
-            longWithdrawalShareProceeds += withdrawalProceeds;
-
-            // Apply the withdrawal payouts to the reserves. These updates reflect
-            // the fact that some of the reserves will be attributed to the
-            // withdrawal pool. The math for the share reserves update is given by:
-            //
-            // z -= (c / c_0 - 1) * min(b_x, dy) / c
-            shareReserves -= withdrawalProceeds.divDown(_sharePrice);
-            bondReserves = HyperdriveMath.calculateBondReserves(
-                shareReserves,
-                totalSupply[AssetId._LP_ASSET_ID],
-                initialSharePrice,
-                apr,
-                positionDuration,
-                timeStretch
-            );
         }
     }
 
@@ -836,28 +753,22 @@ contract Hyperdrive is MultiToken {
     ///        pool.
     /// @param _sharePayment The payment in shares required to close the short.
     /// @param _sharePrice The current share price.
-    /// @param _maturityTime The maturity time of the bonds.
     function _applyCloseShort(
         uint256 _bondAmount,
         uint256 _poolBondDelta,
         uint256 _sharePayment,
-        uint256 _sharePrice,
-        uint256 _maturityTime
+        uint256 _sharePrice
     ) internal {
         // Decrease the amount of shorts outstanding.
         shortsOutstanding -= _bondAmount;
 
-        // If there are outstanding short withdrawal shares and the bonds haven't
-        // matured yet, we attribute a proportional amount of the proceeds to
-        // the withdrawal pool and the active LPs. Otherwise, we use simplified
-        // accounting that has the same behavior but is more gas efficient.
-        // Since the difference between the base reserves and the longs
-        // outstanding stays the same or gets larger, we don't need to verify
-        // the reserves invariants.
-        if (
-            shortWithdrawalSharesOutstanding > 0 &&
-            _maturityTime > block.timestamp
-        ) {
+        // If there are outstanding short withdrawal shares, we attribute a
+        // proportional amount of the proceeds to the withdrawal pool and the
+        // active LPs. Otherwise, we use simplified accounting that has the same
+        // behavior but is more gas efficient. Since the difference between the
+        // base reserves and the longs outstanding stays the same or gets
+        // larger, we don't need to verify the reserves invariants.
+        if (shortWithdrawalSharesOutstanding > 0) {
             // Calculate the effect that the trade has on the pool's APR.
             uint256 apr = HyperdriveMath.calculateAPRFromReserves(
                 shareReserves.add(_sharePayment),
@@ -902,62 +813,8 @@ contract Hyperdrive is MultiToken {
                 timeStretch
             );
         } else {
-            if (_maturityTime <= block.timestamp) {
-                shortsMatured -= _bondAmount;
-            }
             shareReserves += _sharePayment;
             bondReserves -= _poolBondDelta;
-        }
-    }
-
-    /// @dev Pays out the profits from matured shorts to the withdrawal pool.
-    /// @param _bondAmount The amount of longs that have matured.
-    function _applyMaturedShortsPayout(uint256 _bondAmount) internal {
-        // Increase the amount of shorts that have matured.
-        shortsMatured += _bondAmount;
-
-        if (shortWithdrawalSharesOutstanding > 0) {
-            // Calculate the effect that the trade has on the pool's APR.
-            uint256 apr = HyperdriveMath.calculateAPRFromReserves(
-                shareReserves,
-                bondReserves,
-                totalSupply[AssetId._LP_ASSET_ID],
-                initialSharePrice,
-                positionDuration,
-                timeStretch
-            );
-
-            // Apply the LP proceeds from the trade proportionally to the short
-            // withdrawal pool. The accounting for these proceeds is identical
-            // to the close short accounting because LPs take on a long position when
-            // shorts are opened; however, we can make some simplifications
-            // since the longs have matured. The math for the withdrawal proceeds is
-            // given by:
-            //
-            // proceeds = c * (dy / c) * (min(b_y, dy) / dy)
-            //          = dy * (min(b_y, dy) / dy)
-            //          = min(b_y, dy)
-            uint256 withdrawalAmount = shortWithdrawalSharesOutstanding <
-                _bondAmount
-                ? shortWithdrawalSharesOutstanding
-                : _bondAmount;
-            shortWithdrawalSharesOutstanding -= withdrawalAmount;
-            shortWithdrawalShareProceeds += withdrawalAmount;
-
-            // Apply the trading deltas to the reserves. These updates reflect
-            // the fact that some of the reserves will be attributed to the
-            // withdrawal pool. The math for the share reserves update is given by:
-            //
-            // z -= min(b_y, dy)
-            shareReserves -= withdrawalAmount;
-            bondReserves = HyperdriveMath.calculateBondReserves(
-                shareReserves,
-                totalSupply[AssetId._LP_ASSET_ID],
-                initialSharePrice,
-                apr,
-                positionDuration,
-                timeStretch
-            );
         }
     }
 
@@ -987,7 +844,12 @@ contract Hyperdrive is MultiToken {
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _checkpointTime)
         ];
         if (maturedLongsAmount > 0) {
-            _applyMaturedLongsPayout(
+            // TODO: YieldSpaceMath currently returns a positive quantity at
+            //       redemption. With this in mind, this will represent a
+            //       slight inaccuracy until this problem is fixed.
+            _applyCloseLong(
+                maturedLongsAmount,
+                0,
                 maturedLongsAmount,
                 _sharePrice,
                 _checkpointTime
@@ -999,7 +861,15 @@ contract Hyperdrive is MultiToken {
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _checkpointTime)
         ];
         if (maturedShortsAmount > 0) {
-            _applyMaturedShortsPayout(maturedShortsAmount);
+            // TODO: YieldSpaceMath currently returns a positive quantity at
+            //       redemption. With this in mind, this will represent a
+            //       slight inaccuracy until this problem is fixed.
+            _applyCloseShort(
+                maturedShortsAmount,
+                0,
+                maturedShortsAmount,
+                _sharePrice
+            );
         }
 
         return checkpoints[_checkpointTime];
