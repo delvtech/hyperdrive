@@ -1,4 +1,4 @@
-[![Coverage Status](https://coveralls.io/repos/github/element-fi/hyperdrive/badge.svg?branch=via-ir-2&t=US78Aq)](https://coveralls.io/github/element-fi/hyperdrive?branch=via-ir-2)
+[![Coverage Status](https://coveralls.io/repos/github/element-fi/hyperdrive/badge.svg?t=US78Aq)](https://coveralls.io/github/element-fi/hyperdrive)
 
 # Hyperdrive
 
