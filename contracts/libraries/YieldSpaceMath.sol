@@ -15,100 +15,126 @@ library YieldSpaceMath {
     using FixedPointMath for uint256;
 
     /// Calculates the amount of bond a user would get for given amount of shares.
-    /// @param shareReserves yield bearing vault shares reserve amount, unit is shares
-    /// @param bondReserves bond reserves amount, unit is the face value in underlying
-    /// @param bondReserveAdjustment An optional adjustment to the reserve which MUST have units of underlying.
-    /// @param amountIn amount to be traded, if bonds in the unit is underlying, if shares in the unit is shares
-    /// @param oneMinusT 1 - st
-    /// @param c price of shares in terms of their base
-    /// @param mu Normalization factor -- starts as c at initialization
-    /// @param isBondOut determines if the output is bond or shares
-    /// @return result the amount of shares a user would get for given amount of bond
+    /// @param _shareReserves yield bearing vault shares reserve amount, unit is shares
+    /// @param _bondReserves bond reserves amount, unit is the face value in underlying
+    /// @param _bondReserveAdjustment An optional adjustment to the reserve which MUST have units of underlying.
+    /// @param _amountIn amount to be traded, if bonds in the unit is underlying, if shares in the unit is shares
+    /// @param _stretchedTimeElapsed Amount of time elapsed since term start
+    /// @param _c price of shares in terms of their base
+    /// @param _mu Normalization factor -- starts as c at initialization
+    /// @param _isBondOut determines if the output is bond or shares
+    /// @return Amount of shares a user would get for given amount of bond
     function calculateOutGivenIn(
-        uint256 shareReserves,
-        uint256 bondReserves,
-        uint256 bondReserveAdjustment,
-        uint256 amountIn,
-        uint256 oneMinusT,
-        uint256 c,
-        uint256 mu,
-        bool isBondOut
+        uint256 _shareReserves,
+        uint256 _bondReserves,
+        uint256 _bondReserveAdjustment,
+        uint256 _amountIn,
+        uint256 _stretchedTimeElapsed,
+        uint256 _c,
+        uint256 _mu,
+        bool _isBondOut
     ) internal pure returns (uint256) {
-        uint256 cDivMu = c.divDown(mu);
-        bondReserves = bondReserves.add(bondReserveAdjustment);
-        uint256 k = _k(cDivMu, mu, shareReserves, oneMinusT, bondReserves);
-        if (isBondOut) {
-            shareReserves = mu.mulDown(shareReserves.add(amountIn)).pow(
-                oneMinusT
+        uint256 cDivMu = _c.divDown(_mu);
+        _bondReserves = _bondReserves.add(_bondReserveAdjustment);
+        uint256 k = _k(
+            cDivMu,
+            _mu,
+            _shareReserves,
+            _stretchedTimeElapsed,
+            _bondReserves
+        );
+        if (_isBondOut) {
+            _shareReserves = _mu.mulDown(_shareReserves.add(_amountIn)).pow(
+                _stretchedTimeElapsed
             );
-            shareReserves = cDivMu.mulDown(shareReserves);
-            uint256 rhs = k.sub(shareReserves).pow(
-                FixedPointMath.ONE_18.divDown(oneMinusT)
+            _shareReserves = cDivMu.mulDown(_shareReserves);
+            uint256 rhs = k.sub(_shareReserves).pow(
+                FixedPointMath.ONE_18.divDown(_stretchedTimeElapsed)
             );
-            return bondReserves.sub(rhs);
+            return _bondReserves.sub(rhs);
         } else {
-            bondReserves = bondReserves.add(amountIn).pow(oneMinusT);
-            uint256 rhs = k.sub(bondReserves).divDown(cDivMu).pow(
-                FixedPointMath.ONE_18.divDown(oneMinusT)
+            _bondReserves = _bondReserves.add(_amountIn).pow(
+                _stretchedTimeElapsed
             );
-            rhs = rhs.divDown(mu);
-            return shareReserves.sub(rhs);
+            uint256 rhs = k.sub(_bondReserves).divDown(cDivMu).pow(
+                FixedPointMath.ONE_18.divDown(_stretchedTimeElapsed)
+            );
+            rhs = rhs.divDown(_mu);
+            return _shareReserves.sub(rhs);
         }
     }
 
     /// @dev Calculates the amount of an asset that will be received given a
     ///      specified amount of the other asset given the current AMM reserves.
-    /// @param shareReserves yield bearing vault shares reserve amount, unit is shares
-    /// @param bondReserves bond reserves amount, unit is the face value in underlying
-    /// @param bondReserveAdjustment An optional adjustment to the reserve which MUST have units of underlying.
-    /// @param amountOut amount to be received, if bonds in the unit is underlying, if shares in the unit is shares
-    /// @param oneMinusT 1 - st
-    /// @param c price of shares in terms of their base
-    /// @param mu Normalization factor -- starts as c at initialization
-    /// @param isBondIn determines if the input is bond or shares
-    /// @return result the amount of shares a user would get for given amount of bond
+    /// @param _shareReserves yield bearing vault shares reserve amount, unit is shares
+    /// @param _bondReserves bond reserves amount, unit is the face value in underlying
+    /// @param _bondReserveAdjustment An optional adjustment to the reserve which MUST have units of underlying.
+    /// @param _amountOut amount to be received, if bonds in the unit is underlying, if shares in the unit is shares
+    /// @param _stretchedTimeElapsed Amount of time elapsed since term start
+    /// @param _c price of shares in terms of their base
+    /// @param _mu Normalization factor -- starts as c at initialization
+    /// @param _isBondIn determines if the input is bond or shares
+    /// @return Amount of shares a user would get for given amount of bond
     function calculateInGivenOut(
-        uint256 shareReserves,
-        uint256 bondReserves,
-        uint256 bondReserveAdjustment,
-        uint256 amountOut,
-        uint256 oneMinusT,
-        uint256 c,
-        uint256 mu,
-        bool isBondIn
+        uint256 _shareReserves,
+        uint256 _bondReserves,
+        uint256 _bondReserveAdjustment,
+        uint256 _amountOut,
+        uint256 _stretchedTimeElapsed,
+        uint256 _c,
+        uint256 _mu,
+        bool _isBondIn
     ) internal pure returns (uint256) {
-        uint256 cDivMu = c.divDown(mu);
-        bondReserves = bondReserves.add(bondReserveAdjustment);
-        uint256 k = _k(cDivMu, mu, shareReserves, oneMinusT, bondReserves);
-        if (isBondIn) {
-            shareReserves = mu.mulDown(shareReserves.sub(amountOut)).pow(
-                oneMinusT
+        uint256 cDivMu = _c.divDown(_mu);
+        _bondReserves = _bondReserves.add(_bondReserveAdjustment);
+        uint256 k = _k(
+            cDivMu,
+            _mu,
+            _shareReserves,
+            _stretchedTimeElapsed,
+            _bondReserves
+        );
+        if (_isBondIn) {
+            _shareReserves = _mu.mulDown(_shareReserves.sub(_amountOut)).pow(
+                _stretchedTimeElapsed
             );
-            shareReserves = cDivMu.mulDown(shareReserves);
-            uint256 rhs = k.sub(shareReserves).pow(
-                FixedPointMath.ONE_18.divDown(oneMinusT)
+            _shareReserves = cDivMu.mulDown(_shareReserves);
+            uint256 rhs = k.sub(_shareReserves).pow(
+                FixedPointMath.ONE_18.divDown(_stretchedTimeElapsed)
             );
-            return rhs.sub(bondReserves);
+            return rhs.sub(_bondReserves);
         } else {
-            bondReserves = bondReserves.sub(amountOut).pow(oneMinusT);
-            uint256 rhs = k.sub(bondReserves).divDown(cDivMu).pow(
-                FixedPointMath.ONE_18.divDown(oneMinusT)
+            _bondReserves = _bondReserves.sub(_amountOut).pow(
+                _stretchedTimeElapsed
             );
-            rhs = rhs.divDown(mu);
-            return rhs.sub(shareReserves);
+            uint256 rhs = k.sub(_bondReserves).divDown(cDivMu).pow(
+                FixedPointMath.ONE_18.divDown(_stretchedTimeElapsed)
+            );
+            rhs = rhs.divDown(_mu);
+            return rhs.sub(_shareReserves);
         }
     }
 
+    /// @dev Helper function
+    ///
+    /// (
+    ///   c/mu
+    ///   * (mu*shareReserves)^(1-t)
+    ///   + bondReserves^(1-t)
+    ///   - c/mu
+    ///   * (mu*(shareReserves + amountIn))^(1-t) )^(1 / (1 - t)
+    /// )
+    /// returns k
     function _k(
-        uint256 cDivMu,
-        uint256 mu,
-        uint256 shareReserves,
-        uint256 oneMinusT,
-        uint256 modifiedBondReserves
+        uint256 _cDivMu,
+        uint256 _mu,
+        uint256 _shareReserves,
+        uint256 _stretchedTimeElapsed,
+        uint256 _bondReserves
     ) private pure returns (uint256) {
         return
-            cDivMu.mulDown(mu.mulDown(shareReserves).pow(oneMinusT)).add(
-                modifiedBondReserves.pow(oneMinusT)
-            );
+            _cDivMu
+                .mulDown(_mu.mulDown(_shareReserves).pow(_stretchedTimeElapsed))
+                .add(_bondReserves.pow(_stretchedTimeElapsed));
     }
 }
