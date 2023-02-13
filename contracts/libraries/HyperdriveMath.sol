@@ -134,10 +134,10 @@ library HyperdriveMath {
             // YieldSpace curve configured to timeRemaining = 1.
             uint256 curveIn = _amountIn.mulDown(_timeRemaining);
 
-            // TODO: Revisit this assumption. It seems like LPs can bake this into the 
+            // TODO: Revisit this assumption. It seems like LPs can bake this into the
             // fee schedule rather than adding a hidden fee.
             //
-            // Calculate the curved part of the trade assuming that the flat part of 
+            // Calculate the curved part of the trade assuming that the flat part of
             // the trade was applied to the share and bond reserves.
             _shareReserves = _shareReserves.add(flat);
             _bondReserves = _bondReserves.sub(flat.mulDown(_sharePrice));
@@ -168,10 +168,10 @@ library HyperdriveMath {
                 _sharePrice
             );
 
-            // TODO: Revisit this assumption. It seems like LPs can bake this into the 
+            // TODO: Revisit this assumption. It seems like LPs can bake this into the
             // fee schedule rather than adding a hidden fee.
             //
-            // Calculate the curved part of the trade assuming that the flat part of 
+            // Calculate the curved part of the trade assuming that the flat part of
             // the trade was applied to the share and bond reserves.
             _shareReserves = _shareReserves.sub(flat);
             _bondReserves = _bondReserves.add(flat.mulDown(_sharePrice));
@@ -241,10 +241,10 @@ library HyperdriveMath {
             _sharePrice
         );
 
-        // TODO: Revisit this assumption. It seems like LPs can bake this into the 
+        // TODO: Revisit this assumption. It seems like LPs can bake this into the
         // fee schedule rather than adding a hidden fee.
         //
-        // Calculate the curved part of the trade assuming that the flat part of 
+        // Calculate the curved part of the trade assuming that the flat part of
         // the trade was applied to the share and bond reserves.
         _shareReserves = _shareReserves.add(flat);
         _bondReserves = _bondReserves.sub(flat.mulDown(_sharePrice));
