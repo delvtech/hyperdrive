@@ -166,7 +166,7 @@ contract Hyperdrive is MultiToken, IHyperdrive {
     //
     /// @notice Allows LPs to supply liquidity for LP shares.
     /// @param _contribution The amount of base to supply.
-    function addLiquidty(uint256 _contribution) external {
+    function addLiquidity(uint256 _contribution) external {
         if (_contribution == 0) {
             revert Errors.ZeroAmount();
         }
