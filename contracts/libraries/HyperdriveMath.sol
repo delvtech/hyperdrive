@@ -102,11 +102,13 @@ library HyperdriveMath {
         uint256 _positionDuration,
         uint256 _timeStretch
     ) internal pure returns (uint256 bondReserves) {
-        // tau is a fixed point number
-        uint256 tau = FixedPointMath.ONE_18.divDown(_timeStretch);
-
         // annualized time t as a fixed point number
         uint256 t = _positionDuration.divDown(365 days);
+
+        // tau = t / time_stretch, fixed point number
+        // normalized time remaining, t, is one here when calculating reserves for the whole pool
+        // using the pool's spot APR.
+        uint256 tau = FixedPointMath.ONE_18.divDown(_timeStretch);
 
         // (1 + apr * t) ** (1 / tau)
         uint256 interestFactor = FixedPointMath.ONE_18.add(_apr.mulDown(t)).pow(
