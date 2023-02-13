@@ -23,7 +23,7 @@ library YieldSpaceMath {
     /// @param _c price of shares in terms of their base
     /// @param _mu Normalization factor -- starts as c at initialization
     /// @param _isBondOut determines if the output is bond or shares
-    /// @return Amount of shares a user would get for given amount of bond
+    /// @return Amount of shares/bonds
     function calculateOutGivenIn(
         uint256 _shareReserves,
         uint256 _bondReserves,
@@ -39,6 +39,7 @@ library YieldSpaceMath {
         // Adjust the bond reserve, optionally shifts the curve around the
         // inflection point
         _bondReserves = _bondReserves.add(_bondReserveAdjustment);
+        // (c / mu) * (mu * shareReserves)^(1-t) + bondReserves^(1-t)
         uint256 k = _k(
             cDivMu,
             _mu,
@@ -46,24 +47,37 @@ library YieldSpaceMath {
             _stretchedTimeElapsed,
             _bondReserves
         );
+
         if (_isBondOut) {
+            // (mu * (shareReserves + amountIn))^(1-t)
             _shareReserves = _mu.mulDown(_shareReserves.add(_amountIn)).pow(
                 _stretchedTimeElapsed
             );
+            // (c / mu) * (mu * (shareReserves + amountIn))^(1-t)
             _shareReserves = cDivMu.mulDown(_shareReserves);
-            uint256 rhs = k.sub(_shareReserves).pow(
+            // NOTE: k - shareReserves >= 0 to avoid a complex number
+            // ((c / mu) * (mu*shareReserves)^(1-t) + bondReserves^(1-t) - (c / mu) * (mu*(shareReserves + amountIn))^(1-t))^(1 / (1 - t))
+            uint256 newBondReserves = k.sub(_shareReserves).pow(
                 FixedPointMath.ONE_18.divDown(_stretchedTimeElapsed)
             );
-            return _bondReserves.sub(rhs);
+            // NOTE: bondReserves - newBondReserves >= 0, but I think avoiding a complex number in the step above ensures this never happens
+            // bondsOut = bondReserves - ( (c / mu) * (mu*shareReserves)^(1-t) + bondReserves^(1-t) - (c / mu) * (mu*(shareReserves + shareIn))^(1-t))^(1 / (1 - t))
+            return _bondReserves.sub(newBondReserves);
         } else {
+            // (bondReserves + amountIn)^(1-t)
             _bondReserves = _bondReserves.add(_amountIn).pow(
                 _stretchedTimeElapsed
             );
-            uint256 rhs = k.sub(_bondReserves).divDown(cDivMu).pow(
+            // NOTE: k - bondReserves >= 0 to avoid a complex number
+            // (((mu * shareReserves)^(1-t) + bondReserves^(1-t) - (bondReserves + amountIn)^(1-t)) / (c / mu))^(1 / (1 - t))
+            uint256 newShareReserves = k.sub(_bondReserves).divDown(cDivMu).pow(
                 FixedPointMath.ONE_18.divDown(_stretchedTimeElapsed)
             );
-            rhs = rhs.divDown(_mu);
-            return _shareReserves.sub(rhs);
+            // (((mu * shareReserves)^(1-t) + bondReserves^(1-t) - (bondReserves + bondIn)^(1-t) ) / (c / mu))^(1 / (1 - t)) / mu
+            newShareReserves = newShareReserves.divDown(_mu);
+            // NOTE: shareReserves - sharesOut >= 0, but I think avoiding a complex number in the step above ensures this never happens
+            // sharesOut = shareReserves - (((c / mu) * (mu * shareReserves)^(1-t) + bondReserves^(1-t) - (bondReserves + bondIn)^(1-t) ) / (c / mu))^(1 / (1 - t)) / mu
+            return _shareReserves.sub(newShareReserves);
         }
     }
 
@@ -77,7 +91,7 @@ library YieldSpaceMath {
     /// @param _c price of shares in terms of their base
     /// @param _mu Normalization factor -- starts as c at initialization
     /// @param _isBondIn determines if the input is bond or shares
-    /// @return Amount of shares a user would get for given amount of bond
+    /// @return Amount of shares/bonds
     function calculateInGivenOut(
         uint256 _shareReserves,
         uint256 _bondReserves,
@@ -88,8 +102,11 @@ library YieldSpaceMath {
         uint256 _mu,
         bool _isBondIn
     ) internal pure returns (uint256) {
+        // c / mu
         uint256 cDivMu = _c.divDown(_mu);
+        // Adjust the bond reserve, optionally shifts the curve around the inflection point
         _bondReserves = _bondReserves.add(_bondReserveAdjustment);
+        // (c / mu) * (mu * shareReserves)^(1-t) + bondReserves^(1-t)
         uint256 k = _k(
             cDivMu,
             _mu,
@@ -98,30 +115,39 @@ library YieldSpaceMath {
             _bondReserves
         );
         if (_isBondIn) {
+            // (mu * (shareReserves - amountOut))^(1-t)
             _shareReserves = _mu.mulDown(_shareReserves.sub(_amountOut)).pow(
                 _stretchedTimeElapsed
             );
+            // (c / mu) * (mu*(shareReserves - amountOut))^(1-t)
             _shareReserves = cDivMu.mulDown(_shareReserves);
-            uint256 rhs = k.sub(_shareReserves).pow(
+            // NOTE: k - shareReserves >= 0 to avoid a complex number
+            // ((c / mu) * (mu*shareReserves)^(1-t) + bondReserves^(1-t) - (c / mu) * (mu*(shareReserves - amountOut))^(1-t))^(1 / (1 - t))
+            uint256 newBondReserves = k.sub(_shareReserves).pow(
                 FixedPointMath.ONE_18.divDown(_stretchedTimeElapsed)
             );
-            return rhs.sub(_bondReserves);
+            // NOTE: newBondReserves - bondReserves >= 0, but I think avoiding a complex number in the step above ensures this never happens
+            // bondIn = ((c / mu) * (mu * shareReserves)^(1-t) + bondReserves^(1-t) - (c / mu) * (mu * (shareReserves - shareOut))^(1-t))^(1 / (1 - t)) - bondReserves
+            return newBondReserves.sub(_bondReserves);
         } else {
+            // (bondReserves - amountOut)^(1-t)
             _bondReserves = _bondReserves.sub(_amountOut).pow(
                 _stretchedTimeElapsed
             );
-            uint256 rhs = k.sub(_bondReserves).divDown(cDivMu).pow(
+            // NOTE: k - newScaledBondReserves >= 0 to avoid a complex number
+            // (((mu * shareReserves)^(1-t) + bondReserves^(1-t) - (bondReserves - amountOut)^(1-t) ) / (c / mu))^(1 / (1 - t))
+            uint256 newShareReserves = k.sub(_bondReserves).divDown(cDivMu).pow(
                 FixedPointMath.ONE_18.divDown(_stretchedTimeElapsed)
             );
-            rhs = rhs.divDown(_mu);
-            return rhs.sub(_shareReserves);
+            // (((mu * shareReserves)^(1-t) + bondReserves^(1-t) - (bondReserves - amountOut)^(1-t) ) / (c / mu))^(1 / (1 - t)) / mu
+            newShareReserves = rhs.divDown(_mu);
+            // NOTE: newShareReserves - shareReserves >= 0, but I think avoiding a complex number in the step above ensures this never happens
+            // sharesIn = (((c / mu) * (mu * shareReserves)^(1-t) + bondReserves^(1-t) - (bondReserves - bondOut)^(1-t) ) / (c / mu))^(1 / (1 - t)) / mu - shareReserves
+            return newShareReserves.sub(_shareReserves);
         }
     }
 
     /// @dev Helper function to derive invariant constant k
-    ///
-    /// k = c/mu * (mu*shareReserves)^(1-t) + bondReserves^(1-t)
-    ///
     /// @param _cDivMu Normalized price of shares in terms of base
     /// @param _mu Normalization factor -- starts as c at initialization
     /// @param _shareReserves Yield bearing vault shares reserve amount, unit is shares
@@ -135,6 +161,7 @@ library YieldSpaceMath {
         uint256 _stretchedTimeElapsed,
         uint256 _bondReserves
     ) private pure returns (uint256) {
+        /// k = (c / mu) * (mu*shareReserves)^(1-t) + bondReserves^(1-t)
         return
             _cDivMu
                 .mulDown(_mu.mulDown(_shareReserves).pow(_stretchedTimeElapsed))
