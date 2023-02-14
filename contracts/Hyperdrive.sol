@@ -305,7 +305,8 @@ contract Hyperdrive is MultiToken {
         uint256 baseProceeds = 0;
 
         // Perform a checkpoint.
-        _applyCheckpoint(_latestCheckpoint(), pricePerShare());
+        uint256 sharePrice = pricePerShare();
+        _applyCheckpoint(_latestCheckpoint(), sharePrice);
 
         // Redeem the long withdrawal shares.
         uint256 proceeds = _applyWithdrawalShareRedemption(
@@ -328,7 +329,7 @@ contract Hyperdrive is MultiToken {
 
         // Withdraw the funds released by redeeming the withdrawal shares.
         // TODO: Better destination support.
-        uint256 shareProceeds = baseProceeds.divDown(pricePerShare());
+        uint256 shareProceeds = baseProceeds.divDown(sharePrice);
         withdraw(shareProceeds, msg.sender);
     }
 
