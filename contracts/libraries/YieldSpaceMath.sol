@@ -39,7 +39,7 @@ library YieldSpaceMath {
         // Adjust the bond reserve, optionally shifts the curve around the
         // inflection point
         _bondReserves = _bondReserves.add(_bondReserveAdjustment);
-        // (c / mu) * (mu * shareReserves)^(1-t) + bondReserves^(1-t)
+        // (c / mu) * (mu * shareReserves)^(1 - tau) + bondReserves^(1 - tau)
         uint256 k = _k(
             cDivMu,
             _mu,
@@ -49,34 +49,34 @@ library YieldSpaceMath {
         );
 
         if (_isBondOut) {
-            // (mu * (shareReserves + amountIn))^(1-t)
+            // (mu * (shareReserves + amountIn))^(1 - tau)
             _shareReserves = _mu.mulDown(_shareReserves.add(_amountIn)).pow(
                 _stretchedTimeElapsed
             );
-            // (c / mu) * (mu * (shareReserves + amountIn))^(1-t)
+            // (c / mu) * (mu * (shareReserves + amountIn))^(1 - tau)
             _shareReserves = cDivMu.mulDown(_shareReserves);
             // NOTE: k - shareReserves >= 0 to avoid a complex number
-            // ((c / mu) * (mu*shareReserves)^(1-t) + bondReserves^(1-t) - (c / mu) * (mu*(shareReserves + amountIn))^(1-t))^(1 / (1 - t))
+            // ((c / mu) * (mu * shareReserves)^(1 - tau) + bondReserves^(1 - tau) - (c / mu) * (mu * (shareReserves + amountIn))^(1 - tau))^(1 / (1 - tau)))
             uint256 newBondReserves = k.sub(_shareReserves).pow(
                 FixedPointMath.ONE_18.divDown(_stretchedTimeElapsed)
             );
             // NOTE: bondReserves - newBondReserves >= 0, but I think avoiding a complex number in the step above ensures this never happens
-            // bondsOut = bondReserves - ( (c / mu) * (mu*shareReserves)^(1-t) + bondReserves^(1-t) - (c / mu) * (mu*(shareReserves + shareIn))^(1-t))^(1 / (1 - t))
+            // bondsOut = bondReserves - ( (c / mu) * (mu * shareReserves)^(1 - tau) + bondReserves^(1 - tau) - (c / mu) * (mu * (shareReserves + shareIn))^(1 - tau))^(1 / (1 - tau)))
             return _bondReserves.sub(newBondReserves);
         } else {
-            // (bondReserves + amountIn)^(1-t)
+            // (bondReserves + amountIn)^(1 - tau)
             _bondReserves = _bondReserves.add(_amountIn).pow(
                 _stretchedTimeElapsed
             );
             // NOTE: k - bondReserves >= 0 to avoid a complex number
-            // (((mu * shareReserves)^(1-t) + bondReserves^(1-t) - (bondReserves + amountIn)^(1-t)) / (c / mu))^(1 / (1 - t))
+            // (((mu * shareReserves)^(1 - tau) + bondReserves^(1 - tau) - (bondReserves + amountIn)^(1 - tau)) / (c / mu))^(1 / (1 - tau)))
             uint256 newShareReserves = k.sub(_bondReserves).divDown(cDivMu).pow(
                 FixedPointMath.ONE_18.divDown(_stretchedTimeElapsed)
             );
-            // (((mu * shareReserves)^(1-t) + bondReserves^(1-t) - (bondReserves + bondIn)^(1-t) ) / (c / mu))^(1 / (1 - t)) / mu
+            // (((mu * shareReserves)^(1 - tau) + bondReserves^(1 - tau) - (bondReserves + bondIn)^(1 - tau) ) / (c / mu))^(1 / (1 - tau))) / mu
             newShareReserves = newShareReserves.divDown(_mu);
             // NOTE: shareReserves - sharesOut >= 0, but I think avoiding a complex number in the step above ensures this never happens
-            // sharesOut = shareReserves - (((c / mu) * (mu * shareReserves)^(1-t) + bondReserves^(1-t) - (bondReserves + bondIn)^(1-t) ) / (c / mu))^(1 / (1 - t)) / mu
+            // sharesOut = shareReserves - (((c / mu) * (mu * shareReserves)^(1 - tau) + bondReserves^(1 - tau) - (bondReserves + bondIn)^(1 - tau) ) / (c / mu))^(1 / (1 - tau))) / mu
             return _shareReserves.sub(newShareReserves);
         }
     }
@@ -106,7 +106,7 @@ library YieldSpaceMath {
         uint256 cDivMu = _c.divDown(_mu);
         // Adjust the bond reserve, optionally shifts the curve around the inflection point
         _bondReserves = _bondReserves.add(_bondReserveAdjustment);
-        // (c / mu) * (mu * shareReserves)^(1-t) + bondReserves^(1-t)
+        // (c / mu) * (mu * shareReserves)^(1 - tau) + bondReserves^(1 - tau)
         uint256 k = _k(
             cDivMu,
             _mu,
@@ -115,34 +115,34 @@ library YieldSpaceMath {
             _bondReserves
         );
         if (_isBondIn) {
-            // (mu * (shareReserves - amountOut))^(1-t)
+            // (mu * (shareReserves - amountOut))^(1 - tau)
             _shareReserves = _mu.mulDown(_shareReserves.sub(_amountOut)).pow(
                 _stretchedTimeElapsed
             );
-            // (c / mu) * (mu*(shareReserves - amountOut))^(1-t)
+            // (c / mu) * (mu * (shareReserves - amountOut))^(1 - tau)
             _shareReserves = cDivMu.mulDown(_shareReserves);
             // NOTE: k - shareReserves >= 0 to avoid a complex number
-            // ((c / mu) * (mu*shareReserves)^(1-t) + bondReserves^(1-t) - (c / mu) * (mu*(shareReserves - amountOut))^(1-t))^(1 / (1 - t))
+            // ((c / mu) * (mu * shareReserves)^(1 - tau) + bondReserves^(1 - tau) - (c / mu) * (mu*(shareReserves - amountOut))^(1 - tau))^(1 / (1 - tau)))
             uint256 newBondReserves = k.sub(_shareReserves).pow(
                 FixedPointMath.ONE_18.divDown(_stretchedTimeElapsed)
             );
             // NOTE: newBondReserves - bondReserves >= 0, but I think avoiding a complex number in the step above ensures this never happens
-            // bondIn = ((c / mu) * (mu * shareReserves)^(1-t) + bondReserves^(1-t) - (c / mu) * (mu * (shareReserves - shareOut))^(1-t))^(1 / (1 - t)) - bondReserves
+            // bondIn = ((c / mu) * (mu * shareReserves)^(1 - tau) + bondReserves^(1 - tau) - (c / mu) * (mu * (shareReserves - shareOut))^(1 - tau))^(1 / (1 - tau))) - bondReserves
             return newBondReserves.sub(_bondReserves);
         } else {
-            // (bondReserves - amountOut)^(1-t)
+            // (bondReserves - amountOut)^(1 - tau)
             _bondReserves = _bondReserves.sub(_amountOut).pow(
                 _stretchedTimeElapsed
             );
             // NOTE: k - newScaledBondReserves >= 0 to avoid a complex number
-            // (((mu * shareReserves)^(1-t) + bondReserves^(1-t) - (bondReserves - amountOut)^(1-t) ) / (c / mu))^(1 / (1 - t))
+            // (((mu * shareReserves)^(1 - tau) + bondReserves^(1 - tau) - (bondReserves - amountOut)^(1 - tau) ) / (c / mu))^(1 / (1 - tau)))
             uint256 newShareReserves = k.sub(_bondReserves).divDown(cDivMu).pow(
                 FixedPointMath.ONE_18.divDown(_stretchedTimeElapsed)
             );
-            // (((mu * shareReserves)^(1-t) + bondReserves^(1-t) - (bondReserves - amountOut)^(1-t) ) / (c / mu))^(1 / (1 - t)) / mu
+            // (((mu * shareReserves)^(1 - tau) + bondReserves^(1 - tau) - (bondReserves - amountOut)^(1 - tau) ) / (c / mu))^(1 / (1 - tau))) / mu
             newShareReserves = newShareReserves.divDown(_mu);
             // NOTE: newShareReserves - shareReserves >= 0, but I think avoiding a complex number in the step above ensures this never happens
-            // sharesIn = (((c / mu) * (mu * shareReserves)^(1-t) + bondReserves^(1-t) - (bondReserves - bondOut)^(1-t) ) / (c / mu))^(1 / (1 - t)) / mu - shareReserves
+            // sharesIn = (((c / mu) * (mu * shareReserves)^(1 - tau) + bondReserves^(1 - tau) - (bondReserves - bondOut)^(1 - tau) ) / (c / mu))^(1 / (1 - tau))) / mu - shareReserves
             return newShareReserves.sub(_shareReserves);
         }
     }
@@ -161,7 +161,7 @@ library YieldSpaceMath {
         uint256 _stretchedTimeElapsed,
         uint256 _bondReserves
     ) private pure returns (uint256) {
-        /// k = (c / mu) * (mu*shareReserves)^(1-t) + bondReserves^(1-t)
+        /// k = (c / mu) * (mu * shareReserves)^(1 - tau) + bondReserves^(1 - tau)
         return
             _cDivMu
                 .mulDown(_mu.mulDown(_shareReserves).pow(_stretchedTimeElapsed))
