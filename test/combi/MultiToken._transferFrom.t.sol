@@ -20,6 +20,20 @@ contract MultiToken__transferFrom is BaseTest {
         vm.stopPrank();
     }
 
+    struct TestCase_transferFrom {
+        // -- args
+        uint256 tokenId;
+        address from;
+        address to;
+        uint256 amount;
+        address caller;
+        // -- context
+        uint256 approvals;
+        uint256 balanceFrom;
+        uint256 balanceTo;
+        bool approvedForAll;
+    }
+
     function testCombinatorial__MultiToken__transferFrom() public {
         uint256[][] memory inputs = new uint256[][](4);
 
@@ -49,51 +63,8 @@ contract MultiToken__transferFrom is BaseTest {
         inputs[3][1] = 100e18;
         inputs[3][2] = (2 ** 96) + 98237.12111e5;
 
-        __run(Lib.matrix(inputs));
-    }
+        uint256[][] memory rawTestCases = Lib.matrix(inputs);
 
-    event TransferSingle(
-        address indexed operator,
-        address indexed from,
-        address indexed to,
-        uint256 id,
-        uint256 value
-    );
-
-    struct TestCase_transferFrom {
-        // -- args
-        uint256 tokenId;
-        address from;
-        address to;
-        uint256 amount;
-        address caller;
-        // -- context
-        uint256 approvals;
-        uint256 balanceFrom;
-        uint256 balanceTo;
-        bool approvedForAll;
-    }
-
-    function __log(
-        string memory prelude,
-        TestCase_transferFrom memory testCase
-    ) internal view {
-        console2.log("%s :: ", prelude);
-        console2.log("");
-        console2.log("\ttokenId           = ", testCase.tokenId);
-        console2.log("\tfrom              = ", testCase.from);
-        console2.log("\tto                = ", testCase.to);
-        console2.log("\tamount            = ", testCase.amount);
-        console2.log("\tcaller            = ", testCase.caller);
-        console2.log("\tapprovals         = ", testCase.approvals);
-        console2.log("\tbalanceFrom       = ", testCase.balanceFrom);
-        console2.log("\tbalanceTo         = ", testCase.balanceTo);
-        console2.log("\tapprovedForAll    = ", testCase.approvedForAll);
-        console2.log("");
-    }
-
-    function __run(uint256[][] memory rawTestCases) internal {
-        //console2.log("### Testing %s cases ###\n", testCases.length);
         for (uint256 i = 0; i < rawTestCases.length; i++) {
             require(
                 rawTestCases[i].length == 4,
@@ -120,6 +91,7 @@ contract MultiToken__transferFrom is BaseTest {
                 __success(testCase);
             }
         }
+
         console2.log(
             "###- %s test cases passed for MultiToken._transferFrom() -###",
             rawTestCases.length
@@ -189,6 +161,14 @@ contract MultiToken__transferFrom is BaseTest {
         }
         return true;
     }
+
+    event TransferSingle(
+        address indexed operator,
+        address indexed from,
+        address indexed to,
+        uint256 id,
+        uint256 value
+    );
 
     function __success(TestCase_transferFrom memory testCase) internal {
         vm.expectEmit(true, true, true, true);
@@ -274,5 +254,23 @@ contract MultiToken__transferFrom is BaseTest {
                 "to account balance must have increased by amount"
             );
         }
+    }
+
+    function __log(
+        string memory prelude,
+        TestCase_transferFrom memory testCase
+    ) internal view {
+        console2.log("%s :: ", prelude);
+        console2.log("");
+        console2.log("\ttokenId           = ", testCase.tokenId);
+        console2.log("\tfrom              = ", testCase.from);
+        console2.log("\tto                = ", testCase.to);
+        console2.log("\tamount            = ", testCase.amount);
+        console2.log("\tcaller            = ", testCase.caller);
+        console2.log("\tapprovals         = ", testCase.approvals);
+        console2.log("\tbalanceFrom       = ", testCase.balanceFrom);
+        console2.log("\tbalanceTo         = ", testCase.balanceTo);
+        console2.log("\tapprovedForAll    = ", testCase.approvedForAll);
+        console2.log("");
     }
 }
