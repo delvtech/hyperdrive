@@ -452,7 +452,7 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
                 initialSharePrice,
                 curveFee,
                 flatFee,
-                true // isBondOut
+                true // isBaseIn
             );
 
         // Enforce min user outputs
