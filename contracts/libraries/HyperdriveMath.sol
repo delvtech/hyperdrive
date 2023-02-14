@@ -40,8 +40,9 @@ library HyperdriveMath {
             _timeStretch
         );
 
-        // We are interested calculating an APR for new positions. Because the price will converge
-        // to 1 after positionDuration days, we scale to a year to get the annualized rate.
+        // We are interested calculating the fixed APR for the pool. The rate is calculated by
+        // dividing current spot price of the bonds by the position duration time, t.  To get the
+        // annual rate, we scale t up to a year.
         uint256 annualizedTime = _positionDuration.divDown(365 days);
 
         // r = (1 - p) / (p * t)
