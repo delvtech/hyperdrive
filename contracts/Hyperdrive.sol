@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.15;
+pragma solidity ^0.8.18;
 
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -8,6 +8,7 @@ import { Errors } from "contracts/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/libraries/HyperdriveMath.sol";
 import { MultiToken } from "contracts/MultiToken.sol";
+import { IHyperdrive } from "contracts/interfaces/IHyperdrive.sol";
 
 /// @author Delve
 /// @title Hyperdrive
@@ -15,7 +16,7 @@ import { MultiToken } from "contracts/MultiToken.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract Hyperdrive is MultiToken {
+contract Hyperdrive is MultiToken, IHyperdrive {
     using FixedPointMath for uint256;
 
     /// Tokens ///
@@ -170,7 +171,7 @@ contract Hyperdrive is MultiToken {
     //
     /// @notice Allows LPs to supply liquidity for LP shares.
     /// @param _contribution The amount of base to supply.
-    function addLiquidty(uint256 _contribution) external {
+    function addLiquidity(uint256 _contribution) external {
         if (_contribution == 0) {
             revert Errors.ZeroAmount();
         }
@@ -396,6 +397,7 @@ contract Hyperdrive is MultiToken {
     /// @notice Closes a long position with a specified maturity time.
     /// @param _maturityTime The maturity time of the short.
     /// @param _bondAmount The amount of longs to close.
+    /// @return The amount of underlying the user receives.
     function closeLong(uint256 _maturityTime, uint256 _bondAmount) external {
         if (_bondAmount == 0) {
             revert Errors.ZeroAmount();
@@ -448,6 +450,8 @@ contract Hyperdrive is MultiToken {
         // Withdraw the profit to the trader.
         // TODO: Better destination support.
         withdraw(shareProceeds, msg.sender);
+
+        return (shareProceeds.mulDown(sharePrice));
     }
 
     /// Short ///
