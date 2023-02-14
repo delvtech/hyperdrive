@@ -398,7 +398,10 @@ contract Hyperdrive is MultiToken, IHyperdrive {
     /// @param _maturityTime The maturity time of the short.
     /// @param _bondAmount The amount of longs to close.
     /// @return The amount of underlying the user receives.
-    function closeLong(uint256 _maturityTime, uint256 _bondAmount) external {
+    function closeLong(
+        uint256 _maturityTime,
+        uint256 _bondAmount
+    ) external returns (uint256) {
         if (_bondAmount == 0) {
             revert Errors.ZeroAmount();
         }

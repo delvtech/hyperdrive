@@ -17,7 +17,7 @@ contract BondWrapper is ERC20Permit {
     uint256 public immutable mintPercent;
 
     // Store the user deposits and withdraws
-    mapping(address => mapping(uint256 => uint256)) userAccounts;
+    mapping(address => mapping(uint256 => uint256)) public userAccounts;
 
     /// @notice Constructs the contract and initializes the variables.
     /// @param _hyperdrive The hyperdrive contract.
@@ -39,18 +39,12 @@ contract BondWrapper is ERC20Permit {
     }
 
     /// @notice Transfers bonds from the user and then mints erc20 for the mintable percent.
-    /// @param openSharePrice The bond's initial share price
     /// @param  maturityTime The bond's expiry time
     /// @param amount The amount of bonds to mint
-    function mint(
-        uint256 openSharePrice,
-        uint256 maturityTime,
-        uint256 amount
-    ) external {
+    function mint(uint256 maturityTime, uint256 amount) external {
         // Encode the asset ID
         uint256 assetId = AssetId.encodeAssetId(
             AssetId.AssetIdPrefix.Long,
-            openSharePrice,
             maturityTime
         );
 
@@ -71,12 +65,10 @@ contract BondWrapper is ERC20Permit {
     ///         sale vs the erc20 tokens minted by its deposit. Optionally also burns the ERC20 wrapper
     ///         from the user, if enabled it will transfer both the delta of sale value and the value of
     ///         the burned token.
-    /// @param openSharePrice The bond which was used as collateral's opening share price.
     /// @param  maturityTime The bond's expiry time
     /// @param amount The amount of bonds to redeem
     /// @param andBurn If true it will burn the number of erc20 minted by this deposited bond
     function close(
-        uint256 openSharePrice,
         uint256 maturityTime,
         uint256 amount,
         bool andBurn
@@ -84,7 +76,6 @@ contract BondWrapper is ERC20Permit {
         // Encode the asset ID
         uint256 assetId = AssetId.encodeAssetId(
             AssetId.AssetIdPrefix.Long,
-            openSharePrice,
             maturityTime
         );
 
@@ -98,11 +89,7 @@ contract BondWrapper is ERC20Permit {
         uint256 receivedAmount;
         if (forceClosed == 0) {
             // Close the bond [selling if earlier than the expiration]
-            receivedAmount = hyperdrive.closeLong(
-                openSharePrice,
-                uint32(maturityTime),
-                amount
-            );
+            receivedAmount = hyperdrive.closeLong(maturityTime, amount);
             // Update the user account data, note this sub is safe because the top bits are zero.
             userAccounts[msg.sender][assetId] -= amount;
         } else {
@@ -138,17 +125,11 @@ contract BondWrapper is ERC20Permit {
     ///         the bond has already  matured. This cannot harm the user in question as the
     ///         bond price will not increase above one. Funds freed remain in the contract.
     /// @param user The user who's account will be liquidated
-    /// @param openSharePrice The user's bond's open share price
     /// @param  maturityTime The user's bond's expiry time.
-    function forceClose(
-        address user,
-        uint256 openSharePrice,
-        uint256 maturityTime
-    ) public {
+    function forceClose(address user, uint256 maturityTime) public {
         // Encode the asset ID
         uint256 assetId = AssetId.encodeAssetId(
             AssetId.AssetIdPrefix.Long,
-            openSharePrice,
             maturityTime
         );
         // We unload the variables from storage on the user account
@@ -166,11 +147,7 @@ contract BondWrapper is ERC20Permit {
         if (maturityTime > block.timestamp) revert Errors.BondNotMatured();
 
         // Close the long
-        uint256 receivedAmount = hyperdrive.closeLong(
-            openSharePrice,
-            uint32(maturityTime),
-            deposited
-        );
+        uint256 receivedAmount = hyperdrive.closeLong(maturityTime, deposited);
         // Store the user account update
         userAccounts[user][assetId] = (receivedAmount << 128) + deposited;
     }
@@ -188,16 +165,14 @@ contract BondWrapper is ERC20Permit {
 
     /// @notice Calls both force close and redeem to enable easy liquidation of a user account
     /// @param user The user who's account will be liquidated
-    /// @param openSharePrice The user's bond's open share price
     /// @param  maturityTime The user's bond's expiry time.
     /// @param amount The amount of erc20 wrapper to burn.
     function forceCloseAndRedeem(
         address user,
-        uint256 openSharePrice,
         uint256 maturityTime,
         uint256 amount
     ) external {
-        forceClose(user, openSharePrice, maturityTime);
+        forceClose(user, maturityTime);
         redeem(amount);
     }
 }
