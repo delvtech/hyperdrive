@@ -21,7 +21,7 @@ contract MultiTokenTest is BaseTest {
     function test__name_symbol() public {
         vm.startPrank(deployer);
         multiToken = new MockMultiToken(bytes32(0), address(forwarderFactory));
-        multiToken.setNameAndSymbol(5, "Token", "TKN");
+        multiToken.__setNameAndSymbol(5, "Token", "TKN");
 
         vm.stopPrank();
         assertEq(multiToken.name(5), "Token");
@@ -57,7 +57,10 @@ contract MultiTokenTest is BaseTest {
         inputs[3][0] = 0;
         inputs[3][1] = type(uint96).max;
 
-        __run(__convert(Lib.matrix(inputs)));
+        TestCase_transferFrom[] memory testCases = __convert(
+            Lib.matrix(inputs)
+        );
+        __run(testCases);
     }
 
     struct TestCase_transferFrom {
@@ -146,10 +149,9 @@ contract MultiTokenTest is BaseTest {
     }
 
     function __setup(TestCase_transferFrom memory testCase) internal {
-        console2.log("jbjbjj");
-        multiToken.setBalanceOf(testCase.tokenId, alice, testCase.mintAmount);
-        console2.log("jbjbjj");
-        // when eve is the caller we want to alice to
+        console2.log("LOG BEFORE CALL TO setBalanceOf");
+        multiToken.__setBalanceOf(testCase.tokenId, alice, testCase.mintAmount);
+        console2.log("LOG AFTER CALL TO setBalanceOf");
         if (testCase.caller == eve) {
             vm.startPrank(alice);
             if (testCase.approvedForAll) {

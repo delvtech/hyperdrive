@@ -2,11 +2,9 @@
 pragma solidity ^0.8.15;
 
 import { BaseTest, TestLib as Lib } from "test/Test.sol";
+
 import { MultiToken } from "contracts/MultiToken.sol";
-
 import { ForwarderFactory } from "contracts/ForwarderFactory.sol";
-
-import "forge-std/console2.sol";
 
 contract MockMultiToken is MultiToken {
     constructor(
@@ -14,7 +12,7 @@ contract MockMultiToken is MultiToken {
         address _factory
     ) MultiToken(_linkerCodeHash, _factory) {}
 
-    function setNameAndSymbol(
+    function __setNameAndSymbol(
         uint256 tokenId,
         string memory __name,
         string memory __symbol
@@ -23,12 +21,11 @@ contract MockMultiToken is MultiToken {
         _symbol[tokenId] = __symbol;
     }
 
-    function setBalanceOf(
+    function __setBalanceOf(
         uint256 _tokenId,
         address _who,
         uint256 _amount
-    ) external {
-        console2.log("jbjbjj");
+    ) public {
         balanceOf[_tokenId][_who] = _amount;
     }
 
