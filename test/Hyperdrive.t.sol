@@ -163,14 +163,7 @@ contract HyperdriveTest is Test {
         initialize(alice, apr, contribution);
 
         // Get the reserves before opening the long.
-        (
-            uint256 shareReservesBefore,
-            uint256 bondReservesBefore,
-            uint256 lpTotalSupplyBefore,
-            uint256 sharePriceBefore,
-            uint256 longsOutstandingBefore,
-            uint256 shortsOutstandingBefore
-        ) = hyperdrive.getPoolInfo();
+        PoolInfo memory poolInfoBefore = getPoolInfo();
 
         // TODO: Small base amounts result in higher than quoted APRs. We should
         // first investigate the math to see if there are obvious simplifications
@@ -210,26 +203,27 @@ contract HyperdriveTest is Test {
         // TODO: This tolerance seems too high.
         assertApproxEqAbs(realizedApr, apr, 1e10);
 
-        // FIXME: Fix the stack too deep issue.
-        //
         // Verify that the reserves were updated correctly.
-        // (
-        //     uint256 shareReservesAfter,
-        //     uint256 bondReservesAfter,
-        //     uint256 lpTotalSupplyAfter,
-        //     uint256 sharePriceAfter,
-        //     uint256 longsOutstandingAfter,
-        //     uint256 shortsOutstandingAfter
-        // ) = hyperdrive.getPoolInfo();
-        // assertEq(
-        //     shareReservesAfter,
-        //     shareReservesBefore + baseAmount.divDown(sharePriceBefore)
-        // );
-        // assertEq(bondReservesAfter, bondReservesBefore - bondAmount);
-        // assertEq(lpTotalSupplyAfter, lpTotalSupplyBefore);
-        // assertEq(sharePriceAfter, sharePriceBefore);
-        // assertEq(longsOutstandingAfter, longsOutstandingBefore + bondAmount);
-        // assertEq(shortsOutstandingAfter, shortsOutstandingBefore);
+        PoolInfo memory poolInfoAfter = getPoolInfo();
+        assertEq(
+            poolInfoAfter.shareReserves,
+            poolInfoBefore.shareReserves +
+                baseAmount.divDown(poolInfoBefore.sharePrice)
+        );
+        assertEq(
+            poolInfoAfter.bondReserves,
+            poolInfoBefore.bondReserves - bondAmount
+        );
+        assertEq(poolInfoAfter.lpTotalSupply, poolInfoBefore.lpTotalSupply);
+        assertEq(poolInfoAfter.sharePrice, poolInfoBefore.sharePrice);
+        assertEq(
+            poolInfoAfter.longsOutstanding,
+            poolInfoBefore.longsOutstanding + bondAmount
+        );
+        assertEq(
+            poolInfoAfter.shortsOutstanding,
+            poolInfoBefore.shortsOutstanding
+        );
     }
 
     /// Close Long ///
@@ -324,14 +318,7 @@ contract HyperdriveTest is Test {
         hyperdrive.openLong(baseAmount);
 
         // Get the reserves before closing the long.
-        (
-            uint256 shareReservesBefore,
-            uint256 bondReservesBefore,
-            uint256 lpTotalSupplyBefore,
-            uint256 sharePriceBefore,
-            uint256 longsOutstandingBefore,
-            uint256 shortsOutstandingBefore
-        ) = hyperdrive.getPoolInfo();
+        PoolInfo memory poolInfoBefore = getPoolInfo();
 
         // Immediately close the bonds.
         vm.stopPrank();
@@ -359,28 +346,29 @@ contract HyperdriveTest is Test {
         );
         assertApproxEqAbs(baseProceeds, baseAmount, 1e10);
 
-        // FIXME: Fix the stack too deep issue.
-        //
         // Verify that the reserves were updated correctly. Since this trade
         // happens at the beginning of the term, the bond reserves should be
         // increased by the full amount.
-        // (
-        //     uint256 shareReservesAfter,
-        //     uint256 bondReservesAfter,
-        //     uint256 lpTotalSupplyAfter,
-        //     uint256 sharePriceAfter,
-        //     uint256 longsOutstandingAfter,
-        //     uint256 shortsOutstandingAfter
-        // ) = hyperdrive.getPoolInfo();
-        // assertEq(
-        //     shareReservesAfter,
-        //     shareReservesBefore - baseProceeds.divDown(sharePriceBefore)
-        // );
-        // assertEq(bondReservesAfter, bondReservesBefore + bondAmount);
-        // assertEq(lpTotalSupplyAfter, lpTotalSupplyBefore);
-        // assertEq(sharePriceAfter, sharePriceBefore);
-        // assertEq(longsOutstandingAfter, longsOutstandingBefore - bondAmount);
-        // assertEq(shortsOutstandingAfter, shortsOutstandingBefore);
+        PoolInfo memory poolInfoAfter = getPoolInfo();
+        assertEq(
+            poolInfoAfter.shareReserves,
+            poolInfoBefore.shareReserves -
+                baseProceeds.divDown(poolInfoBefore.sharePrice)
+        );
+        assertEq(
+            poolInfoAfter.bondReserves,
+            poolInfoBefore.bondReserves + bondAmount
+        );
+        assertEq(poolInfoAfter.lpTotalSupply, poolInfoBefore.lpTotalSupply);
+        assertEq(poolInfoAfter.sharePrice, poolInfoBefore.sharePrice);
+        assertEq(
+            poolInfoAfter.longsOutstanding,
+            poolInfoBefore.longsOutstanding - bondAmount
+        );
+        assertEq(
+            poolInfoAfter.shortsOutstanding,
+            poolInfoBefore.shortsOutstanding
+        );
     }
 
     // TODO: Clean up these tests.
@@ -402,14 +390,7 @@ contract HyperdriveTest is Test {
             365 days;
 
         // Get the reserves before closing the long.
-        (
-            uint256 shareReservesBefore,
-            uint256 bondReservesBefore,
-            uint256 lpTotalSupplyBefore,
-            uint256 sharePriceBefore,
-            uint256 longsOutstandingBefore,
-            uint256 shortsOutstandingBefore
-        ) = hyperdrive.getPoolInfo();
+        PoolInfo memory poolInfoBefore = getPoolInfo();
 
         // The term passes.
         vm.warp(block.timestamp + 365 days);
@@ -439,27 +420,25 @@ contract HyperdriveTest is Test {
         );
         assertApproxEqAbs(baseProceeds, bondAmount, 1e10);
 
-        // FIXME: Fix stack-too-deep issue.
-        //
         // Verify that the reserves were updated correctly. Since this trade
         // is a redemption, there should be no changes to the bond reserves.
-        // (
-        //     uint256 shareReservesAfter,
-        //     uint256 bondReservesAfter,
-        //     uint256 lpTotalSupplyAfter,
-        //     uint256 sharePriceAfter,
-        //     uint256 longsOutstandingAfter,
-        //     uint256 shortsOutstandingAfter
-        // ) = hyperdrive.getPoolInfo();
-        // assertEq(
-        //     shareReservesAfter,
-        //     shareReservesBefore - bondAmount.divDown(sharePriceBefore)
-        // );
-        // assertEq(bondReservesAfter, bondReservesBefore);
-        // assertEq(lpTotalSupplyAfter, lpTotalSupplyBefore);
-        // assertEq(sharePriceAfter, sharePriceBefore);
-        // assertEq(longsOutstandingAfter, longsOutstandingBefore - bondAmount);
-        // assertEq(shortsOutstandingAfter, shortsOutstandingBefore);
+        PoolInfo memory poolInfoAfter = getPoolInfo();
+        assertEq(
+            poolInfoAfter.shareReserves,
+            poolInfoBefore.shareReserves -
+                bondAmount.divDown(poolInfoBefore.sharePrice)
+        );
+        assertEq(poolInfoAfter.bondReserves, poolInfoBefore.bondReserves);
+        assertEq(poolInfoAfter.lpTotalSupply, poolInfoBefore.lpTotalSupply);
+        assertEq(poolInfoAfter.sharePrice, poolInfoBefore.sharePrice);
+        assertEq(
+            poolInfoAfter.longsOutstanding,
+            poolInfoBefore.longsOutstanding - bondAmount
+        );
+        assertEq(
+            poolInfoAfter.shortsOutstanding,
+            poolInfoBefore.shortsOutstanding
+        );
     }
 
     /// Open Short ///
@@ -503,14 +482,7 @@ contract HyperdriveTest is Test {
         initialize(alice, apr, contribution);
 
         // Get the reserves before opening the short.
-        (
-            uint256 shareReservesBefore,
-            uint256 bondReservesBefore,
-            uint256 lpTotalSupplyBefore,
-            uint256 sharePriceBefore,
-            uint256 longsOutstandingBefore,
-            uint256 shortsOutstandingBefore
-        ) = hyperdrive.getPoolInfo();
+        PoolInfo memory poolInfoBefore = getPoolInfo();
 
         // Short a small amount of bonds.
         vm.stopPrank();
@@ -553,26 +525,27 @@ contract HyperdriveTest is Test {
         // TODO: This tolerance seems too high.
         assertApproxEqAbs(realizedApr, apr, 1e10);
 
-        // FIXME: Fix the stack-too-deep issue.
-        //
         // Verify that the reserves were updated correctly.
-        // (
-        //     uint256 shareReservesAfter,
-        //     uint256 bondReservesAfter,
-        //     uint256 lpTotalSupplyAfter,
-        //     uint256 sharePriceAfter,
-        //     uint256 longsOutstandingAfter,
-        //     uint256 shortsOutstandingAfter
-        // ) = hyperdrive.getPoolInfo();
-        // assertEq(
-        //     shareReservesAfter,
-        //     shareReservesBefore - baseAmount.divDown(sharePriceBefore)
-        // );
-        // assertEq(bondReservesAfter, bondReservesBefore + bondAmount);
-        // assertEq(lpTotalSupplyAfter, lpTotalSupplyBefore);
-        // assertEq(sharePriceAfter, sharePriceBefore);
-        // assertEq(longsOutstandingAfter, longsOutstandingBefore);
-        // assertEq(shortsOutstandingAfter, shortsOutstandingBefore + bondAmount);
+        PoolInfo memory poolInfoAfter = getPoolInfo();
+        assertEq(
+            poolInfoAfter.shareReserves,
+            poolInfoBefore.shareReserves -
+                baseAmount.divDown(poolInfoBefore.sharePrice)
+        );
+        assertEq(
+            poolInfoAfter.bondReserves,
+            poolInfoBefore.bondReserves + bondAmount
+        );
+        assertEq(poolInfoAfter.lpTotalSupply, poolInfoBefore.lpTotalSupply);
+        assertEq(poolInfoAfter.sharePrice, poolInfoBefore.sharePrice);
+        assertEq(
+            poolInfoAfter.longsOutstanding,
+            poolInfoBefore.longsOutstanding
+        );
+        assertEq(
+            poolInfoAfter.shortsOutstanding,
+            poolInfoBefore.shortsOutstanding + bondAmount
+        );
     }
 
     /// Close Short ///
@@ -663,14 +636,7 @@ contract HyperdriveTest is Test {
         hyperdrive.openShort(bondAmount);
 
         // Get the reserves before closing the long.
-        (
-            uint256 shareReservesBefore,
-            uint256 bondReservesBefore,
-            uint256 lpTotalSupplyBefore,
-            uint256 sharePriceBefore,
-            uint256 longsOutstandingBefore,
-            uint256 shortsOutstandingBefore
-        ) = hyperdrive.getPoolInfo();
+        PoolInfo memory poolInfoBefore = getPoolInfo();
 
         // Immediately close the bonds.
         vm.stopPrank();
@@ -697,28 +663,29 @@ contract HyperdriveTest is Test {
         );
         assertApproxEqAbs(baseAmount, bondAmount, 1e10);
 
-        // FIXME: Address stack too deep.
-        //
         // Verify that the reserves were updated correctly. Since this trade
         // happens at the beginning of the term, the bond reserves should be
         // increased by the full amount.
-        // (
-        //     uint256 shareReservesAfter,
-        //     uint256 bondReservesAfter,
-        //     uint256 lpTotalSupplyAfter,
-        //     uint256 sharePriceAfter,
-        //     uint256 longsOutstandingAfter,
-        //     uint256 shortsOutstandingAfter
-        // ) = hyperdrive.getPoolInfo();
-        // assertEq(
-        //     shareReservesAfter,
-        //     shareReservesBefore + baseAmount.divDown(sharePriceBefore)
-        // );
-        // assertEq(bondReservesAfter, bondReservesBefore - bondAmount);
-        // assertEq(lpTotalSupplyAfter, lpTotalSupplyBefore);
-        // assertEq(sharePriceAfter, sharePriceBefore);
-        // assertEq(longsOutstandingAfter, longsOutstandingBefore);
-        // assertEq(shortsOutstandingAfter, shortsOutstandingBefore - bondAmount);
+        PoolInfo memory poolInfoAfter = getPoolInfo();
+        assertEq(
+            poolInfoAfter.shareReserves,
+            poolInfoBefore.shareReserves +
+                baseAmount.divDown(poolInfoBefore.sharePrice)
+        );
+        assertEq(
+            poolInfoAfter.bondReserves,
+            poolInfoBefore.bondReserves - bondAmount
+        );
+        assertEq(poolInfoAfter.lpTotalSupply, poolInfoBefore.lpTotalSupply);
+        assertEq(poolInfoAfter.sharePrice, poolInfoBefore.sharePrice);
+        assertEq(
+            poolInfoAfter.longsOutstanding,
+            poolInfoBefore.longsOutstanding
+        );
+        assertEq(
+            poolInfoAfter.shortsOutstanding,
+            poolInfoBefore.shortsOutstanding - bondAmount
+        );
     }
 
     // TODO: Clean up these tests.
@@ -740,14 +707,7 @@ contract HyperdriveTest is Test {
             365 days;
 
         // Get the reserves before closing the long.
-        (
-            uint256 shareReservesBefore,
-            uint256 bondReservesBefore,
-            uint256 lpTotalSupplyBefore,
-            uint256 sharePriceBefore,
-            uint256 longsOutstandingBefore,
-            uint256 shortsOutstandingBefore
-        ) = hyperdrive.getPoolInfo();
+        PoolInfo memory poolInfoBefore = getPoolInfo();
 
         // The term passes.
         vm.warp(block.timestamp + 365 days);
@@ -778,26 +738,55 @@ contract HyperdriveTest is Test {
         );
         assertApproxEqAbs(baseBalanceAfter, baseBalanceBefore, 1e10);
 
-        // FIXME: Fix the stack too deep issue
-        //
         // Verify that the reserves were updated correctly. Since this trade
         // is a redemption, there should be no changes to the bond reserves.
-        // (
-        //     uint256 shareReservesAfter,
-        //     uint256 bondReservesAfter,
-        //     uint256 lpTotalSupplyAfter,
-        //     uint256 sharePriceAfter,
-        //     uint256 longsOutstandingAfter,
-        //     uint256 shortsOutstandingAfter
-        // ) = hyperdrive.getPoolInfo();
-        // assertEq(
-        //     shareReservesAfter,
-        //     shareReservesBefore + bondAmount.divDown(sharePriceBefore)
-        // );
-        // assertEq(bondReservesAfter, bondReservesBefore);
-        // assertEq(lpTotalSupplyAfter, lpTotalSupplyBefore);
-        // assertEq(sharePriceAfter, sharePriceBefore);
-        // assertEq(longsOutstandingAfter, longsOutstandingBefore);
-        // assertEq(shortsOutstandingAfter, shortsOutstandingBefore - bondAmount);
+        PoolInfo memory poolInfoAfter = getPoolInfo();
+        assertEq(
+            poolInfoAfter.shareReserves,
+            poolInfoBefore.shareReserves +
+                bondAmount.divDown(poolInfoBefore.sharePrice)
+        );
+        assertEq(poolInfoAfter.bondReserves, poolInfoBefore.bondReserves);
+        assertEq(poolInfoAfter.lpTotalSupply, poolInfoBefore.lpTotalSupply);
+        assertEq(poolInfoAfter.sharePrice, poolInfoBefore.sharePrice);
+        assertEq(
+            poolInfoAfter.longsOutstanding,
+            poolInfoBefore.longsOutstanding
+        );
+        assertEq(
+            poolInfoAfter.shortsOutstanding,
+            poolInfoBefore.shortsOutstanding - bondAmount
+        );
+    }
+
+    /// Utils ///
+
+    struct PoolInfo {
+        uint256 shareReserves;
+        uint256 bondReserves;
+        uint256 lpTotalSupply;
+        uint256 sharePrice;
+        uint256 longsOutstanding;
+        uint256 shortsOutstanding;
+    }
+
+    function getPoolInfo() internal view returns (PoolInfo memory) {
+        (
+            uint256 shareReserves,
+            uint256 bondReserves,
+            uint256 lpTotalSupply,
+            uint256 sharePrice,
+            uint256 longsOutstanding,
+            uint256 shortsOutstanding
+        ) = hyperdrive.getPoolInfo();
+        return
+            PoolInfo({
+                shareReserves: shareReserves,
+                bondReserves: bondReserves,
+                lpTotalSupply: lpTotalSupply,
+                sharePrice: sharePrice,
+                longsOutstanding: longsOutstanding,
+                shortsOutstanding: shortsOutstanding
+            });
     }
 }
