@@ -25,7 +25,7 @@ contract MockMultiToken is MultiToken {
         uint256 _tokenId,
         address _who,
         uint256 _amount
-    ) public {
+    ) external {
         balanceOf[_tokenId][_who] = _amount;
     }
 
