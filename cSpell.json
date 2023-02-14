@@ -101,6 +101,7 @@
         "typechain",
         "TYPEHASH",
         "underflowed",
+        "underflows",
         "visualstudio",
         "vsmarketplacebadge",
         "Vyper",
