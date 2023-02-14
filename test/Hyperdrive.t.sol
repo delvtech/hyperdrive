@@ -29,10 +29,10 @@ contract HyperdriveTest is Test {
         // Instantiate Hyperdrive.
         hyperdrive = new Hyperdrive({
             _linkerCodeHash: linkerCodeHash,
-            _linkerFactoryAddress: address(forwarderFactory),
+            _linkerFactory: address(forwarderFactory),
             _baseToken: baseToken,
             _initialSharePrice: FixedPointMath.ONE_18,
-            _positionDuration: 365 days,
+            _checkpointsPerTerm: 365,
             _checkpointDuration: 1 days,
             _timeStretch: 22.186877016851916266e18
         });
