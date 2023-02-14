@@ -170,15 +170,20 @@ library HyperdriveMath {
             uint256 userDelta
         )
     {
-        uint256 flat = _amountIn.mulDown(
-            FixedPointMath.ONE_18.sub(_timeRemaining)
+        uint256 _normalizedTimeRemaining = _timeRemaining.divDown(
+            _positionDuration
         );
+
+        uint256 flat = _amountIn.mulDown(
+            FixedPointMath.ONE_18.sub(_normalizedTimeRemaining)
+        );
+
+        // TODO: use _isBaseOut to maintain consistent pattern
         if (_isBondOut) {
             // We consider (1-timeRemaining)*amountIn of the bonds being
             // purchased to be fully matured and we use the remaining
             // timeRemaining*amountIn shares to purchase newly minted bonds on a
             // YieldSpace curve configured to timeRemaining = 1.
-            uint256 curveIn = _amountIn.mulDown(_timeRemaining);
 
             // TODO: Revisit this assumption. It seems like LPs can bake this into the
             // fee schedule rather than adding a hidden fee.
@@ -187,6 +192,7 @@ library HyperdriveMath {
             // the trade was applied to the share and bond reserves.
             _shareReserves = _shareReserves.add(flat);
             _bondReserves = _bondReserves.sub(flat.mulDown(_sharePrice));
+            uint256 curveIn = _amountIn.mulDown(_normalizedTimeRemaining);
             uint256 curveOut = YieldSpaceMath.calculateOutGivenIn(
                 _shareReserves,
                 _bondReserves,
@@ -203,13 +209,13 @@ library HyperdriveMath {
                 _bondReserves,
                 _bondReserveAdjustment,
                 _initialSharePrice,
-                _timeRemaining,
+                _normalizedTimeRemaining,
                 _positionDuration,
                 _timeStretch
             );
 
             uint256 curveFee = calculateFeesOutGivenIn(
-                _timeRemaining,
+                _normalizedTimeRemaining,
                 _positionDuration,
                 spotPrice,
                 _curveFeePercent,
@@ -233,9 +239,6 @@ library HyperdriveMath {
             // redemption by the share price) and the newly minted bonds are
             // traded on a YieldSpace curve configured to timeRemaining = 1.
             flat = flat.divDown(_sharePrice);
-            uint256 curveIn = _amountIn.mulDown(_timeRemaining).divDown(
-                _sharePrice
-            );
 
             // TODO: Revisit this assumption. It seems like LPs can bake this into the
             // fee schedule rather than adding a hidden fee.
@@ -244,6 +247,9 @@ library HyperdriveMath {
             // the trade was applied to the share and bond reserves.
             _shareReserves = _shareReserves.sub(flat);
             _bondReserves = _bondReserves.add(flat.mulDown(_sharePrice));
+            uint256 curveIn = _amountIn
+                .mulDown(_normalizedTimeRemaining)
+                .divDown(_sharePrice);
             uint256 curveOut = YieldSpaceMath.calculateOutGivenIn(
                 _shareReserves,
                 _bondReserves,
@@ -260,13 +266,13 @@ library HyperdriveMath {
                 _bondReserves,
                 _bondReserveAdjustment,
                 _initialSharePrice,
-                _timeRemaining,
+                _normalizedTimeRemaining,
                 _positionDuration,
                 _timeStretch
             );
 
             uint256 curveFee = calculateFeesOutGivenIn(
-                _timeRemaining,
+                _normalizedTimeRemaining,
                 _positionDuration,
                 spotPrice,
                 _curveFeePercent,
@@ -292,7 +298,8 @@ library HyperdriveMath {
     ///        when share_reserves = bond_reserves, which would ensure that half
     ///        of the pool reserves couldn't be used to provide liquidity.
     /// @param _amountOut The amount of the asset that is received.
-    /// @param _timeRemaining The amount of time until maturity in seconds.
+    /// @param _timeRemaining The amount of time remaining until maturity in seconds.
+    /// @param _positionDuration The amount of time until maturity in seconds.
     /// @param _timeStretch The time stretch parameter.
     /// @param _sharePrice The share price.
     /// @param _initialSharePrice The initial share price.
@@ -307,6 +314,7 @@ library HyperdriveMath {
         uint256 _bondReserveAdjustment,
         uint256 _amountOut,
         uint256 _timeRemaining,
+        uint256 _positionDuration,
         uint256 _timeStretch,
         uint256 _sharePrice,
         uint256 _initialSharePrice
@@ -319,6 +327,10 @@ library HyperdriveMath {
             uint256 userDelta
         )
     {
+        uint256 _normalizedTimeRemaining = _timeRemaining.divDown(
+            _positionDuration
+        );
+
         // Since we are buying bonds, it's possible that timeRemaining < 1.
         // We consider (1-timeRemaining)*amountOut of the bonds being
         // purchased to be fully matured and timeRemaining*amountOut of the
@@ -328,9 +340,9 @@ library HyperdriveMath {
         // minted bonds are traded on a YieldSpace curve configured to
         // timeRemaining = 1.
         uint256 flat = _amountOut
-            .mulDown(FixedPointMath.ONE_18.sub(_timeRemaining))
+            .mulDown(FixedPointMath.ONE_18.sub(_normalizedTimeRemaining))
             .divDown(_sharePrice);
-        uint256 curveOut = _amountOut.mulDown(_timeRemaining).divDown(
+        uint256 curveOut = _amountOut.mulDown(_normalizedTimeRemaining).divDown(
             _sharePrice
         );
 
