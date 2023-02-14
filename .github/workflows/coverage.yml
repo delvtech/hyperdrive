@@ -1,0 +1,50 @@
+on: ["push", "pull_request"]
+
+name: hyperdrive
+
+jobs:
+  test:
+    name: coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: install node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 14.x
+
+      - name: install packages
+        uses: borales/actions-yarn@v4
+        with:
+          cmd: install # will run `yarn install` command
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # if needed
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Run coverage
+        run: |
+          forge coverage --report lcov
+          sudo apt-get install lcov
+          lcov --remove lcov.info  -o lcov.info 'test/*' 'script/*'
+
+      - name: Coveralls
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: "./lcov.info"
+          parallel: true
+
+  finish:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Coveralls Finished
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          parallel-finished: true
