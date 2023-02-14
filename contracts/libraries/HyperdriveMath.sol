@@ -1,5 +1,5 @@
 /// SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.15;
+pragma solidity ^0.8.18;
 
 import { Errors } from "contracts/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
@@ -159,15 +159,20 @@ library HyperdriveMath {
             // timeRemaining*amountIn shares to purchase newly minted bonds on a
             // YieldSpace curve configured to timeRemaining = 1.
             uint256 curveIn = _amountIn.mulDown(_timeRemaining);
+
+            // TODO: Revisit this assumption. It seems like LPs can bake this into the
+            // fee schedule rather than adding a hidden fee.
+            //
+            // Calculate the curved part of the trade assuming that the flat part of
+            // the trade was applied to the share and bond reserves.
+            _shareReserves = _shareReserves.add(flat);
+            _bondReserves = _bondReserves.sub(flat.mulDown(_sharePrice));
             uint256 curveOut = YieldSpaceMath.calculateOutGivenIn(
-                // Credit the share reserves by the flat trade.
-                _shareReserves.add(flat),
-                // Debit the bond reserves by the flat trade.
-                _bondReserves.sub(flat.mulDown(_sharePrice)),
+                _shareReserves,
+                _bondReserves,
                 _bondReserveAdjustment,
                 curveIn,
-                FixedPointMath.ONE_18,
-                _timeStretch,
+                FixedPointMath.ONE_18.sub(_timeStretch),
                 _sharePrice,
                 _initialSharePrice,
                 _isBondOut
@@ -188,15 +193,20 @@ library HyperdriveMath {
             uint256 curveIn = _amountIn.mulDown(_timeRemaining).divDown(
                 _sharePrice
             );
+
+            // TODO: Revisit this assumption. It seems like LPs can bake this into the
+            // fee schedule rather than adding a hidden fee.
+            //
+            // Calculate the curved part of the trade assuming that the flat part of
+            // the trade was applied to the share and bond reserves.
+            _shareReserves = _shareReserves.sub(flat);
+            _bondReserves = _bondReserves.add(flat.mulDown(_sharePrice));
             uint256 curveOut = YieldSpaceMath.calculateOutGivenIn(
-                // Debit the share reserves by the flat trade.
-                _shareReserves.sub(flat),
-                // Credit the bond reserves by the flat trade.
-                _bondReserves.add(flat.mulDown(_sharePrice)),
+                _shareReserves,
+                _bondReserves,
                 _bondReserveAdjustment,
                 curveIn,
-                FixedPointMath.ONE_18,
-                _timeStretch,
+                FixedPointMath.ONE_18.sub(_timeStretch),
                 _sharePrice,
                 _initialSharePrice,
                 _isBondOut
@@ -256,15 +266,20 @@ library HyperdriveMath {
         uint256 curveOut = _amountOut.mulDown(_timeRemaining).divDown(
             _sharePrice
         );
+
+        // TODO: Revisit this assumption. It seems like LPs can bake this into the
+        // fee schedule rather than adding a hidden fee.
+        //
+        // Calculate the curved part of the trade assuming that the flat part of
+        // the trade was applied to the share and bond reserves.
+        _shareReserves = _shareReserves.add(flat);
+        _bondReserves = _bondReserves.sub(flat.mulDown(_sharePrice));
         uint256 curveIn = YieldSpaceMath.calculateInGivenOut(
-            // Credit the share reserves by the flat trade.
-            _shareReserves.add(flat),
-            // Debit the bond reserves by the flat trade.
-            _bondReserves.sub(flat.mulDown(_sharePrice)),
+            _shareReserves,
+            _bondReserves,
             _bondReserveAdjustment,
             curveOut,
-            FixedPointMath.ONE_18,
-            _timeStretch,
+            FixedPointMath.ONE_18.sub(_timeStretch),
             _sharePrice,
             _initialSharePrice,
             false

@@ -1,5 +1,5 @@
 /// SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.15;
+pragma solidity ^0.8.18;
 
 /// @author Delve
 /// @title Errors
@@ -42,4 +42,13 @@ library Errors {
     /// ### AssetId ###
     /// ###############
     error InvalidTimestamp();
+
+    /// #####################
+    /// ### BondWrapper ###
+    /// #####################
+
+    error AlreadyClosed();
+    error BondMatured();
+    error BondNotMatured();
+    error InsufficientPrice();
 }
