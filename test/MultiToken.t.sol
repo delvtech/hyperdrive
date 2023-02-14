@@ -2,48 +2,10 @@
 pragma solidity ^0.8.15;
 
 import { BaseTest, TestLib as Lib } from "test/Test.sol";
-import { MultiToken } from "contracts/MultiToken.sol";
-
+import { MockMultiToken } from "test/mocks/MockMultiToken.sol";
 import { ForwarderFactory } from "contracts/ForwarderFactory.sol";
 
 import "forge-std/console2.sol";
-
-contract MockMultiToken is MultiToken {
-    constructor(
-        bytes32 _linkerCodeHash,
-        address _factory
-    ) MultiToken(_linkerCodeHash, _factory) {}
-
-    function setNameAndSymbol(
-        uint256 tokenId,
-        string memory __name,
-        string memory __symbol
-    ) external {
-        _name[tokenId] = __name;
-        _symbol[tokenId] = __symbol;
-    }
-
-    // function mint(uint256 _tokenID, address _to, uint256 _amount) external {
-    //     _mint(_tokenID, _to, _amount);
-    // }
-
-    // function burn(uint256 _tokenID, address _from, uint256 _amount) external {
-    //     _burn(_tokenID, _from, _amount);
-    // }
-
-    function setBalanceOf(
-        uint256 _tokenId,
-        address _who,
-        uint256 _amount
-    ) external {
-        console2.log("jbjbjbqqq");
-        uint256 balance = balanceOf[_tokenId][_who];
-        if (balance > 0) {
-            _burn(_tokenId, _who, balance);
-        }
-        _mint(_tokenId, _who, _amount);
-    }
-}
 
 contract MultiTokenTest is BaseTest {
     ForwarderFactory forwarderFactory;
@@ -66,9 +28,9 @@ contract MultiTokenTest is BaseTest {
         assertEq(multiToken.symbol(5), "TKN");
     }
 
-    // ------------------- transferFrom ------------------- //
+    // ------------------- _transferFrom ------------------- //
 
-    function test__combinatorial_transferFrom() public {
+    function test__combi_transferFrom() public {
         uint256[][] memory inputs = new uint256[][](4);
 
         // amount
@@ -84,55 +46,52 @@ contract MultiTokenTest is BaseTest {
         inputs[1][1] = 1;
 
         // allowance
-        inputs[2] = new uint256[](3);
+        inputs[2] = new uint256[](4);
         inputs[2][0] = 0;
         inputs[2][1] = 10e18;
-        inputs[2][2] = type(uint256).max;
+        inputs[2][2] = type(uint128).max; // use this for approvedForAll
+        inputs[2][3] = type(uint256).max;
 
         // mintAmount
         inputs[3] = new uint256[](2);
         inputs[3][0] = 0;
         inputs[3][1] = type(uint96).max;
 
-        __combinatorial_transferFrom_run(
-            __combinatorial_transferFrom_convert(Lib.matrix(inputs))
-        );
+        __run(__convert(Lib.matrix(inputs)));
     }
 
-    struct TransferFromTestCase {
+    struct TestCase_transferFrom {
         // -- args
         uint256 tokenId;
         address from;
         address to;
         uint256 amount;
+        address caller;
         // -- context
-        bool isDirectTransfer;
         uint256 allowance;
         uint256 mintAmount;
         bool approvedForAll;
     }
 
-    function __combinatorial_transferFrom_convert(
+    function __convert(
         uint256[][] memory rawTestCases
-    ) internal view returns (TransferFromTestCase[] memory testCases) {
-        testCases = new TransferFromTestCase[](rawTestCases.length);
+    ) internal view returns (TestCase_transferFrom[] memory testCases) {
+        testCases = new TestCase_transferFrom[](rawTestCases.length);
         for (uint256 i = 0; i < rawTestCases.length; i++) {
             require(
                 rawTestCases[i].length == 4,
                 "Raw test case must have length of 4"
             );
-            bool isDirectTransfer = rawTestCases[i][1] > 0;
-            uint256 allowance = rawTestCases[i][2];
-            bool approvedForAll = !isDirectTransfer &&
-                allowance == type(uint256).max &&
-                (i % 2 == 1);
 
-            testCases[i] = TransferFromTestCase({
+            uint256 allowance = rawTestCases[i][2];
+            bool approvedForAll = allowance == type(uint128).max;
+
+            testCases[i] = TestCase_transferFrom({
                 tokenId: ((i + 5) ** 4) / 7,
                 from: alice,
                 to: bob,
                 amount: rawTestCases[i][0],
-                isDirectTransfer: isDirectTransfer,
+                caller: rawTestCases[i][1] > 0 ? alice : eve,
                 allowance: allowance,
                 mintAmount: rawTestCases[i][3],
                 approvedForAll: approvedForAll
@@ -140,61 +99,45 @@ contract MultiTokenTest is BaseTest {
         }
     }
 
-    function __combinatorial_transferFrom_run(
-        TransferFromTestCase[] memory testCases
-    ) internal {
-        console2.log("jbjbj");
-
+    function __run(TestCase_transferFrom[] memory testCases) internal {
         for (uint256 i = 0; i < testCases.length; i++) {
-            __combinatorial_transferFrom_log("EXPECTED FAIL", testCases[i]);
             // ### SETUP ###
-            __combinatorial_transferFrom_setup(testCases[i]);
+            __setup(testCases[i]);
             // ### ERROR ###
-            (
-                bool _is_error,
-                bytes memory _error
-            ) = __combinatorial_transferFrom_fail(testCases[i]);
-
+            (bool _is_error, bytes memory _error) = __check_fail(testCases[i]);
             if (_is_error) {
                 // ### FAIL CASE ###
                 try
-                    multiToken.transferFrom(
+                    multiToken.__external_transferFrom(
                         testCases[i].tokenId,
                         testCases[i].from,
                         testCases[i].to,
-                        testCases[i].amount
+                        testCases[i].amount,
+                        testCases[i].caller
                     )
                 {
-                    __combinatorial_transferFrom_log(
-                        "EXPECTED FAIL",
-                        testCases[i]
-                    );
+                    __log("EXPECTED FAIL", testCases[i]);
                     revert("SHOULD NOT SUCCEED!");
                 } catch (bytes memory __error) {
                     if (Lib.neq(__error, _error)) {
-                        __combinatorial_transferFrom_log(
-                            "CASE FAIL",
-                            testCases[i]
-                        );
+                        __log("CASE FAIL", testCases[i]);
                         assertEq(__error, _error);
                     }
                 }
             } else {
                 // ### SUCCESS CASE ###
                 try
-                    multiToken.transferFrom(
+                    multiToken.__external_transferFrom(
                         testCases[i].tokenId,
                         testCases[i].from,
                         testCases[i].to,
-                        testCases[i].amount
+                        testCases[i].amount,
+                        testCases[i].caller
                     )
                 {
-                    __combinatorial_transferFrom_success(testCases[i]);
+                    __check_success(testCases[i]);
                 } catch {
-                    __combinatorial_transferFrom_log(
-                        "EXPECTED SUCCEED",
-                        testCases[i]
-                    );
+                    __log("EXPECTED SUCCEED", testCases[i]);
                     revert("SHOULD NOT FAIL!");
                 }
             }
@@ -202,17 +145,12 @@ contract MultiTokenTest is BaseTest {
         }
     }
 
-    function __combinatorial_transferFrom_setup(
-        TransferFromTestCase memory testCase
-    ) internal {
-        console2.log("testCase.tokenId: %s", testCase.tokenId);
-        console2.log("alice: %s", alice);
-        console2.log("testCase.mintAmount: %s", testCase.mintAmount);
-
+    function __setup(TestCase_transferFrom memory testCase) internal {
+        console2.log("jbjbjj");
         multiToken.setBalanceOf(testCase.tokenId, alice, testCase.mintAmount);
-
-        console2.log("jbjbj");
-        if (!testCase.isDirectTransfer) {
+        console2.log("jbjbjj");
+        // when eve is the caller we want to alice to
+        if (testCase.caller == eve) {
             vm.startPrank(alice);
             if (testCase.approvedForAll) {
                 multiToken.setApprovalForAll(eve, true);
@@ -227,8 +165,8 @@ contract MultiTokenTest is BaseTest {
         }
     }
 
-    function __combinatorial_transferFrom_fail(
-        TransferFromTestCase memory testCase
+    function __check_fail(
+        TestCase_transferFrom memory testCase
     ) internal pure returns (bool _is_error, bytes memory _error) {
         //if (testCase.isApproved)
 
@@ -252,13 +190,11 @@ contract MultiTokenTest is BaseTest {
         return (false, new bytes(0));
     }
 
-    function __combinatorial_transferFrom_success(
-        TransferFromTestCase memory testCase
-    ) internal {}
+    function __check_success(TestCase_transferFrom memory testCase) internal {}
 
-    function __combinatorial_transferFrom_log(
+    function __log(
         string memory prelude,
-        TransferFromTestCase memory testCase
+        TestCase_transferFrom memory testCase
     ) internal view {
         console2.log("%s :: ", prelude);
         console2.log("");
@@ -266,7 +202,7 @@ contract MultiTokenTest is BaseTest {
         console2.log("\tfrom              = ", testCase.from);
         console2.log("\tto                = ", testCase.to);
         console2.log("\tamount            = ", testCase.amount);
-        console2.log("\tisDirectTransfer  = ", testCase.isDirectTransfer);
+        console2.log("\tcaller            = ", testCase.caller);
         console2.log("\tallowance         = ", testCase.allowance);
         console2.log("\tmintAmount        = ", testCase.mintAmount);
         console2.log("\tapprovedForAll    = ", testCase.approvedForAll);
