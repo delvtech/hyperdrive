@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.15;
+pragma solidity ^0.8.18;
 
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -8,6 +8,7 @@ import { Errors } from "contracts/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/libraries/HyperdriveMath.sol";
 import { MultiToken } from "contracts/MultiToken.sol";
+import { IHyperdrive } from "contracts/interfaces/IHyperdrive.sol";
 
 /// @author Delve
 /// @title Hyperdrive
@@ -19,7 +20,7 @@ import { MultiToken } from "contracts/MultiToken.sol";
 // TODO - Here we give default implementations of the virtual methods to not break tests
 //        we should move to an abstract contract to prevent this from being deployed w/o
 //        real implementations.
-contract Hyperdrive is MultiToken {
+contract Hyperdrive is MultiToken, IHyperdrive {
     using FixedPointMath for uint256;
 
     /// Tokens ///
@@ -165,7 +166,7 @@ contract Hyperdrive is MultiToken {
     //
     /// @notice Allows LPs to supply liquidity for LP shares.
     /// @param _contribution The amount of base to supply.
-    function addLiquidty(uint256 _contribution) external {
+    function addLiquidity(uint256 _contribution) external {
         if (_contribution == 0) {
             revert Errors.ZeroAmount();
         }
@@ -357,11 +358,12 @@ contract Hyperdrive is MultiToken {
     /// @param _openSharePrice The opening share price of the short.
     /// @param _maturityTime The maturity time of the short.
     /// @param _bondAmount The amount of longs to close.
+    /// @return The amount of underlying the user receives
     function closeLong(
         uint256 _openSharePrice,
         uint32 _maturityTime,
         uint256 _bondAmount
-    ) external {
+    ) external returns (uint256) {
         if (_bondAmount == 0) {
             revert Errors.ZeroAmount();
         }
@@ -424,6 +426,8 @@ contract Hyperdrive is MultiToken {
         if (!success) {
             revert Errors.TransferFailed();
         }
+
+        return (shareProceeds.mulDown(sharePrice));
     }
 
     /// Short ///
