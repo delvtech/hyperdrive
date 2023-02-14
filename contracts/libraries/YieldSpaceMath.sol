@@ -15,141 +15,156 @@ library YieldSpaceMath {
     using FixedPointMath for uint256;
 
     /// Calculates the amount of bond a user would get for given amount of shares.
-    /// @param shareReserves yield bearing vault shares reserve amount, unit is shares
-    /// @param bondReserves bond reserves amount, unit is the face value in underlying
-    /// @param bondReserveAdjustment An optional adjustment to the reserve which MUST have units of underlying.
-    /// @param amountIn amount to be traded, if bonds in the unit is underlying, if shares in the unit is shares
-    /// @param t time till maturity in seconds
-    /// @param s time stretch coefficient.  e.g. 25 years in seconds
-    /// @param c price of shares in terms of their base
-    /// @param mu Normalization factor -- starts as c at initialization
-    /// @param isBondOut determines if the output is bond or shares
-    /// @return result the amount of shares a user would get for given amount of bond
+    /// @param _shareReserves yield bearing vault shares reserve amount, unit is shares
+    /// @param _bondReserves bond reserves amount, unit is the face value in underlying
+    /// @param _bondReserveAdjustment An optional adjustment to the reserve which MUST have units of underlying.
+    /// @param _amountIn amount to be traded, if bonds in the unit is underlying, if shares in the unit is shares
+    /// @param _stretchedTimeElapsed Amount of time elapsed since term start
+    /// @param _c price of shares in terms of their base
+    /// @param _mu Normalization factor -- starts as c at initialization
+    /// @param _isBondOut determines if the output is bond or shares
+    /// @return Amount of shares/bonds
     function calculateOutGivenIn(
-        uint256 shareReserves,
-        uint256 bondReserves,
-        uint256 bondReserveAdjustment,
-        uint256 amountIn,
-        uint256 t,
-        uint256 s,
-        uint256 c,
-        uint256 mu,
-        bool isBondOut
-    ) internal pure returns (uint256 result) {
-        uint256 outReserves;
-        uint256 rhs;
-        // Notes: 1 >= 1-st >= 0
-        uint256 oneMinusT = FixedPointMath.ONE_18.sub(s.mulDown(t));
-        // c/mu
-        uint256 cDivMu = c.divDown(mu);
-        // Adjust the bond reserve, optionally shifts the curve around the inflection point
-        uint256 modifiedBondReserves = bondReserves.add(bondReserveAdjustment);
-        // c/mu * (mu*shareReserves)^(1-t) + bondReserves^(1-t)
-        uint256 k = cDivMu
-            .mulDown(mu.mulDown(shareReserves).pow(oneMinusT))
-            .add(modifiedBondReserves.pow(oneMinusT));
+        uint256 _shareReserves,
+        uint256 _bondReserves,
+        uint256 _bondReserveAdjustment,
+        uint256 _amountIn,
+        uint256 _stretchedTimeElapsed,
+        uint256 _c,
+        uint256 _mu,
+        bool _isBondOut
+    ) internal pure returns (uint256) {
+        // c / mu
+        uint256 cDivMu = _c.divDown(_mu);
+        // Adjust the bond reserve, optionally shifts the curve around the
+        // inflection point
+        _bondReserves = _bondReserves.add(_bondReserveAdjustment);
+        // (c / mu) * (mu * shareReserves)^(1 - tau) + bondReserves^(1 - tau)
+        uint256 k = _k(
+            cDivMu,
+            _mu,
+            _shareReserves,
+            _stretchedTimeElapsed,
+            _bondReserves
+        );
 
-        if (isBondOut) {
-            // bondOut = bondReserves - ( c/mu * (mu*shareReserves)^(1-t) + bondReserves^(1-t) - c/mu * (mu*(shareReserves + shareIn))^(1-t) )^(1 / (1 - t))
-            outReserves = modifiedBondReserves;
-            // (mu*(shareReserves + amountIn))^(1-t)
-            uint256 newScaledShareReserves = mu
-                .mulDown(shareReserves.add(amountIn))
-                .pow(oneMinusT);
-            // c/mu * (mu*(shareReserves + amountIn))^(1-t)
-            newScaledShareReserves = cDivMu.mulDown(newScaledShareReserves);
-            // Notes: k - newScaledShareReserves >= 0 to avoid a complex number
-            // ( c/mu * (mu*shareReserves)^(1-t) + bondReserves^(1-t) - c/mu * (mu*(shareReserves + amountIn))^(1-t) )^(1 / (1 - t))
-            rhs = k.sub(newScaledShareReserves).pow(
-                FixedPointMath.ONE_18.divDown(oneMinusT)
+        if (_isBondOut) {
+            // (mu * (shareReserves + amountIn))^(1 - tau)
+            _shareReserves = _mu.mulDown(_shareReserves.add(_amountIn)).pow(
+                _stretchedTimeElapsed
             );
+            // (c / mu) * (mu * (shareReserves + amountIn))^(1 - tau)
+            _shareReserves = cDivMu.mulDown(_shareReserves);
+            // NOTE: k - shareReserves >= 0 to avoid a complex number
+            // ((c / mu) * (mu * shareReserves)^(1 - tau) + bondReserves^(1 - tau) - (c / mu) * (mu * (shareReserves + amountIn))^(1 - tau))^(1 / (1 - tau)))
+            uint256 newBondReserves = k.sub(_shareReserves).pow(
+                FixedPointMath.ONE_18.divDown(_stretchedTimeElapsed)
+            );
+            // NOTE: bondReserves - newBondReserves >= 0, but I think avoiding a complex number in the step above ensures this never happens
+            // bondsOut = bondReserves - ( (c / mu) * (mu * shareReserves)^(1 - tau) + bondReserves^(1 - tau) - (c / mu) * (mu * (shareReserves + shareIn))^(1 - tau))^(1 / (1 - tau)))
+            return _bondReserves.sub(newBondReserves);
         } else {
-            // shareOut = shareReserves - [ ( c/mu * (mu * shareReserves)^(1-t) + bondReserves^(1-t) - (bondReserves + bondIn)^(1-t) ) / c/u  ]^(1 / (1 - t)) / mu
-            outReserves = shareReserves;
-            // (bondReserves + bondIn)^(1-t)
-            uint256 newScaledBondReserves = modifiedBondReserves
-                .add(amountIn)
-                .pow(oneMinusT);
-            // Notes: k - newScaledBondReserves >= 0 to avoid a complex number
-            // [( (mu * shareReserves)^(1-t) + bondReserves^(1-t) - (bondReserves + bondIn)^(1-t) ) / c/u ]^(1 / (1 - t))
-            rhs = k.sub(newScaledBondReserves).divDown(cDivMu).pow(
-                FixedPointMath.ONE_18.divDown(oneMinusT)
+            // (bondReserves + amountIn)^(1 - tau)
+            _bondReserves = _bondReserves.add(_amountIn).pow(
+                _stretchedTimeElapsed
             );
-            // [( (mu * shareReserves)^(1-t) + bondReserves^(1-t) - (bondReserves + bondIn)^(1-t) ) / c/u ]^(1 / (1 - t)) / mu
-            rhs = rhs.divDown(mu);
+            // NOTE: k - bondReserves >= 0 to avoid a complex number
+            // (((mu * shareReserves)^(1 - tau) + bondReserves^(1 - tau) - (bondReserves + amountIn)^(1 - tau)) / (c / mu))^(1 / (1 - tau)))
+            uint256 newShareReserves = k.sub(_bondReserves).divDown(cDivMu).pow(
+                FixedPointMath.ONE_18.divDown(_stretchedTimeElapsed)
+            );
+            // (((mu * shareReserves)^(1 - tau) + bondReserves^(1 - tau) - (bondReserves + bondIn)^(1 - tau) ) / (c / mu))^(1 / (1 - tau))) / mu
+            newShareReserves = newShareReserves.divDown(_mu);
+            // NOTE: shareReserves - sharesOut >= 0, but I think avoiding a complex number in the step above ensures this never happens
+            // sharesOut = shareReserves - (((c / mu) * (mu * shareReserves)^(1 - tau) + bondReserves^(1 - tau) - (bondReserves + bondIn)^(1 - tau) ) / (c / mu))^(1 / (1 - tau))) / mu
+            return _shareReserves.sub(newShareReserves);
         }
-        // Notes: outReserves - rhs >= 0, but i think avoiding a complex number in the step above ensures this never happens
-        result = outReserves.sub(rhs);
     }
 
     /// @dev Calculates the amount of an asset that will be received given a
     ///      specified amount of the other asset given the current AMM reserves.
-    /// @param shareReserves yield bearing vault shares reserve amount, unit is shares
-    /// @param bondReserves bond reserves amount, unit is the face value in underlying
-    /// @param bondReserveAdjustment An optional adjustment to the reserve which MUST have units of underlying.
-    /// @param amountOut amount to be received, if bonds in the unit is underlying, if shares in the unit is shares
-    /// @param t time till maturity in seconds
-    /// @param s time stretch coefficient.  e.g. 25 years in seconds
-    /// @param c price of shares in terms of their base
-    /// @param mu Normalization factor -- starts as c at initialization
-    /// @param isBondIn determines if the input is bond or shares
-    /// @return result the amount of shares a user would get for given amount of bond
+    /// @param _shareReserves yield bearing vault shares reserve amount, unit is shares
+    /// @param _bondReserves bond reserves amount, unit is the face value in underlying
+    /// @param _bondReserveAdjustment An optional adjustment to the reserve which MUST have units of underlying.
+    /// @param _amountOut amount to be received, if bonds in the unit is underlying, if shares in the unit is shares
+    /// @param _stretchedTimeElapsed Amount of time elapsed since term start
+    /// @param _c price of shares in terms of their base
+    /// @param _mu Normalization factor -- starts as c at initialization
+    /// @param _isBondIn determines if the input is bond or shares
+    /// @return Amount of shares/bonds
     function calculateInGivenOut(
-        uint256 shareReserves,
-        uint256 bondReserves,
-        uint256 bondReserveAdjustment,
-        uint256 amountOut,
-        uint256 t,
-        uint256 s,
-        uint256 c,
-        uint256 mu,
-        bool isBondIn
-    ) internal pure returns (uint256 result) {
-        uint256 inReserves;
-        uint256 rhs;
-        // Notes: 1 >= 1-st >= 0
-        uint256 oneMinusT = FixedPointMath.ONE_18.sub(s.mulDown(t));
-        // c/mu
-        uint256 cDivMu = c.divDown(mu);
+        uint256 _shareReserves,
+        uint256 _bondReserves,
+        uint256 _bondReserveAdjustment,
+        uint256 _amountOut,
+        uint256 _stretchedTimeElapsed,
+        uint256 _c,
+        uint256 _mu,
+        bool _isBondIn
+    ) internal pure returns (uint256) {
+        // c / mu
+        uint256 cDivMu = _c.divDown(_mu);
         // Adjust the bond reserve, optionally shifts the curve around the inflection point
-        uint256 modifiedBondReserves = bondReserves.add(bondReserveAdjustment);
-        // c/mu * (mu*shareReserves)^(1-t) + bondReserves^(1-t)
-        uint256 k = cDivMu
-            .mulDown(mu.mulDown(shareReserves).pow(oneMinusT))
-            .add(modifiedBondReserves.pow(oneMinusT));
-
-        if (isBondIn) {
-            // bondIn = ( c/mu * (mu*shareReserves)^(1-t) + bondReserves^(1-t) - c/mu * (mu*(shareReserves - shareOut))^(1-t) )^(1 / (1 - t)) - bond_reserves
-            inReserves = modifiedBondReserves;
-            // (mu*(shareReserves - amountOut))^(1-t)
-            uint256 newScaledShareReserves = mu
-                .mulDown(shareReserves.sub(amountOut))
-                .pow(oneMinusT);
-            // c/mu * (mu*(shareReserves - amountOut))^(1-t)
-            newScaledShareReserves = cDivMu.mulDown(newScaledShareReserves);
-            // Notes: k - newScaledShareReserves >= 0 to avoid a complex number
-            // ( c/mu * (mu*shareReserves)^(1-t) + bondReserves^(1-t) - c/mu * (mu*(shareReserves - amountOut))^(1-t) )^(1 / (1 - t))
-            rhs = k.sub(newScaledShareReserves).pow(
-                FixedPointMath.ONE_18.divDown(oneMinusT)
+        _bondReserves = _bondReserves.add(_bondReserveAdjustment);
+        // (c / mu) * (mu * shareReserves)^(1 - tau) + bondReserves^(1 - tau)
+        uint256 k = _k(
+            cDivMu,
+            _mu,
+            _shareReserves,
+            _stretchedTimeElapsed,
+            _bondReserves
+        );
+        if (_isBondIn) {
+            // (mu * (shareReserves - amountOut))^(1 - tau)
+            _shareReserves = _mu.mulDown(_shareReserves.sub(_amountOut)).pow(
+                _stretchedTimeElapsed
             );
+            // (c / mu) * (mu * (shareReserves - amountOut))^(1 - tau)
+            _shareReserves = cDivMu.mulDown(_shareReserves);
+            // NOTE: k - shareReserves >= 0 to avoid a complex number
+            // ((c / mu) * (mu * shareReserves)^(1 - tau) + bondReserves^(1 - tau) - (c / mu) * (mu*(shareReserves - amountOut))^(1 - tau))^(1 / (1 - tau)))
+            uint256 newBondReserves = k.sub(_shareReserves).pow(
+                FixedPointMath.ONE_18.divDown(_stretchedTimeElapsed)
+            );
+            // NOTE: newBondReserves - bondReserves >= 0, but I think avoiding a complex number in the step above ensures this never happens
+            // bondIn = ((c / mu) * (mu * shareReserves)^(1 - tau) + bondReserves^(1 - tau) - (c / mu) * (mu * (shareReserves - shareOut))^(1 - tau))^(1 / (1 - tau))) - bondReserves
+            return newBondReserves.sub(_bondReserves);
         } else {
-            // shareOut = [ ( c/mu * (mu * shareReserves)^(1-t) + bondReserves^(1-t) - (bondReserves - bondOut)^(1-t) ) / c/u  ]^(1 / (1 - t)) / mu - share_reserves
-            inReserves = shareReserves;
-            // (bondReserves - amountOut)^(1-t)
-            uint256 newScaledBondReserves = modifiedBondReserves
-                .sub(amountOut)
-                .pow(oneMinusT);
-            // Notes: k - newScaledBondReserves >= 0 to avoid a complex number
-            // [( (mu * shareReserves)^(1-t) + bondReserves^(1-t) - (bondReserves - amountOut)^(1-t) ) / c/u ]^(1 / (1 - t))
-            rhs = k.sub(newScaledBondReserves).divDown(cDivMu).pow(
-                FixedPointMath.ONE_18.divDown(oneMinusT)
+            // (bondReserves - amountOut)^(1 - tau)
+            _bondReserves = _bondReserves.sub(_amountOut).pow(
+                _stretchedTimeElapsed
             );
-            // [( (mu * shareReserves)^(1-t) + bondReserves^(1-t) - (bondReserves - amountOut)^(1-t) ) / c/u ]^(1 / (1 - t)) / mu
-            rhs = rhs.divDown(mu);
+            // NOTE: k - newScaledBondReserves >= 0 to avoid a complex number
+            // (((mu * shareReserves)^(1 - tau) + bondReserves^(1 - tau) - (bondReserves - amountOut)^(1 - tau) ) / (c / mu))^(1 / (1 - tau)))
+            uint256 newShareReserves = k.sub(_bondReserves).divDown(cDivMu).pow(
+                FixedPointMath.ONE_18.divDown(_stretchedTimeElapsed)
+            );
+            // (((mu * shareReserves)^(1 - tau) + bondReserves^(1 - tau) - (bondReserves - amountOut)^(1 - tau) ) / (c / mu))^(1 / (1 - tau))) / mu
+            newShareReserves = newShareReserves.divDown(_mu);
+            // NOTE: newShareReserves - shareReserves >= 0, but I think avoiding a complex number in the step above ensures this never happens
+            // sharesIn = (((c / mu) * (mu * shareReserves)^(1 - tau) + bondReserves^(1 - tau) - (bondReserves - bondOut)^(1 - tau) ) / (c / mu))^(1 / (1 - tau))) / mu - shareReserves
+            return newShareReserves.sub(_shareReserves);
         }
-        // TODO: Double check this.
-        //
-        // Notes: rhs - inReserves >= 0, but i think avoiding a complex number in the step above ensures this never happens
-        result = rhs.sub(inReserves);
+    }
+
+    /// @dev Helper function to derive invariant constant k
+    /// @param _cDivMu Normalized price of shares in terms of base
+    /// @param _mu Normalization factor -- starts as c at initialization
+    /// @param _shareReserves Yield bearing vault shares reserve amount, unit is shares
+    /// @param _stretchedTimeElapsed Amount of time elapsed since term start
+    /// @param _bondReserves Bond reserves amount, unit is the face value in underlying
+    /// returns k
+    function _k(
+        uint256 _cDivMu,
+        uint256 _mu,
+        uint256 _shareReserves,
+        uint256 _stretchedTimeElapsed,
+        uint256 _bondReserves
+    ) private pure returns (uint256) {
+        /// k = (c / mu) * (mu * shareReserves)^(1 - tau) + bondReserves^(1 - tau)
+        return
+            _cDivMu
+                .mulDown(_mu.mulDown(_shareReserves).pow(_stretchedTimeElapsed))
+                .add(_bondReserves.pow(_stretchedTimeElapsed));
     }
 }

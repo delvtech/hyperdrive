@@ -5,7 +5,11 @@ forge-cache/
 node_modules/
 yarn-error.log
 
+# nix/shell extension - https://direnv.net/
 .direnv
 
-# Vim
+# vim
 remappings.txt
+
+# code coverage
+lcov.info
