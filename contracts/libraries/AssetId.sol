@@ -24,34 +24,20 @@ library AssetId {
         ShortWithdrawalShare
     }
 
-    /// @dev Encodes an identifier, data, and a timestamp into an asset ID.
-    ///      Asset IDs are used so that LP, long, and short tokens can all be
-    ///      represented in a single MultiToken instance. The zero asset ID
-    ///      indicates the LP token.
-    /// TODO: Update this comment when we make the range more restrictive.
+    /// @dev Encodes a prefix and a timestamp into an asset ID. Asset IDs are
+    ///      used so that LP, long, and short tokens can all be represented in a
+    ///      single MultiToken instance. The zero asset ID indicates the LP
+    ///      token.
     /// @param _prefix A one byte prefix that specifies the asset type.
-    /// @param _data Data associated with the asset. This is an efficient way of
-    ///        fingerprinting data as the user can supply this data, and the
-    ///        token balance ensures that the data is associated with the asset.
     /// @param _timestamp A timestamp associated with the asset.
     /// @return id The asset ID.
     function encodeAssetId(
         AssetIdPrefix _prefix,
-        uint256 _data,
         uint256 _timestamp
     ) internal pure returns (uint256 id) {
-        // Ensure that _data is a 216 bit number.
-        if (_data > 0xffffffffffffffffffffffffffffffffffffffffffffffffffffff) {
-            revert Errors.AssetIDCorruption();
-        }
-        // [identifier: 8 bits][data: 216 bits][timestamp: 32 bits]
+        // [identifier: 8 bits][timestamp: 248 bits]
         assembly {
-            id := or(
-                or(shl(0xf8, _prefix), shl(0x20, _data)),
-                // ensure max timestamp is 0xffffffff
-                // valid until Sun Feb 07 2106 06:28:15
-                mod(_timestamp, shl(0x21, 1))
-            )
+            id := or(shl(0xf8, _prefix), _timestamp)
         }
         return id;
     }
@@ -60,22 +46,17 @@ library AssetId {
     ///      identifier, data and a timestamp.
     /// @param _id The asset ID.
     /// @return _prefix A one byte prefix that specifies the asset type.
-    /// @return _data Data associated with the asset. This is an efficient way of
-    ///          fingerprinting data as the user can supply this data, and the
-    ///          token balance ensures that the data is associated with the asset.
     /// @return _timestamp A timestamp associated with the asset.
     function decodeAssetId(
         uint256 _id
-    )
-        internal
-        pure
-        returns (AssetIdPrefix _prefix, uint256 _data, uint256 _timestamp)
-    {
-        // [identifier: 8 bits][data: 216 bits][timestamp: 32 bits]
+    ) internal pure returns (AssetIdPrefix _prefix, uint256 _timestamp) {
+        // [identifier: 8 bits][timestamp: 248 bits]
         assembly {
             _prefix := shr(0xf8, _id) // shr 248 bits
-            _data := shr(0x28, shl(0x8, _id)) // shl 8 bits, shr 40 bits
-            _timestamp := and(0xffffffff, _id) // 32 bit-mask
+            _timestamp := and(
+                0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff,
+                _id
+            ) // 248 bit-mask
         }
     }
 }

@@ -8,5 +8,8 @@ yarn-error.log
 # nix/shell extension - https://direnv.net/
 .direnv
 
+# vim
+remappings.txt
+
 # code coverage
 lcov.info

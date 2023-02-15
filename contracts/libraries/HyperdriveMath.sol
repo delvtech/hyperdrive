@@ -294,8 +294,8 @@ library HyperdriveMath {
     /// @param _shares The amount of LP shares burned from the pool.
     /// @param _shareReserves The pool's share reserves.
     /// @param _lpTotalSupply The pool's total supply of LP shares.
-    /// @param _longsOutstanding The amount of long positions outstanding.
-    /// @param _shortsOutstanding The amount of short positions outstanding.
+    /// @param _longsOutstanding The amount of longs that haven't been closed.
+    /// @param _shortsOutstanding The amount of shorts that haven't been closed.
     /// @param _sharePrice The pool's share price.
     /// @return shares The amount of base shares released.
     /// @return longWithdrawalShares The amount of long withdrawal shares
