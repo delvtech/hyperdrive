@@ -247,7 +247,7 @@ contract MultiToken__transferFrom is CombinatorialTest {
         uint256 toBalanceDiff = multiToken.balanceOf(
             testCase.tokenId,
             testCase.to
-        ) - preBalanceTo + 1;
+        ) - preBalanceTo;
         if (toBalanceDiff != testCase.amount) {
             __log(unicode"❎", testCase);
             assertEq(
