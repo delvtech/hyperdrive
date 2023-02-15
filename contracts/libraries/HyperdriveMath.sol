@@ -324,23 +324,23 @@ library HyperdriveMath {
     }
 
     /// @dev Calculates the fees for the curve portion of hyperdrive calcOutGivenIn
-    /// @param _normalizedTimeRemaining The normalized amount of time until maturity.
-    /// @param _spotPrice The price without slippage of bonds in terms of shares.
-    /// @param _curveFeePercent The curve fee parameter.
-    /// @param _flatFeePercent The flat fee parameter.
-    /// @param _sharePrice The current price of shares in terms of base.
     /// @param _amountIn The given amount in for the curve portion of hyperdrive, either in terms of
     /// shares or bonds.
+    /// @param _normalizedTimeRemaining The normalized amount of time until maturity.
+    /// @param _spotPrice The price without slippage of bonds in terms of shares.
+    /// @param _sharePrice The current price of shares in terms of base.
+    /// @param _curveFeePercent The curve fee parameter.
+    /// @param _flatFeePercent The flat fee parameter.
     /// @param _isBaseIn If the user will supply base.
     /// @return curveFee The fee amount to charge.
     /// @return flatFee The fee amount to charge.
     function calculateFeesOutGivenIn(
+        uint256 _amountIn,
         uint256 _normalizedTimeRemaining,
         uint256 _spotPrice,
+        uint256 _sharePrice,
         uint256 _curveFeePercent,
         uint256 _flatFeePercent,
-        uint256 _sharePrice,
-        uint256 _amountIn,
         bool _isBaseIn
     ) internal pure returns (uint256 curveFee, uint256 flatFee) {
         uint256 curveIn = _amountIn.mulDown(_normalizedTimeRemaining);
@@ -375,23 +375,23 @@ library HyperdriveMath {
     }
 
     /// @dev Calculates the fees for the curve portion of hyperdrive calcInGivenOut
-    /// @param _normalizedTimeRemaining The normalized amount of time until maturity.
-    /// @param _spotPrice The price without slippage of bonds in terms of shares.
-    /// @param _curveFeePercent The curve fee parameter.
-    /// @param _flatFeePercent The flat fee parameter.
-    /// @param _sharePrice The current price of shares in terms of base.
     /// @param _amountOut The given amount out, either in terms
     /// of shares or bonds.
+    /// @param _normalizedTimeRemaining The normalized amount of time until maturity.
+    /// @param _spotPrice The price without slippage of bonds in terms of shares.
+    /// @param _sharePrice The current price of shares in terms of base.
+    /// @param _curveFeePercent The curve fee parameter.
+    /// @param _flatFeePercent The flat fee parameter.
     /// @param _isBaseOut If the user will receive base.
     /// @return curveFee The fee amount to charge.
     /// @return flatFee The fee amount to charge.
     function calculateFeesInGivenOut(
+        uint256 _amountOut,
         uint256 _normalizedTimeRemaining,
         uint256 _spotPrice,
+        uint256 _sharePrice,
         uint256 _curveFeePercent,
         uint256 _flatFeePercent,
-        uint256 _sharePrice,
-        uint256 _amountOut,
         bool _isBaseOut
     ) internal pure returns (uint256 curveFee, uint256 flatFee) {
         uint256 curveOut = _amountOut.mulDown(_normalizedTimeRemaining);

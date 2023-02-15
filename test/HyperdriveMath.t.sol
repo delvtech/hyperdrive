@@ -69,12 +69,12 @@ contract HyperdriveMathTest is Test {
     function test__calcFeesInGivenOut() public {
         (uint256 curveFee, uint256 flatFee) = HyperdriveMath
             .calculateFeesInGivenOut(
+                1 ether, // amountOut
                 1 ether, // timeRemaining
                 0.9 ether, // spotPrice
+                1 ether, // sharePrice
                 0.1 ether, // curveFeePercent
                 0.1 ether, // flatFeePercent
-                1 ether, // sharePrice
-                1 ether, // amountOut
                 true // isBaseIn
             );
         assertEq(
@@ -87,12 +87,12 @@ contract HyperdriveMathTest is Test {
         );
 
         (curveFee, flatFee) = HyperdriveMath.calculateFeesInGivenOut(
+            1 ether, // amountOut
             1 ether, // timeRemaining
             0.9 ether, // spotPrice
+            1 ether, // sharePrice
             0.1 ether, // curveFeePercent
             0.1 ether, // flatFeePercent
-            1 ether, // sharePrice
-            1 ether, // amountOut
             false // isBaseIn
         );
         assertEq(
@@ -105,12 +105,12 @@ contract HyperdriveMathTest is Test {
         );
 
         (curveFee, flatFee) = HyperdriveMath.calculateFeesInGivenOut(
+            1 ether, // amountOut
             0, // timeRemaining
             0.9 ether, // spotPrice
+            1 ether, // sharePrice
             0.1 ether, // curveFeePercent
             0.1 ether, // flatFeePercent
-            1 ether, // sharePrice
-            1 ether, // amountOut
             true // isBaseIn
         );
         assertEq(
@@ -123,12 +123,12 @@ contract HyperdriveMathTest is Test {
         );
 
         (curveFee, flatFee) = HyperdriveMath.calculateFeesInGivenOut(
+            1 ether, // amountOut
             0, // timeRemaining
             0.9 ether, // spotPrice
+            1 ether, // sharePrice
             0.1 ether, // curveFeePercent
             0.1 ether, // flatFeePercent
-            1 ether, // sharePrice
-            1 ether, // amountOut
             false // isBaseIn
         );
         assertEq(
@@ -144,12 +144,12 @@ contract HyperdriveMathTest is Test {
     function test__calcFeesOutGivenIn() public {
         (uint256 curveFee, uint256 flatFee) = HyperdriveMath
             .calculateFeesOutGivenIn(
+                1 ether, // amountIn
                 1 ether, // timeRemaining
                 0.9 ether, // spotPrice
+                1 ether, // sharePrice
                 0.1 ether, // curveFeePercent
                 0.1 ether, // flatFeePercent
-                1 ether, // sharePrice
-                1 ether, // amountOut
                 true // isBaseIn
             );
         assertEq(
@@ -162,12 +162,12 @@ contract HyperdriveMathTest is Test {
         );
 
         (curveFee, flatFee) = HyperdriveMath.calculateFeesOutGivenIn(
+            1 ether, // amountIn
             1 ether, // timeRemaining
             0.9 ether, // spotPrice
+            1 ether, // sharePrice
             0.1 ether, // curveFeePercent
             0.1 ether, // flatFeePercent
-            1 ether, // sharePrice
-            1 ether, // amountOut
             false // isBaseIn
         );
         assertEq(
@@ -180,12 +180,12 @@ contract HyperdriveMathTest is Test {
         );
 
         (curveFee, flatFee) = HyperdriveMath.calculateFeesOutGivenIn(
+            1 ether, // amountIn
             0, // timeRemaining
             0.9 ether, // spotPrice
+            1 ether, // sharePrice
             0.1 ether, // curveFeePercent
             0.1 ether, // flatFeePercent
-            1 ether, // sharePrice
-            1 ether, // amountOut
             true // isBaseIn
         );
         assertEq(
@@ -199,12 +199,12 @@ contract HyperdriveMathTest is Test {
         );
 
         (curveFee, flatFee) = HyperdriveMath.calculateFeesOutGivenIn(
+            1 ether, // amountIn
             0, // timeRemaining
             0.9 ether, // spotPrice
+            1 ether, // sharePrice
             0.1 ether, // curveFeePercent
             0.1 ether, // flatFeePercent
-            1 ether, // sharePrice
-            1 ether, // amountOut
             false // isBaseIn
         );
         assertEq(
