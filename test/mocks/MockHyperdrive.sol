@@ -27,7 +27,9 @@ contract MockHyperdrive is Hyperdrive {
             _initialSharePrice,
             _checkpointsPerTerm,
             _checkpointDuration,
-            _timeStretch
+            _timeStretch,
+            0, // curveFee
+            0 // flatFee
         )
     {
         _sharePrice = _initialSharePrice;
