@@ -84,23 +84,23 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
     /// @param _linkerFactory The address of the factory which is used to deploy
     ///        the ERC20 linker contracts.
     /// @param _baseToken The base token contract.
+    /// @param _initialSharePrice The initial share price.
     /// @param _checkpointsPerTerm The number of checkpoints that elaspes before
     ///        bonds can be redeemed one-to-one for base.
     /// @param _checkpointDuration The time in seconds between share price
     ///        checkpoints. Position duration must be a multiple of checkpoint
     ///        duration.
     /// @param _timeStretch The time stretch of the pool.
-    /// @param _initialPricePerShare The initial share price.
     /// @param _curveFee The fee parameter for the curve portion of the hyperdrive trade equation.
     /// @param _flatFee The fee parameter for the flat portion of the hyperdrive trade equation.
     constructor(
         bytes32 _linkerCodeHash,
         address _linkerFactory,
         IERC20 _baseToken,
+        uint256 _initialSharePrice,
         uint256 _checkpointsPerTerm,
         uint256 _checkpointDuration,
         uint256 _timeStretch,
-        uint256 _initialPricePerShare,
         uint256 _curveFee,
         uint256 _flatFee
     ) MultiToken(_linkerCodeHash, _linkerFactory) {
@@ -112,7 +112,7 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         checkpointDuration = _checkpointDuration;
         timeStretch = _timeStretch;
 
-        initialSharePrice = _initialPricePerShare;
+        initialSharePrice = _initialSharePrice;
 
         curveFee = _curveFee;
         flatFee = _flatFee;
