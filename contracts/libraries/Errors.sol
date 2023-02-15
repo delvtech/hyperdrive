@@ -19,6 +19,7 @@ library Errors {
     error TransferFailed();
     error UnexpectedAssetId();
     error ZeroAmount();
+    error OutputLimit();
 
     /// ######################
     /// ### ERC20Forwarder ###
