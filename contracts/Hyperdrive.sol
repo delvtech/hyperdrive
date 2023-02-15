@@ -208,6 +208,9 @@ contract Hyperdrive is MultiToken, IHyperdrive {
             sharePrice
         );
 
+        // Enforce min user outputs
+        if (_minOutput > lpShares) revert Errors.OutputLimit();
+
         // Update the reserves.
         shareReserves += shares;
         bondReserves = HyperdriveMath.calculateBondReserves(
@@ -218,9 +221,6 @@ contract Hyperdrive is MultiToken, IHyperdrive {
             positionDuration,
             timeStretch
         );
-
-        // Enforce min user outputs
-        if (_minOutput > lpShares) revert Errors.OutputLimit();
 
         // Mint LP shares to the supplier.
         _mint(AssetId._LP_ASSET_ID, msg.sender, lpShares);
@@ -400,6 +400,9 @@ contract Hyperdrive is MultiToken, IHyperdrive {
                 true
             );
 
+        // Enforce min user outputs
+        if (_minOutput > bondProceeds) revert Errors.OutputLimit();
+
         // Apply the trading deltas to the reserves and update the amount of
         // longs outstanding.
         shareReserves += shares;
@@ -416,9 +419,6 @@ contract Hyperdrive is MultiToken, IHyperdrive {
         if (sharePrice.mulDown(shareReserves) < longsOutstanding) {
             revert Errors.BaseBufferExceedsShareReserves();
         }
-
-        // Enforce min user outputs
-        if (_minOutput > bondProceeds) revert Errors.OutputLimit();
 
         // Mint the bonds to the trader with an ID of the maturity time.
         _mint(
@@ -547,10 +547,9 @@ contract Hyperdrive is MultiToken, IHyperdrive {
             FixedPointMath.ONE_18).mulDown(_bondAmount);
         uint256 baseProceeds = shareProceeds.mulDown(sharePrice);
         uint256 userDeposit = (_bondAmount - baseProceeds) + owedInterest;
-        deposit(userDeposit); // max_loss + interest
-
         // Enforce min user outputs
         if (_maxDeposit < userDeposit) revert Errors.OutputLimit();
+        deposit(userDeposit); // max_loss + interest
 
         // Apply the trading deltas to the reserves and increase the bond buffer
         // by the amount of bonds that were shorted. We don't need to add the
