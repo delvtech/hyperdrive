@@ -743,45 +743,6 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         }
     }
 
-    /// Checkpoint ///
-
-    /// @notice Allows anyone to mint a new checkpoint.
-    /// @param _checkpointTime The time of the checkpoint to create.
-    function checkpoint(uint256 _checkpointTime) public {
-        // If the checkpoint has already been set, return early.
-        if (checkpoints[_checkpointTime] != 0) {
-            return;
-        }
-
-        // If the checkpoint time isn't divisible by the checkpoint duration
-        // or is in the future, it's an invalid checkpoint and we should
-        // revert.
-        uint256 latestCheckpoint = _latestCheckpoint();
-        if (
-            _checkpointTime % checkpointDuration != 0 ||
-            latestCheckpoint < _checkpointTime
-        ) {
-            revert Errors.InvalidCheckpointTime();
-        }
-
-        // If the checkpoint time is the latest checkpoint, we use the current
-        // share price. Otherwise, we use a linear search to find the closest
-        // share price and use that to perform the checkpoint.
-        if (_checkpointTime == latestCheckpoint) {
-            _applyCheckpoint(latestCheckpoint, pricePerShare());
-        } else {
-            for (uint256 time = _checkpointTime; ; time += checkpointDuration) {
-                uint256 closestSharePrice = checkpoints[time];
-                if (time == latestCheckpoint) {
-                    closestSharePrice = pricePerShare();
-                }
-                if (closestSharePrice != 0) {
-                    _applyCheckpoint(_checkpointTime, closestSharePrice);
-                }
-            }
-        }
-    }
-
     /// Getters ///
 
     /// @notice Gets info about the pool's reserves and other state that is

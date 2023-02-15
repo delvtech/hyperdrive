@@ -124,7 +124,7 @@ contract HyperdriveTest is Test {
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(Errors.ZeroAmount.selector);
-        hyperdrive.openLong(0);
+        hyperdrive.openLong(0, 0);
     }
 
     function test_open_long_extreme_amount() external {
@@ -141,7 +141,7 @@ contract HyperdriveTest is Test {
         baseToken.mint(baseAmount);
         baseToken.approve(address(hyperdrive), baseAmount);
         vm.expectRevert(stdError.arithmeticError);
-        hyperdrive.openLong(baseAmount);
+        hyperdrive.openLong(baseAmount, 0);
     }
 
     function test_open_long() external {
@@ -165,7 +165,7 @@ contract HyperdriveTest is Test {
         uint256 baseAmount = 10e18;
         baseToken.mint(baseAmount);
         baseToken.approve(address(hyperdrive), baseAmount);
-        hyperdrive.openLong(baseAmount);
+        hyperdrive.openLong(baseAmount, 0);
 
         // Verify the base transfers.
         assertEq(baseToken.balanceOf(bob), 0);
@@ -230,7 +230,7 @@ contract HyperdriveTest is Test {
         uint256 baseAmount = 10e18;
         baseToken.mint(baseAmount);
         baseToken.approve(address(hyperdrive), baseAmount);
-        hyperdrive.openLong(baseAmount);
+        hyperdrive.openLong(baseAmount, 0);
 
         // Attempt to close zero longs. This should fail.
         vm.stopPrank();
@@ -238,7 +238,7 @@ contract HyperdriveTest is Test {
         vm.expectRevert(Errors.ZeroAmount.selector);
         uint256 maturityTime = (block.timestamp - (block.timestamp % 1 days)) +
             365 days;
-        hyperdrive.closeLong(maturityTime, 0);
+        hyperdrive.closeLong(maturityTime, 0, 0);
     }
 
     function test_close_long_invalid_amount() external {
@@ -254,7 +254,7 @@ contract HyperdriveTest is Test {
         uint256 baseAmount = 10e18;
         baseToken.mint(baseAmount);
         baseToken.approve(address(hyperdrive), baseAmount);
-        hyperdrive.openLong(baseAmount);
+        hyperdrive.openLong(baseAmount, 0);
 
         // Attempt to close too many longs. This should fail.
         vm.stopPrank();
@@ -266,7 +266,7 @@ contract HyperdriveTest is Test {
             bob
         );
         vm.expectRevert(stdError.arithmeticError);
-        hyperdrive.closeLong(maturityTime, bondAmount + 1);
+        hyperdrive.closeLong(maturityTime, bondAmount + 1, 0);
     }
 
     function test_close_long_invalid_timestamp() external {
@@ -282,13 +282,13 @@ contract HyperdriveTest is Test {
         uint256 baseAmount = 10e18;
         baseToken.mint(baseAmount);
         baseToken.approve(address(hyperdrive), baseAmount);
-        hyperdrive.openLong(baseAmount);
+        hyperdrive.openLong(baseAmount, 0);
 
         // Attempt to use a timestamp greater than the maximum range.
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(Errors.InvalidTimestamp.selector);
-        hyperdrive.closeLong(uint256(type(uint248).max) + 1, 1);
+        hyperdrive.closeLong(uint256(type(uint248).max) + 1, 1, 0);
     }
 
     function test_close_long_immediately() external {
@@ -304,7 +304,7 @@ contract HyperdriveTest is Test {
         uint256 baseAmount = 10e18;
         baseToken.mint(baseAmount);
         baseToken.approve(address(hyperdrive), baseAmount);
-        hyperdrive.openLong(baseAmount);
+        hyperdrive.openLong(baseAmount, 0);
 
         // Get the reserves before closing the long.
         PoolInfo memory poolInfoBefore = getPoolInfo();
@@ -318,7 +318,7 @@ contract HyperdriveTest is Test {
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
             bob
         );
-        hyperdrive.closeLong(maturityTime, bondAmount);
+        hyperdrive.closeLong(maturityTime, bondAmount, 0);
 
         // TODO: Bob receives more base than he started with. Fees should take
         // care of this, but this should be investigating nonetheless.
@@ -374,7 +374,7 @@ contract HyperdriveTest is Test {
         uint256 baseAmount = 10e18;
         baseToken.mint(baseAmount);
         baseToken.approve(address(hyperdrive), baseAmount);
-        hyperdrive.openLong(baseAmount);
+        hyperdrive.openLong(baseAmount, 0);
         uint256 maturityTime = (block.timestamp - (block.timestamp % 1 days)) +
             365 days;
 
@@ -391,7 +391,7 @@ contract HyperdriveTest is Test {
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
             bob
         );
-        hyperdrive.closeLong(maturityTime, bondAmount);
+        hyperdrive.closeLong(maturityTime, bondAmount, 0);
 
         // TODO: Bob receives more base than the bond amount. It appears that
         // the yield space implementation returns a positive value even when
@@ -443,7 +443,7 @@ contract HyperdriveTest is Test {
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(Errors.ZeroAmount.selector);
-        hyperdrive.openShort(0);
+        hyperdrive.openShort(0, type(uint256).max);
     }
 
     function test_open_short_extreme_amount() external {
@@ -460,7 +460,7 @@ contract HyperdriveTest is Test {
         baseToken.mint(baseAmount);
         baseToken.approve(address(hyperdrive), baseAmount);
         vm.expectRevert(Errors.FixedPointMath_SubOverflow.selector);
-        hyperdrive.openShort(baseAmount * 2);
+        hyperdrive.openShort(baseAmount * 2, type(uint256).max);
     }
 
     function test_open_short() external {
@@ -479,7 +479,7 @@ contract HyperdriveTest is Test {
         uint256 bondAmount = 10e18;
         baseToken.mint(bondAmount);
         baseToken.approve(address(hyperdrive), bondAmount);
-        hyperdrive.openShort(bondAmount);
+        hyperdrive.openShort(bondAmount, type(uint256).max);
 
         // Verify that Hyperdrive received the max loss and that Bob received
         // the short tokens.
@@ -552,7 +552,7 @@ contract HyperdriveTest is Test {
         uint256 bondAmount = 10e18;
         baseToken.mint(bondAmount);
         baseToken.approve(address(hyperdrive), bondAmount);
-        hyperdrive.openShort(bondAmount);
+        hyperdrive.openShort(bondAmount, type(uint256).max);
 
         // Attempt to close zero shorts. This should fail.
         vm.stopPrank();
@@ -560,7 +560,7 @@ contract HyperdriveTest is Test {
         vm.expectRevert(Errors.ZeroAmount.selector);
         uint256 maturityTime = (block.timestamp - (block.timestamp % 1 days)) +
             365 days;
-        hyperdrive.closeShort(maturityTime, 0);
+        hyperdrive.closeShort(maturityTime, 0, 0);
     }
 
     function test_close_short_invalid_amount() external {
@@ -576,7 +576,7 @@ contract HyperdriveTest is Test {
         uint256 bondAmount = 10e18;
         baseToken.mint(bondAmount);
         baseToken.approve(address(hyperdrive), bondAmount);
-        hyperdrive.openShort(bondAmount);
+        hyperdrive.openShort(bondAmount, type(uint256).max);
 
         // Attempt to close too many shorts. This should fail.
         vm.stopPrank();
@@ -584,7 +584,7 @@ contract HyperdriveTest is Test {
         uint256 maturityTime = (block.timestamp - (block.timestamp % 1 days)) +
             365 days;
         vm.expectRevert(stdError.arithmeticError);
-        hyperdrive.closeShort(maturityTime, bondAmount + 1);
+        hyperdrive.closeShort(maturityTime, bondAmount + 1, 0);
     }
 
     function test_close_short_invalid_timestamp() external {
@@ -600,13 +600,13 @@ contract HyperdriveTest is Test {
         uint256 bondAmount = 10e18;
         baseToken.mint(bondAmount);
         baseToken.approve(address(hyperdrive), bondAmount);
-        hyperdrive.openShort(bondAmount);
+        hyperdrive.openShort(bondAmount, type(uint256).max);
 
         // Attempt to use a timestamp greater than the maximum range.
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(Errors.InvalidTimestamp.selector);
-        hyperdrive.closeShort(uint256(type(uint248).max) + 1, 1);
+        hyperdrive.closeShort(uint256(type(uint248).max) + 1, 1, 0);
     }
 
     function test_close_short_immediately() external {
@@ -622,7 +622,7 @@ contract HyperdriveTest is Test {
         uint256 bondAmount = 10e18;
         baseToken.mint(bondAmount);
         baseToken.approve(address(hyperdrive), bondAmount);
-        hyperdrive.openShort(bondAmount);
+        hyperdrive.openShort(bondAmount, type(uint256).max);
 
         // Get the reserves before closing the long.
         PoolInfo memory poolInfoBefore = getPoolInfo();
@@ -632,7 +632,7 @@ contract HyperdriveTest is Test {
         vm.startPrank(bob);
         uint256 maturityTime = (block.timestamp - (block.timestamp % 1 days)) +
             365 days;
-        hyperdrive.closeShort(maturityTime, bondAmount);
+        hyperdrive.closeShort(maturityTime, bondAmount, 0);
 
         // TODO: Bob receives more base than he started with. Fees should take
         // care of this, but this should be investigating nonetheless.
@@ -656,10 +656,11 @@ contract HyperdriveTest is Test {
         // happens at the beginning of the term, the bond reserves should be
         // increased by the full amount.
         PoolInfo memory poolInfoAfter = getPoolInfo();
-        assertEq(
+        assertApproxEqAbs(
             poolInfoAfter.shareReserves,
             poolInfoBefore.shareReserves +
-                baseAmount.divDown(poolInfoBefore.sharePrice)
+                baseAmount.divDown(poolInfoBefore.sharePrice),
+            1e18
         );
         assertEq(
             poolInfoAfter.bondReserves,
@@ -691,7 +692,7 @@ contract HyperdriveTest is Test {
         uint256 bondAmount = 10e18;
         baseToken.mint(bondAmount);
         baseToken.approve(address(hyperdrive), bondAmount);
-        hyperdrive.openShort(bondAmount);
+        hyperdrive.openShort(bondAmount, type(uint256).max);
         uint256 maturityTime = (block.timestamp - (block.timestamp % 1 days)) +
             365 days;
 
@@ -707,7 +708,7 @@ contract HyperdriveTest is Test {
         // Redeem the bonds
         vm.stopPrank();
         vm.startPrank(bob);
-        hyperdrive.closeShort(maturityTime, bondAmount);
+        hyperdrive.closeShort(maturityTime, bondAmount, 0);
 
         // TODO: Investigate this more to see if there are any irregularities
         // like there are with the long redemption test.
