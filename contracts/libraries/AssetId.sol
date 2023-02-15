@@ -36,6 +36,12 @@ library AssetId {
         uint256 _timestamp
     ) internal pure returns (uint256 id) {
         // [identifier: 8 bits][timestamp: 248 bits]
+        if (
+            _timestamp >
+            0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+        ) {
+            revert Errors.InvalidTimestamp();
+        }
         assembly {
             id := or(shl(0xf8, _prefix), _timestamp)
         }

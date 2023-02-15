@@ -5,10 +5,6 @@ import { Errors } from "contracts/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
 import { YieldSpaceMath } from "contracts/libraries/YieldSpaceMath.sol";
 
-// FIXME: The matrix of uses of flat+curve includes cases that should never
-// occur. In particular, if isBondOut && t < 1 or isBondIn && t < 1, then the
-// flat part refers to base tokens and the model doesn't make sense.
-//
 /// @author Delve
 /// @title Hyperdrive
 /// @notice Math for the Hyperdrive pricing model.
@@ -34,9 +30,9 @@ library HyperdriveMath {
         uint256 _positionDuration,
         uint256 _timeStretch
     ) internal pure returns (uint256 apr) {
-        // NOTE: This calculation is automatically scaled in the divDown operation
+        // NOTE: Using divDown to convert to fixed point format.
         uint256 t = _positionDuration.divDown(365 days);
-        uint256 tau = t.divDown(_timeStretch);
+        uint256 tau = t.mulDown(_timeStretch);
         // ((y + s) / (mu * z)) ** -tau
         uint256 spotPrice = _initialSharePrice
             .mulDown(_shareReserves)
@@ -47,9 +43,39 @@ library HyperdriveMath {
             FixedPointMath.ONE_18.sub(spotPrice).divDown(spotPrice.mulDown(t));
     }
 
-    // TODO: There is likely a more efficient formulation for when the rate is
-    // based on the existing share and bond reserves.
-    //
+    /// @dev Calculates the initial bond reserves assuming that the initial LP
+    ///      receives LP shares amounting to c * z + y.
+    /// @param _shareReserves The pool's share reserves.
+    /// @param _sharePrice The pool's share price.
+    /// @param _initialSharePrice The pool's initial share price.
+    /// @param _apr The pool's APR.
+    /// @param _positionDuration The amount of time until maturity in seconds.
+    /// @param _timeStretch The time stretch parameter.
+    /// @return bondReserves The bond reserves that make the pool have a
+    ///         specified APR.
+    function calculateInitialBondReserves(
+        uint256 _shareReserves,
+        uint256 _sharePrice,
+        uint256 _initialSharePrice,
+        uint256 _apr,
+        uint256 _positionDuration,
+        uint256 _timeStretch
+    ) internal pure returns (uint256 bondReserves) {
+        // NOTE: Using divDown to convert to fixed point format.
+        uint256 t = _positionDuration.divDown(365 days);
+        uint256 tau = t.mulDown(_timeStretch);
+        // mu * (1 + apr * t) ** (1 / tau) - c
+        uint256 rhs = _initialSharePrice
+            .mulDown(
+                FixedPointMath.ONE_18.add(_apr.mulDown(t)).pow(
+                    FixedPointMath.ONE_18.divDown(tau)
+                )
+            )
+            .sub(_sharePrice);
+        // (z / 2) * (mu * (1 + apr * t) ** (1 / tau) - c)
+        return _shareReserves.divDown(2 * FixedPointMath.ONE_18).mulDown(rhs);
+    }
+
     /// @dev Calculates the bond reserves that will make the pool have a
     ///      specified APR.
     /// @param _shareReserves The pool's share reserves.
@@ -68,9 +94,9 @@ library HyperdriveMath {
         uint256 _positionDuration,
         uint256 _timeStretch
     ) internal pure returns (uint256 bondReserves) {
-        // NOTE: This calculation is automatically scaled in the divDown operation
+        // NOTE: Using divDown to convert to fixed point format.
         uint256 t = _positionDuration.divDown(365 days);
-        uint256 tau = t.divDown(_timeStretch);
+        uint256 tau = t.mulDown(_timeStretch);
         // (1 + apr * t) ** (1 / tau)
         uint256 interestFactor = FixedPointMath.ONE_18.add(_apr.mulDown(t)).pow(
             FixedPointMath.ONE_18.divDown(tau)
@@ -248,16 +274,19 @@ library HyperdriveMath {
         // the trade was applied to the share and bond reserves.
         _shareReserves = _shareReserves.add(flat);
         _bondReserves = _bondReserves.sub(flat.mulDown(_sharePrice));
-        uint256 curveIn = YieldSpaceMath.calculateInGivenOut(
-            _shareReserves,
-            _bondReserves,
-            _bondReserveAdjustment,
-            curveOut,
-            FixedPointMath.ONE_18.sub(_timeStretch),
-            _sharePrice,
-            _initialSharePrice,
-            false
-        );
+        uint256 curveIn = 0;
+        if (curveOut > 0) {
+            curveIn = YieldSpaceMath.calculateInGivenOut(
+                _shareReserves,
+                _bondReserves,
+                _bondReserveAdjustment,
+                curveOut,
+                FixedPointMath.ONE_18.sub(_timeStretch),
+                _sharePrice,
+                _initialSharePrice,
+                false
+            );
+        }
         return (flat.add(curveIn), curveOut, flat.add(curveIn));
     }
 

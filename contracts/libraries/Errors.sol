@@ -42,14 +42,14 @@ library Errors {
     /// ###############
     /// ### AssetId ###
     /// ###############
-    error AssetIDCorruption();
+    error InvalidTimestamp();
 
     /// #####################
     /// ### BondWrapper ###
     /// #####################
 
-    error BondMatured();
-    error InsufficientPrice();
     error AlreadyClosed();
+    error BondMatured();
     error BondNotMatured();
+    error InsufficientPrice();
 }

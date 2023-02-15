@@ -16,7 +16,7 @@ import { IHyperdrive } from "contracts/interfaces/IHyperdrive.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract Hyperdrive is MultiToken, IHyperdrive {
+abstract contract Hyperdrive is MultiToken, IHyperdrive {
     using FixedPointMath for uint256;
 
     /// Tokens ///
@@ -107,7 +107,6 @@ contract Hyperdrive is MultiToken, IHyperdrive {
     }
 
     /// Yield Source ///
-    // In order to deploy a yield source implement must be written which implements the following methods
 
     /// @notice Transfers base from the user and commits it to the yield source.
     /// @param amount The amount of base to deposit.
@@ -115,7 +114,7 @@ contract Hyperdrive is MultiToken, IHyperdrive {
     /// @return sharePrice The share price at time of deposit.
     function deposit(
         uint256 amount
-    ) internal virtual returns (uint256 sharesMinted, uint256 sharePrice) {}
+    ) internal virtual returns (uint256 sharesMinted, uint256 sharePrice);
 
     /// @notice Withdraws shares from the yield source and sends the base
     ///         released to the destination.
@@ -126,11 +125,11 @@ contract Hyperdrive is MultiToken, IHyperdrive {
     function withdraw(
         uint256 shares,
         address destination
-    ) internal virtual returns (uint256 amountWithdrawn, uint256 sharePrice) {}
+    ) internal virtual returns (uint256 amountWithdrawn, uint256 sharePrice);
 
     ///@notice Loads the share price from the yield source
     ///@return sharePrice The current share price.
-    function pricePerShare() internal virtual returns (uint256 sharePrice) {}
+    function pricePerShare() internal view virtual returns (uint256 sharePrice);
 
     /// LP ///
 
@@ -152,10 +151,10 @@ contract Hyperdrive is MultiToken, IHyperdrive {
         // Update the reserves. The bond reserves are calculated so that the
         // pool is initialized with the target APR.
         shareReserves = shares;
-        bondReserves = HyperdriveMath.calculateBondReserves(
-            shares,
+        bondReserves = HyperdriveMath.calculateInitialBondReserves(
             shares,
             sharePrice,
+            initialSharePrice,
             _apr,
             positionDuration,
             timeStretch
@@ -164,7 +163,11 @@ contract Hyperdrive is MultiToken, IHyperdrive {
         // Mint LP shares to the initializer.
         // TODO - Should we index the lp share and virtual reserve to shares or to underlying?
         //        I think in the case where price per share < 1 there may be a problem.
-        _mint(AssetId._LP_ASSET_ID, msg.sender, shares);
+        _mint(
+            AssetId._LP_ASSET_ID,
+            msg.sender,
+            sharePrice.mulDown(shares).add(bondReserves)
+        );
     }
 
     // TODO: Add slippage protection.
@@ -358,6 +361,44 @@ contract Hyperdrive is MultiToken, IHyperdrive {
 
         // Enforce min user outputs
         if (_minOutput > _proceeds) revert Errors.OutputLimit();
+    }
+
+    /// @notice Redeems long and short withdrawal shares.
+    /// @param _longWithdrawalShares The long withdrawal shares to redeem.
+    /// @param _shortWithdrawalShares The short withdrawal shares to redeem.
+    function redeemWithdrawalShares(
+        uint256 _longWithdrawalShares,
+        uint256 _shortWithdrawalShares
+    ) external {
+        uint256 baseProceeds = 0;
+
+        // Perform a checkpoint.
+        uint256 sharePrice = pricePerShare();
+        _applyCheckpoint(_latestCheckpoint(), sharePrice);
+
+        // Redeem the long withdrawal shares.
+        uint256 proceeds = _applyWithdrawalShareRedemption(
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.LongWithdrawalShare, 0),
+            _longWithdrawalShares,
+            longWithdrawalSharesOutstanding,
+            longWithdrawalShareProceeds
+        );
+
+        // Redeem the short withdrawal shares.
+        proceeds += _applyWithdrawalShareRedemption(
+            AssetId.encodeAssetId(
+                AssetId.AssetIdPrefix.ShortWithdrawalShare,
+                0
+            ),
+            _shortWithdrawalShares,
+            shortWithdrawalSharesOutstanding,
+            shortWithdrawalShareProceeds
+        );
+
+        // Withdraw the funds released by redeeming the withdrawal shares.
+        // TODO: Better destination support.
+        uint256 shareProceeds = baseProceeds.divDown(sharePrice);
+        withdraw(shareProceeds, msg.sender);
     }
 
     /// Long ///
@@ -651,7 +692,6 @@ contract Hyperdrive is MultiToken, IHyperdrive {
         if (_maturityTime <= block.timestamp) {
             closeSharePrice = checkpoints[_maturityTime];
         }
-        // Recycle a local variable
         _bondAmount = _bondAmount.divDown(openSharePrice).sub(sharePayment);
         uint256 shortProceeds = closeSharePrice.mulDown(_bondAmount).divDown(
             sharePrice
@@ -701,6 +741,38 @@ contract Hyperdrive is MultiToken, IHyperdrive {
                 }
             }
         }
+    }
+
+    /// Getters ///
+
+    /// @notice Gets info about the pool's reserves and other state that is
+    ///         important to evaluate potential trades.
+    /// @return shareReserves_ The share reserves.
+    /// @return bondReserves_ The bond reserves.
+    /// @return lpTotalSupply The total supply of LP shares.
+    /// @return sharePrice The share price.
+    /// @return longsOutstanding_ The longs that haven't been closed.
+    /// @return shortsOutstanding_ The shorts that haven't been closed.
+    function getPoolInfo()
+        external
+        view
+        returns (
+            uint256 shareReserves_,
+            uint256 bondReserves_,
+            uint256 lpTotalSupply,
+            uint256 sharePrice,
+            uint256 longsOutstanding_,
+            uint256 shortsOutstanding_
+        )
+    {
+        return (
+            shareReserves,
+            bondReserves,
+            totalSupply[AssetId._LP_ASSET_ID],
+            pricePerShare(),
+            longsOutstanding,
+            shortsOutstanding
+        );
     }
 
     /// Helpers ///
