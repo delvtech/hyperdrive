@@ -1,5 +1,5 @@
 [![Tests](https://github.com/element-fi/hyperdrive/actions/workflows/test.yml/badge.svg)](https://github.com/element-fi/hyperdrive/actions/workflows/test.yml)
-[![Coverage](https://coveralls.io/repos/github/element-fi/hyperdrive/badge.svg?t=US78Aq)](https://coveralls.io/github/element-fi/hyperdrive)
+[![Coverage](https://coveralls.io/repos/github/element-fi/hyperdrive/badge.svg?branch=main&t=US78Aq)](https://coveralls.io/github/element-fi/hyperdrive?branch=main)
 
 # Hyperdrive
 
