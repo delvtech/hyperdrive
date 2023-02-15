@@ -275,7 +275,7 @@ library HyperdriveMath {
         _shareReserves = _shareReserves.add(flat);
         _bondReserves = _bondReserves.sub(flat.mulDown(_sharePrice));
         uint256 curveIn = 0;
-        if(curveOut > 0) {
+        if (curveOut > 0) {
             curveIn = YieldSpaceMath.calculateInGivenOut(
                 _shareReserves,
                 _bondReserves,
