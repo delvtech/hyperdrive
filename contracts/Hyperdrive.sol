@@ -432,7 +432,7 @@ contract Hyperdrive is MultiToken, IHyperdrive {
     /// @notice Closes a long position with a specified maturity time.
     /// @param _maturityTime The maturity time of the short.
     /// @param _bondAmount The amount of longs to close.
-    /// @param _minOutput The minium base the user should receive from this trade
+    /// @param _minOutput The minimum base the user should receive from this trade
     /// @return The amount of underlying the user receives.
     function closeLong(
         uint256 _maturityTime,
