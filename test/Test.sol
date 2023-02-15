@@ -211,3 +211,76 @@ contract BaseTest is Test {
         vm.deal(_user, 100 ether);
     }
 }
+
+contract CombinatorialTest is BaseTest {
+    enum CombinatorialTestKind {
+        Fail,
+        Success
+    }
+
+    CombinatorialTestKind internal __combinatorialTestKind =
+        CombinatorialTestKind.Success;
+
+    error UnassignedCatchError();
+    error UnassignedFailError();
+
+    bytes __error = abi.encodeWithSelector(UnassignedCatchError.selector);
+    bytes __fail_error = abi.encodeWithSelector(UnassignedFailError.selector);
+
+    modifier __combinatorial_setup() {
+        __combinatorialTestKind = CombinatorialTestKind.Success;
+        __error = abi.encodeWithSelector(UnassignedCatchError.selector);
+        __fail_error = abi.encodeWithSelector(UnassignedFailError.selector);
+        _;
+    }
+
+    modifier __combinatorial_success() {
+        // If the test case was set as a fail we short-circuit the __success function
+        if (__combinatorialTestKind == CombinatorialTestKind.Fail) {
+            return;
+        }
+        _;
+    }
+
+    modifier __combinatorial_fail() {
+        _;
+        // Detect if the __fail call was caught
+        if (
+            TestLib.neq(
+                __error,
+                abi.encodeWithSelector(UnassignedCatchError.selector)
+            )
+        ) {
+            // If a __fail call was caught then a __fail_error must be assigned
+            assertTrue(
+                !checkEq0(
+                    __fail_error,
+                    abi.encodeWithSelector(UnassignedFailError.selector)
+                ),
+                "__fail_error should be assigned"
+            );
+            // If the caught error and the expected error do not match then cause a test revert
+            if (TestLib.neq(__error, __fail_error)) {
+                assertEq(__error, __fail_error, "Expected different error");
+            }
+
+            // If an error was caught we set this so __success will short-circuit
+            __combinatorialTestKind = CombinatorialTestKind.Fail;
+        } else {
+            assertEq(
+                __fail_error,
+                abi.encodeWithSelector(UnassignedFailError.selector),
+                "__fail_error should not be assigned"
+            );
+            assertEq(
+                __error,
+                abi.encodeWithSelector(UnassignedCatchError.selector),
+                "__error should not be assigned"
+            );
+        }
+    }
+
+    function setUp() public virtual override {
+        super.setUp();
+    }
+}

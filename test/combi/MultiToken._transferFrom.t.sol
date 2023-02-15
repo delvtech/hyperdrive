@@ -4,11 +4,11 @@ pragma solidity ^0.8.18;
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
-import { BaseTest, TestLib as lib } from "test/Test.sol";
+import { CombinatorialTest, TestLib as lib } from "test/Test.sol";
 import { MockMultiToken } from "test/mocks/MockMultiToken.sol";
 import { ForwarderFactory } from "contracts/ForwarderFactory.sol";
 
-contract MultiToken__transferFrom is BaseTest {
+contract MultiToken__transferFrom is CombinatorialTest {
     ForwarderFactory forwarderFactory;
     MockMultiToken multiToken;
 
@@ -34,7 +34,7 @@ contract MultiToken__transferFrom is BaseTest {
         bool approvedForAll;
     }
 
-    function testCombinatorial__MultiToken__transferFrom() public {
+    function test_Combinatorial__MultiToken__transferFrom() public {
         uint256[][] memory rawTestCases = lib.matrix(
             lib._arr(
                 // amount
@@ -64,10 +64,10 @@ contract MultiToken__transferFrom is BaseTest {
                 approvedForAll: approvedForAll
             });
 
+            __log("--", i, testCase);
             __setup(testCase);
-            if (__fail(testCase)) {
-                __success(testCase);
-            }
+            __fail(testCase);
+            __success(testCase);
         }
 
         console2.log(
@@ -76,7 +76,9 @@ contract MultiToken__transferFrom is BaseTest {
         );
     }
 
-    function __setup(TestCase_transferFrom memory testCase) internal {
+    function __setup(
+        TestCase_transferFrom memory testCase
+    ) internal __combinatorial_setup {
         multiToken.__setBalanceOf(
             testCase.tokenId,
             testCase.from,
@@ -106,7 +108,7 @@ contract MultiToken__transferFrom is BaseTest {
 
     function __fail(
         TestCase_transferFrom memory testCase
-    ) internal returns (bool isSuccessCase) {
+    ) internal __combinatorial_fail {
         bool approvalUnderflows = testCase.caller != testCase.from &&
             !testCase.approvedForAll &&
             testCase.approvals != type(uint256).max &&
@@ -127,20 +129,12 @@ contract MultiToken__transferFrom is BaseTest {
                     testCase.caller
                 )
             {
-                __log("EXPECTED FAIL", testCase);
-                revert("SHOULD NOT SUCCEED!");
-            } catch (bytes memory __error) {
-                if (lib.neq(__error, stdError.arithmeticError)) {
-                    assertEq(
-                        __error,
-                        stdError.arithmeticError,
-                        "Expected different error"
-                    );
-                }
-                return false;
+                revert("EXPECTED FAIL");
+            } catch (bytes memory e) {
+                __error = e;
+                __fail_error = stdError.arithmeticError;
             }
         }
-        return true;
     }
 
     event TransferSingle(
@@ -151,7 +145,9 @@ contract MultiToken__transferFrom is BaseTest {
         uint256 value
     );
 
-    function __success(TestCase_transferFrom memory testCase) internal {
+    function __success(
+        TestCase_transferFrom memory testCase
+    ) internal __combinatorial_success {
         uint256 preBalanceFrom = multiToken.balanceOf(
             testCase.tokenId,
             testCase.from
@@ -166,18 +162,6 @@ contract MultiToken__transferFrom is BaseTest {
             testCase.caller
         );
 
-        try
-            multiToken.__external_transferFrom(
-                testCase.tokenId,
-                testCase.from,
-                testCase.to,
-                testCase.amount,
-                testCase.caller
-            )
-        {} catch {
-            __log("EXPECTED SUCCEED", testCase);
-            revert("SHOULD NOT FAIL!");
-        }
         // _transferFrom emits the TransferSingle event in success cases
         vm.expectEmit(true, true, true, true);
         emit TransferSingle(
@@ -188,6 +172,17 @@ contract MultiToken__transferFrom is BaseTest {
             testCase.amount
         );
 
+        try
+            multiToken.__external_transferFrom(
+                testCase.tokenId,
+                testCase.from,
+                testCase.to,
+                testCase.amount,
+                testCase.caller
+            )
+        {} catch {
+            revert("EXPECTED SUCCESS");
+        }
         if (
             testCase.caller != testCase.from &&
             !testCase.approvedForAll &&
@@ -201,7 +196,6 @@ contract MultiToken__transferFrom is BaseTest {
                 );
 
             if (callerApprovalsDiff != testCase.amount) {
-                __log("", testCase);
                 assertEq(
                     callerApprovalsDiff,
                     testCase.amount,
@@ -219,7 +213,6 @@ contract MultiToken__transferFrom is BaseTest {
         ) - preBalanceTo;
 
         if (fromBalanceDiff != testCase.amount) {
-            __log("", testCase);
             assertEq(
                 fromBalanceDiff,
                 testCase.amount,
@@ -228,7 +221,6 @@ contract MultiToken__transferFrom is BaseTest {
         }
 
         if (toBalanceDiff != testCase.amount) {
-            __log("", testCase);
             assertEq(
                 toBalanceDiff,
                 testCase.amount,
@@ -239,9 +231,10 @@ contract MultiToken__transferFrom is BaseTest {
 
     function __log(
         string memory prelude,
+        uint256 index,
         TestCase_transferFrom memory testCase
     ) internal view {
-        console2.log("%s :: ", prelude);
+        console2.log("%s :: { TestCase #%s }", prelude, index);
         console2.log("");
         console2.log("\ttokenId           = ", testCase.tokenId);
         console2.log("\tfrom              = ", testCase.from);
