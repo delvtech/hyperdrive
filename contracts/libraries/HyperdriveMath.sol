@@ -274,16 +274,19 @@ library HyperdriveMath {
         // the trade was applied to the share and bond reserves.
         _shareReserves = _shareReserves.add(flat);
         _bondReserves = _bondReserves.sub(flat.mulDown(_sharePrice));
-        uint256 curveIn = YieldSpaceMath.calculateInGivenOut(
-            _shareReserves,
-            _bondReserves,
-            _bondReserveAdjustment,
-            curveOut,
-            FixedPointMath.ONE_18.sub(_timeStretch),
-            _sharePrice,
-            _initialSharePrice,
-            false
-        );
+        uint256 curveIn = 0;
+        if(curveOut > 0) {
+            curveIn = YieldSpaceMath.calculateInGivenOut(
+                _shareReserves,
+                _bondReserves,
+                _bondReserveAdjustment,
+                curveOut,
+                FixedPointMath.ONE_18.sub(_timeStretch),
+                _sharePrice,
+                _initialSharePrice,
+                false
+            );
+        }
         return (flat.add(curveIn), curveOut, flat.add(curveIn));
     }
 
