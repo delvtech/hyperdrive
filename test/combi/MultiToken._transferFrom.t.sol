@@ -153,8 +153,7 @@ contract MultiToken__transferFrom is BaseTest {
                 revert("SHOULD NOT SUCCEED!");
             } catch (bytes memory __error) {
                 if (Lib.neq(__error, stdError.arithmeticError)) {
-                    __log("CASE FAIL", testCase);
-                    assertEq(__error, stdError.arithmeticError);
+                    assertEq(__error, stdError.arithmeticError, "Expected different error");
                 }
                 return false;
             }
