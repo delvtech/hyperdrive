@@ -6,18 +6,35 @@ import "./IMultiToken.sol";
 interface IHyperdrive is IMultiToken {
     function initialize(uint256 _contribution, uint256 _apr) external;
 
-    function addLiquidity(uint256 _contribution) external;
+    function addLiquidity(
+        uint256 _contribution,
+        uint256 _minOutput
+    ) external returns (uint256);
 
-    function removeLiquidity(uint256 _shares) external;
+    function removeLiquidity(
+        uint256 _shares,
+        uint256 _minOutput
+    ) external returns (uint256, uint256, uint256);
 
-    function openLong(uint256 _baseAmount) external;
+    function openLong(
+        uint256 _baseAmount,
+        uint256 _minOutput
+    ) external returns (uint256);
 
     function closeLong(
         uint256 _maturityTime,
-        uint256 _bondAmount
+        uint256 _bondAmount,
+        uint256 _minOutput
     ) external returns (uint256);
 
-    function openShort(uint256 _bondAmount) external;
+    function openShort(
+        uint256 _bondAmount,
+        uint256 _maxDeposit
+    ) external returns (uint256);
 
-    function closeShort(uint256 _maturityTime, uint256 _bondAmount) external;
+    function closeShort(
+        uint256 _maturityTime,
+        uint256 _bondAmount,
+        uint256 _minOutput
+    ) external returns (uint256);
 }
