@@ -445,18 +445,45 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
                 shareReserves,
                 bondReserves,
                 totalSupply[AssetId._LP_ASSET_ID],
-                shares,
+                shares, // amountIn
                 timeRemaining,
+                shareAmount, // amountIn
+                // normalizedTimeRemaining, when opening a position, the full time is remaining
+                FixedPointMath.ONE_18,
                 timeStretch,
                 sharePrice,
                 initialSharePrice,
-                curveFee,
-                flatFee,
                 true // isBaseIn
             );
 
         // Enforce min user outputs
         if (_minOutput > bondProceeds) revert Errors.OutputLimit();
+        uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
+            shareReserves,
+            bondReserves,
+            totalSupply[AssetId._LP_ASSET_ID],
+            initialSharePrice,
+            // normalizedTimeRemaining, when opening a position, the full time is remaining
+            FixedPointMath.ONE_18,
+            timeStretch
+        );
+
+        (uint256 _curveFee, uint256 _flatFee) = HyperdriveMath
+            .calculateFeesOutGivenIn(
+                // normalizedTimeRemaining, when opening a position, the full time is remaining
+                FixedPointMath.ONE_18,
+                spotPrice,
+                curveFee,
+                flatFee,
+                sharePrice,
+                shareAmount, // amountIn
+                true // isBaseIn
+            );
+
+        // This is a base in / bond out operation where the in is given, so we subtract the fee
+        // amount from the output.
+        bondProceeds -= _curveFee - _flatFee;
+        poolBondDelta -= _curveFee;
 
         // Apply the trading deltas to the reserves and update the amount of
         // longs outstanding.
@@ -518,12 +545,9 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
                 totalSupply[AssetId._LP_ASSET_ID],
                 _bondAmount,
                 timeRemaining,
-                positionDuration,
                 timeStretch,
                 sharePrice,
                 initialSharePrice,
-                curveFee,
-                flatFee,
                 false
             );
 
@@ -591,8 +615,6 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
                 timeStretch,
                 sharePrice,
                 initialSharePrice,
-                curveFee,
-                flatFee,
                 false
             );
 
@@ -670,7 +692,6 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
                 totalSupply[AssetId._LP_ASSET_ID],
                 _bondAmount,
                 timeRemaining,
-                positionDuration,
                 timeStretch,
                 sharePrice,
                 initialSharePrice
