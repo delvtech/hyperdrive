@@ -22,6 +22,7 @@ contract MultiToken__transferFrom is CombinatorialTest {
     }
 
     struct TestCase {
+        uint256 index;
         // -- args
         uint256 tokenId;
         address from;
@@ -55,6 +56,7 @@ contract MultiToken__transferFrom is CombinatorialTest {
             uint256 approvals = rawTestCases[i][2];
             bool approvedForAll = approvals == type(uint128).max;
             TestCase memory testCase = TestCase({
+                index: i,
                 tokenId: ((i + 5) ** 4) / 7,
                 from: alice,
                 to: bob,
@@ -65,7 +67,6 @@ contract MultiToken__transferFrom is CombinatorialTest {
                 balanceTo: rawTestCases[i][3],
                 approvedForAll: approvedForAll
             });
-            __log("--", i, testCase);
             __setup(testCase);
             __fail(testCase);
             __success(testCase);
@@ -139,6 +140,7 @@ contract MultiToken__transferFrom is CombinatorialTest {
                     testCase.caller
                 )
             {
+                __log(unicode"❎", testCase);
                 revert ExpectedFail();
             } catch (bytes memory e) {
                 // NOTE: __error and __fail_error must be assigned here to
@@ -200,6 +202,7 @@ contract MultiToken__transferFrom is CombinatorialTest {
                 testCase.caller
             )
         {} catch {
+            __log(unicode"❎", testCase);
             revert ExpectedSuccess();
         }
 
@@ -219,6 +222,7 @@ contract MultiToken__transferFrom is CombinatorialTest {
                 );
 
             if (callerApprovalsDiff != testCase.amount) {
+                __log(unicode"❎", testCase);
                 assertEq(
                     callerApprovalsDiff,
                     testCase.amount,
@@ -231,6 +235,7 @@ contract MultiToken__transferFrom is CombinatorialTest {
         uint256 fromBalanceDiff = preBalanceFrom -
             multiToken.balanceOf(testCase.tokenId, testCase.from);
         if (fromBalanceDiff != testCase.amount) {
+            __log(unicode"❎", testCase);
             assertEq(
                 fromBalanceDiff,
                 testCase.amount,
@@ -244,6 +249,7 @@ contract MultiToken__transferFrom is CombinatorialTest {
             testCase.to
         ) - preBalanceTo;
         if (toBalanceDiff != testCase.amount) {
+            __log(unicode"❎", testCase);
             assertEq(
                 toBalanceDiff,
                 testCase.amount,
@@ -254,11 +260,10 @@ contract MultiToken__transferFrom is CombinatorialTest {
 
     function __log(
         string memory prelude,
-        uint256 index,
         TestCase memory testCase
     ) internal view {
-        console2.log("%s :: { TestCase #%s }", prelude, index);
         console2.log("");
+        console2.log("%s Fail :: { TestCase #%s }\n", prelude, testCase.index);
         console2.log("\ttokenId           = ", testCase.tokenId);
         console2.log("\tfrom              = ", testCase.from);
         console2.log("\tto                = ", testCase.to);
