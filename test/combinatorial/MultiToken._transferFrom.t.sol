@@ -21,7 +21,7 @@ contract MultiToken__transferFrom is CombinatorialTest {
         vm.stopPrank();
     }
 
-    struct TestCase_transferFrom {
+    struct TestCase {
         // -- args
         uint256 tokenId;
         address from;
@@ -54,7 +54,7 @@ contract MultiToken__transferFrom is CombinatorialTest {
         for (uint256 i = 0; i < rawTestCases.length; i++) {
             uint256 approvals = rawTestCases[i][2];
             bool approvedForAll = approvals == type(uint128).max;
-            TestCase_transferFrom memory testCase = TestCase_transferFrom({
+            TestCase memory testCase = TestCase({
                 tokenId: ((i + 5) ** 4) / 7,
                 from: alice,
                 to: bob,
@@ -77,9 +77,7 @@ contract MultiToken__transferFrom is CombinatorialTest {
         );
     }
 
-    function __setup(
-        TestCase_transferFrom memory testCase
-    ) internal __combinatorial_setup {
+    function __setup(TestCase memory testCase) internal __combinatorial_setup {
         // Set balances of the "from" and "to" addresses
         multiToken.__setBalanceOf(
             testCase.tokenId,
@@ -110,9 +108,7 @@ contract MultiToken__transferFrom is CombinatorialTest {
         }
     }
 
-    function __fail(
-        TestCase_transferFrom memory testCase
-    ) internal __combinatorial_fail {
+    function __fail(TestCase memory testCase) internal __combinatorial_fail {
         // Approval underflows occur when the following conditions are met
         // - "caller" is not "from"
         // - isApprovedForAll[from][caller] is not true
@@ -162,7 +158,7 @@ contract MultiToken__transferFrom is CombinatorialTest {
     );
 
     function __success(
-        TestCase_transferFrom memory testCase
+        TestCase memory testCase
     ) internal __combinatorial_success {
         // Fetch "from" and "to" balances prior to function under testing being
         // executed to perform differential checking
@@ -259,7 +255,7 @@ contract MultiToken__transferFrom is CombinatorialTest {
     function __log(
         string memory prelude,
         uint256 index,
-        TestCase_transferFrom memory testCase
+        TestCase memory testCase
     ) internal view {
         console2.log("%s :: { TestCase #%s }", prelude, index);
         console2.log("");
