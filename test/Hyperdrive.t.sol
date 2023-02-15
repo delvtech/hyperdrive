@@ -113,17 +113,6 @@ contract HyperdriveTest is Test {
 
     /// openLong ///
 
-    function calculateAPRFromRealizedPrice(
-        uint256 baseAmount,
-        uint256 bondAmount,
-        uint256 timeRemaining,
-        uint256 positionDuration
-    ) internal pure returns (uint256) {
-        // apr = (dy - dx) / (dx * t)
-        uint256 t = timeRemaining.divDown(positionDuration);
-        return (bondAmount.sub(baseAmount)).divDown(baseAmount.mulDown(t));
-    }
-
     function test_open_long_zero_amount() external {
         uint256 apr = 0.05e18;
 
@@ -760,6 +749,17 @@ contract HyperdriveTest is Test {
     }
 
     /// Utils ///
+
+    function calculateAPRFromRealizedPrice(
+        uint256 baseAmount,
+        uint256 bondAmount,
+        uint256 timeRemaining,
+        uint256 positionDuration
+    ) internal pure returns (uint256) {
+        // apr = (dy - dx) / (dx * t)
+        uint256 t = timeRemaining.divDown(positionDuration);
+        return (bondAmount.sub(baseAmount)).divDown(baseAmount.mulDown(t));
+    }
 
     struct PoolInfo {
         uint256 shareReserves;

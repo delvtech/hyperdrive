@@ -89,7 +89,7 @@ contract BondWrapper is ERC20Permit {
         uint256 receivedAmount;
         if (forceClosed == 0) {
             // Close the bond [selling if earlier than the expiration]
-            receivedAmount = hyperdrive.closeLong(maturityTime, amount);
+            receivedAmount = hyperdrive.closeLong(maturityTime, amount, 0);
             // Update the user account data, note this sub is safe because the top bits are zero.
             userAccounts[msg.sender][assetId] -= amount;
         } else {
@@ -147,7 +147,11 @@ contract BondWrapper is ERC20Permit {
         if (maturityTime > block.timestamp) revert Errors.BondNotMatured();
 
         // Close the long
-        uint256 receivedAmount = hyperdrive.closeLong(maturityTime, deposited);
+        uint256 receivedAmount = hyperdrive.closeLong(
+            maturityTime,
+            deposited,
+            0
+        );
         // Store the user account update
         userAccounts[user][assetId] = (receivedAmount << 128) + deposited;
     }
