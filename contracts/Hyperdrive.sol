@@ -524,12 +524,14 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         uint256 sharePrice = pricePerShare();
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
 
-        // Burn the longs that are being closed.
-        uint256 assetId = AssetId.encodeAssetId(
-            AssetId.AssetIdPrefix.Long,
-            _maturityTime
-        );
-        _burn(assetId, msg.sender, _bondAmount);
+        {
+            // Burn the longs that are being closed.
+            uint256 assetId = AssetId.encodeAssetId(
+                AssetId.AssetIdPrefix.Long,
+                _maturityTime
+            );
+            _burn(assetId, msg.sender, _bondAmount);
+        }
 
         // Calculate the pool and user deltas using the trading function.
         uint256 timeRemaining = _calculateTimeRemaining(_maturityTime);
