@@ -467,7 +467,6 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
             FixedPointMath.ONE_18,
             timeStretch
         );
-
         (uint256 _curveFee, uint256 _flatFee) = HyperdriveMath
             .calculateFeesOutGivenIn(
                 // normalizedTimeRemaining, when opening a position, the full time is remaining
@@ -479,7 +478,6 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
                 shareAmount, // amountIn
                 true // isBaseIn
             );
-
         // This is a base in / bond out operation where the in is given, so we subtract the fee
         // amount from the output.
         bondProceeds -= _curveFee - _flatFee;
