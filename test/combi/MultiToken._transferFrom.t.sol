@@ -37,6 +37,7 @@ contract MultiToken__transferFrom is BaseTest {
     function testCombinatorial__MultiToken__transferFrom() public {
         uint256[][] memory rawTestCases = lib.matrix(
             lib._arr(
+                // amount
                 lib._arr(0, 1, 1e18, 1000000e18, type(uint256).max),
                 // caller
                 lib._arr(0, 1),
