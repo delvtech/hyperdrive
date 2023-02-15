@@ -221,16 +221,19 @@ contract CombinatorialTest is BaseTest {
     CombinatorialTestKind internal __combinatorialTestKind =
         CombinatorialTestKind.Success;
 
-    error UnassignedCatchError();
-    error UnassignedFailError();
+    error ExpectedSuccess();
+    error ExpectedFail();
 
-    bytes __error = abi.encodeWithSelector(UnassignedCatchError.selector);
-    bytes __fail_error = abi.encodeWithSelector(UnassignedFailError.selector);
+    error UnassignedCatch();
+    error UnassignedFail();
+
+    bytes __error = abi.encodeWithSelector(UnassignedCatch.selector);
+    bytes __fail_error = abi.encodeWithSelector(UnassignedFail.selector);
 
     modifier __combinatorial_setup() {
         __combinatorialTestKind = CombinatorialTestKind.Success;
-        __error = abi.encodeWithSelector(UnassignedCatchError.selector);
-        __fail_error = abi.encodeWithSelector(UnassignedFailError.selector);
+        __error = abi.encodeWithSelector(UnassignedCatch.selector);
+        __fail_error = abi.encodeWithSelector(UnassignedFail.selector);
         _;
     }
 
@@ -248,14 +251,14 @@ contract CombinatorialTest is BaseTest {
         if (
             TestLib.neq(
                 __error,
-                abi.encodeWithSelector(UnassignedCatchError.selector)
+                abi.encodeWithSelector(UnassignedCatch.selector)
             )
         ) {
             // If a __fail call was caught then a __fail_error must be assigned
             assertTrue(
                 !checkEq0(
                     __fail_error,
-                    abi.encodeWithSelector(UnassignedFailError.selector)
+                    abi.encodeWithSelector(UnassignedFail.selector)
                 ),
                 "__fail_error should be assigned"
             );
@@ -269,12 +272,12 @@ contract CombinatorialTest is BaseTest {
         } else {
             assertEq(
                 __fail_error,
-                abi.encodeWithSelector(UnassignedFailError.selector),
+                abi.encodeWithSelector(UnassignedFail.selector),
                 "__fail_error should not be assigned"
             );
             assertEq(
                 __error,
-                abi.encodeWithSelector(UnassignedCatchError.selector),
+                abi.encodeWithSelector(UnassignedCatch.selector),
                 "__error should not be assigned"
             );
         }

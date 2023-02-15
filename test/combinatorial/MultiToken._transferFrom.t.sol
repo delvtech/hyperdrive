@@ -143,7 +143,7 @@ contract MultiToken__transferFrom is CombinatorialTest {
                     testCase.caller
                 )
             {
-                revert("EXPECTED FAIL");
+                revert ExpectedFail();
             } catch (bytes memory e) {
                 // NOTE: __error and __fail_error must be assigned here to
                 // validate failure reason
@@ -204,7 +204,7 @@ contract MultiToken__transferFrom is CombinatorialTest {
                 testCase.caller
             )
         {} catch {
-            revert("EXPECTED SUCCESS");
+            revert ExpectedSuccess();
         }
 
         // When a non-infinite approval is set, validate that the difference
