@@ -16,7 +16,7 @@ contract MultiToken is IMultiToken {
     //        or names
 
     // Allows loading of each balance
-    mapping(uint256 => mapping(address => uint256)) public override balanceOf;
+    mapping(uint256 => mapping(address => uint256)) public balanceOf;
     // Allows loading of each total supply
     mapping(uint256 => uint256) public totalSupply;
     // Uniform approval for all tokens
