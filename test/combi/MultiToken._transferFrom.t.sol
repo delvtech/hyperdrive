@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
-import { BaseTest, TestLib as Lib } from "test/Test.sol";
+import { BaseTest, TestLib as lib } from "test/Test.sol";
 import { MockMultiToken } from "test/mocks/MockMultiToken.sol";
 import { ForwarderFactory } from "contracts/ForwarderFactory.sol";
 
@@ -35,42 +35,19 @@ contract MultiToken__transferFrom is BaseTest {
     }
 
     function testCombinatorial__MultiToken__transferFrom() public {
-        uint256[][] memory inputs = new uint256[][](4);
-
-        // amount
-        inputs[0] = new uint256[](5);
-        inputs[0][0] = 0;
-        inputs[0][1] = 1;
-        inputs[0][2] = 1e18;
-        inputs[0][3] = 1000000e18;
-        inputs[0][4] = type(uint256).max;
-
-        // caller
-        inputs[1] = new uint256[](2);
-        inputs[1][0] = 0;
-        inputs[1][1] = 1;
-
-        // approvals
-        inputs[2] = new uint256[](4);
-        inputs[2][0] = 0;
-        inputs[2][1] = 10e18;
-        inputs[2][2] = type(uint128).max; // use this for approvedForAll
-        inputs[2][3] = type(uint256).max;
-
-        // balanceOf(from/to)
-        inputs[3] = new uint256[](3);
-        inputs[3][0] = 0;
-        inputs[3][1] = 100e18;
-        inputs[3][2] = (2 ** 96) + 98237.12111e5;
-
-        uint256[][] memory rawTestCases = Lib.matrix(inputs);
+        uint256[][] memory rawTestCases = lib.matrix(
+            lib._arr(
+                lib._arr(0, 1, 1e18, 1000000e18, type(uint256).max),
+                // caller
+                lib._arr(0, 1),
+                // approvals
+                lib._arr(0, 10e18, type(uint128).max, type(uint256).max),
+                // balanceOf(from/to)
+                lib._arr(0, 100e18, (2 ** 96) + 98237.12111e5)
+            )
+        );
 
         for (uint256 i = 0; i < rawTestCases.length; i++) {
-            require(
-                rawTestCases[i].length == 4,
-                "Raw test case must have length of 4"
-            );
-
             uint256 approvals = rawTestCases[i][2];
             bool approvedForAll = approvals == type(uint128).max;
 
@@ -152,8 +129,12 @@ contract MultiToken__transferFrom is BaseTest {
                 __log("EXPECTED FAIL", testCase);
                 revert("SHOULD NOT SUCCEED!");
             } catch (bytes memory __error) {
-                if (Lib.neq(__error, stdError.arithmeticError)) {
-                    assertEq(__error, stdError.arithmeticError, "Expected different error");
+                if (lib.neq(__error, stdError.arithmeticError)) {
+                    assertEq(
+                        __error,
+                        stdError.arithmeticError,
+                        "Expected different error"
+                    );
                 }
                 return false;
             }

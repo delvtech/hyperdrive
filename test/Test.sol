@@ -79,16 +79,100 @@ library TestLib {
         console2.log("");
     }
 
-    function addressToU256(address _addr) internal pure returns (uint256 _num) {
-        assembly {
-            _num := _addr
-        }
+    function _arr(
+        uint256 a,
+        uint256 b
+    ) internal pure returns (uint256[] memory _arr) {
+        _arr = new uint256[](2);
+        _arr[0] = a;
+        _arr[1] = b;
     }
 
-    function u256ToAddress(uint256 _num) internal pure returns (address _addr) {
-        assembly {
-            _addr := _num
-        }
+    function _arr(
+        uint256 a,
+        uint256 b,
+        uint256 c
+    ) internal pure returns (uint256[] memory _arr) {
+        _arr = new uint256[](3);
+        _arr[0] = a;
+        _arr[1] = b;
+        _arr[2] = c;
+    }
+
+    function _arr(
+        uint256 a,
+        uint256 b,
+        uint256 c,
+        uint256 d
+    ) internal pure returns (uint256[] memory _arr) {
+        _arr = new uint256[](4);
+        _arr[0] = a;
+        _arr[1] = b;
+        _arr[2] = c;
+        _arr[3] = d;
+    }
+
+    function _arr(
+        uint256 a,
+        uint256 b,
+        uint256 c,
+        uint256 d,
+        uint256 e
+    ) internal pure returns (uint256[] memory _arr) {
+        _arr = new uint256[](5);
+        _arr[0] = a;
+        _arr[1] = b;
+        _arr[2] = c;
+        _arr[3] = d;
+        _arr[4] = e;
+    }
+
+    function _arr(
+        uint256[] memory a,
+        uint256[] memory b
+    ) internal pure returns (uint256[][] memory _arr) {
+        _arr = new uint256[][](2);
+        _arr[0] = a;
+        _arr[1] = b;
+    }
+
+    function _arr(
+        uint256[] memory a,
+        uint256[] memory b,
+        uint256[] memory c
+    ) internal pure returns (uint256[][] memory _arr) {
+        _arr = new uint256[][](3);
+        _arr[0] = a;
+        _arr[1] = b;
+        _arr[2] = c;
+    }
+
+    function _arr(
+        uint256[] memory a,
+        uint256[] memory b,
+        uint256[] memory c,
+        uint256[] memory d
+    ) internal pure returns (uint256[][] memory _arr) {
+        _arr = new uint256[][](4);
+        _arr[0] = a;
+        _arr[1] = b;
+        _arr[2] = c;
+        _arr[3] = d;
+    }
+
+    function _arr(
+        uint256[] memory a,
+        uint256[] memory b,
+        uint256[] memory c,
+        uint256[] memory d,
+        uint256[] memory e
+    ) internal pure returns (uint256[][] memory _arr) {
+        _arr = new uint256[][](5);
+        _arr[0] = a;
+        _arr[1] = b;
+        _arr[2] = c;
+        _arr[3] = d;
+        _arr[4] = e;
     }
 
     function eq(bytes memory b1, bytes memory b2) public pure returns (bool) {
