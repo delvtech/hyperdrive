@@ -152,15 +152,6 @@ contract MultiToken__transferFrom is BaseTest {
     );
 
     function __success(TestCase_transferFrom memory testCase) internal {
-        vm.expectEmit(true, true, true, true);
-        emit TransferSingle(
-            testCase.caller,
-            testCase.from,
-            testCase.to,
-            testCase.tokenId,
-            testCase.amount
-        );
-
         uint256 preBalanceFrom = multiToken.balanceOf(
             testCase.tokenId,
             testCase.from
@@ -187,6 +178,15 @@ contract MultiToken__transferFrom is BaseTest {
             __log("EXPECTED SUCCEED", testCase);
             revert("SHOULD NOT FAIL!");
         }
+        // _transferFrom emits the TransferSingle event in success cases
+        vm.expectEmit(true, true, true, true);
+        emit TransferSingle(
+            testCase.caller,
+            testCase.from,
+            testCase.to,
+            testCase.tokenId,
+            testCase.amount
+        );
 
         if (
             testCase.caller != testCase.from &&
