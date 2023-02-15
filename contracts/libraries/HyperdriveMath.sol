@@ -324,8 +324,7 @@ library HyperdriveMath {
     }
 
     /// @dev Calculates the fees for the curve portion of hyperdrive calcOutGivenIn
-    /// @param _amountIn The given amount in for the curve portion of hyperdrive, either in terms of
-    /// shares or bonds.
+    /// @param _amountIn The given amount in, either in terms of shares or bonds.
     /// @param _normalizedTimeRemaining The normalized amount of time until maturity.
     /// @param _spotPrice The price without slippage of bonds in terms of shares.
     /// @param _sharePrice The current price of shares in terms of base.
@@ -375,8 +374,7 @@ library HyperdriveMath {
     }
 
     /// @dev Calculates the fees for the curve portion of hyperdrive calcInGivenOut
-    /// @param _amountOut The given amount out, either in terms
-    /// of shares or bonds.
+    /// @param _amountOut The given amount out, either in terms of shares or bonds.
     /// @param _normalizedTimeRemaining The normalized amount of time until maturity.
     /// @param _spotPrice The price without slippage of bonds in terms of shares.
     /// @param _sharePrice The current price of shares in terms of base.
