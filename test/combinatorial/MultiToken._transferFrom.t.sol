@@ -56,7 +56,7 @@ contract MultiToken__transferFrom is CombinatorialTest {
             uint256 approvals = rawTestCases[i][2];
             bool approvedForAll = approvals == type(uint128).max;
             TestCase memory testCase = TestCase({
-                    index: i,
+                index: i,
                 tokenId: ((i + 5) ** 4) / 7,
                 from: alice,
                 to: bob,
