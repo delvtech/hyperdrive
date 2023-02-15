@@ -13,6 +13,7 @@ contract MultiToken__transferFrom is CombinatorialTest {
     MockMultiToken multiToken;
 
     function setUp() public override {
+        // MultiToken deployment
         super.setUp();
         vm.startPrank(deployer);
         forwarderFactory = new ForwarderFactory();
@@ -34,7 +35,8 @@ contract MultiToken__transferFrom is CombinatorialTest {
         bool approvedForAll;
     }
 
-    function test_Combinatorial__MultiToken__transferFrom() public {
+    function test__MultiToken__transferFrom() public {
+        // Construction of combinatorial matrix
         uint256[][] memory rawTestCases = lib.matrix(
             lib._arr(
                 // amount
@@ -48,10 +50,10 @@ contract MultiToken__transferFrom is CombinatorialTest {
             )
         );
 
+        // Iterate through every test case combination and check if they __fail/__success
         for (uint256 i = 0; i < rawTestCases.length; i++) {
             uint256 approvals = rawTestCases[i][2];
             bool approvedForAll = approvals == type(uint128).max;
-
             TestCase_transferFrom memory testCase = TestCase_transferFrom({
                 tokenId: ((i + 5) ** 4) / 7,
                 from: alice,
@@ -63,7 +65,6 @@ contract MultiToken__transferFrom is CombinatorialTest {
                 balanceTo: rawTestCases[i][3],
                 approvedForAll: approvedForAll
             });
-
             __log("--", i, testCase);
             __setup(testCase);
             __fail(testCase);
@@ -79,6 +80,7 @@ contract MultiToken__transferFrom is CombinatorialTest {
     function __setup(
         TestCase_transferFrom memory testCase
     ) internal __combinatorial_setup {
+        // Set balances of the "from" and "to" addresses
         multiToken.__setBalanceOf(
             testCase.tokenId,
             testCase.from,
@@ -89,8 +91,10 @@ contract MultiToken__transferFrom is CombinatorialTest {
             testCase.to,
             testCase.balanceTo
         );
+
+        // When the "caller" is not "from", then an approved transfer is the
+        // intention and so approvals must be made by "from" for "caller"
         if (testCase.caller != testCase.from) {
-            // If the caller is not from, from must set an approvals for caller
             vm.startPrank(testCase.from);
             if (testCase.approvedForAll) {
                 multiToken.setApprovalForAll(testCase.caller, true);
@@ -109,16 +113,26 @@ contract MultiToken__transferFrom is CombinatorialTest {
     function __fail(
         TestCase_transferFrom memory testCase
     ) internal __combinatorial_fail {
+        // Approval underflows occur when the following conditions are met
+        // - "caller" is not "from"
+        // - isApprovedForAll[from][caller] is not true
+        // - "approvals" is non-infinite (max uint256)
+        // - "amount" to transfer is greater than "approvals"
         bool approvalUnderflows = testCase.caller != testCase.from &&
             !testCase.approvedForAll &&
             testCase.approvals != type(uint256).max &&
             testCase.approvals < testCase.amount;
 
+        // Underflow occurs when the "from" balance is less than "amount"
         bool balanceFromUnderflows = testCase.balanceFrom < testCase.amount;
 
+        // Balance overflows when the "to" balance + "amount" is greater than
+        // max uint256
         bool balanceToOverflows = (type(uint256).max - testCase.balanceTo) <
             testCase.amount;
 
+        // If the failure conditions are met then attempt a failing
+        // _transferFrom. If the call succeeds then code execution should revert
         if (approvalUnderflows || balanceFromUnderflows || balanceToOverflows) {
             try
                 multiToken.__external_transferFrom(
@@ -131,6 +145,8 @@ contract MultiToken__transferFrom is CombinatorialTest {
             {
                 revert("EXPECTED FAIL");
             } catch (bytes memory e) {
+                // NOTE: __error and __fail_error must be assigned here to
+                // validate failure reason
                 __error = e;
                 __fail_error = stdError.arithmeticError;
             }
@@ -148,6 +164,8 @@ contract MultiToken__transferFrom is CombinatorialTest {
     function __success(
         TestCase_transferFrom memory testCase
     ) internal __combinatorial_success {
+        // Fetch "from" and "to" balances prior to function under testing being
+        // executed to perform differential checking
         uint256 preBalanceFrom = multiToken.balanceOf(
             testCase.tokenId,
             testCase.from
@@ -156,13 +174,16 @@ contract MultiToken__transferFrom is CombinatorialTest {
             testCase.tokenId,
             testCase.to
         );
+        // Fetch "from's" approvals for "caller" prior to function under testing
+        // being executed to perform differential checking in the case of
+        // non-infinite approvals being set
         uint256 preCallerApprovals = multiToken.perTokenApprovals(
             testCase.tokenId,
             testCase.from,
             testCase.caller
         );
 
-        // _transferFrom emits the TransferSingle event in success cases
+        // Register the TransferSingle event
         vm.expectEmit(true, true, true, true);
         emit TransferSingle(
             testCase.caller,
@@ -172,6 +193,8 @@ contract MultiToken__transferFrom is CombinatorialTest {
             testCase.amount
         );
 
+        // Execute the function under test. It is expected to succeed and any
+        // failure will cause the code execution to revert
         try
             multiToken.__external_transferFrom(
                 testCase.tokenId,
@@ -183,6 +206,10 @@ contract MultiToken__transferFrom is CombinatorialTest {
         {} catch {
             revert("EXPECTED SUCCESS");
         }
+
+        // When a non-infinite approval is set, validate that the difference
+        // of the before and after perTokenApprovals of the "caller" is equal
+        // to "amount"
         if (
             testCase.caller != testCase.from &&
             !testCase.approvedForAll &&
@@ -204,14 +231,9 @@ contract MultiToken__transferFrom is CombinatorialTest {
             }
         }
 
+        // Difference of before and after "from" balances should be "amount"
         uint256 fromBalanceDiff = preBalanceFrom -
             multiToken.balanceOf(testCase.tokenId, testCase.from);
-
-        uint256 toBalanceDiff = multiToken.balanceOf(
-            testCase.tokenId,
-            testCase.to
-        ) - preBalanceTo;
-
         if (fromBalanceDiff != testCase.amount) {
             assertEq(
                 fromBalanceDiff,
@@ -220,6 +242,11 @@ contract MultiToken__transferFrom is CombinatorialTest {
             );
         }
 
+        // Difference of before and after "to" balances should be "amount"
+        uint256 toBalanceDiff = multiToken.balanceOf(
+            testCase.tokenId,
+            testCase.to
+        ) - preBalanceTo;
         if (toBalanceDiff != testCase.amount) {
             assertEq(
                 toBalanceDiff,
