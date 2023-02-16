@@ -69,7 +69,7 @@ abstract contract ERC20Permit is IERC20Permit {
     }
 
     /// @notice An optional override function to execute and change state before immutable assignment
-    function _extraConstruction() internal virtual {}
+    function _extraConstruction() internal virtual {} // solhint-disable-line no-empty-blocks
 
     // --- Token ---
     /// @notice Allows a token owner to send tokens to another address
