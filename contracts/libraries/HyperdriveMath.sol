@@ -40,6 +40,7 @@ library HyperdriveMath {
             _bondReserves,
             _lpTotalSupply,
             _initialSharePrice,
+            // full time remaining of position
             annualizedTime,
             _timeStretch
         );
@@ -107,7 +108,7 @@ library HyperdriveMath {
         // to the proportion of a year of the positionDuration. tau = t / time_stretch, or just
         // 1 / time_stretch in this case.
         uint256 t = _positionDuration.divDown(365 days);
-        uint256 tau = FixedPointMath.ONE_18.divDown(_timeStretch);
+        uint256 tau = FixedPointMath.ONE_18.mulDown(_timeStretch);
         uint256 interestFactor = FixedPointMath.ONE_18.add(_apr.mulDown(t)).pow(
             FixedPointMath.ONE_18.divDown(tau)
         );
@@ -316,7 +317,9 @@ library HyperdriveMath {
         uint256 _timeStretch
     ) internal pure returns (uint256 spotPrice) {
         // ((y + s) / (mu * z)) ** -tau
-        uint256 tau = _normalizedTimeRemaining.divDown(_timeStretch);
+        // ((mu * z) / (y + s)) ** tau
+        uint256 tau = _normalizedTimeRemaining.mulDown(_timeStretch);
+
         spotPrice = _initialSharePrice
             .mulDown(_shareReserves)
             .divDown(_bondReserves.add(_lpTotalSupply))
