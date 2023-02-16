@@ -58,7 +58,7 @@ library YieldSpaceMath {
             // NOTE: k - shareReserves >= 0 to avoid a complex number
             // ((c / mu) * (mu * shareReserves)^(1 - tau) + bondReserves^(1 - tau) - (c / mu) * (mu * (shareReserves + amountIn))^(1 - tau))^(1 / (1 - tau)))
             uint256 newBondReserves = k.sub(_shareReserves).pow(
-                FixedPointMath.ONE_18.divDown(_stretchedTimeElapsed)
+                FixedPointMath.ONE_18.divUp(_stretchedTimeElapsed)
             );
             // NOTE: bondReserves - newBondReserves >= 0, but I think avoiding a complex number in the step above ensures this never happens
             // bondsOut = bondReserves - ( (c / mu) * (mu * shareReserves)^(1 - tau) + bondReserves^(1 - tau) - (c / mu) * (mu * (shareReserves + shareIn))^(1 - tau))^(1 / (1 - tau)))

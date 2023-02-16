@@ -4,12 +4,15 @@ pragma solidity ^0.8.18;
 import "./Errors.sol";
 
 /// @notice A fixed-point math library.
-/// @author Element Finance
+/// @author Delve
 library FixedPointMath {
     int256 internal constant _ONE_18 = 1e18;
     uint256 public constant ONE_18 = 1e18;
 
     /// @dev Credit to Balancer (https://github.com/balancer-labs/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/FixedPoint.sol)
+    /// @param a Fixed point number in 1e18 format.
+    /// @param b Fixed point number in 1e18 format.
+    /// @return Result of a + b.
     function add(uint256 a, uint256 b) internal pure returns (uint256) {
         // Fixed Point addition is the same as regular checked addition
 
@@ -19,6 +22,9 @@ library FixedPointMath {
     }
 
     /// @dev Credit to Balancer (https://github.com/balancer-labs/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/FixedPoint.sol)
+    /// @param a Fixed point number in 1e18 format.
+    /// @param b Fixed point number in 1e18 format.
+    /// @return Result of a - b.
     function sub(uint256 a, uint256 b) internal pure returns (uint256) {
         // Fixed Point addition is the same as regular checked addition
 
@@ -27,7 +33,11 @@ library FixedPointMath {
         return c;
     }
 
-    /// @dev Credit to Solmate (https://github.com/Rari-Capital/solmate/blob/main/src/utils/FixedPointMathLib.sol)
+    /// @dev Credit to Solmate (https://github.com/transmissions11/solmate/blob/main/src/utils/FixedPointMathLib.sol)
+    /// @param x Fixed point number in 1e18 format.
+    /// @param y Fixed point number in 1e18 format.
+    /// @param d Fixed point number in 1e18 format.
+    /// @return z The result of x * y / d rounded down.
     function mulDivDown(
         uint256 x,
         uint256 y,
@@ -47,11 +57,27 @@ library FixedPointMath {
         }
     }
 
+    /// @dev Credit to Solmate (https://github.com/transmissions11/solmate/blob/main/src/utils/FixedPointMathLib.sol)
+    /// @param a Fixed point number in 1e18 format.
+    /// @param b Fixed point number in 1e18 format.
+    /// @return Result of a * b rounded down.
     function mulDown(uint256 a, uint256 b) internal pure returns (uint256) {
         return (mulDivDown(a, b, 1e18));
     }
 
-    /// @dev Credit to Solmate (https://github.com/Rari-Capital/solmate/blob/main/src/utils/FixedPointMathLib.sol)
+    /// @dev Credit to Solmate (https://github.com/transmissions11/solmate/blob/main/src/utils/FixedPointMathLib.sol)
+    /// @param a Fixed point number in 1e18 format.
+    /// @param b Fixed point number in 1e18 format.
+    /// @return Result of a / b rounded down.
+    function divDown(uint256 a, uint256 b) internal pure returns (uint256) {
+        return (mulDivDown(a, 1e18, b)); // Equivalent to (a * 1e18) / b rounded down.
+    }
+
+    /// @dev Credit to Solmate (https://github.com/transmissions11/solmate/blob/main/src/utils/FixedPointMathLib.sol)
+    /// @param x Fixed point number in 1e18 format.
+    /// @param y Fixed point number in 1e18 format.
+    /// @param d Fixed point number in 1e18 format.
+    /// @return z The result of x * y / d rounded up.
     function mulDivUp(
         uint256 x,
         uint256 y,
@@ -73,12 +99,27 @@ library FixedPointMath {
         }
     }
 
-    function divDown(uint256 a, uint256 b) internal pure returns (uint256) {
-        return (mulDivDown(a, 1e18, b)); // Equivalent to (a * 1e18) / b rounded down.
+    /// @dev Credit to Solmate (https://github.com/transmissions11/solmate/blob/main/src/utils/FixedPointMathLib.sol)
+    /// @param a Fixed point number in 1e18 format.
+    /// @param b Fixed point number in 1e18 format.
+    /// @return The result of a * b rounded up.
+    function mulUp(uint256 a, uint256 b) internal pure returns (uint256) {
+        return (mulDivUp(a, b, 1e18));
+    }
+
+    /// @dev Credit to Solmate (https://github.com/transmissions11/solmate/blob/main/src/utils/FixedPointMathLib.sol)
+    /// @param a Fixed point number in 1e18 format.
+    /// @param b Fixed point number in 1e18 format.
+    /// @return The result of a / b rounded up.
+    function divUp(uint256 a, uint256 b) internal pure returns (uint256) {
+        return (mulDivUp(a, 1e18, b));
     }
 
     /// @dev Exponentiation (x^y) with unsigned 18 decimal fixed point base and exponent.
     /// @dev Partially inspired by Balancer LogExpMath library (https://github.com/balancer-labs/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/LogExpMath.sol)
+    /// @param x Fixed point number in 1e18 format.
+    /// @param y Fixed point number in 1e18 format.
+    /// @return The result of x^y.
     function pow(uint256 x, uint256 y) internal pure returns (uint256) {
         // Using properties of logarithms we calculate x^y:
         // -> ln(x^y) = y * ln(x)
@@ -99,14 +140,16 @@ library FixedPointMath {
         return uint256(exp(ylnx));
     }
 
-    // Computes e^x in 1e18 fixed point.
-    // Credit to Remco (https://github.com/recmo/experiment-solexp/blob/main/src/FixedPointMathLib.sol)
+    /// @dev Computes e^x in 1e18 fixed point.
+    /// @dev Credit to Remco (https://github.com/recmo/experiment-solexp/blob/main/src/FixedPointMathLib.sol)
+    /// @param x Fixed point number in 1e18 format.
+    /// @return r The result of e^x.
     function exp(int256 x) internal pure returns (int256 r) {
         unchecked {
             // Input x is in fixed point format, with scale factor 1/1e18.
 
             // When the result is < 0.5 we return zero. This happens when
-            // x <= floor(log(0.5e18) * 1e18) ~ -42e18
+            // x <= floor(log(0.5e-18) * 1e18) ~ -42e18
             if (x <= -42139678854452767551) {
                 return 0;
             }
@@ -169,6 +212,8 @@ library FixedPointMath {
     /// @dev Computes ln(x) in 1e18 fixed point.
     /// @dev Reverts if x is negative
     /// @dev Credit to Remco (https://github.com/recmo/experiment-solexp/blob/main/src/FixedPointMathLib.sol)
+    /// @param x Fixed point number in 1e18 format.
+    /// @return Result of ln(x).
     function ln(int256 x) internal pure returns (int256) {
         if (x <= 0) revert Errors.FixedPointMath_NegativeOrZeroInput();
         return _ln(x);
@@ -238,10 +283,11 @@ library FixedPointMath {
         }
     }
 
-    // Integer log2
-    // @returns floor(log2(x)) if x is nonzero, otherwise 0. This is the same
-    //          as the location of the highest set bit.
-    // Credit to Remco (https://github.com/recmo/experiment-solexp/blob/main/src/FixedPointMathLib.sol)
+    /// @dev Integer log2
+    /// @dev Credit to Remco (https://github.com/recmo/experiment-solexp/blob/main/src/FixedPointMathLib.sol)
+    /// @param x Integer
+    /// @return r The floor(log2(x)) if x is nonzero, otherwise 0. This is the same
+    ///         as the location of the highest set bit.
     function _ilog2(uint256 x) private pure returns (uint256 r) {
         assembly {
             r := shl(7, lt(0xffffffffffffffffffffffffffffffff, x))

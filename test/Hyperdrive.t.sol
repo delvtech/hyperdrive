@@ -170,11 +170,6 @@ contract HyperdriveTest is Test {
         // Get the reserves before opening the long.
         PoolInfo memory poolInfoBefore = getPoolInfo();
 
-        // TODO: Small base amounts result in higher than quoted APRs. We should
-        // first investigate the math to see if there are obvious simplifications
-        // to be made, and then consider increasing the amount of precision in
-        // used in our fixed rate format.
-        //
         // Purchase a small amount of bonds.
         vm.stopPrank();
         vm.startPrank(bob);
@@ -205,8 +200,83 @@ contract HyperdriveTest is Test {
             maturityTime - block.timestamp,
             365 days
         );
-        // TODO: This tolerance seems too high.
-        assertApproxEqAbs(realizedApr, apr, 1e10);
+
+        // Verify that opening a long doesn't make the APR go up
+        assertGt(apr, realizedApr);
+
+        // Verify that the reserves were updated correctly.
+        PoolInfo memory poolInfoAfter = getPoolInfo();
+        assertEq(
+            poolInfoAfter.shareReserves,
+            poolInfoBefore.shareReserves +
+                baseAmount.divDown(poolInfoBefore.sharePrice)
+        );
+        assertEq(
+            poolInfoAfter.bondReserves,
+            poolInfoBefore.bondReserves - bondAmount
+        );
+        assertEq(poolInfoAfter.lpTotalSupply, poolInfoBefore.lpTotalSupply);
+        assertEq(poolInfoAfter.sharePrice, poolInfoBefore.sharePrice);
+        assertEq(
+            poolInfoAfter.longsOutstanding,
+            poolInfoBefore.longsOutstanding + bondAmount
+        );
+        assertApproxEqAbs(
+            poolInfoAfter.longAverageMaturityTime,
+            maturityTime,
+            1
+        );
+        assertEq(
+            poolInfoAfter.shortsOutstanding,
+            poolInfoBefore.shortsOutstanding
+        );
+        assertEq(poolInfoAfter.shortAverageMaturityTime, 0);
+    }
+
+    function test_open_long_with_small_amount() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Get the reserves before opening the long.
+        PoolInfo memory poolInfoBefore = getPoolInfo();
+
+        // Purchase a small amount of bonds.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        uint256 baseAmount = .01e18;
+
+        baseToken.mint(baseAmount);
+        baseToken.approve(address(hyperdrive), baseAmount);
+        hyperdrive.openLong(baseAmount, 0, bob);
+
+        // Verify the base transfers.
+        assertEq(baseToken.balanceOf(bob), 0);
+        assertEq(
+            baseToken.balanceOf(address(hyperdrive)),
+            contribution + baseAmount
+        );
+
+        // Verify that Bob received an acceptable amount of bonds. Since the
+        // base amount is very low relative to the pool's liquidity, the implied
+        // APR should be approximately equal to the pool's APR.
+        uint256 maturityTime = (block.timestamp - (block.timestamp % 1 days)) +
+            365 days;
+        uint256 bondAmount = hyperdrive.balanceOf(
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
+            bob
+        );
+        uint256 realizedApr = calculateAPRFromRealizedPrice(
+            baseAmount,
+            bondAmount,
+            maturityTime - block.timestamp,
+            365 days
+        );
+
+        // Verify that opening a long doesn't make the APR go up
+        assertGt(apr, realizedApr);
 
         // Verify that the reserves were updated correctly.
         PoolInfo memory poolInfoAfter = getPoolInfo();
@@ -342,9 +412,6 @@ contract HyperdriveTest is Test {
         );
         hyperdrive.closeLong(maturityTime, bondAmount, 0, bob);
 
-        // TODO: Bob receives more base than he started with. Fees should take
-        // care of this, but this should be investigating nonetheless.
-        //
         // Verify that all of Bob's bonds were burned and that he has
         // approximately as much base as he started with.
         uint256 baseProceeds = baseToken.balanceOf(bob);
@@ -355,7 +422,77 @@ contract HyperdriveTest is Test {
             ),
             0
         );
-        assertApproxEqAbs(baseProceeds, baseAmount, 1e10);
+        // Verify that bob doesn't end up with more than he started with
+        assertGe(baseAmount, baseProceeds);
+
+        // Verify that the reserves were updated correctly. Since this trade
+        // happens at the beginning of the term, the bond reserves should be
+        // increased by the full amount.
+        PoolInfo memory poolInfoAfter = getPoolInfo();
+        assertEq(
+            poolInfoAfter.shareReserves,
+            poolInfoBefore.shareReserves -
+                baseProceeds.divDown(poolInfoBefore.sharePrice)
+        );
+        assertEq(
+            poolInfoAfter.bondReserves,
+            poolInfoBefore.bondReserves + bondAmount
+        );
+        assertEq(poolInfoAfter.lpTotalSupply, poolInfoBefore.lpTotalSupply);
+        assertEq(poolInfoAfter.sharePrice, poolInfoBefore.sharePrice);
+        assertEq(
+            poolInfoAfter.longsOutstanding,
+            poolInfoBefore.longsOutstanding - bondAmount
+        );
+        assertEq(poolInfoAfter.longAverageMaturityTime, 0);
+        assertEq(
+            poolInfoAfter.shortsOutstanding,
+            poolInfoBefore.shortsOutstanding
+        );
+        assertEq(poolInfoAfter.shortAverageMaturityTime, 0);
+    }
+
+    function test_close_long_immediately_with_small_amount() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Purchase some bonds.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        uint256 baseAmount = .01e18;
+        baseToken.mint(baseAmount);
+        baseToken.approve(address(hyperdrive), baseAmount);
+        hyperdrive.openLong(baseAmount, 0, bob);
+
+        // Get the reserves before closing the long.
+        PoolInfo memory poolInfoBefore = getPoolInfo();
+
+        // Immediately close the bonds.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        uint256 maturityTime = (block.timestamp - (block.timestamp % 1 days)) +
+            365 days;
+        uint256 bondAmount = hyperdrive.balanceOf(
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
+            bob
+        );
+        hyperdrive.closeLong(maturityTime, bondAmount, 0, bob);
+
+        // Verify that all of Bob's bonds were burned and that he has
+        // approximately as much base as he started with.
+        uint256 baseProceeds = baseToken.balanceOf(bob);
+        assertEq(
+            hyperdrive.balanceOf(
+                AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
+                bob
+            ),
+            0
+        );
+        // Verify that bob doesn't end up with more than he started with
+        assertGe(baseAmount, baseProceeds);
 
         // Verify that the reserves were updated correctly. Since this trade
         // happens at the beginning of the term, the bond reserves should be
@@ -417,10 +554,6 @@ contract HyperdriveTest is Test {
         );
         hyperdrive.closeLong(maturityTime, bondAmount, 0, bob);
 
-        // TODO: Bob receives more base than the bond amount. It appears that
-        // the yield space implementation returns a positive value even when
-        // the input is zero.
-        //
         // Verify that all of Bob's bonds were burned and that he has
         // approximately as much base as he started with.
         uint256 baseProceeds = baseToken.balanceOf(bob);
@@ -431,7 +564,7 @@ contract HyperdriveTest is Test {
             ),
             0
         );
-        assertApproxEqAbs(baseProceeds, bondAmount, 1e10);
+        assertEq(baseProceeds, bondAmount);
 
         // Verify that the reserves were updated correctly. Since this trade
         // is a redemption, there should be no changes to the bond reserves.

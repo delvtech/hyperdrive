@@ -1149,13 +1149,13 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
             return
                 (_positionsOutstanding.mulDown(_averageMaturityTime))
                     .add(_positionAmount.mulDown(_positionMaturityTime))
-                    .divDown(_positionsOutstanding.add(_positionAmount));
+                    .divUp(_positionsOutstanding.add(_positionAmount));
         } else {
             if (_positionsOutstanding == _positionAmount) return 0;
             return
                 (_positionsOutstanding.mulDown(_averageMaturityTime))
                     .sub(_positionAmount.mulDown(_positionMaturityTime))
-                    .divDown(_positionsOutstanding.sub(_positionAmount));
+                    .divUp(_positionsOutstanding.sub(_positionAmount));
         }
     }
 

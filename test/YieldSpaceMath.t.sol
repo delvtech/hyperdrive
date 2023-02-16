@@ -6,32 +6,28 @@ import { YieldSpaceMath } from "contracts/libraries/YieldSpaceMath.sol";
 
 contract YieldSpaceMathTest is Test {
     function test__calculateOutGivenIn() public {
-        assertEq(
-            YieldSpaceMath.calculateOutGivenIn(
-                56.79314253e18, // shareReserves
-                62.38101813e18, // bondReserves
-                119.1741606776616e18, // bondReserveAdjustment
-                5.03176076e18, // amountOut
-                1e18 - 0.08065076081220067e18, // stretchedTimeElapsed
-                1e18, // c
-                1e18, // mu
-                true // isBondIn
-            ),
-            5.500250311701939082e18
+        uint256 result1 = YieldSpaceMath.calculateOutGivenIn(
+            61.824903300361854e18, // shareReserves
+            56.92761678068477e18, // bondReserves
+            119.1741606776616e18, // bondReserveAdjustment
+            5.500250311701939e18, // amountIn
+            1e18 - 0.08065076081220067e18, // stretchedTimeElapsed
+            1e18, // c
+            1e18, // mu
+            true // isBondIn
         );
+        assertEq(result1, 5.955718322566968926e18);
 
-        assertEq(
-            YieldSpaceMath.calculateOutGivenIn(
-                61.824903300361854e18, // shareReserves
-                56.92761678068477e18, // bondReserves
-                119.1741606776616e18, // bondReserveAdjustment
-                5.500250311701939e18, // amountOut
-                1e18 - 0.08065076081220067e18, // stretchedTimeElapsed
-                1e18, // c
-                1e18, // mu
-                false // isBondIn
-            ),
-            5.031654806080805188e18
+        uint256 result2 = YieldSpaceMath.calculateOutGivenIn(
+            61.824903300361854e18, // shareReserves
+            56.92761678068477e18, // bondReserves
+            119.1741606776616e18, // bondReserveAdjustment
+            5.500250311701939e18, // amountIn
+            1e18 - 0.08065076081220067e18, // stretchedTimeElapsed
+            1e18, // c
+            1e18, // mu
+            false // isBondIn
         );
+        assertEq(result2, 5.031654806080805188e18);
     }
 }

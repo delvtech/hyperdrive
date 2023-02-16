@@ -175,7 +175,6 @@ library HyperdriveMath {
             uint256 flat = _amountIn.mulDown(
                 FixedPointMath.ONE_18.sub(_normalizedTimeRemaining)
             );
-
             _shareReserves = _shareReserves.add(flat);
             _bondReserves = _bondReserves.sub(flat.mulDown(_sharePrice));
             uint256 curveIn = _amountIn.mulDown(_normalizedTimeRemaining);
@@ -211,16 +210,19 @@ library HyperdriveMath {
             uint256 curveIn = _amountIn
                 .mulDown(_normalizedTimeRemaining)
                 .divDown(_sharePrice);
-            uint256 curveOut = YieldSpaceMath.calculateOutGivenIn(
-                _shareReserves,
-                _bondReserves,
-                _bondReserveAdjustment,
-                curveIn,
-                FixedPointMath.ONE_18.sub(_timeStretch),
-                _sharePrice,
-                _initialSharePrice,
-                _isBaseIn
-            );
+            uint256 curveOut = 0;
+            if (curveIn > 0) {
+                curveOut = YieldSpaceMath.calculateOutGivenIn(
+                    _shareReserves,
+                    _bondReserves,
+                    _bondReserveAdjustment,
+                    curveIn,
+                    FixedPointMath.ONE_18.sub(_timeStretch),
+                    _sharePrice,
+                    _initialSharePrice,
+                    _isBaseIn
+                );
+            }
             uint256 shareDelta = flat.add(curveOut);
             return (shareDelta, curveIn, shareDelta);
         }
