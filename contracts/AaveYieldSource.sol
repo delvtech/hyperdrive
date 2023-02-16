@@ -31,8 +31,6 @@ contract AaveYieldSource is Hyperdrive {
     /// @param _linkerFactory The factory which is used to deploy the ERC20
     ///        linker contracts.
     /// @param _baseToken The base token contract.
-    /// @param _positionDuration The time in seconds that elapses before bonds
-    ///        can be redeemed one-to-one for base.
     /// @param _checkpointDuration The time in seconds between share price
     ///        checkpoints. Position duration must be a multiple of checkpoint
     ///        duration.
@@ -43,7 +41,6 @@ contract AaveYieldSource is Hyperdrive {
         bytes32 _linkerCodeHash,
         address _linkerFactory,
         IERC20 _baseToken,
-        uint256 _positionDuration,
         uint256 _checkpointDuration,
         uint256 _timeStretch,
         IERC20 _aToken,

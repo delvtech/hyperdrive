@@ -3,11 +3,13 @@ on: ["push", "pull_request"]
 name: hyperdrive
 
 jobs:
-  build:
-    name: lint
+  check:
+    name: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          submodules: recursive
 
       - name: install node
         uses: actions/setup-node@v3
@@ -26,7 +28,5 @@ jobs:
         with:
           version: nightly
 
-      - name: lint
-        uses: borales/actions-yarn@v4
-        with:
-          cmd: lint
+      - name: test
+        run: FOUNDRY_PROFILE=production forge build
