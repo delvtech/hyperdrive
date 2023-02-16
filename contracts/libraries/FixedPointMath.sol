@@ -110,7 +110,7 @@ library FixedPointMath {
     /// @param b Fixed point number in 1e18 format.
     /// @return The result of a / b rounded up.
     function divUp(uint256 a, uint256 b) internal pure returns (uint256) {
-        return (mulDivUp(a, 1e18, b)); 
+        return (mulDivUp(a, 1e18, b));
     }
 
     /// @dev Exponentiation (x^y) with unsigned 18 decimal fixed point base and exponent.

@@ -211,7 +211,7 @@ library HyperdriveMath {
                 .mulDown(_normalizedTimeRemaining)
                 .divDown(_sharePrice);
             uint256 curveOut = 0;
-            if(curveIn > 0){
+            if (curveIn > 0) {
                 curveOut = YieldSpaceMath.calculateOutGivenIn(
                     _shareReserves,
                     _bondReserves,

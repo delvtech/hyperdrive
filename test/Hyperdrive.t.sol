@@ -204,7 +204,7 @@ contract HyperdriveTest is Test {
 
         // Verify that opening a long doesn't make the APR go up
         assertGt(apr, realizedApr);
-        
+
         // Verify that the reserves were updated correctly.
         PoolInfo memory poolInfoAfter = getPoolInfo();
         assertEq(
@@ -248,7 +248,7 @@ contract HyperdriveTest is Test {
         vm.stopPrank();
         vm.startPrank(bob);
         uint256 baseAmount = .01e18;
-        
+
         baseToken.mint(baseAmount);
         baseToken.approve(address(hyperdrive), baseAmount);
         hyperdrive.openLong(baseAmount, 0, bob);
@@ -278,7 +278,7 @@ contract HyperdriveTest is Test {
 
         // Verify that opening a long doesn't make the APR go up
         assertGt(apr, realizedApr);
-        
+
         // Verify that the reserves were updated correctly.
         PoolInfo memory poolInfoAfter = getPoolInfo();
         assertEq(
