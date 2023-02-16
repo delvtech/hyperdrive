@@ -83,6 +83,8 @@ library YieldSpaceMath {
 
     /// @dev Calculates the amount of an asset that will be received given a
     ///      specified amount of the other asset given the current AMM reserves.
+    /// @dev _isBaseOut = True isn't used in the current implementation,
+    ///      but is included for completeness
     /// @param _shareReserves yield bearing vault shares reserve amount, unit is shares
     /// @param _bondReserves bond reserves amount, unit is the face value in underlying
     /// @param _bondReserveAdjustment An optional adjustment to the reserve which MUST have units of underlying.
@@ -114,6 +116,7 @@ library YieldSpaceMath {
             _stretchedTimeElapsed,
             _bondReserves
         );
+
         if (_isBaseOut) {
             // (mu * (shareReserves - amountOut))^(1 - tau)
             _shareReserves = _mu.mulDown(_shareReserves.sub(_amountOut)).pow(
@@ -124,7 +127,7 @@ library YieldSpaceMath {
             // NOTE: k - shareReserves >= 0 to avoid a complex number
             // ((c / mu) * (mu * shareReserves)^(1 - tau) + bondReserves^(1 - tau) - (c / mu) * (mu*(shareReserves - amountOut))^(1 - tau))^(1 / (1 - tau)))
             uint256 newBondReserves = k.sub(_shareReserves).pow(
-                FixedPointMath.ONE_18.divDown(_stretchedTimeElapsed)
+                FixedPointMath.ONE_18.divUp(_stretchedTimeElapsed)
             );
             // NOTE: newBondReserves - bondReserves >= 0, but I think avoiding a complex number in the step above ensures this never happens
             // bondIn = ((c / mu) * (mu * shareReserves)^(1 - tau) + bondReserves^(1 - tau) - (c / mu) * (mu * (shareReserves - shareOut))^(1 - tau))^(1 / (1 - tau))) - bondReserves
@@ -137,7 +140,7 @@ library YieldSpaceMath {
             // NOTE: k - newScaledBondReserves >= 0 to avoid a complex number
             // (((mu * shareReserves)^(1 - tau) + bondReserves^(1 - tau) - (bondReserves - amountOut)^(1 - tau) ) / (c / mu))^(1 / (1 - tau)))
             uint256 newShareReserves = k.sub(_bondReserves).divDown(cDivMu).pow(
-                FixedPointMath.ONE_18.divDown(_stretchedTimeElapsed)
+                FixedPointMath.ONE_18.divUp(_stretchedTimeElapsed)
             );
             // (((mu * shareReserves)^(1 - tau) + bondReserves^(1 - tau) - (bondReserves - amountOut)^(1 - tau) ) / (c / mu))^(1 / (1 - tau))) / mu
             newShareReserves = newShareReserves.divDown(_mu);
