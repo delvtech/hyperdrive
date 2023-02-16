@@ -248,23 +248,7 @@ contract HyperdriveTest is Test {
         vm.stopPrank();
         vm.startPrank(bob);
         uint256 baseAmount = .01e18;
-        //10e18
-        //with divDown: 49999999999886067
-        //with divUp: 49999996900228853
-        //delta: 49999999999886067 - 49999996900228853 = 3099657200
-        //1e18
-        //with divDown: 50000006551536041
-        //with divUp: 49999975554963707
-        //delta: 50000006551536041 - 49999975554963707 = 30996572304
-        //0.1e18
-        //with divDown: 50000057980327600
-        //with divUp: 49999762774876600
-        //delta: 50000057980327600 - 49999762774876600 = 295205451000
-        //0.01e18
-        //with divDown: 50000583700909500
-        //with divUp: 49997631646399300
-        //delta: 50000583700909500 - 49997631646399300 = 2952054510208
-
+        
         baseToken.mint(baseAmount);
         baseToken.approve(address(hyperdrive), baseAmount);
         hyperdrive.openLong(baseAmount, 0, bob);

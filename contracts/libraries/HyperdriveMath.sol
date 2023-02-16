@@ -154,7 +154,7 @@ library HyperdriveMath {
         bool _isBaseIn
     )
         internal
-        view
+        pure
         returns (
             uint256 poolShareDelta,
             uint256 poolBondDelta,

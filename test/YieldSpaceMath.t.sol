@@ -3,7 +3,6 @@ pragma solidity ^0.8.18;
 
 import { Test } from "forge-std/Test.sol";
 import { YieldSpaceMath } from "contracts/libraries/YieldSpaceMath.sol";
-import "forge-std/console2.sol";
 
 contract YieldSpaceMathTest is Test {
     function test__calculateOutGivenIn() public {
@@ -36,8 +35,5 @@ contract YieldSpaceMathTest is Test {
             result2,
             5.031654806080805188e18
         );
-
-        console2.log("result1", result1);
-        console2.log("result2", result2);
     }
 }
