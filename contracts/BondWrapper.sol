@@ -16,7 +16,7 @@ contract BondWrapper is ERC20Permit {
     // TODO - Should we make this mutable and updatable?
     uint256 public immutable mintPercent;
 
-    // Store the user deposits
+    // Store the user deposits as a mapping from user address -> asset id -> amount 
     mapping(address => mapping(uint256 => uint256)) public deposits;
 
     /// @notice Constructs the contract and initializes the variables.
@@ -41,7 +41,8 @@ contract BondWrapper is ERC20Permit {
     /// @notice Transfers bonds from the user and then mints erc20 for the mintable percent.
     /// @param  maturityTime The bond's expiry time
     /// @param amount The amount of bonds to mint
-    function mint(uint256 maturityTime, uint256 amount) external {
+    /// @param destination The address which gets credited with these funds
+    function mint(uint256 maturityTime, uint256 amount, address destination) external {
         // Encode the asset ID
         uint256 assetId = AssetId.encodeAssetId(
             AssetId.AssetIdPrefix.Long,
@@ -55,10 +56,10 @@ contract BondWrapper is ERC20Permit {
 
         // Mint them the tokens for their deposit
         uint256 mintAmount = (amount * mintPercent) / 10000;
-        _mint(msg.sender, mintAmount);
+        _mint(destination, mintAmount);
 
         // Add this to the deposited amount
-        deposits[msg.sender][assetId] += amount;
+        deposits[destination][assetId] += amount;
     }
 
     /// @notice Closes a user account by selling the bond and then transferring the delta value of that
@@ -112,7 +113,7 @@ contract BondWrapper is ERC20Permit {
     }
 
     /// @notice Sells all assets from the contract if they are matured, has no affect if
-    ///         the conract has no assets from a timestamp
+    ///         the contract has no assets from a timestamp
     /// @param maturityTime The maturity time of the asset to sell
     function sweep(uint256 maturityTime) public {
         // Require only sweeping after maturity
