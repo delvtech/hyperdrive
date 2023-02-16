@@ -187,10 +187,12 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
     /// @notice Allows LPs to supply liquidity for LP shares.
     /// @param _contribution The amount of base to supply.
     /// @param _minOutput The minimum number of LP tokens the user should receive
+    /// @param _destination The address which will hold the LP shares
     /// @return lpShares The number of LP tokens created
     function addLiquidity(
         uint256 _contribution,
-        uint256 _minOutput
+        uint256 _minOutput,
+        address _destination
     ) external returns (uint256 lpShares) {
         if (_contribution == 0) {
             revert Errors.ZeroAmount();
@@ -238,7 +240,7 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         );
 
         // Mint LP shares to the supplier.
-        _mint(AssetId._LP_ASSET_ID, msg.sender, lpShares);
+        _mint(AssetId._LP_ASSET_ID, _destination, lpShares);
     }
 
     // TODO: Consider if some MEV protection is necessary for the LP.
@@ -249,11 +251,13 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
     ///                   value is likely to be less than the amount LP shares are worth.
     ///                   The remainder is in short and long withdraw shares which are hard
     ///                   to game the value of.
+    /// @param _destination The address which will receive the withdraw proceeds
     /// @return Returns the base out, the lond withdraw shares out and the short withdraw
     ///         shares out.
     function removeLiquidity(
         uint256 _shares,
-        uint256 _minOutput
+        uint256 _minOutput,
+        address _destination
     ) external returns (uint256, uint256, uint256) {
         if (_shares == 0) {
             revert Errors.ZeroAmount();
@@ -309,7 +313,7 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         // Mint the long and short withdrawal tokens.
         _mint(
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.LongWithdrawalShare, 0),
-            msg.sender,
+            _destination,
             longWithdrawalShares
         );
         longWithdrawalSharesOutstanding += longWithdrawalShares;
@@ -318,14 +322,14 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
                 AssetId.AssetIdPrefix.ShortWithdrawalShare,
                 0
             ),
-            msg.sender,
+            _destination,
             shortWithdrawalShares
         );
         shortWithdrawalSharesOutstanding += shortWithdrawalShares;
 
         // Withdraw the shares from the yield source
         // TODO - Good destination support.
-        (uint256 baseOutput, ) = withdraw(shareProceeds, msg.sender);
+        (uint256 baseOutput, ) = withdraw(shareProceeds, _destination);
         // Enforce min user outputs
         if (_minOutput > baseOutput) revert Errors.OutputLimit();
         return (baseOutput, longWithdrawalShares, shortWithdrawalShares);
@@ -335,11 +339,13 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
     /// @param _longWithdrawalShares The long withdrawal shares to redeem.
     /// @param _shortWithdrawalShares The short withdrawal shares to redeem.
     /// @param _minOutput The minimum amount of base the LP expects to receive.
+    /// @param _destination The address which receive the withdraw proceeds
     /// @return _proceeds The amount of base the LP received.
     function redeemWithdrawalShares(
         uint256 _longWithdrawalShares,
         uint256 _shortWithdrawalShares,
-        uint256 _minOutput
+        uint256 _minOutput,
+        address _destination
     ) external returns (uint256 _proceeds) {
         uint256 baseProceeds = 0;
 
@@ -369,7 +375,7 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         // Withdraw the funds released by redeeming the withdrawal shares.
         // TODO: Better destination support.
         uint256 shareProceeds = baseProceeds.divDown(sharePrice);
-        (_proceeds, ) = withdraw(shareProceeds, msg.sender);
+        (_proceeds, ) = withdraw(shareProceeds, _destination);
 
         // Enforce min user outputs
         if (_minOutput > _proceeds) revert Errors.OutputLimit();
@@ -418,10 +424,12 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
     /// @notice Opens a long position.
     /// @param _baseAmount The amount of base to use when trading.
     /// @param _minOutput The minium number of bonds to receive.
+    /// @param _destination The address which will receive the bonds
     /// @return The number of bonds the user received
     function openLong(
         uint256 _baseAmount,
-        uint256 _minOutput
+        uint256 _minOutput,
+        address _destination
     ) external returns (uint256) {
         if (_baseAmount == 0) {
             revert Errors.ZeroAmount();
@@ -501,7 +509,7 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         // Mint the bonds to the trader with an ID of the maturity time.
         _mint(
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
-            msg.sender,
+            _destination,
             bondProceeds
         );
         return (bondProceeds);
@@ -511,11 +519,13 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
     /// @param _maturityTime The maturity time of the short.
     /// @param _bondAmount The amount of longs to close.
     /// @param _minOutput The minimum base the user should receive from this trade
+    /// @param _destination The address which will receive the proceeds of this sale
     /// @return The amount of underlying the user receives.
     function closeLong(
         uint256 _maturityTime,
         uint256 _bondAmount,
-        uint256 _minOutput
+        uint256 _minOutput,
+        address _destination
     ) external returns (uint256) {
         if (_bondAmount == 0) {
             revert Errors.ZeroAmount();
@@ -557,20 +567,22 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
             FixedPointMath.ONE_18,
             timeStretch
         );
-        (uint256 _curveFee, uint256 _flatFee) = HyperdriveMath
-            .calculateFeesOutGivenIn(
-                _bondAmount, // amountIn
-                // normalizedTimeRemaining, when opening a position, the full time is remaining
-                FixedPointMath.ONE_18,
-                spotPrice,
-                sharePrice,
-                curveFee,
-                flatFee,
-                false // isBaseIn
-            );
-        // This is a bond in / base out where the bonds are fixed, so we subtract from the base
-        // out.
-        shareProceeds -= _curveFee + _flatFee;
+        {
+            (uint256 _curveFee, uint256 _flatFee) = HyperdriveMath
+                .calculateFeesOutGivenIn(
+                    _bondAmount, // amountIn
+                    // normalizedTimeRemaining, when opening a position, the full time is remaining
+                    FixedPointMath.ONE_18,
+                    spotPrice,
+                    sharePrice,
+                    curveFee,
+                    flatFee,
+                    false // isBaseIn
+                );
+            // This is a bond in / base out where the bonds are fixed, so we subtract from the base
+            // out.
+            shareProceeds -= _curveFee + _flatFee;
+        }
 
         // If the position hasn't matured, apply the accounting updates that
         // result from closing the long to the reserves and pay out the
@@ -591,8 +603,7 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         }
 
         // Withdraw the profit to the trader.
-        // TODO: Better destination support.
-        (uint256 baseProceeds, ) = withdraw(shareProceeds, msg.sender);
+        (uint256 baseProceeds, ) = withdraw(shareProceeds, _destination);
 
         // Enforce min user outputs
         if (_minOutput > baseProceeds) revert Errors.OutputLimit();
@@ -605,10 +616,12 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
     /// @notice Opens a short position.
     /// @param _bondAmount The amount of bonds to short.
     /// @param _maxDeposit The most the user expects to deposit for this trade
+    /// @param _destination The address which gets credited with share tokens
     /// @return The amount the user deposited for this trade
     function openShort(
         uint256 _bondAmount,
-        uint256 _maxDeposit
+        uint256 _maxDeposit,
+        address _destination
     ) external returns (uint256) {
         if (_bondAmount == 0) {
             revert Errors.ZeroAmount();
@@ -646,13 +659,16 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         //
         // interest = (c_1 - c_0) * (dy / c_0)
         //          = (c_1 / c_0 - 1) * dy
-        uint256 owedInterest = (sharePrice.divDown(openSharePrice) -
-            FixedPointMath.ONE_18).mulDown(_bondAmount);
-        uint256 baseProceeds = shareProceeds.mulDown(sharePrice);
-        uint256 userDeposit = (_bondAmount - baseProceeds) + owedInterest;
-        // Enforce min user outputs
-        if (_maxDeposit < userDeposit) revert Errors.OutputLimit();
-        deposit(userDeposit); // max_loss + interest
+        uint256 userDeposit;
+        {
+            uint256 owedInterest = (sharePrice.divDown(openSharePrice) -
+                FixedPointMath.ONE_18).mulDown(_bondAmount);
+            uint256 baseProceeds = shareProceeds.mulDown(sharePrice);
+            userDeposit = (_bondAmount - baseProceeds) + owedInterest;
+            // Enforce min user outputs
+            if (_maxDeposit < userDeposit) revert Errors.OutputLimit();
+            deposit(userDeposit); // max_loss + interest
+        }
 
         // Apply the trading deltas to the reserves and increase the bond buffer
         // by the amount of bonds that were shorted. We don't need to add the
@@ -672,7 +688,7 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         // current share price and the maturity time of the shorts.
         _mint(
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, maturityTime),
-            msg.sender,
+            _destination,
             _bondAmount
         );
 
@@ -683,11 +699,13 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
     /// @param _maturityTime The maturity time of the short.
     /// @param _bondAmount The amount of shorts to close.
     /// @param _minOutput The minimum output of this trade.
+    /// @param _destination The address which gets the proceeds from closing this short
     /// @return The amount of base tokens produced by closing this short
     function closeShort(
         uint256 _maturityTime,
         uint256 _bondAmount,
-        uint256 _minOutput
+        uint256 _minOutput,
+        address _destination
     ) external returns (uint256) {
         if (_bondAmount == 0) {
             revert Errors.ZeroAmount();
@@ -759,7 +777,7 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
             sharePrice
         );
         // TODO - Better destination support
-        (uint256 baseProceeds, ) = withdraw(shortProceeds, msg.sender);
+        (uint256 baseProceeds, ) = withdraw(shortProceeds, _destination);
 
         // Enforce min user outputs
         if (baseProceeds < _minOutput) revert Errors.OutputLimit();

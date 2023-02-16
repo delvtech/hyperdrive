@@ -68,10 +68,12 @@ contract BondWrapper is ERC20Permit {
     /// @param  maturityTime The bond's expiry time
     /// @param amount The amount of bonds to redeem
     /// @param andBurn If true it will burn the number of erc20 minted by this deposited bond
+    /// @param destination The address which gets credited with this withdraw
     function close(
         uint256 maturityTime,
         uint256 amount,
-        bool andBurn
+        bool andBurn,
+        address destination
     ) external {
         // Encode the asset ID
         uint256 assetId = AssetId.encodeAssetId(
@@ -89,7 +91,12 @@ contract BondWrapper is ERC20Permit {
         uint256 receivedAmount;
         if (forceClosed == 0) {
             // Close the bond [selling if earlier than the expiration]
-            receivedAmount = hyperdrive.closeLong(maturityTime, amount, 0);
+            receivedAmount = hyperdrive.closeLong(
+                maturityTime,
+                amount,
+                0,
+                address(this)
+            );
             // Update the user account data, note this sub is safe because the top bits are zero.
             userAccounts[msg.sender][assetId] -= amount;
         } else {
@@ -117,7 +124,7 @@ contract BondWrapper is ERC20Permit {
         }
 
         // Transfer the released funds to the user
-        bool success = token.transfer(msg.sender, userFunds);
+        bool success = token.transfer(destination, userFunds);
         if (!success) revert Errors.TransferFailed();
     }
 
@@ -150,7 +157,8 @@ contract BondWrapper is ERC20Permit {
         uint256 receivedAmount = hyperdrive.closeLong(
             maturityTime,
             deposited,
-            0
+            0,
+            address(this)
         );
         // Store the user account update
         userAccounts[user][assetId] = (receivedAmount << 128) + deposited;
