@@ -521,7 +521,7 @@ contract HyperdriveTest is Test {
         assertEq(poolInfoAfter.shortAverageMaturityTime, 0);
     }
 
-    // TODO: Clean up these tests.
+    // TODO: Clean up these tests. 
     function test_close_long_redeem() external {
         uint256 apr = 0.05e18;
 
