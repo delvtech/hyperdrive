@@ -16,8 +16,8 @@ contract BondWrapper is ERC20Permit {
     // TODO - Should we make this mutable and updatable?
     uint256 public immutable mintPercent;
 
-    // Store the user deposits and withdraws
-    mapping(address => mapping(uint256 => uint256)) public userAccounts;
+    // Store the user deposits
+    mapping(address => mapping(uint256 => uint256)) public deposits;
 
     /// @notice Constructs the contract and initializes the variables.
     /// @param _hyperdrive The hyperdrive contract.
@@ -58,7 +58,7 @@ contract BondWrapper is ERC20Permit {
         _mint(msg.sender, mintAmount);
 
         // Add this to the deposited amount
-        userAccounts[msg.sender][assetId] += amount;
+        deposits[msg.sender][assetId] += amount;
     }
 
     /// @notice Closes a user account by selling the bond and then transferring the delta value of that
@@ -79,29 +79,19 @@ contract BondWrapper is ERC20Permit {
             maturityTime
         );
 
-        // We unload the variables from storage on the user account
-        uint256 userAccount = userAccounts[msg.sender][assetId];
-        // Forces overflow and deletion of bits in top 128 bits
-        uint256 deposited = (userAccount << 128) >> 128;
-        uint256 forceClosed = (userAccount >> 128);
-
         // Close the user position
         uint256 receivedAmount;
-        if (forceClosed == 0) {
+        if (maturityTime > block.timestamp) {
             // Close the bond [selling if earlier than the expiration]
             receivedAmount = hyperdrive.closeLong(maturityTime, amount, 0);
-            // Update the user account data, note this sub is safe because the top bits are zero.
-            userAccounts[msg.sender][assetId] -= amount;
         } else {
-            // If the user account was already closed we use the recorded closing price
-            receivedAmount = (forceClosed * amount) / deposited;
-            // Update the user account
-            deposited -= amount;
-            forceClosed -= receivedAmount;
-            userAccounts[msg.sender][assetId] =
-                (forceClosed << 128) +
-                deposited;
+            // Sell all assets
+            sweep(maturityTime);
+            // Sweep gauntness 1 to 1 conversion so the user gets exactly the amount they are closing
+            receivedAmount = amount;
         }
+        // Update the user balances
+        deposits[msg.sender][assetId] -= amount;
 
         // We require that this won't make the position unbacked
         uint256 mintedFromBonds = (amount * mintPercent) / 10000;
@@ -121,39 +111,22 @@ contract BondWrapper is ERC20Permit {
         if (!success) revert Errors.TransferFailed();
     }
 
-    /// @notice Allows a user to liquidate the contents of an account they do not own if
-    ///         the bond has already  matured. This cannot harm the user in question as the
-    ///         bond price will not increase above one. Funds freed remain in the contract.
-    /// @param user The user who's account will be liquidated
-    /// @param  maturityTime The user's bond's expiry time.
-    function forceClose(address user, uint256 maturityTime) public {
-        // Encode the asset ID
+    /// @notice Sells all assets from the contract if they are matured, has no affect if
+    ///         the conract has no assets from a timestamp
+    /// @param maturityTime The maturity time of the asset to sell
+    function sweep(uint256 maturityTime) public {
+        // Require only sweeping after maturity
+        if (maturityTime > block.timestamp) revert Errors.BondNotMatured();
+        // Load the balance of this contract
         uint256 assetId = AssetId.encodeAssetId(
             AssetId.AssetIdPrefix.Long,
             maturityTime
         );
-        // We unload the variables from storage on the user account
-        uint256 userAccount = userAccounts[user][assetId];
-        // Forces overflow and deletion of bits in top 128 bits
-        uint256 deposited = (userAccount << 128) >> 128;
-        uint256 forceClosed = (userAccount >> 128);
-
-        // Cannot close again
-        if (forceClosed != 0) revert Errors.AlreadyClosed();
-        // Cannot close if not  matured
-        // Note - This check is to prevent people from being able to liquate arbitrary positions and
-        //        interfere with other users positions. No new borrows can be done from these bonds
-        //        because no new borrows are allowed from  matured assets.
-        if (maturityTime > block.timestamp) revert Errors.BondNotMatured();
-
-        // Close the long
-        uint256 receivedAmount = hyperdrive.closeLong(
-            maturityTime,
-            deposited,
-            0
-        );
-        // Store the user account update
-        userAccounts[user][assetId] = (receivedAmount << 128) + deposited;
+        uint256 balance = hyperdrive.balanceOf(assetId, address(this));
+        // Only close if we have something to close
+        if (balance != 0) {
+            hyperdrive.closeLong(maturityTime, balance, balance);
+        }
     }
 
     /// @notice Burns a caller's erc20 and transfers the result from the contract's token balance.
@@ -168,15 +141,16 @@ contract BondWrapper is ERC20Permit {
     }
 
     /// @notice Calls both force close and redeem to enable easy liquidation of a user account
-    /// @param user The user who's account will be liquidated
-    /// @param  maturityTime The user's bond's expiry time.
+    /// @param  maturityTimes Maturity times which the caller would like to sweep before redeeming
     /// @param amount The amount of erc20 wrapper to burn.
-    function forceCloseAndRedeem(
-        address user,
-        uint256 maturityTime,
+    function sweepAndRedeem(
+        uint256[] calldata maturityTimes,
         uint256 amount
     ) external {
-        forceClose(user, maturityTime);
+        // Cycle through each maturity and sweep
+        for (uint256 i = 0; i < maturityTimes.length; i++) {
+            sweep(maturityTimes[i]);
+        }
         redeem(amount);
     }
 }
