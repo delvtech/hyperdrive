@@ -174,7 +174,6 @@ contract HyperdriveTest is Test {
         vm.stopPrank();
         vm.startPrank(bob);
         uint256 baseAmount = 10e18;
-
         baseToken.mint(baseAmount);
         baseToken.approve(address(hyperdrive), baseAmount);
         hyperdrive.openLong(baseAmount, 0, bob);
