@@ -87,7 +87,7 @@ contract BondWrapper is ERC20Permit {
         } else {
             // Sell all assets
             sweep(maturityTime);
-            // Sweep gauntness 1 to 1 conversion so the user gets exactly the amount they are closing
+            // Sweep guarantees 1 to 1 conversion so the user gets exactly the amount they are closing
             receivedAmount = amount;
         }
         // Update the user balances
