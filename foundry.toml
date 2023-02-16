@@ -21,5 +21,8 @@ via_ir = false
 remappings = ['forge-std=lib/forge-std/src', '@openzeppelin/=node_modules/@openzeppelin']
 # gas limit - max u64
 gas_limit = "18446744073709551615"
-
+# gas reports
+gas_reports = ["*"]
+# Build failure if warnings
+deny_warnings = true
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
