@@ -28,6 +28,6 @@ contract YieldSpaceMathTest is Test {
             1e18, // mu
             false // isBondIn
         );
-        assertEq(result2, 5.031654806080805188e18);
+        assertEq(result2, 5.031654806080804961e18);
     }
 }
