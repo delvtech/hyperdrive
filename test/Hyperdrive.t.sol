@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-// FIXME
-import "forge-std/console.sol";
-
 import { stdError } from "forge-std/StdError.sol";
 import { Test } from "forge-std/Test.sol";
 import { ForwarderFactory } from "contracts/ForwarderFactory.sol";
@@ -754,6 +751,10 @@ contract HyperdriveTest is Test {
             poolInfoBefore.longsOutstanding
         );
         assertEq(poolInfoAfter.longAverageMaturityTime, 0);
+        assertEq(poolInfoAfter.longBaseVolume, 0);
+        {
+            assertEq(hyperdrive.longAverageRealizedPrice(checkpointTime), 0);
+        }
         assertEq(
             poolInfoAfter.shortsOutstanding,
             poolInfoBefore.shortsOutstanding + bondAmount
@@ -763,6 +764,13 @@ contract HyperdriveTest is Test {
             maturityTime,
             1
         );
+        assertEq(poolInfoAfter.shortBaseVolume, baseAmount);
+        {
+            assertEq(
+                hyperdrive.shortAverageRealizedPrice(checkpointTime),
+                baseAmount.divDown(bondAmount)
+            );
+        }
     }
 
     function test_open_short_with_small_amount() external {
@@ -786,8 +794,8 @@ contract HyperdriveTest is Test {
         // Verify that Hyperdrive received the max loss and that Bob received
         // the short tokens.
         uint256 maxLoss = bondAmount - baseToken.balanceOf(bob);
-        uint256 maturityTime = (block.timestamp - (block.timestamp % 1 days)) +
-            365 days;
+        uint256 checkpointTime = block.timestamp - (block.timestamp % 1 days);
+        uint256 maturityTime = checkpointTime + 365 days;
         assertEq(
             baseToken.balanceOf(address(hyperdrive)),
             contribution + maxLoss
@@ -969,7 +977,7 @@ contract HyperdriveTest is Test {
             0
         );
         // Verify that bob doesn't end up with more base than he started with
-        assertGe(bondAmount, baseAmount);
+        assertGe(bondAmount, baseBalanceAfter);
 
         // Verify that the reserves were updated correctly. Since this trade
         // happens at the beginning of the term, the bond reserves should be
@@ -978,7 +986,7 @@ contract HyperdriveTest is Test {
         assertApproxEqAbs(
             poolInfoAfter.shareReserves,
             poolInfoBefore.shareReserves +
-                baseAmount.divDown(poolInfoBefore.sharePrice),
+                baseBalanceAfter.divDown(poolInfoBefore.sharePrice),
             1e18
         );
         assertEq(
@@ -992,11 +1000,23 @@ contract HyperdriveTest is Test {
             poolInfoBefore.longsOutstanding
         );
         assertEq(poolInfoAfter.longAverageMaturityTime, 0);
+        assertEq(poolInfoAfter.longBaseVolume, 0);
+        {
+            assertEq(hyperdrive.longAverageRealizedPrice(checkpointTime), 0);
+        }
         assertEq(
             poolInfoAfter.shortsOutstanding,
             poolInfoBefore.shortsOutstanding - bondAmount
         );
         assertEq(poolInfoAfter.shortAverageMaturityTime, 0);
+        assertApproxEqAbs(poolInfoAfter.shortBaseVolume, 0, 1e1);
+        {
+            assertApproxEqAbs(
+                hyperdrive.shortAverageRealizedPrice(checkpointTime),
+                baseAmount.divDown(bondAmount),
+                1
+            );
+        }
     }
 
     function test_close_short_immediately_with_small_amount() external {
@@ -1020,13 +1040,15 @@ contract HyperdriveTest is Test {
         // Immediately close the bonds.
         vm.stopPrank();
         vm.startPrank(bob);
-        uint256 maturityTime = (block.timestamp - (block.timestamp % 1 days)) +
-            365 days;
+        uint256 checkpointTime = block.timestamp - (block.timestamp % 1 days);
+        uint256 maturityTime = checkpointTime + 365 days;
+        uint256 maxLoss = bondAmount - baseToken.balanceOf(bob);
+        uint256 baseAmount = bondAmount - maxLoss;
         hyperdrive.closeShort(maturityTime, bondAmount, 0, bob);
 
         // Verify that all of Bob's bonds were burned and that he has
         // approximately as much base as he started with.
-        uint256 baseAmount = baseToken.balanceOf(bob);
+        uint256 baseBalanceAfter = baseToken.balanceOf(bob);
         assertEq(
             hyperdrive.balanceOf(
                 AssetId.encodeAssetId(
@@ -1038,7 +1060,7 @@ contract HyperdriveTest is Test {
             0
         );
         // Verify that bob doesn't end up with more base than he started with
-        assertGe(bondAmount, baseAmount);
+        assertGe(bondAmount, baseBalanceAfter);
 
         // Verify that the reserves were updated correctly. Since this trade
         // happens at the beginning of the term, the bond reserves should be
