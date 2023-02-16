@@ -453,8 +453,6 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
                 true // isBaseIn
             );
 
-        // Enforce min user outputs
-        if (_minOutput > bondProceeds) revert Errors.OutputLimit();
         uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
             shareReserves,
             bondReserves,
@@ -479,6 +477,9 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         // amount from the output.
         bondProceeds -= _curveFee - _flatFee;
         poolBondDelta -= _curveFee;
+
+        // Enforce min user outputs
+        if (_minOutput > bondProceeds) revert Errors.OutputLimit();
 
         // Apply the trading deltas to the reserves and update the amount of
         // longs outstanding.
