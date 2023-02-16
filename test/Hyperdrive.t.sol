@@ -99,7 +99,7 @@ contract HyperdriveTest is Test {
             hyperdrive.positionDuration(),
             hyperdrive.timeStretch()
         );
-        assertApproxEqAbs(poolApr, apr, 1e1); // 17 decimals of precision
+        assertApproxEqAbs(poolApr, apr, 1); // 17 decimals of precision
 
         // Ensure that Alice's base balance has been depleted and that Alice
         // received some LP tokens.
@@ -225,10 +225,16 @@ contract HyperdriveTest is Test {
             poolInfoAfter.longsOutstanding,
             poolInfoBefore.longsOutstanding + bondAmount
         );
+        assertApproxEqAbs(
+            poolInfoAfter.longAverageMaturityTime,
+            maturityTime,
+            1
+        );
         assertEq(
             poolInfoAfter.shortsOutstanding,
             poolInfoBefore.shortsOutstanding
         );
+        assertEq(poolInfoAfter.shortAverageMaturityTime, 0);
     }
 
     /// Close Long ///
@@ -370,10 +376,12 @@ contract HyperdriveTest is Test {
             poolInfoAfter.longsOutstanding,
             poolInfoBefore.longsOutstanding - bondAmount
         );
+        assertEq(poolInfoAfter.longAverageMaturityTime, 0);
         assertEq(
             poolInfoAfter.shortsOutstanding,
             poolInfoBefore.shortsOutstanding
         );
+        assertEq(poolInfoAfter.shortAverageMaturityTime, 0);
     }
 
     // TODO: Clean up these tests.
@@ -440,10 +448,12 @@ contract HyperdriveTest is Test {
             poolInfoAfter.longsOutstanding,
             poolInfoBefore.longsOutstanding - bondAmount
         );
+        assertEq(poolInfoAfter.longAverageMaturityTime, 0);
         assertEq(
             poolInfoAfter.shortsOutstanding,
             poolInfoBefore.shortsOutstanding
         );
+        assertEq(poolInfoAfter.shortAverageMaturityTime, 0);
     }
 
     /// Open Short ///
@@ -547,9 +557,15 @@ contract HyperdriveTest is Test {
             poolInfoAfter.longsOutstanding,
             poolInfoBefore.longsOutstanding
         );
+        assertEq(poolInfoAfter.longAverageMaturityTime, 0);
         assertEq(
             poolInfoAfter.shortsOutstanding,
             poolInfoBefore.shortsOutstanding + bondAmount
+        );
+        assertApproxEqAbs(
+            poolInfoAfter.shortAverageMaturityTime,
+            maturityTime,
+            1
         );
     }
 
@@ -688,10 +704,12 @@ contract HyperdriveTest is Test {
             poolInfoAfter.longsOutstanding,
             poolInfoBefore.longsOutstanding
         );
+        assertEq(poolInfoAfter.longAverageMaturityTime, 0);
         assertEq(
             poolInfoAfter.shortsOutstanding,
             poolInfoBefore.shortsOutstanding - bondAmount
         );
+        assertEq(poolInfoAfter.shortAverageMaturityTime, 0);
     }
 
     // TODO: Clean up these tests.
@@ -759,10 +777,12 @@ contract HyperdriveTest is Test {
             poolInfoAfter.longsOutstanding,
             poolInfoBefore.longsOutstanding
         );
+        assertEq(poolInfoAfter.longAverageMaturityTime, 0);
         assertEq(
             poolInfoAfter.shortsOutstanding,
             poolInfoBefore.shortsOutstanding - bondAmount
         );
+        assertEq(poolInfoAfter.shortAverageMaturityTime, 0);
     }
 
     /// Utils ///
@@ -784,7 +804,9 @@ contract HyperdriveTest is Test {
         uint256 lpTotalSupply;
         uint256 sharePrice;
         uint256 longsOutstanding;
+        uint256 longAverageMaturityTime;
         uint256 shortsOutstanding;
+        uint256 shortAverageMaturityTime;
     }
 
     function getPoolInfo() internal view returns (PoolInfo memory) {
@@ -794,7 +816,9 @@ contract HyperdriveTest is Test {
             uint256 lpTotalSupply,
             uint256 sharePrice,
             uint256 longsOutstanding,
-            uint256 shortsOutstanding
+            uint256 longAverageMaturityTime,
+            uint256 shortsOutstanding,
+            uint256 shortAverageMaturityTime
         ) = hyperdrive.getPoolInfo();
         return
             PoolInfo({
@@ -803,7 +827,9 @@ contract HyperdriveTest is Test {
                 lpTotalSupply: lpTotalSupply,
                 sharePrice: sharePrice,
                 longsOutstanding: longsOutstanding,
-                shortsOutstanding: shortsOutstanding
+                longAverageMaturityTime: longAverageMaturityTime,
+                shortsOutstanding: shortsOutstanding,
+                shortAverageMaturityTime: shortAverageMaturityTime
             });
     }
 }

@@ -824,8 +824,12 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
     /// @return bondReserves_ The bond reserves.
     /// @return lpTotalSupply The total supply of LP shares.
     /// @return sharePrice The share price.
-    /// @return longsOutstanding_ The longs that haven't been closed.
-    /// @return shortsOutstanding_ The shorts that haven't been closed.
+    /// @return longsOutstanding_ The outstanding longs that haven't matured.
+    /// @return longAverageMaturityTime_ The average maturity time of the
+    ///         outstanding longs.
+    /// @return shortsOutstanding_ The outstanding shorts that haven't matured.
+    /// @return shortAverageMaturityTime_ The average maturity time of the
+    ///         outstanding shorts.
     function getPoolInfo()
         external
         view
@@ -835,7 +839,9 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
             uint256 lpTotalSupply,
             uint256 sharePrice,
             uint256 longsOutstanding_,
-            uint256 shortsOutstanding_
+            uint256 longAverageMaturityTime_,
+            uint256 shortsOutstanding_,
+            uint256 shortAverageMaturityTime_
         )
     {
         return (
@@ -844,7 +850,9 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
             totalSupply[AssetId._LP_ASSET_ID],
             pricePerShare(),
             longsOutstanding,
-            shortsOutstanding
+            longAverageMaturityTime,
+            shortsOutstanding,
+            shortAverageMaturityTime
         );
     }
 
@@ -1143,6 +1151,7 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
                     .add(_positionAmount.mulDown(_positionMaturityTime))
                     .divDown(_positionsOutstanding.add(_positionAmount));
         } else {
+            if (_positionsOutstanding == _positionAmount) return 0;
             return
                 (_positionsOutstanding.mulDown(_averageMaturityTime))
                     .sub(_positionAmount.mulDown(_positionMaturityTime))
