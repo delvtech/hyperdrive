@@ -76,6 +76,9 @@ library YieldSpaceMath {
             // (((mu * shareReserves)^(1 - tau) + bondReserves^(1 - tau) - (bondReserves + bondIn)^(1 - tau) ) / (c / mu))^(1 / (1 - tau))) / mu
             newShareReserves = newShareReserves.divDown(_mu);
             // NOTE: shareReserves - sharesOut >= 0, but I think avoiding a complex number in the step above ensures this never happens
+            //
+            // Δz = z - 1/μ( ( c/μ * (μz)^(1 - t) + y^(1 - t) - (y + Δy)^(1 - t) ) / c/μ )^(1 / (1 - t))
+            //
             // sharesOut = shareReserves - (((c / mu) * (mu * shareReserves)^(1 - tau) + bondReserves^(1 - tau) - (bondReserves + bondIn)^(1 - tau) ) / (c / mu))^(1 / (1 - tau))) / mu
             return _shareReserves.sub(newShareReserves);
         }
