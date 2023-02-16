@@ -1,0 +1,32 @@
+on: ["push", "pull_request"]
+
+name: hyperdrive
+
+jobs:
+  check:
+    name: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: install node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 14.x
+
+      - name: install packages
+        uses: borales/actions-yarn@v4
+        with:
+          cmd: install # will run `yarn install` command
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # if needed
+
+      - name: install foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: test
+        run: FOUNDRY_PROFILE=production forge build

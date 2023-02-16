@@ -6,9 +6,11 @@
         "node": "^14"
     },
     "scripts": {
-        "build": "forge clean && forge build",
+        "build:prod": "FOUNDRY_PROFILE=production forge build",
+        "build:test": "FOUNDRY_PROFILE=production forge test --gas-report",
+        "build": "forge build",
         "clean": "forge clean",
-        "lint": "yarn solhint && yarn style-check && yarn spell-check && yarn build",
+        "lint": "yarn solhint && yarn style-check && yarn spell-check",
         "prettier": "npx prettier --write .",
         "test": "forge test -vvv",
         "solhint": "npx solhint -f table contracts/*.sol contracts/**/*.sol",
