@@ -375,44 +375,6 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         if (_minOutput > _proceeds) revert Errors.OutputLimit();
     }
 
-    /// @notice Redeems long and short withdrawal shares.
-    /// @param _longWithdrawalShares The long withdrawal shares to redeem.
-    /// @param _shortWithdrawalShares The short withdrawal shares to redeem.
-    function redeemWithdrawalShares(
-        uint256 _longWithdrawalShares,
-        uint256 _shortWithdrawalShares
-    ) external {
-        uint256 baseProceeds = 0;
-
-        // Perform a checkpoint.
-        uint256 sharePrice = pricePerShare();
-        _applyCheckpoint(_latestCheckpoint(), sharePrice);
-
-        // Redeem the long withdrawal shares.
-        uint256 proceeds = _applyWithdrawalShareRedemption(
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.LongWithdrawalShare, 0),
-            _longWithdrawalShares,
-            longWithdrawalSharesOutstanding,
-            longWithdrawalShareProceeds
-        );
-
-        // Redeem the short withdrawal shares.
-        proceeds += _applyWithdrawalShareRedemption(
-            AssetId.encodeAssetId(
-                AssetId.AssetIdPrefix.ShortWithdrawalShare,
-                0
-            ),
-            _shortWithdrawalShares,
-            shortWithdrawalSharesOutstanding,
-            shortWithdrawalShareProceeds
-        );
-
-        // Withdraw the funds released by redeeming the withdrawal shares.
-        // TODO: Better destination support.
-        uint256 shareProceeds = baseProceeds.divDown(sharePrice);
-        withdraw(shareProceeds, msg.sender);
-    }
-
     /// Long ///
 
     /// @notice Opens a long position.
