@@ -552,7 +552,6 @@ contract HyperdriveTest is Test {
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
             bob
         );
-
         hyperdrive.closeLong(maturityTime, bondAmount, 0, bob);
 
         // Verify that all of Bob's bonds were burned and that he has
