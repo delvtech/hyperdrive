@@ -35,7 +35,7 @@ library YieldSpaceMath {
         bool _isBaseIn
     ) internal pure returns (uint256) {
         // c / mu
-        uint256 cDivMu = _c.divDown(_mu);
+        uint256 cDivMu = _c.divDown(_mu); //divUp doesn't help
         // Adjust the bond reserve, optionally shifts the curve around the
         // inflection point
         _bondReserves = _bondReserves.add(_bondReserveAdjustment);
@@ -52,13 +52,13 @@ library YieldSpaceMath {
             // (mu * (shareReserves + amountIn))^(1 - tau)
             _shareReserves = _mu.mulDown(_shareReserves.add(_amountIn)).pow(
                 _stretchedTimeElapsed
-            );
+            ); // mulUp doesn't help
             // (c / mu) * (mu * (shareReserves + amountIn))^(1 - tau)
-            _shareReserves = cDivMu.mulDown(_shareReserves);
+            _shareReserves = cDivMu.mulDown(_shareReserves); // mulUp doesn't help
             // NOTE: k - shareReserves >= 0 to avoid a complex number
             // ((c / mu) * (mu * shareReserves)^(1 - tau) + bondReserves^(1 - tau) - (c / mu) * (mu * (shareReserves + amountIn))^(1 - tau))^(1 / (1 - tau)))
             uint256 newBondReserves = k.sub(_shareReserves).pow(
-                FixedPointMath.ONE_18.divDown(_stretchedTimeElapsed)
+                FixedPointMath.ONE_18.divUp(_stretchedTimeElapsed)
             );
             // NOTE: bondReserves - newBondReserves >= 0, but I think avoiding a complex number in the step above ensures this never happens
             // bondsOut = bondReserves - ( (c / mu) * (mu * shareReserves)^(1 - tau) + bondReserves^(1 - tau) - (c / mu) * (mu * (shareReserves + shareIn))^(1 - tau))^(1 / (1 - tau)))
