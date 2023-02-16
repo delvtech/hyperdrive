@@ -12,14 +12,18 @@ cache = true
 # The cache directory if enabled
 cache_path  = 'forge-cache'
 # Enables or disables the optimizer
-optimizer = true
-# The number of optimizer runs
-optimizer_runs = 7500
-# Whether or not to use the Yul intermediate representation compilation pipeline
-via_ir = false
-
 remappings = ['forge-std=lib/forge-std/src', '@openzeppelin/=node_modules/@openzeppelin']
 # gas limit - max u64
 gas_limit = "18446744073709551615"
-
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
+
+[profile.production]
+# strict warnings
+deny_warnings = true
+# optimizer settings
+optimizer = true
+optimizer_runs = 7500
+# Enable via-ir
+via_ir = true
+# Enable gas-reporting for all contracts
+gas_reports = ["*"]
