@@ -1145,9 +1145,6 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         uint256 _positionMaturityTime,
         bool _isOpen
     ) internal pure returns (uint256 averageMaturityTime) {
-        // Note: changing the division to divUp gets the average maturity time
-        // to withen 1 wei of the correct value as demonstrated by the test:
-        // test_open_long_with_small_amount()
         if (_isOpen) {
             return
                 (_positionsOutstanding.mulDown(_averageMaturityTime))

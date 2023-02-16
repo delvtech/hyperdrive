@@ -57,6 +57,7 @@ library FixedPointMath {
         }
     }
 
+    /// @dev Credit to Solmate (https://github.com/transmissions11/solmate/blob/main/src/utils/FixedPointMathLib.sol)
     /// @param a Fixed point number in 1e18 format.
     /// @param b Fixed point number in 1e18 format.
     /// @return Result of a * b rounded down.
@@ -64,6 +65,7 @@ library FixedPointMath {
         return (mulDivDown(a, b, 1e18));
     }
 
+    /// @dev Credit to Solmate (https://github.com/transmissions11/solmate/blob/main/src/utils/FixedPointMathLib.sol)
     /// @param a Fixed point number in 1e18 format.
     /// @param b Fixed point number in 1e18 format.
     /// @return Result of a / b rounded down.

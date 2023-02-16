@@ -35,7 +35,7 @@ library YieldSpaceMath {
         bool _isBaseIn
     ) internal pure returns (uint256) {
         // c / mu
-        uint256 cDivMu = _c.divDown(_mu); //divUp doesn't help
+        uint256 cDivMu = _c.divDown(_mu);
         // Adjust the bond reserve, optionally shifts the curve around the
         // inflection point
         _bondReserves = _bondReserves.add(_bondReserveAdjustment);
@@ -52,9 +52,9 @@ library YieldSpaceMath {
             // (mu * (shareReserves + amountIn))^(1 - tau)
             _shareReserves = _mu.mulDown(_shareReserves.add(_amountIn)).pow(
                 _stretchedTimeElapsed
-            ); // mulUp doesn't help
+            );
             // (c / mu) * (mu * (shareReserves + amountIn))^(1 - tau)
-            _shareReserves = cDivMu.mulDown(_shareReserves); // mulUp doesn't help
+            _shareReserves = cDivMu.mulDown(_shareReserves);
             // NOTE: k - shareReserves >= 0 to avoid a complex number
             // ((c / mu) * (mu * shareReserves)^(1 - tau) + bondReserves^(1 - tau) - (c / mu) * (mu * (shareReserves + amountIn))^(1 - tau))^(1 / (1 - tau)))
             uint256 newBondReserves = k.sub(_shareReserves).pow(
