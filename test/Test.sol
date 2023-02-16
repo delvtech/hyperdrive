@@ -82,21 +82,21 @@ library TestLib {
     function _arr(
         uint256 a,
         uint256 b
-    ) internal pure returns (uint256[] memory _arr) {
-        _arr = new uint256[](2);
-        _arr[0] = a;
-        _arr[1] = b;
+    ) internal pure returns (uint256[] memory array) {
+        array = new uint256[](2);
+        array[0] = a;
+        array[1] = b;
     }
 
     function _arr(
         uint256 a,
         uint256 b,
         uint256 c
-    ) internal pure returns (uint256[] memory _arr) {
-        _arr = new uint256[](3);
-        _arr[0] = a;
-        _arr[1] = b;
-        _arr[2] = c;
+    ) internal pure returns (uint256[] memory array) {
+        array = new uint256[](3);
+        array[0] = a;
+        array[1] = b;
+        array[2] = c;
     }
 
     function _arr(
@@ -104,12 +104,12 @@ library TestLib {
         uint256 b,
         uint256 c,
         uint256 d
-    ) internal pure returns (uint256[] memory _arr) {
-        _arr = new uint256[](4);
-        _arr[0] = a;
-        _arr[1] = b;
-        _arr[2] = c;
-        _arr[3] = d;
+    ) internal pure returns (uint256[] memory array) {
+        array = new uint256[](4);
+        array[0] = a;
+        array[1] = b;
+        array[2] = c;
+        array[3] = d;
     }
 
     function _arr(
@@ -118,33 +118,138 @@ library TestLib {
         uint256 c,
         uint256 d,
         uint256 e
-    ) internal pure returns (uint256[] memory _arr) {
-        _arr = new uint256[](5);
-        _arr[0] = a;
-        _arr[1] = b;
-        _arr[2] = c;
-        _arr[3] = d;
-        _arr[4] = e;
+    ) internal pure returns (uint256[] memory array) {
+        array = new uint256[](5);
+        array[0] = a;
+        array[1] = b;
+        array[2] = c;
+        array[3] = d;
+        array[4] = e;
+    }
+
+    function _arr(
+        uint256 a,
+        uint256 b,
+        uint256 c,
+        uint256 d,
+        uint256 e,
+        uint256 f
+    ) internal pure returns (uint256[] memory array) {
+        array = new uint256[](6);
+        array[0] = a;
+        array[1] = b;
+        array[2] = c;
+        array[3] = d;
+        array[4] = e;
+        array[5] = f;
+    }
+
+    function _arr(
+        uint256 a,
+        uint256 b,
+        uint256 c,
+        uint256 d,
+        uint256 e,
+        uint256 f,
+        uint256 g
+    ) internal pure returns (uint256[] memory array) {
+        array = new uint256[](7);
+        array[0] = a;
+        array[1] = b;
+        array[2] = c;
+        array[3] = d;
+        array[4] = e;
+        array[5] = f;
+        array[6] = g;
+    }
+
+   function _arr(
+        uint256 a,
+        uint256 b,
+        uint256 c,
+        uint256 d,
+        uint256 e,
+        uint256 f,
+        uint256 g,
+        uint256 h
+    ) internal pure returns (uint256[] memory array) {
+        array = new uint256[](8);
+        array[0] = a;
+        array[1] = b;
+        array[2] = c;
+        array[3] = d;
+        array[4] = e;
+        array[5] = f;
+        array[6] = g;
+        array[7] = h;
+    }
+
+    function _arr(
+        uint256 a,
+        uint256 b,
+        uint256 c,
+        uint256 d,
+        uint256 e,
+        uint256 f,
+        uint256 g,
+        uint256 h,
+        uint256 i
+    ) internal pure returns (uint256[] memory array) {
+        array = new uint256[](9);
+        array[0] = a;
+        array[1] = b;
+        array[2] = c;
+        array[3] = d;
+        array[4] = e;
+        array[5] = f;
+        array[6] = g;
+        array[7] = h;
+        array[8] = i;
+    }
+
+    function _arr(
+        uint256 a,
+        uint256 b,
+        uint256 c,
+        uint256 d,
+        uint256 e,
+        uint256 f,
+        uint256 g,
+        uint256 h,
+        uint256 i,
+        uint256 j
+    ) internal pure returns (uint256[] memory array) {
+        array = new uint256[](10);
+        array[0] = a;
+        array[1] = b;
+        array[2] = c;
+        array[3] = d;
+        array[4] = e;
+        array[5] = f;
+        array[6] = g;
+        array[7] = h;
+        array[8] = i;
+        array[9] = j;
     }
 
     function _arr(
         uint256[] memory a,
         uint256[] memory b
-    ) internal pure returns (uint256[][] memory _arr) {
-        _arr = new uint256[][](2);
-        _arr[0] = a;
-        _arr[1] = b;
+    ) internal pure returns (uint256[][] memory array) {
+        array = new uint256[][](2);
+        array[0] = a;
+        array[1] = b;
     }
 
     function _arr(
         uint256[] memory a,
         uint256[] memory b,
         uint256[] memory c
-    ) internal pure returns (uint256[][] memory _arr) {
-        _arr = new uint256[][](3);
-        _arr[0] = a;
-        _arr[1] = b;
-        _arr[2] = c;
+    ) internal pure returns (uint256[][] memory array) {
+        array = new uint256[][](3);
+        array[0] = a;
+        array[1] = b;
+        array[2] = c;
     }
 
     function _arr(
@@ -152,12 +257,12 @@ library TestLib {
         uint256[] memory b,
         uint256[] memory c,
         uint256[] memory d
-    ) internal pure returns (uint256[][] memory _arr) {
-        _arr = new uint256[][](4);
-        _arr[0] = a;
-        _arr[1] = b;
-        _arr[2] = c;
-        _arr[3] = d;
+    ) internal pure returns (uint256[][] memory array) {
+        array = new uint256[][](4);
+        array[0] = a;
+        array[1] = b;
+        array[2] = c;
+        array[3] = d;
     }
 
     function _arr(
@@ -166,13 +271,118 @@ library TestLib {
         uint256[] memory c,
         uint256[] memory d,
         uint256[] memory e
-    ) internal pure returns (uint256[][] memory _arr) {
-        _arr = new uint256[][](5);
-        _arr[0] = a;
-        _arr[1] = b;
-        _arr[2] = c;
-        _arr[3] = d;
-        _arr[4] = e;
+    ) internal pure returns (uint256[][] memory array) {
+        array = new uint256[][](5);
+        array[0] = a;
+        array[1] = b;
+        array[2] = c;
+        array[3] = d;
+        array[4] = e;
+    }
+
+    function _arr(
+        uint256[] memory a,
+        uint256[] memory b,
+        uint256[] memory c,
+        uint256[] memory d,
+        uint256[] memory e,
+        uint256[] memory f
+    ) internal pure returns (uint256[][] memory array) {
+        array = new uint256[][](6);
+        array[0] = a;
+        array[1] = b;
+        array[2] = c;
+        array[3] = d;
+        array[4] = e;
+        array[5] = f;
+    }
+
+    function _arr(
+        uint256[] memory a,
+        uint256[] memory b,
+        uint256[] memory c,
+        uint256[] memory d,
+        uint256[] memory e,
+        uint256[] memory f,
+        uint256[] memory g
+    ) internal pure returns (uint256[][] memory array) {
+        array = new uint256[][](7);
+        array[0] = a;
+        array[1] = b;
+        array[2] = c;
+        array[3] = d;
+        array[4] = e;
+        array[5] = f;
+        array[6] = g;
+    }
+
+    function _arr(
+        uint256[] memory a,
+        uint256[] memory b,
+        uint256[] memory c,
+        uint256[] memory d,
+        uint256[] memory e,
+        uint256[] memory f,
+        uint256[] memory g,
+        uint256[] memory h
+    ) internal pure returns (uint256[][] memory array) {
+        array = new uint256[][](8);
+        array[0] = a;
+        array[1] = b;
+        array[2] = c;
+        array[3] = d;
+        array[4] = e;
+        array[5] = f;
+        array[6] = g;
+        array[7] = h;
+    }
+
+    function _arr(
+        uint256[] memory a,
+        uint256[] memory b,
+        uint256[] memory c,
+        uint256[] memory d,
+        uint256[] memory e,
+        uint256[] memory f,
+        uint256[] memory g,
+        uint256[] memory h,
+        uint256[] memory i
+    ) internal pure returns (uint256[][] memory array) {
+        array = new uint256[][](9);
+        array[0] = a;
+        array[1] = b;
+        array[2] = c;
+        array[3] = d;
+        array[4] = e;
+        array[5] = f;
+        array[6] = g;
+        array[7] = h;
+        array[8] = i;
+    }
+
+    function _arr(
+        uint256[] memory a,
+        uint256[] memory b,
+        uint256[] memory c,
+        uint256[] memory d,
+        uint256[] memory e,
+        uint256[] memory f,
+        uint256[] memory g,
+        uint256[] memory h,
+        uint256[] memory i,
+        uint256[] memory j
+    ) internal pure returns (uint256[][] memory array) {
+        array = new uint256[][](10);
+        array[0] = a;
+        array[1] = b;
+        array[2] = c;
+        array[3] = d;
+        array[4] = e;
+        array[5] = f;
+        array[6] = g;
+        array[7] = h;
+        array[8] = i;
+        array[9] = j;
     }
 
     function eq(bytes memory b1, bytes memory b2) public pure returns (bool) {
