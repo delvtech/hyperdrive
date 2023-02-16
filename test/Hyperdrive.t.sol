@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
+// FIXME
+import "forge-std/console.sol";
+
 import { stdError } from "forge-std/StdError.sol";
 import { Test } from "forge-std/Test.sol";
 import { ForwarderFactory } from "contracts/ForwarderFactory.sol";
@@ -188,8 +191,8 @@ contract HyperdriveTest is Test {
         // Verify that Bob received an acceptable amount of bonds. Since the
         // base amount is very low relative to the pool's liquidity, the implied
         // APR should be approximately equal to the pool's APR.
-        uint256 maturityTime = (block.timestamp - (block.timestamp % 1 days)) +
-            365 days;
+        uint256 checkpointTime = block.timestamp - (block.timestamp % 1 days);
+        uint256 maturityTime = checkpointTime + 365 days;
         uint256 bondAmount = hyperdrive.balanceOf(
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
             bob
@@ -300,11 +303,23 @@ contract HyperdriveTest is Test {
             maturityTime,
             1
         );
+        assertEq(poolInfoAfter.longBaseVolume, baseAmount);
+        {
+            assertApproxEqAbs(
+                hyperdrive.longAverageRealizedPrice(checkpointTime),
+                baseAmount.divDown(bondAmount),
+                1
+            );
+        }
         assertEq(
             poolInfoAfter.shortsOutstanding,
             poolInfoBefore.shortsOutstanding
         );
         assertEq(poolInfoAfter.shortAverageMaturityTime, 0);
+        assertEq(poolInfoAfter.shortBaseVolume, 0);
+        {
+            assertEq(hyperdrive.shortAverageRealizedPrice(checkpointTime), 0);
+        }
     }
 
     /// Close Long ///
@@ -404,8 +419,8 @@ contract HyperdriveTest is Test {
         // Immediately close the bonds.
         vm.stopPrank();
         vm.startPrank(bob);
-        uint256 maturityTime = (block.timestamp - (block.timestamp % 1 days)) +
-            365 days;
+        uint256 checkpointTime = block.timestamp - (block.timestamp % 1 days);
+        uint256 maturityTime = checkpointTime + 365 days;
         uint256 bondAmount = hyperdrive.balanceOf(
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
             bob
@@ -514,11 +529,23 @@ contract HyperdriveTest is Test {
             poolInfoBefore.longsOutstanding - bondAmount
         );
         assertEq(poolInfoAfter.longAverageMaturityTime, 0);
+        assertApproxEqAbs(poolInfoAfter.longBaseVolume, 0, 1e2);
+        {
+            assertApproxEqAbs(
+                hyperdrive.longAverageRealizedPrice(checkpointTime),
+                baseAmount.divDown(bondAmount),
+                1
+            );
+        }
         assertEq(
             poolInfoAfter.shortsOutstanding,
             poolInfoBefore.shortsOutstanding
         );
         assertEq(poolInfoAfter.shortAverageMaturityTime, 0);
+        assertEq(poolInfoAfter.shortBaseVolume, 0);
+        {
+            assertEq(hyperdrive.shortAverageRealizedPrice(checkpointTime), 0);
+        }
     }
 
     // TODO: Clean up these tests.
@@ -536,8 +563,8 @@ contract HyperdriveTest is Test {
         baseToken.mint(baseAmount);
         baseToken.approve(address(hyperdrive), baseAmount);
         hyperdrive.openLong(baseAmount, 0, bob);
-        uint256 maturityTime = (block.timestamp - (block.timestamp % 1 days)) +
-            365 days;
+        uint256 checkpointTime = block.timestamp - (block.timestamp % 1 days);
+        uint256 maturityTime = checkpointTime + 365 days;
 
         // Get the reserves before closing the long.
         PoolInfo memory poolInfoBefore = getPoolInfo();
@@ -582,11 +609,24 @@ contract HyperdriveTest is Test {
             poolInfoBefore.longsOutstanding - bondAmount
         );
         assertEq(poolInfoAfter.longAverageMaturityTime, 0);
+        // TODO
+        assertApproxEqAbs(poolInfoAfter.longBaseVolume, 0, 1e2);
+        {
+            assertApproxEqAbs(
+                hyperdrive.longAverageRealizedPrice(checkpointTime),
+                baseAmount.divDown(bondAmount),
+                1
+            );
+        }
         assertEq(
             poolInfoAfter.shortsOutstanding,
             poolInfoBefore.shortsOutstanding
         );
         assertEq(poolInfoAfter.shortAverageMaturityTime, 0);
+        assertEq(poolInfoAfter.shortBaseVolume, 0);
+        {
+            assertEq(hyperdrive.shortAverageRealizedPrice(checkpointTime), 0);
+        }
     }
 
     /// Open Short ///
@@ -643,8 +683,8 @@ contract HyperdriveTest is Test {
         // Verify that Hyperdrive received the max loss and that Bob received
         // the short tokens.
         uint256 maxLoss = bondAmount - baseToken.balanceOf(bob);
-        uint256 maturityTime = (block.timestamp - (block.timestamp % 1 days)) +
-            365 days;
+        uint256 checkpointTime = block.timestamp - (block.timestamp % 1 days);
+        uint256 maturityTime = checkpointTime + 365 days;
         assertEq(
             baseToken.balanceOf(address(hyperdrive)),
             contribution + maxLoss
@@ -771,6 +811,10 @@ contract HyperdriveTest is Test {
             poolInfoBefore.longsOutstanding
         );
         assertEq(poolInfoAfter.longAverageMaturityTime, 0);
+        assertEq(poolInfoAfter.longBaseVolume, 0);
+        {
+            assertEq(hyperdrive.longAverageRealizedPrice(checkpointTime), 0);
+        }
         assertEq(
             poolInfoAfter.shortsOutstanding,
             poolInfoBefore.shortsOutstanding + bondAmount
@@ -780,6 +824,13 @@ contract HyperdriveTest is Test {
             maturityTime,
             1
         );
+        assertEq(poolInfoAfter.shortBaseVolume, baseAmount);
+        {
+            assertEq(
+                hyperdrive.shortAverageRealizedPrice(checkpointTime),
+                baseAmount.divDown(bondAmount)
+            );
+        }
     }
 
     /// Close Short ///
@@ -875,13 +926,15 @@ contract HyperdriveTest is Test {
         // Immediately close the bonds.
         vm.stopPrank();
         vm.startPrank(bob);
-        uint256 maturityTime = (block.timestamp - (block.timestamp % 1 days)) +
-            365 days;
+        uint256 maxLoss = bondAmount - baseToken.balanceOf(bob);
+        uint256 baseAmount = bondAmount - maxLoss;
+        uint256 checkpointTime = block.timestamp - (block.timestamp % 1 days);
+        uint256 maturityTime = checkpointTime + 365 days;
         hyperdrive.closeShort(maturityTime, bondAmount, 0, bob);
 
         // Verify that all of Bob's bonds were burned and that he has
         // approximately as much base as he started with.
-        uint256 baseAmount = baseToken.balanceOf(bob);
+        uint256 baseBalanceAfter = baseToken.balanceOf(bob);
         assertEq(
             hyperdrive.balanceOf(
                 AssetId.encodeAssetId(
@@ -971,7 +1024,7 @@ contract HyperdriveTest is Test {
         assertApproxEqAbs(
             poolInfoAfter.shareReserves,
             poolInfoBefore.shareReserves +
-                baseAmount.divDown(poolInfoBefore.sharePrice),
+                baseBalanceAfter.divDown(poolInfoBefore.sharePrice),
             1e18
         );
         assertEq(
@@ -985,11 +1038,24 @@ contract HyperdriveTest is Test {
             poolInfoBefore.longsOutstanding
         );
         assertEq(poolInfoAfter.longAverageMaturityTime, 0);
+        assertEq(poolInfoAfter.longBaseVolume, 0);
+        {
+            assertEq(hyperdrive.longAverageRealizedPrice(checkpointTime), 0);
+        }
         assertEq(
             poolInfoAfter.shortsOutstanding,
             poolInfoBefore.shortsOutstanding - bondAmount
         );
         assertEq(poolInfoAfter.shortAverageMaturityTime, 0);
+        // FIXME
+        assertApproxEqAbs(poolInfoAfter.shortBaseVolume, 0, 1e2);
+        {
+            assertApproxEqAbs(
+                hyperdrive.shortAverageRealizedPrice(checkpointTime),
+                baseAmount.divDown(bondAmount),
+                1
+            );
+        }
     }
 
     // TODO: Clean up these tests.
@@ -1007,8 +1073,8 @@ contract HyperdriveTest is Test {
         baseToken.mint(bondAmount);
         baseToken.approve(address(hyperdrive), bondAmount);
         hyperdrive.openShort(bondAmount, type(uint256).max, bob);
-        uint256 maturityTime = (block.timestamp - (block.timestamp % 1 days)) +
-            365 days;
+        uint256 checkpointTime = block.timestamp - (block.timestamp % 1 days);
+        uint256 maturityTime = checkpointTime + 365 days;
 
         // Get the reserves before closing the long.
         PoolInfo memory poolInfoBefore = getPoolInfo();
@@ -1022,6 +1088,8 @@ contract HyperdriveTest is Test {
         // Redeem the bonds
         vm.stopPrank();
         vm.startPrank(bob);
+        uint256 maxLoss = bondAmount - baseToken.balanceOf(bob);
+        uint256 baseAmount = bondAmount - maxLoss;
         hyperdrive.closeShort(maturityTime, bondAmount, 0, bob);
 
         // TODO: Investigate this more to see if there are any irregularities
@@ -1058,11 +1126,24 @@ contract HyperdriveTest is Test {
             poolInfoBefore.longsOutstanding
         );
         assertEq(poolInfoAfter.longAverageMaturityTime, 0);
+        assertEq(poolInfoAfter.longBaseVolume, 0);
+        {
+            assertEq(hyperdrive.longAverageRealizedPrice(checkpointTime), 0);
+        }
         assertEq(
             poolInfoAfter.shortsOutstanding,
             poolInfoBefore.shortsOutstanding - bondAmount
         );
         assertEq(poolInfoAfter.shortAverageMaturityTime, 0);
+        // TODO
+        assertApproxEqAbs(poolInfoAfter.shortBaseVolume, 0, 1e2);
+        {
+            assertApproxEqAbs(
+                hyperdrive.shortAverageRealizedPrice(checkpointTime),
+                baseAmount.divDown(bondAmount),
+                1
+            );
+        }
     }
 
     /// Utils ///
@@ -1085,8 +1166,10 @@ contract HyperdriveTest is Test {
         uint256 sharePrice;
         uint256 longsOutstanding;
         uint256 longAverageMaturityTime;
+        uint256 longBaseVolume;
         uint256 shortsOutstanding;
         uint256 shortAverageMaturityTime;
+        uint256 shortBaseVolume;
     }
 
     function getPoolInfo() internal view returns (PoolInfo memory) {
@@ -1097,8 +1180,10 @@ contract HyperdriveTest is Test {
             uint256 sharePrice,
             uint256 longsOutstanding,
             uint256 longAverageMaturityTime,
+            uint256 longBaseVolume,
             uint256 shortsOutstanding,
-            uint256 shortAverageMaturityTime
+            uint256 shortAverageMaturityTime,
+            uint256 shortBaseVolume
         ) = hyperdrive.getPoolInfo();
         return
             PoolInfo({
@@ -1108,8 +1193,10 @@ contract HyperdriveTest is Test {
                 sharePrice: sharePrice,
                 longsOutstanding: longsOutstanding,
                 longAverageMaturityTime: longAverageMaturityTime,
+                longBaseVolume: longBaseVolume,
                 shortsOutstanding: shortsOutstanding,
-                shortAverageMaturityTime: shortAverageMaturityTime
+                shortAverageMaturityTime: shortAverageMaturityTime,
+                shortBaseVolume: shortBaseVolume
             });
     }
 }
