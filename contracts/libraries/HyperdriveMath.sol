@@ -4,7 +4,6 @@ pragma solidity ^0.8.18;
 import { Errors } from "contracts/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
 import { YieldSpaceMath } from "contracts/libraries/YieldSpaceMath.sol";
-import "forge-std/console2.sol";
 
 /// @author Delve
 /// @title Hyperdrive
@@ -176,13 +175,9 @@ library HyperdriveMath {
             uint256 flat = _amountIn.mulDown(
                 FixedPointMath.ONE_18.sub(_normalizedTimeRemaining)
             );
-            console2.log("flat", flat);
             _shareReserves = _shareReserves.add(flat);
             _bondReserves = _bondReserves.sub(flat.mulDown(_sharePrice));
             uint256 curveIn = _amountIn.mulDown(_normalizedTimeRemaining);
-            console2.log("normalizedTimeRemaining: ", _normalizedTimeRemaining);
-            console2.log("amountIn: ", _amountIn);
-            console2.log("curveIn", curveIn);
             uint256 curveOut = YieldSpaceMath.calculateOutGivenIn(
                 _shareReserves,
                 _bondReserves,
@@ -215,7 +210,6 @@ library HyperdriveMath {
             uint256 curveIn = _amountIn
                 .mulDown(_normalizedTimeRemaining)
                 .divDown(_sharePrice);
-            console2.log("curveIn: ", curveIn);
             uint256 curveOut = 0;
             if(curveIn > 0){
                 curveOut = YieldSpaceMath.calculateOutGivenIn(

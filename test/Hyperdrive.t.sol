@@ -11,7 +11,6 @@ import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/libraries/HyperdriveMath.sol";
 import { ERC20Mintable } from "test/mocks/ERC20Mintable.sol";
 import { MockHyperdrive } from "test/mocks/MockHyperdrive.sol";
-import "forge-std/console2.sol";
 
 contract HyperdriveTest is Test {
     using FixedPointMath for uint256;
@@ -511,8 +510,6 @@ contract HyperdriveTest is Test {
         );
         // Verify that bob doesn't end up with more than he started with
         assertGe(baseAmount, baseProceeds);
-        console2.log("baseProceeds: ", baseProceeds);
-        console2.log("baseAmount: ", baseAmount);
 
         // Verify that the reserves were updated correctly. Since this trade
         // happens at the beginning of the term, the bond reserves should be
