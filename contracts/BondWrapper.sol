@@ -16,7 +16,7 @@ contract BondWrapper is ERC20Permit {
     // TODO - Should we make this mutable and updatable?
     uint256 public immutable mintPercent;
 
-    // Store the user deposits as a mapping from user address -> asset id -> amount 
+    // Store the user deposits as a mapping from user address -> asset id -> amount
     mapping(address => mapping(uint256 => uint256)) public deposits;
 
     /// @notice Constructs the contract and initializes the variables.
@@ -42,7 +42,11 @@ contract BondWrapper is ERC20Permit {
     /// @param  maturityTime The bond's expiry time
     /// @param amount The amount of bonds to mint
     /// @param destination The address which gets credited with these funds
-    function mint(uint256 maturityTime, uint256 amount, address destination) external {
+    function mint(
+        uint256 maturityTime,
+        uint256 amount,
+        address destination
+    ) external {
         // Encode the asset ID
         uint256 assetId = AssetId.encodeAssetId(
             AssetId.AssetIdPrefix.Long,
@@ -86,7 +90,12 @@ contract BondWrapper is ERC20Permit {
         uint256 receivedAmount;
         if (maturityTime > block.timestamp) {
             // Close the bond [selling if earlier than the expiration]
-            receivedAmount = hyperdrive.closeLong(maturityTime, amount, 0, address(this));
+            receivedAmount = hyperdrive.closeLong(
+                maturityTime,
+                amount,
+                0,
+                address(this)
+            );
             // Update the user account data, note this sub is safe because the top bits are zero.
             userAccounts[msg.sender][assetId] -= amount;
         } else {
