@@ -814,6 +814,40 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
 
     /// Getters ///
 
+    // TODO: The fee parameters aren't immutable right now, but arguably they
+    //       should be.
+    //
+    /// @notice Gets the pool's configuration parameters.
+    /// @dev These parameters are immutable, so this should only need to be
+    ///      called once.
+    /// @return initialSharePrice_ The initial share price.
+    /// @return positionDuration_ The duration of positions.
+    /// @return checkpointDuration_ The duration of checkpoints.
+    /// @return timeStretch_ The time stretch configuration.
+    /// @return flatFee_ The flat fee parameter.
+    /// @return curveFee_ The flat fee parameter.
+    function getPoolConfiguration()
+        external
+        view
+        returns (
+            uint256 initialSharePrice_,
+            uint256 positionDuration_,
+            uint256 checkpointDuration_,
+            uint256 timeStretch_,
+            uint256 flatFee_,
+            uint256 curveFee_
+        )
+    {
+        return (
+            initialSharePrice,
+            positionDuration,
+            checkpointDuration,
+            timeStretch,
+            flatFee,
+            curveFee
+        );
+    }
+
     /// @notice Gets info about the pool's reserves and other state that is
     ///         important to evaluate potential trades.
     /// @return shareReserves_ The share reserves.
