@@ -1006,7 +1006,7 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         // Update the long base volume.
         longBaseVolume -= longAverageRealizedPrice[
             _maturityTime - positionDuration
-        ].mulDown(_bondAmount);
+        ].mulUp(_bondAmount);
 
         // Reduce the amount of outstanding longs.
         longsOutstanding -= _bondAmount;

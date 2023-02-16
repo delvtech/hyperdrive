@@ -320,13 +320,13 @@ library FixedPointMath {
             return
                 (_totalWeight.mulDown(_average))
                     .add(_deltaWeight.mulDown(_delta))
-                    .divDown(_totalWeight.add(_deltaWeight));
+                    .divUp(_totalWeight.add(_deltaWeight));
         } else {
             if (_totalWeight == _deltaWeight) return 0;
             return
                 (_totalWeight.mulDown(_average))
                     .sub(_deltaWeight.mulDown(_delta))
-                    .divDown(_totalWeight.sub(_delta));
+                    .divUp(_totalWeight.sub(_delta));
         }
     }
 }
