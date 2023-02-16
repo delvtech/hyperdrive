@@ -879,9 +879,6 @@ contract HyperdriveTest is Test {
             365 days;
         hyperdrive.closeShort(maturityTime, bondAmount, 0, bob);
 
-        // TODO: Bob receives more base than he started with. Fees should take
-        // care of this, but this should be investigating nonetheless.
-        //
         // Verify that all of Bob's bonds were burned and that he has
         // approximately as much base as he started with.
         uint256 baseAmount = baseToken.balanceOf(bob);
@@ -895,7 +892,77 @@ contract HyperdriveTest is Test {
             ),
             0
         );
-        assertApproxEqAbs(baseAmount, bondAmount, 1e10);
+        // Verify that bob doesn't end up with more base than he started with
+        assertGe(bondAmount, baseAmount);
+
+        // Verify that the reserves were updated correctly. Since this trade
+        // happens at the beginning of the term, the bond reserves should be
+        // increased by the full amount.
+        PoolInfo memory poolInfoAfter = getPoolInfo();
+        assertApproxEqAbs(
+            poolInfoAfter.shareReserves,
+            poolInfoBefore.shareReserves +
+                baseAmount.divDown(poolInfoBefore.sharePrice),
+            1e18
+        );
+        assertEq(
+            poolInfoAfter.bondReserves,
+            poolInfoBefore.bondReserves - bondAmount
+        );
+        assertEq(poolInfoAfter.lpTotalSupply, poolInfoBefore.lpTotalSupply);
+        assertEq(poolInfoAfter.sharePrice, poolInfoBefore.sharePrice);
+        assertEq(
+            poolInfoAfter.longsOutstanding,
+            poolInfoBefore.longsOutstanding
+        );
+        assertEq(poolInfoAfter.longAverageMaturityTime, 0);
+        assertEq(
+            poolInfoAfter.shortsOutstanding,
+            poolInfoBefore.shortsOutstanding - bondAmount
+        );
+        assertEq(poolInfoAfter.shortAverageMaturityTime, 0);
+    }
+
+    function test_close_short_immediately_with_small_amount() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Purchase some bonds.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        uint256 bondAmount = .1e18;
+        baseToken.mint(bondAmount);
+        baseToken.approve(address(hyperdrive), bondAmount);
+        hyperdrive.openShort(bondAmount, type(uint256).max, bob);
+
+        // Get the reserves before closing the long.
+        PoolInfo memory poolInfoBefore = getPoolInfo();
+
+        // Immediately close the bonds.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        uint256 maturityTime = (block.timestamp - (block.timestamp % 1 days)) +
+            365 days;
+        hyperdrive.closeShort(maturityTime, bondAmount, 0, bob);
+
+        // Verify that all of Bob's bonds were burned and that he has
+        // approximately as much base as he started with.
+        uint256 baseAmount = baseToken.balanceOf(bob);
+        assertEq(
+            hyperdrive.balanceOf(
+                AssetId.encodeAssetId(
+                    AssetId.AssetIdPrefix.Short,
+                    maturityTime
+                ),
+                bob
+            ),
+            0
+        );
+        // Verify that bob doesn't end up with more base than he started with
+        assertGe(bondAmount, baseAmount);
 
         // Verify that the reserves were updated correctly. Since this trade
         // happens at the beginning of the term, the bond reserves should be
@@ -973,7 +1040,7 @@ contract HyperdriveTest is Test {
             ),
             0
         );
-        assertApproxEqAbs(baseBalanceAfter, baseBalanceBefore, 1e10);
+        assertEq(baseBalanceAfter, baseBalanceBefore);
 
         // Verify that the reserves were updated correctly. Since this trade
         // is a redemption, there should be no changes to the bond reserves.
