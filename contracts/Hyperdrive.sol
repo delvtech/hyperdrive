@@ -72,6 +72,12 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
     /// @notice The proceeds that have accrued to the short withdrawal shares.
     uint256 public shortWithdrawalShareProceeds;
 
+    // @notice the fee paramater to apply to the curve portion of the hyperdrive trade equation.
+    uint256 public curveFee;
+
+    // @notice the fee paramater to apply to the flat portion of the hyperdrive trade equation.
+    uint256 public flatFee;
+
     /// @notice Initializes a Hyperdrive pool.
     /// @param _linkerCodeHash The hash of the ERC20 linker contract's
     ///        constructor code.
@@ -85,6 +91,8 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
     ///        checkpoints. Position duration must be a multiple of checkpoint
     ///        duration.
     /// @param _timeStretch The time stretch of the pool.
+    /// @param _curveFee The fee parameter for the curve portion of the hyperdrive trade equation.
+    /// @param _flatFee The fee parameter for the flat portion of the hyperdrive trade equation.
     constructor(
         bytes32 _linkerCodeHash,
         address _linkerFactory,
@@ -92,7 +100,9 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         uint256 _initialSharePrice,
         uint256 _checkpointsPerTerm,
         uint256 _checkpointDuration,
-        uint256 _timeStretch
+        uint256 _timeStretch,
+        uint256 _curveFee,
+        uint256 _flatFee
     ) MultiToken(_linkerCodeHash, _linkerFactory) {
         // Initialize the base token address.
         baseToken = _baseToken;
@@ -102,8 +112,10 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         checkpointDuration = _checkpointDuration;
         timeStretch = _timeStretch;
 
-        // Initialize the share prices.
         initialSharePrice = _initialSharePrice;
+
+        curveFee = _curveFee;
+        flatFee = _flatFee;
     }
 
     /// Yield Source ///
@@ -433,13 +445,38 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
                 shareReserves,
                 bondReserves,
                 totalSupply[AssetId._LP_ASSET_ID],
-                shares,
+                shares, // amountIn
                 timeRemaining,
                 timeStretch,
                 sharePrice,
                 initialSharePrice,
-                true
+                true // isBaseIn
             );
+
+        uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
+            shareReserves,
+            bondReserves,
+            totalSupply[AssetId._LP_ASSET_ID],
+            initialSharePrice,
+            // normalizedTimeRemaining, when opening a position, the full time is remaining
+            FixedPointMath.ONE_18,
+            timeStretch
+        );
+        (uint256 _curveFee, uint256 _flatFee) = HyperdriveMath
+            .calculateFeesOutGivenIn(
+                shares, // amountIn
+                // normalizedTimeRemaining, when opening a position, the full time is remaining
+                FixedPointMath.ONE_18,
+                spotPrice,
+                sharePrice,
+                curveFee,
+                flatFee,
+                true // isBaseIn
+            );
+        // This is a base in / bond out operation where the in is given, so we subtract the fee
+        // amount from the output.
+        bondProceeds -= _curveFee - _flatFee;
+        poolBondDelta -= _curveFee;
 
         // Enforce min user outputs
         if (_minOutput > bondProceeds) revert Errors.OutputLimit();
@@ -488,12 +525,14 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         uint256 sharePrice = pricePerShare();
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
 
-        // Burn the longs that are being closed.
-        uint256 assetId = AssetId.encodeAssetId(
-            AssetId.AssetIdPrefix.Long,
-            _maturityTime
-        );
-        _burn(assetId, msg.sender, _bondAmount);
+        {
+            // Burn the longs that are being closed.
+            uint256 assetId = AssetId.encodeAssetId(
+                AssetId.AssetIdPrefix.Long,
+                _maturityTime
+            );
+            _burn(assetId, msg.sender, _bondAmount);
+        }
 
         // Calculate the pool and user deltas using the trading function.
         uint256 timeRemaining = _calculateTimeRemaining(_maturityTime);
@@ -509,6 +548,29 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
                 initialSharePrice,
                 false
             );
+        uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
+            shareReserves,
+            bondReserves,
+            totalSupply[AssetId._LP_ASSET_ID],
+            initialSharePrice,
+            // normalizedTimeRemaining, when opening a position, the full time is remaining
+            FixedPointMath.ONE_18,
+            timeStretch
+        );
+        (uint256 _curveFee, uint256 _flatFee) = HyperdriveMath
+            .calculateFeesOutGivenIn(
+                _bondAmount, // amountIn
+                // normalizedTimeRemaining, when opening a position, the full time is remaining
+                FixedPointMath.ONE_18,
+                spotPrice,
+                sharePrice,
+                curveFee,
+                flatFee,
+                false // isBaseIn
+            );
+        // This is a bond in / base out where the bonds are fixed, so we subtract from the base
+        // out.
+        shareProceeds -= _curveFee + _flatFee;
 
         // If the position hasn't matured, apply the accounting updates that
         // result from closing the long to the reserves and pay out the

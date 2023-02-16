@@ -1,6 +1,7 @@
 cache/
 out/
 forge-cache/
+.vscode/
 
 node_modules/
 yarn-error.log

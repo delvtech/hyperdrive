@@ -22,7 +22,7 @@ library YieldSpaceMath {
     /// @param _stretchedTimeElapsed Amount of time elapsed since term start
     /// @param _c price of shares in terms of their base
     /// @param _mu Normalization factor -- starts as c at initialization
-    /// @param _isBondOut determines if the output is bond or shares
+    /// @param _isBaseIn determines if the input is bond or shares
     /// @return Amount of shares/bonds
     function calculateOutGivenIn(
         uint256 _shareReserves,
@@ -32,7 +32,7 @@ library YieldSpaceMath {
         uint256 _stretchedTimeElapsed,
         uint256 _c,
         uint256 _mu,
-        bool _isBondOut
+        bool _isBaseIn
     ) internal pure returns (uint256) {
         // c / mu
         uint256 cDivMu = _c.divDown(_mu);
@@ -48,7 +48,7 @@ library YieldSpaceMath {
             _bondReserves
         );
 
-        if (_isBondOut) {
+        if (_isBaseIn) {
             // (mu * (shareReserves + amountIn))^(1 - tau)
             _shareReserves = _mu.mulDown(_shareReserves.add(_amountIn)).pow(
                 _stretchedTimeElapsed
@@ -90,7 +90,7 @@ library YieldSpaceMath {
     /// @param _stretchedTimeElapsed Amount of time elapsed since term start
     /// @param _c price of shares in terms of their base
     /// @param _mu Normalization factor -- starts as c at initialization
-    /// @param _isBondIn determines if the input is bond or shares
+    /// @param _isBaseOut determines if the output is bond or shares
     /// @return Amount of shares/bonds
     function calculateInGivenOut(
         uint256 _shareReserves,
@@ -100,7 +100,7 @@ library YieldSpaceMath {
         uint256 _stretchedTimeElapsed,
         uint256 _c,
         uint256 _mu,
-        bool _isBondIn
+        bool _isBaseOut
     ) internal pure returns (uint256) {
         // c / mu
         uint256 cDivMu = _c.divDown(_mu);
@@ -114,7 +114,7 @@ library YieldSpaceMath {
             _stretchedTimeElapsed,
             _bondReserves
         );
-        if (_isBondIn) {
+        if (_isBaseOut) {
             // (mu * (shareReserves - amountOut))^(1 - tau)
             _shareReserves = _mu.mulDown(_shareReserves.sub(_amountOut)).pow(
                 _stretchedTimeElapsed
