@@ -163,7 +163,7 @@ library TestLib {
         array[6] = g;
     }
 
-   function _arr(
+    function _arr(
         uint256 a,
         uint256 b,
         uint256 c,
