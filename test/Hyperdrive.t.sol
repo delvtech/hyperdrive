@@ -670,8 +670,88 @@ contract HyperdriveTest is Test {
             maturityTime - block.timestamp,
             365 days
         );
-        // TODO: This tolerance seems too high.
-        assertApproxEqAbs(realizedApr, apr, 1e10);
+        // Verify that opening a short doesn't cause the pool's APR to go down
+        assertLt(apr, realizedApr);
+
+        // Verify that the reserves were updated correctly.
+        PoolInfo memory poolInfoAfter = getPoolInfo();
+        assertEq(
+            poolInfoAfter.shareReserves,
+            poolInfoBefore.shareReserves -
+                baseAmount.divDown(poolInfoBefore.sharePrice)
+        );
+        assertEq(
+            poolInfoAfter.bondReserves,
+            poolInfoBefore.bondReserves + bondAmount
+        );
+        assertEq(poolInfoAfter.lpTotalSupply, poolInfoBefore.lpTotalSupply);
+        assertEq(poolInfoAfter.sharePrice, poolInfoBefore.sharePrice);
+        assertEq(
+            poolInfoAfter.longsOutstanding,
+            poolInfoBefore.longsOutstanding
+        );
+        assertEq(poolInfoAfter.longAverageMaturityTime, 0);
+        assertEq(
+            poolInfoAfter.shortsOutstanding,
+            poolInfoBefore.shortsOutstanding + bondAmount
+        );
+        assertApproxEqAbs(
+            poolInfoAfter.shortAverageMaturityTime,
+            maturityTime,
+            1
+        );
+    }
+
+    function test_open_short_with_small_amount() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Get the reserves before opening the short.
+        PoolInfo memory poolInfoBefore = getPoolInfo();
+
+        // Short a small amount of bonds.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        uint256 bondAmount = .1e18;
+        baseToken.mint(bondAmount);
+        baseToken.approve(address(hyperdrive), bondAmount);
+        hyperdrive.openShort(bondAmount, type(uint256).max, bob);
+
+        // Verify that Hyperdrive received the max loss and that Bob received
+        // the short tokens.
+        uint256 maxLoss = bondAmount - baseToken.balanceOf(bob);
+        uint256 maturityTime = (block.timestamp - (block.timestamp % 1 days)) +
+            365 days;
+        assertEq(
+            baseToken.balanceOf(address(hyperdrive)),
+            contribution + maxLoss
+        );
+        assertEq(
+            hyperdrive.balanceOf(
+                AssetId.encodeAssetId(
+                    AssetId.AssetIdPrefix.Short,
+                    maturityTime
+                ),
+                bob
+            ),
+            bondAmount
+        );
+
+        // Verify that Bob's short has an acceptable fixed rate. Since the bond
+        // amount is very low relative to the pool's liquidity, the implied APR
+        // should be approximately equal to the pool's APR.
+        uint256 baseAmount = bondAmount - maxLoss;
+        uint256 realizedApr = calculateAPRFromRealizedPrice(
+            baseAmount,
+            bondAmount,
+            maturityTime - block.timestamp,
+            365 days
+        );
+        // Verify that opening a short doesn't cause the pool's APR to go down
+        assertLt(apr, realizedApr);
 
         // Verify that the reserves were updated correctly.
         PoolInfo memory poolInfoAfter = getPoolInfo();
