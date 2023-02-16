@@ -82,10 +82,10 @@ library TestLib {
     function _arr(
         uint256 a,
         uint256 b
-    ) internal pure returns (uint256[] memory array) {
-        array = new uint256[](2);
-        array[0] = a;
-        array[1] = b;
+    ) internal pure returns (uint256[] memory _arr) {
+        _arr = new uint256[](2);
+        _arr[0] = a;
+        _arr[1] = b;
     }
 
     function _arr(
