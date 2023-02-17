@@ -176,7 +176,12 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
     /// @notice Allows the first LP to initialize the market with a target APR.
     /// @param _contribution The amount of base to supply.
     /// @param _apr The target APR.
-    function initialize(uint256 _contribution, uint256 _apr) external {
+    /// @param _destination The destination of the LP shares.
+    function initialize(
+        uint256 _contribution,
+        uint256 _apr,
+        address _destination
+    ) external {
         // Ensure that the pool hasn't been initialized yet.
         if (shareReserves > 0 || bondReserves > 0) {
             revert Errors.PoolAlreadyInitialized();
@@ -205,7 +210,7 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         //        I think in the case where price per share < 1 there may be a problem.
         _mint(
             AssetId._LP_ASSET_ID,
-            msg.sender, // do we want to allow the user to specify the destination?
+            _destination,
             sharePrice.mulDown(shares).add(bondReserves)
         );
     }
@@ -1265,6 +1270,7 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
     ///        outstanding.
     /// @param _withdrawalShareProceeds The proceeds that have accrued to the
     ///        withdrawal share pool.
+    /// @param _destination The destination of the withdrawal shares.
     /// @return proceeds The proceeds from redeeming the withdrawal shares.
     function _applyWithdrawalShareRedemption(
         uint256 _assetId,

@@ -4,7 +4,11 @@ pragma solidity ^0.8.18;
 import "./IMultiToken.sol";
 
 interface IHyperdrive is IMultiToken {
-    function initialize(uint256 _contribution, uint256 _apr) external;
+    function initialize(
+        uint256 _contribution,
+        uint256 _apr,
+        address _destination
+    ) external;
 
     function addLiquidity(
         uint256 _contribution,
