@@ -668,7 +668,7 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         //
         // Update the base volume of short positions.
         {
-            uint256 baseAmount = poolShareDelta.mulDown(openSharePrice);
+            uint256 baseAmount = shareProceeds.mulDown(openSharePrice);
             shortBaseVolume += baseAmount;
             shortBaseVolumeCheckpoints[latestCheckpoint] += baseAmount;
         }
