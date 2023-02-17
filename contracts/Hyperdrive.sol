@@ -45,15 +45,13 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
 
     // TODO: Optimize the storage layout.
     //
-    /// @notice Checkpoints of historical realized prices of opening longs.
-    ///         This is realized price of base in terms of bonds.
-    mapping(uint256 => uint256) public longAverageRealizedPrice;
+    /// @notice Checkpoints of historical base volume of long positions.
+    mapping(uint256 => uint256) public longBaseVolumeCheckpoints;
 
     // TODO: Optimize the storage layout.
     //
-    /// @notice Checkpoints of historical realized prices of opening shorts.
-    ///         This is realized price of base in terms of bonds.
-    mapping(uint256 => uint256) public shortAverageRealizedPrice;
+    /// @notice Checkpoints of historical base volume of short positions.
+    mapping(uint256 => uint256) public shortBaseVolumeCheckpoints;
 
     /// @notice The share reserves. The share reserves multiplied by the share
     ///         price give the base reserves, so shares are a mechanism of
@@ -665,22 +663,14 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
                 true
             );
 
-        // TODO: Think about backdating more.
+        // TODO: Think about backdating more. This is only correct when the time
+        // remaining is one.
         //
-        // Update the base committed of short positions and the weighted average
-        // of the realized price of short positions in this checkpoint.
+        // Update the base volume of short positions.
         {
             uint256 baseAmount = poolShareDelta.mulDown(openSharePrice);
             shortBaseVolume += baseAmount;
-            shortAverageRealizedPrice[
-                latestCheckpoint
-            ] = shortAverageRealizedPrice[latestCheckpoint]
-                .updateWeightedAverage(
-                    shortsOutstanding,
-                    baseAmount.divDown(_bondAmount),
-                    _bondAmount,
-                    true
-                );
+            shortBaseVolumeCheckpoints[latestCheckpoint] += baseAmount;
         }
 
         // Apply the trading deltas to the reserves and increase the bond buffer
@@ -946,19 +936,12 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
             true
         );
 
-        // TODO: Think more about backdating.
+        // TODO: Think about backdating more. This is only correct when the time
+        // remaining is one.
         //
-        // Update the base volume of long positions and the weighted average
-        // of the realized price of long positions in this checkpoint.
+        // Update the base volume of long positions.
         longBaseVolume += _baseAmount;
-        longAverageRealizedPrice[_checkpointTime] = longAverageRealizedPrice[
-            _checkpointTime
-        ].updateWeightedAverage(
-                longsOutstanding,
-                _baseAmount.divDown(_bondProceeds),
-                _bondProceeds,
-                true
-            );
+        longBaseVolumeCheckpoints[_checkpointTime] += _baseAmount;
 
         // Apply the trading deltas to the reserves and update the amount of
         // longs outstanding.
@@ -1004,9 +987,35 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         );
 
         // Update the long base volume.
-        longBaseVolume -= longAverageRealizedPrice[
-            _maturityTime - positionDuration
-        ].mulUp(_bondAmount);
+        {
+            // Get the total supply of longs in the checkpoint of the longs
+            // being closed. If the longs are closed before maturity, we add the
+            // amount of longs being closed since the total supply is decreased
+            // when burning the long tokens.
+            uint256 checkpointAmount = totalSupply[
+                AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _maturityTime)
+            ];
+            if (block.timestamp < _maturityTime) {
+                checkpointAmount += _bondAmount;
+            }
+
+            // If all of the longs in the checkpoint are being closed, delete
+            // the base volume in the checkpoint. Otherwise, decrease the base
+            // volume aggregates by a proportional amount.
+            uint256 checkpointTime = _maturityTime - positionDuration;
+            if (_bondAmount == checkpointAmount) {
+                longBaseVolume -= longBaseVolumeCheckpoints[checkpointTime];
+                delete longBaseVolumeCheckpoints[checkpointTime];
+            } else {
+                uint256 proportionalBaseVolume = longBaseVolumeCheckpoints[
+                    checkpointTime
+                ].mulDown(_bondAmount.divDown(checkpointAmount));
+                longBaseVolume -= proportionalBaseVolume;
+                longBaseVolumeCheckpoints[
+                    checkpointTime
+                ] -= proportionalBaseVolume;
+            }
+        }
 
         // Reduce the amount of outstanding longs.
         longsOutstanding -= _bondAmount;
@@ -1107,9 +1116,38 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
             );
 
         // Update the short base volume.
-        shortBaseVolume -= shortAverageRealizedPrice[
-            _maturityTime - positionDuration
-        ].mulDown(_bondAmount);
+        {
+            // Get the total supply of shorts in the checkpoint of the shorts
+            // being closed. If the shorts are closed before maturity, we add the
+            // amount of shorts being closed since the total supply is decreased
+            // when burning the short tokens.
+            uint256 checkpointAmount = totalSupply[
+                AssetId.encodeAssetId(
+                    AssetId.AssetIdPrefix.Short,
+                    _maturityTime
+                )
+            ];
+            if (block.timestamp < _maturityTime) {
+                checkpointAmount += _bondAmount;
+            }
+
+            // If all of the shorts in the checkpoint are being closed, delete
+            // the base volume in the checkpoint. Otherwise, decrease the base
+            // volume aggregates by a proportional amount.
+            uint256 checkpointTime = _maturityTime - positionDuration;
+            if (_bondAmount == checkpointAmount) {
+                shortBaseVolume -= shortBaseVolumeCheckpoints[checkpointTime];
+                delete shortBaseVolumeCheckpoints[checkpointTime];
+            } else {
+                uint256 proportionalBaseVolume = shortBaseVolumeCheckpoints[
+                    checkpointTime
+                ].mulDown(_bondAmount.divDown(checkpointAmount));
+                shortBaseVolume -= proportionalBaseVolume;
+                shortBaseVolumeCheckpoints[
+                    checkpointTime
+                ] -= proportionalBaseVolume;
+            }
+        }
 
         // Decrease the amount of shorts outstanding.
         shortsOutstanding -= _bondAmount;

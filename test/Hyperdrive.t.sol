@@ -227,22 +227,17 @@ contract HyperdriveTest is Test {
             1
         );
         assertEq(poolInfoAfter.longBaseVolume, baseAmount);
-        {
-            assertApproxEqAbs(
-                hyperdrive.longAverageRealizedPrice(checkpointTime),
-                baseAmount.divDown(bondAmount),
-                1
-            );
-        }
+        assertEq(
+            hyperdrive.longBaseVolumeCheckpoints(checkpointTime),
+            baseAmount
+        );
         assertEq(
             poolInfoAfter.shortsOutstanding,
             poolInfoBefore.shortsOutstanding
         );
         assertEq(poolInfoAfter.shortAverageMaturityTime, 0);
         assertEq(poolInfoAfter.shortBaseVolume, 0);
-        {
-            assertEq(hyperdrive.shortAverageRealizedPrice(checkpointTime), 0);
-        }
+        assertEq(hyperdrive.shortBaseVolumeCheckpoints(checkpointTime), 0);
     }
 
     function test_open_long_with_small_amount() external {
@@ -313,22 +308,17 @@ contract HyperdriveTest is Test {
             1
         );
         assertEq(poolInfoAfter.longBaseVolume, baseAmount);
-        {
-            assertApproxEqAbs(
-                hyperdrive.longAverageRealizedPrice(checkpointTime),
-                baseAmount.divDown(bondAmount),
-                1e2
-            );
-        }
+        assertEq(
+            hyperdrive.longBaseVolumeCheckpoints(checkpointTime),
+            baseAmount
+        );
         assertEq(
             poolInfoAfter.shortsOutstanding,
             poolInfoBefore.shortsOutstanding
         );
         assertEq(poolInfoAfter.shortAverageMaturityTime, 0);
         assertEq(poolInfoAfter.shortBaseVolume, 0);
-        {
-            assertEq(hyperdrive.shortAverageRealizedPrice(checkpointTime), 0);
-        }
+        assertEq(hyperdrive.shortBaseVolumeCheckpoints(checkpointTime), 0);
     }
 
     /// Close Long ///
@@ -469,23 +459,15 @@ contract HyperdriveTest is Test {
             poolInfoBefore.longsOutstanding - bondAmount
         );
         assertEq(poolInfoAfter.longAverageMaturityTime, 0);
-        assertApproxEqAbs(poolInfoAfter.longBaseVolume, 0, 1e1);
-        {
-            assertApproxEqAbs(
-                hyperdrive.longAverageRealizedPrice(checkpointTime),
-                baseAmount.divDown(bondAmount),
-                1
-            );
-        }
+        assertEq(poolInfoAfter.longBaseVolume, 0);
+        assertEq(hyperdrive.longBaseVolumeCheckpoints(checkpointTime), 0);
         assertEq(
             poolInfoAfter.shortsOutstanding,
             poolInfoBefore.shortsOutstanding
         );
         assertEq(poolInfoAfter.shortAverageMaturityTime, 0);
         assertEq(poolInfoAfter.shortBaseVolume, 0);
-        {
-            assertEq(hyperdrive.shortAverageRealizedPrice(checkpointTime), 0);
-        }
+        assertEq(hyperdrive.shortBaseVolumeCheckpoints(checkpointTime), 0);
     }
 
     function test_close_long_immediately_with_small_amount() external {
@@ -550,23 +532,15 @@ contract HyperdriveTest is Test {
             poolInfoBefore.longsOutstanding - bondAmount
         );
         assertEq(poolInfoAfter.longAverageMaturityTime, 0);
-        assertApproxEqAbs(poolInfoAfter.longBaseVolume, 0, 1e1);
-        {
-            assertApproxEqAbs(
-                hyperdrive.longAverageRealizedPrice(checkpointTime),
-                baseAmount.divDown(bondAmount),
-                1e2
-            );
-        }
+        assertEq(poolInfoAfter.longBaseVolume, 0);
+        assertEq(hyperdrive.longBaseVolumeCheckpoints(checkpointTime), 0);
         assertEq(
             poolInfoAfter.shortsOutstanding,
             poolInfoBefore.shortsOutstanding
         );
         assertEq(poolInfoAfter.shortAverageMaturityTime, 0);
         assertEq(poolInfoAfter.shortBaseVolume, 0);
-        {
-            assertEq(hyperdrive.shortAverageRealizedPrice(checkpointTime), 0);
-        }
+        assertEq(hyperdrive.shortBaseVolumeCheckpoints(checkpointTime), 0);
     }
 
     // TODO: Clean up these tests.
@@ -630,23 +604,15 @@ contract HyperdriveTest is Test {
             poolInfoBefore.longsOutstanding - bondAmount
         );
         assertEq(poolInfoAfter.longAverageMaturityTime, 0);
-        assertApproxEqAbs(poolInfoAfter.longBaseVolume, 0, 1e1);
-        {
-            assertApproxEqAbs(
-                hyperdrive.longAverageRealizedPrice(checkpointTime),
-                baseAmount.divDown(bondAmount),
-                1
-            );
-        }
+        assertEq(poolInfoAfter.longBaseVolume, 0);
+        assertEq(hyperdrive.longBaseVolumeCheckpoints(checkpointTime), 0);
         assertEq(
             poolInfoAfter.shortsOutstanding,
             poolInfoBefore.shortsOutstanding
         );
         assertEq(poolInfoAfter.shortAverageMaturityTime, 0);
         assertEq(poolInfoAfter.shortBaseVolume, 0);
-        {
-            assertEq(hyperdrive.shortAverageRealizedPrice(checkpointTime), 0);
-        }
+        assertEq(hyperdrive.shortBaseVolumeCheckpoints(checkpointTime), 0);
     }
 
     /// Open Short ///
@@ -752,9 +718,7 @@ contract HyperdriveTest is Test {
         );
         assertEq(poolInfoAfter.longAverageMaturityTime, 0);
         assertEq(poolInfoAfter.longBaseVolume, 0);
-        {
-            assertEq(hyperdrive.longAverageRealizedPrice(checkpointTime), 0);
-        }
+        assertEq(hyperdrive.longBaseVolumeCheckpoints(checkpointTime), 0);
         assertEq(
             poolInfoAfter.shortsOutstanding,
             poolInfoBefore.shortsOutstanding + bondAmount
@@ -765,12 +729,10 @@ contract HyperdriveTest is Test {
             1
         );
         assertEq(poolInfoAfter.shortBaseVolume, baseAmount);
-        {
-            assertEq(
-                hyperdrive.shortAverageRealizedPrice(checkpointTime),
-                baseAmount.divDown(bondAmount)
-            );
-        }
+        assertEq(
+            hyperdrive.shortBaseVolumeCheckpoints(checkpointTime),
+            baseAmount
+        );
     }
 
     function test_open_short_with_small_amount() external {
@@ -843,9 +805,7 @@ contract HyperdriveTest is Test {
         );
         assertEq(poolInfoAfter.longAverageMaturityTime, 0);
         assertEq(poolInfoAfter.longBaseVolume, 0);
-        {
-            assertEq(hyperdrive.longAverageRealizedPrice(checkpointTime), 0);
-        }
+        assertEq(hyperdrive.longBaseVolumeCheckpoints(checkpointTime), 0);
         assertEq(
             poolInfoAfter.shortsOutstanding,
             poolInfoBefore.shortsOutstanding + bondAmount
@@ -856,12 +816,10 @@ contract HyperdriveTest is Test {
             1
         );
         assertEq(poolInfoAfter.shortBaseVolume, baseAmount);
-        {
-            assertEq(
-                hyperdrive.shortAverageRealizedPrice(checkpointTime),
-                baseAmount.divDown(bondAmount)
-            );
-        }
+        assertEq(
+            hyperdrive.shortBaseVolumeCheckpoints(checkpointTime),
+            baseAmount
+        );
     }
 
     /// Close Short ///
@@ -957,8 +915,6 @@ contract HyperdriveTest is Test {
         // Immediately close the bonds.
         vm.stopPrank();
         vm.startPrank(bob);
-        uint256 maxLoss = bondAmount - baseToken.balanceOf(bob);
-        uint256 baseAmount = bondAmount - maxLoss;
         uint256 checkpointTime = block.timestamp - (block.timestamp % 1 days);
         uint256 maturityTime = checkpointTime + 365 days;
         hyperdrive.closeShort(maturityTime, bondAmount, 0, bob);
@@ -1001,22 +957,14 @@ contract HyperdriveTest is Test {
         );
         assertEq(poolInfoAfter.longAverageMaturityTime, 0);
         assertEq(poolInfoAfter.longBaseVolume, 0);
-        {
-            assertEq(hyperdrive.longAverageRealizedPrice(checkpointTime), 0);
-        }
+        assertEq(hyperdrive.longBaseVolumeCheckpoints(checkpointTime), 0);
         assertEq(
             poolInfoAfter.shortsOutstanding,
             poolInfoBefore.shortsOutstanding - bondAmount
         );
         assertEq(poolInfoAfter.shortAverageMaturityTime, 0);
-        assertApproxEqAbs(poolInfoAfter.shortBaseVolume, 0, 1e1);
-        {
-            assertApproxEqAbs(
-                hyperdrive.shortAverageRealizedPrice(checkpointTime),
-                baseAmount.divDown(bondAmount),
-                1
-            );
-        }
+        assertEq(poolInfoAfter.shortBaseVolume, 0);
+        assertEq(hyperdrive.shortBaseVolumeCheckpoints(checkpointTime), 0);
     }
 
     function test_close_short_immediately_with_small_amount() external {
@@ -1042,8 +990,6 @@ contract HyperdriveTest is Test {
         vm.startPrank(bob);
         uint256 checkpointTime = block.timestamp - (block.timestamp % 1 days);
         uint256 maturityTime = checkpointTime + 365 days;
-        uint256 maxLoss = bondAmount - baseToken.balanceOf(bob);
-        uint256 baseAmount = bondAmount - maxLoss;
         hyperdrive.closeShort(maturityTime, bondAmount, 0, bob);
 
         // Verify that all of Bob's bonds were burned and that he has
@@ -1084,22 +1030,14 @@ contract HyperdriveTest is Test {
         );
         assertEq(poolInfoAfter.longAverageMaturityTime, 0);
         assertEq(poolInfoAfter.longBaseVolume, 0);
-        {
-            assertEq(hyperdrive.longAverageRealizedPrice(checkpointTime), 0);
-        }
+        assertEq(hyperdrive.longBaseVolumeCheckpoints(checkpointTime), 0);
         assertEq(
             poolInfoAfter.shortsOutstanding,
             poolInfoBefore.shortsOutstanding - bondAmount
         );
         assertEq(poolInfoAfter.shortAverageMaturityTime, 0);
-        assertApproxEqAbs(poolInfoAfter.shortBaseVolume, 0, 1e1);
-        {
-            assertApproxEqAbs(
-                hyperdrive.shortAverageRealizedPrice(checkpointTime),
-                baseAmount.divDown(bondAmount),
-                1
-            );
-        }
+        assertEq(poolInfoAfter.shortBaseVolume, 0);
+        assertEq(hyperdrive.shortBaseVolumeCheckpoints(checkpointTime), 0);
     }
 
     // TODO: Clean up these tests.
@@ -1132,8 +1070,6 @@ contract HyperdriveTest is Test {
         // Redeem the bonds
         vm.stopPrank();
         vm.startPrank(bob);
-        uint256 maxLoss = bondAmount - baseToken.balanceOf(bob);
-        uint256 baseAmount = bondAmount - maxLoss;
         hyperdrive.closeShort(maturityTime, bondAmount, 0, bob);
 
         // TODO: Investigate this more to see if there are any irregularities
@@ -1171,22 +1107,14 @@ contract HyperdriveTest is Test {
         );
         assertEq(poolInfoAfter.longAverageMaturityTime, 0);
         assertEq(poolInfoAfter.longBaseVolume, 0);
-        {
-            assertEq(hyperdrive.longAverageRealizedPrice(checkpointTime), 0);
-        }
+        assertEq(hyperdrive.longBaseVolumeCheckpoints(checkpointTime), 0);
         assertEq(
             poolInfoAfter.shortsOutstanding,
             poolInfoBefore.shortsOutstanding - bondAmount
         );
         assertEq(poolInfoAfter.shortAverageMaturityTime, 0);
-        assertApproxEqAbs(poolInfoAfter.shortBaseVolume, 0, 1e1);
-        {
-            assertApproxEqAbs(
-                hyperdrive.shortAverageRealizedPrice(checkpointTime),
-                baseAmount.divDown(bondAmount),
-                1
-            );
-        }
+        assertEq(poolInfoAfter.shortBaseVolume, 0);
+        assertEq(hyperdrive.shortBaseVolumeCheckpoints(checkpointTime), 0);
     }
 
     /// Utils ///
