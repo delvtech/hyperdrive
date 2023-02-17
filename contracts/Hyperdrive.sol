@@ -326,7 +326,7 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
             );
 
         // Burn the LP shares.
-        _burn(AssetId._LP_ASSET_ID, _destination, _shares);
+        _burn(AssetId._LP_ASSET_ID, msg.sender, _shares);
 
         // Update the reserves.
         shareReserves -= shareProceeds;
@@ -388,8 +388,7 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.LongWithdrawalShare, 0),
             _longWithdrawalShares,
             longWithdrawalSharesOutstanding,
-            longWithdrawalShareProceeds,
-            _destination
+            longWithdrawalShareProceeds
         );
 
         // Redeem the short withdrawal shares.
@@ -400,8 +399,7 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
             ),
             _shortWithdrawalShares,
             shortWithdrawalSharesOutstanding,
-            shortWithdrawalShareProceeds,
-            _destination
+            shortWithdrawalShareProceeds
         );
 
         // Withdraw the funds released by redeeming the withdrawal shares.
@@ -531,7 +529,7 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
                 AssetId.AssetIdPrefix.Long,
                 _maturityTime
             );
-            _burn(assetId, _destination, _bondAmount);
+            _burn(assetId, msg.sender, _bondAmount);
         }
 
         // Calculate the pool and user deltas using the trading function.
@@ -726,7 +724,7 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
             AssetId.AssetIdPrefix.Short,
             _maturityTime
         );
-        _burn(assetId, _destination, _bondAmount);
+        _burn(assetId, msg.sender, _bondAmount);
 
         // Calculate the pool and user deltas using the trading function.
         uint256 timeRemaining = _calculateTimeRemaining(_maturityTime);
@@ -783,7 +781,6 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         uint256 shortProceeds = closeSharePrice.mulDown(_bondAmount).divDown(
             sharePrice
         );
-
         (uint256 baseProceeds, ) = withdraw(shortProceeds, _destination);
 
         // Enforce min user outputs
@@ -1270,18 +1267,16 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
     ///        outstanding.
     /// @param _withdrawalShareProceeds The proceeds that have accrued to the
     ///        withdrawal share pool.
-    /// @param _destination The destination of the withdrawal shares.
     /// @return proceeds The proceeds from redeeming the withdrawal shares.
     function _applyWithdrawalShareRedemption(
         uint256 _assetId,
         uint256 _withdrawalShares,
         uint256 _withdrawalSharesOutstanding,
-        uint256 _withdrawalShareProceeds,
-        address _destination
+        uint256 _withdrawalShareProceeds
     ) internal returns (uint256 proceeds) {
         if (_withdrawalShares > 0) {
             // Burn the withdrawal shares.
-            _burn(_assetId, _destination, _withdrawalShares);
+            _burn(_assetId, msg.sender, _withdrawalShares);
 
             // Calculate the base released from the withdrawal shares.
             uint256 withdrawalShareProportion = _withdrawalShares.divDown(
