@@ -620,7 +620,7 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         // backdate the bonds sold to the beginning of the checkpoint.
         uint256 maturityTime = latestCheckpoint + positionDuration;
         uint256 timeRemaining = _calculateTimeRemaining(maturityTime);
-        uint256 poolShareDelta = HyperdriveMath.calculateOpenShort(
+        uint256 shareProceeds = HyperdriveMath.calculateOpenShort(
             shareReserves,
             bondReserves,
             totalSupply[AssetId._LP_ASSET_ID],
@@ -642,7 +642,7 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         {
             uint256 owedInterest = (sharePrice.divDown(openSharePrice) -
                 FixedPointMath.ONE_18).mulDown(_bondAmount);
-            uint256 baseProceeds = poolShareDelta.mulDown(sharePrice);
+            uint256 baseProceeds = shareProceeds.mulDown(sharePrice);
             userDeposit = (_bondAmount - baseProceeds) + owedInterest;
             // Enforce min user outputs
             if (_maxDeposit < userDeposit) revert Errors.OutputLimit();
@@ -662,7 +662,7 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         // by the amount of bonds that were shorted. We don't need to add the
         // margin or pre-paid interest to the reserves because of the way that
         // the close short accounting works.
-        shareReserves -= poolShareDelta;
+        shareReserves -= shareProceeds;
         bondReserves += _bondAmount;
         shortsOutstanding += _bondAmount;
 
