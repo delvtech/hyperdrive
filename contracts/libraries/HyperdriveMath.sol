@@ -133,7 +133,7 @@ library HyperdriveMath {
     /// @param _sharePrice The share price.
     /// @param _initialSharePrice The initial share price.
     /// @return poolBondDelta The change in the pool's bond reserves.
-    /// @return userDelta The amount of bonds the user receieves.
+    /// @return userDelta The amount of bonds the user will receive.
     function calculateOpenLong(
         uint256 _shareReserves,
         uint256 _bondReserves,
@@ -256,7 +256,7 @@ library HyperdriveMath {
             );
     }
 
-    /// @dev Calculates the amount of base that a user revieves when closing a short position
+    /// @dev Calculates the amount of base that a user will receive when closing a short position
     /// @param _shareReserves The pool's share reserves.
     /// @param _bondReserves The pool's bonds reserves.
     /// @param _bondReserveAdjustment The bond reserves are adjusted to improve
@@ -269,7 +269,7 @@ library HyperdriveMath {
     /// @param _sharePrice The share price.
     /// @param _initialSharePrice The initial share price.
     /// @return poolBondDelta The change in the pool's share reserves.
-    /// @return userDelta The amount of shares the user should receive.
+    /// @return userDelta The amount of shares the user will receive.
     function calculateCloseShort(
         uint256 _shareReserves,
         uint256 _bondReserves,
