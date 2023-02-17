@@ -1,9 +1,9 @@
-on: ["push", "pull_request"]
+on: ["pull_request"]
 
 name: hyperdrive
 
 jobs:
-  test:
+  coverage:
     name: coverage
     runs-on: ubuntu-latest
     steps:
@@ -40,7 +40,7 @@ jobs:
           parallel: true
 
   finish:
-    needs: test
+    needs: coverage
     runs-on: ubuntu-latest
     steps:
       - name: Coveralls Finished

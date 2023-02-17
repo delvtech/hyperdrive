@@ -1,9 +1,9 @@
-on: ["push", "pull_request"]
+on: ["push"]
 
 name: hyperdrive
 
 jobs:
-  check:
+  test:
     name: test
     runs-on: ubuntu-latest
     steps:
