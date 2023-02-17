@@ -135,8 +135,9 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         // Initialize the base token address.
         baseToken = _baseToken;
 
-        // Initialize the time configurations.
-        if (_checkpointsPerTerm < 2) {
+        // Initialize the time configurations. There must be at least one
+        // checkpoint per term to avoid having a position duration of zero.
+        if (_checkpointsPerTerm == 0) {
             revert Errors.InvalidCheckpointsPerTerm();
         }
         positionDuration = _checkpointsPerTerm * _checkpointDuration;
