@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import { YieldSpaceMath } from "contracts/libraries/YieldSpaceMath.sol";
 
 contract MockYieldSpaceMath {
-    function calculateOutGivenIn (
+    function calculateOutGivenIn(
         uint256 shareReserves,
         uint256 bondReserves,
         uint256 bondReserveAdjustment,
@@ -27,7 +27,7 @@ contract MockYieldSpaceMath {
         return result;
     }
 
-    function calculateInGivenOut (
+    function calculateInGivenOut(
         uint256 shareReserves,
         uint256 bondReserves,
         uint256 bondReserveAdjustment,

@@ -5,7 +5,6 @@ import { Test } from "forge-std/Test.sol";
 import "test/mocks/MockYieldSpaceMath.sol";
 
 contract YieldSpaceMathTest is Test {
-
     function test__calculateOutGivenIn() public {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockYieldSpaceMath yieldSpaceMath = new MockYieldSpaceMath();
