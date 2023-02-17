@@ -75,7 +75,7 @@ contract HyperdriveMathTest is Test {
                 1 ether, // sharePrice
                 0.1 ether, // curveFeePercent
                 0.1 ether, // flatFeePercent
-                true // isBaseIn
+                true // isShareIn
             );
         assertEq(
             curveFee,
@@ -93,7 +93,7 @@ contract HyperdriveMathTest is Test {
             1 ether, // sharePrice
             0.1 ether, // curveFeePercent
             0.1 ether, // flatFeePercent
-            false // isBaseIn
+            false // isShareIn
         );
         assertEq(
             curveFee,
@@ -111,7 +111,7 @@ contract HyperdriveMathTest is Test {
             1 ether, // sharePrice
             0.1 ether, // curveFeePercent
             0.1 ether, // flatFeePercent
-            true // isBaseIn
+            true // isShareIn
         );
         assertEq(
             curveFee,
@@ -129,7 +129,7 @@ contract HyperdriveMathTest is Test {
             1 ether, // sharePrice
             0.1 ether, // curveFeePercent
             0.1 ether, // flatFeePercent
-            false // isBaseIn
+            false // isShareIn
         );
         assertEq(
             curveFee,
@@ -150,7 +150,7 @@ contract HyperdriveMathTest is Test {
                 1 ether, // sharePrice
                 0.1 ether, // curveFeePercent
                 0.1 ether, // flatFeePercent
-                true // isBaseIn
+                true // isShareIn
             );
         assertEq(
             curveFee,
@@ -168,7 +168,7 @@ contract HyperdriveMathTest is Test {
             1 ether, // sharePrice
             0.1 ether, // curveFeePercent
             0.1 ether, // flatFeePercent
-            false // isBaseIn
+            false // isShareIn
         );
         assertEq(
             curveFee,
@@ -186,7 +186,7 @@ contract HyperdriveMathTest is Test {
             1 ether, // sharePrice
             0.1 ether, // curveFeePercent
             0.1 ether, // flatFeePercent
-            true // isBaseIn
+            true // isShareIn
         );
         assertEq(
             curveFee,
@@ -205,7 +205,7 @@ contract HyperdriveMathTest is Test {
             1 ether, // sharePrice
             0.1 ether, // curveFeePercent
             0.1 ether, // flatFeePercent
-            false // isBaseIn
+            false // isShareIn
         );
         assertEq(
             curveFee,
