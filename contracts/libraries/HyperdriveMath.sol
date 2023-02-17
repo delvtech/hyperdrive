@@ -374,7 +374,7 @@ library HyperdriveMath {
     /// @param _sharePrice The current price of shares in terms of base.
     /// @param _curveFeePercent The curve fee parameter.
     /// @param _flatFeePercent The flat fee parameter.
-    /// @param _isBaseIn If the user will supply base.
+    /// @param _isShareIn If the user will supply shares.
     /// @return curveFee The fee amount to charge.
     /// @return flatFee The fee amount to charge.
     function calculateFeesOutGivenIn(
@@ -384,10 +384,10 @@ library HyperdriveMath {
         uint256 _sharePrice,
         uint256 _curveFeePercent,
         uint256 _flatFeePercent,
-        bool _isBaseIn
+        bool _isShareIn
     ) internal pure returns (uint256 curveFee, uint256 flatFee) {
         uint256 curveIn = _amountIn.mulDown(_normalizedTimeRemaining);
-        if (_isBaseIn) {
+        if (_isShareIn) {
             // curve fee = ((1 / p) - 1) * phi * c * d_z * t
             uint256 _pricePart = (FixedPointMath.ONE_18.divDown(_spotPrice))
                 .sub(FixedPointMath.ONE_18);
@@ -424,7 +424,7 @@ library HyperdriveMath {
     /// @param _sharePrice The current price of shares in terms of base.
     /// @param _curveFeePercent The curve fee parameter.
     /// @param _flatFeePercent The flat fee parameter.
-    /// @param _isBaseOut If the user will receive base.
+    /// @param _isShareOut If the user will receive shares.
     /// @return curveFee The fee amount to charge.
     /// @return flatFee The fee amount to charge.
     function calculateFeesInGivenOut(
@@ -434,10 +434,10 @@ library HyperdriveMath {
         uint256 _sharePrice,
         uint256 _curveFeePercent,
         uint256 _flatFeePercent,
-        bool _isBaseOut
+        bool _isShareOut
     ) internal pure returns (uint256 curveFee, uint256 flatFee) {
         uint256 curveOut = _amountOut.mulDown(_normalizedTimeRemaining);
-        if (_isBaseOut) {
+        if (_isShareOut) {
             // curve fee = ((1 / p) - 1) * phi * c * d_z
             uint256 _pricePart = (FixedPointMath.ONE_18.divDown(_spotPrice))
                 .sub(FixedPointMath.ONE_18);

@@ -22,7 +22,7 @@ library YieldSpaceMath {
     /// @param _stretchedTimeElapsed Amount of time elapsed since term start
     /// @param _c price of shares in terms of their base
     /// @param _mu Normalization factor -- starts as c at initialization
-    /// @param _isBaseIn determines if the input is bond or shares
+    /// @param _isShareIn determines if the input is bond or shares
     /// @return Amount of shares/bonds
     function calculateOutGivenIn(
         uint256 _shareReserves,
@@ -32,7 +32,7 @@ library YieldSpaceMath {
         uint256 _stretchedTimeElapsed,
         uint256 _c,
         uint256 _mu,
-        bool _isBaseIn
+        bool _isShareIn
     ) internal pure returns (uint256) {
         // c / mu
         uint256 cDivMu = _c.divDown(_mu);
@@ -48,7 +48,7 @@ library YieldSpaceMath {
             _bondReserves
         );
 
-        if (_isBaseIn) {
+        if (_isShareIn) {
             // (mu * (shareReserves + amountIn))^(1 - tau)
             _shareReserves = _mu.mulDown(_shareReserves.add(_amountIn)).pow(
                 _stretchedTimeElapsed
@@ -83,7 +83,7 @@ library YieldSpaceMath {
 
     /// @dev Calculates the amount of an asset that will be received given a
     ///      specified amount of the other asset given the current AMM reserves.
-    /// @dev _isBaseOut = True isn't used in the current implementation,
+    /// @dev _isShareOut = True isn't used in the current implementation,
     ///      but is included for completeness
     /// @param _shareReserves yield bearing vault shares reserve amount, unit is shares
     /// @param _bondReserves bond reserves amount, unit is the face value in underlying
@@ -92,7 +92,7 @@ library YieldSpaceMath {
     /// @param _stretchedTimeElapsed Amount of time elapsed since term start
     /// @param _c price of shares in terms of their base
     /// @param _mu Normalization factor -- starts as c at initialization
-    /// @param _isBaseOut determines if the output is bond or shares
+    /// @param _isShareOut determines if the output is bond or shares
     /// @return Amount of shares/bonds
     function calculateInGivenOut(
         uint256 _shareReserves,
@@ -102,7 +102,7 @@ library YieldSpaceMath {
         uint256 _stretchedTimeElapsed,
         uint256 _c,
         uint256 _mu,
-        bool _isBaseOut
+        bool _isShareOut
     ) internal pure returns (uint256) {
         // c / mu
         uint256 cDivMu = _c.divDown(_mu);
@@ -117,7 +117,7 @@ library YieldSpaceMath {
             _bondReserves
         );
 
-        if (_isBaseOut) {
+        if (_isShareOut) {
             // (mu * (shareReserves - amountOut))^(1 - tau)
             _shareReserves = _mu.mulDown(_shareReserves.sub(_amountOut)).pow(
                 _stretchedTimeElapsed
