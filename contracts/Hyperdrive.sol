@@ -205,7 +205,7 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         //        I think in the case where price per share < 1 there may be a problem.
         _mint(
             AssetId._LP_ASSET_ID,
-            msg.sender,
+            msg.sender, // do we want to allow the user to specify the destination?
             sharePrice.mulDown(shares).add(bondReserves)
         );
     }
@@ -1246,9 +1246,6 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _checkpointTime)
         ];
         if (maturedShortsAmount > 0) {
-            // TODO: YieldSpaceMath currently returns a positive quantity at
-            //       redemption. With this in mind, this will represent a
-            //       slight inaccuracy until this problem is fixed.
             _applyCloseShort(
                 maturedShortsAmount,
                 0,
