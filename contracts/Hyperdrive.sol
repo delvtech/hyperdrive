@@ -176,7 +176,12 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
     /// @notice Allows the first LP to initialize the market with a target APR.
     /// @param _contribution The amount of base to supply.
     /// @param _apr The target APR.
-    function initialize(uint256 _contribution, uint256 _apr) external {
+    /// @param _destination The destination of the LP shares.
+    function initialize(
+        uint256 _contribution,
+        uint256 _apr,
+        address _destination
+    ) external {
         // Ensure that the pool hasn't been initialized yet.
         if (shareReserves > 0 || bondReserves > 0) {
             revert Errors.PoolAlreadyInitialized();
@@ -205,13 +210,11 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         //        I think in the case where price per share < 1 there may be a problem.
         _mint(
             AssetId._LP_ASSET_ID,
-            msg.sender,
+            _destination,
             sharePrice.mulDown(shares).add(bondReserves)
         );
     }
 
-    // TODO: Add slippage protection.
-    //
     /// @notice Allows LPs to supply liquidity for LP shares.
     /// @param _contribution The amount of base to supply.
     /// @param _minOutput The minimum number of LP tokens the user should receive
@@ -355,8 +358,7 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         );
         shortWithdrawalSharesOutstanding += shortWithdrawalShares;
 
-        // Withdraw the shares from the yield source
-        // TODO - Good destination support.
+        // Withdraw the shares from the yield source.
         (uint256 baseOutput, ) = withdraw(shareProceeds, _destination);
         // Enforce min user outputs
         if (_minOutput > baseOutput) revert Errors.OutputLimit();
@@ -401,7 +403,6 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         );
 
         // Withdraw the funds released by redeeming the withdrawal shares.
-        // TODO: Better destination support.
         uint256 shareProceeds = baseProceeds.divDown(sharePrice);
         (_proceeds, ) = withdraw(shareProceeds, _destination);
 
@@ -780,7 +781,6 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         uint256 shortProceeds = closeSharePrice.mulDown(_bondAmount).divDown(
             sharePrice
         );
-        // TODO - Better destination support
         (uint256 baseProceeds, ) = withdraw(shortProceeds, _destination);
 
         // Enforce min user outputs
@@ -1234,9 +1234,6 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _checkpointTime)
         ];
         if (maturedLongsAmount > 0) {
-            // TODO: YieldSpaceMath currently returns a positive quantity at
-            //       redemption. With this in mind, this will represent a
-            //       slight inaccuracy until this problem is fixed.
             _applyCloseLong(
                 maturedLongsAmount,
                 0,
@@ -1251,9 +1248,6 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _checkpointTime)
         ];
         if (maturedShortsAmount > 0) {
-            // TODO: YieldSpaceMath currently returns a positive quantity at
-            //       redemption. With this in mind, this will represent a
-            //       slight inaccuracy until this problem is fixed.
             _applyCloseShort(
                 maturedShortsAmount,
                 0,

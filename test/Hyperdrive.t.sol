@@ -57,7 +57,7 @@ contract HyperdriveTest is Test {
         // Initialize the pool.
         baseToken.mint(contribution);
         baseToken.approve(address(hyperdrive), contribution);
-        hyperdrive.initialize(contribution, apr);
+        hyperdrive.initialize(contribution, apr, lp);
     }
 
     function test_initialize_failure() external {
@@ -73,7 +73,7 @@ contract HyperdriveTest is Test {
         baseToken.mint(contribution);
         baseToken.approve(address(hyperdrive), contribution);
         vm.expectRevert(Errors.PoolAlreadyInitialized.selector);
-        hyperdrive.initialize(contribution, apr);
+        hyperdrive.initialize(contribution, apr, bob);
     }
 
     // TODO: We need a test that verifies that the quoted APR is the same as the
