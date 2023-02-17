@@ -210,8 +210,6 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         );
     }
 
-    // TODO: Add slippage protection.
-    //
     /// @notice Allows LPs to supply liquidity for LP shares.
     /// @param _contribution The amount of base to supply.
     /// @param _minOutput The minimum number of LP tokens the user should receive
@@ -323,7 +321,7 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
             );
 
         // Burn the LP shares.
-        _burn(AssetId._LP_ASSET_ID, msg.sender, _shares);
+        _burn(AssetId._LP_ASSET_ID, _destination, _shares);
 
         // Update the reserves.
         shareReserves -= shareProceeds;
@@ -355,8 +353,7 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         );
         shortWithdrawalSharesOutstanding += shortWithdrawalShares;
 
-        // Withdraw the shares from the yield source
-        // TODO - Good destination support.
+        // Withdraw the shares from the yield source.
         (uint256 baseOutput, ) = withdraw(shareProceeds, _destination);
         // Enforce min user outputs
         if (_minOutput > baseOutput) revert Errors.OutputLimit();
@@ -386,14 +383,16 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.LongWithdrawalShare, 0),
             _longWithdrawalShares,
             longWithdrawalSharesOutstanding,
-            longWithdrawalShareProceeds
+            longWithdrawalShareProceeds,
+            destination
         );
 
         // Redeem the short withdrawal shares.
         proceeds += _applyWithdrawalShareRedemption(
             AssetId.encodeAssetId(
                 AssetId.AssetIdPrefix.ShortWithdrawalShare,
-                0
+                0,
+                destination
             ),
             _shortWithdrawalShares,
             shortWithdrawalSharesOutstanding,
@@ -401,7 +400,6 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         );
 
         // Withdraw the funds released by redeeming the withdrawal shares.
-        // TODO: Better destination support.
         uint256 shareProceeds = baseProceeds.divDown(sharePrice);
         (_proceeds, ) = withdraw(shareProceeds, _destination);
 
@@ -528,7 +526,7 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
                 AssetId.AssetIdPrefix.Long,
                 _maturityTime
             );
-            _burn(assetId, msg.sender, _bondAmount);
+            _burn(assetId, _destination, _bondAmount);
         }
 
         // Calculate the pool and user deltas using the trading function.
@@ -723,7 +721,7 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
             AssetId.AssetIdPrefix.Short,
             _maturityTime
         );
-        _burn(assetId, msg.sender, _bondAmount);
+        _burn(assetId, _destination, _bondAmount);
 
         // Calculate the pool and user deltas using the trading function.
         uint256 timeRemaining = _calculateTimeRemaining(_maturityTime);
@@ -780,7 +778,7 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         uint256 shortProceeds = closeSharePrice.mulDown(_bondAmount).divDown(
             sharePrice
         );
-        // TODO - Better destination support
+
         (uint256 baseProceeds, ) = withdraw(shortProceeds, _destination);
 
         // Enforce min user outputs
@@ -1234,9 +1232,6 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _checkpointTime)
         ];
         if (maturedLongsAmount > 0) {
-            // TODO: YieldSpaceMath currently returns a positive quantity at
-            //       redemption. With this in mind, this will represent a
-            //       slight inaccuracy until this problem is fixed.
             _applyCloseLong(
                 maturedLongsAmount,
                 0,
@@ -1278,11 +1273,12 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         uint256 _assetId,
         uint256 _withdrawalShares,
         uint256 _withdrawalSharesOutstanding,
-        uint256 _withdrawalShareProceeds
+        uint256 _withdrawalShareProceeds,
+        address _destination
     ) internal returns (uint256 proceeds) {
         if (_withdrawalShares > 0) {
             // Burn the withdrawal shares.
-            _burn(_assetId, msg.sender, _withdrawalShares);
+            _burn(_assetId, _destination, _withdrawalShares);
 
             // Calculate the base released from the withdrawal shares.
             uint256 withdrawalShareProportion = _withdrawalShares.divDown(
