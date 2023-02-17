@@ -6,6 +6,8 @@ import "./Errors.sol";
 /// @notice A fixed-point math library.
 /// @author Delve
 library FixedPointMath {
+    using FixedPointMath for uint256;
+
     int256 internal constant _ONE_18 = 1e18;
     uint256 public constant ONE_18 = 1e18;
 
@@ -298,6 +300,33 @@ library FixedPointMath {
             r := or(r, shl(2, lt(0xf, shr(r, x))))
             r := or(r, shl(1, lt(0x3, shr(r, x))))
             r := or(r, lt(0x1, shr(r, x)))
+        }
+    }
+
+    /// @dev Updates a weighted average by adding or removing a weighted delta.
+    /// @param _totalWeight The total weight before the update.
+    /// @param _deltaWeight The weight of the new value.
+    /// @param _average The weighted average before the update.
+    /// @param _delta The new value.
+    /// @return average The new weighted average.
+    function updateWeightedAverage(
+        uint256 _average,
+        uint256 _totalWeight,
+        uint256 _delta,
+        uint256 _deltaWeight,
+        bool _isAdding
+    ) internal pure returns (uint256 average) {
+        if (_isAdding) {
+            return
+                (_totalWeight.mulDown(_average))
+                    .add(_deltaWeight.mulDown(_delta))
+                    .divUp(_totalWeight.add(_deltaWeight));
+        } else {
+            if (_totalWeight == _deltaWeight) return 0;
+            return
+                (_totalWeight.mulDown(_average))
+                    .sub(_deltaWeight.mulDown(_delta))
+                    .divUp(_totalWeight.sub(_delta));
         }
     }
 }

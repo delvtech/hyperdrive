@@ -43,6 +43,16 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
     /// @notice Checkpoints of historical share prices.
     mapping(uint256 => uint256) public checkpoints;
 
+    // TODO: Optimize the storage layout.
+    //
+    /// @notice Checkpoints of historical base volume of long positions.
+    mapping(uint256 => uint256) public longBaseVolumeCheckpoints;
+
+    // TODO: Optimize the storage layout.
+    //
+    /// @notice Checkpoints of historical base volume of short positions.
+    mapping(uint256 => uint256) public shortBaseVolumeCheckpoints;
+
     /// @notice The share reserves. The share reserves multiplied by the share
     ///         price give the base reserves, so shares are a mechanism of
     ///         ensuring that interest is properly awarded over time.
@@ -65,6 +75,12 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
 
     /// @notice The average maturity time of short positions.
     uint256 public shortAverageMaturityTime;
+
+    /// @notice The amount of base paid by outstanding longs.
+    uint256 public longBaseVolume;
+
+    /// @notice The amount of base paid to outstanding shorts.
+    uint256 public shortBaseVolume;
 
     /// @notice The amount of long withdrawal shares that haven't been paid out.
     uint256 public longWithdrawalSharesOutstanding;
@@ -434,59 +450,48 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
                 initialSharePrice
             );
 
-        uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
-            shareReserves,
-            bondReserves,
-            totalSupply[AssetId._LP_ASSET_ID],
-            initialSharePrice,
-            // normalizedTimeRemaining, when opening a position, the full time is remaining
-            FixedPointMath.ONE_18,
-            timeStretch
-        );
-        (uint256 _curveFee, uint256 _flatFee) = HyperdriveMath
-            .calculateFeesOutGivenIn(
-                shares, // amountIn
+        {
+            // Calculate the fees owed by the trader.
+            uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
+                shareReserves,
+                bondReserves,
+                totalSupply[AssetId._LP_ASSET_ID],
+                initialSharePrice,
                 // normalizedTimeRemaining, when opening a position, the full time is remaining
                 FixedPointMath.ONE_18,
-                spotPrice,
-                sharePrice,
-                curveFee,
-                flatFee,
-                true // isBaseIn
+                timeStretch
             );
-        // This is a base in / bond out operation where the in is given, so we subtract the fee
-        // amount from the output.
-        bondProceeds -= _curveFee - _flatFee;
-        poolBondDelta -= _curveFee;
+            (uint256 _curveFee, uint256 _flatFee) = HyperdriveMath
+                .calculateFeesOutGivenIn(
+                    shares, // amountIn
+                    // normalizedTimeRemaining, when opening a position, the full time is remaining
+                    FixedPointMath.ONE_18,
+                    spotPrice,
+                    sharePrice,
+                    curveFee,
+                    flatFee,
+                    true // isBaseIn
+                );
+
+            // This is a base in / bond out operation where the in is given, so we subtract the fee
+            // amount from the output.
+            bondProceeds -= _curveFee - _flatFee;
+            poolBondDelta -= _curveFee;
+        }
 
         // Enforce min user outputs
         if (_minOutput > bondProceeds) revert Errors.OutputLimit();
 
-        // Update the average maturity time of long positions.
-        longAverageMaturityTime = _calculateAverageMaturityTime(
-            longsOutstanding,
+        // Apply the open long to the state.
+        _applyOpenLong(
+            _baseAmount,
+            shares,
             bondProceeds,
-            longAverageMaturityTime,
-            maturityTime,
-            true
+            poolBondDelta,
+            sharePrice,
+            latestCheckpoint,
+            maturityTime
         );
-
-        // Apply the trading deltas to the reserves and update the amount of
-        // longs outstanding.
-        shareReserves += shares;
-        bondReserves -= poolBondDelta;
-        longsOutstanding += bondProceeds;
-
-        // TODO: We should fuzz test this and other trading functions to ensure
-        // that the APR never goes below zero. If it does, we may need to
-        // enforce additional invariants.
-        //
-        // Since the base buffer may have increased relative to the base
-        // reserves and the bond reserves decreased, we must ensure that the
-        // base reserves are greater than the longsOutstanding.
-        if (sharePrice.mulDown(shareReserves) < longsOutstanding) {
-            revert Errors.BaseBufferExceedsShareReserves();
-        }
 
         // Mint the bonds to the trader with an ID of the maturity time.
         _mint(
@@ -650,13 +655,23 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         }
 
         // Update the average maturity time of long positions.
-        shortAverageMaturityTime = _calculateAverageMaturityTime(
-            shortsOutstanding,
-            _bondAmount,
-            shortAverageMaturityTime,
-            maturityTime,
-            true
-        );
+        shortAverageMaturityTime = shortAverageMaturityTime
+            .updateWeightedAverage(
+                shortsOutstanding,
+                maturityTime,
+                _bondAmount,
+                true
+            );
+
+        // TODO: Think about backdating more. This is only correct when the time
+        // remaining is one.
+        //
+        // Update the base volume of short positions.
+        {
+            uint256 baseAmount = shareProceeds.mulDown(openSharePrice);
+            shortBaseVolume += baseAmount;
+            shortBaseVolumeCheckpoints[latestCheckpoint] += baseAmount;
+        }
 
         // Apply the trading deltas to the reserves and increase the bond buffer
         // by the amount of bonds that were shorted. We don't need to add the
@@ -814,6 +829,40 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
 
     /// Getters ///
 
+    // TODO: The fee parameters aren't immutable right now, but arguably they
+    //       should be.
+    //
+    /// @notice Gets the pool's configuration parameters.
+    /// @dev These parameters are immutable, so this should only need to be
+    ///      called once.
+    /// @return initialSharePrice_ The initial share price.
+    /// @return positionDuration_ The duration of positions.
+    /// @return checkpointDuration_ The duration of checkpoints.
+    /// @return timeStretch_ The time stretch configuration.
+    /// @return flatFee_ The flat fee parameter.
+    /// @return curveFee_ The flat fee parameter.
+    function getPoolConfiguration()
+        external
+        view
+        returns (
+            uint256 initialSharePrice_,
+            uint256 positionDuration_,
+            uint256 checkpointDuration_,
+            uint256 timeStretch_,
+            uint256 flatFee_,
+            uint256 curveFee_
+        )
+    {
+        return (
+            initialSharePrice,
+            positionDuration,
+            checkpointDuration,
+            timeStretch,
+            flatFee,
+            curveFee
+        );
+    }
+
     /// @notice Gets info about the pool's reserves and other state that is
     ///         important to evaluate potential trades.
     /// @return shareReserves_ The share reserves.
@@ -823,9 +872,12 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
     /// @return longsOutstanding_ The outstanding longs that haven't matured.
     /// @return longAverageMaturityTime_ The average maturity time of the
     ///         outstanding longs.
+    /// @return longBaseVolume_ The amount of base paid by longs on opening.
     /// @return shortsOutstanding_ The outstanding shorts that haven't matured.
     /// @return shortAverageMaturityTime_ The average maturity time of the
     ///         outstanding shorts.
+    /// @return shortBaseVolume_ The amount of base paid to shorts on
+    ///         opening.
     function getPoolInfo()
         external
         view
@@ -836,8 +888,10 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
             uint256 sharePrice,
             uint256 longsOutstanding_,
             uint256 longAverageMaturityTime_,
+            uint256 longBaseVolume_,
             uint256 shortsOutstanding_,
-            uint256 shortAverageMaturityTime_
+            uint256 shortAverageMaturityTime_,
+            uint256 shortBaseVolume_
         )
     {
         return (
@@ -847,12 +901,65 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
             pricePerShare(),
             longsOutstanding,
             longAverageMaturityTime,
+            longBaseVolume,
             shortsOutstanding,
-            shortAverageMaturityTime
+            shortAverageMaturityTime,
+            shortBaseVolume
         );
     }
 
     /// Helpers ///
+
+    /// @dev Applies an open long to the state. This includes updating the
+    ///      reserves and maintaining the reserve invariants.
+    /// @param _baseAmount The amount of base paid by the trader.
+    /// @param _shareAmount The amount of shares paid by the trader.
+    /// @param _bondProceeds The amount of bonds purchased by the trader.
+    /// @param _poolBondDelta The change in the pool's bond reserves.
+    /// @param _sharePrice The share price.
+    /// @param _checkpointTime The time of the latest checkpoint.
+    /// @param _maturityTime The maturity time of the long.
+    function _applyOpenLong(
+        uint256 _baseAmount,
+        uint256 _shareAmount,
+        uint256 _bondProceeds,
+        uint256 _poolBondDelta,
+        uint256 _sharePrice,
+        uint256 _checkpointTime,
+        uint256 _maturityTime
+    ) internal {
+        // Update the average maturity time of long positions.
+        longAverageMaturityTime = longAverageMaturityTime.updateWeightedAverage(
+            longsOutstanding,
+            _maturityTime,
+            _bondProceeds,
+            true
+        );
+
+        // TODO: Think about backdating more. This is only correct when the time
+        // remaining is one.
+        //
+        // Update the base volume of long positions.
+        longBaseVolume += _baseAmount;
+        longBaseVolumeCheckpoints[_checkpointTime] += _baseAmount;
+
+        // Apply the trading deltas to the reserves and update the amount of
+        // longs outstanding.
+        shareReserves += _shareAmount;
+        bondReserves -= _poolBondDelta;
+        longsOutstanding += _bondProceeds;
+
+        // TODO: We should fuzz test this and other trading functions to ensure
+        // that the APR never goes below zero. If it does, we may need to
+        // enforce additional invariants.
+        //
+        // Since the base buffer may have increased relative to the base
+        // reserves and the bond reserves decreased, we must ensure that the
+        // base reserves are greater than the longsOutstanding.
+        if (_sharePrice.mulDown(shareReserves) < longsOutstanding) {
+            revert Errors.BaseBufferExceedsShareReserves();
+        }
+    }
 
     /// @dev Applies the trading deltas from a closed long to the reserves and
     ///      the withdrawal pool.
@@ -872,13 +979,43 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         uint256 _maturityTime
     ) internal {
         // Update the long average maturity time.
-        longAverageMaturityTime = _calculateAverageMaturityTime(
+        longAverageMaturityTime = longAverageMaturityTime.updateWeightedAverage(
             longsOutstanding,
-            _bondAmount,
-            longAverageMaturityTime,
             _maturityTime,
+            _bondAmount,
             false
         );
+
+        // Update the long base volume.
+        {
+            // Get the total supply of longs in the checkpoint of the longs
+            // being closed. If the longs are closed before maturity, we add the
+            // amount of longs being closed since the total supply is decreased
+            // when burning the long tokens.
+            uint256 checkpointAmount = totalSupply[
+                AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _maturityTime)
+            ];
+            if (block.timestamp < _maturityTime) {
+                checkpointAmount += _bondAmount;
+            }
+
+            // If all of the longs in the checkpoint are being closed, delete
+            // the base volume in the checkpoint. Otherwise, decrease the base
+            // volume aggregates by a proportional amount.
+            uint256 checkpointTime = _maturityTime - positionDuration;
+            if (_bondAmount == checkpointAmount) {
+                longBaseVolume -= longBaseVolumeCheckpoints[checkpointTime];
+                delete longBaseVolumeCheckpoints[checkpointTime];
+            } else {
+                uint256 proportionalBaseVolume = longBaseVolumeCheckpoints[
+                    checkpointTime
+                ].mulDown(_bondAmount.divDown(checkpointAmount));
+                longBaseVolume -= proportionalBaseVolume;
+                longBaseVolumeCheckpoints[
+                    checkpointTime
+                ] -= proportionalBaseVolume;
+            }
+        }
 
         // Reduce the amount of outstanding longs.
         longsOutstanding -= _bondAmount;
@@ -970,13 +1107,47 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         uint256 _maturityTime
     ) internal {
         // Update the short average maturity time.
-        shortAverageMaturityTime = _calculateAverageMaturityTime(
-            shortsOutstanding,
-            _bondAmount,
-            shortAverageMaturityTime,
-            _maturityTime,
-            false
-        );
+        shortAverageMaturityTime = shortAverageMaturityTime
+            .updateWeightedAverage(
+                shortsOutstanding,
+                _maturityTime,
+                _bondAmount,
+                false
+            );
+
+        // Update the short base volume.
+        {
+            // Get the total supply of shorts in the checkpoint of the shorts
+            // being closed. If the shorts are closed before maturity, we add the
+            // amount of shorts being closed since the total supply is decreased
+            // when burning the short tokens.
+            uint256 checkpointAmount = totalSupply[
+                AssetId.encodeAssetId(
+                    AssetId.AssetIdPrefix.Short,
+                    _maturityTime
+                )
+            ];
+            if (block.timestamp < _maturityTime) {
+                checkpointAmount += _bondAmount;
+            }
+
+            // If all of the shorts in the checkpoint are being closed, delete
+            // the base volume in the checkpoint. Otherwise, decrease the base
+            // volume aggregates by a proportional amount.
+            uint256 checkpointTime = _maturityTime - positionDuration;
+            if (_bondAmount == checkpointAmount) {
+                shortBaseVolume -= shortBaseVolumeCheckpoints[checkpointTime];
+                delete shortBaseVolumeCheckpoints[checkpointTime];
+            } else {
+                uint256 proportionalBaseVolume = shortBaseVolumeCheckpoints[
+                    checkpointTime
+                ].mulDown(_bondAmount.divDown(checkpointAmount));
+                shortBaseVolume -= proportionalBaseVolume;
+                shortBaseVolumeCheckpoints[
+                    checkpointTime
+                ] -= proportionalBaseVolume;
+            }
+        }
 
         // Decrease the amount of shorts outstanding.
         shortsOutstanding -= _bondAmount;
@@ -1122,37 +1293,6 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
             );
         }
         return proceeds;
-    }
-
-    /// @dev Calculate a new average maturity time when positions are opened or
-    ///      closed.
-    /// @param _positionsOutstanding The amount of positions outstanding.
-    /// @param _positionAmount The position balance being opened or closed.
-    /// @param _averageMaturityTime The average maturity time of positions.
-    /// @param _positionMaturityTime The maturity time of the position being
-    ///        opened or closed.
-    /// @param _isOpen A flag indicating that the position is being opened if
-    ///        true and that the position is being closed if false.
-    /// @return averageMaturityTime The updated average maturity time.
-    function _calculateAverageMaturityTime(
-        uint256 _positionsOutstanding,
-        uint256 _positionAmount,
-        uint256 _averageMaturityTime,
-        uint256 _positionMaturityTime,
-        bool _isOpen
-    ) internal pure returns (uint256 averageMaturityTime) {
-        if (_isOpen) {
-            return
-                (_positionsOutstanding.mulDown(_averageMaturityTime))
-                    .add(_positionAmount.mulDown(_positionMaturityTime))
-                    .divUp(_positionsOutstanding.add(_positionAmount));
-        } else {
-            if (_positionsOutstanding == _positionAmount) return 0;
-            return
-                (_positionsOutstanding.mulDown(_averageMaturityTime))
-                    .sub(_positionAmount.mulDown(_positionMaturityTime))
-                    .divUp(_positionsOutstanding.sub(_positionAmount));
-        }
     }
 
     /// @dev Calculates the normalized time remaining of a position.
