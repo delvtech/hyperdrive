@@ -1,6 +1,12 @@
-on: ["push"]
+name: Test
 
-name: hyperdrive
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   test:

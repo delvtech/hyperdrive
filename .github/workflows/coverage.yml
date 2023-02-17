@@ -1,6 +1,12 @@
-on: ["pull_request"]
+name: Code Coverage
 
-name: hyperdrive
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   coverage:
