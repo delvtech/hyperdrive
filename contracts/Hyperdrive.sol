@@ -391,12 +391,12 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         proceeds += _applyWithdrawalShareRedemption(
             AssetId.encodeAssetId(
                 AssetId.AssetIdPrefix.ShortWithdrawalShare,
-                0,
-                _destination
+                0
             ),
             _shortWithdrawalShares,
             shortWithdrawalSharesOutstanding,
-            shortWithdrawalShareProceeds
+            shortWithdrawalShareProceeds,
+            _destination
         );
 
         // Withdraw the funds released by redeeming the withdrawal shares.
