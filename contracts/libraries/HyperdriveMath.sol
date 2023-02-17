@@ -140,7 +140,7 @@ library HyperdriveMath {
         uint256 _bondReserves,
         uint256 _bondReserveAdjustment,
         uint256 _amountIn,
-        uint256 _normalizedTimeRemaining,   // solhint-disable-line no-unused-vars
+        uint256 _normalizedTimeRemaining, // solhint-disable-line no-unused-vars
         uint256 _timeStretch,
         uint256 _sharePrice,
         uint256 _initialSharePrice
@@ -180,7 +180,7 @@ library HyperdriveMath {
         uint256 _bondReserves,
         uint256 _bondReserveAdjustment,
         uint256 _amountIn,
-        uint256 _normalizedTimeRemaining,   // solhint-disable-line no-unused-vars
+        uint256 _normalizedTimeRemaining,
         uint256 _timeStretch,
         uint256 _sharePrice,
         uint256 _initialSharePrice
@@ -241,7 +241,7 @@ library HyperdriveMath {
         uint256 _bondReserves,
         uint256 _bondReserveAdjustment,
         uint256 _amountIn,
-        uint256 _normalizedTimeRemaining,
+        uint256 _normalizedTimeRemaining, // solhint-disable-line no-unused-vars
         uint256 _timeStretch,
         uint256 _sharePrice,
         uint256 _initialSharePrice
