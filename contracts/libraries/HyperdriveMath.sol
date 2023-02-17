@@ -140,23 +140,30 @@ library HyperdriveMath {
         uint256 _bondReserves,
         uint256 _bondReserveAdjustment,
         uint256 _amountIn,
-        uint256 _normalizedTimeRemaining, // solhint-disable-line no-unused-vars
+        uint256 _normalizedTimeRemaining,
         uint256 _timeStretch,
         uint256 _sharePrice,
         uint256 _initialSharePrice
     ) internal pure returns (uint256 poolBondDelta, uint256 userDelta) {
+        // Calculate the flat part of the trade.
+        uint256 flat = _amountIn.mulDown(
+            FixedPointMath.ONE_18.sub(_normalizedTimeRemaining)
+        );
+        _shareReserves = _shareReserves.add(flat);
+        _bondReserves = _bondReserves.sub(flat.mulDown(_sharePrice));
+        uint256 curveIn = _amountIn.mulDown(_normalizedTimeRemaining);
         // (time remaining)/(term length) is always 1 so we just use _timeStretch
-        uint256 amountOut = YieldSpaceMath.calculateOutGivenIn(
+        uint256 curveOut = YieldSpaceMath.calculateOutGivenIn(
             _shareReserves,
             _bondReserves,
             _bondReserveAdjustment,
-            _amountIn,
+            curveIn,
             FixedPointMath.ONE_18.sub(_timeStretch),
             _sharePrice,
             _initialSharePrice,
             true
         );
-        return (amountOut, amountOut);
+        return (curveOut, curveOut);
     }
 
     /// @dev Calculates the amount of shares a user will receive when closing a
@@ -241,23 +248,34 @@ library HyperdriveMath {
         uint256 _bondReserves,
         uint256 _bondReserveAdjustment,
         uint256 _amountIn,
-        uint256 _normalizedTimeRemaining, // solhint-disable-line no-unused-vars
+        uint256 _normalizedTimeRemaining,
         uint256 _timeStretch,
         uint256 _sharePrice,
         uint256 _initialSharePrice
     ) internal pure returns (uint256 poolShareDelta) {
+        // Calculate the flat part of the trade.
+        uint256 flat = _amountIn
+            .mulDown(FixedPointMath.ONE_18.sub(_normalizedTimeRemaining))
+            .divDown(_sharePrice);
+        // Calculate the curved part of the trade assuming that the flat part of
+        // the trade was applied to the share and bond reserves.
+        _shareReserves = _shareReserves.sub(flat);
+        _bondReserves = _bondReserves.add(flat.mulDown(_sharePrice));
+        uint256 curveIn = _amountIn.mulDown(_normalizedTimeRemaining).divDown(
+            _sharePrice
+        );
         // (time remaining)/(term length) is always 1 so we just use _timeStretch
-        return
-            YieldSpaceMath.calculateOutGivenIn(
-                _shareReserves,
-                _bondReserves,
-                _bondReserveAdjustment,
-                _amountIn,
-                FixedPointMath.ONE_18.sub(_timeStretch),
-                _sharePrice,
-                _initialSharePrice,
-                false
-            );
+        uint256 curveOut = YieldSpaceMath.calculateOutGivenIn(
+            _shareReserves,
+            _bondReserves,
+            _bondReserveAdjustment,
+            curveIn,
+            FixedPointMath.ONE_18.sub(_timeStretch),
+            _sharePrice,
+            _initialSharePrice,
+            false
+        );
+        return flat.add(curveOut);
     }
 
     /// @dev Calculates the amount of base that a user will receive when closing a short position
