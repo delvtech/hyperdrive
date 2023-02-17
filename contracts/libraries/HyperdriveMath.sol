@@ -487,32 +487,54 @@ library HyperdriveMath {
         }
     }
 
-    // TODO: Use an allocation scheme that doesn't punish early LPs.
-    //
     /// @dev Calculates the amount of LP shares that should be awarded for
     ///      supplying a specified amount of base shares to the pool.
     /// @param _shares The amount of base shares supplied to the pool.
     /// @param _shareReserves The pool's share reserves.
     /// @param _lpTotalSupply The pool's total supply of LP shares.
-    /// @param _longsOutstanding The amount of long positions outstanding.
-    /// @param _shortsOutstanding The amount of short positions outstanding.
-    /// @param _sharePrice The pool's share price.
-    /// @return The amount of LP shares awarded.
+    /// @param _longAdjustment A parameter denominated in base shares that
+    ///        accounts for the duration risk that the LP takes on from longs.
+    /// @param _shortAdjustment A parameter denominated in base shares that
+    ///        accounts for the duration risk that the LP takes on from shorts.
+    /// @param _shortAdjustment The amount of short positions outstanding.
+    /// @return lpShares The amount of LP shares awarded.
     function calculateLpSharesOutForSharesIn(
         uint256 _shares,
         uint256 _shareReserves,
         uint256 _lpTotalSupply,
-        uint256 _longsOutstanding,
-        uint256 _shortsOutstanding,
+        uint256 _longAdjustment,
+        uint256 _shortAdjustment
+    ) internal pure returns (uint256 lpShares) {
+        // lpShares = (dz * l) / (z + a_s - a_l)
+        lpShares = _shares.mulDown(_lpTotalSupply).divDown(
+            _shareReserves.add(_shortAdjustment).sub(_longAdjustment)
+        );
+        return lpShares;
+    }
+
+    /// @dev Computes the LP allocation adjustment for a position. This is used
+    ///      to accurately account for the duration risk that LPs take on when
+    ///      adding liquidtion to fairly reward LP shares.
+    /// @param _positionsOutstanding The position balance outstanding.
+    /// @param _baseVolume The base volume created by opening the positions.
+    /// @param _averageTimeRemaining The average time remaining of the positions.
+    /// @param _sharePrice The pool's share price.
+    /// @return adjustment The allocation adjustment.
+    function calculateLpAllocationAdjustment(
+        uint256 _positionsOutstanding,
+        uint256 _baseVolume,
+        uint256 _averageTimeRemaining,
         uint256 _sharePrice
-    ) internal pure returns (uint256) {
-        // (dz * l) / (z + b_y / c - b_x / c)
-        return
-            _shares.mulDown(_lpTotalSupply).divDown(
-                _shareReserves.add(_shortsOutstanding.divDown(_sharePrice)).sub(
-                    _longsOutstanding.divDown(_sharePrice)
-                )
-            );
+    ) internal pure returns (uint256 adjustment) {
+        // baseAdjustment = t * _baseVolume + (1 - t) * _positionsOutstanding
+        adjustment = (_averageTimeRemaining.mulDown(_baseVolume)).add(
+            (FixedPointMath.ONE_18.sub(_averageTimeRemaining)).mulDown(
+                _positionsOutstanding
+            )
+        );
+        // adjustment = baseAdjustment / c
+        adjustment = adjustment.divDown(_sharePrice);
+        return adjustment;
     }
 
     /// @dev Calculates the amount of base shares released from burning a

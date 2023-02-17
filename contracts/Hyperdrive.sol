@@ -247,13 +247,25 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         );
 
         // Calculate the amount of LP shares that the supplier should receive.
+        uint256 longAdjustment = HyperdriveMath.calculateLpAllocationAdjustment(
+            longsOutstanding,
+            longBaseVolume,
+            longAverageMaturityTime,
+            sharePrice
+        );
+        uint256 shortAdjustment = HyperdriveMath
+            .calculateLpAllocationAdjustment(
+                shortsOutstanding,
+                shortBaseVolume,
+                shortAverageMaturityTime,
+                sharePrice
+            );
         lpShares = HyperdriveMath.calculateLpSharesOutForSharesIn(
             shares,
             shareReserves,
             totalSupply[AssetId._LP_ASSET_ID],
-            longsOutstanding,
-            shortsOutstanding,
-            sharePrice
+            longAdjustment,
+            shortAdjustment
         );
 
         // Enforce min user outputs
