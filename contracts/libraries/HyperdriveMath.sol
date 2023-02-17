@@ -129,6 +129,7 @@ library HyperdriveMath {
     ///        when share_reserves = bond_reserves, which would ensure that half
     ///        of the pool reserves couldn't be used to provide liquidity.
     /// @param _amountIn The amount of shares the user is depositing.
+    /// @param _normalizedTimeRemaining The amount of time remaining until maturity in seconds.
     /// @param _timeStretch The time stretch parameter.
     /// @param _sharePrice The share price.
     /// @param _initialSharePrice The initial share price.
@@ -139,6 +140,7 @@ library HyperdriveMath {
         uint256 _bondReserves,
         uint256 _bondReserveAdjustment,
         uint256 _amountIn,
+        uint256 _normalizedTimeRemaining,   // solhint-disable-line no-unused-vars
         uint256 _timeStretch,
         uint256 _sharePrice,
         uint256 _initialSharePrice
@@ -178,7 +180,7 @@ library HyperdriveMath {
         uint256 _bondReserves,
         uint256 _bondReserveAdjustment,
         uint256 _amountIn,
-        uint256 _normalizedTimeRemaining,
+        uint256 _normalizedTimeRemaining,   // solhint-disable-line no-unused-vars
         uint256 _timeStretch,
         uint256 _sharePrice,
         uint256 _initialSharePrice
@@ -229,6 +231,7 @@ library HyperdriveMath {
     ///        when share_reserves = bond_reserves, which would ensure that half
     ///        of the pool reserves couldn't be used to provide liquidity.
     /// @param _amountIn The amount of bonds the user is providing.
+    /// @param _normalizedTimeRemaining The amount of time remaining until maturity in seconds.
     /// @param _timeStretch The time stretch parameter.
     /// @param _sharePrice The share price.
     /// @param _initialSharePrice The initial share price.
@@ -238,6 +241,7 @@ library HyperdriveMath {
         uint256 _bondReserves,
         uint256 _bondReserveAdjustment,
         uint256 _amountIn,
+        uint256 _normalizedTimeRemaining,
         uint256 _timeStretch,
         uint256 _sharePrice,
         uint256 _initialSharePrice

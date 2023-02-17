@@ -421,12 +421,14 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         // reduce the purchasing power of the longs by the amount of interest
         // earned in shares.
         uint256 maturityTime = latestCheckpoint + positionDuration;
+        uint256 timeRemaining = _calculateTimeRemaining(maturityTime);
         (uint256 poolBondDelta, uint256 bondProceeds) = HyperdriveMath
             .calculateOpenLong(
                 shareReserves,
                 bondReserves,
                 totalSupply[AssetId._LP_ASSET_ID],
                 shares, // amountIn
+                timeRemaining,
                 timeStretch,
                 sharePrice,
                 initialSharePrice
@@ -617,11 +619,13 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         // Calculate the pool and user deltas using the trading function. We
         // backdate the bonds sold to the beginning of the checkpoint.
         uint256 maturityTime = latestCheckpoint + positionDuration;
+        uint256 timeRemaining = _calculateTimeRemaining(maturityTime);
         uint256 poolShareDelta = HyperdriveMath.calculateOpenShort(
             shareReserves,
             bondReserves,
             totalSupply[AssetId._LP_ASSET_ID],
             _bondAmount,
+            timeRemaining,
             timeStretch,
             sharePrice,
             initialSharePrice
