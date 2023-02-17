@@ -471,7 +471,7 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
                     sharePrice,
                     curveFee,
                     flatFee,
-                    true // isBaseIn
+                    true // isShareIn
                 );
 
             // This is a base in / bond out operation where the in is given, so we subtract the fee
@@ -564,7 +564,7 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
                     sharePrice,
                     curveFee,
                     flatFee,
-                    false // isBaseIn
+                    false // isShareIn
                 );
             // This is a bond in / base out where the bonds are fixed, so we subtract from the base
             // out.
