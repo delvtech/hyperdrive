@@ -421,18 +421,15 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         // reduce the purchasing power of the longs by the amount of interest
         // earned in shares.
         uint256 maturityTime = latestCheckpoint + positionDuration;
-        uint256 timeRemaining = _calculateTimeRemaining(maturityTime);
-        (, uint256 poolBondDelta, uint256 bondProceeds) = HyperdriveMath
-            .calculateOutGivenIn(
+        (uint256 poolBondDelta, uint256 bondProceeds) = HyperdriveMath
+            .calculateOpenLong(
                 shareReserves,
                 bondReserves,
                 totalSupply[AssetId._LP_ASSET_ID],
                 shares, // amountIn
-                timeRemaining,
                 timeStretch,
                 sharePrice,
-                initialSharePrice,
-                true // isBaseIn
+                initialSharePrice
             );
 
         uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
@@ -529,8 +526,8 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
 
         // Calculate the pool and user deltas using the trading function.
         uint256 timeRemaining = _calculateTimeRemaining(_maturityTime);
-        (, uint256 poolBondDelta, uint256 shareProceeds) = HyperdriveMath
-            .calculateOutGivenIn(
+        (uint256 poolBondDelta, uint256 shareProceeds) = HyperdriveMath
+            .calculateCloseLong(
                 shareReserves,
                 bondReserves,
                 totalSupply[AssetId._LP_ASSET_ID],
@@ -538,8 +535,7 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
                 timeRemaining,
                 timeStretch,
                 sharePrice,
-                initialSharePrice,
-                false
+                initialSharePrice
             );
         uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
             shareReserves,
@@ -621,19 +617,15 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         // Calculate the pool and user deltas using the trading function. We
         // backdate the bonds sold to the beginning of the checkpoint.
         uint256 maturityTime = latestCheckpoint + positionDuration;
-        uint256 timeRemaining = _calculateTimeRemaining(maturityTime);
-        (uint256 poolShareDelta, , uint256 shareProceeds) = HyperdriveMath
-            .calculateOutGivenIn(
-                shareReserves,
-                bondReserves,
-                totalSupply[AssetId._LP_ASSET_ID],
-                _bondAmount,
-                timeRemaining,
-                timeStretch,
-                sharePrice,
-                initialSharePrice,
-                false
-            );
+        uint256 poolShareDelta = HyperdriveMath.calculateOpenShort(
+            shareReserves,
+            bondReserves,
+            totalSupply[AssetId._LP_ASSET_ID],
+            _bondAmount,
+            timeStretch,
+            sharePrice,
+            initialSharePrice
+        );
 
         // Take custody of the maximum amount the trader can lose on the short
         // and the extra interest the short will receive at closing (since the
@@ -646,7 +638,7 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         {
             uint256 owedInterest = (sharePrice.divDown(openSharePrice) -
                 FixedPointMath.ONE_18).mulDown(_bondAmount);
-            uint256 baseProceeds = shareProceeds.mulDown(sharePrice);
+            uint256 baseProceeds = poolShareDelta.mulDown(sharePrice);
             userDeposit = (_bondAmount - baseProceeds) + owedInterest;
             // Enforce min user outputs
             if (_maxDeposit < userDeposit) revert Errors.OutputLimit();
@@ -716,8 +708,8 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
 
         // Calculate the pool and user deltas using the trading function.
         uint256 timeRemaining = _calculateTimeRemaining(_maturityTime);
-        (, uint256 poolBondDelta, uint256 sharePayment) = HyperdriveMath
-            .calculateSharesInGivenBondsOut(
+        (uint256 poolBondDelta, uint256 sharePayment) = HyperdriveMath
+            .calculateCloseShort(
                 shareReserves,
                 bondReserves,
                 totalSupply[AssetId._LP_ASSET_ID],
