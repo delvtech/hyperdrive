@@ -14,6 +14,7 @@ library Errors {
     error BaseBufferExceedsShareReserves();
     error InvalidCheckpointTime();
     error InvalidCheckpointDuration();
+    error InvalidCheckpointsPerTerm();
     error InvalidMaturityTime();
     error PoolAlreadyInitialized();
     error TransferFailed();

@@ -136,6 +136,9 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         baseToken = _baseToken;
 
         // Initialize the time configurations.
+        if (_checkpointsPerTerm < 2) {
+            revert Errors.InvalidCheckpointsPerTerm();
+        }
         positionDuration = _checkpointsPerTerm * _checkpointDuration;
         checkpointDuration = _checkpointDuration;
         timeStretch = _timeStretch;
@@ -286,8 +289,6 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         _mint(AssetId._LP_ASSET_ID, _destination, lpShares);
     }
 
-    // TODO: Consider if some MEV protection is necessary for the LP.
-    //
     /// @notice Allows an LP to burn shares and withdraw from the pool.
     /// @param _shares The LP shares to burn.
     /// @param _minOutput The minium amount of the base token to receive. Note - this
@@ -372,8 +373,10 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
 
         // Withdraw the shares from the yield source.
         (uint256 baseOutput, ) = withdraw(shareProceeds, _destination);
+
         // Enforce min user outputs
         if (_minOutput > baseOutput) revert Errors.OutputLimit();
+
         return (baseOutput, longWithdrawalShares, shortWithdrawalShares);
     }
 
@@ -501,7 +504,8 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
             poolBondDelta,
             sharePrice,
             latestCheckpoint,
-            maturityTime
+            maturityTime,
+            timeRemaining
         );
 
         // Mint the bonds to the trader with an ID of the maturity time.
@@ -696,15 +700,14 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
                 true
             );
 
-        // TODO: Think about backdating more. This is only correct when the time
-        // remaining is one.
-        //
         // Update the base volume of short positions.
-        {
-            uint256 baseAmount = shareProceeds.mulDown(openSharePrice);
-            shortBaseVolume += baseAmount;
-            shortBaseVolumeCheckpoints[latestCheckpoint] += baseAmount;
-        }
+        uint256 baseVolume = HyperdriveMath.calculateBaseVolume(
+            shareProceeds.mulDown(openSharePrice),
+            _bondAmount,
+            timeRemaining
+        );
+        shortBaseVolume += baseVolume;
+        shortBaseVolumeCheckpoints[latestCheckpoint] += baseVolume;
 
         // Apply the trading deltas to the reserves and increase the bond buffer
         // by the amount of bonds that were shorted. We don't need to add the
@@ -953,6 +956,7 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
     /// @param _sharePrice The share price.
     /// @param _checkpointTime The time of the latest checkpoint.
     /// @param _maturityTime The maturity time of the long.
+    /// @param _timeRemaining The time remaining until maturity.
     function _applyOpenLong(
         uint256 _baseAmount,
         uint256 _shareAmount,
@@ -960,7 +964,8 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         uint256 _poolBondDelta,
         uint256 _sharePrice,
         uint256 _checkpointTime,
-        uint256 _maturityTime
+        uint256 _maturityTime,
+        uint256 _timeRemaining
     ) internal {
         // Update the average maturity time of long positions.
         longAverageMaturityTime = longAverageMaturityTime.updateWeightedAverage(
@@ -970,12 +975,14 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
             true
         );
 
-        // TODO: Think about backdating more. This is only correct when the time
-        // remaining is one.
-        //
         // Update the base volume of long positions.
-        longBaseVolume += _baseAmount;
-        longBaseVolumeCheckpoints[_checkpointTime] += _baseAmount;
+        uint256 baseVolume = HyperdriveMath.calculateBaseVolume(
+            _baseAmount,
+            _bondProceeds,
+            _timeRemaining
+        );
+        longBaseVolume += baseVolume;
+        longBaseVolumeCheckpoints[_checkpointTime] += baseVolume;
 
         // Apply the trading deltas to the reserves and update the amount of
         // longs outstanding.

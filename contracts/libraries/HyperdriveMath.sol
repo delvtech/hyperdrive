@@ -487,6 +487,32 @@ library HyperdriveMath {
         }
     }
 
+    /// @dev Calculates the base volume of an open trade given the base amount,
+    ///      the bond amount, and the time remaining. Since the base amount
+    ///      takes into account backdating, we can't use this as our base
+    ///      volume. Since we linearly interpolate between the base volume
+    ///      and the bond amount as the time remaining goes from 1 to 0, the
+    ///      base volume is can be determined as follows:
+    ///
+    ///      baseAmount = t * baseVolume + (1 - t) * bondAmount
+    ///                               =>
+    ///      baseVolume = (baseAmount - (1 - t) * bondAmount) / t
+    /// @param _baseAmount The base exchanged in the open trade.
+    /// @param _bondAmount The bonds exchanged in the open trade.
+    /// @param _timeRemaining The time remaining in the position.
+    function calculateBaseVolume(
+        uint256 _baseAmount,
+        uint256 _bondAmount,
+        uint256 _timeRemaining
+    ) internal pure returns (uint256 baseVolume) {
+        baseVolume = (
+            _baseAmount.sub(
+                (FixedPointMath.ONE_18.sub(_timeRemaining)).mulDown(_bondAmount)
+            )
+        ).divDown(_timeRemaining);
+        return baseVolume;
+    }
+
     /// @dev Calculates the amount of LP shares that should be awarded for
     ///      supplying a specified amount of base shares to the pool.
     /// @param _shares The amount of base shares supplied to the pool.
@@ -514,7 +540,7 @@ library HyperdriveMath {
 
     /// @dev Computes the LP allocation adjustment for a position. This is used
     ///      to accurately account for the duration risk that LPs take on when
-    ///      adding liquidtion to fairly reward LP shares.
+    ///      adding liquidity so that LP shares can be rewarded fairly.
     /// @param _positionsOutstanding The position balance outstanding.
     /// @param _baseVolume The base volume created by opening the positions.
     /// @param _averageTimeRemaining The average time remaining of the positions.
