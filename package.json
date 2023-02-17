@@ -10,7 +10,7 @@
         "build:test": "FOUNDRY_PROFILE=production forge test --gas-report",
         "build": "forge build",
         "clean": "forge clean",
-        "lint": "yarn solhint && yarn style-check && yarn spell-check",
+        "lint": "yarn solhint && yarn style-check && yarn spell-check && forge build --deny-warnings --force",
         "prettier": "npx prettier --write .",
         "test": "forge test -vvv",
         "solhint": "npx solhint -f table contracts/*.sol contracts/**/*.sol",

@@ -13,7 +13,7 @@ contract MockYieldSpaceMath {
         uint256 c,
         uint256 mu,
         bool isBondIn
-    ) external returns (uint256) {
+    ) external pure returns (uint256) {
         uint256 result = YieldSpaceMath.calculateOutGivenIn(
             shareReserves,
             bondReserves,
@@ -36,7 +36,7 @@ contract MockYieldSpaceMath {
         uint256 c,
         uint256 mu,
         bool isBaseOut
-    ) external returns (uint256) {
+    ) external pure returns (uint256) {
         uint256 result = YieldSpaceMath.calculateInGivenOut(
             shareReserves,
             bondReserves,

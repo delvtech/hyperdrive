@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+pragma solidity ^0.8.18;
 
 import { Test } from "forge-std/Test.sol";
 import { ForwarderFactory } from "contracts/ForwarderFactory.sol";
