@@ -52,12 +52,9 @@ contract OpenLongTest is HyperdriveTest {
         PoolInfo memory poolInfoBefore = getPoolInfo();
 
         // Purchase a small amount of bonds.
-        vm.stopPrank();
-        vm.startPrank(bob);
         uint256 baseAmount = 10e18;
-        baseToken.mint(baseAmount);
-        baseToken.approve(address(hyperdrive), baseAmount);
-        hyperdrive.openLong(baseAmount, 0, bob);
+        (uint256 maturityTime, uint256 bondAmount) = openLong(bob, baseAmount);
+        uint256 checkpointTime = maturityTime - POSITION_DURATION;
 
         // Verify the base transfers.
         assertEq(baseToken.balanceOf(bob), 0);
@@ -66,23 +63,13 @@ contract OpenLongTest is HyperdriveTest {
             contribution + baseAmount
         );
 
-        // Verify that Bob received an acceptable amount of bonds. Since the
-        // base amount is very low relative to the pool's liquidity, the implied
-        // APR should be approximately equal to the pool's APR.
-        uint256 checkpointTime = block.timestamp - (block.timestamp % 1 days);
-        uint256 maturityTime = checkpointTime + 365 days;
-        uint256 bondAmount = hyperdrive.balanceOf(
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
-            bob
-        );
+        // Verify that opening a long doesn't make the APR go up.
         uint256 realizedApr = calculateAPRFromRealizedPrice(
             baseAmount,
             bondAmount,
             maturityTime - block.timestamp,
-            365 days
+            POSITION_DURATION
         );
-
-        // Verify that opening a long doesn't make the APR go up
         assertGt(apr, realizedApr);
 
         // Verify that the reserves were updated correctly.
@@ -132,13 +119,9 @@ contract OpenLongTest is HyperdriveTest {
         PoolInfo memory poolInfoBefore = getPoolInfo();
 
         // Purchase a small amount of bonds.
-        vm.stopPrank();
-        vm.startPrank(bob);
         uint256 baseAmount = .01e18;
-
-        baseToken.mint(baseAmount);
-        baseToken.approve(address(hyperdrive), baseAmount);
-        hyperdrive.openLong(baseAmount, 0, bob);
+        (uint256 maturityTime, uint256 bondAmount) = openLong(bob, baseAmount);
+        uint256 checkpointTime = maturityTime - POSITION_DURATION;
 
         // Verify the base transfers.
         assertEq(baseToken.balanceOf(bob), 0);
@@ -147,23 +130,13 @@ contract OpenLongTest is HyperdriveTest {
             contribution + baseAmount
         );
 
-        // Verify that Bob received an acceptable amount of bonds. Since the
-        // base amount is very low relative to the pool's liquidity, the implied
-        // APR should be approximately equal to the pool's APR.
-        uint256 checkpointTime = block.timestamp - (block.timestamp % 1 days);
-        uint256 maturityTime = checkpointTime + 365 days;
-        uint256 bondAmount = hyperdrive.balanceOf(
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
-            bob
-        );
+        // Verify that opening a long doesn't make the APR go up.
         uint256 realizedApr = calculateAPRFromRealizedPrice(
             baseAmount,
             bondAmount,
             maturityTime - block.timestamp,
-            365 days
+            POSITION_DURATION
         );
-
-        // Verify that opening a long doesn't make the APR go up
         assertGt(apr, realizedApr);
 
         // Verify that the reserves were updated correctly.
