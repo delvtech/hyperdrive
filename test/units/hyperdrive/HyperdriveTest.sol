@@ -129,10 +129,10 @@ contract HyperdriveTest is Test {
 
         // Open the short
         maturityTime = latestCheckpoint() + POSITION_DURATION;
-        uint256 baseBalanceBefore = baseToken.balanceOf(trader);
         baseToken.mint(bondAmount);
         baseToken.approve(address(hyperdrive), bondAmount);
-        hyperdrive.openShort(bondAmount, 0, trader);
+        uint256 baseBalanceBefore = baseToken.balanceOf(trader);
+        hyperdrive.openShort(bondAmount, bondAmount, trader);
 
         baseAmount = baseBalanceBefore - baseToken.balanceOf(trader);
         baseToken.burn(bondAmount - baseAmount);
