@@ -138,7 +138,9 @@ contract MockHyperdriveMath {
         uint256 _normalizedTimeRemaining,
         uint256 _timeStretch,
         uint256 _sharePrice,
-        uint256 _initialSharePrice
+        uint256 _initialSharePrice,
+        uint256 _curveFee,
+        uint256 _flatFee
     ) external pure returns (uint256, uint256) {
         (uint256 result1, uint256 result2) = HyperdriveMath.calculateCloseShort(
             _shareReserves,
@@ -148,7 +150,9 @@ contract MockHyperdriveMath {
             _normalizedTimeRemaining,
             _timeStretch,
             _sharePrice,
-            _initialSharePrice
+            _initialSharePrice,
+            _curveFee,
+            _flatFee
         );
         return (result1, result2);
     }
