@@ -637,6 +637,32 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
             initialSharePrice
         );
 
+        {
+            uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
+                shareReserves,
+                bondReserves,
+                totalSupply[AssetId._LP_ASSET_ID],
+                initialSharePrice,
+                // normalizedTimeRemaining, when opening a position, the full time is remaining
+                FixedPointMath.ONE_18,
+                timeStretch
+            );
+            (uint256 _curveFee, uint256 _flatFee) = HyperdriveMath
+                .calculateFeesOutGivenIn(
+                    _bondAmount, // amountIn
+                    // normalizedTimeRemaining, when opening a position, the full time is remaining
+                    FixedPointMath.ONE_18,
+                    spotPrice,
+                    sharePrice,
+                    curveFee,
+                    flatFee,
+                    false // isShareIn
+                );
+            // This is a bond in / base out where the bonds are given, so we subtract from the shares
+            // out.
+            shareProceeds -= _curveFee + _flatFee;
+        }
+
         // Take custody of the maximum amount the trader can lose on the short
         // and the extra interest the short will receive at closing (since the
         // proceeds of the trades are calculated using the checkpoint's open
@@ -737,7 +763,9 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
                 timeRemaining,
                 timeStretch,
                 sharePrice,
-                initialSharePrice
+                initialSharePrice,
+                curveFee,
+                flatFee
             );
 
         // If the position hasn't matured, apply the accounting updates that
