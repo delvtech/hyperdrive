@@ -458,15 +458,13 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
                 bondReserves,
                 totalSupply[AssetId._LP_ASSET_ID],
                 initialSharePrice,
-                // normalizedTimeRemaining, when opening a position, the full time is remaining
-                FixedPointMath.ONE_18,
+                timeRemaining,
                 timeStretch
             );
             (uint256 _curveFee, uint256 _flatFee) = HyperdriveMath
                 .calculateFeesOutGivenIn(
                     shares, // amountIn
-                    // normalizedTimeRemaining, when opening a position, the full time is remaining
-                    FixedPointMath.ONE_18,
+                    timeRemaining,
                     spotPrice,
                     sharePrice,
                     curveFee,
@@ -550,16 +548,14 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
             bondReserves,
             totalSupply[AssetId._LP_ASSET_ID],
             initialSharePrice,
-            // normalizedTimeRemaining, when opening a position, the full time is remaining
-            FixedPointMath.ONE_18,
+            timeRemaining,
             timeStretch
         );
         {
             (uint256 _curveFee, uint256 _flatFee) = HyperdriveMath
                 .calculateFeesOutGivenIn(
                     _bondAmount, // amountIn
-                    // normalizedTimeRemaining, when opening a position, the full time is remaining
-                    FixedPointMath.ONE_18,
+                    timeRemaining,
                     spotPrice,
                     sharePrice,
                     curveFee,
@@ -643,15 +639,13 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
                 bondReserves,
                 totalSupply[AssetId._LP_ASSET_ID],
                 initialSharePrice,
-                // normalizedTimeRemaining, when opening a position, the full time is remaining
-                FixedPointMath.ONE_18,
+                timeRemaining,
                 timeStretch
             );
             (uint256 _curveFee, uint256 _flatFee) = HyperdriveMath
                 .calculateFeesOutGivenIn(
                     _bondAmount, // amountIn
-                    // normalizedTimeRemaining, when opening a position, the full time is remaining
-                    FixedPointMath.ONE_18,
+                    timeRemaining,
                     spotPrice,
                     sharePrice,
                     curveFee,
