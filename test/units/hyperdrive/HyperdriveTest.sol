@@ -77,7 +77,6 @@ contract HyperdriveTest is Test {
         vm.startPrank(lp);
 
         // Remove liquidity from the pool.
-        hyperdrive.setApprovalForAll(address(hyperdrive), true);
         hyperdrive.removeLiquidity(shares, 0, lp);
     }
 
@@ -115,7 +114,6 @@ contract HyperdriveTest is Test {
 
         // Close the long.
         uint256 baseBalanceBefore = baseToken.balanceOf(trader);
-        hyperdrive.setApprovalForAll(address(hyperdrive), true);
         hyperdrive.closeLong(maturityTime, bondAmount, 0, trader);
 
         uint256 baseBalanceAfter = baseToken.balanceOf(trader);
@@ -151,7 +149,6 @@ contract HyperdriveTest is Test {
 
         // Close the short
         uint256 baseBalanceBefore = baseToken.balanceOf(trader);
-        hyperdrive.setApprovalForAll(address(hyperdrive), true);
         hyperdrive.closeShort(maturityTime, bondAmount, 0, trader);
 
         return baseToken.balanceOf(trader) - baseBalanceBefore;

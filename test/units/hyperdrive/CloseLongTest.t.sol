@@ -17,20 +17,14 @@ contract CloseLongTest is HyperdriveTest {
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
 
-        // Purchase some bonds.
-        vm.stopPrank();
-        vm.startPrank(bob);
+        // Open a long position.
         uint256 baseAmount = 10e18;
-        baseToken.mint(baseAmount);
-        baseToken.approve(address(hyperdrive), baseAmount);
-        hyperdrive.openLong(baseAmount, 0, bob);
+        (uint256 maturityTime, ) = openLong(bob, baseAmount);
 
         // Attempt to close zero longs. This should fail.
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(Errors.ZeroAmount.selector);
-        uint256 maturityTime = (block.timestamp - (block.timestamp % 1 days)) +
-            365 days;
         hyperdrive.closeLong(maturityTime, 0, 0, bob);
     }
 
@@ -41,23 +35,13 @@ contract CloseLongTest is HyperdriveTest {
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
 
-        // Purchase some bonds.
-        vm.stopPrank();
-        vm.startPrank(bob);
+        // Open a long position.
         uint256 baseAmount = 10e18;
-        baseToken.mint(baseAmount);
-        baseToken.approve(address(hyperdrive), baseAmount);
-        hyperdrive.openLong(baseAmount, 0, bob);
+        (uint256 maturityTime, uint256 bondAmount) = openLong(bob, baseAmount);
 
         // Attempt to close too many longs. This should fail.
         vm.stopPrank();
         vm.startPrank(bob);
-        uint256 maturityTime = (block.timestamp - (block.timestamp % 1 days)) +
-            365 days;
-        uint256 bondAmount = hyperdrive.balanceOf(
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
-            bob
-        );
         vm.expectRevert(stdError.arithmeticError);
         hyperdrive.closeLong(maturityTime, bondAmount + 1, 0, bob);
     }
@@ -69,13 +53,9 @@ contract CloseLongTest is HyperdriveTest {
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
 
-        // Purchase some bonds.
-        vm.stopPrank();
-        vm.startPrank(bob);
+        // Open a long position.
         uint256 baseAmount = 10e18;
-        baseToken.mint(baseAmount);
-        baseToken.approve(address(hyperdrive), baseAmount);
-        hyperdrive.openLong(baseAmount, 0, bob);
+        openLong(bob, baseAmount);
 
         // Attempt to use a timestamp greater than the maximum range.
         vm.stopPrank();
@@ -91,31 +71,19 @@ contract CloseLongTest is HyperdriveTest {
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
 
-        // Purchase some bonds.
-        vm.stopPrank();
-        vm.startPrank(bob);
+        // Open a long position.
         uint256 baseAmount = 10e18;
-        baseToken.mint(baseAmount);
-        baseToken.approve(address(hyperdrive), baseAmount);
-        hyperdrive.openLong(baseAmount, 0, bob);
+        (uint256 maturityTime, uint256 bondAmount) = openLong(bob, baseAmount);
+        uint256 checkpointTime = maturityTime - POSITION_DURATION;
 
         // Get the reserves before closing the long.
         PoolInfo memory poolInfoBefore = getPoolInfo();
 
         // Immediately close the bonds.
-        vm.stopPrank();
-        vm.startPrank(bob);
-        uint256 checkpointTime = block.timestamp - (block.timestamp % 1 days);
-        uint256 maturityTime = checkpointTime + 365 days;
-        uint256 bondAmount = hyperdrive.balanceOf(
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
-            bob
-        );
-        hyperdrive.closeLong(maturityTime, bondAmount, 0, bob);
+        uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
 
         // Verify that all of Bob's bonds were burned and that he has
         // approximately as much base as he started with.
-        uint256 baseProceeds = baseToken.balanceOf(bob);
         assertEq(
             hyperdrive.balanceOf(
                 AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
@@ -164,31 +132,19 @@ contract CloseLongTest is HyperdriveTest {
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
 
-        // Purchase some bonds.
-        vm.stopPrank();
-        vm.startPrank(bob);
+        // Open a long position.
         uint256 baseAmount = .01e18;
-        baseToken.mint(baseAmount);
-        baseToken.approve(address(hyperdrive), baseAmount);
-        hyperdrive.openLong(baseAmount, 0, bob);
+        (uint256 maturityTime, uint256 bondAmount) = openLong(bob, baseAmount);
+        uint256 checkpointTime = maturityTime - POSITION_DURATION;
 
         // Get the reserves before closing the long.
         PoolInfo memory poolInfoBefore = getPoolInfo();
 
         // Immediately close the bonds.
-        vm.stopPrank();
-        vm.startPrank(bob);
-        uint256 checkpointTime = block.timestamp - (block.timestamp % 1 days);
-        uint256 maturityTime = checkpointTime + 365 days;
-        uint256 bondAmount = hyperdrive.balanceOf(
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
-            bob
-        );
-        hyperdrive.closeLong(maturityTime, bondAmount, 0, bob);
+        uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
 
         // Verify that all of Bob's bonds were burned and that he has
         // approximately as much base as he started with.
-        uint256 baseProceeds = baseToken.balanceOf(bob);
         assertEq(
             hyperdrive.balanceOf(
                 AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
@@ -238,34 +194,22 @@ contract CloseLongTest is HyperdriveTest {
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
 
-        // Purchase some bonds.
-        vm.stopPrank();
-        vm.startPrank(bob);
+        // Open a long position.
         uint256 baseAmount = 10e18;
-        baseToken.mint(baseAmount);
-        baseToken.approve(address(hyperdrive), baseAmount);
-        hyperdrive.openLong(baseAmount, 0, bob);
-        uint256 checkpointTime = block.timestamp - (block.timestamp % 1 days);
-        uint256 maturityTime = checkpointTime + 365 days;
+        (uint256 maturityTime, uint256 bondAmount) = openLong(bob, baseAmount);
+        uint256 checkpointTime = maturityTime - POSITION_DURATION;
 
         // Get the reserves before closing the long.
         PoolInfo memory poolInfoBefore = getPoolInfo();
 
         // The term passes.
-        vm.warp(block.timestamp + 365 days);
+        vm.warp(block.timestamp + POSITION_DURATION);
 
         // Redeem the bonds
-        vm.stopPrank();
-        vm.startPrank(bob);
-        uint256 bondAmount = hyperdrive.balanceOf(
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
-            bob
-        );
-        hyperdrive.closeLong(maturityTime, bondAmount, 0, bob);
+        uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
 
         // Verify that all of Bob's bonds were burned and that he has
         // approximately as much base as he started with.
-        uint256 baseProceeds = baseToken.balanceOf(bob);
         assertEq(
             hyperdrive.balanceOf(
                 AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
