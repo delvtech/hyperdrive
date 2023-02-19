@@ -18,7 +18,9 @@ contract MockHyperdrive is Hyperdrive {
         uint256 _initialSharePrice,
         uint256 _checkpointsPerTerm,
         uint256 _checkpointDuration,
-        uint256 _timeStretch
+        uint256 _timeStretch,
+        uint256 _curveFee,
+        uint256 _flatFee
     )
         Hyperdrive(
             bytes32(0),
@@ -28,14 +30,19 @@ contract MockHyperdrive is Hyperdrive {
             _checkpointsPerTerm,
             _checkpointDuration,
             _timeStretch,
-            0, // curveFee
-            0 // flatFee
+            _curveFee,
+            _flatFee
         )
     {
         _sharePrice = _initialSharePrice;
     }
 
     /// Mocks ///
+
+    function setFees(uint256 _curveFee, uint256 _flatFee) public {
+        curveFee = _curveFee;
+        flatFee = _flatFee;
+    }
 
     error InvalidSharePrice();
 
