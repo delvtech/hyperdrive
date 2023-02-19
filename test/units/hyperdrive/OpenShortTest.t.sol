@@ -48,7 +48,7 @@ contract OpenShortTest is HyperdriveTest {
         initialize(alice, apr, contribution);
 
         // Get the reserves before opening the short.
-        PoolInfo memory poolInfoBefore = getPoolInfo();
+        PoolInfo memory poolInfoBefore = getPoolInfo(hyperdrive);
 
         // Short a small amount of bonds.
         uint256 bondAmount = 10e18;
@@ -83,7 +83,7 @@ contract OpenShortTest is HyperdriveTest {
         assertLt(apr, realizedApr);
 
         // Verify that the reserves were updated correctly.
-        PoolInfo memory poolInfoAfter = getPoolInfo();
+        PoolInfo memory poolInfoAfter = getPoolInfo(hyperdrive);
         assertEq(
             poolInfoAfter.shareReserves,
             poolInfoBefore.shareReserves -
@@ -126,7 +126,7 @@ contract OpenShortTest is HyperdriveTest {
         initialize(alice, apr, contribution);
 
         // Get the reserves before opening the short.
-        PoolInfo memory poolInfoBefore = getPoolInfo();
+        PoolInfo memory poolInfoBefore = getPoolInfo(hyperdrive);
 
         // Short a small amount of bonds.
         uint256 bondAmount = .1e18;
@@ -161,7 +161,7 @@ contract OpenShortTest is HyperdriveTest {
         assertLt(apr, realizedApr);
 
         // Verify that the reserves were updated correctly.
-        PoolInfo memory poolInfoAfter = getPoolInfo();
+        PoolInfo memory poolInfoAfter = getPoolInfo(hyperdrive);
         assertEq(
             poolInfoAfter.shareReserves,
             poolInfoBefore.shareReserves -

@@ -77,7 +77,7 @@ contract CloseShortTest is HyperdriveTest {
         uint256 checkpointTime = maturityTime - POSITION_DURATION;
 
         // Get the reserves before closing the long.
-        PoolInfo memory poolInfoBefore = getPoolInfo();
+        PoolInfo memory poolInfoBefore = getPoolInfo(hyperdrive);
 
         // Immediately close the bonds.
         uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
@@ -99,7 +99,7 @@ contract CloseShortTest is HyperdriveTest {
         // Verify that the reserves were updated correctly. Since this trade
         // happens at the beginning of the term, the bond reserves should be
         // increased by the full amount.
-        PoolInfo memory poolInfoAfter = getPoolInfo();
+        PoolInfo memory poolInfoAfter = getPoolInfo(hyperdrive);
         assertApproxEqAbs(
             poolInfoAfter.shareReserves,
             poolInfoBefore.shareReserves +
@@ -143,7 +143,7 @@ contract CloseShortTest is HyperdriveTest {
         uint256 checkpointTime = maturityTime - POSITION_DURATION;
 
         // Get the reserves before closing the long.
-        PoolInfo memory poolInfoBefore = getPoolInfo();
+        PoolInfo memory poolInfoBefore = getPoolInfo(hyperdrive);
 
         // Immediately close the bonds.
         uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
@@ -165,7 +165,7 @@ contract CloseShortTest is HyperdriveTest {
         // Verify that the reserves were updated correctly. Since this trade
         // happens at the beginning of the term, the bond reserves should be
         // increased by the full amount.
-        PoolInfo memory poolInfoAfter = getPoolInfo();
+        PoolInfo memory poolInfoAfter = getPoolInfo(hyperdrive);
         assertApproxEqAbs(
             poolInfoAfter.shareReserves,
             poolInfoBefore.shareReserves +
@@ -210,7 +210,7 @@ contract CloseShortTest is HyperdriveTest {
         uint256 checkpointTime = maturityTime - POSITION_DURATION;
 
         // Get the reserves before closing the long.
-        PoolInfo memory poolInfoBefore = getPoolInfo();
+        PoolInfo memory poolInfoBefore = getPoolInfo(hyperdrive);
 
         // The term passes.
         vm.warp(block.timestamp + 365 days);
@@ -237,7 +237,7 @@ contract CloseShortTest is HyperdriveTest {
 
         // Verify that the reserves were updated correctly. Since this trade
         // is a redemption, there should be no changes to the bond reserves.
-        PoolInfo memory poolInfoAfter = getPoolInfo();
+        PoolInfo memory poolInfoAfter = getPoolInfo(hyperdrive);
         assertEq(
             poolInfoAfter.shareReserves,
             poolInfoBefore.shareReserves +
