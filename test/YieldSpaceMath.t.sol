@@ -64,7 +64,4 @@ contract YieldSpaceMathTest is Test {
         );
         assertEq(result, 5.031654806080804961e18);
     }
-
-
-
 }
