@@ -52,16 +52,11 @@ contract OpenShortTest is HyperdriveTest {
 
         // Short a small amount of bonds.
         uint256 bondAmount = 10e18;
-<<<<<<< HEAD
         (uint256 maturityTime, uint256 baseAmount) = openShort(
             hyperdrive,
             bob,
             bondAmount
         );
-        uint256 checkpointTime = maturityTime - POSITION_DURATION;
-=======
-        (uint256 maturityTime, uint256 baseAmount) = openShort(bob, bondAmount);
->>>>>>> 2407cde (Refactor assertions in the short tests (#90))
 
         // Verify the open short updates occurred correctly.
         verifyOpenShort(
@@ -69,40 +64,6 @@ contract OpenShortTest is HyperdriveTest {
             contribution,
             baseAmount,
             bondAmount,
-<<<<<<< HEAD
-            maturityTime - block.timestamp,
-            POSITION_DURATION
-        );
-        assertLt(apr, realizedApr);
-
-        // Verify that the reserves were updated correctly.
-        PoolInfo memory poolInfoAfter = getPoolInfo(hyperdrive);
-        assertEq(
-            poolInfoAfter.shareReserves,
-            poolInfoBefore.shareReserves -
-                baseProceeds.divDown(poolInfoBefore.sharePrice)
-        );
-        assertEq(
-            poolInfoAfter.bondReserves,
-            poolInfoBefore.bondReserves + bondAmount
-        );
-        assertEq(poolInfoAfter.lpTotalSupply, poolInfoBefore.lpTotalSupply);
-        assertEq(poolInfoAfter.sharePrice, poolInfoBefore.sharePrice);
-        assertEq(
-            poolInfoAfter.longsOutstanding,
-            poolInfoBefore.longsOutstanding
-        );
-        assertEq(poolInfoAfter.longAverageMaturityTime, 0);
-        assertEq(poolInfoAfter.longBaseVolume, 0);
-        assertEq(hyperdrive.longBaseVolumeCheckpoints(checkpointTime), 0);
-        assertEq(
-            poolInfoAfter.shortsOutstanding,
-            poolInfoBefore.shortsOutstanding + bondAmount
-        );
-        assertApproxEqAbs(
-            poolInfoAfter.shortAverageMaturityTime,
-=======
->>>>>>> 2407cde (Refactor assertions in the short tests (#90))
             maturityTime,
             apr
         );
@@ -120,14 +81,11 @@ contract OpenShortTest is HyperdriveTest {
 
         // Short a small amount of bonds.
         uint256 bondAmount = .1e18;
-<<<<<<< HEAD
         (uint256 maturityTime, uint256 baseAmount) = openShort(
             hyperdrive,
             bob,
             bondAmount
         );
-=======
-        (uint256 maturityTime, uint256 baseAmount) = openShort(bob, bondAmount);
 
         // Verify the open short updates occurred correctly.
         verifyOpenShort(
@@ -148,7 +106,6 @@ contract OpenShortTest is HyperdriveTest {
         uint256 maturityTime,
         uint256 apr
     ) internal {
->>>>>>> 2407cde (Refactor assertions in the short tests (#90))
         uint256 checkpointTime = maturityTime - POSITION_DURATION;
 
         // Verify that Hyperdrive received the max loss and that Bob received
