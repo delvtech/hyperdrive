@@ -76,99 +76,7 @@ contract HyperdriveTest is Test {
         hyperdrive.initialize(contribution, apr, lp);
     }
 
-    function addLiquidity(address lp, uint256 contribution) internal {
-        vm.stopPrank();
-        vm.startPrank(lp);
-
-        // Add liquidity to the pool.
-        baseToken.mint(contribution);
-        baseToken.approve(address(hyperdrive), contribution);
-        hyperdrive.addLiquidity(contribution, 0, lp);
-    }
-
-    function removeLiquidity(address lp, uint256 shares) internal {
-        vm.stopPrank();
-        vm.startPrank(lp);
-
-        // Remove liquidity from the pool.
-        hyperdrive.removeLiquidity(shares, 0, lp);
-    }
-
-    function openLong(
-        address trader,
-        uint256 baseAmount
-    ) internal returns (uint256 maturityTime, uint256 bondAmount) {
-        vm.stopPrank();
-        vm.startPrank(trader);
-
-        // Open the long.
-        maturityTime = latestCheckpoint() + POSITION_DURATION;
-        uint256 bondBalanceBefore = hyperdrive.balanceOf(
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
-            trader
-        );
-        baseToken.mint(baseAmount);
-        baseToken.approve(address(hyperdrive), baseAmount);
-        hyperdrive.openLong(baseAmount, 0, trader);
-
-        uint256 bondBalanceAfter = hyperdrive.balanceOf(
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
-            trader
-        );
-        return (maturityTime, bondBalanceAfter.sub(bondBalanceBefore));
-    }
-
-    function closeLong(
-        address trader,
-        uint256 maturityTime,
-        uint256 bondAmount
-    ) internal returns (uint256 baseAmount) {
-        vm.stopPrank();
-        vm.startPrank(trader);
-
-        // Close the long.
-        uint256 baseBalanceBefore = baseToken.balanceOf(trader);
-        hyperdrive.closeLong(maturityTime, bondAmount, 0, trader);
-
-        uint256 baseBalanceAfter = baseToken.balanceOf(trader);
-        return baseBalanceAfter.sub(baseBalanceBefore);
-    }
-
-    function openShort(
-        address trader,
-        uint256 bondAmount
-    ) internal returns (uint256 maturityTime, uint256 baseAmount) {
-        vm.stopPrank();
-        vm.startPrank(trader);
-
-        // Open the short
-        maturityTime = latestCheckpoint() + POSITION_DURATION;
-        baseToken.mint(bondAmount);
-        baseToken.approve(address(hyperdrive), bondAmount);
-        uint256 baseBalanceBefore = baseToken.balanceOf(trader);
-        hyperdrive.openShort(bondAmount, bondAmount, trader);
-
-        baseAmount = baseBalanceBefore - baseToken.balanceOf(trader);
-        baseToken.burn(bondAmount - baseAmount);
-        return (maturityTime, baseAmount);
-    }
-
-    function closeShort(
-        address trader,
-        uint256 maturityTime,
-        uint256 bondAmount
-    ) internal returns (uint256 baseAmount) {
-        vm.stopPrank();
-        vm.startPrank(trader);
-
-        // Close the short
-        uint256 baseBalanceBefore = baseToken.balanceOf(trader);
-        hyperdrive.closeShort(maturityTime, bondAmount, 0, trader);
-
-        return baseToken.balanceOf(trader) - baseBalanceBefore;
-    }
-
-    /// Utils ///
+    // TODO: combine with initialize()
     function initializeWithFees(
         address lp,
         uint256 apr,
@@ -182,6 +90,112 @@ contract HyperdriveTest is Test {
         baseToken.approve(address(hyperdrive_with_fees), contribution);
         hyperdrive_with_fees.initialize(contribution, apr, lp);
     }
+
+    function addLiquidity(
+        MockHyperdrive _hyperdrive,
+        address lp,
+        uint256 contribution
+    ) internal {
+        vm.stopPrank();
+        vm.startPrank(lp);
+
+        // Add liquidity to the pool.
+        baseToken.mint(contribution);
+        baseToken.approve(address(_hyperdrive), contribution);
+        _hyperdrive.addLiquidity(contribution, 0, lp);
+    }
+
+    function removeLiquidity(
+        MockHyperdrive _hyperdrive,
+        address lp,
+        uint256 shares
+    ) internal {
+        vm.stopPrank();
+        vm.startPrank(lp);
+
+        // Remove liquidity from the pool.
+        _hyperdrive.removeLiquidity(shares, 0, lp);
+    }
+
+    function openLong(
+        MockHyperdrive _hyperdrive,
+        address trader,
+        uint256 baseAmount
+    ) internal returns (uint256 maturityTime, uint256 bondAmount) {
+        vm.stopPrank();
+        vm.startPrank(trader);
+
+        // Open the long.
+        maturityTime = latestCheckpoint() + POSITION_DURATION;
+        uint256 bondBalanceBefore = _hyperdrive.balanceOf(
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
+            trader
+        );
+        baseToken.mint(baseAmount);
+        baseToken.approve(address(_hyperdrive), baseAmount);
+        _hyperdrive.openLong(baseAmount, 0, trader);
+
+        uint256 bondBalanceAfter = _hyperdrive.balanceOf(
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
+            trader
+        );
+        return (maturityTime, bondBalanceAfter.sub(bondBalanceBefore));
+    }
+
+    function closeLong(
+        MockHyperdrive _hyperdrive,
+        address trader,
+        uint256 maturityTime,
+        uint256 bondAmount
+    ) internal returns (uint256 baseAmount) {
+        vm.stopPrank();
+        vm.startPrank(trader);
+
+        // Close the long.
+        uint256 baseBalanceBefore = baseToken.balanceOf(trader);
+        _hyperdrive.closeLong(maturityTime, bondAmount, 0, trader);
+
+        uint256 baseBalanceAfter = baseToken.balanceOf(trader);
+        return baseBalanceAfter.sub(baseBalanceBefore);
+    }
+
+    function openShort(
+        MockHyperdrive _hyperdrive,
+        address trader,
+        uint256 bondAmount
+    ) internal returns (uint256 maturityTime, uint256 baseAmount) {
+        vm.stopPrank();
+        vm.startPrank(trader);
+
+        // Open the short
+        maturityTime = latestCheckpoint() + POSITION_DURATION;
+        baseToken.mint(bondAmount);
+        baseToken.approve(address(_hyperdrive), bondAmount);
+        uint256 baseBalanceBefore = baseToken.balanceOf(trader);
+        _hyperdrive.openShort(bondAmount, bondAmount, trader);
+
+        baseAmount = baseBalanceBefore - baseToken.balanceOf(trader);
+        baseToken.burn(bondAmount - baseAmount);
+        return (maturityTime, baseAmount);
+    }
+
+    function closeShort(
+        MockHyperdrive _hyperdrive,
+        address trader,
+        uint256 maturityTime,
+        uint256 bondAmount
+    ) internal returns (uint256 baseAmount) {
+        vm.stopPrank();
+        vm.startPrank(trader);
+
+        // Close the short
+        uint256 baseBalanceBefore = baseToken.balanceOf(trader);
+        _hyperdrive.closeShort(maturityTime, bondAmount, 0, trader);
+
+        return baseToken.balanceOf(trader) - baseBalanceBefore;
+    }
+
+    /// Utils ///
 
     struct PoolInfo {
         uint256 shareReserves;

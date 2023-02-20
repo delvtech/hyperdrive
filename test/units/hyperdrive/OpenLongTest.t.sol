@@ -53,7 +53,11 @@ contract OpenLongTest is HyperdriveTest {
 
         // Open a long.
         uint256 baseAmount = 10e18;
-        (uint256 maturityTime, uint256 bondAmount) = openLong(bob, baseAmount);
+        (uint256 maturityTime, uint256 bondAmount) = openLong(
+            hyperdrive,
+            bob,
+            baseAmount
+        );
 
         // Verify that the open long updated the state correctly.
         verifyOpenLong(
@@ -78,7 +82,11 @@ contract OpenLongTest is HyperdriveTest {
 
         // Purchase a small amount of bonds.
         uint256 baseAmount = .01e18;
-        (uint256 maturityTime, uint256 bondAmount) = openLong(bob, baseAmount);
+        (uint256 maturityTime, uint256 bondAmount) = openLong(
+            hyperdrive,
+            bob,
+            baseAmount
+        );
 
         // Verify that the open long updated the state correctly.
         verifyOpenLong(
