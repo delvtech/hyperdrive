@@ -57,68 +57,15 @@ contract OpenShortTest is HyperdriveTest {
             bob,
             bondAmount
         );
-        uint256 checkpointTime = maturityTime - POSITION_DURATION;
 
-        // Verify that Hyperdrive received the max loss and that Bob received
-        // the short tokens.
-        assertEq(
-            baseToken.balanceOf(address(hyperdrive)),
-            contribution + baseAmount
-        );
-        assertEq(
-            hyperdrive.balanceOf(
-                AssetId.encodeAssetId(
-                    AssetId.AssetIdPrefix.Short,
-                    maturityTime
-                ),
-                bob
-            ),
-            bondAmount
-        );
-
-        // Verify that opening a short doesn't cause the pool's APR to go down.
-        uint256 baseProceeds = bondAmount - baseAmount;
-        uint256 realizedApr = calculateAPRFromRealizedPrice(
-            baseProceeds,
+        // Verify the open short updates occurred correctly.
+        verifyOpenShort(
+            poolInfoBefore,
+            contribution,
+            baseAmount,
             bondAmount,
-            maturityTime - block.timestamp,
-            POSITION_DURATION
-        );
-        assertLt(apr, realizedApr);
-
-        // Verify that the reserves were updated correctly.
-        PoolInfo memory poolInfoAfter = getPoolInfo(hyperdrive);
-        assertEq(
-            poolInfoAfter.shareReserves,
-            poolInfoBefore.shareReserves -
-                baseProceeds.divDown(poolInfoBefore.sharePrice)
-        );
-        assertEq(
-            poolInfoAfter.bondReserves,
-            poolInfoBefore.bondReserves + bondAmount
-        );
-        assertEq(poolInfoAfter.lpTotalSupply, poolInfoBefore.lpTotalSupply);
-        assertEq(poolInfoAfter.sharePrice, poolInfoBefore.sharePrice);
-        assertEq(
-            poolInfoAfter.longsOutstanding,
-            poolInfoBefore.longsOutstanding
-        );
-        assertEq(poolInfoAfter.longAverageMaturityTime, 0);
-        assertEq(poolInfoAfter.longBaseVolume, 0);
-        assertEq(hyperdrive.longBaseVolumeCheckpoints(checkpointTime), 0);
-        assertEq(
-            poolInfoAfter.shortsOutstanding,
-            poolInfoBefore.shortsOutstanding + bondAmount
-        );
-        assertApproxEqAbs(
-            poolInfoAfter.shortAverageMaturityTime,
             maturityTime,
-            1
-        );
-        assertEq(poolInfoAfter.shortBaseVolume, baseProceeds);
-        assertEq(
-            hyperdrive.shortBaseVolumeCheckpoints(checkpointTime),
-            baseProceeds
+            apr
         );
     }
 
@@ -139,6 +86,26 @@ contract OpenShortTest is HyperdriveTest {
             bob,
             bondAmount
         );
+
+        // Verify the open short updates occurred correctly.
+        verifyOpenShort(
+            poolInfoBefore,
+            contribution,
+            baseAmount,
+            bondAmount,
+            maturityTime,
+            apr
+        );
+    }
+
+    function verifyOpenShort(
+        PoolInfo memory poolInfoBefore,
+        uint256 contribution,
+        uint256 baseAmount,
+        uint256 bondAmount,
+        uint256 maturityTime,
+        uint256 apr
+    ) internal {
         uint256 checkpointTime = maturityTime - POSITION_DURATION;
 
         // Verify that Hyperdrive received the max loss and that Bob received
@@ -158,15 +125,17 @@ contract OpenShortTest is HyperdriveTest {
             bondAmount
         );
 
-        // Verify that opening a short doesn't cause the pool's APR to go down.
+        // Verify that the short didn't receive an APR higher than the pool's
+        // APR.
         uint256 baseProceeds = bondAmount - baseAmount;
         uint256 realizedApr = calculateAPRFromRealizedPrice(
             baseProceeds,
             bondAmount,
-            maturityTime - block.timestamp,
-            POSITION_DURATION
+            FixedPointMath.ONE_18
         );
         assertLt(apr, realizedApr);
+
+        // Verify that the pool's APR didn't go down.
 
         // Verify that the reserves were updated correctly.
         PoolInfo memory poolInfoAfter = getPoolInfo(hyperdrive);
