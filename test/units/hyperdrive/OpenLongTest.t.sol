@@ -52,12 +52,56 @@ contract OpenLongTest is HyperdriveTest {
         // Get the reserves before opening the long.
         PoolInfo memory poolInfoBefore = getPoolInfo();
 
-        // Open a long without fees.
+        // Open a long.
         uint256 baseAmount = 10e18;
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, baseAmount);
 
         // Verify that the open long updated the state correctly.
         verifyOpenLong(
+            poolInfoBefore,
+            contribution,
+            baseAmount,
+            bondAmount,
+            maturityTime,
+            apr
+        );
+    }
+
+    function test_open_long_with_small_amount() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Get the reserves before opening the long.
+        PoolInfo memory poolInfoBefore = getPoolInfo();
+
+        // Purchase a small amount of bonds.
+        uint256 baseAmount = .01e18;
+        (uint256 maturityTime, uint256 bondAmount) = openLong(bob, baseAmount);
+
+        // Verify that the open long updated the state correctly.
+        verifyOpenLong(
+            poolInfoBefore,
+            contribution,
+            baseAmount,
+            bondAmount,
+            maturityTime,
+            apr
+        );
+    }
+
+    function verifyOpenLong(
+        PoolInfo memory poolInfoBefore,
+        uint256 contribution,
+        uint256 baseAmount,
+        uint256 bondAmount,
+        uint256 maturityTime,
+        uint256 apr
+    ) internal {
+        // Verify that the open long updated the state correctly.
+        _verifyOpenLong(
             bob,
             poolInfoBefore,
             contribution,
@@ -86,7 +130,7 @@ contract OpenLongTest is HyperdriveTest {
         // Open a long with fees.
         (, uint256 bondAmountWithFees) = openLong(celine, baseAmount);
 
-        verifyOpenLong(
+        _verifyOpenLong(
             celine,
             poolInfoBeforeWithFees,
             contribution,
@@ -123,33 +167,7 @@ contract OpenLongTest is HyperdriveTest {
         );
     }
 
-    function test_open_long_with_small_amount() external {
-        uint256 apr = 0.05e18;
-
-        // Initialize the pool with a large amount of capital.
-        uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
-
-        // Get the reserves before opening the long.
-        PoolInfo memory poolInfoBefore = getPoolInfo();
-
-        // Purchase a small amount of bonds.
-        uint256 baseAmount = .01e18;
-        (uint256 maturityTime, uint256 bondAmount) = openLong(bob, baseAmount);
-
-        // Verify that the open long updated the state correctly.
-        verifyOpenLong(
-            bob,
-            poolInfoBefore,
-            contribution,
-            baseAmount,
-            bondAmount,
-            maturityTime,
-            apr
-        );
-    }
-
-    function verifyOpenLong(
+    function _verifyOpenLong(
         address user,
         PoolInfo memory poolInfoBefore,
         uint256 contribution,
