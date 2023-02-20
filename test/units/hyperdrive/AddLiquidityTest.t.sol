@@ -34,7 +34,7 @@ contract AddLiquidityTest is HyperdriveTest {
         uint256 baseBalance = baseToken.balanceOf(address(hyperdrive));
 
         // Add liquidity with the same amount as the original contribution.
-        addLiquidity(bob, contribution);
+        addLiquidity(hyperdrive, bob, contribution);
 
         // Ensure that the contribution was transferred to Hyperdrive.
         assertEq(baseToken.balanceOf(bob), 0);
