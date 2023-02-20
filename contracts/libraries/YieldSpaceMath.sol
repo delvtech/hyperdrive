@@ -13,7 +13,7 @@ import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
 /// @dev It is advised for developers to attain the pre-requisite knowledge
 ///      of how this implementation works on the mathematical level. This
 ///      excerpt attempts to document this pre-requisite knowledge explaining
-///      the underpinning mathematical concepts in a parseable manner and
+///      the underpinning mathematical concepts in an understandable manner and
 ///      relating it directly to the code implementation.
 ///      This implementation is based on a paper called "YieldSpace with Yield
 ///      Bearing Vaults" or more casually "Modified YieldSpace" (MYS). It can be
@@ -71,10 +71,10 @@ import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
 ///      time.
 ///      However, one important critique of this model is because all base
 ///      assets are held in reserve, there is effectively zero capital
-///      utilisation and liquidity providers would only earn a return from fees
+///      utilization and liquidity providers would only earn a return from fees
 ///      laid on bond purchases.
 ///
-///      MYS solves this capital utilisation problem by using reserves of
+///      MYS solves this capital utilization problem by using reserves of
 ///      "shares" instead of base. A share is a unit claim to a deposit of
 ///      base in some interest accruing enterprise *and* the variable interest
 ///      accrued on that deposit. Examples of this are aDAI or cDAI for which
@@ -84,7 +84,7 @@ import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
 ///      With this, under the MYS model, all deposits of base would be invested
 ///      in some "vault" (Yield bearing Vault) and the shares given in return
 ///      for those deposits are held in reserve, thereby collectively accruing
-///      variable interest for the pool. This of course modifes the "constant
+///      variable interest for the pool. This of course modifies the "constant
 ///      power sum" invariant to incorporate shares as an intermediary pricing
 ///      mechanic between bonds and base.
 ///      _______________________________________________________________________
@@ -136,7 +136,7 @@ import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
 ///                 p_y = -1 / (-200 / 600) = 3
 ///
 ///               The definition of p provided in the YS paper is meant to be
-///               generalised to illustrate how invariants can be conceived but
+///               generalized to illustrate how invariants can be conceived but
 ///               the most simple example is how the constant product formula
 ///               expresses p to maintain equal value of reserves of a pool
 ///
@@ -158,7 +158,7 @@ import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
 ///
 ///      The "constant power sum" formula inherits the idea from the constant
 ///      product formula where "price" is defined as a function of the reserves.
-///      In Yieldspace, it is desired that the interest rate is a function of
+///      In YieldSpace, it is desired that the interest rate is a function of
 ///      the reserves which is described clearly in the definition of "r".
 ///
 ///      Thereby, the interest rate of bonds can be derived using the reserves
@@ -196,7 +196,7 @@ import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
 ///      _______________________________________________________________________
 ///      # The Modified YieldSpace invariant #
 ///
-///      As stated before, MYS conceptualizes greater capital utilisation whilst
+///      As stated before, MYS conceptualizes greater capital utilization whilst
 ///      still providing the same bond market mechanics as derived in YS. The
 ///      conceptual difference to understand is that the invariant must derive
 ///      the same bond/base relationship through the redemption value (c) of
@@ -221,7 +221,7 @@ import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
 ///
 ///        1 + r = y / (µ * z) = (c * y) / (µ * x)
 ///
-///      µ, as mentioned before is typically c at market initialisation (t = 0)
+///      µ, as mentioned before is typically c at market initialization (t = 0)
 ///      and so when considering the interest rate of the bonds,
 ///
 ///        µ = 1.1
@@ -258,7 +258,7 @@ import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
 ///
 ///      This formula becomes the basis of how trade calculations are derived.
 ///      If more illustration is needed, the MYS trading curve has been graphed
-///      at this link which may help for visualisation:
+///      at this link which may help for visualization:
 ///
 ///        https://www.desmos.com/calculator/vfrzlsopsb
 ///
