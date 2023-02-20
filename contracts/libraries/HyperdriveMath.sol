@@ -167,15 +167,15 @@ library HyperdriveMath {
             // the trade was applied to the share and bond reserves.
             _shareReserves = _shareReserves.add(flat);
             _bondReserves = _bondReserves.sub(flat.mulDown(_sharePrice));
-            uint256 curveOut = YieldSpaceMath.calculateOutGivenIn(
+            uint256 curveOut =
+                YieldSpaceMath.calculateBondsOutGivenSharesIn(
                 _shareReserves,
                 _bondReserves,
                 _bondReserveAdjustment,
                 curveIn,
                 FixedPointMath.ONE_18.sub(_timeStretch),
                 _sharePrice,
-                _initialSharePrice,
-                _isBondOut
+                _initialSharePrice
             );
             return (
                 _amountIn,
@@ -201,15 +201,14 @@ library HyperdriveMath {
             // the trade was applied to the share and bond reserves.
             _shareReserves = _shareReserves.sub(flat);
             _bondReserves = _bondReserves.add(flat.mulDown(_sharePrice));
-            uint256 curveOut = YieldSpaceMath.calculateOutGivenIn(
+            uint256 curveOut = YieldSpaceMath.calculateSharesOutGivenBondsIn(
                 _shareReserves,
                 _bondReserves,
                 _bondReserveAdjustment,
                 curveIn,
                 FixedPointMath.ONE_18.sub(_timeStretch),
                 _sharePrice,
-                _initialSharePrice,
-                _isBondOut
+                _initialSharePrice
             );
             uint256 shareDelta = flat.add(curveOut);
             return (shareDelta, curveIn, shareDelta);
@@ -276,15 +275,14 @@ library HyperdriveMath {
         _bondReserves = _bondReserves.sub(flat.mulDown(_sharePrice));
         uint256 curveIn = 0;
         if (curveOut > 0) {
-            curveIn = YieldSpaceMath.calculateInGivenOut(
+            curveIn = YieldSpaceMath.calculateSharesInGivenBondsOut(
                 _shareReserves,
                 _bondReserves,
                 _bondReserveAdjustment,
                 curveOut,
                 FixedPointMath.ONE_18.sub(_timeStretch),
                 _sharePrice,
-                _initialSharePrice,
-                false
+                _initialSharePrice
             );
         }
         return (flat.add(curveIn), curveOut, flat.add(curveIn));
