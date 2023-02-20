@@ -112,8 +112,7 @@ contract OpenLongTest is HyperdriveTest {
         uint256 realizedApr = calculateAPRFromRealizedPrice(
             baseAmount,
             bondAmount,
-            FixedPointMath.ONE_18,
-            POSITION_DURATION
+            FixedPointMath.ONE_18
         );
         assertGt(apr, realizedApr);
 

@@ -200,12 +200,13 @@ contract HyperdriveTest is Test {
     function calculateAPRFromRealizedPrice(
         uint256 baseAmount,
         uint256 bondAmount,
-        uint256 timeRemaining,
-        uint256 positionDuration
+        uint256 timeRemaining
     ) internal pure returns (uint256) {
         // apr = (dy - dx) / (dx * t)
-        uint256 t = timeRemaining.divDown(positionDuration);
-        return (bondAmount.sub(baseAmount)).divDown(baseAmount.mulDown(t));
+        return
+            (bondAmount.sub(baseAmount)).divDown(
+                baseAmount.mulDown(timeRemaining)
+            );
     }
 
     function calculateTimeRemaining(
