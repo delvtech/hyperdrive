@@ -17,7 +17,7 @@ contract HyperdriveTest is Test {
 
     ERC20Mintable baseToken;
     MockHyperdrive hyperdrive;
-    MockHyperdrive hyperdrive_with_fees;
+    MockHyperdrive hyperdriveWithFees;
 
     uint256 internal constant INITIAL_SHARE_PRICE = FixedPointMath.ONE_18;
     uint256 internal constant CHECKPOINT_DURATION = 1 days;
@@ -45,7 +45,7 @@ contract HyperdriveTest is Test {
             0
         );
 
-        hyperdrive_with_fees = new MockHyperdrive(
+        hyperdriveWithFees = new MockHyperdrive(
             baseToken,
             FixedPointMath.ONE_18,
             365,
@@ -87,8 +87,8 @@ contract HyperdriveTest is Test {
 
         // Initialize the pool.
         baseToken.mint(contribution);
-        baseToken.approve(address(hyperdrive_with_fees), contribution);
-        hyperdrive_with_fees.initialize(contribution, apr, lp);
+        baseToken.approve(address(hyperdriveWithFees), contribution);
+        hyperdriveWithFees.initialize(contribution, apr, lp);
     }
 
     function addLiquidity(
