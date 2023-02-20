@@ -147,8 +147,7 @@ contract CloseLongTest is HyperdriveTest {
     ) internal {
         uint256 checkpointTime = maturityTime - POSITION_DURATION;
 
-        // Verify that all of Bob's bonds were burned and that the base proceeds
-        // are as expected.
+        // Verify that all of Bob's bonds were burned.
         assertEq(
             hyperdrive.balanceOf(
                 AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
