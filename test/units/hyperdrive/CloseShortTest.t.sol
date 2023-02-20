@@ -17,20 +17,14 @@ contract CloseShortTest is HyperdriveTest {
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
 
-        // Open a short..
-        vm.stopPrank();
-        vm.startPrank(bob);
+        // Open a short.
         uint256 bondAmount = 10e18;
-        baseToken.mint(bondAmount);
-        baseToken.approve(address(hyperdrive), bondAmount);
-        hyperdrive.openShort(bondAmount, type(uint256).max, bob);
+        (uint256 maturityTime, ) = openShort(bob, bondAmount);
 
         // Attempt to close zero shorts. This should fail.
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(Errors.ZeroAmount.selector);
-        uint256 maturityTime = (block.timestamp - (block.timestamp % 1 days)) +
-            365 days;
         hyperdrive.closeShort(maturityTime, 0, 0, bob);
     }
 
@@ -41,19 +35,13 @@ contract CloseShortTest is HyperdriveTest {
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
 
-        // Purchase some bonds.
-        vm.stopPrank();
-        vm.startPrank(bob);
+        // Open a short.
         uint256 bondAmount = 10e18;
-        baseToken.mint(bondAmount);
-        baseToken.approve(address(hyperdrive), bondAmount);
-        hyperdrive.openShort(bondAmount, type(uint256).max, bob);
+        (uint256 maturityTime, ) = openShort(bob, bondAmount);
 
         // Attempt to close too many shorts. This should fail.
         vm.stopPrank();
         vm.startPrank(bob);
-        uint256 maturityTime = (block.timestamp - (block.timestamp % 1 days)) +
-            365 days;
         vm.expectRevert(stdError.arithmeticError);
         hyperdrive.closeShort(maturityTime, bondAmount + 1, 0, bob);
     }
@@ -66,12 +54,8 @@ contract CloseShortTest is HyperdriveTest {
         initialize(alice, apr, contribution);
 
         // Open a short.
-        vm.stopPrank();
-        vm.startPrank(bob);
         uint256 bondAmount = 10e18;
-        baseToken.mint(bondAmount);
-        baseToken.approve(address(hyperdrive), bondAmount);
-        hyperdrive.openShort(bondAmount, type(uint256).max, bob);
+        openShort(bob, bondAmount);
 
         // Attempt to use a timestamp greater than the maximum range.
         vm.stopPrank();
@@ -88,26 +72,18 @@ contract CloseShortTest is HyperdriveTest {
         initialize(alice, apr, contribution);
 
         // Purchase some bonds.
-        vm.stopPrank();
-        vm.startPrank(bob);
         uint256 bondAmount = 10e18;
-        baseToken.mint(bondAmount);
-        baseToken.approve(address(hyperdrive), bondAmount);
-        hyperdrive.openShort(bondAmount, type(uint256).max, bob);
+        (uint256 maturityTime, uint256 basePaid) = openShort(bob, bondAmount);
+        uint256 checkpointTime = maturityTime - POSITION_DURATION;
 
         // Get the reserves before closing the long.
         PoolInfo memory poolInfoBefore = getPoolInfo();
 
         // Immediately close the bonds.
-        vm.stopPrank();
-        vm.startPrank(bob);
-        uint256 checkpointTime = block.timestamp - (block.timestamp % 1 days);
-        uint256 maturityTime = checkpointTime + 365 days;
-        hyperdrive.closeShort(maturityTime, bondAmount, 0, bob);
+        uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
 
-        // Verify that all of Bob's bonds were burned and that he has
-        // approximately as much base as he started with.
-        uint256 baseBalanceAfter = baseToken.balanceOf(bob);
+        // Verify that all of Bob's bonds were burned and that he doesn't end
+        // up with more base than he started with.
         assertEq(
             hyperdrive.balanceOf(
                 AssetId.encodeAssetId(
@@ -118,8 +94,7 @@ contract CloseShortTest is HyperdriveTest {
             ),
             0
         );
-        // Verify that bob doesn't end up with more base than he started with
-        assertGe(bondAmount, baseBalanceAfter);
+        assertGe(basePaid, baseProceeds);
 
         // Verify that the reserves were updated correctly. Since this trade
         // happens at the beginning of the term, the bond reserves should be
@@ -128,7 +103,9 @@ contract CloseShortTest is HyperdriveTest {
         assertApproxEqAbs(
             poolInfoAfter.shareReserves,
             poolInfoBefore.shareReserves +
-                baseBalanceAfter.divDown(poolInfoBefore.sharePrice),
+                (bondAmount + baseProceeds - basePaid).divDown(
+                    poolInfoBefore.sharePrice
+                ),
             1e18
         );
         assertEq(
@@ -160,27 +137,19 @@ contract CloseShortTest is HyperdriveTest {
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
 
-        // Purchase some bonds.
-        vm.stopPrank();
-        vm.startPrank(bob);
+        // Short some bonds.
         uint256 bondAmount = .1e18;
-        baseToken.mint(bondAmount);
-        baseToken.approve(address(hyperdrive), bondAmount);
-        hyperdrive.openShort(bondAmount, type(uint256).max, bob);
+        (uint256 maturityTime, uint256 basePaid) = openShort(bob, bondAmount);
+        uint256 checkpointTime = maturityTime - POSITION_DURATION;
 
         // Get the reserves before closing the long.
         PoolInfo memory poolInfoBefore = getPoolInfo();
 
         // Immediately close the bonds.
-        vm.stopPrank();
-        vm.startPrank(bob);
-        uint256 checkpointTime = block.timestamp - (block.timestamp % 1 days);
-        uint256 maturityTime = checkpointTime + 365 days;
-        hyperdrive.closeShort(maturityTime, bondAmount, 0, bob);
+        uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
 
-        // Verify that all of Bob's bonds were burned and that he has
-        // approximately as much base as he started with.
-        uint256 baseBalanceAfter = baseToken.balanceOf(bob);
+        // Verify that all of Bob's bonds were burned and that bob doesn't end
+        // up with more base than he started with.
         assertEq(
             hyperdrive.balanceOf(
                 AssetId.encodeAssetId(
@@ -191,8 +160,7 @@ contract CloseShortTest is HyperdriveTest {
             ),
             0
         );
-        // Verify that bob doesn't end up with more base than he started with
-        assertGe(bondAmount, baseBalanceAfter);
+        assertGe(basePaid, baseProceeds);
 
         // Verify that the reserves were updated correctly. Since this trade
         // happens at the beginning of the term, the bond reserves should be
@@ -201,7 +169,9 @@ contract CloseShortTest is HyperdriveTest {
         assertApproxEqAbs(
             poolInfoAfter.shareReserves,
             poolInfoBefore.shareReserves +
-                baseBalanceAfter.divDown(poolInfoBefore.sharePrice),
+                (bondAmount + baseProceeds - basePaid).divDown(
+                    poolInfoBefore.sharePrice
+                ),
             1e18
         );
         assertEq(
@@ -234,15 +204,10 @@ contract CloseShortTest is HyperdriveTest {
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
 
-        // Purchase some bonds.
-        vm.stopPrank();
-        vm.startPrank(bob);
+        // Short some bonds.
         uint256 bondAmount = 10e18;
-        baseToken.mint(bondAmount);
-        baseToken.approve(address(hyperdrive), bondAmount);
-        hyperdrive.openShort(bondAmount, type(uint256).max, bob);
-        uint256 checkpointTime = block.timestamp - (block.timestamp % 1 days);
-        uint256 maturityTime = checkpointTime + 365 days;
+        (uint256 maturityTime, ) = openShort(bob, bondAmount);
+        uint256 checkpointTime = maturityTime - POSITION_DURATION;
 
         // Get the reserves before closing the long.
         PoolInfo memory poolInfoBefore = getPoolInfo();
@@ -250,20 +215,14 @@ contract CloseShortTest is HyperdriveTest {
         // The term passes.
         vm.warp(block.timestamp + 365 days);
 
-        // Get the base balance before closing the short.
-        uint256 baseBalanceBefore = baseToken.balanceOf(bob);
-
-        // Redeem the bonds
-        vm.stopPrank();
-        vm.startPrank(bob);
-        hyperdrive.closeShort(maturityTime, bondAmount, 0, bob);
+        // Redeem the bonds.
+        uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
 
         // TODO: Investigate this more to see if there are any irregularities
         // like there are with the long redemption test.
         //
-        // Verify that all of Bob's bonds were burned and that he has
-        // approximately as much base as he started with.
-        uint256 baseBalanceAfter = baseToken.balanceOf(bob);
+        // Verify that all of Bob's bonds were burned and that he received no
+        // base for posting the shorts.
         assertEq(
             hyperdrive.balanceOf(
                 AssetId.encodeAssetId(
@@ -274,7 +233,7 @@ contract CloseShortTest is HyperdriveTest {
             ),
             0
         );
-        assertEq(baseBalanceAfter, baseBalanceBefore);
+        assertEq(baseProceeds, 0);
 
         // Verify that the reserves were updated correctly. Since this trade
         // is a redemption, there should be no changes to the bond reserves.
