@@ -195,7 +195,7 @@ contract CloseShortTest is HyperdriveTest {
                 (bondAmount + baseProceeds - basePaid).divDown(
                     poolInfoBefore.sharePrice
                 ),
-            1e18
+            1e18 // TODO: This error bar is too big. Analyze this.
         );
         assertEq(poolInfoAfter.lpTotalSupply, poolInfoBefore.lpTotalSupply);
         assertEq(poolInfoAfter.sharePrice, poolInfoBefore.sharePrice);
