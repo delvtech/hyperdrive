@@ -7,7 +7,7 @@ contract MockYieldSpaceMath {
     function calculateBondsInGivenSharesOut(
         uint256 z,
         uint256 y,
-        uint256 y_adj,
+        uint256 yAdj,
         uint256 dz,
         uint256 t,
         uint256 c,
@@ -16,7 +16,7 @@ contract MockYieldSpaceMath {
         uint256 result = YieldSpaceMath.calculateBondsInGivenSharesOut(
             z,
             y,
-            y_adj,
+            yAdj,
             dz,
             t,
             c,
@@ -28,7 +28,7 @@ contract MockYieldSpaceMath {
     function calculateBondsOutGivenSharesIn(
         uint256 z,
         uint256 y,
-        uint256 y_adj,
+        uint256 yAdj,
         uint256 dz,
         uint256 t,
         uint256 c,
@@ -37,7 +37,7 @@ contract MockYieldSpaceMath {
         uint256 result = YieldSpaceMath.calculateBondsOutGivenSharesIn(
             z,
             y,
-            y_adj,
+            yAdj,
             dz,
             t,
             c,
@@ -49,7 +49,7 @@ contract MockYieldSpaceMath {
     function calculateSharesInGivenBondsOut(
         uint256 z,
         uint256 y,
-        uint256 y_adj,
+        uint256 yAdj,
         uint256 dy,
         uint256 t,
         uint256 c,
@@ -58,7 +58,7 @@ contract MockYieldSpaceMath {
         uint256 result = YieldSpaceMath.calculateSharesInGivenBondsOut(
             z,
             y,
-            y_adj,
+            yAdj,
             dy,
             t,
             c,
@@ -70,7 +70,7 @@ contract MockYieldSpaceMath {
     function calculateSharesOutGivenBondsIn(
         uint256 z,
         uint256 y,
-        uint256 y_adj,
+        uint256 yAdj,
         uint256 dy,
         uint256 t,
         uint256 c,
@@ -79,7 +79,7 @@ contract MockYieldSpaceMath {
         uint256 result = YieldSpaceMath.calculateSharesOutGivenBondsIn(
             z,
             y,
-            y_adj,
+            yAdj,
             dy,
             t,
             c,
