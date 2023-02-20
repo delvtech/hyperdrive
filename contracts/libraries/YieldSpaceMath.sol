@@ -254,7 +254,7 @@ import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
 ///
 ///      Which evaluates to:
 ///
-///        (c / µ) * (µ * z)^(1 - t) + y^(1 - t) = C
+///        (c / µ) * (µ * z)^(1 - t) + y^(1 - t) = k
 ///
 ///      This formula becomes the basis of how trade calculations are derived.
 ///      If more illustration is needed, the MYS trading curve has been graphed
@@ -272,15 +272,15 @@ import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
 ///      The code as expressed in this library defines 4 trading actions:
 ///
 ///      - bondsInGivenSharesOut
-///        Δy = (C - (c / µ) * (µ * (z - dz))^(1 - t))^(1 / (1 - t))) - y
+///          Δy = (k - (c / µ) * (µ * (z - dz))^(1 - t))^(1 / (1 - t))) - y
 ///      - bondsOutGivenSharesIn
-///        Δy = y - (C - (c / µ) * (µ * (z + dz))^(1 - t))^(1 / (1 - t)))
+///          Δy = y - (k - (c / µ) * (µ * (z + dz))^(1 - t))^(1 / (1 - t)))
 ///      - sharesInGivenBondsOut
-///        Δz = (((C - (y - dy)^(1 - t)) / (c / µ))^(1 / (1 - t)) / µ) - z
+///          Δz = (((k - (y - dy)^(1 - t)) / (c / µ))^(1 / (1 - t)) / µ) - z
 ///      - sharesOutGivenBondsIn
-///        Δz = z - (((C - (y + Δy)^(1 - t)) / c/μ )^(1 / (1 - t)) / µ)
+///          Δz = z - (((k - (y + Δy)^(1 - t)) / c/μ )^(1 / (1 - t)) / µ)
 ///
-///        NOTE: C = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
+///        where, k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
 ///
 ///
 library YieldSpaceMath {
@@ -290,7 +290,7 @@ library YieldSpaceMath {
     /// a specified amount of shares
     /// @param z Amount of share reserves in the pool
     /// @param y Amount of bond reserves in the pool
-    /// @param y_adj An optional adjustment to the bond reserve
+    /// @param yAdj An optional adjustment to the bond reserve
     /// @param dz Amount of shares user wants to receive
     /// @param t Amount of time elapsed since term start
     /// @param c Conversion rate between base and shares
@@ -298,7 +298,7 @@ library YieldSpaceMath {
     function calculateBondsInGivenSharesOut(
         uint256 z,
         uint256 y,
-        uint256 y_adj,
+        uint256 yAdj,
         uint256 dz,
         uint256 t,
         uint256 c,
@@ -308,15 +308,15 @@ library YieldSpaceMath {
         uint256 cDivMu = c.divDown(mu);
         // Adjust the bond reserve, optionally shifts the curve around the
         // inflection point
-        y = y.add(y_adj);
+        y = y.add(yAdj);
         // (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
-        uint256 C = _modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
+        uint256 k = _modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
         // (µ * (z - dz))^(1 - t)
         z = mu.mulDown(z.sub(dz)).pow(t);
         // (c / µ) * (µ * (z - dz))^(1 - t)
         z = cDivMu.mulDown(z);
         // ((c / µ) * (µ * z)^(1 - t) + y^(1 - t) - (c / µ) * (µ * (z - dz))^(1 - t))^(1 / (1 - t)))
-        uint256 _y = C.sub(z).pow(FixedPointMath.ONE_18.divUp(t));
+        uint256 _y = k.sub(z).pow(FixedPointMath.ONE_18.divUp(t));
         // Δy = ((c / µ) * (µ * z)^(1 - t) + y^(1 - t) - (c / µ) * (µ * (z - dz))^(1 - t))^(1 / (1 - t))) - y
         return _y.sub(y);
     }
@@ -325,7 +325,7 @@ library YieldSpaceMath {
     /// providing a specified amount of shares
     /// @param z Amount of share reserves in the pool
     /// @param y Amount of bond reserves in the pool
-    /// @param y_adj An optional adjustment to the bond reserve
+    /// @param yAdj An optional adjustment to the bond reserve
     /// @param dz Amount of shares user wants to provide
     /// @param t Amount of time elapsed since term start
     /// @param c Conversion rate between base and shares
@@ -333,7 +333,7 @@ library YieldSpaceMath {
     function calculateBondsOutGivenSharesIn(
         uint256 z,
         uint256 y,
-        uint256 y_adj,
+        uint256 yAdj,
         uint256 dz,
         uint256 t,
         uint256 c,
@@ -343,15 +343,15 @@ library YieldSpaceMath {
         uint256 cDivMu = c.divDown(mu);
         // Adjust the bond reserve, optionally shifts the curve around the
         // inflection point
-        y = y.add(y_adj);
+        y = y.add(yAdj);
         // (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
-        uint256 C = _modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
+        uint256 k = _modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
         // (µ * (z + dz))^(1 - t)
         z = mu.mulDown(z.add(dz)).pow(t);
         // (c / µ) * (µ * (z + dz))^(1 - t)
         z = cDivMu.mulDown(z);
         // ((c / µ) * (µ * z)^(1 - t) + y^(1 - t) - (c / µ) * (µ * (z + dz))^(1 - t))^(1 / (1 - t)))
-        uint256 _y = C.sub(z).pow(FixedPointMath.ONE_18.divUp(t));
+        uint256 _y = k.sub(z).pow(FixedPointMath.ONE_18.divUp(t));
         // Δy = y - ((c / µ) * (µ * z)^(1 - t) + y^(1 - t) - (c / µ) * (µ * (z + dz))^(1 - t))^(1 / (1 - t)))
         return y.sub(_y);
     }
@@ -360,7 +360,7 @@ library YieldSpaceMath {
     /// a specified amount of bonds
     /// @param z Amount of share reserves in the pool
     /// @param y Amount of bond reserves in the pool
-    /// @param y_adj An optional adjustment to the bond reserve
+    /// @param yAdj An optional adjustment to the bond reserve
     /// @param dy Amount of bonds user wants to provide
     /// @param t Amount of time elapsed since term start
     /// @param c Conversion rate between base and shares
@@ -368,7 +368,7 @@ library YieldSpaceMath {
     function calculateSharesInGivenBondsOut(
         uint256 z,
         uint256 y,
-        uint256 y_adj,
+        uint256 yAdj,
         uint256 dy,
         uint256 t,
         uint256 c,
@@ -378,13 +378,13 @@ library YieldSpaceMath {
         uint256 cDivMu = c.divDown(mu);
         // Adjust the bond reserve, optionally shifts the curve around the
         // inflection point
-        y = y.add(y_adj);
+        y = y.add(yAdj);
         // (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
-        uint256 C = _modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
+        uint256 k = _modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
         // (y - dy)^(1 - t)
         y = y.sub(dy).pow(t);
         // (((µ * z)^(1 - t) + y^(1 - t) - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))
-        uint256 _z = C.sub(y).divDown(cDivMu).pow(
+        uint256 _z = k.sub(y).divDown(cDivMu).pow(
             FixedPointMath.ONE_18.divUp(t)
         );
         // (((µ * z)^(1 - t) + y^(1 - t) - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
@@ -397,7 +397,7 @@ library YieldSpaceMath {
     /// providing a specified amount of bonds
     /// @param z Amount of share reserves in the pool
     /// @param y Amount of bond reserves in the pool
-    /// @param y_adj An optional adjustment to the bond reserve
+    /// @param yAdj An optional adjustment to the bond reserve
     /// @param dy Amount of bonds user wants to provide
     /// @param t Amount of time elapsed since term start
     /// @param c Conversion rate between base and shares
@@ -405,7 +405,7 @@ library YieldSpaceMath {
     function calculateSharesOutGivenBondsIn(
         uint256 z,
         uint256 y,
-        uint256 y_adj,
+        uint256 yAdj,
         uint256 dy,
         uint256 t,
         uint256 c,
@@ -415,13 +415,13 @@ library YieldSpaceMath {
         uint256 cDivMu = c.divDown(mu);
         // Adjust the bond reserve, optionally shifts the curve around the
         // inflection point
-        y = y.add(y_adj);
+        y = y.add(yAdj);
         // (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
-        uint256 C = _modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
+        uint256 k = _modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
         // (y + dy)^(1 - t)
         y = y.add(dy).pow(t);
         // (((µ * z)^(1 - t) + y^(1 - t) - (y + dy)^(1 - t)) / (c / µ))^(1 / (1 - t)))
-        uint256 _z = C.sub(y).divDown(cDivMu).pow(
+        uint256 _z = k.sub(y).divDown(cDivMu).pow(
             FixedPointMath.ONE_18.divUp(t)
         );
         // (((µ * z)^(1 - t) + y^(1 - t) - (y + dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
@@ -444,7 +444,7 @@ library YieldSpaceMath {
         uint256 t,
         uint256 y
     ) private pure returns (uint256) {
-        /// C = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
+        /// k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
         return cDivMu.mulDown(mu.mulDown(z).pow(t)).add(y.pow(t));
     }
 }
