@@ -51,24 +51,14 @@ contract OpenLongTest is HyperdriveTest {
         initializeWithFees(alice, apr, contribution);
 
         // Get the reserves before opening the long.
-        PoolInfo memory poolInfoBefore = getPoolInfo(hyperdrive);
-        PoolInfo memory poolInfoBeforeWithFees = getPoolInfo(
-            hyperdriveWithFees
-        );
+        PoolInfo memory poolInfoBefore = getPoolInfo();
+        PoolInfo memory poolInfoBeforeWithFees = getPoolInfo();
 
         // Open a long without fees.
         uint256 baseAmount = 10e18;
-        (uint256 maturityTime, uint256 bondAmount) = openLong(
-            hyperdrive,
-            bob,
-            baseAmount
-        );
+        (uint256 maturityTime, uint256 bondAmount) = openLong(bob, baseAmount);
         // Open a long with fees.
-        (, uint256 bondAmountWithFees) = openLong(
-            hyperdriveWithFees,
-            celine,
-            baseAmount
-        );
+        (, uint256 bondAmountWithFees) = openLong(celine, baseAmount);
 
         // Verify that the open long updated the state correctly.
         verifyOpenLong(
@@ -104,9 +94,7 @@ contract OpenLongTest is HyperdriveTest {
                 .mulDown(phi)
                 .mulDown(baseAmount);
 
-            PoolInfo memory poolInfoAfterWithFees = getPoolInfo(
-                hyperdriveWithFees
-            );
+            PoolInfo memory poolInfoAfterWithFees = getPoolInfo();
             // bondAmount is from the hyperdrive without the curve fee
             assertApproxEqAbs(
                 poolInfoAfterWithFees.bondReserves,
@@ -134,15 +122,11 @@ contract OpenLongTest is HyperdriveTest {
         initialize(alice, apr, contribution);
 
         // Get the reserves before opening the long.
-        PoolInfo memory poolInfoBefore = getPoolInfo(hyperdrive);
+        PoolInfo memory poolInfoBefore = getPoolInfo();
 
         // Purchase a small amount of bonds.
         uint256 baseAmount = .01e18;
-        (uint256 maturityTime, uint256 bondAmount) = openLong(
-            hyperdrive,
-            bob,
-            baseAmount
-        );
+        (uint256 maturityTime, uint256 bondAmount) = openLong(bob, baseAmount);
 
         // Verify that the open long updated the state correctly.
         verifyOpenLong(
@@ -185,7 +169,7 @@ contract OpenLongTest is HyperdriveTest {
         assertGt(apr, realizedApr);
 
         // Verify that the reserves were updated correctly.
-        PoolInfo memory poolInfoAfter = getPoolInfo(_hyperdrive);
+        PoolInfo memory poolInfoAfter = getPoolInfo();
         assertEq(
             poolInfoAfter.shareReserves,
             poolInfoBefore.shareReserves +
