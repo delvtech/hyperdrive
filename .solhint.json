@@ -10,7 +10,8 @@
     "compiler-version": ["off"],
     "func-visibility": ["warn",{"ignoreConstructors":true}],
     "not-rely-on-time": "off",
-    "no-inline-assembly": "off"
+    "no-inline-assembly": "off",
+    "max-states-count": ["off", 15]
   },
   "plugins": ["prettier"]
 }
