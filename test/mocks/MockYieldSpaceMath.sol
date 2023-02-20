@@ -4,48 +4,86 @@ pragma solidity ^0.8.18;
 import { YieldSpaceMath } from "contracts/libraries/YieldSpaceMath.sol";
 
 contract MockYieldSpaceMath {
-    function calculateOutGivenIn(
-        uint256 shareReserves,
-        uint256 bondReserves,
-        uint256 bondReserveAdjustment,
-        uint256 amountIn,
-        uint256 stretchedTimeElapsed,
+    function calculateBondsInGivenSharesOut(
+        uint256 z,
+        uint256 y,
+        uint256 y_adj,
+        uint256 dz,
+        uint256 t,
         uint256 c,
-        uint256 mu,
-        bool isBondIn
+        uint256 mu
     ) external pure returns (uint256) {
-        uint256 result = YieldSpaceMath.calculateOutGivenIn(
-            shareReserves,
-            bondReserves,
-            bondReserveAdjustment,
-            amountIn,
-            stretchedTimeElapsed,
+        uint256 result = YieldSpaceMath.calculateBondsInGivenSharesOut(
+            z,
+            y,
+            y_adj,
+            dz,
+            t,
             c,
-            mu,
-            isBondIn
+            mu
         );
         return result;
     }
 
-    function calculateInGivenOut(
-        uint256 shareReserves,
-        uint256 bondReserves,
-        uint256 bondReserveAdjustment,
-        uint256 amountOut,
-        uint256 stretchedTimeElapsed,
+    function calculateBondsOutGivenSharesIn(
+        uint256 z,
+        uint256 y,
+        uint256 y_adj,
+        uint256 dz,
+        uint256 t,
         uint256 c,
-        uint256 mu,
-        bool isBaseOut
+        uint256 mu
     ) external pure returns (uint256) {
-        uint256 result = YieldSpaceMath.calculateInGivenOut(
-            shareReserves,
-            bondReserves,
-            bondReserveAdjustment,
-            amountOut,
-            stretchedTimeElapsed,
+        uint256 result = YieldSpaceMath.calculateBondsOutGivenSharesIn(
+            z,
+            y,
+            y_adj,
+            dz,
+            t,
             c,
-            mu,
-            isBaseOut
+            mu
+        );
+        return result;
+    }
+
+    function calculateSharesInGivenBondsOut(
+        uint256 z,
+        uint256 y,
+        uint256 y_adj,
+        uint256 dy,
+        uint256 t,
+        uint256 c,
+        uint256 mu
+    ) external pure returns (uint256) {
+        uint256 result = YieldSpaceMath.calculateSharesInGivenBondsOut(
+            z,
+            y,
+            y_adj,
+            dy,
+            t,
+            c,
+            mu
+        );
+        return result;
+    }
+
+    function calculateSharesOutGivenBondsIn(
+        uint256 z,
+        uint256 y,
+        uint256 y_adj,
+        uint256 dy,
+        uint256 t,
+        uint256 c,
+        uint256 mu
+    ) external pure returns (uint256) {
+        uint256 result = YieldSpaceMath.calculateSharesOutGivenBondsIn(
+            z,
+            y,
+            y_adj,
+            dy,
+            t,
+            c,
+            mu
         );
         return result;
     }
