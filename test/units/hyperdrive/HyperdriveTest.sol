@@ -13,9 +13,11 @@ contract HyperdriveTest is Test {
 
     address alice = address(uint160(uint256(keccak256("alice"))));
     address bob = address(uint160(uint256(keccak256("bob"))));
+    address celine = address(uint160(uint256(keccak256("celine"))));
 
     ERC20Mintable baseToken;
     MockHyperdrive hyperdrive;
+    MockHyperdrive hyperdriveWithFees;
 
     uint256 internal constant INITIAL_SHARE_PRICE = FixedPointMath.ONE_18;
     uint256 internal constant CHECKPOINT_DURATION = 1 days;
@@ -38,7 +40,19 @@ contract HyperdriveTest is Test {
             INITIAL_SHARE_PRICE,
             CHECKPOINTS_PER_TERM,
             CHECKPOINT_DURATION,
-            timeStretch
+            timeStretch,
+            0,
+            0
+        );
+
+        hyperdriveWithFees = new MockHyperdrive(
+            baseToken,
+            FixedPointMath.ONE_18,
+            365,
+            1 days,
+            timeStretch,
+            0.1 ether,
+            0.1 ether
         );
 
         // Advance time so that Hyperdrive can look back more than a position
@@ -62,25 +76,49 @@ contract HyperdriveTest is Test {
         hyperdrive.initialize(contribution, apr, lp);
     }
 
-    function addLiquidity(address lp, uint256 contribution) internal {
+    // TODO: combine with initialize()
+    function initializeWithFees(
+        address lp,
+        uint256 apr,
+        uint256 contribution
+    ) internal {
+        vm.stopPrank();
+        vm.startPrank(lp);
+
+        // Initialize the pool.
+        baseToken.mint(contribution);
+        baseToken.approve(address(hyperdriveWithFees), contribution);
+        hyperdriveWithFees.initialize(contribution, apr, lp);
+    }
+
+    function addLiquidity(
+        MockHyperdrive _hyperdrive,
+        address lp,
+        uint256 contribution
+    ) internal {
         vm.stopPrank();
         vm.startPrank(lp);
 
         // Add liquidity to the pool.
         baseToken.mint(contribution);
-        baseToken.approve(address(hyperdrive), contribution);
-        hyperdrive.addLiquidity(contribution, 0, lp);
+        baseToken.approve(address(_hyperdrive), contribution);
+        _hyperdrive.addLiquidity(contribution, 0, lp);
     }
 
-    function removeLiquidity(address lp, uint256 shares) internal {
+    function removeLiquidity(
+        MockHyperdrive _hyperdrive,
+        address lp,
+        uint256 shares
+    ) internal {
         vm.stopPrank();
         vm.startPrank(lp);
 
         // Remove liquidity from the pool.
-        hyperdrive.removeLiquidity(shares, 0, lp);
+        _hyperdrive.removeLiquidity(shares, 0, lp);
     }
 
     function openLong(
+        MockHyperdrive _hyperdrive,
         address trader,
         uint256 baseAmount
     ) internal returns (uint256 maturityTime, uint256 bondAmount) {
@@ -89,15 +127,15 @@ contract HyperdriveTest is Test {
 
         // Open the long.
         maturityTime = latestCheckpoint() + POSITION_DURATION;
-        uint256 bondBalanceBefore = hyperdrive.balanceOf(
+        uint256 bondBalanceBefore = _hyperdrive.balanceOf(
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
             trader
         );
         baseToken.mint(baseAmount);
-        baseToken.approve(address(hyperdrive), baseAmount);
-        hyperdrive.openLong(baseAmount, 0, trader);
+        baseToken.approve(address(_hyperdrive), baseAmount);
+        _hyperdrive.openLong(baseAmount, 0, trader);
 
-        uint256 bondBalanceAfter = hyperdrive.balanceOf(
+        uint256 bondBalanceAfter = _hyperdrive.balanceOf(
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
             trader
         );
@@ -105,6 +143,7 @@ contract HyperdriveTest is Test {
     }
 
     function closeLong(
+        MockHyperdrive _hyperdrive,
         address trader,
         uint256 maturityTime,
         uint256 bondAmount
@@ -114,13 +153,14 @@ contract HyperdriveTest is Test {
 
         // Close the long.
         uint256 baseBalanceBefore = baseToken.balanceOf(trader);
-        hyperdrive.closeLong(maturityTime, bondAmount, 0, trader);
+        _hyperdrive.closeLong(maturityTime, bondAmount, 0, trader);
 
         uint256 baseBalanceAfter = baseToken.balanceOf(trader);
         return baseBalanceAfter.sub(baseBalanceBefore);
     }
 
     function openShort(
+        MockHyperdrive _hyperdrive,
         address trader,
         uint256 bondAmount
     ) internal returns (uint256 maturityTime, uint256 baseAmount) {
@@ -130,9 +170,9 @@ contract HyperdriveTest is Test {
         // Open the short
         maturityTime = latestCheckpoint() + POSITION_DURATION;
         baseToken.mint(bondAmount);
-        baseToken.approve(address(hyperdrive), bondAmount);
+        baseToken.approve(address(_hyperdrive), bondAmount);
         uint256 baseBalanceBefore = baseToken.balanceOf(trader);
-        hyperdrive.openShort(bondAmount, bondAmount, trader);
+        _hyperdrive.openShort(bondAmount, bondAmount, trader);
 
         baseAmount = baseBalanceBefore - baseToken.balanceOf(trader);
         baseToken.burn(bondAmount - baseAmount);
@@ -140,6 +180,7 @@ contract HyperdriveTest is Test {
     }
 
     function closeShort(
+        MockHyperdrive _hyperdrive,
         address trader,
         uint256 maturityTime,
         uint256 bondAmount
@@ -149,7 +190,7 @@ contract HyperdriveTest is Test {
 
         // Close the short
         uint256 baseBalanceBefore = baseToken.balanceOf(trader);
-        hyperdrive.closeShort(maturityTime, bondAmount, 0, trader);
+        _hyperdrive.closeShort(maturityTime, bondAmount, 0, trader);
 
         return baseToken.balanceOf(trader) - baseBalanceBefore;
     }
@@ -169,7 +210,9 @@ contract HyperdriveTest is Test {
         uint256 shortBaseVolume;
     }
 
-    function getPoolInfo() internal view returns (PoolInfo memory) {
+    function getPoolInfo(
+        MockHyperdrive _hyperdrive
+    ) internal view returns (PoolInfo memory) {
         (
             uint256 shareReserves,
             uint256 bondReserves,
@@ -181,7 +224,7 @@ contract HyperdriveTest is Test {
             uint256 shortsOutstanding,
             uint256 shortAverageMaturityTime,
             uint256 shortBaseVolume
-        ) = hyperdrive.getPoolInfo();
+        ) = _hyperdrive.getPoolInfo();
         return
             PoolInfo({
                 shareReserves: shareReserves,

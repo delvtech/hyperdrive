@@ -19,7 +19,7 @@ contract CloseShortTest is HyperdriveTest {
 
         // Open a short.
         uint256 bondAmount = 10e18;
-        (uint256 maturityTime, ) = openShort(bob, bondAmount);
+        (uint256 maturityTime, ) = openShort(hyperdrive, bob, bondAmount);
 
         // Attempt to close zero shorts. This should fail.
         vm.stopPrank();
@@ -37,7 +37,7 @@ contract CloseShortTest is HyperdriveTest {
 
         // Open a short.
         uint256 bondAmount = 10e18;
-        (uint256 maturityTime, ) = openShort(bob, bondAmount);
+        (uint256 maturityTime, ) = openShort(hyperdrive, bob, bondAmount);
 
         // Attempt to close too many shorts. This should fail.
         vm.stopPrank();
@@ -55,7 +55,7 @@ contract CloseShortTest is HyperdriveTest {
 
         // Open a short.
         uint256 bondAmount = 10e18;
-        openShort(bob, bondAmount);
+        openShort(hyperdrive, bob, bondAmount);
 
         // Attempt to use a timestamp greater than the maximum range.
         vm.stopPrank();
@@ -73,14 +73,23 @@ contract CloseShortTest is HyperdriveTest {
 
         // Purchase some bonds.
         uint256 bondAmount = 10e18;
-        (uint256 maturityTime, uint256 basePaid) = openShort(bob, bondAmount);
+        (uint256 maturityTime, uint256 basePaid) = openShort(
+            hyperdrive,
+            bob,
+            bondAmount
+        );
         uint256 checkpointTime = maturityTime - POSITION_DURATION;
 
         // Get the reserves before closing the long.
-        PoolInfo memory poolInfoBefore = getPoolInfo();
+        PoolInfo memory poolInfoBefore = getPoolInfo(hyperdrive);
 
         // Immediately close the bonds.
-        uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
+        uint256 baseProceeds = closeShort(
+            hyperdrive,
+            bob,
+            maturityTime,
+            bondAmount
+        );
 
         // Verify that all of Bob's bonds were burned and that he doesn't end
         // up with more base than he started with.
@@ -99,7 +108,7 @@ contract CloseShortTest is HyperdriveTest {
         // Verify that the reserves were updated correctly. Since this trade
         // happens at the beginning of the term, the bond reserves should be
         // increased by the full amount.
-        PoolInfo memory poolInfoAfter = getPoolInfo();
+        PoolInfo memory poolInfoAfter = getPoolInfo(hyperdrive);
         assertApproxEqAbs(
             poolInfoAfter.shareReserves,
             poolInfoBefore.shareReserves +
@@ -139,14 +148,23 @@ contract CloseShortTest is HyperdriveTest {
 
         // Short some bonds.
         uint256 bondAmount = .1e18;
-        (uint256 maturityTime, uint256 basePaid) = openShort(bob, bondAmount);
+        (uint256 maturityTime, uint256 basePaid) = openShort(
+            hyperdrive,
+            bob,
+            bondAmount
+        );
         uint256 checkpointTime = maturityTime - POSITION_DURATION;
 
         // Get the reserves before closing the long.
-        PoolInfo memory poolInfoBefore = getPoolInfo();
+        PoolInfo memory poolInfoBefore = getPoolInfo(hyperdrive);
 
         // Immediately close the bonds.
-        uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
+        uint256 baseProceeds = closeShort(
+            hyperdrive,
+            bob,
+            maturityTime,
+            bondAmount
+        );
 
         // Verify that all of Bob's bonds were burned and that bob doesn't end
         // up with more base than he started with.
@@ -165,7 +183,7 @@ contract CloseShortTest is HyperdriveTest {
         // Verify that the reserves were updated correctly. Since this trade
         // happens at the beginning of the term, the bond reserves should be
         // increased by the full amount.
-        PoolInfo memory poolInfoAfter = getPoolInfo();
+        PoolInfo memory poolInfoAfter = getPoolInfo(hyperdrive);
         assertApproxEqAbs(
             poolInfoAfter.shareReserves,
             poolInfoBefore.shareReserves +
@@ -206,17 +224,22 @@ contract CloseShortTest is HyperdriveTest {
 
         // Short some bonds.
         uint256 bondAmount = 10e18;
-        (uint256 maturityTime, ) = openShort(bob, bondAmount);
+        (uint256 maturityTime, ) = openShort(hyperdrive, bob, bondAmount);
         uint256 checkpointTime = maturityTime - POSITION_DURATION;
 
         // Get the reserves before closing the long.
-        PoolInfo memory poolInfoBefore = getPoolInfo();
+        PoolInfo memory poolInfoBefore = getPoolInfo(hyperdrive);
 
         // The term passes.
         vm.warp(block.timestamp + 365 days);
 
         // Redeem the bonds.
-        uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
+        uint256 baseProceeds = closeShort(
+            hyperdrive,
+            bob,
+            maturityTime,
+            bondAmount
+        );
 
         // TODO: Investigate this more to see if there are any irregularities
         // like there are with the long redemption test.
@@ -237,7 +260,7 @@ contract CloseShortTest is HyperdriveTest {
 
         // Verify that the reserves were updated correctly. Since this trade
         // is a redemption, there should be no changes to the bond reserves.
-        PoolInfo memory poolInfoAfter = getPoolInfo();
+        PoolInfo memory poolInfoAfter = getPoolInfo(hyperdrive);
         assertEq(
             poolInfoAfter.shareReserves,
             poolInfoBefore.shareReserves +

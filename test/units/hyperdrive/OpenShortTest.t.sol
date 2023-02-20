@@ -48,11 +48,15 @@ contract OpenShortTest is HyperdriveTest {
         initialize(alice, apr, contribution);
 
         // Get the reserves before opening the short.
-        PoolInfo memory poolInfoBefore = getPoolInfo();
+        PoolInfo memory poolInfoBefore = getPoolInfo(hyperdrive);
 
         // Short a small amount of bonds.
         uint256 bondAmount = 10e18;
-        (uint256 maturityTime, uint256 baseAmount) = openShort(bob, bondAmount);
+        (uint256 maturityTime, uint256 baseAmount) = openShort(
+            hyperdrive,
+            bob,
+            bondAmount
+        );
         uint256 checkpointTime = maturityTime - POSITION_DURATION;
 
         // Verify that Hyperdrive received the max loss and that Bob received
@@ -83,7 +87,7 @@ contract OpenShortTest is HyperdriveTest {
         assertLt(apr, realizedApr);
 
         // Verify that the reserves were updated correctly.
-        PoolInfo memory poolInfoAfter = getPoolInfo();
+        PoolInfo memory poolInfoAfter = getPoolInfo(hyperdrive);
         assertEq(
             poolInfoAfter.shareReserves,
             poolInfoBefore.shareReserves -
@@ -126,11 +130,15 @@ contract OpenShortTest is HyperdriveTest {
         initialize(alice, apr, contribution);
 
         // Get the reserves before opening the short.
-        PoolInfo memory poolInfoBefore = getPoolInfo();
+        PoolInfo memory poolInfoBefore = getPoolInfo(hyperdrive);
 
         // Short a small amount of bonds.
         uint256 bondAmount = .1e18;
-        (uint256 maturityTime, uint256 baseAmount) = openShort(bob, bondAmount);
+        (uint256 maturityTime, uint256 baseAmount) = openShort(
+            hyperdrive,
+            bob,
+            bondAmount
+        );
         uint256 checkpointTime = maturityTime - POSITION_DURATION;
 
         // Verify that Hyperdrive received the max loss and that Bob received
@@ -161,7 +169,7 @@ contract OpenShortTest is HyperdriveTest {
         assertLt(apr, realizedApr);
 
         // Verify that the reserves were updated correctly.
-        PoolInfo memory poolInfoAfter = getPoolInfo();
+        PoolInfo memory poolInfoAfter = getPoolInfo(hyperdrive);
         assertEq(
             poolInfoAfter.shareReserves,
             poolInfoBefore.shareReserves -
