@@ -19,7 +19,7 @@ contract CloseShortTest is HyperdriveTest {
 
         // Open a short.
         uint256 bondAmount = 10e18;
-        (uint256 maturityTime, ) = openShort(hyperdrive, bob, bondAmount);
+        (uint256 maturityTime, ) = openShort(bob, bondAmount);
 
         // Attempt to close zero shorts. This should fail.
         vm.stopPrank();
@@ -37,7 +37,7 @@ contract CloseShortTest is HyperdriveTest {
 
         // Open a short.
         uint256 bondAmount = 10e18;
-        (uint256 maturityTime, ) = openShort(hyperdrive, bob, bondAmount);
+        (uint256 maturityTime, ) = openShort(bob, bondAmount);
 
         // Attempt to close too many shorts. This should fail.
         vm.stopPrank();
@@ -55,7 +55,7 @@ contract CloseShortTest is HyperdriveTest {
 
         // Open a short.
         uint256 bondAmount = 10e18;
-        openShort(hyperdrive, bob, bondAmount);
+        openShort(bob, bondAmount);
 
         // Attempt to use a timestamp greater than the maximum range.
         vm.stopPrank();
@@ -73,22 +73,13 @@ contract CloseShortTest is HyperdriveTest {
 
         // Purchase some bonds.
         uint256 bondAmount = 10e18;
-        (uint256 maturityTime, uint256 basePaid) = openShort(
-            hyperdrive,
-            bob,
-            bondAmount
-        );
+        (uint256 maturityTime, uint256 basePaid) = openShort(bob, bondAmount);
 
         // Get the reserves before closing the long.
-        PoolInfo memory poolInfoBefore = getPoolInfo(hyperdrive);
+        PoolInfo memory poolInfoBefore = getPoolInfo();
 
         // Immediately close the bonds.
-        uint256 baseProceeds = closeShort(
-            hyperdrive,
-            bob,
-            maturityTime,
-            bondAmount
-        );
+        uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
 
         // Verify that Bob doesn't end up with more base than he started with.
         assertGe(basePaid, baseProceeds);
@@ -112,22 +103,13 @@ contract CloseShortTest is HyperdriveTest {
 
         // Short some bonds.
         uint256 bondAmount = .1e18;
-        (uint256 maturityTime, uint256 basePaid) = openShort(
-            hyperdrive,
-            bob,
-            bondAmount
-        );
+        (uint256 maturityTime, uint256 basePaid) = openShort(bob, bondAmount);
 
         // Get the reserves before closing the long.
-        PoolInfo memory poolInfoBefore = getPoolInfo(hyperdrive);
+        PoolInfo memory poolInfoBefore = getPoolInfo();
 
         // Immediately close the bonds.
-        uint256 baseProceeds = closeShort(
-            hyperdrive,
-            bob,
-            maturityTime,
-            bondAmount
-        );
+        uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
 
         // Verify that Bob doesn't end up with more base than he started with.
         assertGe(basePaid, baseProceeds);
@@ -151,25 +133,16 @@ contract CloseShortTest is HyperdriveTest {
 
         // Short some bonds.
         uint256 bondAmount = 10e18;
-        (uint256 maturityTime, uint256 basePaid) = openShort(
-            hyperdrive,
-            bob,
-            bondAmount
-        );
+        (uint256 maturityTime, uint256 basePaid) = openShort(bob, bondAmount);
 
         // Get the reserves before closing the long.
-        PoolInfo memory poolInfoBefore = getPoolInfo(hyperdrive);
+        PoolInfo memory poolInfoBefore = getPoolInfo();
 
         // The term passes.
         vm.warp(block.timestamp + 365 days);
 
         // Redeem the bonds.
-        uint256 baseProceeds = closeShort(
-            hyperdrive,
-            bob,
-            maturityTime,
-            bondAmount
-        );
+        uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
 
         // Verify that Bob doesn't receive any base from closing the short.
         assertEq(baseProceeds, 0);
@@ -208,7 +181,7 @@ contract CloseShortTest is HyperdriveTest {
         // Verify that the reserves were updated according to flat+curve.
         // The bond adjustment should be equal to timeRemaining * bondAmount
         // because the bond update decays as the term progresses.
-        PoolInfo memory poolInfoAfter = getPoolInfo(hyperdrive);
+        PoolInfo memory poolInfoAfter = getPoolInfo();
         uint256 timeRemaining = calculateTimeRemaining(maturityTime);
         assertEq(
             poolInfoAfter.bondReserves,
