@@ -13,9 +13,11 @@ contract HyperdriveTest is Test {
 
     address alice = address(uint160(uint256(keccak256("alice"))));
     address bob = address(uint160(uint256(keccak256("bob"))));
+    address celine = address(uint160(uint256(keccak256("celine"))));
 
     ERC20Mintable baseToken;
     MockHyperdrive hyperdrive;
+    MockHyperdrive hyperdrive_with_fees;
 
     uint256 internal constant INITIAL_SHARE_PRICE = FixedPointMath.ONE_18;
     uint256 internal constant CHECKPOINT_DURATION = 1 days;
@@ -38,7 +40,19 @@ contract HyperdriveTest is Test {
             INITIAL_SHARE_PRICE,
             CHECKPOINTS_PER_TERM,
             CHECKPOINT_DURATION,
-            timeStretch
+            timeStretch,
+            0,
+            0
+        );
+
+        hyperdrive_with_fees = new MockHyperdrive(
+            baseToken,
+            FixedPointMath.ONE_18,
+            365,
+            1 days,
+            timeStretch,
+            0.1 ether,
+            0.1 ether
         );
 
         // Advance time so that Hyperdrive can look back more than a position
@@ -155,6 +169,19 @@ contract HyperdriveTest is Test {
     }
 
     /// Utils ///
+    function initializeWithFees(
+        address lp,
+        uint256 apr,
+        uint256 contribution
+    ) internal {
+        vm.stopPrank();
+        vm.startPrank(lp);
+
+        // Initialize the pool.
+        baseToken.mint(contribution);
+        baseToken.approve(address(hyperdrive_with_fees), contribution);
+        hyperdrive_with_fees.initialize(contribution, apr, lp);
+    }
 
     struct PoolInfo {
         uint256 shareReserves;
@@ -169,7 +196,9 @@ contract HyperdriveTest is Test {
         uint256 shortBaseVolume;
     }
 
-    function getPoolInfo() internal view returns (PoolInfo memory) {
+    function getPoolInfo(
+        MockHyperdrive _hyperdrive
+    ) internal view returns (PoolInfo memory) {
         (
             uint256 shareReserves,
             uint256 bondReserves,
@@ -181,7 +210,7 @@ contract HyperdriveTest is Test {
             uint256 shortsOutstanding,
             uint256 shortAverageMaturityTime,
             uint256 shortBaseVolume
-        ) = hyperdrive.getPoolInfo();
+        ) = _hyperdrive.getPoolInfo();
         return
             PoolInfo({
                 shareReserves: shareReserves,
