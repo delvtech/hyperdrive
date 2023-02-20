@@ -251,6 +251,16 @@ contract HyperdriveTest is Test {
         return (bondAmount.sub(baseAmount)).divDown(baseAmount.mulDown(t));
     }
 
+    function calculateTimeRemaining(
+        uint256 _maturityTime
+    ) internal view returns (uint256 timeRemaining) {
+        timeRemaining = _maturityTime > block.timestamp
+            ? _maturityTime - block.timestamp
+            : 0;
+        timeRemaining = (timeRemaining).divDown(POSITION_DURATION);
+        return timeRemaining;
+    }
+
     function latestCheckpoint() internal view returns (uint256) {
         return block.timestamp - (block.timestamp % CHECKPOINT_DURATION);
     }
