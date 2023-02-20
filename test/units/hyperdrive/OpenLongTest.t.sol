@@ -48,21 +48,16 @@ contract OpenLongTest is HyperdriveTest {
         // Initialize the pools with a large amount of capital.
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
-        initializeWithFees(alice, apr, contribution);
 
         // Get the reserves before opening the long.
         PoolInfo memory poolInfoBefore = getPoolInfo();
-        PoolInfo memory poolInfoBeforeWithFees = getPoolInfo();
 
         // Open a long without fees.
         uint256 baseAmount = 10e18;
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, baseAmount);
-        // Open a long with fees.
-        (, uint256 bondAmountWithFees) = openLong(celine, baseAmount);
 
         // Verify that the open long updated the state correctly.
         verifyOpenLong(
-            hyperdrive,
             bob,
             poolInfoBefore,
             contribution,
@@ -72,8 +67,26 @@ contract OpenLongTest is HyperdriveTest {
             apr
         );
 
+        uint256 timeStretch = FixedPointMath.ONE_18.divDown(
+            22.186877016851916266e18
+        );
+
+        hyperdrive = new MockHyperdrive(
+            baseToken,
+            INITIAL_SHARE_PRICE,
+            CHECKPOINTS_PER_TERM,
+            CHECKPOINT_DURATION,
+            timeStretch,
+            0.1 ether,
+            0.1 ether
+        );
+        initialize(alice, apr, contribution);
+        // Get the reserves before opening the long.
+        PoolInfo memory poolInfoBeforeWithFees = getPoolInfo();
+        // Open a long with fees.
+        (, uint256 bondAmountWithFees) = openLong(celine, baseAmount);
+
         verifyOpenLong(
-            hyperdriveWithFees,
             celine,
             poolInfoBeforeWithFees,
             contribution,
@@ -83,35 +96,31 @@ contract OpenLongTest is HyperdriveTest {
             apr
         );
 
-        {
-            // let's manually check that the fees are collected appropriately
-            // curve fee = ((1 / p) - 1) * phi * c * d_z * t
-            // p = 1 / (1 + r)
-            // roughly ((1/.9523 - 1) * .1) * 10e18 * 1 = 5e16, or 10% of the 5% bond - base spread.
-            uint256 p = (uint256(1 ether)).divDown(1 ether + 0.05 ether);
-            uint256 phi = hyperdriveWithFees.curveFee();
-            uint256 curveFeeAmount = (uint256(1 ether).divDown(p) - 1 ether)
-                .mulDown(phi)
-                .mulDown(baseAmount);
+        // let's manually check that the fees are collected appropriately
+        // curve fee = ((1 / p) - 1) * phi * c * d_z * t
+        // p = 1 / (1 + r)
+        // roughly ((1/.9523 - 1) * .1) * 10e18 * 1 = 5e16, or 10% of the 5% bond - base spread.
+        uint256 p = (uint256(1 ether)).divDown(1 ether + 0.05 ether);
+        uint256 phi = hyperdrive.curveFee();
+        uint256 curveFeeAmount = (uint256(1 ether).divDown(p) - 1 ether)
+            .mulDown(phi)
+            .mulDown(baseAmount);
 
-            PoolInfo memory poolInfoAfterWithFees = getPoolInfo();
-            // bondAmount is from the hyperdrive without the curve fee
-            assertApproxEqAbs(
-                poolInfoAfterWithFees.bondReserves,
-                poolInfoBeforeWithFees.bondReserves -
-                    bondAmount +
-                    curveFeeAmount,
-                10
-            );
-            // bondAmount is from the hyperdrive without the curve fee
-            assertApproxEqAbs(
-                poolInfoAfterWithFees.longsOutstanding,
-                poolInfoBeforeWithFees.longsOutstanding +
-                    bondAmount -
-                    curveFeeAmount,
-                10
-            );
-        }
+        PoolInfo memory poolInfoAfterWithFees = getPoolInfo();
+        // bondAmount is from the hyperdrive without the curve fee
+        assertApproxEqAbs(
+            poolInfoAfterWithFees.bondReserves,
+            poolInfoBeforeWithFees.bondReserves - bondAmount + curveFeeAmount,
+            10
+        );
+        // bondAmount is from the hyperdrive without the curve fee
+        assertApproxEqAbs(
+            poolInfoAfterWithFees.longsOutstanding,
+            poolInfoBeforeWithFees.longsOutstanding +
+                bondAmount -
+                curveFeeAmount,
+            10
+        );
     }
 
     function test_open_long_with_small_amount() external {
@@ -130,7 +139,6 @@ contract OpenLongTest is HyperdriveTest {
 
         // Verify that the open long updated the state correctly.
         verifyOpenLong(
-            hyperdrive,
             bob,
             poolInfoBefore,
             contribution,
@@ -142,7 +150,6 @@ contract OpenLongTest is HyperdriveTest {
     }
 
     function verifyOpenLong(
-        MockHyperdrive _hyperdrive,
         address user,
         PoolInfo memory poolInfoBefore,
         uint256 contribution,
@@ -156,7 +163,7 @@ contract OpenLongTest is HyperdriveTest {
         // Verify the base transfers.
         assertEq(baseToken.balanceOf(user), 0);
         assertEq(
-            baseToken.balanceOf(address(_hyperdrive)),
+            baseToken.balanceOf(address(hyperdrive)),
             contribution + baseAmount
         );
 
@@ -194,7 +201,7 @@ contract OpenLongTest is HyperdriveTest {
         );
         assertEq(poolInfoAfter.longBaseVolume, baseAmount);
         assertEq(
-            _hyperdrive.longBaseVolumeCheckpoints(checkpointTime),
+            hyperdrive.longBaseVolumeCheckpoints(checkpointTime),
             baseAmount
         );
         assertEq(
@@ -203,6 +210,6 @@ contract OpenLongTest is HyperdriveTest {
         );
         assertEq(poolInfoAfter.shortAverageMaturityTime, 0);
         assertEq(poolInfoAfter.shortBaseVolume, 0);
-        assertEq(_hyperdrive.shortBaseVolumeCheckpoints(checkpointTime), 0);
+        assertEq(hyperdrive.shortBaseVolumeCheckpoints(checkpointTime), 0);
     }
 }
