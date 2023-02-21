@@ -214,6 +214,14 @@ contract FixedPointMathTest is Test {
         assertEq(mockFixedPointMath.exp(1e18), 2.718281828459045235e18);
         assertEq(mockFixedPointMath.exp(0), 1e18);
         assertEq(mockFixedPointMath.exp(-1e18), 0.367879441171442321e18);
+        assertEq(mockFixedPointMath.exp(-42139678854452767551), 0);
+    }
+
+    function test_fail_exp_negative_or_zero_input() public {
+        // NOTE: Coverage only works if I initialize the fixture in the test function
+        MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
+        vm.expectRevert(Errors.FixedPointMath_InvalidExponent.selector);
+        mockFixedPointMath.exp(135305999368893231589);
     }
 
     function test_ln() public {
