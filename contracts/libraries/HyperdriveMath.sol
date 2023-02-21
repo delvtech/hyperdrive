@@ -153,15 +153,14 @@ library HyperdriveMath {
         _bondReserves = _bondReserves.sub(flat.mulDown(_sharePrice));
         uint256 curveIn = _amountIn.mulDown(_normalizedTimeRemaining);
         // (time remaining)/(term length) is always 1 so we just use _timeStretch
-        uint256 curveOut = YieldSpaceMath.calculateOutGivenIn(
+        uint256 curveOut = YieldSpaceMath.calculateBondsOutGivenSharesIn(
             _shareReserves,
             _bondReserves,
             _bondReserveAdjustment,
             curveIn,
             FixedPointMath.ONE_18.sub(_timeStretch),
             _sharePrice,
-            _initialSharePrice,
-            true
+            _initialSharePrice
         );
         return (curveOut, flat.add(curveOut));
     }
@@ -213,15 +212,14 @@ library HyperdriveMath {
                 .mulDown(_normalizedTimeRemaining)
                 .divDown(_sharePrice);
             // (time remaining)/(term length) is always 1 so we just use _timeStretch
-            uint256 curveOut = YieldSpaceMath.calculateOutGivenIn(
+            uint256 curveOut = YieldSpaceMath.calculateSharesOutGivenBondsIn(
                 _shareReserves,
                 _bondReserves,
                 _bondReserveAdjustment,
                 curveIn,
                 FixedPointMath.ONE_18.sub(_timeStretch),
                 _sharePrice,
-                _initialSharePrice,
-                false
+                _initialSharePrice
             );
             return (curveIn, flat.add(curveOut));
         } else {
@@ -265,15 +263,14 @@ library HyperdriveMath {
             _sharePrice
         );
         // (time remaining)/(term length) is always 1 so we just use _timeStretch
-        uint256 curveOut = YieldSpaceMath.calculateOutGivenIn(
+        uint256 curveOut = YieldSpaceMath.calculateSharesOutGivenBondsIn(
             _shareReserves,
             _bondReserves,
             _bondReserveAdjustment,
             curveIn,
             FixedPointMath.ONE_18.sub(_timeStretch),
             _sharePrice,
-            _initialSharePrice,
-            false
+            _initialSharePrice
         );
         return flat.add(curveOut);
     }
@@ -345,15 +342,14 @@ library HyperdriveMath {
         );
         // Calculate the curved part of the trade assuming that the flat part of
         // the trade was applied to the share and bond reserves.
-        uint256 curveIn = YieldSpaceMath.calculateInGivenOut(
+        uint256 curveIn = YieldSpaceMath.calculateSharesInGivenBondsOut(
             _shareReserves,
             _bondReserves,
             _bondReserveAdjustment,
             _amountOut,
             FixedPointMath.ONE_18.sub(_timeStretch),
             _sharePrice,
-            _initialSharePrice,
-            false
+            _initialSharePrice
         );
 
         if (_normalizedTimeRemaining > 0) {

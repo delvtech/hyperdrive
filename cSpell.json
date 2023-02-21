@@ -2,6 +2,7 @@
     "version": "0.2",
     "language": "en",
     "words": [
+        "Aave",
         "adoc",
         "amount",
         "authorizable",
@@ -16,6 +17,7 @@
         "calldatasize",
         "callvalue",
         "casset",
+        "CFMM",
         "chainid",
         "concat",
         "cusdc",

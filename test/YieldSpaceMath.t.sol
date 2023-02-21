@@ -5,59 +5,63 @@ import { Test } from "forge-std/Test.sol";
 import "test/mocks/MockYieldSpaceMath.sol";
 
 contract YieldSpaceMathTest is Test {
-    function test__calculateOutGivenIn() public {
-        // NOTE: Coverage only works if I initialize the fixture in the test function
+    // calculateInGivenOut true
+    function test__calculateBondsInGivenSharesOut() public {
         MockYieldSpaceMath yieldSpaceMath = new MockYieldSpaceMath();
-        uint256 result1 = yieldSpaceMath.calculateOutGivenIn(
+        uint256 result = yieldSpaceMath.calculateBondsInGivenSharesOut(
             61.824903300361854e18, // shareReserves
             56.92761678068477e18, // bondReserves
             119.1741606776616e18, // bondReserveAdjustment
-            5.500250311701939e18, // amountIn
+            5.500250311701939e18, // amountOut
             1e18 - 0.08065076081220067e18, // stretchedTimeElapsed
             1e18, // c
-            1e18, // mu
-            true // isBondIn
+            1e18 // mu
         );
-        assertEq(result1, 5.955718322566968926e18);
-
-        uint256 result2 = yieldSpaceMath.calculateOutGivenIn(
-            61.824903300361854e18, // shareReserves
-            56.92761678068477e18, // bondReserves
-            119.1741606776616e18, // bondReserveAdjustment
-            5.500250311701939e18, // amountIn
-            1e18 - 0.08065076081220067e18, // stretchedTimeElapsed
-            1e18, // c
-            1e18, // mu
-            false // isBondIn
-        );
-        assertEq(result2, 5.031654806080804961e18);
+        assertEq(result, 6.015131552181907864e18);
     }
 
-    function test__calculateInGivenOut() public {
-        // NOTE: Coverage only works if I initialize the fixture in the test function
+    // calculateOutGivenIn true
+    function test__calculateBondsOutGivenSharesIn() public {
         MockYieldSpaceMath yieldSpaceMath = new MockYieldSpaceMath();
-        uint256 result1 = yieldSpaceMath.calculateInGivenOut(
+        uint256 result = yieldSpaceMath.calculateBondsOutGivenSharesIn(
             61.824903300361854e18, // shareReserves
             56.92761678068477e18, // bondReserves
             119.1741606776616e18, // bondReserveAdjustment
-            5.500250311701939e18, // amountOut
+            5.500250311701939e18, // amountIn
             1e18 - 0.08065076081220067e18, // stretchedTimeElapsed
             1e18, // c
-            1e18, // mu
-            true // isBaseOut
+            1e18 // mu
         );
-        assertEq(result1, 6.015131552181907864e18);
+        assertEq(result, 5.955718322566968926e18);
+    }
 
-        uint256 result2 = yieldSpaceMath.calculateInGivenOut(
+    // calculateInGivenOut false
+    function test__calculateSharesInGivenBondsOut() public {
+        MockYieldSpaceMath yieldSpaceMath = new MockYieldSpaceMath();
+        uint256 result = yieldSpaceMath.calculateSharesInGivenBondsOut(
             61.824903300361854e18, // shareReserves
             56.92761678068477e18, // bondReserves
             119.1741606776616e18, // bondReserveAdjustment
             5.500250311701939e18, // amountOut
             1e18 - 0.08065076081220067e18, // stretchedTimeElapsed
             1e18, // c
-            1e18, // mu
-            false // isBaseOut
+            1e18 // mu
         );
-        assertEq(result2, 5.077749727267331547e18);
+        assertEq(result, 5.077749727267331547e18);
+    }
+
+    // calculateOutGivenIn false
+    function test__calculateSharesOutGivenBondsIn() public {
+        MockYieldSpaceMath yieldSpaceMath = new MockYieldSpaceMath();
+        uint256 result = yieldSpaceMath.calculateSharesOutGivenBondsIn(
+            61.824903300361854e18, // shareReserves
+            56.92761678068477e18, // bondReserves
+            119.1741606776616e18, // bondReserveAdjustment
+            5.500250311701939e18, // amountIn
+            1e18 - 0.08065076081220067e18, // stretchedTimeElapsed
+            1e18, // c
+            1e18 // mu
+        );
+        assertEq(result, 5.031654806080804961e18);
     }
 }
