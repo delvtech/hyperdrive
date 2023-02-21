@@ -250,7 +250,13 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
             timeStretch
         );
 
-        // Calculate the amount of LP shares that the supplier should receive.
+        // To ensure that our LP allocation scheme fairly rewards LPs for adding
+        // liquidity, we linearly interpolate between the present and future
+        // value of longs and shorts. These interpolated values are the long and
+        // short adjustments. The following calculation is used to determine the
+        // amount of LP shares rewarded to new LP:
+        //
+        // lpShares = (dz * l) / (z + a_s - a_l)
         uint256 longAdjustment = HyperdriveMath.calculateLpAllocationAdjustment(
             longsOutstanding,
             longBaseVolume,
@@ -264,12 +270,8 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
                 _calculateTimeRemaining(shortAverageMaturityTime),
                 sharePrice
             );
-        lpShares = HyperdriveMath.calculateLpSharesOutForSharesIn(
-            shares,
-            shareReserves,
-            totalSupply[AssetId._LP_ASSET_ID],
-            longAdjustment,
-            shortAdjustment
+        lpShares = shares.mulDown(totalSupply[AssetId._LP_ASSET_ID]).divDown(
+            shareReserves.add(shortAdjustment).sub(longAdjustment)
         );
 
         // Update the reserves.

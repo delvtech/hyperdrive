@@ -518,30 +518,6 @@ library HyperdriveMath {
         return baseVolume;
     }
 
-    /// @dev Calculates the amount of LP shares that should be awarded for
-    ///      supplying a specified amount of base shares to the pool.
-    /// @param _shares The amount of base shares supplied to the pool.
-    /// @param _shareReserves The pool's share reserves.
-    /// @param _lpTotalSupply The pool's total supply of LP shares.
-    /// @param _longAdjustment A parameter denominated in base shares that
-    ///        accounts for the duration risk that the LP takes on from longs.
-    /// @param _shortAdjustment A parameter denominated in base shares that
-    ///        accounts for the duration risk that the LP takes on from shorts.
-    /// @return lpShares The amount of LP shares awarded.
-    function calculateLpSharesOutForSharesIn(
-        uint256 _shares,
-        uint256 _shareReserves,
-        uint256 _lpTotalSupply,
-        uint256 _longAdjustment,
-        uint256 _shortAdjustment
-    ) internal pure returns (uint256 lpShares) {
-        // lpShares = (dz * l) / (z + a_s - a_l)
-        lpShares = _shares.mulDown(_lpTotalSupply).divDown(
-            _shareReserves.add(_shortAdjustment).sub(_longAdjustment)
-        );
-        return lpShares;
-    }
-
     /// @dev Computes the LP allocation adjustment for a position. This is used
     ///      to accurately account for the duration risk that LPs take on when
     ///      adding liquidity so that LP shares can be rewarded fairly.
