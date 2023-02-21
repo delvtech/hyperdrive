@@ -8,11 +8,8 @@ import "test/3rdPartyLibs/BalancerErrors.sol";
 import { Errors } from "contracts/libraries/Errors.sol";
 import "forge-std/console2.sol";
 
-
 contract FixedPointMathTest is Test {
-    function setUp() public {
-
-    }
+    function setUp() public {}
 
     function test_add() public {
         // NOTE: Coverage only works if I initialize the fixture in the test function
@@ -45,9 +42,7 @@ contract FixedPointMathTest is Test {
     function test_fail_sub_overflow() public {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
-        vm.expectRevert(
-            Errors.FixedPointMath_SubOverflow.selector
-        );
+        vm.expectRevert(Errors.FixedPointMath_SubOverflow.selector);
         mockFixedPointMath.sub(0, 1e18);
     }
 
@@ -86,7 +81,7 @@ contract FixedPointMathTest is Test {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
         // TODO: Should we have an error for divide by zero?
-        vm.expectRevert(); 
+        vm.expectRevert();
         mockFixedPointMath.divDown(1e18, 0);
     }
 
@@ -103,7 +98,7 @@ contract FixedPointMathTest is Test {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
         // TODO: Should we have an error for divide by zero?
-        vm.expectRevert(); 
+        vm.expectRevert();
         mockFixedPointMath.divUp(1e18, 0);
     }
 
@@ -129,7 +124,7 @@ contract FixedPointMathTest is Test {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
         // TODO: Should we have an error for divide by zero?
-        vm.expectRevert(); 
+        vm.expectRevert();
         mockFixedPointMath.mulDivDown(1e18, 1e18, 0);
     }
 
@@ -155,7 +150,7 @@ contract FixedPointMathTest is Test {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
         // TODO: Should we have an error for divide by zero?
-        vm.expectRevert(); 
+        vm.expectRevert();
         mockFixedPointMath.mulDivUp(1e18, 1e18, 0);
     }
 
@@ -193,9 +188,8 @@ contract FixedPointMathTest is Test {
         assertApproxEqAbs(result, expected, 1e5 wei);
     }
 
-
     function test_differential_fuzz_pow(uint256 x, uint256 y) public {
-        vm.assume(x < 2**255);
+        vm.assume(x < 2 ** 255);
         vm.assume(y < 1);
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
@@ -207,7 +201,7 @@ contract FixedPointMathTest is Test {
     /// @dev This test is to check that the pow function returns 1e18 when the exponent is 0
     function test_differential_fuzz_pow_zero(uint256 x) public {
         vm.assume(x > 0);
-        vm.assume(x < 2**255);
+        vm.assume(x < 2 ** 255);
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
         uint256 result = mockFixedPointMath.pow(x, 0);
@@ -232,9 +226,7 @@ contract FixedPointMathTest is Test {
     function test_fail_ln_negative_or_zero_input() public {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
-        vm.expectRevert(
-            Errors.FixedPointMath_NegativeOrZeroInput.selector
-        );
+        vm.expectRevert(Errors.FixedPointMath_NegativeOrZeroInput.selector);
         mockFixedPointMath.ln(0);
     }
 }

@@ -22,7 +22,7 @@ contract MockFixedPointMath {
         uint256 d
     ) external pure returns (uint256 z) {
         uint256 result = FixedPointMath.mulDivDown(x, y, d);
-        return result; 
+        return result;
     }
 
     function mulDown(uint256 a, uint256 b) external pure returns (uint256) {
