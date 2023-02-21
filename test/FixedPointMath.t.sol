@@ -21,13 +21,10 @@ contract FixedPointMathTest is Test {
     }
 
     function test_fail_add_overflow() public {
-        // TODO: Figure out how to test revert with proper error message
-        // // NOTE: Coverage only works if I initialize the fixture in the test function
-        // MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
-        // vm.expectRevert(
-        //     Errors.FixedPointMath_AddOverflow.selector
-        // );
-        // mockFixedPointMath.add(type(uint256).max, 1e18);
+        // NOTE: Coverage only works if I initialize the fixture in the test function
+        MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
+        vm.expectRevert(stdError.arithmeticError);
+        mockFixedPointMath.add(type(uint256).max, 1e18);
     }
 
     function test_sub() public {
@@ -80,7 +77,6 @@ contract FixedPointMathTest is Test {
     function test_fail_divDown_zero_denominator() public {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
-        // TODO: Should we have an error for divide by zero?
         vm.expectRevert();
         mockFixedPointMath.divDown(1e18, 0);
     }
@@ -188,26 +184,6 @@ contract FixedPointMathTest is Test {
         assertApproxEqAbs(result, expected, 1e5 wei);
     }
 
-    function test_differential_fuzz_pow(uint256 x, uint256 y) public {
-        vm.assume(x < 2 ** 255);
-        vm.assume(y < 1);
-        // NOTE: Coverage only works if I initialize the fixture in the test function
-        MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
-        uint256 result = mockFixedPointMath.pow(x, y);
-        uint256 expected = LogExpMath.pow(x, y);
-        assertApproxEqAbs(result, expected, 1e5 wei);
-    }
-
-    /// @dev This test is to check that the pow function returns 1e18 when the exponent is 0
-    function test_differential_fuzz_pow_zero(uint256 x) public {
-        vm.assume(x > 0);
-        vm.assume(x < 2 ** 255);
-        // NOTE: Coverage only works if I initialize the fixture in the test function
-        MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
-        uint256 result = mockFixedPointMath.pow(x, 0);
-        assertEq(result, 1e18);
-    }
-
     function test_exp() public {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
@@ -271,5 +247,25 @@ contract FixedPointMathTest is Test {
             ),
             1e18
         );
+    }
+
+    function test_differential_fuzz_pow(uint256 x, uint256 y) public {
+        vm.assume(x < 2 ** 255);
+        vm.assume(y < 1);
+        // NOTE: Coverage only works if I initialize the fixture in the test function
+        MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
+        uint256 result = mockFixedPointMath.pow(x, y);
+        uint256 expected = LogExpMath.pow(x, y);
+        assertApproxEqAbs(result, expected, 1e5 wei);
+    }
+
+    /// @dev This test is to check that the pow function returns 1e18 when the exponent is 0
+    function test_differential_fuzz_pow_zero(uint256 x) public {
+        vm.assume(x > 0);
+        vm.assume(x < 2 ** 255);
+        // NOTE: Coverage only works if I initialize the fixture in the test function
+        MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
+        uint256 result = mockFixedPointMath.pow(x, 0);
+        assertEq(result, 1e18);
     }
 }
