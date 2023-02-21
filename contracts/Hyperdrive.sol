@@ -254,14 +254,14 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
         uint256 longAdjustment = HyperdriveMath.calculateLpAllocationAdjustment(
             longsOutstanding,
             longBaseVolume,
-            longAverageMaturityTime,
+            _calculateTimeRemaining(longAverageMaturityTime),
             sharePrice
         );
         uint256 shortAdjustment = HyperdriveMath
             .calculateLpAllocationAdjustment(
                 shortsOutstanding,
                 shortBaseVolume,
-                shortAverageMaturityTime,
+                _calculateTimeRemaining(shortAverageMaturityTime),
                 sharePrice
             );
         lpShares = HyperdriveMath.calculateLpSharesOutForSharesIn(
@@ -271,9 +271,6 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
             longAdjustment,
             shortAdjustment
         );
-
-        // Enforce min user outputs
-        if (_minOutput > lpShares) revert Errors.OutputLimit();
 
         // Update the reserves.
         shareReserves += shares;
@@ -285,6 +282,9 @@ abstract contract Hyperdrive is MultiToken, IHyperdrive {
             positionDuration,
             timeStretch
         );
+
+        // Enforce min user outputs
+        if (_minOutput > lpShares) revert Errors.OutputLimit();
 
         // Mint LP shares to the supplier.
         _mint(AssetId._LP_ASSET_ID, _destination, lpShares);

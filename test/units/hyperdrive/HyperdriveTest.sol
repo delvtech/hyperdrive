@@ -5,6 +5,7 @@ import { Test } from "forge-std/Test.sol";
 import { ForwarderFactory } from "contracts/ForwarderFactory.sol";
 import { AssetId } from "contracts/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
+import { HyperdriveMath } from "contracts/libraries/HyperdriveMath.sol";
 import { ERC20Mintable } from "test/mocks/ERC20Mintable.sol";
 import { MockHyperdrive } from "test/mocks/MockHyperdrive.sol";
 
@@ -65,22 +66,27 @@ contract HyperdriveTest is Test {
         hyperdrive.initialize(contribution, apr, lp);
     }
 
-    function addLiquidity(address lp, uint256 contribution) internal {
+    function addLiquidity(address lp, uint256 contribution) internal returns (uint256 lpShares) {
         vm.stopPrank();
         vm.startPrank(lp);
 
         // Add liquidity to the pool.
         baseToken.mint(contribution);
-        baseToken.approve(address(hyperdrive), contribution);
-        hyperdrive.addLiquidity(contribution, 0, lp);
+        baseToken.approve(address(_hyperdrive), contribution);
+        _hyperdrive.addLiquidity(contribution, 0, lp);
+
+        return _hyperdrive.balanceOf(AssetId._LP_ASSET_ID, lp);
     }
 
-    function removeLiquidity(address lp, uint256 shares) internal {
+    function removeLiquidity(address lp, uint256 shares) internal returns (uint256 baseProceeds) {
         vm.stopPrank();
         vm.startPrank(lp);
 
         // Remove liquidity from the pool.
-        hyperdrive.removeLiquidity(shares, 0, lp);
+        uint256 baseBalanceBefore = baseToken.balanceOf(lp);
+        _hyperdrive.removeLiquidity(shares, 0, lp);
+
+        return baseToken.balanceOf(lp) - baseBalanceBefore;
     }
 
     function openLong(
@@ -198,6 +204,20 @@ contract HyperdriveTest is Test {
                 shortAverageMaturityTime: shortAverageMaturityTime,
                 shortBaseVolume: shortBaseVolume
             });
+    }
+
+    function calculateAPRFromReserves(
+        MockHyperdrive _hyperdrive
+    ) internal view returns (uint256) {
+        return
+            HyperdriveMath.calculateAPRFromReserves(
+                _hyperdrive.shareReserves(),
+                _hyperdrive.bondReserves(),
+                _hyperdrive.totalSupply(AssetId._LP_ASSET_ID),
+                _hyperdrive.initialSharePrice(),
+                _hyperdrive.positionDuration(),
+                _hyperdrive.timeStretch()
+            );
     }
 
     function calculateAPRFromRealizedPrice(

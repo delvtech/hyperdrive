@@ -30,11 +30,11 @@ contract AddLiquidityTest is HyperdriveTest {
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
-        uint256 lpShares = hyperdrive.totalSupply(AssetId._LP_ASSET_ID);
+        uint256 lpSupplyBefore = hyperdrive.totalSupply(AssetId._LP_ASSET_ID);
         uint256 baseBalance = baseToken.balanceOf(address(hyperdrive));
 
         // Add liquidity with the same amount as the original contribution.
-        addLiquidity(hyperdrive, bob, contribution);
+        uint256 lpShares = addLiquidity(hyperdrive, bob, contribution);
 
         // Ensure that the contribution was transferred to Hyperdrive.
         assertEq(baseToken.balanceOf(bob), 0);
@@ -45,8 +45,11 @@ contract AddLiquidityTest is HyperdriveTest {
 
         // Ensure that the new LP receives the same amount of LP shares as
         // the initializer.
-        assertEq(hyperdrive.balanceOf(AssetId._LP_ASSET_ID, bob), lpShares);
-        assertEq(hyperdrive.totalSupply(AssetId._LP_ASSET_ID), lpShares * 2);
+        assertEq(lpShares, lpSupplyBefore);
+        assertEq(
+            hyperdrive.totalSupply(AssetId._LP_ASSET_ID),
+            lpSupplyBefore * 2
+        );
 
         // Ensure the pool APR is still approximately equal to the target APR.
         uint256 poolApr = HyperdriveMath.calculateAPRFromReserves(
@@ -58,5 +61,152 @@ contract AddLiquidityTest is HyperdriveTest {
             hyperdrive.timeStretch()
         );
         assertApproxEqAbs(poolApr, apr, 1);
+    }
+
+    function test_add_liquidity_with_long_immediately() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+        uint256 lpSupplyBefore = hyperdrive.totalSupply(AssetId._LP_ASSET_ID);
+
+        // Celine opens a long.
+        openLong(hyperdrive, celine, 50_000_000e18);
+
+        // Add liquidity with the same amount as the original contribution.
+        uint256 aprBefore = calculateAPRFromReserves(hyperdrive);
+        uint256 baseBalance = baseToken.balanceOf(address(hyperdrive));
+        uint256 lpShares = addLiquidity(hyperdrive, bob, contribution);
+
+        // Ensure that the contribution was transferred to Hyperdrive.
+        assertEq(baseToken.balanceOf(bob), 0);
+        assertEq(
+            baseToken.balanceOf(address(hyperdrive)),
+            baseBalance.add(contribution)
+        );
+
+        // Ensure that the new LP receives the same amount of LP shares as
+        // the initializer.
+        assertEq(lpShares, lpSupplyBefore);
+        assertEq(
+            hyperdrive.totalSupply(AssetId._LP_ASSET_ID),
+            lpSupplyBefore * 2
+        );
+
+        // Ensure the pool APR is still approximately equal to the target APR.
+        uint256 aprAfter = calculateAPRFromReserves(hyperdrive);
+        assertApproxEqAbs(aprAfter, aprBefore, 1);
+    }
+
+    function test_add_liquidity_with_short_immediately() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+        uint256 lpSupplyBefore = hyperdrive.totalSupply(AssetId._LP_ASSET_ID);
+
+        // Celine opens a short.
+        openShort(hyperdrive, celine, 50_000_000e18);
+
+        // Add liquidity with the same amount as the original contribution.
+        uint256 aprBefore = calculateAPRFromReserves(hyperdrive);
+        uint256 baseBalance = baseToken.balanceOf(address(hyperdrive));
+        uint256 lpShares = addLiquidity(hyperdrive, bob, contribution);
+
+        // Ensure that the contribution was transferred to Hyperdrive.
+        assertEq(baseToken.balanceOf(bob), 0);
+        assertEq(
+            baseToken.balanceOf(address(hyperdrive)),
+            baseBalance.add(contribution)
+        );
+
+        // Ensure that the new LP receives the same amount of LP shares as
+        // the initializer.
+        assertEq(lpShares, lpSupplyBefore);
+        assertEq(
+            hyperdrive.totalSupply(AssetId._LP_ASSET_ID),
+            lpSupplyBefore * 2
+        );
+
+        // Ensure the pool APR is still approximately equal to the target APR.
+        uint256 aprAfter = calculateAPRFromReserves(hyperdrive);
+        assertApproxEqAbs(aprAfter, aprBefore, 1);
+    }
+
+    function test_add_liquidity_with_long_at_maturity() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+        hyperdrive.totalSupply(AssetId._LP_ASSET_ID);
+
+        // Celine opens a long.
+        openLong(hyperdrive, celine, 50_000_000e18);
+
+        // The term passes.
+        vm.warp(block.timestamp + POSITION_DURATION);
+
+        // Add liquidity with the same amount as the original contribution.
+        uint256 aprBefore = calculateAPRFromReserves(hyperdrive);
+        uint256 baseBalance = baseToken.balanceOf(address(hyperdrive));
+        uint256 lpShares = addLiquidity(hyperdrive, bob, contribution);
+
+        // TODO: This suggests an issue with the flat+curve usage in the
+        //       checkpointing mechanism. These APR figures should be the same.
+        //
+        // Ensure the pool APR hasn't decreased after adding liquidity.
+        uint256 aprAfter = calculateAPRFromReserves(hyperdrive);
+        assertGe(aprAfter, aprBefore);
+
+        // Ensure that the contribution was transferred to Hyperdrive.
+        assertEq(baseToken.balanceOf(bob), 0);
+        assertEq(
+            baseToken.balanceOf(address(hyperdrive)),
+            baseBalance.add(contribution)
+        );
+
+        // Ensure that if the new LP withdraws, they get their money back.
+        uint256 withdrawalProceeds = removeLiquidity(hyperdrive, bob, lpShares);
+        assertApproxEqAbs(withdrawalProceeds, contribution, 1e9);
+    }
+
+    function test_add_liquidity_with_short_at_maturity() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Celine opens a short.
+        openShort(hyperdrive, celine, 50_000_000e18);
+
+        // The term passes.
+        vm.warp(block.timestamp + POSITION_DURATION);
+
+        // Add liquidity with the same amount as the original contribution.
+        uint256 aprBefore = calculateAPRFromReserves(hyperdrive);
+        uint256 baseBalance = baseToken.balanceOf(address(hyperdrive));
+        uint256 lpShares = addLiquidity(hyperdrive, bob, contribution);
+
+        // TODO: This suggests an issue with the flat+curve usage in the
+        //       checkpointing mechanism. These APR figures should be the same.
+        //
+        // Ensure the pool APR hasn't increased after adding liquidity.
+        uint256 aprAfter = calculateAPRFromReserves(hyperdrive);
+        assertLe(aprAfter, aprBefore);
+
+        // Ensure that the contribution was transferred to Hyperdrive.
+        assertEq(baseToken.balanceOf(bob), 0);
+        assertEq(
+            baseToken.balanceOf(address(hyperdrive)),
+            baseBalance.add(contribution)
+        );
+
+        // Ensure that if the new LP withdraws, they get their money back.
+        uint256 withdrawalProceeds = removeLiquidity(hyperdrive, bob, lpShares);
+        assertApproxEqAbs(withdrawalProceeds, contribution, 1e9);
     }
 }
