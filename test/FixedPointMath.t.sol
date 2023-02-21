@@ -261,7 +261,7 @@ contract FixedPointMathTest is Test {
             ),
             0
         );
-         assertEq(
+        assertEq(
             mockFixedPointMath.updateWeightedAverage(
                 1e18,
                 2e18,
