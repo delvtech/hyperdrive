@@ -229,4 +229,11 @@ contract FixedPointMathTest is Test {
         vm.expectRevert(Errors.FixedPointMath_NegativeOrZeroInput.selector);
         mockFixedPointMath.ln(0);
     }
+
+    function test_updateWeightedAverage() public {
+        // NOTE: Coverage only works if I initialize the fixture in the test function
+        MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
+        assertEq(mockFixedPointMath.updateWeightedAverage(1e18, 1e18, 1e18, 1e18, true), 1e18);
+        assertEq(mockFixedPointMath.updateWeightedAverage(1e18, 1e18, 1e18, 1e18, false), 0);
+    }
 }
