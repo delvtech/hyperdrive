@@ -27,3 +27,6 @@ optimizer_runs = 7500
 via_ir = true
 # Enable gas-reporting for all contracts
 gas_reports = ["*"]
+
+[fuzz]
+runs = 1000
