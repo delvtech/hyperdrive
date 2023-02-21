@@ -487,32 +487,60 @@ library HyperdriveMath {
         }
     }
 
-    // TODO: Use an allocation scheme that doesn't punish early LPs.
-    //
-    /// @dev Calculates the amount of LP shares that should be awarded for
-    ///      supplying a specified amount of base shares to the pool.
-    /// @param _shares The amount of base shares supplied to the pool.
-    /// @param _shareReserves The pool's share reserves.
-    /// @param _lpTotalSupply The pool's total supply of LP shares.
-    /// @param _longsOutstanding The amount of long positions outstanding.
-    /// @param _shortsOutstanding The amount of short positions outstanding.
+    /// @dev Calculates the base volume of an open trade given the base amount,
+    ///      the bond amount, and the time remaining. Since the base amount
+    ///      takes into account backdating, we can't use this as our base
+    ///      volume. Since we linearly interpolate between the base volume
+    ///      and the bond amount as the time remaining goes from 1 to 0, the
+    ///      base volume is can be determined as follows:
+    ///
+    ///      baseAmount = t * baseVolume + (1 - t) * bondAmount
+    ///                               =>
+    ///      baseVolume = (baseAmount - (1 - t) * bondAmount) / t
+    /// @param _baseAmount The base exchanged in the open trade.
+    /// @param _bondAmount The bonds exchanged in the open trade.
+    /// @param _timeRemaining The time remaining in the position.
+    /// @return baseVolume The calculated base volume.
+    function calculateBaseVolume(
+        uint256 _baseAmount,
+        uint256 _bondAmount,
+        uint256 _timeRemaining
+    ) internal pure returns (uint256 baseVolume) {
+        // If the time remaining is 0, the position has already matured and
+        // doesn't have an impact on LP's ability to withdraw. This is a
+        // pathological case that should never arise.
+        if (_timeRemaining == 0) return 0;
+        baseVolume = (
+            _baseAmount.sub(
+                (FixedPointMath.ONE_18.sub(_timeRemaining)).mulDown(_bondAmount)
+            )
+        ).divDown(_timeRemaining);
+        return baseVolume;
+    }
+
+    /// @dev Computes the LP allocation adjustment for a position. This is used
+    ///      to accurately account for the duration risk that LPs take on when
+    ///      adding liquidity so that LP shares can be rewarded fairly.
+    /// @param _positionsOutstanding The position balance outstanding.
+    /// @param _baseVolume The base volume created by opening the positions.
+    /// @param _averageTimeRemaining The average time remaining of the positions.
     /// @param _sharePrice The pool's share price.
-    /// @return The amount of LP shares awarded.
-    function calculateLpSharesOutForSharesIn(
-        uint256 _shares,
-        uint256 _shareReserves,
-        uint256 _lpTotalSupply,
-        uint256 _longsOutstanding,
-        uint256 _shortsOutstanding,
+    /// @return adjustment The allocation adjustment.
+    function calculateLpAllocationAdjustment(
+        uint256 _positionsOutstanding,
+        uint256 _baseVolume,
+        uint256 _averageTimeRemaining,
         uint256 _sharePrice
-    ) internal pure returns (uint256) {
-        // (dz * l) / (z + b_y / c - b_x / c)
-        return
-            _shares.mulDown(_lpTotalSupply).divDown(
-                _shareReserves.add(_shortsOutstanding.divDown(_sharePrice)).sub(
-                    _longsOutstanding.divDown(_sharePrice)
-                )
-            );
+    ) internal pure returns (uint256 adjustment) {
+        // baseAdjustment = t * _baseVolume + (1 - t) * _positionsOutstanding
+        adjustment = (_averageTimeRemaining.mulDown(_baseVolume)).add(
+            (FixedPointMath.ONE_18.sub(_averageTimeRemaining)).mulDown(
+                _positionsOutstanding
+            )
+        );
+        // adjustment = baseAdjustment / c
+        adjustment = adjustment.divDown(_sharePrice);
+        return adjustment;
     }
 
     /// @dev Calculates the amount of base shares released from burning a
