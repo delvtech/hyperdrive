@@ -66,25 +66,31 @@ contract HyperdriveTest is Test {
         hyperdrive.initialize(contribution, apr, lp);
     }
 
-    function addLiquidity(address lp, uint256 contribution) internal returns (uint256 lpShares) {
+    function addLiquidity(
+        address lp,
+        uint256 contribution
+    ) internal returns (uint256 lpShares) {
         vm.stopPrank();
         vm.startPrank(lp);
 
         // Add liquidity to the pool.
         baseToken.mint(contribution);
-        baseToken.approve(address(_hyperdrive), contribution);
-        _hyperdrive.addLiquidity(contribution, 0, lp);
+        baseToken.approve(address(hyperdrive), contribution);
+        hyperdrive.addLiquidity(contribution, 0, lp);
 
-        return _hyperdrive.balanceOf(AssetId._LP_ASSET_ID, lp);
+        return hyperdrive.balanceOf(AssetId._LP_ASSET_ID, lp);
     }
 
-    function removeLiquidity(address lp, uint256 shares) internal returns (uint256 baseProceeds) {
+    function removeLiquidity(
+        address lp,
+        uint256 shares
+    ) internal returns (uint256 baseProceeds) {
         vm.stopPrank();
         vm.startPrank(lp);
 
         // Remove liquidity from the pool.
         uint256 baseBalanceBefore = baseToken.balanceOf(lp);
-        _hyperdrive.removeLiquidity(shares, 0, lp);
+        hyperdrive.removeLiquidity(shares, 0, lp);
 
         return baseToken.balanceOf(lp) - baseBalanceBefore;
     }

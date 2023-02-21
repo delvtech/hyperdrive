@@ -34,7 +34,7 @@ contract AddLiquidityTest is HyperdriveTest {
         uint256 baseBalance = baseToken.balanceOf(address(hyperdrive));
 
         // Add liquidity with the same amount as the original contribution.
-        uint256 lpShares = addLiquidity(hyperdrive, bob, contribution);
+        uint256 lpShares = addLiquidity(bob, contribution);
 
         // Ensure that the contribution was transferred to Hyperdrive.
         assertEq(baseToken.balanceOf(bob), 0);
@@ -72,12 +72,12 @@ contract AddLiquidityTest is HyperdriveTest {
         uint256 lpSupplyBefore = hyperdrive.totalSupply(AssetId._LP_ASSET_ID);
 
         // Celine opens a long.
-        openLong(hyperdrive, celine, 50_000_000e18);
+        openLong(celine, 50_000_000e18);
 
         // Add liquidity with the same amount as the original contribution.
         uint256 aprBefore = calculateAPRFromReserves(hyperdrive);
         uint256 baseBalance = baseToken.balanceOf(address(hyperdrive));
-        uint256 lpShares = addLiquidity(hyperdrive, bob, contribution);
+        uint256 lpShares = addLiquidity(bob, contribution);
 
         // Ensure that the contribution was transferred to Hyperdrive.
         assertEq(baseToken.balanceOf(bob), 0);
@@ -108,12 +108,12 @@ contract AddLiquidityTest is HyperdriveTest {
         uint256 lpSupplyBefore = hyperdrive.totalSupply(AssetId._LP_ASSET_ID);
 
         // Celine opens a short.
-        openShort(hyperdrive, celine, 50_000_000e18);
+        openShort(celine, 50_000_000e18);
 
         // Add liquidity with the same amount as the original contribution.
         uint256 aprBefore = calculateAPRFromReserves(hyperdrive);
         uint256 baseBalance = baseToken.balanceOf(address(hyperdrive));
-        uint256 lpShares = addLiquidity(hyperdrive, bob, contribution);
+        uint256 lpShares = addLiquidity(bob, contribution);
 
         // Ensure that the contribution was transferred to Hyperdrive.
         assertEq(baseToken.balanceOf(bob), 0);
@@ -144,7 +144,7 @@ contract AddLiquidityTest is HyperdriveTest {
         hyperdrive.totalSupply(AssetId._LP_ASSET_ID);
 
         // Celine opens a long.
-        openLong(hyperdrive, celine, 50_000_000e18);
+        openLong(celine, 50_000_000e18);
 
         // The term passes.
         vm.warp(block.timestamp + POSITION_DURATION);
@@ -152,7 +152,7 @@ contract AddLiquidityTest is HyperdriveTest {
         // Add liquidity with the same amount as the original contribution.
         uint256 aprBefore = calculateAPRFromReserves(hyperdrive);
         uint256 baseBalance = baseToken.balanceOf(address(hyperdrive));
-        uint256 lpShares = addLiquidity(hyperdrive, bob, contribution);
+        uint256 lpShares = addLiquidity(bob, contribution);
 
         // TODO: This suggests an issue with the flat+curve usage in the
         //       checkpointing mechanism. These APR figures should be the same.
@@ -169,7 +169,7 @@ contract AddLiquidityTest is HyperdriveTest {
         );
 
         // Ensure that if the new LP withdraws, they get their money back.
-        uint256 withdrawalProceeds = removeLiquidity(hyperdrive, bob, lpShares);
+        uint256 withdrawalProceeds = removeLiquidity(bob, lpShares);
         assertApproxEqAbs(withdrawalProceeds, contribution, 1e9);
     }
 
@@ -181,7 +181,7 @@ contract AddLiquidityTest is HyperdriveTest {
         initialize(alice, apr, contribution);
 
         // Celine opens a short.
-        openShort(hyperdrive, celine, 50_000_000e18);
+        openShort(celine, 50_000_000e18);
 
         // The term passes.
         vm.warp(block.timestamp + POSITION_DURATION);
@@ -189,7 +189,7 @@ contract AddLiquidityTest is HyperdriveTest {
         // Add liquidity with the same amount as the original contribution.
         uint256 aprBefore = calculateAPRFromReserves(hyperdrive);
         uint256 baseBalance = baseToken.balanceOf(address(hyperdrive));
-        uint256 lpShares = addLiquidity(hyperdrive, bob, contribution);
+        uint256 lpShares = addLiquidity(bob, contribution);
 
         // TODO: This suggests an issue with the flat+curve usage in the
         //       checkpointing mechanism. These APR figures should be the same.
@@ -206,7 +206,7 @@ contract AddLiquidityTest is HyperdriveTest {
         );
 
         // Ensure that if the new LP withdraws, they get their money back.
-        uint256 withdrawalProceeds = removeLiquidity(hyperdrive, bob, lpShares);
+        uint256 withdrawalProceeds = removeLiquidity(bob, lpShares);
         assertApproxEqAbs(withdrawalProceeds, contribution, 1e9);
     }
 }
