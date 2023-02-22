@@ -67,7 +67,8 @@ contract MockHyperdrive is Hyperdrive {
     /// Overrides ///
 
     function deposit(
-        uint256 amount
+        uint256 amount,
+        bool
     ) internal override returns (uint256, uint256) {
         bool success = baseToken.transferFrom(
             msg.sender,
@@ -82,7 +83,8 @@ contract MockHyperdrive is Hyperdrive {
 
     function withdraw(
         uint256 shares,
-        address destination
+        address destination,
+        bool
     ) internal override returns (uint256, uint256) {
         uint256 amountWithdrawn = shares.mulDown(_sharePrice);
         bool success = baseToken.transfer(destination, amountWithdrawn);

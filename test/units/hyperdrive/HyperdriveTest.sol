@@ -63,7 +63,7 @@ contract HyperdriveTest is Test {
         // Initialize the pool.
         baseToken.mint(contribution);
         baseToken.approve(address(hyperdrive), contribution);
-        hyperdrive.initialize(contribution, apr, lp);
+        hyperdrive.initialize(contribution, apr, lp, true);
     }
 
     function addLiquidity(
@@ -76,7 +76,7 @@ contract HyperdriveTest is Test {
         // Add liquidity to the pool.
         baseToken.mint(contribution);
         baseToken.approve(address(hyperdrive), contribution);
-        hyperdrive.addLiquidity(contribution, 0, lp);
+        hyperdrive.addLiquidity(contribution, 0, lp, true);
 
         return hyperdrive.balanceOf(AssetId._LP_ASSET_ID, lp);
     }
@@ -90,7 +90,7 @@ contract HyperdriveTest is Test {
 
         // Remove liquidity from the pool.
         uint256 baseBalanceBefore = baseToken.balanceOf(lp);
-        hyperdrive.removeLiquidity(shares, 0, lp);
+        hyperdrive.removeLiquidity(shares, 0, lp, true);
 
         return baseToken.balanceOf(lp) - baseBalanceBefore;
     }
@@ -110,7 +110,7 @@ contract HyperdriveTest is Test {
         );
         baseToken.mint(baseAmount);
         baseToken.approve(address(hyperdrive), baseAmount);
-        hyperdrive.openLong(baseAmount, 0, trader);
+        hyperdrive.openLong(baseAmount, 0, trader, true);
 
         uint256 bondBalanceAfter = hyperdrive.balanceOf(
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
@@ -129,7 +129,7 @@ contract HyperdriveTest is Test {
 
         // Close the long.
         uint256 baseBalanceBefore = baseToken.balanceOf(trader);
-        hyperdrive.closeLong(maturityTime, bondAmount, 0, trader);
+        hyperdrive.closeLong(maturityTime, bondAmount, 0, trader, true);
 
         uint256 baseBalanceAfter = baseToken.balanceOf(trader);
         return baseBalanceAfter.sub(baseBalanceBefore);
@@ -147,7 +147,7 @@ contract HyperdriveTest is Test {
         baseToken.mint(bondAmount);
         baseToken.approve(address(hyperdrive), bondAmount);
         uint256 baseBalanceBefore = baseToken.balanceOf(trader);
-        hyperdrive.openShort(bondAmount, bondAmount, trader);
+        hyperdrive.openShort(bondAmount, bondAmount, trader, true);
 
         baseAmount = baseBalanceBefore - baseToken.balanceOf(trader);
         baseToken.burn(bondAmount - baseAmount);
@@ -164,7 +164,7 @@ contract HyperdriveTest is Test {
 
         // Close the short
         uint256 baseBalanceBefore = baseToken.balanceOf(trader);
-        hyperdrive.closeShort(maturityTime, bondAmount, 0, trader);
+        hyperdrive.closeShort(maturityTime, bondAmount, 0, trader, true);
 
         return baseToken.balanceOf(trader) - baseBalanceBefore;
     }

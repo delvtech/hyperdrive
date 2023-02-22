@@ -21,7 +21,7 @@ contract AddLiquidityTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(Errors.ZeroAmount.selector);
-        hyperdrive.addLiquidity(0, 0, bob);
+        hyperdrive.addLiquidity(0, 0, bob, true);
     }
 
     function test_add_liquidity_identical_lp_shares() external {

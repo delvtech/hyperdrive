@@ -20,10 +20,14 @@ abstract contract HyperdriveLP is HyperdriveBase {
     /// @param _contribution The amount of base to supply.
     /// @param _apr The target APR.
     /// @param _destination The destination of the LP shares.
+    /// @param _asUnderlying If true the user is charged in underlying if false in 
+    ///                      the contract transfers in yield source directly.
+    ///                       Note - for some paths one choice may be disabled or blocked.
     function initialize(
         uint256 _contribution,
         uint256 _apr,
-        address _destination
+        address _destination,
+        bool _asUnderlying
     ) external {
         // Ensure that the pool hasn't been initialized yet.
         if (shareReserves > 0 || bondReserves > 0) {
@@ -31,7 +35,7 @@ abstract contract HyperdriveLP is HyperdriveBase {
         }
 
         // Deposit for the user, this transfers from them.
-        (uint256 shares, uint256 sharePrice) = deposit(_contribution);
+        (uint256 shares, uint256 sharePrice) = deposit(_contribution, _asUnderlying);
 
         // Create an initial checkpoint.
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
@@ -62,18 +66,22 @@ abstract contract HyperdriveLP is HyperdriveBase {
     /// @param _contribution The amount of base to supply.
     /// @param _minOutput The minimum number of LP tokens the user should receive
     /// @param _destination The address which will hold the LP shares
+    /// @param _asUnderlying If true the user is  in underlying if false in 
+    ///                      the contract transfers in yield source directly.
+    ///                       Note - for some paths one choice may be disabled or blocked.
     /// @return lpShares The number of LP tokens created
     function addLiquidity(
         uint256 _contribution,
         uint256 _minOutput,
-        address _destination
+        address _destination,
+        bool _asUnderlying
     ) external returns (uint256 lpShares) {
         if (_contribution == 0) {
             revert Errors.ZeroAmount();
         }
 
         // Deposit for the user, this call also transfers from them
-        (uint256 shares, uint256 sharePrice) = deposit(_contribution);
+        (uint256 shares, uint256 sharePrice) = deposit(_contribution, _asUnderlying);
 
         // Perform a checkpoint.
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
@@ -138,12 +146,16 @@ abstract contract HyperdriveLP is HyperdriveBase {
     ///                   The remainder is in short and long withdraw shares which are hard
     ///                   to game the value of.
     /// @param _destination The address which will receive the withdraw proceeds
+    /// @param _asUnderlying If true the user is payed in underlying if false in 
+    ///                      the contract transfers in yield source directly.
+    ///                       Note - for some paths one choice may be disabled or blocked.
     /// @return Returns the base out, the lond withdraw shares out and the short withdraw
     ///         shares out.
     function removeLiquidity(
         uint256 _shares,
         uint256 _minOutput,
-        address _destination
+        address _destination,
+        bool _asUnderlying
     ) external returns (uint256, uint256, uint256) {
         if (_shares == 0) {
             revert Errors.ZeroAmount();
@@ -214,7 +226,7 @@ abstract contract HyperdriveLP is HyperdriveBase {
         shortWithdrawalSharesOutstanding += shortWithdrawalShares;
 
         // Withdraw the shares from the yield source.
-        (uint256 baseOutput, ) = withdraw(shareProceeds, _destination);
+        (uint256 baseOutput, ) = withdraw(shareProceeds, _destination, _asUnderlying);
 
         // Enforce min user outputs
         if (_minOutput > baseOutput) revert Errors.OutputLimit();
@@ -227,12 +239,16 @@ abstract contract HyperdriveLP is HyperdriveBase {
     /// @param _shortWithdrawalShares The short withdrawal shares to redeem.
     /// @param _minOutput The minimum amount of base the LP expects to receive.
     /// @param _destination The address which receive the withdraw proceeds
+    /// @param _asUnderlying If true the user is payed in underlying if false in 
+    ///                      the contract transfers in yield source directly.
+    ///                       Note - for some paths one choice may be disabled or blocked.
     /// @return _proceeds The amount of base the LP received.
     function redeemWithdrawalShares(
         uint256 _longWithdrawalShares,
         uint256 _shortWithdrawalShares,
         uint256 _minOutput,
-        address _destination
+        address _destination,
+        bool _asUnderlying
     ) external returns (uint256 _proceeds) {
         uint256 baseProceeds = 0;
 
@@ -261,7 +277,7 @@ abstract contract HyperdriveLP is HyperdriveBase {
 
         // Withdraw the funds released by redeeming the withdrawal shares.
         uint256 shareProceeds = baseProceeds.divDown(sharePrice);
-        (_proceeds, ) = withdraw(shareProceeds, _destination);
+        (_proceeds, ) = withdraw(shareProceeds, _destination, _asUnderlying);
 
         // Enforce min user outputs
         if (_minOutput > _proceeds) revert Errors.OutputLimit();

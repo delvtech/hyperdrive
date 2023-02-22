@@ -25,7 +25,7 @@ contract CloseLongTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(Errors.ZeroAmount.selector);
-        hyperdrive.closeLong(maturityTime, 0, 0, bob);
+        hyperdrive.closeLong(maturityTime, 0, 0, bob, true);
     }
 
     function test_close_long_failure_invalid_amount() external {
@@ -43,7 +43,7 @@ contract CloseLongTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(stdError.arithmeticError);
-        hyperdrive.closeLong(maturityTime, bondAmount + 1, 0, bob);
+        hyperdrive.closeLong(maturityTime, bondAmount + 1, 0, bob, true);
     }
 
     function test_close_long_failure_invalid_timestamp() external {
@@ -61,7 +61,7 @@ contract CloseLongTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(Errors.InvalidTimestamp.selector);
-        hyperdrive.closeLong(uint256(type(uint248).max) + 1, 1, 0, bob);
+        hyperdrive.closeLong(uint256(type(uint248).max) + 1, 1, 0, bob, true);
     }
 
     function test_close_long_immediately() external {

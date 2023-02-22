@@ -20,11 +20,15 @@ abstract contract HyperdriveShort is HyperdriveBase {
     /// @param _bondAmount The amount of bonds to short.
     /// @param _maxDeposit The most the user expects to deposit for this trade
     /// @param _destination The address which gets credited with share tokens
+    /// @param _asUnderlying If true the user is charged in underlying if false in 
+    ///                      the contract transfers in yield source directly.
+    ///                       Note - for some paths one choice may be disabled or blocked.
     /// @return The amount the user deposited for this trade
     function openShort(
         uint256 _bondAmount,
         uint256 _maxDeposit,
-        address _destination
+        address _destination,
+        bool _asUnderlying
     ) external returns (uint256) {
         if (_bondAmount == 0) {
             revert Errors.ZeroAmount();
@@ -92,7 +96,7 @@ abstract contract HyperdriveShort is HyperdriveBase {
             userDeposit = (_bondAmount - baseProceeds) + owedInterest;
             // Enforce min user outputs
             if (_maxDeposit < userDeposit) revert Errors.OutputLimit();
-            deposit(userDeposit); // max_loss + interest
+            deposit(userDeposit, _asUnderlying); // max_loss + interest
         }
 
         // Update the average maturity time of long positions.
@@ -143,12 +147,16 @@ abstract contract HyperdriveShort is HyperdriveBase {
     /// @param _bondAmount The amount of shorts to close.
     /// @param _minOutput The minimum output of this trade.
     /// @param _destination The address which gets the proceeds from closing this short
+    /// @param _asUnderlying If true the user is payed in underlying if false in 
+    ///                      the contract transfers in yield source directly.
+    ///                       Note - for some paths one choice may be disabled or blocked.
     /// @return The amount of base tokens produced by closing this short
     function closeShort(
         uint256 _maturityTime,
         uint256 _bondAmount,
         uint256 _minOutput,
-        address _destination
+        address _destination,
+        bool _asUnderlying
     ) external returns (uint256) {
         if (_bondAmount == 0) {
             revert Errors.ZeroAmount();
@@ -222,7 +230,7 @@ abstract contract HyperdriveShort is HyperdriveBase {
         uint256 shortProceeds = closeSharePrice.mulDown(_bondAmount).divDown(
             sharePrice
         );
-        (uint256 baseProceeds, ) = withdraw(shortProceeds, _destination);
+        (uint256 baseProceeds, ) = withdraw(shortProceeds, _destination, _asUnderlying);
 
         // Enforce min user outputs
         if (baseProceeds < _minOutput) revert Errors.OutputLimit();
