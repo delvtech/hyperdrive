@@ -10,6 +10,7 @@ import "forge-std/console2.sol";
 
 contract HyperdriveMathTest is Test {
     using FixedPointMath for uint256;
+
     function setUp() public {}
 
     function test__calcSpotPrice() public {
@@ -86,134 +87,124 @@ contract HyperdriveMathTest is Test {
             1109.3438508425959e18
         );
         uint256 bondReserves = hyperdriveMath.calculateInitialBondReserves(
-            shareReserves, 
-            sharePrice, 
-            initialSharePrice, 
-            apr, 
-            positionDuration, 
+            shareReserves,
+            sharePrice,
+            initialSharePrice,
+            apr,
+            positionDuration,
             timeStretch
         );
         uint256 result = hyperdriveMath.calculateAPRFromReserves(
-            shareReserves, 
-            bondReserves, 
-            shareReserves.add(bondReserves), 
-            initialSharePrice, 
-            positionDuration, 
+            shareReserves,
+            bondReserves,
+            shareReserves.add(bondReserves),
+            initialSharePrice,
+            positionDuration,
             timeStretch
         );
         assertApproxEqAbs(result, apr, 20 wei);
 
         // Test 1% APR
         apr = 0.01 ether;
-        timeStretch = FixedPointMath.ONE_18.divDown(
-            110.93438508425959e18
-        );
+        timeStretch = FixedPointMath.ONE_18.divDown(110.93438508425959e18);
         bondReserves = hyperdriveMath.calculateInitialBondReserves(
-            shareReserves, 
-            sharePrice, 
-            initialSharePrice, 
-            apr, 
-            positionDuration, 
+            shareReserves,
+            sharePrice,
+            initialSharePrice,
+            apr,
+            positionDuration,
             timeStretch
         );
         result = hyperdriveMath.calculateAPRFromReserves(
-            shareReserves, 
-            bondReserves, 
-            shareReserves.add(bondReserves), 
-            initialSharePrice, 
-            positionDuration, 
+            shareReserves,
+            bondReserves,
+            shareReserves.add(bondReserves),
+            initialSharePrice,
+            positionDuration,
             timeStretch
         );
         assertApproxEqAbs(result, apr, 1 wei);
 
         // Test 5% APR
         apr = 0.05 ether;
-        timeStretch = FixedPointMath.ONE_18.divDown(
-            22.186877016851916266e18
-        );
+        timeStretch = FixedPointMath.ONE_18.divDown(22.186877016851916266e18);
         bondReserves = hyperdriveMath.calculateInitialBondReserves(
-            shareReserves, 
-            sharePrice, 
-            initialSharePrice, 
-            apr, 
-            positionDuration, 
+            shareReserves,
+            sharePrice,
+            initialSharePrice,
+            apr,
+            positionDuration,
             timeStretch
         );
         result = hyperdriveMath.calculateAPRFromReserves(
-            shareReserves, 
-            bondReserves, 
-            shareReserves.add(bondReserves), 
-            initialSharePrice, 
-            positionDuration, 
+            shareReserves,
+            bondReserves,
+            shareReserves.add(bondReserves),
+            initialSharePrice,
+            positionDuration,
             timeStretch
         );
         assertApproxEqAbs(result, apr, 1 wei);
 
         // Test 25% APR
         apr = 0.25 ether;
-        timeStretch = FixedPointMath.ONE_18.divDown(
-            4.437375403370384e18
-        );
+        timeStretch = FixedPointMath.ONE_18.divDown(4.437375403370384e18);
         bondReserves = hyperdriveMath.calculateInitialBondReserves(
-            shareReserves, 
-            sharePrice, 
-            initialSharePrice, 
-            apr, 
-            positionDuration, 
+            shareReserves,
+            sharePrice,
+            initialSharePrice,
+            apr,
+            positionDuration,
             timeStretch
         );
         result = hyperdriveMath.calculateAPRFromReserves(
-            shareReserves, 
-            bondReserves, 
-            shareReserves.add(bondReserves), 
-            initialSharePrice, 
-            positionDuration, 
+            shareReserves,
+            bondReserves,
+            shareReserves.add(bondReserves),
+            initialSharePrice,
+            positionDuration,
             timeStretch
         );
         assertApproxEqAbs(result, apr, 0 wei);
 
         // Test 50% APR
         apr = 0.50 ether;
-        timeStretch = FixedPointMath.ONE_18.divDown(
-            2.218687701685192e18
-        );
+        timeStretch = FixedPointMath.ONE_18.divDown(2.218687701685192e18);
         bondReserves = hyperdriveMath.calculateInitialBondReserves(
-            shareReserves, 
-            sharePrice, 
-            initialSharePrice, 
-            apr, 
-            positionDuration, 
+            shareReserves,
+            sharePrice,
+            initialSharePrice,
+            apr,
+            positionDuration,
             timeStretch
         );
         result = hyperdriveMath.calculateAPRFromReserves(
-            shareReserves, 
-            bondReserves, 
-            shareReserves.add(bondReserves), 
-            initialSharePrice, 
-            positionDuration, 
+            shareReserves,
+            bondReserves,
+            shareReserves.add(bondReserves),
+            initialSharePrice,
+            positionDuration,
             timeStretch
         );
         assertApproxEqAbs(result, apr, 1 wei);
 
         // Test 100% APR
         apr = 1 ether;
-        timeStretch = FixedPointMath.ONE_18.divDown(
-            1.109343850842596e18
-        );
+        timeStretch = FixedPointMath.ONE_18.divDown(1.109343850842596e18);
         bondReserves = hyperdriveMath.calculateInitialBondReserves(
-            shareReserves, 
-            sharePrice, 
-            initialSharePrice, 
-            apr, 
-            positionDuration, 
+            shareReserves,
+            sharePrice,
+            initialSharePrice,
+            apr,
+            positionDuration,
             timeStretch
         );
         result = hyperdriveMath.calculateAPRFromReserves(
-            shareReserves, 
-            bondReserves, 
-            shareReserves.add(bondReserves), 
-            initialSharePrice, 
-            positionDuration, 
+            shareReserves,
+            bondReserves,
+            shareReserves.add(bondReserves),
+            initialSharePrice,
+            positionDuration,
             timeStretch
         );
         assertApproxEqAbs(result, apr, 4 wei);
@@ -223,9 +214,7 @@ contract HyperdriveMathTest is Test {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
 
-        //////////////////////////////////////////////////////////////
         // Test .1% APR with 5% drift in total supply
-        //////////////////////////////////////////////////////////////
         uint256 shareReserves = 500_000_000 ether;
         uint256 bondReserves = 507_671_918.147567987442016602 ether;
         uint256 totalSupply = shareReserves.add(bondReserves).mulDown(.95e18);
@@ -237,151 +226,163 @@ contract HyperdriveMathTest is Test {
         );
 
         uint256 newBondReserves = hyperdriveMath.calculateBondReserves(
-            shareReserves, 
+            shareReserves,
             shareReserves.add(bondReserves).mulDown(.95e18),
-            initialSharePrice, 
-            apr, 
-            positionDuration, 
+            initialSharePrice,
+            apr,
+            positionDuration,
             timeStretch
         );
 
         uint256 result = hyperdriveMath.calculateAPRFromReserves(
-            shareReserves, 
-            newBondReserves, 
-            totalSupply, 
-            initialSharePrice, 
-            positionDuration, 
+            shareReserves,
+            newBondReserves,
+            totalSupply,
+            initialSharePrice,
+            positionDuration,
             timeStretch
         );
         assertApproxEqAbs(result, apr, 1 wei);
 
-        //////////////////////////////////////////////////////////////
         // Test .5% APR with 5% drift in total supply
-        //////////////////////////////////////////////////////////////
         shareReserves = 500_000_000 ether;
         bondReserves = 505_999_427.633650124073028564 ether;
         totalSupply = shareReserves.add(bondReserves).mulDown(.95e18);
         initialSharePrice = 1 ether;
         apr = 0.005 ether;
         positionDuration = 365 days;
-        timeStretch = FixedPointMath.ONE_18.divDown(
-            221.86877016851918e18
-        );
+        timeStretch = FixedPointMath.ONE_18.divDown(221.86877016851918e18);
 
         newBondReserves = hyperdriveMath.calculateBondReserves(
-            shareReserves, 
+            shareReserves,
             shareReserves.add(bondReserves).mulDown(.95e18),
-            initialSharePrice, 
-            apr, 
-            positionDuration, 
+            initialSharePrice,
+            apr,
+            positionDuration,
             timeStretch
         );
 
         result = hyperdriveMath.calculateAPRFromReserves(
-            shareReserves, 
-            newBondReserves, 
-            totalSupply, 
-            initialSharePrice, 
-            positionDuration, 
+            shareReserves,
+            newBondReserves,
+            totalSupply,
+            initialSharePrice,
+            positionDuration,
             timeStretch
         );
         assertApproxEqAbs(result, apr, 0);
 
-        //////////////////////////////////////////////////////////////
         // Test 1% APR with 5% drift in total supply
-        //////////////////////////////////////////////////////////////
         shareReserves = 500_000_000 ether;
         bondReserves = 503_926_401.456553339958190918 ether;
         totalSupply = shareReserves.add(bondReserves).mulDown(.95e18);
         initialSharePrice = 1 ether;
         apr = .01 ether;
         positionDuration = 365 days;
-        timeStretch = FixedPointMath.ONE_18.divDown(
-            110.93438508425959e18
-        );
+        timeStretch = FixedPointMath.ONE_18.divDown(110.93438508425959e18);
 
         newBondReserves = hyperdriveMath.calculateBondReserves(
-            shareReserves, 
+            shareReserves,
             shareReserves.add(bondReserves).mulDown(.95e18),
-            initialSharePrice, 
-            apr, 
-            positionDuration, 
+            initialSharePrice,
+            apr,
+            positionDuration,
             timeStretch
         );
 
         result = hyperdriveMath.calculateAPRFromReserves(
-            shareReserves, 
-            newBondReserves, 
-            totalSupply, 
-            initialSharePrice, 
-            positionDuration, 
+            shareReserves,
+            newBondReserves,
+            totalSupply,
+            initialSharePrice,
+            positionDuration,
             timeStretch
         );
         assertApproxEqAbs(result, apr, 0);
 
-        //////////////////////////////////////////////////////////////
         // Test 10% APR with 5% drift in total supply
-        //////////////////////////////////////////////////////////////
         shareReserves = 500_000_000 ether;
         bondReserves = 469_659_754.230894804000854492 ether;
         totalSupply = shareReserves.add(bondReserves).mulDown(.95e18);
         initialSharePrice = 1 ether;
         apr = .1 ether;
         positionDuration = 365 days;
-        timeStretch = FixedPointMath.ONE_18.divDown(
-            11.093438508425958e18
-        );
+        timeStretch = FixedPointMath.ONE_18.divDown(11.093438508425958e18);
 
         newBondReserves = hyperdriveMath.calculateBondReserves(
-            shareReserves, 
+            shareReserves,
             shareReserves.add(bondReserves).mulDown(.95e18),
-            initialSharePrice, 
-            apr, 
-            positionDuration, 
+            initialSharePrice,
+            apr,
+            positionDuration,
             timeStretch
         );
 
         result = hyperdriveMath.calculateAPRFromReserves(
-            shareReserves, 
-            newBondReserves, 
-            totalSupply, 
-            initialSharePrice, 
-            positionDuration, 
+            shareReserves,
+            newBondReserves,
+            totalSupply,
+            initialSharePrice,
+            positionDuration,
             timeStretch
         );
         assertApproxEqAbs(result, apr, 1 wei);
 
-        //////////////////////////////////////////////////////////////
         // Test 50% APR with 5% drift in total supply
-        //////////////////////////////////////////////////////////////
         shareReserves = 500_000_000 ether;
         bondReserves = 364_655_142.534339368343353271 ether;
         totalSupply = shareReserves.add(bondReserves).mulDown(.95e18);
         initialSharePrice = 1 ether;
         apr = .5 ether;
         positionDuration = 365 days;
-        timeStretch = FixedPointMath.ONE_18.divDown(
-            2.218687701685192e18
-        );
+        timeStretch = FixedPointMath.ONE_18.divDown(2.218687701685192e18);
 
         newBondReserves = hyperdriveMath.calculateBondReserves(
-            shareReserves, 
+            shareReserves,
             totalSupply,
-            initialSharePrice, 
-            apr, 
-            positionDuration, 
+            initialSharePrice,
+            apr,
+            positionDuration,
             timeStretch
         );
 
         result = hyperdriveMath.calculateAPRFromReserves(
-            shareReserves, 
-            newBondReserves, 
-            totalSupply, 
-            initialSharePrice, 
-            positionDuration, 
+            shareReserves,
+            newBondReserves,
+            totalSupply,
+            initialSharePrice,
+            positionDuration,
             timeStretch
         );
         assertApproxEqAbs(result, apr, 1 wei);
+
+        // Test 100% APR with 5% drift in total supply
+        shareReserves = 500_000_000 ether;
+        bondReserves = 289_368_753.268716454505920410 ether;
+        totalSupply = shareReserves.add(bondReserves).mulDown(.95e18);
+        initialSharePrice = 1 ether;
+        apr = 1 ether;
+        positionDuration = 365 days;
+        timeStretch = FixedPointMath.ONE_18.divDown(1.109343850842596e18);
+
+        newBondReserves = hyperdriveMath.calculateBondReserves(
+            shareReserves,
+            totalSupply,
+            initialSharePrice,
+            apr,
+            positionDuration,
+            timeStretch
+        );
+
+        result = hyperdriveMath.calculateAPRFromReserves(
+            shareReserves,
+            newBondReserves,
+            totalSupply,
+            initialSharePrice,
+            positionDuration,
+            timeStretch
+        );
+        assertApproxEqAbs(result, apr, 0 wei);
     }
 
     function test__calcFeesInGivenOut() public {
