@@ -151,21 +151,27 @@ abstract contract HyperdriveBase is MultiToken {
 
     /// @notice Transfers base from the user and commits it to the yield source.
     /// @param amount The amount of base to deposit.
+    /// @param asUnderlying If true the yield source will transfer underlying tokens
+    ///                     if false it will transfer the yielding asset directly
     /// @return sharesMinted The shares this deposit creates.
     /// @return sharePrice The share price at time of deposit.
     function deposit(
-        uint256 amount
+        uint256 amount, 
+        bool asUnderlying
     ) internal virtual returns (uint256 sharesMinted, uint256 sharePrice);
 
     /// @notice Withdraws shares from the yield source and sends the base
     ///         released to the destination.
     /// @param shares The shares to withdraw from the yieldsource.
     /// @param destination The recipient of the withdrawal.
+    /// @param asUnderlying If true the yield source will transfer underlying tokens
+    ///                     if false it will transfer the yielding asset directly
     /// @return amountWithdrawn The amount of base released by the withdrawal.
     /// @return sharePrice The share price on withdraw.
     function withdraw(
         uint256 shares,
-        address destination
+        address destination,
+        bool asUnderlying
     ) internal virtual returns (uint256 amountWithdrawn, uint256 sharePrice);
 
     ///@notice Loads the share price from the yield source
