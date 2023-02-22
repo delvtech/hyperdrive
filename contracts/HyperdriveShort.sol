@@ -188,7 +188,7 @@ abstract contract HyperdriveShort is HyperdriveBase {
                 curveFee,
                 flatFee
             );
-
+        
         // If the position hasn't matured, apply the accounting updates that
         // result from closing the short to the reserves and pay out the
         // withdrawal pool if necessary.
@@ -224,11 +224,13 @@ abstract contract HyperdriveShort is HyperdriveBase {
         // If variable interest rates are more negative than the short capital
         // deposited by the user then the user position is set to zero instead
         // of locking
-        uint256 userSharesAtOpen = _bondAmount.divDown(openSharePrice);
-        if (userSharesAtOpen > sharePayment) {
-            _bondAmount = userSharesAtOpen.sub(sharePayment);
-        } else {
-            bondAmount = 0;
+        {
+            uint256 userSharesAtOpen = _bondAmount.divDown(openSharePrice);
+            if (userSharesAtOpen > sharePayment) {
+                _bondAmount = userSharesAtOpen.sub(sharePayment);
+            } else {
+                _bondAmount = 0;
+            }
         }
         uint256 shortProceeds = closeSharePrice.mulDown(_bondAmount).divDown(
             sharePrice

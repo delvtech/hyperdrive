@@ -6,6 +6,7 @@ import { AssetId } from "contracts/libraries/AssetId.sol";
 import { Errors } from "contracts/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/libraries/HyperdriveMath.sol";
+import "forge-std/console.sol";
 
 /// @author Delve
 /// @title HyperdriveLong
@@ -136,7 +137,7 @@ abstract contract HyperdriveLong is HyperdriveBase {
         // Perform a checkpoint at the maturity time, this ensures the bond is closed
         // and closes all other possible positions in that checkpoint
         uint256 sharePrice = pricePerShare();
-        _applyCheckpoint(_latestCheckpoint(), _maturityTime);
+        _applyCheckpoint(_maturityTime, sharePrice);
 
         {
             // Burn the longs that are being closed.
