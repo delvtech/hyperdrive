@@ -20,9 +20,9 @@ abstract contract HyperdriveLP is HyperdriveBase {
     /// @param _contribution The amount of base to supply.
     /// @param _apr The target APR.
     /// @param _destination The destination of the LP shares.
-    /// @param _asUnderlying If true the user is charged in underlying if false in
+    /// @param _asUnderlying If true the user is charged in underlying if false
     ///                      the contract transfers in yield source directly.
-    ///                       Note - for some paths one choice may be disabled or blocked.
+    ///                      Note - for some paths one choice may be disabled or blocked.
     function initialize(
         uint256 _contribution,
         uint256 _apr,
@@ -69,9 +69,9 @@ abstract contract HyperdriveLP is HyperdriveBase {
     /// @param _contribution The amount of base to supply.
     /// @param _minOutput The minimum number of LP tokens the user should receive
     /// @param _destination The address which will hold the LP shares
-    /// @param _asUnderlying If true the user is  in underlying if false in
+    /// @param _asUnderlying If true the user is charged in underlying if false
     ///                      the contract transfers in yield source directly.
-    ///                       Note - for some paths one choice may be disabled or blocked.
+    ///                      Note - for some paths one choice may be disabled or blocked.
     /// @return lpShares The number of LP tokens created
     function addLiquidity(
         uint256 _contribution,
@@ -147,14 +147,14 @@ abstract contract HyperdriveLP is HyperdriveBase {
 
     /// @notice Allows an LP to burn shares and withdraw from the pool.
     /// @param _shares The LP shares to burn.
-    /// @param _minOutput The minium amount of the base token to receive. Note - this
+    /// @param _minOutput The minium amount of the base token to receive.Note - this
     ///                   value is likely to be less than the amount LP shares are worth.
     ///                   The remainder is in short and long withdraw shares which are hard
     ///                   to game the value of.
     /// @param _destination The address which will receive the withdraw proceeds
-    /// @param _asUnderlying If true the user is payed in underlying if false in
+    /// @param _asUnderlying If true the user is payed in underlying if false
     ///                      the contract transfers in yield source directly.
-    ///                       Note - for some paths one choice may be disabled or blocked.
+    ///                      Note - for some paths one choice may be disabled or blocked.
     /// @return Returns the base out, the lond withdraw shares out and the short withdraw
     ///         shares out.
     function removeLiquidity(
@@ -249,9 +249,9 @@ abstract contract HyperdriveLP is HyperdriveBase {
     /// @param _shortWithdrawalShares The short withdrawal shares to redeem.
     /// @param _minOutput The minimum amount of base the LP expects to receive.
     /// @param _destination The address which receive the withdraw proceeds
-    /// @param _asUnderlying If true the user is payed in underlying if false in
+    /// @param _asUnderlying If true the user is payed in underlying if false
     ///                      the contract transfers in yield source directly.
-    ///                       Note - for some paths one choice may be disabled or blocked.
+    ///                      Note - for some paths one choice may be disabled or blocked.
     /// @return _proceeds The amount of base the LP received.
     function redeemWithdrawalShares(
         uint256 _longWithdrawalShares,

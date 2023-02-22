@@ -20,9 +20,9 @@ abstract contract HyperdriveShort is HyperdriveBase {
     /// @param _bondAmount The amount of bonds to short.
     /// @param _maxDeposit The most the user expects to deposit for this trade
     /// @param _destination The address which gets credited with share tokens
-    /// @param _asUnderlying If true the user is charged in underlying if false in
+    /// @param _asUnderlying If true the user is charged in underlying if false
     ///                      the contract transfers in yield source directly.
-    ///                       Note - for some paths one choice may be disabled or blocked.
+    ///                      Note - for some paths one choice may be disabled or blocked.
     /// @return The amount the user deposited for this trade
     function openShort(
         uint256 _bondAmount,
@@ -147,9 +147,9 @@ abstract contract HyperdriveShort is HyperdriveBase {
     /// @param _bondAmount The amount of shorts to close.
     /// @param _minOutput The minimum output of this trade.
     /// @param _destination The address which gets the proceeds from closing this short
-    /// @param _asUnderlying If true the user is payed in underlying if false in
+    /// @param _asUnderlying If true the user is payed in underlying if false
     ///                      the contract transfers in yield source directly.
-    ///                       Note - for some paths one choice may be disabled or blocked.
+    ///                      Note - for some paths one choice may be disabled or blocked.
     /// @return The amount of base tokens produced by closing this short
     function closeShort(
         uint256 _maturityTime,
