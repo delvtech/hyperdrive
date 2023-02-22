@@ -5,7 +5,7 @@ import { stdError } from "forge-std/StdError.sol";
 import { AssetId } from "contracts/libraries/AssetId.sol";
 import { Errors } from "contracts/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
-import { HyperdriveTest } from "./HyperdriveTest.sol";
+import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 
 contract CloseLongTest is HyperdriveTest {
     using FixedPointMath for uint256;
@@ -112,6 +112,46 @@ contract CloseLongTest is HyperdriveTest {
         verifyCloseLong(poolInfoBefore, baseProceeds, bondAmount, maturityTime);
     }
 
+    function test_close_long_halfway_through_term() external {
+        // Initialize the market.
+        uint apr = 0.05e18;
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Bob opens a large long.
+        uint256 basePaid = 10e18;
+        (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
+
+        // Most of the term passes. The pool accrues interest at the current apr.
+        uint256 timeDelta = 0.5e18;
+        vm.warp(block.timestamp + POSITION_DURATION.mulDown(timeDelta));
+        hyperdrive.setSharePrice(
+            getPoolInfo().sharePrice.mulDown(
+                FixedPointMath.ONE_18 + apr.mulDown(timeDelta)
+            )
+        );
+
+        // Get the reserves before closing the long.
+        PoolInfo memory poolInfoBefore = getPoolInfo();
+
+        // Bob closes his long close to maturity.
+        uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
+
+        // Ensure that the realized APR is approximately equal to the pool APR.
+        assertApproxEqAbs(
+            calculateAPRFromRealizedPrice(
+                basePaid,
+                baseProceeds,
+                FixedPointMath.ONE_18 - timeDelta
+            ),
+            apr,
+            1e10
+        );
+
+        // Verify that the close long updates were correct.
+        verifyCloseLong(poolInfoBefore, baseProceeds, bondAmount, maturityTime);
+    }
+
     function test_close_long_redeem() external {
         uint256 apr = 0.05e18;
 
@@ -126,8 +166,14 @@ contract CloseLongTest is HyperdriveTest {
         // Get the reserves before closing the long.
         PoolInfo memory poolInfoBefore = getPoolInfo();
 
-        // The term passes.
-        vm.warp(block.timestamp + POSITION_DURATION);
+        // Term passes. The pool accrues interest at the current apr.
+        uint256 timeDelta = 1e18;
+        vm.warp(block.timestamp + POSITION_DURATION.mulDown(timeDelta));
+        hyperdrive.setSharePrice(
+            getPoolInfo().sharePrice.mulDown(
+                FixedPointMath.ONE_18 + apr.mulDown(timeDelta)
+            )
+        );
 
         // Redeem the bonds
         uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
@@ -166,10 +212,11 @@ contract CloseLongTest is HyperdriveTest {
         );
 
         // Verify that the other states were correct.
-        assertEq(
+        assertApproxEqAbs(
             poolInfoAfter.shareReserves,
             poolInfoBefore.shareReserves -
-                baseProceeds.divDown(poolInfoBefore.sharePrice)
+                baseProceeds.divDown(poolInfoBefore.sharePrice),
+            1
         );
         assertEq(poolInfoAfter.lpTotalSupply, poolInfoBefore.lpTotalSupply);
         assertEq(poolInfoAfter.sharePrice, poolInfoBefore.sharePrice);

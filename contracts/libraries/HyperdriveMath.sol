@@ -208,9 +208,7 @@ library HyperdriveMath {
             // the trade was applied to the share and bond reserves.
             _shareReserves = _shareReserves.sub(flat);
             _bondReserves = _bondReserves.add(flat.mulDown(_sharePrice));
-            uint256 curveIn = _amountIn
-                .mulDown(_normalizedTimeRemaining)
-                .divDown(_sharePrice);
+            uint256 curveIn = _amountIn.mulDown(_normalizedTimeRemaining);
             // (time remaining)/(term length) is always 1 so we just use _timeStretch
             uint256 curveOut = YieldSpaceMath.calculateSharesOutGivenBondsIn(
                 _shareReserves,
