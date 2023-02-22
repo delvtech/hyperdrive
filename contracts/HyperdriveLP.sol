@@ -260,7 +260,6 @@ abstract contract HyperdriveLP is HyperdriveBase {
         address _destination,
         bool _asUnderlying
     ) external returns (uint256 _proceeds) {
-
         // Perform a checkpoint.
         uint256 sharePrice = pricePerShare();
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
