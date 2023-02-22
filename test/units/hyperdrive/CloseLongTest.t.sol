@@ -163,9 +163,6 @@ contract CloseLongTest is HyperdriveTest {
         uint256 basePaid = 10e18;
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
 
-        // Get the reserves before closing the long.
-        PoolInfo memory poolInfoBefore = getPoolInfo();
-
         // Term passes. The pool accrues interest at the current apr.
         uint256 timeDelta = 1e18;
         vm.warp(block.timestamp + POSITION_DURATION.mulDown(timeDelta));
@@ -175,11 +172,14 @@ contract CloseLongTest is HyperdriveTest {
             )
         );
 
+        // Get the reserves before closing the long.
+        PoolInfo memory poolInfoBefore = getPoolInfo();
+
         // Redeem the bonds
         uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
 
         // Verify that Bob received base equal to the full bond amount.
-        assertEq(baseProceeds, bondAmount);
+        assertApproxEqAbs(baseProceeds, bondAmount, 1);
 
         // Verify that the close long updates were correct.
         verifyCloseLong(poolInfoBefore, baseProceeds, bondAmount, maturityTime);

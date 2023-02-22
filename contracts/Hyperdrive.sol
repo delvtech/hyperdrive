@@ -131,7 +131,7 @@ abstract contract Hyperdrive is
             _applyCloseLong(
                 maturedLongsAmount,
                 0,
-                maturedLongsAmount,
+                maturedLongsAmount.divDown(_sharePrice),
                 _sharePrice,
                 _checkpointTime
             );
@@ -145,7 +145,7 @@ abstract contract Hyperdrive is
             _applyCloseShort(
                 maturedShortsAmount,
                 0,
-                maturedShortsAmount,
+                maturedShortsAmount.divDown(_sharePrice),
                 _sharePrice,
                 _checkpointTime
             );

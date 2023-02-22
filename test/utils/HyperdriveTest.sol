@@ -242,18 +242,6 @@ contract HyperdriveTest is Test {
             );
     }
 
-    function calculateProceedsFromAPR(
-        uint256 apr,
-        uint256 bondAmount,
-        uint256 timeRemaining
-    ) internal pure returns (uint256) {
-        // proceeds = dy / (1 + apr * t)
-        return
-            bondAmount.divDown(
-                FixedPointMath.ONE_18 + apr.mulDown(timeRemaining)
-            );
-    }
-
     function calculateTimeRemaining(
         uint256 _maturityTime
     ) internal view returns (uint256 timeRemaining) {
