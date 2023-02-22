@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 
 import { Errors } from "contracts/libraries/Errors.sol";
-import { HyperdriveTest } from "./HyperdriveTest.sol";
+import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 
 contract CheckpointTest is HyperdriveTest {
     function test_checkpoint_failure_future_checkpoint() external {
