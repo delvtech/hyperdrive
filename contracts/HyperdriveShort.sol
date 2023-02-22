@@ -188,7 +188,7 @@ abstract contract HyperdriveShort is HyperdriveBase {
                 curveFee,
                 flatFee
             );
-        
+
         // If the position hasn't matured, apply the accounting updates that
         // result from closing the short to the reserves and pay out the
         // withdrawal pool if necessary.
@@ -337,7 +337,9 @@ abstract contract HyperdriveShort is HyperdriveBase {
                 _bondAmount
                 ? shortWithdrawalSharesOutstanding
                 : _bondAmount;
-            uint256 withdrawalProceeds = _sharePayment.mulDown(withdrawalAmount.divDown(_bondAmount));
+            uint256 withdrawalProceeds = _sharePayment.mulDown(
+                withdrawalAmount.divDown(_bondAmount)
+            );
             shortWithdrawalSharesOutstanding -= withdrawalAmount;
             shortWithdrawalShareProceeds += withdrawalProceeds;
 

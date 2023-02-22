@@ -186,7 +186,7 @@ abstract contract HyperdriveLong is HyperdriveBase {
 
         // If the position hasn't matured, apply the accounting updates that
         // result from closing the long to the reserves and pay out the
-        // withdrawal pool if necessary. 
+        // withdrawal pool if necessary.
         if (block.timestamp < _maturityTime) {
             _applyCloseLong(
                 _bondAmount,
@@ -195,7 +195,7 @@ abstract contract HyperdriveLong is HyperdriveBase {
                 sharePrice,
                 _maturityTime
             );
-        } 
+        }
 
         // Withdraw the profit to the trader.
         (uint256 baseProceeds, ) = withdraw(
@@ -362,13 +362,15 @@ abstract contract HyperdriveLong is HyperdriveBase {
                 _bondAmount
                 ? longWithdrawalSharesOutstanding
                 : _bondAmount;
-        
+
             uint256 withdrawalProceeds;
             // We check if the interest rate was negative
             if (_sharePrice > openSharePrice) {
                 // If not we do the normal calculation
-                withdrawalProceeds = 
-                    _bondAmount.divDown(openSharePrice).sub(_shareProceeds).mulDown(withdrawalAmount.divDown(_bondAmount));
+                withdrawalProceeds = _bondAmount
+                    .divDown(openSharePrice)
+                    .sub(_shareProceeds)
+                    .mulDown(withdrawalAmount.divDown(_bondAmount));
             } else {
                 // If there's negative interest the LP's position is fully wiped out and has zero value.
                 withdrawalProceeds = 0;
