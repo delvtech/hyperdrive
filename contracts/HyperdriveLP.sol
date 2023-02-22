@@ -260,7 +260,6 @@ abstract contract HyperdriveLP is HyperdriveBase {
         address _destination,
         bool _asUnderlying
     ) external returns (uint256 _proceeds) {
-        uint256 baseProceeds = 0;
 
         // Perform a checkpoint.
         uint256 sharePrice = pricePerShare();
@@ -286,7 +285,7 @@ abstract contract HyperdriveLP is HyperdriveBase {
         );
 
         // Withdraw the funds released by redeeming the withdrawal shares.
-        uint256 shareProceeds = baseProceeds.divDown(sharePrice);
+        uint256 shareProceeds = proceeds.divDown(sharePrice);
         (_proceeds, ) = withdraw(shareProceeds, _destination, _asUnderlying);
 
         // Enforce min user outputs
