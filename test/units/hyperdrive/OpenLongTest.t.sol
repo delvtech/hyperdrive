@@ -22,7 +22,7 @@ contract OpenLongTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(Errors.ZeroAmount.selector);
-        hyperdrive.openLong(0, 0, bob);
+        hyperdrive.openLong(0, 0, bob, true);
     }
 
     function test_open_long_failure_extreme_amount() external {
@@ -39,7 +39,7 @@ contract OpenLongTest is HyperdriveTest {
         baseToken.mint(baseAmount);
         baseToken.approve(address(hyperdrive), baseAmount);
         vm.expectRevert(stdError.arithmeticError);
-        hyperdrive.openLong(baseAmount, 0, bob);
+        hyperdrive.openLong(baseAmount, 0, bob, true);
     }
 
     function test_open_long() external {

@@ -20,7 +20,7 @@ contract OpenShortTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(Errors.ZeroAmount.selector);
-        hyperdrive.openShort(0, type(uint256).max, bob);
+        hyperdrive.openShort(0, type(uint256).max, bob, true);
     }
 
     function test_open_short_failure_extreme_amount() external {
@@ -37,7 +37,7 @@ contract OpenShortTest is HyperdriveTest {
         baseToken.mint(baseAmount);
         baseToken.approve(address(hyperdrive), baseAmount);
         vm.expectRevert(Errors.FixedPointMath_SubOverflow.selector);
-        hyperdrive.openShort(baseAmount * 2, type(uint256).max, bob);
+        hyperdrive.openShort(baseAmount * 2, type(uint256).max, bob, true);
     }
 
     function test_open_short() external {

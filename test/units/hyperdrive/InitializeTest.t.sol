@@ -23,7 +23,7 @@ contract InitializeTest is HyperdriveTest {
         baseToken.mint(contribution);
         baseToken.approve(address(hyperdrive), contribution);
         vm.expectRevert(Errors.PoolAlreadyInitialized.selector);
-        hyperdrive.initialize(contribution, apr, bob);
+        hyperdrive.initialize(contribution, apr, bob, true);
     }
 
     // TODO: This should ultimately be a fuzz test that fuzzes over the initial

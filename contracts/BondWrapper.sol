@@ -94,7 +94,8 @@ contract BondWrapper is ERC20Permit {
                 maturityTime,
                 amount,
                 0,
-                address(this)
+                address(this),
+                true
             );
             // Update the user account data, note this sub is safe because the top bits are zero.
             deposits[msg.sender][assetId] -= amount;
@@ -139,7 +140,13 @@ contract BondWrapper is ERC20Permit {
         uint256 balance = hyperdrive.balanceOf(assetId, address(this));
         // Only close if we have something to close
         if (balance != 0) {
-            hyperdrive.closeLong(maturityTime, balance, balance, address(this));
+            hyperdrive.closeLong(
+                maturityTime,
+                balance,
+                balance,
+                address(this),
+                true
+            );
         }
     }
 

@@ -66,25 +66,33 @@ contract AaveYieldSource is Hyperdrive {
 
     ///@notice Transfers amount of 'token' from the user and commits it to the yield source.
     ///@param amount The amount of token to transfer
+    /// @param asUnderlying If true the yield source will transfer underlying tokens
+    ///                     if false it will transfer the yielding asset directly
     ///@return sharesMinted The shares this deposit creates
     ///@return sharePrice The share price at time of deposit
     function deposit(
-        uint256 amount
+        uint256 amount,
+        bool asUnderlying
     ) internal override returns (uint256 sharesMinted, uint256 sharePrice) {
-        // Transfer from user
-        bool success = baseToken.transferFrom(
-            msg.sender,
-            address(this),
-            amount
-        );
-        if (!success) {
-            revert Errors.TransferFailed();
-        }
-
         // Load the balance of this pool
         uint256 assets = aToken.balanceOf(address(this));
-        // Supply for the user
-        pool.supply(address(baseToken), amount, address(this), 0);
+
+        if (asUnderlying) {
+            // Transfer from user
+            bool success = baseToken.transferFrom(
+                msg.sender,
+                address(this),
+                amount
+            );
+            if (!success) {
+                revert Errors.TransferFailed();
+            }
+            // Supply for the user
+            pool.supply(address(baseToken), amount, address(this), 0);
+        } else {
+            // aTokens are known to be revert on failed transfer tokens
+            aToken.transferFrom(msg.sender, address(this), amount);
+        }
 
         // Do share calculations
         if (totalShares == 0) {
@@ -99,19 +107,33 @@ contract AaveYieldSource is Hyperdrive {
 
     ///@notice Withdraws shares from the yield source and sends the resulting tokens to the destination
     ///@param shares The shares to withdraw from the yieldsource
+    /// @param asUnderlying If true the yield source will transfer underlying tokens
+    ///                     if false it will transfer the yielding asset directly
     ///@param destination The address which is where to send the resulting tokens
     ///@return amountWithdrawn the amount of 'token' produced by this withdraw
     ///@return sharePrice The share price on withdraw.
     function withdraw(
         uint256 shares,
-        address destination
+        address destination,
+        bool asUnderlying
     ) internal override returns (uint256 amountWithdrawn, uint256 sharePrice) {
         // Load the balance of this contract
         uint256 assets = aToken.balanceOf(address(this));
         // The withdraw is the percent of shares the user has times the total assets
         uint256 withdrawValue = assets.mulDown(shares.divDown(totalShares));
-        // Now we call aave to fulfill this for the user
-        pool.withdraw(address(baseToken), withdrawValue, destination);
+
+        // If the user wants underlying we withdraw for them otherwise send the base
+        if (asUnderlying) {
+            // Now we call aave to fulfill this withdraw for the user
+            pool.withdraw(address(baseToken), withdrawValue, destination);
+        } else {
+            // Otherwise we simply transfer to them
+            aToken.transfer(destination, withdrawValue);
+        }
+
+        // Remove the shares from the total share supply
+        totalShares -= shares;
+
         // Return the amount and implied share price
         return (withdrawValue, shares.divDown(withdrawValue));
     }
