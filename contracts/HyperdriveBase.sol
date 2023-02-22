@@ -156,7 +156,7 @@ abstract contract HyperdriveBase is MultiToken {
     /// @return sharesMinted The shares this deposit creates.
     /// @return sharePrice The share price at time of deposit.
     function deposit(
-        uint256 amount, 
+        uint256 amount,
         bool asUnderlying
     ) internal virtual returns (uint256 sharesMinted, uint256 sharePrice);
 

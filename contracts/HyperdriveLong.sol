@@ -20,7 +20,7 @@ abstract contract HyperdriveLong is HyperdriveBase {
     /// @param _baseAmount The amount of base to use when trading.
     /// @param _minOutput The minium number of bonds to receive.
     /// @param _destination The address which will receive the bonds
-    /// @param _asUnderlying If true the user is charged in underlying if false in 
+    /// @param _asUnderlying If true the user is charged in underlying if false in
     ///                      the contract transfers in yield source directly.
     ///                       Note - for some paths one choice may be disabled or blocked.
     /// @return The number of bonds the user received
@@ -35,7 +35,10 @@ abstract contract HyperdriveLong is HyperdriveBase {
         }
 
         // Deposit the user's base.
-        (uint256 shares, uint256 sharePrice) = deposit(_baseAmount, _asUnderlying);
+        (uint256 shares, uint256 sharePrice) = deposit(
+            _baseAmount,
+            _asUnderlying
+        );
 
         // Perform a checkpoint.
         uint256 latestCheckpoint = _latestCheckpoint();
@@ -115,7 +118,7 @@ abstract contract HyperdriveLong is HyperdriveBase {
     /// @param _bondAmount The amount of longs to close.
     /// @param _minOutput The minimum base the user should receive from this trade
     /// @param _destination The address which will receive the proceeds of this sale
-    /// @param _asUnderlying If true the user is payed in underlying if false in 
+    /// @param _asUnderlying If true the user is payed in underlying if false in
     ///                      the contract transfers in yield source directly.
     ///                       Note - for some paths one choice may be disabled or blocked.
     /// @return The amount of underlying the user receives.
@@ -199,7 +202,11 @@ abstract contract HyperdriveLong is HyperdriveBase {
         }
 
         // Withdraw the profit to the trader.
-        (uint256 baseProceeds, ) = withdraw(shareProceeds, _destination, _asUnderlying);
+        (uint256 baseProceeds, ) = withdraw(
+            shareProceeds,
+            _destination,
+            _asUnderlying
+        );
 
         // Enforce min user outputs
         if (_minOutput > baseProceeds) revert Errors.OutputLimit();

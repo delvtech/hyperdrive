@@ -140,7 +140,13 @@ contract BondWrapper is ERC20Permit {
         uint256 balance = hyperdrive.balanceOf(assetId, address(this));
         // Only close if we have something to close
         if (balance != 0) {
-            hyperdrive.closeLong(maturityTime, balance, balance, address(this), true);
+            hyperdrive.closeLong(
+                maturityTime,
+                balance,
+                balance,
+                address(this),
+                true
+            );
         }
     }
 

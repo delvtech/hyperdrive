@@ -74,7 +74,6 @@ contract AaveYieldSource is Hyperdrive {
         uint256 amount,
         bool asUnderlying
     ) internal override returns (uint256 sharesMinted, uint256 sharePrice) {
-
         // Load the balance of this pool
         uint256 assets = aToken.balanceOf(address(this));
 
