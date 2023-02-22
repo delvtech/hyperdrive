@@ -330,13 +330,12 @@ abstract contract HyperdriveShort is HyperdriveBase {
             // by:
             //
             // proceeds = c_1 * dz * (min(b_y, dy) / dy)
+            // we convert to shares by dividing by c_1
             uint256 withdrawalAmount = shortWithdrawalSharesOutstanding <
                 _bondAmount
                 ? shortWithdrawalSharesOutstanding
                 : _bondAmount;
-            uint256 withdrawalProceeds = _sharePrice
-                .mulDown(_sharePayment)
-                .mulDown(withdrawalAmount.divDown(_bondAmount));
+            uint256 withdrawalProceeds = _sharePayment.mulDown(withdrawalAmount.divDown(_bondAmount));
             shortWithdrawalSharesOutstanding -= withdrawalAmount;
             shortWithdrawalShareProceeds += withdrawalProceeds;
 
@@ -345,9 +344,7 @@ abstract contract HyperdriveShort is HyperdriveBase {
             // withdrawal pool. The math for the share reserves update is given by:
             //
             // z += dz - dz * (min(b_y, dy) / dy)
-            shareReserves += _sharePayment.sub(
-                withdrawalProceeds.divDown(_sharePrice)
-            );
+            shareReserves += _sharePayment - withdrawalProceeds;
             bondReserves = HyperdriveMath.calculateBondReserves(
                 shareReserves,
                 totalSupply[AssetId._LP_ASSET_ID],

@@ -268,7 +268,7 @@ abstract contract HyperdriveLP is HyperdriveBase {
         uint256 proceeds = _applyWithdrawalShareRedemption(
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.LongWithdrawalShare, 0),
             _longWithdrawalShares,
-            longWithdrawalSharesOutstanding,
+            longWithdrawalSharesOutstanding.divDown(sharePrice),
             longWithdrawalShareProceeds
         );
 
@@ -279,13 +279,12 @@ abstract contract HyperdriveLP is HyperdriveBase {
                 0
             ),
             _shortWithdrawalShares,
-            shortWithdrawalSharesOutstanding,
+            shortWithdrawalSharesOutstanding.divDown(sharePrice),
             shortWithdrawalShareProceeds
         );
 
         // Withdraw the funds released by redeeming the withdrawal shares.
-        uint256 shareProceeds = proceeds.divDown(sharePrice);
-        (_proceeds, ) = withdraw(shareProceeds, _destination, _asUnderlying);
+        (_proceeds, ) = withdraw(proceeds, _destination, _asUnderlying);
 
         // Enforce min user outputs
         if (_minOutput > _proceeds) revert Errors.OutputLimit();

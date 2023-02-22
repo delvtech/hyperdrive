@@ -357,6 +357,7 @@ abstract contract HyperdriveLong is HyperdriveBase {
             // given by:
             //
             // proceeds = c_1 * (dy / c_0 - dz) * (min(b_x, dy) / dy)
+            // We convert to shares by dividing by c_1
             uint256 withdrawalAmount = longWithdrawalSharesOutstanding <
                 _bondAmount
                 ? longWithdrawalSharesOutstanding
@@ -366,11 +367,8 @@ abstract contract HyperdriveLong is HyperdriveBase {
             // We check if the interest rate was negative
             if (_sharePrice > openSharePrice) {
                 // If not we do the normal calculation
-                withdrawalProceeds = _sharePrice
-                .mulDown(
-                    _bondAmount.divDown(openSharePrice).sub(_shareProceeds)
-                )
-                .mulDown(withdrawalAmount.divDown(_bondAmount));
+                withdrawalProceeds = 
+                    _bondAmount.divDown(openSharePrice).sub(_shareProceeds).mulDown(withdrawalAmount.divDown(_bondAmount));
             } else {
                 // If there's negative interest the LP's position is fully wiped out and has zero value.
                 withdrawalProceeds = 0;
@@ -386,9 +384,7 @@ abstract contract HyperdriveLong is HyperdriveBase {
             // the math for the share reserves update is given by:
             //
             // z -= dz + (dy / c_0 - dz) * (min(b_x, dy) / dy)
-            shareReserves -= _shareProceeds.add(
-                withdrawalProceeds.divDown(_sharePrice)
-            );
+            shareReserves -= _shareProceeds + withdrawalProceeds;
             bondReserves = HyperdriveMath.calculateBondReserves(
                 shareReserves,
                 totalSupply[AssetId._LP_ASSET_ID],
