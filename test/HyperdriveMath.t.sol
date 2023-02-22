@@ -6,6 +6,7 @@ import { Test } from "forge-std/Test.sol";
 import { ForwarderFactory } from "contracts/ForwarderFactory.sol";
 import { MockHyperdriveMath } from "test/mocks/MockHyperdriveMath.sol";
 import "contracts/libraries/FixedPointMath.sol";
+import "forge-std/console2.sol";
 
 contract HyperdriveMathTest is Test {
     using FixedPointMath for uint256;
@@ -227,6 +228,7 @@ contract HyperdriveMathTest is Test {
         //////////////////////////////////////////////////////////////
         uint256 shareReserves = 500_000_000 ether;
         uint256 bondReserves = 507_671_918.147567987442016602 ether;
+        uint256 totalSupply = shareReserves.add(bondReserves).mulDown(.95e18);
         uint256 initialSharePrice = 1 ether;
         uint256 apr = 0.001 ether;
         uint256 positionDuration = 365 days;
@@ -245,23 +247,20 @@ contract HyperdriveMathTest is Test {
 
         uint256 result = hyperdriveMath.calculateAPRFromReserves(
             shareReserves, 
-            bondReserves, 
-            shareReserves.add(newBondReserves), 
+            newBondReserves, 
+            totalSupply, 
             initialSharePrice, 
             positionDuration, 
             timeStretch
         );
-
-        // TODO: The error seems way too high here
-        // Expected: 1000000000000000 = .1% APR
-        // Actual: 1029514159977079 = .1029514159977079% APR
-        assertApproxEqAbs(result, apr, 3e13);
+        assertApproxEqAbs(result, apr, 1 wei);
 
         //////////////////////////////////////////////////////////////
         // Test .5% APR with 5% drift in total supply
         //////////////////////////////////////////////////////////////
         shareReserves = 500_000_000 ether;
         bondReserves = 505_999_427.633650124073028564 ether;
+        totalSupply = shareReserves.add(bondReserves).mulDown(.95e18);
         initialSharePrice = 1 ether;
         apr = 0.005 ether;
         positionDuration = 365 days;
@@ -280,23 +279,20 @@ contract HyperdriveMathTest is Test {
 
         result = hyperdriveMath.calculateAPRFromReserves(
             shareReserves, 
-            bondReserves, 
-            shareReserves.add(newBondReserves), 
+            newBondReserves, 
+            totalSupply, 
             initialSharePrice, 
             positionDuration, 
             timeStretch
         );
-
-        // TODO: The error seems way too high here
-        // Expected: 5000000000000000 = .5% APR
-        // Actual: 5148249244606428 = .5148249244606428% APR
-        assertApproxEqAbs(result, apr, 2e14);
+        assertApproxEqAbs(result, apr, 0);
 
         //////////////////////////////////////////////////////////////
         // Test 1% APR with 5% drift in total supply
         //////////////////////////////////////////////////////////////
         shareReserves = 500_000_000 ether;
         bondReserves = 503_926_401.456553339958190918 ether;
+        totalSupply = shareReserves.add(bondReserves).mulDown(.95e18);
         initialSharePrice = 1 ether;
         apr = .01 ether;
         positionDuration = 365 days;
@@ -315,23 +311,20 @@ contract HyperdriveMathTest is Test {
 
         result = hyperdriveMath.calculateAPRFromReserves(
             shareReserves, 
-            bondReserves, 
-            shareReserves.add(newBondReserves), 
+            newBondReserves, 
+            totalSupply, 
             initialSharePrice, 
             positionDuration, 
             timeStretch
         );
-
-        // TODO: The error seems way too high here
-        // Expected: 10000000000000000 = 1% APR
-        // Actual: 10298195938430249 = 1.0298195938430249% APR
-        assertApproxEqAbs(result, apr, 3e14);
+        assertApproxEqAbs(result, apr, 0);
 
         //////////////////////////////////////////////////////////////
         // Test 10% APR with 5% drift in total supply
         //////////////////////////////////////////////////////////////
         shareReserves = 500_000_000 ether;
         bondReserves = 469_659_754.230894804000854492 ether;
+        totalSupply = shareReserves.add(bondReserves).mulDown(.95e18);
         initialSharePrice = 1 ether;
         apr = .1 ether;
         positionDuration = 365 days;
@@ -350,23 +343,20 @@ contract HyperdriveMathTest is Test {
 
         result = hyperdriveMath.calculateAPRFromReserves(
             shareReserves, 
-            bondReserves, 
-            shareReserves.add(newBondReserves), 
+            newBondReserves, 
+            totalSupply, 
             initialSharePrice, 
             positionDuration, 
             timeStretch
         );
-
-        // TODO: The error seems way too high here
-        // Expected: 100000000000000000 = 10% APR
-        // Actual: 103289981282019581 = 10.3289981282019581% APR
-        assertApproxEqAbs(result, apr, 4e15);
+        assertApproxEqAbs(result, apr, 1 wei);
 
         //////////////////////////////////////////////////////////////
         // Test 50% APR with 5% drift in total supply
         //////////////////////////////////////////////////////////////
         shareReserves = 500_000_000 ether;
         bondReserves = 364_655_142.534339368343353271 ether;
+        totalSupply = shareReserves.add(bondReserves).mulDown(.95e18);
         initialSharePrice = 1 ether;
         apr = .5 ether;
         positionDuration = 365 days;
@@ -376,7 +366,7 @@ contract HyperdriveMathTest is Test {
 
         newBondReserves = hyperdriveMath.calculateBondReserves(
             shareReserves, 
-            shareReserves.add(bondReserves).mulDown(.95e18),
+            totalSupply,
             initialSharePrice, 
             apr, 
             positionDuration, 
@@ -385,18 +375,13 @@ contract HyperdriveMathTest is Test {
 
         result = hyperdriveMath.calculateAPRFromReserves(
             shareReserves, 
-            bondReserves, 
-            shareReserves.add(newBondReserves), 
+            newBondReserves, 
+            totalSupply, 
             initialSharePrice, 
             positionDuration, 
             timeStretch
         );
-
-        // TODO: The error seems way too high here
-        // Expected: 500000000000000000 = 50% APR
-        // Actual: 523550852882770178 = 52.3550852882770178% APR
-        assertApproxEqAbs(result, apr, 0);//3e16);
-
+        assertApproxEqAbs(result, apr, 1 wei);
     }
 
     function test__calcFeesInGivenOut() public {
