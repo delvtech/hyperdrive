@@ -249,7 +249,7 @@ abstract contract HyperdriveLP is HyperdriveBase {
     /// @param _shortWithdrawalShares The short withdrawal shares to redeem.
     /// @param _minOutput The minimum amount of base the LP expects to receive.
     /// @param _destination The address which receive the withdraw proceeds
-    /// @param _asUnderlying If true the user is payed in underlying if false in
+    /// @param _asUnderlying If true the user is paid in underlying if false in
     ///                      the contract transfers in yield source directly.
     ///                       Note - for some paths one choice may be disabled or blocked.
     /// @return _proceeds The amount of base the LP received.
