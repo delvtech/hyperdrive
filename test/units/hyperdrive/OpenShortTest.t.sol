@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import { AssetId } from "contracts/libraries/AssetId.sol";
 import { Errors } from "contracts/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
-import { HyperdriveTest } from "./HyperdriveTest.sol";
+import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 
 contract OpenShortTest is HyperdriveTest {
     using FixedPointMath for uint256;

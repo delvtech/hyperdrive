@@ -231,6 +231,10 @@ contract HyperdriveTest is Test {
         uint256 bondAmount,
         uint256 timeRemaining
     ) internal pure returns (uint256) {
+        // price = dx / dy
+        //       =>
+        // rate = (1 - p) / (p * t) = (1 - dx / dy) * (dx / dy * t)
+        //       =>
         // apr = (dy - dx) / (dx * t)
         return
             (bondAmount.sub(baseAmount)).divDown(

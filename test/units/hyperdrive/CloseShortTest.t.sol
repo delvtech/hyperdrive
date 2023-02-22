@@ -5,7 +5,7 @@ import { stdError } from "forge-std/StdError.sol";
 import { AssetId } from "contracts/libraries/AssetId.sol";
 import { Errors } from "contracts/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
-import { HyperdriveTest } from "./HyperdriveTest.sol";
+import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 
 contract CloseShortTest is HyperdriveTest {
     using FixedPointMath for uint256;
