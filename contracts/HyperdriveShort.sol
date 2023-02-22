@@ -147,7 +147,7 @@ abstract contract HyperdriveShort is HyperdriveBase {
     /// @param _bondAmount The amount of shorts to close.
     /// @param _minOutput The minimum output of this trade.
     /// @param _destination The address which gets the proceeds from closing this short
-    /// @param _asUnderlying If true the user is payed in underlying if false
+    /// @param _asUnderlying If true the user is paid in underlying if false
     ///                      the contract transfers in yield source directly.
     ///                      Note - for some paths one choice may be disabled or blocked.
     /// @return The amount of base tokens produced by closing this short

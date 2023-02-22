@@ -118,7 +118,7 @@ abstract contract HyperdriveLong is HyperdriveBase {
     /// @param _bondAmount The amount of longs to close.
     /// @param _minOutput The minimum base the user should receive from this trade
     /// @param _destination The address which will receive the proceeds of this sale
-    /// @param _asUnderlying If true the user is payed in underlying if false
+    /// @param _asUnderlying If true the user is paid in underlying if false
     ///                      the contract transfers in yield source directly.
     ///                      Note - for some paths one choice may be disabled or blocked.
     /// @return The amount of underlying the user receives.
