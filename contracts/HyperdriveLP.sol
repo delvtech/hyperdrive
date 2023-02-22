@@ -155,7 +155,7 @@ abstract contract HyperdriveLP is HyperdriveBase {
     /// @param _asUnderlying If true the user is paid in underlying if false in
     ///                      the contract transfers in yield source directly.
     ///                       Note - for some paths one choice may be disabled or blocked.
-    /// @return Returns the base out, the lond withdraw shares out and the short withdraw
+    /// @return Returns the base out, the long withdraw shares out and the short withdraw
     ///         shares out.
     function removeLiquidity(
         uint256 _shares,
