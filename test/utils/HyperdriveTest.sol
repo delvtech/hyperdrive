@@ -56,7 +56,7 @@ contract HyperdriveTest is Test {
         address lp,
         uint256 apr,
         uint256 contribution
-    ) internal {
+    ) internal returns (uint256 lpShares) {
         vm.stopPrank();
         vm.startPrank(lp);
 
@@ -64,6 +64,8 @@ contract HyperdriveTest is Test {
         baseToken.mint(contribution);
         baseToken.approve(address(hyperdrive), contribution);
         hyperdrive.initialize(contribution, apr, lp, true);
+
+        return hyperdrive.balanceOf(AssetId._LP_ASSET_ID, lp);
     }
 
     function addLiquidity(
