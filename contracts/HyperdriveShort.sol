@@ -164,7 +164,7 @@ abstract contract HyperdriveShort is HyperdriveBase {
 
         // Perform a checkpoint.
         uint256 sharePrice = pricePerShare();
-        _applyCheckpoint(_latestCheckpoint(), sharePrice);
+        _applyCheckpoint(_maturityTime, sharePrice);
 
         // Burn the shorts that are being closed.
         uint256 assetId = AssetId.encodeAssetId(
@@ -191,8 +191,7 @@ abstract contract HyperdriveShort is HyperdriveBase {
 
         // If the position hasn't matured, apply the accounting updates that
         // result from closing the short to the reserves and pay out the
-        // withdrawal pool if necessary. If the position has reached maturity,
-        // create a checkpoint at the maturity time if necessary.
+        // withdrawal pool if necessary.
         if (block.timestamp < _maturityTime) {
             _applyCloseShort(
                 _bondAmount,
@@ -201,10 +200,6 @@ abstract contract HyperdriveShort is HyperdriveBase {
                 sharePrice,
                 _maturityTime
             );
-        } else {
-            // Perform a checkpoint for the short's maturity time. This ensures
-            // that the matured position has been applied to the reserves.
-            checkpoint(_maturityTime);
         }
 
         // Withdraw the profit to the trader. This includes the proceeds from
@@ -226,7 +221,15 @@ abstract contract HyperdriveShort is HyperdriveBase {
         if (_maturityTime <= block.timestamp) {
             closeSharePrice = checkpoints[_maturityTime];
         }
-        _bondAmount = _bondAmount.divDown(openSharePrice).sub(sharePayment);
+        // If variable interest rates are more negative than the short capital
+        // deposited by the user then the user position is set to zero instead
+        // of locking
+        uint256 userSharesAtOpen = _bondAmount.divDown(openSharePrice);
+        if (userSharesAtOpen > sharePayment) {
+            _bondAmount = userSharesAtOpen.sub(sharePayment);
+        } else {
+            bondAmount = 0;
+        }
         uint256 shortProceeds = closeSharePrice.mulDown(_bondAmount).divDown(
             sharePrice
         );

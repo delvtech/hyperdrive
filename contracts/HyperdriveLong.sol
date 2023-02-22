@@ -133,9 +133,10 @@ abstract contract HyperdriveLong is HyperdriveBase {
             revert Errors.ZeroAmount();
         }
 
-        // Perform a checkpoint.
+        // Perform a checkpoint at the maturity time, this ensures the bond is closed
+        // and closes all other possible positions in that checkpoint
         uint256 sharePrice = pricePerShare();
-        _applyCheckpoint(_latestCheckpoint(), sharePrice);
+        _applyCheckpoint(_latestCheckpoint(), _maturityTime);
 
         {
             // Burn the longs that are being closed.
@@ -185,8 +186,7 @@ abstract contract HyperdriveLong is HyperdriveBase {
 
         // If the position hasn't matured, apply the accounting updates that
         // result from closing the long to the reserves and pay out the
-        // withdrawal pool if necessary. If the position has reached maturity,
-        // create a checkpoint at the maturity time if necessary.
+        // withdrawal pool if necessary. 
         if (block.timestamp < _maturityTime) {
             _applyCloseLong(
                 _bondAmount,
@@ -195,11 +195,7 @@ abstract contract HyperdriveLong is HyperdriveBase {
                 sharePrice,
                 _maturityTime
             );
-        } else {
-            // Perform a checkpoint for the long's maturity time. This ensures
-            // that the matured position has been applied to the reserves.
-            checkpoint(_maturityTime);
-        }
+        } 
 
         // Withdraw the profit to the trader.
         (uint256 baseProceeds, ) = withdraw(
@@ -365,11 +361,20 @@ abstract contract HyperdriveLong is HyperdriveBase {
                 _bondAmount
                 ? longWithdrawalSharesOutstanding
                 : _bondAmount;
-            uint256 withdrawalProceeds = _sharePrice
+        
+            uint256 withdrawalProceeds;
+            // We check if the interest rate was negative
+            if (_sharePrice > openSharePrice) {
+                // If not we do the normal calculation
+                withdrawalProceeds = _sharePrice
                 .mulDown(
                     _bondAmount.divDown(openSharePrice).sub(_shareProceeds)
                 )
                 .mulDown(withdrawalAmount.divDown(_bondAmount));
+            } else {
+                // If there's negative interest the LP's position is fully wiped out and has zero value.
+                withdrawalProceeds = 0;
+            }
 
             // Update the long aggregates.
             longWithdrawalSharesOutstanding -= withdrawalAmount;

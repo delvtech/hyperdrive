@@ -203,6 +203,12 @@ library HyperdriveMath {
             .mulDown(FixedPointMath.ONE_18.sub(_normalizedTimeRemaining))
             .divDown(_sharePrice);
 
+        // If there's net negative interest over the period the flat redemption amount
+        // is reduced.
+        if (_initialSharePrice > _sharePrice) {
+            flat -= (flat.mulUp(_sharePrice)).divDown(_initialSharePrice);
+        }
+
         if (_normalizedTimeRemaining > 0) {
             // Calculate the curved part of the trade assuming that the flat part of
             // the trade was applied to the share and bond reserves.
