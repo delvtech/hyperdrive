@@ -152,7 +152,7 @@ abstract contract HyperdriveLP is HyperdriveBase {
     ///                   The remainder is in short and long withdraw shares which are hard
     ///                   to game the value of.
     /// @param _destination The address which will receive the withdraw proceeds
-    /// @param _asUnderlying If true the user is payed in underlying if false in
+    /// @param _asUnderlying If true the user is paid in underlying if false in
     ///                      the contract transfers in yield source directly.
     ///                       Note - for some paths one choice may be disabled or blocked.
     /// @return Returns the base out, the lond withdraw shares out and the short withdraw
