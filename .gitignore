@@ -2,6 +2,8 @@ cache/
 out/
 forge-cache/
 .vscode/
+broadcast
+.env
 
 node_modules/
 yarn-error.log
