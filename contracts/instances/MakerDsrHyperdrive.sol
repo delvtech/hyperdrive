@@ -106,7 +106,7 @@ contract MakerDsrHyperdrive is Hyperdrive {
     }
 
     ///@notice Withdraws shares from the yield source and sends the resulting tokens to the destination
-    ///@param shares The shares to withdraw from the yieldsource
+    ///@param shares The shares to withdraw from the yield source
     ///@param destination The address which is where to send the resulting tokens
     ///@return amountWithdrawn the amount of 'token' produced by this withdraw
     ///@return sharePrice The share price on withdraw.

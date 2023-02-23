@@ -125,7 +125,7 @@ contract AaveHyperdrive is Hyperdrive {
     }
 
     ///@notice Withdraws shares from the yield source and sends the resulting tokens to the destination
-    ///@param shares The shares to withdraw from the yieldsource
+    ///@param shares The shares to withdraw from the yield source
     /// @param asUnderlying If true the yield source will transfer underlying tokens
     ///                     if false it will transfer the yielding asset directly
     ///@param destination The address which is where to send the resulting tokens
@@ -146,6 +146,9 @@ contract AaveHyperdrive is Hyperdrive {
         // The withdraw is the percent of shares the user has times the total assets
         uint256 withdrawValue = assets.mulDown(shares.divDown(totalShares));
 
+        // Remove the shares from the total share supply
+        totalShares -= shares;
+
         // If the user wants underlying we withdraw for them otherwise send the base
         if (asUnderlying) {
             // Now we call aave to fulfill this withdraw for the user
@@ -154,9 +157,6 @@ contract AaveHyperdrive is Hyperdrive {
             // Otherwise we simply transfer to them
             aToken.transfer(destination, withdrawValue);
         }
-
-        // Remove the shares from the total share supply
-        totalShares -= shares;
 
         // Return the amount and implied share price
         return (withdrawValue, shares.divDown(withdrawValue));
