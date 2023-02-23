@@ -514,6 +514,48 @@ contract HyperdriveMathTest is Test {
         assertApproxEqAbs(result, expectedAPR.divDown(100e18), 4e12);
     }
 
+    function test__calculateOpenShort() public {
+        // NOTE: Coverage only works if I initialize the fixture in the test function
+        MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
+
+        // Test open long at 1% APR, No backdating
+        uint256 shareReserves = 500_000_000 ether;
+        uint256 bondReserves = 503_926_401.456553339958190918 ether;
+        uint256 totalSupply = shareReserves.add(bondReserves);
+        uint256 sharePrice = 1 ether;
+        uint256 initialSharePrice = 1 ether;
+        uint256 positionDuration = 365 days;
+        uint256 timeStretch = FixedPointMath.ONE_18.divDown(
+            110.93438508425959e18
+        );
+        uint256 amountIn = 50_000_000 ether;
+        uint256 expectedAPR = 1.125979043589839357 ether;
+        uint256 poolShareDelta = hyperdriveMath.calculateOpenShort(
+            shareReserves,
+            bondReserves,
+            totalSupply,
+            amountIn,
+            FixedPointMath.ONE_18,
+            timeStretch,
+            sharePrice,
+            initialSharePrice
+        );
+        // verify that the flat part is zero
+        //assertEq(poolShareDelta);
+        bondReserves += poolShareDelta;
+        shareReserves -= amountIn;
+        uint256 result = hyperdriveMath.calculateAPRFromReserves(
+            shareReserves,
+            bondReserves,
+            totalSupply,
+            initialSharePrice,
+            positionDuration,
+            timeStretch
+        );
+        // verify that the resulting APR is correct
+        assertApproxEqAbs(result, expectedAPR.divDown(100e18), 6e12);
+    }
+
     function test__calcFeesInGivenOut() public {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
