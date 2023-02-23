@@ -6,7 +6,6 @@ import { Test } from "forge-std/Test.sol";
 import { ForwarderFactory } from "contracts/ForwarderFactory.sol";
 import { MockHyperdriveMath } from "test/mocks/MockHyperdriveMath.sol";
 import "contracts/libraries/FixedPointMath.sol";
-import "forge-std/console2.sol";
 
 contract HyperdriveMathTest is Test {
     using FixedPointMath for uint256;
