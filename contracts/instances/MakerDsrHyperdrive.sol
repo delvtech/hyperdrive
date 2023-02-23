@@ -38,12 +38,15 @@ contract MakerDsrHyperdrive is Hyperdrive {
     /// @param _linkerFactory The factory which is used to deploy the ERC20
     ///        linker contracts.
     /// @param _baseToken The base token contract.
+    /// @param _checkpointsPerTerm The number of checkpoints that elaspes before
+    ///        bonds can be redeemed one-to-one for base.
     /// @param _checkpointDuration The time in seconds between share price
     ///        checkpoints. Position duration must be a multiple of checkpoint
     ///        duration.
     /// @param _timeStretch The time stretch of the pool.
     /// @param _curveFee The fee parameter for the curve portion of the hyperdrive trade equation.
     /// @param _flatFee The fee parameter for the flat portion of the hyperdrive trade equation.
+    /// @param _dsrManager The "dai savings rate" manager contract
     constructor(
         bytes32 _linkerCodeHash,
         address _linkerFactory,
