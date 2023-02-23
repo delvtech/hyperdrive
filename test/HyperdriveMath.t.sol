@@ -445,7 +445,7 @@ contract HyperdriveMathTest is Test {
         );
         uint256 amountIn = 503_926_401.456553339958190918 ether -
             453_456_134.637519001960754395 ether;
-        uint256 expectedAPR = 0.969008904524498504 ether;
+        uint256 expectedAPR = 0.969865355289938558 ether;
         (uint256 poolBondDelta, ) = hyperdriveMath.calculateCloseLong(
             shareReserves,
             bondReserves,
@@ -468,7 +468,7 @@ contract HyperdriveMathTest is Test {
             timeStretch
         );
         // verify that the resulting APR is correct
-        assertApproxEqAbs(result, expectedAPR.divDown(100e18), 6e12);
+        assertApproxEqAbs(result, expectedAPR.divDown(100e18), 3e12);
     }
 
     function test__calculateCloseLongBeforeMaturity() public {
@@ -554,6 +554,48 @@ contract HyperdriveMathTest is Test {
         );
         // verify that the resulting APR is correct
         assertApproxEqAbs(result, expectedAPR.divDown(100e18), 6e12);
+    }
+
+    function test__calculateCloseShortAtMaturity() public {
+        // NOTE: Coverage only works if I initialize the fixture in the test function
+        MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
+
+        // Test closing the long at maturity that was opened at 1% APR, No backdating
+        uint256 shareReserves = 450_000_000 ether;
+        uint256 bondReserves = 554_396_668.275587677955627441 ether;
+        uint256 totalSupply = shareReserves.add(bondReserves);
+        uint256 positionDuration = 365 days;
+        uint256 normalizedTimeRemaining = 0;
+        uint256 timeStretch = FixedPointMath.ONE_18.divDown(
+            110.93438508425959e18
+        );
+        uint256 amountOut = 50_470_266.819034337997436523 ether;
+        uint256 expectedAPR = 1.029123553254638335 ether;
+        (uint256 poolBondDelta, ) = hyperdriveMath.calculateCloseShort(
+            shareReserves,
+            bondReserves,
+            totalSupply,
+            amountOut,
+            normalizedTimeRemaining,
+            timeStretch,
+            1 ether,
+            1 ether,
+            0 ether,
+            0 ether
+        );
+        // verify that the curve part is zero
+        assertEq(poolBondDelta, 0);
+        shareReserves += amountOut;
+        uint256 result = hyperdriveMath.calculateAPRFromReserves(
+            shareReserves,
+            bondReserves,
+            totalSupply,
+            1 ether,
+            positionDuration,
+            timeStretch
+        );
+        // verify that the resulting APR is correct
+        assertApproxEqAbs(result, expectedAPR.divDown(100e18), 3e12);
     }
 
     function test__calcFeesInGivenOut() public {
