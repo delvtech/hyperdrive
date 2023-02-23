@@ -820,4 +820,19 @@ contract HyperdriveMathTest is Test {
         );
         assertEq(baseVolume, 0);
     }
+
+    function test__calculateLpAllocationAdjustment() public {
+        // NOTE: Coverage only works if I initialize the fixture in the test function
+        MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
+        uint256 lpAllocationAdjustment = hyperdriveMath
+            .calculateLpAllocationAdjustment(
+                5 ether, // positionsOutstanding
+                10 ether, // baseVolume
+                .5e18, // averageTimeRemaining
+                3.75 ether // sharePrice
+            );
+        // baseAdjustment = .5 * 10 + (1 - .5) * 5 = 7.5
+        // adjustment = baseAdjustment / 3.75 = 2
+        assertEq(lpAllocationAdjustment, 2 ether);
+    }
 }
