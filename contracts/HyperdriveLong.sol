@@ -197,7 +197,6 @@ abstract contract HyperdriveLong is HyperdriveBase {
                 _bondAmount,
                 poolBondDelta,
                 shareProceeds,
-                sharePrice,
                 _maturityTime
             );
         }
@@ -278,13 +277,11 @@ abstract contract HyperdriveLong is HyperdriveBase {
     ///        pool.
     /// @param _shareProceeds The proceeds in shares received from closing the
     ///        long.
-    /// @param _sharePrice The current share price.
     /// @param _maturityTime The maturity time of the long.
     function _applyCloseLong(
         uint256 _bondAmount,
         uint256 _poolBondDelta,
         uint256 _shareProceeds,
-        uint256 _sharePrice,
         uint256 _maturityTime
     ) internal {
         // Update the long average maturity time.

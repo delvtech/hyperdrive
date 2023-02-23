@@ -135,7 +135,6 @@ abstract contract Hyperdrive is
                 maturedLongsAmount,
                 0,
                 maturedLongsAmount.divDown(_sharePrice),
-                _sharePrice,
                 _checkpointTime
             );
         }
