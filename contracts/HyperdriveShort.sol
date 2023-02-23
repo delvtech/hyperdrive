@@ -334,7 +334,7 @@ abstract contract HyperdriveShort is HyperdriveBase {
             // by:
             //
             // proceeds = c_1 * dz * (min(b_y, dy) / dy)
-            // 
+            //
             // We convert to shares at position close by dividing by c_1. If a checkpoint
             // was missed and old matured positions are being closed, this will correctly
             // attribute the extra interest to the withdrawal pool.
