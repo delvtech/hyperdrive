@@ -369,7 +369,7 @@ abstract contract HyperdriveLong is HyperdriveBase {
                 : _bondAmount;
 
             uint256 withdrawalProceeds;
-            uint256 openShares = _bondAmount.divDown(openSharePrice)
+            uint256 openShares = _bondAmount.divDown(openSharePrice);
             // We check if the interest rate was negative
             if (openShares > _shareProceeds) {
                 // If not we do the normal calculation
