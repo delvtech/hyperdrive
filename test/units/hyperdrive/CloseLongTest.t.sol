@@ -185,6 +185,68 @@ contract CloseLongTest is HyperdriveTest {
         verifyCloseLong(poolInfoBefore, baseProceeds, bondAmount, maturityTime);
     }
 
+    function test_close_long_redeem_negative_interest() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Open a long position.
+        uint256 basePaid = 10e18;
+        (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
+
+        // Term passes. The pool accrues interest at the current apr.
+        uint256 timeDelta = 1e18;
+        vm.warp(block.timestamp + POSITION_DURATION.mulDown(timeDelta));
+        hyperdrive.setSharePrice((getPoolInfo().sharePrice * 80) / 100);
+
+        // Get the reserves before closing the long.
+        PoolInfo memory poolInfoBefore = getPoolInfo();
+
+        // Redeem the bonds
+        uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
+
+        // Verify that Bob received base equal to the full bond amount.
+        assertApproxEqAbs(baseProceeds, (bondAmount * 80) / 100, 1);
+
+        // Verify that the close long updates were correct.
+        verifyCloseLong(poolInfoBefore, baseProceeds, bondAmount, maturityTime);
+    }
+
+    function test_close_long_half_term_negative_interest() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Open a long position.
+        uint256 basePaid = 10e18;
+
+        (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
+
+        // Term passes. The pool accrues interest at the current apr.
+        vm.warp(block.timestamp + POSITION_DURATION / 2);
+        hyperdrive.setSharePrice((getPoolInfo().sharePrice * 80) / 100);
+
+        // Get the reserves before closing the long.
+        PoolInfo memory poolInfoBefore = getPoolInfo();
+
+        // Redeem the bonds
+        uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
+
+        // Verify that Bob received base equal to the full bond amount.
+        assertApproxEqAbs(
+            baseProceeds,
+            (bondAmount * 40) / 100 + (bondAmount * 4762) / 10000,
+            2e14
+        );
+
+        // Verify that the close long updates were correct.
+        verifyCloseLong(poolInfoBefore, baseProceeds, bondAmount, maturityTime);
+    }
+
     function verifyCloseLong(
         PoolInfo memory poolInfoBefore,
         uint256 baseProceeds,
@@ -216,7 +278,8 @@ contract CloseLongTest is HyperdriveTest {
             poolInfoAfter.shareReserves,
             poolInfoBefore.shareReserves -
                 baseProceeds.divDown(poolInfoBefore.sharePrice),
-            1
+            // 0.00000001 off or 1 wei
+            poolInfoAfter.shareReserves.mulDown(100000000000) + 1
         );
         assertEq(poolInfoAfter.lpTotalSupply, poolInfoBefore.lpTotalSupply);
         assertEq(poolInfoAfter.sharePrice, poolInfoBefore.sharePrice);

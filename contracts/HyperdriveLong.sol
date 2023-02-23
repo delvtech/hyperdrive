@@ -62,6 +62,10 @@ abstract contract HyperdriveLong is HyperdriveBase {
                 initialSharePrice
             );
 
+        // If the user gets less bonds than they paid we are in the negative interest
+        // region of the trading function.
+        if (bondProceeds < _baseAmount) revert Errors.NegativeInterest();
+
         {
             // Calculate the fees owed by the trader.
             uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
@@ -133,9 +137,11 @@ abstract contract HyperdriveLong is HyperdriveBase {
             revert Errors.ZeroAmount();
         }
 
-        // Perform a checkpoint.
+        // Perform a checkpoint at the maturity time, this ensures the bond is closed
+        // and closes all other positions in that checkpoint. This will be ignored
+        // if the maturity time is in the future.
         uint256 sharePrice = pricePerShare();
-        _applyCheckpoint(_latestCheckpoint(), sharePrice);
+        _applyCheckpoint(_maturityTime, sharePrice);
 
         {
             // Burn the longs that are being closed.
@@ -185,20 +191,14 @@ abstract contract HyperdriveLong is HyperdriveBase {
 
         // If the position hasn't matured, apply the accounting updates that
         // result from closing the long to the reserves and pay out the
-        // withdrawal pool if necessary. If the position has reached maturity,
-        // create a checkpoint at the maturity time if necessary.
+        // withdrawal pool if necessary.
         if (block.timestamp < _maturityTime) {
             _applyCloseLong(
                 _bondAmount,
                 poolBondDelta,
                 shareProceeds,
-                sharePrice,
                 _maturityTime
             );
-        } else {
-            // Perform a checkpoint for the long's maturity time. This ensures
-            // that the matured position has been applied to the reserves.
-            checkpoint(_maturityTime);
         }
 
         // Withdraw the profit to the trader.
@@ -277,13 +277,11 @@ abstract contract HyperdriveLong is HyperdriveBase {
     ///        pool.
     /// @param _shareProceeds The proceeds in shares received from closing the
     ///        long.
-    /// @param _sharePrice The current share price.
     /// @param _maturityTime The maturity time of the long.
     function _applyCloseLong(
         uint256 _bondAmount,
         uint256 _poolBondDelta,
         uint256 _shareProceeds,
-        uint256 _sharePrice,
         uint256 _maturityTime
     ) internal {
         // Update the long average maturity time.
@@ -361,15 +359,27 @@ abstract contract HyperdriveLong is HyperdriveBase {
             // given by:
             //
             // proceeds = c_1 * (dy / c_0 - dz) * (min(b_x, dy) / dy)
+            //
+            // We convert to shares at position close by dividing by c_1. If a checkpoint
+            // was missed and old matured positions are being closed, this will correctly
+            // attribute the extra interest to the withdrawal pool.
             uint256 withdrawalAmount = longWithdrawalSharesOutstanding <
                 _bondAmount
                 ? longWithdrawalSharesOutstanding
                 : _bondAmount;
-            uint256 withdrawalProceeds = _sharePrice
-                .mulDown(
-                    _bondAmount.divDown(openSharePrice).sub(_shareProceeds)
-                )
-                .mulDown(withdrawalAmount.divDown(_bondAmount));
+
+            uint256 withdrawalProceeds;
+            uint256 openShares = _bondAmount.divDown(openSharePrice);
+            // We check if the interest rate was negative
+            if (openShares > _shareProceeds) {
+                // If not we do the normal calculation
+                withdrawalProceeds = openShares.sub(_shareProceeds).mulDown(
+                    withdrawalAmount.divDown(_bondAmount)
+                );
+            } else {
+                // If there's negative interest the LP's position is fully wiped out and has zero value.
+                withdrawalProceeds = 0;
+            }
 
             // Update the long aggregates.
             longWithdrawalSharesOutstanding -= withdrawalAmount;
@@ -381,9 +391,7 @@ abstract contract HyperdriveLong is HyperdriveBase {
             // the math for the share reserves update is given by:
             //
             // z -= dz + (dy / c_0 - dz) * (min(b_x, dy) / dy)
-            shareReserves -= _shareProceeds.add(
-                withdrawalProceeds.divDown(_sharePrice)
-            );
+            shareReserves -= _shareProceeds + withdrawalProceeds;
             bondReserves = HyperdriveMath.calculateBondReserves(
                 shareReserves,
                 totalSupply[AssetId._LP_ASSET_ID],

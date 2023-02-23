@@ -116,7 +116,10 @@ abstract contract Hyperdrive is
         uint256 _sharePrice
     ) internal override returns (uint256 openSharePrice) {
         // Return early if the checkpoint has already been updated.
-        if (checkpoints[_checkpointTime] != 0) {
+        if (
+            checkpoints[_checkpointTime] != 0 ||
+            _checkpointTime > block.timestamp
+        ) {
             return checkpoints[_checkpointTime];
         }
 
@@ -132,7 +135,6 @@ abstract contract Hyperdrive is
                 maturedLongsAmount,
                 0,
                 maturedLongsAmount.divDown(_sharePrice),
-                _sharePrice,
                 _checkpointTime
             );
         }
@@ -146,7 +148,6 @@ abstract contract Hyperdrive is
                 maturedShortsAmount,
                 0,
                 maturedShortsAmount.divDown(_sharePrice),
-                _sharePrice,
                 _checkpointTime
             );
         }

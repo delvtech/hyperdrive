@@ -57,6 +57,11 @@ abstract contract HyperdriveShort is HyperdriveBase {
             initialSharePrice
         );
 
+        // If the user short sale is at a greater than 1 to 1 rate we are in the negative interest
+        // region of the trading function.
+        if (shareProceeds.mulDown(sharePrice) > _bondAmount)
+            revert Errors.NegativeInterest();
+
         {
             uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
                 shareReserves,
@@ -164,7 +169,7 @@ abstract contract HyperdriveShort is HyperdriveBase {
 
         // Perform a checkpoint.
         uint256 sharePrice = pricePerShare();
-        _applyCheckpoint(_latestCheckpoint(), sharePrice);
+        _applyCheckpoint(_maturityTime, sharePrice);
 
         // Burn the shorts that are being closed.
         uint256 assetId = AssetId.encodeAssetId(
@@ -191,20 +196,14 @@ abstract contract HyperdriveShort is HyperdriveBase {
 
         // If the position hasn't matured, apply the accounting updates that
         // result from closing the short to the reserves and pay out the
-        // withdrawal pool if necessary. If the position has reached maturity,
-        // create a checkpoint at the maturity time if necessary.
+        // withdrawal pool if necessary.
         if (block.timestamp < _maturityTime) {
             _applyCloseShort(
                 _bondAmount,
                 poolBondDelta,
                 sharePayment,
-                sharePrice,
                 _maturityTime
             );
-        } else {
-            // Perform a checkpoint for the short's maturity time. This ensures
-            // that the matured position has been applied to the reserves.
-            checkpoint(_maturityTime);
         }
 
         // Withdraw the profit to the trader. This includes the proceeds from
@@ -226,7 +225,17 @@ abstract contract HyperdriveShort is HyperdriveBase {
         if (_maturityTime <= block.timestamp) {
             closeSharePrice = checkpoints[_maturityTime];
         }
-        _bondAmount = _bondAmount.divDown(openSharePrice).sub(sharePayment);
+        // If variable interest rates are more negative than the short capital
+        // deposited by the user then the user position is set to zero instead
+        // of locking
+        {
+            uint256 userSharesAtOpen = _bondAmount.divDown(openSharePrice);
+            if (userSharesAtOpen > sharePayment) {
+                _bondAmount = userSharesAtOpen.sub(sharePayment);
+            } else {
+                _bondAmount = 0;
+            }
+        }
         uint256 shortProceeds = closeSharePrice.mulDown(_bondAmount).divDown(
             sharePrice
         );
@@ -248,13 +257,11 @@ abstract contract HyperdriveShort is HyperdriveBase {
     ///        decreased by if we didn't need to account for the withdrawal
     ///        pool.
     /// @param _sharePayment The payment in shares required to close the short.
-    /// @param _sharePrice The current share price.
     /// @param _maturityTime The maturity time of the short.
     function _applyCloseShort(
         uint256 _bondAmount,
         uint256 _poolBondDelta,
         uint256 _sharePayment,
-        uint256 _sharePrice,
         uint256 _maturityTime
     ) internal {
         // Update the short average maturity time.
@@ -327,13 +334,17 @@ abstract contract HyperdriveShort is HyperdriveBase {
             // by:
             //
             // proceeds = c_1 * dz * (min(b_y, dy) / dy)
+            //
+            // We convert to shares at position close by dividing by c_1. If a checkpoint
+            // was missed and old matured positions are being closed, this will correctly
+            // attribute the extra interest to the withdrawal pool.
             uint256 withdrawalAmount = shortWithdrawalSharesOutstanding <
                 _bondAmount
                 ? shortWithdrawalSharesOutstanding
                 : _bondAmount;
-            uint256 withdrawalProceeds = _sharePrice
-                .mulDown(_sharePayment)
-                .mulDown(withdrawalAmount.divDown(_bondAmount));
+            uint256 withdrawalProceeds = _sharePayment.mulDown(
+                withdrawalAmount.divDown(_bondAmount)
+            );
             shortWithdrawalSharesOutstanding -= withdrawalAmount;
             shortWithdrawalShareProceeds += withdrawalProceeds;
 
@@ -342,9 +353,7 @@ abstract contract HyperdriveShort is HyperdriveBase {
             // withdrawal pool. The math for the share reserves update is given by:
             //
             // z += dz - dz * (min(b_y, dy) / dy)
-            shareReserves += _sharePayment.sub(
-                withdrawalProceeds.divDown(_sharePrice)
-            );
+            shareReserves += _sharePayment - withdrawalProceeds;
             bondReserves = HyperdriveMath.calculateBondReserves(
                 shareReserves,
                 totalSupply[AssetId._LP_ASSET_ID],
