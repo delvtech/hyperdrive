@@ -334,7 +334,7 @@ abstract contract HyperdriveShort is HyperdriveBase {
             // by:
             //
             // proceeds = c_1 * dz * (min(b_y, dy) / dy)
-            // we convert to shares by dividing by c_1
+            // we convert to shares at close by dividing by c_1
             uint256 withdrawalAmount = shortWithdrawalSharesOutstanding <
                 _bondAmount
                 ? shortWithdrawalSharesOutstanding

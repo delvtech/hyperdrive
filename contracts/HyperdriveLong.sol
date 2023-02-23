@@ -362,7 +362,7 @@ abstract contract HyperdriveLong is HyperdriveBase {
             // given by:
             //
             // proceeds = c_1 * (dy / c_0 - dz) * (min(b_x, dy) / dy)
-            // We convert to shares by dividing by c_1
+            // We convert to shares at position close by dividing by c_1
             uint256 withdrawalAmount = longWithdrawalSharesOutstanding <
                 _bondAmount
                 ? longWithdrawalSharesOutstanding
