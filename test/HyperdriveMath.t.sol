@@ -797,4 +797,27 @@ contract HyperdriveMathTest is Test {
             "test 2"
         );
     }
+
+    function test__calculateBaseVolume() public {
+        // NOTE: Coverage only works if I initialize the fixture in the test function
+        MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
+        uint256 baseVolume = hyperdriveMath.calculateBaseVolume(
+            5 ether, // baseAmount
+            2 ether, // bondAmount
+            0.5e18 // timeRemaining
+        );
+        // (5 - (1-.5) * 2)/0.5 = (5 - 1)/0.5 = 8
+        assertEq(baseVolume, 8 ether);
+    }
+
+    function test__calculateBaseVolumeWithZeroTimeRemaining() public {
+        // NOTE: Coverage only works if I initialize the fixture in the test function
+        MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
+        uint256 baseVolume = hyperdriveMath.calculateBaseVolume(
+            1 ether, // baseAmount
+            1 ether, // bondAmount
+            0 // timeRemaining
+        );
+        assertEq(baseVolume, 0);
+    }
 }
