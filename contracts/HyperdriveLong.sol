@@ -62,6 +62,10 @@ abstract contract HyperdriveLong is HyperdriveBase {
                 initialSharePrice
             );
 
+        // If the user gets less bonds than they paid we are in the negative interest
+        // region of the trading function.
+        if (poolBondDelta < _baseAmount) revert Errors.NegativeInterest();
+
         {
             // Calculate the fees owed by the trader.
             uint256 spotPrice = HyperdriveMath.calculateSpotPrice(

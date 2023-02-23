@@ -206,7 +206,7 @@ library HyperdriveMath {
         // If there's net negative interest over the period the flat redemption amount
         // is reduced.
         if (_initialSharePrice > _sharePrice) {
-            flat -= (flat.mulUp(_sharePrice)).divDown(_initialSharePrice);
+            flat = (flat.mulUp(_sharePrice)).divDown(_initialSharePrice);
         }
 
         if (_normalizedTimeRemaining > 0) {
@@ -341,9 +341,7 @@ library HyperdriveMath {
         );
 
         // curveOut
-        _amountOut = _amountOut.mulDown(_normalizedTimeRemaining).divDown(
-            _sharePrice
-        );
+        _amountOut = _amountOut.mulDown(_normalizedTimeRemaining);
         // Calculate the curved part of the trade assuming that the flat part of
         // the trade was applied to the share and bond reserves.
         uint256 curveIn = YieldSpaceMath.calculateSharesInGivenBondsOut(

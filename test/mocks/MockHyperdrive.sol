@@ -51,16 +51,21 @@ contract MockHyperdrive is Hyperdrive {
     }
 
     function setSharePrice(uint256 sharePrice) external {
-        if (sharePrice <= _sharePrice) {
-            revert InvalidSharePrice();
+        if (sharePrice > _sharePrice) {
+            // Update the share price and accrue interest.
+            ERC20Mintable(address(baseToken)).mint(
+                (sharePrice.sub(_sharePrice)).mulDown(
+                    baseToken.balanceOf(address(this))
+                )
+            );
+        } else {
+            baseToken.transfer(
+                address(1),
+                (_sharePrice.sub(sharePrice)).mulDown(
+                    baseToken.balanceOf(address(this))
+                )
+            );
         }
-
-        // Update the share price and accrue interest.
-        ERC20Mintable(address(baseToken)).mint(
-            (sharePrice.sub(_sharePrice)).mulDown(
-                baseToken.balanceOf(address(this))
-            )
-        );
         _sharePrice = sharePrice;
     }
 

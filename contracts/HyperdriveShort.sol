@@ -57,6 +57,11 @@ abstract contract HyperdriveShort is HyperdriveBase {
             initialSharePrice
         );
 
+        // If the user short sale is at a greater than 1 to 1 rate we are in the negative interest
+        // region of the trading function.
+        if (shareProceeds.mulDown(sharePrice) > _bondAmount)
+            revert Errors.NegativeInterest();
+
         {
             uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
                 shareReserves,
@@ -197,7 +202,6 @@ abstract contract HyperdriveShort is HyperdriveBase {
                 _bondAmount,
                 poolBondDelta,
                 sharePayment,
-                sharePrice,
                 _maturityTime
             );
         }
@@ -253,13 +257,11 @@ abstract contract HyperdriveShort is HyperdriveBase {
     ///        decreased by if we didn't need to account for the withdrawal
     ///        pool.
     /// @param _sharePayment The payment in shares required to close the short.
-    /// @param _sharePrice The current share price.
     /// @param _maturityTime The maturity time of the short.
     function _applyCloseShort(
         uint256 _bondAmount,
         uint256 _poolBondDelta,
         uint256 _sharePayment,
-        uint256 _sharePrice,
         uint256 _maturityTime
     ) internal {
         // Update the short average maturity time.

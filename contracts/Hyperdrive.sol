@@ -149,7 +149,6 @@ abstract contract Hyperdrive is
                 maturedShortsAmount,
                 0,
                 maturedShortsAmount.divDown(_sharePrice),
-                _sharePrice,
                 _checkpointTime
             );
         }
