@@ -32,15 +32,13 @@ contract HyperdriveTest is Test {
         baseToken = new ERC20Mintable();
 
         // Instantiate Hyperdrive.
-        uint256 timeStretch = FixedPointMath.ONE_18.divDown(
-            22.186877016851916266e18
-        );
+        uint256 apr = 0.05e18;
         hyperdrive = new MockHyperdrive(
             baseToken,
             INITIAL_SHARE_PRICE,
             CHECKPOINTS_PER_TERM,
             CHECKPOINT_DURATION,
-            timeStretch,
+            calculateTimeStretch(apr),
             0,
             0
         );
@@ -48,6 +46,25 @@ contract HyperdriveTest is Test {
         // Advance time so that Hyperdrive can look back more than a position
         // duration.
         vm.warp(POSITION_DURATION * 3);
+    }
+
+    function deploy(
+        address deployer,
+        uint256 apr,
+        uint256 curveFee,
+        uint256 flatFee
+    ) internal {
+        vm.stopPrank();
+        vm.startPrank(deployer);
+        hyperdrive = new MockHyperdrive(
+            baseToken,
+            INITIAL_SHARE_PRICE,
+            CHECKPOINTS_PER_TERM,
+            CHECKPOINT_DURATION,
+            calculateTimeStretch(apr),
+            curveFee,
+            flatFee
+        );
     }
 
     /// Actions ///
@@ -244,6 +261,15 @@ contract HyperdriveTest is Test {
             );
     }
 
+    function calculateFutureValue(
+        uint256 prinicipal,
+        uint256 apr,
+        uint256 timeDelta
+    ) internal pure returns (uint256) {
+        return
+            prinicipal.mulDown(FixedPointMath.ONE_18 + apr.mulDown(timeDelta));
+    }
+
     function calculateTimeRemaining(
         uint256 _maturityTime
     ) internal view returns (uint256 timeRemaining) {
@@ -252,6 +278,13 @@ contract HyperdriveTest is Test {
             : 0;
         timeRemaining = (timeRemaining).divDown(POSITION_DURATION);
         return timeRemaining;
+    }
+
+    function calculateTimeStretch(uint256 apr) internal pure returns (uint256) {
+        uint256 timeStretch = uint256(3.09396e18).divDown(
+            uint256(0.02789e18).mulDown(apr * 100)
+        );
+        return FixedPointMath.ONE_18.divDown(timeStretch);
     }
 
     function latestCheckpoint() internal view returns (uint256) {
