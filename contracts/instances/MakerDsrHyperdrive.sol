@@ -8,8 +8,6 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface Pot {
     function chi() external view returns (uint256);
-
-    // function rho() external view returns (uint256);
 }
 
 interface DsrManager {
@@ -29,9 +27,9 @@ contract MakerDsrHyperdrive is Hyperdrive {
 
     // The shares created by this pool, starts at 1 to one with deposits and increases
     uint256 public totalShares;
-
+    // The pool management contract
     DsrManager public dsrManager;
-
+    // The core Maker accounting module for the Dai Savings Rate
     Pot public pot;
 
     /// @notice Initializes a Hyperdrive pool.
@@ -91,7 +89,9 @@ contract MakerDsrHyperdrive is Hyperdrive {
             revert Errors.TransferFailed();
         }
 
+        // Get total base, deposits + interest
         uint256 totalBase = dsrManager.daiBalance(address(this));
+        // Deposit base into the dsr
         dsrManager.join(address(this), amount);
 
         // Do share calculations
