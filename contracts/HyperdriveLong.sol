@@ -64,7 +64,7 @@ abstract contract HyperdriveLong is HyperdriveBase {
 
         // If the user gets less bonds than they paid we are in the negative interest
         // region of the trading function.
-        if (poolBondDelta < _baseAmount) revert Errors.NegativeInterest();
+        if (bondProceeds < _baseAmount) revert Errors.NegativeInterest();
 
         {
             // Calculate the fees owed by the trader.
