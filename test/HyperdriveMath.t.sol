@@ -598,6 +598,50 @@ contract HyperdriveMathTest is Test {
         assertApproxEqAbs(result, expectedAPR.divDown(100e18), 3e12);
     }
 
+    function test__calculateCloseShortBeforeMaturity() public {
+        // NOTE: Coverage only works if I initialize the fixture in the test function
+        MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
+
+        // Test closing the long at maturity that was opened at 1% APR, No backdating
+        uint256 shareReserves = 450_000_000 ether;
+        uint256 bondReserves = 554_396_668.275587677955627441 ether;
+        uint256 totalSupply = shareReserves.add(bondReserves);
+        uint256 positionDuration = 365 days;
+        uint256 normalizedTimeRemaining = 0.5e18;
+        uint256 timeStretch = FixedPointMath.ONE_18.divDown(
+            110.93438508425959e18
+        );
+        uint256 amountOut = 50_470_266.819034337997436523 ether;
+        uint256 expectedAPR = 1.014782319047301762 ether;
+        (uint256 poolBondDelta, uint256 userDelta) = hyperdriveMath
+            .calculateCloseShort(
+                shareReserves,
+                bondReserves,
+                totalSupply,
+                amountOut,
+                normalizedTimeRemaining,
+                timeStretch,
+                1 ether,
+                1 ether,
+                0 ether,
+                0 ether
+            );
+        // verify that the poolBondDelta equals the amountOut/2
+        assertEq(poolBondDelta, amountOut.mulDown(normalizedTimeRemaining));
+        shareReserves += userDelta;
+        bondReserves -= poolBondDelta;
+        uint256 result = hyperdriveMath.calculateAPRFromReserves(
+            shareReserves,
+            bondReserves,
+            totalSupply,
+            1 ether,
+            positionDuration,
+            timeStretch
+        );
+        // verify that the resulting APR is correct
+        assertApproxEqAbs(result, expectedAPR.divDown(100e18), 3e12);
+    }
+
     function test__calcFeesInGivenOut() public {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
