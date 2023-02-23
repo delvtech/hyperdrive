@@ -389,7 +389,7 @@ contract HyperdriveMathTest is Test {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
 
-        // Test 1% APR, No backdating
+        // Test open long at 1% APR, No backdating
         uint256 shareReserves = 500_000_000 ether;
         uint256 bondReserves = 503_926_401.456553339958190918 ether;
         uint256 totalSupply = shareReserves.add(bondReserves);
@@ -401,7 +401,6 @@ contract HyperdriveMathTest is Test {
         );
         uint256 amountIn = 50_000_000 ether;
         uint256 expectedAPR = 0.882004326279808182 ether;
-
         (uint256 poolBondDelta, uint256 userDelta) = hyperdriveMath
             .calculateOpenLong(
                 shareReserves,
@@ -413,10 +412,10 @@ contract HyperdriveMathTest is Test {
                 sharePrice,
                 initialSharePrice
             );
-
+        // verify that the flat part is zero
+        assertEq(poolBondDelta, userDelta);
         bondReserves -= poolBondDelta;
         shareReserves += amountIn;
-
         uint256 result = hyperdriveMath.calculateAPRFromReserves(
             shareReserves,
             bondReserves,
@@ -425,12 +424,94 @@ contract HyperdriveMathTest is Test {
             positionDuration,
             timeStretch
         );
-
-        // verify that the flat part is zero
-        assertEq(poolBondDelta, userDelta);
-
         // verify that the resulting APR is correct
         assertApproxEqAbs(result, expectedAPR.divDown(100e18), 3e12);
+    }
+
+    function test__calculateCloseLongAtMaturity() public {
+        // NOTE: Coverage only works if I initialize the fixture in the test function
+        MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
+
+        // Test closing the long at maturity that was opened at 1% APR, No backdating
+        uint256 shareReserves = 550_000_000 ether;
+        uint256 bondReserves = 453_456_134.637519001960754395 ether;
+        uint256 totalSupply = shareReserves.add(bondReserves);
+        uint256 sharePrice = 1 ether;
+        uint256 initialSharePrice = 1 ether;
+        uint256 positionDuration = 365 days;
+        uint256 normalizedTimeRemaining = 0;
+        uint256 timeStretch = FixedPointMath.ONE_18.divDown(
+            110.93438508425959e18
+        );
+        uint256 amountIn = 503_926_401.456553339958190918 ether -
+            453_456_134.637519001960754395 ether;
+        uint256 expectedAPR = 0.969008904524498504 ether;
+        (uint256 poolBondDelta, ) = hyperdriveMath.calculateCloseLong(
+            shareReserves,
+            bondReserves,
+            totalSupply,
+            amountIn,
+            normalizedTimeRemaining,
+            timeStretch,
+            sharePrice,
+            initialSharePrice
+        );
+        // verify that the curve part is zero
+        assertEq(poolBondDelta, 0);
+        shareReserves -= amountIn;
+        uint256 result = hyperdriveMath.calculateAPRFromReserves(
+            shareReserves,
+            bondReserves,
+            totalSupply,
+            initialSharePrice,
+            positionDuration,
+            timeStretch
+        );
+        // verify that the resulting APR is correct
+        assertApproxEqAbs(result, expectedAPR.divDown(100e18), 6e12);
+    }
+
+    function test__calculateCloseLongBeforeMaturity() public {
+        // NOTE: Coverage only works if I initialize the fixture in the test function
+        MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
+
+        // Test closing the long halfway thru the term that was opened at 1% APR, No backdating
+        uint256 shareReserves = 550_000_000 ether;
+        uint256 bondReserves = 453_456_134.637519001960754395 ether;
+        uint256 totalSupply = shareReserves.add(bondReserves);
+        uint256 positionDuration = 365 days;
+        uint256 normalizedTimeRemaining = 0.5e18;
+        uint256 timeStretch = FixedPointMath.ONE_18.divDown(
+            110.93438508425959e18
+        );
+        uint256 amountIn = 503_926_401.456553339958190918 ether -
+            453_456_134.637519001960754395 ether;
+        uint256 expectedAPR = 0.985076602986273420 ether;
+        (uint256 poolBondDelta, uint256 userDelta) = hyperdriveMath
+            .calculateCloseLong(
+                shareReserves,
+                bondReserves,
+                totalSupply,
+                amountIn,
+                normalizedTimeRemaining,
+                timeStretch,
+                1 ether,
+                1 ether
+            );
+        // verify that the poolBondDelta equals the amountIn/2
+        assertEq(poolBondDelta, amountIn.mulDown(normalizedTimeRemaining));
+        shareReserves -= userDelta;
+        bondReserves += poolBondDelta;
+        uint256 result = hyperdriveMath.calculateAPRFromReserves(
+            shareReserves,
+            bondReserves,
+            totalSupply,
+            1 ether,
+            positionDuration,
+            timeStretch
+        );
+        // verify that the resulting APR is correct
+        assertApproxEqAbs(result, expectedAPR.divDown(100e18), 4e12);
     }
 
     function test__calcFeesInGivenOut() public {
