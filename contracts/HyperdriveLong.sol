@@ -138,7 +138,8 @@ abstract contract HyperdriveLong is HyperdriveBase {
         }
 
         // Perform a checkpoint at the maturity time, this ensures the bond is closed
-        // and closes all other possible positions in that checkpoint
+        // and closes all other positions in that checkpoint. This will be ignored
+        // if the maturity time is in the future.
         uint256 sharePrice = pricePerShare();
         _applyCheckpoint(_maturityTime, sharePrice);
 
