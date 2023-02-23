@@ -513,7 +513,6 @@ library HyperdriveMath {
                 (FixedPointMath.ONE_18.sub(_timeRemaining)).mulDown(_bondAmount)
             )
         ).divDown(_timeRemaining);
-        return baseVolume;
     }
 
     /// @dev Computes the LP allocation adjustment for a position. This is used
