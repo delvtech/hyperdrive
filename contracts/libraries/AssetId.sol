@@ -45,7 +45,6 @@ library AssetId {
         assembly {
             id := or(shl(0xf8, _prefix), _timestamp)
         }
-        return id;
     }
 
     /// @dev Decodes an encoded asset ID into it's constituent parts of an
