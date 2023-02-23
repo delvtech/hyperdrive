@@ -226,7 +226,7 @@ contract HyperdriveMathTest is Test {
 
         uint256 newBondReserves = hyperdriveMath.calculateBondReserves(
             shareReserves,
-            shareReserves.add(bondReserves).mulDown(.95e18),
+            totalSupply,
             initialSharePrice,
             apr,
             positionDuration,
@@ -254,7 +254,7 @@ contract HyperdriveMathTest is Test {
 
         newBondReserves = hyperdriveMath.calculateBondReserves(
             shareReserves,
-            shareReserves.add(bondReserves).mulDown(.95e18),
+            totalSupply,
             initialSharePrice,
             apr,
             positionDuration,
@@ -282,7 +282,7 @@ contract HyperdriveMathTest is Test {
 
         newBondReserves = hyperdriveMath.calculateBondReserves(
             shareReserves,
-            shareReserves.add(bondReserves).mulDown(.95e18),
+            totalSupply,
             initialSharePrice,
             apr,
             positionDuration,
@@ -310,7 +310,7 @@ contract HyperdriveMathTest is Test {
 
         newBondReserves = hyperdriveMath.calculateBondReserves(
             shareReserves,
-            shareReserves.add(bondReserves).mulDown(.95e18),
+            totalSupply,
             initialSharePrice,
             apr,
             positionDuration,
