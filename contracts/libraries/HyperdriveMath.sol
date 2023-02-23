@@ -41,7 +41,7 @@ library HyperdriveMath {
             _lpTotalSupply,
             _initialSharePrice,
             // full time remaining of position
-            annualizedTime,
+            FixedPointMath.ONE_18,
             _timeStretch
         );
 
@@ -72,12 +72,12 @@ library HyperdriveMath {
     ) internal pure returns (uint256 bondReserves) {
         // NOTE: Using divDown to convert to fixed point format.
         uint256 t = _positionDuration.divDown(365 days);
-        uint256 tau = t.mulDown(_timeStretch);
+        uint256 tau = FixedPointMath.ONE_18.mulDown(_timeStretch);
         // mu * (1 + apr * t) ** (1 / tau) - c
         uint256 rhs = _initialSharePrice
             .mulDown(
                 FixedPointMath.ONE_18.add(_apr.mulDown(t)).pow(
-                    FixedPointMath.ONE_18.divDown(tau)
+                    FixedPointMath.ONE_18.divUp(tau)
                 )
             )
             .sub(_sharePrice);
@@ -149,8 +149,6 @@ library HyperdriveMath {
         uint256 flat = _amountIn.mulDown(
             FixedPointMath.ONE_18.sub(_normalizedTimeRemaining)
         );
-        _shareReserves = _shareReserves.add(flat);
-        _bondReserves = _bondReserves.sub(flat.mulDown(_sharePrice));
         uint256 curveIn = _amountIn.mulDown(_normalizedTimeRemaining);
         // (time remaining)/(term length) is always 1 so we just use _timeStretch
         uint256 curveOut = YieldSpaceMath.calculateBondsOutGivenSharesIn(
@@ -197,8 +195,6 @@ library HyperdriveMath {
         // (our result is given in shares, so we divide the one-to-one
         // redemption by the share price) and the newly minted bonds are
         // traded on a YieldSpace curve configured to timeRemaining = 1.
-
-        // Calculate the flat part of the trade.
         uint256 flat = _amountIn
             .mulDown(FixedPointMath.ONE_18.sub(_normalizedTimeRemaining))
             .divDown(_sharePrice);
@@ -210,10 +206,7 @@ library HyperdriveMath {
         }
 
         if (_normalizedTimeRemaining > 0) {
-            // Calculate the curved part of the trade assuming that the flat part of
-            // the trade was applied to the share and bond reserves.
-            _shareReserves = _shareReserves.sub(flat);
-            _bondReserves = _bondReserves.add(flat.mulDown(_sharePrice));
+            // Calculate the curved part of the trade.
             uint256 curveIn = _amountIn.mulDown(_normalizedTimeRemaining);
             // (time remaining)/(term length) is always 1 so we just use _timeStretch
             uint256 curveOut = YieldSpaceMath.calculateSharesOutGivenBondsIn(
@@ -259,10 +252,7 @@ library HyperdriveMath {
         uint256 flat = _amountIn
             .mulDown(FixedPointMath.ONE_18.sub(_normalizedTimeRemaining))
             .divDown(_sharePrice);
-        // Calculate the curved part of the trade assuming that the flat part of
-        // the trade was applied to the share and bond reserves.
-        _shareReserves = _shareReserves.sub(flat);
-        _bondReserves = _bondReserves.add(flat.mulDown(_sharePrice));
+        // Calculate the curved part of the trade.
         uint256 curveIn = _amountIn.mulDown(_normalizedTimeRemaining).divDown(
             _sharePrice
         );
@@ -315,12 +305,9 @@ library HyperdriveMath {
         // the one-to-one redemption by the share price) and the newly
         // minted bonds are traded on a YieldSpace curve configured to
         // timeRemaining = 1.
-        // Calculate the flat part of the trade.
         uint256 flat = _amountOut
             .mulDown(FixedPointMath.ONE_18.sub(_normalizedTimeRemaining))
             .divDown(_sharePrice);
-        _shareReserves = _shareReserves.add(flat);
-        _bondReserves = _bondReserves.sub(flat.mulDown(_sharePrice));
         uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
             _shareReserves,
             _bondReserves,
@@ -329,7 +316,6 @@ library HyperdriveMath {
             _normalizedTimeRemaining,
             _timeStretch
         );
-        // reuse variables to save stack space
         (_curveFee, _flatFee) = HyperdriveMath.calculateFeesInGivenOut(
             _amountOut, // amountOut
             _normalizedTimeRemaining,
@@ -517,7 +503,6 @@ library HyperdriveMath {
                 (FixedPointMath.ONE_18.sub(_timeRemaining)).mulDown(_bondAmount)
             )
         ).divDown(_timeRemaining);
-        return baseVolume;
     }
 
     /// @dev Computes the LP allocation adjustment for a position. This is used
@@ -542,7 +527,6 @@ library HyperdriveMath {
         );
         // adjustment = baseAdjustment / c
         adjustment = adjustment.divDown(_sharePrice);
-        return adjustment;
     }
 
     /// @dev Calculates the amount of base shares released from burning a

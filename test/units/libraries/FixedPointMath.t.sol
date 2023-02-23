@@ -6,7 +6,6 @@ import "test/mocks/MockFixedPointMath.sol";
 import "test/3rdPartyLibs/LogExpMath.sol";
 import "test/3rdPartyLibs/BalancerErrors.sol";
 import { Errors } from "contracts/libraries/Errors.sol";
-import "forge-std/console2.sol";
 
 contract FixedPointMathTest is Test {
     function setUp() public {}
