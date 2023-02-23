@@ -262,12 +262,12 @@ contract HyperdriveTest is Test {
     }
 
     function calculateFutureValue(
-        uint256 prinicipal,
+        uint256 principal,
         uint256 apr,
         uint256 timeDelta
     ) internal pure returns (uint256) {
         return
-            prinicipal.mulDown(FixedPointMath.ONE_18 + apr.mulDown(timeDelta));
+            principal.mulDown(FixedPointMath.ONE_18 + apr.mulDown(timeDelta));
     }
 
     function calculateTimeRemaining(

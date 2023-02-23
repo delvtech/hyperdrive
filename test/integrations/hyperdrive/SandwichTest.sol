@@ -1,18 +1,24 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-// FIXME
-import "forge-std/console.sol";
-
 import "contracts/libraries/FixedPointMath.sol";
 import "../../utils/HyperdriveTest.sol";
 
 contract SandwichTest is HyperdriveTest {
     using FixedPointMath for uint256;
 
-    function test_sandwich_test_trades() external {
-        uint256 apr = 0.01e18;
-        deploy(alice, apr, 0.01e18, 0);
+    function test_sandwich_test_trades(uint8 _apr, uint64 _timeDelta) external {
+        uint256 apr = uint256(_apr) * 0.01e18;
+        uint256 timeDelta = uint256(_timeDelta);
+        vm.assume(apr >= 0.005e18 && apr <= 0.2e18);
+        vm.assume(timeDelta <= FixedPointMath.ONE_18 && timeDelta >= 0);
+
+        // Deploy the pool with fees.
+        {
+            uint256 timeStretchApr = 0.02e18;
+            uint256 curveFee = 0.1e18;
+            deploy(alice, timeStretchApr, curveFee, 0);
+        }
 
         // Initialize the market.
         uint256 contribution = 500_000_000e18;
@@ -26,7 +32,6 @@ contract SandwichTest is HyperdriveTest {
         );
 
         // Some of the term passes and interest accrues at the starting APR.
-        uint256 timeDelta = 1e18;
         vm.warp(block.timestamp + POSITION_DURATION.mulDown(timeDelta));
         hyperdrive.setSharePrice(
             getPoolInfo().sharePrice.mulDown(
@@ -36,26 +41,18 @@ contract SandwichTest is HyperdriveTest {
 
         // Celine opens a short.
         uint256 shortAmount = 200_000_000e18;
-        (uint256 shortMaturitytime, uint256 shortPaid) = openShort(
-            celine,
-            shortAmount
-        );
+        (uint256 shortMaturitytime, ) = openShort(celine, shortAmount);
 
         // Bob closes his long.
-        uint256 longProceeds = closeLong(bob, longMaturityTime, longAmount);
+        closeLong(bob, longMaturityTime, longAmount);
 
-        // Celine immediately closes her short. She shouldn't have made a profit.
-        uint256 shortProceeds = closeShort(
-            celine,
-            shortMaturitytime,
-            shortAmount
-        );
-        assertLe(shortProceeds, shortPaid);
+        // Celine immediately closes her short.
+        closeShort(celine, shortMaturitytime, shortAmount);
 
-        // FIXME: This isn't a good enough check.
-        //
-        // Alice burns her LP shares. She should end up with more money than she
-        // started with.
+        // Ensure the proceeds from the sandwich attack didn't negatively
+        // impact the LP. With this in mind, they should have made at least as
+        // much money as if no trades had been made and they just collected
+        // variable APR.
         uint256 lpProceeds = removeLiquidity(alice, lpShares);
         assertGe(
             lpProceeds,

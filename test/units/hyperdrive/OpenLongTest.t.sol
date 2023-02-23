@@ -111,23 +111,12 @@ contract OpenLongTest is HyperdriveTest {
             apr
         );
 
-        uint256 timeStretch = FixedPointMath.ONE_18.divDown(
-            22.186877016851916266e18
-        );
-
-        hyperdrive = new MockHyperdrive(
-            baseToken,
-            INITIAL_SHARE_PRICE,
-            CHECKPOINTS_PER_TERM,
-            CHECKPOINT_DURATION,
-            timeStretch,
-            0.1 ether,
-            0.1 ether
-        );
+        // Deploy and initialize a new pool with fees.
+        deploy(alice, apr, 0.1e18, 0.1e18);
         initialize(alice, apr, contribution);
-        // Get the reserves before opening the long.
-        PoolInfo memory poolInfoBeforeWithFees = getPoolInfo();
+
         // Open a long with fees.
+        PoolInfo memory poolInfoBeforeWithFees = getPoolInfo();
         (, uint256 bondAmountWithFees) = openLong(celine, baseAmount);
 
         _verifyOpenLong(

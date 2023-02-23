@@ -51,7 +51,7 @@ contract MockHyperdrive is Hyperdrive {
     }
 
     function setSharePrice(uint256 sharePrice) external {
-        if (sharePrice <= _sharePrice) {
+        if (sharePrice < _sharePrice) {
             revert InvalidSharePrice();
         }
 

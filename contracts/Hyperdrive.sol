@@ -63,7 +63,7 @@ abstract contract Hyperdrive is
             _curveFee,
             _flatFee
         )
-    {}
+    {} // solhint-disable-line no-empty-blocks
 
     /// @notice Allows anyone to mint a new checkpoint.
     /// @param _checkpointTime The time of the checkpoint to create.
