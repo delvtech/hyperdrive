@@ -41,7 +41,7 @@ library HyperdriveMath {
             _lpTotalSupply,
             _initialSharePrice,
             // full time remaining of position
-            annualizedTime,
+            FixedPointMath.ONE_18,
             _timeStretch
         );
 
@@ -72,12 +72,12 @@ library HyperdriveMath {
     ) internal pure returns (uint256 bondReserves) {
         // NOTE: Using divDown to convert to fixed point format.
         uint256 t = _positionDuration.divDown(365 days);
-        uint256 tau = t.mulDown(_timeStretch);
+        uint256 tau = FixedPointMath.ONE_18.mulDown(_timeStretch);
         // mu * (1 + apr * t) ** (1 / tau) - c
         uint256 rhs = _initialSharePrice
             .mulDown(
                 FixedPointMath.ONE_18.add(_apr.mulDown(t)).pow(
-                    FixedPointMath.ONE_18.divDown(tau)
+                    FixedPointMath.ONE_18.divUp(tau)
                 )
             )
             .sub(_sharePrice);
@@ -513,7 +513,6 @@ library HyperdriveMath {
                 (FixedPointMath.ONE_18.sub(_timeRemaining)).mulDown(_bondAmount)
             )
         ).divDown(_timeRemaining);
-        return baseVolume;
     }
 
     /// @dev Computes the LP allocation adjustment for a position. This is used
@@ -538,7 +537,6 @@ library HyperdriveMath {
         );
         // adjustment = baseAdjustment / c
         adjustment = adjustment.divDown(_sharePrice);
-        return adjustment;
     }
 
     /// @dev Calculates the amount of base shares released from burning a
