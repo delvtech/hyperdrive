@@ -118,7 +118,7 @@ contract AaveHyperdrive is Hyperdrive {
         // Do share calculations
         if (totalShares == 0) {
             totalShares = amount;
-            return (amount, assets.divDown(amount));
+            return (amount, FixedPointMath.ONE_18);
         } else {
             uint256 newShares = totalShares.mulDown(amount.divDown(assets));
             totalShares += newShares;

@@ -8,6 +8,10 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface Pot {
     function chi() external view returns (uint256);
+
+    function rho() external view returns (uint256);
+
+    function dsr() external view returns (uint256);
 }
 
 interface DsrManager {
@@ -72,6 +76,8 @@ contract MakerDsrHyperdrive is Hyperdrive {
     {
         dsrManager = _dsrManager;
         pot = Pot(dsrManager.pot());
+
+        _baseToken.approve(address(dsrManager), type(uint256).max);
     }
 
     ///@notice Transfers amount of 'token' from the user and commits it to the yield source.
@@ -80,7 +86,7 @@ contract MakerDsrHyperdrive is Hyperdrive {
     ///@return sharePrice The share price at time of deposit
     function _deposit(
         uint256 amount,
-        bool
+        bool asUnderlying
     ) internal override returns (uint256 sharesMinted, uint256 sharePrice) {
         // Transfer from user
         bool success = baseToken.transferFrom(
@@ -100,7 +106,7 @@ contract MakerDsrHyperdrive is Hyperdrive {
         // Do share calculations
         if (totalShares == 0) {
             totalShares = amount;
-            return (amount, totalBase.divDown(amount));
+            return (amount, FixedPointMath.ONE_18);
         } else {
             uint256 newShares = totalShares.mulDown(amount.divDown(totalBase));
             totalShares += newShares;
@@ -136,13 +142,74 @@ contract MakerDsrHyperdrive is Hyperdrive {
         override
         returns (uint256 sharePrice)
     {
-        // The interest rate accumulator
-        uint256 chi = pot.chi();
+        // timestamp when drip was last called
+        uint256 rho = pot.rho();
+        // Rate accumulator as of last
+        uint256 _chi = pot.chi();
+        // Annualized interest rate
+        uint256 dsr = pot.dsr();
+        // Updates the rate accumulator to current time
+        uint256 chi = (block.timestamp > rho)
+            ? _rpow(dsr, block.timestamp - rho, 1e27).mulDivDown(_chi, 1e27)
+            : _chi;
         // The normalized DAI amount owned by this contract
         uint256 pie = dsrManager.pieOf(address(this));
         // Load the balance of this contract
-        uint256 totalBase = pie.mulDown(chi);
+        uint256 totalBase = pie.mulDivDown(chi, 1e27);
         // The share price is assets divided by shares
         return (totalBase.divDown(totalShares));
+    }
+
+    /// @notice Taken from https://github.com/makerdao/dss/blob/master/src/pot.sol#L85
+    /// @return z
+    function _rpow(uint x, uint n, uint base) internal pure returns (uint z) {
+        assembly {
+            switch x
+            case 0 {
+                switch n
+                case 0 {
+                    z := base
+                }
+                default {
+                    z := 0
+                }
+            }
+            default {
+                switch mod(n, 2)
+                case 0 {
+                    z := base
+                }
+                default {
+                    z := x
+                }
+                let half := div(base, 2) // for rounding.
+                for {
+                    n := div(n, 2)
+                } n {
+                    n := div(n, 2)
+                } {
+                    let xx := mul(x, x)
+                    if iszero(eq(div(xx, x), x)) {
+                        revert(0, 0)
+                    }
+                    let xxRound := add(xx, half)
+                    if lt(xxRound, xx) {
+                        revert(0, 0)
+                    }
+                    x := div(xxRound, base)
+                    if mod(n, 2) {
+                        let zx := mul(z, x)
+                        if and(iszero(iszero(x)), iszero(eq(div(zx, x), z))) {
+                            revert(0, 0)
+                        }
+                        let zxRound := add(zx, half)
+                        if lt(zxRound, zx) {
+                            revert(0, 0)
+                        }
+                        z := div(zxRound, base)
+                    }
+                }
+            }
+        }
     }
 }

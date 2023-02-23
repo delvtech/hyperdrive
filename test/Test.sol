@@ -418,7 +418,7 @@ contract BaseTest is Test {
     function createUser(string memory name) public returns (address _user) {
         _user = address(uint160(uint256(keccak256(abi.encode(name)))));
         vm.label(_user, name);
-        vm.deal(_user, 100 ether);
+        vm.deal(_user, 10000 ether);
     }
 }
 
