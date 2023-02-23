@@ -278,7 +278,7 @@ contract CloseLongTest is HyperdriveTest {
             poolInfoAfter.shareReserves,
             poolInfoBefore.shareReserves -
                 baseProceeds.divDown(poolInfoBefore.sharePrice),
-            //0.00000001 off or 1 wei
+            // 0.00000001 off or 1 wei
             poolInfoAfter.shareReserves.mulDown(100000000000) + 1
         );
         assertEq(poolInfoAfter.lpTotalSupply, poolInfoBefore.lpTotalSupply);
