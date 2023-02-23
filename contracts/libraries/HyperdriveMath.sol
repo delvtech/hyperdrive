@@ -537,7 +537,6 @@ library HyperdriveMath {
         );
         // adjustment = baseAdjustment / c
         adjustment = adjustment.divDown(_sharePrice);
-        return adjustment;
     }
 
     /// @dev Calculates the amount of base shares released from burning a
