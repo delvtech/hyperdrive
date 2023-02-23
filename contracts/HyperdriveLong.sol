@@ -368,12 +368,11 @@ abstract contract HyperdriveLong is HyperdriveBase {
                 : _bondAmount;
 
             uint256 withdrawalProceeds;
+            uint256 openShares = _bondAmount.divDown(openSharePrice)
             // We check if the interest rate was negative
-            if (_sharePrice > openSharePrice) {
+            if (openShares > _shareProceeds) {
                 // If not we do the normal calculation
-                withdrawalProceeds = _bondAmount
-                    .divDown(openSharePrice)
-                    .sub(_shareProceeds)
+                withdrawalProceeds = openShares.sub(_shareProceeds)
                     .mulDown(withdrawalAmount.divDown(_bondAmount));
             } else {
                 // If there's negative interest the LP's position is fully wiped out and has zero value.
