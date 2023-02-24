@@ -26,6 +26,8 @@ interface DsrManager {
     function join(address, uint256) external;
 
     function exit(address, uint256) external;
+
+    function exitAll(address) external;
 }
 
 interface Chai {
@@ -79,7 +81,7 @@ contract MakerDsrHyperdrive is Hyperdrive {
         Hyperdrive(
             _linkerCodeHash,
             _linkerFactory,
-            address(_dsrManager.dai()), // baseToken will always be DAI
+            IERC20(address(_dsrManager.dai())), // baseToken will always be DAI
             FixedPointMath.ONE_18,
             _checkpointsPerTerm,
             _checkpointDuration,
@@ -91,7 +93,7 @@ contract MakerDsrHyperdrive is Hyperdrive {
         dsrManager = _dsrManager;
         chai = Chai(address(_chai));
         pot = Pot(dsrManager.pot());
-        _baseToken.approve(address(dsrManager), type(uint256).max);
+        baseToken.approve(address(dsrManager), type(uint256).max);
     }
 
     /// @notice Transfers base or shares from the user and commits it to the yield source.
@@ -166,9 +168,9 @@ contract MakerDsrHyperdrive is Hyperdrive {
         // this contract
         if (totalShares == 0) {
             // Use differential amounts for rounding
-            uint256 pre = dai.balanceOf(address(this));
+            uint256 pre = baseToken.balanceOf(address(this));
             dsrManager.exitAll(asUnderlying ? destination : address(this));
-            amountWithdrawn = dai.balanceOf(address(this)) - pre;
+            amountWithdrawn = baseToken.balanceOf(address(this)) - pre;
         } else {
             dsrManager.exit(
                 asUnderlying ? destination : address(this),
@@ -179,12 +181,10 @@ contract MakerDsrHyperdrive is Hyperdrive {
         // If user is redeeming their shares in chai then insert withdrawn dai
         // to the chai contract
         if (!asUnderlying) {
-            chai.join(destination, daiToWithdraw);
+            chai.join(destination, amountWithdrawn);
         }
 
-        sharePrice = totalShares != 0
-            ? shares.divDown(amountWithdrawn)
-            : FixedPointMath.ONE_18;
+        sharePrice = shares.divDown(amountWithdrawn);
     }
 
     /// @notice Loads the share price from the yield source.

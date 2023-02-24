@@ -37,7 +37,7 @@ contract MakerDsrHyperdrive is BaseTest {
         );
 
         vm.startPrank(deployer);
-        hyperdrive = new MockMakerDsrHyperdrive(dai, chai, dsrManager);
+        hyperdrive = new MockMakerDsrHyperdrive(chai, dsrManager);
         vm.stopPrank();
 
         address chaiWhale = 0x602f2E120A9956F2Ad1cE47cED286fcEfbBa9f8C;

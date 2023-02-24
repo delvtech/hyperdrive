@@ -10,14 +10,12 @@ contract MockMakerDsrHyperdrive is MakerDsrHyperdrive {
     using FixedPointMath for uint256;
 
     constructor(
-        IERC20 _daiToken,
         IERC20 _chaiToken,
         DsrManager _dsrManager
     )
         MakerDsrHyperdrive(
             bytes32(0),
             address(new ForwarderFactory()),
-            _daiToken,
             365,
             1 days,
             FixedPointMath.ONE_18.divDown(22.186877016851916266e18),
