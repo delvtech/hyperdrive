@@ -246,7 +246,7 @@ contract MakerDsrHyperdrive is BaseTest {
         hyperdrive.deposit(1, false);
     }
 
-    function test__unsupported_withdrawl() public {
+    function test__unsupported_withdraw() public {
         vm.expectRevert(Errors.Unsupported.selector);
         hyperdrive.withdraw(1, alice, false);
     }
