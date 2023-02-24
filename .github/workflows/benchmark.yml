@@ -45,10 +45,6 @@ jobs:
           path: ./cache
           key: ${{ runner.os }}-benchmark
 
-      # FIXME: Remove this
-      - name: Seed the benchmark with data.
-        run: cp benchmarks.json ./cache/benchmarks.json
-
       # Run `github-action-benchmark` action
       - name: Store benchmark result
         uses: benchmark-action/github-action-benchmark@v1
