@@ -10,6 +10,8 @@ import { HyperdriveMath } from "contracts/libraries/HyperdriveMath.sol";
 import { ERC20PresetFixedSupply } from "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import { ForwarderFactory } from "contracts/ForwarderFactory.sol";
 import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
+import { Address } from "@openzeppelin/contracts/utils/Address.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 library TestLib {
     // @notice Generates a matrix of all of the different combinations of
@@ -406,6 +408,9 @@ contract BaseTest is Test {
     address minter;
     address deployer;
 
+    error WhaleBalanceExceeded();
+    error WhaleIsContract();
+
     function setUp() public virtual {
         alice = createUser("alice");
         bob = createUser("bob");
@@ -419,6 +424,30 @@ contract BaseTest is Test {
         _user = address(uint160(uint256(keccak256(abi.encode(name)))));
         vm.label(_user, name);
         vm.deal(_user, 10000 ether);
+    }
+
+    function whaleTransfer(
+        address whale,
+        IERC20 token,
+        address to
+    ) public returns (uint256) {
+        return whaleTransfer(whale, token, token.balanceOf(whale), to);
+    }
+
+    function whaleTransfer(
+        address whale,
+        IERC20 token,
+        uint256 amount,
+        address to
+    ) public returns (uint256) {
+        uint256 whaleBalance = token.balanceOf(whale);
+        if (amount > whaleBalance) revert WhaleBalanceExceeded();
+        if (Address.isContract(whale)) revert WhaleIsContract();
+        vm.stopPrank();
+        vm.startPrank(whale);
+        vm.deal(whale, 1 ether);
+        token.transfer(to, amount);
+        return amount;
     }
 }
 
