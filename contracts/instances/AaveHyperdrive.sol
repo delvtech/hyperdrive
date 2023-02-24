@@ -77,11 +77,7 @@ contract AaveHyperdrive is Hyperdrive {
     function _deposit(
         uint256 amount,
         bool asUnderlying
-    )
-        internal
-        override
-        returns (uint256 sharesMinted, uint256 sharePrice)
-    {
+    ) internal override returns (uint256 sharesMinted, uint256 sharePrice) {
         // Load the balance of this pool
         uint256 assets = aToken.balanceOf(address(this));
 
@@ -124,11 +120,7 @@ contract AaveHyperdrive is Hyperdrive {
         uint256 shares,
         address destination,
         bool asUnderlying
-    )
-        internal
-        override
-        returns (uint256 amountWithdrawn, uint256 sharePrice)
-    {
+    ) internal override returns (uint256 amountWithdrawn, uint256 sharePrice) {
         // Load the balance of this contract
         uint256 assets = aToken.balanceOf(address(this));
         // The withdraw is the percent of shares the user has times the total assets

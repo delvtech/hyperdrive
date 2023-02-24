@@ -163,7 +163,7 @@ contract MakerDsrHyperdrive is Hyperdrive {
         totalShares -= shares;
 
         // If all shares are removed from the pool we exit all underlying,
-        // otherwise the users prtion worth of dai is exited. In the case where
+        // otherwise the users portion worth of dai is exited. In the case where
         // the user is redeeming back to chai then the dai is directly sent to
         // this contract
         if (totalShares == 0) {
@@ -207,7 +207,7 @@ contract MakerDsrHyperdrive is Hyperdrive {
     /// @dev The Maker protocol uses a tick based accounting mechanic to
     ///      accumulate interest in a single variable called the rate
     ///      accumulator or more commonly "chi".
-    ///      This is recalibrated on any interaction with the maker protocol by
+    ///      This is re-calibrated on any interaction with the maker protocol by
     ///      a function pot.drip(). The rationale for not using this is that it
     ///      is not a view function and so the purpose of this function is to
     ///      get the real chi value without interacting with the core maker
