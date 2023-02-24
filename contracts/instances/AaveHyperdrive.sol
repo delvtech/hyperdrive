@@ -83,18 +83,6 @@ contract AaveHyperdrive is Hyperdrive {
         override
         returns (uint256 sharesMinted, uint256 sharePrice)
     {
-        {
-            // Transfer from user
-            bool success = baseToken.transferFrom(
-                msg.sender,
-                address(this),
-                amount
-            );
-            if (!success) {
-                revert Errors.TransferFailed();
-            }
-        }
-
         // Load the balance of this pool
         uint256 assets = aToken.balanceOf(address(this));
 
