@@ -10,6 +10,7 @@ import { MockMakerDsrHyperdrive, DsrManager } from "test/mocks/MockMakerDsrHyper
 import { ForwarderFactory } from "contracts/ForwarderFactory.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
+import { Errors } from "contracts/libraries/Errors.sol";
 
 contract MakerDsrHyperdrive is BaseTest {
     using FixedPointMath for uint256;
@@ -238,5 +239,15 @@ contract MakerDsrHyperdrive is BaseTest {
                 "emulated share price should match pool ratio after deposit"
             );
         }
+    }
+
+    function test__unsupported_deposit() public {
+        vm.expectRevert(Errors.Unsupported.selector);
+        hyperdrive.deposit(1, false);
+    }
+
+    function test__unsupported_withdrawl() public {
+        vm.expectRevert(Errors.Unsupported.selector);
+        hyperdrive.withdraw(1, alice, false);
     }
 }
