@@ -97,6 +97,7 @@ abstract contract Hyperdrive is
                 }
                 if (closestSharePrice != 0) {
                     _applyCheckpoint(_checkpointTime, closestSharePrice);
+                    break;
                 }
             }
         }
