@@ -36,6 +36,7 @@ contract MakerDsrHyperdrive is Hyperdrive {
     // @notice The shares created by this pool, starts at 1 to one with
     //         deposits and increases
     uint256 public totalShares;
+
     // @notice The pool management contract
     DsrManager public dsrManager;
     // @notice The core Maker accounting module for the Dai Savings Rate
@@ -152,7 +153,7 @@ contract MakerDsrHyperdrive is Hyperdrive {
         // If all shares are removed from the pool we exit all underlying,
         // otherwise the users portion worth of dai is exited.
         if (totalShares == 0) {
-            // Use differential amounts for rounding - TODO Maybe unneccessary?
+            // Use differential amounts for rounding - TODO Is this needed?
             uint256 preExitBalance = baseToken.balanceOf(address(destination));
             dsrManager.exitAll(destination);
             amountWithdrawn =
