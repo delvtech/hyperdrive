@@ -15,6 +15,8 @@ interface Pot {
 }
 
 interface DsrManager {
+    function dai() external view returns (address);
+
     function pot() external view returns (address);
 
     function pieOf(address) external view returns (uint256);
@@ -53,8 +55,7 @@ contract MakerDsrHyperdrive is Hyperdrive {
     ///        constructor code.
     /// @param _linkerFactory The factory which is used to deploy the ERC20
     ///        linker contracts.
-    /// @param _baseToken The base token contract.
-    /// @param _checkpointsPerTerm The number of checkpoints that elaspes before
+    /// @param _checkpointsPerTerm The number of checkpoints that elapses before
     ///        bonds can be redeemed one-to-one for base.
     /// @param _checkpointDuration The time in seconds between share price
     ///        checkpoints. Position duration must be a multiple of checkpoint
@@ -62,24 +63,23 @@ contract MakerDsrHyperdrive is Hyperdrive {
     /// @param _timeStretch The time stretch of the pool.
     /// @param _curveFee The fee parameter for the curve portion of the hyperdrive trade equation.
     /// @param _flatFee The fee parameter for the flat portion of the hyperdrive trade equation.
-    /// @param _dsrManager The "dai savings rate" manager contract
+    /// @param _chai The "dai savings rate" manager contract
     /// @param _dsrManager The "dai savings rate" manager contract
     constructor(
         bytes32 _linkerCodeHash,
         address _linkerFactory,
-        IERC20 _baseToken,
         uint256 _checkpointsPerTerm,
         uint256 _checkpointDuration,
         uint256 _timeStretch,
         uint256 _curveFee,
         uint256 _flatFee,
-        IERC20 _shareToken,
+        IERC20 _chai,
         DsrManager _dsrManager
     )
         Hyperdrive(
             _linkerCodeHash,
             _linkerFactory,
-            _baseToken,
+            address(_dsrManager.dai()), // baseToken will always be DAI
             FixedPointMath.ONE_18,
             _checkpointsPerTerm,
             _checkpointDuration,
@@ -89,7 +89,7 @@ contract MakerDsrHyperdrive is Hyperdrive {
         )
     {
         dsrManager = _dsrManager;
-        chai = Chai(address(_shareToken));
+        chai = Chai(address(_chai));
         pot = Pot(dsrManager.pot());
         _baseToken.approve(address(dsrManager), type(uint256).max);
     }

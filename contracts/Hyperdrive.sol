@@ -33,7 +33,7 @@ abstract contract Hyperdrive is
     ///        the ERC20 linker contracts.
     /// @param _baseToken The base token contract.
     /// @param _initialSharePrice The initial share price.
-    /// @param _checkpointsPerTerm The number of checkpoints that elaspes before
+    /// @param _checkpointsPerTerm The number of checkpoints that elapses before
     ///        bonds can be redeemed one-to-one for base.
     /// @param _checkpointDuration The time in seconds between share price
     ///        checkpoints. Position duration must be a multiple of checkpoint
