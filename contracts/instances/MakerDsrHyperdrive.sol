@@ -30,26 +30,17 @@ interface DsrManager {
     function exitAll(address) external;
 }
 
-interface Chai {
-    function join(address, uint256) external;
-
-    function exit(address, uint256) external;
-
-    function approve(address, uint256) external;
-}
-
 contract MakerDsrHyperdrive is Hyperdrive {
     using FixedPointMath for uint256;
 
-    // The shares created by this pool, starts at 1 to one with deposits and increases
+    // @notice The shares created by this pool, starts at 1 to one with
+    //         deposits and increases
     uint256 public totalShares;
-    // The pool management contract
+    // @notice The pool management contract
     DsrManager public dsrManager;
-    // The core Maker accounting module for the Dai Savings Rate
+    // @notice The core Maker accounting module for the Dai Savings Rate
     Pot public pot;
-    // Shares abstracted in an ERC20 - Chai
-    Chai public chai;
-    // Maker constant
+    // @notice Maker constant
     uint256 public constant RAY = 1e27;
 
     /// @notice Initializes a Hyperdrive pool.
@@ -65,7 +56,6 @@ contract MakerDsrHyperdrive is Hyperdrive {
     /// @param _timeStretch The time stretch of the pool.
     /// @param _curveFee The fee parameter for the curve portion of the hyperdrive trade equation.
     /// @param _flatFee The fee parameter for the flat portion of the hyperdrive trade equation.
-    /// @param _chai The "dai savings rate" manager contract
     /// @param _dsrManager The "dai savings rate" manager contract
     constructor(
         bytes32 _linkerCodeHash,
@@ -75,7 +65,6 @@ contract MakerDsrHyperdrive is Hyperdrive {
         uint256 _timeStretch,
         uint256 _curveFee,
         uint256 _flatFee,
-        IERC20 _chai,
         DsrManager _dsrManager
     )
         Hyperdrive(
@@ -91,13 +80,12 @@ contract MakerDsrHyperdrive is Hyperdrive {
         )
     {
         dsrManager = _dsrManager;
-        chai = Chai(address(_chai));
         pot = Pot(dsrManager.pot());
         baseToken.approve(address(dsrManager), type(uint256).max);
     }
 
     /// @notice Transfers base or shares from the user and commits it to the yield source.
-    /// @param amount The amount of base or share tokens to deposit.
+    /// @param amount The amount of base tokens to deposit.
     /// @param asUnderlying If true the yield source will transfer underlying tokens
     ///                     if false it will transfer the yielding asset directly
     /// @return sharesMinted The shares this deposit creates.
@@ -106,26 +94,22 @@ contract MakerDsrHyperdrive is Hyperdrive {
         uint256 amount,
         bool asUnderlying
     ) internal override returns (uint256 sharesMinted, uint256 sharePrice) {
-        // Transfer the share or base token from the user to this contract
-        if (asUnderlying) {
-            bool success = baseToken.transferFrom(
-                msg.sender,
-                address(this),
-                amount
-            );
-            if (!success) {
-                revert Errors.TransferFailed();
-            }
-        } else {
-            chai.exit(msg.sender, amount);
+        if (!asUnderlying) {
+            revert Errors.Unsupported();
+        }
+
+        // Transfer the base token from the user to this contract
+        bool success = baseToken.transferFrom(
+            msg.sender,
+            address(this),
+            amount
+        );
+        if (!success) {
+            revert Errors.TransferFailed();
         }
 
         // Get total invested balance of pool, deposits + interest
         uint256 totalBase = dsrManager.daiBalance(address(this));
-
-        // As the amount is denominated in DAI or CHAI, in the case of the user
-        // depositing CHAI, then we must derive how much DAI was exited.
-        amount = asUnderlying ? amount : amount.mulDivDown(pot.chi(), RAY);
 
         // Deposit the base tokens into the dsr
         dsrManager.join(address(this), amount);
@@ -152,6 +136,9 @@ contract MakerDsrHyperdrive is Hyperdrive {
         address destination,
         bool asUnderlying
     ) internal override returns (uint256 amountWithdrawn, uint256 sharePrice) {
+        if (!asUnderlying) {
+            revert Errors.Unsupported();
+        }
         // Load the balance of this contract - this calls drip internally so
         // this is real deposits + interest accrued at point in time
         uint256 totalBase = dsrManager.daiBalance(address(this));
@@ -163,28 +150,18 @@ contract MakerDsrHyperdrive is Hyperdrive {
         totalShares -= shares;
 
         // If all shares are removed from the pool we exit all underlying,
-        // otherwise the users portion worth of dai is exited. In the case where
-        // the user is redeeming back to chai then the dai is directly sent to
-        // this contract
+        // otherwise the users portion worth of dai is exited.
         if (totalShares == 0) {
-            // Use differential amounts for rounding
-            uint256 pre = baseToken.balanceOf(address(this));
-            dsrManager.exitAll(asUnderlying ? destination : address(this));
-            amountWithdrawn = baseToken.balanceOf(address(this)) - pre;
+            // Use differential amounts for rounding - TODO Maybe unneccessary?
+            uint256 preExitBalance = baseToken.balanceOf(address(destination));
+            dsrManager.exitAll(destination);
+            amountWithdrawn =
+                baseToken.balanceOf(address(destination)) -
+                preExitBalance;
         } else {
-            dsrManager.exit(
-                asUnderlying ? destination : address(this),
-                amountWithdrawn
-            );
+            dsrManager.exit(destination, amountWithdrawn);
         }
-
-        // If user is redeeming their shares in chai then insert withdrawn dai
-        // to the chai contract
-        if (!asUnderlying) {
-            chai.join(destination, amountWithdrawn);
-        }
-
-        sharePrice = shares.divDown(amountWithdrawn);
+        return (amountWithdrawn, amountWithdrawn.divDown(shares));
     }
 
     /// @notice Loads the share price from the yield source.
