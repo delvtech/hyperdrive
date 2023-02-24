@@ -1,0 +1,68 @@
+name: Benchmark
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  benchmark:
+    name: benchmark
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: install node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 14.x
+
+      - name: install packages
+        uses: borales/actions-yarn@v4
+        with:
+          cmd: install # will run `yarn install` command
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # if needed
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      # Run gas benchmark and stores the output to a json file.
+      - name: Run benchmark
+        run: python scripts/gas_benchmarks.py benchmarks.json
+
+      # Download previous benchmark result from cache (if exists)
+      - name: Download previous benchmark data
+        uses: actions/cache@v3
+        with:
+          path: ./cache
+          key: ${{ runner.os }}-benchmark
+
+      # Run `github-action-benchmark` action
+      - name: Store benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: Hyperdrive Gas Benchmark
+          # We're using the custom tool since there isn't a Solidity tool yet.
+          tool: "customSmallerIsBetter"
+          # Where the output from the benchmark tool is stored
+          output-file-path: benchmarks.json
+          # Where the previous data file is stored
+          external-data-json-path: ./cache/benchmark-data.json
+          # Workflow will fail when an alert happens
+          fail-on-alert: true
+          # Always leave a comment on the PR
+          comment-always: true
+          # Needed to allow the project to comment on PRs.
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update the benchmark on main
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        run: cp benchmarks.json ./cache/benchmarks.json
