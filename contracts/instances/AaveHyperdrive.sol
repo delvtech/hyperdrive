@@ -79,7 +79,6 @@ contract AaveHyperdrive is Hyperdrive {
         bool asUnderlying
     )
         internal
-        virtual
         override
         returns (uint256 sharesMinted, uint256 sharePrice)
     {
@@ -127,7 +126,6 @@ contract AaveHyperdrive is Hyperdrive {
         bool asUnderlying
     )
         internal
-        virtual
         override
         returns (uint256 amountWithdrawn, uint256 sharePrice)
     {
@@ -157,7 +155,6 @@ contract AaveHyperdrive is Hyperdrive {
     function _pricePerShare()
         internal
         view
-        virtual
         override
         returns (uint256 sharePrice)
     {
