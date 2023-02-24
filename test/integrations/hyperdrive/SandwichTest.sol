@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
+import "contracts/libraries/AssetId.sol";
 import "contracts/libraries/FixedPointMath.sol";
 import "../../utils/HyperdriveTest.sol";
 
 contract SandwichTest is HyperdriveTest {
     using FixedPointMath for uint256;
 
-    function test_sandwich_test_trades(uint8 _apr, uint64 _timeDelta) external {
+    function test_sandwich_trades(uint8 _apr, uint64 _timeDelta) external {
         uint256 apr = uint256(_apr) * 0.01e18;
         uint256 timeDelta = uint256(_timeDelta);
         vm.assume(apr >= 0.005e18 && apr <= 0.2e18);
@@ -58,5 +59,45 @@ contract SandwichTest is HyperdriveTest {
             lpProceeds,
             calculateFutureValue(contribution, apr, timeDelta)
         );
+    }
+
+    function test_sandwich_lp(uint8 _apr) external {
+        uint256 apr = uint256(_apr) * 0.01e18;
+        vm.assume(apr >= 0.005e18 && apr <= 0.2e18);
+
+        // Deploy the pool with fees.
+        {
+            uint256 timeStretchApr = 0.02e18;
+            uint256 curveFee = 0.05e18;
+            deploy(alice, timeStretchApr, curveFee, 0);
+        }
+
+        // Initialize the market.
+        uint256 contribution = 500_000_000e18;
+        uint256 aliceLpShares = initialize(alice, apr, contribution);
+
+        // Bob opens a large long and a short.
+        uint256 tradeAmount = 100_000_000e18;
+        (uint256 longMaturityTime, uint256 longAmount) = openLong(
+            bob,
+            tradeAmount
+        );
+        (uint256 shortMaturityTime, ) = openShort(bob, tradeAmount);
+
+        // Bob adds liquidity. Bob shouldn't receive more LP shares than Alice.
+        uint256 bobLpShares = addLiquidity(bob, contribution);
+        assertLe(bobLpShares, aliceLpShares);
+
+        // Bob closes his positions.
+        closeLong(bob, longMaturityTime, longAmount);
+        closeShort(bob, shortMaturityTime, tradeAmount);
+
+        // Bob removes his liquidity.
+        removeLiquidity(bob, bobLpShares);
+
+        // Ensure the proceeds from the sandwich attack didn't negatively impact
+        // the LP.
+        uint256 lpProceeds = removeLiquidity(alice, aliceLpShares);
+        assertGe(lpProceeds, contribution);
     }
 }
