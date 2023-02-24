@@ -45,11 +45,9 @@ jobs:
           path: ./cache
           key: ${{ runner.os }}-benchmark
 
-      - name: Restore cached benchmark
-        uses: actions/cache@v3
-        with:
-          path: .cache
-          key: ${{ runner.os }}-benchmark
+      # FIXME: Remove this
+      - name: Seed the benchmark with data.
+        run: cp benchmarks.json ./cache/benchmarks.json
 
       # Run `github-action-benchmark` action
       - name: Store benchmark result
