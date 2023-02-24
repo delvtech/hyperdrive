@@ -239,7 +239,6 @@ abstract contract HyperdriveShort is HyperdriveBase {
         uint256 shortProceeds = closeSharePrice.mulDown(_bondAmount).divDown(
             sharePrice
         );
-
         (uint256 baseProceeds, ) = _withdraw(
             shortProceeds,
             _destination,
