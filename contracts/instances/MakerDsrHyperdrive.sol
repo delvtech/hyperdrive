@@ -188,7 +188,7 @@ contract MakerDsrHyperdrive is Hyperdrive {
     }
 
     /// @notice Loads the share price from the yield source.
-    // /@return sharePrice The current share price.
+    /// @return sharePrice The current share price.
     function _pricePerShare()
         internal
         view
