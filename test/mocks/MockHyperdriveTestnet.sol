@@ -45,7 +45,7 @@ contract MockHyperdriveTestnet is Hyperdrive {
 
     error UnsupportedOption();
 
-    function deposit(
+    function _deposit(
         uint256 _amount,
         bool _asUnderlying
     ) internal override returns (uint256 sharesMinted, uint256 sharePrice) {
@@ -70,14 +70,14 @@ contract MockHyperdriveTestnet is Hyperdrive {
             totalShares = _amount;
             return (_amount, FixedPointMath.ONE_18);
         } else {
-            sharePrice = pricePerShare();
+            sharePrice = _pricePerShare();
             sharesMinted = _amount.divDown(sharePrice);
             totalShares += sharesMinted;
             return (sharesMinted, sharePrice);
         }
     }
 
-    function withdraw(
+    function _withdraw(
         uint256 _shares,
         address _destination,
         bool _asUnderlying
@@ -89,7 +89,7 @@ contract MockHyperdriveTestnet is Hyperdrive {
         accrueInterest();
 
         // Transfer the base to the destination.
-        sharePrice = pricePerShare();
+        sharePrice = _pricePerShare();
         amountWithdrawn = _shares.mulDown(sharePrice);
         bool success = baseToken.transfer(_destination, amountWithdrawn);
         if (!success) {
@@ -99,7 +99,7 @@ contract MockHyperdriveTestnet is Hyperdrive {
         return (amountWithdrawn, sharePrice);
     }
 
-    function pricePerShare() internal view override returns (uint256) {
+    function _pricePerShare() internal view override returns (uint256) {
         uint256 underlying = baseToken.balanceOf(address(this)) +
             getAccruedInterest();
         return underlying.divDown(totalShares);
