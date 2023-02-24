@@ -103,4 +103,49 @@ contract CheckpointTest is HyperdriveTest {
         assertEq(hyperdrive.longsOutstanding(), 0);
         assertEq(hyperdrive.shortsOutstanding(), 0);
     }
+
+    function test_checkpoint_in_the_past() external {
+        // Initialize the Hyperdrive pool.
+        initialize(alice, 0.05e18, 500_000_000e18);
+
+        // Open a long and a short.
+        openLong(bob, 10_000_000e18);
+        uint256 shortAmount = 50_000e18;
+        openShort(celine, shortAmount);
+
+        // Advance a term.
+        vm.warp(block.timestamp + POSITION_DURATION);
+
+        // Create a checkpoint.
+        hyperdrive.checkpoint(latestCheckpoint());
+
+        uint256 previousCheckpoint = latestCheckpoint() -
+            hyperdrive.checkpointDuration();
+        hyperdrive.checkpoint(previousCheckpoint);
+
+        // TODO: This should be either removed or uncommented when we decide
+        // whether or not the flat+curve invariant should have an impact on
+        // the market rate.
+        //
+        // Ensure that the pool's APR wasn't changed by the checkpoint.
+        // assertEq(calculateAPRFromReserves(hyperdrive), aprBefore);
+
+        // Ensure that the checkpoint contains the share price prior to the
+        // share price update.
+        assertEq(
+            hyperdrive.checkpoints(latestCheckpoint()),
+            getPoolInfo().sharePrice
+        );
+
+        // Ensure that the previous checkpoint contains the closest share price.
+        assertEq(
+            hyperdrive.checkpoints(previousCheckpoint),
+            getPoolInfo().sharePrice
+        );
+
+        // Ensure that the long and short balance has gone to zero (all of the
+        // matured positions have been closed).
+        assertEq(hyperdrive.longsOutstanding(), 0);
+        assertEq(hyperdrive.shortsOutstanding(), 0);
+    }
 }
