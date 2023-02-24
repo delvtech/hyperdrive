@@ -35,7 +35,7 @@ abstract contract HyperdriveLP is HyperdriveBase {
         }
 
         // Deposit for the user, this transfers from them.
-        (uint256 shares, uint256 sharePrice) = deposit(
+        (uint256 shares, uint256 sharePrice) = _deposit(
             _contribution,
             _asUnderlying
         );
@@ -84,7 +84,7 @@ abstract contract HyperdriveLP is HyperdriveBase {
         }
 
         // Deposit for the user, this call also transfers from them
-        (uint256 shares, uint256 sharePrice) = deposit(
+        (uint256 shares, uint256 sharePrice) = _deposit(
             _contribution,
             _asUnderlying
         );
@@ -168,7 +168,7 @@ abstract contract HyperdriveLP is HyperdriveBase {
         }
 
         // Perform a checkpoint.
-        uint256 sharePrice = pricePerShare();
+        uint256 sharePrice = _pricePerShare();
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
 
         // Calculate the pool's APR prior to updating the share reserves and LP
@@ -232,7 +232,7 @@ abstract contract HyperdriveLP is HyperdriveBase {
         shortWithdrawalSharesOutstanding += shortWithdrawalShares;
 
         // Withdraw the shares from the yield source.
-        (uint256 baseOutput, ) = withdraw(
+        (uint256 baseOutput, ) = _withdraw(
             shareProceeds,
             _destination,
             _asUnderlying
@@ -261,7 +261,7 @@ abstract contract HyperdriveLP is HyperdriveBase {
         bool _asUnderlying
     ) external returns (uint256 _proceeds) {
         // Perform a checkpoint.
-        uint256 sharePrice = pricePerShare();
+        uint256 sharePrice = _pricePerShare();
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
 
         // Redeem the long withdrawal shares.
@@ -284,7 +284,7 @@ abstract contract HyperdriveLP is HyperdriveBase {
         );
 
         // Withdraw the funds released by redeeming the withdrawal shares.
-        (_proceeds, ) = withdraw(proceeds, _destination, _asUnderlying);
+        (_proceeds, ) = _withdraw(proceeds, _destination, _asUnderlying);
 
         // Enforce min user outputs
         if (_minOutput > _proceeds) revert Errors.OutputLimit();

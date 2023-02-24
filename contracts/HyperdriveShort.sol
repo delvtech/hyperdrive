@@ -38,7 +38,7 @@ abstract contract HyperdriveShort is HyperdriveBase {
         // would have received if they opened at the beginning of the checkpoint.
         // Since the short will receive interest from the beginning of the
         // checkpoint, they will receive this backdated interest back at closing.
-        uint256 sharePrice = pricePerShare();
+        uint256 sharePrice = _pricePerShare();
         uint256 latestCheckpoint = _latestCheckpoint();
         uint256 openSharePrice = _applyCheckpoint(latestCheckpoint, sharePrice);
 
@@ -101,7 +101,7 @@ abstract contract HyperdriveShort is HyperdriveBase {
             userDeposit = (_bondAmount - baseProceeds) + owedInterest;
             // Enforce min user outputs
             if (_maxDeposit < userDeposit) revert Errors.OutputLimit();
-            deposit(userDeposit, _asUnderlying); // max_loss + interest
+            _deposit(userDeposit, _asUnderlying); // max_loss + interest
         }
 
         // Update the average maturity time of long positions.
@@ -168,7 +168,7 @@ abstract contract HyperdriveShort is HyperdriveBase {
         }
 
         // Perform a checkpoint.
-        uint256 sharePrice = pricePerShare();
+        uint256 sharePrice = _pricePerShare();
         _applyCheckpoint(_maturityTime, sharePrice);
 
         // Burn the shorts that are being closed.
@@ -239,7 +239,8 @@ abstract contract HyperdriveShort is HyperdriveBase {
         uint256 shortProceeds = closeSharePrice.mulDown(_bondAmount).divDown(
             sharePrice
         );
-        (uint256 baseProceeds, ) = withdraw(
+
+        (uint256 baseProceeds, ) = _withdraw(
             shortProceeds,
             _destination,
             _asUnderlying

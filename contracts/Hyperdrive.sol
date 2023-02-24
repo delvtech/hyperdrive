@@ -88,12 +88,12 @@ abstract contract Hyperdrive is
         // share price. Otherwise, we use a linear search to find the closest
         // share price and use that to perform the checkpoint.
         if (_checkpointTime == latestCheckpoint) {
-            _applyCheckpoint(latestCheckpoint, pricePerShare());
+            _applyCheckpoint(latestCheckpoint, _pricePerShare());
         } else {
             for (uint256 time = _checkpointTime; ; time += checkpointDuration) {
                 uint256 closestSharePrice = checkpoints[time];
                 if (time == latestCheckpoint) {
-                    closestSharePrice = pricePerShare();
+                    closestSharePrice = _pricePerShare();
                 }
                 if (closestSharePrice != 0) {
                     _applyCheckpoint(_checkpointTime, closestSharePrice);
