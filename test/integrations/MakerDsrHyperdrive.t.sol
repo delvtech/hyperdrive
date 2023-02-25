@@ -242,12 +242,12 @@ contract MakerDsrHyperdrive is BaseTest {
     }
 
     function test__unsupported_deposit() public {
-        vm.expectRevert(Errors.Unsupported.selector);
+        vm.expectRevert(Errors.UnsupportedToken.selector);
         hyperdrive.deposit(1, false);
     }
 
     function test__unsupported_withdraw() public {
-        vm.expectRevert(Errors.Unsupported.selector);
+        vm.expectRevert(Errors.UnsupportedToken.selector);
         hyperdrive.withdraw(1, alice, false);
     }
 }

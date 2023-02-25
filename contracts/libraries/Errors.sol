@@ -22,7 +22,7 @@ library Errors {
     error ZeroAmount();
     error OutputLimit();
     error NegativeInterest();
-    error Unsupported();
+    error UnsupportedToken();
 
     /// ######################
     /// ### ERC20Forwarder ###

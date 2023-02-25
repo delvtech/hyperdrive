@@ -5,30 +5,7 @@ import { Hyperdrive } from "../Hyperdrive.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { Errors } from "../libraries/Errors.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
-interface Pot {
-    function chi() external view returns (uint256);
-
-    function rho() external view returns (uint256);
-
-    function dsr() external view returns (uint256);
-}
-
-interface DsrManager {
-    function dai() external view returns (address);
-
-    function pot() external view returns (address);
-
-    function pieOf(address) external view returns (uint256);
-
-    function daiBalance(address) external returns (uint256);
-
-    function join(address, uint256) external;
-
-    function exit(address, uint256) external;
-
-    function exitAll(address) external;
-}
+import { Pot, DsrManager } from "../interfaces/IMaker.sol";
 
 contract MakerDsrHyperdrive is Hyperdrive {
     using FixedPointMath for uint256;
@@ -36,11 +13,10 @@ contract MakerDsrHyperdrive is Hyperdrive {
     // @notice The shares created by this pool, starts at 1 to one with
     //         deposits and increases
     uint256 public totalShares;
-
     // @notice The pool management contract
-    DsrManager public dsrManager;
+    DsrManager public immutable dsrManager;
     // @notice The core Maker accounting module for the Dai Savings Rate
-    Pot public pot;
+    Pot public immutable pot;
     // @notice Maker constant
     uint256 public constant RAY = 1e27;
 
@@ -96,7 +72,7 @@ contract MakerDsrHyperdrive is Hyperdrive {
         bool asUnderlying
     ) internal override returns (uint256 sharesMinted, uint256 sharePrice) {
         if (!asUnderlying) {
-            revert Errors.Unsupported();
+            revert Errors.UnsupportedToken();
         }
 
         // Transfer the base token from the user to this contract
@@ -121,7 +97,7 @@ contract MakerDsrHyperdrive is Hyperdrive {
             // Initial deposits are always 1:1
             return (amount, FixedPointMath.ONE_18);
         } else {
-            uint256 newShares = totalShares.mulDown(amount.divDown(totalBase));
+            uint256 newShares = totalShares.mulDivDown(amount, totalBase);
             totalShares += newShares;
             return (newShares, amount.divDown(newShares));
         }
@@ -138,30 +114,21 @@ contract MakerDsrHyperdrive is Hyperdrive {
         bool asUnderlying
     ) internal override returns (uint256 amountWithdrawn, uint256 sharePrice) {
         if (!asUnderlying) {
-            revert Errors.Unsupported();
+            revert Errors.UnsupportedToken();
         }
         // Load the balance of this contract - this calls drip internally so
         // this is real deposits + interest accrued at point in time
         uint256 totalBase = dsrManager.daiBalance(address(this));
 
         // The withdraw is the percent of shares the user has times the total assets
-        amountWithdrawn = totalBase.mulDown(shares.divDown(totalShares));
+        amountWithdrawn = totalBase.mulDivDown(shares, totalShares);
 
         // Remove shares from the total supply
         totalShares -= shares;
 
-        // If all shares are removed from the pool we exit all underlying,
-        // otherwise the users portion worth of dai is exited.
-        if (totalShares == 0) {
-            // Use differential amounts for rounding - TODO Is this needed?
-            uint256 preExitBalance = baseToken.balanceOf(address(destination));
-            dsrManager.exitAll(destination);
-            amountWithdrawn =
-                baseToken.balanceOf(address(destination)) -
-                preExitBalance;
-        } else {
-            dsrManager.exit(destination, amountWithdrawn);
-        }
+        // Withdraw pro-rata share of underlying to user
+        dsrManager.exit(destination, amountWithdrawn);
+
         return (amountWithdrawn, amountWithdrawn.divDown(shares));
     }
 
@@ -181,6 +148,7 @@ contract MakerDsrHyperdrive is Hyperdrive {
         return (totalBase.divDown(totalShares));
     }
 
+    /// TODO Is this actually worthwhile versus using drip?
     /// @notice Gets the current up to date value of the rate accumulator
     /// @dev The Maker protocol uses a tick based accounting mechanic to
     ///      accumulate interest in a single variable called the rate
