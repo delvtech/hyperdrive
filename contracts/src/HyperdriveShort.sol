@@ -47,8 +47,8 @@ abstract contract HyperdriveShort is HyperdriveBase {
         uint256 maturityTime = latestCheckpoint + positionDuration;
         uint256 timeRemaining = _calculateTimeRemaining(maturityTime);
         uint256 shareProceeds = HyperdriveMath.calculateOpenShort(
-            shareReserves,
-            bondReserves,
+            state.shareReserves,
+            state.bondReserves,
             totalSupply[AssetId._LP_ASSET_ID],
             _bondAmount,
             timeRemaining,
@@ -64,8 +64,8 @@ abstract contract HyperdriveShort is HyperdriveBase {
 
         {
             uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
-                shareReserves,
-                bondReserves,
+                state.shareReserves,
+                state.bondReserves,
                 totalSupply[AssetId._LP_ASSET_ID],
                 initialSharePrice,
                 timeRemaining,
@@ -105,9 +105,10 @@ abstract contract HyperdriveShort is HyperdriveBase {
         }
 
         // Update the average maturity time of long positions.
-        shortAverageMaturityTime = shortAverageMaturityTime
+        aggregates.shortAverageMaturityTime = aggregates
+            .shortAverageMaturityTime
             .updateWeightedAverage(
-                shortsOutstanding,
+                state.shortsOutstanding,
                 maturityTime,
                 _bondAmount,
                 true
@@ -119,20 +120,20 @@ abstract contract HyperdriveShort is HyperdriveBase {
             _bondAmount,
             timeRemaining
         );
-        shortBaseVolume += baseVolume;
-        shortBaseVolumeCheckpoints[latestCheckpoint] += baseVolume;
+        aggregates.shortBaseVolume += baseVolume;
+        checkpoints[latestCheckpoint].shortBaseVolume += baseVolume;
 
         // Apply the trading deltas to the reserves and increase the bond buffer
         // by the amount of bonds that were shorted. We don't need to add the
         // margin or pre-paid interest to the reserves because of the way that
         // the close short accounting works.
-        shareReserves -= shareProceeds;
-        bondReserves += _bondAmount;
-        shortsOutstanding += _bondAmount;
+        state.shareReserves -= shareProceeds;
+        state.bondReserves += _bondAmount;
+        state.shortsOutstanding += _bondAmount;
 
         // Since the share reserves are reduced, we need to verify that the base
         // reserves are greater than or equal to the amount of longs outstanding.
-        if (sharePrice.mulDown(shareReserves) < longsOutstanding) {
+        if (sharePrice.mulDown(state.shareReserves) < state.longsOutstanding) {
             revert Errors.BaseBufferExceedsShareReserves();
         }
 
@@ -182,8 +183,8 @@ abstract contract HyperdriveShort is HyperdriveBase {
         uint256 timeRemaining = _calculateTimeRemaining(_maturityTime);
         (uint256 poolBondDelta, uint256 sharePayment) = HyperdriveMath
             .calculateCloseShort(
-                shareReserves,
-                bondReserves,
+                state.shareReserves,
+                state.bondReserves,
                 totalSupply[AssetId._LP_ASSET_ID],
                 _bondAmount,
                 timeRemaining,
@@ -220,10 +221,11 @@ abstract contract HyperdriveShort is HyperdriveBase {
         // share price:
         //
         // shareProceeds = (c_1 * (dy / c_0 - dz)) / c
-        uint256 openSharePrice = checkpoints[_maturityTime - positionDuration];
+        uint256 openSharePrice = checkpoints[_maturityTime - positionDuration]
+            .sharePrice;
         uint256 closeSharePrice = sharePrice;
         if (_maturityTime <= block.timestamp) {
-            closeSharePrice = checkpoints[_maturityTime];
+            closeSharePrice = checkpoints[_maturityTime].sharePrice;
         }
         // If variable interest rates are more negative than the short capital
         // deposited by the user then the user position is set to zero instead
@@ -265,9 +267,10 @@ abstract contract HyperdriveShort is HyperdriveBase {
         uint256 _maturityTime
     ) internal {
         // Update the short average maturity time.
-        shortAverageMaturityTime = shortAverageMaturityTime
+        aggregates.shortAverageMaturityTime = aggregates
+            .shortAverageMaturityTime
             .updateWeightedAverage(
-                shortsOutstanding,
+                state.shortsOutstanding,
                 _maturityTime,
                 _bondAmount,
                 false
@@ -294,21 +297,21 @@ abstract contract HyperdriveShort is HyperdriveBase {
             // volume aggregates by a proportional amount.
             uint256 checkpointTime = _maturityTime - positionDuration;
             if (_bondAmount == checkpointAmount) {
-                shortBaseVolume -= shortBaseVolumeCheckpoints[checkpointTime];
-                delete shortBaseVolumeCheckpoints[checkpointTime];
+                aggregates.shortBaseVolume -= checkpoints[checkpointTime]
+                    .shortBaseVolume;
+                delete checkpoints[checkpointTime].shortBaseVolume;
             } else {
-                uint256 proportionalBaseVolume = shortBaseVolumeCheckpoints[
-                    checkpointTime
-                ].mulDown(_bondAmount.divDown(checkpointAmount));
-                shortBaseVolume -= proportionalBaseVolume;
-                shortBaseVolumeCheckpoints[
-                    checkpointTime
-                ] -= proportionalBaseVolume;
+                uint256 proportionalBaseVolume = checkpoints[checkpointTime]
+                    .shortBaseVolume
+                    .mulDown(_bondAmount.divDown(checkpointAmount));
+                aggregates.shortBaseVolume -= proportionalBaseVolume;
+                checkpoints[checkpointTime]
+                    .shortBaseVolume -= proportionalBaseVolume;
             }
         }
 
         // Decrease the amount of shorts outstanding.
-        shortsOutstanding -= _bondAmount;
+        state.shortsOutstanding -= _bondAmount;
 
         // If there are outstanding short withdrawal shares, we attribute a
         // proportional amount of the proceeds to the withdrawal pool and the
@@ -319,8 +322,8 @@ abstract contract HyperdriveShort is HyperdriveBase {
         if (shortWithdrawalSharesOutstanding > 0) {
             // Calculate the effect that the trade has on the pool's APR.
             uint256 apr = HyperdriveMath.calculateAPRFromReserves(
-                shareReserves.add(_sharePayment),
-                bondReserves.sub(_poolBondDelta),
+                state.shareReserves.add(_sharePayment),
+                state.bondReserves.sub(_poolBondDelta),
                 totalSupply[AssetId._LP_ASSET_ID],
                 initialSharePrice,
                 positionDuration,
@@ -353,9 +356,9 @@ abstract contract HyperdriveShort is HyperdriveBase {
             // withdrawal pool. The math for the share reserves update is given by:
             //
             // z += dz - dz * (min(b_y, dy) / dy)
-            shareReserves += _sharePayment - withdrawalProceeds;
-            bondReserves = HyperdriveMath.calculateBondReserves(
-                shareReserves,
+            state.shareReserves += _sharePayment - withdrawalProceeds;
+            state.bondReserves = HyperdriveMath.calculateBondReserves(
+                state.shareReserves,
                 totalSupply[AssetId._LP_ASSET_ID],
                 initialSharePrice,
                 apr,
@@ -363,8 +366,8 @@ abstract contract HyperdriveShort is HyperdriveBase {
                 timeStretch
             );
         } else {
-            shareReserves += _sharePayment;
-            bondReserves -= _poolBondDelta;
+            state.shareReserves += _sharePayment;
+            state.bondReserves -= _poolBondDelta;
         }
     }
 }
