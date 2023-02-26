@@ -2,10 +2,10 @@
 pragma solidity ^0.8.18;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { MultiToken } from "contracts/MultiToken.sol";
-import { AssetId } from "contracts/libraries/AssetId.sol";
-import { Errors } from "contracts/libraries/Errors.sol";
-import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
+import { MultiToken } from "./MultiToken.sol";
+import { AssetId } from "./libraries/AssetId.sol";
+import { Errors } from "./libraries/Errors.sol";
+import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 
 /// @author Delve
 /// @title HyperdriveBase

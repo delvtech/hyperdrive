@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import { Errors } from "contracts/libraries/Errors.sol";
-import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
+import { Errors } from "./Errors.sol";
+import { FixedPointMath } from "./FixedPointMath.sol";
 
 /// @author Delve
 /// @title Hyperdrive

@@ -5,7 +5,7 @@ import "./interfaces/IHyperdrive.sol";
 import "./interfaces/IERC20.sol";
 import "./libraries/ERC20Permit.sol";
 import "./libraries/Errors.sol";
-import "contracts/libraries/AssetId.sol";
+import "./libraries/AssetId.sol";
 
 contract BondWrapper is ERC20Permit {
     // The multitoken of the bond

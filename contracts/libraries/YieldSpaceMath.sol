@@ -1,7 +1,7 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
+import { FixedPointMath } from "./FixedPointMath.sol";
 
 /// @author Delve
 /// @title YieldSpaceMath
