@@ -32,13 +32,44 @@ abstract contract HyperdriveBase is MultiToken {
     // @notice A parameter that decreases slippage around a target rate.
     uint256 public immutable timeStretch;
 
-    /// Market state ///
+    /// Market State ///
 
     // @notice The share price at the time the pool was created.
     uint256 public immutable initialSharePrice;
 
-    /// @notice Checkpoints of historical share prices.
-    mapping(uint256 => uint256) public checkpoints;
+    struct State {
+        uint128 shareReserves;
+        uint128 bondReserves;
+        uint128 longsOutstanding;
+        uint128 shortsOutstanding;
+    }
+
+    struct Aggregates {
+        // TODO: Can we avoid dust here.
+        uint128 longAverageMaturityTime;
+        uint128 longBaseVolume;
+        uint128 shortAverageMaturityTime;
+        uint128 shortBaseVolume;
+    }
+
+    struct Checkpoint {
+        uint256 sharePrice;
+        uint128 longBaseVolume;
+        uint128 shortBaseVolume;
+    }
+
+    /// @notice The reserves and the buffers. This is the primary state used for
+    ///         pricing trades and maintaining solvency.
+    State public state;
+
+    /// @notice Aggregate values that are used to enforce fairness guarantees.
+    Aggregates public aggregates;
+
+    /// @notice Hyperdrive positions are bucketed into checkpoints, which
+    ///         allows us to avoid poking in any period that has LP or trading
+    ///         activity. The checkpoints contain the starting share price from
+    ///         the checkpoint as well as aggregate volume values.
+    mapping(uint256 => Checkpoint) public checkpoints;
 
     // TODO: Optimize the storage layout.
     //
@@ -79,6 +110,8 @@ abstract contract HyperdriveBase is MultiToken {
     /// @notice The amount of base paid to outstanding shorts.
     uint256 public shortBaseVolume;
 
+    // FIXME: Create a struct for this.
+    //
     /// @notice The amount of long withdrawal shares that haven't been paid out.
     uint256 public longWithdrawalSharesOutstanding;
 
