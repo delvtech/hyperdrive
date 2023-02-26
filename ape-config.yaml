@@ -1,0 +1,8 @@
+dependencies:
+  - name: OpenZeppelin
+    github: OpenZeppelin/openzeppelin-contracts
+    version: 4.8.1
+
+solidity:
+  import_remapping:
+    - "@openzeppelin/contracts=OpenZeppelin/4.8.1"

@@ -2,15 +2,15 @@
 pragma solidity ^0.8.18;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { HyperdriveBase } from "contracts/HyperdriveBase.sol";
-import { HyperdriveLong } from "contracts/HyperdriveLong.sol";
-import { HyperdriveLP } from "contracts/HyperdriveLP.sol";
-import { HyperdriveShort } from "contracts/HyperdriveShort.sol";
-import { AssetId } from "contracts/libraries/AssetId.sol";
-import { Errors } from "contracts/libraries/Errors.sol";
-import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
-import { HyperdriveMath } from "contracts/libraries/HyperdriveMath.sol";
-import { IHyperdrive } from "contracts/interfaces/IHyperdrive.sol";
+import { HyperdriveBase } from "./HyperdriveBase.sol";
+import { HyperdriveLong } from "./HyperdriveLong.sol";
+import { HyperdriveLP } from "./HyperdriveLP.sol";
+import { HyperdriveShort } from "./HyperdriveShort.sol";
+import { AssetId } from "./libraries/AssetId.sol";
+import { Errors } from "./libraries/Errors.sol";
+import { FixedPointMath } from "./libraries/FixedPointMath.sol";
+import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
+import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 
 /// @author Delve
 /// @title Hyperdrive

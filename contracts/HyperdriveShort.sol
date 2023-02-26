@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import { HyperdriveBase } from "contracts/HyperdriveBase.sol";
-import { AssetId } from "contracts/libraries/AssetId.sol";
-import { Errors } from "contracts/libraries/Errors.sol";
-import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
-import { HyperdriveMath } from "contracts/libraries/HyperdriveMath.sol";
+import { HyperdriveBase } from "./HyperdriveBase.sol";
+import { AssetId } from "./libraries/AssetId.sol";
+import { Errors } from "./libraries/Errors.sol";
+import { FixedPointMath } from "./libraries/FixedPointMath.sol";
+import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 
 /// @author Delve
 /// @title HyperdriveShort

@@ -1,9 +1,9 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import { Errors } from "contracts/libraries/Errors.sol";
-import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
-import { YieldSpaceMath } from "contracts/libraries/YieldSpaceMath.sol";
+import { Errors } from "./Errors.sol";
+import { FixedPointMath } from "./FixedPointMath.sol";
+import { YieldSpaceMath } from "./YieldSpaceMath.sol";
 
 /// @author Delve
 /// @title Hyperdrive
