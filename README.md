@@ -26,6 +26,19 @@ To build the smart contracts, run `yarn build`.
 
 To test the smart contracts, run `yarn test`.
 
+## Ape Jupyter Notebook Integration
+Run:
+```bash
+pip install eth-ape
+ape plugins install solidity
+ape plugins install notebook
+ape plugins install foundry
+ape compile
+yarn testnet
+anvil
+ape notebook
+```
+
 ## Lint
 
 We have several linters. Solhint is a Solidity linter that checks for best

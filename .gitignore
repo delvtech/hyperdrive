@@ -4,6 +4,8 @@ forge-cache/
 .vscode/
 broadcast
 .env
+.cache
+.build
 
 node_modules/
 yarn-error.log
