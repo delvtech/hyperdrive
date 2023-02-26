@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import "./Hyperdrive.sol";
-import "./libraries/FixedPointMath.sol";
+import { Hyperdrive } from "../Hyperdrive.sol";
+import { FixedPointMath } from "../libraries/FixedPointMath.sol";
+import { Errors } from "../libraries/Errors.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface Pool {
@@ -16,7 +17,7 @@ interface Pool {
     function withdraw(address asset, uint256 amount, address to) external;
 }
 
-contract AaveYieldSource is Hyperdrive {
+contract AaveHyperdrive is Hyperdrive {
     using FixedPointMath for uint256;
 
     // The aave deployment details, the a token for this asset and the aave pool
@@ -31,6 +32,8 @@ contract AaveYieldSource is Hyperdrive {
     /// @param _linkerFactory The factory which is used to deploy the ERC20
     ///        linker contracts.
     /// @param _baseToken The base token contract.
+    /// @param _checkpointsPerTerm The number of checkpoints that elapses before
+    ///        bonds can be redeemed one-to-one for base.
     /// @param _checkpointDuration The time in seconds between share price
     ///        checkpoints. Position duration must be a multiple of checkpoint
     ///        duration.
@@ -41,6 +44,7 @@ contract AaveYieldSource is Hyperdrive {
         bytes32 _linkerCodeHash,
         address _linkerFactory,
         IERC20 _baseToken,
+        uint256 _checkpointsPerTerm,
         uint256 _checkpointDuration,
         uint256 _timeStretch,
         IERC20 _aToken,
@@ -53,9 +57,9 @@ contract AaveYieldSource is Hyperdrive {
             _linkerFactory,
             _baseToken,
             FixedPointMath.ONE_18,
+            _checkpointsPerTerm,
             _checkpointDuration,
             _timeStretch,
-            FixedPointMath.ONE_18,
             _curveFee,
             _flatFee
         )
@@ -70,7 +74,7 @@ contract AaveYieldSource is Hyperdrive {
     ///                     if false it will transfer the yielding asset directly
     ///@return sharesMinted The shares this deposit creates
     ///@return sharePrice The share price at time of deposit
-    function deposit(
+    function _deposit(
         uint256 amount,
         bool asUnderlying
     ) internal override returns (uint256 sharesMinted, uint256 sharePrice) {
@@ -97,7 +101,7 @@ contract AaveYieldSource is Hyperdrive {
         // Do share calculations
         if (totalShares == 0) {
             totalShares = amount;
-            return (amount, assets.divDown(amount));
+            return (amount, FixedPointMath.ONE_18);
         } else {
             uint256 newShares = totalShares.mulDown(amount.divDown(assets));
             totalShares += newShares;
@@ -106,13 +110,13 @@ contract AaveYieldSource is Hyperdrive {
     }
 
     ///@notice Withdraws shares from the yield source and sends the resulting tokens to the destination
-    ///@param shares The shares to withdraw from the yieldsource
+    ///@param shares The shares to withdraw from the yield source
     /// @param asUnderlying If true the yield source will transfer underlying tokens
     ///                     if false it will transfer the yielding asset directly
     ///@param destination The address which is where to send the resulting tokens
     ///@return amountWithdrawn the amount of 'token' produced by this withdraw
     ///@return sharePrice The share price on withdraw.
-    function withdraw(
+    function _withdraw(
         uint256 shares,
         address destination,
         bool asUnderlying
@@ -121,6 +125,9 @@ contract AaveYieldSource is Hyperdrive {
         uint256 assets = aToken.balanceOf(address(this));
         // The withdraw is the percent of shares the user has times the total assets
         uint256 withdrawValue = assets.mulDown(shares.divDown(totalShares));
+
+        // Remove the shares from the total share supply
+        totalShares -= shares;
 
         // If the user wants underlying we withdraw for them otherwise send the base
         if (asUnderlying) {
@@ -131,16 +138,13 @@ contract AaveYieldSource is Hyperdrive {
             aToken.transfer(destination, withdrawValue);
         }
 
-        // Remove the shares from the total share supply
-        totalShares -= shares;
-
         // Return the amount and implied share price
         return (withdrawValue, shares.divDown(withdrawValue));
     }
 
     ///@notice Loads the share price from the yield source.
     ///@return sharePrice The current share price.
-    function pricePerShare()
+    function _pricePerShare()
         internal
         view
         override

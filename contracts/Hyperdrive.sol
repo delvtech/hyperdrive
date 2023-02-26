@@ -33,7 +33,7 @@ abstract contract Hyperdrive is
     ///        the ERC20 linker contracts.
     /// @param _baseToken The base token contract.
     /// @param _initialSharePrice The initial share price.
-    /// @param _checkpointsPerTerm The number of checkpoints that elaspes before
+    /// @param _checkpointsPerTerm The number of checkpoints that elapses before
     ///        bonds can be redeemed one-to-one for base.
     /// @param _checkpointDuration The time in seconds between share price
     ///        checkpoints. Position duration must be a multiple of checkpoint
@@ -88,12 +88,12 @@ abstract contract Hyperdrive is
         // share price. Otherwise, we use a linear search to find the closest
         // share price and use that to perform the checkpoint.
         if (_checkpointTime == latestCheckpoint) {
-            _applyCheckpoint(latestCheckpoint, pricePerShare());
+            _applyCheckpoint(latestCheckpoint, _pricePerShare());
         } else {
             for (uint256 time = _checkpointTime; ; time += checkpointDuration) {
                 uint256 closestSharePrice = checkpoints[time];
                 if (time == latestCheckpoint) {
-                    closestSharePrice = pricePerShare();
+                    closestSharePrice = _pricePerShare();
                 }
                 if (closestSharePrice != 0) {
                     _applyCheckpoint(_checkpointTime, closestSharePrice);

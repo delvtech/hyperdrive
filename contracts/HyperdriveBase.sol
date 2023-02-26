@@ -155,7 +155,7 @@ abstract contract HyperdriveBase is MultiToken {
     ///                     if false it will transfer the yielding asset directly
     /// @return sharesMinted The shares this deposit creates.
     /// @return sharePrice The share price at time of deposit.
-    function deposit(
+    function _deposit(
         uint256 amount,
         bool asUnderlying
     ) internal virtual returns (uint256 sharesMinted, uint256 sharePrice);
@@ -168,7 +168,7 @@ abstract contract HyperdriveBase is MultiToken {
     ///                     if false it will transfer the yielding asset directly
     /// @return amountWithdrawn The amount of base released by the withdrawal.
     /// @return sharePrice The share price on withdraw.
-    function withdraw(
+    function _withdraw(
         uint256 shares,
         address destination,
         bool asUnderlying
@@ -176,7 +176,11 @@ abstract contract HyperdriveBase is MultiToken {
 
     ///@notice Loads the share price from the yield source
     ///@return sharePrice The current share price.
-    function pricePerShare() internal view virtual returns (uint256 sharePrice);
+    function _pricePerShare()
+        internal
+        view
+        virtual
+        returns (uint256 sharePrice);
 
     /// Checkpoint ///
 
@@ -264,7 +268,7 @@ abstract contract HyperdriveBase is MultiToken {
             shareReserves,
             bondReserves,
             totalSupply[AssetId._LP_ASSET_ID],
-            pricePerShare(),
+            _pricePerShare(),
             longsOutstanding,
             longAverageMaturityTime,
             longBaseVolume,

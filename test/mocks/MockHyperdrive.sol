@@ -71,7 +71,7 @@ contract MockHyperdrive is Hyperdrive {
 
     /// Overrides ///
 
-    function deposit(
+    function _deposit(
         uint256 amount,
         bool
     ) internal override returns (uint256, uint256) {
@@ -86,7 +86,7 @@ contract MockHyperdrive is Hyperdrive {
         return (amount.divDown(_sharePrice), _sharePrice);
     }
 
-    function withdraw(
+    function _withdraw(
         uint256 shares,
         address destination,
         bool
@@ -99,7 +99,7 @@ contract MockHyperdrive is Hyperdrive {
         return (amountWithdrawn, _sharePrice);
     }
 
-    function pricePerShare() internal view override returns (uint256) {
+    function _pricePerShare() internal view override returns (uint256) {
         return _sharePrice;
     }
 }

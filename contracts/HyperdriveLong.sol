@@ -35,7 +35,7 @@ abstract contract HyperdriveLong is HyperdriveBase {
         }
 
         // Deposit the user's base.
-        (uint256 shares, uint256 sharePrice) = deposit(
+        (uint256 shares, uint256 sharePrice) = _deposit(
             _baseAmount,
             _asUnderlying
         );
@@ -140,7 +140,7 @@ abstract contract HyperdriveLong is HyperdriveBase {
         // Perform a checkpoint at the maturity time, this ensures the bond is closed
         // and closes all other positions in that checkpoint. This will be ignored
         // if the maturity time is in the future.
-        uint256 sharePrice = pricePerShare();
+        uint256 sharePrice = _pricePerShare();
         _applyCheckpoint(_maturityTime, sharePrice);
 
         {
@@ -202,7 +202,7 @@ abstract contract HyperdriveLong is HyperdriveBase {
         }
 
         // Withdraw the profit to the trader.
-        (uint256 baseProceeds, ) = withdraw(
+        (uint256 baseProceeds, ) = _withdraw(
             shareProceeds,
             _destination,
             _asUnderlying
