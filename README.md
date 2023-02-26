@@ -27,15 +27,15 @@ To build the smart contracts, run `yarn build`.
 To test the smart contracts, run `yarn test`.
 
 ## Ape Jupyter Notebook Integration
-Run:
+Run using at least python 3.8, preferably use pyenv.
+
 ```bash
-pip install eth-ape
-ape plugins install solidity
-ape plugins install notebook
-ape plugins install foundry
+pip install install -r requirements.txt
+ape plugins list -a
+ape plugins install .
 ape compile
-yarn testnet
 anvil
+yarn testnet
 ape notebook
 ```
 
