@@ -49,6 +49,9 @@ jobs:
       - name: seed data
         run: cp benchmarks.json ./cache/benchmarks.json
 
+      - name: log data
+        run: cat benchmarks.json && echo "\n" && cat ./cache/benchmarks.json
+
       # Run `github-action-benchmark` action
       - name: Store benchmark result
         uses: jalextowle/github-action-benchmark@v1.3-test19
