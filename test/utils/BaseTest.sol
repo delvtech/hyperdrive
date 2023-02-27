@@ -19,6 +19,8 @@ contract BaseTest is Test {
     address alice;
     address bob;
     address celine;
+    address dan;
+    address eve;
 
     address minter;
     address deployer;
@@ -38,6 +40,9 @@ contract BaseTest is Test {
         alice = createUser("alice");
         bob = createUser("bob");
         celine = createUser("celine");
+        dan = createUser("dan");
+        eve = createUser("eve");
+
         deployer = createUser("deployer");
         minter = createUser("minter");
     }
