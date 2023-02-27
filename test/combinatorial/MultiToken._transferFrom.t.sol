@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
-import { CombinatorialTest, TestLib as lib } from "test/Test.sol";
+import { CombinatorialTest } from "test/utils/CombinatorialTest.sol";
 import { MockMultiToken } from "test/mocks/MockMultiToken.sol";
 import { ForwarderFactory } from "contracts/ForwarderFactory.sol";
 
@@ -38,16 +38,16 @@ contract MultiToken__transferFrom is CombinatorialTest {
 
     function test__MultiToken__transferFrom() public {
         // Construction of combinatorial matrix
-        uint256[][] memory rawTestCases = lib.matrix(
-            lib._arr(
+        uint256[][] memory rawTestCases = __matrix(
+            _arr(
                 // amount
-                lib._arr(0, 1, 1e18, 1000000e18, type(uint256).max),
+                _arr(0, 1, 1e18, 1000000e18, type(uint256).max),
                 // caller
-                lib._arr(0, 1),
+                _arr(0, 1),
                 // approvals
-                lib._arr(0, 10e18, type(uint128).max, type(uint256).max),
+                _arr(0, 10e18, type(uint128).max, type(uint256).max),
                 // balanceOf(from/to)
-                lib._arr(0, 100e18, (2 ** 96) + 98237.12111e5)
+                _arr(0, 100e18, (2 ** 96) + 98237.12111e5)
             )
         );
 
@@ -61,7 +61,7 @@ contract MultiToken__transferFrom is CombinatorialTest {
                 from: alice,
                 to: bob,
                 amount: rawTestCases[i][0],
-                caller: rawTestCases[i][1] > 0 ? alice : eve,
+                caller: rawTestCases[i][1] > 0 ? alice : celine,
                 approvals: approvals,
                 balanceFrom: rawTestCases[i][3],
                 balanceTo: rawTestCases[i][3],
