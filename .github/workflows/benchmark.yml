@@ -34,19 +34,21 @@ jobs:
         with:
           python-version: "3.10"
 
-      # Run gas benchmark and stores the output to a json file.
+      # Run the gas benchmark and stores the output to a json file.
       - name: Run benchmark
         run: python scripts/gas_benchmarks.py benchmarks.json
 
-      # Download previous benchmark result from cache (if exists)
+      # Load the benchmarks cache. We use a different cache key for every run
+      # because Github Actions caches are currently immutable. By specifying the
+      # same restore key, we can load the latest cache on restore and still save
+      # a new cache: https://github.com/actions/cache/blob/main/tips-and-workarounds.md#update-a-cache.
       - name: Download previous benchmark data
-        uses: actions/cache/restore@v3
+        uses: actions/cache@v3
         with:
           path: ./cache
-          key: ${{ runner.os }}-benchmarks
-
-      - name: log data
-        run: cat ./cache/benchmarks.json
+          key: benchmarks-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            benchmarks-${{ runner.os }}
 
       # Comment on pull request.
       - name: Create benchmark comment
@@ -61,7 +63,7 @@ jobs:
           # Where the previous data file is stored
           external-data-json-path: ./cache/benchmarks.json
           # Don't save the benchmark on PRs.
-          save-data-file: true
+          save-data-file: false
           # Workflow will fail when an alert happens
           fail-on-alert: true
           # Always leave a comment.
@@ -70,9 +72,6 @@ jobs:
           comment-on-pull-request: true
           # Needed to allow the project to comment on PRs.
           github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: log data
-        run: cat ./cache/benchmarks.json
 
       # Save the benchmark on push.
       - name: Create benchmark comment and update data file
@@ -92,13 +91,3 @@ jobs:
           fail-on-alert: true
           # Needed to allow the project to comment on PRs.
           github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      # Store any updates made to the cache.
-      - name: Update benchmark cache
-        # FIXME
-        if: always()
-        uses: actions/cache/save@v3
-        id: cache
-        with:
-          path: ./cache
-          key: ${{ runner.os }}-benchmarks
