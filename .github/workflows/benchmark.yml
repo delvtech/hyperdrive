@@ -45,9 +45,30 @@ jobs:
           path: ./cache
           key: ${{ runner.os }}-benchmark
 
-      # Run `github-action-benchmark` action
+      # Comment on pull request.
       - name: Create benchmark comment.
-        # if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: jalextowle/github-action-benchmark@v1.3-test20
+        with:
+          name: Hyperdrive Gas Benchmark
+          # We're using the custom tool since there isn't a Solidity tool yet.
+          tool: "customSmallerIsBetter"
+          # Where the output from the benchmark tool is stored
+          output-file-path: benchmarks.json
+          # Where the previous data file is stored
+          external-data-json-path: ./cache/benchmarks.json
+          # Don't save the benchmark on PRs.
+          save-data-file: false
+          # Workflow will fail when an alert happens
+          fail-on-alert: true
+          # Always leave a comment on the PR
+          comment-always: true
+          # Needed to allow the project to comment on PRs.
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Save the benchmark on push.
+      - name: Create benchmark comment.
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         uses: jalextowle/github-action-benchmark@v1.3-test20
         with:
           name: Hyperdrive Gas Benchmark
@@ -61,7 +82,5 @@ jobs:
           save-data-file: true
           # Workflow will fail when an alert happens
           fail-on-alert: true
-          # Always leave a comment on the PR
-          comment-always: true
           # Needed to allow the project to comment on PRs.
           github-token: ${{ secrets.GITHUB_TOKEN }}
