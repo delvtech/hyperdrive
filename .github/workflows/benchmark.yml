@@ -48,13 +48,10 @@ jobs:
       - name: log data
         run: cat ./cache/benchmarks.json
 
-      - name: log data
-        run: cat ./cache/benchmarks.json
-
       # Comment on pull request.
       - name: Create benchmark comment
         if: ${{ github.event_name == 'pull_request' }}
-        uses: jalextowle/github-action-benchmark@v1.3-test20
+        uses: jalextowle/github-action-benchmark@v1
         with:
           name: Hyperdrive Gas Benchmark
           # We're using the custom tool since there isn't a Solidity tool yet.
@@ -67,8 +64,10 @@ jobs:
           save-data-file: true
           # Workflow will fail when an alert happens
           fail-on-alert: true
-          # Always leave a comment on the PR
+          # Always leave a comment.
           comment-always: true
+          # Leave a comment on the PR.
+          comment-on-pull-request: true
           # Needed to allow the project to comment on PRs.
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -78,7 +77,7 @@ jobs:
       # Save the benchmark on push.
       - name: Create benchmark comment and update data file
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-        uses: jalextowle/github-action-benchmark@v1.3-test20
+        uses: jalextowle/github-action-benchmark@v1
         with:
           name: Hyperdrive Gas Benchmark
           # We're using the custom tool since there isn't a Solidity tool yet.
