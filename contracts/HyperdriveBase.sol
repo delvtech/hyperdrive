@@ -37,7 +37,7 @@ abstract contract HyperdriveBase is MultiToken {
     // @notice The share price at the time the pool was created.
     uint256 public immutable initialSharePrice;
 
-    struct State {
+    struct MarketState {
         uint128 shareReserves;
         uint128 bondReserves;
         uint128 longsOutstanding;
@@ -52,6 +52,13 @@ abstract contract HyperdriveBase is MultiToken {
         uint128 shortBaseVolume;
     }
 
+    struct WithdrawalState {
+        uint128 longWithdrawalSharesOutstanding;
+        uint128 shortWithdrawalSharesOutstanding;
+        uint128 longWithdrawalShareProceeds;
+        uint128 shortWithdrawalShareProceeds;
+    }
+
     struct Checkpoint {
         uint256 sharePrice;
         uint128 longBaseVolume;
@@ -60,30 +67,19 @@ abstract contract HyperdriveBase is MultiToken {
 
     /// @notice The reserves and the buffers. This is the primary state used for
     ///         pricing trades and maintaining solvency.
-    State public state;
+    MarketState public marketState;
 
     /// @notice Aggregate values that are used to enforce fairness guarantees.
     Aggregates public aggregates;
+
+    // FIXME
+    WithdrawalState public withdrawalState;
 
     /// @notice Hyperdrive positions are bucketed into checkpoints, which
     ///         allows us to avoid poking in any period that has LP or trading
     ///         activity. The checkpoints contain the starting share price from
     ///         the checkpoint as well as aggregate volume values.
     mapping(uint256 => Checkpoint) public checkpoints;
-
-    // FIXME: Create a struct for this.
-    //
-    /// @notice The amount of long withdrawal shares that haven't been paid out.
-    uint256 public longWithdrawalSharesOutstanding;
-
-    /// @notice The amount of short withdrawal shares that haven't been paid out.
-    uint256 public shortWithdrawalSharesOutstanding;
-
-    /// @notice The proceeds that have accrued to the long withdrawal shares.
-    uint256 public longWithdrawalShareProceeds;
-
-    /// @notice The proceeds that have accrued to the short withdrawal shares.
-    uint256 public shortWithdrawalShareProceeds;
 
     // TODO: Should this be immutable?
     //
@@ -259,14 +255,14 @@ abstract contract HyperdriveBase is MultiToken {
         )
     {
         return (
-            state.shareReserves,
-            state.bondReserves,
+            marketState.shareReserves,
+            marketState.bondReserves,
             totalSupply[AssetId._LP_ASSET_ID],
             _pricePerShare(),
-            state.longsOutstanding,
+            marketState.longsOutstanding,
             aggregates.longAverageMaturityTime,
             aggregates.longBaseVolume,
-            state.shortsOutstanding,
+            marketState.shortsOutstanding,
             aggregates.shortAverageMaturityTime,
             aggregates.shortBaseVolume
         );
