@@ -45,8 +45,8 @@ jobs:
           path: ./cache
           key: ${{ runner.os }}-benchmark
 
-      - name: Clear cache
-        run: rm ./cache/benchmarks.json
+      - name: log data
+        run: cat ./cache/benchmarks.json
 
       # Comment on pull request.
       - name: Create benchmark comment.
@@ -68,9 +68,6 @@ jobs:
           comment-always: true
           # Needed to allow the project to comment on PRs.
           github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Log data
-        run: cat ./cache/benchmarks.json
 
       # Save the benchmark on push.
       - name: Create benchmark comment.
