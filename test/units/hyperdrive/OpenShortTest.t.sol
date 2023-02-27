@@ -33,7 +33,7 @@ contract OpenShortTest is HyperdriveTest {
         // Attempt to short an extreme amount of bonds. This should fail.
         vm.stopPrank();
         vm.startPrank(bob);
-        uint256 baseAmount = hyperdrive.shareReserves();
+        uint256 baseAmount = getPoolInfo().shareReserves;
         baseToken.mint(baseAmount);
         baseToken.approve(address(hyperdrive), baseAmount);
         vm.expectRevert(Errors.FixedPointMath_SubOverflow.selector);
@@ -131,6 +131,11 @@ contract OpenShortTest is HyperdriveTest {
 
         // Verify that the reserves were updated correctly.
         PoolInfo memory poolInfoAfter = getPoolInfo();
+        (
+            ,
+            uint256 checkpointLongBaseVolume,
+            uint256 checkpointShortBaseVolume
+        ) = hyperdrive.checkpoints(checkpointTime);
         assertEq(
             poolInfoAfter.shareReserves,
             poolInfoBefore.shareReserves -
@@ -148,7 +153,7 @@ contract OpenShortTest is HyperdriveTest {
         );
         assertEq(poolInfoAfter.longAverageMaturityTime, 0);
         assertEq(poolInfoAfter.longBaseVolume, 0);
-        assertEq(hyperdrive.longBaseVolumeCheckpoints(checkpointTime), 0);
+        assertEq(checkpointLongBaseVolume, 0);
         assertEq(
             poolInfoAfter.shortsOutstanding,
             poolInfoBefore.shortsOutstanding + bondAmount
@@ -159,9 +164,6 @@ contract OpenShortTest is HyperdriveTest {
             1
         );
         assertEq(poolInfoAfter.shortBaseVolume, baseProceeds);
-        assertEq(
-            hyperdrive.shortBaseVolumeCheckpoints(checkpointTime),
-            baseProceeds
-        );
+        assertEq(checkpointShortBaseVolume, baseProceeds);
     }
 }

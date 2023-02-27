@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
+import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { HyperdriveBase } from "./HyperdriveBase.sol";
 import { AssetId } from "./libraries/AssetId.sol";
 import { Errors } from "./libraries/Errors.sol";
@@ -15,6 +16,7 @@ import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveLong is HyperdriveBase {
     using FixedPointMath for uint256;
+    using SafeCast for uint256;
 
     /// @notice Opens a long position.
     /// @param _baseAmount The amount of base to use when trading.
@@ -235,29 +237,29 @@ abstract contract HyperdriveLong is HyperdriveBase {
         uint256 _timeRemaining
     ) internal {
         // Update the average maturity time of long positions.
-        longAverageMaturityTime = longAverageMaturityTime.updateWeightedAverage(
-            longsOutstanding,
-            _maturityTime,
-            _bondProceeds,
-            true
-        );
+        aggregates.longAverageMaturityTime = uint256(
+            aggregates.longAverageMaturityTime
+        )
+            .updateWeightedAverage(
+                uint256(state.longsOutstanding),
+                _maturityTime,
+                _bondProceeds,
+                true
+            )
+            .toUint128();
 
-        // FIXME: We need a safe uint128
-        //
         // Update the base volume of long positions.
-        uint256 baseVolume = HyperdriveMath.calculateBaseVolume(
-            _baseAmount,
-            _bondProceeds,
-            _timeRemaining
-        );
-        aggregates.longBaseVolume += uint128(baseVolume);
+        uint128 baseVolume = HyperdriveMath
+            .calculateBaseVolume(_baseAmount, _bondProceeds, _timeRemaining)
+            .toUint128();
+        aggregates.longBaseVolume += baseVolume;
         checkpoints[_checkpointTime].longBaseVolume += baseVolume;
 
         // Apply the trading deltas to the reserves and update the amount of
         // longs outstanding.
-        state.shareReserves += _shareAmount;
-        state.bondReserves -= _poolBondDelta;
-        state.longsOutstanding += _bondProceeds;
+        state.shareReserves += _shareAmount.toUint128();
+        state.bondReserves -= _poolBondDelta.toUint128();
+        state.longsOutstanding += _bondProceeds.toUint128();
 
         // TODO: We should fuzz test this and other trading functions to ensure
         // that the APR never goes below zero. If it does, we may need to
@@ -266,7 +268,10 @@ abstract contract HyperdriveLong is HyperdriveBase {
         // Since the base buffer may have increased relative to the base
         // reserves and the bond reserves decreased, we must ensure that the
         // base reserves are greater than the longsOutstanding.
-        if (_sharePrice.mulDown(shareReserves) < state.longsOutstanding) {
+        if (
+            _sharePrice.mulDown(uint256(state.shareReserves)) <
+            state.longsOutstanding
+        ) {
             revert Errors.BaseBufferExceedsShareReserves();
         }
     }
@@ -287,14 +292,16 @@ abstract contract HyperdriveLong is HyperdriveBase {
         uint256 _maturityTime
     ) internal {
         // Update the long average maturity time.
-        aggregates.longAverageMaturityTime = aggregates
-            .longAverageMaturityTime
+        aggregates.longAverageMaturityTime = uint256(
+            aggregates.longAverageMaturityTime
+        )
             .updateWeightedAverage(
                 state.longsOutstanding,
                 _maturityTime,
                 _bondAmount,
                 false
-            );
+            )
+            .toUint128();
 
         // Update the long base volume.
         {
@@ -314,13 +321,13 @@ abstract contract HyperdriveLong is HyperdriveBase {
             // volume aggregates by a proportional amount.
             uint256 checkpointTime = _maturityTime - positionDuration;
             if (_bondAmount == checkpointAmount) {
-                state.longBaseVolume -= checkpoints[checkpointTime]
+                aggregates.longBaseVolume -= checkpoints[checkpointTime]
                     .longBaseVolume;
                 delete checkpoints[checkpointTime].longBaseVolume;
             } else {
-                uint256 proportionalBaseVolume = checkpoints[checkpointTime]
-                    .longBaseVolume
-                    .mulDown(_bondAmount.divDown(checkpointAmount));
+                uint128 proportionalBaseVolume = uint256(
+                    checkpoints[checkpointTime].longBaseVolume
+                ).mulDown(_bondAmount.divDown(checkpointAmount)).toUint128();
                 aggregates.longBaseVolume -= proportionalBaseVolume;
                 checkpoints[checkpointTime]
                     .longBaseVolume -= proportionalBaseVolume;
@@ -328,7 +335,7 @@ abstract contract HyperdriveLong is HyperdriveBase {
         }
 
         // Reduce the amount of outstanding longs.
-        state.longsOutstanding -= _bondAmount;
+        state.longsOutstanding -= _bondAmount.toUint128();
 
         // If there are outstanding long withdrawal shares, we attribute a
         // proportional amount of the proceeds to the withdrawal pool and the
@@ -339,8 +346,8 @@ abstract contract HyperdriveLong is HyperdriveBase {
         if (longWithdrawalSharesOutstanding > 0) {
             // Calculate the effect that the trade has on the pool's APR.
             uint256 apr = HyperdriveMath.calculateAPRFromReserves(
-                state.shareReserves.sub(_shareProceeds),
-                state.bondReserves.add(_poolBondDelta),
+                uint256(state.shareReserves).sub(_shareProceeds),
+                uint256(state.bondReserves).add(_poolBondDelta),
                 totalSupply[AssetId._LP_ASSET_ID],
                 initialSharePrice,
                 positionDuration,
@@ -395,18 +402,22 @@ abstract contract HyperdriveLong is HyperdriveBase {
             // the math for the share reserves update is given by:
             //
             // z -= dz + (dy / c_0 - dz) * (min(b_x, dy) / dy)
-            state.shareReserves -= _shareProceeds + withdrawalProceeds;
-            state.bondReserves = HyperdriveMath.calculateBondReserves(
-                state.shareReserves,
-                totalSupply[AssetId._LP_ASSET_ID],
-                initialSharePrice,
-                apr,
-                positionDuration,
-                timeStretch
-            );
+            state.shareReserves -=
+                _shareProceeds.toUint128() +
+                withdrawalProceeds.toUint128();
+            state.bondReserves = HyperdriveMath
+                .calculateBondReserves(
+                    state.shareReserves,
+                    totalSupply[AssetId._LP_ASSET_ID],
+                    initialSharePrice,
+                    apr,
+                    positionDuration,
+                    timeStretch
+                )
+                .toUint128();
         } else {
-            state.shareReserves -= _shareProceeds;
-            state.bondReserves += _poolBondDelta;
+            state.shareReserves -= _shareProceeds.toUint128();
+            state.bondReserves += _poolBondDelta.toUint128();
         }
     }
 }

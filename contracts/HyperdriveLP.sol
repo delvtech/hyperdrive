@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
+import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { HyperdriveBase } from "./HyperdriveBase.sol";
 import { AssetId } from "./libraries/AssetId.sol";
 import { Errors } from "./libraries/Errors.sol";
@@ -15,6 +16,7 @@ import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveLP is HyperdriveBase {
     using FixedPointMath for uint256;
+    using SafeCast for uint256;
 
     /// @notice Allows the first LP to initialize the market with a target APR.
     /// @param _contribution The amount of base to supply.
@@ -45,15 +47,17 @@ abstract contract HyperdriveLP is HyperdriveBase {
 
         // Update the reserves. The bond reserves are calculated so that the
         // pool is initialized with the target APR.
-        state.shareReserves = shares;
-        state.bondReserves = HyperdriveMath.calculateInitialBondReserves(
-            shares,
-            sharePrice,
-            initialSharePrice,
-            _apr,
-            positionDuration,
-            timeStretch
-        );
+        state.shareReserves = shares.toUint128();
+        state.bondReserves = HyperdriveMath
+            .calculateInitialBondReserves(
+                shares,
+                sharePrice,
+                initialSharePrice,
+                _apr,
+                positionDuration,
+                timeStretch
+            )
+            .toUint128();
 
         // Mint LP shares to the initializer.
         // TODO - Should we index the lp share and virtual reserve to shares or to underlying?
@@ -124,19 +128,23 @@ abstract contract HyperdriveLP is HyperdriveBase {
                 sharePrice
             );
         lpShares = shares.mulDown(totalSupply[AssetId._LP_ASSET_ID]).divDown(
-            state.shareReserves.add(shortAdjustment).sub(longAdjustment)
+            uint256(state.shareReserves).add(shortAdjustment).sub(
+                longAdjustment
+            )
         );
 
         // Update the reserves.
-        state.shareReserves += shares;
-        state.bondReserves = HyperdriveMath.calculateBondReserves(
-            state.shareReserves,
-            totalSupply[AssetId._LP_ASSET_ID] + lpShares,
-            initialSharePrice,
-            apr,
-            positionDuration,
-            timeStretch
-        );
+        state.shareReserves += shares.toUint128();
+        state.bondReserves = HyperdriveMath
+            .calculateBondReserves(
+                state.shareReserves,
+                totalSupply[AssetId._LP_ASSET_ID] + lpShares,
+                initialSharePrice,
+                apr,
+                positionDuration,
+                timeStretch
+            )
+            .toUint128();
 
         // Enforce min user outputs
         if (_minOutput > lpShares) revert Errors.OutputLimit();
@@ -202,15 +210,17 @@ abstract contract HyperdriveLP is HyperdriveBase {
         _burn(AssetId._LP_ASSET_ID, msg.sender, _shares);
 
         // Update the reserves.
-        state.shareReserves -= shareProceeds;
-        state.bondReserves = HyperdriveMath.calculateBondReserves(
-            state.shareReserves,
-            totalSupply[AssetId._LP_ASSET_ID],
-            initialSharePrice,
-            apr,
-            positionDuration,
-            timeStretch
-        );
+        state.shareReserves -= shareProceeds.toUint128();
+        state.bondReserves = HyperdriveMath
+            .calculateBondReserves(
+                state.shareReserves,
+                totalSupply[AssetId._LP_ASSET_ID],
+                initialSharePrice,
+                apr,
+                positionDuration,
+                timeStretch
+            )
+            .toUint128();
 
         // TODO: Update this when we implement tranches.
         //

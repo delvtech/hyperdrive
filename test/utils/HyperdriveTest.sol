@@ -228,17 +228,35 @@ contract HyperdriveTest is BaseTest {
             });
     }
 
-    function calculateAPRFromReserves(
-        MockHyperdrive _hyperdrive
-    ) internal view returns (uint256) {
+    function calculateAPRFromReserves() internal view returns (uint256) {
+        (
+            uint256 initialSharePrice,
+            uint256 positionDuration,
+            ,
+            uint256 timeStretch,
+            ,
+
+        ) = hyperdrive.getPoolConfiguration();
+        (
+            uint256 shareReserves,
+            uint256 bondReserves,
+            uint256 lpTotalSupply,
+            ,
+            ,
+            ,
+            ,
+            ,
+            ,
+
+        ) = hyperdrive.getPoolInfo();
         return
             HyperdriveMath.calculateAPRFromReserves(
-                _hyperdrive.shareReserves(),
-                _hyperdrive.bondReserves(),
-                _hyperdrive.totalSupply(AssetId._LP_ASSET_ID),
-                _hyperdrive.initialSharePrice(),
-                _hyperdrive.positionDuration(),
-                _hyperdrive.timeStretch()
+                shareReserves,
+                bondReserves,
+                lpTotalSupply,
+                initialSharePrice,
+                positionDuration,
+                timeStretch
             );
     }
 

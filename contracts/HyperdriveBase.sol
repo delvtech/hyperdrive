@@ -71,45 +71,6 @@ abstract contract HyperdriveBase is MultiToken {
     ///         the checkpoint as well as aggregate volume values.
     mapping(uint256 => Checkpoint) public checkpoints;
 
-    // TODO: Optimize the storage layout.
-    //
-    /// @notice Checkpoints of historical base volume of long positions.
-    mapping(uint256 => uint256) public longBaseVolumeCheckpoints;
-
-    // TODO: Optimize the storage layout.
-    //
-    /// @notice Checkpoints of historical base volume of short positions.
-    mapping(uint256 => uint256) public shortBaseVolumeCheckpoints;
-
-    /// @notice The share reserves. The share reserves multiplied by the share
-    ///         price give the base reserves, so shares are a mechanism of
-    ///         ensuring that interest is properly awarded over time.
-    uint256 public shareReserves;
-
-    /// @notice The bond reserves. In Hyperdrive, the bond reserves aren't
-    ///         backed by pre-minted bonds and are instead used as a virtual
-    ///         value that ensures that the spot rate changes according to the
-    ///         laws of supply and demand.
-    uint256 public bondReserves;
-
-    /// @notice The amount of longs that are still open.
-    uint256 public longsOutstanding;
-
-    /// @notice The amount of shorts that are still open.
-    uint256 public shortsOutstanding;
-
-    /// @notice The average maturity time of long positions.
-    uint256 public longAverageMaturityTime;
-
-    /// @notice The average maturity time of short positions.
-    uint256 public shortAverageMaturityTime;
-
-    /// @notice The amount of base paid by outstanding longs.
-    uint256 public longBaseVolume;
-
-    /// @notice The amount of base paid to outstanding shorts.
-    uint256 public shortBaseVolume;
-
     // FIXME: Create a struct for this.
     //
     /// @notice The amount of long withdrawal shares that haven't been paid out.
@@ -298,16 +259,16 @@ abstract contract HyperdriveBase is MultiToken {
         )
     {
         return (
-            shareReserves,
-            bondReserves,
+            state.shareReserves,
+            state.bondReserves,
             totalSupply[AssetId._LP_ASSET_ID],
             _pricePerShare(),
-            longsOutstanding,
-            longAverageMaturityTime,
-            longBaseVolume,
-            shortsOutstanding,
-            shortAverageMaturityTime,
-            shortBaseVolume
+            state.longsOutstanding,
+            aggregates.longAverageMaturityTime,
+            aggregates.longBaseVolume,
+            state.shortsOutstanding,
+            aggregates.shortAverageMaturityTime,
+            aggregates.shortBaseVolume
         );
     }
 

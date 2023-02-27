@@ -260,6 +260,11 @@ contract CloseShortTest is HyperdriveTest {
         );
 
         // Verify that the other state was updated correctly.
+        (
+            ,
+            uint256 checkpointLongBaseVolume,
+            uint256 checkpointShortBaseVolume
+        ) = hyperdrive.checkpoints(checkpointTime);
         assertApproxEqAbs(
             poolInfoAfter.shareReserves,
             poolInfoBefore.shareReserves +
@@ -276,13 +281,13 @@ contract CloseShortTest is HyperdriveTest {
         );
         assertEq(poolInfoAfter.longAverageMaturityTime, 0);
         assertEq(poolInfoAfter.longBaseVolume, 0);
-        assertEq(hyperdrive.longBaseVolumeCheckpoints(checkpointTime), 0);
+        assertEq(checkpointLongBaseVolume, 0);
         assertEq(
             poolInfoAfter.shortsOutstanding,
             poolInfoBefore.shortsOutstanding - bondAmount
         );
         assertEq(poolInfoAfter.shortAverageMaturityTime, 0);
         assertEq(poolInfoAfter.shortBaseVolume, 0);
-        assertEq(hyperdrive.shortBaseVolumeCheckpoints(checkpointTime), 0);
+        assertEq(checkpointShortBaseVolume, 0);
     }
 }
