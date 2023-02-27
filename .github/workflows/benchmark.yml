@@ -40,7 +40,7 @@ jobs:
 
       # Download previous benchmark result from cache (if exists)
       - name: Download previous benchmark data
-        uses: actions/cache@v3
+        uses: actions/cache/restore@v3
         with:
           path: ./cache
           key: ${{ runner.os }}-benchmark
@@ -49,7 +49,7 @@ jobs:
         run: cat ./cache/benchmarks.json
 
       # Comment on pull request.
-      - name: Create benchmark comment.
+      - name: Create benchmark comment
         if: ${{ github.event_name == 'pull_request' }}
         uses: jalextowle/github-action-benchmark@v1.3-test20
         with:
@@ -73,7 +73,7 @@ jobs:
         run: cat ./cache/benchmarks.json
 
       # Save the benchmark on push.
-      - name: Create benchmark comment.
+      - name: Create benchmark comment and update data file
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         uses: jalextowle/github-action-benchmark@v1.3-test20
         with:
@@ -90,3 +90,12 @@ jobs:
           fail-on-alert: true
           # Needed to allow the project to comment on PRs.
           github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Store any updates made to the cache.
+      - name: Update benchmark cache
+        if: always()
+        uses: actions/cache/save@v3
+        id: cache
+        with:
+          path: ./cache
+          key: ${{ runner.os }}-benchmark
