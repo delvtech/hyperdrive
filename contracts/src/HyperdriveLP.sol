@@ -32,7 +32,7 @@ abstract contract HyperdriveLP is HyperdriveBase {
         bool _asUnderlying
     ) external {
         // Ensure that the pool hasn't been initialized yet.
-        if (state.shareReserves > 0 || state.bondReserves > 0) {
+        if (marketState.shareReserves > 0 || marketState.bondReserves > 0) {
             revert Errors.PoolAlreadyInitialized();
         }
 
@@ -47,8 +47,8 @@ abstract contract HyperdriveLP is HyperdriveBase {
 
         // Update the reserves. The bond reserves are calculated so that the
         // pool is initialized with the target APR.
-        state.shareReserves = shares.toUint128();
-        state.bondReserves = HyperdriveMath
+        marketState.shareReserves = shares.toUint128();
+        marketState.bondReserves = HyperdriveMath
             .calculateInitialBondReserves(
                 shares,
                 sharePrice,
@@ -65,7 +65,7 @@ abstract contract HyperdriveLP is HyperdriveBase {
         _mint(
             AssetId._LP_ASSET_ID,
             _destination,
-            sharePrice.mulDown(shares).add(state.bondReserves)
+            sharePrice.mulDown(shares).add(marketState.bondReserves)
         );
     }
 
@@ -99,8 +99,8 @@ abstract contract HyperdriveLP is HyperdriveBase {
         // Calculate the pool's APR prior to updating the share reserves so that
         // we can compute the bond reserves update.
         uint256 apr = HyperdriveMath.calculateAPRFromReserves(
-            state.shareReserves,
-            state.bondReserves,
+            marketState.shareReserves,
+            marketState.bondReserves,
             totalSupply[AssetId._LP_ASSET_ID],
             initialSharePrice,
             positionDuration,
@@ -115,29 +115,29 @@ abstract contract HyperdriveLP is HyperdriveBase {
         //
         // lpShares = (dz * l) / (z + a_s - a_l)
         uint256 longAdjustment = HyperdriveMath.calculateLpAllocationAdjustment(
-            state.longsOutstanding,
+            marketState.longsOutstanding,
             aggregates.longBaseVolume,
             _calculateTimeRemaining(aggregates.longAverageMaturityTime),
             sharePrice
         );
         uint256 shortAdjustment = HyperdriveMath
             .calculateLpAllocationAdjustment(
-                state.shortsOutstanding,
+                marketState.shortsOutstanding,
                 aggregates.shortBaseVolume,
                 _calculateTimeRemaining(aggregates.shortAverageMaturityTime),
                 sharePrice
             );
         lpShares = shares.mulDown(totalSupply[AssetId._LP_ASSET_ID]).divDown(
-            uint256(state.shareReserves).add(shortAdjustment).sub(
+            uint256(marketState.shareReserves).add(shortAdjustment).sub(
                 longAdjustment
             )
         );
 
         // Update the reserves.
-        state.shareReserves += shares.toUint128();
-        state.bondReserves = HyperdriveMath
+        marketState.shareReserves += shares.toUint128();
+        marketState.bondReserves = HyperdriveMath
             .calculateBondReserves(
-                state.shareReserves,
+                marketState.shareReserves,
                 totalSupply[AssetId._LP_ASSET_ID] + lpShares,
                 initialSharePrice,
                 apr,
@@ -182,8 +182,8 @@ abstract contract HyperdriveLP is HyperdriveBase {
         // Calculate the pool's APR prior to updating the share reserves and LP
         // total supply so that we can compute the bond reserves update.
         uint256 apr = HyperdriveMath.calculateAPRFromReserves(
-            state.shareReserves,
-            state.bondReserves,
+            marketState.shareReserves,
+            marketState.bondReserves,
             totalSupply[AssetId._LP_ASSET_ID],
             initialSharePrice,
             positionDuration,
@@ -199,10 +199,10 @@ abstract contract HyperdriveLP is HyperdriveBase {
             uint256 shortWithdrawalShares
         ) = HyperdriveMath.calculateOutForLpSharesIn(
                 _shares,
-                state.shareReserves,
+                marketState.shareReserves,
                 totalSupply[AssetId._LP_ASSET_ID],
-                state.longsOutstanding,
-                state.shortsOutstanding,
+                marketState.longsOutstanding,
+                marketState.shortsOutstanding,
                 sharePrice
             );
 
@@ -210,10 +210,10 @@ abstract contract HyperdriveLP is HyperdriveBase {
         _burn(AssetId._LP_ASSET_ID, msg.sender, _shares);
 
         // Update the reserves.
-        state.shareReserves -= shareProceeds.toUint128();
-        state.bondReserves = HyperdriveMath
+        marketState.shareReserves -= shareProceeds.toUint128();
+        marketState.bondReserves = HyperdriveMath
             .calculateBondReserves(
-                state.shareReserves,
+                marketState.shareReserves,
                 totalSupply[AssetId._LP_ASSET_ID],
                 initialSharePrice,
                 apr,
@@ -230,7 +230,8 @@ abstract contract HyperdriveLP is HyperdriveBase {
             _destination,
             longWithdrawalShares
         );
-        longWithdrawalSharesOutstanding += longWithdrawalShares;
+        withdrawalState.longWithdrawalSharesOutstanding += longWithdrawalShares
+            .toUint128();
         _mint(
             AssetId.encodeAssetId(
                 AssetId.AssetIdPrefix.ShortWithdrawalShare,
@@ -239,7 +240,9 @@ abstract contract HyperdriveLP is HyperdriveBase {
             _destination,
             shortWithdrawalShares
         );
-        shortWithdrawalSharesOutstanding += shortWithdrawalShares;
+        withdrawalState
+            .shortWithdrawalSharesOutstanding += shortWithdrawalShares
+            .toUint128();
 
         // Withdraw the shares from the yield source.
         (uint256 baseOutput, ) = _withdraw(
@@ -278,8 +281,10 @@ abstract contract HyperdriveLP is HyperdriveBase {
         uint256 proceeds = _applyWithdrawalShareRedemption(
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.LongWithdrawalShare, 0),
             _longWithdrawalShares,
-            longWithdrawalSharesOutstanding.divDown(sharePrice),
-            longWithdrawalShareProceeds
+            uint256(withdrawalState.longWithdrawalSharesOutstanding).divDown(
+                sharePrice
+            ),
+            withdrawalState.longWithdrawalShareProceeds
         );
 
         // Redeem the short withdrawal shares.
@@ -289,8 +294,10 @@ abstract contract HyperdriveLP is HyperdriveBase {
                 0
             ),
             _shortWithdrawalShares,
-            shortWithdrawalSharesOutstanding.divDown(sharePrice),
-            shortWithdrawalShareProceeds
+            uint256(withdrawalState.shortWithdrawalSharesOutstanding).divDown(
+                sharePrice
+            ),
+            withdrawalState.shortWithdrawalShareProceeds
         );
 
         // Withdraw the funds released by redeeming the withdrawal shares.
