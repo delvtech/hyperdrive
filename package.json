@@ -17,7 +17,8 @@
         "spell-check": "npx cspell ./**/**/**.sol --gitignore",
         "style-check": "npx prettier --check .",
         "postinstall": "patch-package --patch-dir .patches",
-        "configure-husky": "npx husky install && npx husky add .husky/pre-commit \"npx --no-install lint-staged\""
+        "configure-husky": "npx husky install && npx husky add .husky/pre-commit \"npx --no-install lint-staged\"",
+        "testnet": "forge script migrations/MockHyperdrive.s.sol:MockHyperdriveScript --rpc-url http://localhost:8545 --broadcast  -vvvv"
     },
     "_moduleAliases": {
         "test": "./test"
