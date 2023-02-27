@@ -153,6 +153,6 @@ abstract contract Hyperdrive is
             );
         }
 
-        return checkpoints[_checkpointTime];
+        return checkpoints[_checkpointTime].sharePrice;
     }
 }
