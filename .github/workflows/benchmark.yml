@@ -46,7 +46,8 @@ jobs:
           key: ${{ runner.os }}-benchmark
 
       # Run `github-action-benchmark` action
-      - name: Store benchmark result
+      - name: Create benchmark comment.
+        # if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         uses: jalextowle/github-action-benchmark@v1.3-test20
         with:
           name: Hyperdrive Gas Benchmark
@@ -56,14 +57,11 @@ jobs:
           output-file-path: benchmarks.json
           # Where the previous data file is stored
           external-data-json-path: ./cache/benchmarks.json
+          # Save the benchmark for comparison.
+          save-data-file: true
           # Workflow will fail when an alert happens
           fail-on-alert: true
           # Always leave a comment on the PR
           comment-always: true
           # Needed to allow the project to comment on PRs.
           github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Update the benchmark on main
-        # FIXME
-        # if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-        run: cp benchmarks.json ./cache/benchmarks.json
