@@ -45,16 +45,9 @@ jobs:
           path: ./cache
           key: ${{ runner.os }}-benchmark
 
-      # FIXME: Seed data.
-      - name: Seed data.
-        run: cp benchmarks.json ./cache/benchmarks.json
-
-      - name: Log data
-        run: cat benchmarks.json && cat ./cache/benchmarks.json
-
       # Run `github-action-benchmark` action
       - name: Store benchmark result
-        uses: jalextowle/github-action-benchmark@v1.3-test15
+        uses: jalextowle/github-action-benchmark@v1.3-test16
         with:
           name: Hyperdrive Gas Benchmark
           # We're using the custom tool since there isn't a Solidity tool yet.
