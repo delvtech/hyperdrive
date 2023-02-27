@@ -46,7 +46,7 @@ jobs:
           key: ${{ runner.os }}-benchmark
 
       # FIXME: Seed data.
-      - name: Update the benchmark on main
+      - name: Seed data.
         run: cp benchmarks.json ./cache/benchmarks.json
 
       # Run `github-action-benchmark` action
