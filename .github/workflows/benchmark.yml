@@ -13,23 +13,20 @@ jobs:
     name: benchmark
     runs-on: ubuntu-latest
     steps:
+      # Install the dependencies.
       - uses: actions/checkout@v2
-
       - name: install node
         uses: actions/setup-node@v3
         with:
           node-version: 14.x
-
       - name: install packages
         uses: borales/actions-yarn@v4
         with:
           cmd: install # will run `yarn install` command
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # if needed
-
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
-
       - uses: actions/setup-python@v4
         with:
           python-version: "3.10"
@@ -56,22 +53,24 @@ jobs:
         uses: jalextowle/github-action-benchmark@v1
         with:
           name: Hyperdrive Gas Benchmark
-          # We're using the custom tool since there isn't a Solidity tool yet.
+          # We pass in raw benchmark data since there isn't a Solidity tool that
+          # is supported yet.
           tool: "customSmallerIsBetter"
-          # Where the output from the benchmark tool is stored.
-          output-file-path: benchmarks.json
-          # Where the data file is stored.
-          external-data-json-path: ./cache/benchmarks.json
-          # Don't save to the data file since we only compare to the base branch.
+          # For PRs, we don't save to the data file since we compare to the
+          # base branch. The output file specifies the current benchmark and
+          # the external data path specifies the latest benchmark on the base
+          # branch.
           save-data-file: false
-          # Adds a comment to the PR on alert.
+          output-file-path: benchmarks.json
+          external-data-json-path: ./cache/benchmarks.json
+          # If the performance degrades, we fail the workflow. We have no
+          # tolerance for degradation.
+          alert-threshold: "100%"
           comment-on-alert: true
-          # Workflow will fail when an alert happens.
           fail-on-alert: true
-          # Always leave a comment.
-          comment-always: true
-          # Leave a comment on the PR.
+          # Always leave a comment on PRs.
           comment-on-pull-request: true
+          comment-always: true
           # Needed to allow the project to comment on PRs.
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -81,13 +80,14 @@ jobs:
         uses: jalextowle/github-action-benchmark@v1
         with:
           name: Hyperdrive Gas Benchmark
-          # We're using the custom tool since there isn't a Solidity tool yet.
+          # We pass in raw benchmark data since there isn't a Solidity tool that
+          # is supported yet.
           tool: "customSmallerIsBetter"
-          # Where the output from the benchmark tool is stored
+          # We save to the data file when pushing to the base branch. The output
+          # file specifies the current benchmark and the external data path
+          # specifies the latest benchmark on the base branch.
           output-file-path: benchmarks.json
-          # Where the previous data file is stored
           external-data-json-path: ./cache/benchmarks.json
-          # Save the benchmark for comparison.
           save-data-file: true
           # Needed to allow the project to comment on PRs.
           github-token: ${{ secrets.GITHUB_TOKEN }}
