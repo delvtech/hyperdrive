@@ -61,7 +61,7 @@ jobs:
           # Where the previous data file is stored
           external-data-json-path: ./cache/benchmarks.json
           # Don't save the benchmark on PRs.
-          save-data-file: true # FIXME: Make it false
+          save-data-file: false
           # Workflow will fail when an alert happens
           fail-on-alert: true
           # Always leave a comment on the PR
