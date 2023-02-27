@@ -14,8 +14,4 @@ contract MockBondWrapper is BondWrapper {
         string memory name_,
         string memory symbol_
     ) BondWrapper(_hyperdrive, _token, _mintPercent, name_, symbol_) {}
-
-    function __setMintPercent(uint256 _mintPercent) external {
-        mintPercent = _mintPercent;
-    }
 }

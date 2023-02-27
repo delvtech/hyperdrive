@@ -27,14 +27,6 @@ contract BondWrapper_mint is CombinatorialTest {
 
         multiToken = new MockMultiToken(bytes32(0), address(forwarderFactory));
         baseToken = new ERC20Mintable();
-        bondWrapper = new MockBondWrapper(
-            IHyperdrive(address(multiToken)),
-            IERC20(address(baseToken)),
-            0,
-            "Bond",
-            "BND"
-        );
-
         initTime = block.timestamp;
     }
 
@@ -119,6 +111,15 @@ contract BondWrapper_mint is CombinatorialTest {
     }
 
     function __setup(TestCase memory testCase) internal __combinatorial_setup {
+        // Deploy contract with a new mint percent
+        bondWrapper = new MockBondWrapper(
+            IHyperdrive(address(multiToken)),
+            IERC20(address(baseToken)),
+            testCase.mintPercent,
+            "Bond",
+            "BND"
+        );
+
         // Set timestamp
         vm.warp(testCase.blockTimestamp);
 
@@ -128,9 +129,6 @@ contract BondWrapper_mint is CombinatorialTest {
             testCase.user,
             testCase.unwrappedBonds
         );
-
-        // Set mintPercent
-        bondWrapper.__setMintPercent(testCase.mintPercent);
 
         // Ensure that the bondWrapper contract has been approved by the user
         vm.stopPrank();
