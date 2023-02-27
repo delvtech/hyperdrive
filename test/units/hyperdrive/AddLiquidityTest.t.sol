@@ -71,8 +71,8 @@ contract AddLiquidityTest is HyperdriveTest {
         initialize(alice, apr, contribution);
         uint256 lpSupplyBefore = hyperdrive.totalSupply(AssetId._LP_ASSET_ID);
 
-        // Eve opens a long.
-        openLong(eve, 50_000_000e18);
+        // Celine opens a long.
+        openLong(celine, 50_000_000e18);
 
         // Add liquidity with the same amount as the original contribution.
         uint256 aprBefore = calculateAPRFromReserves(hyperdrive);
@@ -107,8 +107,8 @@ contract AddLiquidityTest is HyperdriveTest {
         initialize(alice, apr, contribution);
         uint256 lpSupplyBefore = hyperdrive.totalSupply(AssetId._LP_ASSET_ID);
 
-        // Eve opens a short.
-        openShort(eve, 50_000_000e18);
+        // Celine opens a short.
+        openShort(celine, 50_000_000e18);
 
         // Add liquidity with the same amount as the original contribution.
         uint256 aprBefore = calculateAPRFromReserves(hyperdrive);
@@ -143,8 +143,8 @@ contract AddLiquidityTest is HyperdriveTest {
         initialize(alice, apr, contribution);
         hyperdrive.totalSupply(AssetId._LP_ASSET_ID);
 
-        // Eve opens a long.
-        openLong(eve, 50_000_000e18);
+        // Celine opens a long.
+        openLong(celine, 50_000_000e18);
 
         // The term passes.
         vm.warp(block.timestamp + POSITION_DURATION);
@@ -180,8 +180,8 @@ contract AddLiquidityTest is HyperdriveTest {
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
 
-        // Eve opens a short.
-        openShort(eve, 50_000_000e18);
+        // Celine opens a short.
+        openShort(celine, 50_000_000e18);
 
         // The term passes.
         vm.warp(block.timestamp + POSITION_DURATION);

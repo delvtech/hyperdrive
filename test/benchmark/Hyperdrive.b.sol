@@ -20,9 +20,9 @@ contract HyperdriveBenchmark is HyperdriveTest {
             20_000_000e18
         );
 
-        // Eve opens a short.
+        // Celine opens a short.
         uint256 shortAmount = 20_000_000e18;
-        (uint256 shortMaturityTime, ) = openShort(eve, shortAmount);
+        (uint256 shortMaturityTime, ) = openShort(celine, shortAmount);
 
         // A small amount of time passes.
         vm.warp(block.timestamp + CHECKPOINT_DURATION.mulDown(1.5e18));
@@ -33,8 +33,8 @@ contract HyperdriveBenchmark is HyperdriveTest {
         // A small amount of time passes.
         vm.warp(block.timestamp + CHECKPOINT_DURATION.mulDown(0.3e18));
 
-        // Eve closes her short.
-        closeShort(eve, shortMaturityTime, shortAmount);
+        // Celine closes her short.
+        closeShort(celine, shortMaturityTime, shortAmount);
 
         // Most of the term passes.
         vm.warp(block.timestamp + POSITION_DURATION.mulDown(0.6e18));
@@ -51,9 +51,9 @@ contract HyperdriveBenchmark is HyperdriveTest {
         // Most of Alice's new term passes.
         vm.warp(block.timestamp + POSITION_DURATION.mulDown(0.8e18));
 
-        // Eve creates a checkpoint.
+        // Celine creates a checkpoint.
         vm.stopPrank();
-        vm.startPrank(eve);
+        vm.startPrank(celine);
         hyperdrive.checkpoint(latestCheckpoint());
 
         // Bob closes his long.

@@ -18,7 +18,7 @@ contract BaseTest is Test {
 
     address alice;
     address bob;
-    address eve;
+    address celine;
 
     address minter;
     address deployer;
@@ -37,7 +37,7 @@ contract BaseTest is Test {
     function setUp() public virtual {
         alice = createUser("alice");
         bob = createUser("bob");
-        eve = createUser("eve");
+        celine = createUser("celine");
         deployer = createUser("deployer");
         minter = createUser("minter");
     }

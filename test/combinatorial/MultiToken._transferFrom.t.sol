@@ -61,7 +61,7 @@ contract MultiToken__transferFrom is CombinatorialTest {
                 from: alice,
                 to: bob,
                 amount: rawTestCases[i][0],
-                caller: rawTestCases[i][1] > 0 ? alice : eve,
+                caller: rawTestCases[i][1] > 0 ? alice : celine,
                 approvals: approvals,
                 balanceFrom: rawTestCases[i][3],
                 balanceTo: rawTestCases[i][3],

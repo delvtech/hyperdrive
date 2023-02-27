@@ -22,7 +22,7 @@ contract CheckpointTest is HyperdriveTest {
         // Open a long and a short.
         (, uint256 longAmount) = openLong(bob, 10_000_000e18);
         uint256 shortAmount = 50_000e18;
-        openShort(eve, shortAmount);
+        openShort(celine, shortAmount);
 
         // Update the share price. Since the long and short were opened in this
         // checkpoint, the checkpoint should be of the old checkpoint price.
@@ -76,7 +76,7 @@ contract CheckpointTest is HyperdriveTest {
         // Open a long and a short.
         openLong(bob, 10_000_000e18);
         uint256 shortAmount = 50_000e18;
-        openShort(eve, shortAmount);
+        openShort(celine, shortAmount);
 
         // Advance a term.
         vm.warp(block.timestamp + POSITION_DURATION);
@@ -111,7 +111,7 @@ contract CheckpointTest is HyperdriveTest {
         // Open a long and a short.
         openLong(bob, 10_000_000e18);
         uint256 shortAmount = 50_000e18;
-        openShort(eve, shortAmount);
+        openShort(celine, shortAmount);
 
         // Advance a term.
         vm.warp(block.timestamp + POSITION_DURATION);

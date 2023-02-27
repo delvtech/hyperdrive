@@ -40,15 +40,15 @@ contract SandwichTest is HyperdriveTest {
             )
         );
 
-        // Eve opens a short.
+        // Celine opens a short.
         uint256 shortAmount = 200_000_000e18;
-        (uint256 shortMaturitytime, ) = openShort(eve, shortAmount);
+        (uint256 shortMaturitytime, ) = openShort(celine, shortAmount);
 
         // Bob closes his long.
         closeLong(bob, longMaturityTime, longAmount);
 
-        // Eve immediately closes her short.
-        closeShort(eve, shortMaturitytime, shortAmount);
+        // Celine immediately closes her short.
+        closeShort(celine, shortMaturitytime, shortAmount);
 
         // Ensure the proceeds from the sandwich attack didn't negatively
         // impact the LP. With this in mind, they should have made at least as
