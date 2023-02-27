@@ -47,7 +47,7 @@ jobs:
 
       # Run `github-action-benchmark` action
       - name: Store benchmark result
-        uses: jalextowle/github-action-benchmark@v1.3-test19
+        uses: jalextowle/github-action-benchmark@v1.3-test20
         with:
           name: Hyperdrive Gas Benchmark
           # We're using the custom tool since there isn't a Solidity tool yet.
