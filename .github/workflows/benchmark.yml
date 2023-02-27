@@ -43,7 +43,7 @@ jobs:
         uses: actions/cache/restore@v3
         with:
           path: ./cache
-          key: ${{ runner.os }}-benchmark
+          key: ${{ runner.os }}-benchmarks
 
       - name: log data
         run: cat ./cache/benchmarks.json
@@ -100,4 +100,4 @@ jobs:
         id: cache
         with:
           path: ./cache
-          key: ${{ runner.os }}-benchmark
+          key: ${{ runner.os }}-benchmarks
