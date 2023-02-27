@@ -45,9 +45,6 @@ jobs:
           path: ./cache
           key: ${{ runner.os }}-benchmarks
 
-      - name: log data
-        run: cat ./cache/benchmarks.json
-
       # Comment on pull request.
       - name: Create benchmark comment
         if: ${{ github.event_name == 'pull_request' }}
@@ -71,9 +68,6 @@ jobs:
           # Needed to allow the project to comment on PRs.
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: log data
-        run: cat ./cache/benchmarks.json
-
       # Save the benchmark on push.
       - name: Create benchmark comment and update data file
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
@@ -95,6 +89,7 @@ jobs:
 
       # Store any updates made to the cache.
       - name: Update benchmark cache
+        # FIXME
         if: always()
         uses: actions/cache/save@v3
         id: cache
