@@ -6,7 +6,6 @@ import { MockMultiToken } from "test/mocks/MockMultiToken.sol";
 import { ForwarderFactory } from "contracts/ForwarderFactory.sol";
 
 contract MultiTokenTest is BaseTest {
-    ForwarderFactory forwarderFactory;
     MockMultiToken multiToken;
 
     function setUp() public override {

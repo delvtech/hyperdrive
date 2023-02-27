@@ -14,7 +14,7 @@ contract BondWrapper is ERC20Permit {
     IERC20 public immutable token;
     // The basis points [ie out of 10000] which will be minted for a bond deposit
     // TODO - Should we make this mutable and updatable?
-    uint256 public immutable mintPercent;
+    uint256 public mintPercent;
 
     // Store the user deposits as a mapping from user address -> asset id -> amount
     mapping(address => mapping(uint256 => uint256)) public deposits;

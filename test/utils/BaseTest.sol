@@ -16,6 +16,8 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract BaseTest is Test {
     using FixedPointMath for uint256;
 
+    ForwarderFactory forwarderFactory;
+
     address alice;
     address bob;
     address celine;
