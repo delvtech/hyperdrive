@@ -36,7 +36,7 @@ jobs:
 
       # Run gas benchmark and stores the output to a json file.
       - name: Run benchmark
-        run: python scripts/gas_benchmarks.py benchmark-data.json
+        run: python scripts/gas_benchmarks.py benchmarks.json
 
       # Download previous benchmark result from cache (if exists)
       - name: Download previous benchmark data
@@ -44,13 +44,6 @@ jobs:
         with:
           path: ./cache
           key: ${{ runner.os }}-benchmark
-
-      # FIXME
-      - name: seed data
-        run: cp benchmark-data.json ./cache/benchmark-data.json
-
-      - name: log data
-        run: cat benchmark-data.json && echo "\n" && cat ./cache/benchmark-data.json
 
       # Run `github-action-benchmark` action
       - name: Store benchmark result
@@ -60,9 +53,9 @@ jobs:
           # We're using the custom tool since there isn't a Solidity tool yet.
           tool: "customSmallerIsBetter"
           # Where the output from the benchmark tool is stored
-          output-file-path: benchmark-data.json
+          output-file-path: benchmarks.json
           # Where the previous data file is stored
-          external-data-json-path: ./cache/benchmark-data.json
+          external-data-json-path: ./cache/benchmarks.json
           # Workflow will fail when an alert happens
           fail-on-alert: true
           # Always leave a comment on the PR
@@ -71,5 +64,6 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Update the benchmark on main
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-        run: cp benchmark-data.json ./cache/benchmark-data.json
+        # FIXME
+        # if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        run: cp benchmarks.json ./cache/benchmarks.json
