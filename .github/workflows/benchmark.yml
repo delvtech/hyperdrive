@@ -48,6 +48,9 @@ jobs:
       - name: log data
         run: cat ./cache/benchmarks.json
 
+      - name: clear cache
+        run: rm ./cache/benchmarks.json
+
       # Comment on pull request.
       - name: Create benchmark comment
         if: ${{ github.event_name == 'pull_request' }}
