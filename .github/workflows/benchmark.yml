@@ -45,6 +45,9 @@ jobs:
           path: ./cache
           key: ${{ runner.os }}-benchmarks
 
+      - name: log data
+        run: cat ./cache/benchmarks.json
+
       # Comment on pull request.
       - name: Create benchmark comment
         if: ${{ github.event_name == 'pull_request' }}
