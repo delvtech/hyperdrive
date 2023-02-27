@@ -45,9 +45,13 @@ jobs:
           path: ./cache
           key: ${{ runner.os }}-benchmark
 
+      # FIXME
+      - name: seed data
+        run: cp benchmarks.json ./cache/benchmarks.json
+
       # Run `github-action-benchmark` action
       - name: Store benchmark result
-        uses: benchmark-action/github-action-benchmark@v1
+        uses: jalextowle/github-action-benchmark@v1.3-test17
         with:
           name: Hyperdrive Gas Benchmark
           # We're using the custom tool since there isn't a Solidity tool yet.
@@ -55,7 +59,7 @@ jobs:
           # Where the output from the benchmark tool is stored
           output-file-path: benchmarks.json
           # Where the previous data file is stored
-          external-data-json-path: ./cache/benchmark-data.json
+          external-data-json-path: ./cache/benchmarks.json
           # Workflow will fail when an alert happens
           fail-on-alert: true
           # Always leave a comment on the PR
