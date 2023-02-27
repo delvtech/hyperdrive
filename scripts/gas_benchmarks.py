@@ -5,7 +5,9 @@ import json
 OUTPUT_PATH = sys.argv[1]
 
 # Run the Solidity tests and write the test name and the gas used to a markdown table.
-test_output = subprocess.check_output(["forge", "test"]).decode()
+test_output = subprocess.check_output(
+    ["forge", "test", "--match-test", "test_benchmark"]
+).decode()
 benchmark_captures = []
 for line in test_output.split("\n"):
     if "gas:" in line:
