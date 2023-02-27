@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import "forge-std/Vm.sol";
 import "forge-std/console2.sol";
 
-import { BaseTest } from "test/Test.sol";
+import { BaseTest } from "test/utils/BaseTest.sol";
 import { MockMakerDsrHyperdrive, DsrManager } from "test/mocks/MockMakerDsrHyperdrive.sol";
 import { ForwarderFactory } from "contracts/ForwarderFactory.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -20,15 +20,7 @@ contract MakerDsrHyperdrive is BaseTest {
     IERC20 chai;
     DsrManager dsrManager;
 
-    function setUp() public override {
-        // Fork to mainnet to use Maker
-        uint256 mainnetForkId = vm.createFork(
-            "https://eth-mainnet.alchemyapi.io/v2/kwjMP-X-Vajdk1ItCfU-56Uaq1wwhamK"
-        );
-        vm.selectFork(mainnetForkId);
-        // DSR is at 1% here
-        vm.rollFork(16_685_972);
-
+    function setUp() public override __mainnet_fork(16_685_972) {
         super.setUp();
 
         dai = IERC20(address(0x6B175474E89094C44Da98b954EedeAC495271d0F));

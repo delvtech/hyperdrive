@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import { Test } from "forge-std/Test.sol";
+import { BaseTest } from "./BaseTest.sol";
 import { ForwarderFactory } from "contracts/ForwarderFactory.sol";
 import { AssetId } from "contracts/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
@@ -9,12 +9,8 @@ import { HyperdriveMath } from "contracts/libraries/HyperdriveMath.sol";
 import { ERC20Mintable } from "test/mocks/ERC20Mintable.sol";
 import { MockHyperdrive } from "test/mocks/MockHyperdrive.sol";
 
-contract HyperdriveTest is Test {
+contract HyperdriveTest is BaseTest {
     using FixedPointMath for uint256;
-
-    address alice = address(uint160(uint256(keccak256("alice"))));
-    address bob = address(uint160(uint256(keccak256("bob"))));
-    address celine = address(uint160(uint256(keccak256("celine"))));
 
     ERC20Mintable baseToken;
     MockHyperdrive hyperdrive;
@@ -25,7 +21,8 @@ contract HyperdriveTest is Test {
     uint256 internal constant POSITION_DURATION =
         CHECKPOINT_DURATION * CHECKPOINTS_PER_TERM;
 
-    function setUp() public {
+    function setUp() public override {
+        super.setUp();
         vm.startPrank(alice);
 
         // Instantiate the base token.

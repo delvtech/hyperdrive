@@ -117,10 +117,10 @@ contract OpenLongTest is HyperdriveTest {
 
         // Open a long with fees.
         PoolInfo memory poolInfoBeforeWithFees = getPoolInfo();
-        (, uint256 bondAmountWithFees) = openLong(celine, baseAmount);
+        (, uint256 bondAmountWithFees) = openLong(eve, baseAmount);
 
         _verifyOpenLong(
-            celine,
+            eve,
             poolInfoBeforeWithFees,
             contribution,
             baseAmount,
