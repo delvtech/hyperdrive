@@ -13,56 +13,81 @@ jobs:
     name: benchmark
     runs-on: ubuntu-latest
     steps:
+      # Install the dependencies.
       - uses: actions/checkout@v2
-
       - name: install node
         uses: actions/setup-node@v3
         with:
           node-version: 14.x
-
       - name: install packages
         uses: borales/actions-yarn@v4
         with:
           cmd: install # will run `yarn install` command
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # if needed
-
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
-
       - uses: actions/setup-python@v4
         with:
           python-version: "3.10"
 
-      # Run gas benchmark and stores the output to a json file.
+      # Run the gas benchmark and stores the output to a json file.
       - name: Run benchmark
         run: python scripts/gas_benchmarks.py benchmarks.json
 
-      # Download previous benchmark result from cache (if exists)
+      # Load the benchmarks cache. We use a different cache key for every run
+      # because Github Actions caches are currently immutable. By specifying the
+      # same restore key, we can load the latest cache on restore and still save
+      # a new cache: https://github.com/actions/cache/blob/main/tips-and-workarounds.md#update-a-cache.
       - name: Download previous benchmark data
         uses: actions/cache@v3
         with:
           path: ./cache
-          key: ${{ runner.os }}-benchmark
+          key: benchmarks-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            benchmarks-${{ runner.os }}-
 
-      # Run `github-action-benchmark` action
-      - name: Store benchmark result
-        uses: benchmark-action/github-action-benchmark@v1
+      # Comment on pull request.
+      - name: Create benchmark comment
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: jalextowle/github-action-benchmark@v1
         with:
           name: Hyperdrive Gas Benchmark
-          # We're using the custom tool since there isn't a Solidity tool yet.
+          # We pass in raw benchmark data since there isn't a Solidity tool that
+          # is supported yet.
           tool: "customSmallerIsBetter"
-          # Where the output from the benchmark tool is stored
+          # For PRs, we don't save to the data file since we compare to the
+          # base branch. The output file specifies the current benchmark and
+          # the external data path specifies the latest benchmark on the base
+          # branch.
+          save-data-file: false
           output-file-path: benchmarks.json
-          # Where the previous data file is stored
-          external-data-json-path: ./cache/benchmark-data.json
-          # Workflow will fail when an alert happens
+          external-data-json-path: ./cache/benchmarks.json
+          # If the performance degrades, we fail the workflow. We have no
+          # tolerance for degradation.
+          alert-threshold: "100%"
+          comment-on-alert: true
           fail-on-alert: true
-          # Always leave a comment on the PR
+          # Always leave a comment on PRs.
+          comment-on-pull-request: true
           comment-always: true
           # Needed to allow the project to comment on PRs.
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Update the benchmark on main
+      # Save the benchmark on push.
+      - name: Create benchmark comment and update data file
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-        run: cp benchmarks.json ./cache/benchmarks.json
+        uses: jalextowle/github-action-benchmark@v1
+        with:
+          name: Hyperdrive Gas Benchmark
+          # We pass in raw benchmark data since there isn't a Solidity tool that
+          # is supported yet.
+          tool: "customSmallerIsBetter"
+          # We save to the data file when pushing to the base branch. The output
+          # file specifies the current benchmark and the external data path
+          # specifies the latest benchmark on the base branch.
+          output-file-path: benchmarks.json
+          external-data-json-path: ./cache/benchmarks.json
+          save-data-file: true
+          # Needed to allow the project to comment on PRs.
+          github-token: ${{ secrets.GITHUB_TOKEN }}
