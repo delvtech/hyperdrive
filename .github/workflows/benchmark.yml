@@ -48,9 +48,6 @@ jobs:
       - name: log data
         run: cat ./cache/benchmarks.json
 
-      - name: clear cache
-        run: rm ./cache/benchmarks.json
-
       # Comment on pull request.
       - name: Create benchmark comment
         if: ${{ github.event_name == 'pull_request' }}
@@ -64,7 +61,7 @@ jobs:
           # Where the previous data file is stored
           external-data-json-path: ./cache/benchmarks.json
           # Don't save the benchmark on PRs.
-          save-data-file: true
+          save-data-file: false
           # Workflow will fail when an alert happens
           fail-on-alert: true
           # Always leave a comment.
