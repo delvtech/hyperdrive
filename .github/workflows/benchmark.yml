@@ -48,7 +48,7 @@ jobs:
           path: ./cache
           key: benchmarks-${{ runner.os }}-${{ github.run_id }}
           restore-keys: |
-            benchmarks-${{ runner.os }}
+            benchmarks-${{ runner.os }}-
 
       # Comment on pull request.
       - name: Create benchmark comment
