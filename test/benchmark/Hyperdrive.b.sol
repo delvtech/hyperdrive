@@ -67,5 +67,13 @@ contract HyperdriveBenchmark is HyperdriveTest {
 
         // Bob removes his liquidity.
         removeLiquidity(bob, bobLpShares);
+
+        // FIXME: Add large transaction to see the change in the benchmark.
+        openLong(alice, 10e18);
+        openLong(alice, 10e18);
+        openLong(alice, 10e18);
+        openLong(alice, 10e18);
+        openLong(alice, 10e18);
+        openLong(alice, 10e18);
     }
 }
