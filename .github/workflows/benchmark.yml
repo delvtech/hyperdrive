@@ -60,7 +60,7 @@ jobs:
           # base branch. The output file specifies the current benchmark and
           # the external data path specifies the latest benchmark on the base
           # branch.
-          save-data-file: true
+          save-data-file: false
           output-file-path: benchmarks.json
           external-data-json-path: ./cache/benchmarks.json
           # If the performance degrades, we fail the workflow. We have no
