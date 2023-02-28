@@ -93,13 +93,13 @@ abstract contract HyperdriveBase is MultiToken {
 
     // TODO: Should this be immutable?
     //
-    /// @notice The fee paramater to apply to the curve portion of the
+    /// @notice The fee parameter to apply to the curve portion of the
     ///         hyperdrive trade equation.
     uint256 public curveFee;
 
     // TODO: Should this be immutable?
     //
-    /// @notice The fee paramater to apply to the flat portion of the hyperdrive
+    /// @notice The fee parameter to apply to the flat portion of the hyperdrive
     ///         trade equation.
     uint256 public flatFee;
 
@@ -110,7 +110,7 @@ abstract contract HyperdriveBase is MultiToken {
     ///        the ERC20 linker contracts.
     /// @param _baseToken The base token contract.
     /// @param _initialSharePrice The initial share price.
-    /// @param _checkpointsPerTerm The number of checkpoints that elaspes before
+    /// @param _checkpointsPerTerm The number of checkpoints that elapses before
     ///        bonds can be redeemed one-to-one for base.
     /// @param _checkpointDuration The time in seconds between share price
     ///        checkpoints. Position duration must be a multiple of checkpoint
@@ -162,7 +162,7 @@ abstract contract HyperdriveBase is MultiToken {
 
     /// @notice Withdraws shares from the yield source and sends the base
     ///         released to the destination.
-    /// @param shares The shares to withdraw from the yieldsource.
+    /// @param shares The shares to withdraw from the yield source.
     /// @param destination The recipient of the withdrawal.
     /// @param asUnderlying If true the yield source will transfer underlying tokens
     ///                     if false it will transfer the yielding asset directly
