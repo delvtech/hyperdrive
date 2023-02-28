@@ -32,6 +32,13 @@ for line in test_output.split("\n"):
         if function_name in FUNCTION_NAMES:
             capture += [
                 {
+                    "name": f"{cols[1].strip()}: min",
+                    "value": cols[2].strip(),
+                    "unit": "gas",
+                }
+            ]
+            capture += [
+                {
                     "name": f"{cols[1].strip()}: avg",
                     "value": cols[3].strip(),
                     "unit": "gas",
