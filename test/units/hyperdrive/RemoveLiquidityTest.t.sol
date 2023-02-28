@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-// FIXME
-import "forge-std/console.sol";
-
 import { stdError } from "forge-std/StdError.sol";
 import { AssetId } from "contracts/libraries/AssetId.sol";
 import { Errors } from "contracts/libraries/Errors.sol";
@@ -71,6 +68,11 @@ contract RemoveLiquidityTest is HyperdriveTest {
             calculateFutureValue(contribution, apr, timeDelta)
         );
         assertEq(baseToken.balanceOf(address(hyperdrive)), 0);
+
+        // Ensure that the reserves were updated correctly.
+        PoolInfo memory poolInfo = getPoolInfo();
+        assertEq(poolInfo.shareReserves, 0);
+        assertEq(poolInfo.bondReserves, 0);
         assertEq(baseToken.balanceOf(alice), baseProceeds);
 
         // Ensure that Alice receives the right amount of withdrawal shares.
@@ -115,6 +117,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
         // Bob opens a long.
         uint256 baseAmount = 50_000_000e18;
         (, uint256 bondAmount) = openLong(bob, baseAmount);
+        uint256 poolApr = calculateAPRFromReserves(hyperdrive);
 
         // Alice removes all of her liquidity.
         uint256 baseProceeds = removeLiquidity(alice, lpShares);
@@ -134,6 +137,14 @@ contract RemoveLiquidityTest is HyperdriveTest {
         assertEq(baseProceeds, baseExpected);
         assertEq(baseToken.balanceOf(address(hyperdrive)), bondAmount);
         assertEq(baseToken.balanceOf(alice), baseProceeds);
+
+        // Ensure that the reserves were updated correctly.
+        PoolInfo memory poolInfo = getPoolInfo();
+        assertEq(
+            poolInfo.shareReserves,
+            bondAmount.divDown(getPoolInfo().sharePrice)
+        );
+        assertApproxEqAbs(calculateAPRFromReserves(hyperdrive), poolApr, 1 wei);
 
         // Ensure that Alice receives the right amount of withdrawal shares.
         uint256 longWithdrawalSharesExpected = getPoolInfo().longsOutstanding;
@@ -201,6 +212,11 @@ contract RemoveLiquidityTest is HyperdriveTest {
             1 wei
         );
         assertEq(baseToken.balanceOf(alice), baseProceeds);
+
+        // Ensure that the reserves were updated correctly.
+        PoolInfo memory poolInfo = getPoolInfo();
+        assertEq(poolInfo.shareReserves, 0);
+        assertEq(poolInfo.bondReserves, 0);
 
         // Ensure that Alice receives the right amount of withdrawal shares.
         uint256 shortWithdrawalSharesExpected = getPoolInfo().shortsOutstanding;
