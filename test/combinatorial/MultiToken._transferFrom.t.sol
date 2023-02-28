@@ -9,14 +9,12 @@ import { MockMultiToken } from "test/mocks/MockMultiToken.sol";
 import { ForwarderFactory } from "contracts/ForwarderFactory.sol";
 
 contract MultiToken__transferFrom is CombinatorialTest {
-    ForwarderFactory forwarderFactory;
     MockMultiToken multiToken;
 
     function setUp() public override {
         // MultiToken deployment
         super.setUp();
         vm.startPrank(deployer);
-        forwarderFactory = new ForwarderFactory();
         multiToken = new MockMultiToken(bytes32(0), address(forwarderFactory));
         vm.stopPrank();
     }
