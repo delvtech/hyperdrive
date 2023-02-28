@@ -117,7 +117,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
         // Bob opens a long.
         uint256 baseAmount = 50_000_000e18;
         (, uint256 bondAmount) = openLong(bob, baseAmount);
-        uint256 poolApr = calculateAPRFromReserves(hyperdrive);
+        uint256 poolApr = calculateAPRFromReserves();
 
         // Alice removes all of her liquidity.
         uint256 baseProceeds = removeLiquidity(alice, lpShares);
@@ -144,7 +144,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
             poolInfo.shareReserves,
             bondAmount.divDown(getPoolInfo().sharePrice)
         );
-        assertApproxEqAbs(calculateAPRFromReserves(hyperdrive), poolApr, 1 wei);
+        assertApproxEqAbs(calculateAPRFromReserves(), poolApr, 1 wei);
 
         // Ensure that Alice receives the right amount of withdrawal shares.
         uint256 longWithdrawalSharesExpected = getPoolInfo().longsOutstanding;
