@@ -50,7 +50,7 @@ jobs:
       # Comment on pull request.
       - name: Create benchmark comment
         if: ${{ github.event_name == 'pull_request' }}
-        uses: jalextowle/github-action-benchmark@v1
+        uses: jalextowle/github-action-benchmark@v1.2
         with:
           name: Hyperdrive Gas Benchmark
           # We pass in raw benchmark data since there isn't a Solidity tool that
@@ -75,9 +75,9 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       # Save the benchmark on push.
-      - name: Create benchmark comment and update data file
+      - name: Save benchmark data file
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-        uses: jalextowle/github-action-benchmark@v1
+        uses: jalextowle/github-action-benchmark@v1.2
         with:
           name: Hyperdrive Gas Benchmark
           # We pass in raw benchmark data since there isn't a Solidity tool that
