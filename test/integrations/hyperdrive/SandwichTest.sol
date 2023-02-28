@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import "contracts/libraries/AssetId.sol";
-import "contracts/libraries/FixedPointMath.sol";
+import "contracts/src/libraries/AssetId.sol";
+import "contracts/src/libraries/FixedPointMath.sol";
 import "../../utils/HyperdriveTest.sol";
 
 contract SandwichTest is HyperdriveTest {

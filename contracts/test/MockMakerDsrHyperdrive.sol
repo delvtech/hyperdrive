@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import { MakerDsrHyperdrive, DsrManager } from "contracts/instances/MakerDsrHyperdrive.sol";
+import { MakerDsrHyperdrive, DsrManager } from "../src/instances/MakerDsrHyperdrive.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
-import { ForwarderFactory } from "contracts/ForwarderFactory.sol";
+import { FixedPointMath } from "../src/libraries/FixedPointMath.sol";
+import { ForwarderFactory } from "../src/ForwarderFactory.sol";
 
 contract MockMakerDsrHyperdrive is MakerDsrHyperdrive {
     using FixedPointMath for uint256;

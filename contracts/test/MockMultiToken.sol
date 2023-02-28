@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.15;
 
-import { MultiToken } from "contracts/MultiToken.sol";
-import { ForwarderFactory } from "contracts/ForwarderFactory.sol";
+import { MultiToken } from "../src/MultiToken.sol";
+import { ForwarderFactory } from "../src/ForwarderFactory.sol";
 
 contract MockMultiToken is MultiToken {
     constructor(

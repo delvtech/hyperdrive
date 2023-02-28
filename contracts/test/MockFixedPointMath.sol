@@ -1,7 +1,7 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
+import { FixedPointMath } from "../src/libraries/FixedPointMath.sol";
 
 contract MockFixedPointMath {
     using FixedPointMath for uint256;

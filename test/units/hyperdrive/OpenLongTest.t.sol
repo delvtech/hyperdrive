@@ -2,10 +2,10 @@
 pragma solidity ^0.8.18;
 
 import { stdError } from "forge-std/StdError.sol";
-import { AssetId } from "contracts/libraries/AssetId.sol";
-import { Errors } from "contracts/libraries/Errors.sol";
-import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
-import { MockHyperdrive } from "test/mocks/MockHyperdrive.sol";
+import { AssetId } from "contracts/src/libraries/AssetId.sol";
+import { Errors } from "contracts/src/libraries/Errors.sol";
+import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { MockHyperdrive } from "contracts/test/MockHyperdrive.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 
 contract OpenLongTest is HyperdriveTest {

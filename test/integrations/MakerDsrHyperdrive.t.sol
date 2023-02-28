@@ -6,11 +6,11 @@ import "forge-std/Vm.sol";
 import "forge-std/console2.sol";
 
 import { BaseTest } from "test/utils/BaseTest.sol";
-import { MockMakerDsrHyperdrive, DsrManager } from "test/mocks/MockMakerDsrHyperdrive.sol";
-import { ForwarderFactory } from "contracts/ForwarderFactory.sol";
+import { MockMakerDsrHyperdrive, DsrManager } from "contracts/test/MockMakerDsrHyperdrive.sol";
+import { ForwarderFactory } from "contracts/src/ForwarderFactory.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
-import { Errors } from "contracts/libraries/Errors.sol";
+import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { Errors } from "contracts/src/libraries/Errors.sol";
 
 contract MakerDsrHyperdrive is BaseTest {
     using FixedPointMath for uint256;

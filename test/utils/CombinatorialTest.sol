@@ -6,11 +6,11 @@ import "forge-std/Vm.sol";
 
 import { BaseTest } from "./BaseTest.sol";
 import { Lib as lib } from "./Lib.sol";
-import { Hyperdrive } from "contracts/Hyperdrive.sol";
-import { HyperdriveMath } from "contracts/libraries/HyperdriveMath.sol";
+import { Hyperdrive } from "contracts/src/Hyperdrive.sol";
+import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { ERC20PresetFixedSupply } from "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
-import { ForwarderFactory } from "contracts/ForwarderFactory.sol";
-import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
+import { ForwarderFactory } from "contracts/src/ForwarderFactory.sol";
+import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { Address } from "@openzeppelin/contracts/utils/Address.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
