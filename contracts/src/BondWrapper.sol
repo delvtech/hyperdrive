@@ -97,8 +97,6 @@ contract BondWrapper is ERC20Permit {
                 address(this),
                 true
             );
-            // Update the user account data, note this sub is safe because the top bits are zero.
-            deposits[msg.sender][assetId] -= amount;
         } else {
             // Sell all assets
             sweep(maturityTime);
