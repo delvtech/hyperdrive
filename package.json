@@ -47,6 +47,7 @@
         "solhint-plugin-prettier": "0.0.5"
     },
     "dependencies": {
+        "@aave/core-v3": "^1.17.2",
         "@openzeppelin/contracts": "^4.8.1"
     }
 }
