@@ -2,8 +2,8 @@
 pragma solidity ^0.8.18;
 
 import { BaseTest } from "test/utils/BaseTest.sol";
-import { MockMultiToken } from "test/mocks/MockMultiToken.sol";
-import { ForwarderFactory } from "contracts/ForwarderFactory.sol";
+import { MockMultiToken } from "contracts/test/MockMultiToken.sol";
+import { ForwarderFactory } from "contracts/src/ForwarderFactory.sol";
 
 contract MultiTokenTest is BaseTest {
     MockMultiToken multiToken;

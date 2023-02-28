@@ -2,10 +2,10 @@
 pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
-import "test/mocks/MockFixedPointMath.sol";
+import "contracts/test/MockFixedPointMath.sol";
 import "test/3rdPartyLibs/LogExpMath.sol";
 import "test/3rdPartyLibs/BalancerErrors.sol";
-import { Errors } from "contracts/libraries/Errors.sol";
+import { Errors } from "contracts/src/libraries/Errors.sol";
 
 contract FixedPointMathTest is Test {
     function setUp() public {}

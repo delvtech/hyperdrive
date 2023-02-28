@@ -3,9 +3,9 @@ pragma solidity ^0.8.15;
 
 import { ERC20PresetFixedSupply } from "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import { Test } from "forge-std/Test.sol";
-import { ForwarderFactory } from "contracts/ForwarderFactory.sol";
-import { MockHyperdriveMath } from "test/mocks/MockHyperdriveMath.sol";
-import "contracts/libraries/FixedPointMath.sol";
+import { ForwarderFactory } from "contracts/src/ForwarderFactory.sol";
+import { MockHyperdriveMath } from "contracts/test/MockHyperdriveMath.sol";
+import "contracts/src/libraries/FixedPointMath.sol";
 
 contract HyperdriveMathTest is Test {
     using FixedPointMath for uint256;

@@ -5,8 +5,8 @@ import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
 import { CombinatorialTest } from "test/utils/CombinatorialTest.sol";
-import { MockMultiToken } from "test/mocks/MockMultiToken.sol";
-import { ForwarderFactory } from "contracts/ForwarderFactory.sol";
+import { MockMultiToken } from "contracts/test/MockMultiToken.sol";
+import { ForwarderFactory } from "contracts/src/ForwarderFactory.sol";
 
 contract MultiToken__transferFrom is CombinatorialTest {
     MockMultiToken multiToken;

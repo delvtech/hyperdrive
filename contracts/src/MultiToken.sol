@@ -11,7 +11,7 @@ import "./libraries/Errors.sol";
 //        risk of external calls to untrusted code.
 
 contract MultiToken is IMultiToken {
-    // TOOD - Choose to change names to perfect match the 1155 ie adding 'safe',
+    // TODO - Choose to change names to perfect match the 1155 ie adding 'safe',
     //        choose whether to support the batch methods, and to support token uris
     //        or names
 
@@ -92,7 +92,7 @@ contract MultiToken is IMultiToken {
     }
 
     /// @notice Derive the ERC20 forwarder address for a provided `tokenId`.
-    /// @param tokenId Token Id of the token whose forwader contract address need to drived.
+    /// @param tokenId Token Id of the token whose forwarder contract address need to derived.
     /// @return Address of the ERC20 forwarder contract.
     function _deriveForwarderAddress(
         uint256 tokenId

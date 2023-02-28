@@ -2,12 +2,12 @@
 pragma solidity ^0.8.18;
 
 import { BaseTest } from "./BaseTest.sol";
-import { ForwarderFactory } from "contracts/ForwarderFactory.sol";
-import { AssetId } from "contracts/libraries/AssetId.sol";
-import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
-import { HyperdriveMath } from "contracts/libraries/HyperdriveMath.sol";
-import { ERC20Mintable } from "test/mocks/ERC20Mintable.sol";
-import { MockHyperdrive } from "test/mocks/MockHyperdrive.sol";
+import { ForwarderFactory } from "contracts/src/ForwarderFactory.sol";
+import { AssetId } from "contracts/src/libraries/AssetId.sol";
+import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
+import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
+import { MockHyperdrive } from "contracts/test/MockHyperdrive.sol";
 
 contract HyperdriveTest is BaseTest {
     using FixedPointMath for uint256;

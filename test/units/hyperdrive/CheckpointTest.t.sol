@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import { Errors } from "contracts/libraries/Errors.sol";
+import { Errors } from "contracts/src/libraries/Errors.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 
 contract CheckpointTest is HyperdriveTest {

@@ -2,8 +2,8 @@
 pragma solidity ^0.8.18;
 
 import { Test } from "forge-std/Test.sol";
-import "test/mocks/MockYieldSpaceMath.sol";
-import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
+import "contracts/test/MockYieldSpaceMath.sol";
+import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 
 contract YieldSpaceMathTest is Test {
     using FixedPointMath for uint256;

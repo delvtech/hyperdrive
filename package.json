@@ -13,7 +13,7 @@
         "lint": "yarn solhint && yarn style-check && yarn spell-check && forge build --deny-warnings --force",
         "prettier": "npx prettier --write .",
         "test": "forge test -vvv",
-        "solhint": "npx solhint -f table contracts/*.sol contracts/**/*.sol",
+        "solhint": "npx solhint -f table contracts/src/*.sol contracts/src/**/*.sol",
         "spell-check": "npx cspell ./**/**/**.sol --gitignore",
         "style-check": "npx prettier --check .",
         "postinstall": "patch-package --patch-dir .patches",

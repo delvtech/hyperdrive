@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import { HyperdriveMath } from "contracts/libraries/HyperdriveMath.sol";
+import { HyperdriveMath } from "../src/libraries/HyperdriveMath.sol";
 
 contract MockHyperdriveMath {
     function calculateAPRFromReserves(
