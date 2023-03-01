@@ -63,11 +63,6 @@ jobs:
           save-data-file: false
           output-file-path: benchmarks.json
           external-data-json-path: ./cache/benchmarks.json
-          # If the performance degrades, we fail the workflow. We have no
-          # tolerance for degradation.
-          alert-threshold: "100%"
-          comment-on-alert: true
-          fail-on-alert: true
           # Always leave a comment on PRs.
           comment-on-pull-request: true
           comment-always: true

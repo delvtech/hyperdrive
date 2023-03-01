@@ -651,27 +651,8 @@ contract HyperdriveMathTest is Test {
                 0.9 ether, // spotPrice
                 1 ether, // sharePrice
                 0.1 ether, // curveFeePercent
-                0.1 ether, // flatFeePercent
-                true // isShareIn
+                0.1 ether // flatFeePercent
             );
-        assertEq(
-            curveFee,
-            .011111111111111111 ether // ~ 0.011 ether or 10% of the price difference
-        );
-        assertEq(
-            flatFee,
-            0 ether // ~ 0.011 ether or 10% of the price difference
-        );
-
-        (curveFee, flatFee) = hyperdriveMath.calculateFeesInGivenOut(
-            1 ether, // amountOut
-            1 ether, // timeRemaining
-            0.9 ether, // spotPrice
-            1 ether, // sharePrice
-            0.1 ether, // curveFeePercent
-            0.1 ether, // flatFeePercent
-            false // isShareIn
-        );
         assertEq(
             curveFee,
             .01 ether // ~ 0.011 ether or 10% of the price difference
@@ -687,26 +668,7 @@ contract HyperdriveMathTest is Test {
             0.9 ether, // spotPrice
             1 ether, // sharePrice
             0.1 ether, // curveFeePercent
-            0.1 ether, // flatFeePercent
-            true // isShareIn
-        );
-        assertEq(
-            curveFee,
-            0 ether // ~ 0.011 ether or 10% of the price difference
-        );
-        assertEq(
-            flatFee,
-            0.1 ether // ~ 0.011 ether or 10% of the price difference
-        );
-
-        (curveFee, flatFee) = hyperdriveMath.calculateFeesInGivenOut(
-            1 ether, // amountOut
-            0, // timeRemaining
-            0.9 ether, // spotPrice
-            1 ether, // sharePrice
-            0.1 ether, // curveFeePercent
-            0.1 ether, // flatFeePercent
-            false // isShareIn
+            0.1 ether // flatFeePercent
         );
         assertEq(
             curveFee,
