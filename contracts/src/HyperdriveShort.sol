@@ -211,7 +211,7 @@ abstract contract HyperdriveShort is HyperdriveBase {
         // withdrawal pool if necessary.
         if (block.timestamp < _maturityTime) {
             _applyCloseShort(
-                _bondAmount,   
+                _bondAmount,
                 poolBondDelta,
                 sharePayment,
                 _maturityTime
