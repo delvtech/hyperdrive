@@ -410,14 +410,14 @@ library HyperdriveMath {
             flatFee = (flat.mulDown(_sharePrice).mulDown(_flatFeePercent));
         } else {
             // 'bond' in
-            // curve fee = (1 - p) * phi_curve * d_y/c * t
+            // curve fee = ((1 - p) * phi_curve * d_y * t)/c
             uint256 _pricePart = (FixedPointMath.ONE_18.sub(_spotPrice));
             curveFee = _pricePart
                 .mulDown(_curveFeePercent)
                 .mulDown(curveIn)
                 .divDown(_sharePrice)
                 .mulDown(_normalizedTimeRemaining);
-            // flat fee = d_y/c * (1 - t) * phi_flat
+            // flat fee = (d_y * (1 - t) * phi_flat)/c
             uint256 flat = _amountIn.divDown(_sharePrice).mulDown(
                 FixedPointMath.ONE_18.sub(_normalizedTimeRemaining)
             );
