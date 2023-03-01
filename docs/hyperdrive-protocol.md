@@ -295,13 +295,13 @@ $$
 The short adjustment, $a_s$, is:
 
 $$
-a_s = v_s \cdot t + o_s \cdot (1 - t)
+a_s = v_s \cdot t + o_s \cdot (1 - t_s)
 $$
 
 The long adjustment, $a_l$, is:
 
 $$
-a_l = v_l \cdot t + o_l \cdot (1 - t)
+a_l = v_l \cdot t + o_l \cdot (1 - t_l)
 $$
 
 The reserves are updated as follows:
