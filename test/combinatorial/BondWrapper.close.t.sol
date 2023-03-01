@@ -105,7 +105,7 @@ contract BondWrapper_close is CombinatorialTest {
                 // blockTimestamp
                 _arr(0, 2 hours, 9 days, 444 days),
                 // mintPercent
-                _arr(0, 100, 5000, 25000, 1000000),
+                _arr(0, 1, 50, 250, 1000),
                 // userDeposit
                 _arr(0, 10000000e18, type(uint128).max),
                 // userMintAmount
@@ -275,6 +275,10 @@ contract BondWrapper_close is CombinatorialTest {
     function __success(
         TestCase memory testCase
     ) internal __combinatorial_success {
+        // There are two code paths which calls hyperdrive.closeLong(),
+        // dependent on whether the long is matured. In the case it has all
+        // longs (of that assetId) are closed. In the case it hasn't matured
+        // just the users longs are expected to be closed.
         vm.expectEmit(true, true, true, true);
         if (testCase.maturityTime > testCase.blockTimestamp) {
             emit __CloseLong__(
@@ -294,11 +298,13 @@ contract BondWrapper_close is CombinatorialTest {
             );
         }
 
+        // A users wrapped long tokens should be burned if they specify to do so
         if (testCase.andBurn) {
             vm.expectEmit(true, true, true, true);
             emit Transfer(testCase.user, address(0), testCase.mintedFromBonds);
         }
 
+        // Some amount of baseToken should be sent to the user
         vm.expectEmit(true, true, true, true);
         emit Transfer(
             address(bondWrapper),
@@ -306,6 +312,7 @@ contract BondWrapper_close is CombinatorialTest {
             testCase.userFunds
         );
 
+        // Caching balances prior to executing transaction for differentials
         uint256 userDeposit = bondWrapper.deposits(
             testCase.user,
             testCase.assetId
@@ -330,6 +337,9 @@ contract BondWrapper_close is CombinatorialTest {
             revert ExpectedSuccess();
         }
 
+        // The bondWrapper contract records deposits of bonds per user. It is
+        // expected for this to decrease by the amount of bonds passed to the
+        // function
         uint256 userDepositDiff = userDeposit -
             bondWrapper.deposits(testCase.user, testCase.assetId);
         if (userDepositDiff != testCase.amount) {
@@ -341,6 +351,8 @@ contract BondWrapper_close is CombinatorialTest {
             );
         }
 
+        // The users wrapped bonds balance should decrease by the wrapped bonds
+        // value of amount provided they have specified to burn those tokens
         uint256 userWrappedBondDiff = userWrappedBondBalance -
             bondWrapper.balanceOf(testCase.user);
         if (
@@ -354,6 +366,8 @@ contract BondWrapper_close is CombinatorialTest {
             );
         }
 
+        // Should expect an amount of base to be transferred from the bond
+        // wrapper contract
         uint256 bondWrapperBaseDiff = bondWrapperBaseBalance -
             baseToken.balanceOf(address(bondWrapper));
         if (bondWrapperBaseDiff != testCase.userFunds) {
@@ -365,6 +379,8 @@ contract BondWrapper_close is CombinatorialTest {
             );
         }
 
+        // Should expect an amount of base to be transferred to the destination
+        // specified by the user
         uint256 destinationBaseDiff = baseToken.balanceOf(
             address(testCase.destination)
         ) - destinationBaseBalance;
