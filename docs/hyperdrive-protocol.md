@@ -28,11 +28,11 @@ Suppose that the current time is $t$, the contract's checkpoint duration is $d_c
 
 ## Pricing
 
-The following sections describe the accounting logic needed for the pricing functions. This logic is agnostic to the invariant used and so we represent the invariant function with $I()$. Right now, our implementation uses the invariant described in [YieldSpace with Yield Bearing Vaults](https://hackmd.io/lRZ4mgdrRgOpxZQXqKYlFw?view).  The following list represents the variations we use and their definitions:
+The following sections describe the accounting logic needed for the pricing functions. This logic is agnostic to the invariant used and so we represent the invariant function with $I()$. Right now, our implementation uses the invariant described in [YieldSpace with Yield Bearing Vaults](https://hackmd.io/@DFwMpOvuQ_e2wVXLeKnTuw/BJfLJlcnF).  The following list represents the variations we use and their definitions:
 
-- $I_{BondsOutSharesIn}$ is defined [here](https://hackmd.io/lRZ4mgdrRgOpxZQXqKYlFw?view#fyTokenOutForSharesIn)
-- $I_{SharesOutBondsIn}$ is defined [here](https://hackmd.io/lRZ4mgdrRgOpxZQXqKYlFw?view#sharesOutForFYTokenIn)
-- $I_{SharesInBondsOut}$ is defined [here](https://hackmd.io/lRZ4mgdrRgOpxZQXqKYlFw?view#sharesInForFYTokenOut)
+- $I_{BondsOutSharesIn}$ is defined [here](https://hackmd.io/@DFwMpOvuQ_e2wVXLeKnTuw/BJfLJlcnF#fyTokenOutForSharesIn)
+- $I_{SharesOutBondsIn}$ is defined [here](https://hackmd.io/@DFwMpOvuQ_e2wVXLeKnTuw/BJfLJlcnF#sharesOutForFYTokenIn)
+- $I_{SharesInBondsOut}$ is defined [here](https://hackmd.io/@DFwMpOvuQ_e2wVXLeKnTuw/BJfLJlcnF#sharesInForFYTokenOut)
 
 
 ### Open Long
@@ -58,7 +58,7 @@ $$
 \end{aligned}
 $$
 
-where $\phi_{flat}$ is the flat fee, $\phi_{curve}$ is the fee for the curve and $p$ is the spot price as defined in [YieldSpace with Yield Bearing Vaults](https://hackmd.io/lRZ4mgdrRgOpxZQXqKYlFw?view). The reserves are updated as follows:
+where $\phi_{flat}$ is the flat fee, $\phi_{curve}$ is the fee for the curve and $p$ is the spot price as defined in [YieldSpace with Yield Bearing Vaults](https://hackmd.io/@DFwMpOvuQ_e2wVXLeKnTuw/BJfLJlcnF). The reserves are updated as follows:
 
 $$
 \begin{aligned}
