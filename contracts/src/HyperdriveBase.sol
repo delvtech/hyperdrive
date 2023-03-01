@@ -32,64 +32,54 @@ abstract contract HyperdriveBase is MultiToken {
     // @notice A parameter that decreases slippage around a target rate.
     uint256 public immutable timeStretch;
 
-    /// Market state ///
+    /// Market State ///
 
     // @notice The share price at the time the pool was created.
     uint256 public immutable initialSharePrice;
 
-    /// @notice Checkpoints of historical share prices.
-    mapping(uint256 => uint256) public checkpoints;
+    struct MarketState {
+        uint128 shareReserves;
+        uint128 bondReserves;
+        uint128 longsOutstanding;
+        uint128 shortsOutstanding;
+    }
 
-    // TODO: Optimize the storage layout.
-    //
-    /// @notice Checkpoints of historical base volume of long positions.
-    mapping(uint256 => uint256) public longBaseVolumeCheckpoints;
+    struct Aggregates {
+        // TODO: Can we avoid dust here.
+        uint128 longAverageMaturityTime;
+        uint128 longBaseVolume;
+        uint128 shortAverageMaturityTime;
+        uint128 shortBaseVolume;
+    }
 
-    // TODO: Optimize the storage layout.
-    //
-    /// @notice Checkpoints of historical base volume of short positions.
-    mapping(uint256 => uint256) public shortBaseVolumeCheckpoints;
+    struct WithdrawalState {
+        uint128 longWithdrawalSharesOutstanding;
+        uint128 shortWithdrawalSharesOutstanding;
+        uint128 longWithdrawalShareProceeds;
+        uint128 shortWithdrawalShareProceeds;
+    }
 
-    /// @notice The share reserves. The share reserves multiplied by the share
-    ///         price give the base reserves, so shares are a mechanism of
-    ///         ensuring that interest is properly awarded over time.
-    uint256 public shareReserves;
+    struct Checkpoint {
+        uint256 sharePrice;
+        uint128 longBaseVolume;
+        uint128 shortBaseVolume;
+    }
 
-    /// @notice The bond reserves. In Hyperdrive, the bond reserves aren't
-    ///         backed by pre-minted bonds and are instead used as a virtual
-    ///         value that ensures that the spot rate changes according to the
-    ///         laws of supply and demand.
-    uint256 public bondReserves;
+    /// @notice The reserves and the buffers. This is the primary state used for
+    ///         pricing trades and maintaining solvency.
+    MarketState public marketState;
 
-    /// @notice The amount of longs that are still open.
-    uint256 public longsOutstanding;
+    /// @notice Aggregate values that are used to enforce fairness guarantees.
+    Aggregates public aggregates;
 
-    /// @notice The amount of shorts that are still open.
-    uint256 public shortsOutstanding;
+    // FIXME
+    WithdrawalState public withdrawalState;
 
-    /// @notice The average maturity time of long positions.
-    uint256 public longAverageMaturityTime;
-
-    /// @notice The average maturity time of short positions.
-    uint256 public shortAverageMaturityTime;
-
-    /// @notice The amount of base paid by outstanding longs.
-    uint256 public longBaseVolume;
-
-    /// @notice The amount of base paid to outstanding shorts.
-    uint256 public shortBaseVolume;
-
-    /// @notice The amount of long withdrawal shares that haven't been paid out.
-    uint256 public longWithdrawalSharesOutstanding;
-
-    /// @notice The amount of short withdrawal shares that haven't been paid out.
-    uint256 public shortWithdrawalSharesOutstanding;
-
-    /// @notice The proceeds that have accrued to the long withdrawal shares.
-    uint256 public longWithdrawalShareProceeds;
-
-    /// @notice The proceeds that have accrued to the short withdrawal shares.
-    uint256 public shortWithdrawalShareProceeds;
+    /// @notice Hyperdrive positions are bucketed into checkpoints, which
+    ///         allows us to avoid poking in any period that has LP or trading
+    ///         activity. The checkpoints contain the starting share price from
+    ///         the checkpoint as well as aggregate volume values.
+    mapping(uint256 => Checkpoint) public checkpoints;
 
     // TODO: Should this be immutable?
     //
@@ -265,16 +255,16 @@ abstract contract HyperdriveBase is MultiToken {
         )
     {
         return (
-            shareReserves,
-            bondReserves,
+            marketState.shareReserves,
+            marketState.bondReserves,
             totalSupply[AssetId._LP_ASSET_ID],
             _pricePerShare(),
-            longsOutstanding,
-            longAverageMaturityTime,
-            longBaseVolume,
-            shortsOutstanding,
-            shortAverageMaturityTime,
-            shortBaseVolume
+            marketState.longsOutstanding,
+            aggregates.longAverageMaturityTime,
+            aggregates.longBaseVolume,
+            marketState.shortsOutstanding,
+            aggregates.shortAverageMaturityTime,
+            aggregates.shortBaseVolume
         );
     }
 

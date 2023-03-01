@@ -30,20 +30,24 @@ contract CheckpointTest is HyperdriveTest {
         hyperdrive.setSharePrice(1.5e18);
 
         // Create a checkpoint.
-        uint256 aprBefore = calculateAPRFromReserves(hyperdrive);
+        uint256 aprBefore = calculateAPRFromReserves();
         hyperdrive.checkpoint(latestCheckpoint());
 
         // Ensure that the pool's APR wasn't changed by the checkpoint.
-        assertEq(calculateAPRFromReserves(hyperdrive), aprBefore);
+        assertEq(calculateAPRFromReserves(), aprBefore);
 
         // Ensure that the checkpoint contains the share price prior to the
         // share price update.
-        assertEq(hyperdrive.checkpoints(latestCheckpoint()), sharePrice);
+        (uint256 checkpointSharePrice, , ) = hyperdrive.checkpoints(
+            latestCheckpoint()
+        );
+        assertEq(checkpointSharePrice, sharePrice);
 
         // Ensure that the long and short balance wasn't effected by the
         // checkpoint (the long and short haven't matured yet).
-        assertEq(hyperdrive.longsOutstanding(), longAmount);
-        assertEq(hyperdrive.shortsOutstanding(), shortAmount);
+        PoolInfo memory poolInfo = getPoolInfo();
+        assertEq(poolInfo.longsOutstanding, longAmount);
+        assertEq(poolInfo.shortsOutstanding, shortAmount);
     }
 
     function test_checkpoint_latest_checkpoint() external {
@@ -59,14 +63,17 @@ contract CheckpointTest is HyperdriveTest {
         hyperdrive.setSharePrice(sharePrice);
 
         // Create a checkpoint.
-        uint256 aprBefore = calculateAPRFromReserves(hyperdrive);
+        uint256 aprBefore = calculateAPRFromReserves();
         hyperdrive.checkpoint(latestCheckpoint());
 
         // Ensure that the pool's APR wasn't changed by the checkpoint.
-        assertEq(calculateAPRFromReserves(hyperdrive), aprBefore);
+        assertEq(calculateAPRFromReserves(), aprBefore);
 
         // Ensure that the checkpoint contains the latest share price.
-        assertEq(hyperdrive.checkpoints(latestCheckpoint()), sharePrice);
+        (uint256 checkpointSharePrice, , ) = hyperdrive.checkpoints(
+            latestCheckpoint()
+        );
+        assertEq(checkpointSharePrice, sharePrice);
     }
 
     function test_checkpoint_redemption() external {
@@ -93,15 +100,16 @@ contract CheckpointTest is HyperdriveTest {
 
         // Ensure that the checkpoint contains the share price prior to the
         // share price update.
-        assertEq(
-            hyperdrive.checkpoints(latestCheckpoint()),
-            getPoolInfo().sharePrice
+        (uint256 checkpointSharePrice, , ) = hyperdrive.checkpoints(
+            latestCheckpoint()
         );
+        PoolInfo memory poolInfo = getPoolInfo();
+        assertEq(checkpointSharePrice, poolInfo.sharePrice);
 
         // Ensure that the long and short balance has gone to zero (all of the
         // matured positions have been closed).
-        assertEq(hyperdrive.longsOutstanding(), 0);
-        assertEq(hyperdrive.shortsOutstanding(), 0);
+        assertEq(poolInfo.longsOutstanding, 0);
+        assertEq(poolInfo.shortsOutstanding, 0);
     }
 
     function test_checkpoint_in_the_past() external {
@@ -132,20 +140,19 @@ contract CheckpointTest is HyperdriveTest {
 
         // Ensure that the checkpoint contains the share price prior to the
         // share price update.
-        assertEq(
-            hyperdrive.checkpoints(latestCheckpoint()),
-            getPoolInfo().sharePrice
+        (uint256 checkpointSharePrice, , ) = hyperdrive.checkpoints(
+            latestCheckpoint()
         );
+        PoolInfo memory poolInfo = getPoolInfo();
+        assertEq(checkpointSharePrice, poolInfo.sharePrice);
 
         // Ensure that the previous checkpoint contains the closest share price.
-        assertEq(
-            hyperdrive.checkpoints(previousCheckpoint),
-            getPoolInfo().sharePrice
-        );
+        (checkpointSharePrice, , ) = hyperdrive.checkpoints(previousCheckpoint);
+        assertEq(checkpointSharePrice, poolInfo.sharePrice);
 
         // Ensure that the long and short balance has gone to zero (all of the
         // matured positions have been closed).
-        assertEq(hyperdrive.longsOutstanding(), 0);
-        assertEq(hyperdrive.shortsOutstanding(), 0);
+        assertEq(poolInfo.longsOutstanding, 0);
+        assertEq(poolInfo.shortsOutstanding, 0);
     }
 }

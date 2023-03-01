@@ -52,14 +52,7 @@ contract AddLiquidityTest is HyperdriveTest {
         );
 
         // Ensure the pool APR is still approximately equal to the target APR.
-        uint256 poolApr = HyperdriveMath.calculateAPRFromReserves(
-            hyperdrive.shareReserves(),
-            hyperdrive.bondReserves(),
-            hyperdrive.totalSupply(AssetId._LP_ASSET_ID),
-            hyperdrive.initialSharePrice(),
-            hyperdrive.positionDuration(),
-            hyperdrive.timeStretch()
-        );
+        uint256 poolApr = calculateAPRFromReserves();
         assertApproxEqAbs(poolApr, apr, 1);
     }
 
@@ -75,7 +68,7 @@ contract AddLiquidityTest is HyperdriveTest {
         openLong(celine, 50_000_000e18);
 
         // Add liquidity with the same amount as the original contribution.
-        uint256 aprBefore = calculateAPRFromReserves(hyperdrive);
+        uint256 aprBefore = calculateAPRFromReserves();
         uint256 baseBalance = baseToken.balanceOf(address(hyperdrive));
         uint256 lpShares = addLiquidity(bob, contribution);
 
@@ -95,7 +88,7 @@ contract AddLiquidityTest is HyperdriveTest {
         );
 
         // Ensure the pool APR is still approximately equal to the target APR.
-        uint256 aprAfter = calculateAPRFromReserves(hyperdrive);
+        uint256 aprAfter = calculateAPRFromReserves();
         assertApproxEqAbs(aprAfter, aprBefore, 1);
     }
 
@@ -111,7 +104,7 @@ contract AddLiquidityTest is HyperdriveTest {
         openShort(celine, 50_000_000e18);
 
         // Add liquidity with the same amount as the original contribution.
-        uint256 aprBefore = calculateAPRFromReserves(hyperdrive);
+        uint256 aprBefore = calculateAPRFromReserves();
         uint256 baseBalance = baseToken.balanceOf(address(hyperdrive));
         uint256 lpShares = addLiquidity(bob, contribution);
 
@@ -131,7 +124,7 @@ contract AddLiquidityTest is HyperdriveTest {
         );
 
         // Ensure the pool APR is still approximately equal to the target APR.
-        uint256 aprAfter = calculateAPRFromReserves(hyperdrive);
+        uint256 aprAfter = calculateAPRFromReserves();
         assertApproxEqAbs(aprAfter, aprBefore, 1);
     }
 
@@ -150,7 +143,7 @@ contract AddLiquidityTest is HyperdriveTest {
         vm.warp(block.timestamp + POSITION_DURATION);
 
         // Add liquidity with the same amount as the original contribution.
-        uint256 aprBefore = calculateAPRFromReserves(hyperdrive);
+        uint256 aprBefore = calculateAPRFromReserves();
         uint256 baseBalance = baseToken.balanceOf(address(hyperdrive));
         uint256 lpShares = addLiquidity(bob, contribution);
 
@@ -158,7 +151,7 @@ contract AddLiquidityTest is HyperdriveTest {
         //       checkpointing mechanism. These APR figures should be the same.
         //
         // Ensure the pool APR hasn't decreased after adding liquidity.
-        uint256 aprAfter = calculateAPRFromReserves(hyperdrive);
+        uint256 aprAfter = calculateAPRFromReserves();
         assertGe(aprAfter, aprBefore);
 
         // Ensure that the contribution was transferred to Hyperdrive.
@@ -187,7 +180,7 @@ contract AddLiquidityTest is HyperdriveTest {
         vm.warp(block.timestamp + POSITION_DURATION);
 
         // Add liquidity with the same amount as the original contribution.
-        uint256 aprBefore = calculateAPRFromReserves(hyperdrive);
+        uint256 aprBefore = calculateAPRFromReserves();
         uint256 baseBalance = baseToken.balanceOf(address(hyperdrive));
         uint256 lpShares = addLiquidity(bob, contribution);
 
@@ -195,7 +188,7 @@ contract AddLiquidityTest is HyperdriveTest {
         //       checkpointing mechanism. These APR figures should be the same.
         //
         // Ensure the pool APR hasn't increased after adding liquidity.
-        uint256 aprAfter = calculateAPRFromReserves(hyperdrive);
+        uint256 aprAfter = calculateAPRFromReserves();
         assertLe(aprAfter, aprBefore);
 
         // Ensure that the contribution was transferred to Hyperdrive.
