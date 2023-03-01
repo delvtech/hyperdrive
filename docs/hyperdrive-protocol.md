@@ -40,8 +40,10 @@ The following sections describe the accounting logic needed for the pricing func
 The trader supplies $\Delta x$ base and receives $\Delta y$ bonds. At the current share price $c$, $\Delta x = c \cdot \Delta z$ where $\Delta z$ is the amount of shares being traded. 
 
 $$
-\Delta y_{flat}' = \Delta z \cdot (1 - t) \\
+\begin{aligned}
+\Delta y_{flat}' = \Delta z \cdot (1 - t)\\
 \Delta y_{curve}' = I_{BondsOutSharesIn}(\Delta z \cdot t)
+\end{aligned}
 $$
 
 > Note: that $\Delta y_{flat}'$ is only zero if the position's start time is EXACTLY the same as the most recent checkpoint.
@@ -49,16 +51,20 @@ $$
 Next, we account for fees:
 
 $$
+\begin{aligned}
 \Delta y_{flat} = \Delta y_{flat}'-c \cdot \Delta z \cdot (1 - t) \cdot \phi_{flat}\\
 \Delta y_{curve} = \Delta y_{curve}' - (\frac{1}{p} - 1) \cdot c \cdot \Delta z \cdot t \cdot \phi_{curve}\\
 \Delta y = \Delta y_{flat} + \Delta y_{curve}
+\end{aligned}
 $$
 
 where $\phi_{flat}$ is the flat fee, $\phi_{curve}$ is the fee for the curve and $p$ is the spot price as defined in [YieldSpace with Yield Bearing Vaults](https://hackmd.io/lRZ4mgdrRgOpxZQXqKYlFw?view). The reserves are updated as follows:
 
 $$
+\begin{aligned}
 z_{reserves} = z_{reserves} + \Delta z \\
 y_{reserves} = y_{reserves} - \Delta y_{curve}
+\end{aligned}
 $$
 
 > Note: We only debit $y_{curve}$ from the $y_{reserves}$ because the $y_{flat}$ portion is considered mature and should have no impact on the fixed rate market.
@@ -86,16 +92,20 @@ Update the long's base volume, $v_l$
 The trader closes their long position of $\Delta y$ bonds for $\Delta x$ base with $t$ time remaining in the term:
 
 $$
+\begin{aligned}
 \Delta z_{flat}' = \frac{\Delta y \cdot (1 - t)}{c} \\
 \Delta z_{curve}' = I_{SharesOutBondsIn}(\Delta y \cdot t)
+\end{aligned}
 $$
 
 Next, we account for fees:
 
 $$
+\begin{aligned}
 \Delta z_{flat} = \Delta z_{flat}' - \frac{\Delta y \cdot (1 - t) \cdot \phi_{flat}}{c}\\
 \Delta z_{curve} = \Delta z_{curve}' - \frac{(1 - p) \cdot \Delta y \cdot t \cdot \phi_{curve}}{c}\\
 \Delta z = \Delta z_{flat} + \Delta z_{curve}
+\end{aligned}
 $$
 
 The number of outstanding longs are reduced by $\Delta y$
@@ -106,8 +116,10 @@ $$
 The reserves are updated:
 
 $$
+\begin{aligned}
 z_{reserves} = z_{reserves} - \Delta z\\
 y_{reserves} = y_{reserves} + \Delta y_{curve}
+\end{aligned}
 $$
 
 
@@ -141,15 +153,19 @@ Update the long's base volume, $v_l$
 The trader shorts $\Delta y$ bonds with $\Delta x$ base with $t$ time remaining in the term. To calculate the short we must determine how many $\Delta z$ shares that $\Delta y$ bonds are worth. 
 
 $$
+\begin{aligned}
 \Delta z_{flat}' = \frac{\Delta y \cdot (1 - t)}{c}\\
 \Delta z_{curve}' = I_{SharesOutBondsIn}(\Delta y \cdot t)
+\end{aligned}
 $$
 
 Next, we account for fees:
 
 $$
+\begin{aligned}
 \Delta z_{flat} = \Delta z_{flat}' - \frac{\Delta y \cdot (1 - t) \cdot \phi_{flat}}{c}\\
 \Delta z_{curve} = \Delta z_{curve}' - \frac{(1 - p) \cdot \Delta y \cdot t \cdot \phi_{curve}}{c}
+\end{aligned}
 $$
 
 Summing the flat and curve portion together
@@ -179,8 +195,10 @@ $$
 The reserves are updated as follows:
 
 $$
+\begin{aligned}
 z_{reserves} = z_{reserves} - \Delta z\\
 y_{reserves} = y_{reserves} + \Delta y
+\end{aligned}
 $$
 
 Since the share reserves are reduced, we need to verify that the base reserves are greater than or equal to the number of outstanding long positions. The following invariant must be preserved when opening a short:
@@ -204,16 +222,20 @@ Update the short's base volume, $v_s$
 The trader closes their short position of $\Delta y$ bonds for $\Delta x$ base with $t$ time remaining in the term:
 
 $$
+\begin{aligned}
 \Delta z_{flat}' = \frac{\Delta y \cdot (1 - t)}{c} \\
 \Delta z_{curve}' = I_{SharesInBondsOut}(\Delta y \cdot t)
+\end{aligned}
 $$
 
 Next, we account for fees:
 
 $$
+\begin{aligned}
 \Delta z_{flat} = \Delta z_{flat}' + \frac{\Delta y \cdot (1 - t) \cdot \phi_{flat}}{c}\\
 \Delta z_{curve} = \Delta z_{curve}' + \frac{(1 - p) \cdot \Delta y \cdot t \cdot \phi_{curve}}{c}\\
 \Delta z = \Delta z_{flat} + \Delta z_{curve}
+\end{aligned}
 $$
 
 $\Delta z$ represents the number of shares the user would need to purchase back the bonds and close the short.
@@ -226,8 +248,10 @@ $$
 The reserves are updated as follows:
 
 $$
+\begin{aligned}
 z_{reserves} = z_{reserves} + \Delta z\\
 y_{reserves} = y_{reserves} - \Delta y_{curve}
+\end{aligned}
 $$
 
 If there are short withdrawal shares outstanding, $w_{s}$, then we update the reserves to reflect the proportion of shares that are owed the LPs vs the withdrawal pool.
@@ -288,9 +312,11 @@ The $y_{reserves}$ are recalculated to ensure that the apr doesn't change from b
 User redeems $\Delta l$ lp shares and receives $\Delta x$ base, $\Delta w_{s}$ short withdrawal shares and $\Delta w_{l}$ long withdrawal shares.
 
 $$
+\begin{aligned}
 \Delta x = (z_{reserves} - \frac{o_l}{c}) \cdot \frac{\Delta l}{l}\\
 \Delta w_l = l_o * \frac{\Delta l}{l}\\
 \Delta w_s = s_o * \frac{\Delta l}{l}
+\end{aligned}
 $$
 
 The reserves are updated as follows:
@@ -304,6 +330,8 @@ The $y_{reserves}$ are recalculated to ensure that the apr doesn't change from b
 The withdrawal shares are updated as follows:
 
 $$
+\begin{aligned}
 w_l = w_l + \Delta w_l\\
 w_s = w_s + \Delta w_s
+\end{aligned}
 $$
