@@ -76,6 +76,7 @@ o_l = o_l + \Delta y
 $$
 
 Since the base buffer may have increased relative to the base reserves and the bond reserves decreased, we must ensure that the base reserves are greater than the number of outstanding long positions. The following invariant must be preserved when opening a long:
+
 $$
 c_1 \cdot z_{reserves} \ge o_l
 $$
@@ -203,6 +204,7 @@ y_{reserves} = y_{reserves} + \Delta y
 $$
 
 Since the share reserves are reduced, we need to verify that the base reserves are greater than or equal to the number of outstanding long positions. The following invariant must be preserved when opening a short:
+
 $$
 c_1 \cdot z_{reserves} \ge l_o
 $$
