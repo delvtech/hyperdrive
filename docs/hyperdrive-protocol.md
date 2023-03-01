@@ -78,7 +78,7 @@ $$
 Since the base buffer may have increased relative to the base reserves and the bond reserves decreased, we must ensure that the base reserves are greater than the number of outstanding long positions. The following invariant must be preserved when opening a long:
 
 $$
-c_1 \cdot z_{reserves} \ge o_l
+c \cdot z_{reserves} \ge o_l
 $$
 
 
