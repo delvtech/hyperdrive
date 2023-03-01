@@ -542,7 +542,7 @@ library HyperdriveMath {
     {
         // dl / l
         uint256 poolFactor = _shares.divDown(_lpTotalSupply);
-        // (z - b_x / c) * (dl / l)
+        // (z - o_l / c) * (dl / l)
         shares = _shareReserves
             .sub(_longsOutstanding.divDown(_sharePrice))
             .mulDown(poolFactor);

@@ -35,7 +35,7 @@ contract OpenLongTest is HyperdriveTest {
         // Attempt to purchase more bonds than exist. This should fail.
         vm.stopPrank();
         vm.startPrank(bob);
-        uint256 baseAmount = hyperdrive.bondReserves();
+        uint256 baseAmount = getPoolInfo().bondReserves;
         baseToken.mint(baseAmount);
         baseToken.approve(address(hyperdrive), baseAmount);
         vm.expectRevert(stdError.arithmeticError);
@@ -204,22 +204,24 @@ contract OpenLongTest is HyperdriveTest {
 
         // TODO: This problem gets much worse as the baseAmount to open a long gets smaller.
         // Figure out a solution to this.
+        (
+            ,
+            uint256 checkpointLongBaseVolume,
+            uint256 checkpointShortBaseVolume
+        ) = hyperdrive.checkpoints(checkpointTime);
         assertApproxEqAbs(
             poolInfoAfter.longAverageMaturityTime,
             maturityTime,
             100
         );
         assertEq(poolInfoAfter.longBaseVolume, baseAmount);
-        assertEq(
-            hyperdrive.longBaseVolumeCheckpoints(checkpointTime),
-            baseAmount
-        );
+        assertEq(checkpointLongBaseVolume, baseAmount);
         assertEq(
             poolInfoAfter.shortsOutstanding,
             poolInfoBefore.shortsOutstanding
         );
         assertEq(poolInfoAfter.shortAverageMaturityTime, 0);
         assertEq(poolInfoAfter.shortBaseVolume, 0);
-        assertEq(hyperdrive.shortBaseVolumeCheckpoints(checkpointTime), 0);
+        assertEq(checkpointShortBaseVolume, 0);
     }
 }
