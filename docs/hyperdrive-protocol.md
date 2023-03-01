@@ -2,7 +2,7 @@
 
 ## Overview
 
-Hyperdrive is a new AMM that allows users to open long and short positions to get exposure to fixed and variable rates respectively. Terms are "Mint on Demand" and the AMM essentially underwrites a new term for the user when they enter a position. Long traders receive fixed interest during the term and gives up any variable interest collected on their investment. Short traders sell long positions to the LP which means that they pay fixed interest during the term and receive all of the variable interest collected on the LP's investment. LPs provide liquidity to a single pool, which underwrites a variety of fixed terms with differing maturity dates. This removes fragmented liquidity and gives LPs an everlasting exposure to the markets.
+Hyperdrive is a new AMM that allows users to open long and short positions to get exposure to fixed and variable rates respectively. Terms are "Mint on Demand" and the AMM essentially underwrites a new term for the user when they enter a position. Long traders receive fixed interest during the term and give up any variable interest collected on their investment. Short traders sell long positions to the LP which means that they pay fixed interest during the term and receive all of the variable interest collected on the LP's investment. LPs provide liquidity to a single pool, which underwrites a variety of fixed terms with differing maturity dates. This removes fragmented liquidity and gives LPs an everlasting exposure to the markets.
 
 
 
