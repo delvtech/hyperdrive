@@ -237,16 +237,18 @@ abstract contract HyperdriveLong is HyperdriveBase {
         uint256 _timeRemaining
     ) internal {
         // Update the average maturity time of long positions.
-        aggregates.longAverageMaturityTime = uint256(
-            aggregates.longAverageMaturityTime
-        )
-            .updateWeightedAverage(
-                uint256(marketState.longsOutstanding),
-                _maturityTime,
-                _bondProceeds,
-                true
-            )
-            .toUint128();
+        {
+            uint256 longAverageMaturityTime = uint256(
+                aggregates.longAverageMaturityTime
+            ).updateWeightedAverage(
+                    uint256(marketState.longsOutstanding),
+                    _maturityTime,
+                    _bondProceeds,
+                    true
+                );
+            aggregates.longAverageMaturityTime = longAverageMaturityTime
+                .toUint128();
+        }
 
         // Update the base volume of long positions.
         uint128 baseVolume = HyperdriveMath
@@ -292,16 +294,18 @@ abstract contract HyperdriveLong is HyperdriveBase {
         uint256 _maturityTime
     ) internal {
         // Update the long average maturity time.
-        aggregates.longAverageMaturityTime = uint256(
-            aggregates.longAverageMaturityTime
-        )
-            .updateWeightedAverage(
-                marketState.longsOutstanding,
-                _maturityTime,
-                _bondAmount,
-                false
-            )
-            .toUint128();
+        {
+            uint256 longAverageMaturityTime = uint256(
+                aggregates.longAverageMaturityTime
+            ).updateWeightedAverage(
+                    marketState.longsOutstanding,
+                    _maturityTime,
+                    _bondAmount,
+                    false
+                );
+            aggregates.longAverageMaturityTime = longAverageMaturityTime
+                .toUint128();
+        }
 
         // Update the long base volume.
         {

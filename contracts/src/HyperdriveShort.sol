@@ -107,16 +107,18 @@ abstract contract HyperdriveShort is HyperdriveBase {
         }
 
         // Update the average maturity time of long positions.
-        aggregates.shortAverageMaturityTime = uint256(
-            aggregates.shortAverageMaturityTime
-        )
-            .updateWeightedAverage(
-                marketState.shortsOutstanding,
-                maturityTime,
-                _bondAmount,
-                true
-            )
-            .toUint128();
+        {
+            uint256 shortAverageMaturityTime = uint256(
+                aggregates.shortAverageMaturityTime
+            ).updateWeightedAverage(
+                    marketState.shortsOutstanding,
+                    maturityTime,
+                    _bondAmount,
+                    true
+                );
+            aggregates.shortAverageMaturityTime = shortAverageMaturityTime
+                .toUint128();
+        }
 
         // Update the base volume of short positions.
         uint128 baseVolume = HyperdriveMath
@@ -276,16 +278,18 @@ abstract contract HyperdriveShort is HyperdriveBase {
         uint256 _maturityTime
     ) internal {
         // Update the short average maturity time.
-        aggregates.shortAverageMaturityTime = uint256(
-            aggregates.shortAverageMaturityTime
-        )
-            .updateWeightedAverage(
-                marketState.shortsOutstanding,
-                _maturityTime,
-                _bondAmount,
-                false
-            )
-            .toUint128();
+        {
+            uint256 shortAverageMaturityTime = uint256(
+                aggregates.shortAverageMaturityTime
+            ).updateWeightedAverage(
+                    marketState.shortsOutstanding,
+                    _maturityTime,
+                    _bondAmount,
+                    false
+                );
+            aggregates.shortAverageMaturityTime = shortAverageMaturityTime
+                .toUint128();
+        }
 
         // Update the short base volume.
         {
