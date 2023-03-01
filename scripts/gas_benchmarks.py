@@ -17,7 +17,7 @@ FUNCTION_NAMES = [
 ]
 
 # Run the Solidity tests and write the test name and the gas used to a markdown table.
-test_output = subprocess.check_output(["forge", "test", "--gas-report"]).decode()
+test_output = subprocess.check_output(["forge", "test", "--no-match-path \'*/combinatorial/*\'" "--gas-report"]).decode()
 capture = []
 found_contract = ""
 found_report = False
