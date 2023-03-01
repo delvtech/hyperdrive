@@ -133,8 +133,9 @@ library HyperdriveMath {
     /// @param _timeStretch The time stretch parameter.
     /// @param _sharePrice The share price.
     /// @param _initialSharePrice The initial share price.
-    /// @return poolBondDelta The change in the pool's bond reserves.
-    /// @return userDelta The amount of bonds the user will receive.
+    /// @return curveIn The input amount for the curve trade (denominated in shares).
+    /// @return curveOut The output amount for the curve trade (denominated in bonds).
+    /// @return flat The flat amount (denominated in bonds).
     function calculateOpenLong(
         uint256 _shareReserves,
         uint256 _bondReserves,
@@ -144,14 +145,14 @@ library HyperdriveMath {
         uint256 _timeStretch,
         uint256 _sharePrice,
         uint256 _initialSharePrice
-    ) internal pure returns (uint256 poolBondDelta, uint256 userDelta) {
+    ) internal pure returns (uint256 curveIn, uint256 curveOut, uint256 flat) {
         // Calculate the flat part of the trade.
-        uint256 flat = _amountIn.mulDown(
+        flat = _amountIn.mulDown(
             FixedPointMath.ONE_18.sub(_normalizedTimeRemaining)
         );
-        uint256 curveIn = _amountIn.mulDown(_normalizedTimeRemaining);
+        curveIn = _amountIn.mulDown(_normalizedTimeRemaining);
         // (time remaining)/(term length) is always 1 so we just use _timeStretch
-        uint256 curveOut = YieldSpaceMath.calculateBondsOutGivenSharesIn(
+        curveOut = YieldSpaceMath.calculateBondsOutGivenSharesIn(
             _shareReserves,
             _bondReserves,
             _bondReserveAdjustment,
@@ -160,7 +161,7 @@ library HyperdriveMath {
             _sharePrice,
             _initialSharePrice
         );
-        return (curveOut, flat.add(curveOut));
+        return (curveOut, curveOut, flat);
     }
 
     /// @dev Calculates the amount of shares a user will receive when closing a
@@ -177,8 +178,9 @@ library HyperdriveMath {
     /// @param _timeStretch The time stretch parameter.
     /// @param _sharePrice The share price.
     /// @param _initialSharePrice The initial share price.
-    /// @return poolBondDelta The change in the pool's bond reserves.
-    /// @return userDelta The amount of shares the user will receive.
+    /// @return curveIn The input amount for the curve trade (denominated in bonds).
+    /// @return curveOut The output amount for the curve trade (denominated in shares).
+    /// @return flat The flat amount (denominated in shares).
     function calculateCloseLong(
         uint256 _shareReserves,
         uint256 _bondReserves,
@@ -188,14 +190,14 @@ library HyperdriveMath {
         uint256 _timeStretch,
         uint256 _sharePrice,
         uint256 _initialSharePrice
-    ) internal pure returns (uint256 poolBondDelta, uint256 userDelta) {
+    ) internal pure returns (uint256 curveIn, uint256 curveOut, uint256 flat) {
         // We consider (1 - timeRemaining) * amountIn of the bonds to be fully
         // matured and timeRemaining * amountIn of the bonds to be newly
         // minted. The fully matured bonds are redeemed one-to-one to base
         // (our result is given in shares, so we divide the one-to-one
         // redemption by the share price) and the newly minted bonds are
         // traded on a YieldSpace curve configured to timeRemaining = 1.
-        uint256 flat = _amountIn
+        flat = _amountIn
             .mulDown(FixedPointMath.ONE_18.sub(_normalizedTimeRemaining))
             .divDown(_sharePrice);
 
@@ -207,9 +209,9 @@ library HyperdriveMath {
 
         if (_normalizedTimeRemaining > 0) {
             // Calculate the curved part of the trade.
-            uint256 curveIn = _amountIn.mulDown(_normalizedTimeRemaining);
+            curveIn = _amountIn.mulDown(_normalizedTimeRemaining);
             // (time remaining)/(term length) is always 1 so we just use _timeStretch
-            uint256 curveOut = YieldSpaceMath.calculateSharesOutGivenBondsIn(
+            curveOut = YieldSpaceMath.calculateSharesOutGivenBondsIn(
                 _shareReserves,
                 _bondReserves,
                 _bondReserveAdjustment,
@@ -218,10 +220,8 @@ library HyperdriveMath {
                 _sharePrice,
                 _initialSharePrice
             );
-            return (curveIn, flat.add(curveOut));
-        } else {
-            return (0, flat);
         }
+        return (curveIn, curveOut, flat);
     }
 
     /// @dev Calculates the amount of shares that will be received given a
@@ -237,7 +237,9 @@ library HyperdriveMath {
     /// @param _timeStretch The time stretch parameter.
     /// @param _sharePrice The share price.
     /// @param _initialSharePrice The initial share price.
-    /// @return poolShareDelta The change in the pool's share reserves.
+    /// @return curveIn The input amount for the curve trade (denominated in bonds).
+    /// @return curveOut The output amount for the curve trade (denominated in shares).
+    /// @return flat The flat amount (denominated in shares).
     function calculateOpenShort(
         uint256 _shareReserves,
         uint256 _bondReserves,
@@ -247,17 +249,17 @@ library HyperdriveMath {
         uint256 _timeStretch,
         uint256 _sharePrice,
         uint256 _initialSharePrice
-    ) internal pure returns (uint256 poolShareDelta) {
+    ) internal pure returns (uint256 curveIn, uint256 curveOut, uint256 flat) {
         // Calculate the flat part of the trade.
-        uint256 flat = _amountIn
+        flat = _amountIn
             .mulDown(FixedPointMath.ONE_18.sub(_normalizedTimeRemaining))
             .divDown(_sharePrice);
         // Calculate the curved part of the trade.
-        uint256 curveIn = _amountIn.mulDown(_normalizedTimeRemaining).divDown(
+        curveIn = _amountIn.mulDown(_normalizedTimeRemaining).divDown(
             _sharePrice
         );
         // (time remaining)/(term length) is always 1 so we just use _timeStretch
-        uint256 curveOut = YieldSpaceMath.calculateSharesOutGivenBondsIn(
+        curveOut = YieldSpaceMath.calculateSharesOutGivenBondsIn(
             _shareReserves,
             _bondReserves,
             _bondReserveAdjustment,
@@ -266,7 +268,7 @@ library HyperdriveMath {
             _sharePrice,
             _initialSharePrice
         );
-        return flat.add(curveOut);
+        return (curveIn, curveOut, flat);
     }
 
     /// @dev Calculates the amount of base that a user will receive when closing a short position
@@ -281,10 +283,9 @@ library HyperdriveMath {
     /// @param _timeStretch The time stretch parameter.
     /// @param _sharePrice The share price.
     /// @param _initialSharePrice The initial share price.
-    /// @param _curveFee The curve fee parameter.
-    /// @param _flatFee The flat fee parameter.
-    /// @return poolBondDelta The change in the pool's share reserves.
-    /// @return userDelta The amount of shares the user will receive.
+    /// @return curveIn The input amount for the curve trade (denominated in shares).
+    /// @return curveOut The output amount for the curve trade (denominated in bonds).
+    /// @return flat The flat amount (denominated in shares).
     function calculateCloseShort(
         uint256 _shareReserves,
         uint256 _bondReserves,
@@ -293,10 +294,8 @@ library HyperdriveMath {
         uint256 _normalizedTimeRemaining,
         uint256 _timeStretch,
         uint256 _sharePrice,
-        uint256 _initialSharePrice,
-        uint256 _curveFee,
-        uint256 _flatFee
-    ) internal pure returns (uint256 poolBondDelta, uint256 userDelta) {
+        uint256 _initialSharePrice
+    ) internal pure returns (uint256 curveIn, uint256 curveOut, uint256 flat) {
         // Since we are buying bonds, it's possible that timeRemaining < 1.
         // We consider (1-timeRemaining)*amountOut of the bonds being
         // purchased to be fully matured and timeRemaining*amountOut of the
@@ -305,46 +304,25 @@ library HyperdriveMath {
         // the one-to-one redemption by the share price) and the newly
         // minted bonds are traded on a YieldSpace curve configured to
         // timeRemaining = 1.
-        uint256 flat = _amountOut
+        flat = _amountOut
             .mulDown(FixedPointMath.ONE_18.sub(_normalizedTimeRemaining))
             .divDown(_sharePrice);
-        uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
-            _shareReserves,
-            _bondReserves,
-            _bondReserveAdjustment,
-            _initialSharePrice,
-            _normalizedTimeRemaining,
-            _timeStretch
-        );
-        (_curveFee, _flatFee) = HyperdriveMath.calculateFeesInGivenOut(
-            _amountOut, // amountOut
-            _normalizedTimeRemaining,
-            spotPrice,
-            _sharePrice,
-            _curveFee,
-            _flatFee
-        );
-
-        // curveOut
-        _amountOut = _amountOut.mulDown(_normalizedTimeRemaining);
-        // Calculate the curved part of the trade.
-        uint256 curveIn = YieldSpaceMath.calculateSharesInGivenBondsOut(
-            _shareReserves,
-            _bondReserves,
-            _bondReserveAdjustment,
-            _amountOut,
-            FixedPointMath.ONE_18.sub(_timeStretch),
-            _sharePrice,
-            _initialSharePrice
-        );
 
         if (_normalizedTimeRemaining > 0) {
-            // This is a base in / bond out operation where the out is given, so we add the fee
-            // to the amount in.
-            return (_amountOut, flat.add(_flatFee).add(curveIn).add(_curveFee));
-        } else {
-            return (0, flat.add(_flatFee));
+            curveOut = _amountOut.mulDown(_normalizedTimeRemaining);
+            // Calculate the curved part of the trade.
+            curveIn = YieldSpaceMath.calculateSharesInGivenBondsOut(
+                _shareReserves,
+                _bondReserves,
+                _bondReserveAdjustment,
+                _amountOut,
+                FixedPointMath.ONE_18.sub(_timeStretch),
+                _sharePrice,
+                _initialSharePrice
+            );
         }
+
+        return (curveIn, curveOut, flat);
     }
 
     /// @dev Calculates the spot price without slippage of bonds in terms of shares.
@@ -373,6 +351,9 @@ library HyperdriveMath {
             .pow(tau);
     }
 
+    // FIXME: It seems like this can be optimized considering that we've already
+    // computed curveIn, curveOut, and flat.
+    //
     /// @dev Calculates the fees for the curve portion of hyperdrive calcOutGivenIn
     /// @param _amountIn The given amount in, either in terms of shares or bonds.
     /// @param _normalizedTimeRemaining The normalized amount of time until maturity.
@@ -424,6 +405,9 @@ library HyperdriveMath {
         }
     }
 
+    // FIXME: It seems like this can be optimized considering that we've already
+    // computed curveIn, curveOut, and flat.
+    //
     /// @dev Calculates the fees for the curve portion of hyperdrive calcInGivenOut
     /// @param _amountOut The given amount out, either in terms of shares or bonds.
     /// @param _normalizedTimeRemaining The normalized amount of time until maturity.

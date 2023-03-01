@@ -192,7 +192,7 @@ abstract contract HyperdriveShort is HyperdriveBase {
 
         // Calculate the pool and user deltas using the trading function.
         uint256 timeRemaining = _calculateTimeRemaining(_maturityTime);
-        (uint256 poolBondDelta, uint256 sharePayment) = HyperdriveMath
+        (uint256 curveIn, uint256 curveOut, uint256 flat) = HyperdriveMath
             .calculateCloseShort(
                 marketState.shareReserves,
                 marketState.bondReserves,
@@ -201,10 +201,30 @@ abstract contract HyperdriveShort is HyperdriveBase {
                 timeRemaining,
                 timeStretch,
                 sharePrice,
-                initialSharePrice,
-                curveFee,
-                flatFee
+                initialSharePrice
             );
+        // FIXME: Refactor this and do unit analysis.
+        {
+            uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
+                shareReserves,
+                bondReserves,
+                totalSupply[AssetId._LP_ASSET_ID],
+                initialSharePrice,
+                timeRemaining,
+                timeStretch
+            );
+            (uint256 curveFee, uint256 flatFee) = HyperdriveMath
+                .calculateFeesInGivenOut(
+                    _bondAmount, // amountOut
+                    timeRemaining,
+                    spotPrice,
+                    sharePrice,
+                    curveFee,
+                    flatFee
+                );
+            curveIn += curveFee;
+            flat += flatFee;
+        }
 
         // If the position hasn't matured, apply the accounting updates that
         // result from closing the short to the reserves and pay out the
@@ -263,6 +283,8 @@ abstract contract HyperdriveShort is HyperdriveBase {
         return (baseProceeds);
     }
 
+    // FIXME
+    //
     /// @dev Applies the trading deltas from a closed short to the reserves and
     ///      the withdrawal pool.
     /// @param _bondAmount The amount of shorts that were closed.
