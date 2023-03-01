@@ -109,6 +109,7 @@ $$
 $$
 
 The number of outstanding longs are reduced by $\Delta y$
+
 $$
 o_l = o_l - \Delta y
 $$
@@ -208,6 +209,7 @@ $$
 
 
 The number of outstanding shorts, $s_o$, are increased by $\Delta y$
+
 $$
 s_o = s_o + \Delta y
 $$
@@ -241,6 +243,7 @@ $$
 $\Delta z$ represents the number of shares the user would need to purchase back the bonds and close the short.
 
 The number of outstanding shorts, $s_o$, are decreased by $\Delta y$
+
 $$
 s_o = s_o - \Delta y
 $$
