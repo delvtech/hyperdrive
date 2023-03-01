@@ -314,7 +314,7 @@ The $y_{reserves}$ are recalculated to ensure that the apr doesn't change from b
 
 ### Remove Liquidity
 
-User redeems $\Delta l$ lp shares and receives $\Delta x$ base, $\Delta w_{s}$ short withdrawal shares and $\Delta w_{l}$ long withdrawal shares.
+User redeems $\Delta l$ lp shares and receives $\Delta x$ base at share price c where $\frac{\Delta x}{c} = \Delta z$. The user also receives $\Delta w_{s}$ short withdrawal shares and $\Delta w_{l}$ long withdrawal shares.
 
 $$
 \begin{aligned}
