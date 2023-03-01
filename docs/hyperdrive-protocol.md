@@ -206,14 +206,14 @@ $$
 Since the share reserves are reduced, we need to verify that the base reserves are greater than or equal to the number of outstanding long positions. The following invariant must be preserved when opening a short:
 
 $$
-c \cdot z_{reserves} \ge l_o
+c \cdot z_{reserves} \ge o_l
 $$
 
 
-The number of outstanding shorts, $s_o$, are increased by $\Delta y$:
+The number of outstanding shorts, $o_s$, are increased by $\Delta y$:
 
 $$
-s_o = s_o + \Delta y
+o_s = o_s + \Delta y
 $$
 
 > TODO: Cover the aggregates accounting
@@ -244,10 +244,10 @@ $$
 
 $\Delta z$ represents the number of shares the user would need to purchase back the bonds and close the short.
 
-The number of outstanding shorts, $s_o$, are decreased by $\Delta y$:
+The number of outstanding shorts, $o_s$, are decreased by $\Delta y$:
 
 $$
-s_o = s_o - \Delta y
+o_s = o_s - \Delta y
 $$
 
 The reserves are updated as follows:
