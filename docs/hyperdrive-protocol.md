@@ -206,7 +206,7 @@ $$
 Since the share reserves are reduced, we need to verify that the base reserves are greater than or equal to the number of outstanding long positions. The following invariant must be preserved when opening a short:
 
 $$
-c_1 \cdot z_{reserves} \ge l_o
+c \cdot z_{reserves} \ge l_o
 $$
 
 
