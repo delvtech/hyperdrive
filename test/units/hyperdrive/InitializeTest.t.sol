@@ -37,20 +37,13 @@ contract InitializeTest is HyperdriveTest {
         uint256 lpShares = initialize(alice, apr, contribution);
 
         // Ensure that the pool's APR is approximately equal to the target APR.
-        uint256 poolApr = HyperdriveMath.calculateAPRFromReserves(
-            hyperdrive.shareReserves(),
-            hyperdrive.bondReserves(),
-            hyperdrive.totalSupply(AssetId._LP_ASSET_ID),
-            hyperdrive.initialSharePrice(),
-            hyperdrive.positionDuration(),
-            hyperdrive.timeStretch()
-        );
+        uint256 poolApr = calculateAPRFromReserves();
         assertApproxEqAbs(poolApr, apr, 1); // 17 decimals of precision
 
         // Ensure that Alice's base balance has been depleted and that Alice
         // received some LP tokens.
         assertEq(baseToken.balanceOf(alice), 0);
         assertEq(baseToken.balanceOf(address(hyperdrive)), contribution);
-        assertEq(lpShares, contribution + hyperdrive.bondReserves());
+        assertEq(lpShares, contribution + getPoolInfo().bondReserves);
     }
 }
