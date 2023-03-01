@@ -48,23 +48,30 @@ abstract contract HyperdriveShort is HyperdriveBase {
         // backdate the bonds sold to the beginning of the checkpoint.
         uint256 maturityTime = latestCheckpoint + positionDuration;
         uint256 timeRemaining = _calculateTimeRemaining(maturityTime);
-        uint256 shareProceeds = HyperdriveMath.calculateOpenShort(
-            marketState.shareReserves,
-            marketState.bondReserves,
-            totalSupply[AssetId._LP_ASSET_ID],
-            _bondAmount,
-            timeRemaining,
-            timeStretch,
-            sharePrice,
-            initialSharePrice
-        );
-
-        // If the user short sale is at a greater than 1 to 1 rate we are in the negative interest
-        // region of the trading function.
-        if (shareProceeds.mulDown(sharePrice) > _bondAmount)
-            revert Errors.NegativeInterest();
-
+        uint256 shareProceeds;
+        uint256 shareReservesDelta;
+        uint256 bondReservesDelta;
         {
+            (uint256 curveIn, uint256 curveOut, uint256 flat) = HyperdriveMath
+                .calculateOpenShort(
+                    marketState.shareReserves,
+                    marketState.bondReserves,
+                    totalSupply[AssetId._LP_ASSET_ID],
+                    _bondAmount,
+                    timeRemaining,
+                    timeStretch,
+                    sharePrice,
+                    initialSharePrice
+                );
+            shareReservesDelta = curveOut;
+            bondReservesDelta = curveIn;
+            shareProceeds = curveOut + flat;
+
+            // If the user short sale is at a greater than 1 to 1 rate we are in the negative interest
+            // region of the trading function.
+            if (shareProceeds.mulDown(sharePrice) > _bondAmount)
+                revert Errors.NegativeInterest();
+
             uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
                 marketState.shareReserves,
                 marketState.bondReserves,
@@ -83,8 +90,10 @@ abstract contract HyperdriveShort is HyperdriveBase {
                     flatFee,
                     false // isShareIn
                 );
-            // This is a bond in / base out where the bonds are given, so we subtract from the shares
-            // out.
+
+            // This is a bond in / shares out where the bonds are given, so we
+            // subtract from the shares out.
+            shareReservesDelta -= _curveFee;
             shareProceeds -= _curveFee + _flatFee;
         }
 
@@ -135,8 +144,8 @@ abstract contract HyperdriveShort is HyperdriveBase {
         // by the amount of bonds that were shorted. We don't need to add the
         // margin or pre-paid interest to the reserves because of the way that
         // the close short accounting works.
-        marketState.shareReserves -= shareProceeds.toUint128();
-        marketState.bondReserves += _bondAmount.toUint128();
+        marketState.shareReserves -= shareReservesDelta.toUint128();
+        marketState.bondReserves += bondReservesDelta.toUint128();
         marketState.shortsOutstanding += _bondAmount.toUint128();
 
         // Since the share reserves are reduced, we need to verify that the base
@@ -192,22 +201,28 @@ abstract contract HyperdriveShort is HyperdriveBase {
 
         // Calculate the pool and user deltas using the trading function.
         uint256 timeRemaining = _calculateTimeRemaining(_maturityTime);
-        (uint256 curveIn, uint256 curveOut, uint256 flat) = HyperdriveMath
-            .calculateCloseShort(
-                marketState.shareReserves,
-                marketState.bondReserves,
-                totalSupply[AssetId._LP_ASSET_ID],
-                _bondAmount,
-                timeRemaining,
-                timeStretch,
-                sharePrice,
-                initialSharePrice
-            );
+        uint256 sharePayment;
+        uint256 shareReservesDelta;
+        uint256 bondReservesDelta;
         // FIXME: Refactor this and do unit analysis.
         {
+            (uint256 curveIn, uint256 curveOut, uint256 flat) = HyperdriveMath
+                .calculateCloseShort(
+                    marketState.shareReserves,
+                    marketState.bondReserves,
+                    totalSupply[AssetId._LP_ASSET_ID],
+                    _bondAmount,
+                    timeRemaining,
+                    timeStretch,
+                    sharePrice,
+                    initialSharePrice
+                );
+            shareReservesDelta = curveIn;
+            bondReservesDelta = curveOut;
+            sharePayment = curveIn + flat;
             uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
-                shareReserves,
-                bondReserves,
+                marketState.shareReserves,
+                marketState.bondReserves,
                 totalSupply[AssetId._LP_ASSET_ID],
                 initialSharePrice,
                 timeRemaining,
@@ -222,8 +237,8 @@ abstract contract HyperdriveShort is HyperdriveBase {
                     curveFee,
                     flatFee
                 );
-            curveIn += curveFee;
-            flat += flatFee;
+            shareReservesDelta += curveFee;
+            sharePayment += curveFee + flatFee;
         }
 
         // If the position hasn't matured, apply the accounting updates that
@@ -232,8 +247,9 @@ abstract contract HyperdriveShort is HyperdriveBase {
         if (block.timestamp < _maturityTime) {
             _applyCloseShort(
                 _bondAmount,
-                poolBondDelta,
+                bondReservesDelta,
                 sharePayment,
+                shareReservesDelta,
                 _maturityTime
             );
         }
@@ -283,20 +299,18 @@ abstract contract HyperdriveShort is HyperdriveBase {
         return (baseProceeds);
     }
 
-    // FIXME
-    //
     /// @dev Applies the trading deltas from a closed short to the reserves and
     ///      the withdrawal pool.
     /// @param _bondAmount The amount of shorts that were closed.
-    /// @param _poolBondDelta The amount of bonds that the pool would be
-    ///        decreased by if we didn't need to account for the withdrawal
-    ///        pool.
+    /// @param _bondReservesDelta The amount of bonds paid by the curve.
     /// @param _sharePayment The payment in shares required to close the short.
+    /// @param _shareReservesDelta The amount of bonds paid to the curve.
     /// @param _maturityTime The maturity time of the short.
     function _applyCloseShort(
         uint256 _bondAmount,
-        uint256 _poolBondDelta,
+        uint256 _bondReservesDelta,
         uint256 _sharePayment,
+        uint256 _shareReservesDelta,
         uint256 _maturityTime
     ) internal {
         // Update the short average maturity time.
@@ -359,8 +373,8 @@ abstract contract HyperdriveShort is HyperdriveBase {
         if (withdrawalState.shortWithdrawalSharesOutstanding > 0) {
             // Calculate the effect that the trade has on the pool's APR.
             uint256 apr = HyperdriveMath.calculateAPRFromReserves(
-                uint256(marketState.shareReserves).add(_sharePayment),
-                uint256(marketState.bondReserves).sub(_poolBondDelta),
+                uint256(marketState.shareReserves).add(_shareReservesDelta),
+                uint256(marketState.bondReserves).sub(_bondReservesDelta),
                 totalSupply[AssetId._LP_ASSET_ID],
                 initialSharePrice,
                 positionDuration,
@@ -409,8 +423,8 @@ abstract contract HyperdriveShort is HyperdriveBase {
                 )
                 .toUint128();
         } else {
-            marketState.shareReserves += _sharePayment.toUint128();
-            marketState.bondReserves -= _poolBondDelta.toUint128();
+            marketState.shareReserves += _shareReservesDelta.toUint128();
+            marketState.bondReserves -= _bondReservesDelta.toUint128();
         }
     }
 }
