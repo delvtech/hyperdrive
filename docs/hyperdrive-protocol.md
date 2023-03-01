@@ -37,7 +37,7 @@ The following sections describe the accounting logic needed for the pricing func
 
 ### Open Long
 
-The trader supplies $\Delta x$ base and receives $\Delta y$ bonds. At the current share price $c$, $\Delta x = c \cdot \Delta z$ where $\Delta z$ is the amount of shares being traded. 
+The trader supplies $\Delta x$ base and receives $\Delta y$ bonds. At the current share price $c$, $\Delta x = c \cdot \Delta z$ where $\Delta z$ is the amount of shares being traded with $t$ time remaining in the term.
 
 $$
 \begin{aligned}
@@ -145,10 +145,10 @@ $$
 p_{l} = p_{l} + (\frac{\Delta y}{c_0} - \Delta z) \cdot \frac{\min(w_{l}, \Delta y)}{\Delta y}
 $$
 
-> TODO: Cover the aggregates accounting
-
 Update the long's average maturity time, $t_l$
 Update the long's base volume, $v_l$
+
+> TODO: Cover the aggregates accounting
 
 ### Open Short
 
