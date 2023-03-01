@@ -328,9 +328,7 @@ library HyperdriveMath {
 
         // curveOut
         _amountOut = _amountOut.mulDown(_normalizedTimeRemaining);
-        // Question: Do we still need the asumption that the flat has already been applied to the reserves?
-        // Calculate the curved part of the trade assuming that the flat part of
-        // the trade was applied to the share and bond reserves.
+        // Calculate the curved part of the trade.
         uint256 curveIn = YieldSpaceMath.calculateSharesInGivenBondsOut(
             _shareReserves,
             _bondReserves,
