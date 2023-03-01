@@ -328,6 +328,7 @@ library HyperdriveMath {
 
         // curveOut
         _amountOut = _amountOut.mulDown(_normalizedTimeRemaining);
+        // Question: Do we still need the asumption that the flat has already been applied to the reserves?
         // Calculate the curved part of the trade assuming that the flat part of
         // the trade was applied to the share and bond reserves.
         uint256 curveIn = YieldSpaceMath.calculateSharesInGivenBondsOut(
@@ -396,7 +397,7 @@ library HyperdriveMath {
     ) internal pure returns (uint256 curveFee, uint256 flatFee) {
         uint256 curveIn = _amountIn.mulDown(_normalizedTimeRemaining);
         if (_isShareIn) {
-            // curve fee = ((1 / p) - 1) * phi * c * d_z * t
+            // curve fee = ((1 / p) - 1) * phi_curve * c * d_z * t
             uint256 _pricePart = (FixedPointMath.ONE_18.divDown(_spotPrice))
                 .sub(FixedPointMath.ONE_18);
             curveFee = _pricePart
@@ -404,21 +405,22 @@ library HyperdriveMath {
                 .mulDown(_sharePrice)
                 .mulDown(curveIn)
                 .mulDown(_normalizedTimeRemaining);
-            // flat fee = c * d_z * (1 - t)
+            // flat fee = c * d_z * (1 - t) * phi_flat
             uint256 flat = _amountIn.mulDown(
                 FixedPointMath.ONE_18.sub(_normalizedTimeRemaining)
             );
             flatFee = (flat.mulDown(_sharePrice).mulDown(_flatFeePercent));
         } else {
             // 'bond' in
-            // flat fee = (1 - p) * phi * d_y * t
+            // curve fee = (1 - p) * phi_curve * d_y/c * t
             uint256 _pricePart = (FixedPointMath.ONE_18.sub(_spotPrice));
             curveFee = _pricePart
                 .mulDown(_curveFeePercent)
                 .mulDown(curveIn)
+                .divDown(_sharePrice)
                 .mulDown(_normalizedTimeRemaining);
-            // curve fee = d_y * (1 - t)
-            uint256 flat = _amountIn.mulDown(
+            // flat fee = d_y/c * (1 - t) * phi_flat
+            uint256 flat = _amountIn.divDown(_sharePrice).mulDown(
                 FixedPointMath.ONE_18.sub(_normalizedTimeRemaining)
             );
             flatFee = (flat.mulDown(_flatFeePercent));
@@ -461,13 +463,13 @@ library HyperdriveMath {
             flatFee = (flat.mulDown(_sharePrice).mulDown(_flatFeePercent));
         } else {
             // bonds out
-            // curve fee = (1 - p) * phi * d_y * t
+            // curve fee = (1 - p) * d_y * t * phi_curve
             uint256 _pricePart = FixedPointMath.ONE_18.sub(_spotPrice);
             curveFee = _pricePart
                 .mulDown(_curveFeePercent)
                 .mulDown(curveOut)
                 .mulDown(_normalizedTimeRemaining);
-            // flat fee = d_y * (1 - t)
+            // flat fee = d_y * (1 - t) * phi_flat
             uint256 flat = _amountOut.mulDown(
                 FixedPointMath.ONE_18.sub(_normalizedTimeRemaining)
             );
