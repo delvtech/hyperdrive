@@ -414,9 +414,9 @@ library HyperdriveMath {
             curveFee = _pricePart
                 .mulDown(_curveFeePercent)
                 .mulDown(curveIn)
-                .mulDiv(_normalizedTimeRemaining, _sharePrice);
+                .mulDivDown(_normalizedTimeRemaining, _sharePrice);
             // flat fee = (d_y * (1 - t) * phi_flat)/c
-            uint256 flat = _amountIn.mulDiv(
+            uint256 flat = _amountIn.mulDivDown(
                 FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
                 _sharePrice
             );
@@ -431,7 +431,6 @@ library HyperdriveMath {
     /// @param _sharePrice The current price of shares in terms of base.
     /// @param _curveFeePercent The curve fee parameter.
     /// @param _flatFeePercent The flat fee parameter.
-    /// @param _isShareOut If the user will receive shares.
     /// @return curveFee The fee amount to charge.
     /// @return flatFee The fee amount to charge.
     function calculateFeesInGivenOut(
@@ -444,15 +443,16 @@ library HyperdriveMath {
     ) internal pure returns (uint256 curveFee, uint256 flatFee) {
         uint256 curveOut = _amountOut.mulDown(_normalizedTimeRemaining);
         // bonds out
-        // curve fee = (1 - p) * d_y * t * phi_curve
+        // curve fee = ((1 - p) * d_y * t * phi_curve)/c
         uint256 _pricePart = FixedPointMath.ONE_18.sub(_spotPrice);
         curveFee = _pricePart
             .mulDown(_curveFeePercent)
             .mulDown(curveOut)
-            .mulDiv(_normalizedTimeRemaining, _sharePrice);
-        // flat fee = d_y * (1 - t) * phi_flat
-        uint256 flat = _amountOut.mulDown(
-            FixedPointMath.ONE_18.sub(_normalizedTimeRemaining)
+            .mulDivDown(_normalizedTimeRemaining, _sharePrice);
+        // flat fee = (d_y * (1 - t) * phi_flat)/c
+        uint256 flat = _amountOut.mulDivDown(
+            FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
+            _sharePrice
         );
         flatFee = (flat.mulDown(_flatFeePercent));
     }

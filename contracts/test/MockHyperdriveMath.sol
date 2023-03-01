@@ -204,8 +204,7 @@ contract MockHyperdriveMath {
         uint256 _spotPrice,
         uint256 _sharePrice,
         uint256 _curveFeePercent,
-        uint256 _flatFeePercent,
-        bool _isBaseOut
+        uint256 _flatFeePercent
     ) external pure returns (uint256, uint256) {
         (uint256 result1, uint256 result2) = HyperdriveMath
             .calculateFeesInGivenOut(
@@ -214,8 +213,7 @@ contract MockHyperdriveMath {
                 _spotPrice,
                 _sharePrice,
                 _curveFeePercent,
-                _flatFeePercent,
-                _isBaseOut
+                _flatFeePercent
             );
         return (result1, result2);
     }
