@@ -152,7 +152,7 @@ Update the long's base volume, $v_l$
 
 ### Open Short
 
-The trader shorts $\Delta y$ bonds with $\Delta x$ base with $t$ time remaining in the term. To calculate the short we must determine how many $\Delta z$ shares that $\Delta y$ bonds are worth. 
+The trader shorts $\Delta y$ bonds with $\Delta x$ base with $t$ time remaining in the term. To calculate the short we must determine how many $\Delta z$ shares that $\Delta y$ bonds are worth right now. 
 
 $$
 \begin{aligned}
