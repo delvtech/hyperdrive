@@ -280,7 +280,6 @@ abstract contract HyperdriveBase is MultiToken {
             ? _maturityTime - block.timestamp
             : 0;
         timeRemaining = (timeRemaining).divDown(positionDuration);
-        return timeRemaining;
     }
 
     /// @dev Gets the most recent checkpoint time.
@@ -293,6 +292,5 @@ abstract contract HyperdriveBase is MultiToken {
         latestCheckpoint =
             block.timestamp -
             (block.timestamp % checkpointDuration);
-        return latestCheckpoint;
     }
 }

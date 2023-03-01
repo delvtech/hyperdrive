@@ -351,7 +351,7 @@ abstract contract HyperdriveShort is HyperdriveBase {
             // shorts are opened. The math for the withdrawal proceeds is given
             // by:
             //
-            // proceeds = c_1 * dz * (min(b_y, dy) / dy)
+            // proceeds = c_1 * dz * (min(w_s, dy) / dy)
             //
             // We convert to shares at position close by dividing by c_1. If a checkpoint
             // was missed and old matured positions are being closed, this will correctly
@@ -372,7 +372,7 @@ abstract contract HyperdriveShort is HyperdriveBase {
             // the fact that some of the reserves will be attributed to the
             // withdrawal pool. The math for the share reserves update is given by:
             //
-            // z += dz - dz * (min(b_y, dy) / dy)
+            // z += dz - dz * (min(w_s, dy) / dy)
             marketState.shareReserves +=
                 _sharePayment.toUint128() -
                 withdrawalProceeds.toUint128();

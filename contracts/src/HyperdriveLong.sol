@@ -373,7 +373,7 @@ abstract contract HyperdriveLong is HyperdriveBase {
             // when longs are opened. The math for the withdrawal proceeds is
             // given by:
             //
-            // proceeds = c_1 * (dy / c_0 - dz) * (min(b_x, dy) / dy)
+            // proceeds = c_1 * (dy / c_0 - dz) * (min(w_l, dy) / dy)
             //
             // We convert to shares at position close by dividing by c_1. If a checkpoint
             // was missed and old matured positions are being closed, this will correctly
@@ -407,7 +407,7 @@ abstract contract HyperdriveLong is HyperdriveBase {
             // withdrawal pool. Assuming that there are some withdrawal proceeds,
             // the math for the share reserves update is given by:
             //
-            // z -= dz + (dy / c_0 - dz) * (min(b_x, dy) / dy)
+            // z -= dz + (dy / c_0 - dz) * (min(w_l, dy) / dy)
             marketState.shareReserves -=
                 _shareProceeds.toUint128() +
                 withdrawalProceeds.toUint128();
