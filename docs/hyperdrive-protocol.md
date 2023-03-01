@@ -8,7 +8,7 @@ Hyperdrive is a new AMM that allows users to open long and short positions to ge
 
 ## Flat + Curve
 
-In Hyperdrive, trades only take place on a single curve.  When a user opens a new position, the trade is made on a curve that prices the asset as a function of the reserves and a **fixed** time until maturity. When a user closes a position, we price the trade by splitting into to components: new bonds and matured bonds.  The new bonds are priced on the curve and matured bonds can be redeemed 1:1 with the base asset.  For example, let's say Alice wants to sell 12 bonds that are 9 months from maturity.  We would consider 3 bonds mature and offer a 1:1 redemption for them and the remaining 9 bonds would be priced on the curve with the full time remaining until maturity.
+In Hyperdrive, trades only take place on a single invariant.  When a user opens a new position, the trade is made on a curve that prices the asset as a function of the reserves and a **fixed** time until maturity. When a user closes a position, we price the trade by splitting into to components: new bonds and matured bonds.  The new bonds are priced on the curve and matured bonds can be redeemed 1:1 with the base asset.  For example, let's say Alice wants to sell 12 bonds that are 9 months from maturity on a 12 month term.  We would consider 3 bonds mature and offer a 1:1 redemption for them and the remaining 9 bonds would be priced on the curve with the full time remaining until maturity.
 
 ## Backdating
 
