@@ -322,8 +322,7 @@ library HyperdriveMath {
             spotPrice,
             _sharePrice,
             _curveFee,
-            _flatFee,
-            false // isShareOut
+            _flatFee
         );
 
         // curveOut
@@ -441,38 +440,21 @@ library HyperdriveMath {
         uint256 _spotPrice,
         uint256 _sharePrice,
         uint256 _curveFeePercent,
-        uint256 _flatFeePercent,
-        bool _isShareOut
+        uint256 _flatFeePercent
     ) internal pure returns (uint256 curveFee, uint256 flatFee) {
         uint256 curveOut = _amountOut.mulDown(_normalizedTimeRemaining);
-        if (_isShareOut) {
-            // curve fee = ((1 / p) - 1) * phi * c * d_z
-            uint256 _pricePart = (FixedPointMath.ONE_18.divDown(_spotPrice))
-                .sub(FixedPointMath.ONE_18);
-            curveFee = _pricePart
-                .mulDown(_curveFeePercent)
-                .mulDown(curveOut)
-                .mulDown(_sharePrice)
-                .mulDown(_normalizedTimeRemaining);
-            // flat fee = c * d_z * (1 - t)
-            uint256 flat = _amountOut.mulDown(
-                FixedPointMath.ONE_18.sub(_normalizedTimeRemaining)
-            );
-            flatFee = (flat.mulDown(_sharePrice).mulDown(_flatFeePercent));
-        } else {
-            // bonds out
-            // curve fee = (1 - p) * d_y * t * phi_curve
-            uint256 _pricePart = FixedPointMath.ONE_18.sub(_spotPrice);
-            curveFee = _pricePart
-                .mulDown(_curveFeePercent)
-                .mulDown(curveOut)
-                .mulDown(_normalizedTimeRemaining);
-            // flat fee = d_y * (1 - t) * phi_flat
-            uint256 flat = _amountOut.mulDown(
-                FixedPointMath.ONE_18.sub(_normalizedTimeRemaining)
-            );
-            flatFee = (flat.mulDown(_flatFeePercent));
-        }
+        // bonds out
+        // curve fee = (1 - p) * d_y * t * phi_curve
+        uint256 _pricePart = FixedPointMath.ONE_18.sub(_spotPrice);
+        curveFee = _pricePart
+            .mulDown(_curveFeePercent)
+            .mulDown(curveOut)
+            .mulDiv(_normalizedTimeRemaining, _sharePrice);
+        // flat fee = d_y * (1 - t) * phi_flat
+        uint256 flat = _amountOut.mulDown(
+            FixedPointMath.ONE_18.sub(_normalizedTimeRemaining)
+        );
+        flatFee = (flat.mulDown(_flatFeePercent));
     }
 
     /// @dev Calculates the base volume of an open trade given the base amount,
