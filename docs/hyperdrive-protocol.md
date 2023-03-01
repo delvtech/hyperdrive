@@ -16,7 +16,7 @@ If every position is opened with a fixed position duration (e.g. 6 months from t
 
 ### Checkpointing
 
-To reduce the amount of keeping required to maintain the accounting system, we introduce a checkpointing system that groups long and short positions by the time at which they were opened. These checkpoints store the share price of the first trade in the checkpoint which is used to compute the returns of long and short positions that mature in that checkpoint.
+To reduce the amount of keeping required to maintain the accounting system, we introduce a checkpointing system that groups long and short positions by the time at which they were opened. These checkpoints store the share price of the first trade in the checkpoint. This price is used to compute the returns of long and short positions that mature in that checkpoint.
 
 Mechanically, checkpointing backdates all of the positions opened within the checkpoint interval to the start of the checkpoint. This means that in most cases traders will benefit from interest that has already been collected, so the traders may have to pay slightly more when opening their position. 
 
