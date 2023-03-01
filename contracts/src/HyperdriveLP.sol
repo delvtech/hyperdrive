@@ -273,7 +273,7 @@ abstract contract HyperdriveLP is HyperdriveBase {
         );
 
         // Redeem the short withdrawal shares.
-        proceeds += _applyWithdrawalShareRedemption(
+        proceeds -= _applyWithdrawalShareRedemption(
             AssetId.encodeAssetId(
                 AssetId.AssetIdPrefix.ShortWithdrawalShare,
                 0
