@@ -285,6 +285,8 @@ abstract contract HyperdriveShort is HyperdriveBase {
                     _maturityTime
                 )
             ];
+
+            // Question: Why are we checking this again?  We already checked on line 201
             if (block.timestamp < _maturityTime) {
                 checkpointAmount += _bondAmount;
             }
