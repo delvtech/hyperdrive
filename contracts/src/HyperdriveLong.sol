@@ -52,23 +52,26 @@ abstract contract HyperdriveLong is HyperdriveBase {
         // earned in shares.
         uint256 maturityTime = latestCheckpoint + positionDuration;
         uint256 timeRemaining = _calculateTimeRemaining(maturityTime);
-        (uint256 poolBondDelta, uint256 bondProceeds) = HyperdriveMath
-            .calculateOpenLong(
-                marketState.shareReserves,
-                marketState.bondReserves,
-                totalSupply[AssetId._LP_ASSET_ID],
-                shares, // amountIn
-                timeRemaining,
-                timeStretch,
-                sharePrice,
-                initialSharePrice
-            );
-
-        // If the user gets less bonds than they paid we are in the negative interest
-        // region of the trading function.
-        if (bondProceeds < _baseAmount) revert Errors.NegativeInterest();
-
+        uint256 shareReservesDelta;
+        uint256 bondReservesDelta;
+        uint256 bondProceeds;
         {
+            (uint256 curveIn, uint256 curveOut, uint256 flat) = HyperdriveMath
+                .calculateOpenLong(
+                    marketState.shareReserves,
+                    marketState.bondReserves,
+                    totalSupply[AssetId._LP_ASSET_ID],
+                    shares, // amountIn
+                    timeRemaining,
+                    timeStretch,
+                    sharePrice,
+                    initialSharePrice
+                );
+
+            // If the user gets less bonds than they paid we are in the negative interest
+            // region of the trading function.
+            if (flat + curveOut < _baseAmount) revert Errors.NegativeInterest();
+
             // Calculate the fees owed by the trader.
             uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
                 marketState.shareReserves,
@@ -89,10 +92,12 @@ abstract contract HyperdriveLong is HyperdriveBase {
                     true // isShareIn
                 );
 
-            // This is a base in / bond out operation where the in is given, so we subtract the fee
-            // amount from the output.
+            // TODO: There may be a clearer way to explain this.
+            //
+            // This is a shares in / bond out operation where the in is given,
+            // so we subtract the fee amount from the output.
+            bondReservesDelta = curveOut - curveFee;
             bondProceeds -= _curveFee - _flatFee;
-            poolBondDelta -= _curveFee;
         }
 
         // Enforce min user outputs
@@ -101,9 +106,9 @@ abstract contract HyperdriveLong is HyperdriveBase {
         // Apply the open long to the state.
         _applyOpenLong(
             _baseAmount,
-            shares,
+            shareReservesDelta,
             bondProceeds,
-            poolBondDelta,
+            bondReservesDelta,
             sharePrice,
             latestCheckpoint,
             maturityTime,
@@ -156,26 +161,32 @@ abstract contract HyperdriveLong is HyperdriveBase {
 
         // Calculate the pool and user deltas using the trading function.
         uint256 timeRemaining = _calculateTimeRemaining(_maturityTime);
-        (uint256 poolBondDelta, uint256 shareProceeds) = HyperdriveMath
-            .calculateCloseLong(
+        uint256 shareProceeds;
+        uint256 shareReservesDelta;
+        uint256 bondReservesDelta;
+        {
+            (uint256 curveIn, uint256 curveOut, uint256 flat) = HyperdriveMath
+                .calculateCloseLong(
+                    marketState.shareReserves,
+                    marketState.bondReserves,
+                    totalSupply[AssetId._LP_ASSET_ID],
+                    _bondAmount,
+                    timeRemaining,
+                    timeStretch,
+                    sharePrice,
+                    initialSharePrice
+                );
+            bondReservesDelta = curveIn;
+            shareReservesDelta = curveOut;
+            shareProceeds = curveOut + flat;
+            uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
                 marketState.shareReserves,
                 marketState.bondReserves,
                 totalSupply[AssetId._LP_ASSET_ID],
-                _bondAmount,
+                initialSharePrice,
                 timeRemaining,
-                timeStretch,
-                sharePrice,
-                initialSharePrice
+                timeStretch
             );
-        uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
-            marketState.shareReserves,
-            marketState.bondReserves,
-            totalSupply[AssetId._LP_ASSET_ID],
-            initialSharePrice,
-            timeRemaining,
-            timeStretch
-        );
-        {
             (uint256 _curveFee, uint256 _flatFee) = HyperdriveMath
                 .calculateFeesOutGivenIn(
                     _bondAmount, // amountIn
@@ -186,8 +197,9 @@ abstract contract HyperdriveLong is HyperdriveBase {
                     flatFee,
                     false // isShareIn
                 );
-            // This is a bond in / base out where the bonds are fixed, so we subtract from the base
+            // This is a bond in / shares out where the bonds are fixed, so we subtract from the base
             // out.
+            shareReservesDelta -= _curveFee;
             shareProceeds -= _curveFee + _flatFee;
         }
 
@@ -197,8 +209,9 @@ abstract contract HyperdriveLong is HyperdriveBase {
         if (block.timestamp < _maturityTime) {
             _applyCloseLong(
                 _bondAmount,
-                poolBondDelta,
+                bondReservesDelta,
                 shareProceeds,
+                shareReservesDelta,
                 _maturityTime
             );
         }
@@ -219,18 +232,18 @@ abstract contract HyperdriveLong is HyperdriveBase {
     /// @dev Applies an open long to the state. This includes updating the
     ///      reserves and maintaining the reserve invariants.
     /// @param _baseAmount The amount of base paid by the trader.
-    /// @param _shareAmount The amount of shares paid by the trader.
+    /// @param _shareReservesDelta The amount of shares paid to the curve.
     /// @param _bondProceeds The amount of bonds purchased by the trader.
-    /// @param _poolBondDelta The change in the pool's bond reserves.
+    /// @param _bondReservesDelta The amount of bonds sold by the curve.
     /// @param _sharePrice The share price.
     /// @param _checkpointTime The time of the latest checkpoint.
     /// @param _maturityTime The maturity time of the long.
     /// @param _timeRemaining The time remaining until maturity.
     function _applyOpenLong(
         uint256 _baseAmount,
-        uint256 _shareAmount,
+        uint256 _shareReservesDelta,
         uint256 _bondProceeds,
-        uint256 _poolBondDelta,
+        uint256 _bondReservesDelta,
         uint256 _sharePrice,
         uint256 _checkpointTime,
         uint256 _maturityTime,
@@ -259,8 +272,8 @@ abstract contract HyperdriveLong is HyperdriveBase {
 
         // Apply the trading deltas to the reserves and update the amount of
         // longs outstanding.
-        marketState.shareReserves += _shareAmount.toUint128();
-        marketState.bondReserves -= _poolBondDelta.toUint128();
+        marketState.shareReserves += _shareReservesDelta.toUint128();
+        marketState.bondReserves -= _bondReservesDelta.toUint128();
         marketState.longsOutstanding += _bondProceeds.toUint128();
 
         // TODO: We should fuzz test this and other trading functions to ensure
@@ -281,16 +294,15 @@ abstract contract HyperdriveLong is HyperdriveBase {
     /// @dev Applies the trading deltas from a closed long to the reserves and
     ///      the withdrawal pool.
     /// @param _bondAmount The amount of longs that were closed.
-    /// @param _poolBondDelta The amount of bonds that the pool would be
-    ///        decreased by if we didn't need to account for the withdrawal
-    ///        pool.
-    /// @param _shareProceeds The proceeds in shares received from closing the
-    ///        long.
+    /// @param _bondReservesDelta The bonds paid to the curve.
+    /// @param _shareProceeds The proceeds received from closing the long.
+    /// @param _shareReservesDelta The shares paid by the curve.
     /// @param _maturityTime The maturity time of the long.
     function _applyCloseLong(
         uint256 _bondAmount,
-        uint256 _poolBondDelta,
+        uint256 _bondReservesDelta,
         uint256 _shareProceeds,
+        uint256 _shareReservesDelta,
         uint256 _maturityTime
     ) internal {
         // Update the long average maturity time.
@@ -350,8 +362,8 @@ abstract contract HyperdriveLong is HyperdriveBase {
         if (withdrawalState.longWithdrawalSharesOutstanding > 0) {
             // Calculate the effect that the trade has on the pool's APR.
             uint256 apr = HyperdriveMath.calculateAPRFromReserves(
-                uint256(marketState.shareReserves).sub(_shareProceeds),
-                uint256(marketState.bondReserves).add(_poolBondDelta),
+                uint256(marketState.shareReserves).sub(_shareReservesDelta),
+                uint256(marketState.bondReserves).add(_bondReservesDelta),
                 totalSupply[AssetId._LP_ASSET_ID],
                 initialSharePrice,
                 positionDuration,
@@ -409,7 +421,7 @@ abstract contract HyperdriveLong is HyperdriveBase {
             //
             // z -= dz + (dy / c_0 - dz) * (min(w_l, dy) / dy)
             marketState.shareReserves -=
-                _shareProceeds.toUint128() +
+                _shareReservesDelta.toUint128() +
                 withdrawalProceeds.toUint128();
             marketState.bondReserves = HyperdriveMath
                 .calculateBondReserves(
@@ -422,8 +434,8 @@ abstract contract HyperdriveLong is HyperdriveBase {
                 )
                 .toUint128();
         } else {
-            marketState.shareReserves -= _shareProceeds.toUint128();
-            marketState.bondReserves += _poolBondDelta.toUint128();
+            marketState.shareReserves -= _shareReservesDelta.toUint128();
+            marketState.bondReserves += _bondReservesDelta.toUint128();
         }
     }
 }
