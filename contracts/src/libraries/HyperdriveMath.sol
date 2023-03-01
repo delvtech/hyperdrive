@@ -415,11 +415,11 @@ library HyperdriveMath {
             curveFee = _pricePart
                 .mulDown(_curveFeePercent)
                 .mulDown(curveIn)
-                .divDown(_sharePrice)
-                .mulDown(_normalizedTimeRemaining);
+                .mulDiv(_normalizedTimeRemaining, _sharePrice);
             // flat fee = (d_y * (1 - t) * phi_flat)/c
-            uint256 flat = _amountIn.divDown(_sharePrice).mulDown(
-                FixedPointMath.ONE_18.sub(_normalizedTimeRemaining)
+            uint256 flat = _amountIn.mulDiv(
+                FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
+                _sharePrice
             );
             flatFee = (flat.mulDown(_flatFeePercent));
         }
