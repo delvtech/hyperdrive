@@ -125,11 +125,13 @@ y_{reserves} = y_{reserves} + \Delta y_{curve}
 $$
 
 
-If there are long withdrawal shares outstanding, $w_{l}$, then we must also update the z reserves by crediting the amount of variable interest earned by the LPs
+If there are long withdrawal shares outstanding, $w_{l}$, then we must also update the z reserves by crediting the amount of variable interest earned by the LPs.
 
 $$
 z_{reserves} = z_{reserves} + (\frac{\Delta y}{c_0} - \Delta z) \cdot \frac{\min(w_{l}, \Delta y)}{\Delta y}
 $$
+
+> Note: Long withdrawal shares receive the same proceeds as shorts because they **are** shorts without the ability to close early.
 
 The $y_{reserves}$ are recalculated to ensure that the apr doesn't change from before the redemption.
 
@@ -265,6 +267,7 @@ $$
 z_{reserves} = z_{reserves} - \Delta z \cdot \frac{\min(w_{s}, \Delta y)}{\Delta y}\\
 $$
 
+
 The $y_{reserves}$ are recalculated to ensure that the apr doesn't change from before the short close.
 
 The number of short withdrawal shares outstanding, $w_s$, is decreased by:
@@ -272,6 +275,8 @@ The number of short withdrawal shares outstanding, $w_s$, is decreased by:
 $$
 w_{s} = w_{s} - \frac{\min(w_{s}, \Delta y)}{\Delta y}
 $$
+
+> Note: Short withdrawal shares receive the same proceeds as longs because they **are** longs.
 
 The number of short withdrawal share proceeds, $p_{s}$, is increased by:
 
