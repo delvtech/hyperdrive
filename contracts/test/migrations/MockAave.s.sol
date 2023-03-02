@@ -4,11 +4,9 @@ pragma solidity ^0.8.10;
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
-// import "../test/mocks/MockHyperdriveTestnet.sol";
-import "../test/mocks/ERC20Mintable.sol";
-import "../test/mocks/aave/MockACLManager.sol";
-import "../test/mocks/aave/MockAavePool.sol";
-import "../test/mocks/aave/MockPoolAddressesProvider.sol";
+import "../ERC20Mintable.sol";
+import "../aave/MockACLManager.sol";
+import "../aave/MockAavePool.sol";
 
 import { AToken } from "@aave/core-v3/contracts/protocol/tokenization/AToken.sol";
 import { ConfiguratorInputTypes } from "@aave/core-v3/contracts/protocol/libraries/types/ConfiguratorInputTypes.sol";
@@ -21,6 +19,7 @@ import { PoolConfigurator } from "@aave/core-v3/contracts/protocol/pool/PoolConf
 import { ReservesSetupHelper } from "@aave/core-v3/contracts/deployments/ReservesSetupHelper.sol";
 import { StableDebtToken } from "@aave/core-v3/contracts/protocol/tokenization/StableDebtToken.sol";
 import { VariableDebtToken } from "@aave/core-v3/contracts/protocol/tokenization/VariableDebtToken.sol";
+import { PoolAddressesProvider } from "@aave/core-v3/contracts/protocol/configuration/PoolAddressesProvider.sol";
 
 contract MockAaveScript is Script {
     string constant MARKET_ID = "Aave Testnet Market";
@@ -41,10 +40,10 @@ contract MockAaveScript is Script {
 
         // Deploys the market registry
         // This contract also acts as a proxy factory
-        MockPoolAddressesProvider poolAddressesProvider = new MockPoolAddressesProvider(
-                MARKET_ID,
-                deployer
-            );
+        PoolAddressesProvider poolAddressesProvider = new PoolAddressesProvider(
+            MARKET_ID,
+            deployer
+        );
 
         // Deploy mock ACL manager
         MockACLManager aclManager = new MockACLManager();

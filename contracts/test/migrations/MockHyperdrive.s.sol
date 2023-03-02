@@ -2,9 +2,9 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Script.sol";
-import { FixedPointMath } from "contracts/libraries/FixedPointMath.sol";
-import "../test/mocks/ERC20Mintable.sol";
-import "../test/mocks/MockHyperdriveTestnet.sol";
+import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import "../ERC20Mintable.sol";
+import "../MockHyperdriveTestnet.sol";
 
 contract MockHyperdriveScript is Script {
     using FixedPointMath for uint256;
