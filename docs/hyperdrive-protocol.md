@@ -22,7 +22,17 @@ Mechanically, checkpointing backdates all of the positions opened within the che
 
 ### Calculating Maturity Time
 
-Suppose that the current time is $t$, the contract's checkpoint duration is $d_c$, and the contract's position duration is $d$. The position's start date will be $t_s = t - (t \space \mod \space d_c)$ and the position's maturity date will be $t_m = t_s + d$.
+Suppose that the current time is $t$, the contract's checkpoint duration is $d_c$, and the contract's position duration is $d$. The position's start date will be:
+
+$$
+t_s = t - (t \space \mod \space d_c)
+$$ 
+
+and the position's maturity date will be:
+
+$$
+t_m = t_s + d
+$$
 
 
 
@@ -41,8 +51,8 @@ The trader supplies $\Delta x$ base and receives $\Delta y$ bonds. At the curren
 
 $$
 \begin{aligned}
-\Delta y_{flat}' = \Delta z \cdot (1 - t)\\
-\Delta y_{curve}' = I_{BondsOutSharesIn}(\Delta z \cdot t)
+\Delta y_{flat}' &= \Delta z \cdot (1 - t)\\
+\Delta y_{curve}' &= I_{BondsOutSharesIn}(\Delta z \cdot t)
 \end{aligned}
 $$
 
@@ -52,9 +62,9 @@ Next, we account for fees:
 
 $$
 \begin{aligned}
-\Delta y_{flat} = \Delta y_{flat}'-c \cdot \Delta z \cdot (1 - t) \cdot \phi_{flat}\\
-\Delta y_{curve} = \Delta y_{curve}' - (\frac{1}{p} - 1) \cdot c \cdot \Delta z \cdot t \cdot \phi_{curve}\\
-\Delta y = \Delta y_{flat} + \Delta y_{curve}
+\Delta y_{flat} &= \Delta y_{flat}'-c \cdot \Delta z \cdot (1 - t) \cdot \phi_{flat}\\
+\Delta y_{curve} &= \Delta y_{curve}' - (\frac{1}{p} - 1) \cdot c \cdot \Delta z \cdot t \cdot \phi_{curve}\\
+\Delta y &= \Delta y_{flat} + \Delta y_{curve}
 \end{aligned}
 $$
 
@@ -62,8 +72,8 @@ where $\phi_{flat}$ is the flat fee, $\phi_{curve}$ is the fee for the curve and
 
 $$
 \begin{aligned}
-z_{reserves} = z_{reserves} + \Delta z \\
-y_{reserves} = y_{reserves} - \Delta y_{curve}
+z_{reserves} &= z_{reserves} + \Delta z \\
+y_{reserves} &= y_{reserves} - \Delta y_{curve}
 \end{aligned}
 $$
 
@@ -94,8 +104,8 @@ The trader closes their long position of $\Delta y$ bonds for $\Delta x$ base wi
 
 $$
 \begin{aligned}
-\Delta z_{flat}' = \frac{\Delta y \cdot (1 - t)}{c} \\
-\Delta z_{curve}' = I_{SharesOutBondsIn}(\Delta y \cdot t)
+\Delta z_{flat}' &= \frac{\Delta y \cdot (1 - t)}{c} \\
+\Delta z_{curve}' &= I_{SharesOutBondsIn}(\Delta y \cdot t)
 \end{aligned}
 $$
 
@@ -103,9 +113,9 @@ Next, we account for fees:
 
 $$
 \begin{aligned}
-\Delta z_{flat} = \Delta z_{flat}' - \frac{\Delta y \cdot (1 - t) \cdot \phi_{flat}}{c}\\
-\Delta z_{curve} = \Delta z_{curve}' - \frac{(1 - p) \cdot \Delta y \cdot t \cdot \phi_{curve}}{c}\\
-\Delta z = \Delta z_{flat} + \Delta z_{curve}
+\Delta z_{flat} &= \Delta z_{flat}' - \frac{\Delta y \cdot (1 - t) \cdot \phi_{flat}}{c}\\
+\Delta z_{curve} &= \Delta z_{curve}' - \frac{(1 - p) \cdot \Delta y \cdot t \cdot \phi_{curve}}{c}\\
+\Delta z &= \Delta z_{flat} + \Delta z_{curve}
 \end{aligned}
 $$
 
@@ -119,8 +129,8 @@ The reserves are updated:
 
 $$
 \begin{aligned}
-z_{reserves} = z_{reserves} - \Delta z\\
-y_{reserves} = y_{reserves} + \Delta y_{curve}
+z_{reserves} &= z_{reserves} - \Delta z\\
+y_{reserves} &= y_{reserves} + \Delta y_{curve}
 \end{aligned}
 $$
 
@@ -158,8 +168,8 @@ The trader shorts $\Delta y$ bonds with $\Delta x$ base with $t$ time remaining 
 
 $$
 \begin{aligned}
-\Delta z_{flat}' = \frac{\Delta y \cdot (1 - t)}{c}\\
-\Delta z_{curve}' = I_{SharesOutBondsIn}(\Delta y \cdot t)
+\Delta z_{flat}' &= \frac{\Delta y \cdot (1 - t)}{c}\\
+\Delta z_{curve}' &= I_{SharesOutBondsIn}(\Delta y \cdot t)
 \end{aligned}
 $$
 
@@ -167,8 +177,8 @@ Next, we account for fees:
 
 $$
 \begin{aligned}
-\Delta z_{flat} = \Delta z_{flat}' - \frac{\Delta y \cdot (1 - t) \cdot \phi_{flat}}{c}\\
-\Delta z_{curve} = \Delta z_{curve}' - \frac{(1 - p) \cdot \Delta y \cdot t \cdot \phi_{curve}}{c}
+\Delta z_{flat} &= \Delta z_{flat}' - \frac{\Delta y \cdot (1 - t) \cdot \phi_{flat}}{c}\\
+\Delta z_{curve} &= \Delta z_{curve}' - \frac{(1 - p) \cdot \Delta y \cdot t \cdot \phi_{curve}}{c}
 \end{aligned}
 $$
 
@@ -200,8 +210,8 @@ The reserves are updated as follows:
 
 $$
 \begin{aligned}
-z_{reserves} = z_{reserves} - \Delta z\\
-y_{reserves} = y_{reserves} + \Delta y
+z_{reserves} &= z_{reserves} - \Delta z\\
+y_{reserves} &= y_{reserves} + \Delta y
 \end{aligned}
 $$
 
@@ -229,8 +239,8 @@ The trader closes their short position of $\Delta y$ bonds for $\Delta x$ base w
 
 $$
 \begin{aligned}
-\Delta z_{flat}' = \frac{\Delta y \cdot (1 - t)}{c} \\
-\Delta z_{curve}' = I_{SharesInBondsOut}(\Delta y \cdot t)
+\Delta z_{flat}' &= \frac{\Delta y \cdot (1 - t)}{c} \\
+\Delta z_{curve}' &= I_{SharesInBondsOut}(\Delta y \cdot t)
 \end{aligned}
 $$
 
@@ -238,9 +248,9 @@ Next, we account for fees:
 
 $$
 \begin{aligned}
-\Delta z_{flat} = \Delta z_{flat}' + \frac{\Delta y \cdot (1 - t) \cdot \phi_{flat}}{c}\\
-\Delta z_{curve} = \Delta z_{curve}' + \frac{(1 - p) \cdot \Delta y \cdot t \cdot \phi_{curve}}{c}\\
-\Delta z = \Delta z_{flat} + \Delta z_{curve}
+\Delta z_{flat} &= \Delta z_{flat}' + \frac{\Delta y \cdot (1 - t) \cdot \phi_{flat}}{c}\\
+\Delta z_{curve} &= \Delta z_{curve}' + \frac{(1 - p) \cdot \Delta y \cdot t \cdot \phi_{curve}}{c}\\
+\Delta z &= \Delta z_{flat} + \Delta z_{curve}
 \end{aligned}
 $$
 
@@ -256,8 +266,8 @@ The reserves are updated as follows:
 
 $$
 \begin{aligned}
-z_{reserves} = z_{reserves} + \Delta z\\
-y_{reserves} = y_{reserves} - \Delta y_{curve}
+z_{reserves} &= z_{reserves} + \Delta z\\
+y_{reserves} &= y_{reserves} - \Delta y_{curve}
 \end{aligned}
 $$
 
@@ -300,13 +310,13 @@ $$
 The short adjustment, $a_s$, is:
 
 $$
-a_s = v_s \cdot t + o_s \cdot (1 - t_s)
+a_s = v_s \cdot t_s + o_s \cdot (1 - t_s)
 $$
 
 The long adjustment, $a_l$, is:
 
 $$
-a_l = v_l \cdot t + o_l \cdot (1 - t_l)
+a_l = v_l \cdot t_l + o_l \cdot (1 - t_l)
 $$
 
 The reserves are updated as follows:
@@ -323,9 +333,9 @@ User redeems $\Delta l$ lp shares and receives $\Delta x$ base at share price c 
 
 $$
 \begin{aligned}
-\Delta x = (z_{reserves} - \frac{o_l}{c}) \cdot \frac{\Delta l}{l}\\
-\Delta w_l = l_o * \frac{\Delta l}{l}\\
-\Delta w_s = s_o * \frac{\Delta l}{l}
+\Delta x &= (z_{reserves} - \frac{o_l}{c}) \cdot \frac{\Delta l}{l}\\
+\Delta w_l &= l_o * \frac{\Delta l}{l}\\
+\Delta w_s &= s_o * \frac{\Delta l}{l}
 \end{aligned}
 $$
 
@@ -341,7 +351,7 @@ The withdrawal shares are updated as follows:
 
 $$
 \begin{aligned}
-w_l = w_l + \Delta w_l\\
-w_s = w_s + \Delta w_s
+w_l &= w_l + \Delta w_l\\
+w_s &= w_s + \Delta w_s
 \end{aligned}
 $$
