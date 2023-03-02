@@ -56,7 +56,7 @@ abstract contract HyperdriveLong is HyperdriveBase {
         uint256 bondReservesDelta;
         uint256 bondProceeds;
         {
-            (uint256 curveIn, uint256 curveOut, uint256 flat) = HyperdriveMath
+            (, uint256 curveOut, uint256 flat) = HyperdriveMath
                 .calculateOpenLong(
                     marketState.shareReserves,
                     marketState.bondReserves,
