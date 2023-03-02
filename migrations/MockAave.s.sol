@@ -29,40 +29,45 @@ contract MockAaveScript is Script {
     function setUp() public {}
 
     function run() public {
+        // Fetch deployer private key from env
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(deployerPrivateKey);
 
+        // Start script with deployer as msg.sender
+        vm.startBroadcast(deployerPrivateKey);
         address deployer = msg.sender;
 
+        // Create mock ERC20 token
         ERC20Mintable baseToken = new ERC20Mintable();
 
-        // Create Market Registry
+        // Deploys the market registry
+        // This contract also acts as a proxy factory
         MockPoolAddressesProvider poolAddressesProvider = new MockPoolAddressesProvider(
                 MARKET_ID,
                 deployer
             );
 
-        // Create Pool impl
-        MockAavePool mockAavePool = new MockAavePool(poolAddressesProvider);
-
-        // Initialize pool
-        mockAavePool.initialize(poolAddressesProvider);
-
+        // Deploy mock ACL manager
         MockACLManager aclManager = new MockACLManager();
+        // Set ACL manager of registry
         poolAddressesProvider.setACLManager(address(aclManager));
 
-        // setup utils
-        ReservesSetupHelper reservesSetupHelper = new ReservesSetupHelper();
+        // Deploy Pool contract
+        MockAavePool mockAavePool = new MockAavePool(poolAddressesProvider);
+        mockAavePool.initialize(poolAddressesProvider);
         poolAddressesProvider.setPoolImpl(address(mockAavePool));
-        console.log("after getPool", poolAddressesProvider.getPool());
+        IPool poolProxy = IPool(poolAddressesProvider.getPool());
 
+        // Deploy Pool Configurator contract
         PoolConfigurator poolConfig = new PoolConfigurator();
         poolConfig.initialize(poolAddressesProvider);
         poolAddressesProvider.setPoolConfiguratorImpl(address(poolConfig));
 
+        // dummy data
         bytes memory _param = new bytes(0);
 
-        MockReserveInterestRateStrategy strat = new MockReserveInterestRateStrategy(
+        // Mock interest rate strategy
+        // Source: https://github.com/aave/aave-v3-deploy/blob/main/markets/test/rateStrategies.ts#L28
+        MockReserveInterestRateStrategy mockInterestRateStrategy = new MockReserveInterestRateStrategy(
                 poolAddressesProvider,
                 0.8e27,
                 0,
@@ -72,23 +77,24 @@ contract MockAaveScript is Script {
                 0.75e27
             );
 
-        // setup token impls
-        AToken aTokenImpl = new AToken(IPool(poolAddressesProvider.getPool()));
+        // Deploy aTokens contracts
+        AToken aTokenImpl = new AToken(poolProxy);
         aTokenImpl.initialize(
-            IPool(poolAddressesProvider.getPool()),
+            poolProxy,
             address(0),
             address(0),
             IAaveIncentivesController(address(0)),
             0,
-            "DELEGATION_AWARE_ATOKEN_IMPL",
-            "DELEGATION_AWARE_ATOKEN_IMPL",
+            "ATOKEN_IMPL",
+            "ATOKEN_IMPL",
             _param
         );
+
         DelegationAwareAToken delegationAwareATokenImpl = new DelegationAwareAToken(
-                IPool(poolAddressesProvider.getPool())
+                poolProxy
             );
         delegationAwareATokenImpl.initialize(
-            IPool(poolAddressesProvider.getPool()),
+            poolProxy,
             address(0),
             address(0),
             IAaveIncentivesController(address(0)),
@@ -98,39 +104,38 @@ contract MockAaveScript is Script {
             _param
         );
 
-        StableDebtToken stableDebtTokenImpl = new StableDebtToken(
-            IPool(poolAddressesProvider.getPool())
-        );
+        StableDebtToken stableDebtTokenImpl = new StableDebtToken(poolProxy);
         stableDebtTokenImpl.initialize(
-            IPool(poolAddressesProvider.getPool()),
+            poolProxy,
             address(0),
             IAaveIncentivesController(address(0)),
             0,
-            "DELEGATION_AWARE_ATOKEN_IMPL",
-            "DELEGATION_AWARE_ATOKEN_IMPL",
+            "STABLE_DEBT_ATOKEN_IMPL",
+            "STABLE_DEBT_ATOKEN_IMPL",
             _param
         );
 
         VariableDebtToken variableDebtTokenImpl = new VariableDebtToken(
-            IPool(poolAddressesProvider.getPool())
+            poolProxy
         );
         variableDebtTokenImpl.initialize(
-            IPool(poolAddressesProvider.getPool()),
+            poolProxy,
             address(0),
             IAaveIncentivesController(address(0)),
             0,
-            "DELEGATION_AWARE_ATOKEN_IMPL",
-            "DELEGATION_AWARE_ATOKEN_IMPL",
+            "VARIABLE_DEBT_ATOKEN_IMPL",
+            "VARIABLE_DEBT_ATOKEN_IMPL",
             _param
         );
 
+        // Reserve configuration for base token
         ConfiguratorInputTypes.InitReserveInput
             memory baseReserveConfig = ConfiguratorInputTypes.InitReserveInput({
                 aTokenImpl: address(aTokenImpl),
                 stableDebtTokenImpl: address(stableDebtTokenImpl),
                 variableDebtTokenImpl: address(variableDebtTokenImpl),
                 underlyingAssetDecimals: 18,
-                interestRateStrategyAddress: address(strat),
+                interestRateStrategyAddress: address(mockInterestRateStrategy),
                 underlyingAsset: address(baseToken),
                 treasury: address(0),
                 incentivesController: address(0),
@@ -139,20 +144,22 @@ contract MockAaveScript is Script {
                 variableDebtTokenName: "Aave BASE Variable Debt Token",
                 variableDebtTokenSymbol: "a-vd-BASE",
                 stableDebtTokenName: "Aave BASE Stable Debt Token",
-                stableDebtTokenSymbol: "a-vd-BASE",
+                stableDebtTokenSymbol: "a-sd-BASE",
                 params: _param
             });
 
+        // Initialize new reserves
         reserveConfigs.push(baseReserveConfig);
-
         poolConfig.initReserves(reserveConfigs);
 
-        baseToken.mint(1_000_000e18);
+        // Mint tokens to deployer
+        baseToken.mint(10_000_000e18);
 
-        baseToken.approve(poolAddressesProvider.getPool(), 100_000e18);
+        // Approve pool proxy contract
+        baseToken.approve(address(poolProxy), 100_000e18);
 
-        IPool realPool = IPool(poolAddressesProvider.getPool());
-        realPool.supply(address(baseToken), 100e18, msg.sender, 0);
+        // Supply base tokens to market
+        poolProxy.supply(address(baseToken), 100_000e18, msg.sender, 0);
 
         vm.stopBroadcast();
     }
