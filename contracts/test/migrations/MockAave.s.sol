@@ -6,7 +6,7 @@ import "forge-std/console.sol";
 
 import "../ERC20Mintable.sol";
 import "../aave/MockACLManager.sol";
-import "../aave/MockAavePool.sol";
+import "../aave/MockPool.sol";
 
 import { AToken } from "@aave/core-v3/contracts/protocol/tokenization/AToken.sol";
 import { ConfiguratorInputTypes } from "@aave/core-v3/contracts/protocol/libraries/types/ConfiguratorInputTypes.sol";
@@ -51,9 +51,9 @@ contract MockAaveScript is Script {
         poolAddressesProvider.setACLManager(address(aclManager));
 
         // Deploy Pool contract
-        MockAavePool mockAavePool = new MockAavePool(poolAddressesProvider);
-        mockAavePool.initialize(poolAddressesProvider);
-        poolAddressesProvider.setPoolImpl(address(mockAavePool));
+        MockPool mockPool = new MockPool(poolAddressesProvider);
+        mockPool.initialize(poolAddressesProvider);
+        poolAddressesProvider.setPoolImpl(address(mockPool));
         IPool poolProxy = IPool(poolAddressesProvider.getPool());
 
         // Deploy Pool Configurator contract
