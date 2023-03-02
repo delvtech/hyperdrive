@@ -18,6 +18,11 @@ import { DelegationAwareAToken } from "@aave/core-v3/contracts/protocol/tokeniza
 import { IAaveIncentivesController } from "@aave/core-v3/contracts/interfaces/IAaveIncentivesController.sol";
 import { StableDebtToken } from "@aave/core-v3/contracts/protocol/tokenization/StableDebtToken.sol";
 import { VariableDebtToken } from "@aave/core-v3/contracts/protocol/tokenization/VariableDebtToken.sol";
+import { IPool } from "@aave/core-v3/contracts/interfaces/IPool.sol";
+
+import { DefaultReserveInterestRateStrategy } from "@aave/core-v3/contracts/protocol/pool/DefaultReserveInterestRateStrategy.sol";
+
+import { MockReserveInterestRateStrategy } from "@aave/core-v3/contracts/mocks/tests/MockReserveInterestRateStrategy.sol";
 
 contract MockAaveScript is Script {
     string constant MARKET_ID = "Aave Testnet Market";
@@ -45,27 +50,26 @@ contract MockAaveScript is Script {
         // Create Pool impl
         MockAavePool mockAavePool = new MockAavePool(poolAddressesProvider);
 
-        console.log("mock aave pool address ",address(mockAavePool));
+        console.log("mock aave pool address ", address(mockAavePool));
 
         // Initialize pool
         mockAavePool.initialize(poolAddressesProvider);
 
-        PoolConfigurator poolConfig = new PoolConfigurator();
-        poolConfig.initialize(poolAddressesProvider);
-
         MockACLManager aclManager = new MockACLManager();
         poolAddressesProvider.setACLManager(address(aclManager));
 
-        console.log("prev getPool",poolAddressesProvider.getPool());
+        console.log("prev getPool", poolAddressesProvider.getPool());
 
         // setup utils
         ReservesSetupHelper reservesSetupHelper = new ReservesSetupHelper();
         // poolAddressesProvider.setAddressAsProxy("POOL",address(mockAavePool));
         poolAddressesProvider.setPoolImpl(address(mockAavePool));
-        poolAddressesProvider.setPoolConfiguratorImpl(address(poolConfig));
         // poolAddressesProvider.getPool();
-        console.log("after getPool",poolAddressesProvider.getPool());
+        console.log("after getPool", poolAddressesProvider.getPool());
 
+        PoolConfigurator poolConfig = new PoolConfigurator();
+        poolConfig.initialize(poolAddressesProvider);
+        poolAddressesProvider.setPoolConfiguratorImpl(address(poolConfig));
 
         //           struct InitReserveInput {
         //     address aTokenImpl;
@@ -87,10 +91,37 @@ contract MockAaveScript is Script {
 
         bytes memory _param = new bytes(0);
 
+        //        OPTIMAL_USAGE_RATIO = optimalUsageRatio;
+        // ADDRESSES_PROVIDER = provider;
+        // _baseVariableBorrowRate = baseVariableBorrowRate;
+        // _variableRateSlope1 = variableRateSlope1;
+        // _variableRateSlope2 = variableRateSlope2;
+        // _stableRateSlope1 = stableRateSlope1;
+        // _stableRateSlope2 = stableRateSlope2;
+
+        //   optimalUsageRatio: parseUnits("0.8", 27).toString(),
+        //   baseVariableBorrowRate: parseUnits("0", 27).toString(),
+        //   variableRateSlope1: parseUnits("0.04", 27).toString(),
+        //   variableRateSlope2: parseUnits("0.75", 27).toString(),
+        //   stableRateSlope1: parseUnits("0.02", 27).toString(),
+        //   stableRateSlope2: parseUnits("0.75", 27).toString(),
+        //   baseStableRateOffset: parseUnits("0.02", 27).toString(),
+        //   stableRateExcessOffset: parseUnits("0.05", 27).toString(),
+        //   optimalStableToTotalDebtRatio: parseUnits("0.2", 27).toString(),
+
+        MockReserveInterestRateStrategy strat = new MockReserveInterestRateStrategy(
+                poolAddressesProvider,
+                0.8e27,
+                0,
+                0.04e27,
+                0.75e27,
+                0.02e27,
+                0.75e27
+            );
         // setup token impls
-        AToken aTokenImpl = new AToken(mockAavePool);
+        AToken aTokenImpl = new AToken(IPool(poolAddressesProvider.getPool()));
         aTokenImpl.initialize(
-            mockAavePool,
+            IPool(poolAddressesProvider.getPool()),
             address(0),
             address(0),
             IAaveIncentivesController(address(0)),
@@ -100,10 +131,10 @@ contract MockAaveScript is Script {
             _param
         );
         DelegationAwareAToken delegationAwareATokenImpl = new DelegationAwareAToken(
-                mockAavePool
+                IPool(poolAddressesProvider.getPool())
             );
         delegationAwareATokenImpl.initialize(
-            mockAavePool,
+            IPool(poolAddressesProvider.getPool()),
             address(0),
             address(0),
             IAaveIncentivesController(address(0)),
@@ -113,9 +144,11 @@ contract MockAaveScript is Script {
             _param
         );
 
-        StableDebtToken stableDebtTokenImpl = new StableDebtToken(mockAavePool);
+        StableDebtToken stableDebtTokenImpl = new StableDebtToken(
+            IPool(poolAddressesProvider.getPool())
+        );
         stableDebtTokenImpl.initialize(
-            mockAavePool,
+            IPool(poolAddressesProvider.getPool()),
             address(0),
             IAaveIncentivesController(address(0)),
             0,
@@ -125,10 +158,10 @@ contract MockAaveScript is Script {
         );
 
         VariableDebtToken variableDebtTokenImpl = new VariableDebtToken(
-            mockAavePool
+            IPool(poolAddressesProvider.getPool())
         );
         variableDebtTokenImpl.initialize(
-            mockAavePool,
+            IPool(poolAddressesProvider.getPool()),
             address(0),
             IAaveIncentivesController(address(0)),
             0,
@@ -140,8 +173,25 @@ contract MockAaveScript is Script {
         // console.log("aToken impl ", address(aTokenImpl));
         //         console.log("aToken impl ", address(aTokenImpl));
 
-
         // ConfiguratorInputTypes.InitReserveInput[] memory reserveConfigs;
+
+        //           name: "rateStrategyStableTwo",
+
+        //           strategy: rateStrategyStableTwo,
+        //   baseLTVAsCollateral: "7500",
+        //   liquidationThreshold: "8000",
+        //   liquidationBonus: "10500",
+        //   liquidationProtocolFee: "1000",
+        //   borrowingEnabled: true,
+        //   stableBorrowRateEnabled: true,
+        //   flashLoanEnabled: true,
+        //   reserveDecimals: "18",
+        //   aTokenImpl: eContractid.AToken,
+        //   reserveFactor: "1000",
+        //   supplyCap: "0",
+        //   borrowCap: "0",
+        //   debtCeiling: "0",
+        //   borrowableIsolation: true,
 
         ConfiguratorInputTypes.InitReserveInput
             memory baseReserveConfig = ConfiguratorInputTypes.InitReserveInput({
@@ -149,7 +199,7 @@ contract MockAaveScript is Script {
                 stableDebtTokenImpl: address(stableDebtTokenImpl),
                 variableDebtTokenImpl: address(variableDebtTokenImpl),
                 underlyingAssetDecimals: 18,
-                interestRateStrategyAddress: address(0),
+                interestRateStrategyAddress: address(strat),
                 underlyingAsset: address(baseToken),
                 treasury: address(0),
                 incentivesController: address(0),
@@ -164,8 +214,15 @@ contract MockAaveScript is Script {
 
         reserveConfigs.push(baseReserveConfig);
 
-
         poolConfig.initReserves(reserveConfigs);
+
+        baseToken.mint(1_000_000e18);
+
+        baseToken.approve(poolAddressesProvider.getPool(), 100_000e18);
+        // mockAavePool.supply(address(baseToken), 100e18, msg.sender, 0);
+
+        IPool realPool =   IPool(poolAddressesProvider.getPool());
+        realPool.supply(address(baseToken), 100e18, msg.sender, 0);
 
         // poolConfig.initReserves([{
         //     aTokenImpl: address(0),

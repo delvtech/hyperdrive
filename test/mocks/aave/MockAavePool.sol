@@ -10,18 +10,20 @@ contract MockAavePool is Pool {
         return 0x3;
     }
 
+    function _onlyPoolConfigurator() internal view override {}
+
     constructor(IPoolAddressesProvider provider) Pool(provider) {}
 
-    function setMaxNumberOfReserves(uint16 newMaxNumberOfReserves) public {
-        _maxNumberOfReserves = newMaxNumberOfReserves;
-    }
+    // function setMaxNumberOfReserves(uint16 newMaxNumberOfReserves) public {
+    //     _maxNumberOfReserves = newMaxNumberOfReserves;
+    // }
 
-    function MAX_NUMBER_RESERVES() public view override returns (uint16) {
-        return _maxNumberOfReserves;
-    }
+    // function MAX_NUMBER_RESERVES() public view override returns (uint16) {
+    //     return _maxNumberOfReserves;
+    // }
 
-    function dropReserve(address asset) external override {
-        _reservesList[_reserves[asset].id] = address(0);
-        delete _reserves[asset];
-    }
+    // function dropReserve(address asset) external override {
+    //     _reservesList[_reserves[asset].id] = address(0);
+    //     delete _reserves[asset];
+    // }
 }
