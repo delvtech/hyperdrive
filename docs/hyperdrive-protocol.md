@@ -25,13 +25,13 @@ Mechanically, checkpointing backdates all of the positions opened within the che
 Suppose that the current time is $t$, the contract's checkpoint duration is $d_c$, and the contract's position duration is $d$. The position's start date will be:
 
 $$
-t_s = t - (t \space \mod \space d_c)
+t_c = t - (t \space \mod \space d_c)
 $$ 
 
 and the position's maturity date will be:
 
 $$
-t_m = t_s + d
+t_m = t_c + d
 $$
 
 
