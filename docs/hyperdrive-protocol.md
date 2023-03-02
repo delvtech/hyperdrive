@@ -131,8 +131,6 @@ $$
 z_{reserves} = z_{reserves} + (\frac{\Delta y}{c_0} - \Delta z) \cdot \frac{\min(w_{l}, \Delta y)}{\Delta y}
 $$
 
-> Note: Long withdrawal shares receive the same proceeds as shorts because they **are** shorts without the ability to close early.
-
 The $y_{reserves}$ are recalculated to ensure that the apr doesn't change from before the redemption.
 
 The number of long withdrawal shares outstanding, $w_{l}$, is decreased by:
@@ -140,6 +138,8 @@ The number of long withdrawal shares outstanding, $w_{l}$, is decreased by:
 $$
 w_{l} = w_{l} - \frac{\min(w_{l}, \Delta y)}{\Delta y}
 $$
+
+> Note: Long withdrawal shares receive the same proceeds as shorts because they **are** shorts without the ability to close early.
 
 The number of long withdrawal share proceeds, $p_{l}$, is increased by:
 
