@@ -22,13 +22,15 @@ Mechanically, checkpointing backdates all of the positions opened within the che
 
 ### Calculating Maturity Time
 
-Suppose that the current time is $t$, the contract's checkpoint duration is $d_c$, and the contract's position duration is $d$. The position's start date will be:
+Suppose that the current time is $t$, the contract's checkpoint duration is $d_c$, and the contract's position duration is $d$. The position's start time will be:
 
 $$
 t_c = t - (t \space \mod \space d_c)
 $$ 
 
-and the position's maturity date will be:
+> Note: A position's start time will always correspond with a checkpoint time
+
+and the position's maturity time will be:
 
 $$
 t_m = t_c + d
