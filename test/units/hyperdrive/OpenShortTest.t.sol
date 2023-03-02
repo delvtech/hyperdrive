@@ -5,6 +5,7 @@ import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
+import "../../../lib/forge-std/src/console2.sol";
 
 contract OpenShortTest is HyperdriveTest {
     using FixedPointMath for uint256;
@@ -54,6 +55,11 @@ contract OpenShortTest is HyperdriveTest {
         uint256 bondAmount = 10e18;
         (uint256 maturityTime, uint256 baseAmount) = openShort(bob, bondAmount);
 
+        // Print the results.
+        console2.log("maturityTime", maturityTime);
+        console2.log("bondAmount:%s cents -> baseAmount:%s cents", bondAmount/1e16, baseAmount/1e16);
+        console2.log("bondAmount:%s -> baseAmount:%s", bondAmount, baseAmount);
+
         // Verify the open short updates occurred correctly.
         verifyOpenShort(
             poolInfoBefore,
@@ -102,6 +108,11 @@ contract OpenShortTest is HyperdriveTest {
 
         // Verify that Hyperdrive received the max loss and that Bob received
         // the short tokens.
+        console2.log("baseToken.balanceOf(address(hyperdrive)):%s", baseToken.balanceOf(address(hyperdrive))/1e18);
+        console2.log("contribution:%s", contribution/1e18);
+        console2.log("baseAmount:%s", baseAmount/1e18);
+        console2.log("contribution + baseAmount:%s", (contribution + baseAmount)/1e18);
+
         assertEq(
             baseToken.balanceOf(address(hyperdrive)),
             contribution + baseAmount
