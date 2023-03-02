@@ -38,6 +38,10 @@ jobs:
           sudo apt-get install lcov
           lcov --remove lcov.info  -o lcov.info 'test/*' 'script/*'
 
+      - name: Edit lcov.info
+        run: |
+          cat lcov.info | sed '/.*\/test\/.*/,/TN:/d' > tmp.info && mv tmp.info lcov.info
+
       - name: Coveralls
         uses: coverallsapp/github-action@master
         with:
