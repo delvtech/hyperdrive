@@ -29,6 +29,8 @@ contract CombinatorialTest is BaseTest {
     error UnassignedCatch();
     error UnassignedFail();
 
+    error TestFail();
+
     bytes __error = abi.encodeWithSelector(UnassignedCatch.selector);
     bytes __fail_error = abi.encodeWithSelector(UnassignedFail.selector);
 
@@ -61,7 +63,8 @@ contract CombinatorialTest is BaseTest {
                 ),
                 "__fail_error should be assigned"
             );
-            // If the caught error and the expected error do not match then cause a test revert
+            // If the caught error and the expected error do not match then
+            // cause a test revert
             if (lib.neq(__error, __fail_error)) {
                 assertEq(__error, __fail_error, "Expected different error");
             }
