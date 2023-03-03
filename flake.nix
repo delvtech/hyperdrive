@@ -18,8 +18,13 @@
           mkShell {
             SOLHINT_PATH = ".solhint.json";
             SOLC_VERSION = "0.8.18";
-            buildInputs =
-              [ foundry.defaultPackage.${system} solc-select yarn nodejs-14_x ];
+            buildInputs = [
+              foundry.defaultPackage.${system}
+              solc-select
+              yarn
+              nodejs-14_x
+              (pkgs.python3.withPackages (p: with p; [ ]))
+            ];
             shellHook = ''
               solc-select use $SOLC_VERSION
             '';
