@@ -83,7 +83,7 @@ abstract contract HyperdriveLong is HyperdriveBase {
                 uint256 totalFlatFee,
                 uint256 govCurveFee,
                 uint256 govFlatFee
-            ) = _calculateFeesOutGivenIn(
+            ) = _calculateFeesOutGivenSharesIn(
                     shares, // amountIn
                     bondProceeds, // amountOut
                     timeRemaining,
@@ -187,12 +187,9 @@ abstract contract HyperdriveLong is HyperdriveBase {
         {
             (
                 uint256 totalFee,
-                ,
-                uint256 totalGovFee,
-
-            ) = _calculateFeesOutGivenIn(
+                uint256 totalGovFee
+            ) = _calculateFeesOutGivenBondsIn(
                     _bondAmount, // amountIn
-                    0,
                     timeRemaining,
                     spotPrice,
                     sharePrice
