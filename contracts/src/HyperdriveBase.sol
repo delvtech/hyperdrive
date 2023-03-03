@@ -204,6 +204,8 @@ abstract contract HyperdriveBase is MultiToken {
         uint256 _sharePrice
     ) internal virtual returns (uint256 openSharePrice);
 
+    /// @notice Allows anyone to collect the governance fees.
+    /// @return proceeds The amount of base collected.
     function collectGovFee() external returns (uint256 proceeds) {
         (proceeds, ) = _withdraw(govFeesAccrued, governance, true);
         govFeesAccrued = 0;
@@ -317,75 +319,5 @@ abstract contract HyperdriveBase is MultiToken {
         latestCheckpoint =
             block.timestamp -
             (block.timestamp % checkpointDuration);
-    }
-
-    /// @dev Calculates the fees for the curve portion of hyperdrive calcOutGivenIn
-    /// @param _amountIn The given amount in, either in terms of shares or bonds.
-    /// @param _amountOut The amount of the asset that is received before fees.
-    /// @param _normalizedTimeRemaining The normalized amount of time until maturity.
-    /// @param _spotPrice The price without slippage of bonds in terms of shares.
-    /// @param _sharePrice The current price of shares in terms of base.
-    /// @return totalCurveFee The total curve fee.
-    /// @return totalFlatFee The total flat fee.
-    /// @return govCurveFee The curve fee that goes to gov.
-    /// @return govFlatFee The flat fee that goes to gov.
-    function _calculateFeesOutGivenIn(
-        uint256 _amountIn,
-        uint256 _amountOut,
-        uint256 _normalizedTimeRemaining,
-        uint256 _spotPrice,
-        uint256 _sharePrice
-    )
-        internal
-        view
-        returns (
-            uint256 totalCurveFee,
-            uint256 totalFlatFee,
-            uint256 govCurveFee,
-            uint256 govFlatFee
-        )
-    {
-        if (_amountOut > 0) {
-            // curve fee = ((1 / p) - 1) * phi_curve * c * d_z * t
-            totalCurveFee = (FixedPointMath.ONE_18.divDown(_spotPrice)).sub(
-                FixedPointMath.ONE_18
-            );
-            totalCurveFee = totalCurveFee
-                .mulDown(curveFee)
-                .mulDown(_sharePrice)
-                .mulDown(_amountIn)
-                .mulDown(_normalizedTimeRemaining);
-            // govCurveFee = d_z * (curve_fee/d_y) * c * phi_gov
-            govCurveFee = _amountIn
-                .mulDivDown(totalCurveFee, _amountOut)
-                .mulDown(_sharePrice)
-                .mulDown(govFeePercent);
-            // flat fee = c * d_z * (1 - t) * phi_flat
-            uint256 flat = _amountIn.mulDown(
-                FixedPointMath.ONE_18.sub(_normalizedTimeRemaining)
-            );
-            totalFlatFee = flat.mulDown(_sharePrice).mulDown(flatFee);
-            // calculate the flat portion of the gov fee
-            govFlatFee = totalFlatFee.mulDown(govFeePercent);
-        } else {
-            // 'bond' in
-            // curve fee = ((1 - p) * phi_curve * d_y * t)/c
-            uint256 _pricePart = (FixedPointMath.ONE_18.sub(_spotPrice));
-            totalCurveFee = _pricePart
-                .mulDown(curveFee)
-                .mulDown(_amountIn)
-                .mulDivDown(_normalizedTimeRemaining, _sharePrice);
-            // calculate the curve portion of the gov fee
-            govCurveFee = totalCurveFee.mulDown(govFeePercent);
-            // flat fee = (d_y * (1 - t) * phi_flat)/c
-            uint256 flat = _amountIn.mulDivDown(
-                FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
-                _sharePrice
-            );
-            // Using this as totalFee
-            totalCurveFee += (flat.mulDown(flatFee));
-            // Using this variable as total gov fee
-            govCurveFee += totalFlatFee.mulDown(govFeePercent);
-        }
     }
 }

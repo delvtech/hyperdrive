@@ -15,6 +15,8 @@ cache_path  = 'forge-cache'
 remappings = ['forge-std=lib/forge-std/src', '@openzeppelin/=node_modules/@openzeppelin']
 # gas limit - max u64
 gas_limit = "18446744073709551615"
+# Enable via-ir
+via_ir = true
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
 
 [profile.production]

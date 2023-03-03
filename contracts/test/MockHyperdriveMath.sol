@@ -49,7 +49,7 @@ contract MockHyperdriveMath {
         uint256 _apr,
         uint256 _positionDuration,
         uint256 _timeStretch
-    ) external pure returns (uint256) {
+    ) external view returns (uint256) {
         uint256 result = HyperdriveMath.calculateBondReserves(
             _shareReserves,
             _lpTotalSupply,
@@ -130,6 +130,35 @@ contract MockHyperdriveMath {
         return result;
     }
 
+    function calculateCloseShort(
+        uint256 _shareReserves,
+        uint256 _bondReserves,
+        uint256 _bondReserveAdjustment,
+        uint256 _amountOut,
+        uint256 _normalizedTimeRemaining,
+        uint256 _timeStretch,
+        uint256 _sharePrice,
+        uint256 _initialSharePrice,
+        uint256 _curveFee,
+        uint256 _flatFee,
+        uint256 _govFee
+    ) external pure returns (uint256, uint256, uint256) {
+        (uint256 result1, uint256 result2, uint256 result3) = HyperdriveMath.calculateCloseShort(
+            _shareReserves,
+            _bondReserves,
+            _bondReserveAdjustment,
+            _amountOut,
+            _normalizedTimeRemaining,
+            _timeStretch,
+            _sharePrice,
+            _initialSharePrice,
+            _curveFee,
+            _flatFee,
+            _govFee
+        );
+        return (result1, result2, result3);
+    }
+
     function calculateSpotPrice(
         uint256 _shareReserves,
         uint256 _bondReserves,
@@ -147,6 +176,31 @@ contract MockHyperdriveMath {
             _timeStretch
         );
         return result;
+    }
+
+    function calculateFeesOutGivenIn(
+        uint256 _amountIn,
+        uint256 _amountOut,
+        uint256 _normalizedTimeRemaining,
+        uint256 _spotPrice,
+        uint256 _sharePrice,
+        uint256 _curveFeePercent,
+        uint256 _flatFeePercent,
+        uint256 _govFeePercent,
+        bool _isShareIn
+    ) external pure returns (uint256, uint256, uint256, uint256) {
+        (uint256 result1, uint256 result2, uint256 result3, uint256 result4) = HyperdriveMath.calculateFeesOutGivenIn(
+            _amountIn,
+            _amountOut,
+            _normalizedTimeRemaining,
+            _spotPrice,
+            _sharePrice,
+            _curveFeePercent,
+            _flatFeePercent,
+            _govFeePercent,
+            _isShareIn
+        );
+        return (result1, result2, result3, result4);
     }
 
     function calculateFeesInGivenOut(
