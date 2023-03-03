@@ -20,8 +20,7 @@ library AssetId {
     enum AssetIdPrefix {
         Long,
         Short,
-        LongWithdrawalShare,
-        ShortWithdrawalShare
+        WithdrawalShare
     }
 
     /// @dev Encodes a prefix and a timestamp into an asset ID. Asset IDs are

@@ -41,25 +41,15 @@ contract AssetIdTest is HyperdriveTest {
         assertEq(id, expected);
         console2.log("short id: ", id);
 
-        // Test LongWithdrawalShare Asset ID
-        // id = LongWithdrawalShare << 248 | 126144000 = 126144000
+        // Test WithdrawShare Asset ID
+        // id = WithdrawShare << 248 | 126144000 = 126144000
         expected = (2 << 248) | maturityTime;
         id = assetId.encodeAssetId(
-            AssetId.AssetIdPrefix.LongWithdrawalShare,
+            AssetId.AssetIdPrefix.WithdrawalShare,
             maturityTime
         );
         assertEq(id, expected);
-        console2.log("long withdrawal id: ", id);
-
-        // Test ShortWithdrawalShare Asset ID
-        // id = ShortWithdrawalShare << 248 | 126144000 = 126144000
-        expected = (3 << 248) | maturityTime;
-        id = assetId.encodeAssetId(
-            AssetId.AssetIdPrefix.ShortWithdrawalShare,
-            maturityTime
-        );
-        assertEq(id, expected);
-        console2.log("short withdrawal id: ", id);
+        console2.log("withdrawal id: ", id);
     }
 
     function test__decodeAssetId() public {
@@ -80,16 +70,10 @@ contract AssetIdTest is HyperdriveTest {
         assertEq(uint256(prefix), 1);
         assertEq(timestamp, maturityTime);
 
-        // Test LongWithdrawalShare Asset ID
+        // Test WithdrawShare Asset ID
         id = 904625697166532776746648320380374280103671755200316906558262375061947469312;
         (prefix, timestamp) = assetId.decodeAssetId(id);
         assertEq(uint256(prefix), 2);
-        assertEq(timestamp, maturityTime);
-
-        // Test ShortWithdrawalShare Asset ID
-        id = 1356938545749799165119972480570561420155507632800475359837393562592858131968;
-        (prefix, timestamp) = assetId.decodeAssetId(id);
-        assertEq(uint256(prefix), 3);
         assertEq(timestamp, maturityTime);
     }
 }

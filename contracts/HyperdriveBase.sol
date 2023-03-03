@@ -79,17 +79,15 @@ abstract contract HyperdriveBase is MultiToken {
     /// @notice The amount of base paid to outstanding shorts.
     uint256 public shortBaseVolume;
 
-    /// @notice The amount of long withdrawal shares that haven't been paid out.
-    uint256 public longWithdrawalSharesOutstanding;
+    /// @notice The amount of withdraw shares which can be withdrawn
+    uint256 public withdrawSharesReadyToWithdraw;
 
-    /// @notice The amount of short withdrawal shares that haven't been paid out.
-    uint256 public shortWithdrawalSharesOutstanding;
+    /// @notice The margin capital reclaimed by the withdraw process
+    uint256 public withdrawCapitalPool;
 
-    /// @notice The proceeds that have accrued to the long withdrawal shares.
-    uint256 public longWithdrawalShareProceeds;
-
-    /// @notice The proceeds that have accrued to the short withdrawal shares.
-    uint256 public shortWithdrawalShareProceeds;
+    /// @notice The interest earned by the redemptions which put
+    ///         capital into the withdraw pool
+    uint256 public withdrawInterestPool;
 
     // TODO: Should this be immutable?
     //

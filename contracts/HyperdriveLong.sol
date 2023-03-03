@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import { HyperdriveBase } from "./HyperdriveBase.sol";
+import { HyperdriveLP } from "./HyperdriveLP.sol";
 import { AssetId } from "./libraries/AssetId.sol";
 import { Errors } from "./libraries/Errors.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
@@ -13,7 +13,7 @@ import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract HyperdriveLong is HyperdriveBase {
+abstract contract HyperdriveLong is HyperdriveLP {
     using FixedPointMath for uint256;
 
     /// @notice Opens a long position.
@@ -197,7 +197,8 @@ abstract contract HyperdriveLong is HyperdriveBase {
                 _bondAmount,
                 poolBondDelta,
                 shareProceeds,
-                _maturityTime
+                _maturityTime,
+                sharePrice
             );
         }
 
@@ -278,11 +279,13 @@ abstract contract HyperdriveLong is HyperdriveBase {
     /// @param _shareProceeds The proceeds in shares received from closing the
     ///        long.
     /// @param _maturityTime The maturity time of the long.
+    /// @param _sharePrice The current share price
     function _applyCloseLong(
         uint256 _bondAmount,
         uint256 _poolBondDelta,
         uint256 _shareProceeds,
-        uint256 _maturityTime
+        uint256 _maturityTime,
+        uint256 _sharePrice
     ) internal {
         // Update the long average maturity time.
         longAverageMaturityTime = longAverageMaturityTime.updateWeightedAverage(
@@ -292,6 +295,7 @@ abstract contract HyperdriveLong is HyperdriveBase {
             false
         );
 
+        uint256 userMargin;
         // Update the long base volume.
         {
             // Get the total supply of longs in the checkpoint of the longs
@@ -310,12 +314,18 @@ abstract contract HyperdriveLong is HyperdriveBase {
             // volume aggregates by a proportional amount.
             uint256 checkpointTime = _maturityTime - positionDuration;
             if (_bondAmount == checkpointAmount) {
+                // The total bonds minus what's paid for them
+                userMargin = _bondAmount - checkpointAmount;
+                // Updates
                 longBaseVolume -= longBaseVolumeCheckpoints[checkpointTime];
                 delete longBaseVolumeCheckpoints[checkpointTime];
             } else {
                 uint256 proportionalBaseVolume = longBaseVolumeCheckpoints[
                     checkpointTime
                 ].mulDown(_bondAmount.divDown(checkpointAmount));
+                // The total bonds minus what's paid for them
+                userMargin = _bondAmount - proportionalBaseVolume;
+                // Updates
                 longBaseVolume -= proportionalBaseVolume;
                 longBaseVolumeCheckpoints[
                     checkpointTime
@@ -326,13 +336,9 @@ abstract contract HyperdriveLong is HyperdriveBase {
         // Reduce the amount of outstanding longs.
         longsOutstanding -= _bondAmount;
 
-        // If there are outstanding long withdrawal shares, we attribute a
-        // proportional amount of the proceeds to the withdrawal pool and the
-        // active LPs. Otherwise, we use simplified accounting that has the same
-        // behavior but is more gas efficient. Since the difference between the
-        // base reserves and the longs outstanding stays the same or gets
-        // larger, we don't need to verify the reserves invariants.
-        if (longWithdrawalSharesOutstanding > 0) {
+        // If there is a withdraw processing we calculate the margin freed by this position and then
+        // deposit it into the withdraw pool
+        if (_needsToBeFreed()) {
             // Calculate the effect that the trade has on the pool's APR.
             uint256 apr = HyperdriveMath.calculateAPRFromReserves(
                 shareReserves.sub(_shareProceeds),
@@ -358,33 +364,44 @@ abstract contract HyperdriveLong is HyperdriveBase {
             // when longs are opened. The math for the withdrawal proceeds is
             // given by:
             //
-            // proceeds = c_1 * (dy / c_0 - dz) * (min(b_x, dy) / dy)
+            // proceeds = c_1 * (dy / c_0 - dz)
             //
             // We convert to shares at position close by dividing by c_1. If a checkpoint
             // was missed and old matured positions are being closed, this will correctly
             // attribute the extra interest to the withdrawal pool.
-            uint256 withdrawalAmount = longWithdrawalSharesOutstanding <
-                _bondAmount
-                ? longWithdrawalSharesOutstanding
-                : _bondAmount;
 
             uint256 withdrawalProceeds;
             uint256 openShares = _bondAmount.divDown(openSharePrice);
             // We check if the interest rate was negative
             if (openShares > _shareProceeds) {
                 // If not we do the normal calculation
-                withdrawalProceeds = openShares.sub(_shareProceeds).mulDown(
-                    withdrawalAmount.divDown(_bondAmount)
-                );
+                withdrawalProceeds = openShares.sub(_shareProceeds);
             } else {
                 // If there's negative interest the LP's position is fully wiped out and has zero value.
                 withdrawalProceeds = 0;
             }
 
-            // Update the long aggregates.
-            longWithdrawalSharesOutstanding -= withdrawalAmount;
-            longWithdrawalShareProceeds += withdrawalProceeds;
 
+            {
+                // The short interest is open share price minus close share price times face value.
+                uint256 userInterest = openSharePrice <= _sharePrice
+                    ? (_sharePrice - openSharePrice).mulDown(_bondAmount)
+                    : 0;
+                // If the the short has net lost despite being still positive interest we set capital recovered to 0
+                uint256 capitalFreed = withdrawalProceeds > userInterest
+                    ? withdrawalProceeds - userInterest
+                    : 0;
+                // Call into LP to free margin
+                (
+                    uint256 capitalWithdrawn,
+                    uint256 interestWithdrawn
+                ) = _freeMargin(
+                        capitalFreed,
+                        userMargin.divDown(openSharePrice),
+                        userInterest
+                    );
+                withdrawalProceeds -= (capitalWithdrawn + interestWithdrawn);
+            }
             // Apply the trading deltas to the reserves. These updates reflect
             // the fact that some of the reserves will be attributed to the
             // withdrawal pool. Assuming that there are some withdrawal proceeds,

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import { HyperdriveBase } from "./HyperdriveBase.sol";
+import { HyperdriveLP } from "./HyperdriveLP.sol";
 import { AssetId } from "./libraries/AssetId.sol";
 import { Errors } from "./libraries/Errors.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
@@ -13,7 +13,7 @@ import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract HyperdriveShort is HyperdriveBase {
+abstract contract HyperdriveShort is HyperdriveLP {
     using FixedPointMath for uint256;
 
     /// @notice Opens a short position.
@@ -202,7 +202,8 @@ abstract contract HyperdriveShort is HyperdriveBase {
                 _bondAmount,
                 poolBondDelta,
                 sharePayment,
-                _maturityTime
+                _maturityTime,
+                sharePrice
             );
         }
 
@@ -258,11 +259,13 @@ abstract contract HyperdriveShort is HyperdriveBase {
     ///        pool.
     /// @param _sharePayment The payment in shares required to close the short.
     /// @param _maturityTime The maturity time of the short.
+    /// @param _sharePrice The current price per share
     function _applyCloseShort(
         uint256 _bondAmount,
         uint256 _poolBondDelta,
         uint256 _sharePayment,
-        uint256 _maturityTime
+        uint256 _maturityTime,
+        uint256 _sharePrice
     ) internal {
         // Update the short average maturity time.
         shortAverageMaturityTime = shortAverageMaturityTime
@@ -273,7 +276,10 @@ abstract contract HyperdriveShort is HyperdriveBase {
                 false
             );
 
-        // Update the short base volume.
+        // Update the short base volume.\
+
+        // The margin provided by LPs is the shortSupply minus the volume
+        uint256 lpMargin;
         {
             // Get the total supply of shorts in the checkpoint of the shorts
             // being closed. If the shorts are closed before maturity, we add the
@@ -294,12 +300,16 @@ abstract contract HyperdriveShort is HyperdriveBase {
             // volume aggregates by a proportional amount.
             uint256 checkpointTime = _maturityTime - positionDuration;
             if (_bondAmount == checkpointAmount) {
+                lpMargin =
+                    checkpointAmount -
+                    shortBaseVolumeCheckpoints[checkpointTime];
                 shortBaseVolume -= shortBaseVolumeCheckpoints[checkpointTime];
                 delete shortBaseVolumeCheckpoints[checkpointTime];
             } else {
                 uint256 proportionalBaseVolume = shortBaseVolumeCheckpoints[
                     checkpointTime
                 ].mulDown(_bondAmount.divDown(checkpointAmount));
+                lpMargin = _bondAmount - proportionalBaseVolume;
                 shortBaseVolume -= proportionalBaseVolume;
                 shortBaseVolumeCheckpoints[
                     checkpointTime
@@ -310,13 +320,9 @@ abstract contract HyperdriveShort is HyperdriveBase {
         // Decrease the amount of shorts outstanding.
         shortsOutstanding -= _bondAmount;
 
-        // If there are outstanding short withdrawal shares, we attribute a
-        // proportional amount of the proceeds to the withdrawal pool and the
-        // active LPs. Otherwise, we use simplified accounting that has the same
-        // behavior but is more gas efficient. Since the difference between the
-        // base reserves and the longs outstanding stays the same or gets
-        // larger, we don't need to verify the reserves invariants.
-        if (shortWithdrawalSharesOutstanding > 0) {
+        // If there are outstanding withdrawal shares, withdraw capital into the withdraw shares pool
+        // otherwise we do a simple reserves update with the delta
+        if (_needsToBeFreed()) {
             // Calculate the effect that the trade has on the pool's APR.
             uint256 apr = HyperdriveMath.calculateAPRFromReserves(
                 shareReserves.add(_sharePayment),
@@ -327,41 +333,40 @@ abstract contract HyperdriveShort is HyperdriveBase {
                 timeStretch
             );
 
-            // Apply the LP proceeds from the trade proportionally to the short
-            // withdrawal pool. The accounting for these proceeds is identical
-            // to the close long accounting because LPs take on a long position when
-            // shorts are opened. The math for the withdrawal proceeds is given
-            // by:
-            //
-            // proceeds = c_1 * dz * (min(b_y, dy) / dy)
-            //
-            // We convert to shares at position close by dividing by c_1. If a checkpoint
-            // was missed and old matured positions are being closed, this will correctly
-            // attribute the extra interest to the withdrawal pool.
-            uint256 withdrawalAmount = shortWithdrawalSharesOutstanding <
-                _bondAmount
-                ? shortWithdrawalSharesOutstanding
-                : _bondAmount;
-            uint256 withdrawalProceeds = _sharePayment.mulDown(
-                withdrawalAmount.divDown(_bondAmount)
-            );
-            shortWithdrawalSharesOutstanding -= withdrawalAmount;
-            shortWithdrawalShareProceeds += withdrawalProceeds;
+            // Add capital and interest to their respective withdraw pools
+            // the interest freed is the withdraw minus the margin
+            uint256 withdrawalProceeds = _sharePayment;
+            {
+                uint256 proceedsInBase = withdrawalProceeds.mulDown(
+                    _sharePrice
+                );
+                uint256 interest = proceedsInBase >= lpMargin
+                    ? (proceedsInBase - lpMargin).divDown(_sharePrice)
+                    : 0;
+                (uint256 marginUsed, uint256 interestUsed) = _freeMargin(
+                    withdrawalProceeds,
+                    lpMargin.divDown(_sharePrice),
+                    interest
+                );
+                withdrawalProceeds -= (marginUsed + interestUsed);
+            }
 
             // Apply the trading deltas to the reserves. These updates reflect
             // the fact that some of the reserves will be attributed to the
             // withdrawal pool. The math for the share reserves update is given by:
             //
             // z += dz - dz * (min(b_y, dy) / dy)
-            shareReserves += _sharePayment - withdrawalProceeds;
-            bondReserves = HyperdriveMath.calculateBondReserves(
-                shareReserves,
-                totalSupply[AssetId._LP_ASSET_ID],
-                initialSharePrice,
-                apr,
-                positionDuration,
-                timeStretch
-            );
+            if (withdrawalProceeds != 0) {
+                shareReserves += _sharePayment - withdrawalProceeds;
+                bondReserves = HyperdriveMath.calculateBondReserves(
+                    shareReserves,
+                    totalSupply[AssetId._LP_ASSET_ID],
+                    initialSharePrice,
+                    apr,
+                    positionDuration,
+                    timeStretch
+                );
+            }
         } else {
             shareReserves += _sharePayment;
             bondReserves -= _poolBondDelta;
