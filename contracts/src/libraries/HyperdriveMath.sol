@@ -315,7 +315,16 @@ library HyperdriveMath {
         uint256 _curveFeePercent,
         uint256 _flatFeePercent,
         uint256 _govFeePercent
-    ) internal pure returns (uint256 totalCurveFee, uint256 totalFlatFee, uint256 govCurveFee, uint256 govFlatFee) {
+    )
+        internal
+        pure
+        returns (
+            uint256 totalCurveFee,
+            uint256 totalFlatFee,
+            uint256 govCurveFee,
+            uint256 govFlatFee
+        )
+    {
         uint256 curveOut = _amountOut.mulDown(_normalizedTimeRemaining);
         // bonds out
         // curve fee = ((1 - p) * d_y * t * phi_curve)/c

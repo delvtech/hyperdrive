@@ -158,8 +158,12 @@ contract MockHyperdriveMath {
         uint256 _flatFeePercent,
         uint256 _govFeePercent
     ) external pure returns (uint256, uint256, uint256, uint256) {
-        (uint256 result1, uint256 result2, uint256 result3, uint256 result4) = HyperdriveMath
-            .calculateFeesInGivenOut(
+        (
+            uint256 result1,
+            uint256 result2,
+            uint256 result3,
+            uint256 result4
+        ) = HyperdriveMath.calculateFeesInGivenOut(
                 _amountOut,
                 _normalizedTimeRemaining,
                 _spotPrice,

@@ -646,8 +646,12 @@ contract HyperdriveMathTest is Test {
     function test__calcFeesInGivenOut() public {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
-        (uint256 curveFee, uint256 flatFee, uint256 govCurveFee, uint256 govFlatFee) = hyperdriveMath
-            .calculateFeesInGivenOut(
+        (
+            uint256 curveFee,
+            uint256 flatFee,
+            uint256 govCurveFee,
+            uint256 govFlatFee
+        ) = hyperdriveMath.calculateFeesInGivenOut(
                 1 ether, // amountOut
                 1 ether, // timeRemaining
                 0.9 ether, // spotPrice
@@ -673,15 +677,16 @@ contract HyperdriveMathTest is Test {
             0 ether // ~ 0.011 ether or 10% of the price difference
         );
 
-        (curveFee, flatFee, govCurveFee, govFlatFee) = hyperdriveMath.calculateFeesInGivenOut(
-            1 ether, // amountOut
-            0, // timeRemaining
-            0.9 ether, // spotPrice
-            1 ether, // sharePrice
-            0.1 ether, // curveFeePercent
-            0.1 ether, // flatFeePercent
-            0.5 ether // govFeePercent
-        );
+        (curveFee, flatFee, govCurveFee, govFlatFee) = hyperdriveMath
+            .calculateFeesInGivenOut(
+                1 ether, // amountOut
+                0, // timeRemaining
+                0.9 ether, // spotPrice
+                1 ether, // sharePrice
+                0.1 ether, // curveFeePercent
+                0.1 ether, // flatFeePercent
+                0.5 ether // govFeePercent
+            );
         assertEq(
             curveFee,
             0 ether // ~ 0.011 ether or 10% of the price difference
@@ -726,11 +731,11 @@ contract HyperdriveMathTest is Test {
     //     );
     //     assertEq(
     //         govCurveFee,
-    //         0 ether 
+    //         0 ether
     //     );
     //     assertEq(
     //         govFlatFee,
-    //         0 ether 
+    //         0 ether
     //     );
 
     //     (curveFee, flatFee, govCurveFee, govFlatFee) = hyperdriveMath.calculateFeesOutGivenIn(

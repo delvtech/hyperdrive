@@ -78,7 +78,12 @@ abstract contract HyperdriveLong is HyperdriveBase {
                 timeRemaining,
                 timeStretch
             );
-            (uint256 totalCurveFee, uint256 totalFlatFee, uint256 govCurveFee, uint256 govFlatFee) = _calculateFeesOutGivenIn(
+            (
+                uint256 totalCurveFee,
+                uint256 totalFlatFee,
+                uint256 govCurveFee,
+                uint256 govFlatFee
+            ) = _calculateFeesOutGivenIn(
                     shares, // amountIn
                     bondProceeds, // amountOut
                     timeRemaining,
@@ -92,7 +97,9 @@ abstract contract HyperdriveLong is HyperdriveBase {
             poolBondDelta -= totalCurveFee + govCurveFee;
 
             // Calculate the fees owed to the gov in shares.
-            uint256 totalGovFee = (govCurveFee + govFlatFee).divDown(sharePrice);
+            uint256 totalGovFee = (govCurveFee + govFlatFee).divDown(
+                sharePrice
+            );
             shares -= totalGovFee;
             govFeesAccrued += totalGovFee;
         }
@@ -178,7 +185,12 @@ abstract contract HyperdriveLong is HyperdriveBase {
             timeStretch
         );
         {
-            (uint256 totalFee,  ,uint256 totalGovFee, ) = _calculateFeesOutGivenIn(
+            (
+                uint256 totalFee,
+                ,
+                uint256 totalGovFee,
+
+            ) = _calculateFeesOutGivenIn(
                     _bondAmount, // amountIn
                     0,
                     timeRemaining,
@@ -189,7 +201,6 @@ abstract contract HyperdriveLong is HyperdriveBase {
             // out.
             shareProceeds -= totalFee;
             govFeesAccrued += totalGovFee;
-
         }
 
         // If the position hasn't matured, apply the accounting updates that

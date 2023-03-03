@@ -74,7 +74,12 @@ abstract contract HyperdriveShort is HyperdriveBase {
                 timeRemaining,
                 timeStretch
             );
-            (uint256 totalFee, , uint256 totalGovFee, ) = _calculateFeesOutGivenIn(
+            (
+                uint256 totalFee,
+                ,
+                uint256 totalGovFee,
+
+            ) = _calculateFeesOutGivenIn(
                     _bondAmount, // amountIn
                     0,
                     timeRemaining,
@@ -195,10 +200,10 @@ abstract contract HyperdriveShort is HyperdriveBase {
         {
             uint256 govFee = 0;
             (sharePayment, govFee) = _calculateCloseShort(
-                    _bondAmount,
-                    timeRemaining,
-                    sharePrice
-                );
+                _bondAmount,
+                timeRemaining,
+                sharePrice
+            );
 
             // If the position hasn't matured, apply the accounting updates that
             // result from closing the short to the reserves and pay out the
@@ -288,15 +293,20 @@ abstract contract HyperdriveShort is HyperdriveBase {
             _normalizedTimeRemaining,
             timeStretch
         );
-        (uint256 totalCurveFee, uint256 totalFlatFee, uint256 govCurveFee, uint256 govFlatFee) = HyperdriveMath.calculateFeesInGivenOut(
-            _amountOut, // amountOut
-            _normalizedTimeRemaining,
-            spotPrice,
-            _sharePrice,
-            curveFee,
-            flatFee,
-            govFeePercent
-        );
+        (
+            uint256 totalCurveFee,
+            uint256 totalFlatFee,
+            uint256 govCurveFee,
+            uint256 govFlatFee
+        ) = HyperdriveMath.calculateFeesInGivenOut(
+                _amountOut, // amountOut
+                _normalizedTimeRemaining,
+                spotPrice,
+                _sharePrice,
+                curveFee,
+                flatFee,
+                govFeePercent
+            );
 
         // curveOut
         _amountOut = _amountOut.mulDown(_normalizedTimeRemaining);
@@ -314,7 +324,10 @@ abstract contract HyperdriveShort is HyperdriveBase {
         if (_normalizedTimeRemaining > 0) {
             // This is a share in / bond out operation where the out is given, so we add the fee
             // to the amount in.
-            return (flat.add(totalFlatFee).add(curveIn).add(totalCurveFee), govFlatFee.add(govCurveFee));
+            return (
+                flat.add(totalFlatFee).add(curveIn).add(totalCurveFee),
+                govFlatFee.add(govCurveFee)
+            );
         } else {
             return (flat.add(totalFlatFee), govFlatFee);
         }

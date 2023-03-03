@@ -334,18 +334,31 @@ abstract contract HyperdriveBase is MultiToken {
         uint256 _normalizedTimeRemaining,
         uint256 _spotPrice,
         uint256 _sharePrice
-    ) internal view returns (uint256 totalCurveFee, uint256 totalFlatFee, uint256 govCurveFee, uint256 govFlatFee) {
+    )
+        internal
+        view
+        returns (
+            uint256 totalCurveFee,
+            uint256 totalFlatFee,
+            uint256 govCurveFee,
+            uint256 govFlatFee
+        )
+    {
         if (_amountOut > 0) {
             // curve fee = ((1 / p) - 1) * phi_curve * c * d_z * t
-            totalCurveFee = (FixedPointMath.ONE_18.divDown(_spotPrice))
-                .sub(FixedPointMath.ONE_18);
+            totalCurveFee = (FixedPointMath.ONE_18.divDown(_spotPrice)).sub(
+                FixedPointMath.ONE_18
+            );
             totalCurveFee = totalCurveFee
                 .mulDown(curveFee)
                 .mulDown(_sharePrice)
                 .mulDown(_amountIn)
                 .mulDown(_normalizedTimeRemaining);
             // govCurveFee = d_z * (curve_fee/d_y) * c * phi_gov
-            govCurveFee = _amountIn.mulDivDown(totalCurveFee,_amountOut).mulDown(_sharePrice).mulDown(govFeePercent);
+            govCurveFee = _amountIn
+                .mulDivDown(totalCurveFee, _amountOut)
+                .mulDown(_sharePrice)
+                .mulDown(govFeePercent);
             // flat fee = c * d_z * (1 - t) * phi_flat
             uint256 flat = _amountIn.mulDown(
                 FixedPointMath.ONE_18.sub(_normalizedTimeRemaining)
