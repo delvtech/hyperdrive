@@ -40,6 +40,8 @@ contract AaveHyperdrive is Hyperdrive {
     /// @param _timeStretch The time stretch of the pool.
     /// @param _curveFee The fee parameter for the curve portion of the hyperdrive trade equation.
     /// @param _flatFee The fee parameter for the flat portion of the hyperdrive trade equation.
+    /// @param _govFee The fee parameter for the governance portion of the hyperdrive trade equation.
+    /// @param _governance The governance address.
     constructor(
         bytes32 _linkerCodeHash,
         address _linkerFactory,
@@ -50,7 +52,9 @@ contract AaveHyperdrive is Hyperdrive {
         IERC20 _aToken,
         Pool _pool,
         uint256 _curveFee,
-        uint256 _flatFee
+        uint256 _flatFee,
+        uint256 _govFee,
+        address _governance
     )
         Hyperdrive(
             _linkerCodeHash,
@@ -61,7 +65,9 @@ contract AaveHyperdrive is Hyperdrive {
             _checkpointDuration,
             _timeStretch,
             _curveFee,
-            _flatFee
+            _flatFee,
+            _govFee,
+            _governance
         )
     {
         aToken = _aToken;

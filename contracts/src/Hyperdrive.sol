@@ -41,6 +41,7 @@ abstract contract Hyperdrive is
     /// @param _timeStretch The time stretch of the pool.
     /// @param _curveFee The fee parameter for the curve portion of the hyperdrive trade equation.
     /// @param _flatFee The fee parameter for the flat portion of the hyperdrive trade equation.
+    /// @param _govFee The proportion of fees that go to governance.
     constructor(
         bytes32 _linkerCodeHash,
         address _linkerFactory,
@@ -50,7 +51,9 @@ abstract contract Hyperdrive is
         uint256 _checkpointDuration,
         uint256 _timeStretch,
         uint256 _curveFee,
-        uint256 _flatFee
+        uint256 _flatFee,
+        uint256 _govFee,
+        address _governance
     )
         HyperdriveBase(
             _linkerCodeHash,
@@ -61,7 +64,9 @@ abstract contract Hyperdrive is
             _checkpointDuration,
             _timeStretch,
             _curveFee,
-            _flatFee
+            _flatFee,
+            _govFee,
+            _governance
         )
     {} // solhint-disable-line no-empty-blocks
 

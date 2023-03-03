@@ -37,7 +37,9 @@ contract HyperdriveTest is BaseTest {
             CHECKPOINT_DURATION,
             calculateTimeStretch(apr),
             0,
-            0
+            0,
+            0,
+            governance
         );
 
         // Advance time so that Hyperdrive can look back more than a position
@@ -49,7 +51,9 @@ contract HyperdriveTest is BaseTest {
         address deployer,
         uint256 apr,
         uint256 curveFee,
-        uint256 flatFee
+        uint256 flatFee,
+        uint256 govFee,
+        address governance
     ) internal {
         vm.stopPrank();
         vm.startPrank(deployer);
@@ -60,7 +64,9 @@ contract HyperdriveTest is BaseTest {
             CHECKPOINT_DURATION,
             calculateTimeStretch(apr),
             curveFee,
-            flatFee
+            flatFee,
+            govFee,
+            governance
         );
     }
 
@@ -234,6 +240,7 @@ contract HyperdriveTest is BaseTest {
             uint256 positionDuration,
             ,
             uint256 timeStretch,
+            ,
             ,
 
         ) = hyperdrive.getPoolConfiguration();

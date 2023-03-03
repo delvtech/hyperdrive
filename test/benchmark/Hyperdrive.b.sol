@@ -9,7 +9,7 @@ contract HyperdriveBenchmark is HyperdriveTest {
 
     function test_benchmark() external {
         // Deploy Hyperdrive.
-        deploy(alice, 0.05e18, 0.1e18, 0.1e18);
+        deploy(alice, 0.05e18, 0.1e18, 0.1e18, 0, governance);
 
         // Initialize the market.
         uint256 aliceLpShares = initialize(alice, 0.05e18, 500_000_000e18);

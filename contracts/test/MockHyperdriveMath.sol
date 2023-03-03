@@ -130,33 +130,6 @@ contract MockHyperdriveMath {
         return result;
     }
 
-    function calculateCloseShort(
-        uint256 _shareReserves,
-        uint256 _bondReserves,
-        uint256 _bondReserveAdjustment,
-        uint256 _amountOut,
-        uint256 _normalizedTimeRemaining,
-        uint256 _timeStretch,
-        uint256 _sharePrice,
-        uint256 _initialSharePrice,
-        uint256 _curveFee,
-        uint256 _flatFee
-    ) external pure returns (uint256, uint256) {
-        (uint256 result1, uint256 result2) = HyperdriveMath.calculateCloseShort(
-            _shareReserves,
-            _bondReserves,
-            _bondReserveAdjustment,
-            _amountOut,
-            _normalizedTimeRemaining,
-            _timeStretch,
-            _sharePrice,
-            _initialSharePrice,
-            _curveFee,
-            _flatFee
-        );
-        return (result1, result2);
-    }
-
     function calculateSpotPrice(
         uint256 _shareReserves,
         uint256 _bondReserves,
@@ -176,46 +149,26 @@ contract MockHyperdriveMath {
         return result;
     }
 
-    function calculateFeesOutGivenIn(
-        uint256 _amountIn,
-        uint256 _normalizedTimeRemaining,
-        uint256 _spotPrice,
-        uint256 _sharePrice,
-        uint256 _curveFeePercent,
-        uint256 _flatFeePercent,
-        bool _isBaseIn
-    ) external pure returns (uint256, uint256) {
-        (uint256 result1, uint256 result2) = HyperdriveMath
-            .calculateFeesOutGivenIn(
-                _amountIn,
-                _normalizedTimeRemaining,
-                _spotPrice,
-                _sharePrice,
-                _curveFeePercent,
-                _flatFeePercent,
-                _isBaseIn
-            );
-        return (result1, result2);
-    }
-
     function calculateFeesInGivenOut(
         uint256 _amountOut,
         uint256 _normalizedTimeRemaining,
         uint256 _spotPrice,
         uint256 _sharePrice,
         uint256 _curveFeePercent,
-        uint256 _flatFeePercent
-    ) external pure returns (uint256, uint256) {
-        (uint256 result1, uint256 result2) = HyperdriveMath
+        uint256 _flatFeePercent,
+        uint256 _govFeePercent
+    ) external pure returns (uint256, uint256, uint256, uint256) {
+        (uint256 result1, uint256 result2, uint256 result3, uint256 result4) = HyperdriveMath
             .calculateFeesInGivenOut(
                 _amountOut,
                 _normalizedTimeRemaining,
                 _spotPrice,
                 _sharePrice,
                 _curveFeePercent,
-                _flatFeePercent
+                _flatFeePercent,
+                _govFeePercent
             );
-        return (result1, result2);
+        return (result1, result2, result3, result4);
     }
 
     function calculateBaseVolume(

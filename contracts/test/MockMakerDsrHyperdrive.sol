@@ -20,6 +20,8 @@ contract MockMakerDsrHyperdrive is MakerDsrHyperdrive {
             FixedPointMath.ONE_18.divDown(22.186877016851916266e18),
             0,
             0,
+            0,
+            address(0),
             _dsrManager
         )
     {}
