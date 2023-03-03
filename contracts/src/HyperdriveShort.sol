@@ -193,7 +193,6 @@ abstract contract HyperdriveShort is HyperdriveBase {
         uint256 timeRemaining = _calculateTimeRemaining(_maturityTime);
         uint256 sharePayment = 0;
         {
-            uint256 poolBondDelta = 0;
             uint256 govFee = 0;
             (sharePayment, govFee) = _calculateCloseShort(
                     _bondAmount,
@@ -206,8 +205,8 @@ abstract contract HyperdriveShort is HyperdriveBase {
             // withdrawal pool if necessary.
             if (block.timestamp < _maturityTime) {
                 _applyCloseShort(
+                    _bondAmount,
                     _bondAmount.mulDown(timeRemaining),
-                    poolBondDelta,
                     sharePayment.sub(govFee),
                     _maturityTime
                 );
