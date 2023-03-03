@@ -74,7 +74,7 @@ abstract contract HyperdriveShort is HyperdriveBase {
                 timeRemaining,
                 timeStretch
             );
-            (uint256 totalCurveFee, uint256 totalFlatFee, uint256 govCurveFee,) = _calculateFeesOutGivenIn(
+            (uint256 totalFee, , uint256 totalGovFee, ) = _calculateFeesOutGivenIn(
                     _bondAmount, // amountIn
                     0,
                     timeRemaining,
@@ -83,8 +83,8 @@ abstract contract HyperdriveShort is HyperdriveBase {
                 );
             // This is bond in / share out where the bonds are given, so we subtract from the shares
             // out.
-            shareProceeds -= totalCurveFee + totalFlatFee;
-            govFeesAccrued += govCurveFee;// + govFlatFee;
+            shareProceeds -= totalFee;
+            govFeesAccrued += totalGovFee;
         }
 
         // Take custody of the maximum amount the trader can lose on the short

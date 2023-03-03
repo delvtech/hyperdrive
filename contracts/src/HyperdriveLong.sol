@@ -178,7 +178,7 @@ abstract contract HyperdriveLong is HyperdriveBase {
             timeStretch
         );
         {
-            (uint256 totalCurveFee, uint256 totalFlatFee, uint256 govCurveFee, uint256 govFlatFee) = _calculateFeesOutGivenIn(
+            (uint256 totalFee,  ,uint256 totalGovFee, ) = _calculateFeesOutGivenIn(
                     _bondAmount, // amountIn
                     0,
                     timeRemaining,
@@ -187,8 +187,8 @@ abstract contract HyperdriveLong is HyperdriveBase {
                 );
             // This is bond in / share out where the bonds are fixed, so we subtract from the share
             // out.
-            shareProceeds -= totalCurveFee + totalFlatFee;
-            govFeesAccrued += govCurveFee + govFlatFee;
+            shareProceeds -= totalFee;
+            govFeesAccrued += totalGovFee;
 
         }
 

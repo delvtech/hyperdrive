@@ -351,6 +351,8 @@ abstract contract HyperdriveBase is MultiToken {
                 FixedPointMath.ONE_18.sub(_normalizedTimeRemaining)
             );
             totalFlatFee = flat.mulDown(_sharePrice).mulDown(flatFee);
+            // calculate the flat portion of the gov fee
+            govFlatFee = totalFlatFee.mulDown(govFeePercent);
         } else {
             // 'bond' in
             // curve fee = ((1 - p) * phi_curve * d_y * t)/c
@@ -366,9 +368,10 @@ abstract contract HyperdriveBase is MultiToken {
                 FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
                 _sharePrice
             );
-            totalFlatFee = (flat.mulDown(flatFee));
+            // Using this as totalFee
+            totalCurveFee += (flat.mulDown(flatFee));
+            // Using this variable as total gov fee
+            govCurveFee += totalFlatFee.mulDown(govFeePercent);
         }
-        // calculate the flat portion of the gov fee
-        govFlatFee = totalFlatFee.mulDown(govFeePercent);
     }
 }
