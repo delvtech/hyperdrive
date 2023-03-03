@@ -185,10 +185,7 @@ abstract contract HyperdriveLong is HyperdriveBase {
             timeStretch
         );
         {
-            (
-                uint256 totalFee,
-                uint256 totalGovFee
-            ) = _calculateFeesOutGivenBondsIn(
+            ( uint256 totalFee, uint256 totalGovFee ) = _calculateFeesOutGivenBondsIn(
                     _bondAmount, // amountIn
                     timeRemaining,
                     spotPrice,
