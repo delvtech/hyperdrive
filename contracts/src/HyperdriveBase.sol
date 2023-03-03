@@ -98,7 +98,7 @@ abstract contract HyperdriveBase is MultiToken {
     // Percentage of the fee that goes to governance.
     uint256 public govFeePercent;
 
-    // Governance fees that haven't been collected yet.
+    // Governance fees that haven't been collected yet denominated in shares.
     uint256 public govFeesAccrued;
 
     // TODO: Should this be immutable?
@@ -319,7 +319,7 @@ abstract contract HyperdriveBase is MultiToken {
             (block.timestamp % checkpointDuration);
     }
 
-    /// @dev Calculates the fees for the curve portion of hyperdrive calcOutGivenIn
+    /// @dev Calculates the fees for the flat and curve portion of hyperdrive calcOutGivenIn
     /// @param _amountIn The given amount in, either in terms of shares or bonds.
     /// @param _amountOut The amount of the asset that is received before fees.
     /// @param _normalizedTimeRemaining The normalized amount of time until maturity.
@@ -364,7 +364,7 @@ abstract contract HyperdriveBase is MultiToken {
         govFlatFee = totalFlatFee.mulDown(govFeePercent);
     }
 
-    /// @dev Calculates the fees for the curve portion of hyperdrive calcOutGivenIn
+    /// @dev Calculates the fees for the flat and curve portion of hyperdrive calcOutGivenIn
     /// @param _amountIn The given amount in, either in terms of shares or bonds.
     /// @param _normalizedTimeRemaining The normalized amount of time until maturity.
     /// @param _spotPrice The price without slippage of bonds in terms of shares.
@@ -376,7 +376,7 @@ abstract contract HyperdriveBase is MultiToken {
         uint256 _sharePrice
     ) internal view returns (uint256 totalFee, uint256 totalGovFee) {
         // 'bond' in
-        // curve fee = ((1 - p) * phi_curve * d_y * t)/c
+        // curve fee = ((1 - p) * phi_curve * d_y * t) / c
         uint256 _pricePart = (FixedPointMath.ONE_18.sub(_spotPrice));
         uint256 totalCurveFee = _pricePart
             .mulDown(curveFee)
@@ -384,7 +384,7 @@ abstract contract HyperdriveBase is MultiToken {
             .mulDivDown(_normalizedTimeRemaining, _sharePrice);
         // calculate the curve portion of the gov fee
         totalGovFee = totalCurveFee.mulDown(govFeePercent);
-        // flat fee = (d_y * (1 - t) * phi_flat)/c
+        // flat fee = (d_y * (1 - t) * phi_flat) / c
         uint256 flat = _amountIn.mulDivDown(
             FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
             _sharePrice
