@@ -206,6 +206,7 @@ abstract contract HyperdriveBase is MultiToken {
 
     function collectGovFee() external returns (uint256 proceeds) {
         (proceeds, ) = _withdraw(govFeesAccrued, governance, true);
+        govFeesAccrued = 0;
     }
 
     /// Getters ///
