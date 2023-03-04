@@ -190,6 +190,8 @@ abstract contract HyperdriveLong is HyperdriveBase {
         return (baseProceeds);
     }
 
+    // FIXME: We could apply this update as an add liquidity action.
+    //
     /// @dev Applies an open long to the state. This includes updating the
     ///      reserves and maintaining the reserve invariants.
     /// @param _baseAmount The amount of base paid by the trader.
@@ -237,6 +239,30 @@ abstract contract HyperdriveLong is HyperdriveBase {
         marketState.bondReserves -= _bondReservesDelta.toUint128();
         marketState.longsOutstanding += _bondProceeds.toUint128();
 
+        // Calculate the effect that the curve trade has on the pool's APR.
+        uint256 apr = HyperdriveMath.calculateAPRFromReserves(
+            marketState.shareReserves,
+            marketState.bondReserves,
+            totalSupply[AssetId._LP_ASSET_ID],
+            initialSharePrice,
+            positionDuration,
+            timeStretch
+        );
+
+        // Apply the flat part of the trade to the pool's reserves.
+        marketState.shareReserves += (_baseAmount.divDown(_sharePrice) -
+            _shareReservesDelta).toUint128();
+        marketState.bondReserves = HyperdriveMath
+            .calculateBondReserves(
+                marketState.shareReserves,
+                totalSupply[AssetId._LP_ASSET_ID],
+                initialSharePrice,
+                apr,
+                positionDuration,
+                timeStretch
+            )
+            .toUint128();
+
         // TODO: We should fuzz test this and other trading functions to ensure
         // that the APR never goes below zero. If it does, we may need to
         // enforce additional invariants.
@@ -252,6 +278,10 @@ abstract contract HyperdriveLong is HyperdriveBase {
         }
     }
 
+    // FIXME: A simpler way to think about this accounting scheme is to reframe
+    // the withdrawal shares accounting as a "removeLiquidity" action. This will
+    // play double duty with the updated flat accounting.
+    //
     /// @dev Applies the trading deltas from a closed long to the reserves and
     ///      the withdrawal pool.
     /// @param _bondAmount The amount of longs that were closed.
@@ -314,6 +344,25 @@ abstract contract HyperdriveLong is HyperdriveBase {
         // Reduce the amount of outstanding longs.
         marketState.longsOutstanding -= _bondAmount.toUint128();
 
+        // Apply the updates from the curve trade to the reserves.
+        marketState.shareReserves -= _shareReservesDelta.toUint128();
+        marketState.bondReserves += _bondReservesDelta.toUint128();
+
+        // Calculate the effect that the curve trade has on the pool's APR.
+        uint256 apr = HyperdriveMath.calculateAPRFromReserves(
+            uint256(marketState.shareReserves),
+            uint256(marketState.bondReserves),
+            totalSupply[AssetId._LP_ASSET_ID],
+            initialSharePrice,
+            positionDuration,
+            timeStretch
+        );
+
+        // Calculate the amount of liquidity that needs to be removed.
+        uint256 shareAdjustment = _shareProceeds - _shareReservesDelta;
+
+        // FIXME: Refactor this into it's own function.
+        //
         // If there are outstanding long withdrawal shares, we attribute a
         // proportional amount of the proceeds to the withdrawal pool and the
         // active LPs. Otherwise, we use simplified accounting that has the same
@@ -321,16 +370,6 @@ abstract contract HyperdriveLong is HyperdriveBase {
         // base reserves and the longs outstanding stays the same or gets
         // larger, we don't need to verify the reserves invariants.
         if (withdrawalState.longWithdrawalSharesOutstanding > 0) {
-            // Calculate the effect that the trade has on the pool's APR.
-            uint256 apr = HyperdriveMath.calculateAPRFromReserves(
-                uint256(marketState.shareReserves).sub(_shareReservesDelta),
-                uint256(marketState.bondReserves).add(_bondReservesDelta),
-                totalSupply[AssetId._LP_ASSET_ID],
-                initialSharePrice,
-                positionDuration,
-                timeStretch
-            );
-
             // Since longs are backdated to the beginning of the checkpoint and
             // interest only begins accruing when the longs are opened, we
             // exclude the first checkpoint from LP withdrawal payouts. For most
@@ -348,9 +387,10 @@ abstract contract HyperdriveLong is HyperdriveBase {
             //
             // proceeds = c_1 * (dy / c_0 - dz) * (min(w_l, dy) / dy)
             //
-            // We convert to shares at position close by dividing by c_1. If a checkpoint
-            // was missed and old matured positions are being closed, this will correctly
-            // attribute the extra interest to the withdrawal pool.
+            // We convert to shares at position close by dividing by c_1. If a
+            // checkpoint was missed and old matured positions are being closed,
+            // this will correctly attribute the extra interest to the
+            // withdrawal pool.
             uint256 withdrawalAmount = withdrawalState
                 .longWithdrawalSharesOutstanding < _bondAmount
                 ? withdrawalState.longWithdrawalSharesOutstanding
@@ -375,29 +415,24 @@ abstract contract HyperdriveLong is HyperdriveBase {
             withdrawalState.longWithdrawalShareProceeds += withdrawalProceeds
                 .toUint128();
 
-            // Apply the trading deltas to the reserves. These updates reflect
-            // the fact that some of the reserves will be attributed to the
-            // withdrawal pool. Assuming that there are some withdrawal proceeds,
-            // the math for the share reserves update is given by:
-            //
-            // z -= dz + (dy / c_0 - dz) * (min(w_l, dy) / dy)
-            marketState.shareReserves -=
-                _shareReservesDelta.toUint128() +
-                withdrawalProceeds.toUint128();
-            marketState.bondReserves = HyperdriveMath
-                .calculateBondReserves(
-                    marketState.shareReserves,
-                    totalSupply[AssetId._LP_ASSET_ID],
-                    initialSharePrice,
-                    apr,
-                    positionDuration,
-                    timeStretch
-                )
-                .toUint128();
-        } else {
-            marketState.shareReserves -= _shareReservesDelta.toUint128();
-            marketState.bondReserves += _bondReservesDelta.toUint128();
+            // Increase the amount of liquidity to be removed.
+            shareAdjustment += withdrawalProceeds;
         }
+
+        // FIXME: This could be documented better.
+        //
+        // Apply the share adjustment from the reserves.
+        marketState.shareReserves -= shareAdjustment.toUint128();
+        marketState.bondReserves = HyperdriveMath
+            .calculateBondReserves(
+                marketState.shareReserves,
+                totalSupply[AssetId._LP_ASSET_ID],
+                initialSharePrice,
+                apr,
+                positionDuration,
+                timeStretch
+            )
+            .toUint128();
     }
 
     /// @dev Calculate the pool reserve and trader deltas that result from

@@ -240,6 +240,30 @@ abstract contract HyperdriveShort is HyperdriveBase {
         marketState.bondReserves += _bondReservesDelta.toUint128();
         marketState.shortsOutstanding += _bondAmount.toUint128();
 
+        // Calculate the effect that the trade has on the pool's APR.
+        uint256 apr = HyperdriveMath.calculateAPRFromReserves(
+            uint256(marketState.shareReserves),
+            uint256(marketState.bondReserves),
+            totalSupply[AssetId._LP_ASSET_ID],
+            initialSharePrice,
+            positionDuration,
+            timeStretch
+        );
+
+        // Apply the flat part of the trade to the pool's reserves.
+        marketState.shareReserves -= (_shareProceeds - _shareReservesDelta)
+            .toUint128();
+        marketState.bondReserves = HyperdriveMath
+            .calculateBondReserves(
+                marketState.shareReserves,
+                totalSupply[AssetId._LP_ASSET_ID],
+                initialSharePrice,
+                apr,
+                positionDuration,
+                timeStretch
+            )
+            .toUint128();
+
         // Since the share reserves are reduced, we need to verify that the base
         // reserves are greater than or equal to the amount of longs outstanding.
         if (
@@ -315,6 +339,23 @@ abstract contract HyperdriveShort is HyperdriveBase {
         // Decrease the amount of shorts outstanding.
         marketState.shortsOutstanding -= _bondAmount.toUint128();
 
+        // Apply the updates from the curve trade to the reserves.
+        marketState.shareReserves += _shareReservesDelta.toUint128();
+        marketState.bondReserves -= _bondReservesDelta.toUint128();
+
+        // Calculate the effect that the trade has on the pool's APR.
+        uint256 apr = HyperdriveMath.calculateAPRFromReserves(
+            uint256(marketState.shareReserves),
+            uint256(marketState.bondReserves),
+            totalSupply[AssetId._LP_ASSET_ID],
+            initialSharePrice,
+            positionDuration,
+            timeStretch
+        );
+
+        // Calculate the amount of liquidity that needs to be removed.
+        int256 shareAdjustment = int256(_sharePayment - _shareReservesDelta);
+
         // If there are outstanding short withdrawal shares, we attribute a
         // proportional amount of the proceeds to the withdrawal pool and the
         // active LPs. Otherwise, we use simplified accounting that has the same
@@ -322,16 +363,6 @@ abstract contract HyperdriveShort is HyperdriveBase {
         // base reserves and the longs outstanding stays the same or gets
         // larger, we don't need to verify the reserves invariants.
         if (withdrawalState.shortWithdrawalSharesOutstanding > 0) {
-            // Calculate the effect that the trade has on the pool's APR.
-            uint256 apr = HyperdriveMath.calculateAPRFromReserves(
-                uint256(marketState.shareReserves).add(_shareReservesDelta),
-                uint256(marketState.bondReserves).sub(_bondReservesDelta),
-                totalSupply[AssetId._LP_ASSET_ID],
-                initialSharePrice,
-                positionDuration,
-                timeStretch
-            );
-
             // Apply the LP proceeds from the trade proportionally to the short
             // withdrawal pool. The accounting for these proceeds is identical
             // to the close long accounting because LPs take on a long position when
@@ -355,28 +386,27 @@ abstract contract HyperdriveShort is HyperdriveBase {
             withdrawalState.shortWithdrawalShareProceeds += withdrawalProceeds
                 .toUint128();
 
-            // Apply the trading deltas to the reserves. These updates reflect
-            // the fact that some of the reserves will be attributed to the
-            // withdrawal pool. The math for the share reserves update is given by:
-            //
-            // z += dz - dz * (min(w_s, dy) / dy)
-            marketState.shareReserves +=
-                _sharePayment.toUint128() -
-                withdrawalProceeds.toUint128();
-            marketState.bondReserves = HyperdriveMath
-                .calculateBondReserves(
-                    marketState.shareReserves,
-                    totalSupply[AssetId._LP_ASSET_ID],
-                    initialSharePrice,
-                    apr,
-                    positionDuration,
-                    timeStretch
-                )
-                .toUint128();
-        } else {
-            marketState.shareReserves += _shareReservesDelta.toUint128();
-            marketState.bondReserves -= _bondReservesDelta.toUint128();
+            // FIXME: We should use an int256 here.
+            // Decrease the amount of liquidity to be added.
+            shareAdjustment -= int256(withdrawalProceeds);
         }
+
+        // FIXME: This could be documented better.
+        //
+        // Apply the share adjustment from the reserves.
+        marketState.shareReserves = shareAdjustment >= 0
+            ? marketState.shareReserves + uint256(shareAdjustment).toUint128()
+            : marketState.shareReserves - uint256(-shareAdjustment).toUint128();
+        marketState.bondReserves = HyperdriveMath
+            .calculateBondReserves(
+                marketState.shareReserves,
+                totalSupply[AssetId._LP_ASSET_ID],
+                initialSharePrice,
+                apr,
+                positionDuration,
+                timeStretch
+            )
+            .toUint128();
     }
 
     /// @dev Calculate the cost of opening a short. This is the maximum amount
