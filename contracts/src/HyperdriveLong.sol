@@ -93,8 +93,9 @@ abstract contract HyperdriveLong is HyperdriveBase {
 
             // This is a share in / bond out operation where the in is given, so we subtract the fee
             // amount from the output.
-            bondProceeds -= totalCurveFee - totalFlatFee;
-            poolBondDelta -= totalCurveFee + govCurveFee;
+            // 
+            bondProceeds -= totalCurveFee + totalFlatFee;
+            poolBondDelta -= totalCurveFee - govCurveFee;
 
             // Calculate the fees owed to the gov in shares.
             uint256 totalGovFee = (govCurveFee + govFlatFee).divDown(
