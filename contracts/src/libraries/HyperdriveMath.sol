@@ -295,56 +295,6 @@ library HyperdriveMath {
             .pow(tau);
     }
 
-    /// @dev Calculates the fees for the curve portion of hyperdrive calcInGivenOut
-    /// @param _amountOut The given amount out, either in terms of shares or bonds.
-    /// @param _normalizedTimeRemaining The normalized amount of time until maturity.
-    /// @param _spotPrice The price without slippage of bonds in terms of shares.
-    /// @param _sharePrice The current price of shares in terms of base.
-    /// @param _curveFeePercent The percent curve fee parameter.
-    /// @param _flatFeePercent The percent flat fee parameter.
-    /// @param _govFeePercent The percent gov fee parameter.
-    /// @return totalCurveFee The total curve fee. Fee is in terms of shares.
-    /// @return totalFlatFee The total flat fee.  Fee is in terms of shares.
-    /// @return govCurveFee The curve fee that goes to gov.  Fee is in terms of shares.
-    /// @return govFlatFee The flat fee that goes to gov.  Fee is in terms of shares.
-    function calculateFeesInGivenOut(
-        uint256 _amountOut,
-        uint256 _normalizedTimeRemaining,
-        uint256 _spotPrice,
-        uint256 _sharePrice,
-        uint256 _curveFeePercent,
-        uint256 _flatFeePercent,
-        uint256 _govFeePercent
-    )
-        internal
-        pure
-        returns (
-            uint256 totalCurveFee,
-            uint256 totalFlatFee,
-            uint256 govCurveFee,
-            uint256 govFlatFee
-        )
-    {
-        uint256 curveOut = _amountOut.mulDown(_normalizedTimeRemaining);
-        // bonds out
-        // curve fee = ((1 - p) * d_y * t * phi_curve)/c
-        totalCurveFee = FixedPointMath.ONE_18.sub(_spotPrice);
-        totalCurveFee = totalCurveFee
-            .mulDown(_curveFeePercent)
-            .mulDown(curveOut)
-            .mulDivDown(_normalizedTimeRemaining, _sharePrice);
-        // calculate the curve portion of the gov fee
-        govCurveFee = totalCurveFee.mulDown(_govFeePercent);
-        // flat fee = (d_y * (1 - t) * phi_flat)/c
-        uint256 flat = _amountOut.mulDivDown(
-            FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
-            _sharePrice
-        );
-        totalFlatFee = (flat.mulDown(_flatFeePercent));
-        // calculate the flat portion of the gov fee
-        govFlatFee = totalFlatFee.mulDown(_govFeePercent);
-    }
-
     /// @dev Calculates the base volume of an open trade given the base amount,
     ///      the bond amount, and the time remaining. Since the base amount
     ///      takes into account backdating, we can't use this as our base

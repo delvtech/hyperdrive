@@ -555,68 +555,6 @@ contract HyperdriveMathTest is Test {
         assertApproxEqAbs(result, expectedAPR.divDown(100e18), 6e12);
     }
 
-    function test__calcFeesInGivenOut() public {
-        // NOTE: Coverage only works if I initialize the fixture in the test function
-        MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
-        (
-            uint256 curveFee,
-            uint256 flatFee,
-            uint256 govCurveFee,
-            uint256 govFlatFee
-        ) = hyperdriveMath.calculateFeesInGivenOut(
-                1 ether, // amountOut
-                1 ether, // timeRemaining
-                0.9 ether, // spotPrice
-                1 ether, // sharePrice
-                0.1 ether, // curveFeePercent
-                0.1 ether, // flatFeePercent
-                0.5 ether // govFeePercent
-            );
-        assertEq(
-            curveFee,
-            .01 ether // ~ 0.011 ether or 10% of the price difference
-        );
-        assertEq(
-            flatFee,
-            0 ether // ~ 0.011 ether or 10% of the price difference
-        );
-        assertEq(
-            govCurveFee,
-            .005 ether // ~ 0.011 ether or 10% of the price difference
-        );
-        assertEq(
-            govFlatFee,
-            0 ether // ~ 0.011 ether or 10% of the price difference
-        );
-
-        (curveFee, flatFee, govCurveFee, govFlatFee) = hyperdriveMath
-            .calculateFeesInGivenOut(
-                1 ether, // amountOut
-                0, // timeRemaining
-                0.9 ether, // spotPrice
-                1 ether, // sharePrice
-                0.1 ether, // curveFeePercent
-                0.1 ether, // flatFeePercent
-                0.5 ether // govFeePercent
-            );
-        assertEq(
-            curveFee,
-            0 ether // ~ 0.011 ether or 10% of the price difference
-        );
-        assertEq(
-            flatFee,
-            0.1 ether // ~ 0.011 ether or 10% of the price difference
-        );
-        assertEq(
-            govCurveFee,
-            0 ether // ~ 0.011 ether or 10% of the price difference
-        );
-        assertEq(
-            govFlatFee,
-            0.05 ether // ~ 0.011 ether or 10% of the price difference
-        );
-    }
-
     function test__calculateBaseVolume() public {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();

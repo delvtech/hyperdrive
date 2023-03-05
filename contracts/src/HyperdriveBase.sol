@@ -402,4 +402,48 @@ abstract contract HyperdriveBase is MultiToken {
         totalGovFee += totalFlatFee.mulDown(govFeePercent);
         totalFee = totalCurveFee + totalFlatFee;
     }
+
+    /// @dev Calculates the fees for the curve portion of hyperdrive calcInGivenOut
+    /// @param _amountOut The given amount out.
+    /// @param _normalizedTimeRemaining The normalized amount of time until maturity.
+    /// @param _spotPrice The price without slippage of bonds in terms of shares.
+    /// @param _sharePrice The current price of shares in terms of base.
+    /// @return totalCurveFee The total curve fee. Fee is in terms of shares.
+    /// @return totalFlatFee The total flat fee.  Fee is in terms of shares.
+    /// @return govCurveFee The curve fee that goes to gov.  Fee is in terms of shares.
+    /// @return govFlatFee The flat fee that goes to gov.  Fee is in terms of shares.
+    function _calculateFeesInGivenBondsOut(
+        uint256 _amountOut,
+        uint256 _normalizedTimeRemaining,
+        uint256 _spotPrice,
+        uint256 _sharePrice
+    )
+        internal
+        view
+        returns (
+            uint256 totalCurveFee,
+            uint256 totalFlatFee,
+            uint256 govCurveFee,
+            uint256 govFlatFee
+        )
+    {
+        uint256 curveOut = _amountOut.mulDown(_normalizedTimeRemaining);
+        // bonds out
+        // curve fee = ((1 - p) * d_y * t * phi_curve)/c
+        totalCurveFee = FixedPointMath.ONE_18.sub(_spotPrice);
+        totalCurveFee = totalCurveFee
+            .mulDown(curveFee)
+            .mulDown(curveOut)
+            .mulDivDown(_normalizedTimeRemaining, _sharePrice);
+        // calculate the curve portion of the gov fee
+        govCurveFee = totalCurveFee.mulDown(govFeePercent);
+        // flat fee = (d_y * (1 - t) * phi_flat)/c
+        uint256 flat = _amountOut.mulDivDown(
+            FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
+            _sharePrice
+        );
+        totalFlatFee = (flat.mulDown(flatFee));
+        // calculate the flat portion of the gov fee
+        govFlatFee = totalFlatFee.mulDown(govFeePercent);
+    }
 }

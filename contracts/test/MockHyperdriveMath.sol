@@ -149,32 +149,6 @@ contract MockHyperdriveMath {
         return result;
     }
 
-    function calculateFeesInGivenOut(
-        uint256 _amountOut,
-        uint256 _normalizedTimeRemaining,
-        uint256 _spotPrice,
-        uint256 _sharePrice,
-        uint256 _curveFeePercent,
-        uint256 _flatFeePercent,
-        uint256 _govFeePercent
-    ) external pure returns (uint256, uint256, uint256, uint256) {
-        (
-            uint256 result1,
-            uint256 result2,
-            uint256 result3,
-            uint256 result4
-        ) = HyperdriveMath.calculateFeesInGivenOut(
-                _amountOut,
-                _normalizedTimeRemaining,
-                _spotPrice,
-                _sharePrice,
-                _curveFeePercent,
-                _flatFeePercent,
-                _govFeePercent
-            );
-        return (result1, result2, result3, result4);
-    }
-
     function calculateBaseVolume(
         uint256 _baseAmount,
         uint256 _bondAmount,
