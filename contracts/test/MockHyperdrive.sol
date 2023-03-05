@@ -88,15 +88,19 @@ contract MockHyperdrive is Hyperdrive {
             uint256 govCurveFee,
             uint256 govFlatFee
         )
-
     {
-        (totalCurveFee, totalFlatFee, govCurveFee, govFlatFee) = _calculateFeesOutGivenSharesIn(
-                _amountIn,
-                _amountOut,
-                _normalizedTimeRemaining,
-                _spotPrice,
-                _sharePrice
-            );
+        (
+            totalCurveFee,
+            totalFlatFee,
+            govCurveFee,
+            govFlatFee
+        ) = _calculateFeesOutGivenSharesIn(
+            _amountIn,
+            _amountOut,
+            _normalizedTimeRemaining,
+            _spotPrice,
+            _sharePrice
+        );
         return (totalCurveFee, totalFlatFee, govCurveFee, govFlatFee);
     }
 
@@ -130,7 +134,12 @@ contract MockHyperdrive is Hyperdrive {
             uint256 govFlatFee
         )
     {
-        (totalCurveFee, totalFlatFee, govCurveFee, govFlatFee) = _calculateFeesInGivenBondsOut(
+        (
+            totalCurveFee,
+            totalFlatFee,
+            govCurveFee,
+            govFlatFee
+        ) = _calculateFeesInGivenBondsOut(
             _amountOut,
             _normalizedTimeRemaining,
             _spotPrice,
