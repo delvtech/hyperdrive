@@ -204,7 +204,10 @@ abstract contract HyperdriveBase is MultiToken {
         uint256 _sharePrice
     ) internal virtual returns (uint256 openSharePrice);
 
+    /// @notice This function collects the governance fees accrued by the pool.
+    /// @return proceeds The amount of base collected.
     function collectGovFee() external returns (uint256 proceeds) {
+        // TODO: We should make an immutable asUnderlying parameter
         (proceeds, ) = _withdraw(govFeesAccrued, governance, true);
         govFeesAccrued = 0;
     }
@@ -325,6 +328,10 @@ abstract contract HyperdriveBase is MultiToken {
     /// @param _normalizedTimeRemaining The normalized amount of time until maturity.
     /// @param _spotPrice The price without slippage of bonds in terms of shares.
     /// @param _sharePrice The current price of shares in terms of base.
+    /// @return totalCurveFee The total curve fee. The fee is in terms of bonds.
+    /// @return totalFlatFee The total flat fee. The fee is in terms of bonds.
+    /// @return govCurveFee The curve fee that goes to governance. The fee is in terms of bonds.
+    /// @return govFlatFee The flat fee that goes to governance. The fee is in terms of bonds.
     function _calculateFeesOutGivenSharesIn(
         uint256 _amountIn,
         uint256 _amountOut,
@@ -369,6 +376,8 @@ abstract contract HyperdriveBase is MultiToken {
     /// @param _normalizedTimeRemaining The normalized amount of time until maturity.
     /// @param _spotPrice The price without slippage of bonds in terms of shares.
     /// @param _sharePrice The current price of shares in terms of base.
+    /// @return totalFee The total fee. The fee is in terms of shares.
+    /// @return totalGovFee The total fee that goes to governance. The fee is in terms of shares.
     function _calculateFeesOutGivenBondsIn(
         uint256 _amountIn,
         uint256 _normalizedTimeRemaining,

@@ -303,10 +303,10 @@ library HyperdriveMath {
     /// @param _curveFeePercent The percent curve fee parameter.
     /// @param _flatFeePercent The percent flat fee parameter.
     /// @param _govFeePercent The percent gov fee parameter.
-    /// @return totalCurveFee The total curve fee.
-    /// @return totalFlatFee The total flat fee.
-    /// @return govCurveFee The curve fee that goes to gov.
-    /// @return govFlatFee The flat fee that goes to gov.
+    /// @return totalCurveFee The total curve fee. Fee is in terms of shares.
+    /// @return totalFlatFee The total flat fee.  Fee is in terms of shares.
+    /// @return govCurveFee The curve fee that goes to gov.  Fee is in terms of shares.
+    /// @return govFlatFee The flat fee that goes to gov.  Fee is in terms of shares.
     function calculateFeesInGivenOut(
         uint256 _amountOut,
         uint256 _normalizedTimeRemaining,

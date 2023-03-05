@@ -202,6 +202,9 @@ abstract contract HyperdriveShort is HyperdriveBase {
                 sharePrice
             );
 
+            // Add the gov fee to the total governance fees accrued.
+            govFeesAccrued += govFee;  // Fee in terms of shares.
+
             // If the position hasn't matured, apply the accounting updates that
             // result from closing the short to the reserves and pay out the
             // withdrawal pool if necessary.
@@ -265,7 +268,7 @@ abstract contract HyperdriveShort is HyperdriveBase {
     /// @param _normalizedTimeRemaining The amount of time remaining until maturity in seconds.
     /// @param _sharePrice The share price.
     /// @return userDelta The amount of shares the user owes the pool (including gov fees).
-    /// @return govFee The amount of shares that is sent to the gov fee recipient.
+    /// @return govFee The amount of shares that is sent to the gov fee recipient.  The fee is in terms of shares.
     function _calculateCloseShort(
         uint256 _amountOut,
         uint256 _normalizedTimeRemaining,
