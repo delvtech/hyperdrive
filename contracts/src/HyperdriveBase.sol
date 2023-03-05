@@ -93,10 +93,8 @@ abstract contract HyperdriveBase is MultiToken {
     ///         trade equation.
     uint256 public flatFee;
 
-    // TODO: Should this be immutable?
-    //
     // Percentage of the fee that goes to governance.
-    uint256 public govFeePercent;
+    uint256 public immutable govFeePercent;
 
     // Governance fees that haven't been collected yet denominated in shares.
     uint256 public govFeesAccrued;
