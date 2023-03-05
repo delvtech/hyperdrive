@@ -73,6 +73,72 @@ contract MockHyperdrive is Hyperdrive {
         _sharePrice = sharePrice;
     }
 
+    function calculateFeesOutGivenSharesIn(
+        uint256 _amountIn,
+        uint256 _amountOut,
+        uint256 _normalizedTimeRemaining,
+        uint256 _spotPrice,
+        uint256 _sharePrice
+    )
+        public
+        view
+        returns (
+            uint256 totalCurveFee,
+            uint256 totalFlatFee,
+            uint256 govCurveFee,
+            uint256 govFlatFee
+        )
+
+    {
+        (totalCurveFee, totalFlatFee, govCurveFee, govFlatFee) = _calculateFeesOutGivenSharesIn(
+                _amountIn,
+                _amountOut,
+                _normalizedTimeRemaining,
+                _spotPrice,
+                _sharePrice
+            );
+        return (totalCurveFee, totalFlatFee, govCurveFee, govFlatFee);
+    }
+
+    function calculateFeesOutGivenBondsIn(
+        uint256 _amountIn,
+        uint256 _normalizedTimeRemaining,
+        uint256 _spotPrice,
+        uint256 _sharePrice
+    ) public view returns (uint256 totalFee, uint256 totalGovFee) {
+        (totalFee, totalGovFee) = _calculateFeesOutGivenBondsIn(
+            _amountIn,
+            _normalizedTimeRemaining,
+            _spotPrice,
+            _sharePrice
+        );
+        return (totalFee, totalGovFee);
+    }
+
+    function calculateFeesInGivenBondsOut(
+        uint256 _amountOut,
+        uint256 _normalizedTimeRemaining,
+        uint256 _spotPrice,
+        uint256 _sharePrice
+    )
+        public
+        view
+        returns (
+            uint256 totalCurveFee,
+            uint256 totalFlatFee,
+            uint256 govCurveFee,
+            uint256 govFlatFee
+        )
+    {
+        (totalCurveFee, totalFlatFee, govCurveFee, govFlatFee) = _calculateFeesInGivenBondsOut(
+            _amountOut,
+            _normalizedTimeRemaining,
+            _spotPrice,
+            _sharePrice
+        );
+        return (totalCurveFee, totalFlatFee, govCurveFee, govFlatFee);
+    }
+
     /// Overrides ///
 
     function _deposit(
