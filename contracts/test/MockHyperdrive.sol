@@ -112,13 +112,13 @@ contract MockHyperdrive is Hyperdrive {
         uint256 _amountIn,
         uint256 _normalizedTimeRemaining,
         uint256 _spotPrice,
-        uint256 _sharePrice
+        uint256 sharePrice
     ) public view returns (uint256 totalFee, uint256 totalGovFee) {
         (totalFee, totalGovFee) = _calculateFeesOutGivenBondsIn(
             _amountIn,
             _normalizedTimeRemaining,
             _spotPrice,
-            _sharePrice
+            sharePrice
         );
         return (totalFee, totalGovFee);
     }
@@ -127,7 +127,7 @@ contract MockHyperdrive is Hyperdrive {
         uint256 _amountOut,
         uint256 _normalizedTimeRemaining,
         uint256 _spotPrice,
-        uint256 _sharePrice
+        uint256 sharePrice
     )
         public
         view
@@ -147,7 +147,7 @@ contract MockHyperdrive is Hyperdrive {
             _amountOut,
             _normalizedTimeRemaining,
             _spotPrice,
-            _sharePrice
+            sharePrice
         );
         return (totalCurveFee, totalFlatFee, govCurveFee, govFlatFee);
     }
