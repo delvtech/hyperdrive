@@ -47,7 +47,7 @@ contract FeeTest is HyperdriveTest {
         );
 
         // Bob closes his long close to maturity.
-        uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
+        closeLong(bob, maturityTime, bondAmount);
 
         // Ensure that gov fees after close are greater than before close.
         uint256 govFeesAfterCloseLong = hyperdrive.getGovFeesAccrued();
@@ -84,7 +84,7 @@ contract FeeTest is HyperdriveTest {
 
         // Short some bonds.
         uint256 bondAmount = 10e18;
-        (uint256 maturityTime, uint256 basePaid) = openShort(bob, bondAmount);
+        (uint256 maturityTime, ) = openShort(bob, bondAmount);
 
         // Ensure that gov fees have been accrued.
         uint256 govFeesAfterOpenShort = hyperdrive.getGovFeesAccrued();
@@ -100,7 +100,7 @@ contract FeeTest is HyperdriveTest {
         );
 
         // Redeem the bonds.
-        uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
+        closeShort(bob, maturityTime, bondAmount);
 
         // Ensure that gov fees after close are greater than before close.
         uint256 govFeesAfterCloseShort = hyperdrive.getGovFeesAccrued();
