@@ -28,11 +28,7 @@ contract HyperdriveTest is BaseTest {
 
         // Instantiate the base token.
         baseToken = new ERC20Mintable();
-        HyperdriveBase.Fees memory fees = HyperdriveBase.Fees(
-            0,
-            0,
-            0
-        );
+        HyperdriveBase.Fees memory fees = HyperdriveBase.Fees(0, 0, 0);
         // Instantiate Hyperdrive.
         uint256 apr = 0.05e18;
         hyperdrive = new MockHyperdrive(
