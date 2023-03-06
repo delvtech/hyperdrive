@@ -4,7 +4,6 @@ pragma solidity ^0.8.18;
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { HyperdriveBase } from "./HyperdriveBase.sol";
 import { HyperdriveLong } from "./HyperdriveLong.sol";
-import { HyperdriveLP } from "./HyperdriveLP.sol";
 import { HyperdriveShort } from "./HyperdriveShort.sol";
 import { AssetId } from "./libraries/AssetId.sol";
 import { Errors } from "./libraries/Errors.sol";
@@ -21,8 +20,7 @@ import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 abstract contract Hyperdrive is
     HyperdriveBase,
     HyperdriveLong,
-    HyperdriveShort,
-    HyperdriveLP
+    HyperdriveShort
 {
     using FixedPointMath for uint256;
 
@@ -136,7 +134,8 @@ abstract contract Hyperdrive is
                 maturedLongsAmount,
                 0,
                 maturedLongsAmount.divDown(_sharePrice),
-                _checkpointTime
+                _checkpointTime,
+                _sharePrice
             );
         }
 
@@ -149,7 +148,8 @@ abstract contract Hyperdrive is
                 maturedShortsAmount,
                 0,
                 maturedShortsAmount.divDown(_sharePrice),
-                _checkpointTime
+                _checkpointTime,
+                _sharePrice
             );
         }
 
