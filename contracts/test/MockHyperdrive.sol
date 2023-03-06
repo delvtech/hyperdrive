@@ -19,8 +19,8 @@ contract MockHyperdrive is Hyperdrive {
         uint256 _checkpointsPerTerm,
         uint256 _checkpointDuration,
         uint256 _timeStretch,
-        uint256 _curveFee,
-        uint256 _flatFee
+        Fees memory _fees,
+        address _governance
     )
         Hyperdrive(
             bytes32(0),
@@ -30,8 +30,8 @@ contract MockHyperdrive is Hyperdrive {
             _checkpointsPerTerm,
             _checkpointDuration,
             _timeStretch,
-            _curveFee,
-            _flatFee
+            _fees,
+            _governance
         )
     {
         _sharePrice = _initialSharePrice;
@@ -48,6 +48,10 @@ contract MockHyperdrive is Hyperdrive {
 
     function getSharePrice() external view returns (uint256) {
         return _sharePrice;
+    }
+
+    function getGovFeesAccrued() external view returns (uint256) {
+        return govFeesAccrued;
     }
 
     function setSharePrice(uint256 sharePrice) external {
@@ -67,6 +71,81 @@ contract MockHyperdrive is Hyperdrive {
             );
         }
         _sharePrice = sharePrice;
+    }
+
+    function calculateFeesOutGivenSharesIn(
+        uint256 _amountIn,
+        uint256 _amountOut,
+        uint256 _normalizedTimeRemaining,
+        uint256 _spotPrice,
+        uint256 sharePrice
+    )
+        public
+        view
+        returns (
+            uint256 totalCurveFee,
+            uint256 totalFlatFee,
+            uint256 govCurveFee,
+            uint256 govFlatFee
+        )
+    {
+        (
+            totalCurveFee,
+            totalFlatFee,
+            govCurveFee,
+            govFlatFee
+        ) = _calculateFeesOutGivenSharesIn(
+            _amountIn,
+            _amountOut,
+            _normalizedTimeRemaining,
+            _spotPrice,
+            sharePrice
+        );
+        return (totalCurveFee, totalFlatFee, govCurveFee, govFlatFee);
+    }
+
+    function calculateFeesOutGivenBondsIn(
+        uint256 _amountIn,
+        uint256 _normalizedTimeRemaining,
+        uint256 _spotPrice,
+        uint256 sharePrice
+    ) public view returns (uint256 totalFee, uint256 totalGovFee) {
+        (totalFee, totalGovFee) = _calculateFeesOutGivenBondsIn(
+            _amountIn,
+            _normalizedTimeRemaining,
+            _spotPrice,
+            sharePrice
+        );
+        return (totalFee, totalGovFee);
+    }
+
+    function calculateFeesInGivenBondsOut(
+        uint256 _amountOut,
+        uint256 _normalizedTimeRemaining,
+        uint256 _spotPrice,
+        uint256 sharePrice
+    )
+        public
+        view
+        returns (
+            uint256 totalCurveFee,
+            uint256 totalFlatFee,
+            uint256 govCurveFee,
+            uint256 govFlatFee
+        )
+    {
+        (
+            totalCurveFee,
+            totalFlatFee,
+            govCurveFee,
+            govFlatFee
+        ) = _calculateFeesInGivenBondsOut(
+            _amountOut,
+            _normalizedTimeRemaining,
+            _spotPrice,
+            sharePrice
+        );
+        return (totalCurveFee, totalFlatFee, govCurveFee, govFlatFee);
     }
 
     /// Overrides ///

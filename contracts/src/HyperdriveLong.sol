@@ -78,21 +78,30 @@ abstract contract HyperdriveLong is HyperdriveBase {
                 timeRemaining,
                 timeStretch
             );
-            (uint256 _curveFee, uint256 _flatFee) = HyperdriveMath
-                .calculateFeesOutGivenIn(
+            (
+                uint256 totalCurveFee,
+                uint256 totalFlatFee,
+                uint256 govCurveFee,
+                uint256 govFlatFee
+            ) = _calculateFeesOutGivenSharesIn(
                     shares, // amountIn
+                    bondProceeds, // amountOut
                     timeRemaining,
                     spotPrice,
-                    sharePrice,
-                    curveFee,
-                    flatFee,
-                    true // isShareIn
+                    sharePrice
                 );
 
-            // This is a base in / bond out operation where the in is given, so we subtract the fee
+            // This is a share in / bond out operation where the in is given, so we subtract the fee
             // amount from the output.
-            bondProceeds -= _curveFee - _flatFee;
-            poolBondDelta -= _curveFee;
+            bondProceeds -= totalCurveFee + totalFlatFee;
+            poolBondDelta -= totalCurveFee - govCurveFee;
+
+            // Calculate the fees owed to the gov in shares.
+            uint256 totalGovFee = (govCurveFee + govFlatFee).divDown(
+                sharePrice
+            );
+            shares -= totalGovFee;
+            govFeesAccrued += totalGovFee;
         }
 
         // Enforce min user outputs
@@ -176,19 +185,19 @@ abstract contract HyperdriveLong is HyperdriveBase {
             timeStretch
         );
         {
-            (uint256 _curveFee, uint256 _flatFee) = HyperdriveMath
-                .calculateFeesOutGivenIn(
+            (
+                uint256 totalFee,
+                uint256 totalGovFee
+            ) = _calculateFeesOutGivenBondsIn(
                     _bondAmount, // amountIn
                     timeRemaining,
                     spotPrice,
-                    sharePrice,
-                    curveFee,
-                    flatFee,
-                    false // isShareIn
+                    sharePrice
                 );
-            // This is a bond in / base out where the bonds are fixed, so we subtract from the base
+            // This is bond in / share out where the bonds are fixed, so we subtract from the share
             // out.
-            shareProceeds -= _curveFee + _flatFee;
+            shareProceeds -= totalFee;
+            govFeesAccrued += totalGovFee;
         }
 
         // If the position hasn't matured, apply the accounting updates that

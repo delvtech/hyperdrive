@@ -112,7 +112,7 @@ contract OpenLongTest is HyperdriveTest {
         );
 
         // Deploy and initialize a new pool with fees.
-        deploy(alice, apr, 0.1e18, 0.1e18);
+        deploy(alice, apr, 0.1e18, 0.1e18, 0, governance);
         initialize(alice, apr, contribution);
 
         // Open a long with fees.

@@ -22,8 +22,8 @@ contract MockHyperdriveTestnet is Hyperdrive {
         uint256 _checkpointsPerTerm,
         uint256 _checkpointDuration,
         uint256 _timeStretch,
-        uint256 _curveFee,
-        uint256 _flatFee
+        Fees memory _fees,
+        address _governance
     )
         Hyperdrive(
             bytes32(0),
@@ -33,8 +33,8 @@ contract MockHyperdriveTestnet is Hyperdrive {
             _checkpointsPerTerm,
             _checkpointDuration,
             _timeStretch,
-            _curveFee,
-            _flatFee
+            _fees,
+            _governance
         )
     {
         rate = _initialRate;
