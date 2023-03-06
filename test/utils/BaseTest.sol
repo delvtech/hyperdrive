@@ -33,6 +33,8 @@ contract BaseTest is Test {
 
     uint256 mainnetForkId;
 
+    uint256 __init__; // time setup function was ran
+
     constructor() {
         mainnetForkId = vm.createFork(
             "https://eth-mainnet.alchemyapi.io/v2/kwjMP-X-Vajdk1ItCfU-56Uaq1wwhamK"
@@ -49,6 +51,8 @@ contract BaseTest is Test {
         deployer = createUser("deployer");
         minter = createUser("minter");
         governance = createUser("governance");
+
+        __init__ = block.timestamp;
     }
 
     modifier __mainnet_fork(uint256 blockNumber) {

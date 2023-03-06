@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "description": "Hyperdrive Smart Contracts",
     "engines": {
-        "node": "^14"
+        "node": "^16"
     },
     "scripts": {
         "build:prod": "FOUNDRY_PROFILE=production forge build",

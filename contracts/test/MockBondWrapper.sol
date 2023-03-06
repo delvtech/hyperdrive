@@ -14,4 +14,24 @@ contract MockBondWrapper is BondWrapper {
         string memory name_,
         string memory symbol_
     ) BondWrapper(_hyperdrive, _token, _mintPercent, name_, symbol_) {}
+
+    function mint(address destination, uint256 amount) external {
+        _mint(destination, amount);
+    }
+
+    function burn(address destination, uint256 amount) external {
+        _burn(destination, amount);
+    }
+
+    function setDeposits(
+        address user,
+        uint256 assetId,
+        uint256 amount
+    ) external {
+        deposits[user][assetId] = amount;
+    }
+
+    function setBalanceOf(address user, uint256 amount) external {
+        balanceOf[user] = amount;
+    }
 }

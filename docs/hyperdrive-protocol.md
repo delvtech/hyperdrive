@@ -8,7 +8,7 @@ Hyperdrive is a new AMM that allows users to open long and short positions to ge
 
 ## Flat + Curve
 
-In Hyperdrive, trades only take place on a single invariant.  When a user opens a new position, the trade is made on a curve that prices the asset as a function of the reserves and a **fixed** time until maturity. When a user closes a position, we price the trade by splitting into to components: new bonds and matured bonds.  The new bonds are priced on the curve and matured bonds can be redeemed 1:1 with the base asset.  For example, let's say Alice wants to sell 12 bonds that are 9 months from maturity on a 12 month term.  We would consider 3 bonds mature and offer a 1:1 redemption for them and the remaining 9 bonds would be priced on the curve with the full time remaining until maturity.
+In Hyperdrive, trades only take place on a single invariant.  When a user opens a new position, the trade is made on a curve that prices the asset as a function of the reserves and a **fixed** time until maturity. When a user closes a position, we price the trade by splitting into two components: new bonds and matured bonds.  The new bonds are priced on the curve and matured bonds can be redeemed 1:1 with the base asset.  For example, let's say Alice wants to sell 12 bonds that are 9 months from maturity on a 12 month term.  We would consider 3 bonds mature and offer a 1:1 redemption for them and the remaining 9 bonds would be priced on the curve with the full time remaining until maturity.
 
 ## Backdating
 
@@ -25,7 +25,7 @@ Mechanically, checkpointing backdates all of the positions opened within the che
 Suppose that the current time is $t$, the contract's checkpoint duration is $d_c$, and the contract's position duration is $d$. The position's start time will be:
 
 $$
-t_c = t - (t \space \mod \space d_c)
+t_c = t - (t \mod d_c)
 $$ 
 
 > Note: A position's start time will always correspond with a checkpoint time
@@ -97,6 +97,7 @@ $$
 > TODO: Cover the aggregates accounting
 
 Update the long's average maturity time, $t_l$
+
 Update the long's base volume, $v_l$
 
 
@@ -137,10 +138,10 @@ y_{reserves} &= y_{reserves} + \Delta y_{curve}
 $$
 
 
-If there are long withdrawal shares outstanding, $w_{l}$, then we must also update the z reserves by crediting the amount of variable interest earned by the LPs.
+If there are long withdrawal shares outstanding, $w_{l}$, then we must also update the z reserves by crediting the amount of variable interest earned by the LPs. Note that $c_{open}$ is the share price when the position was opened.
 
 $$
-z_{reserves} = z_{reserves} + (\frac{\Delta y}{c_0} - \Delta z) \cdot \frac{\min(w_{l}, \Delta y)}{\Delta y}
+z_{reserves} = z_{reserves} + (\frac{\Delta y}{c_{open}} - \Delta z) \cdot \frac{\min(w_{l}, \Delta y)}{\Delta y}
 $$
 
 The $y_{reserves}$ are recalculated to ensure that the apr doesn't change from before the redemption.
@@ -156,13 +157,16 @@ $$
 The number of long withdrawal share proceeds, $p_{l}$, is increased by:
 
 $$
-p_{l} = p_{l} + (\frac{\Delta y}{c_0} - \Delta z) \cdot \frac{\min(w_{l}, \Delta y)}{\Delta y}
+p_{l} = p_{l} + (\frac{\Delta y}{c_{open}} - \Delta z) \cdot \frac{\min(w_{l}, \Delta y)}{\Delta y}
 $$
 
-Update the long's average maturity time, $t_l$
-Update the long's base volume, $v_l$
+Note that $c_{open}$ is the share price when the position was opened.
 
 > TODO: Cover the aggregates accounting
+
+Update the long's average maturity time, $t_l$
+
+Update the long's base volume, $v_l$
 
 ### Open Short
 
@@ -193,13 +197,13 @@ $$
 gives us the $\Delta z$ shares that the $\Delta y$ bonds are worth. Next, we calculate the $\Delta x$ base that the user owes when opening the short. To do this, we calculate the max loss:
 
 $$
-x_{maxloss} = \Delta y - c_1 \cdot \Delta z
+x_{maxloss} = \Delta y - c \cdot \Delta z
 $$
 
-and the interest owed from backdating to the most recent checkpoint:
+and the interest owed from backdating to the most recent checkpoint. Note that $c_{open}$ is the share price when the position was opened:
 
 $$
-x_{interest} = (\frac{c_1}{c_0} - 1) \cdot \Delta y
+x_{interest} = (\frac{c}{c_{open}} - 1) \cdot \Delta y
 $$
 
 The $\Delta x$ base that the user must provide to open the short is equal to the sum of the max loss and the interest owed from backdating to the most recent checkpoint:
@@ -233,6 +237,7 @@ $$
 > TODO: Cover the aggregates accounting
 
 Update the short's average maturity time, $t_s$
+
 Update the short's base volume, $v_s$
 
 ### Close Short
@@ -299,11 +304,12 @@ $$
 > TODO: Cover aggregates accounting
 
 Update the short's average maturity time, $t_s$
+
 Update the short's base volume, $v_s$
 
 ### Add Liquidity
 
-User deposits $\Delta x$ base at share price c where $\frac{\Delta x}{c} = \Delta z$ and $l$ is the total supply of lp shares and receives $\Delta l$ lp shares.
+User deposits $\Delta x$ base at share price c where $\Delta x = c \cdot \Delta z$ and $l$ is the total supply of lp shares and receives $\Delta l$ lp shares.
 
 $$
 \Delta l = \frac{\Delta z \cdot l}{z_{reserves} + a_s - a_l}
@@ -331,13 +337,13 @@ The $y_{reserves}$ are recalculated to ensure that the apr doesn't change from b
 
 ### Remove Liquidity
 
-User redeems $\Delta l$ lp shares and receives $\Delta x$ base at share price c where $\frac{\Delta x}{c} = \Delta z$. The user also receives $\Delta w_{s}$ short withdrawal shares and $\Delta w_{l}$ long withdrawal shares.
+User redeems $\Delta l$ lp shares and receives $\Delta x$ base at share price c where $\Delta x = c \cdot \Delta z$. The user also receives $\Delta w_{s}$ short withdrawal shares and $\Delta w_{l}$ long withdrawal shares.
 
 $$
 \begin{aligned}
 \Delta x &= (z_{reserves} - \frac{o_l}{c}) \cdot \frac{\Delta l}{l}\\
-\Delta w_l &= l_o * \frac{\Delta l}{l}\\
-\Delta w_s &= s_o * \frac{\Delta l}{l}
+\Delta w_l &= l_o \cdot \frac{\Delta l}{l}\\
+\Delta w_s &= s_o \cdot \frac{\Delta l}{l}
 \end{aligned}
 $$
 

@@ -18,8 +18,6 @@ contract BondWrapper_mint is CombinatorialTest {
     MockBondWrapper bondWrapper;
     ERC20Mintable baseToken;
 
-    uint256 initTime;
-
     function setUp() public override {
         super.setUp();
         vm.stopPrank();
@@ -27,7 +25,6 @@ contract BondWrapper_mint is CombinatorialTest {
 
         multiToken = new MockMultiToken(bytes32(0), address(forwarderFactory));
         baseToken = new ERC20Mintable();
-        initTime = block.timestamp;
     }
 
     struct TestCase {
@@ -79,8 +76,8 @@ contract BondWrapper_mint is CombinatorialTest {
                 ? dan
                 : eve;
             // We use offsets for time context
-            uint256 maturityTime = initTime + rawTestCases[i][0];
-            uint256 blockTimestamp = initTime + rawTestCases[i][3];
+            uint256 maturityTime = __init__ + rawTestCases[i][0];
+            uint256 blockTimestamp = __init__ + rawTestCases[i][3];
 
             // Encoding the assetId as it's easier to reference
             uint256 assetId = AssetId.encodeAssetId(
