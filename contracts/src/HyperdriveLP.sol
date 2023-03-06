@@ -283,7 +283,7 @@ abstract contract HyperdriveLP is HyperdriveBase {
             uint128(withdrawSharesReadyToWithdraw)
         );
 
-        //Withdraw for the user
+        // Withdraw for the user
         (_proceeds, ) = _withdraw(
             recoveredMargin + recoveredInterest,
             _destination,
