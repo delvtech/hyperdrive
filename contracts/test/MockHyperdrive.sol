@@ -54,6 +54,10 @@ contract MockHyperdrive is Hyperdrive {
         return _sharePrice;
     }
 
+    function getGovFeesAccrued() external view returns (uint256) {
+        return govFeesAccrued;
+    }
+
     function setSharePrice(uint256 sharePrice) external {
         if (sharePrice > _sharePrice) {
             // Update the share price and accrue interest.
