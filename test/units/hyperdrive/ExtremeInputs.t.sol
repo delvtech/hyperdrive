@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import "forge-std/console2.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 
-contract MaxOpenLongTest is HyperdriveTest {
+contract ExtremeInputs is HyperdriveTest {
     using FixedPointMath for uint256;
 
     function test_max_open_long() external {
