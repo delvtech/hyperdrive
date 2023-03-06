@@ -328,7 +328,7 @@ contract HyperdriveTest is BaseTest {
         uint256 timeRemaining = calculateTimeRemaining(maturityTime);
         // 1 - t * s
         // t = normalized seconds until maturity
-        // s = time stretch paramater of the pool
+        // s = time stretch of the pool
         uint256 normalizedTimeRemaining = FixedPointMath.ONE_18.sub(
             timeRemaining.mulDown(tStretch)
         );
@@ -337,14 +337,16 @@ contract HyperdriveTest is BaseTest {
         // as the theoretical amount of bondsOut. As openLong specifies an
         // amount of base, the conversion of shares to base must also be derived
         return
-            YieldSpaceMath.calculateSharesInGivenBondsOut(
-                poolInfo.shareReserves,
-                poolInfo.bondReserves,
-                poolInfo.lpTotalSupply,
-                poolInfo.bondReserves,
-                normalizedTimeRemaining,
-                poolInfo.sharePrice,
-                hyperdrive.initialSharePrice()
-            ).divDown(poolInfo.sharePrice);
+            YieldSpaceMath
+                .calculateSharesInGivenBondsOut(
+                    poolInfo.shareReserves,
+                    poolInfo.bondReserves,
+                    poolInfo.lpTotalSupply,
+                    poolInfo.bondReserves,
+                    normalizedTimeRemaining,
+                    poolInfo.sharePrice,
+                    hyperdrive.initialSharePrice()
+                )
+                .divDown(poolInfo.sharePrice);
     }
 }
