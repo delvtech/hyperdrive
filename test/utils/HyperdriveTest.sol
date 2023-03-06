@@ -333,8 +333,6 @@ contract HyperdriveTest is BaseTest {
             timeRemaining.mulDown(tStretch)
         );
 
-        uint256 sharePrice = hyperdrive.pricePerShare();
-
         // The max amount of base is derived by approximating the bondReserve
         // as the theoretical amount of bondsOut. As openLong specifies an
         // amount of base, the conversion of shares to base must also be derived
@@ -347,6 +345,6 @@ contract HyperdriveTest is BaseTest {
                 normalizedTimeRemaining,
                 poolInfo.sharePrice,
                 hyperdrive.initialSharePrice()
-            ).divDown(sharePrice);
+            ).divDown(poolInfo.sharePrice);
     }
 }
