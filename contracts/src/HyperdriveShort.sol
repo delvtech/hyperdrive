@@ -370,7 +370,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
                     lpMargin.divDown(_sharePrice),
                     interest
                 );
-                withdrawalProceeds -= (marginUsed + interestUsed);
+                withdrawalProceeds = (marginUsed + interestUsed);
             }
 
 

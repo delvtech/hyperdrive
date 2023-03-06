@@ -399,11 +399,15 @@ abstract contract HyperdriveLong is HyperdriveLP {
 
             // Update the long aggregates.
             {
-                // The short interest is open share price minus close share price times face value.
+                // The short interest is the percent increase in share value times the bonds. We convert
+                // to shares to match the withdraw pool:
+                //   ((c - mu)/mu * bonds) / c
                 uint256 userInterest = openSharePrice <= _sharePrice
-                    ? (_sharePrice - openSharePrice).mulDown(_bondAmount)
+                    ? (_sharePrice - openSharePrice).mulDivDown(_bondAmount, openSharePrice).divDown(_sharePrice);
                     : 0;
                 // If the the short has net lost despite being still positive interest we set capital recovered to 0
+                // Note - This happens when the fixed rate is higher than variable but the position closes before the
+                //        LP looses all of their capital.
                 uint256 capitalFreed = withdrawalProceeds > userInterest
                     ? withdrawalProceeds - userInterest
                     : 0;
@@ -416,7 +420,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
                         userMargin.divDown(openSharePrice),
                         userInterest
                     );
-                withdrawalProceeds -= (capitalWithdrawn + interestWithdrawn);
+                withdrawalProceeds = (capitalWithdrawn + interestWithdrawn);
             }
 
             // Apply the trading deltas to the reserves. These updates reflect
