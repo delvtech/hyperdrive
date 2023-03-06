@@ -7,7 +7,6 @@ import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
-import "forge-std/console.sol";
 
 contract RemoveLiquidityTest is HyperdriveTest {
     using FixedPointMath for uint256;
