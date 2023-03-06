@@ -93,7 +93,6 @@ abstract contract HyperdriveLong is HyperdriveBase {
 
             // This is a share in / bond out operation where the in is given, so we subtract the fee
             // amount from the output.
-            //
             bondProceeds -= totalCurveFee + totalFlatFee;
             poolBondDelta -= totalCurveFee - govCurveFee;
 
