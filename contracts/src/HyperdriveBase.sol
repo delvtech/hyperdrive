@@ -65,6 +65,12 @@ abstract contract HyperdriveBase is MultiToken {
         uint128 shortBaseVolume;
     }
 
+    struct Fees {
+        uint256 curveFee;
+        uint256 flatFee;
+        uint256 govFee;
+    }
+
     /// @notice The reserves and the buffers. This is the primary state used for
     ///         pricing trades and maintaining solvency.
     MarketState public marketState;
@@ -117,9 +123,7 @@ abstract contract HyperdriveBase is MultiToken {
     ///        checkpoints. Position duration must be a multiple of checkpoint
     ///        duration.
     /// @param _timeStretch The time stretch of the pool.
-    /// @param _curveFee The fee parameter for the curve portion of the hyperdrive trade equation.
-    /// @param _flatFee The fee parameter for the flat portion of the hyperdrive trade equation.
-    /// @param _govFeePercent The percentage of the fee that goes to governance.
+    /// @param _fees The fees to apply to trades.
     /// @param _governance The address that receives governance fees.
     constructor(
         bytes32 _linkerCodeHash,
@@ -129,9 +133,7 @@ abstract contract HyperdriveBase is MultiToken {
         uint256 _checkpointsPerTerm,
         uint256 _checkpointDuration,
         uint256 _timeStretch,
-        uint256 _curveFee,
-        uint256 _flatFee,
-        uint256 _govFeePercent,
+        Fees memory _fees,
         address _governance
     ) MultiToken(_linkerCodeHash, _linkerFactory) {
         // Initialize the base token address.
@@ -146,9 +148,9 @@ abstract contract HyperdriveBase is MultiToken {
         checkpointDuration = _checkpointDuration;
         timeStretch = _timeStretch;
         initialSharePrice = _initialSharePrice;
-        curveFee = _curveFee;
-        flatFee = _flatFee;
-        govFeePercent = _govFeePercent;
+        curveFee = _fees.curveFee;
+        flatFee = _fees.flatFee;
+        govFeePercent = _fees.govFee;
         governance = _governance;
     }
 

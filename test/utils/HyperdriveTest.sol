@@ -7,6 +7,7 @@ import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
+import { HyperdriveBase } from "contracts/src/HyperdriveBase.sol";
 import { MockHyperdrive } from "contracts/test/MockHyperdrive.sol";
 
 contract HyperdriveTest is BaseTest {
@@ -27,7 +28,11 @@ contract HyperdriveTest is BaseTest {
 
         // Instantiate the base token.
         baseToken = new ERC20Mintable();
-
+        HyperdriveBase.Fees memory fees = HyperdriveBase.Fees(
+            0,
+            0,
+            0
+        );
         // Instantiate Hyperdrive.
         uint256 apr = 0.05e18;
         hyperdrive = new MockHyperdrive(
@@ -36,9 +41,7 @@ contract HyperdriveTest is BaseTest {
             CHECKPOINTS_PER_TERM,
             CHECKPOINT_DURATION,
             calculateTimeStretch(apr),
-            0,
-            0,
-            0,
+            fees,
             governance
         );
 
@@ -57,15 +60,19 @@ contract HyperdriveTest is BaseTest {
     ) internal {
         vm.stopPrank();
         vm.startPrank(deployer);
+        HyperdriveBase.Fees memory fees = HyperdriveBase.Fees(
+            curveFee,
+            flatFee,
+            govFee
+        );
+
         hyperdrive = new MockHyperdrive(
             baseToken,
             INITIAL_SHARE_PRICE,
             CHECKPOINTS_PER_TERM,
             CHECKPOINT_DURATION,
             calculateTimeStretch(apr),
-            curveFee,
-            flatFee,
-            govFee,
+            fees,
             governance
         );
     }

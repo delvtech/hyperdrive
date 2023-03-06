@@ -31,9 +31,7 @@ contract MakerDsrHyperdrive is Hyperdrive {
     ///        checkpoints. Position duration must be a multiple of checkpoint
     ///        duration.
     /// @param _timeStretch The time stretch of the pool.
-    /// @param _curveFee The fee parameter for the curve portion of the hyperdrive trade equation.
-    /// @param _flatFee The fee parameter for the flat portion of the hyperdrive trade equation.
-    /// @param _govFee The fee parameter for the governance portion of the hyperdrive trade equation.
+    /// @param _fees The fees to apply to trades.
     /// @param _governance The governance address.
     /// @param _dsrManager The "dai savings rate" manager contract
     constructor(
@@ -42,9 +40,7 @@ contract MakerDsrHyperdrive is Hyperdrive {
         uint256 _checkpointsPerTerm,
         uint256 _checkpointDuration,
         uint256 _timeStretch,
-        uint256 _curveFee,
-        uint256 _flatFee,
-        uint256 _govFee,
+        Fees memory _fees,
         address _governance,
         DsrManager _dsrManager
     )
@@ -56,9 +52,7 @@ contract MakerDsrHyperdrive is Hyperdrive {
             _checkpointsPerTerm,
             _checkpointDuration,
             _timeStretch,
-            _curveFee,
-            _flatFee,
-            _govFee,
+            _fees,
             _governance
         )
     {
