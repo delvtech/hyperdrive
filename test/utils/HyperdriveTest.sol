@@ -322,12 +322,22 @@ contract HyperdriveTest is BaseTest {
 
         uint256 tStretch = hyperdrive.timeStretch();
         uint256 positionDuration = hyperdrive.positionDuration();
+        // As any long in the middle of a checkpoint duration is backdated,
+        // we must use that backdate as the reference for the maturity time
         uint256 maturityTime = latestCheckpoint() + positionDuration;
         uint256 timeRemaining = calculateTimeRemaining(maturityTime);
+        // 1 - t * s
+        // t = normalized seconds until maturity
+        // s = time stretch paramater of the pool
         uint256 normalizedTimeRemaining = FixedPointMath.ONE_18.sub(
             timeRemaining.mulDown(tStretch)
         );
 
+        uint256 sharePrice = hyperdrive.pricePerShare();
+
+        // The max amount of base is derived by approximating the bondReserve
+        // as the theoretical amount of bondsOut. As openLong specifies an
+        // amount of base, the conversion of shares to base must also be derived
         return
             YieldSpaceMath.calculateSharesInGivenBondsOut(
                 poolInfo.shareReserves,
@@ -337,6 +347,6 @@ contract HyperdriveTest is BaseTest {
                 normalizedTimeRemaining,
                 poolInfo.sharePrice,
                 hyperdrive.initialSharePrice()
-            );
+            ).divDown(sharePrice);
     }
 }
