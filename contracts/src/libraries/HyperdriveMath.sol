@@ -161,7 +161,7 @@ library HyperdriveMath {
             _sharePrice,
             _initialSharePrice
         );
-        return (curveOut, curveOut, flat);
+        return (curveIn, curveOut, flat);
     }
 
     /// @dev Calculates the amount of shares a user will receive when closing a

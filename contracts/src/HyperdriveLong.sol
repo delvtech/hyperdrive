@@ -52,53 +52,15 @@ abstract contract HyperdriveLong is HyperdriveBase {
         // earned in shares.
         uint256 maturityTime = latestCheckpoint + positionDuration;
         uint256 timeRemaining = _calculateTimeRemaining(maturityTime);
-        uint256 shareReservesDelta;
-        uint256 bondReservesDelta;
-        uint256 bondProceeds;
-        {
-            (, uint256 curveOut, uint256 flat) = HyperdriveMath
-                .calculateOpenLong(
-                    marketState.shareReserves,
-                    marketState.bondReserves,
-                    totalSupply[AssetId._LP_ASSET_ID],
-                    shares, // amountIn
-                    timeRemaining,
-                    timeStretch,
-                    sharePrice,
-                    initialSharePrice
-                );
+        (
+            uint256 shareReservesDelta,
+            uint256 bondReservesDelta,
+            uint256 bondProceeds
+        ) = _calculateOpenLong(shares, sharePrice, timeRemaining);
 
-            // If the user gets less bonds than they paid we are in the negative interest
-            // region of the trading function.
-            if (flat + curveOut < _baseAmount) revert Errors.NegativeInterest();
-
-            // Calculate the fees owed by the trader.
-            uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
-                marketState.shareReserves,
-                marketState.bondReserves,
-                totalSupply[AssetId._LP_ASSET_ID],
-                initialSharePrice,
-                timeRemaining,
-                timeStretch
-            );
-            (uint256 _curveFee, uint256 _flatFee) = HyperdriveMath
-                .calculateFeesOutGivenIn(
-                    shares, // amountIn
-                    timeRemaining,
-                    spotPrice,
-                    sharePrice,
-                    curveFee,
-                    flatFee,
-                    true // isShareIn
-                );
-
-            // TODO: There may be a clearer way to explain this.
-            //
-            // This is a shares in / bond out operation where the in is given,
-            // so we subtract the fee amount from the output.
-            bondReservesDelta = curveOut - curveFee;
-            bondProceeds -= _curveFee - _flatFee;
-        }
+        // If the user gets less bonds than they paid, we are in the negative
+        // interest region of the trading function.
+        if (bondProceeds < _baseAmount) revert Errors.NegativeInterest();
 
         // Enforce min user outputs
         if (_minOutput > bondProceeds) revert Errors.OutputLimit();
@@ -433,6 +395,70 @@ abstract contract HyperdriveLong is HyperdriveBase {
                 timeStretch
             )
             .toUint128();
+    }
+
+    /// @dev Calculate the pool reserve and trader deltas that result from
+    ///      opening a long. This calculation includes trading fees.
+    /// @param _shareAmount The amount of shares being paid to open the long.
+    /// @param _sharePrice The current share price.
+    /// @param _timeRemaining The time remaining in the position.
+    /// @return shareReservesDelta The change in the share reserves.
+    /// @return bondReservesDelta The change in the bond reserves.
+    /// @return bondProceeds The proceeds in bonds.
+    function _calculateOpenLong(
+        uint256 _shareAmount,
+        uint256 _sharePrice,
+        uint256 _timeRemaining
+    )
+        internal
+        view
+        returns (
+            uint256 shareReservesDelta,
+            uint256 bondReservesDelta,
+            uint256 bondProceeds
+        )
+    {
+        (uint256 curveIn, uint256 curveOut, uint256 flat) = HyperdriveMath
+            .calculateOpenLong(
+                marketState.shareReserves,
+                marketState.bondReserves,
+                totalSupply[AssetId._LP_ASSET_ID],
+                _shareAmount, // amountIn
+                _timeRemaining,
+                timeStretch,
+                _sharePrice,
+                initialSharePrice
+            );
+        shareReservesDelta = curveIn;
+        bondReservesDelta = curveOut;
+        bondProceeds = curveOut + flat;
+
+        // Calculate the fees charged on the curve and flat parts of the trade.
+        // Since we calculate the amount of bonds received given shares in, we
+        // subtract the fee from the bond deltas so that the trader receives
+        // less bonds.
+        uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
+            marketState.shareReserves,
+            marketState.bondReserves,
+            totalSupply[AssetId._LP_ASSET_ID],
+            initialSharePrice,
+            _timeRemaining,
+            timeStretch
+        );
+        (uint256 _curveFee, uint256 _flatFee) = HyperdriveMath
+            .calculateFeesOutGivenIn(
+                _shareAmount, // amountIn
+                _timeRemaining,
+                spotPrice,
+                _sharePrice,
+                curveFee,
+                flatFee,
+                true // isShareIn
+            );
+        bondReservesDelta -= _curveFee;
+        bondProceeds -= _curveFee + _flatFee;
+
+        return (shareReservesDelta, bondReservesDelta, bondProceeds);
     }
 
     /// @dev Calculate the pool reserve and trader deltas that result from
