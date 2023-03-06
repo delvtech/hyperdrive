@@ -42,6 +42,7 @@ abstract contract Hyperdrive is
     /// @param _curveFee The fee parameter for the curve portion of the hyperdrive trade equation.
     /// @param _flatFee The fee parameter for the flat portion of the hyperdrive trade equation.
     /// @param _govFee The proportion of fees that go to governance.
+    /// @param _governance The address of the governance contract.
     constructor(
         bytes32 _linkerCodeHash,
         address _linkerFactory,
