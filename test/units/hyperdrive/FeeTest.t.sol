@@ -9,7 +9,7 @@ import { MockHyperdrive } from "contracts/test/MockHyperdrive.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 
-contract OpenLongTest is HyperdriveTest {
+contract FeeTest is HyperdriveTest {
     using FixedPointMath for uint256;
 
     function test_calcFeesOutGivenSharesIn() public {
