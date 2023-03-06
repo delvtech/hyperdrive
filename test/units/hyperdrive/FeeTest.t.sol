@@ -12,6 +12,37 @@ import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 contract FeeTest is HyperdriveTest {
     using FixedPointMath for uint256;
 
+    function test_govFeeAccrual() public {
+        uint256 apr = 0.05e18;
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+
+        // Deploy and initialize a new pool with fees.
+        deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18, governance);
+        initialize(alice, apr, contribution);
+
+        // Open a long, record the accrued fees x share price
+        uint256 baseAmount = 10e18;
+        openLong(bob, baseAmount);
+        uint256 govFeesAfterOpenLong = hyperdrive.getGovFeesAccrued().mulDown(
+            hyperdrive.getSharePrice()
+        );
+
+        // Time passes and the pool accrues interest at the current apr.
+        uint256 timeDelta = 0.5e18;
+        vm.warp(block.timestamp + POSITION_DURATION.mulDown(timeDelta));
+        hyperdrive.setSharePrice(
+            getPoolInfo().sharePrice.mulDown(
+                FixedPointMath.ONE_18 + apr.mulDown(timeDelta)
+            )
+        );
+
+        // Collect fees and test that the fees received in the governance address have earned interest.
+        hyperdrive.collectGovFee();
+        uint256 govBalanceAfter = baseToken.balanceOf(governance);
+        assertGt(govBalanceAfter, govFeesAfterOpenLong);
+    }
+
     function test_collectFees_long() public {
         uint256 apr = 0.05e18;
         // Initialize the pool with a large amount of capital.
@@ -53,14 +84,14 @@ contract FeeTest is HyperdriveTest {
         uint256 govFeesAfterCloseLong = hyperdrive.getGovFeesAccrued();
         assertGt(govFeesAfterCloseLong, govFeesAfterOpenLong);
 
-        // collected fees
+        // Collect fees to governance address
         hyperdrive.collectGovFee();
 
         // Ensure that gov fees after collection are zero.
         uint256 govFeesAfterCollection = hyperdrive.getGovFeesAccrued();
         assertEq(govFeesAfterCollection, 0);
 
-        // Ensure that the governance has received the fees.
+        // Ensure that the governance address has received the fees.
         uint256 govBalanceAfter = baseToken.balanceOf(governance);
         assertGt(govBalanceAfter, govBalanceBefore);
     }
@@ -106,14 +137,14 @@ contract FeeTest is HyperdriveTest {
         uint256 govFeesAfterCloseShort = hyperdrive.getGovFeesAccrued();
         assertGt(govFeesAfterCloseShort, govFeesAfterOpenShort);
 
-        // collected fees
+        // collect governance fees
         hyperdrive.collectGovFee();
 
         // Ensure that gov fees after collection are zero.
         uint256 govFeesAfterCollection = hyperdrive.getGovFeesAccrued();
         assertEq(govFeesAfterCollection, 0);
 
-        // Ensure that the governance has received the fees.
+        // Ensure that the governance address has received the fees.
         uint256 govBalanceAfter = baseToken.balanceOf(governance);
         assertGt(govBalanceAfter, govBalanceBefore);
     }
