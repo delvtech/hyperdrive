@@ -69,15 +69,9 @@ contract FeeTest is HyperdriveTest {
                 0.9 ether, // spotPrice
                 1 ether // sharePrice
             );
-        assertEq(
-            totalFee,
-            .01 ether // ~ 0.011 ether or 10% of the price difference
-        );
+        assertEq(totalFee, .01 ether);
 
-        assertEq(
-            totalGovFee,
-            .005 ether // ~ 0.011 ether or 10% of the price difference
-        );
+        assertEq(totalGovFee, .005 ether);
 
         (totalFee, totalGovFee) = hyperdrive.calculateFeesOutGivenBondsIn(
             1 ether, // amountIn
@@ -85,15 +79,8 @@ contract FeeTest is HyperdriveTest {
             0.9 ether, // spotPrice
             1 ether // sharePrice
         );
-        assertEq(
-            totalFee,
-            0.1 ether // ~ 0.011 ether or 10% of the price difference
-        );
-        assertEq(
-            totalGovFee,
-            0.05 ether, // ~ 0.011 ether or 10% of the price difference
-            "test 2"
-        );
+        assertEq(totalFee, 0.1 ether);
+        assertEq(totalGovFee, 0.05 ether);
     }
 
     function test_calculateFeesInGivenBondsOut() public {
@@ -114,22 +101,10 @@ contract FeeTest is HyperdriveTest {
                 0.9 ether, // spotPrice
                 1 ether // sharePrice
             );
-        assertEq(
-            curveFee,
-            .01 ether // ~ 0.011 ether or 10% of the price difference
-        );
-        assertEq(
-            flatFee,
-            0 ether // ~ 0.011 ether or 10% of the price difference
-        );
-        assertEq(
-            govCurveFee,
-            .005 ether // ~ 0.011 ether or 10% of the price difference
-        );
-        assertEq(
-            govFlatFee,
-            0 ether // ~ 0.011 ether or 10% of the price difference
-        );
+        assertEq(curveFee, .01 ether);
+        assertEq(flatFee, 0 ether);
+        assertEq(govCurveFee, .005 ether);
+        assertEq(govFlatFee, 0 ether);
 
         (curveFee, flatFee, govCurveFee, govFlatFee) = hyperdrive
             .calculateFeesInGivenBondsOut(
@@ -138,21 +113,9 @@ contract FeeTest is HyperdriveTest {
                 0.9 ether, // spotPrice
                 1 ether // sharePrice
             );
-        assertEq(
-            curveFee,
-            0 ether // ~ 0.011 ether or 10% of the price difference
-        );
-        assertEq(
-            flatFee,
-            0.1 ether // ~ 0.011 ether or 10% of the price difference
-        );
-        assertEq(
-            govCurveFee,
-            0 ether // ~ 0.011 ether or 10% of the price difference
-        );
-        assertEq(
-            govFlatFee,
-            0.05 ether // ~ 0.011 ether or 10% of the price difference
-        );
+        assertEq(curveFee, 0 ether);
+        assertEq(flatFee, 0.1 ether);
+        assertEq(govCurveFee, 0 ether);
+        assertEq(govFlatFee, 0.05 ether);
     }
 }
