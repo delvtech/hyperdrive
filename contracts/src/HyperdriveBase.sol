@@ -52,13 +52,6 @@ abstract contract HyperdriveBase is MultiToken {
         uint128 shortBaseVolume;
     }
 
-    struct WithdrawalState {
-        uint128 longWithdrawalSharesOutstanding;
-        uint128 shortWithdrawalSharesOutstanding;
-        uint128 longWithdrawalShareProceeds;
-        uint128 shortWithdrawalShareProceeds;
-    }
-
     struct Checkpoint {
         uint256 sharePrice;
         uint128 longBaseVolume;
@@ -71,6 +64,16 @@ abstract contract HyperdriveBase is MultiToken {
         uint256 govFee;
     }
 
+    //  withdrawSharesReadyToWithdraw - The interest earned by the redemptions which put
+    // capital into the withdraw pool
+    // withdrawCapitalPool - The margin capital reclaimed by the withdraw process
+    // withdrawInterestPool - withdrawInterestPool
+    struct WithdrawPool {
+        uint128 withdrawSharesReadyToWithdraw;
+        uint128 capital;
+        uint128 interest;
+    }
+
     /// @notice The reserves and the buffers. This is the primary state used for
     ///         pricing trades and maintaining solvency.
     MarketState public marketState;
@@ -78,8 +81,8 @@ abstract contract HyperdriveBase is MultiToken {
     /// @notice Aggregate values that are used to enforce fairness guarantees.
     Aggregates public aggregates;
 
-    // FIXME
-    WithdrawalState public withdrawalState;
+    /// @notice The state corresponding to the withdraw pool, expressed as a struct.
+    WithdrawPool public withdrawPool;
 
     /// @notice Hyperdrive positions are bucketed into checkpoints, which
     ///         allows us to avoid poking in any period that has LP or trading
