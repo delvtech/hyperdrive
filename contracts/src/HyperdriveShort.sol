@@ -213,7 +213,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
                     _bondAmount,
                     _bondAmount.mulDown(timeRemaining),
                     sharePayment.sub(govFee),
-                    _maturityTime
+                    _maturityTime,
+                    sharePrice
                 );
             }
         }
