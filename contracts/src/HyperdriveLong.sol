@@ -407,7 +407,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
                     : 0;
                 // If the the short has net lost despite being still positive interest we set capital recovered to 0
                 // Note - This happens when the fixed rate is higher than variable but the position closes before the
-                //        LP looses all of their capital.
+                //        LP loses all of their capital.
                 uint256 capitalFreed = withdrawalProceeds > userInterest
                     ? withdrawalProceeds - userInterest
                     : 0;
