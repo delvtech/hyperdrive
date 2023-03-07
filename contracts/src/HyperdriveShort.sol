@@ -386,9 +386,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             uint256 checkpointTime = _maturityTime - positionDuration;
             if (_bondAmount == checkpointAmount) {
                 // The margin is the value of shorts minus what was paid
-                lpMargin =
-                    _bondAmount -
-                    checkpoints[checkpointTime].shortBaseVolume;
+                lpMargin = checkpoints[checkpointTime].shortBaseVolume;
                 // Do state updates
                 aggregates.shortBaseVolume -= checkpoints[checkpointTime]
                     .shortBaseVolume;
@@ -398,7 +396,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
                     checkpoints[checkpointTime].shortBaseVolume
                 ).mulDown(_bondAmount.divDown(checkpointAmount)).toUint128();
                 // The margin is the value of shorts minus what was paid
-                lpMargin = _bondAmount - proportionalBaseVolume;
+                lpMargin = proportionalBaseVolume;
                 // Do the state updates
                 aggregates.shortBaseVolume -= proportionalBaseVolume;
                 checkpoints[checkpointTime]
