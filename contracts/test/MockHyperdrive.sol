@@ -166,8 +166,7 @@ contract MockHyperdrive is Hyperdrive {
         return (totalCurveFee, totalFlatFee, govCurveFee, govFlatFee);
     }
 
-    // Calculates the accrued amount continuously compounded rate of interest
-    // over a period
+    // Derives principal + continous compounded rate of interest over a period
     // principal * e ^ (rate * time)
     function calculateCompoundInterest(
         uint256 _principal,
