@@ -351,7 +351,7 @@ library HyperdriveMath {
             .pow(tau);
     }
 
-    // FIXME: It seems like this can be optimized considering that we've already
+    // TODO: It seems like this can be optimized considering that we've already
     // computed curveIn, curveOut, and flat.
     //
     /// @dev Calculates the fees for the curve portion of hyperdrive calcOutGivenIn
@@ -405,7 +405,7 @@ library HyperdriveMath {
         }
     }
 
-    // FIXME: It seems like this can be optimized considering that we've already
+    // TODO: It seems like this can be optimized considering that we've already
     // computed curveIn, curveOut, and flat.
     //
     /// @dev Calculates the fees for the curve portion of hyperdrive calcInGivenOut
