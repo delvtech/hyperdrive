@@ -6,6 +6,7 @@ import { ForwarderFactory } from "contracts/src/ForwarderFactory.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
+import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { HyperdriveBase } from "contracts/src/HyperdriveBase.sol";
 import { MockHyperdrive } from "contracts/test/MockHyperdrive.sol";
@@ -314,5 +315,38 @@ contract HyperdriveTest is BaseTest {
 
     function latestCheckpoint() internal view returns (uint256) {
         return block.timestamp - (block.timestamp % CHECKPOINT_DURATION);
+    }
+
+    function calculateMaxOpenLong() internal view returns (uint256 baseAmount) {
+        PoolInfo memory poolInfo = getPoolInfo();
+
+        uint256 tStretch = hyperdrive.timeStretch();
+        uint256 positionDuration = hyperdrive.positionDuration();
+        // As any long in the middle of a checkpoint duration is backdated,
+        // we must use that backdate as the reference for the maturity time
+        uint256 maturityTime = latestCheckpoint() + positionDuration;
+        uint256 timeRemaining = calculateTimeRemaining(maturityTime);
+        // 1 - t * s
+        // t = normalized seconds until maturity
+        // s = time stretch of the pool
+        uint256 normalizedTimeRemaining = FixedPointMath.ONE_18.sub(
+            timeRemaining.mulDown(tStretch)
+        );
+
+        // The max amount of base is derived by approximating the bondReserve
+        // as the theoretical amount of bondsOut. As openLong specifies an
+        // amount of base, the conversion of shares to base must also be derived
+        return
+            YieldSpaceMath
+                .calculateSharesInGivenBondsOut(
+                    poolInfo.shareReserves,
+                    poolInfo.bondReserves,
+                    poolInfo.lpTotalSupply,
+                    poolInfo.bondReserves,
+                    normalizedTimeRemaining,
+                    poolInfo.sharePrice,
+                    hyperdrive.initialSharePrice()
+                )
+                .divDown(poolInfo.sharePrice);
     }
 }

@@ -97,7 +97,6 @@ $$
 > TODO: Cover the aggregates accounting
 
 Update the long's average maturity time, $t_l$
-
 Update the long's base volume, $v_l$
 
 
@@ -138,35 +137,35 @@ y_{reserves} &= y_{reserves} + \Delta y_{curve}
 $$
 
 
-If there are long withdrawal shares outstanding, $w_{l}$, then we must also update the z reserves by crediting the amount of variable interest earned by the LPs. Note that $c_{open}$ is the share price when the position was opened.
+If there are withdrawal shares outstanding, $w$, then we must also update the z reserves by removing the margin $m$ and variable interest from them and then crediting that freed margin to the withdraw shares. We do not credit more margin than the outstanding withdraw shares to the pool.
 
 $$
-z_{reserves} = z_{reserves} + (\frac{\Delta y}{c_{open}} - \Delta z) \cdot \frac{\min(w_{l}, \Delta y)}{\Delta y}
+m = min(w, \frac{\Delta y}{c_{open}} - \Delta z)\\
+z_{reserves} = z_{reserves} -  (\Delta z + m)\\
 $$
 
 The $y_{reserves}$ are recalculated to ensure that the apr doesn't change from before the redemption.
 
-The number of long withdrawal shares outstanding, $w_{l}$, is decreased by:
+The number of long withdrawal shares outstanding, $w$, is decreased by the margin which would have backed this position at open. We calculate this in the smart contacts by loading the open check point then subtracting the base volume from the total supply of longs, then multiplying by the proportion represented by this position.
 
 $$
-w_{l} = w_{l} - \frac{\min(w_{l}, \Delta y)}{\Delta y}
+m_{open} = (supply_{l}(t_{open}) - v_{l}(t_{open})) \frac{\Delta y}{supply_{l}(t_{open})}
 $$
 
-> Note: Long withdrawal shares receive the same proceeds as shorts because they **are** shorts without the ability to close early.
+The amount of capital freed by this withdraw in excess of the margin at open is payed into the interest pool. When withdraw shares are consumed they get pro-rata access to both the margin and interest pools.
 
-The number of long withdrawal share proceeds, $p_{l}$, is increased by:
+> Note: Withdrawal shares when closing longs receive the same proceeds as shorts because they **are** shorts without the ability to close early.
+
+The number of withdrawal share proceeds, $p$, is increased by:
 
 $$
-p_{l} = p_{l} + (\frac{\Delta y}{c_{open}} - \Delta z) \cdot \frac{\min(w_{l}, \Delta y)}{\Delta y}
+p = min((\frac{\Delta y}{c_0} - \Delta z), w)
 $$
-
-Note that $c_{open}$ is the share price when the position was opened.
-
-> TODO: Cover the aggregates accounting
 
 Update the long's average maturity time, $t_l$
-
 Update the long's base volume, $v_l$
+
+> TODO: Cover the aggregates accounting
 
 ### Open Short
 
@@ -237,7 +236,6 @@ $$
 > TODO: Cover the aggregates accounting
 
 Update the short's average maturity time, $t_s$
-
 Update the short's base volume, $v_s$
 
 ### Close Short
@@ -278,34 +276,31 @@ y_{reserves} &= y_{reserves} - \Delta y_{curve}
 \end{aligned}
 $$
 
-If there are short withdrawal shares outstanding, $w_{s}$, then we update the reserves to reflect the proportion of shares that are owed the LPs vs the withdrawal pool.
+If there are withdrawal shares outstanding, $w$, then use the margin freed by this position to pay off the withdraw pool. We also adjust the reserves so that any margin paid to the withdraw pool is excluded from the update. The freed margin plus interest $p$ is equal to the freed shares.
 
 $$
-z_{reserves} = z_{reserves} - \Delta z \cdot \frac{\min(w_{s}, \Delta y)}{\Delta y}\\
+p = min(\Delta z, w)
+z_{reserves} = z_{reserves} - (\Delta z - p)
 $$
 
 
 The $y_{reserves}$ are recalculated to ensure that the apr doesn't change from before the short close.
 
-The number of short withdrawal shares outstanding, $w_s$, is decreased by:
+We calculate the opening margin of this position by comparing the margin required at open to the current freed margin, in positive interest domains this should be strictly increasing. The amount of capital freed by this withdraw in excess of the margin at open is payed into the interest pool. When withdraw shares are consumed they get pro-rata access to both the margin and interest pools.
 
 $$
-w_{s} = w_{s} - \frac{\min(w_{s}, \Delta y)}{\Delta y}
+m_{open} = (supply_{s}(t_{open}) - v_{s}(t_{open})) \frac{\Delta y}{supply_{s}(t_{open})}
+i = p - m_{open}
 $$
 
 > Note: Short withdrawal shares receive the same proceeds as longs because they **are** longs.
-
-The number of short withdrawal share proceeds, $p_{s}$, is increased by:
-
-$$
-p_{s} = p_{s} + \Delta z \cdot\frac{\min(w_{s}, \Delta y)}{\Delta y}
-$$
 
 > TODO: Cover aggregates accounting
 
 Update the short's average maturity time, $t_s$
 
 Update the short's base volume, $v_s$
+Update the withdraw shares outstanding by reducing by $p$
 
 ### Add Liquidity
 
@@ -337,13 +332,12 @@ The $y_{reserves}$ are recalculated to ensure that the apr doesn't change from b
 
 ### Remove Liquidity
 
-User redeems $\Delta l$ lp shares and receives $\Delta x$ base at share price c where $\Delta x = c \cdot \Delta z$. The user also receives $\Delta w_{s}$ short withdrawal shares and $\Delta w_{l}$ long withdrawal shares.
+User redeems $\Delta l$ lp shares and receives $\Delta x$ base at share price c where $\frac{\Delta x}{c} = \Delta z$. The user also receives $\Delta w$ withdraw shares equal to their margin exposure to existing positions.
 
 $$
 \begin{aligned}
 \Delta x &= (z_{reserves} - \frac{o_l}{c}) \cdot \frac{\Delta l}{l}\\
-\Delta w_l &= l_o \cdot \frac{\Delta l}{l}\\
-\Delta w_s &= s_o \cdot \frac{\Delta l}{l}
+\Delta w &= l_o - v_l + s_o - v_s\\
 \end{aligned}
 $$
 
@@ -355,11 +349,4 @@ $$
 
 The $y_{reserves}$ are recalculated to ensure that the apr doesn't change from before the lp added liquidity.
 
-The withdrawal shares are updated as follows:
-
-$$
-\begin{aligned}
-w_l &= w_l + \Delta w_l\\
-w_s &= w_s + \Delta w_s
-\end{aligned}
-$$
+The withdrawal shares are updated so that the supply of withdraw shares is increased but no other changes are made.

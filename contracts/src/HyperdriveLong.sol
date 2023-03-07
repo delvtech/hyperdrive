@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import { HyperdriveBase } from "./HyperdriveBase.sol";
+import { HyperdriveLP } from "./HyperdriveLP.sol";
 import { AssetId } from "./libraries/AssetId.sol";
 import { Errors } from "./libraries/Errors.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
@@ -14,7 +14,7 @@ import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract HyperdriveLong is HyperdriveBase {
+abstract contract HyperdriveLong is HyperdriveLP {
     using FixedPointMath for uint256;
     using SafeCast for uint256;
 
@@ -147,7 +147,8 @@ abstract contract HyperdriveLong is HyperdriveBase {
                 bondReservesDelta,
                 shareProceeds,
                 shareReservesDelta,
-                _maturityTime
+                _maturityTime,
+                sharePrice
             );
         }
 
@@ -263,12 +264,14 @@ abstract contract HyperdriveLong is HyperdriveBase {
     /// @param _shareProceeds The proceeds received from closing the long.
     /// @param _shareReservesDelta The shares paid by the curve.
     /// @param _maturityTime The maturity time of the long.
+    /// @param _sharePrice The current price of shares
     function _applyCloseLong(
         uint256 _bondAmount,
         uint256 _bondReservesDelta,
         uint256 _shareProceeds,
         uint256 _shareReservesDelta,
-        uint256 _maturityTime
+        uint256 _maturityTime,
+        uint256 _sharePrice
     ) internal {
         // Update the long average maturity time.
         {
@@ -285,6 +288,8 @@ abstract contract HyperdriveLong is HyperdriveBase {
         }
 
         // Update the long base volume.
+        // The margin used by this position which may be freed
+        uint256 userMargin;
         {
             // Get the total supply of longs in the checkpoint of the longs
             // being closed. If the longs are closed before maturity, we add the
@@ -302,6 +307,11 @@ abstract contract HyperdriveLong is HyperdriveBase {
             // volume aggregates by a proportional amount.
             uint256 checkpointTime = _maturityTime - positionDuration;
             if (_bondAmount == checkpointAmount) {
+                // The total bonds minus what's paid for them
+                userMargin =
+                    _bondAmount -
+                    checkpoints[checkpointTime].longBaseVolume;
+                // Updates
                 aggregates.longBaseVolume -= checkpoints[checkpointTime]
                     .longBaseVolume;
                 delete checkpoints[checkpointTime].longBaseVolume;
@@ -309,6 +319,9 @@ abstract contract HyperdriveLong is HyperdriveBase {
                 uint128 proportionalBaseVolume = uint256(
                     checkpoints[checkpointTime].longBaseVolume
                 ).mulDown(_bondAmount.divDown(checkpointAmount)).toUint128();
+                // The total bonds minus what's paid for them
+                userMargin = _bondAmount - proportionalBaseVolume;
+                // Update state
                 aggregates.longBaseVolume -= proportionalBaseVolume;
                 checkpoints[checkpointTime]
                     .longBaseVolume -= proportionalBaseVolume;
@@ -335,15 +348,9 @@ abstract contract HyperdriveLong is HyperdriveBase {
         // Calculate the amount of liquidity that needs to be removed.
         uint256 shareAdjustment = _shareProceeds - _shareReservesDelta;
 
-        // FIXME: Refactor this into it's own function.
-        //
-        // If there are outstanding long withdrawal shares, we attribute a
-        // proportional amount of the proceeds to the withdrawal pool and the
-        // active LPs. Otherwise, we use simplified accounting that has the same
-        // behavior but is more gas efficient. Since the difference between the
-        // base reserves and the longs outstanding stays the same or gets
-        // larger, we don't need to verify the reserves invariants.
-        if (withdrawalState.longWithdrawalSharesOutstanding > 0) {
+        // If there is a withdraw processing we calculate the margin freed by this position and then
+        // deposit it into the withdraw pool
+        if (_needsToBeFreed()) {
             // Since longs are backdated to the beginning of the checkpoint and
             // interest only begins accruing when the longs are opened, we
             // exclude the first checkpoint from LP withdrawal payouts. For most
@@ -359,35 +366,48 @@ abstract contract HyperdriveLong is HyperdriveBase {
             // when longs are opened. The math for the withdrawal proceeds is
             // given by:
             //
-            // proceeds = c_1 * (dy / c_0 - dz) * (min(w_l, dy) / dy)
+            // proceeds = c_1 * (dy / c_0 - dz)
             //
-            // We convert to shares at position close by dividing by c_1. If a
-            // checkpoint was missed and old matured positions are being closed,
-            // this will correctly attribute the extra interest to the
-            // withdrawal pool.
-            uint256 withdrawalAmount = withdrawalState
-                .longWithdrawalSharesOutstanding < _bondAmount
-                ? withdrawalState.longWithdrawalSharesOutstanding
-                : _bondAmount;
-
+            // We convert to shares at position close by dividing by c_1. If a checkpoint
+            // was missed and old matured positions are being closed, this will correctly
+            // attribute the extra interest to the withdrawal pool.
             uint256 withdrawalProceeds;
             uint256 openShares = _bondAmount.divDown(openSharePrice);
             // We check if the interest rate was negative
             if (openShares > _shareProceeds) {
                 // If not we do the normal calculation
-                withdrawalProceeds = openShares.sub(_shareProceeds).mulDown(
-                    withdrawalAmount.divDown(_bondAmount)
-                );
+                withdrawalProceeds = openShares.sub(_shareProceeds);
             } else {
                 // If there's negative interest the LP's position is fully wiped out and has zero value.
                 withdrawalProceeds = 0;
             }
 
             // Update the long aggregates.
-            withdrawalState.longWithdrawalSharesOutstanding -= withdrawalAmount
-                .toUint128();
-            withdrawalState.longWithdrawalShareProceeds += withdrawalProceeds
-                .toUint128();
+            {
+                // The short interest is the percent increase in share value times the bonds. We convert
+                // to shares to match the withdraw pool:
+                //   ((c - mu)/mu * bonds) / c
+                uint256 userInterest = openSharePrice <= _sharePrice
+                    ? (_sharePrice - openSharePrice)
+                        .mulDivDown(_bondAmount, openSharePrice)
+                        .divDown(_sharePrice)
+                    : 0;
+                // If the the short has net lost despite being still positive interest we set capital recovered to 0
+                // Note - This happens when there's negative interest
+                uint256 capitalFreed = withdrawalProceeds > userInterest
+                    ? withdrawalProceeds - userInterest
+                    : 0;
+                // Call into LP to free margin
+                (
+                    uint256 capitalWithdrawn,
+                    uint256 interestWithdrawn
+                ) = _freeMargin(
+                        capitalFreed,
+                        userMargin.divDown(openSharePrice),
+                        userInterest
+                    );
+                withdrawalProceeds = (capitalWithdrawn + interestWithdrawn);
+            }
 
             // Increase the amount of liquidity to be removed.
             shareAdjustment += withdrawalProceeds;

@@ -78,20 +78,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
         // Ensure that Alice receives the right amount of withdrawal shares.
         assertEq(
             hyperdrive.balanceOf(
-                AssetId.encodeAssetId(
-                    AssetId.AssetIdPrefix.LongWithdrawalShare,
-                    0
-                ),
-                alice
-            ),
-            0
-        );
-        assertEq(
-            hyperdrive.balanceOf(
-                AssetId.encodeAssetId(
-                    AssetId.AssetIdPrefix.ShortWithdrawalShare,
-                    0
-                ),
+                AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0),
                 alice
             ),
             0
@@ -147,26 +134,15 @@ contract RemoveLiquidityTest is HyperdriveTest {
         assertApproxEqAbs(calculateAPRFromReserves(), poolApr, 1 wei);
 
         // Ensure that Alice receives the right amount of withdrawal shares.
-        uint256 longWithdrawalSharesExpected = getPoolInfo().longsOutstanding;
+        (, uint256 longBaseVolume, , ) = hyperdrive.aggregates();
+        uint256 withdrawSharesExpected = (getPoolInfo().longsOutstanding -
+            longBaseVolume).divDown(poolInfo.sharePrice);
         assertEq(
             hyperdrive.balanceOf(
-                AssetId.encodeAssetId(
-                    AssetId.AssetIdPrefix.LongWithdrawalShare,
-                    0
-                ),
+                AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0),
                 alice
             ),
-            longWithdrawalSharesExpected
-        );
-        assertEq(
-            hyperdrive.balanceOf(
-                AssetId.encodeAssetId(
-                    AssetId.AssetIdPrefix.ShortWithdrawalShare,
-                    0
-                ),
-                alice
-            ),
-            0
+            withdrawSharesExpected
         );
     }
 
@@ -219,26 +195,16 @@ contract RemoveLiquidityTest is HyperdriveTest {
         assertEq(poolInfo.bondReserves, 0);
 
         // Ensure that Alice receives the right amount of withdrawal shares.
-        uint256 shortWithdrawalSharesExpected = getPoolInfo().shortsOutstanding;
-        assertEq(
-            hyperdrive.balanceOf(
-                AssetId.encodeAssetId(
-                    AssetId.AssetIdPrefix.LongWithdrawalShare,
-                    0
-                ),
-                alice
-            ),
-            0
+        (, , , uint256 shortBaseVolume) = hyperdrive.aggregates();
+        uint256 withdrawSharesExpected = (shortBaseVolume).divDown(
+            poolInfo.sharePrice
         );
         assertEq(
             hyperdrive.balanceOf(
-                AssetId.encodeAssetId(
-                    AssetId.AssetIdPrefix.ShortWithdrawalShare,
-                    0
-                ),
+                AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0),
                 alice
             ),
-            shortWithdrawalSharesExpected
+            withdrawSharesExpected
         );
     }
 }
