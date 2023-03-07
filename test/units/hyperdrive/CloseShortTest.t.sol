@@ -249,7 +249,11 @@ contract CloseShortTest is HyperdriveTest {
         uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
 
         // Should be near 100% of a loss
-        assertApproxEqAbs(basePaid.sub(baseProceeds).divDown(basePaid), 1e18, 1e15);
+        assertApproxEqAbs(
+            basePaid.sub(baseProceeds).divDown(basePaid),
+            1e18,
+            1e15
+        );
 
         // Verify that the close short updates were correct.
         verifyCloseShort(
