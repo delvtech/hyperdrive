@@ -227,6 +227,40 @@ contract CloseShortTest is HyperdriveTest {
         );
     }
 
+    function test_close_short_max_loss() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Short some bonds.
+        uint256 bondAmount = 1000e18;
+        (uint256 maturityTime, uint256 basePaid) = openShort(bob, bondAmount);
+
+        // Get the reserves before closing the short.
+        PoolInfo memory poolInfoBefore = getPoolInfo();
+
+        // Advance and shares accrue 0% interest throughout the duration
+        advanceTime(POSITION_DURATION, 0);
+        assertEq(block.timestamp, maturityTime);
+
+        // Redeem the bonds.
+        uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
+
+        // Should be near 100% of a loss
+        assertApproxEqAbs(basePaid.sub(baseProceeds).divDown(basePaid), 1e18, 1e15);
+
+        // Verify that the close short updates were correct.
+        verifyCloseShort(
+            poolInfoBefore,
+            basePaid,
+            baseProceeds,
+            bondAmount,
+            maturityTime
+        );
+    }
+
     function verifyCloseShort(
         PoolInfo memory poolInfoBefore,
         uint256 basePaid,
