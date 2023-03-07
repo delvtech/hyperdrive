@@ -224,12 +224,14 @@ abstract contract HyperdriveLP is HyperdriveBase {
             )
             .toUint128();
 
-
         // The withdrawing LP will get their percent of the margin which is
         // used to back open positions as a token which can be redeemed for
         // margin as it becomes available.
-        uint256 userMargin = marketState.longsOutstanding - aggregates.longBaseVolume;
-        userMargin +=  marketState.shortsOutstanding - aggregates.shortBaseVolume;
+        uint256 userMargin = marketState.longsOutstanding -
+            aggregates.longBaseVolume;
+        userMargin +=
+            marketState.shortsOutstanding -
+            aggregates.shortBaseVolume;
         userMargin = userMargin.mulDivDown(_shares, totalSupply);
         // Mint the withdrawal tokens.
         _mint(
@@ -315,15 +317,20 @@ abstract contract HyperdriveLP is HyperdriveBase {
         uint256 withdrawShareSupply = totalSupply[
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
         ];
-        if (withdrawShareSupply <= withdrawSharesReadyToWithdraw ) {
+        if (withdrawShareSupply <= withdrawSharesReadyToWithdraw) {
             return (0, 0);
         }
         // If we have more capital freed than needed we adjust down all values
-        if (maxCapital + uint256(withdrawSharesReadyToWithdraw) > uint256(withdrawShareSupply)) {
+        if (
+            maxCapital + uint256(withdrawSharesReadyToWithdraw) >
+            uint256(withdrawShareSupply)
+        ) {
             // In this case we want maxCapital*adjustment + withdrawSharesReadyToWithdraw = withdrawShareSupply
             // so adjustment = (withdrawShareSupply - withdrawSharesReadyToWithdraw)/maxCapital
             // We adjust maxCapital and do corresponding reduction in freedCapital and interest
-            uint256 adjustment = uint256(withdrawShareSupply - withdrawSharesReadyToWithdraw).divDown(maxCapital);
+            uint256 adjustment = uint256(
+                withdrawShareSupply - withdrawSharesReadyToWithdraw
+            ).divDown(maxCapital);
             freedCapital = freedCapital.mulDown(adjustment);
             interest = interest.mulDown(adjustment);
             maxCapital = maxCapital.mulDown(adjustment);

@@ -373,27 +373,24 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 withdrawalProceeds = (marginUsed + interestUsed);
             }
 
-
             // Apply the trading deltas to the reserves. These updates reflect
             // the fact that some of the reserves will be attributed to the
             // withdrawal pool. The math for the share reserves update is given by:
             //
-            // z += dz - dz * (min(w_s, dy) / dy)
-            if (withdrawalProceeds != 0) {
-                marketState.shareReserves +=
-                    _sharePayment.toUint128() -
-                    withdrawalProceeds.toUint128();
-                marketState.bondReserves = HyperdriveMath
-                    .calculateBondReserves(
-                        marketState.shareReserves,
-                        totalSupply[AssetId._LP_ASSET_ID],
-                        initialSharePrice,
-                        apr,
-                        positionDuration,
-                        timeStretch
-                    )
-                    .toUint128();
-            }
+            // z += dz - freed_margin
+            marketState.shareReserves +=
+                _sharePayment.toUint128() -
+                withdrawalProceeds.toUint128();
+            marketState.bondReserves = HyperdriveMath
+                .calculateBondReserves(
+                    marketState.shareReserves,
+                    totalSupply[AssetId._LP_ASSET_ID],
+                    initialSharePrice,
+                    apr,
+                    positionDuration,
+                    timeStretch
+                )
+                .toUint128();
         } else {
             marketState.shareReserves += _sharePayment.toUint128();
             marketState.bondReserves -= _poolBondDelta.toUint128();

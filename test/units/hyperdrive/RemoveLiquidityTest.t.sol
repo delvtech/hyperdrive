@@ -78,10 +78,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
         // Ensure that Alice receives the right amount of withdrawal shares.
         assertEq(
             hyperdrive.balanceOf(
-                AssetId.encodeAssetId(
-                    AssetId.AssetIdPrefix.WithdrawalShare,
-                    0
-                ),
+                AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0),
                 alice
             ),
             0
@@ -138,13 +135,11 @@ contract RemoveLiquidityTest is HyperdriveTest {
 
         // Ensure that Alice receives the right amount of withdrawal shares.
         (, uint256 longBaseVolume, , ) = hyperdrive.aggregates();
-        uint256 withdrawSharesExpected = (getPoolInfo().longsOutstanding - longBaseVolume).divDown(poolInfo.sharePrice);
+        uint256 withdrawSharesExpected = (getPoolInfo().longsOutstanding -
+            longBaseVolume).divDown(poolInfo.sharePrice);
         assertEq(
             hyperdrive.balanceOf(
-                AssetId.encodeAssetId(
-                    AssetId.AssetIdPrefix.WithdrawalShare,
-                    0
-                ),
+                AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0),
                 alice
             ),
             withdrawSharesExpected
@@ -201,13 +196,11 @@ contract RemoveLiquidityTest is HyperdriveTest {
 
         // Ensure that Alice receives the right amount of withdrawal shares.
         (, , , uint256 shortBaseVolume) = hyperdrive.aggregates();
-        uint256 withdrawSharesExpected = (getPoolInfo().shortsOutstanding - shortBaseVolume).divDown(poolInfo.sharePrice);
+        uint256 withdrawSharesExpected = (getPoolInfo().shortsOutstanding -
+            shortBaseVolume).divDown(poolInfo.sharePrice);
         assertEq(
             hyperdrive.balanceOf(
-                AssetId.encodeAssetId(
-                    AssetId.AssetIdPrefix.WithdrawalShare,
-                    0
-                ),
+                AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0),
                 alice
             ),
             withdrawSharesExpected

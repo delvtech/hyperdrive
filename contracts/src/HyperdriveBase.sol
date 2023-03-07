@@ -65,8 +65,7 @@ abstract contract HyperdriveBase is MultiToken {
     /// @notice Aggregate values that are used to enforce fairness guarantees.
     Aggregates public aggregates;
 
-
-   /// @notice The amount of withdraw shares which can be withdrawn
+    /// @notice The amount of withdraw shares which can be withdrawn
     uint128 public withdrawSharesReadyToWithdraw;
 
     /// @notice The margin capital reclaimed by the withdraw process

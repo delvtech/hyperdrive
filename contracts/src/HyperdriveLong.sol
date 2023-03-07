@@ -331,7 +331,9 @@ abstract contract HyperdriveLong is HyperdriveLP {
             uint256 checkpointTime = _maturityTime - positionDuration;
             if (_bondAmount == checkpointAmount) {
                 // The total bonds minus what's paid for them
-                userMargin = _bondAmount - checkpoints[checkpointTime].longBaseVolume;
+                userMargin =
+                    _bondAmount -
+                    checkpoints[checkpointTime].longBaseVolume;
                 // Updates
                 aggregates.longBaseVolume -= checkpoints[checkpointTime]
                     .longBaseVolume;
@@ -403,11 +405,12 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 // to shares to match the withdraw pool:
                 //   ((c - mu)/mu * bonds) / c
                 uint256 userInterest = openSharePrice <= _sharePrice
-                    ? (_sharePrice - openSharePrice).mulDivDown(_bondAmount, openSharePrice).divDown(_sharePrice);
+                    ? (_sharePrice - openSharePrice)
+                        .mulDivDown(_bondAmount, openSharePrice)
+                        .divDown(_sharePrice)
                     : 0;
                 // If the the short has net lost despite being still positive interest we set capital recovered to 0
-                // Note - This happens when the fixed rate is higher than variable but the position closes before the
-                //        LP looses all of their capital.
+                // Note - This happens when there's negative interest
                 uint256 capitalFreed = withdrawalProceeds > userInterest
                     ? withdrawalProceeds - userInterest
                     : 0;
