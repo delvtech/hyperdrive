@@ -54,8 +54,8 @@ contract MockHyperdrive is Hyperdrive {
         return govFeesAccrued;
     }
 
-    // Accrues continuosly compounded interest for a given number of seconds
-    // and readjusts share price to reflect such compounding
+    // Accrues compounded interest for a given number of seconds and readjusts
+    // share price to reflect such compounding
     function accrue(uint256 time, uint256 apy) external {
         (uint256 accrued, uint256 interest) = calculateCompoundInterest(
             baseToken.balanceOf(address(this)),
@@ -166,7 +166,7 @@ contract MockHyperdrive is Hyperdrive {
         return (totalCurveFee, totalFlatFee, govCurveFee, govFlatFee);
     }
 
-    // Derives principal + continous compounded rate of interest over a period
+    // Derives principal + compounded rate of interest over a period
     // principal * e ^ (rate * time)
     function calculateCompoundInterest(
         uint256 _principal,
