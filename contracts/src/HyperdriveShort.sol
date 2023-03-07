@@ -373,7 +373,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 withdrawalProceeds = (marginUsed + interestUsed);
             }
 
-
             // Apply the trading deltas to the reserves. These updates reflect
             // the fact that some of the reserves will be attributed to the
             // withdrawal pool. The math for the share reserves update is given by:
