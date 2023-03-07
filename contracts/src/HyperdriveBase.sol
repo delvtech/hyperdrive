@@ -2,10 +2,12 @@
 pragma solidity ^0.8.18;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { MultiToken } from "./MultiToken.sol";
 import { AssetId } from "./libraries/AssetId.sol";
 import { Errors } from "./libraries/Errors.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
+import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 
 /// @author Delve
 /// @title HyperdriveBase
@@ -15,6 +17,7 @@ import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveBase is MultiToken {
     using FixedPointMath for uint256;
+    using SafeCast for uint256;
 
     /// Tokens ///
 
@@ -300,6 +303,40 @@ abstract contract HyperdriveBase is MultiToken {
     }
 
     /// Helpers ///
+
+    // TODO: Use this in the LP functions.
+    //
+    /// @dev Updates the pool's liquidity and holds the pool's APR constant.
+    /// @param _liquidity The delta that should be applied to share reserves.
+    function _updateLiquidity(int256 _liquidity) internal {
+        // Calculate the effect that the curve trade has on the pool's APR.
+        uint256 apr = HyperdriveMath.calculateAPRFromReserves(
+            uint256(marketState.shareReserves),
+            uint256(marketState.bondReserves),
+            totalSupply[AssetId._LP_ASSET_ID],
+            initialSharePrice,
+            positionDuration,
+            timeStretch
+        );
+
+        // Apply the liquidity update to the pool's share reserves and solve
+        // for the bond reserves that maintains the current pool APR.
+        if (_liquidity >= 0) {
+            marketState.shareReserves += uint256(_liquidity).toUint128();
+        } else {
+            marketState.shareReserves -= uint256(-_liquidity).toUint128();
+        }
+        marketState.bondReserves = HyperdriveMath
+            .calculateBondReserves(
+                marketState.shareReserves,
+                totalSupply[AssetId._LP_ASSET_ID],
+                initialSharePrice,
+                apr,
+                positionDuration,
+                timeStretch
+            )
+            .toUint128();
+    }
 
     /// @dev Calculates the normalized time remaining of a position.
     /// @param _maturityTime The maturity time of the position.

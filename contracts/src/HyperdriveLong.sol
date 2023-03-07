@@ -165,8 +165,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
         return (baseProceeds);
     }
 
-    // FIXME: We could apply this update as an add liquidity action.
-    //
     /// @dev Applies an open long to the state. This includes updating the
     ///      reserves and maintaining the reserve invariants.
     /// @param _baseAmount The amount of base paid by the trader.
@@ -214,29 +212,10 @@ abstract contract HyperdriveLong is HyperdriveLP {
         marketState.bondReserves -= _bondReservesDelta.toUint128();
         marketState.longsOutstanding += _bondProceeds.toUint128();
 
-        // Calculate the effect that the curve trade has on the pool's APR.
-        uint256 apr = HyperdriveMath.calculateAPRFromReserves(
-            marketState.shareReserves,
-            marketState.bondReserves,
-            totalSupply[AssetId._LP_ASSET_ID],
-            initialSharePrice,
-            positionDuration,
-            timeStretch
+        // Add the flat component of the trade to the pool's liquidity.
+        _updateLiquidity(
+            int256(_baseAmount.divDown(_sharePrice) - _shareReservesDelta)
         );
-
-        // Apply the flat part of the trade to the pool's reserves.
-        marketState.shareReserves += (_baseAmount.divDown(_sharePrice) -
-            _shareReservesDelta).toUint128();
-        marketState.bondReserves = HyperdriveMath
-            .calculateBondReserves(
-                marketState.shareReserves,
-                totalSupply[AssetId._LP_ASSET_ID],
-                initialSharePrice,
-                apr,
-                positionDuration,
-                timeStretch
-            )
-            .toUint128();
 
         // TODO: We should fuzz test this and other trading functions to ensure
         // that the APR never goes below zero. If it does, we may need to
@@ -335,18 +314,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
         marketState.shareReserves -= _shareReservesDelta.toUint128();
         marketState.bondReserves += _bondReservesDelta.toUint128();
 
-        // Calculate the effect that the curve trade has on the pool's APR.
-        uint256 apr = HyperdriveMath.calculateAPRFromReserves(
-            uint256(marketState.shareReserves),
-            uint256(marketState.bondReserves),
-            totalSupply[AssetId._LP_ASSET_ID],
-            initialSharePrice,
-            positionDuration,
-            timeStretch
-        );
-
         // Calculate the amount of liquidity that needs to be removed.
-        uint256 shareAdjustment = _shareProceeds - _shareReservesDelta;
+        int256 shareAdjustment = -int256(_shareProceeds - _shareReservesDelta);
 
         // If there is a withdraw processing we calculate the margin freed by this position and then
         // deposit it into the withdraw pool
@@ -410,23 +379,12 @@ abstract contract HyperdriveLong is HyperdriveLP {
             }
 
             // Increase the amount of liquidity to be removed.
-            shareAdjustment += withdrawalProceeds;
+            shareAdjustment -= int256(withdrawalProceeds);
         }
 
-        // FIXME: This could be documented better.
-        //
-        // Apply the share adjustment from the reserves.
-        marketState.shareReserves -= shareAdjustment.toUint128();
-        marketState.bondReserves = HyperdriveMath
-            .calculateBondReserves(
-                marketState.shareReserves,
-                totalSupply[AssetId._LP_ASSET_ID],
-                initialSharePrice,
-                apr,
-                positionDuration,
-                timeStretch
-            )
-            .toUint128();
+        // Remove the flat component of the trade as well as any LP proceeds
+        // paid to the withdrawal pool from the pool's liquidity.
+        _updateLiquidity(shareAdjustment);
     }
 
     /// @dev Calculate the pool reserve and trader deltas that result from
@@ -576,7 +534,11 @@ abstract contract HyperdriveLong is HyperdriveLP {
         );
     }
 
-    // TODO: Document this.
+    /// @dev Calculates the reserve updates and the proceeds of closing the
+    ///      long.
+    /// @param _bondAmount The bonds being sold.
+    /// @param _sharePrice The current share price.
+    /// @param _timeRemaining The time remaining until maturity of the position.
     function _calculateCloseLongDeltas(
         uint256 _bondAmount,
         uint256 _sharePrice,

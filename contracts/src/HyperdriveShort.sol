@@ -262,29 +262,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
         marketState.bondReserves += _bondReservesDelta.toUint128();
         marketState.shortsOutstanding += _bondAmount.toUint128();
 
-        // Calculate the effect that the trade has on the pool's APR.
-        uint256 apr = HyperdriveMath.calculateAPRFromReserves(
-            uint256(marketState.shareReserves),
-            uint256(marketState.bondReserves),
-            totalSupply[AssetId._LP_ASSET_ID],
-            initialSharePrice,
-            positionDuration,
-            timeStretch
-        );
-
-        // Apply the flat part of the trade to the pool's reserves.
-        marketState.shareReserves -= (_shareProceeds - _shareReservesDelta)
-            .toUint128();
-        marketState.bondReserves = HyperdriveMath
-            .calculateBondReserves(
-                marketState.shareReserves,
-                totalSupply[AssetId._LP_ASSET_ID],
-                initialSharePrice,
-                apr,
-                positionDuration,
-                timeStretch
-            )
-            .toUint128();
+        // Remove the flat component of the trade from the pool's liquidity.
+        _updateLiquidity(-int256(_shareProceeds - _shareReservesDelta));
 
         // Since the share reserves are reduced, we need to verify that the base
         // reserves are greater than or equal to the amount of longs outstanding.
@@ -376,17 +355,9 @@ abstract contract HyperdriveShort is HyperdriveLP {
         marketState.shareReserves += _shareReservesDelta.toUint128();
         marketState.bondReserves -= _bondReservesDelta.toUint128();
 
-        // Calculate the effect that the trade has on the pool's APR.
-        uint256 apr = HyperdriveMath.calculateAPRFromReserves(
-            uint256(marketState.shareReserves),
-            uint256(marketState.bondReserves),
-            totalSupply[AssetId._LP_ASSET_ID],
-            initialSharePrice,
-            positionDuration,
-            timeStretch
-        );
-
-        // Calculate the amount of liquidity that needs to be removed.
+        // The flat component of the trade is added to the pool's liquidity
+        // since it represents the fixed interest that the short pays to the
+        // pool.
         int256 shareAdjustment = int256(_sharePayment - _shareReservesDelta);
 
         // If there are outstanding withdrawal shares, withdraw capital into the
@@ -411,27 +382,14 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 withdrawalProceeds = (marginUsed + interestUsed);
             }
 
-            // FIXME: We should use an int256 here.
-            // Decrease the amount of liquidity to be added.
+            // The withdrawal proceeds are removed from the pool's liquidity.
             shareAdjustment -= int256(withdrawalProceeds);
         }
 
-        // FIXME: This could be documented better.
-        //
-        // Apply the share adjustment from the reserves.
-        marketState.shareReserves = shareAdjustment >= 0
-            ? marketState.shareReserves + uint256(shareAdjustment).toUint128()
-            : marketState.shareReserves - uint256(-shareAdjustment).toUint128();
-        marketState.bondReserves = HyperdriveMath
-            .calculateBondReserves(
-                marketState.shareReserves,
-                totalSupply[AssetId._LP_ASSET_ID],
-                initialSharePrice,
-                apr,
-                positionDuration,
-                timeStretch
-            )
-            .toUint128();
+        // Add the flat component of the trade to the pool's liquidity and
+        // remove any LP proceeds paid to the withdrawal pool from the pool's
+        // liquidity.
+        _updateLiquidity(shareAdjustment);
     }
 
     /// @dev Calculate the cost of opening a short. This is the maximum amount
@@ -614,7 +572,11 @@ abstract contract HyperdriveShort is HyperdriveLP {
         );
     }
 
-    // TODO: Document this.
+    /// @dev Calculates the reserve updates and the cost in shares of closing
+    ///      the short.
+    /// @param _bondAmount The bonds purchased to close the short.
+    /// @param _sharePrice The current share price.
+    /// @param _timeRemaining The time remaining until maturity of the position.
     function _calculateCloseShortDeltas(
         uint256 _bondAmount,
         uint256 _sharePrice,
