@@ -2,7 +2,7 @@
   description = "A very basic flake";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-21.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     utils.url = "github:numtide/flake-utils";
     foundry.url = "github:shazow/foundry.nix";
   };
@@ -20,10 +20,9 @@
             SOLC_VERSION = "0.8.18";
             buildInputs = [
               foundry.defaultPackage.${system}
-              solc-select
-              yarn
-              nodejs-14_x
-              (pkgs.python3.withPackages (p: with p; [ ]))
+              nodejs-16_x
+              (yarn.override { nodejs = nodejs-16_x; })
+              (pkgs.python311.withPackages (p: with p; [ solc-select ]))
             ];
             shellHook = ''
               solc-select use $SOLC_VERSION

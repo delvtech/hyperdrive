@@ -8,7 +8,7 @@ Hyperdrive is a new AMM that allows users to open long and short positions to ge
 
 ## Flat + Curve
 
-In Hyperdrive, trades only take place on a single invariant.  When a user opens a new position, the trade is made on a curve that prices the asset as a function of the reserves and a **fixed** time until maturity. When a user closes a position, we price the trade by splitting into to components: new bonds and matured bonds.  The new bonds are priced on the curve and matured bonds can be redeemed 1:1 with the base asset.  For example, let's say Alice wants to sell 12 bonds that are 9 months from maturity on a 12 month term.  We would consider 3 bonds mature and offer a 1:1 redemption for them and the remaining 9 bonds would be priced on the curve with the full time remaining until maturity.
+In Hyperdrive, trades only take place on a single invariant.  When a user opens a new position, the trade is made on a curve that prices the asset as a function of the reserves and a **fixed** time until maturity. When a user closes a position, we price the trade by splitting into two components: new bonds and matured bonds.  The new bonds are priced on the curve and matured bonds can be redeemed 1:1 with the base asset.  For example, let's say Alice wants to sell 12 bonds that are 9 months from maturity on a 12 month term.  We would consider 3 bonds mature and offer a 1:1 redemption for them and the remaining 9 bonds would be priced on the curve with the full time remaining until maturity.
 
 ## Backdating
 
@@ -25,7 +25,7 @@ Mechanically, checkpointing backdates all of the positions opened within the che
 Suppose that the current time is $t$, the contract's checkpoint duration is $d_c$, and the contract's position duration is $d$. The position's start time will be:
 
 $$
-t_c = t - (t \space \mod \space d_c)
+t_c = t - (t \mod d_c)
 $$ 
 
 > Note: A position's start time will always correspond with a checkpoint time
@@ -196,13 +196,13 @@ $$
 gives us the $\Delta z$ shares that the $\Delta y$ bonds are worth. Next, we calculate the $\Delta x$ base that the user owes when opening the short. To do this, we calculate the max loss:
 
 $$
-x_{maxloss} = \Delta y - c_1 \cdot \Delta z
+x_{maxloss} = \Delta y - c \cdot \Delta z
 $$
 
-and the interest owed from backdating to the most recent checkpoint:
+and the interest owed from backdating to the most recent checkpoint. Note that $c_{open}$ is the share price when the position was opened:
 
 $$
-x_{interest} = (\frac{c_1}{c_0} - 1) \cdot \Delta y
+x_{interest} = (\frac{c}{c_{open}} - 1) \cdot \Delta y
 $$
 
 The $\Delta x$ base that the user must provide to open the short is equal to the sum of the max loss and the interest owed from backdating to the most recent checkpoint:
@@ -298,12 +298,13 @@ $$
 > TODO: Cover aggregates accounting
 
 Update the short's average maturity time, $t_s$
+
 Update the short's base volume, $v_s$
 Update the withdraw shares outstanding by reducing by $p$
 
 ### Add Liquidity
 
-User deposits $\Delta x$ base at share price c where $\frac{\Delta x}{c} = \Delta z$ and $l$ is the total supply of lp shares and receives $\Delta l$ lp shares.
+User deposits $\Delta x$ base at share price c where $\Delta x = c \cdot \Delta z$ and $l$ is the total supply of lp shares and receives $\Delta l$ lp shares.
 
 $$
 \Delta l = \frac{\Delta z \cdot l}{z_{reserves} + a_s - a_l}
