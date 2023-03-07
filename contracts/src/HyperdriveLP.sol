@@ -285,19 +285,19 @@ abstract contract HyperdriveLP is HyperdriveBase {
             uint128(withdrawPool.withdrawSharesReadyToWithdraw)
         );
 
-        // Withdraw for the user
-        (_proceeds, ) = _withdraw(
-            recoveredMargin + recoveredInterest,
-            _destination,
-            _asUnderlying
-        );
-
         // Update the pool state
         // Note - Will revert here if not enough margin has been reclaimed by checkpoints or
         //        by position closes
         withdrawPool.withdrawSharesReadyToWithdraw -= uint128(_shares);
         withdrawPool.capital -= uint128(recoveredMargin);
         withdrawPool.interest -= uint128(recoveredInterest);
+
+        // Withdraw for the user
+        (_proceeds, ) = _withdraw(
+            recoveredMargin + recoveredInterest,
+            _destination,
+            _asUnderlying
+        );
 
         // Enforce min user outputs
         if (_minOutput > _proceeds) revert Errors.OutputLimit();
