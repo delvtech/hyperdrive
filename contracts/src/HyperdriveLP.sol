@@ -275,14 +275,14 @@ abstract contract HyperdriveLP is HyperdriveBase {
         // value of their withdraw shares times the percent of the withdraw
         // pool which has been lost.
         uint256 recoveredMargin = _shares.mulDivDown(
-            uint128(withdrawCapitalPool),
-            uint128(withdrawSharesReadyToWithdraw)
+            uint128(withdrawPool.capital),
+            uint128(withdrawPool.withdrawSharesReadyToWithdraw)
         );
         // The user gets interest equal to their percent of the withdraw pool
         // times the withdraw pool interest
         uint256 recoveredInterest = _shares.mulDivDown(
-            uint128(withdrawInterestPool),
-            uint128(withdrawSharesReadyToWithdraw)
+            uint128(withdrawPool.interest),
+            uint128(withdrawPool.withdrawSharesReadyToWithdraw)
         );
 
         // Withdraw for the user
@@ -295,9 +295,9 @@ abstract contract HyperdriveLP is HyperdriveBase {
         // Update the pool state
         // Note - Will revert here if not enough margin has been reclaimed by checkpoints or
         //        by position closes
-        withdrawSharesReadyToWithdraw -= uint128(_shares);
-        withdrawCapitalPool -= uint128(recoveredMargin);
-        withdrawInterestPool -= uint128(recoveredInterest);
+        withdrawPool.withdrawSharesReadyToWithdraw -= uint128(_shares);
+        withdrawPool.capital -= uint128(recoveredMargin);
+        withdrawPool.interest -= uint128(recoveredInterest);
 
         // Enforce min user outputs
         if (_minOutput > _proceeds) revert Errors.OutputLimit();
@@ -317,19 +317,19 @@ abstract contract HyperdriveLP is HyperdriveBase {
         uint256 withdrawShareSupply = totalSupply[
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
         ];
-        if (withdrawShareSupply <= withdrawSharesReadyToWithdraw) {
+        if (withdrawShareSupply <= withdrawPool.withdrawSharesReadyToWithdraw) {
             return (0, 0);
         }
         // If we have more capital freed than needed we adjust down all values
         if (
-            maxCapital + uint256(withdrawSharesReadyToWithdraw) >
+            maxCapital + uint256(withdrawPool.withdrawSharesReadyToWithdraw) >
             uint256(withdrawShareSupply)
         ) {
-            // In this case we want maxCapital*adjustment + withdrawSharesReadyToWithdraw = withdrawShareSupply
-            // so adjustment = (withdrawShareSupply - withdrawSharesReadyToWithdraw)/maxCapital
+            // In this case we want maxCapital*adjustment + withdrawPool.withdrawSharesReadyToWithdraw = withdrawShareSupply
+            // so adjustment = (withdrawShareSupply - withdrawPool.withdrawSharesReadyToWithdraw)/maxCapital
             // We adjust maxCapital and do corresponding reduction in freedCapital and interest
             uint256 adjustment = uint256(
-                withdrawShareSupply - withdrawSharesReadyToWithdraw
+                withdrawShareSupply - withdrawPool.withdrawSharesReadyToWithdraw
             ).divDown(maxCapital);
             freedCapital = freedCapital.mulDown(adjustment);
             interest = interest.mulDown(adjustment);
@@ -337,9 +337,9 @@ abstract contract HyperdriveLP is HyperdriveBase {
         }
 
         // Now we update the withdraw pool.
-        withdrawSharesReadyToWithdraw += maxCapital.toUint128();
-        withdrawCapitalPool += freedCapital.toUint128();
-        withdrawInterestPool += interest.toUint128();
+        withdrawPool.withdrawSharesReadyToWithdraw += maxCapital.toUint128();
+        withdrawPool.capital += freedCapital.toUint128();
+        withdrawPool.interest += interest.toUint128();
         // Finally return the amount used by this action and the caller can update reserves.
         return (freedCapital, interest);
     }
@@ -350,6 +350,6 @@ abstract contract HyperdriveLP is HyperdriveBase {
         return
             totalSupply[
                 AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
-            ] > uint256(withdrawSharesReadyToWithdraw);
+            ] > uint256(withdrawPool.withdrawSharesReadyToWithdraw);
     }
 }
