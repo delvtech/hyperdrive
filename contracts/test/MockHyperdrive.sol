@@ -170,10 +170,10 @@ contract MockHyperdrive is Hyperdrive {
     // principal * e ^ (rate * time)
     function calculateCompoundInterest(
         uint256 _principal,
-        uint256 _apy,
+        uint256 _apr,
         uint256 _time
     ) public pure returns (uint256 accrued, uint256 interest) {
-        uint256 perSecondInterestRate = _apy.divDown(365 days);
+        uint256 perSecondInterestRate = _apr.divDown(365 days);
         accrued = _principal.mulDown(
             uint256(
                 FixedPointMath.exp(int256(perSecondInterestRate.mulDown(_time)))
