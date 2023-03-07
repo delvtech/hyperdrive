@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "description": "Hyperdrive Smart Contracts",
     "engines": {
-        "node": "^14"
+        "node": "^16"
     },
     "scripts": {
         "build:prod": "FOUNDRY_PROFILE=production forge build",
@@ -47,6 +47,7 @@
         "solhint-plugin-prettier": "0.0.5"
     },
     "dependencies": {
-        "@openzeppelin/contracts": "^4.8.1"
+        "@openzeppelin/contracts": "^4.8.1",
+        "yarn": "^1.22.19"
     }
 }

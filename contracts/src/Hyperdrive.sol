@@ -39,8 +39,8 @@ abstract contract Hyperdrive is
     ///        checkpoints. Position duration must be a multiple of checkpoint
     ///        duration.
     /// @param _timeStretch The time stretch of the pool.
-    /// @param _curveFee The fee parameter for the curve portion of the hyperdrive trade equation.
-    /// @param _flatFee The fee parameter for the flat portion of the hyperdrive trade equation.
+    /// @param _fees The fees to apply to trades.
+    /// @param _governance The address of the governance contract.
     constructor(
         bytes32 _linkerCodeHash,
         address _linkerFactory,
@@ -49,8 +49,8 @@ abstract contract Hyperdrive is
         uint256 _checkpointsPerTerm,
         uint256 _checkpointDuration,
         uint256 _timeStretch,
-        uint256 _curveFee,
-        uint256 _flatFee
+        Fees memory _fees,
+        address _governance
     )
         HyperdriveBase(
             _linkerCodeHash,
@@ -60,8 +60,8 @@ abstract contract Hyperdrive is
             _checkpointsPerTerm,
             _checkpointDuration,
             _timeStretch,
-            _curveFee,
-            _flatFee
+            _fees,
+            _governance
         )
     {} // solhint-disable-line no-empty-blocks
 

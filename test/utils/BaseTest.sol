@@ -26,11 +26,14 @@ contract BaseTest is Test {
 
     address minter;
     address deployer;
+    address governance;
 
     error WhaleBalanceExceeded();
     error WhaleIsContract();
 
     uint256 mainnetForkId;
+
+    uint256 __init__; // time setup function was ran
 
     constructor() {
         mainnetForkId = vm.createFork(
@@ -47,6 +50,9 @@ contract BaseTest is Test {
 
         deployer = createUser("deployer");
         minter = createUser("minter");
+        governance = createUser("governance");
+
+        __init__ = block.timestamp;
     }
 
     modifier __mainnet_fork(uint256 blockNumber) {

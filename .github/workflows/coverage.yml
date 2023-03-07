@@ -20,7 +20,7 @@ jobs:
       - name: install node
         uses: actions/setup-node@v3
         with:
-          node-version: 14.x
+          node-version: 16.x
 
       - name: install packages
         uses: borales/actions-yarn@v4
@@ -37,6 +37,10 @@ jobs:
           forge coverage --report lcov
           sudo apt-get install lcov
           lcov --remove lcov.info  -o lcov.info 'test/*' 'script/*'
+
+      - name: Edit lcov.info
+        run: |
+          cat lcov.info | sed '/.*\/test\/.*/,/TN:/d' > tmp.info && mv tmp.info lcov.info
 
       - name: Coveralls
         uses: coverallsapp/github-action@master
