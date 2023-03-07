@@ -196,8 +196,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
 
         // Ensure that Alice receives the right amount of withdrawal shares.
         (, , , uint256 shortBaseVolume) = hyperdrive.aggregates();
-        uint256 withdrawSharesExpected = (getPoolInfo().shortsOutstanding -
-            shortBaseVolume).divDown(poolInfo.sharePrice);
+        uint256 withdrawSharesExpected = (shortBaseVolume).divDown(poolInfo.sharePrice);
         assertEq(
             hyperdrive.balanceOf(
                 AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0),

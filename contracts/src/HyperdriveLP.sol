@@ -229,9 +229,7 @@ abstract contract HyperdriveLP is HyperdriveBase {
         // margin as it becomes available.
         uint256 userMargin = marketState.longsOutstanding -
             aggregates.longBaseVolume;
-        userMargin +=
-            marketState.shortsOutstanding -
-            aggregates.shortBaseVolume;
+        userMargin += aggregates.shortBaseVolume;
         userMargin = userMargin.mulDivDown(_shares, totalSupply);
         // Mint the withdrawal tokens.
         _mint(
