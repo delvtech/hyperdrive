@@ -197,6 +197,11 @@ contract HyperdriveTest is BaseTest {
 
     /// Utils ///
 
+    function advanceTime(uint256 time, uint256 apy) internal {
+        hyperdrive.accrue(time, apy);
+        vm.warp(block.timestamp + time);
+    }
+
     struct PoolInfo {
         uint256 shareReserves;
         uint256 bondReserves;

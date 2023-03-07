@@ -54,6 +54,24 @@ contract MockHyperdrive is Hyperdrive {
         return govFeesAccrued;
     }
 
+    // Accrues continuosly compounded interest for a given number of seconds
+    // and readjusts share price to reflect such compounding
+    function accrue(uint256 time, uint256 apy) external {
+        (uint256 accrued, uint256 interest) = calculateCompoundInterest(
+            baseToken.balanceOf(address(this)),
+            apy,
+            time
+        );
+
+        if (interest > 0) {
+            ERC20Mintable(address(baseToken)).mint(interest);
+        }
+
+        _sharePrice = accrued.divDown(
+            marketState.shareReserves > 0 ? marketState.shareReserves : accrued
+        );
+    }
+
     function setSharePrice(uint256 sharePrice) external {
         if (sharePrice > _sharePrice) {
             // Update the share price and accrue interest.
@@ -146,6 +164,23 @@ contract MockHyperdrive is Hyperdrive {
             sharePrice
         );
         return (totalCurveFee, totalFlatFee, govCurveFee, govFlatFee);
+    }
+
+    // Calculates the accrued amount continuously compounded rate of interest
+    // over a period
+    // principal * e ^ (rate * time)
+    function calculateCompoundInterest(
+        uint256 _principal,
+        uint256 _apy,
+        uint256 _time
+    ) public pure returns (uint256 accrued, uint256 interest) {
+        uint256 perSecondInterestRate = _apy.divDown(365 days);
+        accrued = _principal.mulDown(
+            uint256(
+                FixedPointMath.exp(int256(perSecondInterestRate.mulDown(_time)))
+            )
+        );
+        interest = accrued - _principal;
     }
 
     /// Overrides ///
