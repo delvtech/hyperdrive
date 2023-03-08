@@ -38,14 +38,18 @@ for artifact_path in get_artifact_paths(ARTIFACTS_PATH):
     with open(artifact_path, "r") as f:
         contract_name = basename(artifact_path).split(".")[0]
         artifact = json.load(f)
-        if "contracts/src/" in get_compilation_target(artifact):
+        if (
+            "contracts/src/" in get_compilation_target(artifact)
+            or "MockHyperdriveTestnet" in get_compilation_target(artifact)
+            or "MockMakerDsrHyperdrive" in get_compilation_target(artifact)
+        ):
             info[contract_name] = {}
             info[contract_name]["bytecode_size"] = (
                 len(artifact["bytecode"]["object"][2:]) / 2
             )
 
-print("|       Contract       | Bytecode Size |     Margin    |")
-print("| -------------------- | ------------- | ------------- |")
+print("|       Contract          | Bytecode Size |     Margin    |")
+print("| ----------------------- | ------------- | ------------- |")
 
 failure = False
 for contract in sorted(info):
@@ -64,7 +68,7 @@ for contract in sorted(info):
         color = bcolors.FAIL
 
     print(
-        f"| {contract:<20} | {bytecode_size:>13} | {color}{margin:>13}{bcolors.ENDC} |"
+        f"| {contract:<23} | {bytecode_size:>13} | {color}{margin:>13}{bcolors.ENDC} |"
     )
 
 if failure:

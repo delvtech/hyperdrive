@@ -2,7 +2,6 @@
 pragma solidity ^0.8.15;
 
 import { ERC20PresetMinterPauser } from "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
-import { ForwarderFactory } from "../src/ForwarderFactory.sol";
 import { Hyperdrive } from "../src/Hyperdrive.sol";
 import { FixedPointMath } from "../src/libraries/FixedPointMath.sol";
 import { Errors } from "../src/libraries/Errors.sol";
@@ -27,7 +26,7 @@ contract MockHyperdriveTestnet is Hyperdrive {
     )
         Hyperdrive(
             bytes32(0),
-            address(new ForwarderFactory()),
+            address(0),
             baseToken,
             _initialSharePrice,
             _checkpointsPerTerm,
