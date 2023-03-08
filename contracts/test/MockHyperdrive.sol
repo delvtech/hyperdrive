@@ -175,9 +175,7 @@ contract MockHyperdrive is Hyperdrive {
     ) public pure returns (uint256 accrued, uint256 interest) {
         uint256 normalizedTime = _time.divDown(365 days);
         accrued = _principal.mulDown(
-            uint256(
-                FixedPointMath.exp(int256(_apr.mulDown(normalizedTime)))
-            )
+            uint256(FixedPointMath.exp(int256(_apr.mulDown(normalizedTime))))
         );
         interest = accrued - _principal;
     }
