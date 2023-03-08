@@ -27,8 +27,21 @@ def get_artifact_paths(out_path):
     return artifact_paths
 
 
+# Get the file in which the compiled contract resides. This is useful for
+# filtering for contracts
 def get_compilation_target(artifact):
     return list(artifact["metadata"]["settings"]["compilationTarget"].keys())[0]
+
+
+# We only check the code size for contracts in "contracts/src" and a few of the
+# mock contracts that we may need to deploy.
+def should_check_code_size(artifact):
+    compilation_target = get_compilation_target(artifact)
+    return (
+        "contracts/src/" in compilation_target
+        or "MockHyperdriveTestnet" in compilation_target
+        or "MockMakerDsrHyperdrive" in compilation_target
+    )
 
 
 ARTIFACTS_PATH = sys.argv[1]
@@ -38,18 +51,14 @@ for artifact_path in get_artifact_paths(ARTIFACTS_PATH):
     with open(artifact_path, "r") as f:
         contract_name = basename(artifact_path).split(".")[0]
         artifact = json.load(f)
-        if (
-            "contracts/src/" in get_compilation_target(artifact)
-            or "MockHyperdriveTestnet" in get_compilation_target(artifact)
-            or "MockMakerDsrHyperdrive" in get_compilation_target(artifact)
-        ):
+        if should_check_code_size(artifact):
             info[contract_name] = {}
             info[contract_name]["bytecode_size"] = (
                 len(artifact["bytecode"]["object"][2:]) / 2
             )
 
-print("|       Contract          | Bytecode Size |     Margin    |")
-print("| ----------------------- | ------------- | ------------- |")
+print("|         Contract         | Bytecode Size |     Margin    |")
+print("| ------------------------ | ------------- | ------------- |")
 
 failure = False
 for contract in sorted(info):
@@ -68,7 +77,7 @@ for contract in sorted(info):
         color = bcolors.FAIL
 
     print(
-        f"| {contract:<23} | {bytecode_size:>13} | {color}{margin:>13}{bcolors.ENDC} |"
+        f"| {contract:<24} | {bytecode_size:>13} | {color}{margin:>13}{bcolors.ENDC} |"
     )
 
 if failure:
