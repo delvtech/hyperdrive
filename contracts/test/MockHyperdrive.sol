@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.15;
+pragma solidity ^0.8.18;
 
 import { ERC20PresetMinterPauser } from "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
 import { ForwarderFactory } from "../src/ForwarderFactory.sol";
@@ -56,10 +56,10 @@ contract MockHyperdrive is Hyperdrive {
 
     // Accrues compounded interest for a given number of seconds and readjusts
     // share price to reflect such compounding
-    function accrue(uint256 time, uint256 apy) external {
+    function accrue(uint256 time, uint256 apr) external {
         (uint256 accrued, uint256 interest) = calculateCompoundInterest(
             baseToken.balanceOf(address(this)),
-            apy,
+            apr,
             time
         );
 
@@ -173,10 +173,10 @@ contract MockHyperdrive is Hyperdrive {
         uint256 _apr,
         uint256 _time
     ) public pure returns (uint256 accrued, uint256 interest) {
-        uint256 perSecondInterestRate = _apr.divDown(365 days);
+        uint256 normalizedTime = _time.divDown(365 days);
         accrued = _principal.mulDown(
             uint256(
-                FixedPointMath.exp(int256(perSecondInterestRate.mulDown(_time)))
+                FixedPointMath.exp(int256(_apr.mulDown(normalizedTime)))
             )
         );
         interest = accrued - _principal;

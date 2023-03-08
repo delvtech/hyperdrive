@@ -196,9 +196,8 @@ contract HyperdriveTest is BaseTest {
     }
 
     /// Utils ///
-
-    function advanceTime(uint256 time, uint256 apy) internal {
-        hyperdrive.accrue(time, apy);
+    function advanceTime(uint256 time, uint256 apr) internal {
+        hyperdrive.accrue(time, apr);
         vm.warp(block.timestamp + time);
     }
 

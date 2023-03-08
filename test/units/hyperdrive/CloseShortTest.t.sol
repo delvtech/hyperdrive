@@ -252,7 +252,7 @@ contract CloseShortTest is HyperdriveTest {
         assertApproxEqAbs(
             basePaid.sub(baseProceeds).divDown(basePaid),
             1e18,
-            1e15
+            1e15 // TODO Large tolerance?
         );
 
         // Verify that the close short updates were correct.
