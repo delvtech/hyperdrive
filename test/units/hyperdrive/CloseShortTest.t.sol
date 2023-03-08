@@ -281,7 +281,7 @@ contract CloseShortTest is HyperdriveTest {
         assertEq(poolInfoAfter.shortBaseVolume, 0);
         assertEq(checkpointShortBaseVolume, 0);
 
-        // FIXME: Figure out how to test for this.
+        // TODO: Figure out how to test for this.
         //
         // Ensure that the bond reserves were updated to have the correct APR.
         // Due to the way that the flat part of the trade is applied, the bond

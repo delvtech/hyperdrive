@@ -304,38 +304,6 @@ abstract contract HyperdriveBase is MultiToken {
 
     /// Helpers ///
 
-    // TODO: Use this in the LP functions.
-    //
-    /// @dev Updates the pool's liquidity and holds the pool's APR constant.
-    /// @param _liquidity The delta that should be applied to share reserves.
-    function _updateLiquidity(int256 _liquidity) internal {
-        // Calculate the effect that the curve trade has on the pool's APR.
-        uint256 apr = HyperdriveMath.calculateAPRFromReserves(
-            uint256(marketState.shareReserves),
-            uint256(marketState.bondReserves),
-            initialSharePrice,
-            positionDuration,
-            timeStretch
-        );
-
-        // Apply the liquidity update to the pool's share reserves and solve
-        // for the bond reserves that maintains the current pool APR.
-        if (_liquidity >= 0) {
-            marketState.shareReserves += uint256(_liquidity).toUint128();
-        } else {
-            marketState.shareReserves -= uint256(-_liquidity).toUint128();
-        }
-        marketState.bondReserves = HyperdriveMath
-            .calculateBondReserves(
-                marketState.shareReserves,
-                initialSharePrice,
-                apr,
-                positionDuration,
-                timeStretch
-            )
-            .toUint128();
-    }
-
     /// @dev Calculates the normalized time remaining of a position.
     /// @param _maturityTime The maturity time of the position.
     /// @return timeRemaining The normalized time remaining (in [0, 1]).
