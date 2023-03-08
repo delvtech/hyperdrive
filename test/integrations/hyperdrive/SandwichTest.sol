@@ -11,14 +11,13 @@ contract SandwichTest is HyperdriveTest {
     function test_sandwich_trades(uint8 _apr, uint64 _timeDelta) external {
         uint256 apr = uint256(_apr) * 0.01e18;
         uint256 timeDelta = uint256(_timeDelta);
-        vm.assume(apr >= 0.005e18 && apr <= 0.2e18);
+        vm.assume(apr >= 0.01e18 && apr <= 0.2e18);
         vm.assume(timeDelta <= FixedPointMath.ONE_18 && timeDelta >= 0);
 
         // Deploy the pool with fees.
         {
             uint256 timeStretchApr = 0.02e18;
-            uint256 curveFee = 0.1e18;
-            deploy(alice, timeStretchApr, curveFee, 0, 0, governance);
+            deploy(alice, timeStretchApr, 0, 0, 0, governance);
         }
 
         // Initialize the market.
@@ -63,12 +62,12 @@ contract SandwichTest is HyperdriveTest {
 
     function test_sandwich_lp(uint8 _apr) external {
         uint256 apr = uint256(_apr) * 0.01e18;
-        vm.assume(apr >= 0.005e18 && apr <= 0.2e18);
+        vm.assume(apr >= 0.01e18 && apr <= 0.2e18);
 
         // Deploy the pool with fees.
         {
             uint256 timeStretchApr = 0.02e18;
-            uint256 curveFee = 0.05e18;
+            uint256 curveFee = 0.001e18;
             deploy(alice, timeStretchApr, curveFee, 0, 0, governance);
         }
 
