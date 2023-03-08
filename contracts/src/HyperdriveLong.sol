@@ -415,7 +415,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 .calculateOpenLong(
                     marketState.shareReserves,
                     marketState.bondReserves,
-                    totalSupply[AssetId._LP_ASSET_ID],
                     _shareAmount, // amountIn
                     _timeRemaining,
                     timeStretch,
@@ -434,7 +433,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
         uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
             marketState.shareReserves,
             marketState.bondReserves,
-            totalSupply[AssetId._LP_ASSET_ID],
             initialSharePrice,
             _timeRemaining,
             timeStretch
@@ -506,7 +504,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
         uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
             marketState.shareReserves,
             marketState.bondReserves,
-            totalSupply[AssetId._LP_ASSET_ID],
             initialSharePrice,
             timeRemaining,
             timeStretch
@@ -556,7 +553,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
             .calculateCloseLong(
                 marketState.shareReserves,
                 marketState.bondReserves,
-                totalSupply[AssetId._LP_ASSET_ID],
                 _bondAmount,
                 _timeRemaining,
                 timeStretch,

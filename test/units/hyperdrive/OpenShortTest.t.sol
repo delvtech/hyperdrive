@@ -175,7 +175,6 @@ contract OpenShortTest is HyperdriveTest {
             HyperdriveMath.calculateAPRFromReserves(
                 poolInfoAfter.shareReserves,
                 poolInfoBefore.bondReserves + bondAmount,
-                poolInfoAfter.lpTotalSupply,
                 INITIAL_SHARE_PRICE,
                 POSITION_DURATION,
                 hyperdrive.timeStretch()

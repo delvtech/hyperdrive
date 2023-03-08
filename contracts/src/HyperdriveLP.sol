@@ -48,7 +48,7 @@ abstract contract HyperdriveLP is HyperdriveBase {
         // Update the reserves. The bond reserves are calculated so that the
         // pool is initialized with the target APR.
         marketState.shareReserves = shares.toUint128();
-        marketState.bondReserves = HyperdriveMath
+        uint256 unadjustedBondReserves = HyperdriveMath
             .calculateInitialBondReserves(
                 shares,
                 sharePrice,
@@ -56,17 +56,16 @@ abstract contract HyperdriveLP is HyperdriveBase {
                 _apr,
                 positionDuration,
                 timeStretch
-            )
+            );
+        uint256 initialLpShares = unadjustedBondReserves +
+            sharePrice.mulDown(shares);
+        marketState.bondReserves = (unadjustedBondReserves + initialLpShares)
             .toUint128();
 
         // Mint LP shares to the initializer.
         // TODO - Should we index the lp share and virtual reserve to shares or to underlying?
         //        I think in the case where price per share < 1 there may be a problem.
-        _mint(
-            AssetId._LP_ASSET_ID,
-            _destination,
-            sharePrice.mulDown(shares).add(marketState.bondReserves)
-        );
+        _mint(AssetId._LP_ASSET_ID, _destination, initialLpShares);
     }
 
     /// @notice Allows LPs to supply liquidity for LP shares.
@@ -101,7 +100,6 @@ abstract contract HyperdriveLP is HyperdriveBase {
         uint256 apr = HyperdriveMath.calculateAPRFromReserves(
             marketState.shareReserves,
             marketState.bondReserves,
-            totalSupply[AssetId._LP_ASSET_ID],
             initialSharePrice,
             positionDuration,
             timeStretch
@@ -138,7 +136,6 @@ abstract contract HyperdriveLP is HyperdriveBase {
         marketState.bondReserves = HyperdriveMath
             .calculateBondReserves(
                 marketState.shareReserves,
-                totalSupply[AssetId._LP_ASSET_ID] + lpShares,
                 initialSharePrice,
                 apr,
                 positionDuration,
@@ -186,7 +183,6 @@ abstract contract HyperdriveLP is HyperdriveBase {
         uint256 apr = HyperdriveMath.calculateAPRFromReserves(
             marketState.shareReserves,
             marketState.bondReserves,
-            totalSupply,
             initialSharePrice,
             positionDuration,
             timeStretch
@@ -216,7 +212,6 @@ abstract contract HyperdriveLP is HyperdriveBase {
         marketState.bondReserves = HyperdriveMath
             .calculateBondReserves(
                 marketState.shareReserves,
-                totalSupply - _shares,
                 initialSharePrice,
                 apr,
                 positionDuration,

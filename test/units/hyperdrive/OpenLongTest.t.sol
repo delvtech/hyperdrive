@@ -39,7 +39,7 @@ contract OpenLongTest is HyperdriveTest {
         uint256 baseAmount = getPoolInfo().bondReserves;
         baseToken.mint(baseAmount);
         baseToken.approve(address(hyperdrive), baseAmount);
-        vm.expectRevert(stdError.arithmeticError);
+        vm.expectRevert(Errors.NegativeInterest.selector);
         hyperdrive.openLong(baseAmount, 0, bob, true);
     }
 
@@ -203,7 +203,6 @@ contract OpenLongTest is HyperdriveTest {
             HyperdriveMath.calculateAPRFromReserves(
                 poolInfoAfter.shareReserves,
                 poolInfoBefore.bondReserves - bondAmount,
-                poolInfoAfter.lpTotalSupply,
                 INITIAL_SHARE_PRICE,
                 POSITION_DURATION,
                 hyperdrive.timeStretch()

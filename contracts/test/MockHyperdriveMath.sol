@@ -7,7 +7,6 @@ contract MockHyperdriveMath {
     function calculateAPRFromReserves(
         uint256 _shareReserves,
         uint256 _bondReserves,
-        uint256 _lpTotalSupply,
         uint256 _initialSharePrice,
         uint256 _positionDuration,
         uint256 _timeStretch
@@ -15,7 +14,6 @@ contract MockHyperdriveMath {
         uint256 result = HyperdriveMath.calculateAPRFromReserves(
             _shareReserves,
             _bondReserves,
-            _lpTotalSupply,
             _initialSharePrice,
             _positionDuration,
             _timeStretch
@@ -44,7 +42,6 @@ contract MockHyperdriveMath {
 
     function calculateBondReserves(
         uint256 _shareReserves,
-        uint256 _lpTotalSupply,
         uint256 _initialSharePrice,
         uint256 _apr,
         uint256 _positionDuration,
@@ -52,7 +49,6 @@ contract MockHyperdriveMath {
     ) external pure returns (uint256) {
         uint256 result = HyperdriveMath.calculateBondReserves(
             _shareReserves,
-            _lpTotalSupply,
             _initialSharePrice,
             _apr,
             _positionDuration,
@@ -64,7 +60,6 @@ contract MockHyperdriveMath {
     function calculateOpenLong(
         uint256 _shareReserves,
         uint256 _bondReserves,
-        uint256 _bondReserveAdjustment,
         uint256 _amountIn,
         uint256 _normalizedTimeRemaining,
         uint256 _timeStretch,
@@ -75,7 +70,6 @@ contract MockHyperdriveMath {
             .calculateOpenLong(
                 _shareReserves,
                 _bondReserves,
-                _bondReserveAdjustment,
                 _amountIn,
                 _normalizedTimeRemaining,
                 _timeStretch,
@@ -88,7 +82,6 @@ contract MockHyperdriveMath {
     function calculateCloseLong(
         uint256 _shareReserves,
         uint256 _bondReserves,
-        uint256 _bondReserveAdjustment,
         uint256 _amountIn,
         uint256 _normalizedTimeRemaining,
         uint256 _timeStretch,
@@ -99,7 +92,6 @@ contract MockHyperdriveMath {
             .calculateCloseLong(
                 _shareReserves,
                 _bondReserves,
-                _bondReserveAdjustment,
                 _amountIn,
                 _normalizedTimeRemaining,
                 _timeStretch,
@@ -112,7 +104,6 @@ contract MockHyperdriveMath {
     function calculateOpenShort(
         uint256 _shareReserves,
         uint256 _bondReserves,
-        uint256 _bondReserveAdjustment,
         uint256 _amountIn,
         uint256 _normalizedTimeRemaining,
         uint256 _timeStretch,
@@ -123,7 +114,6 @@ contract MockHyperdriveMath {
             .calculateOpenShort(
                 _shareReserves,
                 _bondReserves,
-                _bondReserveAdjustment,
                 _amountIn,
                 _normalizedTimeRemaining,
                 _timeStretch,
@@ -136,7 +126,6 @@ contract MockHyperdriveMath {
     function calculateCloseShort(
         uint256 _shareReserves,
         uint256 _bondReserves,
-        uint256 _bondReserveAdjustment,
         uint256 _amountOut,
         uint256 _normalizedTimeRemaining,
         uint256 _timeStretch,
@@ -147,7 +136,6 @@ contract MockHyperdriveMath {
             .calculateCloseShort(
                 _shareReserves,
                 _bondReserves,
-                _bondReserveAdjustment,
                 _amountOut,
                 _normalizedTimeRemaining,
                 _timeStretch,
@@ -160,7 +148,6 @@ contract MockHyperdriveMath {
     function calculateSpotPrice(
         uint256 _shareReserves,
         uint256 _bondReserves,
-        uint256 _lpTotalSupply,
         uint256 _initialSharePrice,
         uint256 _normalizedTimeRemaining,
         uint256 _timeStretch
@@ -168,7 +155,6 @@ contract MockHyperdriveMath {
         uint256 result = HyperdriveMath.calculateSpotPrice(
             _shareReserves,
             _bondReserves,
-            _lpTotalSupply,
             _initialSharePrice,
             _normalizedTimeRemaining,
             _timeStretch

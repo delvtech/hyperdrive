@@ -313,7 +313,6 @@ abstract contract HyperdriveBase is MultiToken {
         uint256 apr = HyperdriveMath.calculateAPRFromReserves(
             uint256(marketState.shareReserves),
             uint256(marketState.bondReserves),
-            totalSupply[AssetId._LP_ASSET_ID],
             initialSharePrice,
             positionDuration,
             timeStretch
@@ -329,7 +328,6 @@ abstract contract HyperdriveBase is MultiToken {
         marketState.bondReserves = HyperdriveMath
             .calculateBondReserves(
                 marketState.shareReserves,
-                totalSupply[AssetId._LP_ASSET_ID],
                 initialSharePrice,
                 apr,
                 positionDuration,
