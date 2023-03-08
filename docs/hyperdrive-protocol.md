@@ -18,7 +18,7 @@ If every position is opened with a fixed position duration (e.g. 6 months from t
 
 To reduce the amount of keeping required to maintain the accounting system, we introduce a checkpointing system that groups long and short positions by the time at which they were opened. These checkpoints store the share price of the first trade in the checkpoint. This price is used to compute the returns of long and short positions that mature in that checkpoint.
 
-Mechanically, checkpointing backdates all of the positions opened within the checkpoint interval to the start of the checkpoint. This means that in most cases traders will benefit from interest that has already been collected, so the traders may have to pay slightly more when opening their position. 
+Mechanically, checkpointing backdates all of the positions opened within the checkpoint interval to the start of the checkpoint. This means that in most cases traders will benefit from interest that has already been collected, so the traders may have to pay slightly more when opening their position.
 
 ### Calculating Maturity Time
 
@@ -26,7 +26,7 @@ Suppose that the current time is $t$, the contract's checkpoint duration is $d_c
 
 $$
 t_c = t - (t \mod d_c)
-$$ 
+$$
 
 > Note: A position's start time will always correspond with a checkpoint time
 
@@ -169,7 +169,7 @@ Update the long's base volume, $v_l$
 
 ### Open Short
 
-The trader shorts $\Delta y$ bonds with $\Delta x$ base with $t$ time remaining in the term. To calculate the short we must determine how many $\Delta z$ shares that $\Delta y$ bonds are worth right now. 
+The trader shorts $\Delta y$ bonds with $\Delta x$ base with $t$ time remaining in the term. To calculate the short we must determine how many $\Delta z$ shares that $\Delta y$ bonds are worth right now.
 
 $$
 \begin{aligned}
@@ -337,7 +337,7 @@ User redeems $\Delta l$ lp shares and receives $\Delta x$ base at share price c 
 $$
 \begin{aligned}
 \Delta x &= (z_{reserves} - \frac{o_l}{c}) \cdot \frac{\Delta l}{l}\\
-\Delta w &= l_o - v_l + s_o - v_s\\
+\Delta w &= o_l - v_l + o_s - v_s\\
 \end{aligned}
 $$
 

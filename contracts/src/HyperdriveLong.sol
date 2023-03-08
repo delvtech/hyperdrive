@@ -69,7 +69,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
 
         // Apply the open long to the state.
         _applyOpenLong(
-            _baseAmount,
+            _baseAmount - totalGovFee,
             shareReservesDelta,
             bondProceeds,
             bondReservesDelta,
@@ -453,8 +453,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
         bondProceeds -= totalCurveFee + totalFlatFee;
 
         // Calculate the fees owed to governance in shares.
+        shareReservesDelta -= govCurveFee.divDown(_sharePrice);
         totalGovFee = (govCurveFee + govFlatFee).divDown(_sharePrice);
-        shareReservesDelta -= totalGovFee;
 
         return (
             shareReservesDelta,

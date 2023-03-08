@@ -126,18 +126,20 @@ abstract contract HyperdriveShort is HyperdriveLP {
         _applyCheckpoint(_maturityTime, sharePrice);
 
         // Burn the shorts that are being closed.
-        uint256 assetId = AssetId.encodeAssetId(
-            AssetId.AssetIdPrefix.Short,
-            _maturityTime
-        );
-        _burn(assetId, msg.sender, _bondAmount);
+        {
+            uint256 assetId = AssetId.encodeAssetId(
+                AssetId.AssetIdPrefix.Short,
+                _maturityTime
+            );
+            _burn(assetId, msg.sender, _bondAmount);
+        }
 
         // Calculate the pool and user deltas using the trading function.
         uint256 shareReservesDelta;
         uint256 bondReservesDelta;
         uint256 sharePayment;
+        uint256 totalGovFee;
         {
-            uint256 totalGovFee;
             (
                 shareReservesDelta,
                 bondReservesDelta,
@@ -156,7 +158,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             _applyCloseShort(
                 _bondAmount,
                 bondReservesDelta,
-                sharePayment,
+                sharePayment - totalGovFee,
                 shareReservesDelta,
                 _maturityTime,
                 sharePrice
@@ -555,10 +557,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 _sharePrice
             );
         shareReservesDelta += totalCurveFee - govCurveFee;
-        // TODO: Double check that governance fees shouldn't be applied here.
-        //       My reasoning for the exclusion is that the governance curve fee
-        //       and governance flat fee are part of the total fees, and from
-        //       the user's perspective, they still need to be paid.
         sharePayment += totalCurveFee + totalFlatFee;
 
         return (
