@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.15;
+pragma solidity ^0.8.18;
 
 import { ERC20PresetMinterPauser } from "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
 import { ForwarderFactory } from "../src/ForwarderFactory.sol";
@@ -52,6 +52,24 @@ contract MockHyperdrive is Hyperdrive {
 
     function getGovFeesAccrued() external view returns (uint256) {
         return govFeesAccrued;
+    }
+
+    // Accrues compounded interest for a given number of seconds and readjusts
+    // share price to reflect such compounding
+    function accrue(uint256 time, uint256 apr) external {
+        (uint256 accrued, uint256 interest) = calculateCompoundInterest(
+            baseToken.balanceOf(address(this)),
+            apr,
+            time
+        );
+
+        if (interest > 0) {
+            ERC20Mintable(address(baseToken)).mint(interest);
+        }
+
+        _sharePrice = accrued.divDown(
+            marketState.shareReserves > 0 ? marketState.shareReserves : accrued
+        );
     }
 
     function setSharePrice(uint256 sharePrice) external {
@@ -158,6 +176,20 @@ contract MockHyperdrive is Hyperdrive {
             sharePrice
         );
         return (totalCurveFee, totalFlatFee, govCurveFee, govFlatFee);
+    }
+
+    // Derives principal + compounded rate of interest over a period
+    // principal * e ^ (rate * time)
+    function calculateCompoundInterest(
+        uint256 _principal,
+        uint256 _apr,
+        uint256 _time
+    ) public pure returns (uint256 accrued, uint256 interest) {
+        uint256 normalizedTime = _time.divDown(365 days);
+        accrued = _principal.mulDown(
+            uint256(FixedPointMath.exp(int256(_apr.mulDown(normalizedTime))))
+        );
+        interest = accrued - _principal;
     }
 
     /// Overrides ///

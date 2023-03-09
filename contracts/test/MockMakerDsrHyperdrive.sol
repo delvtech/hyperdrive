@@ -15,7 +15,7 @@ contract MockMakerDsrHyperdrive is MakerDsrHyperdrive {
     )
         MakerDsrHyperdrive(
             bytes32(0),
-            address(new ForwarderFactory()),
+            address(0),
             365,
             1 days,
             FixedPointMath.ONE_18.divDown(22.186877016851916266e18),
