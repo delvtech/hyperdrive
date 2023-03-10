@@ -232,10 +232,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
         }
     }
 
-    // FIXME: A simpler way to think about this accounting scheme is to reframe
-    // the withdrawal shares accounting as a "removeLiquidity" action. This will
-    // play double duty with the updated flat accounting.
-    //
     /// @dev Applies the trading deltas from a closed long to the reserves and
     ///      the withdrawal pool.
     /// @param _bondAmount The amount of longs that were closed.

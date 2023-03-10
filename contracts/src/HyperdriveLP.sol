@@ -259,33 +259,21 @@ abstract contract HyperdriveLP is HyperdriveBase {
     }
 
     /// @dev Updates the pool's liquidity and holds the pool's APR constant.
-    /// @param _liquidity The delta that should be applied to share reserves.
-    function _updateLiquidity(int256 _liquidity) internal {
-        // Calculate the effect that the curve trade has on the pool's APR.
-        uint256 apr = HyperdriveMath.calculateAPRFromReserves(
-            uint256(marketState.shareReserves),
-            uint256(marketState.bondReserves),
-            initialSharePrice,
-            positionDuration,
-            timeStretch
-        );
-
-        // Apply the liquidity update to the pool's share reserves and solve
-        // for the bond reserves that maintains the current pool APR.
-        if (_liquidity >= 0) {
-            marketState.shareReserves += uint256(_liquidity).toUint128();
-        } else {
-            marketState.shareReserves -= uint256(-_liquidity).toUint128();
-        }
-        marketState.bondReserves = HyperdriveMath
-            .calculateBondReserves(
+    /// @param _shareReservesDelta The delta that should be applied to share reserves.
+    function _updateLiquidity(int256 _shareReservesDelta) internal {
+        // Apply the update to the pool's share reserves and solve for the bond
+        // reserves that maintains the current pool APR.
+        (uint256 shareReserves, uint256 bondReserves) = HyperdriveMath
+            .calculateUpdatedReserves(
                 marketState.shareReserves,
+                marketState.bondReserves,
+                _shareReservesDelta,
                 initialSharePrice,
-                apr,
                 positionDuration,
                 timeStretch
-            )
-            .toUint128();
+            );
+        marketState.shareReserves = shareReserves.toUint128();
+        marketState.bondReserves = bondReserves.toUint128();
     }
 
     /// @dev Moves capital into the withdraw pool and marks shares ready for withdraw.
