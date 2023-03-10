@@ -12,17 +12,18 @@ library Errors {
     /// ### Hyperdrive ###
     /// ##################
     error BaseBufferExceedsShareReserves();
+    error InvalidApr();
     error InvalidCheckpointTime();
     error InvalidCheckpointDuration();
     error InvalidCheckpointsPerTerm();
     error InvalidMaturityTime();
+    error NegativeInterest();
+    error OutputLimit();
     error PoolAlreadyInitialized();
     error TransferFailed();
     error UnexpectedAssetId();
-    error ZeroAmount();
-    error OutputLimit();
-    error NegativeInterest();
     error UnsupportedToken();
+    error ZeroAmount();
 
     /// ######################
     /// ### ERC20Forwarder ###
@@ -50,7 +51,6 @@ library Errors {
     /// #####################
     /// ### BondWrapper ###
     /// #####################
-
     error AlreadyClosed();
     error BondMatured();
     error BondNotMatured();

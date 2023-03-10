@@ -102,7 +102,7 @@ contract HyperdriveTest is BaseTest {
         // Add liquidity to the pool.
         baseToken.mint(contribution);
         baseToken.approve(address(hyperdrive), contribution);
-        hyperdrive.addLiquidity(contribution, 0, lp, true);
+        hyperdrive.addLiquidity(contribution, 0, type(uint256).max, lp, true);
 
         return hyperdrive.balanceOf(AssetId._LP_ASSET_ID, lp);
     }

@@ -70,7 +70,8 @@ abstract contract HyperdriveLP is HyperdriveBase {
 
     /// @notice Allows LPs to supply liquidity for LP shares.
     /// @param _contribution The amount of base to supply.
-    /// @param _minOutput The minimum number of LP tokens the user should receive
+    /// @param _minApr The minimum APR at which the LP is willing to supply.
+    /// @param _maxApr The maximum APR at which the LP is willing to supply.
     /// @param _destination The address which will hold the LP shares
     /// @param _asUnderlying If true the user is charged in underlying if false
     ///                      the contract transfers in yield source directly.
@@ -78,13 +79,24 @@ abstract contract HyperdriveLP is HyperdriveBase {
     /// @return lpShares The number of LP tokens created
     function addLiquidity(
         uint256 _contribution,
-        uint256 _minOutput,
+        uint256 _minApr,
+        uint256 _maxApr,
         address _destination,
         bool _asUnderlying
     ) external returns (uint256 lpShares) {
         if (_contribution == 0) {
             revert Errors.ZeroAmount();
         }
+
+        // Enforce the slippage guard.
+        uint256 apr = HyperdriveMath.calculateAPRFromReserves(
+            marketState.shareReserves,
+            marketState.bondReserves,
+            initialSharePrice,
+            positionDuration,
+            timeStretch
+        );
+        if (apr < _minApr || apr > _maxApr) revert Errors.InvalidApr();
 
         // Deposit for the user, this call also transfers from them
         (uint256 shares, uint256 sharePrice) = _deposit(
@@ -123,9 +135,6 @@ abstract contract HyperdriveLP is HyperdriveBase {
 
         // Add the liquidity to the pool's reserves.
         _updateLiquidity(int256(shares));
-
-        // Enforce min user outputs
-        if (_minOutput > lpShares) revert Errors.OutputLimit();
 
         // Mint LP shares to the supplier.
         _mint(AssetId._LP_ASSET_ID, _destination, lpShares);
