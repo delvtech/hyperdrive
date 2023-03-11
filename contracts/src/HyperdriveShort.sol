@@ -135,21 +135,15 @@ abstract contract HyperdriveShort is HyperdriveLP {
         }
 
         // Calculate the pool and user deltas using the trading function.
-        uint256 shareReservesDelta;
-        uint256 bondReservesDelta;
-        uint256 sharePayment;
-        uint256 totalGovFee;
-        {
-            (
-                shareReservesDelta,
-                bondReservesDelta,
-                sharePayment,
-                totalGovFee
-            ) = _calculateCloseShort(_bondAmount, sharePrice, _maturityTime);
+        (
+            uint256 shareReservesDelta,
+            uint256 bondReservesDelta,
+            uint256 sharePayment,
+            uint256 totalGovFee
+        ) = _calculateCloseShort(_bondAmount, sharePrice, _maturityTime);
 
-            // Attribute the governance fees.
-            govFeesAccrued += totalGovFee;
-        }
+        // Attribute the governance fees.
+        govFeesAccrued += totalGovFee;
 
         // If the position hasn't matured, apply the accounting updates that
         // result from closing the short to the reserves and pay out the
