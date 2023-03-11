@@ -272,17 +272,13 @@ abstract contract HyperdriveLP is HyperdriveBase {
     function _updateLiquidity(int256 _shareReservesDelta) internal {
         // Apply the update to the pool's share reserves and solve for the bond
         // reserves that maintains the current pool APR.
-        (uint256 shareReserves, uint256 bondReserves) = HyperdriveMath
-            .calculateUpdatedReserves(
-                marketState.shareReserves,
-                marketState.bondReserves,
-                _shareReservesDelta,
-                initialSharePrice,
-                positionDuration,
-                timeStretch
-            );
-        marketState.shareReserves = shareReserves.toUint128();
-        marketState.bondReserves = bondReserves.toUint128();
+        uint256 shareReserves = marketState.shareReserves;
+        marketState.shareReserves = uint256(
+            int256(shareReserves) + _shareReservesDelta
+        ).toUint128();
+        marketState.bondReserves = uint256(marketState.bondReserves)
+            .mulDivDown(marketState.shareReserves, shareReserves)
+            .toUint128();
     }
 
     /// @dev Moves capital into the withdraw pool and marks shares ready for withdraw.

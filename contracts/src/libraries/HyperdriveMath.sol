@@ -109,55 +109,6 @@ library HyperdriveMath {
         return _shareReserves.divDown(2 * FixedPointMath.ONE_18).mulDown(rhs);
     }
 
-    /// @dev Given starting reserves and an adjustment to the share reserves,
-    ///      this function will apply the adjustment to the share reserves and
-    ///      calculate the bond reserves that maintain the APR implied by the
-    ///      previous reserves.
-    /// @param _shareReserves The pool's share reserves.
-    /// @param _bondReserves The pool's bond reserves.
-    /// @param _shareReservesDelta The adjustment to the pool's share reserves.
-    /// @param _initialSharePrice The pool's initial share price.
-    /// @param _positionDuration The amount of time until maturity in seconds.
-    /// @param _timeStretch The time stretch parameter.
-    /// @return shareReserves The new share reserves.
-    /// @return bondReserves The new bond reserves.
-    function calculateUpdatedReserves(
-        uint256 _shareReserves,
-        uint256 _bondReserves,
-        int256 _shareReservesDelta,
-        uint256 _initialSharePrice,
-        uint256 _positionDuration,
-        uint256 _timeStretch
-    ) internal pure returns (uint256 shareReserves, uint256 bondReserves) {
-        // Calculate the APR implied by the current pool reserves.
-        uint256 apr = calculateAPRFromReserves(
-            _shareReserves,
-            _bondReserves,
-            _initialSharePrice,
-            _positionDuration,
-            _timeStretch
-        );
-
-        // Update the share reserves.
-        shareReserves = uint256(int256(_shareReserves) + _shareReservesDelta);
-
-        // Solving for (1 + r * t) ** (1 / tau) here. t is the normalized time remaining which in
-        // this case is 1. Because bonds mature after the positionDuration, we need to scale the apr
-        // to the proportion of a year of the positionDuration. tau = t / time_stretch, or just
-        // 1 / time_stretch in this case.
-        uint256 t = _positionDuration.divDown(365 days);
-        uint256 tau = FixedPointMath.ONE_18.mulDown(_timeStretch);
-        uint256 interestFactor = FixedPointMath.ONE_18.add(apr.mulDown(t)).pow(
-            FixedPointMath.ONE_18.divDown(tau)
-        );
-
-        // mu * z * (1 + apr * t) ** (1 / tau)
-        bondReserves = _initialSharePrice.mulDown(shareReserves).mulDown(
-            interestFactor
-        );
-        return (shareReserves, bondReserves);
-    }
-
     /// @dev Calculates the number of bonds a user will receive when opening a long position.
     /// @param _shareReserves The pool's share reserves.
     /// @param _bondReserves The pool's bond reserves.

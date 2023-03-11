@@ -40,26 +40,6 @@ contract MockHyperdriveMath {
         return result;
     }
 
-    function calculateUpdatedReserves(
-        uint256 _shareReserves,
-        uint256 _bondReserves,
-        int256 _shareReservesDelta,
-        uint256 _initialSharePrice,
-        uint256 _positionDuration,
-        uint256 _timeStretch
-    ) external pure returns (uint256, uint256) {
-        (uint256 result1, uint256 result2) = HyperdriveMath
-            .calculateUpdatedReserves(
-                _shareReserves,
-                _bondReserves,
-                _shareReservesDelta,
-                _initialSharePrice,
-                _positionDuration,
-                _timeStretch
-            );
-        return (result1, result2);
-    }
-
     function calculateOpenLong(
         uint256 _shareReserves,
         uint256 _bondReserves,
