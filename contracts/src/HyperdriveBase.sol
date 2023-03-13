@@ -2,10 +2,12 @@
 pragma solidity ^0.8.18;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { MultiToken } from "./MultiToken.sol";
 import { AssetId } from "./libraries/AssetId.sol";
 import { Errors } from "./libraries/Errors.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
+import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 
 /// @author Delve
 /// @title HyperdriveBase
@@ -15,6 +17,7 @@ import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveBase is MultiToken {
     using FixedPointMath for uint256;
+    using SafeCast for uint256;
 
     /// Tokens ///
 
@@ -360,7 +363,7 @@ abstract contract HyperdriveBase is MultiToken {
             .mulDown(_sharePrice)
             .mulDown(_amountIn)
             .mulDown(_normalizedTimeRemaining);
-        // govCurveFee = d_z * (curve_fee/d_y) * c * phi_gov
+        // govCurveFee = d_z * (curve_fee / d_y) * c * phi_gov
         govCurveFee = _amountIn
             .mulDivDown(totalCurveFee, _amountOut)
             .mulDown(_sharePrice)
@@ -379,18 +382,27 @@ abstract contract HyperdriveBase is MultiToken {
     /// @param _normalizedTimeRemaining The normalized amount of time until maturity.
     /// @param _spotPrice The price without slippage of bonds in terms of shares.
     /// @param _sharePrice The current price of shares in terms of base.
-    /// @return totalFee The total fee. The fee is in terms of shares.
+    /// @return totalCurveFee The curve fee. The fee is in terms of shares.
+    /// @return totalFlatFee The flat fee. The fee is in terms of shares.
     /// @return totalGovFee The total fee that goes to governance. The fee is in terms of shares.
     function _calculateFeesOutGivenBondsIn(
         uint256 _amountIn,
         uint256 _normalizedTimeRemaining,
         uint256 _spotPrice,
         uint256 _sharePrice
-    ) internal view returns (uint256 totalFee, uint256 totalGovFee) {
+    )
+        internal
+        view
+        returns (
+            uint256 totalCurveFee,
+            uint256 totalFlatFee,
+            uint256 totalGovFee
+        )
+    {
         // 'bond' in
         // curve fee = ((1 - p) * phi_curve * d_y * t) / c
         uint256 _pricePart = (FixedPointMath.ONE_18.sub(_spotPrice));
-        uint256 totalCurveFee = _pricePart
+        totalCurveFee = _pricePart
             .mulDown(curveFee)
             .mulDown(_amountIn)
             .mulDivDown(_normalizedTimeRemaining, _sharePrice);
@@ -401,9 +413,8 @@ abstract contract HyperdriveBase is MultiToken {
             FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
             _sharePrice
         );
-        uint256 totalFlatFee = (flat.mulDown(flatFee));
+        totalFlatFee = (flat.mulDown(flatFee));
         totalGovFee += totalFlatFee.mulDown(govFeePercent);
-        totalFee = totalCurveFee + totalFlatFee;
     }
 
     /// @dev Calculates the fees for the curve portion of hyperdrive calcInGivenOut
