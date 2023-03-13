@@ -5,7 +5,7 @@ import { MakerDsrHyperdrive, DsrManager } from "../src/instances/MakerDsrHyperdr
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { FixedPointMath } from "../src/libraries/FixedPointMath.sol";
 import { ForwarderFactory } from "../src/ForwarderFactory.sol";
-import { HyperdriveBase } from "contracts/src/HyperdriveBase.sol";
+import { HyperdriveBase } from "../src/HyperdriveBase.sol";
 
 contract MockMakerDsrHyperdrive is MakerDsrHyperdrive {
     using FixedPointMath for uint256;
