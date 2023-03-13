@@ -386,6 +386,9 @@ abstract contract HyperdriveShort is HyperdriveLP {
         _updateLiquidity(shareAdjustment);
     }
 
+    // TODO: If we have a function that calculates short profits, we could use
+    // that here.
+    //
     /// @dev Calculate the cost of opening a short. This is the maximum amount
     ///      the trader can lose on the short and the extra interest the short
     ///      will receive at closing (since the proceeds of the trades are
@@ -438,26 +441,19 @@ abstract contract HyperdriveShort is HyperdriveLP {
             uint256 totalGovFee
         )
     {
-        // TODO: HyperdriveMath's APR should just return these values.
-        //
         // Calculate the effect that opening the short should have on the pool's
         // reserves as well as the amount of shares the trader receives from
         // selling the shorted bonds at the market price.
-        {
-            (uint256 curveIn, uint256 curveOut, uint256 flat) = HyperdriveMath
-                .calculateOpenShort(
-                    marketState.shareReserves,
-                    marketState.bondReserves,
-                    _bondAmount,
-                    _timeRemaining,
-                    timeStretch,
-                    _sharePrice,
-                    initialSharePrice
-                );
-            shareReservesDelta = curveOut;
-            bondReservesDelta = curveIn;
-            shareProceeds = curveOut + flat;
-        }
+        (shareReservesDelta, bondReservesDelta, shareProceeds) = HyperdriveMath
+            .calculateOpenShort(
+                marketState.shareReserves,
+                marketState.bondReserves,
+                _bondAmount,
+                _timeRemaining,
+                timeStretch,
+                _sharePrice,
+                initialSharePrice
+            );
 
         // If the base proceeds of selling the bonds is greater than the bond
         // amount, then the trade occurred in the negative interest domain. We
@@ -529,11 +525,16 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // reserves as well as the amount of shares the trader needs to pay to
         // purchase the shorted bonds at the market price.
         uint256 timeRemaining = _calculateTimeRemaining(_maturityTime);
-        (
-            shareReservesDelta,
-            bondReservesDelta,
-            sharePayment
-        ) = _calculateCloseShortDeltas(_bondAmount, _sharePrice, timeRemaining);
+        (shareReservesDelta, bondReservesDelta, sharePayment) = HyperdriveMath
+            .calculateCloseShort(
+                marketState.shareReserves,
+                marketState.bondReserves,
+                _bondAmount,
+                timeRemaining,
+                timeStretch,
+                _sharePrice,
+                initialSharePrice
+            );
 
         // Calculate the fees charged on the curve and flat parts of the trade.
         // Since we calculate the amount of shares paid given bonds out, we add
@@ -565,43 +566,5 @@ abstract contract HyperdriveShort is HyperdriveLP {
             sharePayment,
             govCurveFee + govFlatFee
         );
-    }
-
-    // TODO: This should be removed if possible. Can we just encapsulate this
-    // within the actual hyperdrive math function?
-    //
-    /// @dev Calculates the reserve updates and the cost in shares of closing
-    ///      the short.
-    /// @param _bondAmount The bonds purchased to close the short.
-    /// @param _sharePrice The current share price.
-    /// @param _timeRemaining The time remaining until maturity of the position.
-    function _calculateCloseShortDeltas(
-        uint256 _bondAmount,
-        uint256 _sharePrice,
-        uint256 _timeRemaining
-    )
-        internal
-        view
-        returns (
-            uint256 shareReservesDelta,
-            uint256 bondReservesDelta,
-            uint256 sharePayment
-        )
-    {
-        (uint256 curveIn, uint256 curveOut, uint256 flat) = HyperdriveMath
-            .calculateCloseShort(
-                marketState.shareReserves,
-                marketState.bondReserves,
-                _bondAmount,
-                _timeRemaining,
-                timeStretch,
-                _sharePrice,
-                initialSharePrice
-            );
-        shareReservesDelta = curveIn;
-        bondReservesDelta = curveOut;
-        sharePayment = curveIn + flat;
-
-        return (shareReservesDelta, bondReservesDelta, sharePayment);
     }
 }

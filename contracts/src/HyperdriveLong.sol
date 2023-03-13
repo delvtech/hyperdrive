@@ -406,21 +406,18 @@ abstract contract HyperdriveLong is HyperdriveLP {
             uint256 totalGovFee
         )
     {
-        {
-            (uint256 curveIn, uint256 curveOut, uint256 flat) = HyperdriveMath
-                .calculateOpenLong(
-                    marketState.shareReserves,
-                    marketState.bondReserves,
-                    _shareAmount, // amountIn
-                    _timeRemaining,
-                    timeStretch,
-                    _sharePrice,
-                    initialSharePrice
-                );
-            shareReservesDelta = curveIn;
-            bondReservesDelta = curveOut;
-            bondProceeds = curveOut + flat;
-        }
+        // Calculate the effect that opening the long should have on the pool's
+        // reserves as well as the amount of bond the trader receives.
+        (shareReservesDelta, bondReservesDelta, bondProceeds) = HyperdriveMath
+            .calculateOpenLong(
+                marketState.shareReserves,
+                marketState.bondReserves,
+                _shareAmount, // amountIn
+                _timeRemaining,
+                timeStretch,
+                _sharePrice,
+                initialSharePrice
+            );
 
         // Calculate the fees charged on the curve and flat parts of the trade.
         // Since we calculate the amount of bonds received given shares in, we
@@ -490,11 +487,16 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // reserves as well as the amount of shares the trader receives for
         // selling the bonds at the market price.
         uint256 timeRemaining = _calculateTimeRemaining(_maturityTime);
-        (
-            shareReservesDelta,
-            bondReservesDelta,
-            shareProceeds
-        ) = _calculateCloseLongDeltas(_bondAmount, _sharePrice, timeRemaining);
+        (shareReservesDelta, bondReservesDelta, shareProceeds) = HyperdriveMath
+            .calculateCloseLong(
+                marketState.shareReserves,
+                marketState.bondReserves,
+                _bondAmount,
+                timeRemaining,
+                timeStretch,
+                _sharePrice,
+                initialSharePrice
+            );
 
         // Calculate the fees charged on the curve and flat parts of the trade.
         // Since we calculate the amount of shares received given bonds in, we
@@ -528,43 +530,5 @@ abstract contract HyperdriveLong is HyperdriveLP {
             shareProceeds,
             totalGovFee
         );
-    }
-
-    // TODO: This should be removed if possible. Can we just encapsulate this
-    // within the actual hyperdrive math function?
-    //
-    /// @dev Calculates the reserve updates and the proceeds of closing the
-    ///      long.
-    /// @param _bondAmount The bonds being sold.
-    /// @param _sharePrice The current share price.
-    /// @param _timeRemaining The time remaining until maturity of the position.
-    function _calculateCloseLongDeltas(
-        uint256 _bondAmount,
-        uint256 _sharePrice,
-        uint256 _timeRemaining
-    )
-        internal
-        view
-        returns (
-            uint256 shareReservesDelta,
-            uint256 bondReservesDelta,
-            uint256 shareProceeds
-        )
-    {
-        (uint256 curveIn, uint256 curveOut, uint256 flat) = HyperdriveMath
-            .calculateCloseLong(
-                marketState.shareReserves,
-                marketState.bondReserves,
-                _bondAmount,
-                _timeRemaining,
-                timeStretch,
-                _sharePrice,
-                initialSharePrice
-            );
-        bondReservesDelta = curveIn;
-        shareReservesDelta = curveOut;
-        shareProceeds = curveOut + flat;
-
-        return (shareReservesDelta, bondReservesDelta, shareProceeds);
     }
 }
