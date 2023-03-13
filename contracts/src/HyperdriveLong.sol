@@ -115,28 +115,22 @@ abstract contract HyperdriveLong is HyperdriveLP {
         _applyCheckpoint(_maturityTime, sharePrice);
 
         // Burn the longs that are being closed.
-        uint256 assetId = AssetId.encodeAssetId(
-            AssetId.AssetIdPrefix.Long,
-            _maturityTime
+        _burn(
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _maturityTime),
+            msg.sender,
+            _bondAmount
         );
-        _burn(assetId, msg.sender, _bondAmount);
 
         // Calculate the pool and user deltas using the trading function.
-        uint256 shareReservesDelta;
-        uint256 bondReservesDelta;
-        uint256 shareProceeds;
-        {
-            uint256 totalGovFee;
-            (
-                shareReservesDelta,
-                bondReservesDelta,
-                shareProceeds,
-                totalGovFee
-            ) = _calculateCloseLong(_bondAmount, sharePrice, _maturityTime);
+        (
+            uint256 shareReservesDelta,
+            uint256 bondReservesDelta,
+            uint256 shareProceeds,
+            uint256 totalGovFee
+        ) = _calculateCloseLong(_bondAmount, sharePrice, _maturityTime);
 
-            // Attribute the governance fee.
-            govFeesAccrued += totalGovFee;
-        }
+        // Attribute the governance fee.
+        govFeesAccrued += totalGovFee;
 
         // If the position hasn't matured, apply the accounting updates that
         // result from closing the long to the reserves and pay out the
@@ -347,6 +341,9 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 withdrawalProceeds = 0;
             }
 
+            // TODO: This doesn't actually update the long aggregates. This
+            // seems like a good candidate for a refactor.
+            //
             // Update the long aggregates.
             {
                 // The short interest is the percent increase in share value times the bonds. We convert
@@ -383,6 +380,9 @@ abstract contract HyperdriveLong is HyperdriveLP {
         _updateLiquidity(shareAdjustment);
     }
 
+    // TODO: This is actually relatively clean, but it's a good candidate for a
+    // refactor if we can find a way to avoid stack-too-deep-issues.
+    //
     /// @dev Calculate the pool reserve and trader deltas that result from
     ///      opening a long. This calculation includes trading fees.
     /// @param _shareAmount The amount of shares being paid to open the long.
@@ -460,6 +460,9 @@ abstract contract HyperdriveLong is HyperdriveLP {
         );
     }
 
+    // TODO: This is actually relatively clean, but it's a good candidate for a
+    // refactor if we can find a way to avoid stack-too-deep-issues.
+    //
     /// @dev Calculate the pool reserve and trader deltas that result from
     ///      closing a long. This calculation includes trading fees.
     /// @param _bondAmount The amount of bonds being purchased to close the short.
@@ -527,6 +530,9 @@ abstract contract HyperdriveLong is HyperdriveLP {
         );
     }
 
+    // TODO: This should be removed if possible. Can we just encapsulate this
+    // within the actual hyperdrive math function?
+    //
     /// @dev Calculates the reserve updates and the proceeds of closing the
     ///      long.
     /// @param _bondAmount The bonds being sold.

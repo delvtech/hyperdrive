@@ -126,13 +126,11 @@ abstract contract HyperdriveShort is HyperdriveLP {
         _applyCheckpoint(_maturityTime, sharePrice);
 
         // Burn the shorts that are being closed.
-        {
-            uint256 assetId = AssetId.encodeAssetId(
-                AssetId.AssetIdPrefix.Short,
-                _maturityTime
-            );
-            _burn(assetId, msg.sender, _bondAmount);
-        }
+        _burn(
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _maturityTime),
+            msg.sender,
+            _bondAmount
+        );
 
         // Calculate the pool and user deltas using the trading function.
         (
@@ -414,6 +412,9 @@ abstract contract HyperdriveShort is HyperdriveLP {
         return userDeposit; // max loss + interest
     }
 
+    // TODO: This is actually relatively clean, but it's a good candidate for a
+    // refactor if we can find a way to avoid stack-too-deep-issues.
+    //
     /// @dev Calculate the pool reserve and trader deltas that result from
     ///      opening a short. This calculation includes trading fees.
     /// @param _bondAmount The amount of bonds being sold to open the short.
@@ -437,6 +438,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
             uint256 totalGovFee
         )
     {
+        // TODO: HyperdriveMath's APR should just return these values.
+        //
         // Calculate the effect that opening the short should have on the pool's
         // reserves as well as the amount of shares the trader receives from
         // selling the shorted bonds at the market price.
@@ -496,6 +499,9 @@ abstract contract HyperdriveShort is HyperdriveLP {
         );
     }
 
+    // TODO: This is actually relatively clean, but it's a good candidate for a
+    // refactor if we can find a way to avoid stack-too-deep-issues.
+    //
     /// @dev Calculate the pool reserve and trader deltas that result from
     ///      closing a short. This calculation includes trading fees.
     /// @param _bondAmount The amount of bonds being purchased to close the short.
@@ -561,6 +567,9 @@ abstract contract HyperdriveShort is HyperdriveLP {
         );
     }
 
+    // TODO: This should be removed if possible. Can we just encapsulate this
+    // within the actual hyperdrive math function?
+    //
     /// @dev Calculates the reserve updates and the cost in shares of closing
     ///      the short.
     /// @param _bondAmount The bonds purchased to close the short.
