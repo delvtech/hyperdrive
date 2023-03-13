@@ -47,13 +47,8 @@ contract RemoveLiquidityTest is HyperdriveTest {
         uint256 lpShares = initialize(alice, apr, contribution);
 
         // Time passes and interest accrues.
-        uint256 timeDelta = 0.5e18;
-        vm.warp(block.timestamp + POSITION_DURATION.mulDown(timeDelta));
-        hyperdrive.setSharePrice(
-            getPoolInfo().sharePrice.mulDown(
-                FixedPointMath.ONE_18 + apr.mulDown(timeDelta)
-            )
-        );
+        uint256 timeAdvanced = POSITION_DURATION.mulDown(0.05e18);
+        advanceTime(timeAdvanced, int256(apr));
 
         // Alice removes all of her liquidity.
         uint256 baseProceeds = removeLiquidity(alice, lpShares);
@@ -62,11 +57,12 @@ contract RemoveLiquidityTest is HyperdriveTest {
         assertEq(hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice), 0);
         assertEq(hyperdrive.totalSupply(AssetId._LP_ASSET_ID), 0);
 
+        // Calculate how much interest has accrued on the initial contribution
+        (uint256 contributionPlusInterest, ) = hyperdrive
+            .calculateCompoundInterest(contribution, int256(apr), timeAdvanced);
+
         // Ensure that Alice received the correct amount of base.
-        assertEq(
-            baseProceeds,
-            calculateFutureValue(contribution, apr, timeDelta)
-        );
+        assertEq(baseProceeds, contributionPlusInterest);
         assertEq(baseToken.balanceOf(address(hyperdrive)), 0);
 
         // Ensure that the reserves were updated correctly.
@@ -93,13 +89,8 @@ contract RemoveLiquidityTest is HyperdriveTest {
         uint256 lpShares = initialize(alice, apr, contribution);
 
         // Time passes and interest accrues.
-        uint256 timeDelta = 0.5e18;
-        vm.warp(block.timestamp + POSITION_DURATION.mulDown(timeDelta));
-        hyperdrive.setSharePrice(
-            getPoolInfo().sharePrice.mulDown(
-                FixedPointMath.ONE_18 + apr.mulDown(timeDelta)
-            )
-        );
+        uint256 timeAdvanced = POSITION_DURATION.mulDown(0.5e18);
+        advanceTime(timeAdvanced, int256(apr));
 
         // Bob opens a long.
         uint256 baseAmount = 50_000_000e18;
@@ -113,17 +104,21 @@ contract RemoveLiquidityTest is HyperdriveTest {
         assertEq(hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice), 0);
         assertEq(hyperdrive.totalSupply(AssetId._LP_ASSET_ID), 0);
 
+        // Calculate how much interest has accrued on the initial contribution
+        (uint256 contributionPlusInterest, ) = hyperdrive
+            .calculateCompoundInterest(contribution, int256(apr), timeAdvanced);
+
         // Ensure that Alice received the correct amount of base.
-        uint256 baseExpected = calculateFutureValue(
-            contribution,
-            apr,
-            timeDelta
-        ) +
+        uint256 baseExpected = contributionPlusInterest +
             baseAmount -
             bondAmount;
-        assertEq(baseProceeds, baseExpected);
-        assertEq(baseToken.balanceOf(address(hyperdrive)), bondAmount);
-        assertEq(baseToken.balanceOf(alice), baseProceeds);
+        assertApproxEqAbs(baseProceeds, baseExpected, 1);
+        assertApproxEqAbs(
+            baseToken.balanceOf(address(hyperdrive)),
+            bondAmount,
+            1
+        );
+        assertApproxEqAbs(baseToken.balanceOf(alice), baseProceeds, 1);
 
         // Ensure that the reserves were updated correctly.
         PoolInfo memory poolInfo = getPoolInfo();
@@ -154,13 +149,8 @@ contract RemoveLiquidityTest is HyperdriveTest {
         uint256 lpShares = initialize(alice, apr, contribution);
 
         // Time passes and interest accrues.
-        uint256 timeDelta = 0.5e18;
-        vm.warp(block.timestamp + POSITION_DURATION.mulDown(timeDelta));
-        hyperdrive.setSharePrice(
-            getPoolInfo().sharePrice.mulDown(
-                FixedPointMath.ONE_18 + apr.mulDown(timeDelta)
-            )
-        );
+        uint256 timeAdvanced = POSITION_DURATION.mulDown(0.05e18);
+        advanceTime(timeAdvanced, int256(apr));
 
         // Bob opens a long.
         uint256 bondAmount = 50_000_000e18;
@@ -173,14 +163,12 @@ contract RemoveLiquidityTest is HyperdriveTest {
         assertEq(hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice), 0);
         assertEq(hyperdrive.totalSupply(AssetId._LP_ASSET_ID), 0);
 
+        // Calculate how much interest has accrued on the initial contribution
+        (uint256 contributionPlusInterest, ) = hyperdrive
+            .calculateCompoundInterest(contribution, int256(apr), timeAdvanced);
+
         // Ensure that Alice received the correct amount of base.
-        uint256 baseExpected = calculateFutureValue(
-            contribution,
-            apr,
-            timeDelta
-        ) +
-            basePaid -
-            bondAmount;
+        uint256 baseExpected = contributionPlusInterest + basePaid - bondAmount;
         assertApproxEqAbs(baseProceeds, baseExpected, 1 wei);
         assertApproxEqAbs(
             baseToken.balanceOf(address(hyperdrive)),

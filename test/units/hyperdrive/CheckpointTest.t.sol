@@ -27,7 +27,7 @@ contract CheckpointTest is HyperdriveTest {
         // Update the share price. Since the long and short were opened in this
         // checkpoint, the checkpoint should be of the old checkpoint price.
         uint256 sharePrice = getPoolInfo().sharePrice;
-        hyperdrive.setSharePrice(1.5e18);
+        hyperdrive.accrue(CHECKPOINT_DURATION, 0.1e18);
 
         // Create a checkpoint.
         uint256 aprBefore = calculateAPRFromReserves();
@@ -54,13 +54,11 @@ contract CheckpointTest is HyperdriveTest {
         // Initialize the Hyperdrive pool.
         initialize(alice, 0.05e18, 500_000_000e18);
 
-        // Advance a checkpoint.
-        vm.warp(block.timestamp + CHECKPOINT_DURATION);
-
-        // Update the share price. Since the long and short were opened in this
-        // checkpoint, the checkpoint should be of the old checkpoint price.
-        uint256 sharePrice = 1.5e18;
-        hyperdrive.setSharePrice(sharePrice);
+        // Advance a checkpoint, updating the share price. Since the long and
+        // short were opened in this checkpoint, the checkpoint should be of the
+        // old checkpoint price.
+        advanceTime(CHECKPOINT_DURATION, 0.1e18);
+        uint256 sharePrice = getPoolInfo().sharePrice;
 
         // Create a checkpoint.
         uint256 aprBefore = calculateAPRFromReserves();

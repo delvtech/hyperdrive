@@ -56,39 +56,28 @@ contract MockHyperdrive is Hyperdrive {
 
     // Accrues compounded interest for a given number of seconds and readjusts
     // share price to reflect such compounding
-    function accrue(uint256 time, uint256 apr) external {
-        (uint256 accrued, uint256 interest) = calculateCompoundInterest(
+    function accrue(uint256 time, int256 apr) external {
+        (uint256 accrued, int256 interest) = calculateCompoundInterest(
             baseToken.balanceOf(address(this)),
             apr,
             time
         );
 
         if (interest > 0) {
-            ERC20Mintable(address(baseToken)).mint(interest);
+            ERC20Mintable(address(baseToken)).mint(
+                address(this),
+                uint256(interest)
+            );
+        } else if (interest < 0) {
+            ERC20Mintable(address(baseToken)).burn(
+                address(this),
+                uint256(-interest)
+            );
         }
 
         _sharePrice = accrued.divDown(
             marketState.shareReserves > 0 ? marketState.shareReserves : accrued
         );
-    }
-
-    function setSharePrice(uint256 sharePrice) external {
-        if (sharePrice > _sharePrice) {
-            // Update the share price and accrue interest.
-            ERC20Mintable(address(baseToken)).mint(
-                (sharePrice.sub(_sharePrice)).mulDown(
-                    baseToken.balanceOf(address(this))
-                )
-            );
-        } else {
-            baseToken.transfer(
-                address(1),
-                (_sharePrice.sub(sharePrice)).mulDown(
-                    baseToken.balanceOf(address(this))
-                )
-            );
-        }
-        _sharePrice = sharePrice;
     }
 
     function calculateFeesOutGivenSharesIn(
@@ -178,18 +167,36 @@ contract MockHyperdrive is Hyperdrive {
         return (totalCurveFee, totalFlatFee, govCurveFee, govFlatFee);
     }
 
-    // Derives principal + compounded rate of interest over a period
-    // principal * e ^ (rate * time)
+    /// @dev Derives principal + compounded rate of interest over a period
+    ///      principal * e ^ (rate * time)
+    /// @param _principal The initial amount interest will be accrued on
+    /// @param _apr Annual percentage rate
+    /// @param _time Number of seconds compounding will occur for
     function calculateCompoundInterest(
         uint256 _principal,
-        uint256 _apr,
+        int256 _apr,
         uint256 _time
-    ) public pure returns (uint256 accrued, uint256 interest) {
+    ) public pure returns (uint256 accrued, int256 interest) {
+        // Adjust time to a fraction of a year
         uint256 normalizedTime = _time.divDown(365 days);
-        accrued = _principal.mulDown(
-            uint256(FixedPointMath.exp(int256(_apr.mulDown(normalizedTime))))
-        );
-        interest = accrued - _principal;
+        uint256 rt = uint256(_apr < 0 ? -_apr : _apr).mulDown(normalizedTime);
+
+        if (_apr > 0) {
+            accrued = _principal.mulDown(
+                uint256(FixedPointMath.exp(int256(rt)))
+            );
+            interest = int256(accrued - _principal);
+            return (accrued, interest);
+        } else if (_apr < 0) {
+            // NOTE: Might not be the correct calculation for negatively
+            // continuously compounded interest
+            accrued = _principal.divDown(
+                uint256(FixedPointMath.exp(int256(rt)))
+            );
+            interest = int256(accrued) - int256(_principal);
+            return (accrued, interest);
+        }
+        return (_principal, 0);
     }
 
     /// Overrides ///

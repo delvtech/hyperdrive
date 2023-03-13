@@ -29,13 +29,7 @@ contract FeeTest is HyperdriveTest {
         );
 
         // Time passes and the pool accrues interest at the current apr.
-        uint256 timeDelta = 0.5e18;
-        vm.warp(block.timestamp + POSITION_DURATION.mulDown(timeDelta));
-        hyperdrive.setSharePrice(
-            getPoolInfo().sharePrice.mulDown(
-                FixedPointMath.ONE_18 + apr.mulDown(timeDelta)
-            )
-        );
+        advanceTime(POSITION_DURATION.mulDown(0.5e18), int256(apr));
 
         // Collect fees and test that the fees received in the governance address have earned interest.
         hyperdrive.collectGovFee();
@@ -69,13 +63,7 @@ contract FeeTest is HyperdriveTest {
         assertGt(govFeesAfterOpenLong, govFeesBeforeOpenLong);
 
         // Most of the term passes. The pool accrues interest at the current apr.
-        uint256 timeDelta = 0.5e18;
-        vm.warp(block.timestamp + POSITION_DURATION.mulDown(timeDelta));
-        hyperdrive.setSharePrice(
-            getPoolInfo().sharePrice.mulDown(
-                FixedPointMath.ONE_18 + apr.mulDown(timeDelta)
-            )
-        );
+        advanceTime(POSITION_DURATION.mulDown(0.5e18), int256(apr));
 
         // Bob closes his long close to maturity.
         closeLong(bob, maturityTime, bondAmount);
@@ -122,13 +110,7 @@ contract FeeTest is HyperdriveTest {
         assertGt(govFeesAfterOpenShort, govFeesBeforeOpenShort);
 
         // Most of the term passes. The pool accrues interest at the current apr.
-        uint256 timeDelta = 0.5e18;
-        vm.warp(block.timestamp + POSITION_DURATION.mulDown(timeDelta));
-        hyperdrive.setSharePrice(
-            getPoolInfo().sharePrice.mulDown(
-                FixedPointMath.ONE_18 + apr.mulDown(timeDelta)
-            )
-        );
+        advanceTime(POSITION_DURATION.mulDown(0.5e18), int256(apr));
 
         // Redeem the bonds.
         closeShort(bob, maturityTime, bondAmount);
