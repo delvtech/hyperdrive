@@ -41,9 +41,20 @@ contract InitializeTest is HyperdriveTest {
         assertApproxEqAbs(poolApr, apr, 1); // 17 decimals of precision
 
         // Ensure that Alice's base balance has been depleted and that Alice
-        // received some LP tokens.
+        // received the correct amount of LP shares.
         assertEq(baseToken.balanceOf(alice), 0);
         assertEq(baseToken.balanceOf(address(hyperdrive)), contribution);
-        assertEq(lpShares, contribution + getPoolInfo().bondReserves);
+        assertEq(
+            lpShares,
+            getPoolInfo().bondReserves -
+                HyperdriveMath.calculateInitialBondReserves(
+                    contribution,
+                    FixedPointMath.ONE_18,
+                    FixedPointMath.ONE_18,
+                    apr,
+                    POSITION_DURATION,
+                    hyperdrive.timeStretch()
+                )
+        );
     }
 }

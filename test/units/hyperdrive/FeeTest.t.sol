@@ -199,8 +199,11 @@ contract FeeTest is HyperdriveTest {
         // Deploy and initialize a new pool with fees.
         deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18, governance);
         initialize(alice, apr, contribution);
-        (uint256 totalFee, uint256 totalGovFee) = hyperdrive
-            .calculateFeesOutGivenBondsIn(
+        (
+            uint256 totalCurveFee,
+            uint256 totalFlatFee,
+            uint256 totalGovFee
+        ) = hyperdrive.calculateFeesOutGivenBondsIn(
                 1 ether, // amountIn
                 1 ether, // timeRemaining
                 0.9 ether, // spotPrice
@@ -208,17 +211,18 @@ contract FeeTest is HyperdriveTest {
             );
         // curve fee = ((1 - p) * phi_curve * d_y * t) / c
         // ((1-.9)*.1*1*1)/1 = .01
-        assertEq(totalFee, .01 ether);
+        assertEq(totalCurveFee + totalFlatFee, .01 ether);
 
         assertEq(totalGovFee, .005 ether);
 
-        (totalFee, totalGovFee) = hyperdrive.calculateFeesOutGivenBondsIn(
-            1 ether, // amountIn
-            0, // timeRemaining
-            0.9 ether, // spotPrice
-            1 ether // sharePrice
-        );
-        assertEq(totalFee, 0.1 ether);
+        (totalCurveFee, totalFlatFee, totalGovFee) = hyperdrive
+            .calculateFeesOutGivenBondsIn(
+                1 ether, // amountIn
+                0, // timeRemaining
+                0.9 ether, // spotPrice
+                1 ether // sharePrice
+            );
+        assertEq(totalCurveFee + totalFlatFee, 0.1 ether);
         assertEq(totalGovFee, 0.05 ether);
     }
 

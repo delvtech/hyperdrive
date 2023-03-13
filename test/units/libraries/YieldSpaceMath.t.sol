@@ -17,8 +17,7 @@ contract YieldSpaceMathTest is Test {
         // test small amount of shares in
         uint256 result1 = yieldSpaceMath.calculateBondsOutGivenSharesIn(
             100000e18, // shareReserves
-            100000e18, // bondReserves
-            200000e18, // bondReserveAdjustment
+            100000e18 + 200000e18, // bondReserves + s
             100e18, // amountIn
             1e18 - FixedPointMath.ONE_18.divDown(2e18).mulDown(timeStretch), // stretchedTimeElapsed
             1e18, // c
@@ -30,8 +29,7 @@ contract YieldSpaceMathTest is Test {
         // test large amount shares in
         uint256 result2 = yieldSpaceMath.calculateBondsOutGivenSharesIn(
             100000e18, // shareReserves
-            100000e18, // bondReserves
-            200000e18, // bondReserveAdjustment
+            100000e18 + 200000e18, // bondReserves + s
             80000e18, // amountIn
             1e18 - FixedPointMath.ONE_18.divDown(2e18).mulDown(timeStretch), // stretchedTimeElapsed
             1e18, // c
@@ -43,8 +41,7 @@ contract YieldSpaceMathTest is Test {
         // test small amount bond in
         uint256 result3 = yieldSpaceMath.calculateSharesOutGivenBondsIn(
             100000e18, // shareReserves
-            100000e18, // bondReserves
-            200000e18, // bondReserveAdjustment
+            100000e18 + 200000e18, // bondReserves + s
             100e18, // amountIn
             1e18 - FixedPointMath.ONE_18.divDown(2e18).mulDown(timeStretch), // stretchedTimeElapsed
             1e18, // c
@@ -56,8 +53,7 @@ contract YieldSpaceMathTest is Test {
         // test large amount bond in
         uint256 result4 = yieldSpaceMath.calculateSharesOutGivenBondsIn(
             100000e18, // shareReserves
-            100000e18, // bondReserves
-            200000e18, // bondReserveAdjustment
+            100000e18 + 200000e18, // bondReserves + s
             80000e18, // amountIn
             1e18 - FixedPointMath.ONE_18.divDown(2e18).mulDown(timeStretch), // stretchedTimeElapsed
             1e18, // c
@@ -76,8 +72,7 @@ contract YieldSpaceMathTest is Test {
         // test small amount of shares in
         uint256 result1 = yieldSpaceMath.calculateBondsInGivenSharesOut(
             100000e18, // shareReserves
-            100000e18, // bondReserves
-            200000e18, // bondReserveAdjustment
+            100000e18 + 200000e18, // bondReserves + s
             100e18, // amountIn
             1e18 - FixedPointMath.ONE_18.divDown(2e18).mulDown(timeStretch), // stretchedTimeElapsed
             1e18, // c
@@ -89,8 +84,7 @@ contract YieldSpaceMathTest is Test {
         // test large amount shares in
         uint256 result2 = yieldSpaceMath.calculateBondsInGivenSharesOut(
             100000e18, // shareReserves
-            100000e18, // bondReserves
-            200000e18, // bondReserveAdjustment
+            100000e18 + 200000e18, // bondReserves + s
             80000e18, // amountIn
             1e18 - FixedPointMath.ONE_18.divDown(2e18).mulDown(timeStretch), // stretchedTimeElapsed
             1e18, // c
@@ -102,8 +96,7 @@ contract YieldSpaceMathTest is Test {
         // test small amount bond in
         uint256 result3 = yieldSpaceMath.calculateSharesInGivenBondsOut(
             100000e18, // shareReserves
-            100000e18, // bondReserves
-            200000e18, // bondReserveAdjustment
+            100000e18 + 200000e18, // bondReserves + s
             100e18, // amountIn
             1e18 - FixedPointMath.ONE_18.divDown(2e18).mulDown(timeStretch), // stretchedTimeElapsed
             1e18, // c
@@ -115,8 +108,7 @@ contract YieldSpaceMathTest is Test {
         // test large amount bond in
         uint256 result4 = yieldSpaceMath.calculateSharesInGivenBondsOut(
             100000e18, // shareReserves
-            100000e18, // bondReserves
-            200000e18, // bondReserveAdjustment
+            100000e18 + 200000e18, // bondReserves + s
             80000e18, // amountIn
             1e18 - FixedPointMath.ONE_18.divDown(2e18).mulDown(timeStretch), // stretchedTimeElapsed
             1e18, // c

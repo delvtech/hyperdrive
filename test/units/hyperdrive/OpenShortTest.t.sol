@@ -4,6 +4,7 @@ pragma solidity ^0.8.18;
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 
 contract OpenShortTest is HyperdriveTest {
@@ -120,50 +121,65 @@ contract OpenShortTest is HyperdriveTest {
         // Verify that the short didn't receive an APR higher than the pool's
         // APR.
         uint256 baseProceeds = bondAmount - baseAmount;
-        uint256 realizedApr = calculateAPRFromRealizedPrice(
-            baseProceeds,
-            bondAmount,
-            FixedPointMath.ONE_18
-        );
-        assertLt(apr, realizedApr);
-
-        // Verify that the pool's APR didn't go down.
+        {
+            uint256 realizedApr = calculateAPRFromRealizedPrice(
+                baseProceeds,
+                bondAmount,
+                FixedPointMath.ONE_18
+            );
+            assertLt(apr, realizedApr);
+        }
 
         // Verify that the reserves were updated correctly.
         PoolInfo memory poolInfoAfter = getPoolInfo();
-        (
-            ,
-            uint256 checkpointLongBaseVolume,
-            uint256 checkpointShortBaseVolume
-        ) = hyperdrive.checkpoints(checkpointTime);
-        assertEq(
-            poolInfoAfter.shareReserves,
-            poolInfoBefore.shareReserves -
-                baseProceeds.divDown(poolInfoBefore.sharePrice)
-        );
-        assertEq(
-            poolInfoAfter.bondReserves,
-            poolInfoBefore.bondReserves + bondAmount
-        );
-        assertEq(poolInfoAfter.lpTotalSupply, poolInfoBefore.lpTotalSupply);
-        assertEq(poolInfoAfter.sharePrice, poolInfoBefore.sharePrice);
-        assertEq(
-            poolInfoAfter.longsOutstanding,
-            poolInfoBefore.longsOutstanding
-        );
-        assertEq(poolInfoAfter.longAverageMaturityTime, 0);
-        assertEq(poolInfoAfter.longBaseVolume, 0);
-        assertEq(checkpointLongBaseVolume, 0);
-        assertEq(
-            poolInfoAfter.shortsOutstanding,
-            poolInfoBefore.shortsOutstanding + bondAmount
-        );
+        {
+            (
+                ,
+                uint256 checkpointLongBaseVolume,
+                uint256 checkpointShortBaseVolume
+            ) = hyperdrive.checkpoints(checkpointTime);
+            assertEq(
+                poolInfoAfter.shareReserves,
+                poolInfoBefore.shareReserves -
+                    baseProceeds.divDown(poolInfoBefore.sharePrice)
+            );
+            assertEq(poolInfoAfter.lpTotalSupply, poolInfoBefore.lpTotalSupply);
+            assertEq(poolInfoAfter.sharePrice, poolInfoBefore.sharePrice);
+            assertEq(
+                poolInfoAfter.longsOutstanding,
+                poolInfoBefore.longsOutstanding
+            );
+            assertEq(poolInfoAfter.longAverageMaturityTime, 0);
+            assertEq(poolInfoAfter.longBaseVolume, 0);
+            assertEq(checkpointLongBaseVolume, 0);
+            assertEq(
+                poolInfoAfter.shortsOutstanding,
+                poolInfoBefore.shortsOutstanding + bondAmount
+            );
+            assertApproxEqAbs(
+                poolInfoAfter.shortAverageMaturityTime,
+                maturityTime,
+                1
+            );
+            assertEq(poolInfoAfter.shortBaseVolume, baseProceeds);
+            assertEq(checkpointShortBaseVolume, baseProceeds);
+        }
+
+        // Ensure that the bond reserves were updated to have the correct APR.
+        // Due to the way that the flat part of the trade is applied, the bond
+        // reserve updates may not exactly correspond to the amount of bonds
+        // transferred; however, the pool's APR should be identical to the APR
+        // that the bond amount transfer implies.
         assertApproxEqAbs(
-            poolInfoAfter.shortAverageMaturityTime,
-            maturityTime,
-            1
+            calculateAPRFromReserves(),
+            HyperdriveMath.calculateAPRFromReserves(
+                poolInfoAfter.shareReserves,
+                poolInfoBefore.bondReserves + bondAmount,
+                INITIAL_SHARE_PRICE,
+                POSITION_DURATION,
+                hyperdrive.timeStretch()
+            ),
+            5
         );
-        assertEq(poolInfoAfter.shortBaseVolume, baseProceeds);
-        assertEq(checkpointShortBaseVolume, baseProceeds);
     }
 }

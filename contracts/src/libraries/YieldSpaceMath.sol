@@ -290,7 +290,6 @@ library YieldSpaceMath {
     /// a specified amount of shares
     /// @param z Amount of share reserves in the pool
     /// @param y Amount of bond reserves in the pool
-    /// @param s An optional adjustment to the bond reserve
     /// @param dz Amount of shares user wants to receive
     /// @param t Amount of time elapsed since term start
     /// @param c Conversion rate between base and shares
@@ -298,7 +297,6 @@ library YieldSpaceMath {
     function calculateBondsInGivenSharesOut(
         uint256 z,
         uint256 y,
-        uint256 s,
         uint256 dz,
         uint256 t,
         uint256 c,
@@ -306,9 +304,6 @@ library YieldSpaceMath {
     ) internal pure returns (uint256) {
         // c/µ
         uint256 cDivMu = c.divDown(mu);
-        // Adjust the bond reserve, optionally shifts the curve around the
-        // inflection point
-        y = y.add(s);
         // (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
         uint256 k = _modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
         // (µ * (z - dz))^(1 - t)
@@ -325,7 +320,6 @@ library YieldSpaceMath {
     /// providing a specified amount of shares
     /// @param z Amount of share reserves in the pool
     /// @param y Amount of bond reserves in the pool
-    /// @param s An optional adjustment to the bond reserve
     /// @param dz Amount of shares user wants to provide
     /// @param t Amount of time elapsed since term start
     /// @param c Conversion rate between base and shares
@@ -333,7 +327,6 @@ library YieldSpaceMath {
     function calculateBondsOutGivenSharesIn(
         uint256 z,
         uint256 y,
-        uint256 s,
         uint256 dz,
         uint256 t,
         uint256 c,
@@ -341,9 +334,6 @@ library YieldSpaceMath {
     ) internal pure returns (uint256) {
         // c/µ
         uint256 cDivMu = c.divDown(mu);
-        // Adjust the bond reserve, optionally shifts the curve around the
-        // inflection point
-        y = y.add(s);
         // (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
         uint256 k = _modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
         // (µ * (z + dz))^(1 - t)
@@ -360,7 +350,6 @@ library YieldSpaceMath {
     /// a specified amount of bonds
     /// @param z Amount of share reserves in the pool
     /// @param y Amount of bond reserves in the pool
-    /// @param s An optional adjustment to the bond reserve
     /// @param dy Amount of bonds user wants to provide
     /// @param t Amount of time elapsed since term start
     /// @param c Conversion rate between base and shares
@@ -368,7 +357,6 @@ library YieldSpaceMath {
     function calculateSharesInGivenBondsOut(
         uint256 z,
         uint256 y,
-        uint256 s,
         uint256 dy,
         uint256 t,
         uint256 c,
@@ -376,9 +364,6 @@ library YieldSpaceMath {
     ) internal pure returns (uint256) {
         // c/µ
         uint256 cDivMu = c.divDown(mu);
-        // Adjust the bond reserve, optionally shifts the curve around the
-        // inflection point
-        y = y.add(s);
         // (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
         uint256 k = _modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
         // (y - dy)^(1 - t)
@@ -397,7 +382,6 @@ library YieldSpaceMath {
     /// providing a specified amount of bonds
     /// @param z Amount of share reserves in the pool
     /// @param y Amount of bond reserves in the pool
-    /// @param s An optional adjustment to the bond reserve
     /// @param dy Amount of bonds user wants to provide
     /// @param t Amount of time elapsed since term start
     /// @param c Conversion rate between base and shares
@@ -405,7 +389,6 @@ library YieldSpaceMath {
     function calculateSharesOutGivenBondsIn(
         uint256 z,
         uint256 y,
-        uint256 s,
         uint256 dy,
         uint256 t,
         uint256 c,
@@ -413,9 +396,6 @@ library YieldSpaceMath {
     ) internal pure returns (uint256) {
         // c/µ
         uint256 cDivMu = c.divDown(mu);
-        // Adjust the bond reserve, optionally shifts the curve around the
-        // inflection point
-        y = y.add(s);
         // (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
         uint256 k = _modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
         // (y + dy)^(1 - t)

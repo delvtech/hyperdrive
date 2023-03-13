@@ -14,10 +14,32 @@ import { YieldSpaceMath } from "./YieldSpaceMath.sol";
 library HyperdriveMath {
     using FixedPointMath for uint256;
 
+    /// @dev Calculates the spot price without slippage of bonds in terms of shares.
+    /// @param _shareReserves The pool's share reserves.
+    /// @param _bondReserves The pool's bond reserves.
+    /// @param _initialSharePrice The initial share price as an 18 fixed-point value.
+    /// @param _normalizedTimeRemaining The normalized amount of time remaining until maturity.
+    /// @param _timeStretch The time stretch parameter as an 18 fixed-point value.
+    /// @return spotPrice The spot price of bonds in terms of shares as an 18 fixed-point value.
+    function calculateSpotPrice(
+        uint256 _shareReserves,
+        uint256 _bondReserves,
+        uint256 _initialSharePrice,
+        uint256 _normalizedTimeRemaining,
+        uint256 _timeStretch
+    ) internal pure returns (uint256 spotPrice) {
+        // (y / (mu * z)) ** -tau
+        // ((mu * z) / y) ** tau
+        uint256 tau = _normalizedTimeRemaining.mulDown(_timeStretch);
+
+        spotPrice = _initialSharePrice
+            .mulDivDown(_shareReserves, _bondReserves)
+            .pow(tau);
+    }
+
     /// @dev Calculates the APR from the pool's reserves.
     /// @param _shareReserves The pool's share reserves.
     /// @param _bondReserves The pool's bond reserves.
-    /// @param _lpTotalSupply The pool's total supply of LP shares.
     /// @param _initialSharePrice The pool's initial share price.
     /// @param _positionDuration The amount of time until maturity in seconds.
     /// @param _timeStretch The time stretch parameter.
@@ -25,7 +47,6 @@ library HyperdriveMath {
     function calculateAPRFromReserves(
         uint256 _shareReserves,
         uint256 _bondReserves,
-        uint256 _lpTotalSupply,
         uint256 _initialSharePrice,
         uint256 _positionDuration,
         uint256 _timeStretch
@@ -38,7 +59,6 @@ library HyperdriveMath {
         uint256 spotPrice = calculateSpotPrice(
             _shareReserves,
             _bondReserves,
-            _lpTotalSupply,
             _initialSharePrice,
             // full time remaining of position
             FixedPointMath.ONE_18,
@@ -53,15 +73,19 @@ library HyperdriveMath {
     }
 
     /// @dev Calculates the initial bond reserves assuming that the initial LP
-    ///      receives LP shares amounting to c * z + y.
+    ///      receives LP shares amounting to c * z + y. Throughout the rest of
+    ///      the codebase, the bond reserves used include the LP share
+    ///      adjustment specified in YieldSpace. The bond reserves returned by
+    ///      this function are unadjusted which makes it easier to calculate the
+    ///      initial LP shares.
     /// @param _shareReserves The pool's share reserves.
     /// @param _sharePrice The pool's share price.
     /// @param _initialSharePrice The pool's initial share price.
     /// @param _apr The pool's APR.
     /// @param _positionDuration The amount of time until maturity in seconds.
     /// @param _timeStretch The time stretch parameter.
-    /// @return bondReserves The bond reserves that make the pool have a
-    ///         specified APR.
+    /// @return bondReserves The bond reserves (without adjustment) that make
+    ///         the pool have a specified APR.
     function calculateInitialBondReserves(
         uint256 _shareReserves,
         uint256 _sharePrice,
@@ -85,117 +109,121 @@ library HyperdriveMath {
         return _shareReserves.divDown(2 * FixedPointMath.ONE_18).mulDown(rhs);
     }
 
-    /// @dev Calculates the bond reserves that will make the pool have a
-    ///      specified APR.
+    /// @dev Given starting reserves and an adjustment to the share reserves,
+    ///      this function will apply the adjustment to the share reserves and
+    ///      calculate the bond reserves that maintain the APR implied by the
+    ///      previous reserves.
     /// @param _shareReserves The pool's share reserves.
-    /// @param _lpTotalSupply The pool's total supply of LP shares.
-    /// @param _initialSharePrice The pool's initial share price as an 18 fixed-point number.
-    /// @param _apr The pool's APR as an 18 fixed-point number.
+    /// @param _bondReserves The pool's bond reserves.
+    /// @param _shareReservesDelta The adjustment to the pool's share reserves.
+    /// @param _initialSharePrice The pool's initial share price.
     /// @param _positionDuration The amount of time until maturity in seconds.
-    /// @param _timeStretch The time stretch parameter as an 18 fixed-point number.
-    /// @return bondReserves The bond reserves that make the pool have a
-    ///         specified APR.
-    function calculateBondReserves(
+    /// @param _timeStretch The time stretch parameter.
+    /// @return shareReserves The new share reserves.
+    /// @return bondReserves The new bond reserves.
+    function calculateUpdatedReserves(
         uint256 _shareReserves,
-        uint256 _lpTotalSupply,
+        uint256 _bondReserves,
+        int256 _shareReservesDelta,
         uint256 _initialSharePrice,
-        uint256 _apr,
         uint256 _positionDuration,
         uint256 _timeStretch
-    ) internal pure returns (uint256 bondReserves) {
+    ) internal pure returns (uint256 shareReserves, uint256 bondReserves) {
+        // Calculate the APR implied by the current pool reserves.
+        uint256 apr = calculateAPRFromReserves(
+            _shareReserves,
+            _bondReserves,
+            _initialSharePrice,
+            _positionDuration,
+            _timeStretch
+        );
+
+        // Update the share reserves.
+        shareReserves = uint256(int256(_shareReserves) + _shareReservesDelta);
+
         // Solving for (1 + r * t) ** (1 / tau) here. t is the normalized time remaining which in
         // this case is 1. Because bonds mature after the positionDuration, we need to scale the apr
         // to the proportion of a year of the positionDuration. tau = t / time_stretch, or just
         // 1 / time_stretch in this case.
         uint256 t = _positionDuration.divDown(365 days);
         uint256 tau = FixedPointMath.ONE_18.mulDown(_timeStretch);
-        uint256 interestFactor = FixedPointMath.ONE_18.add(_apr.mulDown(t)).pow(
+        uint256 interestFactor = FixedPointMath.ONE_18.add(apr.mulDown(t)).pow(
             FixedPointMath.ONE_18.divDown(tau)
         );
 
         // mu * z * (1 + apr * t) ** (1 / tau)
-        uint256 lhs = _initialSharePrice.mulDown(_shareReserves).mulDown(
+        bondReserves = _initialSharePrice.mulDown(shareReserves).mulDown(
             interestFactor
         );
-        // mu * z * (1 + apr * t) ** (1 / tau) - l
-        return lhs.sub(_lpTotalSupply);
+        return (shareReserves, bondReserves);
     }
 
     /// @dev Calculates the number of bonds a user will receive when opening a long position.
     /// @param _shareReserves The pool's share reserves.
     /// @param _bondReserves The pool's bond reserves.
-    /// @param _bondReserveAdjustment The bond reserves are adjusted to improve
-    ///        the capital efficiency of the AMM. Otherwise, the APR would be 0%
-    ///        when share_reserves = bond_reserves, which would ensure that half
-    ///        of the pool reserves couldn't be used to provide liquidity.
     /// @param _amountIn The amount of shares the user is depositing.
     /// @param _normalizedTimeRemaining The amount of time remaining until maturity in seconds.
     /// @param _timeStretch The time stretch parameter.
     /// @param _sharePrice The share price.
     /// @param _initialSharePrice The initial share price.
-    /// @return poolBondDelta The change in the pool's bond reserves.
-    /// @return userDelta The amount of bonds the user will receive.
+    /// @return curveIn The input amount for the curve trade (denominated in shares).
+    /// @return curveOut The output amount for the curve trade (denominated in bonds).
+    /// @return flat The flat amount (denominated in bonds).
     function calculateOpenLong(
         uint256 _shareReserves,
         uint256 _bondReserves,
-        uint256 _bondReserveAdjustment,
         uint256 _amountIn,
         uint256 _normalizedTimeRemaining,
         uint256 _timeStretch,
         uint256 _sharePrice,
         uint256 _initialSharePrice
-    ) internal pure returns (uint256 poolBondDelta, uint256 userDelta) {
+    ) internal pure returns (uint256 curveIn, uint256 curveOut, uint256 flat) {
         // Calculate the flat part of the trade.
-        uint256 flat = _amountIn.mulDown(
+        flat = _amountIn.mulDown(
             FixedPointMath.ONE_18.sub(_normalizedTimeRemaining)
         );
-        uint256 curveIn = _amountIn.mulDown(_normalizedTimeRemaining);
+        curveIn = _amountIn.mulDown(_normalizedTimeRemaining);
         // (time remaining)/(term length) is always 1 so we just use _timeStretch
-        uint256 curveOut = YieldSpaceMath.calculateBondsOutGivenSharesIn(
+        curveOut = YieldSpaceMath.calculateBondsOutGivenSharesIn(
             _shareReserves,
             _bondReserves,
-            _bondReserveAdjustment,
             curveIn,
             FixedPointMath.ONE_18.sub(_timeStretch),
             _sharePrice,
             _initialSharePrice
         );
-        return (curveOut, flat.add(curveOut));
+        return (curveIn, curveOut, flat);
     }
 
     /// @dev Calculates the amount of shares a user will receive when closing a
     ///      long position.
     /// @param _shareReserves The pool's share reserves.
     /// @param _bondReserves The pool's bond reserves.
-    /// @param _bondReserveAdjustment The bond reserves are adjusted to improve
-    ///        the capital efficiency of the AMM. Otherwise, the APR would be 0%
-    ///        when share_reserves = bond_reserves, which would ensure that half
-    ///        of the pool reserves couldn't be used to provide liquidity.
     /// @param _amountIn The amount of bonds the user is closing.
     /// @param _normalizedTimeRemaining The normalized time remaining of the
     ///        position.
     /// @param _timeStretch The time stretch parameter.
     /// @param _sharePrice The share price.
     /// @param _initialSharePrice The initial share price.
-    /// @return poolBondDelta The change in the pool's bond reserves.
-    /// @return userDelta The amount of shares the user will receive.
+    /// @return curveIn The input amount for the curve trade (denominated in bonds).
+    /// @return curveOut The output amount for the curve trade (denominated in shares).
+    /// @return flat The flat amount (denominated in shares).
     function calculateCloseLong(
         uint256 _shareReserves,
         uint256 _bondReserves,
-        uint256 _bondReserveAdjustment,
         uint256 _amountIn,
         uint256 _normalizedTimeRemaining,
         uint256 _timeStretch,
         uint256 _sharePrice,
         uint256 _initialSharePrice
-    ) internal pure returns (uint256 poolBondDelta, uint256 userDelta) {
+    ) internal pure returns (uint256 curveIn, uint256 curveOut, uint256 flat) {
         // We consider (1 - timeRemaining) * amountIn of the bonds to be fully
         // matured and timeRemaining * amountIn of the bonds to be newly
         // minted. The fully matured bonds are redeemed one-to-one to base
         // (our result is given in shares, so we divide the one-to-one
         // redemption by the share price) and the newly minted bonds are
         // traded on a YieldSpace curve configured to timeRemaining = 1.
-        uint256 flat = _amountIn
+        flat = _amountIn
             .mulDown(FixedPointMath.ONE_18.sub(_normalizedTimeRemaining))
             .divDown(_sharePrice);
 
@@ -207,92 +235,107 @@ library HyperdriveMath {
 
         if (_normalizedTimeRemaining > 0) {
             // Calculate the curved part of the trade.
-            uint256 curveIn = _amountIn.mulDown(_normalizedTimeRemaining);
+            curveIn = _amountIn.mulDown(_normalizedTimeRemaining);
             // (time remaining)/(term length) is always 1 so we just use _timeStretch
-            uint256 curveOut = YieldSpaceMath.calculateSharesOutGivenBondsIn(
+            curveOut = YieldSpaceMath.calculateSharesOutGivenBondsIn(
                 _shareReserves,
                 _bondReserves,
-                _bondReserveAdjustment,
                 curveIn,
                 FixedPointMath.ONE_18.sub(_timeStretch),
                 _sharePrice,
                 _initialSharePrice
             );
-            return (curveIn, flat.add(curveOut));
-        } else {
-            return (0, flat);
         }
+        return (curveIn, curveOut, flat);
     }
 
     /// @dev Calculates the amount of shares that will be received given a
     ///      specified amount of bonds.
     /// @param _shareReserves The pool's share reserves
     /// @param _bondReserves The pool's bonds reserves.
-    /// @param _bondReserveAdjustment The bond reserves are adjusted to improve
-    ///        the capital efficiency of the AMM. Otherwise, the APR would be 0%
-    ///        when share_reserves = bond_reserves, which would ensure that half
-    ///        of the pool reserves couldn't be used to provide liquidity.
     /// @param _amountIn The amount of bonds the user is providing.
     /// @param _normalizedTimeRemaining The amount of time remaining until maturity in seconds.
     /// @param _timeStretch The time stretch parameter.
     /// @param _sharePrice The share price.
     /// @param _initialSharePrice The initial share price.
-    /// @return poolShareDelta The change in the pool's share reserves.
+    /// @return curveIn The input amount for the curve trade (denominated in bonds).
+    /// @return curveOut The output amount for the curve trade (denominated in shares).
+    /// @return flat The flat amount (denominated in shares).
     function calculateOpenShort(
         uint256 _shareReserves,
         uint256 _bondReserves,
-        uint256 _bondReserveAdjustment,
         uint256 _amountIn,
         uint256 _normalizedTimeRemaining,
         uint256 _timeStretch,
         uint256 _sharePrice,
         uint256 _initialSharePrice
-    ) internal pure returns (uint256 poolShareDelta) {
+    ) internal pure returns (uint256 curveIn, uint256 curveOut, uint256 flat) {
         // Calculate the flat part of the trade.
-        uint256 flat = _amountIn
+        flat = _amountIn
             .mulDown(FixedPointMath.ONE_18.sub(_normalizedTimeRemaining))
             .divDown(_sharePrice);
         // Calculate the curved part of the trade.
-        uint256 curveIn = _amountIn.mulDown(_normalizedTimeRemaining).divDown(
+        curveIn = _amountIn.mulDown(_normalizedTimeRemaining).divDown(
             _sharePrice
         );
         // (time remaining)/(term length) is always 1 so we just use _timeStretch
-        uint256 curveOut = YieldSpaceMath.calculateSharesOutGivenBondsIn(
+        curveOut = YieldSpaceMath.calculateSharesOutGivenBondsIn(
             _shareReserves,
             _bondReserves,
-            _bondReserveAdjustment,
             curveIn,
             FixedPointMath.ONE_18.sub(_timeStretch),
             _sharePrice,
             _initialSharePrice
         );
-        return flat.add(curveOut);
+        return (curveIn, curveOut, flat);
     }
 
-    /// @dev Calculates the spot price without slippage of bonds in terms of shares.
+    /// @dev Calculates the amount of base that a user will receive when closing a short position
     /// @param _shareReserves The pool's share reserves.
-    /// @param _bondReserves The pool's bond reserves.
-    /// @param _lpTotalSupply The pool's total supply of LP shares.
-    /// @param _initialSharePrice The initial share price as an 18 fixed-point value.
-    /// @param _normalizedTimeRemaining The normalized amount of time remaining until maturity.
-    /// @param _timeStretch The time stretch parameter as an 18 fixed-point value.
-    /// @return spotPrice The spot price of bonds in terms of shares as an 18 fixed-point value.
-    function calculateSpotPrice(
+    /// @param _bondReserves The pool's bonds reserves.
+    /// @param _amountOut The amount of the asset that is received.
+    /// @param _normalizedTimeRemaining The amount of time remaining until maturity in seconds.
+    /// @param _timeStretch The time stretch parameter.
+    /// @param _sharePrice The share price.
+    /// @param _initialSharePrice The initial share price.
+    /// @return curveIn The input amount for the curve trade (denominated in shares).
+    /// @return curveOut The output amount for the curve trade (denominated in bonds).
+    /// @return flat The flat amount (denominated in shares).
+    function calculateCloseShort(
         uint256 _shareReserves,
         uint256 _bondReserves,
-        uint256 _lpTotalSupply,
-        uint256 _initialSharePrice,
+        uint256 _amountOut,
         uint256 _normalizedTimeRemaining,
-        uint256 _timeStretch
-    ) internal pure returns (uint256 spotPrice) {
-        // ((y + s) / (mu * z)) ** -tau
-        // ((mu * z) / (y + s)) ** tau
-        uint256 tau = _normalizedTimeRemaining.mulDown(_timeStretch);
+        uint256 _timeStretch,
+        uint256 _sharePrice,
+        uint256 _initialSharePrice
+    ) internal pure returns (uint256 curveIn, uint256 curveOut, uint256 flat) {
+        // Since we are buying bonds, it's possible that timeRemaining < 1.
+        // We consider (1-timeRemaining)*amountOut of the bonds being
+        // purchased to be fully matured and timeRemaining*amountOut of the
+        // bonds to be newly minted. The fully matured bonds are redeemed
+        // one-to-one to base (our result is given in shares, so we divide
+        // the one-to-one redemption by the share price) and the newly
+        // minted bonds are traded on a YieldSpace curve configured to
+        // timeRemaining = 1.
+        flat = _amountOut
+            .mulDown(FixedPointMath.ONE_18.sub(_normalizedTimeRemaining))
+            .divDown(_sharePrice);
 
-        spotPrice = _initialSharePrice
-            .mulDown(_shareReserves)
-            .divDown(_bondReserves.add(_lpTotalSupply))
-            .pow(tau);
+        if (_normalizedTimeRemaining > 0) {
+            curveOut = _amountOut.mulDown(_normalizedTimeRemaining);
+            // Calculate the curved part of the trade.
+            curveIn = YieldSpaceMath.calculateSharesInGivenBondsOut(
+                _shareReserves,
+                _bondReserves,
+                _amountOut,
+                FixedPointMath.ONE_18.sub(_timeStretch),
+                _sharePrice,
+                _initialSharePrice
+            );
+        }
+
+        return (curveIn, curveOut, flat);
     }
 
     /// @dev Calculates the base volume of an open trade given the base amount,

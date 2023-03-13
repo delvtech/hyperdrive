@@ -255,7 +255,7 @@ contract HyperdriveTest is BaseTest {
         (
             uint256 shareReserves,
             uint256 bondReserves,
-            uint256 lpTotalSupply,
+            ,
             ,
             ,
             ,
@@ -268,7 +268,6 @@ contract HyperdriveTest is BaseTest {
             HyperdriveMath.calculateAPRFromReserves(
                 shareReserves,
                 bondReserves,
-                lpTotalSupply,
                 initialSharePrice,
                 positionDuration,
                 timeStretch
@@ -345,8 +344,8 @@ contract HyperdriveTest is BaseTest {
                 .calculateSharesInGivenBondsOut(
                     poolInfo.shareReserves,
                     poolInfo.bondReserves,
-                    poolInfo.lpTotalSupply,
-                    poolInfo.bondReserves,
+                    poolInfo.bondReserves -
+                        hyperdrive.totalSupply(AssetId._LP_ASSET_ID),
                     normalizedTimeRemaining,
                     poolInfo.sharePrice,
                     hyperdrive.initialSharePrice()

@@ -48,7 +48,7 @@ abstract contract HyperdriveLP is HyperdriveBase {
         // Update the reserves. The bond reserves are calculated so that the
         // pool is initialized with the target APR.
         marketState.shareReserves = shares.toUint128();
-        marketState.bondReserves = HyperdriveMath
+        uint256 unadjustedBondReserves = HyperdriveMath
             .calculateInitialBondReserves(
                 shares,
                 sharePrice,
@@ -56,17 +56,16 @@ abstract contract HyperdriveLP is HyperdriveBase {
                 _apr,
                 positionDuration,
                 timeStretch
-            )
+            );
+        uint256 initialLpShares = unadjustedBondReserves +
+            sharePrice.mulDown(shares);
+        marketState.bondReserves = (unadjustedBondReserves + initialLpShares)
             .toUint128();
 
         // Mint LP shares to the initializer.
         // TODO - Should we index the lp share and virtual reserve to shares or to underlying?
         //        I think in the case where price per share < 1 there may be a problem.
-        _mint(
-            AssetId._LP_ASSET_ID,
-            _destination,
-            sharePrice.mulDown(shares).add(marketState.bondReserves)
-        );
+        _mint(AssetId._LP_ASSET_ID, _destination, initialLpShares);
     }
 
     /// @notice Allows LPs to supply liquidity for LP shares.
@@ -96,17 +95,6 @@ abstract contract HyperdriveLP is HyperdriveBase {
         // Perform a checkpoint.
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
 
-        // Calculate the pool's APR prior to updating the share reserves so that
-        // we can compute the bond reserves update.
-        uint256 apr = HyperdriveMath.calculateAPRFromReserves(
-            marketState.shareReserves,
-            marketState.bondReserves,
-            totalSupply[AssetId._LP_ASSET_ID],
-            initialSharePrice,
-            positionDuration,
-            timeStretch
-        );
-
         // To ensure that our LP allocation scheme fairly rewards LPs for adding
         // liquidity, we linearly interpolate between the present and future
         // value of longs and shorts. These interpolated values are the long and
@@ -133,18 +121,8 @@ abstract contract HyperdriveLP is HyperdriveBase {
             )
         );
 
-        // Update the reserves.
-        marketState.shareReserves += shares.toUint128();
-        marketState.bondReserves = HyperdriveMath
-            .calculateBondReserves(
-                marketState.shareReserves,
-                totalSupply[AssetId._LP_ASSET_ID] + lpShares,
-                initialSharePrice,
-                apr,
-                positionDuration,
-                timeStretch
-            )
-            .toUint128();
+        // Add the liquidity to the pool's reserves.
+        _updateLiquidity(int256(shares));
 
         // Enforce min user outputs
         if (_minOutput > lpShares) revert Errors.OutputLimit();
@@ -181,17 +159,6 @@ abstract contract HyperdriveLP is HyperdriveBase {
 
         uint256 totalSupply = totalSupply[AssetId._LP_ASSET_ID];
 
-        // Calculate the pool's APR prior to updating the share reserves and LP
-        // total supply so that we can compute the bond reserves update.
-        uint256 apr = HyperdriveMath.calculateAPRFromReserves(
-            marketState.shareReserves,
-            marketState.bondReserves,
-            totalSupply,
-            initialSharePrice,
-            positionDuration,
-            timeStretch
-        );
-
         // Calculate the withdrawal proceeds of the LP. This includes the base,
         // long withdrawal shares, and short withdrawal shares that the LP
         // receives.
@@ -211,18 +178,8 @@ abstract contract HyperdriveLP is HyperdriveBase {
         // Burn the LP shares.
         _burn(AssetId._LP_ASSET_ID, msg.sender, _shares);
 
-        // Update the reserves.
-        marketState.shareReserves -= shareProceeds.toUint128();
-        marketState.bondReserves = HyperdriveMath
-            .calculateBondReserves(
-                marketState.shareReserves,
-                totalSupply - _shares,
-                initialSharePrice,
-                apr,
-                positionDuration,
-                timeStretch
-            )
-            .toUint128();
+        // Remove the liquidity from the pool's reserves.
+        _updateLiquidity(-int256(shareProceeds));
 
         // The withdrawing LP will get their percent of the margin which is
         // used to back open positions as a token which can be redeemed for
@@ -308,7 +265,25 @@ abstract contract HyperdriveLP is HyperdriveBase {
         if (_minOutput > _proceeds) revert Errors.OutputLimit();
     }
 
-    /// @notice Moves capital into the withdraw pool and marks shares ready for withdraw.
+    /// @dev Updates the pool's liquidity and holds the pool's APR constant.
+    /// @param _shareReservesDelta The delta that should be applied to share reserves.
+    function _updateLiquidity(int256 _shareReservesDelta) internal {
+        // Apply the update to the pool's share reserves and solve for the bond
+        // reserves that maintains the current pool APR.
+        (uint256 shareReserves, uint256 bondReserves) = HyperdriveMath
+            .calculateUpdatedReserves(
+                marketState.shareReserves,
+                marketState.bondReserves,
+                _shareReservesDelta,
+                initialSharePrice,
+                positionDuration,
+                timeStretch
+            );
+        marketState.shareReserves = shareReserves.toUint128();
+        marketState.bondReserves = bondReserves.toUint128();
+    }
+
+    /// @dev Moves capital into the withdraw pool and marks shares ready for withdraw.
     /// @param freedCapital The amount of capital to add to the withdraw pool, must not be more than the max capital
     /// @param maxCapital The margin which the LP used to back the position which is being closed.
     /// @param interest The interest earned by this margin position, fixed interest for LP shorts and variable for longs.

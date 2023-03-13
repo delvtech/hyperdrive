@@ -5,6 +5,7 @@ import { stdError } from "forge-std/StdError.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { MockHyperdrive } from "contracts/test/MockHyperdrive.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 
@@ -38,7 +39,7 @@ contract OpenLongTest is HyperdriveTest {
         uint256 baseAmount = getPoolInfo().bondReserves;
         baseToken.mint(baseAmount);
         baseToken.approve(address(hyperdrive), baseAmount);
-        vm.expectRevert(stdError.arithmeticError);
+        vm.expectRevert(Errors.NegativeInterest.selector);
         hyperdrive.openLong(baseAmount, 0, bob, true);
     }
 
@@ -142,12 +143,6 @@ contract OpenLongTest is HyperdriveTest {
         PoolInfo memory poolInfoAfterWithFees = getPoolInfo();
         // bondAmount is from the hyperdrive without the curve fee
         assertApproxEqAbs(
-            poolInfoAfterWithFees.bondReserves,
-            poolInfoBeforeWithFees.bondReserves - bondAmount + curveFeeAmount,
-            10
-        );
-        // bondAmount is from the hyperdrive without the curve fee
-        assertApproxEqAbs(
             poolInfoAfterWithFees.longsOutstanding,
             poolInfoBeforeWithFees.longsOutstanding +
                 bondAmount -
@@ -182,17 +177,13 @@ contract OpenLongTest is HyperdriveTest {
         );
         assertGt(apr, realizedApr);
 
-        // Verify that the reserves were updated correctly.
+        // Ensure that the state changes to the share reserves were applied
+        // correctly and that the other pieces of state were left untouched.
         PoolInfo memory poolInfoAfter = getPoolInfo();
         assertEq(
             poolInfoAfter.shareReserves,
             poolInfoBefore.shareReserves +
                 baseAmount.divDown(poolInfoBefore.sharePrice)
-        );
-        assertApproxEqAbs(
-            poolInfoAfter.bondReserves,
-            poolInfoBefore.bondReserves - bondAmount,
-            10
         );
         assertEq(poolInfoAfter.lpTotalSupply, poolInfoBefore.lpTotalSupply);
         assertEq(poolInfoAfter.sharePrice, poolInfoBefore.sharePrice);
@@ -200,6 +191,23 @@ contract OpenLongTest is HyperdriveTest {
             poolInfoAfter.longsOutstanding,
             poolInfoBefore.longsOutstanding + bondAmount,
             10
+        );
+
+        // Ensure that the bond reserves were updated to have the correct APR.
+        // Due to the way that the flat part of the trade is applied, the bond
+        // reserve updates may not exactly correspond to the amount of bonds
+        // transferred; however, the pool's APR should be identical to the APR
+        // that the bond amount transfer implies.
+        assertApproxEqAbs(
+            calculateAPRFromReserves(),
+            HyperdriveMath.calculateAPRFromReserves(
+                poolInfoAfter.shareReserves,
+                poolInfoBefore.bondReserves - bondAmount,
+                INITIAL_SHARE_PRICE,
+                POSITION_DURATION,
+                hyperdrive.timeStretch()
+            ),
+            5
         );
 
         // TODO: This problem gets much worse as the baseAmount to open a long gets smaller.

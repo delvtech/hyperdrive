@@ -2,6 +2,7 @@
 pragma solidity ^0.8.18;
 
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 
@@ -25,12 +26,18 @@ contract ExtremeInputs is HyperdriveTest {
 
         PoolInfo memory poolInfoAfter = getPoolInfo();
 
-        assertApproxEqAbs(
-            poolInfoAfter.bondReserves,
-            0,
-            1e15,
-            "bondReserves should be approximately empty"
-        );
+        // FIXME: Can we get a similar check, or is this now
+        // fundamentally broken due to the way that the virtual
+        // reserves work?
+        //
+        // assertApproxEqAbs(
+        //     poolInfoAfter.bondReserves,
+        //     0,
+        //     1e15,
+        //     "bondReserves should be approximately empty"
+        // );
+
+        // Ensure that the ending APR is approximately 0%.
         assertApproxEqAbs(
             apr,
             0,
@@ -38,10 +45,21 @@ contract ExtremeInputs is HyperdriveTest {
             "APR should be approximately 0%"
         );
 
-        assertEq(
-            poolInfoBefore.bondReserves.sub(bondAmount),
-            poolInfoAfter.bondReserves,
-            "Delta of bondAmount should have occured in bondReserves"
+        // Ensure that the bond reserves were updated to have the correct APR.
+        // Due to the way that the flat part of the trade is applied, the bond
+        // reserve updates may not exactly correspond to the amount of bonds
+        // transferred; however, the pool's APR should be identical to the APR
+        // that the bond amount transfer implies.
+        assertApproxEqAbs(
+            calculateAPRFromReserves(),
+            HyperdriveMath.calculateAPRFromReserves(
+                poolInfoAfter.shareReserves,
+                poolInfoBefore.bondReserves - bondAmount,
+                INITIAL_SHARE_PRICE,
+                POSITION_DURATION,
+                hyperdrive.timeStretch()
+            ),
+            5
         );
     }
 }

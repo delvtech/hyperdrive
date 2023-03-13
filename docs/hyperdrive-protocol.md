@@ -5,10 +5,11 @@
 Hyperdrive is a new AMM that allows users to open long and short positions to get exposure to fixed and variable rates respectively. Terms are "Mint on Demand" and the AMM essentially underwrites a new term for the user when they enter a position. Long traders receive fixed interest during the term and give up any variable interest collected on their investment. Short traders sell long positions to the LP which means that they pay fixed interest during the term and receive all of the variable interest collected on the LP's investment. LPs provide liquidity to a single pool, which underwrites a variety of fixed terms with differing maturity dates. This removes fragmented liquidity and gives LPs an everlasting exposure to the markets.
 
 
-
 ## Flat + Curve
 
 In Hyperdrive, trades only take place on a single invariant.  When a user opens a new position, the trade is made on a curve that prices the asset as a function of the reserves and a **fixed** time until maturity. When a user closes a position, we price the trade by splitting into two components: new bonds and matured bonds.  The new bonds are priced on the curve and matured bonds can be redeemed 1:1 with the base asset.  For example, let's say Alice wants to sell 12 bonds that are 9 months from maturity on a 12 month term.  We would consider 3 bonds mature and offer a 1:1 redemption for them and the remaining 9 bonds would be priced on the curve with the full time remaining until maturity.
+
+A safe invariant is an invariant that doesn't allow any combination of trading, adding liquidity, and removing liquidity to reduce the wealth of existing LPs (up to impermanent loss). Flat+curve assumes that the "curve" invariant is safe. With this in mind, we prevent prevent sandwich attacks by considering the "new bonds" component of the trade to be a trade on the invariant and the "matured bonds" component of the trade to be an add liquidity or remove liquidity action.
 
 ## Backdating
 
@@ -18,7 +19,7 @@ If every position is opened with a fixed position duration (e.g. 6 months from t
 
 To reduce the amount of keeping required to maintain the accounting system, we introduce a checkpointing system that groups long and short positions by the time at which they were opened. These checkpoints store the share price of the first trade in the checkpoint. This price is used to compute the returns of long and short positions that mature in that checkpoint.
 
-Mechanically, checkpointing backdates all of the positions opened within the checkpoint interval to the start of the checkpoint. This means that in most cases traders will benefit from interest that has already been collected, so the traders may have to pay slightly more when opening their position. 
+Mechanically, checkpointing backdates all of the positions opened within the checkpoint interval to the start of the checkpoint. This means that in most cases traders will benefit from interest that has already been collected, so the traders may have to pay slightly more when opening their position.
 
 ### Calculating Maturity Time
 
@@ -26,7 +27,7 @@ Suppose that the current time is $t$, the contract's checkpoint duration is $d_c
 
 $$
 t_c = t - (t \mod d_c)
-$$ 
+$$
 
 > Note: A position's start time will always correspond with a checkpoint time
 
@@ -53,6 +54,7 @@ The trader supplies $\Delta x$ base and receives $\Delta y$ bonds. At the curren
 
 $$
 \begin{aligned}
+\Delta z_{curve} &= \Delta z \cdot t\\
 \Delta y_{flat}' &= \Delta z \cdot (1 - t)\\
 \Delta y_{curve}' &= I_{BondsOutSharesIn}(\Delta z \cdot t)
 \end{aligned}
@@ -74,12 +76,18 @@ where $\phi_{flat}$ is the flat fee, $\phi_{curve}$ is the fee for the curve and
 
 $$
 \begin{aligned}
-z_{reserves} &= z_{reserves} + \Delta z \\
+z_{reserves} &= z_{reserves} + \Delta z_{curve} \\
 y_{reserves} &= y_{reserves} - \Delta y_{curve}
 \end{aligned}
 $$
 
-> Note: We only debit $y_{curve}$ from the $y_{reserves}$ because the $y_{flat}$ portion is considered mature and should have no impact on the fixed rate market.
+After the "curve" update is made, the $y_{reserves}$ are calculated to ensure that the apr doesn't change from before the "curve" update. The share reserves are updated as follows:
+
+$$
+\begin{aligned}
+z_{reserves} &= z_{reserves} + \Delta y_{flat}
+\end{aligned}
+$$
 
 $o_l$, accounts for outstanding long positions to ensure that the AMM has enough funds to honor those positions when they close and must also be updated.
 
@@ -107,7 +115,8 @@ The trader closes their long position of $\Delta y$ bonds for $\Delta x$ base wi
 $$
 \begin{aligned}
 \Delta z_{flat}' &= \frac{\Delta y \cdot (1 - t)}{c} \\
-\Delta z_{curve}' &= I_{SharesOutBondsIn}(\Delta y \cdot t)
+\Delta z_{curve}' &= I_{SharesOutBondsIn}(\Delta y \cdot t)\\
+\Delta y_{curve} &= \Delta y \cdot t
 \end{aligned}
 $$
 
@@ -117,7 +126,7 @@ $$
 \begin{aligned}
 \Delta z_{flat} &= \Delta z_{flat}' - \frac{\Delta y \cdot (1 - t) \cdot \phi_{flat}}{c}\\
 \Delta z_{curve} &= \Delta z_{curve}' - \frac{(1 - p) \cdot \Delta y \cdot t \cdot \phi_{curve}}{c}\\
-\Delta z &= \Delta z_{flat} + \Delta z_{curve}
+\Delta z &= \Delta z_{curve} + \Delta z_{flat}
 \end{aligned}
 $$
 
@@ -131,11 +140,18 @@ The reserves are updated:
 
 $$
 \begin{aligned}
-z_{reserves} &= z_{reserves} - \Delta z\\
+z_{reserves} &= z_{reserves} - \Delta z_{curve}\\
 y_{reserves} &= y_{reserves} + \Delta y_{curve}
 \end{aligned}
 $$
 
+After the "curve" update is made, the $y_{reserves}$ are calculated to ensure that the apr doesn't change from before the "curve" update. The share reserves are updated as follows:
+
+$$
+\begin{aligned}
+z_{reserves} &= z_{reserves} - \Delta z_{flat}
+\end{aligned}
+$$
 
 If there are withdrawal shares outstanding, $w$, then we must also update the z reserves by removing the margin $m$ and variable interest from them and then crediting that freed margin to the withdraw shares. We do not credit more margin than the outstanding withdraw shares to the pool.
 
@@ -169,12 +185,13 @@ Update the long's base volume, $v_l$
 
 ### Open Short
 
-The trader shorts $\Delta y$ bonds with $\Delta x$ base with $t$ time remaining in the term. To calculate the short we must determine how many $\Delta z$ shares that $\Delta y$ bonds are worth right now. 
+The trader shorts $\Delta y$ bonds with $\Delta x$ base with $t$ time remaining in the term. To calculate the short we must determine how many $\Delta z$ shares that $\Delta y$ bonds are worth right now.
 
 $$
 \begin{aligned}
 \Delta z_{flat}' &= \frac{\Delta y \cdot (1 - t)}{c}\\
-\Delta z_{curve}' &= I_{SharesOutBondsIn}(\Delta y \cdot t)
+\Delta z_{curve}' &= I_{SharesOutBondsIn}(\Delta y \cdot t)\\
+\Delta y_{curve} &= \Delta y \cdot t
 \end{aligned}
 $$
 
@@ -215,8 +232,16 @@ The reserves are updated as follows:
 
 $$
 \begin{aligned}
-z_{reserves} &= z_{reserves} - \Delta z\\
-y_{reserves} &= y_{reserves} + \Delta y
+z_{reserves} &= z_{reserves} - \Delta z_{curve}\\
+y_{reserves} &= y_{reserves} + \Delta y_{curve}
+\end{aligned}
+$$
+
+After the "curve" update is made, the $y_{reserves}$ are calculated to ensure that the apr doesn't change from before the "curve" update. The share reserves are updated as follows:
+
+$$
+\begin{aligned}
+z_{reserves} &= z_{reserves} - \Delta z_{flat}
 \end{aligned}
 $$
 
@@ -246,6 +271,7 @@ $$
 \begin{aligned}
 \Delta z_{flat}' &= \frac{\Delta y \cdot (1 - t)}{c} \\
 \Delta z_{curve}' &= I_{SharesInBondsOut}(\Delta y \cdot t)
+\Delta y_{curve} &= \Delta y \cdot t
 \end{aligned}
 $$
 
@@ -271,8 +297,16 @@ The reserves are updated as follows:
 
 $$
 \begin{aligned}
-z_{reserves} &= z_{reserves} + \Delta z\\
+z_{reserves} &= z_{reserves} + \Delta z_{curve}\\
 y_{reserves} &= y_{reserves} - \Delta y_{curve}
+\end{aligned}
+$$
+
+After the "curve" update is made, the $y_{reserves}$ are calculated to ensure that the apr doesn't change from before the "curve" update. The share reserves are updated as follows:
+
+$$
+\begin{aligned}
+z_{reserves} &= z_{reserves} + \Delta z_{flat}
 \end{aligned}
 $$
 
@@ -337,7 +371,7 @@ User redeems $\Delta l$ lp shares and receives $\Delta x$ base at share price c 
 $$
 \begin{aligned}
 \Delta x &= (z_{reserves} - \frac{o_l}{c}) \cdot \frac{\Delta l}{l}\\
-\Delta w &= l_o - v_l + s_o - v_s\\
+\Delta w &= o_l - v_l + o_s - v_s\\
 \end{aligned}
 $$
 
