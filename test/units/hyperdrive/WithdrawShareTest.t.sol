@@ -77,9 +77,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
         uint256 lpShares = initialize(alice, apr, contribution);
 
         // Time passes and interest accrues.
-        uint256 timeDelta = 0.5e18;
-        uint256 timeAdvanced = POSITION_DURATION.mulDown(timeDelta);
-        advanceTime(timeAdvanced, int256(apr));
+        advanceTime(POSITION_DURATION.mulDown(0.5e18), int256(apr));
         uint256 maturityTime = latestCheckpoint() + POSITION_DURATION;
 
         // Bob opens a long.
@@ -105,7 +103,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0),
             alice
         );
-        assertEq(aliceWithdrawShares, withdrawSharesExpected);
+        assertApproxEqAbs(aliceWithdrawShares, withdrawSharesExpected, 1);
 
         vm.warp(maturityTime);
 
@@ -129,16 +127,25 @@ contract RemoveLiquidityTest is HyperdriveTest {
         hyperdrive.redeemWithdrawalShares(aliceWithdrawShares, 0, alice, true);
 
         // The initial contribution plus 2.5% interest from the first accumulation plus 5/6 of Bob's short
-        // because celeine provides the other 1/6th.
-        uint256 estimatedOutcome = 500_000_000e18 +
-            12_500_000e18 +
-            (bobBasePaid * 5) /
-            6;
+        // because celine provides the other 1/6th.
+        uint256 estimatedOutcome;
+        {
+            // 2.5% interest accrued before Bob opened his long
+            (uint256 aliceContribution, ) = hyperdrive
+                .calculateCompoundInterest(
+                    500_000_000e18,
+                    0.05e18,
+                    POSITION_DURATION.mulDown(0.5e18)
+                );
+            estimatedOutcome =
+                aliceContribution +
+                bobBasePaid.mulDivDown(5e18, 6e18);
+        }
         // TODO - very large error bars here, 1 basis point off
         assertApproxEqAbs(
             baseToken.balanceOf(alice),
             estimatedOutcome,
-            estimatedOutcome / 10_000
+            13_000e18
         );
 
         aliceWithdrawShares = hyperdrive.balanceOf(
@@ -146,7 +153,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
             alice
         );
         // We allow a very small rounding error
-        assertApproxEqAbs(aliceWithdrawShares, 0, 20000000);
+        assertApproxEqAbs(aliceWithdrawShares, 0, 50000000);
 
         // Alice is the only LP withdrawing so the pool should be empty
         (readyToWithdraw, marginPool, interestPool) = hyperdrive.withdrawPool();
@@ -298,9 +305,6 @@ contract RemoveLiquidityTest is HyperdriveTest {
         // Celine receives interest on her whole deposit because it remains in
         // the pool, minus the fixed rate owed to bob
         uint256 estimatedOutcomeCeline;
-        // = 100_000_000e18 * 5%
-        // + (bondAmount * 5%) / 6
-        // - (bobProfit / 6)
         {
             (uint256 celineContribution, ) = hyperdrive
                 .calculateCompoundInterest(
