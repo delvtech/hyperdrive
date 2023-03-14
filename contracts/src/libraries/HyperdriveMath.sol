@@ -337,6 +337,85 @@ library HyperdriveMath {
         return (shareReservesDelta, bondReservesDelta, sharePayment);
     }
 
+    // TODO: Write unit tests for this function.
+    //
+    /// @dev Calculates the proceeds in shares of closing a short position. This
+    ///      takes into account the trading profits, the interest that was
+    ///      earned by the short, and the amount of margin that was released
+    ///      by closing the short. The math for the short's proceeds in base is
+    ///      given by:
+    ///
+    ///      proceeds = dy - c_1 * dz + (c_1 - c_0) * (dy / c_0)
+    ///               = dy - c_1 * dz + (c_1 / c_0) * dy - dy
+    ///               = (c_1 / c_0) * dy - c_1 * dz
+    ///               = c_1 * (dy / c_0 - dz)
+    ///
+    ///      We convert the proceeds to shares by dividing by the current share
+    ///      price. In the event that the interest is negative and outweighs the
+    ///      trading profits and margin released, the short's proceeds are
+    ///      marked to zero.
+    /// @param _bondAmount The amount of bonds underlying the closed short.
+    /// @param _shareAmount The amount of shares that it costs to close the
+    ///                     short.
+    /// @param _openSharePrice The share price at the short's open.
+    /// @param _closeSharePrice The share price at the short's close.
+    /// @param _sharePrice The current share price.
+    /// @return shareProceeds The short proceeds in shares.
+    function calculateShortProceeds(
+        uint256 _bondAmount,
+        uint256 _shareAmount,
+        uint256 _openSharePrice,
+        uint256 _closeSharePrice,
+        uint256 _sharePrice
+    ) internal pure returns (uint256 shareProceeds) {
+        // If the interest is more negative than the trading profits and margin
+        // released, than the short proceeds are marked to zero. Otherwise, we
+        // calculate the proceeds as the sum of the trading proceeds, the
+        // interest proceeds, and the margin released.
+        uint256 openShares = _bondAmount.divDown(_openSharePrice);
+        if (openShares > _shareAmount) {
+            // proceeds = (dy / c_0 - dz) * (c_1 / c)
+            shareProceeds = openShares.sub(_shareAmount).mulDivDown(
+                _closeSharePrice,
+                _sharePrice
+            );
+        }
+        return shareProceeds;
+    }
+
+    // TODO: Write unit tests for this function.
+    //
+    /// @dev Calculates the interest in shares earned by a short position. The
+    ///      math for the short's interest in shares is given by:
+    ///
+    ///      interest = ((c_1 / c_0 - 1) * dy) / c
+    ///               = (((c_1 - c_0) / c_0) * dy) / c
+    ///               = ((c_1 - c_0) / (c_0 * c)) * dy
+    ///
+    ///      In the event that the interest is negative, we mark the interest
+    ///      to zero.
+    /// @param _bondAmount The amount of bonds underlying the closed short.
+    /// @param _openSharePrice The share price at the short's open.
+    /// @param _closeSharePrice The share price at the short's close.
+    /// @param _sharePrice The current share price.
+    /// @return shareInterest The short interest in shares.
+    function calculateShortInterest(
+        uint256 _bondAmount,
+        uint256 _openSharePrice,
+        uint256 _closeSharePrice,
+        uint256 _sharePrice
+    ) internal pure returns (uint256 shareInterest) {
+        // If the interest is negative, we mark it to zero.
+        if (_closeSharePrice > _openSharePrice) {
+            // interest = dy * ((c_1 - c_0) / (c_0 * c))
+            shareInterest = _bondAmount.mulDivDown(
+                _closeSharePrice - _openSharePrice,
+                _openSharePrice.mulDown(_sharePrice)
+            );
+        }
+        return shareInterest;
+    }
+
     /// @dev Calculates the base volume of an open trade given the base amount,
     ///      the bond amount, and the time remaining. Since the base amount
     ///      takes into account backdating, we can't use this as our base

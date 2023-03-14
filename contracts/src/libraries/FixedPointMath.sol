@@ -133,7 +133,7 @@ library FixedPointMath {
         // Any overflow for x will be caught in _ln() in the initial bounds check
         int256 lnx = _ln(int256(x));
         int256 ylnx;
-        assembly {
+        assembly ("memory-safe") {
             ylnx := mul(y_int256, lnx)
         }
         ylnx /= _ONE_18;
@@ -189,7 +189,7 @@ library FixedPointMath {
             w = ((w * z) >> 96) + 892943633302991980437332862907700;
             int256 q = z + w - 78174809823045304726920794422040;
             q = ((q * w) >> 96) + 4203224763890128580604056984195872;
-            assembly {
+            assembly ("memory-safe") {
                 // Div in assembly because solidity adds a zero check despite the `unchecked`.
                 // The q polynomial is known not to have zeros in the domain. (All roots are complex)
                 // No scaling required because p is already 2**96 too large.
@@ -259,7 +259,7 @@ library FixedPointMath {
             q = ((q * x) >> 96) + 204048457590392012362485061816622;
             q = ((q * x) >> 96) + 31853899698501571402653359427138;
             q = ((q * x) >> 96) + 909429971244387300277376558375;
-            assembly {
+            assembly ("memory-safe") {
                 // Div in assembly because solidity adds a zero check despite the `unchecked`.
                 // The q polynomial is known not to have zeros in the domain. (All roots are complex)
                 // No scaling required because p is already 2**96 too large.
@@ -291,7 +291,7 @@ library FixedPointMath {
     /// @return r The floor(log2(x)) if x is nonzero, otherwise 0. This is the same
     ///         as the location of the highest set bit.
     function _ilog2(uint256 x) private pure returns (uint256 r) {
-        assembly {
+        assembly ("memory-safe") {
             r := shl(7, lt(0xffffffffffffffffffffffffffffffff, x))
             r := or(r, shl(6, lt(0xffffffffffffffff, shr(r, x))))
             r := or(r, shl(5, lt(0xffffffff, shr(r, x))))

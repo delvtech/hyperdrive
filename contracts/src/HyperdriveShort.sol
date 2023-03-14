@@ -67,14 +67,21 @@ abstract contract HyperdriveShort is HyperdriveLP {
             govFeesAccrued += totalGovFee;
         }
 
+        // TODO: Would it be better to have calculateShareProceeds return base.
+        //
+        // TODO: Explain the happy accident that this works.
+        //
         // Take custody of the trader's deposit and ensure that the trader
         // doesn't pay more than their max deposit.
-        uint256 traderDeposit = _calculateOpenShortDeposit(
-            _bondAmount,
-            shareProceeds,
-            sharePrice,
-            openSharePrice
-        );
+        uint256 traderDeposit = HyperdriveMath
+            .calculateShortProceeds(
+                _bondAmount,
+                shareProceeds,
+                openSharePrice,
+                sharePrice,
+                sharePrice
+            )
+            .mulDown(sharePrice);
         if (_maxDeposit < traderDeposit) revert Errors.OutputLimit();
         _deposit(traderDeposit, _asUnderlying);
 
@@ -159,36 +166,17 @@ abstract contract HyperdriveShort is HyperdriveLP {
 
         // Withdraw the profit to the trader. This includes the proceeds from
         // the short sale as well as the variable interest that was collected
-        // on the face value of the bonds. The math for the short's proceeds in
-        // base is given by:
-        //
-        // proceeds = dy - c_1 * dz + (c_1 - c_0) * (dy / c_0)
-        //          = dy - c_1 * dz + (c_1 / c_0) * dy - dy
-        //          = (c_1 / c_0) * dy - c_1 * dz
-        //          = c_1 * (dy / c_0 - dz)
-        //
-        // To convert to proceeds in shares, we simply divide by the current
-        // share price:
-        //
-        // shareProceeds = (c_1 * (dy / c_0 - dz)) / c
+        // on the face value of the bonds:
         uint256 openSharePrice = checkpoints[_maturityTime - positionDuration]
             .sharePrice;
-        uint256 closeSharePrice = sharePrice;
-        if (_maturityTime <= block.timestamp) {
-            closeSharePrice = checkpoints[_maturityTime].sharePrice;
-        }
-        // If variable interest rates are more negative than the short capital
-        // deposited by the user then the user position is set to zero instead
-        // of locking
-        {
-            uint256 userSharesAtOpen = _bondAmount.divDown(openSharePrice);
-            if (userSharesAtOpen > sharePayment) {
-                _bondAmount = userSharesAtOpen.sub(sharePayment);
-            } else {
-                _bondAmount = 0;
-            }
-        }
-        uint256 shortProceeds = closeSharePrice.mulDown(_bondAmount).divDown(
+        uint256 closeSharePrice = _maturityTime <= block.timestamp
+            ? checkpoints[_maturityTime].sharePrice
+            : sharePrice;
+        uint256 shortProceeds = HyperdriveMath.calculateShortProceeds(
+            _bondAmount,
+            sharePayment,
+            openSharePrice,
+            closeSharePrice,
             sharePrice
         );
         (uint256 baseProceeds, ) = _withdraw(
@@ -384,35 +372,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // remove any LP proceeds paid to the withdrawal pool from the pool's
         // liquidity.
         _updateLiquidity(shareAdjustment);
-    }
-
-    // TODO: If we have a function that calculates short profits, we could use
-    // that here.
-    //
-    /// @dev Calculate the cost of opening a short. This is the maximum amount
-    ///      the trader can lose on the short and the extra interest the short
-    ///      will receive at closing (since the proceeds of the trades are
-    ///      calculated using the checkpoint's open share price). This extra
-    ///      interest can be calculated as:
-    ///
-    ///      interest = (c_1 - c_0) * (dy / c_0)
-    ///               = (c_1 / c_0 - 1) * dy
-    ///
-    /// @param _bondAmount The amount of bonds to short.
-    /// @param _shareProceeds The market price of the bonds in shares.
-    /// @param _sharePrice The current share price.
-    /// @param _openSharePrice The current checkpoint's share price.
-    function _calculateOpenShortDeposit(
-        uint256 _bondAmount,
-        uint256 _shareProceeds,
-        uint256 _sharePrice,
-        uint256 _openSharePrice
-    ) internal pure returns (uint256 userDeposit) {
-        uint256 owedInterest = (_sharePrice.divDown(_openSharePrice) -
-            FixedPointMath.ONE_18).mulDown(_bondAmount);
-        uint256 baseProceeds = _shareProceeds.mulDown(_sharePrice);
-        userDeposit = (_bondAmount - baseProceeds) + owedInterest;
-        return userDeposit; // max loss + interest
     }
 
     // TODO: This is actually relatively clean, but it's a good candidate for a

@@ -319,41 +319,35 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 (_maturityTime - positionDuration) + checkpointDuration
             ].sharePrice;
 
-            // Apply the LP proceeds from the trade proportionally to the long
-            // withdrawal shares. The accounting for these proceeds is identical
-            // to the close short accounting because LPs take the short position
-            // when longs are opened. The math for the withdrawal proceeds is
-            // given by:
-            //
-            // proceeds = c_1 * (dy / c_0 - dz)
-            //
-            // We convert to shares at position close by dividing by c_1. If a checkpoint
-            // was missed and old matured positions are being closed, this will correctly
-            // attribute the extra interest to the withdrawal pool.
-            uint256 withdrawalProceeds;
-            uint256 openShares = _bondAmount.divDown(openSharePrice);
-            // We check if the interest rate was negative
-            if (openShares > _shareProceeds) {
-                // If not we do the normal calculation
-                withdrawalProceeds = openShares.sub(_shareProceeds);
-            } else {
-                // If there's negative interest the LP's position is fully wiped out and has zero value.
-                withdrawalProceeds = 0;
-            }
+            // The withdrawal pool has preferential access to the proceeds
+            // generated from closing longs. The LP proceeds when longs are
+            // closed are equivalent to the proceeds of short positions.
+            uint256 withdrawalProceeds = HyperdriveMath.calculateShortProceeds(
+                _bondAmount,
+                _shareProceeds,
+                openSharePrice,
+                _sharePrice,
+                _sharePrice
+            );
 
             // TODO: This doesn't actually update the long aggregates. This
             // seems like a good candidate for a refactor.
             //
+            // TODO: Calling this user interest and user margin doesn't really
+            // make sense since the interest and margin.
+            //
             // Update the long aggregates.
             {
-                // The short interest is the percent increase in share value times the bonds. We convert
-                // to shares to match the withdraw pool:
-                //   ((c - mu)/mu * bonds) / c
-                uint256 userInterest = openSharePrice <= _sharePrice
-                    ? (_sharePrice - openSharePrice)
-                        .mulDivDown(_bondAmount, openSharePrice)
-                        .divDown(_sharePrice)
-                    : 0;
+                // TODO: Explain why the interest doesn't need to be marked to
+                //       zero if the withdrawal proceeds are zero.
+                //
+                // Calculate the short interest.
+                uint256 userInterest = HyperdriveMath.calculateShortInterest(
+                    _bondAmount,
+                    openSharePrice,
+                    _sharePrice,
+                    _sharePrice
+                );
                 // If the the short has net lost despite being still positive interest we set capital recovered to 0
                 // Note - This happens when there's negative interest
                 uint256 capitalFreed = withdrawalProceeds > userInterest

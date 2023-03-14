@@ -24,7 +24,7 @@ deny_warnings = true
 optimizer = true
 optimizer_runs = 7500
 # Enable via-ir
-via_ir = true
+via_ir=true
 # Enable gas-reporting for all contracts
 gas_reports = ["*"]
 

@@ -41,7 +41,7 @@ library AssetId {
         ) {
             revert Errors.InvalidTimestamp();
         }
-        assembly {
+        assembly ("memory-safe") {
             id := or(shl(0xf8, _prefix), _timestamp)
         }
     }
@@ -55,7 +55,7 @@ library AssetId {
         uint256 _id
     ) internal pure returns (AssetIdPrefix _prefix, uint256 _timestamp) {
         // [identifier: 8 bits][timestamp: 248 bits]
-        assembly {
+        assembly ("memory-safe") {
             _prefix := shr(0xf8, _id) // shr 248 bits
             _timestamp := and(
                 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff,
