@@ -132,7 +132,7 @@ contract CloseShortTest is HyperdriveTest {
 
         // Short some bonds.
         uint256 bondAmount = 10e18;
-        (uint256 maturityTime,) = openShort(bob, bondAmount);
+        (uint256 maturityTime, ) = openShort(bob, bondAmount);
 
         // Get the reserves before closing the long.
         PoolInfo memory poolInfoBefore = getPoolInfo();
@@ -165,7 +165,7 @@ contract CloseShortTest is HyperdriveTest {
 
         // Short some bonds.
         uint256 bondAmount = 10e18;
-        (uint256 maturityTime,) = openShort(bob, bondAmount);
+        (uint256 maturityTime, ) = openShort(bob, bondAmount);
 
         // Get the reserves before closing the long.
         PoolInfo memory poolInfoBefore = getPoolInfo();
@@ -198,7 +198,7 @@ contract CloseShortTest is HyperdriveTest {
 
         // Short some bonds.
         uint256 bondAmount = 10e18;
-        (uint256 maturityTime,) = openShort(bob, bondAmount);
+        (uint256 maturityTime, ) = openShort(bob, bondAmount);
 
         // Get the reserves before closing the long.
         PoolInfo memory poolInfoBefore = getPoolInfo();
