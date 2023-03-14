@@ -5,7 +5,7 @@ import { stdError } from "forge-std/StdError.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
-import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
+import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 
 contract CloseLongTest is HyperdriveTest {
@@ -125,12 +125,7 @@ contract CloseLongTest is HyperdriveTest {
 
         // Most of the term passes. The pool accrues interest at the current apr.
         uint256 timeDelta = 0.5e18;
-        vm.warp(block.timestamp + POSITION_DURATION.mulDown(timeDelta));
-        hyperdrive.setSharePrice(
-            getPoolInfo().sharePrice.mulDown(
-                FixedPointMath.ONE_18 + apr.mulDown(timeDelta)
-            )
-        );
+        advanceTime(POSITION_DURATION.mulDown(timeDelta), int256(apr));
 
         // Get the reserves before closing the long.
         PoolInfo memory poolInfoBefore = getPoolInfo();
@@ -166,12 +161,7 @@ contract CloseLongTest is HyperdriveTest {
 
         // Term passes. The pool accrues interest at the current apr.
         uint256 timeDelta = 1e18;
-        vm.warp(block.timestamp + POSITION_DURATION.mulDown(timeDelta));
-        hyperdrive.setSharePrice(
-            getPoolInfo().sharePrice.mulDown(
-                FixedPointMath.ONE_18 + apr.mulDown(timeDelta)
-            )
-        );
+        advanceTime(POSITION_DURATION.mulDown(timeDelta), int256(apr));
 
         // Get the reserves before closing the long.
         PoolInfo memory poolInfoBefore = getPoolInfo();
@@ -187,20 +177,19 @@ contract CloseLongTest is HyperdriveTest {
     }
 
     function test_close_long_redeem_negative_interest() external {
-        uint256 apr = 0.05e18;
-
+        uint256 fixedAPR = 0.05e18;
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedAPR, contribution);
 
         // Open a long position.
         uint256 basePaid = 10e18;
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
 
         // Term passes. The pool accrues interest at the current apr.
-        uint256 timeDelta = 1e18;
-        vm.warp(block.timestamp + POSITION_DURATION.mulDown(timeDelta));
-        hyperdrive.setSharePrice((getPoolInfo().sharePrice * 80) / 100);
+        uint256 timeAdvanced = POSITION_DURATION;
+        int256 apr = -0.3e18;
+        advanceTime(timeAdvanced, apr);
 
         // Get the reserves before closing the long.
         PoolInfo memory poolInfoBefore = getPoolInfo();
@@ -208,28 +197,44 @@ contract CloseLongTest is HyperdriveTest {
         // Redeem the bonds
         uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
 
+        // Account the negative interest with the bondAmount as principal
+        (uint256 bondFaceValue, ) = hyperdrive.calculateCompoundInterest(
+            bondAmount,
+            apr,
+            timeAdvanced
+        );
+
+        // As negative interest occurred over the duration, the long position
+        // takes on the loss. As the "matured" bondAmount is implicitly an
+        // amount of shares, the base value of those shares are negative
+        // relative to what they were at the start of the term.
+        uint256 matureBondsValue = bondAmount
+            .divDown(hyperdrive.initialSharePrice())
+            .mulDown(poolInfoBefore.sharePrice);
+
         // Verify that Bob received base equal to the full bond amount.
-        assertApproxEqAbs(baseProceeds, (bondAmount * 80) / 100, 1);
+        assertApproxEqAbs(baseProceeds, bondFaceValue, 10);
+        assertApproxEqAbs(baseProceeds, matureBondsValue, 10);
 
         // Verify that the close long updates were correct.
         verifyCloseLong(poolInfoBefore, baseProceeds, bondAmount, maturityTime);
     }
 
     function test_close_long_half_term_negative_interest() external {
-        uint256 apr = 0.05e18;
-
+        uint256 fixedAPR = 0.05e18;
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedAPR, contribution);
 
         // Open a long position.
         uint256 basePaid = 10e18;
 
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
 
-        // Term passes. The pool accrues interest at the current apr.
-        vm.warp(block.timestamp + POSITION_DURATION / 2);
-        hyperdrive.setSharePrice((getPoolInfo().sharePrice * 80) / 100);
+        // Term passes. The pool accrues negative interest.
+        uint256 timeAdvanced = POSITION_DURATION.mulDown(0.5e18);
+        int256 apr = -0.25e18;
+        advanceTime(timeAdvanced, apr);
 
         // Get the reserves before closing the long.
         PoolInfo memory poolInfoBefore = getPoolInfo();
@@ -237,12 +242,44 @@ contract CloseLongTest is HyperdriveTest {
         // Redeem the bonds
         uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
 
-        // Verify that Bob received base equal to the full bond amount.
-        assertApproxEqAbs(
-            baseProceeds,
-            (bondAmount * 40) / 100 + (bondAmount * 4762) / 10000,
-            2e14
+        // Initial share price
+        uint256 initialSharePrice = hyperdrive.initialSharePrice();
+
+        // All mature bonds are redeemed at the equivalent amount of shares
+        // held throughout the duration, losing capital
+        uint256 matureBonds = bondAmount.mulDown(
+            FixedPointMath.ONE_18.sub(calculateTimeRemaining(maturityTime))
         );
+        uint256 matureBondsValue = matureBonds
+            .divDown(initialSharePrice)
+            .mulDown(poolInfoBefore.sharePrice);
+
+        // Portion of immature bonds are sold on the YieldSpace curve
+        uint256 immatureBonds = bondAmount - matureBonds;
+        uint256 immatureBondsValue = YieldSpaceMath
+            .calculateSharesOutGivenBondsIn(
+                poolInfoBefore.shareReserves,
+                poolInfoBefore.bondReserves,
+                immatureBonds,
+                FixedPointMath.ONE_18.sub(hyperdrive.timeStretch()),
+                poolInfoBefore.sharePrice,
+                initialSharePrice
+            )
+            .mulDown(poolInfoBefore.sharePrice);
+
+        // Account the negative interest with the bondAmount as principal
+        (uint256 matureBondsFaceValue, ) = hyperdrive.calculateCompoundInterest(
+            matureBonds,
+            apr,
+            timeAdvanced
+        );
+
+        assertApproxEqAbs(
+            immatureBondsValue.add(matureBondsValue),
+            baseProceeds,
+            1
+        );
+        assertApproxEqAbs(matureBondsFaceValue, matureBondsValue, 5);
 
         // Verify that the close long updates were correct.
         verifyCloseLong(poolInfoBefore, baseProceeds, bondAmount, maturityTime);

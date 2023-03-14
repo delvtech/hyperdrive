@@ -196,7 +196,7 @@ contract HyperdriveTest is BaseTest {
     }
 
     /// Utils ///
-    function advanceTime(uint256 time, uint256 apr) internal {
+    function advanceTime(uint256 time, int256 apr) internal {
         hyperdrive.accrue(time, apr);
         vm.warp(block.timestamp + time);
     }
@@ -288,15 +288,6 @@ contract HyperdriveTest is BaseTest {
             (bondAmount.sub(baseAmount)).divDown(
                 baseAmount.mulDown(timeRemaining)
             );
-    }
-
-    function calculateFutureValue(
-        uint256 principal,
-        uint256 apr,
-        uint256 timeDelta
-    ) internal pure returns (uint256) {
-        return
-            principal.mulDown(FixedPointMath.ONE_18 + apr.mulDown(timeDelta));
     }
 
     function calculateTimeRemaining(

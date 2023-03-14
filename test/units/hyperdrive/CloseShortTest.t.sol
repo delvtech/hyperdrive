@@ -173,9 +173,7 @@ contract CloseShortTest is HyperdriveTest {
         PoolInfo memory poolInfoBefore = getPoolInfo();
 
         // The term passes.
-        vm.warp(block.timestamp + 365 days);
-        // Small loss
-        hyperdrive.setSharePrice((getPoolInfo().sharePrice * 80) / 100);
+        advanceTime(POSITION_DURATION, -0.2e18);
 
         // Redeem the bonds.
         uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
@@ -207,10 +205,8 @@ contract CloseShortTest is HyperdriveTest {
         // Get the reserves before closing the long.
         PoolInfo memory poolInfoBefore = getPoolInfo();
 
-        // The term passes.
-        vm.warp(block.timestamp + (365 days) / 2);
-        // Small loss
-        hyperdrive.setSharePrice((getPoolInfo().sharePrice * 80) / 100);
+        // The term passes and shares lose value
+        advanceTime(POSITION_DURATION.mulDown(0.5e18), -0.2e18);
 
         // Redeem the bonds.
         uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);

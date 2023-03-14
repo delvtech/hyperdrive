@@ -32,12 +32,8 @@ contract SandwichTest is HyperdriveTest {
         );
 
         // Some of the term passes and interest accrues at the starting APR.
-        vm.warp(block.timestamp + POSITION_DURATION.mulDown(timeDelta));
-        hyperdrive.setSharePrice(
-            getPoolInfo().sharePrice.mulDown(
-                FixedPointMath.ONE_18 + apr.mulDown(timeDelta)
-            )
-        );
+        uint256 timeAdvanced = POSITION_DURATION.mulDown(timeDelta);
+        advanceTime(timeAdvanced, int256(apr));
 
         // Celine opens a short.
         uint256 shortAmount = 200_000_000e18;
@@ -54,10 +50,11 @@ contract SandwichTest is HyperdriveTest {
         // much money as if no trades had been made and they just collected
         // variable APR.
         uint256 lpProceeds = removeLiquidity(alice, lpShares);
-        assertGe(
-            lpProceeds,
-            calculateFutureValue(contribution, apr, timeDelta)
-        );
+
+        // Calculate how much interest has accrued on the initial contribution
+        (uint256 contributionPlusInterest, ) = hyperdrive
+            .calculateCompoundInterest(contribution, int256(apr), timeAdvanced);
+        assertGe(lpProceeds, contributionPlusInterest);
     }
 
     function test_sandwich_lp(uint8 _apr) external {
