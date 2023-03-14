@@ -67,7 +67,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             govFeesAccrued += totalGovFee;
         }
 
-        // TODO: Would it be better to have calculateShareProceeds return base.
+        // TODO: Would it be better to have calculateShareProceeds return base?
         //
         // TODO: Explain the happy accident that this works.
         //
@@ -307,6 +307,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 checkpointAmount += _bondAmount;
             }
 
+            // TODO: Clean this up and improve the docs.
+            //
             // If all of the shorts in the checkpoint are being closed, delete
             // the base volume in the checkpoint. Otherwise, decrease the base
             // volume aggregates by a proportional amount.
@@ -347,6 +349,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 uint256 proceedsInBase = withdrawalProceeds.mulDown(
                     _sharePrice
                 );
+                // TODO: Why are we calling this interest? When is this accrued?
+                // We should document this.
                 uint256 interest = proceedsInBase >= lpMargin
                     ? (proceedsInBase - lpMargin).divDown(_sharePrice)
                     : 0;
