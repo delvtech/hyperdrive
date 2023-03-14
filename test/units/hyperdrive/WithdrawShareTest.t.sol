@@ -324,10 +324,6 @@ contract RemoveLiquidityTest is HyperdriveTest {
         }
 
         // TODO - Large basis point error
-        assertApproxEqAbs(
-            celineWithdraw,
-            estimatedOutcomeCeline,
-            15000e18
-        );
+        assertApproxEqAbs(celineWithdraw, estimatedOutcomeCeline, 15000e18);
     }
 }
