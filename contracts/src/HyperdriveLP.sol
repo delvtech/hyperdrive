@@ -140,6 +140,8 @@ abstract contract HyperdriveLP is HyperdriveBase {
         _mint(AssetId._LP_ASSET_ID, _destination, lpShares);
     }
 
+    // TODO: Can this be cleaned up?
+    //
     /// @notice Allows an LP to burn shares and withdraw from the pool.
     /// @param _shares The LP shares to burn.
     /// @param _minOutput The minium amount of the base token to receive.Note - this
@@ -256,6 +258,8 @@ abstract contract HyperdriveLP is HyperdriveBase {
             uint128(withdrawPool.withdrawSharesReadyToWithdraw)
         );
 
+        // TODO: Improve this comment.
+        //
         // Update the pool state
         // Note - Will revert here if not enough margin has been reclaimed by checkpoints or
         //        by position closes
@@ -263,6 +267,8 @@ abstract contract HyperdriveLP is HyperdriveBase {
         withdrawPool.capital -= uint128(recoveredMargin);
         withdrawPool.interest -= uint128(recoveredInterest);
 
+        // TODO: Improve this comment.
+        //
         // Withdraw for the user
         (_proceeds, ) = _withdraw(
             recoveredMargin + recoveredInterest,
@@ -288,6 +294,9 @@ abstract contract HyperdriveLP is HyperdriveBase {
             .toUint128();
     }
 
+    // TODO: I find this code hard to read. Think about if this could be
+    // reframed to make it cleaner.
+    //
     /// @dev Moves capital into the withdraw pool and marks shares ready for withdraw.
     /// @param freedCapital The amount of capital to add to the withdraw pool, must not be more than the max capital
     /// @param maxCapital The margin which the LP used to back the position which is being closed.
@@ -329,8 +338,10 @@ abstract contract HyperdriveLP is HyperdriveBase {
         return (freedCapital, interest);
     }
 
-    /// @notice Checks if margin needs to be freed
-    /// @return Returns true if margin needs to be freed
+    // TODO: Is there a way to reframe this that would make it cleaner?
+    //
+    /// @dev Checks if margin needs to be freed.
+    /// @return Returns true if margin needs to be freed.
     function _needsToBeFreed() internal view returns (bool) {
         return
             totalSupply[

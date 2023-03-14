@@ -256,9 +256,11 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 .toUint128();
         }
 
-        // Update the long base volume.
-        // The margin used by this position which may be freed
-        uint256 userMargin;
+        // TODO: Cleanup this code. Is it possible to abstract out the process
+        // of updating aggregates in a way that is nice?
+        //
+        // TODO: Document this.
+        uint256 margin;
         {
             // Get the total supply of longs in the checkpoint of the longs
             // being closed. If the longs are closed before maturity, we add the
@@ -271,30 +273,17 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 checkpointAmount += _bondAmount;
             }
 
-            // If all of the longs in the checkpoint are being closed, delete
-            // the base volume in the checkpoint. Otherwise, decrease the base
-            // volume aggregates by a proportional amount.
+            // TODO: Improve the documentation of this code.
             uint256 checkpointTime = _maturityTime - positionDuration;
-            if (_bondAmount == checkpointAmount) {
-                // The total bonds minus what's paid for them
-                userMargin =
-                    _bondAmount -
-                    checkpoints[checkpointTime].longBaseVolume;
-                // Updates
-                longAggregates.baseVolume -= checkpoints[checkpointTime]
-                    .longBaseVolume;
-                delete checkpoints[checkpointTime].longBaseVolume;
-            } else {
-                uint128 proportionalBaseVolume = uint256(
-                    checkpoints[checkpointTime].longBaseVolume
-                ).mulDown(_bondAmount.divDown(checkpointAmount)).toUint128();
-                // The total bonds minus what's paid for them
-                userMargin = _bondAmount - proportionalBaseVolume;
-                // Update state
-                longAggregates.baseVolume -= proportionalBaseVolume;
-                checkpoints[checkpointTime]
-                    .longBaseVolume -= proportionalBaseVolume;
-            }
+            uint128 proportionalBaseVolume = uint256(
+                checkpoints[checkpointTime].longBaseVolume
+            ).mulDown(_bondAmount.divDown(checkpointAmount)).toUint128();
+            longAggregates.baseVolume -= proportionalBaseVolume;
+            checkpoints[checkpointTime]
+                .longBaseVolume -= proportionalBaseVolume;
+
+            // TODO: Document this.
+            margin = _bondAmount - proportionalBaseVolume;
         }
 
         // Reduce the amount of outstanding longs.
@@ -307,8 +296,10 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // Calculate the amount of liquidity that needs to be removed.
         int256 shareAdjustment = -int256(_shareProceeds - _shareReservesDelta);
 
-        // If there is a withdraw processing we calculate the margin freed by this position and then
-        // deposit it into the withdraw pool
+        // TODO: Update this comment.
+        //
+        // If there is a withdraw processing we calculate the margin freed by
+        // this position and then deposit it into the withdraw pool.
         if (_needsToBeFreed()) {
             // Since longs are backdated to the beginning of the checkpoint and
             // interest only begins accruing when the longs are opened, we
@@ -330,40 +321,38 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 _sharePrice
             );
 
-            // TODO: This doesn't actually update the long aggregates. This
-            // seems like a good candidate for a refactor.
+            // TODO: Calling this user interest doesn't make sense since the
+            //       user didn't accrue any interest.
             //
-            // TODO: Calling this user interest and user margin doesn't really
-            // make sense since the interest and margin.
+            // TODO: Explain why the interest doesn't need to be marked to
+            //       zero if the withdrawal proceeds are zero.
             //
-            // Update the long aggregates.
-            {
-                // TODO: Explain why the interest doesn't need to be marked to
-                //       zero if the withdrawal proceeds are zero.
-                //
-                // Calculate the short interest.
-                uint256 userInterest = HyperdriveMath.calculateShortInterest(
-                    _bondAmount,
-                    openSharePrice,
-                    _sharePrice,
-                    _sharePrice
-                );
-                // If the the short has net lost despite being still positive interest we set capital recovered to 0
-                // Note - This happens when there's negative interest
-                uint256 capitalFreed = withdrawalProceeds > userInterest
-                    ? withdrawalProceeds - userInterest
-                    : 0;
-                // Call into LP to free margin
-                (
-                    uint256 capitalWithdrawn,
-                    uint256 interestWithdrawn
-                ) = _freeMargin(
-                        capitalFreed,
-                        userMargin.divDown(openSharePrice),
-                        userInterest
-                    );
-                withdrawalProceeds = (capitalWithdrawn + interestWithdrawn);
-            }
+            // Calculate the short interest.
+            uint256 userInterest = HyperdriveMath.calculateShortInterest(
+                _bondAmount,
+                openSharePrice,
+                _sharePrice,
+                _sharePrice
+            );
+
+            // TODO: This comment is really confusing.
+            //
+            // If the the short has net lost despite being still positive
+            // interest we set capital recovered to 0.
+            // Note - This happens when there's negative interest
+            uint256 capitalFreed = withdrawalProceeds > userInterest
+                ? withdrawalProceeds - userInterest
+                : 0;
+
+            // TODO: Improve this comment.
+            //
+            // Call into LP to free margin
+            (uint256 capitalWithdrawn, uint256 interestWithdrawn) = _freeMargin(
+                capitalFreed,
+                margin.divDown(openSharePrice),
+                userInterest
+            );
+            withdrawalProceeds = capitalWithdrawn + interestWithdrawn;
 
             // Increase the amount of liquidity to be removed.
             shareAdjustment -= int256(withdrawalProceeds);

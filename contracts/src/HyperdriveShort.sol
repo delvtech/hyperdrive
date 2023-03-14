@@ -287,8 +287,9 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 .toUint128();
         }
 
+        // TODO: Clean up this code.
+        //
         // Update the short base volume.
-
         // The margin provided by LPs is the shortSupply minus the volume
         uint256 lpMargin;
         {
@@ -310,24 +311,15 @@ abstract contract HyperdriveShort is HyperdriveLP {
             // the base volume in the checkpoint. Otherwise, decrease the base
             // volume aggregates by a proportional amount.
             uint256 checkpointTime = _maturityTime - positionDuration;
-            if (_bondAmount == checkpointAmount) {
-                // The margin is the value of shorts minus what was paid
-                lpMargin = checkpoints[checkpointTime].shortBaseVolume;
-                // Do state updates
-                shortAggregates.baseVolume -= checkpoints[checkpointTime]
-                    .shortBaseVolume;
-                delete checkpoints[checkpointTime].shortBaseVolume;
-            } else {
-                uint128 proportionalBaseVolume = uint256(
-                    checkpoints[checkpointTime].shortBaseVolume
-                ).mulDown(_bondAmount.divDown(checkpointAmount)).toUint128();
-                // The margin is the value of shorts minus what was paid
-                lpMargin = proportionalBaseVolume;
-                // Do the state updates
-                shortAggregates.baseVolume -= proportionalBaseVolume;
-                checkpoints[checkpointTime]
-                    .shortBaseVolume -= proportionalBaseVolume;
-            }
+            uint128 proportionalBaseVolume = uint256(
+                checkpoints[checkpointTime].shortBaseVolume
+            ).mulDown(_bondAmount.divDown(checkpointAmount)).toUint128();
+            // The margin is the value of shorts minus what was paid
+            lpMargin = proportionalBaseVolume;
+            // Do the state updates
+            shortAggregates.baseVolume -= proportionalBaseVolume;
+            checkpoints[checkpointTime]
+                .shortBaseVolume -= proportionalBaseVolume;
         }
 
         // Decrease the amount of shorts outstanding.
@@ -342,6 +334,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // pool.
         int256 shareAdjustment = int256(_sharePayment - _shareReservesDelta);
 
+        // TODO: Can this be cleaned up too?
+        //
         // If there are outstanding withdrawal shares, withdraw capital into the
         // withdraw shares pool otherwise we do a simple reserves update with
         // the delta.
