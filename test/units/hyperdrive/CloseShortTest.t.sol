@@ -126,7 +126,7 @@ contract CloseShortTest is HyperdriveTest {
         );
     }
 
-    function test_close_short_redeem() external {
+    function test_close_short_redeem_at_maturity_zero_variable_interest() external {
         uint256 apr = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
@@ -312,6 +312,14 @@ contract CloseShortTest is HyperdriveTest {
         console.log();
         console.log("original error bar (in $ units) =", poolInfoAfter.shareReserves.mulDown(1e11) / 1e18);
         console.log();
+        console.log("expected = poolInfoBefore.shareReserves + (bondAmount - baseProceeds) / poolInfoBefore.sharePrice + expectedSharesForNegativeInterest");
+        console.log("poolInfoBefore.shareReserves = ", poolInfoBefore.shareReserves);
+        console.log("bondAmount = ", bondAmount);
+        console.log("baseProceeds = ", baseProceeds);
+        console.log("poolInfoBefore.sharePrice = ", poolInfoBefore.sharePrice);
+        console.log("expectedSharesForNegativeInterest = ", expectedSharesForNegativeInterest);
+        console.log("expected = ", expectedShareReserves);
+        console.log("actual   = ", poolInfoAfter.shareReserves);
         console.log("expected - actual = ", poolInfoAfter.shareReserves - expectedShareReserves);
         assertApproxEqAbs(
             poolInfoAfter.shareReserves,
