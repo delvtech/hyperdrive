@@ -231,8 +231,11 @@ contract HyperdriveMathTest is Test {
             110.93438508425959e18
         );
         uint256 expectedAPR = 0.882004326279808182 ether;
-        (uint256 curveIn, uint256 curveOut, uint256 flat) = hyperdriveMath
-            .calculateOpenLong(
+        (
+            uint256 shareReservesDelta,
+            uint256 bondReservesDelta,
+            uint256 bondProceeds
+        ) = hyperdriveMath.calculateOpenLong(
                 shareReserves,
                 bondReserves,
                 50_000_000 ether, // amountIn
@@ -242,9 +245,9 @@ contract HyperdriveMathTest is Test {
                 initialSharePrice
             );
         // verify that the flat part is zero
-        assertEq(flat, 0);
-        bondReserves -= curveOut;
-        shareReserves += curveIn;
+        assertEq(bondReservesDelta, bondProceeds);
+        bondReserves -= bondReservesDelta;
+        shareReserves += shareReservesDelta;
         uint256 result = hyperdriveMath.calculateAPRFromReserves(
             shareReserves,
             bondReserves,
@@ -305,8 +308,11 @@ contract HyperdriveMathTest is Test {
         uint256 amountIn = 503_926_401.456553339958190918 ether -
             453_456_134.637519001960754395 ether;
         uint256 expectedAPR = 0.9399548487105884 ether;
-        (uint256 curveIn, uint256 curveOut, ) = hyperdriveMath
-            .calculateCloseLong(
+        (
+            uint256 shareReservesDelta,
+            uint256 bondReservesDelta,
+
+        ) = hyperdriveMath.calculateCloseLong(
                 shareReserves,
                 bondReserves,
                 amountIn,
@@ -316,9 +322,9 @@ contract HyperdriveMathTest is Test {
                 1 ether
             );
         // verify that the poolBondDelta equals the amountIn/2
-        assertEq(curveIn, amountIn.mulDown(normalizedTimeRemaining));
-        shareReserves -= curveOut;
-        bondReserves += curveIn;
+        assertEq(bondReservesDelta, amountIn.mulDown(normalizedTimeRemaining));
+        shareReserves -= shareReservesDelta;
+        bondReserves += bondReservesDelta;
         uint256 result = hyperdriveMath.calculateAPRFromReserves(
             shareReserves,
             bondReserves,
@@ -346,8 +352,11 @@ contract HyperdriveMathTest is Test {
         uint256 expectedAPR = 1.1246406058180446 ether;
         {
             uint256 amountIn = 50_000_000 ether;
-            (uint256 curveIn, uint256 curveOut, uint256 flat) = hyperdriveMath
-                .calculateOpenShort(
+            (
+                uint256 shareReservesDelta,
+                uint256 bondReservesDelta,
+                uint256 shareProceeds
+            ) = hyperdriveMath.calculateOpenShort(
                     shareReserves,
                     bondReserves,
                     amountIn,
@@ -357,9 +366,9 @@ contract HyperdriveMathTest is Test {
                     1 ether
                 );
             // verify that the flat part is zero
-            assertEq(flat, 0);
-            bondReserves += curveIn;
-            shareReserves -= curveOut;
+            assertEq(shareProceeds, shareReservesDelta);
+            bondReserves += bondReservesDelta;
+            shareReserves -= shareReservesDelta;
         }
         uint256 result = hyperdriveMath.calculateAPRFromReserves(
             shareReserves,
@@ -386,8 +395,11 @@ contract HyperdriveMathTest is Test {
             110.93438508425959e18
         );
         uint256 amountOut = 50_470_266.819034337997436523 ether;
-        (uint256 curveIn, uint256 curveOut, uint256 flat) = hyperdriveMath
-            .calculateCloseShort(
+        (
+            uint256 shareReservesDelta,
+            uint256 bondReservesDelta,
+            uint256 sharePayment
+        ) = hyperdriveMath.calculateCloseShort(
                 shareReserves,
                 bondReserves,
                 amountOut,
@@ -397,10 +409,10 @@ contract HyperdriveMathTest is Test {
                 1 ether
             );
         // verify that the curve part is zero
-        assertEq(curveOut, 0);
-        assertEq(curveIn, 0);
+        assertEq(shareReservesDelta, 0);
+        assertEq(bondReservesDelta, 0);
         // verify that the flat part is the amountOut / sharePrice (sharePrice = 1)
-        assertEq(flat, amountOut);
+        assertEq(sharePayment, amountOut);
     }
 
     function test__calculateCloseShortBeforeMaturity() public {
@@ -418,9 +430,12 @@ contract HyperdriveMathTest is Test {
             110.93438508425959e18
         );
         uint256 amountOut = 50_470_266.819034337997436523 ether;
-        uint256 expectedAPR = 1.0468643225208602 ether;
-        (uint256 curveIn, uint256 curveOut, ) = hyperdriveMath
-            .calculateCloseShort(
+        uint256 expectedAPR = 1.0621819862950987 ether;
+        (
+            uint256 shareReservesDelta,
+            uint256 bondReservesDelta,
+
+        ) = hyperdriveMath.calculateCloseShort(
                 shareReserves,
                 bondReserves,
                 amountOut,
@@ -429,10 +444,10 @@ contract HyperdriveMathTest is Test {
                 1 ether,
                 1 ether
             );
-        // verify that the poolBondDelta equals the amountOut/2
-        assertEq(curveOut, amountOut.mulDown(normalizedTimeRemaining));
-        shareReserves += curveOut;
-        bondReserves -= curveIn;
+        // verify that the bondReservesDelta equals the amountOut/2
+        assertEq(bondReservesDelta, amountOut.mulDown(normalizedTimeRemaining));
+        shareReserves += shareReservesDelta;
+        bondReserves -= bondReservesDelta;
         uint256 result = hyperdriveMath.calculateAPRFromReserves(
             shareReserves,
             bondReserves,

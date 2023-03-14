@@ -224,7 +224,7 @@ library HyperdriveMath {
             );
             shareProceeds += shareReservesDelta;
         }
-        return (bondReservesDelta, shareReservesDelta, shareProceeds);
+        return (shareReservesDelta, bondReservesDelta, shareProceeds);
     }
 
     // TODO: Consider improving the documentation.
@@ -263,18 +263,19 @@ library HyperdriveMath {
             .mulDown(FixedPointMath.ONE_18.sub(_normalizedTimeRemaining))
             .divDown(_sharePrice);
         // Calculate the curved part of the trade.
-        shareReservesDelta = _amountIn
-            .mulDown(_normalizedTimeRemaining)
-            .divDown(_sharePrice);
+        bondReservesDelta = _amountIn.mulDown(_normalizedTimeRemaining).divDown(
+            _sharePrice
+        );
         // (time remaining)/(term length) is always 1 so we just use _timeStretch
-        bondReservesDelta = YieldSpaceMath.calculateSharesOutGivenBondsIn(
+        shareReservesDelta = YieldSpaceMath.calculateSharesOutGivenBondsIn(
             _shareReserves,
             _bondReserves,
-            shareReservesDelta,
+            bondReservesDelta,
             FixedPointMath.ONE_18.sub(_timeStretch),
             _sharePrice,
             _initialSharePrice
         );
+        shareProceeds += shareReservesDelta;
         return (shareReservesDelta, bondReservesDelta, shareProceeds);
     }
 
