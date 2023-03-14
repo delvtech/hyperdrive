@@ -181,15 +181,15 @@ abstract contract HyperdriveLong is HyperdriveLP {
     ) internal {
         // Update the average maturity time of long positions.
         {
-            uint256 longAverageMaturityTime = uint256(
-                aggregates.longAverageMaturityTime
+            uint256 averageMaturityTime = uint256(
+                longAggregates.averageMaturityTime
             ).updateWeightedAverage(
                     uint256(marketState.longsOutstanding),
                     _maturityTime,
                     _bondProceeds,
                     true
                 );
-            aggregates.longAverageMaturityTime = longAverageMaturityTime
+            longAggregates.averageMaturityTime = averageMaturityTime
                 .toUint128();
         }
 
@@ -197,7 +197,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         uint128 baseVolume = HyperdriveMath
             .calculateBaseVolume(_baseAmount, _bondProceeds, _timeRemaining)
             .toUint128();
-        aggregates.longBaseVolume += baseVolume;
+        longAggregates.baseVolume += baseVolume;
         checkpoints[_checkpointTime].longBaseVolume += baseVolume;
 
         // Apply the trading deltas to the reserves and update the amount of
@@ -244,15 +244,15 @@ abstract contract HyperdriveLong is HyperdriveLP {
     ) internal {
         // Update the long average maturity time.
         {
-            uint256 longAverageMaturityTime = uint256(
-                aggregates.longAverageMaturityTime
+            uint256 averageMaturityTime = uint256(
+                longAggregates.averageMaturityTime
             ).updateWeightedAverage(
                     marketState.longsOutstanding,
                     _maturityTime,
                     _bondAmount,
                     false
                 );
-            aggregates.longAverageMaturityTime = longAverageMaturityTime
+            longAggregates.averageMaturityTime = averageMaturityTime
                 .toUint128();
         }
 
@@ -281,7 +281,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
                     _bondAmount -
                     checkpoints[checkpointTime].longBaseVolume;
                 // Updates
-                aggregates.longBaseVolume -= checkpoints[checkpointTime]
+                longAggregates.baseVolume -= checkpoints[checkpointTime]
                     .longBaseVolume;
                 delete checkpoints[checkpointTime].longBaseVolume;
             } else {
@@ -291,7 +291,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 // The total bonds minus what's paid for them
                 userMargin = _bondAmount - proportionalBaseVolume;
                 // Update state
-                aggregates.longBaseVolume -= proportionalBaseVolume;
+                longAggregates.baseVolume -= proportionalBaseVolume;
                 checkpoints[checkpointTime]
                     .longBaseVolume -= proportionalBaseVolume;
             }

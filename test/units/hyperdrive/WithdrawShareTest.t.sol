@@ -94,7 +94,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
         PoolInfo memory poolInfo = getPoolInfo();
 
         // Ensure that Alice receives the right amount of withdrawal shares.
-        (, , , uint256 shortBaseVolume) = hyperdrive.aggregates();
+        (, uint256 shortBaseVolume) = hyperdrive.shortAggregates();
         uint256 withdrawSharesExpected = (shortBaseVolume)
             .divDown(poolInfo.sharePrice)
             .mulDivDown(lpShares, celineShares + lpShares);
@@ -207,7 +207,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
         uint256 aliceWithdrawShares;
         {
             // Ensure that Alice receives the right amount of withdrawal shares.
-            (, uint256 longBaseVolume, , ) = hyperdrive.aggregates();
+            (, uint256 longBaseVolume) = hyperdrive.longAggregates();
             (, , uint256 longsOutstanding, ) = hyperdrive.marketState();
 
             withdrawSharesExpected = (longsOutstanding - longBaseVolume)

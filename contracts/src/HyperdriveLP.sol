@@ -116,15 +116,15 @@ abstract contract HyperdriveLP is HyperdriveBase {
         // lpShares = (dz * l) / (z + a_s - a_l)
         uint256 longAdjustment = HyperdriveMath.calculateLpAllocationAdjustment(
             marketState.longsOutstanding,
-            aggregates.longBaseVolume,
-            _calculateTimeRemaining(aggregates.longAverageMaturityTime),
+            longAggregates.baseVolume,
+            _calculateTimeRemaining(longAggregates.averageMaturityTime),
             sharePrice
         );
         uint256 shortAdjustment = HyperdriveMath
             .calculateLpAllocationAdjustment(
                 marketState.shortsOutstanding,
-                aggregates.shortBaseVolume,
-                _calculateTimeRemaining(aggregates.shortAverageMaturityTime),
+                shortAggregates.baseVolume,
+                _calculateTimeRemaining(shortAggregates.averageMaturityTime),
                 sharePrice
             );
         lpShares = shares.mulDown(totalSupply[AssetId._LP_ASSET_ID]).divDown(
@@ -194,8 +194,8 @@ abstract contract HyperdriveLP is HyperdriveBase {
         // used to back open positions as a token which can be redeemed for
         // margin as it becomes available.
         uint256 userMargin = marketState.longsOutstanding -
-            aggregates.longBaseVolume;
-        userMargin += aggregates.shortBaseVolume;
+            longAggregates.baseVolume;
+        userMargin += shortAggregates.baseVolume;
         userMargin = userMargin.mulDivDown(_shares, totalSupply);
         // Mint the withdrawal tokens.
         _mint(

@@ -224,15 +224,15 @@ abstract contract HyperdriveShort is HyperdriveLP {
     ) internal {
         // Update the average maturity time of long positions.
         {
-            uint256 shortAverageMaturityTime = uint256(
-                aggregates.shortAverageMaturityTime
+            uint256 averageMaturityTime = uint256(
+                shortAggregates.averageMaturityTime
             ).updateWeightedAverage(
                     marketState.shortsOutstanding,
                     _maturityTime,
                     _bondAmount,
                     true
                 );
-            aggregates.shortAverageMaturityTime = shortAverageMaturityTime
+            shortAggregates.averageMaturityTime = averageMaturityTime
                 .toUint128();
         }
 
@@ -244,7 +244,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 _timeRemaining
             )
             .toUint128();
-        aggregates.shortBaseVolume += baseVolume;
+        shortAggregates.baseVolume += baseVolume;
         // TODO: We shouldn't need to call _latestCheckpoint() again.
         checkpoints[_latestCheckpoint()].shortBaseVolume += baseVolume;
 
@@ -287,15 +287,15 @@ abstract contract HyperdriveShort is HyperdriveLP {
     ) internal {
         // Update the short average maturity time.
         {
-            uint256 shortAverageMaturityTime = uint256(
-                aggregates.shortAverageMaturityTime
+            uint256 averageMaturityTime = uint256(
+                shortAggregates.averageMaturityTime
             ).updateWeightedAverage(
                     marketState.shortsOutstanding,
                     _maturityTime,
                     _bondAmount,
                     false
                 );
-            aggregates.shortAverageMaturityTime = shortAverageMaturityTime
+            shortAggregates.averageMaturityTime = averageMaturityTime
                 .toUint128();
         }
 
@@ -326,7 +326,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 // The margin is the value of shorts minus what was paid
                 lpMargin = checkpoints[checkpointTime].shortBaseVolume;
                 // Do state updates
-                aggregates.shortBaseVolume -= checkpoints[checkpointTime]
+                shortAggregates.baseVolume -= checkpoints[checkpointTime]
                     .shortBaseVolume;
                 delete checkpoints[checkpointTime].shortBaseVolume;
             } else {
@@ -336,7 +336,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 // The margin is the value of shorts minus what was paid
                 lpMargin = proportionalBaseVolume;
                 // Do the state updates
-                aggregates.shortBaseVolume -= proportionalBaseVolume;
+                shortAggregates.baseVolume -= proportionalBaseVolume;
                 checkpoints[checkpointTime]
                     .shortBaseVolume -= proportionalBaseVolume;
             }

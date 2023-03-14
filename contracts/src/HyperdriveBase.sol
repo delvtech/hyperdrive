@@ -48,11 +48,8 @@ abstract contract HyperdriveBase is MultiToken {
     }
 
     struct Aggregates {
-        // TODO: Can we avoid dust here.
-        uint128 longAverageMaturityTime;
-        uint128 longBaseVolume;
-        uint128 shortAverageMaturityTime;
-        uint128 shortBaseVolume;
+        uint128 averageMaturityTime;
+        uint128 baseVolume;
     }
 
     struct Checkpoint {
@@ -81,8 +78,13 @@ abstract contract HyperdriveBase is MultiToken {
     ///         pricing trades and maintaining solvency.
     MarketState public marketState;
 
-    /// @notice Aggregate values that are used to enforce fairness guarantees.
-    Aggregates public aggregates;
+    /// @notice Aggregate values for long positions that are used to enforce
+    ///         fairness guarantees.
+    Aggregates public longAggregates;
+
+    /// @notice Aggregate values for short positions that are used to enforce
+    ///         fairness guarantees.
+    Aggregates public shortAggregates;
 
     /// @notice The state corresponding to the withdraw pool, expressed as a struct.
     WithdrawPool public withdrawPool;
@@ -294,11 +296,11 @@ abstract contract HyperdriveBase is MultiToken {
             totalSupply[AssetId._LP_ASSET_ID],
             _pricePerShare(),
             marketState.longsOutstanding,
-            aggregates.longAverageMaturityTime,
-            aggregates.longBaseVolume,
+            longAggregates.averageMaturityTime,
+            longAggregates.baseVolume,
             marketState.shortsOutstanding,
-            aggregates.shortAverageMaturityTime,
-            aggregates.shortBaseVolume
+            shortAggregates.averageMaturityTime,
+            shortAggregates.baseVolume
         );
     }
 
