@@ -12,7 +12,7 @@ cache = true
 # The cache directory if enabled
 cache_path  = 'forge-cache'
 # Enables or disables the optimizer
-remappings = ['forge-std=lib/forge-std/src', '@openzeppelin/=node_modules/@openzeppelin']
+remappings = ['forge-std=lib/forge-std/src', '@openzeppelin/=node_modules/@openzeppelin', '@aave/=lib/aave-v3-core/contracts']
 # gas limit - max u64
 gas_limit = "18446744073709551615"
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config

@@ -25,7 +25,7 @@ contract HyperdriveTest is BaseTest {
     uint256 internal constant POSITION_DURATION =
         CHECKPOINT_DURATION * CHECKPOINTS_PER_TERM;
 
-    function setUp() public override {
+    function setUp() public virtual override {
         super.setUp();
         vm.startPrank(alice);
 
