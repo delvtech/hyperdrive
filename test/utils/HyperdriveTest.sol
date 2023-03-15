@@ -311,6 +311,24 @@ contract HyperdriveTest is BaseTest {
         return block.timestamp - (block.timestamp % CHECKPOINT_DURATION);
     }
 
+    function calculateSpotPrice(
+        uint256 shareReserves,
+        uint256 bondReserves,
+        uint256 sharePrice
+    ) internal view returns (uint256) {
+        uint256 tStretch = hyperdrive.timeStretch();
+        uint256 positionDuration = hyperdrive.positionDuration();
+        uint256 maturityTime = latestCheckpoint() + positionDuration;
+        uint256 timeRemaining = calculateTimeRemaining(maturityTime);
+        return HyperdriveMath.calculateSpotPrice(
+                shareReserves,
+                bondReserves,
+                sharePrice,
+                timeRemaining,
+                tStretch
+            );
+    }
+
     function calculateMaxOpenLong() internal view returns (uint256 baseAmount) {
         PoolInfo memory poolInfo = getPoolInfo();
 
