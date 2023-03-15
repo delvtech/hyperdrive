@@ -148,10 +148,12 @@ contract CloseLongTest is HyperdriveTest {
         // console.log("shortsOutstanding", poolInfoBeforeOpen.shortsOutstanding);
         // console.log("shortAverageMaturityTime", poolInfoBeforeOpen.shortAverageMaturityTime);
         // console.log("shortBaseVolume", poolInfoBeforeOpen.shortBaseVolume);
-        uint256 spotPrice = calculateSpotPrice(
+        uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
             poolInfoBeforeOpen.shareReserves, //_shareReserves,
             poolInfoBeforeOpen.bondReserves, //_bondReserves,
-            poolInfoBeforeOpen.sharePrice //_initialSharePrice,
+            poolInfoBeforeOpen.sharePrice, //_initialSharePrice,
+            calculateTimeRemaining(latestCheckpoint() + hyperdrive.positionDuration()), // _timeRemaining,
+            hyperdrive.timeStretch() // _timeStretch
         );
         console.log("spotPrice", spotPrice);
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
