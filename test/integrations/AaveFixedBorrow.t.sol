@@ -104,8 +104,12 @@ contract AaveFixedBorrowTest is BaseTest {
 
         // Make call and get dai balance differentials
         uint256 daiBalanceBefore = dai.balanceOf(alice);
-        (, uint256 baseRemaining) = action
-            .supplyBorrowAndOpenShort(10e18, 500e18, 15000e18, 500e18);
+        (, uint256 baseRemaining) = action.supplyBorrowAndOpenShort(
+            10e18,
+            500e18,
+            15000e18,
+            500e18
+        );
         uint256 daiBalanceAfter = dai.balanceOf(alice);
 
         assertEq(daiBalanceAfter - daiBalanceBefore, baseRemaining);
