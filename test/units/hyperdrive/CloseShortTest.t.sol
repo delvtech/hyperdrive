@@ -87,13 +87,7 @@ contract CloseShortTest is HyperdriveTest {
         assertGe(basePaid, baseProceeds);
 
         // Verify that the close long updates were correct.
-        verifyCloseShort(
-            poolInfoBefore,
-            basePaid,
-            baseProceeds,
-            bondAmount,
-            maturityTime
-        );
+        verifyCloseShort(poolInfoBefore, bondAmount, maturityTime);
     }
 
     function test_close_short_immediately_with_small_amount() external {
@@ -117,13 +111,7 @@ contract CloseShortTest is HyperdriveTest {
         assertGe(basePaid, baseProceeds);
 
         // Verify that the close long updates were correct.
-        verifyCloseShort(
-            poolInfoBefore,
-            basePaid,
-            baseProceeds,
-            bondAmount,
-            maturityTime
-        );
+        verifyCloseShort(poolInfoBefore, bondAmount, maturityTime);
     }
 
     function test_close_short_redeem_at_maturity_zero_variable_interest()
@@ -137,7 +125,7 @@ contract CloseShortTest is HyperdriveTest {
 
         // Short some bonds.
         uint256 bondAmount = 10e18;
-        (uint256 maturityTime, uint256 basePaid) = openShort(bob, bondAmount);
+        (uint256 maturityTime, ) = openShort(bob, bondAmount);
 
         // Get the reserves before closing the long.
         PoolInfo memory poolInfoBefore = getPoolInfo();
@@ -152,13 +140,7 @@ contract CloseShortTest is HyperdriveTest {
         assertEq(baseProceeds, 0);
 
         // Verify that the close long updates were correct.
-        verifyCloseShort(
-            poolInfoBefore,
-            basePaid,
-            baseProceeds,
-            bondAmount,
-            maturityTime
-        );
+        verifyCloseShort(poolInfoBefore, bondAmount, maturityTime);
     }
 
     function test_close_short_redeem_negative_interest() external {
@@ -170,7 +152,7 @@ contract CloseShortTest is HyperdriveTest {
 
         // Short some bonds.
         uint256 bondAmount = 10e18;
-        (uint256 maturityTime, uint256 basePaid) = openShort(bob, bondAmount);
+        (uint256 maturityTime, ) = openShort(bob, bondAmount);
 
         // The term passes.
         advanceTime(POSITION_DURATION, -0.2e18);
@@ -185,13 +167,7 @@ contract CloseShortTest is HyperdriveTest {
         assertEq(baseProceeds, 0);
 
         // Verify that the close long updates were correct.
-        verifyCloseShort(
-            poolInfoBefore,
-            basePaid,
-            baseProceeds,
-            bondAmount,
-            maturityTime
-        );
+        verifyCloseShort(poolInfoBefore, bondAmount, maturityTime);
     }
 
     function test_close_short_redeem_negative_interest_half_term() external {
@@ -203,7 +179,7 @@ contract CloseShortTest is HyperdriveTest {
 
         // Short some bonds.
         uint256 bondAmount = 10e18;
-        (uint256 maturityTime, uint256 basePaid) = openShort(bob, bondAmount);
+        (uint256 maturityTime, ) = openShort(bob, bondAmount);
 
         // The term passes and shares lose value
         advanceTime(POSITION_DURATION.mulDown(0.5e18), -0.2e18);
@@ -218,13 +194,7 @@ contract CloseShortTest is HyperdriveTest {
         assertEq(baseProceeds, 0);
 
         // Verify that the close long updates were correct.
-        verifyCloseShort(
-            poolInfoBefore,
-            basePaid,
-            baseProceeds,
-            bondAmount,
-            maturityTime
-        );
+        verifyCloseShort(poolInfoBefore, bondAmount, maturityTime);
     }
 
     function test_close_short_max_loss() external {
@@ -256,19 +226,11 @@ contract CloseShortTest is HyperdriveTest {
         );
 
         // Verify that the close short updates were correct.
-        verifyCloseShort(
-            poolInfoBefore,
-            basePaid,
-            baseProceeds,
-            bondAmount,
-            maturityTime
-        );
+        verifyCloseShort(poolInfoBefore, bondAmount, maturityTime);
     }
 
     function verifyCloseShort(
         PoolInfo memory poolInfoBefore,
-        uint256 basePaid,
-        uint256 baseProceeds,
         uint256 bondAmount,
         uint256 maturityTime
     ) internal {
