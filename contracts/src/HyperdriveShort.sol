@@ -67,12 +67,10 @@ abstract contract HyperdriveShort is HyperdriveLP {
             govFeesAccrued += totalGovFee;
         }
 
-        // TODO: Would it be better to have calculateShareProceeds return base?
-        //
-        // TODO: Explain the happy accident that this works.
-        //
         // Take custody of the trader's deposit and ensure that the trader
-        // doesn't pay more than their max deposit.
+        // doesn't pay more than their max deposit. The trader's deposit is
+        // equal to the proceeds that they would receive if they closed
+        // immediately (without fees).
         uint256 traderDeposit = HyperdriveMath
             .calculateShortProceeds(
                 _bondAmount,

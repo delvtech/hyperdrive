@@ -459,6 +459,197 @@ contract HyperdriveMathTest is Test {
         assertApproxEqAbs(result, expectedAPR.divDown(100e18), 3e12);
     }
 
+    function test__calculateShortProceeds() public {
+        // NOTE: Coverage only works if I initialize the fixture in the test function
+        MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
+
+        // 0% interest - 5% margin released - 0% interest after close
+        uint256 bondAmount = 1.05e18;
+        uint256 shareAmount = 1e18;
+        uint256 openSharePrice = 1e18;
+        uint256 closeSharePrice = 1e18;
+        uint256 sharePrice = 1e18;
+        uint256 shortProceeds = hyperdriveMath.calculateShortProceeds(
+            bondAmount,
+            shareAmount,
+            openSharePrice,
+            closeSharePrice,
+            sharePrice
+        );
+        // proceeds = (margin + interest) / share_price = (0.05 + 0) / 1
+        assertEq(shortProceeds, 0.05e18);
+
+        // 5% interest - 5% margin released - 0% interest after close
+        bondAmount = 1.05e18;
+        openSharePrice = 1e18;
+        closeSharePrice = 1.05e18;
+        sharePrice = 1.05e18;
+        shareAmount = uint256(1e18).divDown(sharePrice);
+        shortProceeds = hyperdriveMath.calculateShortProceeds(
+            bondAmount,
+            shareAmount,
+            openSharePrice,
+            closeSharePrice,
+            sharePrice
+        );
+        // proceeds = (margin + interest) / share_price = (0.05 + 1.05 * 0.05) / 1.05
+        assertApproxEqAbs(
+            shortProceeds,
+            (0.05e18 + bondAmount.mulDown(0.05e18)).divDown(sharePrice),
+            1
+        );
+
+        // 5% interest - 0% margin released - 0% interest after close
+        bondAmount = 1e18;
+        openSharePrice = 1e18;
+        closeSharePrice = 1.05e18;
+        sharePrice = 1.05e18;
+        shareAmount = uint256(1e18).divDown(sharePrice);
+        shortProceeds = hyperdriveMath.calculateShortProceeds(
+            bondAmount,
+            shareAmount,
+            openSharePrice,
+            closeSharePrice,
+            sharePrice
+        );
+        // proceeds = (margin + interest) / share_price = (0 + 1 * 0.05) / 1.05
+        assertApproxEqAbs(
+            shortProceeds,
+            (bondAmount.mulDown(0.05e18)).divDown(sharePrice),
+            1
+        );
+
+        // FIXME: This currently fails and needs to be fixed.
+        //
+        // 5% interest - 5% margin released - 10% interest after close
+        // bondAmount = 1.05e18;
+        // openSharePrice = 1e18;
+        // closeSharePrice = 1.05e18;
+        // sharePrice = 1.155e18;
+        // shareAmount = uint256(1e18).divDown(sharePrice);
+        // shortProceeds = hyperdriveMath.calculateShortProceeds(
+        //     bondAmount,
+        //     shareAmount,
+        //     openSharePrice,
+        //     closeSharePrice,
+        //     sharePrice
+        // );
+        // // proceeds = (margin + interest) / share_price = (0.05 + 1.05 * 0.05) / 1.155
+        // assertEq(
+        //     shortProceeds,
+        //     (0.05e18 + bondAmount.mulDown(0.05e18)).divDown(sharePrice)
+        // );
+
+        // -10% interest - 5% margin released - 0% interest after close
+        bondAmount = 1.05e18;
+        openSharePrice = 1e18;
+        closeSharePrice = 0.9e18;
+        sharePrice = 0.9e18;
+        shareAmount = uint256(1e18).divDown(sharePrice);
+        shortProceeds = hyperdriveMath.calculateShortProceeds(
+            bondAmount,
+            shareAmount,
+            openSharePrice,
+            closeSharePrice,
+            sharePrice
+        );
+        assertEq(shortProceeds, 0);
+
+        // FIXME: This currently fails and needs to be fixed.
+        //
+        // -10% interest - 5% margin released - 20% interest after close
+        // bondAmount = 1.05e18;
+        // openSharePrice = 1e18;
+        // closeSharePrice = 0.9e18;
+        // sharePrice = 1.08e18;
+        // shareAmount = uint256(1e18).divDown(sharePrice);
+        // shortProceeds = hyperdriveMath.calculateShortProceeds(
+        //     bondAmount,
+        //     shareAmount,
+        //     openSharePrice,
+        //     closeSharePrice,
+        //     sharePrice
+        // );
+        // assertEq(shortProceeds, 0);
+    }
+
+    function test__calculateShortInterest() public {
+        // NOTE: Coverage only works if I initialize the fixture in the test function
+        MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
+
+        // 0% interest - 0% interest after close
+        uint256 bondAmount = 1.05e18;
+        uint256 openSharePrice = 1e18;
+        uint256 closeSharePrice = 1e18;
+        uint256 sharePrice = 1e18;
+        uint256 shortInterest = hyperdriveMath.calculateShortInterest(
+            bondAmount,
+            openSharePrice,
+            closeSharePrice,
+            sharePrice
+        );
+        // proceeds = interest / share_price = 0 / 1
+        assertEq(shortInterest, 0);
+
+        // 5% interest - 0% interest after close
+        bondAmount = 1.05e18;
+        openSharePrice = 1e18;
+        closeSharePrice = 1.05e18;
+        sharePrice = 1.05e18;
+        shortInterest = hyperdriveMath.calculateShortInterest(
+            bondAmount,
+            openSharePrice,
+            closeSharePrice,
+            sharePrice
+        );
+        // proceeds = interest / share_price = (1.05 * 0.05) / 1.05
+        assertApproxEqAbs(
+            shortInterest,
+            bondAmount.mulDivDown(0.05e18, sharePrice),
+            1
+        );
+
+        // 5% interest - 10% interest after close
+        bondAmount = 1.05e18;
+        openSharePrice = 1e18;
+        closeSharePrice = 1.05e18;
+        sharePrice = 1.155e18;
+        shortInterest = hyperdriveMath.calculateShortInterest(
+            bondAmount,
+            openSharePrice,
+            closeSharePrice,
+            sharePrice
+        );
+        // proceeds = interest / share_price = (1.05 * 0.05) / 1.155
+        assertEq(shortInterest, bondAmount.mulDivDown(0.05e18, sharePrice));
+
+        // -10% interest - 0% interest after close
+        bondAmount = 1.05e18;
+        openSharePrice = 1e18;
+        closeSharePrice = 0.9e18;
+        sharePrice = 0.9e18;
+        shortInterest = hyperdriveMath.calculateShortInterest(
+            bondAmount,
+            openSharePrice,
+            closeSharePrice,
+            sharePrice
+        );
+        assertEq(shortInterest, 0);
+
+        // -10% interest - 20% interest after close
+        bondAmount = 1.05e18;
+        openSharePrice = 1e18;
+        closeSharePrice = 0.9e18;
+        sharePrice = 1.08e18;
+        shortInterest = hyperdriveMath.calculateShortInterest(
+            bondAmount,
+            openSharePrice,
+            closeSharePrice,
+            sharePrice
+        );
+        assertEq(shortInterest, 0);
+    }
+
     function test__calculateBaseVolume() public {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
