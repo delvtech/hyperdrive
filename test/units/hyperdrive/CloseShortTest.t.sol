@@ -6,8 +6,8 @@ import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
+import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
-import "forge-std/console.sol";
 
 contract CloseShortTest is HyperdriveTest {
     using FixedPointMath for uint256;
@@ -126,7 +126,9 @@ contract CloseShortTest is HyperdriveTest {
         );
     }
 
-    function test_close_short_redeem_at_maturity_zero_variable_interest() external {
+    function test_close_short_redeem_at_maturity_zero_variable_interest()
+        external
+    {
         uint256 apr = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
@@ -170,11 +172,11 @@ contract CloseShortTest is HyperdriveTest {
         uint256 bondAmount = 10e18;
         (uint256 maturityTime, uint256 basePaid) = openShort(bob, bondAmount);
 
-        // Get the reserves before closing the long.
-        PoolInfo memory poolInfoBefore = getPoolInfo();
-
         // The term passes.
         advanceTime(POSITION_DURATION, -0.2e18);
+
+        // Get the reserves before closing the long.
+        PoolInfo memory poolInfoBefore = getPoolInfo();
 
         // Redeem the bonds.
         uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
@@ -203,11 +205,11 @@ contract CloseShortTest is HyperdriveTest {
         uint256 bondAmount = 10e18;
         (uint256 maturityTime, uint256 basePaid) = openShort(bob, bondAmount);
 
-        // Get the reserves before closing the long.
-        PoolInfo memory poolInfoBefore = getPoolInfo();
-
         // The term passes and shares lose value
         advanceTime(POSITION_DURATION.mulDown(0.5e18), -0.2e18);
+
+        // Get the reserves before closing the short.
+        PoolInfo memory poolInfoBefore = getPoolInfo();
 
         // Redeem the bonds.
         uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
@@ -236,12 +238,12 @@ contract CloseShortTest is HyperdriveTest {
         uint256 bondAmount = 1000e18;
         (uint256 maturityTime, uint256 basePaid) = openShort(bob, bondAmount);
 
-        // Get the reserves before closing the short.
-        PoolInfo memory poolInfoBefore = getPoolInfo();
-
         // Advance and shares accrue 0% interest throughout the duration
         advanceTime(POSITION_DURATION, 0);
         assertEq(block.timestamp, maturityTime);
+
+        // Get the reserves before closing the short.
+        PoolInfo memory poolInfoBefore = getPoolInfo();
 
         // Redeem the bonds.
         uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
@@ -293,39 +295,26 @@ contract CloseShortTest is HyperdriveTest {
         ) = hyperdrive.checkpoints(checkpointTime);
 
         // Verify that the other state was updated correctly.
-        uint256 expectedSharesForNegativeInterest = 0;
+        uint256 timeRemaining = calculateTimeRemaining(maturityTime);
+        // TODO: Re-evaluate this. This is obviously correct; however, it may
+        // be better to use HyperdriveMath or find an approximation so that we
+        // aren't repeating ourselves.
         uint256 expectedShareReserves = poolInfoBefore.shareReserves +
-            (bondAmount - baseProceeds).divDown(
+            bondAmount.mulDivDown(
+                FixedPointMath.ONE_18 - timeRemaining,
                 poolInfoBefore.sharePrice
-            ).add(expectedSharesForNegativeInterest);
-
-        // open short:  decrease reserves by (bondAmount - baseProceeds) = (1 - (1-p)) = p
-        // close short: increase reserves by (bondAmount - baseProceeds) = (1 - (1-p)) = p
-        // as you pull to par, however much the trader made (baseProceeds) is subtracted from bondAmount
-
-        console.log("                           1e18 =", 1e18);
-        console.log("original error bar              =", poolInfoAfter.shareReserves.mulDown(1e11));
-        console.log(" => new error bar               =", 1e10);
-        console.log();
-        console.log("original error bar (in $ / 1e9) =", poolInfoAfter.shareReserves.mulDown(1e11) / 1e9);
-        console.log(" => new error bar  (in $ / 1e9) =", 1e10 / 1e9);
-        console.log();
-        console.log("original error bar (in $ units) =", poolInfoAfter.shareReserves.mulDown(1e11) / 1e18);
-        console.log();
-        console.log("expected = poolInfoBefore.shareReserves + (bondAmount - baseProceeds) / poolInfoBefore.sharePrice + expectedSharesForNegativeInterest");
-        console.log("poolInfoBefore.shareReserves = ", poolInfoBefore.shareReserves);
-        console.log("bondAmount = ", bondAmount);
-        console.log("baseProceeds = ", baseProceeds);
-        console.log("poolInfoBefore.sharePrice = ", poolInfoBefore.sharePrice);
-        console.log("expectedSharesForNegativeInterest = ", expectedSharesForNegativeInterest);
-        console.log("expected = ", expectedShareReserves);
-        console.log("actual   = ", poolInfoAfter.shareReserves);
-        console.log("expected - actual = ", poolInfoAfter.shareReserves - expectedShareReserves);
+            ) +
+            YieldSpaceMath.calculateSharesInGivenBondsOut(
+                poolInfoBefore.shareReserves,
+                poolInfoBefore.bondReserves,
+                bondAmount.mulDown(timeRemaining),
+                FixedPointMath.ONE_18 - hyperdrive.timeStretch(),
+                poolInfoBefore.sharePrice,
+                hyperdrive.initialSharePrice()
+            );
         assertApproxEqAbs(
             poolInfoAfter.shareReserves,
             expectedShareReserves,
-            // 10^-7 * 10^18 = 10^11
-            // poolInfoAfter.shareReserves.mulDown(1e11) // TODO: This error bar is too big. Analyze this.
             1e10
         );
         assertEq(poolInfoAfter.lpTotalSupply, poolInfoBefore.lpTotalSupply);
