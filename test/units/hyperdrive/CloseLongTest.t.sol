@@ -7,6 +7,7 @@ import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
+import "forge-std/console.sol";
 
 contract CloseLongTest is HyperdriveTest {
     using FixedPointMath for uint256;
@@ -65,7 +66,7 @@ contract CloseLongTest is HyperdriveTest {
         hyperdrive.closeLong(uint256(type(uint248).max) + 1, 1, 0, bob, true);
     }
 
-    function test_close_long_immediately() external {
+    function test_close_long_immediately_with_regular_amount() external {
         uint256 apr = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
@@ -82,6 +83,8 @@ contract CloseLongTest is HyperdriveTest {
         // Immediately close the bonds.
         uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
 
+        console.log("basePaid", basePaid);
+        console.log("baseProceeds", baseProceeds);
         // Verify that Bob didn't receive more base than he put in.
         assertLe(baseProceeds, basePaid);
 
@@ -121,7 +124,38 @@ contract CloseLongTest is HyperdriveTest {
 
         // Bob opens a large long.
         uint256 basePaid = 10e18;
+        PoolInfo memory poolInfoBeforeOpen = getPoolInfo();
+        console.log("=== test_close_long_halfway_through_term ===");
+        console.log("positionDuration =", POSITION_DURATION);
+        console.log("1 days * 365     =", 1 days * 365);
+            // shareReserves: shareReserves,
+            // bondReserves: bondReserves,
+            // lpTotalSupply: lpTotalSupply,
+            // sharePrice: sharePrice,
+            // longsOutstanding: longsOutstanding,
+            // longAverageMaturityTime: longAverageMaturityTime,
+            // longBaseVolume: longBaseVolume,
+            // shortsOutstanding: shortsOutstanding,
+            // shortAverageMaturityTime: shortAverageMaturityTime,
+            // shortBaseVolume: shortBaseVolume
+        console.log("shareReserves", poolInfoBeforeOpen.shareReserves);
+        console.log("bondReserves", poolInfoBeforeOpen.bondReserves);
+        console.log("lpTotalSupply", poolInfoBeforeOpen.lpTotalSupply);
+        console.log("sharePrice", poolInfoBeforeOpen.sharePrice);
+        // console.log("longsOutstanding", poolInfoBeforeOpen.longsOutstanding);
+        // console.log("longAverageMaturityTime", poolInfoBeforeOpen.longAverageMaturityTime);
+        // console.log("longBaseVolume", poolInfoBeforeOpen.longBaseVolume);
+        // console.log("shortsOutstanding", poolInfoBeforeOpen.shortsOutstanding);
+        // console.log("shortAverageMaturityTime", poolInfoBeforeOpen.shortAverageMaturityTime);
+        // console.log("shortBaseVolume", poolInfoBeforeOpen.shortBaseVolume);
+        uint256 spotPrice = calculateSpotPrice(
+            poolInfoBeforeOpen.shareReserves, //_shareReserves,
+            poolInfoBeforeOpen.bondReserves, //_bondReserves,
+            poolInfoBeforeOpen.sharePrice //_initialSharePrice,
+        );
+        console.log("spotPrice", spotPrice);
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
+        console.log("bondAmount", bondAmount);
 
         // Most of the term passes. The pool accrues interest at the current apr.
         uint256 timeDelta = 0.5e18;
