@@ -117,9 +117,9 @@ library HyperdriveMath {
     /// @param _timeStretch The time stretch parameter.
     /// @param _sharePrice The share price.
     /// @param _initialSharePrice The initial share price.
-    /// @return curveIn The input amount for the curve trade (denominated in shares).
-    /// @return curveOut The output amount for the curve trade (denominated in bonds).
-    /// @return flat The flat amount (denominated in bonds).
+    /// @return shareReservesDelta The shares paid to the reserves in the trade.
+    /// @return bondReservesDelta The bonds paid by the reserves in the trade.
+    /// @return bondProceeds The bonds that the user will receive.
     function calculateOpenLong(
         uint256 _shareReserves,
         uint256 _bondReserves,
@@ -128,22 +128,31 @@ library HyperdriveMath {
         uint256 _timeStretch,
         uint256 _sharePrice,
         uint256 _initialSharePrice
-    ) internal pure returns (uint256 curveIn, uint256 curveOut, uint256 flat) {
+    )
+        internal
+        pure
+        returns (
+            uint256 shareReservesDelta,
+            uint256 bondReservesDelta,
+            uint256 bondProceeds
+        )
+    {
         // Calculate the flat part of the trade.
-        flat = _amountIn.mulDown(
+        bondProceeds = _amountIn.mulDown(
             FixedPointMath.ONE_18.sub(_normalizedTimeRemaining)
         );
-        curveIn = _amountIn.mulDown(_normalizedTimeRemaining);
+        shareReservesDelta = _amountIn.mulDown(_normalizedTimeRemaining);
         // (time remaining)/(term length) is always 1 so we just use _timeStretch
-        curveOut = YieldSpaceMath.calculateBondsOutGivenSharesIn(
+        bondReservesDelta = YieldSpaceMath.calculateBondsOutGivenSharesIn(
             _shareReserves,
             _bondReserves,
-            curveIn,
+            shareReservesDelta,
             FixedPointMath.ONE_18.sub(_timeStretch),
             _sharePrice,
             _initialSharePrice
         );
-        return (curveIn, curveOut, flat);
+        bondProceeds += bondReservesDelta;
+        return (shareReservesDelta, bondReservesDelta, bondProceeds);
     }
 
     /// @dev Calculates the amount of shares a user will receive when closing a
@@ -156,9 +165,9 @@ library HyperdriveMath {
     /// @param _timeStretch The time stretch parameter.
     /// @param _sharePrice The share price.
     /// @param _initialSharePrice The initial share price.
-    /// @return curveIn The input amount for the curve trade (denominated in bonds).
-    /// @return curveOut The output amount for the curve trade (denominated in shares).
-    /// @return flat The flat amount (denominated in shares).
+    /// @return shareReservesDelta The shares paid by the reserves in the trade.
+    /// @return bondReservesDelta The bonds paid to the reserves in the trade.
+    /// @return shareProceeds The shares that the user will receive.
     function calculateCloseLong(
         uint256 _shareReserves,
         uint256 _bondReserves,
@@ -167,37 +176,56 @@ library HyperdriveMath {
         uint256 _timeStretch,
         uint256 _sharePrice,
         uint256 _initialSharePrice
-    ) internal pure returns (uint256 curveIn, uint256 curveOut, uint256 flat) {
+    )
+        internal
+        pure
+        returns (
+            uint256 shareReservesDelta,
+            uint256 bondReservesDelta,
+            uint256 shareProceeds
+        )
+    {
         // We consider (1 - timeRemaining) * amountIn of the bonds to be fully
         // matured and timeRemaining * amountIn of the bonds to be newly
         // minted. The fully matured bonds are redeemed one-to-one to base
         // (our result is given in shares, so we divide the one-to-one
         // redemption by the share price) and the newly minted bonds are
         // traded on a YieldSpace curve configured to timeRemaining = 1.
-        flat = _amountIn
+        shareProceeds = _amountIn
             .mulDown(FixedPointMath.ONE_18.sub(_normalizedTimeRemaining))
             .divDown(_sharePrice);
 
-        // If there's net negative interest over the period the flat redemption amount
-        // is reduced.
+        // TODO: We need better testing for this. This may be correct but the
+        // intuition that longs only take a loss on the flat component of their
+        // trade feels a bit handwavy because negative interest accrued on the
+        // entire trade amount.
+        //
+        // If there's net negative interest over the period, the flat portion of
+        // the trade is reduced in proportion to the negative interest. We
+        // always attribute negative interest to the long since it's difficult
+        // or impossible to attribute the negative interest to the short in
+        // practice.
         if (_initialSharePrice > _sharePrice) {
-            flat = (flat.mulUp(_sharePrice)).divDown(_initialSharePrice);
+            shareProceeds = (shareProceeds.mulUp(_sharePrice)).divDown(
+                _initialSharePrice
+            );
         }
 
         if (_normalizedTimeRemaining > 0) {
             // Calculate the curved part of the trade.
-            curveIn = _amountIn.mulDown(_normalizedTimeRemaining);
+            bondReservesDelta = _amountIn.mulDown(_normalizedTimeRemaining);
             // (time remaining)/(term length) is always 1 so we just use _timeStretch
-            curveOut = YieldSpaceMath.calculateSharesOutGivenBondsIn(
+            shareReservesDelta = YieldSpaceMath.calculateSharesOutGivenBondsIn(
                 _shareReserves,
                 _bondReserves,
-                curveIn,
+                bondReservesDelta,
                 FixedPointMath.ONE_18.sub(_timeStretch),
                 _sharePrice,
                 _initialSharePrice
             );
+            shareProceeds += shareReservesDelta;
         }
-        return (curveIn, curveOut, flat);
+        return (shareReservesDelta, bondReservesDelta, shareProceeds);
     }
 
     /// @dev Calculates the amount of shares that will be received given a
@@ -209,9 +237,9 @@ library HyperdriveMath {
     /// @param _timeStretch The time stretch parameter.
     /// @param _sharePrice The share price.
     /// @param _initialSharePrice The initial share price.
-    /// @return curveIn The input amount for the curve trade (denominated in bonds).
-    /// @return curveOut The output amount for the curve trade (denominated in shares).
-    /// @return flat The flat amount (denominated in shares).
+    /// @return shareReservesDelta The shares paid by the reserves in the trade.
+    /// @return bondReservesDelta The bonds paid to the reserves in the trade.
+    /// @return shareProceeds The shares that the user will receive.
     function calculateOpenShort(
         uint256 _shareReserves,
         uint256 _bondReserves,
@@ -220,25 +248,34 @@ library HyperdriveMath {
         uint256 _timeStretch,
         uint256 _sharePrice,
         uint256 _initialSharePrice
-    ) internal pure returns (uint256 curveIn, uint256 curveOut, uint256 flat) {
+    )
+        internal
+        pure
+        returns (
+            uint256 shareReservesDelta,
+            uint256 bondReservesDelta,
+            uint256 shareProceeds
+        )
+    {
         // Calculate the flat part of the trade.
-        flat = _amountIn
+        shareProceeds = _amountIn
             .mulDown(FixedPointMath.ONE_18.sub(_normalizedTimeRemaining))
             .divDown(_sharePrice);
         // Calculate the curved part of the trade.
-        curveIn = _amountIn.mulDown(_normalizedTimeRemaining).divDown(
+        bondReservesDelta = _amountIn.mulDown(_normalizedTimeRemaining).divDown(
             _sharePrice
         );
         // (time remaining)/(term length) is always 1 so we just use _timeStretch
-        curveOut = YieldSpaceMath.calculateSharesOutGivenBondsIn(
+        shareReservesDelta = YieldSpaceMath.calculateSharesOutGivenBondsIn(
             _shareReserves,
             _bondReserves,
-            curveIn,
+            bondReservesDelta,
             FixedPointMath.ONE_18.sub(_timeStretch),
             _sharePrice,
             _initialSharePrice
         );
-        return (curveIn, curveOut, flat);
+        shareProceeds += shareReservesDelta;
+        return (shareReservesDelta, bondReservesDelta, shareProceeds);
     }
 
     /// @dev Calculates the amount of base that a user will receive when closing a short position
@@ -249,9 +286,9 @@ library HyperdriveMath {
     /// @param _timeStretch The time stretch parameter.
     /// @param _sharePrice The share price.
     /// @param _initialSharePrice The initial share price.
-    /// @return curveIn The input amount for the curve trade (denominated in shares).
-    /// @return curveOut The output amount for the curve trade (denominated in bonds).
-    /// @return flat The flat amount (denominated in shares).
+    /// @return shareReservesDelta The shares paid to the reserves in the trade.
+    /// @return bondReservesDelta The bonds paid by the reserves in the trade.
+    /// @return sharePayment The shares that the user must pay.
     function calculateCloseShort(
         uint256 _shareReserves,
         uint256 _bondReserves,
@@ -260,7 +297,15 @@ library HyperdriveMath {
         uint256 _timeStretch,
         uint256 _sharePrice,
         uint256 _initialSharePrice
-    ) internal pure returns (uint256 curveIn, uint256 curveOut, uint256 flat) {
+    )
+        internal
+        pure
+        returns (
+            uint256 shareReservesDelta,
+            uint256 bondReservesDelta,
+            uint256 sharePayment
+        )
+    {
         // Since we are buying bonds, it's possible that timeRemaining < 1.
         // We consider (1-timeRemaining)*amountOut of the bonds being
         // purchased to be fully matured and timeRemaining*amountOut of the
@@ -269,24 +314,99 @@ library HyperdriveMath {
         // the one-to-one redemption by the share price) and the newly
         // minted bonds are traded on a YieldSpace curve configured to
         // timeRemaining = 1.
-        flat = _amountOut
+        sharePayment = _amountOut
             .mulDown(FixedPointMath.ONE_18.sub(_normalizedTimeRemaining))
             .divDown(_sharePrice);
 
         if (_normalizedTimeRemaining > 0) {
-            curveOut = _amountOut.mulDown(_normalizedTimeRemaining);
-            // Calculate the curved part of the trade.
-            curveIn = YieldSpaceMath.calculateSharesInGivenBondsOut(
+            bondReservesDelta = _amountOut.mulDown(_normalizedTimeRemaining);
+            shareReservesDelta = YieldSpaceMath.calculateSharesInGivenBondsOut(
                 _shareReserves,
                 _bondReserves,
-                _amountOut,
+                bondReservesDelta,
                 FixedPointMath.ONE_18.sub(_timeStretch),
                 _sharePrice,
                 _initialSharePrice
             );
+            sharePayment += shareReservesDelta;
         }
 
-        return (curveIn, curveOut, flat);
+        return (shareReservesDelta, bondReservesDelta, sharePayment);
+    }
+
+    /// @dev Calculates the proceeds in shares of closing a short position. This
+    ///      takes into account the trading profits, the interest that was
+    ///      earned by the short, and the amount of margin that was released
+    ///      by closing the short. The math for the short's proceeds in base is
+    ///      given by:
+    ///
+    ///      proceeds = dy - c_1 * dz + (c_1 - c_0) * (dy / c_0)
+    ///               = dy - c_1 * dz + (c_1 / c_0) * dy - dy
+    ///               = (c_1 / c_0) * dy - c_1 * dz
+    ///               = c_1 * (dy / c_0 - dz)
+    ///
+    ///      We convert the proceeds to shares by dividing by the current share
+    ///      price. In the event that the interest is negative and outweighs the
+    ///      trading profits and margin released, the short's proceeds are
+    ///      marked to zero.
+    /// @param _bondAmount The amount of bonds underlying the closed short.
+    /// @param _shareAmount The amount of shares that it costs to close the
+    ///                     short.
+    /// @param _openSharePrice The share price at the short's open.
+    /// @param _closeSharePrice The share price at the short's close.
+    /// @param _sharePrice The current share price.
+    /// @return shareProceeds The short proceeds in shares.
+    function calculateShortProceeds(
+        uint256 _bondAmount,
+        uint256 _shareAmount,
+        uint256 _openSharePrice,
+        uint256 _closeSharePrice,
+        uint256 _sharePrice
+    ) internal pure returns (uint256 shareProceeds) {
+        // If the interest is more negative than the trading profits and margin
+        // released, than the short proceeds are marked to zero. Otherwise, we
+        // calculate the proceeds as the sum of the trading proceeds, the
+        // interest proceeds, and the margin released.
+        uint256 openShares = _bondAmount.divDown(_openSharePrice);
+        if (openShares > _shareAmount) {
+            // proceeds = (dy / c_0 - dz) * (c_1 / c)
+            shareProceeds = openShares.sub(_shareAmount).mulDivDown(
+                _closeSharePrice,
+                _sharePrice
+            );
+        }
+        return shareProceeds;
+    }
+
+    /// @dev Calculates the interest in shares earned by a short position. The
+    ///      math for the short's interest in shares is given by:
+    ///
+    ///      interest = ((c_1 / c_0 - 1) * dy) / c
+    ///               = (((c_1 - c_0) / c_0) * dy) / c
+    ///               = ((c_1 - c_0) / (c_0 * c)) * dy
+    ///
+    ///      In the event that the interest is negative, we mark the interest
+    ///      to zero.
+    /// @param _bondAmount The amount of bonds underlying the closed short.
+    /// @param _openSharePrice The share price at the short's open.
+    /// @param _closeSharePrice The share price at the short's close.
+    /// @param _sharePrice The current share price.
+    /// @return shareInterest The short interest in shares.
+    function calculateShortInterest(
+        uint256 _bondAmount,
+        uint256 _openSharePrice,
+        uint256 _closeSharePrice,
+        uint256 _sharePrice
+    ) internal pure returns (uint256 shareInterest) {
+        // If the interest is negative, we mark it to zero.
+        if (_closeSharePrice > _openSharePrice) {
+            // interest = dy * ((c_1 - c_0) / (c_0 * c))
+            shareInterest = _bondAmount.mulDivDown(
+                _closeSharePrice - _openSharePrice,
+                _openSharePrice.mulDown(_sharePrice)
+            );
+        }
+        return shareInterest;
     }
 
     /// @dev Calculates the base volume of an open trade given the base amount,

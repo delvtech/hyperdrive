@@ -108,35 +108,29 @@ abstract contract HyperdriveLong is HyperdriveLP {
             revert Errors.ZeroAmount();
         }
 
-        // Perform a checkpoint at the maturity time, this ensures the bond is closed
-        // and closes all other positions in that checkpoint. This will be ignored
-        // if the maturity time is in the future.
+        // Perform a checkpoint at the maturity time. This ensures the long and
+        // all of the other positions in the checkpoint are closed. This will
+        // have no effect if the maturity time is in the future.
         uint256 sharePrice = _pricePerShare();
         _applyCheckpoint(_maturityTime, sharePrice);
 
         // Burn the longs that are being closed.
-        uint256 assetId = AssetId.encodeAssetId(
-            AssetId.AssetIdPrefix.Long,
-            _maturityTime
+        _burn(
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _maturityTime),
+            msg.sender,
+            _bondAmount
         );
-        _burn(assetId, msg.sender, _bondAmount);
 
         // Calculate the pool and user deltas using the trading function.
-        uint256 shareReservesDelta;
-        uint256 bondReservesDelta;
-        uint256 shareProceeds;
-        {
-            uint256 totalGovFee;
-            (
-                shareReservesDelta,
-                bondReservesDelta,
-                shareProceeds,
-                totalGovFee
-            ) = _calculateCloseLong(_bondAmount, sharePrice, _maturityTime);
+        (
+            uint256 shareReservesDelta,
+            uint256 bondReservesDelta,
+            uint256 shareProceeds,
+            uint256 totalGovFee
+        ) = _calculateCloseLong(_bondAmount, sharePrice, _maturityTime);
 
-            // Attribute the governance fee.
-            govFeesAccrued += totalGovFee;
-        }
+        // Attribute the governance fee.
+        govFeesAccrued += totalGovFee;
 
         // If the position hasn't matured, apply the accounting updates that
         // result from closing the long to the reserves and pay out the
@@ -187,15 +181,15 @@ abstract contract HyperdriveLong is HyperdriveLP {
     ) internal {
         // Update the average maturity time of long positions.
         {
-            uint256 longAverageMaturityTime = uint256(
-                aggregates.longAverageMaturityTime
+            uint256 averageMaturityTime = uint256(
+                longAggregates.averageMaturityTime
             ).updateWeightedAverage(
                     uint256(marketState.longsOutstanding),
                     _maturityTime,
                     _bondProceeds,
                     true
                 );
-            aggregates.longAverageMaturityTime = longAverageMaturityTime
+            longAggregates.averageMaturityTime = averageMaturityTime
                 .toUint128();
         }
 
@@ -203,7 +197,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         uint128 baseVolume = HyperdriveMath
             .calculateBaseVolume(_baseAmount, _bondProceeds, _timeRemaining)
             .toUint128();
-        aggregates.longBaseVolume += baseVolume;
+        longAggregates.baseVolume += baseVolume;
         checkpoints[_checkpointTime].longBaseVolume += baseVolume;
 
         // Apply the trading deltas to the reserves and update the amount of
@@ -250,21 +244,24 @@ abstract contract HyperdriveLong is HyperdriveLP {
     ) internal {
         // Update the long average maturity time.
         {
-            uint256 longAverageMaturityTime = uint256(
-                aggregates.longAverageMaturityTime
+            uint256 averageMaturityTime = uint256(
+                longAggregates.averageMaturityTime
             ).updateWeightedAverage(
                     marketState.longsOutstanding,
                     _maturityTime,
                     _bondAmount,
                     false
                 );
-            aggregates.longAverageMaturityTime = longAverageMaturityTime
+            longAggregates.averageMaturityTime = averageMaturityTime
                 .toUint128();
         }
 
-        // Update the long base volume.
-        // The margin used by this position which may be freed
-        uint256 userMargin;
+        // TODO: Is it possible to abstract out the process of updating
+        // aggregates in a way that is nice?
+        //
+        // Calculate the amount of margin that LPs provided on the long
+        // position and update the base volume aggregates.
+        uint256 lpMargin;
         {
             // Get the total supply of longs in the checkpoint of the longs
             // being closed. If the longs are closed before maturity, we add the
@@ -277,30 +274,17 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 checkpointAmount += _bondAmount;
             }
 
-            // If all of the longs in the checkpoint are being closed, delete
-            // the base volume in the checkpoint. Otherwise, decrease the base
-            // volume aggregates by a proportional amount.
+            // Remove a proportional amount of the checkpoints base volume from
+            // the aggregates. We calculate the margin that the LP provided
+            // using this proportional base volume.
             uint256 checkpointTime = _maturityTime - positionDuration;
-            if (_bondAmount == checkpointAmount) {
-                // The total bonds minus what's paid for them
-                userMargin =
-                    _bondAmount -
-                    checkpoints[checkpointTime].longBaseVolume;
-                // Updates
-                aggregates.longBaseVolume -= checkpoints[checkpointTime]
-                    .longBaseVolume;
-                delete checkpoints[checkpointTime].longBaseVolume;
-            } else {
-                uint128 proportionalBaseVolume = uint256(
-                    checkpoints[checkpointTime].longBaseVolume
-                ).mulDown(_bondAmount.divDown(checkpointAmount)).toUint128();
-                // The total bonds minus what's paid for them
-                userMargin = _bondAmount - proportionalBaseVolume;
-                // Update state
-                aggregates.longBaseVolume -= proportionalBaseVolume;
-                checkpoints[checkpointTime]
-                    .longBaseVolume -= proportionalBaseVolume;
-            }
+            uint128 proportionalBaseVolume = uint256(
+                checkpoints[checkpointTime].longBaseVolume
+            ).mulDown(_bondAmount.divDown(checkpointAmount)).toUint128();
+            longAggregates.baseVolume -= proportionalBaseVolume;
+            checkpoints[checkpointTime]
+                .longBaseVolume -= proportionalBaseVolume;
+            lpMargin = _bondAmount - proportionalBaseVolume;
         }
 
         // Reduce the amount of outstanding longs.
@@ -313,8 +297,9 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // Calculate the amount of liquidity that needs to be removed.
         int256 shareAdjustment = -int256(_shareProceeds - _shareReservesDelta);
 
-        // If there is a withdraw processing we calculate the margin freed by this position and then
-        // deposit it into the withdraw pool
+        // If there is a withdraw processing, we pay out as much of the
+        // withdrawal pool as possible with the the margin released and interest
+        // accrued on the position to the withdrawal pool.
         if (_needsToBeFreed()) {
             // Since longs are backdated to the beginning of the checkpoint and
             // interest only begins accruing when the longs are opened, we
@@ -325,56 +310,51 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 (_maturityTime - positionDuration) + checkpointDuration
             ].sharePrice;
 
-            // Apply the LP proceeds from the trade proportionally to the long
-            // withdrawal shares. The accounting for these proceeds is identical
-            // to the close short accounting because LPs take the short position
-            // when longs are opened. The math for the withdrawal proceeds is
-            // given by:
-            //
-            // proceeds = c_1 * (dy / c_0 - dz)
-            //
-            // We convert to shares at position close by dividing by c_1. If a checkpoint
-            // was missed and old matured positions are being closed, this will correctly
-            // attribute the extra interest to the withdrawal pool.
-            uint256 withdrawalProceeds;
-            uint256 openShares = _bondAmount.divDown(openSharePrice);
-            // We check if the interest rate was negative
-            if (openShares > _shareProceeds) {
-                // If not we do the normal calculation
-                withdrawalProceeds = openShares.sub(_shareProceeds);
-            } else {
-                // If there's negative interest the LP's position is fully wiped out and has zero value.
-                withdrawalProceeds = 0;
-            }
+            // The withdrawal pool has preferential access to the proceeds
+            // generated from closing longs. The LP proceeds when longs are
+            // closed are equivalent to the proceeds of short positions.
+            uint256 withdrawalProceeds = HyperdriveMath.calculateShortProceeds(
+                _bondAmount,
+                _shareProceeds,
+                openSharePrice,
+                _sharePrice,
+                _sharePrice
+            );
 
-            // Update the long aggregates.
-            {
-                // The short interest is the percent increase in share value times the bonds. We convert
-                // to shares to match the withdraw pool:
-                //   ((c - mu)/mu * bonds) / c
-                uint256 userInterest = openSharePrice <= _sharePrice
-                    ? (_sharePrice - openSharePrice)
-                        .mulDivDown(_bondAmount, openSharePrice)
-                        .divDown(_sharePrice)
-                    : 0;
-                // If the the short has net lost despite being still positive interest we set capital recovered to 0
-                // Note - This happens when there's negative interest
-                uint256 capitalFreed = withdrawalProceeds > userInterest
-                    ? withdrawalProceeds - userInterest
-                    : 0;
-                // Call into LP to free margin
-                (
-                    uint256 capitalWithdrawn,
-                    uint256 interestWithdrawn
-                ) = _freeMargin(
-                        capitalFreed,
-                        userMargin.divDown(openSharePrice),
-                        userInterest
-                    );
-                withdrawalProceeds = (capitalWithdrawn + interestWithdrawn);
-            }
+            // TODO: I think there may be some problems with the new withdrawal
+            // pool system. In particular, it seems like short-heavy LPs will
+            // get too much interest. We should write out the payoffs in a bunch
+            // of different cases.
+            //
+            // TODO: We should explain somewhere why we decompose the withdrawal
+            // pool into margin and interest.
+            //
+            // TODO: Is this comment accurate? Regardless, we can make it more
+            // readable.
+            //
+            // If the short has net lost despite being still positive
+            // interest we set capital recovered to 0.
+            // Note - This happens when there's negative interest
+            uint256 lpInterest = HyperdriveMath.calculateShortInterest(
+                _bondAmount,
+                openSharePrice,
+                _sharePrice,
+                _sharePrice
+            );
+            uint256 capitalFreed = withdrawalProceeds > lpInterest
+                ? withdrawalProceeds - lpInterest
+                : 0;
 
-            // Increase the amount of liquidity to be removed.
+            // Pay out the withdrawal pool with the freed margin. The withdrawal
+            // proceeds are split into the margin pool and the interest pool.
+            // The proceeds that are distributed to the margin and interest
+            // pools are removed from the pool's liquidity.
+            (uint256 capitalWithdrawn, uint256 interestWithdrawn) = _freeMargin(
+                capitalFreed,
+                lpMargin.divDown(openSharePrice),
+                lpInterest
+            );
+            withdrawalProceeds = capitalWithdrawn + interestWithdrawn;
             shareAdjustment -= int256(withdrawalProceeds);
         }
 
@@ -406,21 +386,18 @@ abstract contract HyperdriveLong is HyperdriveLP {
             uint256 totalGovFee
         )
     {
-        {
-            (uint256 curveIn, uint256 curveOut, uint256 flat) = HyperdriveMath
-                .calculateOpenLong(
-                    marketState.shareReserves,
-                    marketState.bondReserves,
-                    _shareAmount, // amountIn
-                    _timeRemaining,
-                    timeStretch,
-                    _sharePrice,
-                    initialSharePrice
-                );
-            shareReservesDelta = curveIn;
-            bondReservesDelta = curveOut;
-            bondProceeds = curveOut + flat;
-        }
+        // Calculate the effect that opening the long should have on the pool's
+        // reserves as well as the amount of bond the trader receives.
+        (shareReservesDelta, bondReservesDelta, bondProceeds) = HyperdriveMath
+            .calculateOpenLong(
+                marketState.shareReserves,
+                marketState.bondReserves,
+                _shareAmount, // amountIn
+                _timeRemaining,
+                timeStretch,
+                _sharePrice,
+                initialSharePrice
+            );
 
         // Calculate the fees charged on the curve and flat parts of the trade.
         // Since we calculate the amount of bonds received given shares in, we
@@ -487,11 +464,16 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // reserves as well as the amount of shares the trader receives for
         // selling the bonds at the market price.
         uint256 timeRemaining = _calculateTimeRemaining(_maturityTime);
-        (
-            shareReservesDelta,
-            bondReservesDelta,
-            shareProceeds
-        ) = _calculateCloseLongDeltas(_bondAmount, _sharePrice, timeRemaining);
+        (shareReservesDelta, bondReservesDelta, shareProceeds) = HyperdriveMath
+            .calculateCloseLong(
+                marketState.shareReserves,
+                marketState.bondReserves,
+                _bondAmount,
+                timeRemaining,
+                timeStretch,
+                _sharePrice,
+                initialSharePrice
+            );
 
         // Calculate the fees charged on the curve and flat parts of the trade.
         // Since we calculate the amount of shares received given bonds in, we
@@ -525,40 +507,5 @@ abstract contract HyperdriveLong is HyperdriveLP {
             shareProceeds,
             totalGovFee
         );
-    }
-
-    /// @dev Calculates the reserve updates and the proceeds of closing the
-    ///      long.
-    /// @param _bondAmount The bonds being sold.
-    /// @param _sharePrice The current share price.
-    /// @param _timeRemaining The time remaining until maturity of the position.
-    function _calculateCloseLongDeltas(
-        uint256 _bondAmount,
-        uint256 _sharePrice,
-        uint256 _timeRemaining
-    )
-        internal
-        view
-        returns (
-            uint256 shareReservesDelta,
-            uint256 bondReservesDelta,
-            uint256 shareProceeds
-        )
-    {
-        (uint256 curveIn, uint256 curveOut, uint256 flat) = HyperdriveMath
-            .calculateCloseLong(
-                marketState.shareReserves,
-                marketState.bondReserves,
-                _bondAmount,
-                _timeRemaining,
-                timeStretch,
-                _sharePrice,
-                initialSharePrice
-            );
-        bondReservesDelta = curveIn;
-        shareReservesDelta = curveOut;
-        shareProceeds = curveOut + flat;
-
-        return (shareReservesDelta, bondReservesDelta, shareProceeds);
     }
 }

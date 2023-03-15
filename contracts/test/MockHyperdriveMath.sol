@@ -145,6 +145,38 @@ contract MockHyperdriveMath {
         return result;
     }
 
+    function calculateShortProceeds(
+        uint256 _bondAmount,
+        uint256 _shareAmount,
+        uint256 _openSharePrice,
+        uint256 _closeSharePrice,
+        uint256 _sharePrice
+    ) external pure returns (uint256) {
+        uint256 result = HyperdriveMath.calculateShortProceeds(
+            _bondAmount,
+            _shareAmount,
+            _openSharePrice,
+            _closeSharePrice,
+            _sharePrice
+        );
+        return result;
+    }
+
+    function calculateShortInterest(
+        uint256 _bondAmount,
+        uint256 _openSharePrice,
+        uint256 _closeSharePrice,
+        uint256 _sharePrice
+    ) external pure returns (uint256) {
+        uint256 result = HyperdriveMath.calculateShortInterest(
+            _bondAmount,
+            _openSharePrice,
+            _closeSharePrice,
+            _sharePrice
+        );
+        return result;
+    }
+
     function calculateBaseVolume(
         uint256 _baseAmount,
         uint256 _bondAmount,

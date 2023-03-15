@@ -129,7 +129,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
         assertApproxEqAbs(calculateAPRFromReserves(), poolApr, 1 wei);
 
         // Ensure that Alice receives the right amount of withdrawal shares.
-        (, uint256 longBaseVolume, , ) = hyperdrive.aggregates();
+        (, uint256 longBaseVolume) = hyperdrive.longAggregates();
         uint256 withdrawSharesExpected = (getPoolInfo().longsOutstanding -
             longBaseVolume).divDown(poolInfo.sharePrice);
         assertEq(
@@ -183,7 +183,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
         assertEq(poolInfo.bondReserves, 0);
 
         // Ensure that Alice receives the right amount of withdrawal shares.
-        (, , , uint256 shortBaseVolume) = hyperdrive.aggregates();
+        (, uint256 shortBaseVolume) = hyperdrive.shortAggregates();
         uint256 withdrawSharesExpected = (shortBaseVolume).divDown(
             poolInfo.sharePrice
         );
