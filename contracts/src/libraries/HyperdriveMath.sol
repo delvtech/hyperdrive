@@ -314,9 +314,10 @@ library HyperdriveMath {
         // the one-to-one redemption by the share price) and the newly
         // minted bonds are traded on a YieldSpace curve configured to
         // timeRemaining = 1.
-        sharePayment = _amountOut
-            .mulDown(FixedPointMath.ONE_18.sub(_normalizedTimeRemaining))
-            .divDown(_sharePrice);
+        sharePayment = _amountOut.mulDivDown(
+            FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
+            _sharePrice
+        );
 
         if (_normalizedTimeRemaining > 0) {
             bondReservesDelta = _amountOut.mulDown(_normalizedTimeRemaining);

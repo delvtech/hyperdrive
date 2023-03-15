@@ -6,6 +6,7 @@ import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
+import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 
 contract CloseShortTest is HyperdriveTest {
@@ -65,7 +66,7 @@ contract CloseShortTest is HyperdriveTest {
         hyperdrive.closeShort(uint256(type(uint248).max) + 1, 1, 0, bob, true);
     }
 
-    function test_close_short_immediately() external {
+    function test_close_short_immediately_with_regular_amount() external {
         uint256 apr = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
@@ -86,13 +87,7 @@ contract CloseShortTest is HyperdriveTest {
         assertGe(basePaid, baseProceeds);
 
         // Verify that the close long updates were correct.
-        verifyCloseShort(
-            poolInfoBefore,
-            basePaid,
-            baseProceeds,
-            bondAmount,
-            maturityTime
-        );
+        verifyCloseShort(poolInfoBefore, bondAmount, maturityTime);
     }
 
     function test_close_short_immediately_with_small_amount() external {
@@ -116,16 +111,12 @@ contract CloseShortTest is HyperdriveTest {
         assertGe(basePaid, baseProceeds);
 
         // Verify that the close long updates were correct.
-        verifyCloseShort(
-            poolInfoBefore,
-            basePaid,
-            baseProceeds,
-            bondAmount,
-            maturityTime
-        );
+        verifyCloseShort(poolInfoBefore, bondAmount, maturityTime);
     }
 
-    function test_close_short_redeem() external {
+    function test_close_short_redeem_at_maturity_zero_variable_interest()
+        external
+    {
         uint256 apr = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
@@ -134,7 +125,7 @@ contract CloseShortTest is HyperdriveTest {
 
         // Short some bonds.
         uint256 bondAmount = 10e18;
-        (uint256 maturityTime, uint256 basePaid) = openShort(bob, bondAmount);
+        (uint256 maturityTime, ) = openShort(bob, bondAmount);
 
         // Get the reserves before closing the long.
         PoolInfo memory poolInfoBefore = getPoolInfo();
@@ -149,13 +140,7 @@ contract CloseShortTest is HyperdriveTest {
         assertEq(baseProceeds, 0);
 
         // Verify that the close long updates were correct.
-        verifyCloseShort(
-            poolInfoBefore,
-            basePaid,
-            baseProceeds,
-            bondAmount,
-            maturityTime
-        );
+        verifyCloseShort(poolInfoBefore, bondAmount, maturityTime);
     }
 
     function test_close_short_redeem_negative_interest() external {
@@ -167,13 +152,13 @@ contract CloseShortTest is HyperdriveTest {
 
         // Short some bonds.
         uint256 bondAmount = 10e18;
-        (uint256 maturityTime, uint256 basePaid) = openShort(bob, bondAmount);
-
-        // Get the reserves before closing the long.
-        PoolInfo memory poolInfoBefore = getPoolInfo();
+        (uint256 maturityTime, ) = openShort(bob, bondAmount);
 
         // The term passes.
         advanceTime(POSITION_DURATION, -0.2e18);
+
+        // Get the reserves before closing the long.
+        PoolInfo memory poolInfoBefore = getPoolInfo();
 
         // Redeem the bonds.
         uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
@@ -182,13 +167,7 @@ contract CloseShortTest is HyperdriveTest {
         assertEq(baseProceeds, 0);
 
         // Verify that the close long updates were correct.
-        verifyCloseShort(
-            poolInfoBefore,
-            basePaid,
-            baseProceeds,
-            bondAmount,
-            maturityTime
-        );
+        verifyCloseShort(poolInfoBefore, bondAmount, maturityTime);
     }
 
     function test_close_short_redeem_negative_interest_half_term() external {
@@ -200,13 +179,13 @@ contract CloseShortTest is HyperdriveTest {
 
         // Short some bonds.
         uint256 bondAmount = 10e18;
-        (uint256 maturityTime, uint256 basePaid) = openShort(bob, bondAmount);
-
-        // Get the reserves before closing the long.
-        PoolInfo memory poolInfoBefore = getPoolInfo();
+        (uint256 maturityTime, ) = openShort(bob, bondAmount);
 
         // The term passes and shares lose value
         advanceTime(POSITION_DURATION.mulDown(0.5e18), -0.2e18);
+
+        // Get the reserves before closing the short.
+        PoolInfo memory poolInfoBefore = getPoolInfo();
 
         // Redeem the bonds.
         uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
@@ -215,13 +194,7 @@ contract CloseShortTest is HyperdriveTest {
         assertEq(baseProceeds, 0);
 
         // Verify that the close long updates were correct.
-        verifyCloseShort(
-            poolInfoBefore,
-            basePaid,
-            baseProceeds,
-            bondAmount,
-            maturityTime
-        );
+        verifyCloseShort(poolInfoBefore, bondAmount, maturityTime);
     }
 
     function test_close_short_max_loss() external {
@@ -235,12 +208,12 @@ contract CloseShortTest is HyperdriveTest {
         uint256 bondAmount = 1000e18;
         (uint256 maturityTime, uint256 basePaid) = openShort(bob, bondAmount);
 
-        // Get the reserves before closing the short.
-        PoolInfo memory poolInfoBefore = getPoolInfo();
-
         // Advance and shares accrue 0% interest throughout the duration
         advanceTime(POSITION_DURATION, 0);
         assertEq(block.timestamp, maturityTime);
+
+        // Get the reserves before closing the short.
+        PoolInfo memory poolInfoBefore = getPoolInfo();
 
         // Redeem the bonds.
         uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
@@ -253,19 +226,11 @@ contract CloseShortTest is HyperdriveTest {
         );
 
         // Verify that the close short updates were correct.
-        verifyCloseShort(
-            poolInfoBefore,
-            basePaid,
-            baseProceeds,
-            bondAmount,
-            maturityTime
-        );
+        verifyCloseShort(poolInfoBefore, bondAmount, maturityTime);
     }
 
     function verifyCloseShort(
         PoolInfo memory poolInfoBefore,
-        uint256 basePaid,
-        uint256 baseProceeds,
         uint256 bondAmount,
         uint256 maturityTime
     ) internal {
@@ -283,21 +248,36 @@ contract CloseShortTest is HyperdriveTest {
             0
         );
 
-        // Verify that the other state was updated correctly.
+        // Retrieve the pool info after the trade.
         PoolInfo memory poolInfoAfter = getPoolInfo();
         (
             ,
             uint256 checkpointLongBaseVolume,
             uint256 checkpointShortBaseVolume
         ) = hyperdrive.checkpoints(checkpointTime);
+
+        // Verify that the other state was updated correctly.
+        uint256 timeRemaining = calculateTimeRemaining(maturityTime);
+        // TODO: Re-evaluate this. This is obviously correct; however, it may
+        // be better to use HyperdriveMath or find an approximation so that we
+        // aren't repeating ourselves.
+        uint256 expectedShareReserves = poolInfoBefore.shareReserves +
+            bondAmount.mulDivDown(
+                FixedPointMath.ONE_18 - timeRemaining,
+                poolInfoBefore.sharePrice
+            ) +
+            YieldSpaceMath.calculateSharesInGivenBondsOut(
+                poolInfoBefore.shareReserves,
+                poolInfoBefore.bondReserves,
+                bondAmount.mulDown(timeRemaining),
+                FixedPointMath.ONE_18 - hyperdrive.timeStretch(),
+                poolInfoBefore.sharePrice,
+                hyperdrive.initialSharePrice()
+            );
         assertApproxEqAbs(
             poolInfoAfter.shareReserves,
-            poolInfoBefore.shareReserves +
-                (bondAmount + baseProceeds - basePaid).divDown(
-                    poolInfoBefore.sharePrice
-                ),
-            // 10^-7
-            poolInfoAfter.shareReserves.mulDown(1e11) // TODO: This error bar is too big. Analyze this.
+            expectedShareReserves,
+            1e10
         );
         assertEq(poolInfoAfter.lpTotalSupply, poolInfoBefore.lpTotalSupply);
         assertEq(

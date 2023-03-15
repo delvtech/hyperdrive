@@ -5,6 +5,7 @@ import { stdError } from "forge-std/StdError.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 
@@ -65,7 +66,7 @@ contract CloseLongTest is HyperdriveTest {
         hyperdrive.closeLong(uint256(type(uint248).max) + 1, 1, 0, bob, true);
     }
 
-    function test_close_long_immediately() external {
+    function test_close_long_immediately_with_regular_amount() external {
         uint256 apr = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
