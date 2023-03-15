@@ -10,7 +10,7 @@ import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 
 contract AaveFixedBorrowAction {
     // Hyperdrive contract
-    IHyperdrive hyperdrive;
+    IHyperdrive public hyperdrive;
     /// Aave Pool contract
     IPool public pool;
     /// Token to borrow and short with
