@@ -329,10 +329,10 @@ abstract contract HyperdriveLong is HyperdriveLP {
             // TODO: We should explain somewhere why we decompose the withdrawal
             // pool into margin and interest.
             //
-            // TODO: Is this comment accurate? In any event, we can make it more
+            // TODO: Is this comment accurate? Regardless, we can make it more
             // readable.
             //
-            // If the the short has net lost despite being still positive
+            // If the short has net lost despite being still positive
             // interest we set capital recovered to 0.
             // Note - This happens when there's negative interest
             uint256 lpInterest = HyperdriveMath.calculateShortInterest(

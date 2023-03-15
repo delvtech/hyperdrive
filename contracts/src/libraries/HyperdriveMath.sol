@@ -109,8 +109,6 @@ library HyperdriveMath {
         return _shareReserves.divDown(2 * FixedPointMath.ONE_18).mulDown(rhs);
     }
 
-    // TODO: Consider improving the documentation.
-    //
     /// @dev Calculates the number of bonds a user will receive when opening a long position.
     /// @param _shareReserves The pool's share reserves.
     /// @param _bondReserves The pool's bond reserves.
@@ -157,8 +155,6 @@ library HyperdriveMath {
         return (shareReservesDelta, bondReservesDelta, bondProceeds);
     }
 
-    // TODO: Consider improving the documentation.
-    //
     /// @dev Calculates the amount of shares a user will receive when closing a
     ///      long position.
     /// @param _shareReserves The pool's share reserves.
@@ -199,11 +195,16 @@ library HyperdriveMath {
             .mulDown(FixedPointMath.ONE_18.sub(_normalizedTimeRemaining))
             .divDown(_sharePrice);
 
-        // TODO: Improve this documentation. The significance of this cannot be
-        // overstated.
+        // TODO: We need better testing for this. This may be correct but the
+        // intuition that longs only take a loss on the flat component of their
+        // trade feels a bit handwavy because negative interest accrued on the
+        // entire trade amount.
         //
-        // If there's net negative interest over the period, the flat redemption
-        // amount is reduced.
+        // If there's net negative interest over the period, the flat portion of
+        // the trade is reduced in proportion to the negative interest. We
+        // always attribute negative interest to the long since it's difficult
+        // or impossible to attribute the negative interest to the short in
+        // practice.
         if (_initialSharePrice > _sharePrice) {
             shareProceeds = (shareProceeds.mulUp(_sharePrice)).divDown(
                 _initialSharePrice
@@ -227,8 +228,6 @@ library HyperdriveMath {
         return (shareReservesDelta, bondReservesDelta, shareProceeds);
     }
 
-    // TODO: Consider improving the documentation.
-    //
     /// @dev Calculates the amount of shares that will be received given a
     ///      specified amount of bonds.
     /// @param _shareReserves The pool's share reserves
@@ -279,8 +278,6 @@ library HyperdriveMath {
         return (shareReservesDelta, bondReservesDelta, shareProceeds);
     }
 
-    // TODO: Consider improving the documentation.
-    //
     /// @dev Calculates the amount of base that a user will receive when closing a short position
     /// @param _shareReserves The pool's share reserves.
     /// @param _bondReserves The pool's bonds reserves.
@@ -337,8 +334,6 @@ library HyperdriveMath {
         return (shareReservesDelta, bondReservesDelta, sharePayment);
     }
 
-    // TODO: Write unit tests for this function.
-    //
     /// @dev Calculates the proceeds in shares of closing a short position. This
     ///      takes into account the trading profits, the interest that was
     ///      earned by the short, and the amount of margin that was released
@@ -383,8 +378,6 @@ library HyperdriveMath {
         return shareProceeds;
     }
 
-    // TODO: Write unit tests for this function.
-    //
     /// @dev Calculates the interest in shares earned by a short position. The
     ///      math for the short's interest in shares is given by:
     ///

@@ -332,7 +332,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         int256 shareAdjustment = int256(_sharePayment - _shareReservesDelta);
 
         // If there is a withdraw processing, we pay out as much of the
-        // withdrawal pool as possible with the the margin released and interest
+        // withdrawal pool as possible with the margin released and interest
         // accrued on the position to the withdrawal pool.
         if (_needsToBeFreed()) {
             // Add capital and interest to their respective withdraw pools
