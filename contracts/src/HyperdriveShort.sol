@@ -287,10 +287,11 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 .toUint128();
         }
 
-        // TODO: Clean up this code.
+        // TODO: Is it possible to abstract out the process of updating
+        // aggregates in a way that is nice?
         //
-        // Update the short base volume.
-        // The margin provided by LPs is the shortSupply minus the volume
+        // Calculate the amount of margin that LPs provided on the short
+        // position and update the base volume aggregates.
         uint256 lpMargin;
         {
             // Get the total supply of shorts in the checkpoint of the shorts
@@ -307,21 +308,17 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 checkpointAmount += _bondAmount;
             }
 
-            // TODO: Clean this up and improve the docs.
-            //
-            // If all of the shorts in the checkpoint are being closed, delete
-            // the base volume in the checkpoint. Otherwise, decrease the base
-            // volume aggregates by a proportional amount.
+            // Remove a proportional amount of the checkpoints base volume from
+            // the aggregates. We calculate the margin that the LP provided
+            // using this proportional base volume.
             uint256 checkpointTime = _maturityTime - positionDuration;
             uint128 proportionalBaseVolume = uint256(
                 checkpoints[checkpointTime].shortBaseVolume
             ).mulDown(_bondAmount.divDown(checkpointAmount)).toUint128();
-            // The margin is the value of shorts minus what was paid
-            lpMargin = proportionalBaseVolume;
-            // Do the state updates
             shortAggregates.baseVolume -= proportionalBaseVolume;
             checkpoints[checkpointTime]
                 .shortBaseVolume -= proportionalBaseVolume;
+            lpMargin = proportionalBaseVolume;
         }
 
         // Decrease the amount of shorts outstanding.
@@ -336,11 +333,9 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // pool.
         int256 shareAdjustment = int256(_sharePayment - _shareReservesDelta);
 
-        // TODO: Can this be cleaned up too?
-        //
-        // If there are outstanding withdrawal shares, withdraw capital into the
-        // withdraw shares pool otherwise we do a simple reserves update with
-        // the delta.
+        // If there is a withdraw processing, we pay out as much of the
+        // withdrawal pool as possible with the the margin released and interest
+        // accrued on the position to the withdrawal pool.
         if (_needsToBeFreed()) {
             // Add capital and interest to their respective withdraw pools
             // the interest freed is the withdraw minus the margin
@@ -372,9 +367,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
         _updateLiquidity(shareAdjustment);
     }
 
-    // TODO: This is actually relatively clean, but it's a good candidate for a
-    // refactor if we can find a way to avoid stack-too-deep-issues.
-    //
     /// @dev Calculate the pool reserve and trader deltas that result from
     ///      opening a short. This calculation includes trading fees.
     /// @param _bondAmount The amount of bonds being sold to open the short.
@@ -452,9 +444,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
         );
     }
 
-    // TODO: This is actually relatively clean, but it's a good candidate for a
-    // refactor if we can find a way to avoid stack-too-deep-issues.
-    //
     /// @dev Calculate the pool reserve and trader deltas that result from
     ///      closing a short. This calculation includes trading fees.
     /// @param _bondAmount The amount of bonds being purchased to close the short.
