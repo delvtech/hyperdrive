@@ -78,6 +78,7 @@
         "rebalancing",
         "reentrancy",
         "remappings",
+        "repayer",
         "remco",
         "returndata",
         "returndatacopy",
