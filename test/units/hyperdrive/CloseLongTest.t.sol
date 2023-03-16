@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
+import "forge-std/console.sol";
+
 import { stdError } from "forge-std/StdError.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
@@ -159,20 +161,30 @@ contract CloseLongTest is HyperdriveTest {
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
 
+        console.log("share price: %s", getPoolInfo().sharePrice);
+
         // Open a long position.
         uint256 basePaid = 10e18;
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
+
+        console.log("share price: %s", getPoolInfo().sharePrice);
 
         // Term passes. The pool accrues interest at the current apr.
         uint256 timeDelta = 1e18;
         advanceTime(POSITION_DURATION.mulDown(timeDelta), int256(apr));
 
+        console.log("share price: %s", getPoolInfo().sharePrice);
+
         // Get the reserves before closing the long.
         HyperdriveUtils.PoolInfo memory poolInfoBefore = HyperdriveUtils
             .getPoolInfo(hyperdrive);
 
+        console.log("share price: %s", getPoolInfo().sharePrice);
+
         // Redeem the bonds
         uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
+
+        console.log("share price: %s", getPoolInfo().sharePrice);
 
         // Verify that Bob received base equal to the full bond amount.
         assertApproxEqAbs(baseProceeds, bondAmount, 1);

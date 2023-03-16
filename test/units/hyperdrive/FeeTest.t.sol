@@ -26,7 +26,7 @@ contract FeeTest is HyperdriveTest {
         openLong(bob, baseAmount);
         uint256 govFeesAfterOpenLong = MockHyperdrive(address(hyperdrive))
             .getGovFeesAccrued()
-            .mulDown(MockHyperdrive(address(hyperdrive)).getSharePrice());
+            .mulDown(HyperdriveUtils.getPoolInfo().sharePrice);
 
         // Time passes and the pool accrues interest at the current apr.
         advanceTime(POSITION_DURATION.mulDown(0.5e18), int256(apr));
