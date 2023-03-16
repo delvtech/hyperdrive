@@ -283,7 +283,7 @@ contract CloseLongTest is HyperdriveTest {
         assertApproxEqAbs(
             immatureBondsValue.add(matureBondsValue),
             baseProceeds,
-            1
+            6
         );
         assertApproxEqAbs(matureBondsFaceValue, matureBondsValue, 5);
 

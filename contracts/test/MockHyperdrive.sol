@@ -12,7 +12,7 @@ import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 contract MockHyperdrive is Hyperdrive {
     using FixedPointMath for uint256;
 
-    uint256 internal _sharePrice;
+    uint256 internal totalShares;
 
     constructor(
         ERC20Mintable baseToken,
@@ -34,21 +34,13 @@ contract MockHyperdrive is Hyperdrive {
             _fees,
             _governance
         )
-    {
-        _sharePrice = _initialSharePrice;
-    }
+    {}
 
     /// Mocks ///
 
     function setFees(uint256 _curveFee, uint256 _flatFee) public {
         curveFee = _curveFee;
         flatFee = _flatFee;
-    }
-
-    error InvalidSharePrice();
-
-    function getSharePrice() external view returns (uint256) {
-        return _sharePrice;
     }
 
     function getGovFeesAccrued() external view returns (uint256) {
@@ -58,12 +50,11 @@ contract MockHyperdrive is Hyperdrive {
     // Accrues compounded interest for a given number of seconds and readjusts
     // share price to reflect such compounding
     function accrue(uint256 time, int256 apr) external {
-        (uint256 accrued, int256 interest) = HyperdriveUtils
-            .calculateCompoundInterest(
-                baseToken.balanceOf(address(this)),
-                apr,
-                time
-            );
+        (, int256 interest) = HyperdriveUtils.calculateCompoundInterest(
+            baseToken.balanceOf(address(this)),
+            apr,
+            time
+        );
 
         if (interest > 0) {
             ERC20Mintable(address(baseToken)).mint(
@@ -76,10 +67,6 @@ contract MockHyperdrive is Hyperdrive {
                 uint256(-interest)
             );
         }
-
-        _sharePrice = accrued.divDown(
-            marketState.shareReserves > 0 ? marketState.shareReserves : accrued
-        );
     }
 
     function calculateFeesOutGivenSharesIn(
@@ -175,6 +162,7 @@ contract MockHyperdrive is Hyperdrive {
         uint256 amount,
         bool
     ) internal override returns (uint256, uint256) {
+        uint256 assets = baseToken.balanceOf(address(this));
         bool success = baseToken.transferFrom(
             msg.sender,
             address(this),
@@ -183,23 +171,41 @@ contract MockHyperdrive is Hyperdrive {
         if (!success) {
             revert Errors.TransferFailed();
         }
-        return (amount.divDown(_sharePrice), _sharePrice);
+        if (totalShares == 0) {
+            totalShares = amount;
+            return (amount, FixedPointMath.ONE_18);
+        } else {
+            uint256 newShares = totalShares.mulDivDown(amount, assets);
+            totalShares += newShares;
+            return (newShares, amount.divDown(newShares));
+        }
     }
 
     function _withdraw(
         uint256 shares,
         address destination,
         bool
-    ) internal override returns (uint256, uint256) {
-        uint256 amountWithdrawn = shares.mulDown(_sharePrice);
-        bool success = baseToken.transfer(destination, amountWithdrawn);
+    ) internal override returns (uint256 withdrawValue, uint256 sharePrice) {
+        uint256 assets = baseToken.balanceOf(address(this));
+        shares = shares > totalShares ? totalShares : shares;
+        withdrawValue = assets.mulDivDown(shares, totalShares);
+        bool success = baseToken.transfer(destination, withdrawValue);
         if (!success) {
             revert Errors.TransferFailed();
         }
-        return (amountWithdrawn, _sharePrice);
+        totalShares -= shares;
+        sharePrice = withdrawValue != 0 ? shares.divDown(withdrawValue) : 0;
+        return (withdrawValue, sharePrice);
     }
 
-    function _pricePerShare() internal view override returns (uint256) {
-        return _sharePrice;
+    function _pricePerShare()
+        internal
+        view
+        override
+        returns (uint256 sharePrice)
+    {
+        uint256 assets = baseToken.balanceOf(address(this));
+        sharePrice = totalShares != 0 ? assets.divDown(totalShares) : 0;
+        return sharePrice;
     }
 }
