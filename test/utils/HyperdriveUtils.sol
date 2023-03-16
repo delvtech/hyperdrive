@@ -18,20 +18,6 @@ library HyperdriveUtils {
             (block.timestamp % hyperdrive.checkpointDuration());
     }
 
-    // function calculateOpenShortDeposit(
-    //     IHyperdrive _hyperdrive,
-    //     uint256 _bondAmount
-    // ) internal view returns (uint256) {
-    //     uint256 checkpoint = latestCheckpoint(_hyperdrive);
-    //     uint256 maturityTime = checkpoint + _hyperdrive.positionDuration();
-    //     uint256 timeRemaining = calculateTimeRemaining(
-    //         _hyperdrive,
-    //         maturityTime
-    //     );
-    //     uint256 sharePrice = getPoolInfo(_hyperdrive).sharePrice;
-    //     uint256 openSharePrice = _hyperdrive.checkpoints(checkpoint).sharePrice;
-    // }
-
     function calculateTimeRemaining(
         IHyperdrive _hyperdrive,
         uint256 _maturityTime
