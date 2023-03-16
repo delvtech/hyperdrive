@@ -103,7 +103,7 @@ contract AaveHyperdrive is Hyperdrive {
             totalShares = amount;
             return (amount, FixedPointMath.ONE_18);
         } else {
-            uint256 newShares = totalShares.mulDown(amount.divDown(assets));
+            uint256 newShares = totalShares.mulDivDown(amount, assets);
             totalShares += newShares;
             return (newShares, amount.divDown(newShares));
         }
@@ -124,7 +124,7 @@ contract AaveHyperdrive is Hyperdrive {
         // Load the balance of this contract
         uint256 assets = aToken.balanceOf(address(this));
         // The withdraw is the percent of shares the user has times the total assets
-        uint256 withdrawValue = assets.mulDown(shares.divDown(totalShares));
+        uint256 withdrawValue = assets.mulDivDown(shares, totalShares);
 
         // Remove the shares from the total share supply
         totalShares -= shares;
