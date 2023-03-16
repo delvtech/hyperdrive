@@ -273,7 +273,9 @@ library HyperdriveUtils {
             poolConfig.timeStretch
         );
 
-        uint256 curveFee = FixedPointMath.ONE_18.sub(spotPrice)
+        uint256 curveFee = FixedPointMath
+            .ONE_18
+            .sub(spotPrice)
             .mulDown(poolConfig.curveFee)
             .mulDown(_bondAmount)
             .mulDivDown(timeRemaining, poolInfo.sharePrice);

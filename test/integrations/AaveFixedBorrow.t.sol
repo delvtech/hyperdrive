@@ -120,7 +120,13 @@ contract AaveFixedBorrowTest is BaseTest {
         emit Transfer(address(action), address(hyperdrive), baseForShort);
 
         vm.expectEmit(true, true, true, true);
-        emit Repay(address(dai), alice, address(action), borrowAmount - baseForShort, false);
+        emit Repay(
+            address(dai),
+            alice,
+            address(action),
+            borrowAmount - baseForShort,
+            false
+        );
 
         uint256 baseDeposited = action.supplyBorrowAndOpenShort(
             address(wsteth),
