@@ -62,7 +62,9 @@ contract WithdrawShareTest is HyperdriveTest {
             withdrawPool.withdrawSharesReadyToWithdraw,
             // TODO: There is a precision error that causes this test to fail
             // if we use 1 wei instead of 2.
-            (marginPool + interestPool).mulDown(sharePrice) + 2,
+            uint256(withdrawPool.capital + withdrawPool.interest).mulDown(
+                sharePrice
+            ) + 2,
             alice,
             true
         );

@@ -6,7 +6,7 @@ import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { MockHyperdrive } from "contracts/test/MockHyperdrive.sol";
-import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
+import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 
 contract FeeTest is HyperdriveTest {
@@ -26,7 +26,7 @@ contract FeeTest is HyperdriveTest {
         openLong(bob, baseAmount);
         uint256 govFeesAfterOpenLong = MockHyperdrive(address(hyperdrive))
             .getGovFeesAccrued()
-            .mulDown(HyperdriveUtils.getPoolInfo().sharePrice);
+            .mulDown(HyperdriveUtils.getPoolInfo(hyperdrive).sharePrice);
 
         // Time passes and the pool accrues interest at the current apr.
         advanceTime(POSITION_DURATION.mulDown(0.5e18), int256(apr));
