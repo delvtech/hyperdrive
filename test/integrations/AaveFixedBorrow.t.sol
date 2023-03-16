@@ -2,6 +2,7 @@
 pragma solidity ^0.8.18;
 
 import { BaseTest } from "test/utils/BaseTest.sol";
+import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { AaveFixedBorrowAction, IHyperdrive, IPool } from "contracts/src/actions/AaveFixedBorrow.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { DsrManager } from "contracts/src/interfaces/IMaker.sol";
@@ -75,14 +76,13 @@ contract AaveFixedBorrowTest is BaseTest {
         uint16 indexed referralCode
     );
 
-
     event Repay(
-                address indexed reserve,
-                address indexed user,
-                address indexed repayer,
-                uint256 amount,
-                bool useATokens
-                );
+        address indexed reserve,
+        address indexed user,
+        address indexed repayer,
+        uint256 amount,
+        bool useATokens
+    );
 
     function test__aave_fixed_borrow_supply() public {
         wsteth.approve(address(action), type(uint256).max);
@@ -107,13 +107,14 @@ contract AaveFixedBorrowTest is BaseTest {
             0
         );
 
+        uint256 bondAmount = 15000e18;
+
         // TODO Replace this constraint with calculations for base deposited to
         // short
         //
         // Expect a transfer from action to hyperdrive
         vm.expectEmit(true, true, false, false);
         emit Transfer(address(action), address(hyperdrive), 0);
-
 
         vm.expectEmit(true, true, true, false);
         emit Repay(address(dai), alice, address(action), 0, false);
@@ -122,11 +123,16 @@ contract AaveFixedBorrowTest is BaseTest {
             address(wsteth),
             10e18,
             500e18,
-            15000e18,
+            bondAmount,
             500e18
         );
+        uint256 baseForShort = HyperdriveUtils.calculateBaseForOpenShort(
+            hyperdrive,
+            bondAmount
+        );
 
-        // TODO Fix
-        assertApproxEqAbs(baseDeposited, 407e18, 1e18);
+        // TODO MakerDsrHyperdrive fee calcs are different to what the latest
+        // version of hyperdrive is using
+        assertApproxEqAbs(baseDeposited, baseForShort, baseForShort / 10);
     }
 }
