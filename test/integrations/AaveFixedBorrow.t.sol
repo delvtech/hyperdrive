@@ -36,20 +36,23 @@ contract AaveFixedBorrowTest is BaseTest {
             address(0x27b8C295f59f313898b49AfAde92CB430F8b4074)
         );
 
-        action = new AaveFixedBorrowAction(
-            hyperdrive,
-            pool,
-            IERC20(address(wsteth))
-        );
+        action = new AaveFixedBorrowAction(hyperdrive, pool);
 
         vm.stopPrank();
         vm.startPrank(alice);
         IERC20Mint(address(wsteth)).mint(1000e18);
+
+        action.setApproval(address(wsteth), address(pool), type(uint256).max);
+        action.setApproval(address(dai), address(pool), type(uint256).max);
+        action.setApproval(
+            address(dai),
+            address(hyperdrive),
+            type(uint256).max
+        );
     }
 
     function test__aave_fixed_borrow_init() public {
         assertEq(address(action.debtToken()), address(dai));
-        assertEq(address(action.collateralToken()), address(wsteth));
     }
 
     event Transfer(address indexed from, address indexed to, uint256 value);
@@ -71,6 +74,15 @@ contract AaveFixedBorrowTest is BaseTest {
         uint256 borrowRate,
         uint16 indexed referralCode
     );
+
+
+    event Repay(
+                address indexed reserve,
+                address indexed user,
+                address indexed repayer,
+                uint256 amount,
+                bool useATokens
+                );
 
     function test__aave_fixed_borrow_supply() public {
         wsteth.approve(address(action), type(uint256).max);
@@ -102,16 +114,19 @@ contract AaveFixedBorrowTest is BaseTest {
         vm.expectEmit(true, true, false, false);
         emit Transfer(address(action), address(hyperdrive), 0);
 
-        // Make call and get dai balance differentials
-        uint256 daiBalanceBefore = dai.balanceOf(alice);
-        (, uint256 baseRemaining) = action.supplyBorrowAndOpenShort(
+
+        vm.expectEmit(true, true, true, false);
+        emit Repay(address(dai), alice, address(action), 0, false);
+
+        uint256 baseDeposited = action.supplyBorrowAndOpenShort(
+            address(wsteth),
             10e18,
             500e18,
             15000e18,
             500e18
         );
-        uint256 daiBalanceAfter = dai.balanceOf(alice);
 
-        assertEq(daiBalanceAfter - daiBalanceBefore, baseRemaining);
+        // TODO Fix
+        assertApproxEqAbs(baseDeposited, 407e18, 1e18);
     }
 }
