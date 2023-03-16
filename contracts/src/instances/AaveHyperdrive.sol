@@ -121,9 +121,13 @@ contract AaveHyperdrive is Hyperdrive {
         address destination,
         bool asUnderlying
     ) internal override returns (uint256 amountWithdrawn, uint256 sharePrice) {
-        // Load the balance of this contract
+        // The withdrawer receives a proportional amount of the assets held by
+        // the contract to the amount of shares that they are redeeming. Small
+        // numerical errors can result in the shares value being slightly larger
+        // than the total shares, so we clamp the shares to the total shares to
+        // avoid reverts.
+        shares = shares > totalShares ? totalShares : shares;
         uint256 assets = aToken.balanceOf(address(this));
-        // The withdraw is the percent of shares the user has times the total assets
         uint256 withdrawValue = assets.mulDivDown(shares, totalShares);
 
         // Remove the shares from the total share supply
@@ -139,7 +143,8 @@ contract AaveHyperdrive is Hyperdrive {
         }
 
         // Return the amount and implied share price
-        return (withdrawValue, shares.divDown(withdrawValue));
+        sharePrice = withdrawValue != 0 ? shares.divDown(withdrawValue) : 0;
+        return (withdrawValue, sharePrice);
     }
 
     ///@notice Loads the share price from the yield source.
@@ -150,9 +155,8 @@ contract AaveHyperdrive is Hyperdrive {
         override
         returns (uint256 sharePrice)
     {
-        // Load the balance of this contract
         uint256 assets = aToken.balanceOf(address(this));
-        // The share price is assets divided by shares
-        return (assets.divDown(totalShares));
+        sharePrice = totalShares != 0 ? assets.divDown(totalShares) : 0;
+        return sharePrice;
     }
 }
