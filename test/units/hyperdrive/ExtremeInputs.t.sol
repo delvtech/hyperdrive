@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
-import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
+import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol";
 
 contract ExtremeInputs is HyperdriveTest {
     using FixedPointMath for uint256;
@@ -14,17 +14,19 @@ contract ExtremeInputs is HyperdriveTest {
         initialize(alice, 0.05e18, 500_000_000e18);
 
         // Calculate amount of base
-        PoolInfo memory poolInfoBefore = getPoolInfo();
+        HyperdriveUtils.PoolInfo memory poolInfoBefore = HyperdriveUtils
+            .getPoolInfo(hyperdrive);
 
         // Max base amount
-        uint256 baseAmount = calculateMaxOpenLong();
+        uint256 baseAmount = HyperdriveUtils.calculateMaxOpenLong(hyperdrive);
 
         // Open long with max base amount
         (, uint256 bondAmount) = openLong(bob, baseAmount);
 
-        uint256 apr = calculateAPRFromReserves();
+        uint256 apr = HyperdriveUtils.calculateAPRFromReserves(hyperdrive);
 
-        PoolInfo memory poolInfoAfter = getPoolInfo();
+        HyperdriveUtils.PoolInfo memory poolInfoAfter = HyperdriveUtils
+            .getPoolInfo(hyperdrive);
 
         // FIXME: Can we get a similar check, or is this now
         // fundamentally broken due to the way that the virtual
@@ -51,7 +53,7 @@ contract ExtremeInputs is HyperdriveTest {
         // transferred; however, the pool's APR should be identical to the APR
         // that the bond amount transfer implies.
         assertApproxEqAbs(
-            calculateAPRFromReserves(),
+            HyperdriveUtils.calculateAPRFromReserves(hyperdrive),
             HyperdriveMath.calculateAPRFromReserves(
                 poolInfoAfter.shareReserves,
                 poolInfoBefore.bondReserves - bondAmount,

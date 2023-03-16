@@ -7,7 +7,7 @@ import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
-import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
+import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
 
 contract CloseLongTest is HyperdriveTest {
     using FixedPointMath for uint256;
@@ -78,7 +78,8 @@ contract CloseLongTest is HyperdriveTest {
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
 
         // Get the reserves before closing the long.
-        PoolInfo memory poolInfoBefore = getPoolInfo();
+        HyperdriveUtils.PoolInfo memory poolInfoBefore = HyperdriveUtils
+            .getPoolInfo(hyperdrive);
 
         // Immediately close the bonds.
         uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
@@ -102,7 +103,8 @@ contract CloseLongTest is HyperdriveTest {
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
 
         // Get the reserves before closing the long.
-        PoolInfo memory poolInfoBefore = getPoolInfo();
+        HyperdriveUtils.PoolInfo memory poolInfoBefore = HyperdriveUtils
+            .getPoolInfo(hyperdrive);
 
         // Immediately close the bonds.
         uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
@@ -129,14 +131,15 @@ contract CloseLongTest is HyperdriveTest {
         advanceTime(POSITION_DURATION.mulDown(timeDelta), int256(apr));
 
         // Get the reserves before closing the long.
-        PoolInfo memory poolInfoBefore = getPoolInfo();
+        HyperdriveUtils.PoolInfo memory poolInfoBefore = HyperdriveUtils
+            .getPoolInfo(hyperdrive);
 
         // Bob closes his long close to maturity.
         uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
 
         // Ensure that the realized APR is approximately equal to the pool APR.
         assertApproxEqAbs(
-            calculateAPRFromRealizedPrice(
+            HyperdriveUtils.calculateAPRFromRealizedPrice(
                 basePaid,
                 baseProceeds,
                 FixedPointMath.ONE_18 - timeDelta
@@ -165,7 +168,8 @@ contract CloseLongTest is HyperdriveTest {
         advanceTime(POSITION_DURATION.mulDown(timeDelta), int256(apr));
 
         // Get the reserves before closing the long.
-        PoolInfo memory poolInfoBefore = getPoolInfo();
+        HyperdriveUtils.PoolInfo memory poolInfoBefore = HyperdriveUtils
+            .getPoolInfo(hyperdrive);
 
         // Redeem the bonds
         uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
@@ -193,13 +197,14 @@ contract CloseLongTest is HyperdriveTest {
         advanceTime(timeAdvanced, apr);
 
         // Get the reserves before closing the long.
-        PoolInfo memory poolInfoBefore = getPoolInfo();
+        HyperdriveUtils.PoolInfo memory poolInfoBefore = HyperdriveUtils
+            .getPoolInfo(hyperdrive);
 
         // Redeem the bonds
         uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
 
         // Account the negative interest with the bondAmount as principal
-        (uint256 bondFaceValue, ) = hyperdrive.calculateCompoundInterest(
+        (uint256 bondFaceValue, ) = HyperdriveUtils.calculateCompoundInterest(
             bondAmount,
             apr,
             timeAdvanced
@@ -238,7 +243,8 @@ contract CloseLongTest is HyperdriveTest {
         advanceTime(timeAdvanced, apr);
 
         // Get the reserves before closing the long.
-        PoolInfo memory poolInfoBefore = getPoolInfo();
+        HyperdriveUtils.PoolInfo memory poolInfoBefore = HyperdriveUtils
+            .getPoolInfo(hyperdrive);
 
         // Redeem the bonds
         uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
@@ -249,7 +255,9 @@ contract CloseLongTest is HyperdriveTest {
         // All mature bonds are redeemed at the equivalent amount of shares
         // held throughout the duration, losing capital
         uint256 matureBonds = bondAmount.mulDown(
-            FixedPointMath.ONE_18.sub(calculateTimeRemaining(maturityTime))
+            FixedPointMath.ONE_18.sub(
+                HyperdriveUtils.calculateTimeRemaining(hyperdrive, maturityTime)
+            )
         );
         uint256 matureBondsValue = matureBonds
             .divDown(initialSharePrice)
@@ -269,11 +277,8 @@ contract CloseLongTest is HyperdriveTest {
             .mulDown(poolInfoBefore.sharePrice);
 
         // Account the negative interest with the bondAmount as principal
-        (uint256 matureBondsFaceValue, ) = hyperdrive.calculateCompoundInterest(
-            matureBonds,
-            apr,
-            timeAdvanced
-        );
+        (uint256 matureBondsFaceValue, ) = HyperdriveUtils
+            .calculateCompoundInterest(matureBonds, apr, timeAdvanced);
 
         assertApproxEqAbs(
             immatureBondsValue.add(matureBondsValue),
@@ -287,7 +292,7 @@ contract CloseLongTest is HyperdriveTest {
     }
 
     function verifyCloseLong(
-        PoolInfo memory poolInfoBefore,
+        HyperdriveUtils.PoolInfo memory poolInfoBefore,
         uint256 baseProceeds,
         uint256 bondAmount,
         uint256 maturityTime
@@ -304,12 +309,12 @@ contract CloseLongTest is HyperdriveTest {
         );
 
         // Verify that the other states were correct.
-        PoolInfo memory poolInfoAfter = getPoolInfo();
-        (
-            ,
-            uint256 checkpointLongBaseVolume,
-            uint256 checkpointShortBaseVolume
-        ) = hyperdrive.checkpoints(checkpointTime);
+        HyperdriveUtils.PoolInfo memory poolInfoAfter = HyperdriveUtils
+            .getPoolInfo(hyperdrive);
+
+        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.checkpoints(
+            checkpointTime
+        );
         assertApproxEqAbs(
             poolInfoAfter.shareReserves,
             poolInfoBefore.shareReserves -
@@ -325,14 +330,14 @@ contract CloseLongTest is HyperdriveTest {
         );
         assertEq(poolInfoAfter.longAverageMaturityTime, 0);
         assertEq(poolInfoAfter.longBaseVolume, 0);
-        assertEq(checkpointLongBaseVolume, 0);
+        assertEq(checkpoint.longBaseVolume, 0);
         assertEq(
             poolInfoAfter.shortsOutstanding,
             poolInfoBefore.shortsOutstanding
         );
         assertEq(poolInfoAfter.shortAverageMaturityTime, 0);
         assertEq(poolInfoAfter.shortBaseVolume, 0);
-        assertEq(checkpointShortBaseVolume, 0);
+        assertEq(checkpoint.shortBaseVolume, 0);
 
         // TODO: Figure out how to test this without duplicating the logic.
         //

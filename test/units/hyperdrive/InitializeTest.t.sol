@@ -5,7 +5,7 @@ import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
+import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol";
 
 contract InitializeTest is HyperdriveTest {
     using FixedPointMath for uint256;
@@ -37,7 +37,7 @@ contract InitializeTest is HyperdriveTest {
         uint256 lpShares = initialize(alice, apr, contribution);
 
         // Ensure that the pool's APR is approximately equal to the target APR.
-        uint256 poolApr = calculateAPRFromReserves();
+        uint256 poolApr = HyperdriveUtils.calculateAPRFromReserves(hyperdrive);
         assertApproxEqAbs(poolApr, apr, 1); // 17 decimals of precision
 
         // Ensure that Alice's base balance has been depleted and that Alice
@@ -46,7 +46,7 @@ contract InitializeTest is HyperdriveTest {
         assertEq(baseToken.balanceOf(address(hyperdrive)), contribution);
         assertEq(
             lpShares,
-            getPoolInfo().bondReserves -
+            HyperdriveUtils.getPoolInfo(hyperdrive).bondReserves -
                 HyperdriveMath.calculateInitialBondReserves(
                     contribution,
                     FixedPointMath.ONE_18,

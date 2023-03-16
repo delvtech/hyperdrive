@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import "contracts/src/libraries/AssetId.sol";
-import "contracts/src/libraries/FixedPointMath.sol";
-import "../../utils/HyperdriveTest.sol";
+import { AssetId } from "contracts/src/libraries/AssetId.sol";
+import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol";
 
 contract SandwichTest is HyperdriveTest {
     using FixedPointMath for uint256;
@@ -52,7 +52,7 @@ contract SandwichTest is HyperdriveTest {
         uint256 lpProceeds = removeLiquidity(alice, lpShares);
 
         // Calculate how much interest has accrued on the initial contribution
-        (uint256 contributionPlusInterest, ) = hyperdrive
+        (uint256 contributionPlusInterest, ) = HyperdriveUtils
             .calculateCompoundInterest(contribution, int256(apr), timeAdvanced);
         assertGe(lpProceeds, contributionPlusInterest);
     }

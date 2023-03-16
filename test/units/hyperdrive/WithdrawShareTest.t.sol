@@ -8,9 +8,9 @@ import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
+import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
 
-contract RemoveLiquidityTest is HyperdriveTest {
+contract WithdrawShareTest is HyperdriveTest {
     using FixedPointMath for uint256;
 
     function test_redeem_withdraw_shares_fail_insufficient_shares() external {
@@ -24,7 +24,9 @@ contract RemoveLiquidityTest is HyperdriveTest {
         uint256 timeDelta = 0.5e18;
         uint256 timeAdvanced = POSITION_DURATION.mulDown(timeDelta);
         advanceTime(timeAdvanced, int256(apr));
-        uint256 maturityTime = latestCheckpoint() + POSITION_DURATION;
+        uint256 maturityTime = HyperdriveUtils.maturityTimeFromLatestCheckpoint(
+            hyperdrive
+        );
 
         // Bob opens a long.
         uint256 bondAmount = 50_000_000e18;
@@ -54,16 +56,15 @@ contract RemoveLiquidityTest is HyperdriveTest {
             true
         );
         // Alice can redeem but doesn't meet the withdraw limit she sets
-        (
-            uint256 readyForWithdraw,
-            uint256 marginPool,
-            uint256 interestPool
-        ) = hyperdrive.withdrawPool();
-        uint256 sharePrice = getPoolInfo().sharePrice;
+        IHyperdrive.WithdrawPool memory withdrawPool = hyperdrive
+            .withdrawPool();
+        uint256 sharePrice = HyperdriveUtils.getPoolInfo(hyperdrive).sharePrice;
         vm.expectRevert(Errors.OutputLimit.selector);
         hyperdrive.redeemWithdrawalShares(
-            readyForWithdraw,
-            (marginPool + interestPool).mulDown(sharePrice) + 1,
+            withdrawPool.withdrawSharesReadyToWithdraw,
+            uint256(withdrawPool.capital + withdrawPool.interest).mulDown(
+                sharePrice
+            ) + 1,
             alice,
             true
         );
@@ -78,7 +79,9 @@ contract RemoveLiquidityTest is HyperdriveTest {
 
         // Time passes and interest accrues.
         advanceTime(POSITION_DURATION.mulDown(0.5e18), int256(apr));
-        uint256 maturityTime = latestCheckpoint() + POSITION_DURATION;
+        uint256 maturityTime = HyperdriveUtils.maturityTimeFromLatestCheckpoint(
+            hyperdrive
+        );
 
         // Bob opens a long.
         uint256 bondAmount = 50_000_000e18;
@@ -91,11 +94,14 @@ contract RemoveLiquidityTest is HyperdriveTest {
         removeLiquidity(alice, lpShares);
 
         // Pool checks
-        PoolInfo memory poolInfo = getPoolInfo();
+        HyperdriveUtils.PoolInfo memory poolInfo = HyperdriveUtils.getPoolInfo(
+            hyperdrive
+        );
 
         // Ensure that Alice receives the right amount of withdrawal shares.
-        (, uint256 shortBaseVolume) = hyperdrive.shortAggregates();
-        uint256 withdrawSharesExpected = (shortBaseVolume)
+        IHyperdrive.Aggregates memory shortAggregates = hyperdrive
+            .shortAggregates();
+        uint256 withdrawSharesExpected = uint256(shortAggregates.baseVolume)
             .divDown(poolInfo.sharePrice)
             .mulDivDown(lpShares, celineShares + lpShares);
 
@@ -109,18 +115,16 @@ contract RemoveLiquidityTest is HyperdriveTest {
 
         hyperdrive.checkpoint(maturityTime);
 
-        (
-            uint256 readyToWithdraw,
-            uint256 marginPool,
-            uint256 interestPool
-        ) = hyperdrive.withdrawPool();
+        IHyperdrive.WithdrawPool memory withdrawPool = hyperdrive
+            .withdrawPool();
         assertApproxEqAbs(
-            readyToWithdraw,
+            withdrawPool.withdrawSharesReadyToWithdraw,
             aliceWithdrawShares,
             (aliceWithdrawShares * 999999) / 1000000
         );
-        aliceWithdrawShares = aliceWithdrawShares > readyToWithdraw
-            ? readyToWithdraw
+        aliceWithdrawShares = aliceWithdrawShares >
+            withdrawPool.withdrawSharesReadyToWithdraw
+            ? withdrawPool.withdrawSharesReadyToWithdraw
             : aliceWithdrawShares;
 
         // Redeem Alice LP shares
@@ -131,7 +135,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
         uint256 estimatedOutcome;
         {
             // 2.5% interest accrued before Bob opened his long
-            (uint256 aliceContribution, ) = hyperdrive
+            (uint256 aliceContribution, ) = HyperdriveUtils
                 .calculateCompoundInterest(
                     500_000_000e18,
                     0.05e18,
@@ -156,10 +160,10 @@ contract RemoveLiquidityTest is HyperdriveTest {
         assertApproxEqAbs(aliceWithdrawShares, 0, 50000000);
 
         // Alice is the only LP withdrawing so the pool should be empty
-        (readyToWithdraw, marginPool, interestPool) = hyperdrive.withdrawPool();
-        assertEq(readyToWithdraw, 0);
-        assertEq(marginPool, 0);
-        assertEq(interestPool, 0);
+        withdrawPool = hyperdrive.withdrawPool();
+        assertEq(withdrawPool.withdrawSharesReadyToWithdraw, 0);
+        assertEq(withdrawPool.capital, 0);
+        assertEq(withdrawPool.interest, 0);
 
         // Withdraw celine
         uint256 celineWithdraw = removeLiquidity(
@@ -201,16 +205,21 @@ contract RemoveLiquidityTest is HyperdriveTest {
         removeLiquidity(alice, lpShares);
 
         // Pool checks
-        PoolInfo memory poolInfo = getPoolInfo();
+        HyperdriveUtils.PoolInfo memory poolInfo = HyperdriveUtils.getPoolInfo(
+            hyperdrive
+        );
 
         uint256 withdrawSharesExpected;
         uint256 aliceWithdrawShares;
         {
             // Ensure that Alice receives the right amount of withdrawal shares.
-            (, uint256 longBaseVolume) = hyperdrive.longAggregates();
-            (, , uint256 longsOutstanding, ) = hyperdrive.marketState();
+            IHyperdrive.Aggregates memory longAggregates = hyperdrive
+                .longAggregates();
+            IHyperdrive.MarketState memory marketState = hyperdrive
+                .marketState();
 
-            withdrawSharesExpected = (longsOutstanding - longBaseVolume)
+            withdrawSharesExpected = (uint256(marketState.longsOutstanding) -
+                uint256(longAggregates.baseVolume))
                 .divDown(poolInfo.sharePrice)
                 .mulDivDown(lpShares, celineShares + lpShares);
 
@@ -219,28 +228,26 @@ contract RemoveLiquidityTest is HyperdriveTest {
                 alice
             );
         }
-        assertEq(aliceWithdrawShares, withdrawSharesExpected);
+        assertEq(aliceWithdrawShares, withdrawSharesExpected, "aa");
 
         // Longs have a checkpoint open one checkpoint after they are created to protect LPs
         advanceTime(CHECKPOINT_DURATION, 0.05e18);
-        hyperdrive.checkpoint(latestCheckpoint());
+        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
 
         advanceTime(POSITION_DURATION - CHECKPOINT_DURATION, 0.05e18);
         hyperdrive.checkpoint(maturityTime);
 
-        (
-            uint256 readyToWithdraw,
-            uint256 marginPool,
-            uint256 interestPool
-        ) = hyperdrive.withdrawPool();
+        IHyperdrive.WithdrawPool memory withdrawPool = hyperdrive
+            .withdrawPool();
 
         assertApproxEqAbs(
-            readyToWithdraw,
+            withdrawPool.withdrawSharesReadyToWithdraw,
             aliceWithdrawShares,
             (aliceWithdrawShares * 999999) / 1000000
         );
-        aliceWithdrawShares = aliceWithdrawShares > readyToWithdraw
-            ? readyToWithdraw
+        aliceWithdrawShares = aliceWithdrawShares >
+            withdrawPool.withdrawSharesReadyToWithdraw
+            ? withdrawPool.withdrawSharesReadyToWithdraw
             : aliceWithdrawShares;
 
         // Redeem Alice LP shares
@@ -251,13 +258,13 @@ contract RemoveLiquidityTest is HyperdriveTest {
         uint256 estimatedOutcomeAlice;
         {
             // 2.5% interest accrued before Bob opened his long
-            (uint256 aliceContribution, ) = hyperdrive
+            (uint256 aliceContribution, ) = HyperdriveUtils
                 .calculateCompoundInterest(
                     500_000_000e18,
                     0.05e18,
                     POSITION_DURATION.mulDown(0.5e18)
                 );
-            (, int256 _bobInterest) = hyperdrive.calculateCompoundInterest(
+            (, int256 _bobInterest) = HyperdriveUtils.calculateCompoundInterest(
                 bondAmount,
                 0.05e18,
                 POSITION_DURATION
@@ -284,10 +291,10 @@ contract RemoveLiquidityTest is HyperdriveTest {
         assertApproxEqAbs(aliceWithdrawShares, 0, 20000000);
 
         // Alice is the only LP withdrawing so the pool should be empty
-        (readyToWithdraw, marginPool, interestPool) = hyperdrive.withdrawPool();
-        assertEq(readyToWithdraw, 0);
-        assertEq(marginPool, 0);
-        assertEq(interestPool, 0);
+        withdrawPool = hyperdrive.withdrawPool();
+        assertEq(withdrawPool.withdrawSharesReadyToWithdraw, 0);
+        assertEq(withdrawPool.capital, 0);
+        assertEq(withdrawPool.interest, 0);
 
         // Withdraw celine
         uint256 celineWithdraw = removeLiquidity(
@@ -306,13 +313,13 @@ contract RemoveLiquidityTest is HyperdriveTest {
         // the pool, minus the fixed rate owed to bob
         uint256 estimatedOutcomeCeline;
         {
-            (uint256 celineContribution, ) = hyperdrive
+            (uint256 celineContribution, ) = HyperdriveUtils
                 .calculateCompoundInterest(
                     100_000_000e18,
                     0.05e18,
                     POSITION_DURATION
                 );
-            (, int256 _bobInterest) = hyperdrive.calculateCompoundInterest(
+            (, int256 _bobInterest) = HyperdriveUtils.calculateCompoundInterest(
                 bondAmount,
                 0.05e18,
                 POSITION_DURATION
