@@ -32,12 +32,17 @@ contract BaseTest is Test {
     error WhaleIsContract();
 
     uint256 mainnetForkId;
+    uint256 goerliForkId;
 
     uint256 __init__; // time setup function was ran
 
     constructor() {
+        // TODO Hide these in environment variables
         mainnetForkId = vm.createFork(
             "https://eth-mainnet.alchemyapi.io/v2/kwjMP-X-Vajdk1ItCfU-56Uaq1wwhamK"
+        );
+        goerliForkId = vm.createFork(
+            "https://eth-goerli.alchemyapi.io/v2/kwjMP-X-Vajdk1ItCfU-56Uaq1wwhamK"
         );
     }
 
@@ -57,6 +62,13 @@ contract BaseTest is Test {
 
     modifier __mainnet_fork(uint256 blockNumber) {
         vm.selectFork(mainnetForkId);
+        vm.rollFork(blockNumber);
+
+        _;
+    }
+
+    modifier __goerli_fork(uint256 blockNumber) {
+        vm.selectFork(goerliForkId);
         vm.rollFork(blockNumber);
 
         _;
