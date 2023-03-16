@@ -26,6 +26,8 @@ interface IMultiToken {
 
     function symbol(uint256 id) external view returns (string memory);
 
+    function totalSupply(uint256 id) external view returns (uint256);
+
     function isApprovedForAll(
         address owner,
         address spender

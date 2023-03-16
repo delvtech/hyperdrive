@@ -7,7 +7,7 @@ import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { MockHyperdrive } from "contracts/test/MockHyperdrive.sol";
-import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
+import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
 
 contract OpenLongTest is HyperdriveTest {
     using FixedPointMath for uint256;
@@ -36,7 +36,9 @@ contract OpenLongTest is HyperdriveTest {
         // Attempt to purchase more bonds than exist. This should fail.
         vm.stopPrank();
         vm.startPrank(bob);
-        uint256 baseAmount = getPoolInfo().bondReserves;
+        uint256 baseAmount = HyperdriveUtils
+            .getPoolInfo(hyperdrive)
+            .bondReserves;
         baseToken.mint(baseAmount);
         baseToken.approve(address(hyperdrive), baseAmount);
         vm.expectRevert(Errors.NegativeInterest.selector);
@@ -51,7 +53,8 @@ contract OpenLongTest is HyperdriveTest {
         initialize(alice, apr, contribution);
 
         // Get the reserves before opening the long.
-        PoolInfo memory poolInfoBefore = getPoolInfo();
+        HyperdriveUtils.PoolInfo memory poolInfoBefore = HyperdriveUtils
+            .getPoolInfo(hyperdrive);
 
         // Open a long.
         uint256 baseAmount = 10e18;
@@ -76,7 +79,8 @@ contract OpenLongTest is HyperdriveTest {
         initialize(alice, apr, contribution);
 
         // Get the reserves before opening the long.
-        PoolInfo memory poolInfoBefore = getPoolInfo();
+        HyperdriveUtils.PoolInfo memory poolInfoBefore = HyperdriveUtils
+            .getPoolInfo(hyperdrive);
 
         // Purchase a small amount of bonds.
         uint256 baseAmount = .01e18;
@@ -94,7 +98,7 @@ contract OpenLongTest is HyperdriveTest {
     }
 
     function verifyOpenLong(
-        PoolInfo memory poolInfoBefore,
+        HyperdriveUtils.PoolInfo memory poolInfoBefore,
         uint256 contribution,
         uint256 baseAmount,
         uint256 bondAmount,
@@ -117,7 +121,8 @@ contract OpenLongTest is HyperdriveTest {
         initialize(alice, apr, contribution);
 
         // Open a long with fees.
-        PoolInfo memory poolInfoBeforeWithFees = getPoolInfo();
+        HyperdriveUtils.PoolInfo memory poolInfoBeforeWithFees = HyperdriveUtils
+            .getPoolInfo(hyperdrive);
         (, uint256 bondAmountWithFees) = openLong(celine, baseAmount);
 
         _verifyOpenLong(
@@ -140,7 +145,8 @@ contract OpenLongTest is HyperdriveTest {
             .mulDown(phi)
             .mulDown(baseAmount);
 
-        PoolInfo memory poolInfoAfterWithFees = getPoolInfo();
+        HyperdriveUtils.PoolInfo memory poolInfoAfterWithFees = HyperdriveUtils
+            .getPoolInfo(hyperdrive);
         // bondAmount is from the hyperdrive without the curve fee
         assertApproxEqAbs(
             poolInfoAfterWithFees.longsOutstanding,
@@ -153,7 +159,7 @@ contract OpenLongTest is HyperdriveTest {
 
     function _verifyOpenLong(
         address user,
-        PoolInfo memory poolInfoBefore,
+        HyperdriveUtils.PoolInfo memory poolInfoBefore,
         uint256 contribution,
         uint256 baseAmount,
         uint256 bondAmount,
@@ -170,7 +176,7 @@ contract OpenLongTest is HyperdriveTest {
         );
 
         // Verify that opening a long doesn't make the APR go up.
-        uint256 realizedApr = calculateAPRFromRealizedPrice(
+        uint256 realizedApr = HyperdriveUtils.calculateAPRFromRealizedPrice(
             baseAmount,
             bondAmount,
             FixedPointMath.ONE_18
@@ -179,7 +185,8 @@ contract OpenLongTest is HyperdriveTest {
 
         // Ensure that the state changes to the share reserves were applied
         // correctly and that the other pieces of state were left untouched.
-        PoolInfo memory poolInfoAfter = getPoolInfo();
+        HyperdriveUtils.PoolInfo memory poolInfoAfter = HyperdriveUtils
+            .getPoolInfo(hyperdrive);
         assertEq(
             poolInfoAfter.shareReserves,
             poolInfoBefore.shareReserves +
@@ -199,7 +206,7 @@ contract OpenLongTest is HyperdriveTest {
         // transferred; however, the pool's APR should be identical to the APR
         // that the bond amount transfer implies.
         assertApproxEqAbs(
-            calculateAPRFromReserves(),
+            HyperdriveUtils.calculateAPRFromReserves(hyperdrive),
             HyperdriveMath.calculateAPRFromReserves(
                 poolInfoAfter.shareReserves,
                 poolInfoBefore.bondReserves - bondAmount,
@@ -212,24 +219,22 @@ contract OpenLongTest is HyperdriveTest {
 
         // TODO: This problem gets much worse as the baseAmount to open a long gets smaller.
         // Figure out a solution to this.
-        (
-            ,
-            uint256 checkpointLongBaseVolume,
-            uint256 checkpointShortBaseVolume
-        ) = hyperdrive.checkpoints(checkpointTime);
+        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.checkpoints(
+            checkpointTime
+        );
         assertApproxEqAbs(
             poolInfoAfter.longAverageMaturityTime,
             maturityTime,
             100
         );
         assertEq(poolInfoAfter.longBaseVolume, baseAmount);
-        assertEq(checkpointLongBaseVolume, baseAmount);
+        assertEq(checkpoint.longBaseVolume, baseAmount);
         assertEq(
             poolInfoAfter.shortsOutstanding,
             poolInfoBefore.shortsOutstanding
         );
         assertEq(poolInfoAfter.shortAverageMaturityTime, 0);
         assertEq(poolInfoAfter.shortBaseVolume, 0);
-        assertEq(checkpointShortBaseVolume, 0);
+        assertEq(checkpoint.shortBaseVolume, 0);
     }
 }

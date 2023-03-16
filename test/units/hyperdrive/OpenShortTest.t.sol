@@ -5,7 +5,7 @@ import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
+import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
 
 contract OpenShortTest is HyperdriveTest {
     using FixedPointMath for uint256;
@@ -34,7 +34,9 @@ contract OpenShortTest is HyperdriveTest {
         // Attempt to short an extreme amount of bonds. This should fail.
         vm.stopPrank();
         vm.startPrank(bob);
-        uint256 baseAmount = getPoolInfo().shareReserves;
+        uint256 baseAmount = HyperdriveUtils
+            .getPoolInfo(hyperdrive)
+            .shareReserves;
         baseToken.mint(baseAmount);
         baseToken.approve(address(hyperdrive), baseAmount);
         vm.expectRevert(Errors.FixedPointMath_SubOverflow.selector);
@@ -49,7 +51,8 @@ contract OpenShortTest is HyperdriveTest {
         initialize(alice, apr, contribution);
 
         // Get the reserves before opening the short.
-        PoolInfo memory poolInfoBefore = getPoolInfo();
+        HyperdriveUtils.PoolInfo memory poolInfoBefore = HyperdriveUtils
+            .getPoolInfo(hyperdrive);
 
         // Short a small amount of bonds.
         uint256 bondAmount = 10e18;
@@ -74,7 +77,8 @@ contract OpenShortTest is HyperdriveTest {
         initialize(alice, apr, contribution);
 
         // Get the reserves before opening the short.
-        PoolInfo memory poolInfoBefore = getPoolInfo();
+        HyperdriveUtils.PoolInfo memory poolInfoBefore = HyperdriveUtils
+            .getPoolInfo(hyperdrive);
 
         // Short a small amount of bonds.
         uint256 bondAmount = .1e18;
@@ -92,7 +96,7 @@ contract OpenShortTest is HyperdriveTest {
     }
 
     function verifyOpenShort(
-        PoolInfo memory poolInfoBefore,
+        HyperdriveUtils.PoolInfo memory poolInfoBefore,
         uint256 contribution,
         uint256 baseAmount,
         uint256 bondAmount,
@@ -122,7 +126,7 @@ contract OpenShortTest is HyperdriveTest {
         // APR.
         uint256 baseProceeds = bondAmount - baseAmount;
         {
-            uint256 realizedApr = calculateAPRFromRealizedPrice(
+            uint256 realizedApr = HyperdriveUtils.calculateAPRFromRealizedPrice(
                 baseProceeds,
                 bondAmount,
                 FixedPointMath.ONE_18
@@ -131,13 +135,12 @@ contract OpenShortTest is HyperdriveTest {
         }
 
         // Verify that the reserves were updated correctly.
-        PoolInfo memory poolInfoAfter = getPoolInfo();
+        HyperdriveUtils.PoolInfo memory poolInfoAfter = HyperdriveUtils
+            .getPoolInfo(hyperdrive);
         {
-            (
-                ,
-                uint256 checkpointLongBaseVolume,
-                uint256 checkpointShortBaseVolume
-            ) = hyperdrive.checkpoints(checkpointTime);
+            IHyperdrive.Checkpoint memory checkpoint = hyperdrive.checkpoints(
+                checkpointTime
+            );
             assertEq(
                 poolInfoAfter.shareReserves,
                 poolInfoBefore.shareReserves -
@@ -151,7 +154,7 @@ contract OpenShortTest is HyperdriveTest {
             );
             assertEq(poolInfoAfter.longAverageMaturityTime, 0);
             assertEq(poolInfoAfter.longBaseVolume, 0);
-            assertEq(checkpointLongBaseVolume, 0);
+            assertEq(checkpoint.longBaseVolume, 0);
             assertEq(
                 poolInfoAfter.shortsOutstanding,
                 poolInfoBefore.shortsOutstanding + bondAmount
@@ -162,7 +165,7 @@ contract OpenShortTest is HyperdriveTest {
                 1
             );
             assertEq(poolInfoAfter.shortBaseVolume, baseProceeds);
-            assertEq(checkpointShortBaseVolume, baseProceeds);
+            assertEq(checkpoint.shortBaseVolume, baseProceeds);
         }
 
         // Ensure that the bond reserves were updated to have the correct APR.
@@ -171,7 +174,7 @@ contract OpenShortTest is HyperdriveTest {
         // transferred; however, the pool's APR should be identical to the APR
         // that the bond amount transfer implies.
         assertApproxEqAbs(
-            calculateAPRFromReserves(),
+            HyperdriveUtils.calculateAPRFromReserves(hyperdrive),
             HyperdriveMath.calculateAPRFromReserves(
                 poolInfoAfter.shareReserves,
                 poolInfoBefore.bondReserves + bondAmount,

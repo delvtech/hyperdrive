@@ -7,6 +7,7 @@ import { Hyperdrive } from "../src/Hyperdrive.sol";
 import { FixedPointMath } from "../src/libraries/FixedPointMath.sol";
 import { Errors } from "../src/libraries/Errors.sol";
 import { ERC20Mintable } from "./ERC20Mintable.sol";
+import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 
 contract MockHyperdrive is Hyperdrive {
     using FixedPointMath for uint256;
@@ -57,11 +58,12 @@ contract MockHyperdrive is Hyperdrive {
     // Accrues compounded interest for a given number of seconds and readjusts
     // share price to reflect such compounding
     function accrue(uint256 time, int256 apr) external {
-        (uint256 accrued, int256 interest) = calculateCompoundInterest(
-            baseToken.balanceOf(address(this)),
-            apr,
-            time
-        );
+        (uint256 accrued, int256 interest) = HyperdriveUtils
+            .calculateCompoundInterest(
+                baseToken.balanceOf(address(this)),
+                apr,
+                time
+            );
 
         if (interest > 0) {
             ERC20Mintable(address(baseToken)).mint(
@@ -165,38 +167,6 @@ contract MockHyperdrive is Hyperdrive {
             sharePrice
         );
         return (totalCurveFee, totalFlatFee, govCurveFee, govFlatFee);
-    }
-
-    /// @dev Derives principal + compounded rate of interest over a period
-    ///      principal * e ^ (rate * time)
-    /// @param _principal The initial amount interest will be accrued on
-    /// @param _apr Annual percentage rate
-    /// @param _time Number of seconds compounding will occur for
-    function calculateCompoundInterest(
-        uint256 _principal,
-        int256 _apr,
-        uint256 _time
-    ) public pure returns (uint256 accrued, int256 interest) {
-        // Adjust time to a fraction of a year
-        uint256 normalizedTime = _time.divDown(365 days);
-        uint256 rt = uint256(_apr < 0 ? -_apr : _apr).mulDown(normalizedTime);
-
-        if (_apr > 0) {
-            accrued = _principal.mulDown(
-                uint256(FixedPointMath.exp(int256(rt)))
-            );
-            interest = int256(accrued - _principal);
-            return (accrued, interest);
-        } else if (_apr < 0) {
-            // NOTE: Might not be the correct calculation for negatively
-            // continuously compounded interest
-            accrued = _principal.divDown(
-                uint256(FixedPointMath.exp(int256(rt)))
-            );
-            interest = int256(accrued) - int256(_principal);
-            return (accrued, interest);
-        }
-        return (_principal, 0);
     }
 
     /// Overrides ///

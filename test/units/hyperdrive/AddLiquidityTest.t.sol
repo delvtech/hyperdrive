@@ -5,7 +5,7 @@ import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
+import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol";
 
 contract AddLiquidityTest is HyperdriveTest {
     using FixedPointMath for uint256;
@@ -72,7 +72,7 @@ contract AddLiquidityTest is HyperdriveTest {
         );
 
         // Ensure the pool APR is still approximately equal to the target APR.
-        uint256 poolApr = calculateAPRFromReserves();
+        uint256 poolApr = HyperdriveUtils.calculateAPRFromReserves(hyperdrive);
         assertApproxEqAbs(poolApr, apr, 1);
     }
 
@@ -88,7 +88,9 @@ contract AddLiquidityTest is HyperdriveTest {
         openLong(celine, 50_000_000e18);
 
         // Add liquidity with the same amount as the original contribution.
-        uint256 aprBefore = calculateAPRFromReserves();
+        uint256 aprBefore = HyperdriveUtils.calculateAPRFromReserves(
+            hyperdrive
+        );
         uint256 baseBalance = baseToken.balanceOf(address(hyperdrive));
         uint256 lpShares = addLiquidity(bob, contribution);
 
@@ -108,7 +110,7 @@ contract AddLiquidityTest is HyperdriveTest {
         );
 
         // Ensure the pool APR is still approximately equal to the target APR.
-        uint256 aprAfter = calculateAPRFromReserves();
+        uint256 aprAfter = HyperdriveUtils.calculateAPRFromReserves(hyperdrive);
         assertApproxEqAbs(aprAfter, aprBefore, 1);
     }
 
@@ -124,7 +126,9 @@ contract AddLiquidityTest is HyperdriveTest {
         openShort(celine, 50_000_000e18);
 
         // Add liquidity with the same amount as the original contribution.
-        uint256 aprBefore = calculateAPRFromReserves();
+        uint256 aprBefore = HyperdriveUtils.calculateAPRFromReserves(
+            hyperdrive
+        );
         uint256 baseBalance = baseToken.balanceOf(address(hyperdrive));
         uint256 lpShares = addLiquidity(bob, contribution);
 
@@ -144,7 +148,7 @@ contract AddLiquidityTest is HyperdriveTest {
         );
 
         // Ensure the pool APR is still approximately equal to the target APR.
-        uint256 aprAfter = calculateAPRFromReserves();
+        uint256 aprAfter = HyperdriveUtils.calculateAPRFromReserves(hyperdrive);
         assertApproxEqAbs(aprAfter, aprBefore, 1);
     }
 
@@ -163,7 +167,9 @@ contract AddLiquidityTest is HyperdriveTest {
         vm.warp(block.timestamp + POSITION_DURATION);
 
         // Add liquidity with the same amount as the original contribution.
-        uint256 aprBefore = calculateAPRFromReserves();
+        uint256 aprBefore = HyperdriveUtils.calculateAPRFromReserves(
+            hyperdrive
+        );
         uint256 baseBalance = baseToken.balanceOf(address(hyperdrive));
         uint256 lpShares = addLiquidity(bob, contribution);
 
@@ -171,7 +177,7 @@ contract AddLiquidityTest is HyperdriveTest {
         //       checkpointing mechanism. These APR figures should be the same.
         //
         // Ensure the pool APR hasn't decreased after adding liquidity.
-        uint256 aprAfter = calculateAPRFromReserves();
+        uint256 aprAfter = HyperdriveUtils.calculateAPRFromReserves(hyperdrive);
         assertGe(aprAfter, aprBefore);
 
         // Ensure that the contribution was transferred to Hyperdrive.
@@ -200,7 +206,9 @@ contract AddLiquidityTest is HyperdriveTest {
         vm.warp(block.timestamp + POSITION_DURATION);
 
         // Add liquidity with the same amount as the original contribution.
-        uint256 aprBefore = calculateAPRFromReserves();
+        uint256 aprBefore = HyperdriveUtils.calculateAPRFromReserves(
+            hyperdrive
+        );
         uint256 baseBalance = baseToken.balanceOf(address(hyperdrive));
         uint256 lpShares = addLiquidity(bob, contribution);
 
@@ -208,7 +216,7 @@ contract AddLiquidityTest is HyperdriveTest {
         //       checkpointing mechanism. These APR figures should be the same.
         //
         // Ensure the pool APR hasn't increased after adding liquidity.
-        uint256 aprAfter = calculateAPRFromReserves();
+        uint256 aprAfter = HyperdriveUtils.calculateAPRFromReserves(hyperdrive);
         assertLe(aprAfter, aprBefore);
 
         // Ensure that the contribution was transferred to Hyperdrive.

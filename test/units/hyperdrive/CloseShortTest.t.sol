@@ -7,7 +7,7 @@ import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
-import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
+import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
 
 contract CloseShortTest is HyperdriveTest {
     using FixedPointMath for uint256;
@@ -78,7 +78,8 @@ contract CloseShortTest is HyperdriveTest {
         (uint256 maturityTime, uint256 basePaid) = openShort(bob, bondAmount);
 
         // Get the reserves before closing the long.
-        PoolInfo memory poolInfoBefore = getPoolInfo();
+        HyperdriveUtils.PoolInfo memory poolInfoBefore = HyperdriveUtils
+            .getPoolInfo(hyperdrive);
 
         // Immediately close the bonds.
         uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
@@ -102,7 +103,8 @@ contract CloseShortTest is HyperdriveTest {
         (uint256 maturityTime, uint256 basePaid) = openShort(bob, bondAmount);
 
         // Get the reserves before closing the long.
-        PoolInfo memory poolInfoBefore = getPoolInfo();
+        HyperdriveUtils.PoolInfo memory poolInfoBefore = HyperdriveUtils
+            .getPoolInfo(hyperdrive);
 
         // Immediately close the bonds.
         uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
@@ -128,7 +130,8 @@ contract CloseShortTest is HyperdriveTest {
         (uint256 maturityTime, ) = openShort(bob, bondAmount);
 
         // Get the reserves before closing the long.
-        PoolInfo memory poolInfoBefore = getPoolInfo();
+        HyperdriveUtils.PoolInfo memory poolInfoBefore = HyperdriveUtils
+            .getPoolInfo(hyperdrive);
 
         // The term passes.
         vm.warp(block.timestamp + 365 days);
@@ -158,7 +161,8 @@ contract CloseShortTest is HyperdriveTest {
         advanceTime(POSITION_DURATION, -0.2e18);
 
         // Get the reserves before closing the long.
-        PoolInfo memory poolInfoBefore = getPoolInfo();
+        HyperdriveUtils.PoolInfo memory poolInfoBefore = HyperdriveUtils
+            .getPoolInfo(hyperdrive);
 
         // Redeem the bonds.
         uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
@@ -185,7 +189,8 @@ contract CloseShortTest is HyperdriveTest {
         advanceTime(POSITION_DURATION.mulDown(0.5e18), -0.2e18);
 
         // Get the reserves before closing the short.
-        PoolInfo memory poolInfoBefore = getPoolInfo();
+        HyperdriveUtils.PoolInfo memory poolInfoBefore = HyperdriveUtils
+            .getPoolInfo(hyperdrive);
 
         // Redeem the bonds.
         uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
@@ -213,7 +218,8 @@ contract CloseShortTest is HyperdriveTest {
         assertEq(block.timestamp, maturityTime);
 
         // Get the reserves before closing the short.
-        PoolInfo memory poolInfoBefore = getPoolInfo();
+        HyperdriveUtils.PoolInfo memory poolInfoBefore = HyperdriveUtils
+            .getPoolInfo(hyperdrive);
 
         // Redeem the bonds.
         uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
@@ -230,7 +236,7 @@ contract CloseShortTest is HyperdriveTest {
     }
 
     function verifyCloseShort(
-        PoolInfo memory poolInfoBefore,
+        HyperdriveUtils.PoolInfo memory poolInfoBefore,
         uint256 bondAmount,
         uint256 maturityTime
     ) internal {
@@ -249,15 +255,17 @@ contract CloseShortTest is HyperdriveTest {
         );
 
         // Retrieve the pool info after the trade.
-        PoolInfo memory poolInfoAfter = getPoolInfo();
-        (
-            ,
-            uint256 checkpointLongBaseVolume,
-            uint256 checkpointShortBaseVolume
-        ) = hyperdrive.checkpoints(checkpointTime);
+        HyperdriveUtils.PoolInfo memory poolInfoAfter = HyperdriveUtils
+            .getPoolInfo(hyperdrive);
+        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.checkpoints(
+            checkpointTime
+        );
 
         // Verify that the other state was updated correctly.
-        uint256 timeRemaining = calculateTimeRemaining(maturityTime);
+        uint256 timeRemaining = HyperdriveUtils.calculateTimeRemaining(
+            hyperdrive,
+            maturityTime
+        );
         // TODO: Re-evaluate this. This is obviously correct; however, it may
         // be better to use HyperdriveMath or find an approximation so that we
         // aren't repeating ourselves.
@@ -286,14 +294,14 @@ contract CloseShortTest is HyperdriveTest {
         );
         assertEq(poolInfoAfter.longAverageMaturityTime, 0);
         assertEq(poolInfoAfter.longBaseVolume, 0);
-        assertEq(checkpointLongBaseVolume, 0);
+        assertEq(checkpoint.longBaseVolume, 0);
         assertEq(
             poolInfoAfter.shortsOutstanding,
             poolInfoBefore.shortsOutstanding - bondAmount
         );
         assertEq(poolInfoAfter.shortAverageMaturityTime, 0);
         assertEq(poolInfoAfter.shortBaseVolume, 0);
-        assertEq(checkpointShortBaseVolume, 0);
+        assertEq(checkpoint.shortBaseVolume, 0);
 
         // TODO: Figure out how to test for this.
         //
