@@ -464,6 +464,9 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // reserves as well as the amount of shares the trader receives for
         // selling the bonds at the market price.
         uint256 timeRemaining = _calculateTimeRemaining(_maturityTime);
+        uint256 closeSharePrice = block.timestamp < _maturityTime
+            ? _sharePrice
+            : checkpoints[_maturityTime].sharePrice;
         (shareReservesDelta, bondReservesDelta, shareProceeds) = HyperdriveMath
             .calculateCloseLong(
                 marketState.shareReserves,
@@ -471,6 +474,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 _bondAmount,
                 timeRemaining,
                 timeStretch,
+                closeSharePrice,
                 _sharePrice,
                 initialSharePrice
             );

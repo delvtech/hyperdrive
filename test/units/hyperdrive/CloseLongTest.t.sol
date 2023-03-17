@@ -88,7 +88,13 @@ contract CloseLongTest is HyperdriveTest {
         assertLe(baseProceeds, basePaid);
 
         // Verify that the close long updates were correct.
-        verifyCloseLong(poolInfoBefore, baseProceeds, bondAmount, maturityTime);
+        verifyCloseLong(
+            poolInfoBefore,
+            baseProceeds,
+            bondAmount,
+            maturityTime,
+            false
+        );
     }
 
     function test_close_long_immediately_with_small_amount() external {
@@ -113,7 +119,13 @@ contract CloseLongTest is HyperdriveTest {
         assertLe(baseProceeds, basePaid);
 
         // Verify that the close long updates were correct.
-        verifyCloseLong(poolInfoBefore, baseProceeds, bondAmount, maturityTime);
+        verifyCloseLong(
+            poolInfoBefore,
+            baseProceeds,
+            bondAmount,
+            maturityTime,
+            false
+        );
     }
 
     function test_close_long_halfway_through_term() external {
@@ -149,7 +161,13 @@ contract CloseLongTest is HyperdriveTest {
         );
 
         // Verify that the close long updates were correct.
-        verifyCloseLong(poolInfoBefore, baseProceeds, bondAmount, maturityTime);
+        verifyCloseLong(
+            poolInfoBefore,
+            baseProceeds,
+            bondAmount,
+            maturityTime,
+            false
+        );
     }
 
     function test_close_long_redeem() external {
@@ -178,11 +196,18 @@ contract CloseLongTest is HyperdriveTest {
         assertApproxEqAbs(baseProceeds, bondAmount, 1);
 
         // Verify that the close long updates were correct.
-        verifyCloseLong(poolInfoBefore, baseProceeds, bondAmount, maturityTime);
+        verifyCloseLong(
+            poolInfoBefore,
+            baseProceeds,
+            bondAmount,
+            maturityTime,
+            false
+        );
     }
 
     function test_close_long_redeem_negative_interest() external {
         uint256 fixedAPR = 0.05e18;
+
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
         initialize(alice, fixedAPR, contribution);
@@ -223,18 +248,24 @@ contract CloseLongTest is HyperdriveTest {
         assertApproxEqAbs(baseProceeds, matureBondsValue, 10);
 
         // Verify that the close long updates were correct.
-        verifyCloseLong(poolInfoBefore, baseProceeds, bondAmount, maturityTime);
+        verifyCloseLong(
+            poolInfoBefore,
+            baseProceeds,
+            bondAmount,
+            maturityTime,
+            false
+        );
     }
 
     function test_close_long_half_term_negative_interest() external {
         uint256 fixedAPR = 0.05e18;
+
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
         initialize(alice, fixedAPR, contribution);
 
         // Open a long position.
         uint256 basePaid = 10e18;
-
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
 
         // Term passes. The pool accrues negative interest.
@@ -281,21 +312,85 @@ contract CloseLongTest is HyperdriveTest {
             .calculateCompoundInterest(matureBonds, apr, timeAdvanced);
 
         assertApproxEqAbs(
-            immatureBondsValue.add(matureBondsValue),
             baseProceeds,
+            immatureBondsValue.add(matureBondsValue),
             6
         );
-        assertApproxEqAbs(matureBondsFaceValue, matureBondsValue, 5);
+        assertApproxEqAbs(matureBondsValue, matureBondsFaceValue, 5);
 
         // Verify that the close long updates were correct.
-        verifyCloseLong(poolInfoBefore, baseProceeds, bondAmount, maturityTime);
+        verifyCloseLong(
+            poolInfoBefore,
+            baseProceeds,
+            bondAmount,
+            maturityTime,
+            false
+        );
+    }
+
+    function test_close_long_negative_interest_at_close() external {
+        uint256 fixedAPR = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, fixedAPR, contribution);
+
+        // Open a long position.
+        uint256 basePaid = 10e18;
+        (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
+
+        // The term passes and the pool accrues negative interest.
+        int256 apr = -0.25e18;
+        advanceTime(POSITION_DURATION, apr);
+
+        // A checkpoint is created to lock in the close price.
+        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+        uint256 closeSharePrice = HyperdriveUtils
+            .getPoolInfo(hyperdrive)
+            .sharePrice;
+
+        // Another term passes and a large amount of positive interest accrues.
+        advanceTime(POSITION_DURATION, 0.7e18);
+
+        // Get the reserves before closing the long.
+        HyperdriveUtils.PoolInfo memory poolInfoBefore = HyperdriveUtils
+            .getPoolInfo(hyperdrive);
+
+        // Redeem the bonds
+        uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
+
+        // Bond holders take a proportional haircut on any negative interest
+        // that accrues.
+        uint256 bondValue = bondAmount
+            .divDown(hyperdrive.initialSharePrice())
+            .mulDown(closeSharePrice);
+
+        // Calculate the value of the bonds compounded at the negative APR.
+        (uint256 bondFaceValue, ) = HyperdriveUtils.calculateCompoundInterest(
+            bondAmount,
+            apr,
+            POSITION_DURATION
+        );
+
+        assertApproxEqAbs(baseProceeds, bondValue, 6);
+        assertApproxEqAbs(bondValue, bondFaceValue, 5);
+
+        // Verify that the close long updates were correct.
+        verifyCloseLong(
+            poolInfoBefore,
+            baseProceeds,
+            bondAmount,
+            maturityTime,
+            true
+        );
     }
 
     function verifyCloseLong(
         HyperdriveUtils.PoolInfo memory poolInfoBefore,
         uint256 baseProceeds,
         uint256 bondAmount,
-        uint256 maturityTime
+        uint256 maturityTime,
+        bool wasCheckpointed
     ) internal {
         uint256 checkpointTime = maturityTime - POSITION_DURATION;
 
@@ -311,23 +406,31 @@ contract CloseLongTest is HyperdriveTest {
         // Verify that the other states were correct.
         HyperdriveUtils.PoolInfo memory poolInfoAfter = HyperdriveUtils
             .getPoolInfo(hyperdrive);
-
         IHyperdrive.Checkpoint memory checkpoint = hyperdrive.checkpoints(
             checkpointTime
         );
-        assertApproxEqAbs(
-            poolInfoAfter.shareReserves,
-            poolInfoBefore.shareReserves -
-                baseProceeds.divDown(poolInfoBefore.sharePrice),
-            // 0.00000001 off or 1 wei
-            poolInfoAfter.shareReserves.mulDown(100000000000) + 1
-        );
-        assertEq(poolInfoAfter.lpTotalSupply, poolInfoBefore.lpTotalSupply);
+        if (wasCheckpointed) {
+            assertEq(poolInfoAfter.shareReserves, poolInfoBefore.shareReserves);
+            assertEq(
+                poolInfoAfter.longsOutstanding,
+                poolInfoBefore.longsOutstanding
+            );
+        } else {
+            assertApproxEqAbs(
+                poolInfoAfter.shareReserves,
+                poolInfoBefore.shareReserves -
+                    baseProceeds.divDown(poolInfoBefore.sharePrice),
+                // TODO: This is a huge error bar.
+                // 0.00000001 off or 1 wei
+                poolInfoAfter.shareReserves.mulDown(100000000000) + 1
+            );
+            assertEq(
+                poolInfoAfter.longsOutstanding,
+                poolInfoBefore.longsOutstanding - bondAmount
+            );
+        }
         assertEq(poolInfoAfter.sharePrice, poolInfoBefore.sharePrice);
-        assertEq(
-            poolInfoAfter.longsOutstanding,
-            poolInfoBefore.longsOutstanding - bondAmount
-        );
+        assertEq(poolInfoAfter.lpTotalSupply, poolInfoBefore.lpTotalSupply);
         assertEq(poolInfoAfter.longAverageMaturityTime, 0);
         assertEq(poolInfoAfter.longBaseVolume, 0);
         assertEq(checkpoint.longBaseVolume, 0);

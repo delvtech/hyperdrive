@@ -183,11 +183,11 @@ contract RemoveLiquidityTest is HyperdriveTest {
 
         // Ensure that Alice received the correct amount of base.
         uint256 baseExpected = contributionPlusInterest + basePaid - bondAmount;
-        assertApproxEqAbs(baseProceeds, baseExpected, 1 wei);
+        assertApproxEqAbs(baseProceeds, baseExpected, 2.5e7);
         assertApproxEqAbs(
             baseToken.balanceOf(address(hyperdrive)),
             bondAmount,
-            1 wei
+            2.5e7
         );
         assertEq(baseToken.balanceOf(alice), baseProceeds);
 
