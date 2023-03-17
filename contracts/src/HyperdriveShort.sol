@@ -27,13 +27,13 @@ abstract contract HyperdriveShort is HyperdriveLP {
     /// @param _asUnderlying If true the user is charged in underlying if false
     ///                      the contract transfers in yield source directly.
     ///                      Note - for some paths one choice may be disabled or blocked.
-    /// @return traderDeposit The amount the user deposited for this trade
+    /// @return baseDeposit The amount the user deposited for this trade
     function openShort(
         uint256 _bondAmount,
         uint256 _maxDeposit,
         address _destination,
         bool _asUnderlying
-    ) external returns (uint256 traderDeposit) {
+    ) external returns (uint256 baseDeposit) {
         if (_bondAmount == 0) {
             revert Errors.ZeroAmount();
         }
@@ -63,7 +63,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 shareReservesDelta,
                 bondReservesDelta,
                 govFeesAccruedDelta,
-                traderDeposit,
+                baseDeposit,
                 shareProceeds
             ) = HyperdriveMath.calculateOpenShort(
                 IHyperdrive.OpenShortCalculationInputs({
@@ -86,8 +86,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // Attribute the governance fees.
         govFeesAccrued += govFeesAccruedDelta;
 
-        if (_maxDeposit < traderDeposit) revert Errors.OutputLimit();
-        _deposit(traderDeposit, _asUnderlying);
+        if (_maxDeposit < baseDeposit) revert Errors.OutputLimit();
+        _deposit(baseDeposit, _asUnderlying);
 
         // Apply the state updates caused by opening the short.
         _applyOpenShort(
@@ -109,7 +109,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             _bondAmount
         );
 
-        return traderDeposit;
+        return baseDeposit;
     }
 
     /// @notice Closes a short position with a specified maturity time.

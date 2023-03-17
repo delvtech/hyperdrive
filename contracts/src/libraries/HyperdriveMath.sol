@@ -231,6 +231,8 @@ library HyperdriveMath {
         return (shareReservesDelta, bondReservesDelta, shareProceeds);
     }
 
+    /// @notice Calculates the openShort trading deltas
+    /// @param _inputs See IHyperdrive.OpenShortCalculationInputs
     function calculateOpenShort(
         IHyperdrive.OpenShortCalculationInputs memory _inputs
     )
