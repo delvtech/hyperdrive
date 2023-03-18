@@ -163,6 +163,7 @@ library HyperdriveMath {
     /// @param _normalizedTimeRemaining The normalized time remaining of the
     ///        position.
     /// @param _timeStretch The time stretch parameter.
+    /// @param _closeSharePrice The share price at close.
     /// @param _sharePrice The share price.
     /// @param _initialSharePrice The initial share price.
     /// @return shareReservesDelta The shares paid by the reserves in the trade.
@@ -174,6 +175,7 @@ library HyperdriveMath {
         uint256 _amountIn,
         uint256 _normalizedTimeRemaining,
         uint256 _timeStretch,
+        uint256 _closeSharePrice,
         uint256 _sharePrice,
         uint256 _initialSharePrice
     )
@@ -205,8 +207,8 @@ library HyperdriveMath {
         // always attribute negative interest to the long since it's difficult
         // or impossible to attribute the negative interest to the short in
         // practice.
-        if (_initialSharePrice > _sharePrice) {
-            shareProceeds = (shareProceeds.mulUp(_sharePrice)).divDown(
+        if (_initialSharePrice > _closeSharePrice) {
+            shareProceeds = (shareProceeds.mulUp(_closeSharePrice)).divDown(
                 _initialSharePrice
             );
         }
@@ -341,10 +343,9 @@ library HyperdriveMath {
     ///      by closing the short. The math for the short's proceeds in base is
     ///      given by:
     ///
-    ///      proceeds = dy - c_1 * dz + (c_1 - c_0) * (dy / c_0)
-    ///               = dy - c_1 * dz + (c_1 / c_0) * dy - dy
-    ///               = (c_1 / c_0) * dy - c_1 * dz
-    ///               = c_1 * (dy / c_0 - dz)
+    ///      proceeds = dy - c * dz + (c1 - c0) * (dy / c0)
+    ///               = dy - c * dz + (c1 / c0) * dy - dy
+    ///               = (c1 / c0) * dy - c * dz
     ///
     ///      We convert the proceeds to shares by dividing by the current share
     ///      price. In the event that the interest is negative and outweighs the
@@ -368,13 +369,13 @@ library HyperdriveMath {
         // released, than the short proceeds are marked to zero. Otherwise, we
         // calculate the proceeds as the sum of the trading proceeds, the
         // interest proceeds, and the margin released.
-        uint256 openShares = _bondAmount.divDown(_openSharePrice);
-        if (openShares > _shareAmount) {
-            // proceeds = (dy / c_0 - dz) * (c_1 / c)
-            shareProceeds = openShares.sub(_shareAmount).mulDivDown(
-                _closeSharePrice,
-                _sharePrice
-            );
+        uint256 bondFactor = _bondAmount.mulDivDown(
+            _closeSharePrice,
+            _openSharePrice.mulDown(_sharePrice)
+        );
+        if (bondFactor > _shareAmount) {
+            // proceeds = (c1 / c0 * c) * dy - dz
+            shareProceeds = bondFactor - _shareAmount;
         }
         return shareProceeds;
     }
@@ -382,9 +383,9 @@ library HyperdriveMath {
     /// @dev Calculates the interest in shares earned by a short position. The
     ///      math for the short's interest in shares is given by:
     ///
-    ///      interest = ((c_1 / c_0 - 1) * dy) / c
-    ///               = (((c_1 - c_0) / c_0) * dy) / c
-    ///               = ((c_1 - c_0) / (c_0 * c)) * dy
+    ///      interest = ((c1 / c0 - 1) * dy) / c
+    ///               = (((c1 - c0) / c0) * dy) / c
+    ///               = ((c1 - c0) / (c0 * c)) * dy
     ///
     ///      In the event that the interest is negative, we mark the interest
     ///      to zero.
@@ -401,7 +402,7 @@ library HyperdriveMath {
     ) internal pure returns (uint256 shareInterest) {
         // If the interest is negative, we mark it to zero.
         if (_closeSharePrice > _openSharePrice) {
-            // interest = dy * ((c_1 - c_0) / (c_0 * c))
+            // interest = dy * ((c1 - c0) / (c0 * c))
             shareInterest = _bondAmount.mulDivDown(
                 _closeSharePrice - _openSharePrice,
                 _openSharePrice.mulDown(_sharePrice)

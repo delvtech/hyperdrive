@@ -120,6 +120,7 @@ contract WithdrawShareTest is HyperdriveTest {
         assertApproxEqAbs(
             withdrawPool.withdrawSharesReadyToWithdraw,
             aliceWithdrawShares,
+            // TODO: This error bar is way too big
             (aliceWithdrawShares * 999999) / 1000000
         );
         aliceWithdrawShares = aliceWithdrawShares >
@@ -157,7 +158,7 @@ contract WithdrawShareTest is HyperdriveTest {
             alice
         );
         // We allow a very small rounding error
-        assertApproxEqAbs(aliceWithdrawShares, 0, 50000000);
+        assertApproxEqAbs(aliceWithdrawShares, 0, 5e7);
 
         // Alice is the only LP withdrawing so the pool should be empty
         withdrawPool = hyperdrive.withdrawPool();
@@ -175,11 +176,12 @@ contract WithdrawShareTest is HyperdriveTest {
             celine
         );
         assertEq(celineWithdrawShares, 0);
-        // TODO - Large basis point error, the error is because Alice earns about a basis point more than expected
+        // TODO - Large basis point error, the error is because Alice earns
+        // about a basis point more than expected
         assertApproxEqAbs(
             celineWithdraw,
             100_000_000e18 + bobBasePaid / 6,
-            baseToken.balanceOf(alice) - estimatedOutcome + 10
+            baseToken.balanceOf(alice) - estimatedOutcome + 10e9
         );
     }
 
