@@ -4,6 +4,7 @@ pragma solidity ^0.8.18;
 import { Errors } from "./Errors.sol";
 import { FixedPointMath } from "./FixedPointMath.sol";
 import { YieldSpaceMath } from "./YieldSpaceMath.sol";
+import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 
 /// @author Delve
 /// @title Hyperdrive
@@ -230,6 +231,90 @@ library HyperdriveMath {
         return (shareReservesDelta, bondReservesDelta, shareProceeds);
     }
 
+    function calculateOpenShort(
+        IHyperdrive.OpenShortCalculationInputs memory _inputs
+    )
+        internal
+        pure
+        returns (
+            uint256 shareReservesDelta,
+            uint256 bondReservesDelta,
+            uint256 totalGovernanceFee,
+            uint256 baseToDeposit,
+            uint256 shareProceeds
+        )
+    {
+        /// OpenShort Trade Deltas ///
+
+        // Calculate the effect that opening the short should have on the pool's
+        // reserves as well as the amount of shares the trader receives from
+        // selling the shorted bonds at the market price.
+        (shareReservesDelta, bondReservesDelta, shareProceeds) = HyperdriveMath
+            .calculateOpenShortTrade(
+                _inputs.marketState.shareReserves,
+                _inputs.marketState.bondReserves,
+                _inputs.bondAmount,
+                _inputs.normalizedTimeRemaining,
+                _inputs.timeStretch,
+                _inputs.sharePrice,
+                _inputs.initialSharePrice
+            );
+
+        // If the base proceeds of selling the bonds is greater than the bond
+        // amount, then the trade occurred in the negative interest domain. We
+        // revert in these pathological cases.
+        if (shareProceeds.mulDown(_inputs.sharePrice) > _inputs.bondAmount)
+            revert Errors.NegativeInterest();
+
+        /// OpenShort Trade Fees ///
+
+        // Calculate the fees charged on the curve and flat parts of the trade.
+        // Since we calculate the amount of shares received given bonds in, we
+        // subtract the fee from the share deltas so that the trader receives
+        // less shares.
+        uint256 totalCurveFee;
+        uint256 totalFlatFee;
+        (totalCurveFee, totalFlatFee, totalGovernanceFee) = HyperdriveMath
+            .calculateOpenShortFee(
+                _inputs.marketState.shareReserves,
+                _inputs.marketState.bondReserves,
+                _inputs.bondAmount,
+                _inputs.normalizedTimeRemaining,
+                _inputs.timeStretch,
+                _inputs.sharePrice,
+                _inputs.initialSharePrice,
+                _inputs.fees
+            );
+
+        // Attribute the fees to the share deltas.
+        shareReservesDelta -= totalCurveFee;
+        shareProceeds -= totalCurveFee + totalFlatFee;
+
+        /// OpenShort Trade Proceeds ///
+
+        // Take custody of the trader's deposit and ensure that the trader
+        // doesn't pay more than their max deposit. The trader's deposit is
+        // equal to the proceeds that they would receive if they closed
+        // immediately (without fees).
+        baseToDeposit = HyperdriveMath
+            .calculateShortProceeds(
+                _inputs.bondAmount,
+                shareProceeds,
+                _inputs.openSharePrice,
+                _inputs.sharePrice,
+                _inputs.sharePrice
+            )
+            .mulDown(_inputs.sharePrice);
+
+        return (
+            shareReservesDelta,
+            bondReservesDelta,
+            totalGovernanceFee,
+            baseToDeposit,
+            shareProceeds
+        );
+    }
+
     /// @dev Calculates the amount of shares that will be received given a
     ///      specified amount of bonds.
     /// @param _shareReserves The pool's share reserves
@@ -242,7 +327,7 @@ library HyperdriveMath {
     /// @return shareReservesDelta The shares paid by the reserves in the trade.
     /// @return bondReservesDelta The bonds paid to the reserves in the trade.
     /// @return shareProceeds The shares that the user will receive.
-    function calculateOpenShort(
+    function calculateOpenShortTrade(
         uint256 _shareReserves,
         uint256 _bondReserves,
         uint256 _amountIn,
@@ -276,6 +361,54 @@ library HyperdriveMath {
         );
         shareProceeds += shareReservesDelta;
         return (shareReservesDelta, bondReservesDelta, shareProceeds);
+    }
+
+    function calculateOpenShortFee(
+        uint256 _shareReserves,
+        uint256 _bondReserves,
+        uint256 _bondAmount,
+        uint256 _normalizedTimeRemaining,
+        uint256 _timeStretch,
+        uint256 _sharePrice,
+        uint256 _initialSharePrice,
+        IHyperdrive.Fees memory _fees
+    )
+        internal
+        pure
+        returns (
+            uint256 totalCurveFee,
+            uint256 totalFlatFee,
+            uint256 totalGovernanceFee
+        )
+    {
+        uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
+            _shareReserves,
+            _bondReserves,
+            _initialSharePrice,
+            _normalizedTimeRemaining,
+            _timeStretch
+        );
+
+        // curve fee = ((1 - p) * phi_curve * d_y * t) / c
+        uint256 curve = (FixedPointMath.ONE_18.sub(spotPrice));
+        totalCurveFee = curve
+            .mulDown(_fees.curveFee)
+            .mulDown(_bondAmount)
+            .mulDivDown(_normalizedTimeRemaining, _sharePrice);
+
+        // flat fee = (d_y * (1 - t) * phi_flat) / c
+        uint256 flat = _bondAmount.mulDivDown(
+            FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
+            _sharePrice
+        );
+        totalFlatFee = (flat.mulDown(_fees.flatFee));
+
+        // calculate the curve portion of the gov fee
+        totalGovernanceFee = totalCurveFee.mulDown(_fees.govFee);
+        // calculate the flat portion of the gov fee
+        totalGovernanceFee += totalFlatFee.mulDown(_fees.govFee);
+
+        return (totalCurveFee, totalFlatFee, totalGovernanceFee);
     }
 
     /// @dev Calculates the amount of base that a user will receive when closing a short position

@@ -8,6 +8,7 @@ import { AssetId } from "./libraries/AssetId.sol";
 import { Errors } from "./libraries/Errors.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
+import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 
 /// @author Delve
 /// @title HyperdriveBase
@@ -39,61 +40,26 @@ abstract contract HyperdriveBase is MultiToken {
 
     // @notice The share price at the time the pool was created.
     uint256 public immutable initialSharePrice;
-
-    struct MarketState {
-        uint128 shareReserves;
-        uint128 bondReserves;
-        uint128 longsOutstanding;
-        uint128 shortsOutstanding;
-    }
-
-    struct Aggregates {
-        uint128 averageMaturityTime;
-        uint128 baseVolume;
-    }
-
-    struct Checkpoint {
-        uint256 sharePrice;
-        uint128 longBaseVolume;
-        uint128 shortBaseVolume;
-    }
-
-    struct Fees {
-        uint256 curveFee;
-        uint256 flatFee;
-        uint256 govFee;
-    }
-
-    //  withdrawSharesReadyToWithdraw - The interest earned by the redemptions which put
-    // capital into the withdraw pool
-    // withdrawCapitalPool - The margin capital reclaimed by the withdraw process
-    // withdrawInterestPool - withdrawInterestPool
-    struct WithdrawPool {
-        uint128 withdrawSharesReadyToWithdraw;
-        uint128 capital;
-        uint128 interest;
-    }
-
     /// @notice The reserves and the buffers. This is the primary state used for
     ///         pricing trades and maintaining solvency.
-    MarketState public marketState;
+    IHyperdrive.MarketState public marketState;
 
     /// @notice Aggregate values for long positions that are used to enforce
     ///         fairness guarantees.
-    Aggregates public longAggregates;
+    IHyperdrive.Aggregates public longAggregates;
 
     /// @notice Aggregate values for short positions that are used to enforce
     ///         fairness guarantees.
-    Aggregates public shortAggregates;
+    IHyperdrive.Aggregates public shortAggregates;
 
     /// @notice The state corresponding to the withdraw pool, expressed as a struct.
-    WithdrawPool public withdrawPool;
+    IHyperdrive.WithdrawPool public withdrawPool;
 
     /// @notice Hyperdrive positions are bucketed into checkpoints, which
     ///         allows us to avoid poking in any period that has LP or trading
     ///         activity. The checkpoints contain the starting share price from
     ///         the checkpoint as well as aggregate volume values.
-    mapping(uint256 => Checkpoint) public checkpoints;
+    mapping(uint256 => IHyperdrive.Checkpoint) public checkpoints;
 
     // TODO: Should this be immutable?
     //
@@ -141,7 +107,7 @@ abstract contract HyperdriveBase is MultiToken {
         uint256 _checkpointsPerTerm,
         uint256 _checkpointDuration,
         uint256 _timeStretch,
-        Fees memory _fees,
+        IHyperdrive.Fees memory _fees,
         address _governance
     ) MultiToken(_linkerCodeHash, _linkerFactory) {
         // Initialize the base token address.

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.18;
 
 import { HyperdriveMath } from "../src/libraries/HyperdriveMath.sol";
+import { IHyperdrive } from "../src/interfaces/IHyperdrive.sol";
 
 contract MockHyperdriveMath {
     function calculateAPRFromReserves(
@@ -87,6 +88,12 @@ contract MockHyperdriveMath {
     }
 
     function calculateOpenShort(
+        IHyperdrive.OpenShortCalculationInputs memory _inputs
+    ) external pure returns (uint256, uint256, uint256, uint256, uint256) {
+        return HyperdriveMath.calculateOpenShort(_inputs);
+    }
+
+    function calculateOpenShortTrade(
         uint256 _shareReserves,
         uint256 _bondReserves,
         uint256 _amountIn,
@@ -96,7 +103,7 @@ contract MockHyperdriveMath {
         uint256 _initialSharePrice
     ) external pure returns (uint256, uint256, uint256) {
         (uint256 result1, uint256 result2, uint256 result3) = HyperdriveMath
-            .calculateOpenShort(
+            .calculateOpenShortTrade(
                 _shareReserves,
                 _bondReserves,
                 _amountIn,

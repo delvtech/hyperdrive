@@ -5,7 +5,8 @@ import { ERC20PresetFixedSupply } from "@openzeppelin/contracts/token/ERC20/pres
 import { Test } from "forge-std/Test.sol";
 import { ForwarderFactory } from "contracts/src/ForwarderFactory.sol";
 import { MockHyperdriveMath } from "contracts/test/MockHyperdriveMath.sol";
-import "contracts/src/libraries/FixedPointMath.sol";
+import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 
 contract HyperdriveMathTest is Test {
     using FixedPointMath for uint256;
@@ -407,7 +408,7 @@ contract HyperdriveMathTest is Test {
         );
     }
 
-    function test__calculateOpenShort() public {
+    function test__calculateOpenShortTrade() public {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
 
@@ -427,7 +428,7 @@ contract HyperdriveMathTest is Test {
                 uint256 shareReservesDelta,
                 uint256 bondReservesDelta,
                 uint256 shareProceeds
-            ) = hyperdriveMath.calculateOpenShort(
+            ) = hyperdriveMath.calculateOpenShortTrade(
                     shareReserves,
                     bondReserves,
                     amountIn,

@@ -47,7 +47,7 @@ abstract contract Hyperdrive is
         uint256 _checkpointsPerTerm,
         uint256 _checkpointDuration,
         uint256 _timeStretch,
-        Fees memory _fees,
+        IHyperdrive.Fees memory _fees,
         address _governance
     )
         HyperdriveBase(
