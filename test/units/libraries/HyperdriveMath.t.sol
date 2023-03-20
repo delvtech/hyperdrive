@@ -237,7 +237,7 @@ contract HyperdriveMathTest is Test {
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
             uint256 bondProceeds
-        ) = hyperdriveMath.calculateOpenLong(
+        ) = hyperdriveMath.calculateOpenLongTrade(
                 shareReserves,
                 bondReserves,
                 50_000_000 ether, // amountIn
@@ -855,6 +855,46 @@ contract HyperdriveMathTest is Test {
         assertEq(feeDeltas.totalCurveFee, 0 ether);
         assertEq(feeDeltas.totalFlatFee, 0.1 ether);
         assertEq(feeDeltas.governanceCurveFee, 0 ether);
+        assertEq(feeDeltas.governanceFlatFee, 0.05 ether);
+    }
+
+    function test_calcFeesOutGivenSharesIn() public {
+        // NOTE: Coverage only works if I initialize the fixture in the test function
+        MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
+        IHyperdrive.Fees memory fees = IHyperdrive.Fees({
+            curve: 0.1e18,
+            flat: 0.1e18,
+            governance: 0.5e18
+        });
+
+        HyperdriveMath.FeeDeltas memory feeDeltas = hyperdriveMath
+            .calculateFeesOutGivenSharesIn(
+                1 ether, // amountIn
+                1 ether, // amountOut
+                1 ether, // timeRemaining
+                0.5 ether, // spotPrice
+                1 ether, // sharePrice
+                fees
+            );
+        // curve fee = ((1 / p) - 1) * phi_curve * c * d_z * t
+        // ((1/.5)-1) * .1*1*1*1 = .1
+        assertEq(feeDeltas.totalCurveFee, .1 ether);
+        assertEq(feeDeltas.governanceCurveFee, .05 ether);
+        assertEq(feeDeltas.totalFlatFee, 0 ether);
+        assertEq(feeDeltas.governanceFlatFee, 0 ether);
+
+        feeDeltas = hyperdriveMath
+            .calculateFeesOutGivenSharesIn(
+                1 ether, // amountIn
+                1 ether, // amountOut
+                0, // timeRemaining
+                0.5 ether, // spotPrice
+                1 ether, // sharePrice
+                fees
+            );
+        assertEq(feeDeltas.totalCurveFee, 0 ether);
+        assertEq(feeDeltas.governanceCurveFee, 0 ether);
+        assertEq(feeDeltas.totalFlatFee, 0.1 ether);
         assertEq(feeDeltas.governanceFlatFee, 0.05 ether);
     }
 }
