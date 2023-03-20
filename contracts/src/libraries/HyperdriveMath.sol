@@ -445,9 +445,8 @@ library HyperdriveMath {
             _params.flatFee,
             _params.governanceFee
         );
-        shareReservesDelta +=
-            feeDeltas.totalCurveFee -
-            feeDeltas.governanceCurveFee;
+        shareReservesDelta += (feeDeltas.totalCurveFee -
+            feeDeltas.governanceCurveFee);
         sharePayment += feeDeltas.totalCurveFee + feeDeltas.totalFlatFee;
 
         // Derive the total amount of fees given to governance
