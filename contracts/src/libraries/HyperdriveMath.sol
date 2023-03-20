@@ -260,8 +260,7 @@ library HyperdriveMath {
         // Calculate the effect that opening the short should have on the pool's
         // reserves as well as the amount of shares the trader receives from
         // selling the shorted bonds at the market price.
-        (shareReservesDelta, bondReservesDelta, shareProceeds) = HyperdriveMath
-            .calculateOpenShortTrade(
+        (shareReservesDelta, bondReservesDelta, shareProceeds) = calculateOpenShortTrade(
                 _params.marketState.shareReserves,
                 _params.marketState.bondReserves,
                 _params.bondAmount,
@@ -278,7 +277,7 @@ library HyperdriveMath {
             revert Errors.NegativeInterest();
 
         // Calculate the spot price of bonds in terms of shares.
-        uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
+        uint256 spotPrice = calculateSpotPrice(
             _params.marketState.shareReserves,
             _params.marketState.bondReserves,
             _params.initialSharePrice,
@@ -292,8 +291,7 @@ library HyperdriveMath {
         // less shares.
         uint256 totalCurveFee;
         uint256 totalFlatFee;
-        (totalCurveFee, totalFlatFee, totalGovernanceFee) = HyperdriveMath
-            .calculateFeesOutGivenBondsIn(
+        (totalCurveFee, totalFlatFee, totalGovernanceFee) = calculateFeesOutGivenBondsIn(
                 _params.bondAmount,
                 _params.normalizedTimeRemaining,
                 spotPrice,
@@ -308,8 +306,7 @@ library HyperdriveMath {
         shareProceeds -= totalCurveFee + totalFlatFee;
 
         // Calculate the amount of base the user must deposit.
-        baseToDeposit = HyperdriveMath
-            .calculateShortProceeds(
+        baseToDeposit = calculateShortProceeds(
                 _params.bondAmount,
                 shareProceeds,
                 _params.openSharePrice,
