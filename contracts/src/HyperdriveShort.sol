@@ -141,13 +141,28 @@ abstract contract HyperdriveShort is HyperdriveLP {
             _bondAmount
         );
 
+        uint256 openSharePrice = checkpoints[_maturityTime - positionDuration]
+            .sharePrice;
+        uint256 closeSharePrice = _maturityTime <= block.timestamp
+            ? checkpoints[_maturityTime].sharePrice
+            : sharePrice;
+
         // Calculate the pool and user deltas using the trading function.
         (
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
+            uint256 totalGovernanceFee,
             uint256 sharePayment,
-            uint256 totalGovernanceFee
+
         ) = _calculateCloseShort(_bondAmount, sharePrice, _maturityTime);
+
+        uint256 shortProceeds = HyperdriveMath.calculateShortProceeds(
+            _bondAmount,
+            sharePayment,
+            openSharePrice,
+            closeSharePrice,
+            sharePrice
+        );
 
         // Attribute the governance fees.
         governanceFeesAccrued += totalGovernanceFee;
@@ -169,18 +184,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // Withdraw the profit to the trader. This includes the proceeds from
         // the short sale as well as the variable interest that was collected
         // on the face value of the bonds:
-        uint256 openSharePrice = checkpoints[_maturityTime - positionDuration]
-            .sharePrice;
-        uint256 closeSharePrice = _maturityTime <= block.timestamp
-            ? checkpoints[_maturityTime].sharePrice
-            : sharePrice;
-        uint256 shortProceeds = HyperdriveMath.calculateShortProceeds(
-            _bondAmount,
-            sharePayment,
-            openSharePrice,
-            closeSharePrice,
-            sharePrice
-        );
         (uint256 baseProceeds, ) = _withdraw(
             shortProceeds,
             _destination,
