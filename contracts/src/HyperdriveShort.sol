@@ -52,7 +52,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // backdate the bonds sold to the beginning of the checkpoint.
         uint256 maturityTime = _latestCheckpoint() + positionDuration;
         uint256 timeRemaining = _calculateTimeRemaining(maturityTime);
-
         uint256 shareReservesDelta;
         uint256 bondReservesDelta;
         uint256 govFeesAccruedDelta;
