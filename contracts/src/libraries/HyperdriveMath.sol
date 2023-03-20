@@ -260,15 +260,19 @@ library HyperdriveMath {
         // Calculate the effect that opening the short should have on the pool's
         // reserves as well as the amount of shares the trader receives from
         // selling the shorted bonds at the market price.
-        (shareReservesDelta, bondReservesDelta, shareProceeds) = calculateOpenShortTrade(
-                _params.marketState.shareReserves,
-                _params.marketState.bondReserves,
-                _params.bondAmount,
-                _params.normalizedTimeRemaining,
-                _params.timeStretch,
-                _params.sharePrice,
-                _params.initialSharePrice
-            );
+        (
+            shareReservesDelta,
+            bondReservesDelta,
+            shareProceeds
+        ) = calculateOpenShortTrade(
+            _params.marketState.shareReserves,
+            _params.marketState.bondReserves,
+            _params.bondAmount,
+            _params.normalizedTimeRemaining,
+            _params.timeStretch,
+            _params.sharePrice,
+            _params.initialSharePrice
+        );
 
         // If the base proceeds of selling the bonds is greater than the bond
         // amount, then the trade occurred in the negative interest domain. We
@@ -291,15 +295,19 @@ library HyperdriveMath {
         // less shares.
         uint256 totalCurveFee;
         uint256 totalFlatFee;
-        (totalCurveFee, totalFlatFee, totalGovernanceFee) = calculateFeesOutGivenBondsIn(
-                _params.bondAmount,
-                _params.normalizedTimeRemaining,
-                spotPrice,
-                _params.sharePrice,
-                _params.fees.curve,
-                _params.fees.flat,
-                _params.fees.governance
-            );
+        (
+            totalCurveFee,
+            totalFlatFee,
+            totalGovernanceFee
+        ) = calculateFeesOutGivenBondsIn(
+            _params.bondAmount,
+            _params.normalizedTimeRemaining,
+            spotPrice,
+            _params.sharePrice,
+            _params.fees.curve,
+            _params.fees.flat,
+            _params.fees.governance
+        );
 
         // Attribute the fees to the share deltas.
         shareReservesDelta -= totalCurveFee;
@@ -307,13 +315,12 @@ library HyperdriveMath {
 
         // Calculate the amount of base the user must deposit.
         baseToDeposit = calculateShortProceeds(
-                _params.bondAmount,
-                shareProceeds,
-                _params.openSharePrice,
-                _params.sharePrice,
-                _params.sharePrice
-            )
-            .mulDown(_params.sharePrice);
+            _params.bondAmount,
+            shareProceeds,
+            _params.openSharePrice,
+            _params.sharePrice,
+            _params.sharePrice
+        ).mulDown(_params.sharePrice);
 
         return (
             shareReservesDelta,
