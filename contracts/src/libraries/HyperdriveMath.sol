@@ -110,6 +110,78 @@ library HyperdriveMath {
         return _shareReserves.divDown(2 * FixedPointMath.ONE_18).mulDown(rhs);
     }
 
+    struct OpenLongCalculationParams {
+        uint256 shareAmount;
+        uint256 sharePrice;
+        uint256 normalizedTimeRemaining;
+        uint256 initialSharePrice;
+        uint256 timeStretch;
+        IHyperdrive.MarketState marketState;
+        IHyperdrive.Fees fees;
+    }
+
+    function calculateOpenLong(
+        OpenLongCalculationParams memory _params
+    )
+        internal
+        pure
+        returns (
+            uint256 shareReservesDelta,
+            uint256 bondReservesDelta,
+            uint256 totalGovernanceFee,
+            uint256 bondProceeds
+        )
+    {
+        // Calculate the effect that opening the long should have on the pool's
+        // reserves as well as the amount of bond the trader receives.
+        (shareReservesDelta, bondReservesDelta, bondProceeds) = calculateOpenLongTrade(
+                _params.marketState.shareReserves,
+                _params.marketState.bondReserves,
+                _params.shareAmount,
+                _params.normalizedTimeRemaining,
+                _params.timeStretch,
+                _params.sharePrice,
+                _params.initialSharePrice
+            );
+
+        // Calculate the spot price of bonds in terms of shares.
+        uint256 spotPrice = calculateSpotPrice(
+            _params.marketState.shareReserves,
+            _params.marketState.bondReserves,
+            _params.initialSharePrice,
+            _params.normalizedTimeRemaining,
+            _params.timeStretch
+        );
+
+        // Calculate the fees charged on the curve and flat parts of the trade.
+        // Since we calculate the amount of bonds received given shares in, we
+        // subtract the fee from the bond deltas so that the trader receives
+        // less bonds.
+        FeeDeltas memory feeDeltas = calculateFeesOutGivenSharesIn(
+                _params.shareAmount,
+                bondProceeds,
+                _params.normalizedTimeRemaining,
+                spotPrice,
+                _params.sharePrice,
+                _params.fees
+            );
+
+        // Apply the fee deltas
+        bondReservesDelta -= (feeDeltas.totalCurveFee -
+            feeDeltas.governanceCurveFee);
+        bondProceeds -= feeDeltas.totalCurveFee + feeDeltas.totalFlatFee;
+        shareReservesDelta -= feeDeltas.governanceCurveFee.divDown(_params.sharePrice);
+        totalGovernanceFee = (feeDeltas.governanceCurveFee +
+            feeDeltas.governanceFlatFee).divDown(_params.sharePrice);
+
+        return (
+            shareReservesDelta,
+            bondReservesDelta,
+            totalGovernanceFee,
+            bondProceeds
+        );
+    }
+
     /// @dev Calculates the number of bonds a user will receive when opening a long position.
     /// @param _shareReserves The pool's share reserves.
     /// @param _bondReserves The pool's bond reserves.
@@ -121,7 +193,7 @@ library HyperdriveMath {
     /// @return shareReservesDelta The shares paid to the reserves in the trade.
     /// @return bondReservesDelta The bonds paid by the reserves in the trade.
     /// @return bondProceeds The bonds that the user will receive.
-    function calculateOpenLong(
+    function calculateOpenLongTrade(
         uint256 _shareReserves,
         uint256 _bondReserves,
         uint256 _amountIn,
@@ -774,6 +846,55 @@ library HyperdriveMath {
         uint256 totalFlatFee = (flat.mulDown(_flatFee));
         // calculate the flat portion of the governance fee
         uint256 governanceFlatFee = totalFlatFee.mulDown(_governanceFee);
+
+        return
+            FeeDeltas({
+                totalCurveFee: totalCurveFee,
+                totalFlatFee: totalFlatFee,
+                governanceCurveFee: governanceCurveFee,
+                governanceFlatFee: governanceFlatFee
+            });
+    }
+
+    /// @dev Calculates the fees for the flat and curve portion of hyperdrive calcOutGivenIn
+    /// @param _shareAmount The amount of shares in.
+    /// @param _bondAmount The amount of bonds out before fees are applied.
+    /// @param _normalizedTimeRemaining The normalized amount of time until maturity.
+    /// @param _spotPrice The price without slippage of bonds in terms of shares.
+    /// @param _sharePrice The current price of shares in terms of base.
+    /// @return totalCurveFee The total curve fee. The fee is in terms of bonds.
+    /// @return totalFlatFee The total flat fee. The fee is in terms of bonds.
+    /// @return governanceCurveFee The curve fee that goes to governance. The fee is in terms of bonds.
+    /// @return governanceFlatFee The flat fee that goes to governance. The fee is in terms of bonds.
+    function calculateFeesOutGivenSharesIn(
+        uint256 _shareAmount,
+        uint256 _bondAmount,
+        uint256 _normalizedTimeRemaining,
+        uint256 _spotPrice,
+        uint256 _sharePrice,
+        IHyperdrive.Fees memory _fees
+    ) internal pure returns (FeeDeltas memory) {
+        // curve fee = ((1 / p) - 1) * phi_curve * c * d_z * t
+        uint256 totalCurveFee = (FixedPointMath.ONE_18.divDown(_spotPrice)).sub(
+            FixedPointMath.ONE_18
+        );
+        totalCurveFee = totalCurveFee
+            .mulDown(_fees.curve)
+            .mulDown(_sharePrice)
+            .mulDown(_shareAmount)
+            .mulDown(_normalizedTimeRemaining);
+        // governanceCurveFee = d_z * (curve_fee / d_y) * c * phi_gov
+        uint256 governanceCurveFee = _shareAmount
+            .mulDivDown(totalCurveFee, _bondAmount)
+            .mulDown(_sharePrice)
+            .mulDown(_fees.governance);
+        // flat fee = c * d_z * (1 - t) * phi_flat
+        uint256 flat = _shareAmount.mulDown(
+            FixedPointMath.ONE_18.sub(_normalizedTimeRemaining)
+        );
+        uint256 totalFlatFee = flat.mulDown(_sharePrice).mulDown(_fees.flat);
+        // calculate the flat portion of the governance fee
+        uint256 governanceFlatFee = totalFlatFee.mulDown(_fees.governance);
 
         return
             FeeDeltas({
