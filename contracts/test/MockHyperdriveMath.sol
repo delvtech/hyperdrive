@@ -40,7 +40,7 @@ contract MockHyperdriveMath {
         return result;
     }
 
-    function calculateOpenLong(
+    function calculateOpenLongTrade(
         uint256 _shareReserves,
         uint256 _bondReserves,
         uint256 _amountIn,
@@ -50,7 +50,7 @@ contract MockHyperdriveMath {
         uint256 _initialSharePrice
     ) external pure returns (uint256, uint256, uint256) {
         (uint256 result1, uint256 result2, uint256 result3) = HyperdriveMath
-            .calculateOpenLong(
+            .calculateOpenLongTrade(
                 _shareReserves,
                 _bondReserves,
                 _amountIn,
@@ -265,6 +265,26 @@ contract MockHyperdriveMath {
                 _curveFee,
                 _flatFee,
                 _governanceFee
+            );
+        return result;
+    }
+
+    function calculateFeesOutGivenSharesIn(
+        uint256 _shareAmount,
+        uint256 _bondAmount,
+        uint256 _normalizedTimeRemaining,
+        uint256 _spotPrice,
+        uint256 _sharePrice,
+        IHyperdrive.Fees memory _fees
+    ) external pure returns (HyperdriveMath.FeeDeltas memory) {
+        HyperdriveMath.FeeDeltas memory result = HyperdriveMath
+            .calculateFeesOutGivenSharesIn(
+                _shareAmount,
+                _bondAmount,
+                _normalizedTimeRemaining,
+                _spotPrice,
+                _sharePrice,
+                _fees
             );
         return result;
     }

@@ -134,15 +134,19 @@ library HyperdriveMath {
     {
         // Calculate the effect that opening the long should have on the pool's
         // reserves as well as the amount of bond the trader receives.
-        (shareReservesDelta, bondReservesDelta, bondProceeds) = calculateOpenLongTrade(
-                _params.marketState.shareReserves,
-                _params.marketState.bondReserves,
-                _params.shareAmount,
-                _params.normalizedTimeRemaining,
-                _params.timeStretch,
-                _params.sharePrice,
-                _params.initialSharePrice
-            );
+        (
+            shareReservesDelta,
+            bondReservesDelta,
+            bondProceeds
+        ) = calculateOpenLongTrade(
+            _params.marketState.shareReserves,
+            _params.marketState.bondReserves,
+            _params.shareAmount,
+            _params.normalizedTimeRemaining,
+            _params.timeStretch,
+            _params.sharePrice,
+            _params.initialSharePrice
+        );
 
         // Calculate the spot price of bonds in terms of shares.
         uint256 spotPrice = calculateSpotPrice(
@@ -158,19 +162,21 @@ library HyperdriveMath {
         // subtract the fee from the bond deltas so that the trader receives
         // less bonds.
         FeeDeltas memory feeDeltas = calculateFeesOutGivenSharesIn(
-                _params.shareAmount,
-                bondProceeds,
-                _params.normalizedTimeRemaining,
-                spotPrice,
-                _params.sharePrice,
-                _params.fees
-            );
+            _params.shareAmount,
+            bondProceeds,
+            _params.normalizedTimeRemaining,
+            spotPrice,
+            _params.sharePrice,
+            _params.fees
+        );
 
         // Apply the fee deltas
         bondReservesDelta -= (feeDeltas.totalCurveFee -
             feeDeltas.governanceCurveFee);
         bondProceeds -= feeDeltas.totalCurveFee + feeDeltas.totalFlatFee;
-        shareReservesDelta -= feeDeltas.governanceCurveFee.divDown(_params.sharePrice);
+        shareReservesDelta -= feeDeltas.governanceCurveFee.divDown(
+            _params.sharePrice
+        );
         totalGovernanceFee = (feeDeltas.governanceCurveFee +
             feeDeltas.governanceFlatFee).divDown(_params.sharePrice);
 
@@ -889,10 +895,8 @@ library HyperdriveMath {
     /// @param _normalizedTimeRemaining The normalized amount of time until maturity.
     /// @param _spotPrice The price without slippage of bonds in terms of shares.
     /// @param _sharePrice The current price of shares in terms of base.
-    /// @return totalCurveFee The total curve fee. The fee is in terms of bonds.
-    /// @return totalFlatFee The total flat fee. The fee is in terms of bonds.
-    /// @return governanceCurveFee The curve fee that goes to governance. The fee is in terms of bonds.
-    /// @return governanceFlatFee The flat fee that goes to governance. The fee is in terms of bonds.
+    /// @param _fees The fee percentages to be applied to the trade equation
+    /// @return The fee deltas
     function calculateFeesOutGivenSharesIn(
         uint256 _shareAmount,
         uint256 _bondAmount,
