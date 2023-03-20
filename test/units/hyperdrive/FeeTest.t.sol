@@ -211,14 +211,15 @@ contract FeeTest is HyperdriveTest {
                 0.1e18, // curveFee
                 0.1e18, // flatFee
                 0.5e18 // governanceFee
-        );
+            );
         // curve fee = ((1 - p) * phi_curve * d_y * t) / c
         // ((1-.9)*.1*1*1)/1 = .01
         assertEq(totalCurveFee + totalFlatFee, .01 ether);
 
         assertEq(totalGovernanceFee, .005 ether);
 
-        (totalCurveFee, totalFlatFee, totalGovernanceFee) = HyperdriveMath.calculateFeesOutGivenBondsIn(
+        (totalCurveFee, totalFlatFee, totalGovernanceFee) = HyperdriveMath
+            .calculateFeesOutGivenBondsIn(
                 1 ether, // amountIn
                 0, // timeRemaining
                 0.9 ether, // spotPrice
