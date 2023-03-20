@@ -242,7 +242,7 @@ library HyperdriveMath {
         IHyperdrive.Fees fees;
     }
 
-    /// @notice Calculates the openShort trade
+    /// @notice Calculates the openShort trade deltas, fees and proceeds
     /// @param _params Parameters needed to calculate the openShort trade
     function calculateOpenShort(
         OpenShortCalculationParams memory _params
