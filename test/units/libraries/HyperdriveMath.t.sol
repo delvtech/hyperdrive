@@ -829,7 +829,7 @@ contract HyperdriveMathTest is Test {
             governance: 0.5e18
         });
 
-        HyperdriveMath.FeeDeltas memory feeDeltas = HyperdriveMath
+        HyperdriveMath.FeeDeltas memory feeDeltas = hyperdriveMath
             .calculateFeesInGivenBondsOut(
                 1 ether, // amountOut
                 1 ether, // timeRemaining
@@ -844,7 +844,7 @@ contract HyperdriveMathTest is Test {
         assertEq(feeDeltas.governanceCurveFee, .005 ether);
         assertEq(feeDeltas.governanceFlatFee, 0 ether);
 
-        feeDeltas = HyperdriveMath.calculateFeesInGivenBondsOut(
+        feeDeltas = hyperdriveMath.calculateFeesInGivenBondsOut(
             1 ether, // amountOut
             0, // timeRemaining
             0.9 ether, // spotPrice
