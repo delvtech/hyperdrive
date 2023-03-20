@@ -53,9 +53,19 @@ abstract contract HyperdriveLong is HyperdriveLP {
         (
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
-            uint256 bondProceeds,
-            uint256 totalGovFee
-        ) = _calculateOpenLong(shares, sharePrice, timeRemaining);
+            uint256 totalGovernanceFee,
+            uint256 bondProceeds
+        ) = HyperdriveMath.calculateOpenLong(
+                HyperdriveMath.OpenLongCalculationParams({
+                    shareAmount: shares,
+                    sharePrice: sharePrice,
+                    normalizedTimeRemaining: timeRemaining,
+                    initialSharePrice: initialSharePrice,
+                    timeStretch: timeStretch,
+                    marketState: marketState,
+                    fees: fees
+                })
+            );
 
         // If the user gets less bonds than they paid, we are in the negative
         // interest region of the trading function.
@@ -65,11 +75,11 @@ abstract contract HyperdriveLong is HyperdriveLP {
         if (_minOutput > bondProceeds) revert Errors.OutputLimit();
 
         // Attribute the governance fee.
-        governanceFeesAccrued += totalGovFee;
+        governanceFeesAccrued += totalGovernanceFee;
 
         // Apply the open long to the state.
         _applyOpenLong(
-            _baseAmount - totalGovFee,
+            _baseAmount - totalGovernanceFee,
             shareReservesDelta,
             bondProceeds,
             bondReservesDelta,
@@ -361,80 +371,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // Remove the flat component of the trade as well as any LP proceeds
         // paid to the withdrawal pool from the pool's liquidity.
         _updateLiquidity(shareAdjustment);
-    }
-
-    /// @dev Calculate the pool reserve and trader deltas that result from
-    ///      opening a long. This calculation includes trading fees.
-    /// @param _shareAmount The amount of shares being paid to open the long.
-    /// @param _sharePrice The current share price.
-    /// @param _timeRemaining The time remaining in the position.
-    /// @return shareReservesDelta The change in the share reserves.
-    /// @return bondReservesDelta The change in the bond reserves.
-    /// @return bondProceeds The proceeds in bonds.
-    /// @return totalGovFee The governance fee in shares.
-    function _calculateOpenLong(
-        uint256 _shareAmount,
-        uint256 _sharePrice,
-        uint256 _timeRemaining
-    )
-        internal
-        view
-        returns (
-            uint256 shareReservesDelta,
-            uint256 bondReservesDelta,
-            uint256 bondProceeds,
-            uint256 totalGovFee
-        )
-    {
-        // Calculate the effect that opening the long should have on the pool's
-        // reserves as well as the amount of bond the trader receives.
-        (shareReservesDelta, bondReservesDelta, bondProceeds) = HyperdriveMath
-            .calculateOpenLong(
-                marketState.shareReserves,
-                marketState.bondReserves,
-                _shareAmount, // amountIn
-                _timeRemaining,
-                timeStretch,
-                _sharePrice,
-                initialSharePrice
-            );
-
-        // Calculate the fees charged on the curve and flat parts of the trade.
-        // Since we calculate the amount of bonds received given shares in, we
-        // subtract the fee from the bond deltas so that the trader receives
-        // less bonds.
-        uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
-            marketState.shareReserves,
-            marketState.bondReserves,
-            initialSharePrice,
-            _timeRemaining,
-            timeStretch
-        );
-        (
-            uint256 totalCurveFee,
-            uint256 totalFlatFee,
-            uint256 govCurveFee,
-            uint256 govFlatFee
-        ) = _calculateFeesOutGivenSharesIn(
-                _shareAmount, // amountIn
-                bondProceeds, // amountOut
-                _timeRemaining,
-                spotPrice,
-                _sharePrice
-            );
-        bondReservesDelta -= totalCurveFee - govCurveFee;
-        bondProceeds -= totalCurveFee + totalFlatFee;
-
-        // Calculate the fees owed to governance in shares.
-        shareReservesDelta -= govCurveFee.divDown(_sharePrice);
-        totalGovFee = (govCurveFee + govFlatFee).divDown(_sharePrice);
-
-        return (
-            shareReservesDelta,
-            bondReservesDelta,
-            bondProceeds,
-            totalGovFee
-        );
     }
 
     /// @dev Calculate the pool reserve and trader deltas that result from

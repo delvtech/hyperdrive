@@ -65,42 +65,6 @@ contract MockHyperdrive is Hyperdrive {
         }
     }
 
-    function calculateFeesOutGivenSharesIn(
-        uint256 _amountIn,
-        uint256 _amountOut,
-        uint256 _normalizedTimeRemaining,
-        uint256 _spotPrice,
-        uint256 sharePrice
-    )
-        public
-        view
-        returns (
-            uint256 totalCurveFee,
-            uint256 totalFlatFee,
-            uint256 governanceCurveFee,
-            uint256 governanceFlatFee
-        )
-    {
-        (
-            totalCurveFee,
-            totalFlatFee,
-            governanceCurveFee,
-            governanceFlatFee
-        ) = _calculateFeesOutGivenSharesIn(
-            _amountIn,
-            _amountOut,
-            _normalizedTimeRemaining,
-            _spotPrice,
-            sharePrice
-        );
-        return (
-            totalCurveFee,
-            totalFlatFee,
-            governanceCurveFee,
-            governanceFlatFee
-        );
-    }
-
     /// Overrides ///
 
     function _deposit(
