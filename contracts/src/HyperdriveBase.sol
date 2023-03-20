@@ -55,29 +55,17 @@ abstract contract HyperdriveBase is MultiToken {
     /// @notice The state corresponding to the withdraw pool, expressed as a struct.
     IHyperdrive.WithdrawPool public withdrawPool;
 
+    /// @notice The fee percentages to be applied to the trade equation
+    IHyperdrive.Fees public fees;
+
     /// @notice Hyperdrive positions are bucketed into checkpoints, which
     ///         allows us to avoid poking in any period that has LP or trading
     ///         activity. The checkpoints contain the starting share price from
     ///         the checkpoint as well as aggregate volume values.
     mapping(uint256 => IHyperdrive.Checkpoint) public checkpoints;
 
-    // TODO: Should this be immutable?
-    //
-    /// @notice The fee parameter to apply to the curve portion of the
-    ///         hyperdrive trade equation.
-    uint256 public curveFee;
-
-    // TODO: Should this be immutable?
-    //
-    /// @notice The fee parameter to apply to the flat portion of the hyperdrive
-    ///         trade equation.
-    uint256 public flatFee;
-
-    // Percentage of the fee that goes to governance.
-    uint256 public immutable govFeePercent;
-
     // Governance fees that haven't been collected yet denominated in shares.
-    uint256 public govFeesAccrued;
+    uint256 public governanceFeesAccrued;
 
     // TODO: Should this be immutable?
     //
@@ -122,9 +110,7 @@ abstract contract HyperdriveBase is MultiToken {
         checkpointDuration = _checkpointDuration;
         timeStretch = _timeStretch;
         initialSharePrice = _initialSharePrice;
-        curveFee = _fees.curveFee;
-        flatFee = _fees.flatFee;
-        govFeePercent = _fees.govFee;
+        fees = _fees;
         governance = _governance;
     }
 
@@ -180,10 +166,10 @@ abstract contract HyperdriveBase is MultiToken {
 
     /// @notice This function collects the governance fees accrued by the pool.
     /// @return proceeds The amount of base collected.
-    function collectGovFee() external returns (uint256 proceeds) {
+    function collectGovernanceFee() external returns (uint256 proceeds) {
         // TODO: We should make an immutable asUnderlying parameter
-        (proceeds, ) = _withdraw(govFeesAccrued, governance, true);
-        govFeesAccrued = 0;
+        (proceeds, ) = _withdraw(governanceFeesAccrued, governance, true);
+        governanceFeesAccrued = 0;
     }
 
     /// Getters ///
@@ -198,9 +184,7 @@ abstract contract HyperdriveBase is MultiToken {
     /// @return positionDuration_ The duration of positions.
     /// @return checkpointDuration_ The duration of checkpoints.
     /// @return timeStretch_ The time stretch configuration.
-    /// @return flatFee_ The flat fee parameter.
-    /// @return curveFee_ The flat fee parameter.
-    /// @return govFee_ The gov fee parameter.
+    /// @return fees_ The protocol fees
     function getPoolConfiguration()
         external
         view
@@ -209,9 +193,7 @@ abstract contract HyperdriveBase is MultiToken {
             uint256 positionDuration_,
             uint256 checkpointDuration_,
             uint256 timeStretch_,
-            uint256 flatFee_,
-            uint256 curveFee_,
-            uint256 govFee_
+            IHyperdrive.Fees memory fees_
         )
     {
         return (
@@ -219,9 +201,7 @@ abstract contract HyperdriveBase is MultiToken {
             positionDuration,
             checkpointDuration,
             timeStretch,
-            flatFee,
-            curveFee,
-            govFeePercent
+            fees
         );
     }
 
@@ -306,8 +286,8 @@ abstract contract HyperdriveBase is MultiToken {
     /// @param _sharePrice The current price of shares in terms of base.
     /// @return totalCurveFee The total curve fee. The fee is in terms of bonds.
     /// @return totalFlatFee The total flat fee. The fee is in terms of bonds.
-    /// @return govCurveFee The curve fee that goes to governance. The fee is in terms of bonds.
-    /// @return govFlatFee The flat fee that goes to governance. The fee is in terms of bonds.
+    /// @return governanceCurveFee The curve fee that goes to governance. The fee is in terms of bonds.
+    /// @return governanceFlatFee The flat fee that goes to governance. The fee is in terms of bonds.
     function _calculateFeesOutGivenSharesIn(
         uint256 _amountIn,
         uint256 _amountOut,
@@ -320,8 +300,8 @@ abstract contract HyperdriveBase is MultiToken {
         returns (
             uint256 totalCurveFee,
             uint256 totalFlatFee,
-            uint256 govCurveFee,
-            uint256 govFlatFee
+            uint256 governanceCurveFee,
+            uint256 governanceFlatFee
         )
     {
         // curve fee = ((1 / p) - 1) * phi_curve * c * d_z * t
@@ -329,22 +309,22 @@ abstract contract HyperdriveBase is MultiToken {
             FixedPointMath.ONE_18
         );
         totalCurveFee = totalCurveFee
-            .mulDown(curveFee)
+            .mulDown(fees.curve)
             .mulDown(_sharePrice)
             .mulDown(_amountIn)
             .mulDown(_normalizedTimeRemaining);
-        // govCurveFee = d_z * (curve_fee / d_y) * c * phi_gov
-        govCurveFee = _amountIn
+        // governanceCurveFee = d_z * (curve_fee / d_y) * c * phi_gov
+        governanceCurveFee = _amountIn
             .mulDivDown(totalCurveFee, _amountOut)
             .mulDown(_sharePrice)
-            .mulDown(govFeePercent);
+            .mulDown(fees.governance);
         // flat fee = c * d_z * (1 - t) * phi_flat
         uint256 flat = _amountIn.mulDown(
             FixedPointMath.ONE_18.sub(_normalizedTimeRemaining)
         );
-        totalFlatFee = flat.mulDown(_sharePrice).mulDown(flatFee);
-        // calculate the flat portion of the gov fee
-        govFlatFee = totalFlatFee.mulDown(govFeePercent);
+        totalFlatFee = flat.mulDown(_sharePrice).mulDown(fees.flat);
+        // calculate the flat portion of the governance fee
+        governanceFlatFee = totalFlatFee.mulDown(fees.governance);
     }
 
     // TODO: Consider combining this with the trading functions.
@@ -356,7 +336,7 @@ abstract contract HyperdriveBase is MultiToken {
     /// @param _sharePrice The current price of shares in terms of base.
     /// @return totalCurveFee The curve fee. The fee is in terms of shares.
     /// @return totalFlatFee The flat fee. The fee is in terms of shares.
-    /// @return totalGovFee The total fee that goes to governance. The fee is in terms of shares.
+    /// @return totalGovernanceFee The total fee that goes to governance. The fee is in terms of shares.
     function _calculateFeesOutGivenBondsIn(
         uint256 _amountIn,
         uint256 _normalizedTimeRemaining,
@@ -368,25 +348,25 @@ abstract contract HyperdriveBase is MultiToken {
         returns (
             uint256 totalCurveFee,
             uint256 totalFlatFee,
-            uint256 totalGovFee
+            uint256 totalGovernanceFee
         )
     {
         // 'bond' in
         // curve fee = ((1 - p) * phi_curve * d_y * t) / c
         uint256 _pricePart = (FixedPointMath.ONE_18.sub(_spotPrice));
         totalCurveFee = _pricePart
-            .mulDown(curveFee)
+            .mulDown(fees.curve)
             .mulDown(_amountIn)
             .mulDivDown(_normalizedTimeRemaining, _sharePrice);
-        // calculate the curve portion of the gov fee
-        totalGovFee = totalCurveFee.mulDown(govFeePercent);
+        // calculate the curve portion of the governance fee
+        totalGovernanceFee = totalCurveFee.mulDown(fees.governance);
         // flat fee = (d_y * (1 - t) * phi_flat) / c
         uint256 flat = _amountIn.mulDivDown(
             FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
             _sharePrice
         );
-        totalFlatFee = (flat.mulDown(flatFee));
-        totalGovFee += totalFlatFee.mulDown(govFeePercent);
+        totalFlatFee = (flat.mulDown(fees.flat));
+        totalGovernanceFee += totalFlatFee.mulDown(fees.governance);
     }
 
     // TODO: Consider combining this with the trading functions.
@@ -398,8 +378,8 @@ abstract contract HyperdriveBase is MultiToken {
     /// @param _sharePrice The current price of shares in terms of base.
     /// @return totalCurveFee The total curve fee. Fee is in terms of shares.
     /// @return totalFlatFee The total flat fee.  Fee is in terms of shares.
-    /// @return govCurveFee The curve fee that goes to gov.  Fee is in terms of shares.
-    /// @return govFlatFee The flat fee that goes to gov.  Fee is in terms of shares.
+    /// @return governanceCurveFee The curve fee that goes to governance.  Fee is in terms of shares.
+    /// @return governanceFlatFee The flat fee that goes to governance.  Fee is in terms of shares.
     function _calculateFeesInGivenBondsOut(
         uint256 _amountOut,
         uint256 _normalizedTimeRemaining,
@@ -411,8 +391,8 @@ abstract contract HyperdriveBase is MultiToken {
         returns (
             uint256 totalCurveFee,
             uint256 totalFlatFee,
-            uint256 govCurveFee,
-            uint256 govFlatFee
+            uint256 governanceCurveFee,
+            uint256 governanceFlatFee
         )
     {
         uint256 curveOut = _amountOut.mulDown(_normalizedTimeRemaining);
@@ -420,18 +400,18 @@ abstract contract HyperdriveBase is MultiToken {
         // curve fee = ((1 - p) * d_y * t * phi_curve)/c
         totalCurveFee = FixedPointMath.ONE_18.sub(_spotPrice);
         totalCurveFee = totalCurveFee
-            .mulDown(curveFee)
+            .mulDown(fees.curve)
             .mulDown(curveOut)
             .mulDivDown(_normalizedTimeRemaining, _sharePrice);
-        // calculate the curve portion of the gov fee
-        govCurveFee = totalCurveFee.mulDown(govFeePercent);
+        // calculate the curve portion of the governance fee
+        governanceCurveFee = totalCurveFee.mulDown(fees.governance);
         // flat fee = (d_y * (1 - t) * phi_flat)/c
         uint256 flat = _amountOut.mulDivDown(
             FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
             _sharePrice
         );
-        totalFlatFee = (flat.mulDown(flatFee));
-        // calculate the flat portion of the gov fee
-        govFlatFee = totalFlatFee.mulDown(govFeePercent);
+        totalFlatFee = (flat.mulDown(fees.flat));
+        // calculate the flat portion of the governance fee
+        governanceFlatFee = totalFlatFee.mulDown(fees.governance);
     }
 }

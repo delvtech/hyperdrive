@@ -29,9 +29,9 @@ interface IHyperdrive is IMultiToken {
     }
 
     struct Fees {
-        uint256 curveFee;
-        uint256 flatFee;
-        uint256 govFee;
+        uint256 curve;
+        uint256 flat;
+        uint256 governance;
     }
 
     function baseToken() external view returns (address);
@@ -43,8 +43,6 @@ interface IHyperdrive is IMultiToken {
     function timeStretch() external view returns (uint256);
 
     function initialSharePrice() external view returns (uint256);
-
-    function curveFee() external view returns (uint256);
 
     function checkpoint(uint256 _checkpointTime) external;
 
@@ -60,6 +58,8 @@ interface IHyperdrive is IMultiToken {
 
     function marketState() external view returns (MarketState memory);
 
+    function fees() external view returns (Fees memory);
+
     function getPoolConfiguration()
         external
         view
@@ -68,9 +68,7 @@ interface IHyperdrive is IMultiToken {
             uint256 _positionDuration,
             uint256 _checkpointDuration,
             uint256 _timeStretch,
-            uint256 _flatFee,
-            uint256 _curveFee,
-            uint256 _govFee
+            IHyperdrive.Fees memory _fees
         );
 
     function getPoolInfo()

@@ -65,7 +65,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         if (_minOutput > bondProceeds) revert Errors.OutputLimit();
 
         // Attribute the governance fee.
-        govFeesAccrued += totalGovFee;
+        governanceFeesAccrued += totalGovFee;
 
         // Apply the open long to the state.
         _applyOpenLong(
@@ -130,7 +130,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         ) = _calculateCloseLong(_bondAmount, sharePrice, _maturityTime);
 
         // Attribute the governance fee.
-        govFeesAccrued += totalGovFee;
+        governanceFeesAccrued += totalGovFee;
 
         // If the position hasn't matured, apply the accounting updates that
         // result from closing the long to the reserves and pay out the

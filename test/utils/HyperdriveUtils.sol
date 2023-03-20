@@ -86,8 +86,6 @@ library HyperdriveUtils {
             uint256 positionDuration,
             ,
             uint256 timeStretch,
-            ,
-            ,
 
         ) = _hyperdrive.getPoolConfiguration();
         (

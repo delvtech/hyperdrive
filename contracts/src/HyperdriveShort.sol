@@ -54,14 +54,14 @@ abstract contract HyperdriveShort is HyperdriveLP {
         uint256 timeRemaining = _calculateTimeRemaining(maturityTime);
         uint256 shareReservesDelta;
         uint256 bondReservesDelta;
-        uint256 govFeesAccruedDelta;
+        uint256 totalGovernanceFee;
         uint256 shareProceeds;
         {
             // Calculate the openShort trade deltas
             (
                 shareReservesDelta,
                 bondReservesDelta,
-                govFeesAccruedDelta,
+                totalGovernanceFee,
                 baseDeposit,
                 shareProceeds
             ) = HyperdriveMath.calculateOpenShort(
@@ -73,17 +73,13 @@ abstract contract HyperdriveShort is HyperdriveLP {
                     normalizedTimeRemaining: timeRemaining,
                     timeStretch: timeStretch,
                     marketState: marketState,
-                    fees: IHyperdrive.Fees({
-                        curveFee: curveFee,
-                        flatFee: flatFee,
-                        govFee: govFeePercent
-                    })
+                    fees: fees
                 })
             );
         }
 
         // Attribute the governance fees.
-        govFeesAccrued += govFeesAccruedDelta;
+        governanceFeesAccrued += totalGovernanceFee;
 
         if (_maxDeposit < baseDeposit) revert Errors.OutputLimit();
         _deposit(baseDeposit, _asUnderlying);
@@ -147,11 +143,11 @@ abstract contract HyperdriveShort is HyperdriveLP {
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
             uint256 sharePayment,
-            uint256 totalGovFee
+            uint256 totalGovernanceFee
         ) = _calculateCloseShort(_bondAmount, sharePrice, _maturityTime);
 
         // Attribute the governance fees.
-        govFeesAccrued += totalGovFee;
+        governanceFeesAccrued += totalGovernanceFee;
 
         // If the position hasn't matured, apply the accounting updates that
         // result from closing the short to the reserves and pay out the
@@ -160,7 +156,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             _applyCloseShort(
                 _bondAmount,
                 bondReservesDelta,
-                sharePayment - totalGovFee,
+                sharePayment - totalGovernanceFee,
                 shareReservesDelta,
                 _maturityTime,
                 sharePrice
@@ -378,7 +374,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
     /// @return shareReservesDelta The change in the share reserves.
     /// @return bondReservesDelta The change in the bond reserves.
     /// @return sharePayment The cost in shares of buying the bonds.
-    /// @return totalGovFee The governance fee in shares.
+    /// @return totalGovernanceFee The governance fee in shares.
     function _calculateCloseShort(
         uint256 _bondAmount,
         uint256 _sharePrice,
@@ -390,7 +386,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
             uint256 sharePayment,
-            uint256 totalGovFee
+            uint256 totalGovernanceFee
         )
     {
         // Calculate the effect that closing the short should have on the pool's
@@ -421,22 +417,22 @@ abstract contract HyperdriveShort is HyperdriveLP {
         (
             uint256 totalCurveFee,
             uint256 totalFlatFee,
-            uint256 govCurveFee,
-            uint256 govFlatFee
+            uint256 governanceCurveFee,
+            uint256 governanceFlatFee
         ) = _calculateFeesInGivenBondsOut(
                 _bondAmount, // amountOut
                 timeRemaining,
                 spotPrice,
                 _sharePrice
             );
-        shareReservesDelta += totalCurveFee - govCurveFee;
+        shareReservesDelta += totalCurveFee - governanceCurveFee;
         sharePayment += totalCurveFee + totalFlatFee;
 
         return (
             shareReservesDelta,
             bondReservesDelta,
             sharePayment,
-            govCurveFee + govFlatFee
+            governanceCurveFee + governanceFlatFee
         );
     }
 }
