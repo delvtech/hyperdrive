@@ -774,4 +774,39 @@ contract HyperdriveMathTest is Test {
         // (1000 - 0 / 1.5) * (100 / 1000) = 100
         assertEq(out, 100 ether);
     }
+
+    function test_calculateFeesOutGivenBondsIn() public {
+        // NOTE: Coverage only works if I initialize the fixture in the test function
+        MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
+        (
+            uint256 totalCurveFee,
+            uint256 totalFlatFee,
+            uint256 totalGovernanceFee
+        ) = hyperdriveMath.calculateFeesOutGivenBondsIn(
+                1 ether, // bondIn
+                1 ether, // timeRemaining
+                0.9 ether, // spotPrice
+                1 ether, // sharePrice
+                0.1e18, // curveFee
+                0.1e18, // flatFee
+                0.5e18 // governanceFee
+            );
+        // curve fee = ((1 - p) * phi_curve * d_y * t) / c
+        // ((1-.9)*.1*1*1)/1 = .01
+        assertEq(totalCurveFee + totalFlatFee, .01 ether);
+        assertEq(totalGovernanceFee, .005 ether);
+
+        (totalCurveFee, totalFlatFee, totalGovernanceFee) = hyperdriveMath
+            .calculateFeesOutGivenBondsIn(
+                1 ether, // amountIn
+                0, // timeRemaining
+                0.9 ether, // spotPrice
+                1 ether, // sharePrice
+                0.1e18, // curveFee
+                0.1e18, // flatFee
+                0.5e18 // governanceFee
+            );
+        assertEq(totalCurveFee + totalFlatFee, 0.1 ether);
+        assertEq(totalGovernanceFee, 0.05 ether);
+    }
 }
