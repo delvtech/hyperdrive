@@ -445,7 +445,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
     /// @return shareReservesDelta The change in the share reserves.
     /// @return bondReservesDelta The change in the bond reserves.
     /// @return shareProceeds The proceeds in shares of selling the bonds.
-    /// @return totalGovFee The governance fee in shares.
+    /// @return totalGovernanceFee The governance fee in shares.
     function _calculateCloseLong(
         uint256 _bondAmount,
         uint256 _sharePrice,
@@ -457,7 +457,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
             uint256 shareProceeds,
-            uint256 totalGovFee
+            uint256 totalGovernanceFee
         )
     {
         // Calculate the effect that closing the long should have on the pool's
@@ -492,16 +492,17 @@ abstract contract HyperdriveLong is HyperdriveLP {
         );
         uint256 totalCurveFee;
         uint256 totalFlatFee;
-        (
-            totalCurveFee,
-            totalFlatFee,
-            totalGovFee
-        ) = _calculateFeesOutGivenBondsIn(
-            _bondAmount, // amountIn
-            timeRemaining,
-            spotPrice,
-            _sharePrice
-        );
+        (totalCurveFee, totalFlatFee, totalGovernanceFee) = HyperdriveMath
+            .calculateFeesOutGivenBondsIn(
+                _bondAmount,
+                timeRemaining,
+                spotPrice,
+                _sharePrice,
+                fees.curve,
+                fees.flat,
+                fees.governance
+            );
+
         shareReservesDelta -= totalCurveFee;
         shareProceeds -= totalCurveFee + totalFlatFee;
 
@@ -509,7 +510,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
             shareReservesDelta,
             bondReservesDelta,
             shareProceeds,
-            totalGovFee
+            totalGovernanceFee
         );
     }
 }

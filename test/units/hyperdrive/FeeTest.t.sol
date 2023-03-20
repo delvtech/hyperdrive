@@ -8,6 +8,7 @@ import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { MockHyperdrive } from "contracts/test/MockHyperdrive.sol";
 import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 
 contract FeeTest is HyperdriveTest {
     using FixedPointMath for uint256;
@@ -196,36 +197,35 @@ contract FeeTest is HyperdriveTest {
         assertEq(governanceFlatFee, 0.05 ether);
     }
 
-    function test_calcFeesOutGivenBondsIn() public {
-        uint256 apr = 0.05e18;
-        // Initialize the pool with a large amount of capital.
-        uint256 contribution = 500_000_000e18;
-        // Deploy and initialize a new pool with fees.
-        deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18, governance);
-        initialize(alice, apr, contribution);
+    // TODO Maybe move into HyperdriveMath.t.sol?
+    function test_calculateFeesOutGivenBondsIn() public {
         (
             uint256 totalCurveFee,
             uint256 totalFlatFee,
             uint256 totalGovernanceFee
-        ) = MockHyperdrive(address(hyperdrive)).calculateFeesOutGivenBondsIn(
-                1 ether, // amountIn
+        ) = HyperdriveMath.calculateFeesOutGivenBondsIn(
+                1 ether, // bondIn
                 1 ether, // timeRemaining
                 0.9 ether, // spotPrice
-                1 ether // sharePrice
-            );
+                1 ether, // sharePrice
+                0.1e18, // curveFee
+                0.1e18, // flatFee
+                0.5e18 // governanceFee
+        );
         // curve fee = ((1 - p) * phi_curve * d_y * t) / c
         // ((1-.9)*.1*1*1)/1 = .01
         assertEq(totalCurveFee + totalFlatFee, .01 ether);
 
         assertEq(totalGovernanceFee, .005 ether);
 
-        (totalCurveFee, totalFlatFee, totalGovernanceFee) = MockHyperdrive(
-            address(hyperdrive)
-        ).calculateFeesOutGivenBondsIn(
+        (totalCurveFee, totalFlatFee, totalGovernanceFee) = HyperdriveMath.calculateFeesOutGivenBondsIn(
                 1 ether, // amountIn
                 0, // timeRemaining
                 0.9 ether, // spotPrice
-                1 ether // sharePrice
+                1 ether, // sharePrice
+                0.1e18, // curveFee
+                0.1e18, // flatFee
+                0.5e18 // governanceFee
             );
         assertEq(totalCurveFee + totalFlatFee, 0.1 ether);
         assertEq(totalGovernanceFee, 0.05 ether);

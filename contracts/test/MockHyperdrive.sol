@@ -101,33 +101,6 @@ contract MockHyperdrive is Hyperdrive {
         );
     }
 
-    function calculateFeesOutGivenBondsIn(
-        uint256 _amountIn,
-        uint256 _normalizedTimeRemaining,
-        uint256 _spotPrice,
-        uint256 sharePrice
-    )
-        public
-        view
-        returns (
-            uint256 totalCurveFee,
-            uint256 totalFlatFee,
-            uint256 totalGovernanceFee
-        )
-    {
-        (
-            totalCurveFee,
-            totalFlatFee,
-            totalGovernanceFee
-        ) = _calculateFeesOutGivenBondsIn(
-            _amountIn,
-            _normalizedTimeRemaining,
-            _spotPrice,
-            sharePrice
-        );
-        return (totalCurveFee, totalFlatFee, totalGovernanceFee);
-    }
-
     function calculateFeesInGivenBondsOut(
         uint256 _amountOut,
         uint256 _normalizedTimeRemaining,

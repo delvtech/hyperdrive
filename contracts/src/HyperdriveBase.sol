@@ -329,48 +329,6 @@ abstract contract HyperdriveBase is MultiToken {
 
     // TODO: Consider combining this with the trading functions.
     //
-    /// @dev Calculates the fees for the flat and curve portion of hyperdrive calcOutGivenIn
-    /// @param _amountIn The given amount in, either in terms of shares or bonds.
-    /// @param _normalizedTimeRemaining The normalized amount of time until maturity.
-    /// @param _spotPrice The price without slippage of bonds in terms of shares.
-    /// @param _sharePrice The current price of shares in terms of base.
-    /// @return totalCurveFee The curve fee. The fee is in terms of shares.
-    /// @return totalFlatFee The flat fee. The fee is in terms of shares.
-    /// @return totalGovernanceFee The total fee that goes to governance. The fee is in terms of shares.
-    function _calculateFeesOutGivenBondsIn(
-        uint256 _amountIn,
-        uint256 _normalizedTimeRemaining,
-        uint256 _spotPrice,
-        uint256 _sharePrice
-    )
-        internal
-        view
-        returns (
-            uint256 totalCurveFee,
-            uint256 totalFlatFee,
-            uint256 totalGovernanceFee
-        )
-    {
-        // 'bond' in
-        // curve fee = ((1 - p) * phi_curve * d_y * t) / c
-        uint256 _pricePart = (FixedPointMath.ONE_18.sub(_spotPrice));
-        totalCurveFee = _pricePart
-            .mulDown(fees.curve)
-            .mulDown(_amountIn)
-            .mulDivDown(_normalizedTimeRemaining, _sharePrice);
-        // calculate the curve portion of the governance fee
-        totalGovernanceFee = totalCurveFee.mulDown(fees.governance);
-        // flat fee = (d_y * (1 - t) * phi_flat) / c
-        uint256 flat = _amountIn.mulDivDown(
-            FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
-            _sharePrice
-        );
-        totalFlatFee = (flat.mulDown(fees.flat));
-        totalGovernanceFee += totalFlatFee.mulDown(fees.governance);
-    }
-
-    // TODO: Consider combining this with the trading functions.
-    //
     /// @dev Calculates the fees for the curve portion of hyperdrive calcInGivenOut
     /// @param _amountOut The given amount out.
     /// @param _normalizedTimeRemaining The normalized amount of time until maturity.
