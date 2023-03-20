@@ -607,7 +607,9 @@ library HyperdriveMath {
     /// @param _normalizedTimeRemaining The normalized amount of time until maturity
     /// @param _spotPrice The spot price of the pool
     /// @param _sharePrice The current price of shares in terms of base
-    /// @param _curveFee The
+    /// @param _curveFee The percentage fee to be applied for the curve part of the trade equation
+    /// @param _flatFee The percentage fee to be applied for the flat part of the trade equation
+    /// @param _governanceFee The percentage amount of the total fees to be given to governance
     /// @return totalCurveFee The fee for the curved portion of the trade
     /// @return totalFlatFee The fee for the flat portion of the trade
     /// @return totalGovernanceFee The portion of the fee which goes to governance
