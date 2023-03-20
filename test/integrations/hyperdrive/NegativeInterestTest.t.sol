@@ -12,6 +12,7 @@ import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 // - [ ] Negative interest leading to partial haircut.
 // - [ ] Positive interest accrual, then long, then negative interest.
 // - [ ] Long, negative interest, then positive interest after close.
+// - [ ] Extreme inputs
 //
 // Ultimately, we'll want to test these cases with withdraw shares as well
 // as this will complicate the issue.
@@ -28,7 +29,7 @@ contract NegativeInterestTest is HyperdriveTest {
         initialize(alice, apr, contribution);
 
         // Interest accrues for a term.
-        vm.assume(preTradingApr >= -0.5e18 && preTradingApr <= 0.5e18);
+        vm.assume(preTradingApr >= -0.9e18 && preTradingApr <= 1e18);
         advanceTime(POSITION_DURATION, preTradingApr);
 
         // Bob opens a short.
@@ -42,7 +43,7 @@ contract NegativeInterestTest is HyperdriveTest {
         hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
 
         // Interest accrues for a term.
-        vm.assume(postTradingApr >= -0.5e18 && postTradingApr <= 0.5e18);
+        vm.assume(postTradingApr >= -1e18 && postTradingApr <= 1e18);
         advanceTime(POSITION_DURATION, postTradingApr);
 
         // Bob closes the short. He should receive nothing on account of the
@@ -60,7 +61,7 @@ contract NegativeInterestTest is HyperdriveTest {
         initialize(alice, apr, contribution);
 
         // Interest accrues for a term.
-        vm.assume(preTradingApr >= -0.5e18 && preTradingApr <= 0.5e18);
+        vm.assume(preTradingApr >= -0.9e18 && preTradingApr <= 1e18);
         advanceTime(POSITION_DURATION, preTradingApr);
 
         // Bob opens a short.
