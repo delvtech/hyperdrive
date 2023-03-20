@@ -65,7 +65,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 baseDeposit,
                 shareProceeds
             ) = HyperdriveMath.calculateOpenShort(
-                IHyperdrive.OpenShortCalculationInputs({
+                HyperdriveMath.OpenShortCalculationParams({
                     bondAmount: _bondAmount,
                     sharePrice: sharePrice,
                     openSharePrice: openSharePrice,

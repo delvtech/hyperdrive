@@ -231,10 +231,21 @@ library HyperdriveMath {
         return (shareReservesDelta, bondReservesDelta, shareProceeds);
     }
 
-    /// @notice Calculates the openShort trading deltas
-    /// @param _inputs See IHyperdrive.OpenShortCalculationInputs
+    struct OpenShortCalculationParams {
+        uint256 bondAmount;
+        uint256 sharePrice;
+        uint256 openSharePrice;
+        uint256 initialSharePrice;
+        uint256 normalizedTimeRemaining;
+        uint256 timeStretch;
+        IHyperdrive.MarketState marketState;
+        IHyperdrive.Fees fees;
+    }
+
+    /// @notice Calculates the openShort trade
+    /// @param _params Parameters needed to calculate the openShort trade
     function calculateOpenShort(
-        IHyperdrive.OpenShortCalculationInputs memory _inputs
+        OpenShortCalculationParams memory _params
     )
         internal
         pure
@@ -253,19 +264,19 @@ library HyperdriveMath {
         // selling the shorted bonds at the market price.
         (shareReservesDelta, bondReservesDelta, shareProceeds) = HyperdriveMath
             .calculateOpenShortTrade(
-                _inputs.marketState.shareReserves,
-                _inputs.marketState.bondReserves,
-                _inputs.bondAmount,
-                _inputs.normalizedTimeRemaining,
-                _inputs.timeStretch,
-                _inputs.sharePrice,
-                _inputs.initialSharePrice
+                _params.marketState.shareReserves,
+                _params.marketState.bondReserves,
+                _params.bondAmount,
+                _params.normalizedTimeRemaining,
+                _params.timeStretch,
+                _params.sharePrice,
+                _params.initialSharePrice
             );
 
         // If the base proceeds of selling the bonds is greater than the bond
         // amount, then the trade occurred in the negative interest domain. We
         // revert in these pathological cases.
-        if (shareProceeds.mulDown(_inputs.sharePrice) > _inputs.bondAmount)
+        if (shareProceeds.mulDown(_params.sharePrice) > _params.bondAmount)
             revert Errors.NegativeInterest();
 
         /// OpenShort Trade Fees ///
@@ -278,14 +289,14 @@ library HyperdriveMath {
         uint256 totalFlatFee;
         (totalCurveFee, totalFlatFee, totalGovernanceFee) = HyperdriveMath
             .calculateOpenShortFee(
-                _inputs.marketState.shareReserves,
-                _inputs.marketState.bondReserves,
-                _inputs.bondAmount,
-                _inputs.normalizedTimeRemaining,
-                _inputs.timeStretch,
-                _inputs.sharePrice,
-                _inputs.initialSharePrice,
-                _inputs.fees
+                _params.marketState.shareReserves,
+                _params.marketState.bondReserves,
+                _params.bondAmount,
+                _params.normalizedTimeRemaining,
+                _params.timeStretch,
+                _params.sharePrice,
+                _params.initialSharePrice,
+                _params.fees
             );
 
         // Attribute the fees to the share deltas.
@@ -300,13 +311,13 @@ library HyperdriveMath {
         // immediately (without fees).
         baseToDeposit = HyperdriveMath
             .calculateShortProceeds(
-                _inputs.bondAmount,
+                _params.bondAmount,
                 shareProceeds,
-                _inputs.openSharePrice,
-                _inputs.sharePrice,
-                _inputs.sharePrice
+                _params.openSharePrice,
+                _params.sharePrice,
+                _params.sharePrice
             )
-            .mulDown(_inputs.sharePrice);
+            .mulDown(_params.sharePrice);
 
         return (
             shareReservesDelta,

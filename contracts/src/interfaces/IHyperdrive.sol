@@ -22,10 +22,6 @@ interface IHyperdrive is IMultiToken {
         uint128 shortBaseVolume;
     }
 
-    //  withdrawSharesReadyToWithdraw - The interest earned by the redemptions which put
-    // capital into the withdraw pool
-    // withdrawCapitalPool - The margin capital reclaimed by the withdraw process
-    // withdrawInterestPool - withdrawInterestPool
     struct WithdrawPool {
         uint128 withdrawSharesReadyToWithdraw;
         uint128 capital;
@@ -36,17 +32,6 @@ interface IHyperdrive is IMultiToken {
         uint256 curveFee;
         uint256 flatFee;
         uint256 govFee;
-    }
-
-    struct OpenShortCalculationInputs {
-        uint256 bondAmount;
-        uint256 sharePrice;
-        uint256 openSharePrice;
-        uint256 initialSharePrice;
-        uint256 normalizedTimeRemaining;
-        uint256 timeStretch;
-        IHyperdrive.MarketState marketState;
-        IHyperdrive.Fees fees;
     }
 
     function baseToken() external view returns (address);
