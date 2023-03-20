@@ -257,8 +257,6 @@ library HyperdriveMath {
             uint256 shareProceeds
         )
     {
-        /// OpenShort Trade Deltas ///
-
         // Calculate the effect that opening the short should have on the pool's
         // reserves as well as the amount of shares the trader receives from
         // selling the shorted bonds at the market price.
@@ -278,8 +276,6 @@ library HyperdriveMath {
         // revert in these pathological cases.
         if (shareProceeds.mulDown(_params.sharePrice) > _params.bondAmount)
             revert Errors.NegativeInterest();
-
-        /// OpenShort Trade Fees ///
 
         // Calculate the fees charged on the curve and flat parts of the trade.
         // Since we calculate the amount of shares received given bonds in, we
@@ -302,8 +298,6 @@ library HyperdriveMath {
         // Attribute the fees to the share deltas.
         shareReservesDelta -= totalCurveFee;
         shareProceeds -= totalCurveFee + totalFlatFee;
-
-        /// OpenShort Trade Proceeds ///
 
         // Calculate the amount of base the user must deposit
         baseToDeposit = HyperdriveMath
