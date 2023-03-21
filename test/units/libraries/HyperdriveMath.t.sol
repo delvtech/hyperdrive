@@ -282,7 +282,7 @@ contract HyperdriveMathTest is Test {
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
 
-        ) = hyperdriveMath.calculateCloseLong(
+        ) = hyperdriveMath.calculateCloseLongTrade(
                 shareReserves,
                 bondReserves,
                 amountIn,
@@ -326,7 +326,7 @@ contract HyperdriveMathTest is Test {
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
             uint256 shareProceeds
-        ) = hyperdriveMath.calculateCloseLong(
+        ) = hyperdriveMath.calculateCloseLongTrade(
                 shareReserves,
                 bondReserves,
                 amountIn,
@@ -364,7 +364,7 @@ contract HyperdriveMathTest is Test {
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
             uint256 shareProceeds
-        ) = hyperdriveMath.calculateCloseLong(
+        ) = hyperdriveMath.calculateCloseLongTrade(
                 shareReserves,
                 bondReserves,
                 amountIn,
@@ -388,7 +388,7 @@ contract HyperdriveMathTest is Test {
         // backdating. Negative interest accrued over the period and the share
         // price increased after.
         (shareReservesDelta, bondReservesDelta, shareProceeds) = hyperdriveMath
-            .calculateCloseLong(
+            .calculateCloseLongTrade(
                 shareReserves,
                 bondReserves,
                 amountIn,

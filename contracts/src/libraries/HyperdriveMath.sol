@@ -246,6 +246,90 @@ library HyperdriveMath {
         return (shareReservesDelta, bondReservesDelta, bondProceeds);
     }
 
+    struct CloseLongCalculationParams {
+        uint256 bondAmount;
+        uint256 shareReserves;
+        uint256 bondReserves;
+        uint256 sharePrice;
+        uint256 closeSharePrice;
+        uint256 initialSharePrice;
+        uint256 normalizedTimeRemaining;
+        uint256 timeStretch;
+        uint256 curveFee;
+        uint256 flatFee;
+        uint256 governanceFee;
+    }
+
+    /// @notice Calculates the closeLong trade deltas, fees and proceeds
+    /// @param _params Parameters needed to calculate the openShort trade
+    function calculateCloseLong(
+        CloseLongCalculationParams memory _params
+    )
+        internal
+        pure
+        returns (
+            uint256 shareReservesDelta,
+            uint256 bondReservesDelta,
+            uint256 totalGovernanceFee,
+            uint256 shareProceeds
+        )
+    {
+        // Calculate the effect that closing the long should have on the pool's
+        // reserves as well as the amount of shares the trader receives for
+        // selling the bonds at the market price.
+        (
+            shareReservesDelta,
+            bondReservesDelta,
+            shareProceeds
+        ) = calculateCloseLongTrade(
+            _params.shareReserves,
+            _params.bondReserves,
+            _params.bondAmount,
+            _params.normalizedTimeRemaining,
+            _params.timeStretch,
+            _params.closeSharePrice,
+            _params.sharePrice,
+            _params.initialSharePrice
+        );
+
+        // Calculate the spot price of bonds in terms of shares.
+        uint256 spotPrice = calculateSpotPrice(
+            _params.shareReserves,
+            _params.bondReserves,
+            _params.initialSharePrice,
+            _params.normalizedTimeRemaining,
+            _params.timeStretch
+        );
+
+        // Calculate the fees charged on the curve and flat parts of the trade.
+        // Since we calculate the amount of shares received given bonds in, we
+        // subtract the fee from the share deltas so that the trader receives
+        // less shares.
+        HyperdriveMath.FeeDeltas
+            memory feeDeltas = calculateFeesOutGivenBondsIn(
+                _params.bondAmount,
+                _params.normalizedTimeRemaining,
+                spotPrice,
+                _params.sharePrice,
+                _params.curveFee,
+                _params.flatFee,
+                _params.governanceFee
+            );
+
+        // Apply the fee deltas
+        shareReservesDelta -= feeDeltas.totalCurveFee;
+        shareProceeds -= feeDeltas.totalCurveFee + feeDeltas.totalFlatFee;
+        totalGovernanceFee = (feeDeltas.governanceCurveFee +
+            feeDeltas.governanceFlatFee);
+
+        return (
+            shareReservesDelta,
+            bondReservesDelta,
+            totalGovernanceFee,
+            shareProceeds
+        );
+    }
+
     /// @dev Calculates the amount of shares a user will receive when closing a
     ///      long position.
     /// @param _shareReserves The pool's share reserves.
@@ -260,7 +344,7 @@ library HyperdriveMath {
     /// @return shareReservesDelta The shares paid by the reserves in the trade.
     /// @return bondReservesDelta The bonds paid to the reserves in the trade.
     /// @return shareProceeds The shares that the user will receive.
-    function calculateCloseLong(
+    function calculateCloseLongTrade(
         uint256 _shareReserves,
         uint256 _bondReserves,
         uint256 _amountIn,

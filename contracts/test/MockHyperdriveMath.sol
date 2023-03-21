@@ -62,7 +62,7 @@ contract MockHyperdriveMath {
         return (result1, result2, result3);
     }
 
-    function calculateCloseLong(
+    function calculateCloseLongTrade(
         uint256 _shareReserves,
         uint256 _bondReserves,
         uint256 _amountIn,
@@ -73,7 +73,7 @@ contract MockHyperdriveMath {
         uint256 _initialSharePrice
     ) external pure returns (uint256, uint256, uint256) {
         (uint256 result1, uint256 result2, uint256 result3) = HyperdriveMath
-            .calculateCloseLong(
+            .calculateCloseLongTrade(
                 _shareReserves,
                 _bondReserves,
                 _amountIn,
