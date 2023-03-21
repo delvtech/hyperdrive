@@ -161,8 +161,6 @@ contract LPFairnessTest is HyperdriveTest {
         console2.log("bondsShorted2", bondsShorted2.toString(18));
         (, uint256 baseSpent2) = openShort(celine, bondsShorted2);
         console2.log("baseSpent2", baseSpent2.toString(18));
-        // uint256 bondsShorted2 = 0;
-        // uint256 baseSpent2 = 0;
 
         // Bob adds liquidity.
         uint256 contribution = 5_000_000e18;
