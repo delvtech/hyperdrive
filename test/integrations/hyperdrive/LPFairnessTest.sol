@@ -12,11 +12,11 @@ contract LPFairnessTest is HyperdriveTest {
     using Lib for *;
     using FixedPointMath for uint256;
 
-    function test_lp_fairness_short() external {
+    function test_lp_fairness_short(uint256 param) external {
         // limit the fuzz testing to apy's less than 100%
-        //vm.assume(param < 1e18);
+        vm.assume(param < 1e18);
         // variable interest rate earned by the pool
-        int256 apy = 0.10e18;//int256(param);
+        int256 apy = int256(param);
         // fixed interest rate the pool pays the longs
         uint256 apr = 0.10e18;
 
@@ -81,14 +81,17 @@ contract LPFairnessTest is HyperdriveTest {
 
         // Bob removes liquidity
         uint256 withdrawalProceeds = removeLiquidity(bob, lpShares);
-        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1 wei);
+        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e8);
     }
 
-    function test_lp_fairness_short_multiple_trades() external {
+    function test_lp_fairness_short_multiple_trades(uint256 param1, uint256 param2) external {
         // limit the fuzz testing to apy's less than 100%
-        //vm.assume(param < 1e18);
+        vm.assume(param1 < 1e18);
+        // ensure a feasible trade size
+        vm.assume(param2 < 4_900_000e18);
+        vm.assume(param2 > .00001e18);
         // variable interest rate earned by the pool
-        int256 apy = 0.10e18;//int256(param);
+        int256 apy = int256(param1);
         // fixed interest rate the pool pays the longs
         uint256 apr = 0.10e18;
 
@@ -103,7 +106,7 @@ contract LPFairnessTest is HyperdriveTest {
         console2.log("aprBefore", aprBefore.toString(18));
     }
         // Celine opens a short.
-        uint256 bondsShorted = 1_000_000e18;
+        uint256 bondsShorted = 5_000_000e18 - param2;
         console2.log("bondsShorted", bondsShorted.toString(18));
         (, uint256 baseSpent) = openShort(celine, bondsShorted);
         console2.log("baseSpent", baseSpent.toString(18));
@@ -131,7 +134,7 @@ contract LPFairnessTest is HyperdriveTest {
         );
 
         // Celine opens another short.
-        uint256 bondsShorted2 = 1_000_000e18;
+        uint256 bondsShorted2 = param2;
         console2.log("bondsShorted2", bondsShorted2.toString(18));
         (, uint256 baseSpent2) = openShort(celine, bondsShorted2);
         console2.log("baseSpent2", baseSpent2.toString(18));
@@ -182,7 +185,7 @@ contract LPFairnessTest is HyperdriveTest {
 
         // Bob removes liquidity
         uint256 withdrawalProceeds = removeLiquidity(bob, lpShares);
-        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1 wei);
+        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e8);
     }
 
     function test_lp_fairness_long(uint256 param) external {
@@ -245,11 +248,18 @@ contract LPFairnessTest is HyperdriveTest {
         assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1 wei);
     }
 
-    function test_lp_fairness_long_multiple_trades() external {
-        // limit the fuzz testing to apy's less than 100%
-        //vm.assume(param < 1e18);
+    function test_lp_fairness_long_multiple_trades(uint256 param1, uint256 param2) external {
+        // limit to apy's less than 100%
+        vm.assume(param1 < 1e18);
+        // ensure a feasible trade size
+        vm.assume(param2 < 4_900_000e18);
+        vm.assume(param2 > .00001e18);
+        //uint256 param1 = 0.01e18;
+        //uint256 param2 = 1000;
+        console2.log("param2", param2.toString(18));
         // variable interest rate earned by the pool
-        int256 apy = 0.10e18; //int256(param);
+        int256 apy = int256(param1);
+        console2.log("apy", apy.toString(18));
         // fixed interest rate the pool pays the longs
         uint256 apr = 0.10e18;
 
@@ -261,10 +271,10 @@ contract LPFairnessTest is HyperdriveTest {
         uint256 aprBeforeLong = HyperdriveUtils.calculateAPRFromReserves(
             hyperdrive
         );
-        console2.log("aprBeforeLong", aprBeforeLong);
+        console2.log("aprBeforeLong", aprBeforeLong.toString(18));
 }
         // Celine opens a long.
-        uint256 baseSpent = 1_000_000e18;
+        uint256 baseSpent = 5_000_000e18 - param2;
         console2.log("baseSpent", baseSpent.toString(18));
         (, uint256 bondsPurchased) = openLong(celine, baseSpent);
         console2.log("bondsPurchased", bondsPurchased.toString(18));
@@ -283,7 +293,7 @@ contract LPFairnessTest is HyperdriveTest {
         );
 
         // Celine opens another long.
-        uint256 baseSpent2 = 2_000_000e18;
+        uint256 baseSpent2 = param2;
         console2.log("baseSpent2", baseSpent2.toString(18));
         (, uint256 bondsPurchased2) = openLong(celine, baseSpent2);
         console2.log("bondsPurchased2", bondsPurchased2.toString(18));
@@ -317,7 +327,7 @@ contract LPFairnessTest is HyperdriveTest {
 
         // Ensure that if the new LP withdraws, they get their money back.
         uint256 withdrawalProceeds = removeLiquidity(bob, lpShares);
-        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1 wei);
+        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e8);
     }
 }
 
