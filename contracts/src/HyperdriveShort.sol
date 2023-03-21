@@ -146,36 +146,31 @@ abstract contract HyperdriveShort is HyperdriveLP {
         uint256 closeSharePrice = _maturityTime <= block.timestamp
             ? checkpoints[_maturityTime].sharePrice
             : sharePrice;
+        uint256 normalizedTimeRemaining = _calculateTimeRemaining(
+            _maturityTime
+        );
 
         // Calculate the pool and user deltas using the trading function.
-        (
-            uint256 shareReservesDelta,
-            uint256 bondReservesDelta,
-            uint256 totalGovernanceFee,
-            uint256 sharePayment,
-            uint256 shareProceeds
-        ) = HyperdriveMath.calculateCloseShort(
-                                               HyperdriveMath.CloseShortCalculationParams({
-                                                       bondAmount: _bondAmount,
-                                                       sharePrice: sharePrice,
-                                                       openSharePrice: openSharePrice,
-                                                       closeSharePrice: closeSharePrice
-                                                   })
-
-);
-
-        // uint256 shortProceeds = HyperdriveMath.calculateShortProceeds(
-        //     _bondAmount,
-        //     sharePayment,
-        //     openSharePrice,
-        //     closeSharePrice,
-        //     sharePrice
-        // );
-
-
+        HyperdriveMath.CloseShortCalculationDeltas
+            memory deltas = HyperdriveMath.calculateCloseShort(
+                HyperdriveMath.CloseShortCalculationParams({
+                    bondAmount: _bondAmount,
+                    shareReserves: marketState.shareReserves,
+                    bondReserves: marketState.bondReserves,
+                    sharePrice: sharePrice,
+                    openSharePrice: openSharePrice,
+                    closeSharePrice: closeSharePrice,
+                    initialSharePrice: initialSharePrice,
+                    normalizedTimeRemaining: normalizedTimeRemaining,
+                    timeStretch: timeStretch,
+                    curveFee: fees.curve,
+                    flatFee: fees.flat,
+                    governanceFee: fees.governance
+                })
+            );
 
         // Attribute the governance fees.
-        governanceFeesAccrued += totalGovernanceFee;
+        governanceFeesAccrued += deltas.totalGovernanceFee;
 
         // If the position hasn't matured, apply the accounting updates that
         // result from closing the short to the reserves and pay out the
@@ -183,9 +178,9 @@ abstract contract HyperdriveShort is HyperdriveLP {
         if (block.timestamp < _maturityTime) {
             _applyCloseShort(
                 _bondAmount,
-                bondReservesDelta,
-                sharePayment - totalGovernanceFee,
-                shareReservesDelta,
+                deltas.bondReservesDelta,
+                deltas.sharePayment - deltas.totalGovernanceFee,
+                deltas.shareReservesDelta,
                 _maturityTime,
                 sharePrice
             );
@@ -195,7 +190,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // the short sale as well as the variable interest that was collected
         // on the face value of the bonds:
         (baseProceeds, ) = _withdraw(
-            shortProceeds,
+            deltas.shareProceeds,
             _destination,
             _asUnderlying
         );

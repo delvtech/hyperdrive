@@ -29,9 +29,9 @@ contract MockHyperdriveScript is Script {
             1 days,
             FixedPointMath.ONE_18.divDown(22.186877016851916266e18),
             HyperdriveBase.Fees({
-                curveFee: 0.1e18,
-                flatFee: 0.05e18,
-                govFee: 0.1e18
+                curve: 0.1e18,
+                flat: 0.05e18,
+                governance: 0.1e18
             }),
             address(0)
         );

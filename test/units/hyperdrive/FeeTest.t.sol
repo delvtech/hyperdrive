@@ -63,7 +63,7 @@ contract FeeTest is HyperdriveTest {
         uint256 baseAmount = 10e18;
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, baseAmount);
 
-        // Ensure that gov fees have been accrued.
+        // Ensure that governance fees have been accrued.
         uint256 governanceFeesAfterOpenLong = MockHyperdrive(
             address(hyperdrive)
         ).getGovernanceFeesAccrued();
@@ -197,43 +197,41 @@ contract FeeTest is HyperdriveTest {
         assertEq(governanceFlatFee, 0.05 ether);
     }
 
-    function test_calcFeesInGivenBondsOut() public {
-        uint256 apr = 0.05e18;
-        // Initialize the pool with a large amount of capital.
-        uint256 contribution = 500_000_000e18;
-        // Deploy and initialize a new pool with fees.
-        deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18, governance);
-        initialize(alice, apr, contribution);
-        (
-            uint256 curveFee,
-            uint256 flatFee,
-            uint256 governanceCurveFee,
-            uint256 governanceFlatFee
-        ) = MockHyperdrive(address(hyperdrive)).calculateFeesInGivenBondsOut(
+    // TODO Maybe move into HyperdriveMath.t.sol?
+    function test_calculateFeesInGivenBondsOut() public {
+        IHyperdrive.Fees memory fees = IHyperdrive.Fees({
+            curve: 0.1e18,
+            flat: 0.1e18,
+            governance: 0.5e18
+        });
+
+        HyperdriveMath.FeeDeltas memory feeDeltas = HyperdriveMath
+            .calculateFeesInGivenBondsOut(
                 1 ether, // amountOut
                 1 ether, // timeRemaining
                 0.9 ether, // spotPrice
-                1 ether // sharePrice
+                1 ether, // sharePrice
+                fees.curve,
+                fees.flat,
+                fees.governance
             );
-        assertEq(curveFee, .01 ether);
-        assertEq(flatFee, 0 ether);
-        assertEq(governanceCurveFee, .005 ether);
-        assertEq(governanceFlatFee, 0 ether);
+        assertEq(feeDeltas.totalCurveFee, .01 ether);
+        assertEq(feeDeltas.totalFlatFee, 0 ether);
+        assertEq(feeDeltas.governanceCurveFee, .005 ether);
+        assertEq(feeDeltas.governanceFlatFee, 0 ether);
 
-        (
-            curveFee,
-            flatFee,
-            governanceCurveFee,
-            governanceFlatFee
-        ) = MockHyperdrive(address(hyperdrive)).calculateFeesInGivenBondsOut(
+        feeDeltas = HyperdriveMath.calculateFeesInGivenBondsOut(
             1 ether, // amountOut
             0, // timeRemaining
             0.9 ether, // spotPrice
-            1 ether // sharePrice
+            1 ether, // sharePrice
+            fees.curve,
+            fees.flat,
+            fees.governance
         );
-        assertEq(curveFee, 0 ether);
-        assertEq(flatFee, 0.1 ether);
-        assertEq(governanceCurveFee, 0 ether);
-        assertEq(governanceFlatFee, 0.05 ether);
+        assertEq(feeDeltas.totalCurveFee, 0 ether);
+        assertEq(feeDeltas.totalFlatFee, 0.1 ether);
+        assertEq(feeDeltas.governanceCurveFee, 0 ether);
+        assertEq(feeDeltas.governanceFlatFee, 0.05 ether);
     }
 }

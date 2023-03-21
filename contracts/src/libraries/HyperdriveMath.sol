@@ -296,13 +296,7 @@ library HyperdriveMath {
         // Since we calculate the amount of shares received given bonds in, we
         // subtract the fee from the share deltas so that the trader receives
         // less shares.
-        uint256 totalCurveFee;
-        uint256 totalFlatFee;
-        (
-            totalCurveFee,
-            totalFlatFee,
-            totalGovernanceFee
-        ) = calculateFeesOutGivenBondsIn(
+        FeeDeltas memory feeDeltas = calculateFeesOutGivenBondsIn(
             _params.bondAmount,
             _params.normalizedTimeRemaining,
             spotPrice,
@@ -313,8 +307,11 @@ library HyperdriveMath {
         );
 
         // Attribute the fees to the share deltas.
-        shareReservesDelta -= totalCurveFee;
-        shareProceeds -= totalCurveFee + totalFlatFee;
+        shareReservesDelta -= feeDeltas.totalCurveFee;
+        shareProceeds -= feeDeltas.totalCurveFee + feeDeltas.totalFlatFee;
+        totalGovernanceFee =
+            feeDeltas.governanceCurveFee +
+            feeDeltas.governanceFlatFee;
 
         // Calculate the amount of base the user must deposit.
         baseToDeposit = calculateShortProceeds(
@@ -384,39 +381,42 @@ library HyperdriveMath {
 
     struct CloseShortCalculationParams {
         uint256 bondAmount;
-        uint256 sharePrice;
+        uint256 shareReserves;
+        uint256 bondReserves;
         uint256 openSharePrice;
+        uint256 sharePrice;
         uint256 closeSharePrice;
         uint256 initialSharePrice;
         uint256 normalizedTimeRemaining;
         uint256 timeStretch;
-        IHyperdrive.MarketState marketState;
-        IHyperdrive.Fees fees;
+        uint256 curveFee;
+        uint256 flatFee;
+        uint256 governanceFee;
+    }
+
+    struct CloseShortCalculationDeltas {
+        uint256 shareReservesDelta;
+        uint256 bondReservesDelta;
+        uint256 totalGovernanceFee;
+        uint256 sharePayment;
+        uint256 shareProceeds;
     }
 
     /// @notice Calculates the closeShort trade deltas, fees and proceeds
     /// @param _params Parameters needed to calculate the closeShort trade
     function calculateCloseShort(
         CloseShortCalculationParams memory _params
-    )
-        internal
-        pure
-        returns (
-            uint256 shareReservesDelta,
-            uint256 bondReservesDelta,
-            uint256 totalGovernanceFee,
-            uint256 sharePayment,
-            uint256 shareProceeds
-        )
-    {
-
+    ) internal pure returns (CloseShortCalculationDeltas memory) {
         // Calculate the effect that closing the short should have on the pool's
         // reserves as well as the amount of shares the trader receives from
         // selling the shorted bonds
-        (shareReservesDelta, bondReservesDelta, sharePayment) = HyperdriveMath
-            .calculateCloseShortTrade(
-                _params.marketState.shareReserves,
-                _params.marketState.bondReserves,
+        (
+            uint256 shareReservesDelta,
+            uint256 bondReservesDelta,
+            uint256 sharePayment
+        ) = HyperdriveMath.calculateCloseShortTrade(
+                _params.shareReserves,
+                _params.bondReserves,
                 _params.bondAmount,
                 _params.normalizedTimeRemaining,
                 _params.timeStretch,
@@ -426,8 +426,8 @@ library HyperdriveMath {
 
         // Calculate the spot price of bonds in terms of shares.
         uint256 spotPrice = calculateSpotPrice(
-            _params.marketState.shareReserves,
-            _params.marketState.bondReserves,
+            _params.shareReserves,
+            _params.bondReserves,
             _params.initialSharePrice,
             _params.normalizedTimeRemaining,
             _params.timeStretch
@@ -436,28 +436,26 @@ library HyperdriveMath {
         // Calculate the fees charged on the curve and flat parts of the trade.
         // Since we calculate the amount of shares paid given bonds out, we add
         // the fee from the share deltas so that the trader pays less shares.
-        (
-            uint256 totalCurveFee,
-            uint256 totalFlatFee,
-            uint256 governanceCurveFee,
-            uint256 governanceFlatFee
-        ) = calculateFeesInGivenBondsOut(
-                _params.bondAmount,
-                _params.normalizedTimeRemaining,
-                spotPrice,
-                _params.sharePrice,
-                _params.fees.curve,
-                _params.fees.flat,
-                _params.fees.governance
-            );
-        shareReservesDelta += totalCurveFee - governanceCurveFee;
-        sharePayment += totalCurveFee + totalFlatFee;
+        FeeDeltas memory feeDeltas = calculateFeesInGivenBondsOut(
+            _params.bondAmount,
+            _params.normalizedTimeRemaining,
+            spotPrice,
+            _params.sharePrice,
+            _params.curveFee,
+            _params.flatFee,
+            _params.governanceFee
+        );
+        shareReservesDelta +=
+            feeDeltas.totalCurveFee -
+            feeDeltas.governanceCurveFee;
+        sharePayment += feeDeltas.totalCurveFee + feeDeltas.totalFlatFee;
 
         // Derive the total amount of fees given to governance
-        totalGovernanceFee = governanceCurveFee + governanceFlatFee;
+        uint256 totalGovernanceFee = feeDeltas.governanceCurveFee +
+            feeDeltas.governanceFlatFee;
 
         // Calculates the proceeds of the trade
-        shareProceeds = calculateShortProceeds(
+        uint256 shareProceeds = calculateShortProceeds(
             _params.bondAmount,
             sharePayment,
             _params.openSharePrice,
@@ -465,12 +463,14 @@ library HyperdriveMath {
             _params.sharePrice
         );
 
-        return (
-            shareReservesDelta,
-            bondReservesDelta,
-            totalGovernanceFee,
-            shareProceeds
-        );
+        return
+            CloseShortCalculationDeltas({
+                shareReservesDelta: shareReservesDelta,
+                bondReservesDelta: bondReservesDelta,
+                totalGovernanceFee: totalGovernanceFee,
+                sharePayment: sharePayment,
+                shareProceeds: shareProceeds
+            });
     }
 
     /// @dev Calculates the amount of base that a user will receive when closing a short position
@@ -700,6 +700,13 @@ library HyperdriveMath {
         return (shares, longWithdrawalShares, shortWithdrawalShares);
     }
 
+    struct FeeDeltas {
+        uint256 totalCurveFee;
+        uint256 totalFlatFee;
+        uint256 governanceCurveFee;
+        uint256 governanceFlatFee;
+    }
+
     /// @dev Calculates the fees for the flat and curve portion of calcOutGivenIn
     /// @param _bondAmount The amount of bonds to short
     /// @param _normalizedTimeRemaining The normalized amount of time until maturity
@@ -708,9 +715,7 @@ library HyperdriveMath {
     /// @param _curveFee The percentage fee to be applied for the curve part of the trade equation
     /// @param _flatFee The percentage fee to be applied for the flat part of the trade equation
     /// @param _governanceFee The percentage amount of the total fees to be given to governance
-    /// @return totalCurveFee The fee for the curved portion of the trade
-    /// @return totalFlatFee The fee for the flat portion of the trade
-    /// @return totalGovernanceFee The portion of the fee which goes to governance
+    /// @return The fee deltas
     function calculateFeesOutGivenBondsIn(
         uint256 _bondAmount,
         uint256 _normalizedTimeRemaining,
@@ -719,18 +724,10 @@ library HyperdriveMath {
         uint256 _curveFee,
         uint256 _flatFee,
         uint256 _governanceFee
-    )
-        internal
-        pure
-        returns (
-            uint256 totalCurveFee,
-            uint256 totalFlatFee,
-            uint256 totalGovernanceFee
-        )
-    {
+    ) internal pure returns (FeeDeltas memory) {
         // curve fee = ((1 - p) * phi_curve * d_y * t) / c
         uint256 curve = (FixedPointMath.ONE_18.sub(_spotPrice));
-        totalCurveFee = curve
+        uint256 totalCurveFee = curve
             .mulDown(_curveFee)
             .mulDown(_bondAmount)
             .mulDivDown(_normalizedTimeRemaining, _sharePrice);
@@ -740,28 +737,31 @@ library HyperdriveMath {
             FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
             _sharePrice
         );
-        totalFlatFee = (flat.mulDown(_flatFee));
+        uint256 totalFlatFee = (flat.mulDown(_flatFee));
 
         // calculate the curve portion of the gov fee
-        totalGovernanceFee = totalCurveFee.mulDown(_governanceFee);
+        uint256 governanceCurveFee = totalCurveFee.mulDown(_governanceFee);
         // calculate the flat portion of the gov fee
-        totalGovernanceFee += totalFlatFee.mulDown(_governanceFee);
+        uint256 governanceFlatFee = totalFlatFee.mulDown(_governanceFee);
 
-        return (totalCurveFee, totalFlatFee, totalGovernanceFee);
+        return
+            FeeDeltas({
+                totalCurveFee: totalCurveFee,
+                totalFlatFee: totalFlatFee,
+                governanceCurveFee: governanceCurveFee,
+                governanceFlatFee: governanceFlatFee
+            });
     }
 
     /// @dev Calculates the fees for the curve portion of hyperdrive calcInGivenOut
     /// @param _bondAmount The given bond amount out.
     /// @param _normalizedTimeRemaining The normalized amount of time until maturity.
     /// @param _spotPrice The price without slippage of bonds in terms of shares.
-    /// @param _sharePrice The current price of shares in terms of base.A
+    /// @param _sharePrice The current price of shares in terms of base.
     /// @param _curveFee The percentage fee to be applied for the curve part of the trade equation
     /// @param _flatFee The percentage fee to be applied for the flat part of the trade equation
     /// @param _governanceFee The percentage amount of the total fees to be given to governance
-    /// @return totalCurveFee The total curve fee. Fee is in terms of shares.
-    /// @return totalFlatFee The total flat fee.  Fee is in terms of shares.
-    /// @return governanceCurveFee The curve fee that goes to governance.  Fee is in terms of shares.
-    /// @return governanceFlatFee The flat fee that goes to governance.  Fee is in terms of shares.
+    /// @return The fee deltas
     function calculateFeesInGivenBondsOut(
         uint256 _bondAmount,
         uint256 _normalizedTimeRemaining,
@@ -770,32 +770,31 @@ library HyperdriveMath {
         uint256 _curveFee,
         uint256 _flatFee,
         uint256 _governanceFee
-    )
-        internal
-        view
-        returns (
-            uint256 totalCurveFee,
-            uint256 totalFlatFee,
-            uint256 governanceCurveFee,
-            uint256 governanceFlatFee
-        )
-    {
+    ) internal pure returns (FeeDeltas memory) {
         uint256 curve = _bondAmount.mulDown(_normalizedTimeRemaining);
         // curve fee = ((1 - p) * d_y * t * phi_curve)/c
-        totalCurveFee = FixedPointMath.ONE_18.sub(_spotPrice);
+        uint256 totalCurveFee = FixedPointMath.ONE_18.sub(_spotPrice);
         totalCurveFee = totalCurveFee
             .mulDown(_curveFee)
             .mulDown(curve)
             .mulDivDown(_normalizedTimeRemaining, _sharePrice);
         // calculate the curve portion of the governance fee
-        governanceCurveFee = totalCurveFee.mulDown(_governanceFee);
+        uint256 governanceCurveFee = totalCurveFee.mulDown(_governanceFee);
         // flat fee = (d_y * (1 - t) * phi_flat)/c
         uint256 flat = _bondAmount.mulDivDown(
             FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
             _sharePrice
         );
-        totalFlatFee = (flat.mulDown(_flatFee));
+        uint256 totalFlatFee = (flat.mulDown(_flatFee));
         // calculate the flat portion of the governance fee
-        governanceFlatFee = totalFlatFee.mulDown(_governanceFee);
+        uint256 governanceFlatFee = totalFlatFee.mulDown(_governanceFee);
+
+        return
+            FeeDeltas({
+                totalCurveFee: totalCurveFee,
+                totalFlatFee: totalFlatFee,
+                governanceCurveFee: governanceCurveFee,
+                governanceFlatFee: governanceFlatFee
+            });
     }
 }

@@ -108,8 +108,8 @@ contract MockHyperdriveMath {
         uint256 _sharePrice,
         uint256 _initialSharePrice
     ) external pure returns (uint256, uint256, uint256) {
-        (uint256 result1, uint256 result2, uint256 result3) = HyperdriveMath
-            .calculateOpenShortTrade(
+        return
+            HyperdriveMath.calculateOpenShortTrade(
                 _shareReserves,
                 _bondReserves,
                 _amountIn,
@@ -118,29 +118,37 @@ contract MockHyperdriveMath {
                 _sharePrice,
                 _initialSharePrice
             );
-        return (result1, result2, result3);
+    }
+
+    function calculateCloseShort(
+        HyperdriveMath.CloseShortCalculationParams memory _params
+    )
+        external
+        pure
+        returns (HyperdriveMath.CloseShortCalculationDeltas memory)
+    {
+        return HyperdriveMath.calculateCloseShort(_params);
     }
 
     function calculateCloseShortTrade(
         uint256 _shareReserves,
         uint256 _bondReserves,
-        uint256 _amountOut,
+        uint256 _bondAmount,
         uint256 _normalizedTimeRemaining,
         uint256 _timeStretch,
         uint256 _sharePrice,
         uint256 _initialSharePrice
     ) external pure returns (uint256, uint256, uint256) {
-        (uint256 result1, uint256 result2, uint256 result3) = HyperdriveMath
-            .calculateCloseShortTrade(
+        return
+            HyperdriveMath.calculateCloseShortTrade(
                 _shareReserves,
                 _bondReserves,
-                _amountOut,
+                _bondAmount,
                 _normalizedTimeRemaining,
                 _timeStretch,
                 _sharePrice,
                 _initialSharePrice
             );
-        return (result1, result2, result3);
     }
 
     function calculateSpotPrice(
@@ -248,8 +256,8 @@ contract MockHyperdriveMath {
         uint256 _curveFee,
         uint256 _flatFee,
         uint256 _governanceFee
-    ) external pure returns (uint256, uint256, uint256) {
-        (uint256 result1, uint256 result2, uint256 result3) = HyperdriveMath
+    ) external pure returns (HyperdriveMath.FeeDeltas memory) {
+        HyperdriveMath.FeeDeltas memory result = HyperdriveMath
             .calculateFeesOutGivenBondsIn(
                 _bondAmount,
                 _normalizedTimeRemaining,
@@ -259,6 +267,6 @@ contract MockHyperdriveMath {
                 _flatFee,
                 _governanceFee
             );
-        return (result1, result2, result3);
+        return result;
     }
 }
