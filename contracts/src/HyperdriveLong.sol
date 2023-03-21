@@ -492,13 +492,20 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // Since we calculate the amount of shares received given bonds in, we
         // subtract the fee from the share deltas so that the trader receives
         // less shares.
-        uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
-            marketState.shareReserves,
-            marketState.bondReserves,
-            initialSharePrice,
-            timeRemaining,
-            timeStretch
-        );
+        //
+        // TODO: There should be a way to refactor this so that the spot price
+        // isn't calculated when the curve fee is 0. The bond reserves are only
+        // 0 in the scenario that the LPs have fully withdrawn and the last
+        // trader redeems.
+        uint256 spotPrice = marketState.bondReserves > 0
+            ? HyperdriveMath.calculateSpotPrice(
+                marketState.shareReserves,
+                marketState.bondReserves,
+                initialSharePrice,
+                timeRemaining,
+                timeStretch
+            )
+            : FixedPointMath.ONE_18;
         uint256 totalCurveFee;
         uint256 totalFlatFee;
         (

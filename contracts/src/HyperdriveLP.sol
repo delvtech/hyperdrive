@@ -234,6 +234,12 @@ abstract contract HyperdriveLP is HyperdriveBase {
         uint256 sharePrice = _pricePerShare();
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
 
+        // Clamp the shares to the total amount of shares ready for withdrawal
+        // to avoid unnecessary reverts.
+        _shares = _shares <= withdrawPool.withdrawSharesReadyToWithdraw
+            ? _shares
+            : withdrawPool.withdrawSharesReadyToWithdraw;
+
         // We burn the shares from the user
         _burn(
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0),
