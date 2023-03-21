@@ -87,6 +87,19 @@ contract MockHyperdriveMath {
     }
 
     function calculateOpenShort(
+        HyperdriveMath.OpenShortCalculationParams memory _params
+    ) external pure returns (uint256, uint256, uint256, uint256, uint256) {
+        (
+            uint256 result1,
+            uint256 result2,
+            uint256 result3,
+            uint256 result4,
+            uint256 result5
+        ) = HyperdriveMath.calculateOpenShort(_params);
+        return (result1, result2, result3, result4, result5);
+    }
+
+    function calculateOpenShortTrade(
         uint256 _shareReserves,
         uint256 _bondReserves,
         uint256 _amountIn,
@@ -96,7 +109,7 @@ contract MockHyperdriveMath {
         uint256 _initialSharePrice
     ) external pure returns (uint256, uint256, uint256) {
         (uint256 result1, uint256 result2, uint256 result3) = HyperdriveMath
-            .calculateOpenShort(
+            .calculateOpenShortTrade(
                 _shareReserves,
                 _bondReserves,
                 _amountIn,
@@ -223,6 +236,28 @@ contract MockHyperdriveMath {
                 _longsOutstanding,
                 _shortsOutstanding,
                 _sharePrice
+            );
+        return (result1, result2, result3);
+    }
+
+    function calculateFeesOutGivenBondsIn(
+        uint256 _bondAmount,
+        uint256 _normalizedTimeRemaining,
+        uint256 _spotPrice,
+        uint256 _sharePrice,
+        uint256 _curveFee,
+        uint256 _flatFee,
+        uint256 _governanceFee
+    ) external pure returns (uint256, uint256, uint256) {
+        (uint256 result1, uint256 result2, uint256 result3) = HyperdriveMath
+            .calculateFeesOutGivenBondsIn(
+                _bondAmount,
+                _normalizedTimeRemaining,
+                _spotPrice,
+                _sharePrice,
+                _curveFee,
+                _flatFee,
+                _governanceFee
             );
         return (result1, result2, result3);
     }
