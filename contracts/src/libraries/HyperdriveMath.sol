@@ -414,7 +414,7 @@ library HyperdriveMath {
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
             uint256 sharePayment
-        ) = HyperdriveMath.calculateCloseShortTrade(
+        ) = calculateCloseShortTrade(
                 _params.shareReserves,
                 _params.bondReserves,
                 _params.bondAmount,
