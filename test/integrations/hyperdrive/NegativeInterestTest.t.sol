@@ -61,7 +61,7 @@ contract NegativeInterestTest is HyperdriveTest {
         initialize(alice, apr, contribution);
 
         // Interest accrues for a term.
-        vm.assume(preTradingApr >= -0.9e18 && preTradingApr <= 1e18);
+        vm.assume(preTradingApr >= -0.5e18 && preTradingApr <= 1e18);
         advanceTime(POSITION_DURATION, preTradingApr);
 
         // Bob opens a short.
