@@ -326,7 +326,7 @@ library FixedPointMath {
             return
                 (_totalWeight.mulDown(_average))
                     .sub(_deltaWeight.mulDown(_delta))
-                    .divUp(_totalWeight.sub(_delta));
+                    .divUp(_totalWeight.sub(_deltaWeight));
         }
     }
 }
