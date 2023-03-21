@@ -202,8 +202,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // on the face value of the bonds:
         // NOTE "proceeds" here is overwritten from the proceeds in shares to
         // the proceeds in bonds. The reason for this is a via-ir workaround
-        (proceeds /* baseProceeds */, ) = _withdraw(
-            proceeds /* shareProceeds */,
+        (proceeds, ) = _withdraw(
+            proceeds,
             _destination,
             _asUnderlying
         );
