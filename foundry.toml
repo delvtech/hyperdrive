@@ -23,10 +23,6 @@ deny_warnings = true
 # optimizer settings
 optimizer = true
 optimizer_runs = 7500
-# TODO: This led to a stack-too-deep error involving calculateShortProceeds 
-# (most likely in one of the apply functions). Re-evaluate this after more 
-# refactoring.
-#
 # Enable via-ir
 via_ir=true
 # Enable gas-reporting for all contracts
