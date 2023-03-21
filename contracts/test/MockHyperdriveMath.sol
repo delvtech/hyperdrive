@@ -214,14 +214,13 @@ contract MockHyperdriveMath {
         uint256 _longsOutstanding,
         uint256 _sharePrice
     ) external pure returns (uint256) {
-        uint256 result1 = HyperdriveMath
-            .calculateOutForLpSharesIn(
-                _shares,
-                _shareReserves,
-                _lpTotalSupply,
-                _longsOutstanding,
-                _sharePrice
-            );
+        uint256 result1 = HyperdriveMath.calculateOutForLpSharesIn(
+            _shares,
+            _shareReserves,
+            _lpTotalSupply,
+            _longsOutstanding,
+            _sharePrice
+        );
         return result1;
     }
 }

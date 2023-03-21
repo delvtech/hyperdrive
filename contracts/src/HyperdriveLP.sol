@@ -172,12 +172,12 @@ abstract contract HyperdriveLP is HyperdriveBase {
         // long withdrawal shares, and short withdrawal shares that the LP
         // receives.
         uint256 shareProceeds = HyperdriveMath.calculateOutForLpSharesIn(
-                _shares,
-                marketState.shareReserves,
-                totalSupply,
-                marketState.longsOutstanding,
-                sharePrice
-            );
+            _shares,
+            marketState.shareReserves,
+            totalSupply,
+            marketState.longsOutstanding,
+            sharePrice
+        );
 
         // Burn the LP shares.
         _burn(AssetId._LP_ASSET_ID, msg.sender, _shares);
@@ -191,7 +191,10 @@ abstract contract HyperdriveLP is HyperdriveBase {
         uint256 withdrawalShares = marketState.longsOutstanding -
             longAggregates.baseVolume;
         withdrawalShares += shortAggregates.baseVolume;
-        withdrawalShares = withdrawalShares.mulDivDown(_shares, totalSupply.mulDown(sharePrice));
+        withdrawalShares = withdrawalShares.mulDivDown(
+            _shares,
+            totalSupply.mulDown(sharePrice)
+        );
 
         // Mint the withdrawal tokens.
         _mint(
