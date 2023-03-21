@@ -12,7 +12,7 @@ contract LPFairnessTest is HyperdriveTest {
     using Lib for *;
     using FixedPointMath for uint256;
 
-    function test_lp_fairness_short(uint256 param) external {
+    function test_lp_fairness_short_lp(uint256 param) external {
         // limit the fuzz testing to apy's less than 100%
         vm.assume(param < 1e18);
         // variable interest rate earned by the pool
@@ -102,7 +102,7 @@ contract LPFairnessTest is HyperdriveTest {
         assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e8);
     }
 
-    function test_lp_fairness_short_multiple_trades(
+    function test_lp_fairness_short_short_lp(
         uint256 param1,
         uint256 param2
     ) external {
@@ -227,7 +227,7 @@ contract LPFairnessTest is HyperdriveTest {
         assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e8);
     }
 
-    function test_lp_fairness_long(uint256 param) external {
+    function test_lp_fairness_long_lp(uint256 param) external {
         // limit the fuzz testing to apy's less than 100%
         vm.assume(param < 1e18);
         // variable interest rate earned by the pool
@@ -305,7 +305,7 @@ contract LPFairnessTest is HyperdriveTest {
         );
     }
 
-    function test_lp_fairness_long_multiple_trades(
+    function test_lp_fairness_long_long_lp(
         uint256 param1,
         uint256 param2
     ) external {
