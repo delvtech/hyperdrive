@@ -196,42 +196,4 @@ contract FeeTest is HyperdriveTest {
         assertEq(flatFee, 0.1 ether);
         assertEq(governanceFlatFee, 0.05 ether);
     }
-
-    // TODO Maybe move into HyperdriveMath.t.sol?
-    function test_calculateFeesInGivenBondsOut() public {
-        IHyperdrive.Fees memory fees = IHyperdrive.Fees({
-            curve: 0.1e18,
-            flat: 0.1e18,
-            governance: 0.5e18
-        });
-
-        HyperdriveMath.FeeDeltas memory feeDeltas = HyperdriveMath
-            .calculateFeesInGivenBondsOut(
-                1 ether, // amountOut
-                1 ether, // timeRemaining
-                0.9 ether, // spotPrice
-                1 ether, // sharePrice
-                fees.curve,
-                fees.flat,
-                fees.governance
-            );
-        assertEq(feeDeltas.totalCurveFee, .01 ether);
-        assertEq(feeDeltas.totalFlatFee, 0 ether);
-        assertEq(feeDeltas.governanceCurveFee, .005 ether);
-        assertEq(feeDeltas.governanceFlatFee, 0 ether);
-
-        feeDeltas = HyperdriveMath.calculateFeesInGivenBondsOut(
-            1 ether, // amountOut
-            0, // timeRemaining
-            0.9 ether, // spotPrice
-            1 ether, // sharePrice
-            fees.curve,
-            fees.flat,
-            fees.governance
-        );
-        assertEq(feeDeltas.totalCurveFee, 0 ether);
-        assertEq(feeDeltas.totalFlatFee, 0.1 ether);
-        assertEq(feeDeltas.governanceCurveFee, 0 ether);
-        assertEq(feeDeltas.governanceFlatFee, 0.05 ether);
-    }
 }

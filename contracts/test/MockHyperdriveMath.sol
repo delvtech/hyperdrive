@@ -269,4 +269,26 @@ contract MockHyperdriveMath {
             );
         return result;
     }
+
+    function calculateFeesInGivenBondsOut(
+        uint256 _bondAmount,
+        uint256 _normalizedTimeRemaining,
+        uint256 _spotPrice,
+        uint256 _sharePrice,
+        uint256 _curveFee,
+        uint256 _flatFee,
+        uint256 _governanceFee
+    ) internal pure returns (HyperdriveMath.FeeDeltas memory) {
+        HyperdriveMath.FeeDeltas memory result = HyperdriveMath
+            .calculateFeesInGivenBondsOut(
+                _bondAmount,
+                _normalizedTimeRemaining,
+                _spotPrice,
+                _sharePrice,
+                _curveFee,
+                _flatFee,
+                _governanceFee
+            );
+        return result;
+    }
 }
