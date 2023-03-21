@@ -785,7 +785,8 @@ contract HyperdriveMathTest is Test {
             governance: 0.5e18
         });
 
-        HyperdriveMath.FeeDeltas memory feeDeltas = hyperdriveMath.calculateFeesOutGivenBondsIn(
+        HyperdriveMath.FeeDeltas memory feeDeltas = hyperdriveMath
+            .calculateFeesOutGivenBondsIn(
                 1 ether, // bondIn
                 1 ether, // timeRemaining
                 0.9 ether, // spotPrice
@@ -797,7 +798,10 @@ contract HyperdriveMathTest is Test {
         // curve fee = ((1 - p) * phi_curve * d_y * t) / c
         // ((1-.9)*.1*1*1)/1 = .01
         assertEq(feeDeltas.totalCurveFee + feeDeltas.totalFlatFee, .01 ether);
-        assertEq(feeDeltas.governanceCurveFee + feeDeltas.governanceFlatFee, .005 ether);
+        assertEq(
+            feeDeltas.governanceCurveFee + feeDeltas.governanceFlatFee,
+            .005 ether
+        );
 
         feeDeltas = hyperdriveMath
             .calculateFeesOutGivenBondsIn(
@@ -810,7 +814,10 @@ contract HyperdriveMathTest is Test {
                 fees.governance
             );
         assertEq(feeDeltas.totalCurveFee + feeDeltas.totalFlatFee, 0.1 ether);
-        assertEq(feeDeltas.governanceCurveFee + feeDeltas.governanceFlatFee, .05 ether);
+        assertEq(
+            feeDeltas.governanceCurveFee + feeDeltas.governanceFlatFee,
+            .05 ether
+        );
     }
 
     function test__calculateFeesInGivenBondsOut() public {
