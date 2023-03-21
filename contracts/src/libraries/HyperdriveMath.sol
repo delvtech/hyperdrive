@@ -264,9 +264,7 @@ library HyperdriveMath {
             .mulDown(FixedPointMath.ONE_18.sub(_normalizedTimeRemaining))
             .divDown(_sharePrice);
         // Calculate the curved part of the trade.
-        bondReservesDelta = _amountIn.mulDown(_normalizedTimeRemaining).divDown(
-            _sharePrice
-        );
+        bondReservesDelta = _amountIn.mulDown(_normalizedTimeRemaining);
         // (time remaining)/(term length) is always 1 so we just use _timeStretch
         shareReservesDelta = YieldSpaceMath.calculateSharesOutGivenBondsIn(
             _shareReserves,
