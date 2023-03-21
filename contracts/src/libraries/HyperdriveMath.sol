@@ -236,7 +236,6 @@ library HyperdriveMath {
         uint256 shareReserves;
         uint256 bondReserves;
         uint256 sharePrice;
-        uint256 openSharePrice;
         uint256 initialSharePrice;
         uint256 normalizedTimeRemaining;
         uint256 timeStretch;
@@ -251,7 +250,6 @@ library HyperdriveMath {
     /// @return bondReservesDelta The change in the pools bond reserves
     /// @return totalGovernanceFee The portion of fees given to governance for
     ///                            this trade
-    /// @return baseToDeposit The amount of base the user must pay for the short
     /// @return shareProceeds The proceeds of the short the user will receive
     function calculateOpenShort(
         OpenShortCalculationParams memory _params
@@ -262,7 +260,6 @@ library HyperdriveMath {
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
             uint256 totalGovernanceFee,
-            uint256 baseToDeposit,
             uint256 shareProceeds
         )
     {
@@ -319,21 +316,11 @@ library HyperdriveMath {
             feeDeltas.governanceCurveFee +
             feeDeltas.governanceFlatFee;
 
-        // Calculate the amount of base the user must deposit.
-        baseToDeposit = calculateShortProceeds(
-            _params.bondAmount,
-            shareProceeds,
-            _params.openSharePrice,
-            _params.sharePrice,
-            _params.sharePrice
-        ).mulDown(_params.sharePrice);
-
         return (
             shareReservesDelta,
             bondReservesDelta,
-            totalGovernanceFee,
-            baseToDeposit,
-            shareProceeds
+            shareProceeds,
+            totalGovernanceFee
         );
     }
 

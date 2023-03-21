@@ -54,23 +54,21 @@ abstract contract HyperdriveShort is HyperdriveLP {
         uint256 timeRemaining = _calculateTimeRemaining(maturityTime);
         uint256 shareReservesDelta;
         uint256 bondReservesDelta;
-        uint256 totalGovernanceFee;
         uint256 shareProceeds;
+        uint256 totalGovernanceFee;
         {
             // Calculate the openShort trade deltas
             (
                 shareReservesDelta,
                 bondReservesDelta,
-                totalGovernanceFee,
-                baseDeposit,
-                shareProceeds
+                shareProceeds,
+                totalGovernanceFee
             ) = HyperdriveMath.calculateOpenShort(
                 HyperdriveMath.OpenShortCalculationParams({
                     bondAmount: _bondAmount,
                     shareReserves: marketState.shareReserves,
                     bondReserves: marketState.bondReserves,
                     sharePrice: sharePrice,
-                    openSharePrice: openSharePrice,
                     initialSharePrice: initialSharePrice,
                     normalizedTimeRemaining: timeRemaining,
                     timeStretch: timeStretch,
@@ -80,6 +78,17 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 })
             );
         }
+
+        // Calculate the amount of base the user must deposit.
+        baseDeposit = HyperdriveMath
+            .calculateShortProceeds(
+                _bondAmount,
+                shareProceeds,
+                openSharePrice,
+                sharePrice,
+                sharePrice
+            )
+            .mulDown(sharePrice);
 
         // Attribute the governance fees.
         governanceFeesAccrued += totalGovernanceFee;
@@ -202,11 +211,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // on the face value of the bonds:
         // NOTE "proceeds" here is overwritten from the proceeds in shares to
         // the proceeds in bonds. The reason for this is a via-ir workaround
-        (proceeds, ) = _withdraw(
-            proceeds,
-            _destination,
-            _asUnderlying
-        );
+        (proceeds, ) = _withdraw(proceeds, _destination, _asUnderlying);
 
         // Enforce min user outputs
         if (proceeds < _minOutput) revert Errors.OutputLimit();
