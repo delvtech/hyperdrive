@@ -275,7 +275,9 @@ contract MockHyperdriveMath {
         uint256 _normalizedTimeRemaining,
         uint256 _spotPrice,
         uint256 _sharePrice,
-        IHyperdrive.Fees memory _fees
+        uint256 _curveFee,
+        uint256 _flatFee,
+        uint256 _governanceFee
     ) external pure returns (HyperdriveMath.FeeDeltas memory) {
         HyperdriveMath.FeeDeltas memory result = HyperdriveMath
             .calculateFeesOutGivenSharesIn(
@@ -284,7 +286,9 @@ contract MockHyperdriveMath {
                 _normalizedTimeRemaining,
                 _spotPrice,
                 _sharePrice,
-                _fees
+                _curveFee,
+                _flatFee,
+                _governanceFee
             );
         return result;
     }

@@ -874,7 +874,9 @@ contract HyperdriveMathTest is Test {
                 1 ether, // timeRemaining
                 0.5 ether, // spotPrice
                 1 ether, // sharePrice
-                fees
+                fees.curve,
+                fees.flat,
+                fees.governance
             );
         // curve fee = ((1 / p) - 1) * phi_curve * c * d_z * t
         // ((1/.5)-1) * .1*1*1*1 = .1
@@ -889,7 +891,9 @@ contract HyperdriveMathTest is Test {
             0, // timeRemaining
             0.5 ether, // spotPrice
             1 ether, // sharePrice
-            fees
+            fees.curve,
+            fees.flat,
+            fees.governance
         );
         assertEq(feeDeltas.totalCurveFee, 0 ether);
         assertEq(feeDeltas.governanceCurveFee, 0 ether);
