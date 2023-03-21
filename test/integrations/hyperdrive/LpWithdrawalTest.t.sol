@@ -1,10 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-// FIXME
-import "forge-std/console.sol";
-import "test/utils/Lib.sol";
-
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
@@ -119,11 +115,11 @@ contract LpWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             baseToken.balanceOf(address(hyperdrive)),
             0,
-            10_000_000e18
+            100_000e18
         );
         assertApproxEqAbs(
             hyperdrive.totalSupply(
-                AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 1)
+                AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
             ),
             0,
             1e10

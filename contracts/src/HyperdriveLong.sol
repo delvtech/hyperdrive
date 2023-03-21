@@ -352,13 +352,17 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 ? withdrawalProceeds - lpInterest
                 : 0;
 
+            // FIXME: Do this the right way and explain it.
+            uint256 openSharePrice_ = checkpoints[
+                _maturityTime - positionDuration
+            ].sharePrice;
             // Pay out the withdrawal pool with the freed margin. The withdrawal
             // proceeds are split into the margin pool and the interest pool.
             // The proceeds that are distributed to the margin and interest
             // pools are removed from the pool's liquidity.
             (uint256 capitalWithdrawn, uint256 interestWithdrawn) = _freeMargin(
                 capitalFreed,
-                lpMargin.divDown(openSharePrice),
+                lpMargin.divDown(openSharePrice_),
                 lpInterest
             );
             withdrawalProceeds = capitalWithdrawn + interestWithdrawn;
