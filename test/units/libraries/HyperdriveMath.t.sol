@@ -803,16 +803,15 @@ contract HyperdriveMathTest is Test {
             .005 ether
         );
 
-        feeDeltas = hyperdriveMath
-            .calculateFeesOutGivenBondsIn(
-                1 ether, // amountIn
-                0, // timeRemaining
-                0.9 ether, // spotPrice
-                1 ether, // sharePrice
-                fees.curve,
-                fees.flat,
-                fees.governance
-            );
+        feeDeltas = hyperdriveMath.calculateFeesOutGivenBondsIn(
+            1 ether, // amountIn
+            0, // timeRemaining
+            0.9 ether, // spotPrice
+            1 ether, // sharePrice
+            fees.curve,
+            fees.flat,
+            fees.governance
+        );
         assertEq(feeDeltas.totalCurveFee + feeDeltas.totalFlatFee, 0.1 ether);
         assertEq(
             feeDeltas.governanceCurveFee + feeDeltas.governanceFlatFee,
