@@ -125,6 +125,11 @@ library HyperdriveMath {
 
     /// @notice Calculates the openShort trade deltas, fees and proceeds
     /// @param _params Parameters needed to calculate the openShort trade
+    /// @return shareReservesDelta The change in the pools share reserves
+    /// @return bondReservesDelta The change in the pools bond reserves
+    /// @return totalGovernanceFee The portion of fees given to governance for
+    ///                            this trade
+    /// @return bondProceeds The amount of bonds the user will receive
     function calculateOpenLong(
         OpenLongCalculationParams memory _params
     )
