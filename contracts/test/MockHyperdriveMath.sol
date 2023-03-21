@@ -278,7 +278,7 @@ contract MockHyperdriveMath {
         uint256 _curveFee,
         uint256 _flatFee,
         uint256 _governanceFee
-    ) internal pure returns (HyperdriveMath.FeeDeltas memory) {
+    ) external pure returns (HyperdriveMath.FeeDeltas memory) {
         HyperdriveMath.FeeDeltas memory result = HyperdriveMath
             .calculateFeesInGivenBondsOut(
                 _bondAmount,
