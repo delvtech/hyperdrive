@@ -49,7 +49,7 @@ contract SandwichTest is HyperdriveTest {
         // impact the LP. With this in mind, they should have made at least as
         // much money as if no trades had been made and they just collected
         // variable APR.
-        uint256 lpProceeds = removeLiquidity(alice, lpShares);
+        (uint256 lpProceeds, ) = removeLiquidity(alice, lpShares);
 
         // Calculate how much interest has accrued on the initial contribution
         (uint256 contributionPlusInterest, ) = HyperdriveUtils
@@ -93,7 +93,7 @@ contract SandwichTest is HyperdriveTest {
 
         // Ensure the proceeds from the sandwich attack didn't negatively impact
         // the LP.
-        uint256 lpProceeds = removeLiquidity(alice, aliceLpShares);
+        (uint256 lpProceeds, ) = removeLiquidity(alice, aliceLpShares);
         assertGe(lpProceeds, contribution);
     }
 }

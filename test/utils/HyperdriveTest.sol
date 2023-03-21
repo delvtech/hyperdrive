@@ -124,13 +124,37 @@ contract HyperdriveTest is BaseTest {
     function removeLiquidity(
         address lp,
         uint256 shares
-    ) internal returns (uint256 baseProceeds) {
+    ) internal returns (uint256 baseProceeds, uint256 withdrawalShares) {
         vm.stopPrank();
         vm.startPrank(lp);
 
         // Remove liquidity from the pool.
         uint256 baseBalanceBefore = baseToken.balanceOf(lp);
+        uint256 withdrawalShareBalanceBefore = hyperdrive.balanceOf(
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0),
+            lp
+        );
         hyperdrive.removeLiquidity(shares, 0, lp, true);
+
+        return (
+            baseToken.balanceOf(lp) - baseBalanceBefore,
+            hyperdrive.balanceOf(
+                AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0),
+                lp
+            ) - withdrawalShareBalanceBefore
+        );
+    }
+
+    function redeemWithdrawalShares(
+        address lp,
+        uint256 shares
+    ) internal returns (uint256 baseProceeds) {
+        vm.stopPrank();
+        vm.startPrank(lp);
+
+        // Redeem the withdrawal shares.
+        uint256 baseBalanceBefore = baseToken.balanceOf(lp);
+        hyperdrive.redeemWithdrawalShares(shares, 0, lp, true);
 
         return baseToken.balanceOf(lp) - baseBalanceBefore;
     }

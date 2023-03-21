@@ -301,14 +301,21 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // withdrawal pool as possible with the the margin released and interest
         // accrued on the position to the withdrawal pool.
         if (_needsToBeFreed()) {
+            // TODO: This will result in the withdrawal pools receiving no
+            //       interest on this trade if the checkpoint wasn't minted. We
+            //       may want to mint the checkpoint here.
+            //
             // Since longs are backdated to the beginning of the checkpoint and
             // interest only begins accruing when the longs are opened, we
             // exclude the first checkpoint from LP withdrawal payouts. For most
             // pools the difference will not be meaningful, and in edge cases,
             // fees can be tuned to offset the problem.
-            uint256 openSharePrice = checkpoints[
+            uint256 openSharePrice = block.timestamp >=
                 (_maturityTime - positionDuration) + checkpointDuration
-            ].sharePrice;
+                ? checkpoints[
+                    (_maturityTime - positionDuration) + checkpointDuration
+                ].sharePrice
+                : _sharePrice;
 
             // The withdrawal pool has preferential access to the proceeds
             // generated from closing longs. The LP proceeds when longs are

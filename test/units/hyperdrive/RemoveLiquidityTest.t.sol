@@ -51,7 +51,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
         advanceTime(timeAdvanced, int256(apr));
 
         // Alice removes all of her liquidity.
-        uint256 baseProceeds = removeLiquidity(alice, lpShares);
+        (uint256 baseProceeds, ) = removeLiquidity(alice, lpShares);
 
         // Ensure that the LP shares were properly accounted for.
         assertEq(hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice), 0);
@@ -100,7 +100,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
         uint256 poolApr = HyperdriveUtils.calculateAPRFromReserves(hyperdrive);
 
         // Alice removes all of her liquidity.
-        uint256 baseProceeds = removeLiquidity(alice, lpShares);
+        (uint256 baseProceeds, ) = removeLiquidity(alice, lpShares);
 
         // Ensure that the LP shares were properly accounted for.
         assertEq(hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice), 0);
@@ -171,7 +171,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
         (, uint256 basePaid) = openShort(bob, bondAmount);
 
         // Alice removes all of her liquidity.
-        uint256 baseProceeds = removeLiquidity(alice, lpShares);
+        (uint256 baseProceeds, ) = removeLiquidity(alice, lpShares);
 
         // Ensure that the LP shares were properly accounted for.
         assertEq(hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice), 0);
