@@ -67,13 +67,16 @@ abstract contract HyperdriveShort is HyperdriveLP {
             ) = HyperdriveMath.calculateOpenShort(
                 HyperdriveMath.OpenShortCalculationParams({
                     bondAmount: _bondAmount,
+                    shareReserves: marketState.shareReserves,
+                    bondReserves: marketState.bondReserves,
                     sharePrice: sharePrice,
                     openSharePrice: openSharePrice,
                     initialSharePrice: initialSharePrice,
                     normalizedTimeRemaining: timeRemaining,
                     timeStretch: timeStretch,
-                    marketState: marketState,
-                    fees: fees
+                    curveFee: fees.curve,
+                    flatFee: fees.flat,
+                    governanceFee: fees.governance
                 })
             );
         }

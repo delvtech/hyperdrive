@@ -233,13 +233,16 @@ library HyperdriveMath {
 
     struct OpenShortCalculationParams {
         uint256 bondAmount;
+        uint256 shareReserves;
+        uint256 bondReserves;
         uint256 sharePrice;
         uint256 openSharePrice;
         uint256 initialSharePrice;
         uint256 normalizedTimeRemaining;
         uint256 timeStretch;
-        IHyperdrive.MarketState marketState;
-        IHyperdrive.Fees fees;
+        uint256 curveFee;
+        uint256 flatFee;
+        uint256 governanceFee;
     }
 
     /// @notice Calculates the openShort trade deltas, fees and proceeds
@@ -265,8 +268,8 @@ library HyperdriveMath {
             bondReservesDelta,
             shareProceeds
         ) = calculateOpenShortTrade(
-            _params.marketState.shareReserves,
-            _params.marketState.bondReserves,
+            _params.shareReserves,
+            _params.bondReserves,
             _params.bondAmount,
             _params.normalizedTimeRemaining,
             _params.timeStretch,
@@ -282,8 +285,8 @@ library HyperdriveMath {
 
         // Calculate the spot price of bonds in terms of shares.
         uint256 spotPrice = calculateSpotPrice(
-            _params.marketState.shareReserves,
-            _params.marketState.bondReserves,
+            _params.shareReserves,
+            _params.bondReserves,
             _params.initialSharePrice,
             _params.normalizedTimeRemaining,
             _params.timeStretch
@@ -304,9 +307,9 @@ library HyperdriveMath {
             _params.normalizedTimeRemaining,
             spotPrice,
             _params.sharePrice,
-            _params.fees.curve,
-            _params.fees.flat,
-            _params.fees.governance
+            _params.curveFee,
+            _params.flatFee,
+            _params.governanceFee
         );
 
         // Attribute the fees to the share deltas.
