@@ -109,7 +109,7 @@ interface IHyperdrive is IMultiToken {
         uint256 _minOutput,
         address _destination,
         bool _asUnderlying
-    ) external returns (uint256, uint256, uint256);
+    ) external returns (uint256, uint256);
 
     function redeemWithdrawalShares(
         uint256 _shares,
