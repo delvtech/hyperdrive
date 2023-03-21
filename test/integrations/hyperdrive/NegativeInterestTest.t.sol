@@ -100,13 +100,11 @@ contract NegativeInterestTest is HyperdriveTest {
         );
         IHyperdrive.Fees memory fees = hyperdrive.fees();
 
-        (, , , uint256 sharePayment, ) = HyperdriveMath.calculateCloseShort(
+        (, , uint256 sharePayment, ) = HyperdriveMath.calculateCloseShort(
             HyperdriveMath.CloseShortCalculationParams({
                 bondAmount: shortAmount,
                 shareReserves: poolInfo.shareReserves,
                 bondReserves: poolInfo.bondReserves,
-                openSharePrice: poolInfo.sharePrice,
-                closeSharePrice: poolInfo.sharePrice, // TODO This is most likely naiive and should be scrutinized further
                 sharePrice: poolInfo.sharePrice,
                 initialSharePrice: hyperdrive.initialSharePrice(),
                 normalizedTimeRemaining: timeElapsed.divDown(POSITION_DURATION),

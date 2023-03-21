@@ -155,12 +155,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
         uint256 totalGovernanceFee;
         uint256 sharePayment;
         {
-            uint256 openSharePrice = checkpoints[
-                _maturityTime - positionDuration
-            ].sharePrice;
-            uint256 closeSharePrice = _maturityTime <= block.timestamp
-                ? checkpoints[_maturityTime].sharePrice
-                : sharePrice;
             uint256 normalizedTimeRemaining = _calculateTimeRemaining(
                 _maturityTime
             );
@@ -169,17 +163,14 @@ abstract contract HyperdriveShort is HyperdriveLP {
             (
                 shareReservesDelta,
                 bondReservesDelta,
-                totalGovernanceFee,
                 sharePayment,
-                proceeds
+                totalGovernanceFee
             ) = HyperdriveMath.calculateCloseShort(
                 HyperdriveMath.CloseShortCalculationParams({
                     bondAmount: _bondAmount,
                     shareReserves: marketState.shareReserves,
                     bondReserves: marketState.bondReserves,
                     sharePrice: sharePrice,
-                    openSharePrice: openSharePrice,
-                    closeSharePrice: closeSharePrice,
                     initialSharePrice: initialSharePrice,
                     normalizedTimeRemaining: normalizedTimeRemaining,
                     timeStretch: timeStretch,
@@ -189,6 +180,24 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 })
             );
         }
+
+        {
+            uint256 openSharePrice = checkpoints[
+                _maturityTime - positionDuration
+            ].sharePrice;
+            uint256 closeSharePrice = _maturityTime <= block.timestamp
+                ? checkpoints[_maturityTime].sharePrice
+                : sharePrice;
+            // Calculates the proceeds of the trade
+            proceeds = HyperdriveMath.calculateShortProceeds(
+                _bondAmount,
+                sharePayment,
+                openSharePrice,
+                closeSharePrice,
+                sharePrice
+            );
+        }
+
         // Attribute the governance fees.
         governanceFeesAccrued += totalGovernanceFee;
 

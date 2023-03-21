@@ -376,9 +376,7 @@ library HyperdriveMath {
         uint256 bondAmount;
         uint256 shareReserves;
         uint256 bondReserves;
-        uint256 openSharePrice;
         uint256 sharePrice;
-        uint256 closeSharePrice;
         uint256 initialSharePrice;
         uint256 normalizedTimeRemaining;
         uint256 timeStretch;
@@ -391,10 +389,9 @@ library HyperdriveMath {
     /// @param _params Parameters needed to calculate the closeShort trade
     /// @return shareReservesDelta The change in the pools share reserves
     /// @return bondReservesDelta The change in the pools bond reserves
+    /// @return sharePayment The shares that the user must pay for the short
     /// @return totalGovernanceFee The portion of fees given to governance for
     ///                            this trade
-    /// @return sharePayment The shares that the user must pay for the short
-    /// @return shareProceeds The proceeds of the short the user will receive
     function calculateCloseShort(
         CloseShortCalculationParams memory _params
     )
@@ -403,9 +400,8 @@ library HyperdriveMath {
         returns (
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
-            uint256 totalGovernanceFee,
             uint256 sharePayment,
-            uint256 shareProceeds
+            uint256 totalGovernanceFee
         )
     {
         // Calculate the effect that closing the short should have on the pool's
@@ -455,21 +451,11 @@ library HyperdriveMath {
             feeDeltas.governanceCurveFee +
             feeDeltas.governanceFlatFee;
 
-        // Calculates the proceeds of the trade
-        shareProceeds = calculateShortProceeds(
-            _params.bondAmount,
-            sharePayment,
-            _params.openSharePrice,
-            _params.closeSharePrice,
-            _params.sharePrice
-        );
-
         return (
             shareReservesDelta,
             bondReservesDelta,
-            totalGovernanceFee,
             sharePayment,
-            shareProceeds
+            totalGovernanceFee
         );
     }
 
