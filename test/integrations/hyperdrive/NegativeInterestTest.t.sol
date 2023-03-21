@@ -100,25 +100,22 @@ contract NegativeInterestTest is HyperdriveTest {
         );
         IHyperdrive.Fees memory fees = hyperdrive.fees();
 
-        HyperdriveMath.CloseShortCalculationDeltas
-            memory closeShortDeltas = HyperdriveMath.calculateCloseShort(
-                HyperdriveMath.CloseShortCalculationParams({
-                    bondAmount: shortAmount,
-                    shareReserves: poolInfo.shareReserves,
-                    bondReserves: poolInfo.bondReserves,
-                    openSharePrice: poolInfo.sharePrice,
-                    closeSharePrice: poolInfo.sharePrice, // TODO This is most likely naiive and should be scrutinized further
-                    sharePrice: poolInfo.sharePrice,
-                    initialSharePrice: hyperdrive.initialSharePrice(),
-                    normalizedTimeRemaining: timeElapsed.divDown(
-                        POSITION_DURATION
-                    ),
-                    timeStretch: hyperdrive.timeStretch(),
-                    curveFee: fees.curve,
-                    flatFee: fees.flat,
-                    governanceFee: fees.governance
-                })
-            );
+        (, , , uint256 sharePayment, ) = HyperdriveMath.calculateCloseShort(
+            HyperdriveMath.CloseShortCalculationParams({
+                bondAmount: shortAmount,
+                shareReserves: poolInfo.shareReserves,
+                bondReserves: poolInfo.bondReserves,
+                openSharePrice: poolInfo.sharePrice,
+                closeSharePrice: poolInfo.sharePrice, // TODO This is most likely naiive and should be scrutinized further
+                sharePrice: poolInfo.sharePrice,
+                initialSharePrice: hyperdrive.initialSharePrice(),
+                normalizedTimeRemaining: timeElapsed.divDown(POSITION_DURATION),
+                timeStretch: hyperdrive.timeStretch(),
+                curveFee: fees.curve,
+                flatFee: fees.flat,
+                governanceFee: fees.governance
+            })
+        );
         (, int256 expectedInterest) = HyperdriveUtils.calculateCompoundInterest(
             shortAmount,
             variableApr,
@@ -127,10 +124,7 @@ contract NegativeInterestTest is HyperdriveTest {
         return
             uint256(
                 int256(
-                    shortAmount -
-                        poolInfo.sharePrice.mulDown(
-                            closeShortDeltas.sharePayment
-                        )
+                    shortAmount - poolInfo.sharePrice.mulDown(sharePayment)
                 ) + expectedInterest
             );
     }

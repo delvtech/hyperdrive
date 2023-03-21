@@ -118,14 +118,14 @@ abstract contract HyperdriveShort is HyperdriveLP {
     /// @param _asUnderlying If true the user is paid in underlying if false
     ///                      the contract transfers in yield source directly.
     ///                      Note - for some paths one choice may be disabled or blocked.
-    /// @return baseProceeds The amount of base tokens produced by closing this short
+    /// @return proceeds The amount of base tokens produced by closing this short
     function closeShort(
         uint256 _maturityTime,
         uint256 _bondAmount,
         uint256 _minOutput,
         address _destination,
         bool _asUnderlying
-    ) external returns (uint256 baseProceeds) {
+    ) external returns (uint256 proceeds) {
         if (_bondAmount == 0) {
             revert Errors.ZeroAmount();
         }
@@ -141,18 +141,29 @@ abstract contract HyperdriveShort is HyperdriveLP {
             _bondAmount
         );
 
-        uint256 openSharePrice = checkpoints[_maturityTime - positionDuration]
-            .sharePrice;
-        uint256 closeSharePrice = _maturityTime <= block.timestamp
-            ? checkpoints[_maturityTime].sharePrice
-            : sharePrice;
-        uint256 normalizedTimeRemaining = _calculateTimeRemaining(
-            _maturityTime
-        );
+        uint256 shareReservesDelta;
+        uint256 bondReservesDelta;
+        uint256 totalGovernanceFee;
+        uint256 sharePayment;
+        {
+            uint256 openSharePrice = checkpoints[
+                _maturityTime - positionDuration
+            ].sharePrice;
+            uint256 closeSharePrice = _maturityTime <= block.timestamp
+                ? checkpoints[_maturityTime].sharePrice
+                : sharePrice;
+            uint256 normalizedTimeRemaining = _calculateTimeRemaining(
+                _maturityTime
+            );
 
-        // Calculate the pool and user deltas using the trading function.
-        HyperdriveMath.CloseShortCalculationDeltas
-            memory deltas = HyperdriveMath.calculateCloseShort(
+            // Calculate the pool and user deltas using the trading function.
+            (
+                shareReservesDelta,
+                bondReservesDelta,
+                totalGovernanceFee,
+                sharePayment,
+                proceeds
+            ) = HyperdriveMath.calculateCloseShort(
                 HyperdriveMath.CloseShortCalculationParams({
                     bondAmount: _bondAmount,
                     shareReserves: marketState.shareReserves,
@@ -168,9 +179,9 @@ abstract contract HyperdriveShort is HyperdriveLP {
                     governanceFee: fees.governance
                 })
             );
-
+        }
         // Attribute the governance fees.
-        governanceFeesAccrued += deltas.totalGovernanceFee;
+        governanceFeesAccrued += totalGovernanceFee;
 
         // If the position hasn't matured, apply the accounting updates that
         // result from closing the short to the reserves and pay out the
@@ -178,9 +189,9 @@ abstract contract HyperdriveShort is HyperdriveLP {
         if (block.timestamp < _maturityTime) {
             _applyCloseShort(
                 _bondAmount,
-                deltas.bondReservesDelta,
-                deltas.sharePayment - deltas.totalGovernanceFee,
-                deltas.shareReservesDelta,
+                bondReservesDelta,
+                sharePayment - totalGovernanceFee,
+                shareReservesDelta,
                 _maturityTime,
                 sharePrice
             );
@@ -189,15 +200,17 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // Withdraw the profit to the trader. This includes the proceeds from
         // the short sale as well as the variable interest that was collected
         // on the face value of the bonds:
-        (baseProceeds, ) = _withdraw(
-            deltas.shareProceeds,
+        // NOTE "proceeds" here is overwritten from the proceeds in shares to
+        // the proceeds in bonds. The reason for this is a via-ir workaround
+        (proceeds /* baseProceeds */, ) = _withdraw(
+            proceeds /* shareProceeds */,
             _destination,
             _asUnderlying
         );
 
         // Enforce min user outputs
-        if (baseProceeds < _minOutput) revert Errors.OutputLimit();
-        return (baseProceeds);
+        if (proceeds < _minOutput) revert Errors.OutputLimit();
+        return (proceeds);
     }
 
     /// @dev Applies an open short to the state. This includes updating the

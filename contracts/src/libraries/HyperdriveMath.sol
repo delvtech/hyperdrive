@@ -394,35 +394,43 @@ library HyperdriveMath {
         uint256 governanceFee;
     }
 
-    struct CloseShortCalculationDeltas {
-        uint256 shareReservesDelta;
-        uint256 bondReservesDelta;
-        uint256 totalGovernanceFee;
-        uint256 sharePayment;
-        uint256 shareProceeds;
-    }
-
     /// @notice Calculates the closeShort trade deltas, fees and proceeds
     /// @param _params Parameters needed to calculate the closeShort trade
+    /// @return shareReservesDelta The change in the pools share reserves
+    /// @return bondReservesDelta The change in the pools bond reserves
+    /// @return totalGovernanceFee The portion of fees given to governance for
+    ///                            this trade
+    /// @return sharePayment The shares that the user must pay for the short
+    /// @return shareProceeds The proceeds of the short the user will receive
     function calculateCloseShort(
         CloseShortCalculationParams memory _params
-    ) internal pure returns (CloseShortCalculationDeltas memory) {
+    )
+        internal
+        pure
+        returns (
+            uint256 shareReservesDelta,
+            uint256 bondReservesDelta,
+            uint256 totalGovernanceFee,
+            uint256 sharePayment,
+            uint256 shareProceeds
+        )
+    {
         // Calculate the effect that closing the short should have on the pool's
         // reserves as well as the amount of shares the trader receives from
         // selling the shorted bonds
         (
-            uint256 shareReservesDelta,
-            uint256 bondReservesDelta,
-            uint256 sharePayment
+            shareReservesDelta,
+            bondReservesDelta,
+            sharePayment
         ) = calculateCloseShortTrade(
-                _params.shareReserves,
-                _params.bondReserves,
-                _params.bondAmount,
-                _params.normalizedTimeRemaining,
-                _params.timeStretch,
-                _params.sharePrice,
-                _params.initialSharePrice
-            );
+            _params.shareReserves,
+            _params.bondReserves,
+            _params.bondAmount,
+            _params.normalizedTimeRemaining,
+            _params.timeStretch,
+            _params.sharePrice,
+            _params.initialSharePrice
+        );
 
         // Calculate the spot price of bonds in terms of shares.
         uint256 spotPrice = calculateSpotPrice(
@@ -450,11 +458,12 @@ library HyperdriveMath {
         sharePayment += feeDeltas.totalCurveFee + feeDeltas.totalFlatFee;
 
         // Derive the total amount of fees given to governance
-        uint256 totalGovernanceFee = feeDeltas.governanceCurveFee +
+        totalGovernanceFee =
+            feeDeltas.governanceCurveFee +
             feeDeltas.governanceFlatFee;
 
         // Calculates the proceeds of the trade
-        uint256 shareProceeds = calculateShortProceeds(
+        shareProceeds = calculateShortProceeds(
             _params.bondAmount,
             sharePayment,
             _params.openSharePrice,
@@ -462,14 +471,13 @@ library HyperdriveMath {
             _params.sharePrice
         );
 
-        return
-            CloseShortCalculationDeltas({
-                shareReservesDelta: shareReservesDelta,
-                bondReservesDelta: bondReservesDelta,
-                totalGovernanceFee: totalGovernanceFee,
-                sharePayment: sharePayment,
-                shareProceeds: shareProceeds
-            });
+        return (
+            shareReservesDelta,
+            bondReservesDelta,
+            totalGovernanceFee,
+            sharePayment,
+            shareProceeds
+        );
     }
 
     /// @dev Calculates the amount of base that a user will receive when closing a short position

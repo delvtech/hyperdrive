@@ -86,19 +86,6 @@ contract MockHyperdriveMath {
         return (result1, result2, result3);
     }
 
-    function calculateOpenShort(
-        HyperdriveMath.OpenShortCalculationParams memory _params
-    ) external pure returns (uint256, uint256, uint256, uint256, uint256) {
-        (
-            uint256 result1,
-            uint256 result2,
-            uint256 result3,
-            uint256 result4,
-            uint256 result5
-        ) = HyperdriveMath.calculateOpenShort(_params);
-        return (result1, result2, result3, result4, result5);
-    }
-
     function calculateOpenShortTrade(
         uint256 _shareReserves,
         uint256 _bondReserves,
@@ -118,16 +105,6 @@ contract MockHyperdriveMath {
                 _sharePrice,
                 _initialSharePrice
             );
-    }
-
-    function calculateCloseShort(
-        HyperdriveMath.CloseShortCalculationParams memory _params
-    )
-        external
-        pure
-        returns (HyperdriveMath.CloseShortCalculationDeltas memory)
-    {
-        return HyperdriveMath.calculateCloseShort(_params);
     }
 
     function calculateCloseShortTrade(
