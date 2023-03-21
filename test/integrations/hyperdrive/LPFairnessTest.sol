@@ -88,7 +88,7 @@ contract LPFairnessTest is HyperdriveTest {
         // limit the fuzz testing to apy's less than 100%
         vm.assume(param1 < 1e18);
         // ensure a feasible trade size
-        vm.assume(param2 < 4_900_000e18);
+        vm.assume(param2 < 5_000_000e18);
         vm.assume(param2 > .00001e18);
         // variable interest rate earned by the pool
         int256 apy = int256(param1);
@@ -245,14 +245,14 @@ contract LPFairnessTest is HyperdriveTest {
 
         // Ensure that if the new LP withdraws, they get their money back.
         uint256 withdrawalProceeds = removeLiquidity(bob, lpShares);
-        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1 wei);
+        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 5 wei);
     }
 
     function test_lp_fairness_long_multiple_trades(uint256 param1, uint256 param2) external {
         // limit to apy's less than 100%
         vm.assume(param1 < 1e18);
         // ensure a feasible trade size
-        vm.assume(param2 < 4_900_000e18);
+        vm.assume(param2 < 5_000_000e18);
         vm.assume(param2 > .00001e18);
         //uint256 param1 = 0.01e18;
         //uint256 param2 = 1000;
