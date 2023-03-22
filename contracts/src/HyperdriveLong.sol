@@ -490,7 +490,9 @@ abstract contract HyperdriveLong is HyperdriveLP {
             timeRemaining,
             timeStretch
         );
-        HyperdriveMath.FeeDeltas memory feeDeltas = HyperdriveMath
+        uint256 totalCurveFee;
+        uint256 totalFlatFee;
+        (totalCurveFee, totalFlatFee, totalGovernanceFee) = HyperdriveMath
             .calculateFeesOutGivenBondsIn(
                 _bondAmount,
                 timeRemaining,
@@ -501,11 +503,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 fees.governance
             );
 
-        shareReservesDelta -= feeDeltas.totalCurveFee;
-        shareProceeds -= feeDeltas.totalCurveFee + feeDeltas.totalFlatFee;
-        totalGovernanceFee =
-            feeDeltas.governanceCurveFee +
-            feeDeltas.governanceFlatFee;
+        shareReservesDelta -= totalCurveFee;
+        shareProceeds -= totalCurveFee + totalFlatFee;
 
         return (
             shareReservesDelta,
