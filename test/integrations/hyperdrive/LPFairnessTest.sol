@@ -115,7 +115,7 @@ contract LPFairnessTest is HyperdriveTest {
             POSITION_DURATION / 2
         );
 
-        // Calculate the value of the pool after interest is accrued.
+        // Calculate the value of the short after interest is accrued.
         (, int256 shortInterest) = HyperdriveUtils.calculateCompoundInterest(
             bondsShorted,
             apy,
