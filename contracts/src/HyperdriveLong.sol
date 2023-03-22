@@ -427,7 +427,9 @@ abstract contract HyperdriveLong is HyperdriveLP {
 
         // Calculate the fees owed to governance in shares.
         shareReservesDelta -= governanceCurveFee.divDown(_sharePrice);
-        totalGovernanceFee = (governanceCurveFee + governanceFlatFee).divDown(_sharePrice);
+        totalGovernanceFee = (governanceCurveFee + governanceFlatFee).divDown(
+            _sharePrice
+        );
 
         return (
             shareReservesDelta,

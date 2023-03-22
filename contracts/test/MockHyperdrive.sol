@@ -97,7 +97,12 @@ contract MockHyperdrive is Hyperdrive {
             _spotPrice,
             sharePrice
         );
-        return (totalCurveFee, totalFlatFee, governanceCurveFee, governanceFlatFee);
+        return (
+            totalCurveFee,
+            totalFlatFee,
+            governanceCurveFee,
+            governanceFlatFee
+        );
     }
 
     function calculateFeesOutGivenBondsIn(
@@ -153,7 +158,12 @@ contract MockHyperdrive is Hyperdrive {
             _spotPrice,
             sharePrice
         );
-        return (totalCurveFee, totalFlatFee, governanceCurveFee, governanceFlatFee);
+        return (
+            totalCurveFee,
+            totalFlatFee,
+            governanceCurveFee,
+            governanceFlatFee
+        );
     }
 
     /// Overrides ///
