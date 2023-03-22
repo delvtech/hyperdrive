@@ -32,7 +32,7 @@ contract MakerDsrHyperdriveScript is Script {
             _fees: HyperdriveBase.Fees({
                 curveFee: 0.1e18, // 10% curve fee
                 flatFee: 0.05e18, // 5% flat fee
-                govFee: 0.1e18 // 10% governance fee
+                governanceFee: 0.1e18 // 10% governance fee
             }),
             _governance: address(0),
             _dsrManager: DsrManager(dsrManager)

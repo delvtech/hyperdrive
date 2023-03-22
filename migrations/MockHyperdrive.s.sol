@@ -5,7 +5,7 @@ import "forge-std/Script.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import "contracts/test/ERC20Mintable.sol";
 import "contracts/test/MockHyperdriveTestnet.sol";
-import { HyperdriveBase } from "contracts/src/HyperdriveBase.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 
 contract MockHyperdriveScript is Script {
     using FixedPointMath for uint256;
@@ -28,10 +28,10 @@ contract MockHyperdriveScript is Script {
             365,
             1 days,
             FixedPointMath.ONE_18.divDown(22.186877016851916266e18),
-            HyperdriveBase.Fees({
-                curveFee: 0.1e18,
-                flatFee: 0.05e18,
-                govFee: 0.1e18
+            IHyperdrive.Fees({
+                curve: 0.1e18,
+                flat: 0.05e18,
+                governance: 0.1e18
             }),
             address(0)
         );
