@@ -23,7 +23,7 @@ contract AaveFixedBorrowTest is BaseTest {
 
     // Token addresses taken from:
     // https://github.com/phoenixlabsresearch/sparklend/blob/master/script/output/5/spark-latest.json
-    function setUp() public override __goerli_fork(8659000) {
+    function setUp() public override __goerli_fork(8666586) {
         super.setUp();
 
         wsteth = IERC20Permit(
@@ -34,7 +34,7 @@ contract AaveFixedBorrowTest is BaseTest {
         pool = IPool(address(0x26ca51Af4506DE7a6f0785D20CD776081a05fF6d));
 
         hyperdrive = IHyperdrive(
-            address(0x27b8C295f59f313898b49AfAde92CB430F8b4074)
+            address(0xEf99A9De7cf59db2F2b45656c48E2D2733Cc9B3e)
         );
 
         action = new AaveFixedBorrowAction(hyperdrive, pool);
@@ -90,10 +90,14 @@ contract AaveFixedBorrowTest is BaseTest {
             address(0xa99d874d26BdfD94d474Aa04f4f7861DCD55Cbf4)
         ).approveDelegation(address(action), type(uint256).max);
 
+        uint256 supplyAmount = 10e18;
+        uint256 borrowAmount = 500e18;
+        uint256 bondAmount = 15000e18;
+
         // Expect wsteth supply to be made by the action contract
         // on behalf of alice
         vm.expectEmit(true, true, true, true);
-        emit Supply(address(wsteth), address(action), alice, 10e18, 0);
+        emit Supply(address(wsteth), address(action), alice, supplyAmount, 0);
 
         // Expect that an amount of dai to be borrowed on behalf of Alice
         vm.expectEmit(true, true, true, false);
@@ -101,38 +105,31 @@ contract AaveFixedBorrowTest is BaseTest {
             address(dai),
             address(action),
             alice,
-            500e18,
+            borrowAmount,
             DataTypes.InterestRateMode.VARIABLE,
             0,
             0
         );
 
-        uint256 bondAmount = 15000e18;
-
-        // TODO Replace this constraint with calculations for base deposited to
-        // short
-        //
-        // Expect a transfer from action to hyperdrive
-        vm.expectEmit(true, true, false, false);
-        emit Transfer(address(action), address(hyperdrive), 0);
-
-        vm.expectEmit(true, true, true, false);
-        emit Repay(address(dai), alice, address(action), 0, false);
-
-        uint256 baseDeposited = action.supplyBorrowAndOpenShort(
-            address(wsteth),
-            10e18,
-            500e18,
-            bondAmount,
-            500e18
-        );
         uint256 baseForShort = HyperdriveUtils.calculateBaseForOpenShort(
             hyperdrive,
             bondAmount
         );
 
-        // TODO MakerDsrHyperdrive fee calcs are different to what the latest
-        // version of hyperdrive is using
-        assertApproxEqAbs(baseDeposited, baseForShort, baseForShort / 10);
+        vm.expectEmit(true, true, true, true);
+        emit Transfer(address(action), address(hyperdrive), baseForShort);
+
+        vm.expectEmit(true, true, true, true);
+        emit Repay(address(dai), alice, address(action), borrowAmount - baseForShort, false);
+
+        uint256 baseDeposited = action.supplyBorrowAndOpenShort(
+            address(wsteth),
+            supplyAmount,
+            borrowAmount,
+            bondAmount,
+            baseForShort // use as maxDeposit
+        );
+
+        assertEq(baseDeposited, baseForShort);
     }
 }

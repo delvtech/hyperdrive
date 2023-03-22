@@ -8,6 +8,7 @@ import { MakerDsrHyperdrive } from "contracts/src/instances/MakerDsrHyperdrive.s
 import { DsrManager } from "contracts/src/interfaces/IMaker.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 
 contract MakerDsrHyperdriveScript is Script {
     using FixedPointMath for uint256;

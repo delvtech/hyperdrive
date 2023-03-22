@@ -265,7 +265,27 @@ library HyperdriveUtils {
             poolConfig.initialSharePrice
         );
 
-        // TODO Fee accounting
+        uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
+            poolInfo.shareReserves,
+            poolInfo.bondReserves,
+            poolConfig.initialSharePrice,
+            timeRemaining,
+            poolConfig.timeStretch
+        );
+
+        uint256 curveFee = FixedPointMath.ONE_18.sub(spotPrice)
+            .mulDown(poolConfig.curveFee)
+            .mulDown(_bondAmount)
+            .mulDivDown(timeRemaining, poolInfo.sharePrice);
+
+        uint256 flatFee = (
+            _bondAmount.mulDivDown(
+                FixedPointMath.ONE_18.sub(timeRemaining),
+                poolInfo.sharePrice
+            )
+        ).mulDown(poolConfig.flatFee);
+
+        shareProceeds -= curveFee + flatFee;
 
         return
             HyperdriveMath
