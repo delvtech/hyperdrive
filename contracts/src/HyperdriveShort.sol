@@ -55,16 +55,16 @@ abstract contract HyperdriveShort is HyperdriveLP {
         uint256 bondReservesDelta;
         uint256 shareProceeds;
         {
-            uint256 totalGovFee;
+            uint256 totalGovernanceFee;
             (
                 shareReservesDelta,
                 bondReservesDelta,
                 shareProceeds,
-                totalGovFee
+                totalGovernanceFee
             ) = _calculateOpenShort(_bondAmount, sharePrice, timeRemaining);
 
             // Attribute the governance fees.
-            govFeesAccrued += totalGovFee;
+            governanceFeesAccrued += totalGovernanceFee;
         }
 
         // Take custody of the trader's deposit and ensure that the trader
@@ -142,11 +142,11 @@ abstract contract HyperdriveShort is HyperdriveLP {
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
             uint256 sharePayment,
-            uint256 totalGovFee
+            uint256 totalGovernanceFee
         ) = _calculateCloseShort(_bondAmount, sharePrice, _maturityTime);
 
         // Attribute the governance fees.
-        govFeesAccrued += totalGovFee;
+        governanceFeesAccrued += totalGovernanceFee;
 
         // If the position hasn't matured, apply the accounting updates that
         // result from closing the short to the reserves and pay out the
@@ -155,7 +155,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             _applyCloseShort(
                 _bondAmount,
                 bondReservesDelta,
-                sharePayment - totalGovFee,
+                sharePayment - totalGovernanceFee,
                 shareReservesDelta,
                 _maturityTime,
                 sharePrice
@@ -373,7 +373,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
     /// @return shareReservesDelta The change in the share reserves.
     /// @return bondReservesDelta The change in the bond reserves.
     /// @return shareProceeds The proceeds in shares of selling the bonds.
-    /// @return totalGovFee The governance fee in shares.
+    /// @return totalGovernanceFee The governance fee in shares.
     function _calculateOpenShort(
         uint256 _bondAmount,
         uint256 _sharePrice,
@@ -385,7 +385,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
             uint256 shareProceeds,
-            uint256 totalGovFee
+            uint256 totalGovernanceFee
         )
     {
         // Calculate the effect that opening the short should have on the pool's
@@ -424,7 +424,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         (
             totalCurveFee,
             totalFlatFee,
-            totalGovFee
+            totalGovernanceFee
         ) = _calculateFeesOutGivenBondsIn(
             _bondAmount, // amountIn
             _timeRemaining,
@@ -438,7 +438,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             shareReservesDelta,
             bondReservesDelta,
             shareProceeds,
-            totalGovFee
+            totalGovernanceFee
         );
     }
 
@@ -450,7 +450,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
     /// @return shareReservesDelta The change in the share reserves.
     /// @return bondReservesDelta The change in the bond reserves.
     /// @return sharePayment The cost in shares of buying the bonds.
-    /// @return totalGovFee The governance fee in shares.
+    /// @return totalGovernanceFee The governance fee in shares.
     function _calculateCloseShort(
         uint256 _bondAmount,
         uint256 _sharePrice,
@@ -462,7 +462,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
             uint256 sharePayment,
-            uint256 totalGovFee
+            uint256 totalGovernanceFee
         )
     {
         // Calculate the effect that closing the short should have on the pool's
@@ -493,22 +493,22 @@ abstract contract HyperdriveShort is HyperdriveLP {
         (
             uint256 totalCurveFee,
             uint256 totalFlatFee,
-            uint256 govCurveFee,
-            uint256 govFlatFee
+            uint256 governanceCurveFee,
+            uint256 governanceFlatFee
         ) = _calculateFeesInGivenBondsOut(
                 _bondAmount, // amountOut
                 timeRemaining,
                 spotPrice,
                 _sharePrice
             );
-        shareReservesDelta += totalCurveFee - govCurveFee;
+        shareReservesDelta += totalCurveFee - governanceCurveFee;
         sharePayment += totalCurveFee + totalFlatFee;
 
         return (
             shareReservesDelta,
             bondReservesDelta,
             sharePayment,
-            govCurveFee + govFlatFee
+            governanceCurveFee + governanceFlatFee
         );
     }
 }

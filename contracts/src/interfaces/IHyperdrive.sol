@@ -64,7 +64,7 @@ interface IHyperdrive is IMultiToken {
             uint256 _timeStretch,
             uint256 _flatFee,
             uint256 _curveFee,
-            uint256 _govFee
+            uint256 _governanceFee
         );
 
     function getPoolInfo()

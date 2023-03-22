@@ -58,7 +58,7 @@ contract HyperdriveTest is BaseTest {
         uint256 apr,
         uint256 curveFee,
         uint256 flatFee,
-        uint256 govFee,
+        uint256 governanceFee,
         address governance
     ) internal {
         vm.stopPrank();
@@ -66,7 +66,7 @@ contract HyperdriveTest is BaseTest {
         HyperdriveBase.Fees memory fees = HyperdriveBase.Fees(
             curveFee,
             flatFee,
-            govFee
+            governanceFee
         );
 
         hyperdrive = IHyperdrive(

@@ -43,8 +43,8 @@ contract MockHyperdrive is Hyperdrive {
         flatFee = _flatFee;
     }
 
-    function getGovFeesAccrued() external view returns (uint256) {
-        return govFeesAccrued;
+    function getGovernanceFeesAccrued() external view returns (uint256) {
+        return governanceFeesAccrued;
     }
 
     // Accrues compounded interest for a given number of seconds and readjusts
@@ -81,15 +81,15 @@ contract MockHyperdrive is Hyperdrive {
         returns (
             uint256 totalCurveFee,
             uint256 totalFlatFee,
-            uint256 govCurveFee,
-            uint256 govFlatFee
+            uint256 governanceCurveFee,
+            uint256 governanceFlatFee
         )
     {
         (
             totalCurveFee,
             totalFlatFee,
-            govCurveFee,
-            govFlatFee
+            governanceCurveFee,
+            governanceFlatFee
         ) = _calculateFeesOutGivenSharesIn(
             _amountIn,
             _amountOut,
@@ -97,7 +97,7 @@ contract MockHyperdrive is Hyperdrive {
             _spotPrice,
             sharePrice
         );
-        return (totalCurveFee, totalFlatFee, govCurveFee, govFlatFee);
+        return (totalCurveFee, totalFlatFee, governanceCurveFee, governanceFlatFee);
     }
 
     function calculateFeesOutGivenBondsIn(
@@ -111,20 +111,20 @@ contract MockHyperdrive is Hyperdrive {
         returns (
             uint256 totalCurveFee,
             uint256 totalFlatFee,
-            uint256 totalGovFee
+            uint256 totalGovernanceFee
         )
     {
         (
             totalCurveFee,
             totalFlatFee,
-            totalGovFee
+            totalGovernanceFee
         ) = _calculateFeesOutGivenBondsIn(
             _amountIn,
             _normalizedTimeRemaining,
             _spotPrice,
             sharePrice
         );
-        return (totalCurveFee, totalFlatFee, totalGovFee);
+        return (totalCurveFee, totalFlatFee, totalGovernanceFee);
     }
 
     function calculateFeesInGivenBondsOut(
@@ -138,22 +138,22 @@ contract MockHyperdrive is Hyperdrive {
         returns (
             uint256 totalCurveFee,
             uint256 totalFlatFee,
-            uint256 govCurveFee,
-            uint256 govFlatFee
+            uint256 governanceCurveFee,
+            uint256 governanceFlatFee
         )
     {
         (
             totalCurveFee,
             totalFlatFee,
-            govCurveFee,
-            govFlatFee
+            governanceCurveFee,
+            governanceFlatFee
         ) = _calculateFeesInGivenBondsOut(
             _amountOut,
             _normalizedTimeRemaining,
             _spotPrice,
             sharePrice
         );
-        return (totalCurveFee, totalFlatFee, govCurveFee, govFlatFee);
+        return (totalCurveFee, totalFlatFee, governanceCurveFee, governanceFlatFee);
     }
 
     /// Overrides ///
