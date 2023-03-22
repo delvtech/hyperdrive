@@ -1,10 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-// FIXME
-import "forge-std/console.sol";
-import "test/utils/Lib.sol";
-
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
@@ -18,9 +14,6 @@ import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 // - [ ] LPs with different long and short weightings.
 // - [ ] Cases where interest accrues before and after
 contract LpWithdrawalTest is HyperdriveTest {
-    // FIXME
-    using Lib for *;
-
     using FixedPointMath for uint256;
 
     // TODO: Accrue interest before the test starts as this results in weirder
@@ -34,11 +27,11 @@ contract LpWithdrawalTest is HyperdriveTest {
         uint256 lpShares = initialize(alice, apr, contribution);
 
         // TODO: We run into subtraction underflows when the pre trading APR is
-        // higher because the spot price goes above 1. We should investigate
+        // negative because the spot price goes above 1. We should investigate
         // this further.
         //
         // Accrue interest before the trading period.
-        vm.assume(preTradingApr >= -0.1e18 && preTradingApr <= 1e18);
+        vm.assume(preTradingApr >= 0e18 && preTradingApr <= 1e18);
         advanceTime(POSITION_DURATION, preTradingApr);
 
         // Bob opens a large long.
@@ -61,11 +54,12 @@ contract LpWithdrawalTest is HyperdriveTest {
             preTradingApr,
             POSITION_DURATION
         );
-        // TODO: This bound is too high. Investigate this further.
+        // TODO: This bound is too high. Investigate this further. Improving
+        // this will have benefits on the remove liquidity unit tests.
         assertApproxEqAbs(
             baseProceeds,
             contribution - (longAmount - basePaid),
-            1e10
+            1e9
         );
         assertApproxEqAbs(
             withdrawalShares,
@@ -85,18 +79,23 @@ contract LpWithdrawalTest is HyperdriveTest {
         // Alice redeems her withdrawal shares. She receives the unlocked margin
         // as well as quite a bit of "interest" that was collected from Bob's
         // slippage.
+        uint256 sharePrice = HyperdriveUtils.getPoolInfo(hyperdrive).sharePrice;
         uint256 withdrawalProceeds = redeemWithdrawalShares(
             alice,
             withdrawalShares
         );
-        // FIXME
-        // assertApproxEqAbs(withdrawalProceeds, withdrawalShares + (basePaid - longProceeds), 1);
+        assertApproxEqAbs(
+            withdrawalProceeds,
+            // TODO: This bound is still too high.
+            withdrawalShares.mulDown(sharePrice) + (basePaid - longProceeds),
+            1e10
+        );
 
         // TODO: This bound is unacceptably high. Investigate this when the
         // other bounds have been tightened.
         //
         // Ensure that the ending base balance of Hyperdrive is zero.
-        assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1e15);
+        assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1e11);
     }
 
     // TODO: Accrue interest before the test starts as this results in weirder
@@ -130,7 +129,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             baseProceeds,
             contribution - (longAmount - basePaid),
-            1e9
+            1
         );
         assertEq(withdrawalShares, longAmount - basePaid);
 

@@ -1,10 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-// FIXME
-import "forge-std/console.sol";
-import "test/utils/Lib.sol";
-
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { HyperdriveBase } from "./HyperdriveBase.sol";
 import { AssetId } from "./libraries/AssetId.sol";
@@ -19,9 +15,6 @@ import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveLP is HyperdriveBase {
-    // FIXME
-    using Lib for *;
-
     using FixedPointMath for uint256;
     using SafeCast for uint256;
 

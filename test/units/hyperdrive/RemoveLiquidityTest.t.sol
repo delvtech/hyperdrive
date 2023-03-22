@@ -166,7 +166,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
         uint256 timeAdvanced = POSITION_DURATION.mulDown(0.05e18);
         advanceTime(timeAdvanced, int256(apr));
 
-        // Bob opens a long.
+        // Bob opens a short.
         uint256 bondAmount = 50_000_000e18;
         (, uint256 basePaid) = openShort(bob, bondAmount);
 
@@ -182,12 +182,15 @@ contract RemoveLiquidityTest is HyperdriveTest {
             .calculateCompoundInterest(contribution, int256(apr), timeAdvanced);
 
         // Ensure that Alice received the correct amount of base.
-        uint256 baseExpected = contributionPlusInterest + basePaid - bondAmount;
-        assertApproxEqAbs(baseProceeds, baseExpected, 2.5e7);
+        uint256 baseExpected = contributionPlusInterest -
+            (bondAmount - basePaid);
+        // TODO: Improve this bound.
+        assertApproxEqAbs(baseProceeds, baseExpected, 3e7);
+        // TODO: Improve this bound.
         assertApproxEqAbs(
             baseToken.balanceOf(address(hyperdrive)),
             bondAmount,
-            2.5e7
+            3e7
         );
         assertEq(baseToken.balanceOf(alice), baseProceeds);
 

@@ -76,7 +76,7 @@ contract LPFairnessTest is HyperdriveTest {
             variableInterestOwed;
 
         // Bob removes liquidity
-        uint256 withdrawalProceeds = removeLiquidity(bob, lpShares);
+        (uint256 withdrawalProceeds, ) = removeLiquidity(bob, lpShares);
         assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 2e7);
     }
 
@@ -175,7 +175,7 @@ contract LPFairnessTest is HyperdriveTest {
             withdrawalShares;
 
         // Bob removes liquidity
-        uint256 withdrawalProceeds = removeLiquidity(bob, lpShares);
+        (uint256 withdrawalProceeds, ) = removeLiquidity(bob, lpShares);
         assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 2e7);
     }
 
@@ -235,7 +235,7 @@ contract LPFairnessTest is HyperdriveTest {
             fixedInterestOwed;
 
         // Ensure that if the new LP withdraws, they get their money back.
-        uint256 withdrawalProceeds = removeLiquidity(bob, lpShares);
+        (uint256 withdrawalProceeds, ) = removeLiquidity(bob, lpShares);
         assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 2e7);
     }
 
@@ -308,7 +308,7 @@ contract LPFairnessTest is HyperdriveTest {
             fixedInterestOwed;
 
         // Ensure that if the new LP withdraws, they get their money back.
-        uint256 withdrawalProceeds = removeLiquidity(bob, lpShares);
+        (uint256 withdrawalProceeds, ) = removeLiquidity(bob, lpShares);
         assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 2e7);
     }
 
@@ -402,7 +402,7 @@ contract LPFairnessTest is HyperdriveTest {
             fixedInterestOwed;
 
         // Bob removes liquidity
-        uint256 withdrawalProceeds = removeLiquidity(bob, lpShares);
+        (uint256 withdrawalProceeds, ) = removeLiquidity(bob, lpShares);
         assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 2e7);
     }
 
@@ -500,7 +500,7 @@ contract LPFairnessTest is HyperdriveTest {
             withdrawalShares;
 
         // Ensure that if the new LP withdraws, they get their money back.
-        uint256 withdrawalProceeds = removeLiquidity(bob, lpShares);
+        (uint256 withdrawalProceeds, ) = removeLiquidity(bob, lpShares);
         assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 2e7);
     }
 }
