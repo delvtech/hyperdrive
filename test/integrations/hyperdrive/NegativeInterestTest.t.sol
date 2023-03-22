@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 
@@ -97,14 +98,21 @@ contract NegativeInterestTest is HyperdriveTest {
         HyperdriveUtils.PoolInfo memory poolInfo = HyperdriveUtils.getPoolInfo(
             hyperdrive
         );
-        (, , uint256 expectedSharePayment) = HyperdriveMath.calculateCloseShort(
-            poolInfo.shareReserves,
-            poolInfo.bondReserves,
-            shortAmount,
-            timeElapsed.divDown(POSITION_DURATION),
-            hyperdrive.timeStretch(),
-            poolInfo.sharePrice,
-            hyperdrive.initialSharePrice()
+        IHyperdrive.Fees memory fees = hyperdrive.fees();
+
+        (, , uint256 sharePayment, ) = HyperdriveMath.calculateCloseShort(
+            HyperdriveMath.CloseShortCalculationParams({
+                bondAmount: shortAmount,
+                shareReserves: poolInfo.shareReserves,
+                bondReserves: poolInfo.bondReserves,
+                sharePrice: poolInfo.sharePrice,
+                initialSharePrice: hyperdrive.initialSharePrice(),
+                normalizedTimeRemaining: timeElapsed.divDown(POSITION_DURATION),
+                timeStretch: hyperdrive.timeStretch(),
+                curveFee: fees.curve,
+                flatFee: fees.flat,
+                governanceFee: fees.governance
+            })
         );
         (, int256 expectedInterest) = HyperdriveUtils.calculateCompoundInterest(
             shortAmount,
@@ -114,8 +122,7 @@ contract NegativeInterestTest is HyperdriveTest {
         return
             uint256(
                 int256(
-                    shortAmount -
-                        poolInfo.sharePrice.mulDown(expectedSharePayment)
+                    shortAmount - poolInfo.sharePrice.mulDown(sharePayment)
                 ) + expectedInterest
             );
     }
