@@ -6,15 +6,13 @@ import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 
-// FIXME: Some scenarios that we need to test.
+// TODO: Some scenarios that we need to test.
 //
 // - [ ] Short trade closed immediately.
 // - [ ] Short trade closed at redemption.
 // - [ ] A mixture of long and short trades.
 // - [ ] LPs with different long and short weightings.
 contract LpWithdrawalTest is HyperdriveTest {
-    // FIXME
-    using Lib for uint256;
     using FixedPointMath for uint256;
 
     function test_lp_withdrawal_long_immediate_close(
@@ -60,7 +58,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         assertEq(baseToken.balanceOf(address(hyperdrive)), 0);
     }
 
-    // FIXME: We should also test that the withdrawal shares receive interest
+    // TODO: We should also test that the withdrawal shares receive interest
     // if the long isn't closed immediately.
     function test_lp_withdrawal_long_redemption(
         uint128 basePaid,
@@ -82,7 +80,11 @@ contract LpWithdrawalTest is HyperdriveTest {
             alice,
             lpShares
         );
-        assertEq(baseProceeds, contribution - (longAmount - basePaid));
+        assertApproxEqAbs(
+            baseProceeds,
+            contribution - (longAmount - basePaid),
+            1e9
+        );
         assertEq(withdrawalShares, longAmount - basePaid);
 
         // Positive interest accrues over the term. We create a checkpoint for
@@ -96,33 +98,51 @@ contract LpWithdrawalTest is HyperdriveTest {
         // Bob closes his long. He should receive the full bond amount since he
         // is closing at maturity.
         uint256 longProceeds = closeLong(bob, maturityTime, longAmount);
-        assertApproxEqAbs(longProceeds, longAmount, 1e10);
+        assertApproxEqAbs(longProceeds, longAmount, 10);
 
         // Alice redeems her withdrawal shares. She receives the interest
-        // collected on the capital underlying the long for .
+        // collected on the capital underlying the long for all but the first
+        // checkpoint. This will leave dust which is the interest from the first
+        // checkpoint compounded over the whole term.
+        uint256 estimatedDust;
+        int256 estimatedProceeds;
+        {
+            // TODO: We can solve this dust problem by storing a weighted
+            // average of the starting share price for longs.
+            (, int256 dustInterest) = HyperdriveUtils.calculateCompoundInterest(
+                longAmount,
+                variableApr,
+                CHECKPOINT_DURATION
+            );
+            (estimatedDust, ) = HyperdriveUtils.calculateCompoundInterest(
+                uint256(dustInterest),
+                variableApr,
+                POSITION_DURATION - CHECKPOINT_DURATION
+            );
+            (, estimatedProceeds) = HyperdriveUtils.calculateCompoundInterest(
+                longAmount,
+                variableApr,
+                POSITION_DURATION - CHECKPOINT_DURATION
+            );
+        }
         uint256 withdrawalProceeds = redeemWithdrawalShares(
             alice,
             withdrawalShares
         );
-        (, int256 interest) = HyperdriveUtils.calculateCompoundInterest(
-            longAmount,
-            variableApr,
-            POSITION_DURATION - CHECKPOINT_DURATION
-        );
-        assertApproxEqAbs(withdrawalProceeds, uint256(interest), 1e10);
+        assertApproxEqAbs(withdrawalProceeds, uint256(estimatedProceeds), 1e9);
 
         // Ensure that the ending base balance of Hyperdrive is zero.
         assertApproxEqAbs(
             baseToken.balanceOf(address(hyperdrive)),
-            0,
-            100_000e18
+            estimatedDust,
+            1e9
         );
         assertApproxEqAbs(
             hyperdrive.totalSupply(
                 AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
             ),
             0,
-            1e10
+            1
         );
     }
 }

@@ -324,6 +324,9 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 _bondAmount,
                 _shareProceeds,
                 openSharePrice,
+                // TODO: This allows the withdrawal pool to take all of the
+                // interest as long as the checkpoint isn't minted. This is
+                // probably fine, but it's worth more thought.
                 _sharePrice,
                 _sharePrice
             );

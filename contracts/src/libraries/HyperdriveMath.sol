@@ -193,9 +193,10 @@ library HyperdriveMath {
         // (our result is given in shares, so we divide the one-to-one
         // redemption by the share price) and the newly minted bonds are
         // traded on a YieldSpace curve configured to timeRemaining = 1.
-        shareProceeds = _amountIn
-            .mulDown(FixedPointMath.ONE_18.sub(_normalizedTimeRemaining))
-            .divDown(_sharePrice);
+        shareProceeds = _amountIn.mulDivDown(
+            FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
+            _sharePrice
+        );
 
         // TODO: We need better testing for this. This may be correct but the
         // intuition that longs only take a loss on the flat component of their
