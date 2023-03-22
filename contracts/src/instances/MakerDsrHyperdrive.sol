@@ -6,7 +6,6 @@ import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { Errors } from "../libraries/Errors.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Pot, DsrManager } from "../interfaces/IMaker.sol";
-import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 
 contract MakerDsrHyperdrive is Hyperdrive {
     using FixedPointMath for uint256;
@@ -41,7 +40,7 @@ contract MakerDsrHyperdrive is Hyperdrive {
         uint256 _checkpointsPerTerm,
         uint256 _checkpointDuration,
         uint256 _timeStretch,
-        IHyperdrive.Fees memory _fees,
+        Fees memory _fees,
         address _governance,
         DsrManager _dsrManager
     )

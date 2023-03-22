@@ -8,6 +8,7 @@ import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
+import { HyperdriveBase } from "contracts/src/HyperdriveBase.sol";
 import { MockHyperdrive } from "contracts/test/MockHyperdrive.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { HyperdriveUtils } from "./HyperdriveUtils.sol";
@@ -30,11 +31,7 @@ contract HyperdriveTest is BaseTest {
 
         // Instantiate the base token.
         baseToken = new ERC20Mintable();
-        IHyperdrive.Fees memory fees = IHyperdrive.Fees({
-            curve: 0,
-            flat: 0,
-            governance: 0
-        });
+        HyperdriveBase.Fees memory fees = HyperdriveBase.Fees(0, 0, 0);
         // Instantiate Hyperdrive.
         uint256 apr = 0.05e18;
         hyperdrive = IHyperdrive(
@@ -61,16 +58,16 @@ contract HyperdriveTest is BaseTest {
         uint256 apr,
         uint256 curveFee,
         uint256 flatFee,
-        uint256 governanceFee,
+        uint256 govFee,
         address governance
     ) internal {
         vm.stopPrank();
         vm.startPrank(deployer);
-        IHyperdrive.Fees memory fees = IHyperdrive.Fees({
-            curve: curveFee,
-            flat: flatFee,
-            governance: governanceFee
-        });
+        HyperdriveBase.Fees memory fees = HyperdriveBase.Fees(
+            curveFee,
+            flatFee,
+            govFee
+        );
 
         hyperdrive = IHyperdrive(
             address(

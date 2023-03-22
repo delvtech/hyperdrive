@@ -65,7 +65,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         if (_minOutput > bondProceeds) revert Errors.OutputLimit();
 
         // Attribute the governance fee.
-        governanceFeesAccrued += totalGovFee;
+        govFeesAccrued += totalGovFee;
 
         // Apply the open long to the state.
         _applyOpenLong(
@@ -130,7 +130,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         ) = _calculateCloseLong(_bondAmount, sharePrice, _maturityTime);
 
         // Attribute the governance fee.
-        governanceFeesAccrued += totalGovFee;
+        govFeesAccrued += totalGovFee;
 
         // If the position hasn't matured, apply the accounting updates that
         // result from closing the long to the reserves and pay out the
@@ -445,7 +445,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
     /// @return shareReservesDelta The change in the share reserves.
     /// @return bondReservesDelta The change in the bond reserves.
     /// @return shareProceeds The proceeds in shares of selling the bonds.
-    /// @return totalGovernanceFee The governance fee in shares.
+    /// @return totalGovFee The governance fee in shares.
     function _calculateCloseLong(
         uint256 _bondAmount,
         uint256 _sharePrice,
@@ -457,7 +457,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
             uint256 shareProceeds,
-            uint256 totalGovernanceFee
+            uint256 totalGovFee
         )
     {
         // Calculate the effect that closing the long should have on the pool's
@@ -492,17 +492,16 @@ abstract contract HyperdriveLong is HyperdriveLP {
         );
         uint256 totalCurveFee;
         uint256 totalFlatFee;
-        (totalCurveFee, totalFlatFee, totalGovernanceFee) = HyperdriveMath
-            .calculateFeesOutGivenBondsIn(
-                _bondAmount,
-                timeRemaining,
-                spotPrice,
-                _sharePrice,
-                fees.curve,
-                fees.flat,
-                fees.governance
-            );
-
+        (
+            totalCurveFee,
+            totalFlatFee,
+            totalGovFee
+        ) = _calculateFeesOutGivenBondsIn(
+            _bondAmount, // amountIn
+            timeRemaining,
+            spotPrice,
+            _sharePrice
+        );
         shareReservesDelta -= totalCurveFee;
         shareProceeds -= totalCurveFee + totalFlatFee;
 
@@ -510,7 +509,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
             shareReservesDelta,
             bondReservesDelta,
             shareProceeds,
-            totalGovernanceFee
+            totalGovFee
         );
     }
 }
