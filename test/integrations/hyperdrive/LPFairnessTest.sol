@@ -18,11 +18,14 @@ contract LPFairnessTest is HyperdriveTest {
     ) external {
         // limit the fuzz testing to apy's less than 100%
         vm.assume(param1 < 1e18);
+
         // ensure a feasible trade size
         vm.assume(param2 < 5_000_000e18);
         vm.assume(param2 > .00001e18);
+
         // variable interest rate earned by the pool
         int256 apy = int256(param1);
+
         // fixed interest rate the pool pays the longs
         uint256 apr = 0.10e18;
 
@@ -36,6 +39,7 @@ contract LPFairnessTest is HyperdriveTest {
             );
             console2.log("aprBefore", aprBefore.toString(18));
         }
+
         // Celine opens a short.
         uint256 bondsShorted = param2;
         console2.log("bondsShorted", bondsShorted.toString(18));
@@ -48,6 +52,7 @@ contract LPFairnessTest is HyperdriveTest {
             );
             console2.log("aprAfter", aprAfter.toString(18));
         }
+
         // Bob adds liquidity.
         uint256 contribution = 5_000_000e18;
         uint256 lpShares = addLiquidity(bob, contribution);
@@ -114,11 +119,14 @@ contract LPFairnessTest is HyperdriveTest {
     ) external {
         // limit the fuzz testing to apy's less than 100%
         vm.assume(param1 < 1e18);
+
         // ensure a feasible trade size
         vm.assume(param2 < 5_000_000e18);
         vm.assume(param2 > .00001e18);
+
         // variable interest rate earned by the pool
         int256 apy = int256(param1);
+
         // fixed interest rate the pool pays the longs
         uint256 apr = 0.10e18;
 
@@ -132,6 +140,7 @@ contract LPFairnessTest is HyperdriveTest {
             );
             console2.log("aprBefore", aprBefore.toString(18));
         }
+
         // Celine opens a short.
         uint256 bondsShorted = 5_000_000e18 - param2;
         console2.log("bondsShorted", bondsShorted.toString(18));
@@ -144,6 +153,7 @@ contract LPFairnessTest is HyperdriveTest {
             );
             console2.log("aprAfter", aprAfter.toString(18));
         }
+        
         // 1/2 term passes.
         advanceTime(POSITION_DURATION / 2, apy);
 
@@ -236,11 +246,14 @@ contract LPFairnessTest is HyperdriveTest {
     function test_lp_fairness_long_lp(uint256 param1, uint256 param2) external {
         // limit the fuzz testing to apy's less than 100%
         vm.assume(param1 < 1e18);
+
         // ensure a feasible trade size
         vm.assume(param2 < 5_000_000e18);
         vm.assume(param2 > .00001e18);
+
         // variable interest rate earned by the pool
         int256 apy = int256(param1);
+
         // fixed interest rate the pool pays the longs
         uint256 apr = 0.10e18;
 
@@ -282,6 +295,7 @@ contract LPFairnessTest is HyperdriveTest {
             POSITION_DURATION
         );
         console2.log("poolValue", poolValue.toString(18));
+
         // calculate the portion of the pool's value (after interest) that bob contributed.
         uint256 contributionWithInterest = (poolValue - baseSpent).mulDivDown(
             lpShares,
@@ -291,12 +305,14 @@ contract LPFairnessTest is HyperdriveTest {
             "contributionWithInterest",
             contributionWithInterest.toString(18)
         );
+
         // calculate the portion of the fixed interest that bob owes
         uint256 fixedInterestOwed = (bondsPurchased - baseSpent).mulDivDown(
             lpShares,
             hyperdrive.totalSupply(AssetId._LP_ASSET_ID)
         );
         console2.log("fixedInterestOwed", fixedInterestOwed.toString(18));
+
         // calculate the expected withdrawal proceeds
         uint256 expectedWithdrawalProceeds = contributionWithInterest -
             fixedInterestOwed;
@@ -316,15 +332,19 @@ contract LPFairnessTest is HyperdriveTest {
     ) external {
         // limit to apy's less than 100%
         vm.assume(param1 < 1e18);
+
         // ensure a feasible trade size
         vm.assume(param2 < 5_000_000e18);
         vm.assume(param2 > .00001e18);
+
         //uint256 param1 = 0.01e18;
         //uint256 param2 = 1000;
         console2.log("param2", param2.toString(18));
+
         // variable interest rate earned by the pool
         int256 apy = int256(param1);
         console2.log("apy", apy.toString(18));
+
         // fixed interest rate the pool pays the longs
         uint256 apr = 0.10e18;
 
@@ -338,6 +358,7 @@ contract LPFairnessTest is HyperdriveTest {
             );
             console2.log("aprBeforeLong", aprBeforeLong.toString(18));
         }
+
         // Celine opens a long.
         uint256 baseSpent = 5_000_000e18 - param2;
         console2.log("baseSpent", baseSpent.toString(18));
@@ -379,6 +400,7 @@ contract LPFairnessTest is HyperdriveTest {
             POSITION_DURATION / 2
         );
         console2.log("poolValue2", poolValue2.toString(18));
+
         // calculate the portion of the pool's value (after interest) that bob contributed.
         uint256 contributionWithInterest = (poolValue2 - baseSpent2 - baseSpent)
             .mulDivDown(lpShares, hyperdrive.totalSupply(AssetId._LP_ASSET_ID));
@@ -386,6 +408,7 @@ contract LPFairnessTest is HyperdriveTest {
             "contributionWithInterest",
             contributionWithInterest.toString(18)
         );
+
         // calculate the portion of the fixed interest that bob owes
         uint256 fixedInterestOwed = (bondsPurchased +
             bondsPurchased2 -
@@ -395,12 +418,14 @@ contract LPFairnessTest is HyperdriveTest {
                 hyperdrive.totalSupply(AssetId._LP_ASSET_ID)
             );
         console2.log("fixedInterestOwed", fixedInterestOwed.toString(18));
+
         // calculate the expected withdrawal shares so they can be removed from the expected proceeds
         uint256 withdrawalShares = bondsPurchased2.mulDivDown(
             lpShares,
             hyperdrive.totalSupply(AssetId._LP_ASSET_ID)
         );
         console2.log("withdrawalShares", withdrawalShares.toString(18));
+
         // calculate the expected withdrawal proceeds
         uint256 expectedWithdrawalProceeds = contributionWithInterest -
             fixedInterestOwed;
