@@ -95,7 +95,7 @@ contract AaveFixedBorrowAction {
         );
     }
 
-    /// TODO This should probably an admin only function
+    /// TODO Change to admin only function
     ///
     /// @notice Sets approvals for other contracts to send tokens on this
     ///         contracts behalf

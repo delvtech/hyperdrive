@@ -239,7 +239,7 @@ library HyperdriveUtils {
         return FixedPointMath.ONE_18.divDown(timeStretch);
     }
 
-    function calculateBaseForOpenShort(
+    function calculateOpenShortDeposit(
         IHyperdrive _hyperdrive,
         uint256 _bondAmount
     ) internal view returns (uint256) {

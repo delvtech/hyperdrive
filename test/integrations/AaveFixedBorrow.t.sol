@@ -23,7 +23,7 @@ contract AaveFixedBorrowTest is BaseTest {
 
     // Token addresses taken from:
     // https://github.com/phoenixlabsresearch/sparklend/blob/master/script/output/5/spark-latest.json
-    function setUp() public override __goerli_fork(8666586) {
+    function setUp() public override __goerli_fork(8699821) {
         super.setUp();
 
         wsteth = IERC20Permit(
@@ -34,7 +34,7 @@ contract AaveFixedBorrowTest is BaseTest {
         pool = IPool(address(0x26ca51Af4506DE7a6f0785D20CD776081a05fF6d));
 
         hyperdrive = IHyperdrive(
-            address(0xEf99A9De7cf59db2F2b45656c48E2D2733Cc9B3e)
+            address(0xbDe31A37D0901127640E5F1A0A0748Cd4C5866C2)
         );
 
         action = new AaveFixedBorrowAction(hyperdrive, pool);
@@ -84,7 +84,7 @@ contract AaveFixedBorrowTest is BaseTest {
         bool useATokens
     );
 
-    function test__aave_fixed_borrow_supply() public {
+    function test__supply_borrow_and_open_short() public {
         wsteth.approve(address(action), type(uint256).max);
         ICreditDelegationToken(
             address(0xa99d874d26BdfD94d474Aa04f4f7861DCD55Cbf4)
@@ -111,31 +111,31 @@ contract AaveFixedBorrowTest is BaseTest {
             0
         );
 
-        uint256 baseForShort = HyperdriveUtils.calculateBaseForOpenShort(
+        uint256 calculatedDeposit = HyperdriveUtils.calculateOpenShortDeposit(
             hyperdrive,
             bondAmount
         );
 
         vm.expectEmit(true, true, true, true);
-        emit Transfer(address(action), address(hyperdrive), baseForShort);
+        emit Transfer(address(action), address(hyperdrive), calculatedDeposit);
 
         vm.expectEmit(true, true, true, true);
         emit Repay(
             address(dai),
             alice,
             address(action),
-            borrowAmount - baseForShort,
+            borrowAmount - calculatedDeposit,
             false
         );
 
-        uint256 baseDeposited = action.supplyBorrowAndOpenShort(
+        uint256 deposit = action.supplyBorrowAndOpenShort(
             address(wsteth),
             supplyAmount,
             borrowAmount,
             bondAmount,
-            baseForShort // use as maxDeposit
+            calculatedDeposit // use as maxDeposit
         );
 
-        assertEq(baseDeposited, baseForShort);
+        assertEq(deposit, calculatedDeposit);
     }
 }
