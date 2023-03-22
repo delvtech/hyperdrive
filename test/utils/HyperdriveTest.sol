@@ -31,7 +31,11 @@ contract HyperdriveTest is BaseTest {
 
         // Instantiate the base token.
         baseToken = new ERC20Mintable();
-        HyperdriveBase.Fees memory fees = HyperdriveBase.Fees(0, 0, 0);
+        IHyperdrive.Fees memory fees = IHyperdrive.Fees({
+            curve: 0,
+            flat: 0,
+            governance: 0
+        });
         // Instantiate Hyperdrive.
         uint256 apr = 0.05e18;
         hyperdrive = IHyperdrive(
@@ -63,11 +67,11 @@ contract HyperdriveTest is BaseTest {
     ) internal {
         vm.stopPrank();
         vm.startPrank(deployer);
-        HyperdriveBase.Fees memory fees = HyperdriveBase.Fees(
-            curveFee,
-            flatFee,
-            governanceFee
-        );
+        IHyperdrive.Fees memory fees = IHyperdrive.Fees({
+            curve: curveFee,
+            flat: flatFee,
+            governance: governanceFee
+        });
 
         hyperdrive = IHyperdrive(
             address(

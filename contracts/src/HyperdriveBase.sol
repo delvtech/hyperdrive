@@ -8,6 +8,7 @@ import { AssetId } from "./libraries/AssetId.sol";
 import { Errors } from "./libraries/Errors.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
+import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 
 /// @author Delve
 /// @title HyperdriveBase
@@ -40,75 +41,29 @@ abstract contract HyperdriveBase is MultiToken {
     // @notice The share price at the time the pool was created.
     uint256 public immutable initialSharePrice;
 
-    struct MarketState {
-        uint128 shareReserves;
-        uint128 bondReserves;
-        uint128 longsOutstanding;
-        uint128 shortsOutstanding;
-    }
-
-    struct Aggregates {
-        uint128 averageMaturityTime;
-        uint128 baseVolume;
-    }
-
-    struct Checkpoint {
-        uint256 sharePrice;
-        uint128 longBaseVolume;
-        uint128 shortBaseVolume;
-    }
-
-    struct Fees {
-        uint256 curveFee;
-        uint256 flatFee;
-        uint256 governanceFee;
-    }
-
-    //  withdrawSharesReadyToWithdraw - The interest earned by the redemptions which put
-    // capital into the withdraw pool
-    // withdrawCapitalPool - The margin capital reclaimed by the withdraw process
-    // withdrawInterestPool - withdrawInterestPool
-    struct WithdrawPool {
-        uint128 withdrawSharesReadyToWithdraw;
-        uint128 capital;
-        uint128 interest;
-    }
-
     /// @notice The reserves and the buffers. This is the primary state used for
     ///         pricing trades and maintaining solvency.
-    MarketState public marketState;
+    IHyperdrive.MarketState public marketState;
 
     /// @notice Aggregate values for long positions that are used to enforce
     ///         fairness guarantees.
-    Aggregates public longAggregates;
+    IHyperdrive.Aggregates public longAggregates;
 
     /// @notice Aggregate values for short positions that are used to enforce
     ///         fairness guarantees.
-    Aggregates public shortAggregates;
+    IHyperdrive.Aggregates public shortAggregates;
 
     /// @notice The state corresponding to the withdraw pool, expressed as a struct.
-    WithdrawPool public withdrawPool;
+    IHyperdrive.WithdrawPool public withdrawPool;
+
+    /// @notice The fee percentages to be applied to the trade equation
+    IHyperdrive.Fees public fees;
 
     /// @notice Hyperdrive positions are bucketed into checkpoints, which
     ///         allows us to avoid poking in any period that has LP or trading
     ///         activity. The checkpoints contain the starting share price from
     ///         the checkpoint as well as aggregate volume values.
-    mapping(uint256 => Checkpoint) public checkpoints;
-
-    // TODO: Should this be immutable?
-    //
-    /// @notice The fee parameter to apply to the curve portion of the
-    ///         hyperdrive trade equation.
-    uint256 public curveFee;
-
-    // TODO: Should this be immutable?
-    //
-    /// @notice The fee parameter to apply to the flat portion of the hyperdrive
-    ///         trade equation.
-    uint256 public flatFee;
-
-    // Percentage of the fee that goes to governance.
-    uint256 public immutable governanceFeePercent;
+    mapping(uint256 => IHyperdrive.Checkpoint) public checkpoints;
 
     // Governance fees that haven't been collected yet denominated in shares.
     uint256 public governanceFeesAccrued;
@@ -141,7 +96,7 @@ abstract contract HyperdriveBase is MultiToken {
         uint256 _checkpointsPerTerm,
         uint256 _checkpointDuration,
         uint256 _timeStretch,
-        Fees memory _fees,
+        IHyperdrive.Fees memory _fees,
         address _governance
     ) MultiToken(_linkerCodeHash, _linkerFactory) {
         // Initialize the base token address.
@@ -156,9 +111,7 @@ abstract contract HyperdriveBase is MultiToken {
         checkpointDuration = _checkpointDuration;
         timeStretch = _timeStretch;
         initialSharePrice = _initialSharePrice;
-        curveFee = _fees.curveFee;
-        flatFee = _fees.flatFee;
-        governanceFeePercent = _fees.governanceFee;
+        fees = _fees;
         governance = _governance;
     }
 
@@ -253,9 +206,9 @@ abstract contract HyperdriveBase is MultiToken {
             positionDuration,
             checkpointDuration,
             timeStretch,
-            flatFee,
-            curveFee,
-            governanceFeePercent
+            fees.flat,
+            fees.curve,
+            fees.governance
         );
     }
 
@@ -363,7 +316,7 @@ abstract contract HyperdriveBase is MultiToken {
             FixedPointMath.ONE_18
         );
         totalCurveFee = totalCurveFee
-            .mulDown(curveFee)
+            .mulDown(fees.curve)
             .mulDown(_sharePrice)
             .mulDown(_amountIn)
             .mulDown(_normalizedTimeRemaining);
@@ -371,14 +324,14 @@ abstract contract HyperdriveBase is MultiToken {
         governanceCurveFee = _amountIn
             .mulDivDown(totalCurveFee, _amountOut)
             .mulDown(_sharePrice)
-            .mulDown(governanceFeePercent);
+            .mulDown(fees.governance);
         // flat fee = c * d_z * (1 - t) * phi_flat
         uint256 flat = _amountIn.mulDown(
             FixedPointMath.ONE_18.sub(_normalizedTimeRemaining)
         );
-        totalFlatFee = flat.mulDown(_sharePrice).mulDown(flatFee);
+        totalFlatFee = flat.mulDown(_sharePrice).mulDown(fees.flat);
         // calculate the flat portion of the governance fee
-        governanceFlatFee = totalFlatFee.mulDown(governanceFeePercent);
+        governanceFlatFee = totalFlatFee.mulDown(fees.governance);
     }
 
     // TODO: Consider combining this with the trading functions.
@@ -409,18 +362,18 @@ abstract contract HyperdriveBase is MultiToken {
         // curve fee = ((1 - p) * phi_curve * d_y * t) / c
         uint256 _pricePart = (FixedPointMath.ONE_18.sub(_spotPrice));
         totalCurveFee = _pricePart
-            .mulDown(curveFee)
+            .mulDown(fees.curve)
             .mulDown(_amountIn)
             .mulDivDown(_normalizedTimeRemaining, _sharePrice);
         // calculate the curve portion of the governance fee
-        totalGovernanceFee = totalCurveFee.mulDown(governanceFeePercent);
+        totalGovernanceFee = totalCurveFee.mulDown(fees.governance);
         // flat fee = (d_y * (1 - t) * phi_flat) / c
         uint256 flat = _amountIn.mulDivDown(
             FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
             _sharePrice
         );
-        totalFlatFee = (flat.mulDown(flatFee));
-        totalGovernanceFee += totalFlatFee.mulDown(governanceFeePercent);
+        totalFlatFee = (flat.mulDown(fees.flat));
+        totalGovernanceFee += totalFlatFee.mulDown(fees.governance);
     }
 
     // TODO: Consider combining this with the trading functions.
@@ -454,18 +407,18 @@ abstract contract HyperdriveBase is MultiToken {
         // curve fee = ((1 - p) * d_y * t * phi_curve)/c
         totalCurveFee = FixedPointMath.ONE_18.sub(_spotPrice);
         totalCurveFee = totalCurveFee
-            .mulDown(curveFee)
+            .mulDown(fees.curve)
             .mulDown(curveOut)
             .mulDivDown(_normalizedTimeRemaining, _sharePrice);
         // calculate the curve portion of the governance fee
-        governanceCurveFee = totalCurveFee.mulDown(governanceFeePercent);
+        governanceCurveFee = totalCurveFee.mulDown(fees.governance);
         // flat fee = (d_y * (1 - t) * phi_flat)/c
         uint256 flat = _amountOut.mulDivDown(
             FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
             _sharePrice
         );
-        totalFlatFee = (flat.mulDown(flatFee));
+        totalFlatFee = (flat.mulDown(fees.flat));
         // calculate the flat portion of the governance fee
-        governanceFlatFee = totalFlatFee.mulDown(governanceFeePercent);
+        governanceFlatFee = totalFlatFee.mulDown(fees.governance);
     }
 }
