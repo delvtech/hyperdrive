@@ -49,8 +49,7 @@ contract MockHyperdriveTestnet is Hyperdrive {
         uint256 _amount,
         bool _asUnderlying
     ) internal override returns (uint256 sharesMinted, uint256 sharePrice) {
-        // This yield source doesn't accept the underlying since it's just base.
-        if (_asUnderlying) revert UnsupportedOption();
+        if (!_asUnderlying) revert UnsupportedOption();
 
         // Accrue interest.
         accrueInterest();
@@ -82,8 +81,7 @@ contract MockHyperdriveTestnet is Hyperdrive {
         address _destination,
         bool _asUnderlying
     ) internal override returns (uint256 amountWithdrawn, uint256 sharePrice) {
-        // This yield source doesn't accept the underlying since it's just base.
-        if (_asUnderlying) revert UnsupportedOption();
+        if (!_asUnderlying) revert UnsupportedOption();
 
         // Accrue interest.
         accrueInterest();
