@@ -233,10 +233,7 @@ contract LPFairnessTest is HyperdriveTest {
         assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e8);
     }
 
-    function test_lp_fairness_long_lp(
-        uint256 param1,
-        uint256 param2
-    ) external {
+    function test_lp_fairness_long_lp(uint256 param1, uint256 param2) external {
         // limit the fuzz testing to apy's less than 100%
         vm.assume(param1 < 1e18);
         // ensure a feasible trade size
@@ -310,11 +307,7 @@ contract LPFairnessTest is HyperdriveTest {
 
         // Ensure that if the new LP withdraws, they get their money back.
         uint256 withdrawalProceeds = removeLiquidity(bob, lpShares);
-        assertApproxEqAbs(
-            withdrawalProceeds,
-            expectedWithdrawalProceeds,
-            1e8
-        );
+        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e8);
     }
 
     function test_lp_fairness_long_long_lp(
