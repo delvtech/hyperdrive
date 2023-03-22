@@ -243,9 +243,9 @@ library HyperdriveUtils {
         IHyperdrive _hyperdrive,
         uint256 _bondAmount
     ) internal view returns (uint256) {
+        // Retrieve hyperdrive pool state
         PoolConfig memory poolConfig = getPoolConfig(_hyperdrive);
         PoolInfo memory poolInfo = getPoolInfo(_hyperdrive);
-
         uint256 openSharePrice;
         uint256 timeRemaining;
         {
@@ -255,6 +255,7 @@ library HyperdriveUtils {
             openSharePrice = _hyperdrive.checkpoints(checkpoint).sharePrice;
         }
 
+        // Calculate the openShort trade
         (, , uint256 shareProceeds) = HyperdriveMath.calculateOpenShort(
             poolInfo.shareReserves,
             poolInfo.bondReserves,
@@ -265,6 +266,7 @@ library HyperdriveUtils {
             poolConfig.initialSharePrice
         );
 
+        // Price without slippage of bonds in terms of shares
         uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
             poolInfo.shareReserves,
             poolInfo.bondReserves,
@@ -273,22 +275,22 @@ library HyperdriveUtils {
             poolConfig.timeStretch
         );
 
+        // Calculate and attribute fees
         uint256 curveFee = FixedPointMath
             .ONE_18
             .sub(spotPrice)
             .mulDown(poolConfig.curveFee)
             .mulDown(_bondAmount)
             .mulDivDown(timeRemaining, poolInfo.sharePrice);
-
         uint256 flatFee = (
             _bondAmount.mulDivDown(
                 FixedPointMath.ONE_18.sub(timeRemaining),
                 poolInfo.sharePrice
             )
         ).mulDown(poolConfig.flatFee);
-
         shareProceeds -= curveFee + flatFee;
 
+        // Return the proceeds of the short
         return
             HyperdriveMath
                 .calculateShortProceeds(
