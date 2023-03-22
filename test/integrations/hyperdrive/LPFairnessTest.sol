@@ -9,18 +9,18 @@ contract LPFairnessTest is HyperdriveTest {
     using FixedPointMath for uint256;
 
     function test_lp_fairness_short_lp(
-        uint256 param1,
-        uint256 param2
+        uint256 fixedRateParam,
+        uint256 tradeSizeParam
     ) external {
         // limit the fuzz testing to variableRate's less than 100%
-        vm.assume(param1 < 1e18);
+        vm.assume(fixedRateParam < 1e18);
 
         // ensure a feasible trade size
-        vm.assume(param2 < 5_000_000e18);
-        vm.assume(param2 > 0.00001e18);
+        vm.assume(tradeSizeParam < 5_000_000e18);
+        vm.assume(tradeSizeParam > 0.00001e18);
 
         // variable interest rate earned by the pool
-        int256 variableRate = int256(param1);
+        int256 variableRate = int256(fixedRateParam);
 
         // fixed interest rate the pool pays the longs
         uint256 fixedRate = 0.10e18;
@@ -30,7 +30,7 @@ contract LPFairnessTest is HyperdriveTest {
         initialize(alice, fixedRate, initialLiquidity);
 
         // Celine opens a short.
-        uint256 bondsShorted = param2;
+        uint256 bondsShorted = tradeSizeParam;
         (, uint256 baseSpent) = openShort(celine, bondsShorted);
 
         // Bob adds liquidity.
@@ -81,18 +81,18 @@ contract LPFairnessTest is HyperdriveTest {
     }
 
     function test_lp_fairness_short_short_lp(
-        uint256 param1,
-        uint256 param2
+        uint256 fixedRateParam,
+        uint256 tradeSizeParam
     ) external {
         // limit the fuzz testing to variableRate's less than 100%
-        vm.assume(param1 < 1e18);
+        vm.assume(fixedRateParam < 1e18);
 
         // ensure a feasible trade size
-        vm.assume(param2 < 5_000_000e18);
-        vm.assume(param2 > 0.00001e18);
+        vm.assume(tradeSizeParam < 5_000_000e18);
+        vm.assume(tradeSizeParam > 0.00001e18);
 
         // variable interest rate earned by the pool
-        int256 variableRate = int256(param1);
+        int256 variableRate = int256(fixedRateParam);
 
         // fixed interest rate the pool pays the longs
         uint256 fixedRate = 0.10e18;
@@ -102,7 +102,7 @@ contract LPFairnessTest is HyperdriveTest {
         initialize(alice, fixedRate, initialLiquidity);
 
         // Celine opens a short.
-        uint256 bondsShorted = 5_000_000e18 - param2;
+        uint256 bondsShorted = 5_000_000e18 - tradeSizeParam;
         (, uint256 baseSpent) = openShort(celine, bondsShorted);
 
         // 1/2 term passes.
@@ -123,7 +123,7 @@ contract LPFairnessTest is HyperdriveTest {
         );
 
         // Celine opens another short.
-        uint256 bondsShorted2 = param2;
+        uint256 bondsShorted2 = tradeSizeParam;
         (, uint256 baseSpent2) = openShort(celine, bondsShorted2);
 
         // Bob adds liquidity.
@@ -179,16 +179,16 @@ contract LPFairnessTest is HyperdriveTest {
         assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e7);
     }
 
-    function test_lp_fairness_long_lp(uint256 param1, uint256 param2) external {
+    function test_lp_fairness_long_lp(uint256 fixedRateParam, uint256 tradeSizeParam) external {
         // limit the fuzz testing to variableRate's less than 100%
-        vm.assume(param1 < 1e18);
+        vm.assume(fixedRateParam < 1e18);
 
         // ensure a feasible trade size
-        vm.assume(param2 < 5_000_000e18);
-        vm.assume(param2 > 0.00001e18);
+        vm.assume(tradeSizeParam < 5_000_000e18);
+        vm.assume(tradeSizeParam > 0.00001e18);
 
         // variable interest rate earned by the pool
-        int256 variableRate = int256(param1);
+        int256 variableRate = int256(fixedRateParam);
 
         // fixed interest rate the pool pays the longs
         uint256 fixedRate = 0.10e18;
@@ -198,7 +198,7 @@ contract LPFairnessTest is HyperdriveTest {
         initialize(alice, fixedRate, initialLiquidity);
 
         // Celine opens a long.
-        uint256 baseSpent = param2;
+        uint256 baseSpent = tradeSizeParam;
         (, uint256 bondsPurchased) = openLong(celine, baseSpent);
 
         // Bob adds liquidity.
@@ -237,18 +237,18 @@ contract LPFairnessTest is HyperdriveTest {
     }
 
     function test_lp_fairness_long_long_lp(
-        uint256 param1,
-        uint256 param2
+        uint256 fixedRateParam,
+        uint256 tradeSizeParam
     ) external {
         // limit to variableRate's less than 100%
-        vm.assume(param1 < 1e18);
+        vm.assume(fixedRateParam < 1e18);
 
         // ensure a feasible trade size
-        vm.assume(param2 < 5_000_000e18);
-        vm.assume(param2 > 0.00001e18);
+        vm.assume(tradeSizeParam < 5_000_000e18);
+        vm.assume(tradeSizeParam > 0.00001e18);
 
         // variable interest rate earned by the pool
-        int256 variableRate = int256(param1);
+        int256 variableRate = int256(fixedRateParam);
 
         // fixed interest rate the pool pays the longs
         uint256 fixedRate = 0.10e18;
@@ -258,7 +258,7 @@ contract LPFairnessTest is HyperdriveTest {
         initialize(alice, fixedRate, initialLiquidity);
 
         // Celine opens a long.
-        uint256 baseSpent = 5_000_000e18 - param2;
+        uint256 baseSpent = 5_000_000e18 - tradeSizeParam;
         (, uint256 bondsPurchased) = openLong(celine, baseSpent);
 
         // 1/2 the term passes.
@@ -270,7 +270,7 @@ contract LPFairnessTest is HyperdriveTest {
         );
 
         // Celine opens another long.
-        uint256 baseSpent2 = param2;
+        uint256 baseSpent2 = tradeSizeParam;
         (, uint256 bondsPurchased2) = openLong(celine, baseSpent2);
 
         // Bob adds liquidity.
@@ -310,18 +310,18 @@ contract LPFairnessTest is HyperdriveTest {
     }
 
     function test_lp_fairness_short_long_lp(
-        uint256 param1,
-        uint256 param2
+        uint256 fixedRateParam,
+        uint256 tradeSizeParam
     ) external {
         // limit the fuzz testing to variableRate's less than 100%
-        vm.assume(param1 < 1e18);
+        vm.assume(fixedRateParam < 1e18);
 
         // ensure a feasible trade size
-        vm.assume(param2 < 5_000_000e18);
-        vm.assume(param2 > 0.00001e18);
+        vm.assume(tradeSizeParam < 5_000_000e18);
+        vm.assume(tradeSizeParam > 0.00001e18);
 
         // variable interest rate earned by the pool
-        int256 variableRate = int256(param1);
+        int256 variableRate = int256(fixedRateParam);
 
         // fixed interest rate the pool pays the longs
         uint256 fixedRate = 0.10e18;
@@ -331,7 +331,7 @@ contract LPFairnessTest is HyperdriveTest {
         initialize(alice, fixedRate, initialLiquidity);
 
         // Celine opens a short.
-        uint256 bondsShorted = 5_000_000e18 - param2;
+        uint256 bondsShorted = 5_000_000e18 - tradeSizeParam;
         (, uint256 baseSpent) = openShort(celine, bondsShorted);
 
         // 1/2 term passes.
@@ -345,7 +345,7 @@ contract LPFairnessTest is HyperdriveTest {
         );
 
         // Celine opens another long.
-        uint256 baseSpent2 = param2;
+        uint256 baseSpent2 = tradeSizeParam;
         (, uint256 bondsPurchased) = openLong(celine, baseSpent2);
 
         // Bob adds liquidity.
@@ -404,18 +404,18 @@ contract LPFairnessTest is HyperdriveTest {
     }
 
     function test_lp_fairness_long_short_lp(
-        uint256 param1,
-        uint256 param2
+        uint256 fixedRateParam,
+        uint256 tradeSizeParam
     ) external {
         // limit to variableRate's less than 100%
-        vm.assume(param1 < 1e18);
+        vm.assume(fixedRateParam < 1e18);
 
         // ensure a feasible trade size
-        vm.assume(param2 < 5_000_000e18);
-        vm.assume(param2 > 0.00001e18);
+        vm.assume(tradeSizeParam < 5_000_000e18);
+        vm.assume(tradeSizeParam > 0.00001e18);
 
         // variable interest rate earned by the pool
-        int256 variableRate = int256(param1);
+        int256 variableRate = int256(fixedRateParam);
 
         // fixed interest rate the pool pays the longs
         uint256 fixedRate = 0.10e18;
@@ -425,7 +425,7 @@ contract LPFairnessTest is HyperdriveTest {
         initialize(alice, fixedRate, initialLiquidity);
 
         // Celine opens a long.
-        uint256 baseSpent = 5_000_000e18 - param2;
+        uint256 baseSpent = 5_000_000e18 - tradeSizeParam;
         (, uint256 bondsPurchased) = openLong(celine, baseSpent);
 
         // 1/2 the term passes.
@@ -437,7 +437,7 @@ contract LPFairnessTest is HyperdriveTest {
         );
 
         // Celine opens a short.
-        uint256 bondsShorted = param2;
+        uint256 bondsShorted = tradeSizeParam;
         (, uint256 baseSpent2) = openShort(celine, bondsShorted);
 
         // Bob adds liquidity.
