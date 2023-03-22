@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
+// FIXME
+import "forge-std/console.sol";
+import "test/utils/Lib.sol";
+
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { HyperdriveBase } from "./HyperdriveBase.sol";
 import { AssetId } from "./libraries/AssetId.sol";
@@ -15,6 +19,9 @@ import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveLP is HyperdriveBase {
+    // FIXME
+    using Lib for *;
+
     using FixedPointMath for uint256;
     using SafeCast for uint256;
 
@@ -166,11 +173,10 @@ abstract contract HyperdriveLP is HyperdriveBase {
         uint256 sharePrice = _pricePerShare();
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
 
-        uint256 totalSupply = totalSupply[AssetId._LP_ASSET_ID];
-
         // Calculate the withdrawal proceeds of the LP. This includes the base,
         // long withdrawal shares, and short withdrawal shares that the LP
         // receives.
+        uint256 totalSupply = totalSupply[AssetId._LP_ASSET_ID];
         uint256 shareProceeds = HyperdriveMath.calculateOutForLpSharesIn(
             _shares,
             marketState.shareReserves,
@@ -193,6 +199,7 @@ abstract contract HyperdriveLP is HyperdriveBase {
         withdrawalShares += shortAggregates.baseVolume;
         withdrawalShares = withdrawalShares.mulDivDown(
             _shares,
+            // NOTE: Dividing by the share price to convert shares.
             totalSupply.mulDown(sharePrice)
         );
 
