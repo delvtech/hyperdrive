@@ -47,7 +47,7 @@ contract LPFairnessTest is HyperdriveTest {
             POSITION_DURATION
         );
 
-        // Calculate the value of the short after interest is accrued.
+        // Calculate the total short interest.
         (, int256 shortInterest) = HyperdriveUtils.calculateCompoundInterest(
             bondsShorted,
             apy,
@@ -115,7 +115,7 @@ contract LPFairnessTest is HyperdriveTest {
             POSITION_DURATION / 2
         );
 
-        // Calculate the value of the short after interest is accrued.
+        // Calculate the total short interest.
         (, int256 shortInterest) = HyperdriveUtils.calculateCompoundInterest(
             bondsShorted,
             apy,
@@ -140,7 +140,7 @@ contract LPFairnessTest is HyperdriveTest {
             POSITION_DURATION / 2
         );
 
-        // Calculate the value of the short after interest is accrued.
+        // Calculate the total short interest.
         (, int256 shortInterest2) = HyperdriveUtils.calculateCompoundInterest(
             bondsShorted + bondsShorted2 + uint256(shortInterest),
             apy,
@@ -362,7 +362,7 @@ contract LPFairnessTest is HyperdriveTest {
             POSITION_DURATION / 2
         );
 
-        // Calculate the value of the short after interest is accrued.
+        // Calculate the total short interest.
         (, int256 shortInterest) = HyperdriveUtils.calculateCompoundInterest(
             bondsShorted,
             apy,
@@ -454,7 +454,7 @@ contract LPFairnessTest is HyperdriveTest {
             POSITION_DURATION / 2
         );
 
-        // Calculate the value of the short after interest is accrued.
+        // Calculate the total short interest.
         (, int256 shortInterest) = HyperdriveUtils.calculateCompoundInterest(
             bondsShorted,
             apy,
