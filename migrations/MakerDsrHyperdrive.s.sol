@@ -7,7 +7,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { MakerDsrHyperdrive } from "contracts/src/instances/MakerDsrHyperdrive.sol";
 import { DsrManager } from "contracts/src/interfaces/IMaker.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
-import { HyperdriveBase } from "contracts/src/HyperdriveBase.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 
 contract MakerDsrHyperdriveScript is Script {
     using FixedPointMath for uint256;
@@ -29,7 +29,7 @@ contract MakerDsrHyperdriveScript is Script {
             _checkpointsPerTerm: 365, // 1 year term
             _checkpointDuration: 1 days, // 1 day checkpoints
             _timeStretch: calculateTimeStretch(0.02e18), // 2% APR time stretch
-            _fees: HyperdriveBase.Fees({
+            _fees: IHyperdrive.Fees({
                 curveFee: 0.1e18, // 10% curve fee
                 flatFee: 0.05e18, // 5% flat fee
                 governanceFee: 0.1e18 // 10% governance fee

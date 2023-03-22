@@ -5,6 +5,7 @@ import { Hyperdrive } from "../Hyperdrive.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { Errors } from "../libraries/Errors.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 
 interface Pool {
     function supply(
@@ -49,7 +50,7 @@ contract AaveHyperdrive is Hyperdrive {
         uint256 _timeStretch,
         IERC20 _aToken,
         Pool _pool,
-        Fees memory _fees,
+        IHyperdrive.Fees memory _fees,
         address _governance
     )
         Hyperdrive(
