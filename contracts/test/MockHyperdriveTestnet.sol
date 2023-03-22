@@ -6,7 +6,6 @@ import { Hyperdrive } from "../src/Hyperdrive.sol";
 import { FixedPointMath } from "../src/libraries/FixedPointMath.sol";
 import { Errors } from "../src/libraries/Errors.sol";
 import { ERC20Mintable } from "./ERC20Mintable.sol";
-import { IHyperdrive } from "../src/interfaces/IHyperdrive.sol";
 
 contract MockHyperdriveTestnet is Hyperdrive {
     using FixedPointMath for uint256;
@@ -22,7 +21,7 @@ contract MockHyperdriveTestnet is Hyperdrive {
         uint256 _checkpointsPerTerm,
         uint256 _checkpointDuration,
         uint256 _timeStretch,
-        IHyperdrive.Fees memory _fees,
+        Fees memory _fees,
         address _governance
     )
         Hyperdrive(

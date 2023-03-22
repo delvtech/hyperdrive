@@ -86,7 +86,7 @@ contract MockHyperdriveMath {
         return (result1, result2, result3);
     }
 
-    function calculateOpenShortTrade(
+    function calculateOpenShort(
         uint256 _shareReserves,
         uint256 _bondReserves,
         uint256 _amountIn,
@@ -95,8 +95,8 @@ contract MockHyperdriveMath {
         uint256 _sharePrice,
         uint256 _initialSharePrice
     ) external pure returns (uint256, uint256, uint256) {
-        return
-            HyperdriveMath.calculateOpenShortTrade(
+        (uint256 result1, uint256 result2, uint256 result3) = HyperdriveMath
+            .calculateOpenShort(
                 _shareReserves,
                 _bondReserves,
                 _amountIn,
@@ -105,27 +105,29 @@ contract MockHyperdriveMath {
                 _sharePrice,
                 _initialSharePrice
             );
+        return (result1, result2, result3);
     }
 
-    function calculateCloseShortTrade(
+    function calculateCloseShort(
         uint256 _shareReserves,
         uint256 _bondReserves,
-        uint256 _bondAmount,
+        uint256 _amountOut,
         uint256 _normalizedTimeRemaining,
         uint256 _timeStretch,
         uint256 _sharePrice,
         uint256 _initialSharePrice
     ) external pure returns (uint256, uint256, uint256) {
-        return
-            HyperdriveMath.calculateCloseShortTrade(
+        (uint256 result1, uint256 result2, uint256 result3) = HyperdriveMath
+            .calculateCloseShort(
                 _shareReserves,
                 _bondReserves,
-                _bondAmount,
+                _amountOut,
                 _normalizedTimeRemaining,
                 _timeStretch,
                 _sharePrice,
                 _initialSharePrice
             );
+        return (result1, result2, result3);
     }
 
     function calculateSpotPrice(
@@ -223,49 +225,5 @@ contract MockHyperdriveMath {
                 _sharePrice
             );
         return (result1, result2, result3);
-    }
-
-    function calculateFeesOutGivenBondsIn(
-        uint256 _bondAmount,
-        uint256 _normalizedTimeRemaining,
-        uint256 _spotPrice,
-        uint256 _sharePrice,
-        uint256 _curveFee,
-        uint256 _flatFee,
-        uint256 _governanceFee
-    ) external pure returns (HyperdriveMath.FeeDeltas memory) {
-        HyperdriveMath.FeeDeltas memory result = HyperdriveMath
-            .calculateFeesOutGivenBondsIn(
-                _bondAmount,
-                _normalizedTimeRemaining,
-                _spotPrice,
-                _sharePrice,
-                _curveFee,
-                _flatFee,
-                _governanceFee
-            );
-        return result;
-    }
-
-    function calculateFeesInGivenBondsOut(
-        uint256 _bondAmount,
-        uint256 _normalizedTimeRemaining,
-        uint256 _spotPrice,
-        uint256 _sharePrice,
-        uint256 _curveFee,
-        uint256 _flatFee,
-        uint256 _governanceFee
-    ) external pure returns (HyperdriveMath.FeeDeltas memory) {
-        HyperdriveMath.FeeDeltas memory result = HyperdriveMath
-            .calculateFeesInGivenBondsOut(
-                _bondAmount,
-                _normalizedTimeRemaining,
-                _spotPrice,
-                _sharePrice,
-                _curveFee,
-                _flatFee,
-                _governanceFee
-            );
-        return result;
     }
 }

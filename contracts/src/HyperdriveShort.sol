@@ -8,7 +8,6 @@ import { Errors } from "./libraries/Errors.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "./libraries/YieldSpaceMath.sol";
-import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 
 /// @author Delve
 /// @title HyperdriveShort
@@ -27,13 +26,13 @@ abstract contract HyperdriveShort is HyperdriveLP {
     /// @param _asUnderlying If true the user is charged in underlying if false
     ///                      the contract transfers in yield source directly.
     ///                      Note - for some paths one choice may be disabled or blocked.
-    /// @return baseDeposit The amount the user deposited for this trade
+    /// @return The amount the user deposited for this trade
     function openShort(
         uint256 _bondAmount,
         uint256 _maxDeposit,
         address _destination,
         bool _asUnderlying
-    ) external returns (uint256 baseDeposit) {
+    ) external returns (uint256) {
         if (_bondAmount == 0) {
             revert Errors.ZeroAmount();
         }
@@ -55,32 +54,24 @@ abstract contract HyperdriveShort is HyperdriveLP {
         uint256 shareReservesDelta;
         uint256 bondReservesDelta;
         uint256 shareProceeds;
-        uint256 totalGovernanceFee;
         {
-            // Calculate the openShort trade deltas
+            uint256 totalGovFee;
             (
                 shareReservesDelta,
                 bondReservesDelta,
                 shareProceeds,
-                totalGovernanceFee
-            ) = HyperdriveMath.calculateOpenShort(
-                HyperdriveMath.OpenShortCalculationParams({
-                    bondAmount: _bondAmount,
-                    shareReserves: marketState.shareReserves,
-                    bondReserves: marketState.bondReserves,
-                    sharePrice: sharePrice,
-                    initialSharePrice: initialSharePrice,
-                    normalizedTimeRemaining: timeRemaining,
-                    timeStretch: timeStretch,
-                    curveFee: fees.curve,
-                    flatFee: fees.flat,
-                    governanceFee: fees.governance
-                })
-            );
+                totalGovFee
+            ) = _calculateOpenShort(_bondAmount, sharePrice, timeRemaining);
+
+            // Attribute the governance fees.
+            govFeesAccrued += totalGovFee;
         }
 
-        // Calculate the amount of base the user must deposit.
-        baseDeposit = HyperdriveMath
+        // Take custody of the trader's deposit and ensure that the trader
+        // doesn't pay more than their max deposit. The trader's deposit is
+        // equal to the proceeds that they would receive if they closed
+        // immediately (without fees).
+        uint256 traderDeposit = HyperdriveMath
             .calculateShortProceeds(
                 _bondAmount,
                 shareProceeds,
@@ -89,12 +80,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 sharePrice
             )
             .mulDown(sharePrice);
-
-        // Attribute the governance fees.
-        governanceFeesAccrued += totalGovernanceFee;
-
-        if (_maxDeposit < baseDeposit) revert Errors.OutputLimit();
-        _deposit(baseDeposit, _asUnderlying);
+        if (_maxDeposit < traderDeposit) revert Errors.OutputLimit();
+        _deposit(traderDeposit, _asUnderlying);
 
         // Apply the state updates caused by opening the short.
         _applyOpenShort(
@@ -116,7 +103,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             _bondAmount
         );
 
-        return baseDeposit;
+        return (traderDeposit);
     }
 
     /// @notice Closes a short position with a specified maturity time.
@@ -127,14 +114,14 @@ abstract contract HyperdriveShort is HyperdriveLP {
     /// @param _asUnderlying If true the user is paid in underlying if false
     ///                      the contract transfers in yield source directly.
     ///                      Note - for some paths one choice may be disabled or blocked.
-    /// @return proceeds The amount of base tokens produced by closing this short
+    /// @return The amount of base tokens produced by closing this short
     function closeShort(
         uint256 _maturityTime,
         uint256 _bondAmount,
         uint256 _minOutput,
         address _destination,
         bool _asUnderlying
-    ) external returns (uint256 proceeds) {
+    ) external returns (uint256) {
         if (_bondAmount == 0) {
             revert Errors.ZeroAmount();
         }
@@ -150,56 +137,16 @@ abstract contract HyperdriveShort is HyperdriveLP {
             _bondAmount
         );
 
-        uint256 shareReservesDelta;
-        uint256 bondReservesDelta;
-        uint256 totalGovernanceFee;
-        uint256 sharePayment;
-        {
-            uint256 normalizedTimeRemaining = _calculateTimeRemaining(
-                _maturityTime
-            );
-
-            // Calculate the pool and user deltas using the trading function.
-            (
-                shareReservesDelta,
-                bondReservesDelta,
-                sharePayment,
-                totalGovernanceFee
-            ) = HyperdriveMath.calculateCloseShort(
-                HyperdriveMath.CloseShortCalculationParams({
-                    bondAmount: _bondAmount,
-                    shareReserves: marketState.shareReserves,
-                    bondReserves: marketState.bondReserves,
-                    sharePrice: sharePrice,
-                    initialSharePrice: initialSharePrice,
-                    normalizedTimeRemaining: normalizedTimeRemaining,
-                    timeStretch: timeStretch,
-                    curveFee: fees.curve,
-                    flatFee: fees.flat,
-                    governanceFee: fees.governance
-                })
-            );
-        }
-
-        {
-            uint256 openSharePrice = checkpoints[
-                _maturityTime - positionDuration
-            ].sharePrice;
-            uint256 closeSharePrice = _maturityTime <= block.timestamp
-                ? checkpoints[_maturityTime].sharePrice
-                : sharePrice;
-            // Calculates the proceeds of the trade
-            proceeds = HyperdriveMath.calculateShortProceeds(
-                _bondAmount,
-                sharePayment,
-                openSharePrice,
-                closeSharePrice,
-                sharePrice
-            );
-        }
+        // Calculate the pool and user deltas using the trading function.
+        (
+            uint256 shareReservesDelta,
+            uint256 bondReservesDelta,
+            uint256 sharePayment,
+            uint256 totalGovFee
+        ) = _calculateCloseShort(_bondAmount, sharePrice, _maturityTime);
 
         // Attribute the governance fees.
-        governanceFeesAccrued += totalGovernanceFee;
+        govFeesAccrued += totalGovFee;
 
         // If the position hasn't matured, apply the accounting updates that
         // result from closing the short to the reserves and pay out the
@@ -208,7 +155,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             _applyCloseShort(
                 _bondAmount,
                 bondReservesDelta,
-                sharePayment - totalGovernanceFee,
+                sharePayment - totalGovFee,
                 shareReservesDelta,
                 _maturityTime,
                 sharePrice
@@ -218,13 +165,27 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // Withdraw the profit to the trader. This includes the proceeds from
         // the short sale as well as the variable interest that was collected
         // on the face value of the bonds:
-        // NOTE "proceeds" here is overwritten from the proceeds in shares to
-        // the proceeds in bonds. The reason for this is a via-ir workaround
-        (proceeds, ) = _withdraw(proceeds, _destination, _asUnderlying);
+        uint256 openSharePrice = checkpoints[_maturityTime - positionDuration]
+            .sharePrice;
+        uint256 closeSharePrice = _maturityTime <= block.timestamp
+            ? checkpoints[_maturityTime].sharePrice
+            : sharePrice;
+        uint256 shortProceeds = HyperdriveMath.calculateShortProceeds(
+            _bondAmount,
+            sharePayment,
+            openSharePrice,
+            closeSharePrice,
+            sharePrice
+        );
+        (uint256 baseProceeds, ) = _withdraw(
+            shortProceeds,
+            _destination,
+            _asUnderlying
+        );
 
         // Enforce min user outputs
-        if (proceeds < _minOutput) revert Errors.OutputLimit();
-        return (proceeds);
+        if (baseProceeds < _minOutput) revert Errors.OutputLimit();
+        return (baseProceeds);
     }
 
     /// @dev Applies an open short to the state. This includes updating the
@@ -402,5 +363,152 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // remove any LP proceeds paid to the withdrawal pool from the pool's
         // liquidity.
         _updateLiquidity(shareAdjustment);
+    }
+
+    /// @dev Calculate the pool reserve and trader deltas that result from
+    ///      opening a short. This calculation includes trading fees.
+    /// @param _bondAmount The amount of bonds being sold to open the short.
+    /// @param _sharePrice The current share price.
+    /// @param _timeRemaining The time remaining in the position.
+    /// @return shareReservesDelta The change in the share reserves.
+    /// @return bondReservesDelta The change in the bond reserves.
+    /// @return shareProceeds The proceeds in shares of selling the bonds.
+    /// @return totalGovFee The governance fee in shares.
+    function _calculateOpenShort(
+        uint256 _bondAmount,
+        uint256 _sharePrice,
+        uint256 _timeRemaining
+    )
+        internal
+        view
+        returns (
+            uint256 shareReservesDelta,
+            uint256 bondReservesDelta,
+            uint256 shareProceeds,
+            uint256 totalGovFee
+        )
+    {
+        // Calculate the effect that opening the short should have on the pool's
+        // reserves as well as the amount of shares the trader receives from
+        // selling the shorted bonds at the market price.
+        (shareReservesDelta, bondReservesDelta, shareProceeds) = HyperdriveMath
+            .calculateOpenShort(
+                marketState.shareReserves,
+                marketState.bondReserves,
+                _bondAmount,
+                _timeRemaining,
+                timeStretch,
+                _sharePrice,
+                initialSharePrice
+            );
+
+        // If the base proceeds of selling the bonds is greater than the bond
+        // amount, then the trade occurred in the negative interest domain. We
+        // revert in these pathological cases.
+        if (shareProceeds.mulDown(_sharePrice) > _bondAmount)
+            revert Errors.NegativeInterest();
+
+        // Calculate the fees charged on the curve and flat parts of the trade.
+        // Since we calculate the amount of shares received given bonds in, we
+        // subtract the fee from the share deltas so that the trader receives
+        // less shares.
+        uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
+            marketState.shareReserves,
+            marketState.bondReserves,
+            initialSharePrice,
+            _timeRemaining,
+            timeStretch
+        );
+        uint256 totalCurveFee;
+        uint256 totalFlatFee;
+        (
+            totalCurveFee,
+            totalFlatFee,
+            totalGovFee
+        ) = _calculateFeesOutGivenBondsIn(
+            _bondAmount, // amountIn
+            _timeRemaining,
+            spotPrice,
+            _sharePrice
+        );
+        shareReservesDelta -= totalCurveFee;
+        shareProceeds -= totalCurveFee + totalFlatFee;
+
+        return (
+            shareReservesDelta,
+            bondReservesDelta,
+            shareProceeds,
+            totalGovFee
+        );
+    }
+
+    /// @dev Calculate the pool reserve and trader deltas that result from
+    ///      closing a short. This calculation includes trading fees.
+    /// @param _bondAmount The amount of bonds being purchased to close the short.
+    /// @param _sharePrice The current share price.
+    /// @param _maturityTime The maturity time of the short position.
+    /// @return shareReservesDelta The change in the share reserves.
+    /// @return bondReservesDelta The change in the bond reserves.
+    /// @return sharePayment The cost in shares of buying the bonds.
+    /// @return totalGovFee The governance fee in shares.
+    function _calculateCloseShort(
+        uint256 _bondAmount,
+        uint256 _sharePrice,
+        uint256 _maturityTime
+    )
+        internal
+        view
+        returns (
+            uint256 shareReservesDelta,
+            uint256 bondReservesDelta,
+            uint256 sharePayment,
+            uint256 totalGovFee
+        )
+    {
+        // Calculate the effect that closing the short should have on the pool's
+        // reserves as well as the amount of shares the trader needs to pay to
+        // purchase the shorted bonds at the market price.
+        uint256 timeRemaining = _calculateTimeRemaining(_maturityTime);
+        (shareReservesDelta, bondReservesDelta, sharePayment) = HyperdriveMath
+            .calculateCloseShort(
+                marketState.shareReserves,
+                marketState.bondReserves,
+                _bondAmount,
+                timeRemaining,
+                timeStretch,
+                _sharePrice,
+                initialSharePrice
+            );
+
+        // Calculate the fees charged on the curve and flat parts of the trade.
+        // Since we calculate the amount of shares paid given bonds out, we add
+        // the fee from the share deltas so that the trader pays less shares.
+        uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
+            marketState.shareReserves,
+            marketState.bondReserves,
+            initialSharePrice,
+            timeRemaining,
+            timeStretch
+        );
+        (
+            uint256 totalCurveFee,
+            uint256 totalFlatFee,
+            uint256 govCurveFee,
+            uint256 govFlatFee
+        ) = _calculateFeesInGivenBondsOut(
+                _bondAmount, // amountOut
+                timeRemaining,
+                spotPrice,
+                _sharePrice
+            );
+        shareReservesDelta += totalCurveFee - govCurveFee;
+        sharePayment += totalCurveFee + totalFlatFee;
+
+        return (
+            shareReservesDelta,
+            bondReservesDelta,
+            sharePayment,
+            govCurveFee + govFlatFee
+        );
     }
 }

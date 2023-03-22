@@ -5,9 +5,7 @@ import { ERC20PresetFixedSupply } from "@openzeppelin/contracts/token/ERC20/pres
 import { Test } from "forge-std/Test.sol";
 import { ForwarderFactory } from "contracts/src/ForwarderFactory.sol";
 import { MockHyperdriveMath } from "contracts/test/MockHyperdriveMath.sol";
-import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
-import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import "contracts/src/libraries/FixedPointMath.sol";
 
 contract HyperdriveMathTest is Test {
     using FixedPointMath for uint256;
@@ -409,7 +407,7 @@ contract HyperdriveMathTest is Test {
         );
     }
 
-    function test__calculateOpenShortTrade() public {
+    function test__calculateOpenShort() public {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
 
@@ -429,7 +427,7 @@ contract HyperdriveMathTest is Test {
                 uint256 shareReservesDelta,
                 uint256 bondReservesDelta,
                 uint256 shareProceeds
-            ) = hyperdriveMath.calculateOpenShortTrade(
+            ) = hyperdriveMath.calculateOpenShort(
                     shareReserves,
                     bondReserves,
                     amountIn,
@@ -472,7 +470,7 @@ contract HyperdriveMathTest is Test {
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
             uint256 sharePayment
-        ) = hyperdriveMath.calculateCloseShortTrade(
+        ) = hyperdriveMath.calculateCloseShort(
                 shareReserves,
                 bondReserves,
                 amountOut,
@@ -508,7 +506,7 @@ contract HyperdriveMathTest is Test {
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
 
-        ) = hyperdriveMath.calculateCloseShortTrade(
+        ) = hyperdriveMath.calculateCloseShort(
                 shareReserves,
                 bondReserves,
                 amountOut,
@@ -774,87 +772,5 @@ contract HyperdriveMathTest is Test {
         );
         // (1000 - 0 / 1.5) * (100 / 1000) = 100
         assertEq(out, 100 ether);
-    }
-
-    function test__calculateFeesOutGivenBondsIn() public {
-        // NOTE: Coverage only works if I initialize the fixture in the test function
-        MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
-        IHyperdrive.Fees memory fees = IHyperdrive.Fees({
-            curve: 0.1e18,
-            flat: 0.1e18,
-            governance: 0.5e18
-        });
-
-        HyperdriveMath.FeeDeltas memory feeDeltas = hyperdriveMath
-            .calculateFeesOutGivenBondsIn(
-                1 ether, // bondIn
-                1 ether, // timeRemaining
-                0.9 ether, // spotPrice
-                1 ether, // sharePrice
-                fees.curve,
-                fees.flat,
-                fees.governance
-            );
-        // curve fee = ((1 - p) * phi_curve * d_y * t) / c
-        // ((1-.9)*.1*1*1)/1 = .01
-        assertEq(feeDeltas.totalCurveFee + feeDeltas.totalFlatFee, .01 ether);
-        assertEq(
-            feeDeltas.governanceCurveFee + feeDeltas.governanceFlatFee,
-            .005 ether
-        );
-
-        feeDeltas = hyperdriveMath.calculateFeesOutGivenBondsIn(
-            1 ether, // amountIn
-            0, // timeRemaining
-            0.9 ether, // spotPrice
-            1 ether, // sharePrice
-            fees.curve,
-            fees.flat,
-            fees.governance
-        );
-        assertEq(feeDeltas.totalCurveFee + feeDeltas.totalFlatFee, 0.1 ether);
-        assertEq(
-            feeDeltas.governanceCurveFee + feeDeltas.governanceFlatFee,
-            .05 ether
-        );
-    }
-
-    function test__calculateFeesInGivenBondsOut() public {
-        // NOTE: Coverage only works if I initialize the fixture in the test function
-        MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
-        IHyperdrive.Fees memory fees = IHyperdrive.Fees({
-            curve: 0.1e18,
-            flat: 0.1e18,
-            governance: 0.5e18
-        });
-
-        HyperdriveMath.FeeDeltas memory feeDeltas = hyperdriveMath
-            .calculateFeesInGivenBondsOut(
-                1 ether, // amountOut
-                1 ether, // timeRemaining
-                0.9 ether, // spotPrice
-                1 ether, // sharePrice
-                fees.curve,
-                fees.flat,
-                fees.governance
-            );
-        assertEq(feeDeltas.totalCurveFee, .01 ether);
-        assertEq(feeDeltas.totalFlatFee, 0 ether);
-        assertEq(feeDeltas.governanceCurveFee, .005 ether);
-        assertEq(feeDeltas.governanceFlatFee, 0 ether);
-
-        feeDeltas = hyperdriveMath.calculateFeesInGivenBondsOut(
-            1 ether, // amountOut
-            0, // timeRemaining
-            0.9 ether, // spotPrice
-            1 ether, // sharePrice
-            fees.curve,
-            fees.flat,
-            fees.governance
-        );
-        assertEq(feeDeltas.totalCurveFee, 0 ether);
-        assertEq(feeDeltas.totalFlatFee, 0.1 ether);
-        assertEq(feeDeltas.governanceCurveFee, 0 ether);
-        assertEq(feeDeltas.governanceFlatFee, 0.05 ether);
     }
 }

@@ -8,7 +8,6 @@ import { FixedPointMath } from "../src/libraries/FixedPointMath.sol";
 import { Errors } from "../src/libraries/Errors.sol";
 import { ERC20Mintable } from "./ERC20Mintable.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
-import { IHyperdrive } from "../src/interfaces/IHyperdrive.sol";
 
 contract MockHyperdrive is Hyperdrive {
     using FixedPointMath for uint256;
@@ -21,7 +20,7 @@ contract MockHyperdrive is Hyperdrive {
         uint256 _checkpointsPerTerm,
         uint256 _checkpointDuration,
         uint256 _timeStretch,
-        IHyperdrive.Fees memory _fees,
+        Fees memory _fees,
         address _governance
     )
         Hyperdrive(
@@ -39,8 +38,13 @@ contract MockHyperdrive is Hyperdrive {
 
     /// Mocks ///
 
-    function getGovernanceFeesAccrued() external view returns (uint256) {
-        return governanceFeesAccrued;
+    function setFees(uint256 _curveFee, uint256 _flatFee) public {
+        curveFee = _curveFee;
+        flatFee = _flatFee;
+    }
+
+    function getGovFeesAccrued() external view returns (uint256) {
+        return govFeesAccrued;
     }
 
     // Accrues compounded interest for a given number of seconds and readjusts
@@ -77,15 +81,15 @@ contract MockHyperdrive is Hyperdrive {
         returns (
             uint256 totalCurveFee,
             uint256 totalFlatFee,
-            uint256 governanceCurveFee,
-            uint256 governanceFlatFee
+            uint256 govCurveFee,
+            uint256 govFlatFee
         )
     {
         (
             totalCurveFee,
             totalFlatFee,
-            governanceCurveFee,
-            governanceFlatFee
+            govCurveFee,
+            govFlatFee
         ) = _calculateFeesOutGivenSharesIn(
             _amountIn,
             _amountOut,
@@ -93,12 +97,63 @@ contract MockHyperdrive is Hyperdrive {
             _spotPrice,
             sharePrice
         );
-        return (
+        return (totalCurveFee, totalFlatFee, govCurveFee, govFlatFee);
+    }
+
+    function calculateFeesOutGivenBondsIn(
+        uint256 _amountIn,
+        uint256 _normalizedTimeRemaining,
+        uint256 _spotPrice,
+        uint256 sharePrice
+    )
+        public
+        view
+        returns (
+            uint256 totalCurveFee,
+            uint256 totalFlatFee,
+            uint256 totalGovFee
+        )
+    {
+        (
             totalCurveFee,
             totalFlatFee,
-            governanceCurveFee,
-            governanceFlatFee
+            totalGovFee
+        ) = _calculateFeesOutGivenBondsIn(
+            _amountIn,
+            _normalizedTimeRemaining,
+            _spotPrice,
+            sharePrice
         );
+        return (totalCurveFee, totalFlatFee, totalGovFee);
+    }
+
+    function calculateFeesInGivenBondsOut(
+        uint256 _amountOut,
+        uint256 _normalizedTimeRemaining,
+        uint256 _spotPrice,
+        uint256 sharePrice
+    )
+        public
+        view
+        returns (
+            uint256 totalCurveFee,
+            uint256 totalFlatFee,
+            uint256 govCurveFee,
+            uint256 govFlatFee
+        )
+    {
+        (
+            totalCurveFee,
+            totalFlatFee,
+            govCurveFee,
+            govFlatFee
+        ) = _calculateFeesInGivenBondsOut(
+            _amountOut,
+            _normalizedTimeRemaining,
+            _spotPrice,
+            sharePrice
+        );
+        return (totalCurveFee, totalFlatFee, govCurveFee, govFlatFee);
     }
 
     /// Overrides ///
