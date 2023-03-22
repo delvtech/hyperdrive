@@ -17,7 +17,7 @@ contract LPFairnessTest is HyperdriveTest {
 
         // ensure a feasible trade size
         vm.assume(param2 < 5_000_000e18);
-        vm.assume(param2 > .00001e18);
+        vm.assume(param2 > 0.00001e18);
 
         // variable interest rate earned by the pool
         int256 apy = int256(param1);
@@ -89,7 +89,7 @@ contract LPFairnessTest is HyperdriveTest {
 
         // ensure a feasible trade size
         vm.assume(param2 < 5_000_000e18);
-        vm.assume(param2 > .00001e18);
+        vm.assume(param2 > 0.00001e18);
 
         // variable interest rate earned by the pool
         int256 apy = int256(param1);
@@ -185,7 +185,7 @@ contract LPFairnessTest is HyperdriveTest {
 
         // ensure a feasible trade size
         vm.assume(param2 < 5_000_000e18);
-        vm.assume(param2 > .00001e18);
+        vm.assume(param2 > 0.00001e18);
 
         // variable interest rate earned by the pool
         int256 apy = int256(param1);
@@ -245,7 +245,7 @@ contract LPFairnessTest is HyperdriveTest {
 
         // ensure a feasible trade size
         vm.assume(param2 < 5_000_000e18);
-        vm.assume(param2 > .00001e18);
+        vm.assume(param2 > 0.00001e18);
 
         // variable interest rate earned by the pool
         int256 apy = int256(param1);
@@ -318,7 +318,7 @@ contract LPFairnessTest is HyperdriveTest {
 
         // ensure a feasible trade size
         vm.assume(param2 < 5_000_000e18);
-        vm.assume(param2 > .00001e18);
+        vm.assume(param2 > 0.00001e18);
 
         // variable interest rate earned by the pool
         int256 apy = int256(param1);
@@ -412,7 +412,7 @@ contract LPFairnessTest is HyperdriveTest {
 
         // ensure a feasible trade size
         vm.assume(param2 < 5_000_000e18);
-        vm.assume(param2 > .00001e18);
+        vm.assume(param2 > 0.00001e18);
 
         // variable interest rate earned by the pool
         int256 apy = int256(param1);
