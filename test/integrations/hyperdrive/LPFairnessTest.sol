@@ -12,7 +12,7 @@ contract LPFairnessTest is HyperdriveTest {
         uint256 param1,
         uint256 param2
     ) external {
-        // limit the fuzz testing to apy's less than 100%
+        // limit the fuzz testing to variableRate's less than 100%
         vm.assume(param1 < 1e18);
 
         // ensure a feasible trade size
@@ -20,14 +20,14 @@ contract LPFairnessTest is HyperdriveTest {
         vm.assume(param2 > 0.00001e18);
 
         // variable interest rate earned by the pool
-        int256 apy = int256(param1);
+        int256 variableRate = int256(param1);
 
         // fixed interest rate the pool pays the longs
-        uint256 apr = 0.10e18;
+        uint256 fixedRate = 0.10e18;
 
         // Initialize the pool with capital.
         uint256 initialLiquidity = 5_000_000e18;
-        initialize(alice, apr, initialLiquidity);
+        initialize(alice, fixedRate, initialLiquidity);
 
         // Celine opens a short.
         uint256 bondsShorted = param2;
@@ -38,19 +38,19 @@ contract LPFairnessTest is HyperdriveTest {
         uint256 lpShares = addLiquidity(bob, contribution);
 
         // The term passes.
-        advanceTime(POSITION_DURATION, apy);
+        advanceTime(POSITION_DURATION, variableRate);
 
         // Calculate the value of the pool after interest is accrued.
         (uint256 poolValue, ) = HyperdriveUtils.calculateCompoundInterest(
             initialLiquidity + contribution + baseSpent,
-            apy,
+            variableRate,
             POSITION_DURATION
         );
 
         // Calculate the total short interest.
         (, int256 shortInterest) = HyperdriveUtils.calculateCompoundInterest(
             bondsShorted,
-            apy,
+            variableRate,
             POSITION_DURATION
         );
 
@@ -84,7 +84,7 @@ contract LPFairnessTest is HyperdriveTest {
         uint256 param1,
         uint256 param2
     ) external {
-        // limit the fuzz testing to apy's less than 100%
+        // limit the fuzz testing to variableRate's less than 100%
         vm.assume(param1 < 1e18);
 
         // ensure a feasible trade size
@@ -92,33 +92,33 @@ contract LPFairnessTest is HyperdriveTest {
         vm.assume(param2 > 0.00001e18);
 
         // variable interest rate earned by the pool
-        int256 apy = int256(param1);
+        int256 variableRate = int256(param1);
 
         // fixed interest rate the pool pays the longs
-        uint256 apr = 0.10e18;
+        uint256 fixedRate = 0.10e18;
 
         // Initialize the pool with capital.
         uint256 initialLiquidity = 5_000_000e18;
-        initialize(alice, apr, initialLiquidity);
+        initialize(alice, fixedRate, initialLiquidity);
 
         // Celine opens a short.
         uint256 bondsShorted = 5_000_000e18 - param2;
         (, uint256 baseSpent) = openShort(celine, bondsShorted);
 
         // 1/2 term passes.
-        advanceTime(POSITION_DURATION / 2, apy);
+        advanceTime(POSITION_DURATION / 2, variableRate);
 
         // Calculate the value of the pool after interest is accrued.
         (uint256 poolValue, ) = HyperdriveUtils.calculateCompoundInterest(
             initialLiquidity + baseSpent,
-            apy,
+            variableRate,
             POSITION_DURATION / 2
         );
 
         // Calculate the total short interest.
         (, int256 shortInterest) = HyperdriveUtils.calculateCompoundInterest(
             bondsShorted,
-            apy,
+            variableRate,
             POSITION_DURATION / 2
         );
 
@@ -131,19 +131,19 @@ contract LPFairnessTest is HyperdriveTest {
         uint256 lpShares = addLiquidity(bob, contribution);
 
         // 1/2 term passes.
-        advanceTime(POSITION_DURATION / 2, apy);
+        advanceTime(POSITION_DURATION / 2, variableRate);
 
         // Calculate the value of the pool after interest is accrued.
         (uint256 poolValue2, ) = HyperdriveUtils.calculateCompoundInterest(
             poolValue + contribution + baseSpent2,
-            apy,
+            variableRate,
             POSITION_DURATION / 2
         );
 
         // Calculate the total short interest.
         (, int256 shortInterest2) = HyperdriveUtils.calculateCompoundInterest(
             bondsShorted + bondsShorted2 + uint256(shortInterest),
-            apy,
+            variableRate,
             POSITION_DURATION / 2
         );
 
@@ -180,7 +180,7 @@ contract LPFairnessTest is HyperdriveTest {
     }
 
     function test_lp_fairness_long_lp(uint256 param1, uint256 param2) external {
-        // limit the fuzz testing to apy's less than 100%
+        // limit the fuzz testing to variableRate's less than 100%
         vm.assume(param1 < 1e18);
 
         // ensure a feasible trade size
@@ -188,14 +188,14 @@ contract LPFairnessTest is HyperdriveTest {
         vm.assume(param2 > 0.00001e18);
 
         // variable interest rate earned by the pool
-        int256 apy = int256(param1);
+        int256 variableRate = int256(param1);
 
         // fixed interest rate the pool pays the longs
-        uint256 apr = 0.10e18;
+        uint256 fixedRate = 0.10e18;
 
         // Initialize the pool with capital.
         uint256 initialLiquidity = 5_000_000e18;
-        initialize(alice, apr, initialLiquidity);
+        initialize(alice, fixedRate, initialLiquidity);
 
         // Celine opens a long.
         uint256 baseSpent = param2;
@@ -206,12 +206,12 @@ contract LPFairnessTest is HyperdriveTest {
         uint256 lpShares = addLiquidity(bob, contribution);
 
         // The term passes.
-        advanceTime(POSITION_DURATION, apy);
+        advanceTime(POSITION_DURATION, variableRate);
 
         // Calculate the value of the pool after interest is accrued.
         (uint256 poolValue, ) = HyperdriveUtils.calculateCompoundInterest(
             initialLiquidity + contribution + baseSpent,
-            apy,
+            variableRate,
             POSITION_DURATION
         );
 
@@ -240,7 +240,7 @@ contract LPFairnessTest is HyperdriveTest {
         uint256 param1,
         uint256 param2
     ) external {
-        // limit to apy's less than 100%
+        // limit to variableRate's less than 100%
         vm.assume(param1 < 1e18);
 
         // ensure a feasible trade size
@@ -248,24 +248,24 @@ contract LPFairnessTest is HyperdriveTest {
         vm.assume(param2 > 0.00001e18);
 
         // variable interest rate earned by the pool
-        int256 apy = int256(param1);
+        int256 variableRate = int256(param1);
 
         // fixed interest rate the pool pays the longs
-        uint256 apr = 0.10e18;
+        uint256 fixedRate = 0.10e18;
 
         // Initialize the pool with capital.
         uint256 initialLiquidity = 5_000_000e18;
-        initialize(alice, apr, initialLiquidity);
+        initialize(alice, fixedRate, initialLiquidity);
 
         // Celine opens a long.
         uint256 baseSpent = 5_000_000e18 - param2;
         (, uint256 bondsPurchased) = openLong(celine, baseSpent);
 
         // 1/2 the term passes.
-        advanceTime(POSITION_DURATION / 2, apy);
+        advanceTime(POSITION_DURATION / 2, variableRate);
         (uint256 poolValue, ) = HyperdriveUtils.calculateCompoundInterest(
             initialLiquidity + baseSpent,
-            apy,
+            variableRate,
             POSITION_DURATION / 2
         );
 
@@ -278,12 +278,12 @@ contract LPFairnessTest is HyperdriveTest {
         uint256 lpShares = addLiquidity(bob, contribution);
 
         // 1/2 the term passes.
-        advanceTime(POSITION_DURATION / 2, apy);
+        advanceTime(POSITION_DURATION / 2, variableRate);
 
         // Calculate the value of the pool after interest is accrued.
         (uint256 poolValue2, ) = HyperdriveUtils.calculateCompoundInterest(
             poolValue + contribution + baseSpent2,
-            apy,
+            variableRate,
             POSITION_DURATION / 2
         );
 
@@ -313,7 +313,7 @@ contract LPFairnessTest is HyperdriveTest {
         uint256 param1,
         uint256 param2
     ) external {
-        // limit the fuzz testing to apy's less than 100%
+        // limit the fuzz testing to variableRate's less than 100%
         vm.assume(param1 < 1e18);
 
         // ensure a feasible trade size
@@ -321,26 +321,26 @@ contract LPFairnessTest is HyperdriveTest {
         vm.assume(param2 > 0.00001e18);
 
         // variable interest rate earned by the pool
-        int256 apy = int256(param1);
+        int256 variableRate = int256(param1);
 
         // fixed interest rate the pool pays the longs
-        uint256 apr = 0.10e18;
+        uint256 fixedRate = 0.10e18;
 
         // Initialize the pool with capital.
         uint256 initialLiquidity = 5_000_000e18;
-        initialize(alice, apr, initialLiquidity);
+        initialize(alice, fixedRate, initialLiquidity);
 
         // Celine opens a short.
         uint256 bondsShorted = 5_000_000e18 - param2;
         (, uint256 baseSpent) = openShort(celine, bondsShorted);
 
         // 1/2 term passes.
-        advanceTime(POSITION_DURATION / 2, apy);
+        advanceTime(POSITION_DURATION / 2, variableRate);
 
         // Calculate the value of the pool after interest is accrued.
         (uint256 poolValue, ) = HyperdriveUtils.calculateCompoundInterest(
             initialLiquidity + baseSpent,
-            apy,
+            variableRate,
             POSITION_DURATION / 2
         );
 
@@ -353,19 +353,19 @@ contract LPFairnessTest is HyperdriveTest {
         uint256 lpShares = addLiquidity(bob, contribution);
 
         // 1/2 term passes.
-        advanceTime(POSITION_DURATION / 2, apy);
+        advanceTime(POSITION_DURATION / 2, variableRate);
 
         // Calculate the value of the pool after interest is accrued.
         (uint256 poolValue2, ) = HyperdriveUtils.calculateCompoundInterest(
             poolValue + contribution + baseSpent2,
-            apy,
+            variableRate,
             POSITION_DURATION / 2
         );
 
         // Calculate the total short interest.
         (, int256 shortInterest) = HyperdriveUtils.calculateCompoundInterest(
             bondsShorted,
-            apy,
+            variableRate,
             POSITION_DURATION
         );
 
@@ -407,7 +407,7 @@ contract LPFairnessTest is HyperdriveTest {
         uint256 param1,
         uint256 param2
     ) external {
-        // limit to apy's less than 100%
+        // limit to variableRate's less than 100%
         vm.assume(param1 < 1e18);
 
         // ensure a feasible trade size
@@ -415,24 +415,24 @@ contract LPFairnessTest is HyperdriveTest {
         vm.assume(param2 > 0.00001e18);
 
         // variable interest rate earned by the pool
-        int256 apy = int256(param1);
+        int256 variableRate = int256(param1);
 
         // fixed interest rate the pool pays the longs
-        uint256 apr = 0.10e18;
+        uint256 fixedRate = 0.10e18;
 
         // Initialize the pool with capital.
         uint256 initialLiquidity = 5_000_000e18;
-        initialize(alice, apr, initialLiquidity);
+        initialize(alice, fixedRate, initialLiquidity);
 
         // Celine opens a long.
         uint256 baseSpent = 5_000_000e18 - param2;
         (, uint256 bondsPurchased) = openLong(celine, baseSpent);
 
         // 1/2 the term passes.
-        advanceTime(POSITION_DURATION / 2, apy);
+        advanceTime(POSITION_DURATION / 2, variableRate);
         (uint256 poolValue, ) = HyperdriveUtils.calculateCompoundInterest(
             initialLiquidity + baseSpent,
-            apy,
+            variableRate,
             POSITION_DURATION / 2
         );
 
@@ -445,19 +445,19 @@ contract LPFairnessTest is HyperdriveTest {
         uint256 lpShares = addLiquidity(bob, contribution);
 
         // 1/2 the term passes.
-        advanceTime(POSITION_DURATION / 2, apy);
+        advanceTime(POSITION_DURATION / 2, variableRate);
 
         // Calculate the value of the pool after interest is accrued.
         (uint256 poolValue2, ) = HyperdriveUtils.calculateCompoundInterest(
             poolValue + contribution + baseSpent2,
-            apy,
+            variableRate,
             POSITION_DURATION / 2
         );
 
         // Calculate the total short interest.
         (, int256 shortInterest) = HyperdriveUtils.calculateCompoundInterest(
             bondsShorted,
-            apy,
+            variableRate,
             POSITION_DURATION / 2
         );
 
