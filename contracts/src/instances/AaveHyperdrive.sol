@@ -1,30 +1,19 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
+import { IPool } from "@aave/interfaces/IPool.sol";
 import { Hyperdrive } from "../Hyperdrive.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { Errors } from "../libraries/Errors.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 
-// TODO - Replace with Aave source interface
-interface Pool {
-    function supply(
-        address asset,
-        uint256 amount,
-        address onBehalfOf,
-        uint16 referralCode
-    ) external;
-
-    function withdraw(address asset, uint256 amount, address to) external;
-}
-
 contract AaveHyperdrive is Hyperdrive {
     using FixedPointMath for uint256;
 
     // The aave deployment details, the a token for this asset and the aave pool
     IERC20 public immutable aToken;
-    Pool public immutable pool;
+    IPool public immutable pool;
     // The shares created by this pool, starts at 1 to one with deposits and increases
     uint256 public totalShares;
 
@@ -50,7 +39,7 @@ contract AaveHyperdrive is Hyperdrive {
         uint256 _checkpointDuration,
         uint256 _timeStretch,
         IERC20 _aToken,
-        Pool _pool,
+        IPool _pool,
         IHyperdrive.Fees memory _fees,
         address _governance
     )
