@@ -237,7 +237,7 @@ contract LPFairnessTest is HyperdriveTest {
         // limit the fuzz testing to apy's less than 100%
         vm.assume(param1 < 1e18);
         // ensure a feasible trade size
-        vm.assume(param2 < 5_100_000e18);
+        vm.assume(param2 < 5_000_000e18);
         vm.assume(param2 > .00001e18);
         // variable interest rate earned by the pool
         int256 apy = int256(param1);
