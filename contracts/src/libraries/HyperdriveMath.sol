@@ -478,12 +478,10 @@ library HyperdriveMath {
         uint256 _longsOutstanding,
         uint256 _sharePrice
     ) internal pure returns (uint256 shares) {
-        // dl / l
-        uint256 poolFactor = _shares.divDown(_lpTotalSupply);
         // (z - o_l / c) * (dl / l)
         shares = _shareReserves
             .sub(_longsOutstanding.divDown(_sharePrice))
-            .mulDown(poolFactor);
+            .mulDivDown(_shares, _lpTotalSupply);
         return shares;
     }
 }
