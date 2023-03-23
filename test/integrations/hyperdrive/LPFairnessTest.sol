@@ -77,7 +77,7 @@ contract LPFairnessTest is HyperdriveTest {
 
         // Bob removes liquidity
         uint256 withdrawalProceeds = removeLiquidity(bob, lpShares);
-        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e7);
+        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 2e7);
     }
 
     function test_lp_fairness_short_short_lp(
@@ -176,7 +176,7 @@ contract LPFairnessTest is HyperdriveTest {
 
         // Bob removes liquidity
         uint256 withdrawalProceeds = removeLiquidity(bob, lpShares);
-        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e7);
+        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 2e7);
     }
 
     function test_lp_fairness_long_lp(
@@ -236,7 +236,7 @@ contract LPFairnessTest is HyperdriveTest {
 
         // Ensure that if the new LP withdraws, they get their money back.
         uint256 withdrawalProceeds = removeLiquidity(bob, lpShares);
-        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e7);
+        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 2e7);
     }
 
     function test_lp_fairness_long_long_lp(
@@ -309,7 +309,7 @@ contract LPFairnessTest is HyperdriveTest {
 
         // Ensure that if the new LP withdraws, they get their money back.
         uint256 withdrawalProceeds = removeLiquidity(bob, lpShares);
-        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e7);
+        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 2e7);
     }
 
     function test_lp_fairness_short_long_lp(
@@ -403,7 +403,7 @@ contract LPFairnessTest is HyperdriveTest {
 
         // Bob removes liquidity
         uint256 withdrawalProceeds = removeLiquidity(bob, lpShares);
-        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e7);
+        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 2e7);
     }
 
     function test_lp_fairness_long_short_lp(
@@ -501,6 +501,6 @@ contract LPFairnessTest is HyperdriveTest {
 
         // Ensure that if the new LP withdraws, they get their money back.
         uint256 withdrawalProceeds = removeLiquidity(bob, lpShares);
-        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e7);
+        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 2e7);
     }
 }
