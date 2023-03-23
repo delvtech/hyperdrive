@@ -347,9 +347,12 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 uint256 interest = proceedsInBase >= lpMargin
                     ? (proceedsInBase - lpMargin).divDown(_sharePrice)
                     : 0;
+                uint256 openSharePrice = checkpoints[
+                    _maturityTime - positionDuration
+                ].sharePrice;
                 (uint256 marginUsed, uint256 interestUsed) = _freeMargin(
                     withdrawalProceeds - interest,
-                    lpMargin.divDown(_sharePrice),
+                    lpMargin.divDown(openSharePrice),
                     interest
                 );
                 withdrawalProceeds = (marginUsed + interestUsed);

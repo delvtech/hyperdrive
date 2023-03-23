@@ -306,7 +306,7 @@ contract LpWithdrawalTest is HyperdriveTest {
             POSITION_DURATION
         );
         // TODO: See if this bound can be lowered
-        assertApproxEqAbs(shortProceeds, uint256(expectedInterest), 1e10);
+        assertApproxEqAbs(shortProceeds, uint256(expectedInterest), 1e9);
 
         // Alice redeems her withdrawal shares. She receives the margin that she
         // put up as well as the fixed interest paid by the short.
@@ -315,18 +315,17 @@ contract LpWithdrawalTest is HyperdriveTest {
             withdrawalShares
         );
         // TODO: See if this bound can be lowered
-        assertApproxEqAbs(withdrawalProceeds, shortAmount, 1e10);
+        assertApproxEqAbs(withdrawalProceeds, shortAmount, 1e9);
 
         // Ensure that the ending base balance of Hyperdrive is zero.
         // TODO: See if this bound can be lowered
-        assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1e10);
-        // TODO: This bound is unacceptably high.
+        assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1e9);
         assertApproxEqAbs(
             hyperdrive.totalSupply(
                 AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
             ),
             0,
-            1_000_000_000e18
+            1
         );
     }
 }
