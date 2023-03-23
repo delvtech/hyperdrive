@@ -152,38 +152,20 @@ contract LpWithdrawalTest is HyperdriveTest {
         // checkpoint. This will leave dust which is the interest from the first
         // checkpoint compounded over the whole term.
         uint256 estimatedDust;
-        int256 estimatedProceeds;
-        {
-            // TODO: We can solve this dust problem by storing a weighted
-            // average of the starting share price for longs.
-            (, int256 dustInterest) = HyperdriveUtils.calculateCompoundInterest(
+        (, int256 estimatedProceeds) = HyperdriveUtils
+            .calculateCompoundInterest(
                 longAmount,
                 variableApr,
-                CHECKPOINT_DURATION
+                POSITION_DURATION
             );
-            (estimatedDust, ) = HyperdriveUtils.calculateCompoundInterest(
-                uint256(dustInterest),
-                variableApr,
-                POSITION_DURATION - CHECKPOINT_DURATION
-            );
-            (, estimatedProceeds) = HyperdriveUtils.calculateCompoundInterest(
-                longAmount,
-                variableApr,
-                POSITION_DURATION - CHECKPOINT_DURATION
-            );
-        }
         uint256 withdrawalProceeds = redeemWithdrawalShares(
             alice,
             withdrawalShares
         );
-        assertApproxEqAbs(withdrawalProceeds, uint256(estimatedProceeds), 1e9);
+        assertApproxEqAbs(withdrawalProceeds, uint256(estimatedProceeds), 1e10);
 
         // Ensure that the ending base balance of Hyperdrive is zero.
-        assertApproxEqAbs(
-            baseToken.balanceOf(address(hyperdrive)),
-            estimatedDust,
-            1e9
-        );
+        assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1e10);
         assertApproxEqAbs(
             hyperdrive.totalSupply(
                 AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
