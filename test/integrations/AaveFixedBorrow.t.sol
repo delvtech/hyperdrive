@@ -76,13 +76,13 @@ contract AaveFixedBorrowTest is BaseTest {
         uint16 indexed referralCode
     );
 
-    event Repay(
-        address indexed reserve,
-        address indexed user,
-        address indexed repayer,
-        uint256 amount,
-        bool useATokens
-    );
+    // event Repay(
+    //     address indexed reserve,
+    //     address indexed user,
+    //     address indexed repayer,
+    //     uint256 amount,
+    //     bool useATokens
+    // );
 
     function test__supply_borrow_and_open_short() public {
         wsteth.approve(address(action), type(uint256).max);
@@ -111,23 +111,22 @@ contract AaveFixedBorrowTest is BaseTest {
             0
         );
 
+        // Calculate the amount of base deposit needed for the short
         uint256 calculatedDeposit = HyperdriveUtils.calculateOpenShortDeposit(
             hyperdrive,
             bondAmount
         );
 
+        // deposit of base should be transferred to hyperdrive for the short
         vm.expectEmit(true, true, true, true);
         emit Transfer(address(action), address(hyperdrive), calculatedDeposit);
 
+        // Alice should receive the amount of specified borrowings
         vm.expectEmit(true, true, true, true);
-        emit Repay(
-            address(dai),
-            alice,
-            address(action),
-            borrowAmount - calculatedDeposit,
-            false
-        );
+        emit Transfer(address(action), alice, borrowAmount);
 
+        // Make the hedged loan and track Alice's dai balance
+        uint256 daiBalanceBefore = dai.balanceOf(alice);
         uint256 deposit = action.supplyBorrowAndOpenShort(
             address(wsteth),
             supplyAmount,
@@ -135,7 +134,9 @@ contract AaveFixedBorrowTest is BaseTest {
             bondAmount,
             calculatedDeposit // use as maxDeposit
         );
+        uint256 daiBalanceAfter = dai.balanceOf(alice);
 
         assertEq(deposit, calculatedDeposit);
+        assertEq(daiBalanceAfter - daiBalanceBefore, borrowAmount);
     }
 }

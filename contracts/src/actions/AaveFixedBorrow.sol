@@ -47,6 +47,9 @@ contract AaveFixedBorrowAction {
     ///         - Supply Aave collateral on behalf of user
     ///         - Borrow some base on behalf of user
     ///         - Short an amount of bonds
+    ///         The debt on the borrowed position will be the base value of the
+    ///         short + the borrow amount. Also the _borrowAmount must be
+    ///         greater than the value of the short
     /// @param _supplyAmount The amount of collateral
     /// @param _borrowAmount The amount of base to be borrowed
     /// @param _bondAmount The amount of bonds to short
@@ -69,7 +72,7 @@ contract AaveFixedBorrowAction {
         // Supply the aave pool with collateral on behalf of user
         pool.supply(_collateralToken, _supplyAmount, msg.sender, 0);
 
-        // Borrow on behalf of the user
+        // Initial borrow to pay for the short
         pool.borrow(
             address(debtToken),
             _borrowAmount,
@@ -86,13 +89,17 @@ contract AaveFixedBorrowAction {
             true
         );
 
-        // Any remaining amount of borrowings is repayed on the debt position
-        pool.repay(
+        // Borrow the amount of base used to short so user receives borrowAmount
+        pool.borrow(
             address(debtToken),
             _borrowAmount - baseDeposited,
             uint256(DataTypes.InterestRateMode.VARIABLE),
+            0,
             msg.sender
         );
+
+        // Transfer borrowAmount of base to user
+        debtToken.transfer(msg.sender, _borrowAmount);
     }
 
     /// TODO Change to admin only function
