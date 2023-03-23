@@ -12,6 +12,8 @@ import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 // - [ ] A mixture of long and short trades.
 // - [ ] LPs with different long and short weightings.
 // - [ ] Cases where interest accrues before and after
+// - [ ] Cases where the remove liquidity step happens after the long or short
+//       has already been opened.
 contract LpWithdrawalTest is HyperdriveTest {
     using FixedPointMath for uint256;
 
