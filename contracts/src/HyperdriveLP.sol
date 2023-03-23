@@ -157,7 +157,7 @@ abstract contract HyperdriveLP is HyperdriveBase {
         uint256 _minOutput,
         address _destination,
         bool _asUnderlying
-    ) external returns (uint256, uint256, uint256) {
+    ) external returns (uint256, uint256) {
         if (_shares == 0) {
             revert Errors.ZeroAmount();
         }
@@ -171,18 +171,13 @@ abstract contract HyperdriveLP is HyperdriveBase {
         // Calculate the withdrawal proceeds of the LP. This includes the base,
         // long withdrawal shares, and short withdrawal shares that the LP
         // receives.
-        (
-            uint256 shareProceeds,
-            uint256 longWithdrawalShares,
-            uint256 shortWithdrawalShares
-        ) = HyperdriveMath.calculateOutForLpSharesIn(
-                _shares,
-                marketState.shareReserves,
-                totalSupply,
-                marketState.longsOutstanding,
-                marketState.shortsOutstanding,
-                sharePrice
-            );
+        uint256 shareProceeds = HyperdriveMath.calculateOutForLpSharesIn(
+            _shares,
+            marketState.shareReserves,
+            totalSupply,
+            marketState.longsOutstanding,
+            sharePrice
+        );
 
         // Burn the LP shares.
         _burn(AssetId._LP_ASSET_ID, msg.sender, _shares);
@@ -193,15 +188,19 @@ abstract contract HyperdriveLP is HyperdriveBase {
         // The withdrawing LP will get their percent of the margin which is
         // used to back open positions as a token which can be redeemed for
         // margin as it becomes available.
-        uint256 userMargin = marketState.longsOutstanding -
+        uint256 withdrawalShares = marketState.longsOutstanding -
             longAggregates.baseVolume;
-        userMargin += shortAggregates.baseVolume;
-        userMargin = userMargin.mulDivDown(_shares, totalSupply);
+        withdrawalShares += shortAggregates.baseVolume;
+        withdrawalShares = withdrawalShares.mulDivDown(
+            _shares,
+            totalSupply.mulDown(sharePrice)
+        );
+
         // Mint the withdrawal tokens.
         _mint(
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0),
             _destination,
-            userMargin.divDown(sharePrice)
+            withdrawalShares
         );
 
         // Withdraw the shares from the yield source.
@@ -214,7 +213,7 @@ abstract contract HyperdriveLP is HyperdriveBase {
         // Enforce min user outputs
         if (_minOutput > baseOutput) revert Errors.OutputLimit();
 
-        return (baseOutput, longWithdrawalShares, shortWithdrawalShares);
+        return (baseOutput, withdrawalShares);
     }
 
     /// @notice Redeems withdrawal shares if enough margin has been freed to do so.

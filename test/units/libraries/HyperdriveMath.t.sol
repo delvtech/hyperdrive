@@ -762,12 +762,11 @@ contract HyperdriveMathTest is Test {
     function test__calculateOutForLpSharesIn() public {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
-        (uint256 out, , ) = hyperdriveMath.calculateOutForLpSharesIn(
+        uint256 out = hyperdriveMath.calculateOutForLpSharesIn(
             100 ether, //_shares
             1000 ether, //_shareReserves
             1000 ether, //_lpTotalSupply
             0 ether, // _longsOutstanding
-            0 ether, //_shortsOutstanding
             1.5 ether //_sharePrice
         );
         // (1000 - 0 / 1.5) * (100 / 1000) = 100

@@ -469,39 +469,19 @@ library HyperdriveMath {
     /// @param _shareReserves The pool's share reserves.
     /// @param _lpTotalSupply The pool's total supply of LP shares.
     /// @param _longsOutstanding The amount of longs that haven't been closed.
-    /// @param _shortsOutstanding The amount of shorts that haven't been closed.
     /// @param _sharePrice The pool's share price.
     /// @return shares The amount of base shares released.
-    /// @return longWithdrawalShares The amount of long withdrawal shares
-    ///         received.
-    /// @return shortWithdrawalShares The amount of short withdrawal shares
-    ///         received.
     function calculateOutForLpSharesIn(
         uint256 _shares,
         uint256 _shareReserves,
         uint256 _lpTotalSupply,
         uint256 _longsOutstanding,
-        uint256 _shortsOutstanding,
         uint256 _sharePrice
-    )
-        internal
-        pure
-        returns (
-            uint256 shares,
-            uint256 longWithdrawalShares,
-            uint256 shortWithdrawalShares
-        )
-    {
-        // dl / l
-        uint256 poolFactor = _shares.divDown(_lpTotalSupply);
+    ) internal pure returns (uint256 shares) {
         // (z - o_l / c) * (dl / l)
         shares = _shareReserves
             .sub(_longsOutstanding.divDown(_sharePrice))
-            .mulDown(poolFactor);
-        // longsOutstanding * (dl / l)
-        longWithdrawalShares = _longsOutstanding.mulDown(poolFactor);
-        // shortsOutstanding * (dl / l)
-        shortWithdrawalShares = _shortsOutstanding.mulDown(poolFactor);
-        return (shares, longWithdrawalShares, shortWithdrawalShares);
+            .mulDivDown(_shares, _lpTotalSupply);
+        return shares;
     }
 }
