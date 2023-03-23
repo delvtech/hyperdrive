@@ -188,7 +188,7 @@ contract AddLiquidityTest is HyperdriveTest {
         );
 
         // Ensure that if the new LP withdraws, they get their money back.
-        uint256 withdrawalProceeds = removeLiquidity(bob, lpShares);
+        (uint256 withdrawalProceeds, ) = removeLiquidity(bob, lpShares);
         assertApproxEqAbs(withdrawalProceeds, contribution, 1e9);
     }
 
@@ -227,7 +227,7 @@ contract AddLiquidityTest is HyperdriveTest {
         );
 
         // Ensure that if the new LP withdraws, they get their money back.
-        uint256 withdrawalProceeds = removeLiquidity(bob, lpShares);
+        (uint256 withdrawalProceeds, ) = removeLiquidity(bob, lpShares);
         assertApproxEqAbs(withdrawalProceeds, contribution, 1e9);
     }
 }

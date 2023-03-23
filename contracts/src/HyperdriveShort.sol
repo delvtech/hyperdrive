@@ -347,9 +347,12 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 uint256 interest = proceedsInBase >= lpMargin
                     ? (proceedsInBase - lpMargin).divDown(_sharePrice)
                     : 0;
+                uint256 openSharePrice = checkpoints[
+                    _maturityTime - positionDuration
+                ].sharePrice;
                 (uint256 marginUsed, uint256 interestUsed) = _freeMargin(
                     withdrawalProceeds - interest,
-                    lpMargin.divDown(_sharePrice),
+                    lpMargin.divDown(openSharePrice),
                     interest
                 );
                 withdrawalProceeds = (marginUsed + interestUsed);
@@ -483,13 +486,20 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // Calculate the fees charged on the curve and flat parts of the trade.
         // Since we calculate the amount of shares paid given bonds out, we add
         // the fee from the share deltas so that the trader pays less shares.
-        uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
-            marketState.shareReserves,
-            marketState.bondReserves,
-            initialSharePrice,
-            timeRemaining,
-            timeStretch
-        );
+        //
+        // TODO: There should be a way to refactor this so that the spot price
+        // isn't calculated when the curve fee is 0. The bond reserves are only
+        // 0 in the scenario that the LPs have fully withdrawn and the last
+        // trader redeems.
+        uint256 spotPrice = marketState.bondReserves > 0
+            ? HyperdriveMath.calculateSpotPrice(
+                marketState.shareReserves,
+                marketState.bondReserves,
+                initialSharePrice,
+                timeRemaining,
+                timeStretch
+            )
+            : FixedPointMath.ONE_18;
         (
             uint256 totalCurveFee,
             uint256 totalFlatFee,

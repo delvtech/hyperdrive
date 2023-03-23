@@ -166,11 +166,10 @@ abstract contract HyperdriveLP is HyperdriveBase {
         uint256 sharePrice = _pricePerShare();
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
 
-        uint256 totalSupply = totalSupply[AssetId._LP_ASSET_ID];
-
         // Calculate the withdrawal proceeds of the LP. This includes the base,
         // long withdrawal shares, and short withdrawal shares that the LP
         // receives.
+        uint256 totalSupply = totalSupply[AssetId._LP_ASSET_ID];
         uint256 shareProceeds = HyperdriveMath.calculateOutForLpSharesIn(
             _shares,
             marketState.shareReserves,
@@ -193,6 +192,7 @@ abstract contract HyperdriveLP is HyperdriveBase {
         withdrawalShares += shortAggregates.baseVolume;
         withdrawalShares = withdrawalShares.mulDivDown(
             _shares,
+            // NOTE: Dividing by the share price to convert shares.
             totalSupply.mulDown(sharePrice)
         );
 
@@ -233,6 +233,12 @@ abstract contract HyperdriveLP is HyperdriveBase {
         // Perform a checkpoint.
         uint256 sharePrice = _pricePerShare();
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
+
+        // Clamp the shares to the total amount of shares ready for withdrawal
+        // to avoid unnecessary reverts.
+        _shares = _shares <= withdrawPool.withdrawSharesReadyToWithdraw
+            ? _shares
+            : withdrawPool.withdrawSharesReadyToWithdraw;
 
         // We burn the shares from the user
         _burn(
@@ -282,9 +288,12 @@ abstract contract HyperdriveLP is HyperdriveBase {
         marketState.shareReserves = uint256(
             int256(shareReserves) + _shareReservesDelta
         ).toUint128();
-        marketState.bondReserves = uint256(marketState.bondReserves)
-            .mulDivDown(marketState.shareReserves, shareReserves)
-            .toUint128();
+        marketState.bondReserves = marketState.bondReserves > 0 &&
+            marketState.shareReserves > 0
+            ? uint256(marketState.bondReserves)
+                .mulDivDown(marketState.shareReserves, shareReserves)
+                .toUint128()
+            : 0;
     }
 
     /// @dev Moves capital into the withdraw pool and marks shares ready for withdraw.

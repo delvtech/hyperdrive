@@ -301,14 +301,21 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // withdrawal pool as possible with the the margin released and interest
         // accrued on the position to the withdrawal pool.
         if (_needsToBeFreed()) {
+            // TODO: This will result in the withdrawal pools receiving no
+            //       interest on this trade if the checkpoint wasn't minted. We
+            //       may want to mint the checkpoint here.
+            //
             // Since longs are backdated to the beginning of the checkpoint and
             // interest only begins accruing when the longs are opened, we
             // exclude the first checkpoint from LP withdrawal payouts. For most
             // pools the difference will not be meaningful, and in edge cases,
             // fees can be tuned to offset the problem.
-            uint256 openSharePrice = checkpoints[
+            uint256 openSharePrice = block.timestamp >=
                 (_maturityTime - positionDuration) + checkpointDuration
-            ].sharePrice;
+                ? checkpoints[
+                    (_maturityTime - positionDuration) + checkpointDuration
+                ].sharePrice
+                : _sharePrice;
 
             // The withdrawal pool has preferential access to the proceeds
             // generated from closing longs. The LP proceeds when longs are
@@ -317,6 +324,9 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 _bondAmount,
                 _shareProceeds,
                 openSharePrice,
+                // TODO: This allows the withdrawal pool to take all of the
+                // interest as long as the checkpoint isn't minted. This is
+                // probably fine, but it's worth more thought.
                 _sharePrice,
                 _sharePrice
             );
@@ -345,13 +355,28 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 ? withdrawalProceeds - lpInterest
                 : 0;
 
+            // TODO: We won't need to make this distinction once we fix the long
+            // dust issue, so I'm going to use this name for now.
+            //
+            // TODO: Make sure that the withdraw shares are actually
+            // instantiated with the open share price. Think more about this as
+            // it seems weird to have to convert back using an old share price
+            // considering that this may not have been the share price at the
+            // time the withdrawal was initiated.
+            //
+            // The withdraw shares unlocked by this long position were created
+            // using this open share price.
+            uint256 openSharePrice_ = checkpoints[
+                _maturityTime - positionDuration
+            ].sharePrice;
+
             // Pay out the withdrawal pool with the freed margin. The withdrawal
             // proceeds are split into the margin pool and the interest pool.
             // The proceeds that are distributed to the margin and interest
             // pools are removed from the pool's liquidity.
             (uint256 capitalWithdrawn, uint256 interestWithdrawn) = _freeMargin(
                 capitalFreed,
-                lpMargin.divDown(openSharePrice),
+                lpMargin.divDown(openSharePrice_),
                 lpInterest
             );
             withdrawalProceeds = capitalWithdrawn + interestWithdrawn;
@@ -485,13 +510,20 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // Since we calculate the amount of shares received given bonds in, we
         // subtract the fee from the share deltas so that the trader receives
         // less shares.
-        uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
-            marketState.shareReserves,
-            marketState.bondReserves,
-            initialSharePrice,
-            timeRemaining,
-            timeStretch
-        );
+        //
+        // TODO: There should be a way to refactor this so that the spot price
+        // isn't calculated when the curve fee is 0. The bond reserves are only
+        // 0 in the scenario that the LPs have fully withdrawn and the last
+        // trader redeems.
+        uint256 spotPrice = marketState.bondReserves > 0
+            ? HyperdriveMath.calculateSpotPrice(
+                marketState.shareReserves,
+                marketState.bondReserves,
+                initialSharePrice,
+                timeRemaining,
+                timeStretch
+            )
+            : FixedPointMath.ONE_18;
         uint256 totalCurveFee;
         uint256 totalFlatFee;
         (

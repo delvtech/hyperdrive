@@ -129,7 +129,9 @@ contract AaveHyperdrive is Hyperdrive {
         // avoid reverts.
         shares = shares > totalShares ? totalShares : shares;
         uint256 assets = aToken.balanceOf(address(this));
-        uint256 withdrawValue = assets.mulDivDown(shares, totalShares);
+        uint256 withdrawValue = assets != 0
+            ? shares.mulDown(assets.divDown(totalShares))
+            : 0;
 
         // Remove the shares from the total share supply
         totalShares -= shares;
