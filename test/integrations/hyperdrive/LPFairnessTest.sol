@@ -179,7 +179,10 @@ contract LPFairnessTest is HyperdriveTest {
         assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e7);
     }
 
-    function test_lp_fairness_long_lp(uint256 fixedRateParam, uint256 tradeSizeParam) external {
+    function test_lp_fairness_long_lp(
+        uint256 fixedRateParam,
+        uint256 tradeSizeParam
+    ) external {
         // limit the fuzz testing to variableRate's less than 100%
         vm.assume(fixedRateParam < 1e18);
 
