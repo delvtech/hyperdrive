@@ -288,9 +288,12 @@ abstract contract HyperdriveLP is HyperdriveBase {
         marketState.shareReserves = uint256(
             int256(shareReserves) + _shareReservesDelta
         ).toUint128();
-        marketState.bondReserves = uint256(marketState.bondReserves)
-            .mulDivDown(marketState.shareReserves, shareReserves)
-            .toUint128();
+        marketState.bondReserves = marketState.bondReserves > 0 &&
+            marketState.shareReserves > 0
+            ? uint256(marketState.bondReserves)
+                .mulDivDown(marketState.shareReserves, shareReserves)
+                .toUint128()
+            : 0;
     }
 
     /// @dev Moves capital into the withdraw pool and marks shares ready for withdraw.
