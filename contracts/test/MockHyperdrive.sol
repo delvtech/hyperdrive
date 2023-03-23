@@ -162,6 +162,35 @@ contract MockHyperdrive is Hyperdrive {
         );
     }
 
+    // Calls Hyperdrive._calculateOpenLong
+    function calculateOpenLong(
+        uint256 _shareAmount,
+        uint256 _sharePrice,
+        uint256 _timeRemaining
+    )
+        external
+        view
+        returns (
+            uint256 shareReservesDelta,
+            uint256 bondReservesDelta,
+            uint256 bondProceeds,
+            uint256 totalGovernanceFee
+        )
+    {
+        return _calculateOpenLong(_shareAmount, _sharePrice, _timeRemaining);
+    }
+
+    struct State {
+        IHyperdrive.MarketState marketState;
+        IHyperdrive.Fees fees;
+    }
+
+    // TODO generalize this for all hyperdrive state
+    function overrideState(State memory _state) public {
+        marketState = _state.marketState;
+        fees = _state.fees;
+    }
+
     /// Overrides ///
 
     function _deposit(

@@ -112,7 +112,7 @@ library HyperdriveMath {
     /// @dev Calculates the number of bonds a user will receive when opening a long position.
     /// @param _shareReserves The pool's share reserves.
     /// @param _bondReserves The pool's bond reserves.
-    /// @param _amountIn The amount of shares the user is depositing.
+    /// @param _shareAmount The amount of shares the user is depositing.
     /// @param _normalizedTimeRemaining The amount of time remaining until maturity in seconds.
     /// @param _timeStretch The time stretch parameter.
     /// @param _sharePrice The share price.
@@ -123,7 +123,7 @@ library HyperdriveMath {
     function calculateOpenLong(
         uint256 _shareReserves,
         uint256 _bondReserves,
-        uint256 _amountIn,
+        uint256 _shareAmount,
         uint256 _normalizedTimeRemaining,
         uint256 _timeStretch,
         uint256 _sharePrice,
@@ -138,10 +138,10 @@ library HyperdriveMath {
         )
     {
         // Calculate the flat part of the trade.
-        bondProceeds = _amountIn.mulDown(
+        bondProceeds = _shareAmount.mulDown(
             FixedPointMath.ONE_18.sub(_normalizedTimeRemaining)
         );
-        shareReservesDelta = _amountIn.mulDown(_normalizedTimeRemaining);
+        shareReservesDelta = _shareAmount.mulDown(_normalizedTimeRemaining);
         // (time remaining)/(term length) is always 1 so we just use _timeStretch
         bondReservesDelta = YieldSpaceMath.calculateBondsOutGivenSharesIn(
             _shareReserves,
