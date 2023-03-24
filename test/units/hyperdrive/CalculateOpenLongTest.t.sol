@@ -172,6 +172,7 @@ contract CalculateOpenLongTest is HyperdriveTest {
                 normalizedTimeRemaining
             );
 
+        // NOTE - Discrepancy in figures is most likely differences in how exponentiation is derived
         assertApproxEqAbs(
             bondReservesDelta,
             97299.006804515764221818e18,
