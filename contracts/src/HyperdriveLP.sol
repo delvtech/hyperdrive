@@ -282,18 +282,24 @@ abstract contract HyperdriveLP is HyperdriveBase {
     /// @dev Updates the pool's liquidity and holds the pool's APR constant.
     /// @param _shareReservesDelta The delta that should be applied to share reserves.
     function _updateLiquidity(int256 _shareReservesDelta) internal {
-        // Apply the update to the pool's share reserves and solve for the bond
-        // reserves that maintains the current pool APR.
-        uint256 shareReserves = marketState.shareReserves;
-        marketState.shareReserves = uint256(
-            int256(shareReserves) + _shareReservesDelta
-        ).toUint128();
-        marketState.bondReserves = marketState.bondReserves > 0 &&
-            marketState.shareReserves > 0
-            ? uint256(marketState.bondReserves)
+        if (_shareReservesDelta != 0) {
+            // Apply the update to the pool's share reserves and solve for the bond
+            // reserves that maintains the current pool APR.
+            uint256 shareReserves = marketState.shareReserves;
+            int256 updatedShareReserves = int256(shareReserves) +
+                _shareReservesDelta;
+            marketState.shareReserves = uint256(
+                // TODO: This seems to be masking a numerical problem. This
+                // should be investigated more.
+                //
+                // NOTE: There is a 1 wei discrepancy in some of the
+                // calculations which results in this clamping being required.
+                updatedShareReserves >= 0 ? updatedShareReserves : int256(0)
+            ).toUint128();
+            marketState.bondReserves = uint256(marketState.bondReserves)
                 .mulDivDown(marketState.shareReserves, shareReserves)
-                .toUint128()
-            : 0;
+                .toUint128();
+        }
     }
 
     /// @dev Moves capital into the withdraw pool and marks shares ready for withdraw.

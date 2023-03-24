@@ -196,8 +196,14 @@ abstract contract HyperdriveLong is HyperdriveLP {
             checkpoints[_checkpointTime].longSharePrice
         )
             .updateWeightedAverage(
-                // FIXME: Use the amount of longs in the checkpoint.
-                uint256(marketState.longsOutstanding),
+                uint256(
+                    totalSupply[
+                        AssetId.encodeAssetId(
+                            AssetId.AssetIdPrefix.Long,
+                            _maturityTime
+                        )
+                    ]
+                ),
                 _sharePrice,
                 _bondProceeds,
                 true

@@ -151,7 +151,6 @@ contract LpWithdrawalTest is HyperdriveTest {
         // collected on the capital underlying the long for all but the first
         // checkpoint. This will leave dust which is the interest from the first
         // checkpoint compounded over the whole term.
-        uint256 estimatedDust;
         (, int256 estimatedProceeds) = HyperdriveUtils
             .calculateCompoundInterest(
                 longAmount,

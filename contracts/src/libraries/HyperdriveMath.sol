@@ -370,9 +370,7 @@ library HyperdriveMath {
         // interest proceeds, and the margin released.
         uint256 bondFactor = _bondAmount.mulDivDown(
             _closeSharePrice,
-            // We round up here since we don't want to overestimate the share
-            // proceeds. Overestimation leads to clamping which is more
-            // dangerous since it doesn't discriminate between reasons to clamp.
+            // We round up here do avoid overestimating the share proceeds.
             _openSharePrice.mulUp(_sharePrice)
         );
         if (bondFactor > _shareAmount) {
@@ -407,7 +405,8 @@ library HyperdriveMath {
             // interest = dy * ((c1 - c0) / (c0 * c))
             shareInterest = _bondAmount.mulDivDown(
                 _closeSharePrice - _openSharePrice,
-                _openSharePrice.mulDown(_sharePrice)
+                // We round up here do avoid overestimating the share interest.
+                _openSharePrice.mulUp(_sharePrice)
             );
         }
         return shareInterest;

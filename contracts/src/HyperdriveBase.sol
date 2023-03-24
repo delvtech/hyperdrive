@@ -402,13 +402,12 @@ abstract contract HyperdriveBase is MultiToken {
             uint256 governanceFlatFee
         )
     {
-        uint256 curveOut = _amountOut.mulDown(_normalizedTimeRemaining);
         // bonds out
         // curve fee = ((1 - p) * d_y * t * phi_curve)/c
         totalCurveFee = FixedPointMath.ONE_18.sub(_spotPrice);
         totalCurveFee = totalCurveFee
             .mulDown(fees.curve)
-            .mulDown(curveOut)
+            .mulDown(_amountOut)
             .mulDivDown(_normalizedTimeRemaining, _sharePrice);
         // calculate the curve portion of the governance fee
         governanceCurveFee = totalCurveFee.mulDown(fees.governance);
