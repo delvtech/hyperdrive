@@ -180,15 +180,9 @@ contract MockHyperdrive is Hyperdrive {
         return _calculateOpenLong(_shareAmount, _sharePrice, _timeRemaining);
     }
 
-    struct State {
-        IHyperdrive.MarketState marketState;
-        IHyperdrive.Fees fees;
-    }
-
-    // TODO generalize this for all hyperdrive state
-    function overrideState(State memory _state) public {
-        marketState = _state.marketState;
-        fees = _state.fees;
+    function setReserves(uint256 shareReserves, uint256 bondReserves) public {
+        marketState.shareReserves = uint128(shareReserves);
+        marketState.bondReserves = uint128(bondReserves);
     }
 
     /// Overrides ///
