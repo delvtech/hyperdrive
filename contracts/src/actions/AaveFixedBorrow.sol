@@ -43,17 +43,11 @@ contract AaveFixedBorrowAction {
         variableDebtToken = ICreditDelegationToken(_variableDebtToken);
     }
 
-    /// @notice This function performs three actions
-    ///         - Supply Aave collateral on behalf of user
-    ///         - Borrow some base on behalf of user
-    ///         - Short an amount of bonds
-    ///         The debt on the borrowed position will be the base value of the
-    ///         short + the borrow amount. Also the _borrowAmount must be
-    ///         greater than the value of the short
+    /// @notice Creates a hedged borrow position on Aave
     /// @param _supplyAmount The amount of collateral
     /// @param _borrowAmount The amount of base to be borrowed
     /// @param _bondAmount The amount of bonds to short
-    /// @param _maxDeposit The max amount of base to be used to make the short
+    /// @param _maxDeposit The max amount of base to be used to make the short,
     /// @return baseDeposited The amount of base used to make the short
     function supplyBorrowAndOpenShort(
         address _collateralToken,
@@ -69,19 +63,21 @@ contract AaveFixedBorrowAction {
             _supplyAmount
         );
 
-        // Supply the aave pool with collateral on behalf of user
+        // Supply the aave pool with collateral on behalf of user.
         pool.supply(_collateralToken, _supplyAmount, msg.sender, 0);
 
-        // Initial borrow to pay for the short
+        // Borrow the users requested _borrowAmount and _maxDeposit so the
+        // amount of base the user receives and the amount of base the user
+        // shorts with is covered.
         pool.borrow(
             address(debtToken),
-            _borrowAmount,
+            _borrowAmount + _maxDeposit,
             uint256(DataTypes.InterestRateMode.VARIABLE),
             0,
             msg.sender
         );
 
-        // Open short
+        // Open the short
         baseDeposited = hyperdrive.openShort(
             _bondAmount,
             _maxDeposit,
@@ -89,14 +85,16 @@ contract AaveFixedBorrowAction {
             true
         );
 
-        // Borrow the amount of base used to short so user receives borrowAmount
-        pool.borrow(
-            address(debtToken),
-            _borrowAmount - baseDeposited,
-            uint256(DataTypes.InterestRateMode.VARIABLE),
-            0,
-            msg.sender
-        );
+        // If the baseDeposit is greater than _maxDeposit, then there are excess
+        // borrowings which are repaid back to the loan
+        if (baseDeposited < _maxDeposit) {
+            pool.repay(
+                address(debtToken),
+                _maxDeposit - baseDeposited,
+                uint256(DataTypes.InterestRateMode.VARIABLE),
+                msg.sender
+            );
+        }
 
         // Transfer borrowAmount of base to user
         debtToken.transfer(msg.sender, _borrowAmount);
