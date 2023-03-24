@@ -365,21 +365,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 ? withdrawalProceeds - lpInterest
                 : 0;
 
-            // TODO: We won't need to make this distinction once we fix the long
-            // dust issue, so I'm going to use this name for now.
-            //
-            // TODO: Make sure that the withdraw shares are actually
-            // instantiated with the open share price. Think more about this as
-            // it seems weird to have to convert back using an old share price
-            // considering that this may not have been the share price at the
-            // time the withdrawal was initiated.
-            //
-            // The withdraw shares unlocked by this long position were created
-            // using this open share price.
-            uint256 openSharePrice_ = checkpoints[
-                _maturityTime - positionDuration
-            ].sharePrice;
-
             // Pay out the withdrawal pool with the freed margin. The withdrawal
             // proceeds are split into the margin pool and the interest pool.
             // The proceeds that are distributed to the margin and interest
