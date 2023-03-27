@@ -1,18 +1,26 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import { stdError } from "forge-std/StdError.sol";
-import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { Errors } from "contracts/src/libraries/Errors.sol";
-import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
-import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { MockHyperdrive } from "contracts/test/MockHyperdrive.sol";
+import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
 
+// NOTE: The "state" values were randomly selected based with a bias to
+// "non-rounded" figures.
+// NOTE Represented fractional values are rounded down to 18 decimals
+// NOTE Values used in assertions are results from the preceding comment
+// rounded to 18 decimals (most cases down). The "real" values of in the cases of
+// computations of rational exponentiation and fractional division will
+// have arbitrary precision and it is intended these values are the "truest"
+// representation of that given computation in fixed-point precision of
+// 18 decimals.
+// One caveat to mention is that the values produced by the "hand
+// rolled" computations carry forward to dependent computations so
+// precision loss will be compounded
 contract CalculateOpenLongTest is HyperdriveTest {
     using FixedPointMath for uint256;
 
+    // State variables
     uint256 initialSharePrice;
     uint256 sharePrice;
     uint256 normalizedTimeRemaining;
@@ -22,11 +30,23 @@ contract CalculateOpenLongTest is HyperdriveTest {
     uint256 timeStretch;
     IHyperdrive.Fees fees;
 
-    function test_calculate_open_long() external {
-        // NOTE: The "state" values were loosely selected based with a bias to
-        // "non-rounded" figures. Represented fractional values are rounded down
-        // to 18 decimals
+    // Intermediary calculation variables
+    uint256 k;
+    uint256 tau;
+    uint256 p;
+    uint256 dy;
+    uint256 flat_fee;
+    uint256 curve_fee;
+    uint256 governance_flat_fee;
+    uint256 governance_curve_fee;
 
+    // Assertion variables
+    uint256 expectedTotalGovernanceFee;
+    uint256 expectedBondReservesDelta;
+    uint256 expectedBondProceeds;
+    uint256 expectedShareReservesDelta;
+
+    function test_calculate_open_long() external {
         // µ = 1 * 45/41
         initialSharePrice = 1.097560975609756097e18;
         // c = 1 * 49/41
@@ -73,13 +93,13 @@ contract CalculateOpenLongTest is HyperdriveTest {
 
         // Δz_curve = Δz · t
         // Δz_curve = 83673.469387755102049354 * 0.971428571428571428
-        // Δz_curve = 81282.798833819241942987
+        // Δz_curve = 81282.798833819241942987617492711370257512
         uint256 dz_curve = shareAmount.mulDown(normalizedTimeRemaining);
         assertEq(dz_curve, 81282.798833819241942987e18, "dz_curve");
 
         // Δy'flat = Δz · (1 - t)
         // Δy'flat = 83673.469387755102049354 * (1 - 0.971428571428571428)
-        // Δy'flat = 2390.670553935860106366
+        // Δy'flat = 2390.670553935860106366382507288629742488
         uint256 dy_apost_flat = shareAmount.mulDown(
             FixedPointMath.ONE_18.sub(normalizedTimeRemaining)
         );
@@ -96,12 +116,17 @@ contract CalculateOpenLongTest is HyperdriveTest {
         );
 
         // (c / µ) = (1.195121951219512195 / 1.097560975609756097)
-        // (c / µ) = 1.088888888888888889
+        // (c / µ) = 1.0888888888888888893343209876543209878819862825788751715841263222...
         uint256 c_div_mu = sharePrice.divDown(initialSharePrice);
         assertEq(c_div_mu, 1.088888888888888889e18, "c_div_mu");
 
-        // (µ · z)^(1 - t) = (1.097560975609756097 * 337003257.328990228013029315)^(0.954928311936805906)
-        // (µ · z)^(1 - t) = 152014740.974500528173941042
+        // (µ · z) = (1.097560975609756097 * 337003257.328990228013029315)
+        // (µ · z) = 369881623.897672201288664494059346945260983555
+        uint256 mu_z = initialSharePrice.mulDown(shareReserves);
+        assertEq(mu_z, 369881623.897672201288664494e18, "mu_z");
+
+        // (µ · z)^(1 - t) = 369881623.897672201288664494^(0.954928311936805906)
+        // (µ · z)^(1 - t) = 152014740.974500528173941042763114476815073326183010430
         uint256 mu_z_pow_one_minus_t_stretch = initialSharePrice
             .mulDown(shareReserves)
             .pow(one_minus_t_stretch);
@@ -110,99 +135,197 @@ contract CalculateOpenLongTest is HyperdriveTest {
             152014740.974500528173941042e18,
             5e7,
             "mu_z_pow_one_minus_t"
-        ); // TODO The inaccuracy of this assertion is most likely due to difference of pow algorithm implementation
+        ); // TODO Precision
 
         // y^(1 - t) = (383887915.936952714535901926)^(0.954928311936805906)
-        // y^(1 - t) = 157506998.923528080399004587
-        uint256 y_pow_one_minus_t_stretch = bondReserves.pow(one_minus_t_stretch);
+        // y^(1 - t) = 157506998.923528080399004587041700209859953096737243167
+        uint256 y_pow_one_minus_t_stretch = bondReserves.pow(
+            one_minus_t_stretch
+        );
         assertApproxEqAbs(
             y_pow_one_minus_t_stretch,
             157506998.923528080399004587e18,
             3e8,
             "y_pow_one_minus_t_stretch"
-        ); // TODO The inaccuracy of this assertion is most likely due to difference of pow algorithm implementation
+        ); // TODO Precision
 
         // k = (c / µ) · (µ · z)^(1 - t) + y^(1 - t)
         // k = 1.088888888888888889 * 152014740.974500528173941042 + 157506998.923528080399004587
-        // k = 323034161.31798421109418647
-        uint256 k = c_div_mu.mulDown(mu_z_pow_one_minus_t_stretch).add(y_pow_one_minus_t_stretch);
+        // k = 323034161.317984211094186470619388947574882338
+        k = c_div_mu.mulDown(mu_z_pow_one_minus_t_stretch).add(
+            y_pow_one_minus_t_stretch
+        );
+        assertApproxEqAbs(k, 323034161.31798421109418647e18, 3e8, "k"); // TODO Precision
+
+        // (µ · (z + Δz_curve)) = 1.097560975609756097 * (337003257.328990228013029315 + 81282.798833819241942987)
+        // (µ · (z + Δz_curve)) = 369970836.725660539480995345538049924710625294
+        uint256 mu_z_and_dzcurve = initialSharePrice.mulDown(
+            shareReserves.add(dz_curve)
+        );
+        assertEq(
+            mu_z_and_dzcurve,
+            369970836.725660539480995345e18,
+            "mu_z_and_dzcurve"
+        );
+
+        // (µ · (z + Δz_curve))^(1 - t) = 369970836.725660539480995345^0.954928311936805906
+        // (µ · (z + Δz_curve))^(1 - t) = 152049753.115098833898787866715676618030157129075568782
+        uint256 mu_z_and_dzcurve_pow_one_minus_t_stretch = mu_z_and_dzcurve.pow(
+            one_minus_t_stretch
+        );
         assertApproxEqAbs(
-            k,
-            323034161.31798421109418647e18,
-            3e8,
-            "k"
-        ); // TODO The inaccuracy of this assertion is most likely due to difference of pow algorithm implementation
+            mu_z_and_dzcurve_pow_one_minus_t_stretch,
+            152049753.115098833898787866e18,
+            5e7,
+            "mu_z_and_dzcurve_pow_one_minus_t_stretch"
+        ); // TODO Precision
 
-        // (µ · (z + Δz_curve))^(1 - t) = (1.097560975609756097 * (337003257.328990228013029315 + 81282.798833819241942987))^0.954928311936805906
-        // (µ · (z + Δz_curve))^(1 - t) = 152049753.115098833898787866
-        //
         // (c / µ) · (µ · (z + Δz_curve))^(1 - t) = 1.088888888888888889 * 152049753.115098833898787866
-        // (c / µ) · (µ · (z + Δz_curve))^(1 - t) = 165565286.725329841373352315
-        //
-        // (1 / (1 - t)) = 1 / 0.954928311936805906
-        // (1 / (1 - t)) = 1.047199027926796659
-        //
-        // (k - (c / µ) · (µ · (z + Δz_curve))^(1 - t))^(1 / (1 - t)) = (323034161.31798421109418647 - 165565286.725329841373352315)^1.047199027926796659
-        // (k - (c / µ) · (µ · (z + Δz_curve))^(1 - t))^(1 / (1 - t)) = 383790611.29379182550547223
-        //
-        // Δy'curve = y - (k - (c / µ) · (µ · (z + Δz_curve))^(1 - t))^(1 / (1 - t))
-        // Δy'curve = 383887915.936952714535901926 - 383790611.29379182550547223
-        // Δy'curve = 97304.643160889030429696
+        // (c / µ) · (µ · (z + Δz_curve))^(1 - t) = 165565286.725329841373352315546122092655420874
+        uint256 z_ = c_div_mu.mulDown(mu_z_and_dzcurve_pow_one_minus_t_stretch);
+        assertApproxEqAbs(z_, 165565286.725329841373352315e18, 5e7, "z_"); // TODO Precision
 
-        // Spot price
+        // (1 / (1 - t)) = 1 / 0.954928311936805906
+        // (1 / (1 - t)) = 1.0471990279267966596926226784985107956999882836058167426007625189...
+        uint256 one_minus_t_inverse = FixedPointMath.ONE_18.divUp(
+            one_minus_t_stretch
+        );
+        assertEq(
+            one_minus_t_inverse,
+            1.04719902792679666e18, // Rounded up
+            "one_minus_t_stretch"
+        );
+
+        // (k - (c / µ) · (µ · (z + Δz_curve))^(1 - t))^(1 / (1 - t)) = (323034161.31798421109418647 - 165565286.725329841373352315)^1.04719902792679666
+        // (k - (c / µ) · (µ · (z + Δz_curve))^(1 - t))^(1 / (1 - t)) = (157468874.592654369720834155)^1.04719902792679666
+        // (k - (c / µ) · (µ · (z + Δz_curve))^(1 - t))^(1 / (1 - t)) = 383790611.293791832749419609975176889050228160919979985
+        uint256 _y = k.sub(z_).pow(one_minus_t_inverse);
+        assertApproxEqAbs(_y, 383790611.293791832749419609e18, 7e8, "_y"); // TODO Precision
+
+        // Δy'curve = y - (k - (c / µ) · (µ · (z + Δz_curve))^(1 - t))^(1 / (1 - t))
+        // Δy'curve = 383887915.936952714535901926 - 383790611.293791832749419609
+        // Δy'curve = 97304.643160881786482317
+        uint256 dy_apost_curve = bondReserves.sub(_y);
+        assertApproxEqAbs(
+            dy_apost_curve,
+            97304.643160881786482317e18,
+            7e8,
+            "dy_apost_curve"
+        ); // TODO Precision
+
+        // Δy = Δ'y_curve + Δ'y_flat
+        // Δy = 97304.643160881786482317 + 2390.670553935860106366
+        // Δy = 99695.313714817646588683
+        dy = dy_apost_curve.add(dy_apost_flat);
+        assertApproxEqAbs(dy, 99695.313714817646588683e18, 7e8, "dy");
 
         // τ = t * timeStretch
         // τ = 0.971428571428571428 * 0.045071688063194094
-        // τ = 0.043783925547102834
+        // τ = 0.043783925547102834145673321106746232
+        tau = normalizedTimeRemaining.mulDown(timeStretch);
+        assertEq(tau, 0.043783925547102834e18, "tau");
 
         // p = (µ · z / y)^τ
-        // p = ((1.097560975609756097 * 337003257.328990228013029315) / 383887915.936952714535901926)^0.043783925547102834
-        // p = 0.99837397973972079
-
-        // _calculateFeesOutGivenSharesIn
+        // p = (369881623.897672201288664494 / 383887915.936952714535901926)^0.043783925547102834
+        // p = (0.9635146315947574221524973828409339252968448231146639381459727054)^0.043783925547102834
+        // p = 0.9983739797397207901274666301517165600456415425139442692974
+        p = mu_z.divDown(bondReserves).pow(tau);
+        assertEq(p, 0.99837397973972079e18, "p");
 
         // flat_fee = c · Δz · (1 - t) · Φ_flat
         // flat_fee = 1.195121951219512195 * 83673.469387755102049354 * (1 - 0.971428571428571428) * (3/100)
-        // flat_fee = 85.714285714285715999
+        // flat_fee = 85.7142857142857159999995537225343098903025030221147692348
+        flat_fee = sharePrice
+            .mulDown(shareAmount)
+            .mulDown(FixedPointMath.ONE_18.sub(normalizedTimeRemaining))
+            .mulDown(fees.flat);
+        assertEq(flat_fee, 85.714285714285715999e18, "flat_fee");
 
-        // curve_fee = ((1 / p) - 1) · c · Δz · t · Φ_curve
-        // curve_fee = ((1 / 0.99837397973972079) - 1) * 1.195121951219512195 * 83673.469387755102049354 * 0.971428571428571428 * (2.5/100)
-        // curve_fee = 3.955337805800847634
+        // curve_fee = ((1 / p) - 1) · Φ_curve * c · Δz · t
+        // curve_fee = ((1 / 0.99837397973972079) - 1) * (2.5/100) * 1.195121951219512195 * 83673.469387755102049354 * 0.971428571428571428
+        // curve_fee = 3.9553378058008476341813458022271009778187353456297919835792269030
+        curve_fee = (
+            (FixedPointMath.ONE_18.divDown(p)).sub(FixedPointMath.ONE_18)
+        ).mulDown(fees.curve).mulDown(sharePrice).mulDown(shareAmount).mulDown(
+                normalizedTimeRemaining
+            );
+        assertApproxEqAbs(curve_fee, 3.955337805800847634e18, 2e5, "curve_fee");
 
         // governance_flat_fee = (flat_fee · Φ_governance)
         // governance_flat_fee = (85.714285714285715999 * 42.5/100)
-        // governance_flat_fee = 36.428571428571429299
+        // governance_flat_fee = 36.428571428571429299575
+        governance_flat_fee = flat_fee.mulDown(fees.governance);
+        assertEq(
+            governance_flat_fee,
+            36.428571428571429299e18,
+            "governance_flat_fee"
+        );
 
-        // governance_curve_fee = (curve_fee · Φ_governance)
-        // governance_curve_fee = (3.955337805800847634 * 42.5/100)
-        // governance_curve_fee = 1.681018567465360244
+        // governance_curve_fee = Δz * (curve_fee / Δy) * c * Φ_governance
+        // governance_curve_fee = 83673.469387755102049354 * (3.955337805800847634 / 99695.313714817646588683) * 1.195121951219512195 * (42.5/100)
+        // governance_curve_fee = 1.6861560537077798467049595269649831319106116442810493933654615802...
+        governance_curve_fee = shareAmount
+            .mulDivDown(curve_fee, dy)
+            .mulDown(sharePrice)
+            .mulDown(fees.governance);
+        assertApproxEqAbs(
+            governance_curve_fee,
+            1.686156053707779846e18,
+            6e4,
+            "governance_curve_fee"
+        ); // TODO Precision
 
-        // governance_fee = ((flat_fee · Φ_governance) + (curve_fee · Φ_governance)) / c
-        // governance_fee = (36.428571428571429299 + 1.681018567465360244) / 1.195121951219512195
-        // governance_fee = 38.109589996036789544 / 1.195121951219512195
-        // governance_fee = 31.887616119132823907
+        // governance_fee = (flat_fee + curve_fee) / c
+        // governance_fee = (36.428571428571429299 + 1.686156053707779846) / 1.195121951219512195
+        // governance_fee = 31.891914832111175002131828044092977041033860004499283371534067347...
+        expectedTotalGovernanceFee = (
+            governance_flat_fee.add(governance_curve_fee)
+        ).divDown(sharePrice);
+        assertApproxEqAbs(
+            expectedTotalGovernanceFee,
+            31.891914832111175002e18,
+            5e4,
+            "expectedTotalGovernanceFee"
+        ); // TODO Precision
 
-        // attribute fees
+        // bondReservesDelta = Δ'y_curve - (curve_fee - governance_curve_fee)
+        // bondReservesDelta = 97304.643160881786482317 - (3.955337805800847634 - 1.686156053707779846)
+        // bondReservesDelta = 97302.373979129693414529
+        expectedBondReservesDelta = dy_apost_curve.sub(
+            curve_fee.sub(governance_curve_fee)
+        );
+        assertApproxEqAbs(
+            expectedBondReservesDelta,
+            97302.373979129693414529e18,
+            7e8,
+            "expectedBondReservesDelta"
+        ); // TODO Precision
 
-        // Δy_flat = Δy'flat - flat_fee
-        // Δy_flat = 2390.670553935860106366 - 85.714285714285715999
-        // Δy_flat = 2304.956268221574390367
-
-        // Δy_curve = Δy'curve - curve_fee
-        // Δy_curve = 97304.643160889030429696 - 3.955337805800847634
-        // Δy_curve = 97300.687823083229582062
-
-        // bondReservesDelta = Δy_curve - governance_curve_fee
-        // bondReservesDelta = 97300.687823083229582062 - 1.681018567465360244
-        // bondReservesDelta = 97299.006804515764221818
-
-        // bondProceeds = Δy_curve + Δy_flat
-        // bondProceeds = 97300.687823083229582062 + 2304.956268221574390367
-        // bondProceeds = 99605.644091304803972429
+        // bondProceeds = Δy - (curve_fee + flat_fee)
+        // bondProceeds = 99695.313714817646588683 - (3.955337805800847634 + 85.714285714285715999)
+        // bondProceeds = 99605.64409129756002505
+        expectedBondProceeds = dy.sub(
+            curve_fee.add(flat_fee)
+        );
+        assertApproxEqAbs(
+            expectedBondProceeds,
+            99605.64409129756002505e18,
+            7e8,
+            "expectedBondProceeds"
+        ); // TODO Precision
 
         // shareReservesDelta = Δz_curve - (governance_curve_fee / c)
-        // shareReservesDelta = 81282.798833819241942987 - (1.681018567465360244 / 1.195121951219512195)
-        // shareReservesDelta = 81281.392267262791335435
+        // shareReservesDelta = 81282.798833819241942987 - (1.686156053707779846 / 1.195121951219512195)
+        // shareReservesDelta = 81281.387968549812984340202972931690922587061527850172543121128727
+        expectedShareReservesDelta = dz_curve.sub(
+            governance_curve_fee.divDown(sharePrice)
+        );
+        assertApproxEqAbs(
+            expectedShareReservesDelta,
+            81281.38796854981298434e18,
+            5e4,
+            "expectedShareReservesDelta"
+        ); // TODO Precision
 
         (
             uint256 shareReservesDelta,
@@ -215,35 +338,24 @@ contract CalculateOpenLongTest is HyperdriveTest {
                 normalizedTimeRemaining
             );
 
-        // TODO A major source of imprecision at the point of time of writing
-        // is that the hand rolled calculations were made so using a high
-        // precision calculator most likely used a different exponentiation
-        // algorithm than what is utilised in FixedPointMath
-        // Use the FixedPointMath pow to derive corrected values
+        assertEq(
+            shareReservesDelta,
+            expectedShareReservesDelta,
+            "shareReservesDelta computation misaligned"
+        );
+        assertEq(bondReservesDelta, expectedBondReservesDelta, "bondReservesDelta computation misaligned");
+        assertEq(bondProceeds, expectedBondProceeds, "bondProceeds computation misaligned");
+        assertEq(
+            totalGovernanceFee,
+            expectedTotalGovernanceFee,
+            "totalGovernanceFee computation misaligned"
+        );
 
-        uint256 bondReservesDeltaOffset = 3367174614620678992; // TODO Get this to 0
-        assertEq(
-            bondReservesDelta - bondReservesDeltaOffset,
-            97299.006804515764221818e18,
-            "bondReservesDelta"
-        );
-        uint256 shareReservesDeltaOffset = 4298712978301605; // TODO Get this to 0
-        assertEq(
-            shareReservesDelta + shareReservesDeltaOffset,
-            81281.392267262791335435e18,
-            "shareReservesDelta"
-        );
-        uint256 bondProceedsOffset = 6552401952; // TODO Get this to 0
-        assertEq(
-            bondProceeds + bondProceedsOffset,
-            99605.644091304803972429e18,
-            "bondProceeds"
-        );
-        uint256 totalGovernanceFeeOffset = 4298712978301605; // TODO Get this to 0
-        assertEq(
-            totalGovernanceFee - totalGovernanceFeeOffset,
-            31.887616119132823907e18,
-            "totalGovernanceFee"
-        );
+        // Adding explicit delta assertions so that any computation change is
+        // covered
+        assertEq(81281.38796854981298434e18 + 49490, shareReservesDelta);
+        assertEq(97302.373979129693414529e18 + 691486281, bondReservesDelta);
+        assertEq(99605.64409129756002505e18 + 691545427, bondProceeds);
+        assertEq(31.891914832111175002e18 - 49490, totalGovernanceFee);
     }
 }
