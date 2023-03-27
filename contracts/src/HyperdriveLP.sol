@@ -302,7 +302,7 @@ abstract contract HyperdriveLP is HyperdriveBase {
         }
     }
 
-    /// @dev Moves capital into the withdraw pool and marks shares ready for withdraw.
+    /// @dev Moves capital into the withdrawal pool and marks shares ready to withdraw.
     /// @param freedCapital The amount of capital to add to the withdraw pool, must not be more than the max capital
     /// @param maxCapital The margin which the LP used to back the position which is being closed.
     /// @param interest The interest earned by this margin position, fixed interest for LP shorts and variable for longs.

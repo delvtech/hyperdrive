@@ -318,7 +318,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // accrued on the position to the withdrawal pool.
         if (_needsToBeFreed()) {
             // Get the open share price. This is the weighted average of the
-            // share prices at the time that longs were opened, so the withdraw
+            // share prices at the time that longs were opened, so the withdrawal
             // pool will receive as much of the long interest as possible. We
             // don't need to update this value as the weighted average will be
             // correctly computed in the event that longs are closed in the
@@ -371,7 +371,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
             // pools are removed from the pool's liquidity.
             (uint256 capitalWithdrawn, uint256 interestWithdrawn) = _freeMargin(
                 capitalFreed,
-                // TODO: Make sure that the withdraw shares are actually
+                // TODO: Make sure that the withdrawal shares are actually
                 // instantiated with the open share price. Think more about this as
                 // it seems weird to have to convert back using an old share price
                 // considering that this may not have been the share price at the
