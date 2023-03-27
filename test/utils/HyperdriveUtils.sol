@@ -10,29 +10,14 @@ import { AssetId } from "contracts/src/libraries/AssetId.sol";
 library HyperdriveUtils {
     using FixedPointMath for uint256;
 
-    function latestCheckpoint(
-        IHyperdrive hyperdrive
-    ) internal view returns (uint256) {
-        return
-            block.timestamp -
-            (block.timestamp % hyperdrive.checkpointDuration());
-    }
-
-    function calculateTimeRemaining(
-        IHyperdrive _hyperdrive,
-        uint256 _maturityTime
-    ) internal view returns (uint256 timeRemaining) {
-        timeRemaining = _maturityTime > block.timestamp
-            ? _maturityTime - block.timestamp
-            : 0;
-        timeRemaining = (timeRemaining).divDown(_hyperdrive.positionDuration());
-        return timeRemaining;
-    }
-
-    function maturityTimeFromLatestCheckpoint(
-        IHyperdrive _hyperdrive
-    ) internal view returns (uint256) {
-        return latestCheckpoint(_hyperdrive) + _hyperdrive.positionDuration();
+    struct PoolConfig {
+        uint256 initialSharePrice;
+        uint256 positionDuration;
+        uint256 checkpointDuration;
+        uint256 timeStretch;
+        uint256 flatFee;
+        uint256 curveFee;
+        uint256 govFee;
     }
 
     struct PoolInfo {
@@ -46,6 +31,31 @@ library HyperdriveUtils {
         uint256 shortsOutstanding;
         uint256 shortAverageMaturityTime;
         uint256 shortBaseVolume;
+    }
+
+    function getPoolConfig(
+        IHyperdrive _hyperdrive
+    ) internal view returns (PoolConfig memory) {
+        (
+            uint256 initialSharePrice,
+            uint256 positionDuration,
+            uint256 checkpointDuration,
+            uint256 timeStretch,
+            uint256 flatFee,
+            uint256 curveFee,
+            uint256 govFee
+        ) = _hyperdrive.getPoolConfiguration();
+
+        return
+            PoolConfig({
+                initialSharePrice: initialSharePrice,
+                positionDuration: positionDuration,
+                checkpointDuration: checkpointDuration,
+                timeStretch: timeStretch,
+                flatFee: flatFee,
+                curveFee: curveFee,
+                govFee: govFee
+            });
     }
 
     function getPoolInfo(
@@ -76,6 +86,31 @@ library HyperdriveUtils {
                 shortAverageMaturityTime: shortAverageMaturityTime,
                 shortBaseVolume: shortBaseVolume
             });
+    }
+
+    function latestCheckpoint(
+        IHyperdrive hyperdrive
+    ) internal view returns (uint256) {
+        return
+            block.timestamp -
+            (block.timestamp % hyperdrive.checkpointDuration());
+    }
+
+    function calculateTimeRemaining(
+        IHyperdrive _hyperdrive,
+        uint256 _maturityTime
+    ) internal view returns (uint256 timeRemaining) {
+        timeRemaining = _maturityTime > block.timestamp
+            ? _maturityTime - block.timestamp
+            : 0;
+        timeRemaining = (timeRemaining).divDown(_hyperdrive.positionDuration());
+        return timeRemaining;
+    }
+
+    function maturityTimeFromLatestCheckpoint(
+        IHyperdrive _hyperdrive
+    ) internal view returns (uint256) {
+        return latestCheckpoint(_hyperdrive) + _hyperdrive.positionDuration();
     }
 
     function calculateAPRFromReserves(
@@ -202,5 +237,69 @@ library HyperdriveUtils {
             uint256(0.02789e18).mulDown(apr * 100)
         );
         return FixedPointMath.ONE_18.divDown(timeStretch);
+    }
+
+    function calculateOpenShortDeposit(
+        IHyperdrive _hyperdrive,
+        uint256 _bondAmount
+    ) internal view returns (uint256) {
+        // Retrieve hyperdrive pool state
+        PoolConfig memory poolConfig = getPoolConfig(_hyperdrive);
+        PoolInfo memory poolInfo = getPoolInfo(_hyperdrive);
+        uint256 openSharePrice;
+        uint256 timeRemaining;
+        {
+            uint256 checkpoint = latestCheckpoint(_hyperdrive);
+            uint256 maturityTime = checkpoint + _hyperdrive.positionDuration();
+            timeRemaining = calculateTimeRemaining(_hyperdrive, maturityTime);
+            openSharePrice = _hyperdrive.checkpoints(checkpoint).sharePrice;
+        }
+
+        // Calculate the openShort trade
+        (, , uint256 shareProceeds) = HyperdriveMath.calculateOpenShort(
+            poolInfo.shareReserves,
+            poolInfo.bondReserves,
+            _bondAmount,
+            timeRemaining,
+            poolConfig.timeStretch,
+            poolInfo.sharePrice,
+            poolConfig.initialSharePrice
+        );
+
+        // Price without slippage of bonds in terms of shares
+        uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
+            poolInfo.shareReserves,
+            poolInfo.bondReserves,
+            poolConfig.initialSharePrice,
+            timeRemaining,
+            poolConfig.timeStretch
+        );
+
+        // Calculate and attribute fees
+        uint256 curveFee = FixedPointMath
+            .ONE_18
+            .sub(spotPrice)
+            .mulDown(poolConfig.curveFee)
+            .mulDown(_bondAmount)
+            .mulDivDown(timeRemaining, poolInfo.sharePrice);
+        uint256 flatFee = (
+            _bondAmount.mulDivDown(
+                FixedPointMath.ONE_18.sub(timeRemaining),
+                poolInfo.sharePrice
+            )
+        ).mulDown(poolConfig.flatFee);
+        shareProceeds -= curveFee + flatFee;
+
+        // Return the proceeds of the short
+        return
+            HyperdriveMath
+                .calculateShortProceeds(
+                    _bondAmount,
+                    shareProceeds,
+                    openSharePrice,
+                    poolInfo.sharePrice,
+                    poolInfo.sharePrice
+                )
+                .mulDown(poolInfo.sharePrice);
     }
 }
