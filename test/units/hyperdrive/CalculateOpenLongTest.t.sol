@@ -357,8 +357,9 @@ contract CalculateOpenLongTest is HyperdriveTest {
             "totalGovernanceFee computation misaligned"
         );
 
-        // Adding explicit delta assertions so that any computation change is
-        // covered
+        // Adding explicit delta assertions so that any change in how these
+        // values are derived will fail the tests
+        // TODO Precision
         assertEq(81281.38796854981298434e18 + 49490, shareReservesDelta);
         assertEq(97302.373979129693414529e18 + 691486281, bondReservesDelta);
         assertEq(99605.64409129756002505e18 + 691545427, bondProceeds);
