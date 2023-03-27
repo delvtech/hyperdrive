@@ -8,15 +8,13 @@ import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/Hyperd
 // NOTE: The "state" values were randomly selected based with a bias to
 // "non-rounded" figures.
 // NOTE Represented fractional values are rounded down to 18 decimals
-// NOTE Values used in assertions are results from the preceding comment
-// rounded to 18 decimals (most cases down). The "real" values of in the cases of
-// computations of rational exponentiation and fractional division will
-// have arbitrary precision and it is intended these values are the "truest"
-// representation of that given computation in fixed-point precision of
-// 18 decimals.
-// One caveat to mention is that the values produced by the "hand
-// rolled" computations carry forward to dependent computations so
-// precision loss will be compounded
+// NOTE Values used in assertions are results from the preceding comment rounded
+// to 18 decimals (all cases down unless indicated). These values are derived
+// using WolframAlpha and in most cases an amount of precision exceeding 18
+// decimals is provided.
+// One caveat to mention is that the values produced by the "hand rolled"
+// computations carry forward to dependent computations so precision loss will
+// be compounded
 contract CalculateOpenLongTest is HyperdriveTest {
     using FixedPointMath for uint256;
 
