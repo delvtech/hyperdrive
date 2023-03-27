@@ -2,6 +2,7 @@
 pragma solidity ^0.8.18;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { HyperdriveBase } from "./HyperdriveBase.sol";
 import { HyperdriveLong } from "./HyperdriveLong.sol";
 import { HyperdriveShort } from "./HyperdriveShort.sol";
@@ -23,6 +24,7 @@ abstract contract Hyperdrive is
     HyperdriveShort
 {
     using FixedPointMath for uint256;
+    using SafeCast for uint256;
 
     /// @notice Initializes a Hyperdrive pool.
     /// @param _linkerCodeHash The hash of the ERC20 linker contract's
@@ -123,7 +125,7 @@ abstract contract Hyperdrive is
         }
 
         // Create the share price checkpoint.
-        checkpoints[_checkpointTime].sharePrice = _sharePrice;
+        checkpoints[_checkpointTime].sharePrice = _sharePrice.toUint128();
 
         // Pay out the long withdrawal pool for longs that have matured.
         uint256 maturedLongsAmount = totalSupply[

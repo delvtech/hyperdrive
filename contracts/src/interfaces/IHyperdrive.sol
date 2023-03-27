@@ -4,6 +4,7 @@ pragma solidity ^0.8.18;
 import "./IMultiToken.sol";
 
 interface IHyperdrive is IMultiToken {
+    // TODO: Add documentation
     struct MarketState {
         uint128 shareReserves;
         uint128 bondReserves;
@@ -11,23 +12,40 @@ interface IHyperdrive is IMultiToken {
         uint128 shortsOutstanding;
     }
 
+    // TODO: Add documentation
     struct Aggregates {
         uint128 averageMaturityTime;
         uint128 baseVolume;
     }
 
     struct Checkpoint {
-        uint256 sharePrice;
+        /// @dev The share price of the first transaction in the checkpoint.
+        ///      This is used to track the amount of interest accrued by shorts
+        ///      as well as the share price at closing of matured longs and
+        ///      shorts.
+        uint128 sharePrice;
+        /// @dev The weighted average of the share prices that all of the longs
+        ///      in the checkpoint were opened at. This is used as the opening
+        ///      share price of longs to properly attribute interest collected
+        ///      on longs to the withdrawal pool and prevent dust from being
+        ///      stuck in the contract.
+        uint128 longSharePrice;
+        /// @dev The aggregate amount of base that was paid to open longs in the
+        ///      checkpoint.
         uint128 longBaseVolume;
+        /// @dev The aggregate amount of base that was committed by LPs to pay
+        ///      for the bonds that were sold short in the checkpoint.
         uint128 shortBaseVolume;
     }
 
+    // TODO: Add documentation
     struct WithdrawPool {
         uint128 withdrawSharesReadyToWithdraw;
         uint128 capital;
         uint128 interest;
     }
 
+    // TODO: Add documentation
     struct Fees {
         uint256 curve;
         uint256 flat;
