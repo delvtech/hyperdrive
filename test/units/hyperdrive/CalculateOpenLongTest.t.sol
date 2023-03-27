@@ -304,9 +304,7 @@ contract CalculateOpenLongTest is HyperdriveTest {
         // bondProceeds = Δy - (curve_fee + flat_fee)
         // bondProceeds = 99695.313714817646588683 - (3.955337805800847634 + 85.714285714285715999)
         // bondProceeds = 99605.64409129756002505
-        expectedBondProceeds = dy.sub(
-            curve_fee.add(flat_fee)
-        );
+        expectedBondProceeds = dy.sub(curve_fee.add(flat_fee));
         assertApproxEqAbs(
             expectedBondProceeds,
             99605.64409129756002505e18,
@@ -343,8 +341,16 @@ contract CalculateOpenLongTest is HyperdriveTest {
             expectedShareReservesDelta,
             "shareReservesDelta computation misaligned"
         );
-        assertEq(bondReservesDelta, expectedBondReservesDelta, "bondReservesDelta computation misaligned");
-        assertEq(bondProceeds, expectedBondProceeds, "bondProceeds computation misaligned");
+        assertEq(
+            bondReservesDelta,
+            expectedBondReservesDelta,
+            "bondReservesDelta computation misaligned"
+        );
+        assertEq(
+            bondProceeds,
+            expectedBondProceeds,
+            "bondProceeds computation misaligned"
+        );
         assertEq(
             totalGovernanceFee,
             expectedTotalGovernanceFee,
