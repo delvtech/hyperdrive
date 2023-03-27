@@ -17,8 +17,6 @@ import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 contract LpWithdrawalTest is HyperdriveTest {
     using FixedPointMath for uint256;
 
-    // TODO: Accrue interest before the test starts as this results in weirder
-    // scenarios.
     function test_lp_withdrawal_long_immediate_close(
         uint128 basePaid,
         int64 preTradingApr
@@ -29,7 +27,10 @@ contract LpWithdrawalTest is HyperdriveTest {
 
         // TODO: We run into subtraction underflows when the pre trading APR is
         // negative because the spot price goes above 1. We should investigate
-        // this further.
+        // this further. The specific error is caused by a spot price that is 1
+        // or 2 wei greater than 1e18:
+        //
+        // FAIL. Reason: FixedPointMath_SubOverflow() Counterexample: calldata=0xeb03bc3c00000000000000000000000000000000000000000056210439729b8099325834fffffffffffffffffffffffffffffffffffffffffffffffff923591560ca3e4c, args=[104123536507311086290229300, -494453585727570356]]
         //
         // Accrue interest before the trading period.
         vm.assume(preTradingApr >= 0e18 && preTradingApr <= 1e18);
