@@ -8,6 +8,7 @@ import { MakerDsrHyperdrive } from "contracts/src/instances/MakerDsrHyperdrive.s
 import { DsrManager } from "contracts/src/interfaces/IMaker.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 
 contract MakerDsrHyperdriveScript is Script {
     using FixedPointMath for uint256;
@@ -28,11 +29,11 @@ contract MakerDsrHyperdriveScript is Script {
             _linkerFactory: address(0),
             _checkpointsPerTerm: 365, // 1 year term
             _checkpointDuration: 1 days, // 1 day checkpoints
-            _timeStretch: calculateTimeStretch(0.02e18), // 2% APR time stretch
+            _timeStretch: HyperdriveUtils.calculateTimeStretch(0.02e18), // 2% APR time stretch
             _fees: IHyperdrive.Fees({
-                curveFee: 0.1e18, // 10% curve fee
-                flatFee: 0.05e18, // 5% flat fee
-                governanceFee: 0.1e18 // 10% governance fee
+                curve: 0.1e18, // 10% curve fee
+                flat: 0.05e18, // 5% flat fee
+                governance: 0.1e18 // 10% governance fee
             }),
             _governance: address(0),
             _dsrManager: DsrManager(dsrManager)
