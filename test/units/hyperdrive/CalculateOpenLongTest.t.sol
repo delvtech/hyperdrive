@@ -5,16 +5,20 @@ import { MockHyperdrive } from "contracts/test/MockHyperdrive.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
 
-// NOTE: The "state" values were randomly selected based with a bias to
-// "non-rounded" figures.
-// NOTE Represented fractional values are rounded down to 18 decimals
-// NOTE Values used in assertions are results from the preceding comment rounded
-// to 18 decimals (all cases down unless indicated). These values are derived
-// using WolframAlpha and in most cases an amount of precision exceeding 18
-// decimals is provided.
-// One caveat to mention is that the values produced by the "hand rolled"
-// computations carry forward to dependent computations so precision loss will
-// be compounded
+// Assumptions:
+//
+// - The "state" values were arbitraily selected with a bias to non-rounded
+//   figures.
+// - Where fractional values are indicated in commentary, the utilised value is
+//   it's fixed point representation rounded down to 18 decimals.
+// - Calculations as stated in the assertion commentary are derived using
+//   WolframAlpha and are generally represented in a form exceeding 18 decimals
+// - Values in assertions are the fixed point representation of the WolframAlpha
+//   results rounded (down unless otherwise stated) to 18 decimals.
+// - "Hand-rolled" calculations which are dependent on results from other
+//   calculations use the 18 decimal precision representation which will incur
+//   some precision loss from the mathematically "true" value of these
+//   computations.
 contract CalculateOpenLongTest is HyperdriveTest {
     using FixedPointMath for uint256;
 
@@ -356,7 +360,7 @@ contract CalculateOpenLongTest is HyperdriveTest {
         );
 
         // Adding explicit delta assertions so that any change in how these
-        // values are derived will fail the tests
+        // values are derived will fail the test
         // TODO Precision
         assertEq(81281.38796854981298434e18 + 49490, shareReservesDelta);
         assertEq(97302.373979129693414529e18 + 691486281, bondReservesDelta);
