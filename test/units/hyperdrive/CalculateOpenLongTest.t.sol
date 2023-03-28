@@ -10,7 +10,7 @@ import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/Hyperd
 // - The "state" values were arbitraily selected with a bias to non-rounded
 //   figures.
 // - Where fractional values are indicated in commentary, the utilised value is
-//   it's fixed point representation rounded down to 18 decimals.
+//   its fixed point representation rounded down to 18 decimals.
 // - Calculations as stated in the assertion commentary are derived using
 //   WolframAlpha and are generally represented in a form exceeding 18 decimals
 // - Values in assertions are the fixed point representation of the WolframAlpha
