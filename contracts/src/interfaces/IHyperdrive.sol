@@ -40,7 +40,7 @@ interface IHyperdrive is IMultiToken {
 
     // TODO: Add documentation
     struct WithdrawPool {
-        uint128 withdrawSharesReadyToWithdraw;
+        uint128 withdrawalSharesReadyToWithdraw;
         uint128 capital;
         uint128 interest;
     }

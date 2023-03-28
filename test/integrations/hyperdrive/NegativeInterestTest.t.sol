@@ -20,7 +20,7 @@ contract NegativeInterestTest is HyperdriveTest {
     using FixedPointMath for uint256;
 
     function test_negative_interest_short_complete_loss(
-        int64 preTradingApr,
+        int64 preTradingVariableRate,
         int64 postTradingApr
     ) external {
         // Initialize the market.
@@ -29,8 +29,10 @@ contract NegativeInterestTest is HyperdriveTest {
         initialize(alice, apr, contribution);
 
         // Interest accrues for a term.
-        vm.assume(preTradingApr >= -0.9e18 && preTradingApr <= 1e18);
-        advanceTime(POSITION_DURATION, preTradingApr);
+        vm.assume(
+            preTradingVariableRate >= -0.9e18 && preTradingVariableRate <= 1e18
+        );
+        advanceTime(POSITION_DURATION, preTradingVariableRate);
 
         // Bob opens a short.
         uint256 shortAmount = 10_000e18;
@@ -53,7 +55,7 @@ contract NegativeInterestTest is HyperdriveTest {
     }
 
     function test_negative_interest_short_trading_profits(
-        int64 preTradingApr
+        int64 preTradingVariableRate
     ) external {
         // Initialize the market with a very low APR.
         uint256 apr = 0.01e18;
@@ -61,8 +63,10 @@ contract NegativeInterestTest is HyperdriveTest {
         initialize(alice, apr, contribution);
 
         // Interest accrues for a term.
-        vm.assume(preTradingApr >= -0.5e18 && preTradingApr <= 1e18);
-        advanceTime(POSITION_DURATION, preTradingApr);
+        vm.assume(
+            preTradingVariableRate >= -0.5e18 && preTradingVariableRate <= 1e18
+        );
+        advanceTime(POSITION_DURATION, preTradingVariableRate);
 
         // Bob opens a short.
         uint256 shortAmount = 10_000e18;
@@ -74,14 +78,14 @@ contract NegativeInterestTest is HyperdriveTest {
 
         // A small amount of negative interest accrues over the term.
         uint256 timeDelta = POSITION_DURATION.mulDown(0.5e18);
-        int256 variableApr = -0.01e18;
-        advanceTime(timeDelta, variableApr);
+        int256 variableRate = -0.01e18;
+        advanceTime(timeDelta, variableRate);
 
         // Bob closes the short. He should make a trading profit despite the
         // negative interest.
         uint256 estimatedProceeds = estimateShortProceeds(
             shortAmount,
-            variableApr,
+            variableRate,
             timeDelta
         );
         uint256 baseProceeds = closeShort(bob, maturityTime, shortAmount);
@@ -91,7 +95,7 @@ contract NegativeInterestTest is HyperdriveTest {
 
     function estimateShortProceeds(
         uint256 shortAmount,
-        int256 variableApr,
+        int256 variableRate,
         uint256 timeElapsed
     ) internal view returns (uint256) {
         HyperdriveUtils.PoolInfo memory poolInfo = HyperdriveUtils.getPoolInfo(
@@ -108,7 +112,7 @@ contract NegativeInterestTest is HyperdriveTest {
         );
         (, int256 expectedInterest) = HyperdriveUtils.calculateCompoundInterest(
             shortAmount,
-            variableApr,
+            variableRate,
             timeElapsed
         );
         return
