@@ -204,7 +204,29 @@ library HyperdriveUtils {
                 .divDown(poolInfo.sharePrice);
     }
 
-    /// @dev Derives principal + compounded rate of interest over a period
+    /// @dev Calculates the non-compounded interest over a period.
+    /// @param _principal The principal amount that will accrue interest.
+    /// @param _apr Annual percentage rate
+    /// @param _time Amount of time in seconds over which interest accrues.
+    /// @return accrued The total amount of capital after interest accrues.
+    /// @return interest The interest that accrued.
+    function calculateInterest(
+        uint256 _principal,
+        int256 _apr,
+        uint256 _time
+    ) internal pure returns (uint256 accrued, int256 interest) {
+        // Adjust time to a fraction of a year
+        uint256 normalizedTime = _time.divDown(365 days);
+        interest = _apr >= 0
+            ? int256(_principal.mulDown(uint256(_apr).mulDown(normalizedTime)))
+            : -int256(
+                _principal.mulDown(uint256(-_apr).mulDown(normalizedTime))
+            );
+        accrued = uint256(int256(_principal) + interest);
+        return (accrued, interest);
+    }
+
+    /// @dev Calculates principal + compounded rate of interest over a period
     ///      principal * e ^ (rate * time)
     /// @param _principal The initial amount interest will be accrued on
     /// @param _apr Annual percentage rate
@@ -213,7 +235,7 @@ library HyperdriveUtils {
         uint256 _principal,
         int256 _apr,
         uint256 _time
-    ) public pure returns (uint256 accrued, int256 interest) {
+    ) internal pure returns (uint256 accrued, int256 interest) {
         // Adjust time to a fraction of a year
         uint256 normalizedTime = _time.divDown(365 days);
         uint256 rt = uint256(_apr < 0 ? -_apr : _apr).mulDown(normalizedTime);
