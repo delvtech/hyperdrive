@@ -180,7 +180,7 @@ contract OpenShortTest is HyperdriveTest {
                 poolInfoBefore.bondReserves + bondAmount,
                 INITIAL_SHARE_PRICE,
                 POSITION_DURATION,
-                hyperdrive.timeStretch()
+                HyperdriveUtils.getPoolConfig(hyperdrive).timeStretch
             ),
             5
         );

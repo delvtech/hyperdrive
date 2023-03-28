@@ -102,9 +102,9 @@ contract NegativeInterestTest is HyperdriveTest {
             poolInfo.bondReserves,
             shortAmount,
             timeElapsed.divDown(POSITION_DURATION),
-            hyperdrive.timeStretch(),
+            HyperdriveUtils.getPoolConfig(hyperdrive).timeStretch,
             poolInfo.sharePrice,
-            hyperdrive.initialSharePrice()
+            HyperdriveUtils.getPoolConfig(hyperdrive).initialSharePrice
         );
         (, int256 expectedInterest) = HyperdriveUtils.calculateCompoundInterest(
             shortAmount,

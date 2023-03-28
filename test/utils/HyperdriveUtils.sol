@@ -93,7 +93,7 @@ library HyperdriveUtils {
     ) internal view returns (uint256) {
         return
             block.timestamp -
-            (block.timestamp % hyperdrive.checkpointDuration());
+            (block.timestamp % getPoolConfig(hyperdrive).checkpointDuration);
     }
 
     function calculateTimeRemaining(
@@ -103,14 +103,18 @@ library HyperdriveUtils {
         timeRemaining = _maturityTime > block.timestamp
             ? _maturityTime - block.timestamp
             : 0;
-        timeRemaining = (timeRemaining).divDown(_hyperdrive.positionDuration());
+        timeRemaining = (timeRemaining).divDown(
+            getPoolConfig(_hyperdrive).positionDuration
+        );
         return timeRemaining;
     }
 
     function maturityTimeFromLatestCheckpoint(
         IHyperdrive _hyperdrive
     ) internal view returns (uint256) {
-        return latestCheckpoint(_hyperdrive) + _hyperdrive.positionDuration();
+        return
+            latestCheckpoint(_hyperdrive) +
+            getPoolConfig(_hyperdrive).positionDuration;
     }
 
     function calculateAPRFromReserves(
@@ -168,7 +172,7 @@ library HyperdriveUtils {
     ) internal view returns (uint256 baseAmount) {
         PoolInfo memory poolInfo = getPoolInfo(_hyperdrive);
 
-        uint256 tStretch = _hyperdrive.timeStretch();
+        uint256 tStretch = getPoolConfig(_hyperdrive).timeStretch;
         // As any long in the middle of a checkpoint duration is backdated,
         // we must use that backdate as the reference for the maturity time
         uint256 maturityTime = maturityTimeFromLatestCheckpoint(_hyperdrive);
@@ -195,7 +199,7 @@ library HyperdriveUtils {
                         _hyperdrive.totalSupply(AssetId._LP_ASSET_ID)),
                     normalizedTimeRemaining,
                     poolInfo.sharePrice,
-                    _hyperdrive.initialSharePrice()
+                    getPoolConfig(_hyperdrive).initialSharePrice
                 )
                 .divDown(poolInfo.sharePrice);
     }
@@ -250,7 +254,8 @@ library HyperdriveUtils {
         uint256 timeRemaining;
         {
             uint256 checkpoint = latestCheckpoint(_hyperdrive);
-            uint256 maturityTime = checkpoint + _hyperdrive.positionDuration();
+            uint256 maturityTime = checkpoint +
+                getPoolConfig(_hyperdrive).positionDuration;
             timeRemaining = calculateTimeRemaining(_hyperdrive, maturityTime);
             openSharePrice = _hyperdrive.checkpoints(checkpoint).sharePrice;
         }

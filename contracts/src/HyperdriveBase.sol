@@ -28,36 +28,36 @@ abstract contract HyperdriveBase is MultiToken {
     /// Time ///
 
     // @notice The amount of seconds between share price checkpoints.
-    uint256 public immutable checkpointDuration;
+    uint256 internal immutable checkpointDuration;
 
     // @notice The amount of seconds that elapse before a bond can be redeemed.
-    uint256 public immutable positionDuration;
+    uint256 internal immutable positionDuration;
 
     // @notice A parameter that decreases slippage around a target rate.
-    uint256 public immutable timeStretch;
+    uint256 internal immutable timeStretch;
 
     /// Market State ///
 
     // @notice The share price at the time the pool was created.
-    uint256 public immutable initialSharePrice;
+    uint256 internal immutable initialSharePrice;
 
     /// @notice The reserves and the buffers. This is the primary state used for
     ///         pricing trades and maintaining solvency.
-    IHyperdrive.MarketState public marketState;
+    IHyperdrive.MarketState internal marketState;
 
     /// @notice Aggregate values for long positions that are used to enforce
     ///         fairness guarantees.
-    IHyperdrive.Aggregates public longAggregates;
+    IHyperdrive.Aggregates internal longAggregates;
 
     /// @notice Aggregate values for short positions that are used to enforce
     ///         fairness guarantees.
-    IHyperdrive.Aggregates public shortAggregates;
+    IHyperdrive.Aggregates internal shortAggregates;
 
     /// @notice The state corresponding to the withdraw pool, expressed as a struct.
     IHyperdrive.WithdrawPool public withdrawPool;
 
     /// @notice The fee percentages to be applied to the trade equation
-    IHyperdrive.Fees public fees;
+    IHyperdrive.Fees internal fees;
 
     /// @notice Hyperdrive positions are bucketed into checkpoints, which
     ///         allows us to avoid poking in any period that has LP or trading
@@ -65,9 +65,13 @@ abstract contract HyperdriveBase is MultiToken {
     ///         the checkpoint as well as aggregate volume values.
     mapping(uint256 => IHyperdrive.Checkpoint) public checkpoints;
 
+    // TODO: This shouldn't be public.
+    //
     // Governance fees that haven't been collected yet denominated in shares.
     uint256 public governanceFeesAccrued;
 
+    // TODO: This shouldn't be public.
+    //
     // TODO: Should this be immutable?
     //
     // The address that receives governance fees.
