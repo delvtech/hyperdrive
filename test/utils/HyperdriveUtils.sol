@@ -93,7 +93,7 @@ library HyperdriveUtils {
     ) internal view returns (uint256) {
         return
             block.timestamp -
-            (block.timestamp % hyperdrive.checkpointDuration());
+            (block.timestamp % getPoolConfig(hyperdrive).checkpointDuration);
     }
 
     function calculateTimeRemaining(
@@ -103,14 +103,18 @@ library HyperdriveUtils {
         timeRemaining = _maturityTime > block.timestamp
             ? _maturityTime - block.timestamp
             : 0;
-        timeRemaining = (timeRemaining).divDown(_hyperdrive.positionDuration());
+        timeRemaining = (timeRemaining).divDown(
+            getPoolConfig(_hyperdrive).positionDuration
+        );
         return timeRemaining;
     }
 
     function maturityTimeFromLatestCheckpoint(
         IHyperdrive _hyperdrive
     ) internal view returns (uint256) {
-        return latestCheckpoint(_hyperdrive) + _hyperdrive.positionDuration();
+        return
+            latestCheckpoint(_hyperdrive) +
+            getPoolConfig(_hyperdrive).positionDuration;
     }
 
     function calculateAPRFromReserves(
@@ -168,7 +172,7 @@ library HyperdriveUtils {
     ) internal view returns (uint256 baseAmount) {
         PoolInfo memory poolInfo = getPoolInfo(_hyperdrive);
 
-        uint256 tStretch = _hyperdrive.timeStretch();
+        uint256 tStretch = getPoolConfig(_hyperdrive).timeStretch;
         // As any long in the middle of a checkpoint duration is backdated,
         // we must use that backdate as the reference for the maturity time
         uint256 maturityTime = maturityTimeFromLatestCheckpoint(_hyperdrive);
@@ -195,39 +199,63 @@ library HyperdriveUtils {
                         _hyperdrive.totalSupply(AssetId._LP_ASSET_ID)),
                     normalizedTimeRemaining,
                     poolInfo.sharePrice,
-                    _hyperdrive.initialSharePrice()
+                    getPoolConfig(_hyperdrive).initialSharePrice
                 )
                 .divDown(poolInfo.sharePrice);
     }
 
-    /// @dev Derives principal + compounded rate of interest over a period
+    /// @dev Calculates the non-compounded interest over a period.
+    /// @param _principal The principal amount that will accrue interest.
+    /// @param _apr Annual percentage rate
+    /// @param _time Amount of time in seconds over which interest accrues.
+    /// @return totalAmount The total amount of capital after interest accrues.
+    /// @return interest The interest that accrued.
+    function calculateInterest(
+        uint256 _principal,
+        int256 _apr,
+        uint256 _time
+    ) internal pure returns (uint256 totalAmount, int256 interest) {
+        // Adjust time to a fraction of a year
+        uint256 normalizedTime = _time.divDown(365 days);
+        interest = _apr >= 0
+            ? int256(_principal.mulDown(uint256(_apr).mulDown(normalizedTime)))
+            : -int256(
+                _principal.mulDown(uint256(-_apr).mulDown(normalizedTime))
+            );
+        totalAmount = uint256(int256(_principal) + interest);
+        return (totalAmount, interest);
+    }
+
+    /// @dev Calculates principal + compounded rate of interest over a period
     ///      principal * e ^ (rate * time)
     /// @param _principal The initial amount interest will be accrued on
     /// @param _apr Annual percentage rate
     /// @param _time Number of seconds compounding will occur for
+    /// @return totalAmount The total amount of capital after interest accrues.
+    /// @return interest The interest that accrued.
     function calculateCompoundInterest(
         uint256 _principal,
         int256 _apr,
         uint256 _time
-    ) public pure returns (uint256 accrued, int256 interest) {
+    ) internal pure returns (uint256 totalAmount, int256 interest) {
         // Adjust time to a fraction of a year
         uint256 normalizedTime = _time.divDown(365 days);
         uint256 rt = uint256(_apr < 0 ? -_apr : _apr).mulDown(normalizedTime);
 
         if (_apr > 0) {
-            accrued = _principal.mulDown(
+            totalAmount = _principal.mulDown(
                 uint256(FixedPointMath.exp(int256(rt)))
             );
-            interest = int256(accrued - _principal);
-            return (accrued, interest);
+            interest = int256(totalAmount - _principal);
+            return (totalAmount, interest);
         } else if (_apr < 0) {
             // NOTE: Might not be the correct calculation for negatively
             // continuously compounded interest
-            accrued = _principal.divDown(
+            totalAmount = _principal.divDown(
                 uint256(FixedPointMath.exp(int256(rt)))
             );
-            interest = int256(accrued) - int256(_principal);
-            return (accrued, interest);
+            interest = int256(totalAmount) - int256(_principal);
+            return (totalAmount, interest);
         }
         return (_principal, 0);
     }
@@ -250,7 +278,8 @@ library HyperdriveUtils {
         uint256 timeRemaining;
         {
             uint256 checkpoint = latestCheckpoint(_hyperdrive);
-            uint256 maturityTime = checkpoint + _hyperdrive.positionDuration();
+            uint256 maturityTime = checkpoint +
+                getPoolConfig(_hyperdrive).positionDuration;
             timeRemaining = calculateTimeRemaining(_hyperdrive, maturityTime);
             openSharePrice = _hyperdrive.checkpoints(checkpoint).sharePrice;
         }

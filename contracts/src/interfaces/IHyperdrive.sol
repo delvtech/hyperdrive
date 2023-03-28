@@ -40,7 +40,7 @@ interface IHyperdrive is IMultiToken {
 
     // TODO: Add documentation
     struct WithdrawPool {
-        uint128 withdrawSharesReadyToWithdraw;
+        uint128 withdrawalSharesReadyToWithdraw;
         uint128 capital;
         uint128 interest;
     }
@@ -54,29 +54,11 @@ interface IHyperdrive is IMultiToken {
 
     function baseToken() external view returns (address);
 
-    function checkpointDuration() external view returns (uint256);
-
-    function positionDuration() external view returns (uint256);
-
-    function timeStretch() external view returns (uint256);
-
-    function initialSharePrice() external view returns (uint256);
-
-    function checkpoint(uint256 _checkpointTime) external;
-
     function checkpoints(
         uint256 _checkpoint
     ) external view returns (Checkpoint memory);
 
-    function longAggregates() external view returns (Aggregates memory);
-
-    function shortAggregates() external view returns (Aggregates memory);
-
     function withdrawPool() external view returns (WithdrawPool memory);
-
-    function marketState() external view returns (MarketState memory);
-
-    function fees() external view returns (Fees memory);
 
     function getPoolConfiguration()
         external
@@ -106,6 +88,8 @@ interface IHyperdrive is IMultiToken {
             uint256 _shortAverageMaturityTime,
             uint256 _shortBaseVolume
         );
+
+    function checkpoint(uint256 _checkpointTime) external;
 
     function initialize(
         uint256 _contribution,

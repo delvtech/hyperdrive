@@ -240,7 +240,9 @@ contract CloseLongTest is HyperdriveTest {
         // amount of shares, the base value of those shares are negative
         // relative to what they were at the start of the term.
         uint256 matureBondsValue = bondAmount
-            .divDown(hyperdrive.initialSharePrice())
+            .divDown(
+                HyperdriveUtils.getPoolConfig(hyperdrive).initialSharePrice
+            )
             .mulDown(poolInfoBefore.sharePrice);
 
         // Verify that Bob received base equal to the full bond amount.
@@ -281,7 +283,9 @@ contract CloseLongTest is HyperdriveTest {
         uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
 
         // Initial share price
-        uint256 initialSharePrice = hyperdrive.initialSharePrice();
+        uint256 initialSharePrice = HyperdriveUtils
+            .getPoolConfig(hyperdrive)
+            .initialSharePrice;
 
         // All mature bonds are redeemed at the equivalent amount of shares
         // held throughout the duration, losing capital
@@ -301,7 +305,9 @@ contract CloseLongTest is HyperdriveTest {
                 poolInfoBefore.shareReserves,
                 poolInfoBefore.bondReserves,
                 immatureBonds,
-                FixedPointMath.ONE_18.sub(hyperdrive.timeStretch()),
+                FixedPointMath.ONE_18.sub(
+                    HyperdriveUtils.getPoolConfig(hyperdrive).timeStretch
+                ),
                 poolInfoBefore.sharePrice,
                 initialSharePrice
             )
@@ -362,7 +368,9 @@ contract CloseLongTest is HyperdriveTest {
         // Bond holders take a proportional haircut on any negative interest
         // that accrues.
         uint256 bondValue = bondAmount
-            .divDown(hyperdrive.initialSharePrice())
+            .divDown(
+                HyperdriveUtils.getPoolConfig(hyperdrive).initialSharePrice
+            )
             .mulDown(closeSharePrice);
 
         // Calculate the value of the bonds compounded at the negative APR.

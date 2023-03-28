@@ -320,9 +320,10 @@ contract CloseShortTest is HyperdriveTest {
                     poolInfoBefore.shareReserves,
                     poolInfoBefore.bondReserves,
                     bondAmount.mulDown(timeRemaining),
-                    FixedPointMath.ONE_18 - hyperdrive.timeStretch(),
+                    FixedPointMath.ONE_18 -
+                        HyperdriveUtils.getPoolConfig(hyperdrive).timeStretch,
                     poolInfoBefore.sharePrice,
-                    hyperdrive.initialSharePrice()
+                    HyperdriveUtils.getPoolConfig(hyperdrive).initialSharePrice
                 );
             assertApproxEqAbs(
                 poolInfoAfter.shareReserves,
