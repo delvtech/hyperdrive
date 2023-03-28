@@ -362,9 +362,13 @@ contract CalculateOpenLongTest is HyperdriveTest {
         // Adding explicit delta assertions so that any change in how these
         // values are derived will fail the test
         // TODO Precision
-        assertEq(81281.38796854981298434e18 + 49490, shareReservesDelta);
-        assertEq(97302.373979129693414529e18 + 691486281, bondReservesDelta);
-        assertEq(99605.64409129756002505e18 + 691545427, bondProceeds);
-        assertEq(31.891914832111175002e18 - 49490, totalGovernanceFee);
+        assertWithDelta(shareReservesDelta, -49490, 81281.38796854981298434e18);
+        assertWithDelta(
+            bondReservesDelta,
+            -691486281,
+            97302.373979129693414529e18
+        );
+        assertWithDelta(bondProceeds, -691545427, 99605.64409129756002505e18);
+        assertWithDelta(totalGovernanceFee, 49490, 31.891914832111175002e18);
     }
 }
