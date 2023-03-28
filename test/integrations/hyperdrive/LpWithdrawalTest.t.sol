@@ -11,9 +11,6 @@ import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 //
 // - [ ] A mixture of long and short trades.
 // - [ ] LPs with different long and short weightings.
-// - [ ] Cases where interest accrues before and after
-// - [ ] Cases where the remove liquidity step happens after the long or short
-//       has already been opened.
 contract LpWithdrawalTest is HyperdriveTest {
     using FixedPointMath for uint256;
 
@@ -66,7 +63,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             withdrawalShares,
             // TODO: The share price should be the same before and after. The
-            // recent why it isn't is because the current share price
+            // reason why it isn't is because the current share price
             // formulation is imprecise and results in very large withdrawals
             // getting a better share price than they should.
             (longAmount - basePaid).divDown(preRemovalSharePrice),
@@ -300,6 +297,130 @@ contract LpWithdrawalTest is HyperdriveTest {
         );
         // TODO: See if this bound can be lowered
         assertApproxEqAbs(withdrawalProceeds, shortAmount, 1e9);
+
+        // Ensure that the ending base balance of Hyperdrive is zero.
+        // TODO: See if this bound can be lowered
+        assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1e9);
+        assertApproxEqAbs(
+            hyperdrive.totalSupply(
+                AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
+            ),
+            0,
+            1
+        );
+    }
+
+    // TODO: Fuzz the inputs to the test.
+    //
+    // TODO: Add more tests like this where the redemptions happen at different
+    //       times.
+    function test_lp_withdrawal_long_and_short_immediate() external {
+        uint256 apr = 0.02e18;
+        uint256 contribution = 500_000_000e18;
+        uint256 aliceLpShares = initialize(alice, apr, contribution);
+
+        // Bob opens a long.
+        uint256 longBasePaid = 10_000_000e18;
+        (uint256 longMaturityTime, uint256 longAmount) = openLong(
+            bob,
+            longBasePaid
+        );
+
+        // Alice removes her liquidity.
+        (
+            uint256 aliceBaseProceeds,
+            uint256 aliceWithdrawalShares
+        ) = removeLiquidity(alice, aliceLpShares);
+        assertApproxEqAbs(
+            aliceBaseProceeds,
+            contribution - (longAmount - longBasePaid),
+            1e9
+        );
+        assertApproxEqAbs(aliceWithdrawalShares, longAmount - longBasePaid, 10);
+
+        // Celine adds liquidity.
+        uint256 celineLpShares = addLiquidity(celine, 500_000_000e18);
+
+        // Bob opens a short.
+        uint256 shortAmount = 10_000_000e18;
+        (uint256 shortMaturityTime, uint256 shortBasePaid) = openShort(
+            bob,
+            shortAmount
+        );
+
+        // Celine removes her liquidity.
+        uint256 celineWithdrawalShares;
+        {
+            uint256 celineBaseProceeds;
+            (celineBaseProceeds, celineWithdrawalShares) = removeLiquidity(
+                celine,
+                celineLpShares
+            );
+            assertApproxEqAbs(
+                celineBaseProceeds,
+                contribution - (shortAmount - shortBasePaid),
+                1e9
+            );
+            // TODO: This bound is too high.
+            assertApproxEqAbs(
+                celineWithdrawalShares,
+                shortAmount - shortBasePaid,
+                1e9
+            );
+        }
+
+        // Bob closes his long.
+        {
+            uint256 longProceeds = closeLong(bob, longMaturityTime, longAmount);
+            assertGt(longProceeds, longAmount.mulDown(0.9e18)); // TODO: Can this be tightened?
+        }
+
+        // Bob attempts to close, but the operation fails with an arithmetic
+        // error. This will succeed after waiting for the rest of the term to
+        // elapse.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        vm.expectRevert(Errors.FixedPointMath_SubOverflow.selector);
+        hyperdrive.closeShort(shortMaturityTime, shortAmount, 0, bob, true);
+
+        // TODO: Fuzz the APR.
+        int256 variableApr = 0.2e18;
+        advanceTime(POSITION_DURATION, variableApr);
+
+        // Bob closes the short at redemption.
+        {
+            uint256 shortProceeds = closeShort(
+                bob,
+                shortMaturityTime,
+                shortAmount
+            );
+            (, int256 expectedShortProceeds) = HyperdriveUtils
+                .calculateCompoundInterest(
+                    shortAmount,
+                    variableApr,
+                    POSITION_DURATION
+                );
+            // TODO: Try to shrink this bound.
+            assertApproxEqAbs(
+                shortProceeds,
+                uint256(expectedShortProceeds),
+                1e9
+            );
+        }
+
+        // Redeem the withdrawal shares.
+        uint256 aliceRedeemProceeds = redeemWithdrawalShares(
+            alice,
+            aliceWithdrawalShares
+        );
+        uint256 celineRedeemProceeds = redeemWithdrawalShares(
+            celine,
+            celineWithdrawalShares
+        );
+        // TODO: Add the interest component.
+        assertGt(aliceRedeemProceeds, longAmount - longBasePaid);
+        // TODO: Add the interest component.
+        assertGt(celineRedeemProceeds, shortAmount - shortBasePaid);
 
         // Ensure that the ending base balance of Hyperdrive is zero.
         // TODO: See if this bound can be lowered

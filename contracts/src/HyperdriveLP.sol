@@ -107,31 +107,49 @@ abstract contract HyperdriveLP is HyperdriveBase {
         // Perform a checkpoint.
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
 
-        // To ensure that our LP allocation scheme fairly rewards LPs for adding
-        // liquidity, we linearly interpolate between the present and future
-        // value of longs and shorts. These interpolated values are the long and
-        // short adjustments. The following calculation is used to determine the
-        // amount of LP shares rewarded to new LP:
-        //
-        // lpShares = (dz * l) / (z + a_s - a_l)
-        uint256 longAdjustment = HyperdriveMath.calculateLpAllocationAdjustment(
-            marketState.longsOutstanding,
-            longAggregates.baseVolume,
-            _calculateTimeRemaining(longAggregates.averageMaturityTime),
-            sharePrice
-        );
-        uint256 shortAdjustment = HyperdriveMath
-            .calculateLpAllocationAdjustment(
-                marketState.shortsOutstanding,
-                shortAggregates.baseVolume,
-                _calculateTimeRemaining(shortAggregates.averageMaturityTime),
-                sharePrice
-            );
-        lpShares = shares.mulDown(totalSupply[AssetId._LP_ASSET_ID]).divDown(
-            uint256(marketState.shareReserves).add(shortAdjustment).sub(
-                longAdjustment
-            )
-        );
+        // In the case that there are existing LP shares,
+        if (totalSupply[AssetId._LP_ASSET_ID] > 0) {
+            // To ensure that our LP allocation scheme fairly rewards LPs for adding
+            // liquidity, we linearly interpolate between the present and future
+            // value of longs and shorts. These interpolated values are the long and
+            // short adjustments. The following calculation is used to determine the
+            // amount of LP shares rewarded to new LP:
+            //
+            // lpShares = (dz * l) / (z + a_s - a_l)
+            uint256 longAdjustment = HyperdriveMath
+                .calculateLpAllocationAdjustment(
+                    marketState.longsOutstanding,
+                    longAggregates.baseVolume,
+                    _calculateTimeRemaining(longAggregates.averageMaturityTime),
+                    sharePrice
+                );
+            uint256 shortAdjustment = HyperdriveMath
+                .calculateLpAllocationAdjustment(
+                    marketState.shortsOutstanding,
+                    shortAggregates.baseVolume,
+                    _calculateTimeRemaining(
+                        shortAggregates.averageMaturityTime
+                    ),
+                    sharePrice
+                );
+            lpShares = shares
+                .mulDown(totalSupply[AssetId._LP_ASSET_ID])
+                .divDown(
+                    uint256(marketState.shareReserves).add(shortAdjustment).sub(
+                        longAdjustment
+                    )
+                );
+        } else {
+            // TODO: Ensure that this gives the LP a fair outcome. The existing
+            // longs and shorts will have been covered by the previous LP, but
+            // I don't believe that this is accounted for by the implementation
+            // at this time. This is also a problem in the case that there are
+            // existing LP shares and there are existing withdrawal shares as
+            // the withdrawal shares were minted to cover some of the margin
+            // that LPs are exposed to. We may need to incorporate withdrawal
+            // shares into the LP allocation and LP withdrawal mechanisms.
+            lpShares = shares;
+        }
 
         // Add the liquidity to the pool's reserves.
         _updateLiquidity(int256(shares));
@@ -169,11 +187,11 @@ abstract contract HyperdriveLP is HyperdriveBase {
         // Calculate the withdrawal proceeds of the LP. This includes the base,
         // long withdrawal shares, and short withdrawal shares that the LP
         // receives.
-        uint256 totalSupply = totalSupply[AssetId._LP_ASSET_ID];
+        uint256 lpTotalSupply = totalSupply[AssetId._LP_ASSET_ID];
         uint256 shareProceeds = HyperdriveMath.calculateOutForLpSharesIn(
             _shares,
             marketState.shareReserves,
-            totalSupply,
+            lpTotalSupply,
             marketState.longsOutstanding,
             sharePrice
         );
@@ -181,19 +199,24 @@ abstract contract HyperdriveLP is HyperdriveBase {
         // Burn the LP shares.
         _burn(AssetId._LP_ASSET_ID, msg.sender, _shares);
 
-        // Remove the liquidity from the pool's reserves.
+        // Deduct the share proceeds from the liquidity pool reserves.
         _updateLiquidity(-int256(shareProceeds));
 
-        // The withdrawing LP will get their percent of the margin which is
-        // used to back open positions as a token which can be redeemed for
-        // margin as it becomes available.
+        // Calculate the number of withdrawal shares for the withdrawing LP.
+        // This represents their share of the margin backing open positions,
+        // which can be redeemed for margin when it becomes available.
         uint256 withdrawalShares = marketState.longsOutstanding -
             longAggregates.baseVolume;
         withdrawalShares += shortAggregates.baseVolume;
+        withdrawalShares -=
+            totalSupply[
+                AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
+            ] -
+            withdrawPool.withdrawSharesReadyToWithdraw;
         withdrawalShares = withdrawalShares.mulDivDown(
             _shares,
             // NOTE: Dividing by the share price to convert shares.
-            totalSupply.mulDown(sharePrice)
+            lpTotalSupply.mulDown(sharePrice)
         );
 
         // Mint the withdrawal tokens.
