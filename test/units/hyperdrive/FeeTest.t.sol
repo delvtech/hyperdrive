@@ -5,7 +5,7 @@ import { stdError } from "forge-std/StdError.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
-import { MockHyperdrive } from "contracts/test/MockHyperdrive.sol";
+import { MockHyperdrive } from "../../mocks/MockHyperdrive.sol";
 import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 

@@ -9,7 +9,7 @@ import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { HyperdriveBase } from "contracts/src/HyperdriveBase.sol";
-import { MockHyperdrive } from "contracts/test/MockHyperdrive.sol";
+import { MockHyperdrive } from "../mocks/MockHyperdrive.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { HyperdriveUtils } from "./HyperdriveUtils.sol";
 

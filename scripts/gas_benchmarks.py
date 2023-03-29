@@ -4,7 +4,7 @@ import json
 
 OUTPUT_PATH = sys.argv[1]
 
-CONTRACT_NAME = "contracts/test/MockHyperdrive.sol:MockHyperdrive"
+CONTRACT_NAME = "test/mocks/MockHyperdrive.sol:MockHyperdrive"
 FUNCTION_NAMES = [
     "initialize",
     "addLiquidity",
