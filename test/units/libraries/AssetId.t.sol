@@ -5,7 +5,7 @@ import "forge-std/console2.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
-import {MockAssetId} from "../../mocks/MockAssetId.sol";
+import { MockAssetId } from "../../mocks/MockAssetId.sol";
 
 contract AssetIdTest is HyperdriveTest {
     function test__encodeAssetIdInvalidTimestamp() public {
