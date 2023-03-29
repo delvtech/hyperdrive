@@ -7,10 +7,6 @@ import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 
-// TODO: Some scenarios that we need to test.
-//
-// - [ ] A mixture of long and short trades.
-// - [ ] LPs with different long and short weightings.
 contract LpWithdrawalTest is HyperdriveTest {
     using FixedPointMath for uint256;
 
@@ -314,7 +310,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         );
     }
 
-    struct TestLpWithdrawalLongShortImmediateParams {
+    struct TestLpWithdrawalParams {
         int256 fixedRate;
         int256 variableRate;
         uint256 contribution;
@@ -326,8 +322,6 @@ contract LpWithdrawalTest is HyperdriveTest {
         uint256 shortMaturityTime;
     }
 
-    // TODO: Add more tests like this where the redemptions happen at different
-    //       times.
     function test_lp_withdrawal_long_and_short_immediate(
         uint256 longBasePaid,
         uint256 shortAmount,
@@ -341,18 +335,17 @@ contract LpWithdrawalTest is HyperdriveTest {
         vm.assume(variableRate >= 0 && variableRate <= 2e18);
 
         // Set up the test parameters.
-        TestLpWithdrawalLongShortImmediateParams
-            memory testParams = TestLpWithdrawalLongShortImmediateParams({
-                fixedRate: 0.02e18,
-                variableRate: int256(uint256(variableRate)),
-                contribution: 500_000_000e18,
-                longAmount: 0,
-                longBasePaid: 10_000_000e18,
-                longMaturityTime: 0,
-                shortAmount: 10_000_000e18,
-                shortBasePaid: 0,
-                shortMaturityTime: 0
-            });
+        TestLpWithdrawalParams memory testParams = TestLpWithdrawalParams({
+            fixedRate: 0.02e18,
+            variableRate: int256(uint256(variableRate)),
+            contribution: 500_000_000e18,
+            longAmount: 0,
+            longBasePaid: 10_000_000e18,
+            longMaturityTime: 0,
+            shortAmount: 10_000_000e18,
+            shortBasePaid: 0,
+            shortMaturityTime: 0
+        });
 
         // Initialize the pool.
         uint256 aliceLpShares = initialize(
@@ -447,7 +440,7 @@ contract LpWithdrawalTest is HyperdriveTest {
             true
         );
 
-        // TODO: Fuzz the APR.
+        // Time passes and interest accrues.
         advanceTime(POSITION_DURATION, testParams.variableRate);
 
         // Bob closes the short at redemption.
@@ -531,6 +524,149 @@ contract LpWithdrawalTest is HyperdriveTest {
         // Ensure that the ending base balance of Hyperdrive is zero.
         // TODO: See if this bound can be lowered
         assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1e9);
+        assertApproxEqAbs(
+            hyperdrive.totalSupply(
+                AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
+            ),
+            0,
+            1
+        );
+    }
+
+    // TODO: Add more tests like this where the redemptions happen at different
+    //       times.
+    function test_lp_withdrawal_long_close_immediate_and_short_redemption(
+        uint256 longBasePaid,
+        uint256 shortAmount,
+        uint64 variableRate
+    ) external {
+        // Ensure that the provided parameters fit into our testing range.
+        vm.assume(longBasePaid >= 0.001e18);
+        longBasePaid %= 20_000_000e18; // TODO: Use larger amounts
+        vm.assume(shortAmount >= 0.001e18);
+        shortAmount %= 20_000_000e18; // TODO: Use larger amounts
+        vm.assume(variableRate >= 0 && variableRate <= 2e18);
+
+        // Set up the test parameters.
+        TestLpWithdrawalParams memory testParams = TestLpWithdrawalParams({
+            fixedRate: 0.02e18,
+            variableRate: int256(uint256(variableRate)),
+            contribution: 500_000_000e18,
+            longAmount: 0,
+            longBasePaid: 10_000_000e18,
+            longMaturityTime: 0,
+            shortAmount: 10_000_000e18,
+            shortBasePaid: 0,
+            shortMaturityTime: 0
+        });
+
+        // Initialize the pool.
+        uint256 aliceLpShares = initialize(
+            alice,
+            uint256(testParams.fixedRate),
+            testParams.contribution
+        );
+
+        // Bob opens a long.
+        {
+            (uint256 longMaturityTime, uint256 longAmount) = openLong(
+                bob,
+                testParams.longBasePaid
+            );
+            testParams.longMaturityTime = longMaturityTime;
+            testParams.longAmount = longAmount;
+        }
+
+        // Alice removes her liquidity.
+        (
+            uint256 aliceBaseProceeds,
+            uint256 aliceWithdrawalShares
+        ) = removeLiquidity(alice, aliceLpShares);
+        assertApproxEqAbs(
+            aliceBaseProceeds,
+            testParams.contribution -
+                (testParams.longAmount - testParams.longBasePaid),
+            1e9
+        );
+        assertApproxEqAbs(
+            aliceWithdrawalShares,
+            testParams.longAmount - testParams.longBasePaid,
+            10
+        );
+
+        // Celine adds liquidity.
+        uint256 celineLpShares = addLiquidity(celine, 500_000_000e18);
+
+        // Bob closes his long.
+        uint256 longProceeds = closeLong(
+            bob,
+            testParams.longMaturityTime,
+            testParams.longAmount
+        );
+
+        // Bob opens a short.
+        {
+            (uint256 shortMaturityTime, uint256 shortBasePaid) = openShort(
+                bob,
+                testParams.shortAmount
+            );
+            testParams.shortMaturityTime = shortMaturityTime;
+            testParams.shortBasePaid = shortBasePaid;
+        }
+
+        // Redeem Alice's withdrawal shares. Alice should receive the margin
+        // released from Bob's long.
+        uint256 aliceRedeemProceeds = redeemWithdrawalShares(
+            alice,
+            aliceWithdrawalShares
+        );
+        assertEq(aliceRedeemProceeds, testParams.longAmount - longProceeds);
+
+        // Celine removes her liquidity.
+        (
+            uint256 celineBaseProceeds,
+            uint256 celineWithdrawalShares
+        ) = removeLiquidity(celine, celineLpShares);
+        assertApproxEqAbs(
+            celineBaseProceeds,
+            500_000_000e18 -
+                (testParams.shortAmount - testParams.shortBasePaid),
+            1e9
+        );
+
+        // Time passes and interest accrues.
+        advanceTime(POSITION_DURATION, testParams.variableRate);
+
+        // Close the short.
+        {
+            uint256 shortProceeds = closeShort(
+                bob,
+                testParams.shortMaturityTime,
+                testParams.shortAmount
+            );
+            (, int256 expectedShortProceeds) = HyperdriveUtils
+                .calculateCompoundInterest(
+                    testParams.shortAmount,
+                    testParams.variableRate,
+                    POSITION_DURATION
+                );
+            assertApproxEqAbs(
+                shortProceeds,
+                uint256(expectedShortProceeds),
+                1e9
+            );
+        }
+
+        // Redeem the withdrawal shares. Celine should the margin released from
+        // the short as well as the fixed interest from buying the bond.
+        uint256 celineRedeemProceeds = redeemWithdrawalShares(
+            celine,
+            celineWithdrawalShares
+        );
+        assertApproxEqAbs(celineRedeemProceeds, testParams.shortAmount, 10);
+
+        // Ensure that the ending base balance of Hyperdrive is zero.
+        assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1);
         assertApproxEqAbs(
             hyperdrive.totalSupply(
                 AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
