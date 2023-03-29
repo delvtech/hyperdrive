@@ -15,7 +15,10 @@ contract InitializeTest is HyperdriveTest {
         uint256 contribution = 1000.0e18;
 
         // Initialize the pool with Alice.
-        initialize(alice, apr, contribution);
+        uint256 lpShares = initialize(alice, apr, contribution);
+
+        // Alice removes all of her liquidity.
+        removeLiquidity(alice, lpShares);
 
         // Attempt to initialize the pool a second time. This should fail.
         vm.stopPrank();

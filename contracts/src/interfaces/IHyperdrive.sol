@@ -10,6 +10,7 @@ interface IHyperdrive is IMultiToken {
         uint128 bondReserves;
         uint128 longsOutstanding;
         uint128 shortsOutstanding;
+        bool isInitialized;
     }
 
     // TODO: Add documentation
