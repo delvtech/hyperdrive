@@ -26,9 +26,7 @@ contract AaveFixedBorrowActionScript is Script {
         );
 
         // Aave Pool
-        IPool pool = IPool(
-            address(0x26ca51Af4506DE7a6f0785D20CD776081a05fF6d)
-        );
+        IPool pool = IPool(address(0x26ca51Af4506DE7a6f0785D20CD776081a05fF6d));
 
         // AaveFixedBorrow Action Contract
         AaveFixedBorrowAction action = new AaveFixedBorrowAction(
@@ -40,7 +38,9 @@ contract AaveFixedBorrowActionScript is Script {
         IERC20 wsteth = IERC20(
             address(0x6E4F1e8d4c5E5E6e2781FD814EE0744cc16Eb352)
         );
-        IERC20 dai = IERC20(address(0x11fE4B6AE13d2a6055C8D9cF65c55bac32B5d844));
+        IERC20 dai = IERC20(
+            address(0x11fE4B6AE13d2a6055C8D9cF65c55bac32B5d844)
+        );
         action.setApproval(address(wsteth), address(pool), type(uint256).max);
         action.setApproval(address(dai), address(pool), type(uint256).max);
         action.setApproval(
@@ -51,9 +51,6 @@ contract AaveFixedBorrowActionScript is Script {
 
         vm.stopBroadcast();
 
-        console.log(
-            "Deployed AaveFixedBorrowAction to: %s",
-            address(action)
-        );
+        console.log("Deployed AaveFixedBorrowAction to: %s", address(action));
     }
 }
