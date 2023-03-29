@@ -310,6 +310,46 @@ contract LpWithdrawalTest is HyperdriveTest {
         );
     }
 
+    // FIXME: I should lay out the full matrix of tests that I need to do here.
+    //
+    // Test #1:
+    //
+    // 1. initialize (alice)
+    // 2. add liquidity (celine)
+    // 3. remove liquidity (alice)
+    // 4. open long (bob)
+    // 5. open short (bob)
+    // 6. remove liquidity (celine)
+    // 7. close long (bob)
+    // 8. term passes
+    // 9. close short (bob)
+    //
+    // Test #2:
+    //
+    // 1. initialize (alice)
+    // 2. add liquidity (celine)
+    // 3. remove liquidity (alice)
+    // 4. open long (bob)
+    // 5. open short (bob)
+    // 6. remove liquidity (celine)
+    // 7. term passes
+    // 8. close long (bob)
+    // 9. close short (bob)
+    //
+    // Test #3:
+    //
+    // 1. initialize (alice)
+    // 2. add liquidity (celine)
+    // 3. remove liquidity (alice)
+    // 4. open long (bob)
+    // 5. open short (bob)
+    // 6. remove liquidity (celine)
+    // 7. term passes
+    // 8. close long (bob)
+    // 9. close short (bob)
+    //
+    // FIXME: Add the other cases that I'm worried about.
+
     struct TestLpWithdrawalParams {
         int256 fixedRate;
         int256 variableRate;
