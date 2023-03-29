@@ -32,7 +32,7 @@ abstract contract HyperdriveLP is HyperdriveBase {
         bool _asUnderlying
     ) external {
         // Ensure that the pool hasn't been initialized yet.
-        if (marketState.shareReserves > 0 || marketState.bondReserves > 0) {
+        if (marketState.isInitialized) {
             revert Errors.PoolAlreadyInitialized();
         }
 
@@ -44,6 +44,9 @@ abstract contract HyperdriveLP is HyperdriveBase {
 
         // Create an initial checkpoint.
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
+
+        // Set the initialized state to true.
+        marketState.isInitialized = true;
 
         // Update the reserves. The bond reserves are calculated so that the
         // pool is initialized with the target APR.
