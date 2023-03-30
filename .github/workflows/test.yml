@@ -9,7 +9,7 @@ on:
       - main
 
 jobs:
-  test:
+  test-forge:
     name: test-forge
     runs-on: ubuntu-latest
     steps:
@@ -36,7 +36,9 @@ jobs:
 
       - name: test
         run: forge test -vvv
+  test-ape:
     name: test-ape
+    needs: test-forge # don't run if forge tests don't pass
     runs-on: ubuntu-latest
     strategy:
       matrix:
