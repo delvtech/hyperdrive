@@ -10,90 +10,13 @@ import { AssetId } from "contracts/src/libraries/AssetId.sol";
 library HyperdriveUtils {
     using FixedPointMath for uint256;
 
-    struct PoolConfig {
-        uint256 initialSharePrice;
-        uint256 positionDuration;
-        uint256 checkpointDuration;
-        uint256 timeStretch;
-        uint256 flatFee;
-        uint256 curveFee;
-        uint256 govFee;
-    }
-
-    struct PoolInfo {
-        uint256 shareReserves;
-        uint256 bondReserves;
-        uint256 lpTotalSupply;
-        uint256 sharePrice;
-        uint256 longsOutstanding;
-        uint256 longAverageMaturityTime;
-        uint256 longBaseVolume;
-        uint256 shortsOutstanding;
-        uint256 shortAverageMaturityTime;
-        uint256 shortBaseVolume;
-    }
-
-    function getPoolConfig(
-        IHyperdrive _hyperdrive
-    ) internal view returns (PoolConfig memory) {
-        (
-            uint256 initialSharePrice,
-            uint256 positionDuration,
-            uint256 checkpointDuration,
-            uint256 timeStretch,
-            uint256 flatFee,
-            uint256 curveFee,
-            uint256 govFee
-        ) = _hyperdrive.getPoolConfiguration();
-
-        return
-            PoolConfig({
-                initialSharePrice: initialSharePrice,
-                positionDuration: positionDuration,
-                checkpointDuration: checkpointDuration,
-                timeStretch: timeStretch,
-                flatFee: flatFee,
-                curveFee: curveFee,
-                govFee: govFee
-            });
-    }
-
-    function getPoolInfo(
-        IHyperdrive _hyperdrive
-    ) internal view returns (PoolInfo memory) {
-        (
-            uint256 shareReserves,
-            uint256 bondReserves,
-            uint256 lpTotalSupply,
-            uint256 sharePrice,
-            uint256 longsOutstanding,
-            uint256 longAverageMaturityTime,
-            uint256 longBaseVolume,
-            uint256 shortsOutstanding,
-            uint256 shortAverageMaturityTime,
-            uint256 shortBaseVolume
-        ) = _hyperdrive.getPoolInfo();
-        return
-            PoolInfo({
-                shareReserves: shareReserves,
-                bondReserves: bondReserves,
-                lpTotalSupply: lpTotalSupply,
-                sharePrice: sharePrice,
-                longsOutstanding: longsOutstanding,
-                longAverageMaturityTime: longAverageMaturityTime,
-                longBaseVolume: longBaseVolume,
-                shortsOutstanding: shortsOutstanding,
-                shortAverageMaturityTime: shortAverageMaturityTime,
-                shortBaseVolume: shortBaseVolume
-            });
-    }
-
     function latestCheckpoint(
         IHyperdrive hyperdrive
     ) internal view returns (uint256) {
         return
             block.timestamp -
-            (block.timestamp % getPoolConfig(hyperdrive).checkpointDuration);
+            (block.timestamp %
+                hyperdrive.getPoolConfiguration().checkpointDuration);
     }
 
     function calculateTimeRemaining(
@@ -104,7 +27,7 @@ library HyperdriveUtils {
             ? _maturityTime - block.timestamp
             : 0;
         timeRemaining = (timeRemaining).divDown(
-            getPoolConfig(_hyperdrive).positionDuration
+            _hyperdrive.getPoolConfiguration().positionDuration
         );
         return timeRemaining;
     }
@@ -114,40 +37,21 @@ library HyperdriveUtils {
     ) internal view returns (uint256) {
         return
             latestCheckpoint(_hyperdrive) +
-            getPoolConfig(_hyperdrive).positionDuration;
+            _hyperdrive.getPoolConfiguration().positionDuration;
     }
 
     function calculateAPRFromReserves(
         IHyperdrive _hyperdrive
     ) internal view returns (uint256) {
-        (
-            uint256 initialSharePrice,
-            uint256 positionDuration,
-            ,
-            uint256 timeStretch,
-            ,
-            ,
-
-        ) = _hyperdrive.getPoolConfiguration();
-        (
-            uint256 shareReserves,
-            uint256 bondReserves,
-            ,
-            ,
-            ,
-            ,
-            ,
-            ,
-            ,
-
-        ) = _hyperdrive.getPoolInfo();
+        IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfiguration();
+        IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
         return
             HyperdriveMath.calculateAPRFromReserves(
-                shareReserves,
-                bondReserves,
-                initialSharePrice,
-                positionDuration,
-                timeStretch
+                poolInfo.shareReserves,
+                poolInfo.bondReserves,
+                poolConfig.initialSharePrice,
+                poolConfig.positionDuration,
+                poolConfig.timeStretch
             );
     }
 
@@ -170,9 +74,11 @@ library HyperdriveUtils {
     function calculateMaxOpenLong(
         IHyperdrive _hyperdrive
     ) internal view returns (uint256 baseAmount) {
-        PoolInfo memory poolInfo = getPoolInfo(_hyperdrive);
+        IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
+        IHyperdrive.PoolConfig memory poolConfig = _hyperdrive
+            .getPoolConfiguration();
 
-        uint256 tStretch = getPoolConfig(_hyperdrive).timeStretch;
+        uint256 tStretch = poolConfig.timeStretch;
         // As any long in the middle of a checkpoint duration is backdated,
         // we must use that backdate as the reference for the maturity time
         uint256 maturityTime = maturityTimeFromLatestCheckpoint(_hyperdrive);
@@ -199,7 +105,7 @@ library HyperdriveUtils {
                         _hyperdrive.totalSupply(AssetId._LP_ASSET_ID)),
                     normalizedTimeRemaining,
                     poolInfo.sharePrice,
-                    getPoolConfig(_hyperdrive).initialSharePrice
+                    poolConfig.initialSharePrice
                 )
                 .divDown(poolInfo.sharePrice);
     }
@@ -272,14 +178,14 @@ library HyperdriveUtils {
         uint256 _bondAmount
     ) internal view returns (uint256) {
         // Retrieve hyperdrive pool state
-        PoolConfig memory poolConfig = getPoolConfig(_hyperdrive);
-        PoolInfo memory poolInfo = getPoolInfo(_hyperdrive);
+        IHyperdrive.PoolConfig memory poolConfig = _hyperdrive
+            .getPoolConfiguration();
+        IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
         uint256 openSharePrice;
         uint256 timeRemaining;
         {
             uint256 checkpoint = latestCheckpoint(_hyperdrive);
-            uint256 maturityTime = checkpoint +
-                getPoolConfig(_hyperdrive).positionDuration;
+            uint256 maturityTime = checkpoint + poolConfig.positionDuration;
             timeRemaining = calculateTimeRemaining(_hyperdrive, maturityTime);
             openSharePrice = _hyperdrive.checkpoints(checkpoint).sharePrice;
         }

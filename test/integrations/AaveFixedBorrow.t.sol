@@ -23,7 +23,7 @@ contract AaveFixedBorrowTest is BaseTest {
 
     // Token addresses taken from:
     // https://github.com/phoenixlabsresearch/sparklend/blob/master/script/output/5/spark-latest.json
-    function setUp() public override __goerli_fork(8728833) {
+    function setUp() public override __goerli_fork(8745731) {
         super.setUp();
 
         wsteth = IERC20Permit(
@@ -34,7 +34,7 @@ contract AaveFixedBorrowTest is BaseTest {
         pool = IPool(address(0x26ca51Af4506DE7a6f0785D20CD776081a05fF6d));
 
         hyperdrive = IHyperdrive(
-            address(0x5C75833a2cFB2546Dd15FA5549076F222c727daC)
+            address(0x98Bcf54504D68BAfdd8d71df5BA3A3ed538CB68d)
         );
 
         action = new AaveFixedBorrowAction(hyperdrive, pool);

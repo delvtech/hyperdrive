@@ -53,6 +53,34 @@ interface IHyperdrive is IMultiToken {
         uint256 governance;
     }
 
+    // TODO Add documentation
+    struct PoolConfig {
+        uint256 initialSharePrice;
+        uint256 positionDuration;
+        uint256 checkpointDuration;
+        uint256 timeStretch;
+        uint256 flatFee;
+        uint256 curveFee;
+        uint256 governanceFee;
+    }
+
+    // TODO Add documentation
+    struct PoolInfo {
+        uint256 shareReserves;
+        uint256 bondReserves;
+        uint256 lpTotalSupply;
+        uint256 sharePrice;
+        uint256 longsOutstanding;
+        uint256 longAverageMaturityTime;
+        uint256 longBaseVolume;
+        uint256 shortsOutstanding;
+        uint256 shortAverageMaturityTime;
+        uint256 shortBaseVolume;
+        uint256 withdrawalSharesReadyToWithdraw;
+        uint256 capital;
+        uint256 interest;
+    }
+
     function baseToken() external view returns (address);
 
     function checkpoints(
@@ -61,34 +89,9 @@ interface IHyperdrive is IMultiToken {
 
     function withdrawPool() external view returns (WithdrawPool memory);
 
-    function getPoolConfiguration()
-        external
-        view
-        returns (
-            uint256 _initialSharePrice_,
-            uint256 _positionDuration,
-            uint256 _checkpointDuration,
-            uint256 _timeStretch,
-            uint256 _flatFee,
-            uint256 _curveFee,
-            uint256 _governanceFee
-        );
+    function getPoolConfiguration() external view returns (PoolConfig memory);
 
-    function getPoolInfo()
-        external
-        view
-        returns (
-            uint256 _shareReserves,
-            uint256 _bondReserves_,
-            uint256 _lpTotalSupply,
-            uint256 _sharePrice,
-            uint256 _longsOutstanding,
-            uint256 _longAverageMaturityTime,
-            uint256 _longBaseVolume,
-            uint256 _shortsOutstanding,
-            uint256 _shortAverageMaturityTime,
-            uint256 _shortBaseVolume
-        );
+    function getPoolInfo() external view returns (PoolInfo memory);
 
     function checkpoint(uint256 _checkpointTime) external;
 

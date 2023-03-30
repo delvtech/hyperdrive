@@ -49,14 +49,14 @@ contract InitializeTest is HyperdriveTest {
         assertEq(baseToken.balanceOf(address(hyperdrive)), contribution);
         assertEq(
             lpShares,
-            HyperdriveUtils.getPoolInfo(hyperdrive).bondReserves -
+            hyperdrive.getPoolInfo().bondReserves -
                 HyperdriveMath.calculateInitialBondReserves(
                     contribution,
                     FixedPointMath.ONE_18,
                     FixedPointMath.ONE_18,
                     apr,
                     POSITION_DURATION,
-                    HyperdriveUtils.getPoolConfig(hyperdrive).timeStretch
+                    hyperdrive.getPoolConfiguration().timeStretch
                 )
         );
     }

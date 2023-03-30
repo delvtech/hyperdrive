@@ -78,8 +78,7 @@ contract CloseLongTest is HyperdriveTest {
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
 
         // Get the reserves before closing the long.
-        HyperdriveUtils.PoolInfo memory poolInfoBefore = HyperdriveUtils
-            .getPoolInfo(hyperdrive);
+        IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
 
         // Immediately close the bonds.
         uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
@@ -109,8 +108,7 @@ contract CloseLongTest is HyperdriveTest {
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
 
         // Get the reserves before closing the long.
-        HyperdriveUtils.PoolInfo memory poolInfoBefore = HyperdriveUtils
-            .getPoolInfo(hyperdrive);
+        IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
 
         // Immediately close the bonds.
         uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
@@ -143,8 +141,7 @@ contract CloseLongTest is HyperdriveTest {
         advanceTime(POSITION_DURATION.mulDown(timeDelta), int256(apr));
 
         // Get the reserves before closing the long.
-        HyperdriveUtils.PoolInfo memory poolInfoBefore = HyperdriveUtils
-            .getPoolInfo(hyperdrive);
+        IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
 
         // Bob closes his long close to maturity.
         uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
@@ -186,8 +183,7 @@ contract CloseLongTest is HyperdriveTest {
         advanceTime(POSITION_DURATION.mulDown(timeDelta), int256(apr));
 
         // Get the reserves before closing the long.
-        HyperdriveUtils.PoolInfo memory poolInfoBefore = HyperdriveUtils
-            .getPoolInfo(hyperdrive);
+        IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
 
         // Redeem the bonds
         uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
@@ -222,8 +218,7 @@ contract CloseLongTest is HyperdriveTest {
         advanceTime(timeAdvanced, apr);
 
         // Get the reserves before closing the long.
-        HyperdriveUtils.PoolInfo memory poolInfoBefore = HyperdriveUtils
-            .getPoolInfo(hyperdrive);
+        IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
 
         // Redeem the bonds
         uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
@@ -240,9 +235,7 @@ contract CloseLongTest is HyperdriveTest {
         // amount of shares, the base value of those shares are negative
         // relative to what they were at the start of the term.
         uint256 matureBondsValue = bondAmount
-            .divDown(
-                HyperdriveUtils.getPoolConfig(hyperdrive).initialSharePrice
-            )
+            .divDown(hyperdrive.getPoolConfiguration().initialSharePrice)
             .mulDown(poolInfoBefore.sharePrice);
 
         // Verify that Bob received base equal to the full bond amount.
@@ -276,15 +269,14 @@ contract CloseLongTest is HyperdriveTest {
         advanceTime(timeAdvanced, apr);
 
         // Get the reserves before closing the long.
-        HyperdriveUtils.PoolInfo memory poolInfoBefore = HyperdriveUtils
-            .getPoolInfo(hyperdrive);
+        IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
 
         // Redeem the bonds
         uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
 
         // Initial share price
-        uint256 initialSharePrice = HyperdriveUtils
-            .getPoolConfig(hyperdrive)
+        uint256 initialSharePrice = hyperdrive
+            .getPoolConfiguration()
             .initialSharePrice;
 
         // All mature bonds are redeemed at the equivalent amount of shares
@@ -306,7 +298,7 @@ contract CloseLongTest is HyperdriveTest {
                 poolInfoBefore.bondReserves,
                 immatureBonds,
                 FixedPointMath.ONE_18.sub(
-                    HyperdriveUtils.getPoolConfig(hyperdrive).timeStretch
+                    hyperdrive.getPoolConfiguration().timeStretch
                 ),
                 poolInfoBefore.sharePrice,
                 initialSharePrice
@@ -351,16 +343,13 @@ contract CloseLongTest is HyperdriveTest {
 
         // A checkpoint is created to lock in the close price.
         hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
-        uint256 closeSharePrice = HyperdriveUtils
-            .getPoolInfo(hyperdrive)
-            .sharePrice;
+        uint256 closeSharePrice = hyperdrive.getPoolInfo().sharePrice;
 
         // Another term passes and a large amount of positive interest accrues.
         advanceTime(POSITION_DURATION, 0.7e18);
 
         // Get the reserves before closing the long.
-        HyperdriveUtils.PoolInfo memory poolInfoBefore = HyperdriveUtils
-            .getPoolInfo(hyperdrive);
+        IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
 
         // Redeem the bonds
         uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
@@ -368,9 +357,7 @@ contract CloseLongTest is HyperdriveTest {
         // Bond holders take a proportional haircut on any negative interest
         // that accrues.
         uint256 bondValue = bondAmount
-            .divDown(
-                HyperdriveUtils.getPoolConfig(hyperdrive).initialSharePrice
-            )
+            .divDown(hyperdrive.getPoolConfiguration().initialSharePrice)
             .mulDown(closeSharePrice);
 
         // Calculate the value of the bonds compounded at the negative APR.
@@ -394,7 +381,7 @@ contract CloseLongTest is HyperdriveTest {
     }
 
     function verifyCloseLong(
-        HyperdriveUtils.PoolInfo memory poolInfoBefore,
+        IHyperdrive.PoolInfo memory poolInfoBefore,
         uint256 baseProceeds,
         uint256 bondAmount,
         uint256 maturityTime,
@@ -412,8 +399,8 @@ contract CloseLongTest is HyperdriveTest {
         );
 
         // Verify that the other states were correct.
-        HyperdriveUtils.PoolInfo memory poolInfoAfter = HyperdriveUtils
-            .getPoolInfo(hyperdrive);
+        IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
+
         IHyperdrive.Checkpoint memory checkpoint = hyperdrive.checkpoints(
             checkpointTime
         );
