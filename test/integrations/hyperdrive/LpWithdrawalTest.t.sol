@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
+// FIXME
+import "forge-std/console.sol";
+import "test/utils/Lib.sol";
+
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
@@ -8,6 +12,9 @@ import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 
 contract LpWithdrawalTest is HyperdriveTest {
+    // FIXME
+    using Lib for *;
+
     using FixedPointMath for uint256;
 
     function test_lp_withdrawal_long_immediate_close(
@@ -795,6 +802,10 @@ contract LpWithdrawalTest is HyperdriveTest {
             aliceWithdrawalShares
         );
         assertGt(aliceRedeemProceeds, aliceExpectedWithdrawalShares);
+        console.log(
+            "alice proceeds: %s",
+            (aliceBaseProceeds + aliceRedeemProceeds).toString(18)
+        );
 
         // Bob and Celine remove their liquidity. They should receive
         // approximately the same amount of base tokens and no withdrawal
@@ -807,8 +818,24 @@ contract LpWithdrawalTest is HyperdriveTest {
             uint256 celineBaseProceeds,
             uint256 celineWithdrawalShares
         ) = removeLiquidity(celine, celineLpShares);
+        console.log("bob proceeds: %s", bobBaseProceeds.toString(18));
         assertEq(bobBaseProceeds, celineBaseProceeds);
-        // TODO: Why is this failing?
+        // TODO: This assertion fails with the following error:
+        //
+        // Logs:
+        //   alice proceeds: 500003724.406172042149976149
+        //   bob proceeds: 499998138.159024684562895420
+        //   Error: a > b not satisfied [uint]
+        //     Value a: 499998138159024684562895420
+        //     Value b: 500000000000000000000000000
+        //
+        // Test result: FAILED. 0 passed; 1 failed; finished in 1.34s
+        //
+        // Failing tests:
+        // Encountered 1 failing test in test/integrations/hyperdrive/LpWithdrawalTest.t.sol:LpWithdrawalTest
+        // [FAIL. Reason: Assertion failed. Counterexample: calldata=0x7cbb568900000000000000000000000000000000000000000000000000038d7ea4c6800000000000000000000000000000000000000000000000000000038d7ea4c680000000000000000000000000000000000000000000000000000000000000000000, args=[1000000000000000, 1000000000000000, 0]] test_lp_withdrawal_three_lps(uint256,uint256,uint64) (runs: 0, μ: 0, ~: 0)
+
+        //
         // assertGt(bobBaseProceeds, testParams.contribution);
         assertEq(bobWithdrawalShares, 0);
         assertEq(celineWithdrawalShares, 0);
