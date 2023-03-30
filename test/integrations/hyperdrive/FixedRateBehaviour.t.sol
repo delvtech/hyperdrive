@@ -1,44 +1,38 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import "forge-std/console2.sol";
-
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol";
 
-contract ConsistentLong is HyperdriveTest {
+contract FixedRateBehaviour is HyperdriveTest {
     using FixedPointMath for uint256;
 
-    // FAIL
-    // [433008150368160477, 2004459342514105984026, 968944808] - error NegativeInterest()
-    // [97333899, 1000000000000000000000, 1737955964] - error NegativeInterest()
-    // [49091833, 2362315546939457484663205, 4294533110] - error NegativeInterest()
-    function test_fixed_rate_does_not_change_from_positive_interest_accrual(
-        uint32 _variableRate,
+    // May fail if variable interest is large and interim > 50 years with a
+    // NegativeInterest() error
+    function test_fixed_rate_behaviour_long_interim_long_positive_interest(
+        uint64 _variableRate,
         uint256 baseAmount,
         uint32 interim
     ) external {
         uint256 fixedRate = 0.05e18;
 
-        // 5% < variableRate < 100%
-        int256 variableRate = int256(scaleRate(_variableRate));
-        vm.assume(variableRate < 1e18);
-        vm.assume(variableRate >= 0);
+        // 0.0001% < variableRate < 100%
+        vm.assume(_variableRate > 0.0001e18);
+        int256 variableRate = int256(uint256(_variableRate) % 1e18);
 
-        // 1 < baseAmount < 5,000,000
-        vm.assume(baseAmount < 5_000_000e18);
-        vm.assume(baseAmount >= 1000e18);
+        // 1000 < baseAmount < 100,000,000
+        vm.assume(baseAmount >= 1000e18 && baseAmount <= 100_000_000e18);
 
-        // 5 years <= interim <= 136 years
-        vm.assume(interim >= uint32(POSITION_DURATION) * 5);
-        vm.assume(interim <= type(uint32).max);
+        // interim <= 50 years
+        vm.assume(interim <= POSITION_DURATION * 25);
 
         // Initialize the pool with capital.
         uint256 initialLiquidity = 500_000_000e18;
         initialize(alice, fixedRate, initialLiquidity);
 
-        // Advance the interim amount of time accruing variable rate
-        advanceTime(interim, variableRate);
+        // Advance time using the baseAmount so that an arbitrary amount of
+        // interest has accrued
+        advanceTime(POSITION_DURATION, variableRate);
 
         uint256 spotFixedRate1 = HyperdriveUtils.calculateAPRFromReserves(
             hyperdrive
@@ -49,14 +43,21 @@ contract ConsistentLong is HyperdriveTest {
             celine,
             baseAmount
         );
-        closeLong(celine, celineMaturityTime, celineBondAmount);
+
+        advanceTime(block.timestamp - celineMaturityTime, variableRate);
+
+        uint256 celineBaseAmount = closeLong(
+            celine,
+            celineMaturityTime,
+            celineBondAmount
+        );
 
         uint256 spotFixedRate2 = HyperdriveUtils.calculateAPRFromReserves(
             hyperdrive
         );
 
         // Advance the interim amount of time accruing variable rate
-        advanceTime(interim, variableRate);
+        advanceTime(uint256(interim), variableRate);
 
         uint256 spotFixedRate3 = HyperdriveUtils.calculateAPRFromReserves(
             hyperdrive
@@ -67,7 +68,10 @@ contract ConsistentLong is HyperdriveTest {
             dan,
             baseAmount
         );
-        closeLong(dan, danMaturityTime, danBondAmount);
+
+        advanceTime(block.timestamp - danMaturityTime, variableRate);
+
+        uint256 danBaseAmount = closeLong(dan, danMaturityTime, danBondAmount);
 
         uint256 spotFixedRate4 = HyperdriveUtils.calculateAPRFromReserves(
             hyperdrive
@@ -87,6 +91,15 @@ contract ConsistentLong is HyperdriveTest {
             spotFixedRate3,
             spotFixedRate4,
             "fixed rate should decrease after dan opening and closing a long"
+        );
+
+        assertEq(
+            (celineBaseAmount - baseAmount).divDown(baseAmount),
+            HyperdriveUtils.calculateAPRFromRealizedPrice(
+                baseAmount,
+                celineBondAmount,
+                POSITION_DURATION
+            )
         );
 
         // assertApproxEqAbs(

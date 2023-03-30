@@ -81,12 +81,6 @@ contract BaseTest is Test {
         vm.deal(_user, 10000 ether);
     }
 
-    // (2^32) * 10^8 * 2.5 / 10^18 = ~100%
-    // Useful for fuzzing rates
-    function scaleRate(uint32 _variableRate) public pure returns (uint256) {
-        return uint256(_variableRate).mulDown(10e26).mulDown(2.5e18);
-    }
-
     function whaleTransfer(
         address whale,
         IERC20 token,
