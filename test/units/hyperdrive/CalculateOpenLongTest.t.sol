@@ -48,7 +48,7 @@ contract CalculateOpenLongTest is HyperdriveTest {
     uint256 expectedBondProceeds;
     uint256 expectedShareReservesDelta;
 
-    function test_calculate_open_long() external {
+    function test_calculate_open_long() internal {
         // µ = 1 * 45/41
         initialSharePrice = 1.097560975609756097e18;
         // c = 1 * 49/41
@@ -99,13 +99,13 @@ contract CalculateOpenLongTest is HyperdriveTest {
         uint256 dz_curve = shareAmount.mulDown(normalizedTimeRemaining);
         assertEq(dz_curve, 81282.798833819241942987e18, "dz_curve");
 
-        // Δy'flat = Δz · (1 - t)
-        // Δy'flat = 83673.469387755102049354 * (1 - 0.971428571428571428)
-        // Δy'flat = 2390.670553935860106366382507288629742488
-        uint256 dy_apost_flat = shareAmount.mulDown(
-            FixedPointMath.ONE_18.sub(normalizedTimeRemaining)
-        );
-        assertEq(dy_apost_flat, 2390.670553935860106366e18, "dy_apost_flat");
+        // Δy'flat = Δz · (1 - t) * c
+        // Δy'flat = 83673.469387755102049354 * (1 - 0.971428571428571428) * 1.195121951219512195
+        // Δy'flat = 2857.14285714285719999998512408447699634341676740382564116
+        uint256 dy_apost_flat = shareAmount
+            .mulDown(FixedPointMath.ONE_18.sub(normalizedTimeRemaining))
+            .mulDown(sharePrice);
+        assertEq(dy_apost_flat, 2857.142857142857199999e18, "dy_apost_flat");
 
         // For the curve trade, (1 - t) is reframed as (1 - timeStretch)
         // (1 - t) = (1 - 0.045071688063194094)
@@ -216,10 +216,10 @@ contract CalculateOpenLongTest is HyperdriveTest {
         ); // TODO Precision
 
         // Δy = Δ'y_curve + Δ'y_flat
-        // Δy = 97304.643160881786482317 + 2390.670553935860106366
-        // Δy = 99695.313714817646588683
+        // Δy = 97304.643160881786482317 + 2857.142857142857199999
+        // Δy = 100161.786018025335116432
         dy = dy_apost_curve.add(dy_apost_flat);
-        assertApproxEqAbs(dy, 99695.313714817646588683e18, 7e8, "dy");
+        assertApproxEqAbs(dy, 100161.786018025335116432e18, 7e8, "dy");
 
         // τ = t * timeStretch
         // τ = 0.971428571428571428 * 0.045071688063194094
@@ -264,15 +264,15 @@ contract CalculateOpenLongTest is HyperdriveTest {
         );
 
         // governance_curve_fee = Δz * (curve_fee / Δy) * c * Φ_governance
-        // governance_curve_fee = 83673.469387755102049354 * (3.955337805800847634 / 99695.313714817646588683) * 1.195121951219512195 * (42.5/100)
-        // governance_curve_fee = 1.6861560537077798467049595269649831319106116442810493933654615802...
+        // governance_curve_fee = 83673.469387755102049354 * (3.955337805800847634 / 100161.786018025335116432) * 1.195121951219512195 * (42.5/100)
+        // governance_curve_fee = 1.6783033073739723940482360348307398192063707844224640334834848202...
         governance_curve_fee = shareAmount
             .mulDivDown(curve_fee, dy)
             .mulDown(sharePrice)
             .mulDown(fees.governance);
         assertApproxEqAbs(
             governance_curve_fee,
-            1.686156053707779846e18,
+            1.678303307373972394e18,
             6e4,
             "governance_curve_fee"
         ); // TODO Precision
