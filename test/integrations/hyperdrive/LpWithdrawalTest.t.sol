@@ -1,20 +1,16 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-// FIXME
-import "forge-std/console.sol";
-import "test/utils/Lib.sol";
-
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 
+// TODO: We need to add withdrawal share tests with fees. Anecdotally, it seems
+// that the withdrawal shares are not receiving fee revenue, which doesn't seem
+// fair.
 contract LpWithdrawalTest is HyperdriveTest {
-    // FIXME
-    using Lib for *;
-
     using FixedPointMath for uint256;
 
     function test_lp_withdrawal_long_immediate_close(
@@ -717,9 +713,9 @@ contract LpWithdrawalTest is HyperdriveTest {
             variableRate: int256(uint256(variableRate)),
             contribution: 500_000_000e18,
             longAmount: 0,
-            longBasePaid: 10_000_000e18,
+            longBasePaid: longBasePaid,
             longMaturityTime: 0,
-            shortAmount: 10_000_000e18,
+            shortAmount: shortAmount,
             shortBasePaid: 0,
             shortMaturityTime: 0
         });
@@ -802,10 +798,6 @@ contract LpWithdrawalTest is HyperdriveTest {
             aliceWithdrawalShares
         );
         assertGt(aliceRedeemProceeds, aliceExpectedWithdrawalShares);
-        console.log(
-            "alice proceeds: %s",
-            (aliceBaseProceeds + aliceRedeemProceeds).toString(18)
-        );
 
         // Bob and Celine remove their liquidity. They should receive
         // approximately the same amount of base tokens and no withdrawal
@@ -818,7 +810,6 @@ contract LpWithdrawalTest is HyperdriveTest {
             uint256 celineBaseProceeds,
             uint256 celineWithdrawalShares
         ) = removeLiquidity(celine, celineLpShares);
-        console.log("bob proceeds: %s", bobBaseProceeds.toString(18));
         assertEq(bobBaseProceeds, celineBaseProceeds);
         // TODO: This assertion fails with the following error:
         //
@@ -849,5 +840,223 @@ contract LpWithdrawalTest is HyperdriveTest {
             0,
             1e9 // TODO: Why is this not equal to zero?
         );
+    }
+
+    // TODO: We should accrue interest before these tests.
+    //
+    // FIXME: Document this test.
+    function test_lp_withdrawal_long_price_fluctuation(
+        uint256 longBasePaid
+    ) external {
+        // Ensure that the provided parameters fit into our testing range.
+        vm.assume(longBasePaid >= 0.001e18);
+        longBasePaid %= 20_000_000e18; // TODO: Use larger amounts
+
+        // Set up the test parameters.
+        TestLpWithdrawalParams memory testParams = TestLpWithdrawalParams({
+            fixedRate: 0.02e18,
+            variableRate: 0,
+            contribution: 500_000_000e18,
+            longAmount: 0,
+            // FIXME
+            // longBasePaid: longBasePaid,
+            longBasePaid: 10_000_000e18,
+            longMaturityTime: 0,
+            shortAmount: 0,
+            shortBasePaid: 0,
+            shortMaturityTime: 0
+        });
+
+        // Initialize the pool.
+        uint256 aliceLpShares = initialize(
+            alice,
+            uint256(testParams.fixedRate),
+            testParams.contribution
+        );
+
+        // Bob opens a long.
+        {
+            (uint256 longMaturityTime, uint256 longAmount) = openLong(
+                bob,
+                testParams.longBasePaid
+            );
+            testParams.longMaturityTime = longMaturityTime;
+            testParams.longAmount = longAmount;
+        }
+
+        // Celine adds liquidity.
+        uint256 celineLpShares = addLiquidity(celine, testParams.contribution);
+
+        // Alice removes her liquidity.
+        (
+            uint256 aliceBaseProceeds,
+            uint256 aliceWithdrawalShares
+        ) = removeLiquidity(alice, aliceLpShares);
+        uint256 aliceExpectedWithdrawalShares = (testParams.longAmount -
+            testParams.longBasePaid) / 2;
+        assertApproxEqAbs(
+            aliceBaseProceeds,
+            testParams.contribution - aliceExpectedWithdrawalShares,
+            1e9 // TODO: Why is this not equal to zero?
+        );
+        assertApproxEqAbs(
+            aliceWithdrawalShares,
+            aliceExpectedWithdrawalShares,
+            1e9 // TODO: Why is this not equal to zero?
+        );
+
+        // Alice opens a large short. This will increase the rate, which will
+        // lower the value of Bob's long.
+        (
+            uint256 aliceShortMaturityTime,
+            uint256 aliceShortBasePaid
+        ) = openShort(alice, testParams.longAmount * 2);
+
+        // Bob closes his long. This should be closed at a loss.
+        {
+            uint256 longProceeds = closeLong(
+                bob,
+                testParams.longMaturityTime,
+                testParams.longAmount
+            );
+            assertLt(longProceeds, testParams.longBasePaid);
+        }
+
+        // Alice closes her short. This should be closed for a profit.
+        {
+            uint256 shortProceeds = closeShort(
+                alice,
+                aliceShortMaturityTime,
+                testParams.longAmount * 2
+            );
+            assertGt(shortProceeds, aliceShortBasePaid);
+        }
+
+        // Alice redeems her withdrawal shares.
+        uint256 aliceRedeemProceeds = redeemWithdrawalShares(
+            alice,
+            aliceWithdrawalShares
+        );
+        assertGt(
+            aliceBaseProceeds + aliceRedeemProceeds,
+            testParams.contribution
+        );
+
+        // Celine removes her liquidity.
+        (
+            uint256 celineBaseProceeds,
+            uint256 celineWithdrawalShares
+        ) = removeLiquidity(celine, celineLpShares);
+        assertGt(celineBaseProceeds, testParams.contribution);
+        assertEq(celineWithdrawalShares, 0);
+    }
+
+    // TODO: We should accrue interest before this test.
+    //
+    // FIXME: Document this test.
+    function test_lp_withdrawal_short_price_fluctuation(
+        uint256 shortAmount,
+        uint64 variableRate
+    ) external {
+        // Ensure that the provided parameters fit into our testing range.
+        vm.assume(shortAmount >= 0.001e18);
+        shortAmount %= 20_000_000e18; // TODO: Use larger amounts
+        vm.assume(variableRate >= 0 && variableRate <= 2e18);
+
+        // Set up the test parameters.
+        TestLpWithdrawalParams memory testParams = TestLpWithdrawalParams({
+            fixedRate: 0.02e18,
+            variableRate: int256(uint256(variableRate)),
+            contribution: 500_000_000e18,
+            longAmount: 0,
+            longBasePaid: 0,
+            longMaturityTime: 0,
+            shortAmount: shortAmount,
+            shortBasePaid: 0,
+            shortMaturityTime: 0
+        });
+
+        // Initialize the pool.
+        uint256 aliceLpShares = initialize(
+            alice,
+            uint256(testParams.fixedRate),
+            testParams.contribution
+        );
+
+        // Bob opens a short.
+        {
+            (uint256 shortMaturityTime, uint256 shortBasePaid) = openShort(
+                bob,
+                testParams.shortAmount
+            );
+            testParams.shortMaturityTime = shortMaturityTime;
+            testParams.shortBasePaid = shortBasePaid;
+        }
+
+        // Celine adds liquidity.
+        uint256 celineLpShares = addLiquidity(celine, testParams.contribution);
+
+        // Alice removes her liquidity.
+        (
+            uint256 aliceBaseProceeds,
+            uint256 aliceWithdrawalShares
+        ) = removeLiquidity(alice, aliceLpShares);
+        uint256 aliceExpectedWithdrawalShares = (testParams.shortAmount -
+            testParams.shortBasePaid) / 2;
+        assertApproxEqAbs(
+            aliceBaseProceeds,
+            testParams.contribution - aliceExpectedWithdrawalShares,
+            1e9 // TODO: Why is this not equal to zero?
+        );
+        assertApproxEqAbs(
+            aliceWithdrawalShares,
+            aliceExpectedWithdrawalShares,
+            1e9 // TODO: Why is this not equal to zero?
+        );
+
+        // Alice opens a large long. This will decrease the rate, which will
+        // lower the value of Bob's short.
+        (uint256 aliceLongMaturityTime, uint256 aliceLongAmount) = openLong(
+            alice,
+            testParams.shortAmount * 2
+        );
+
+        // Bob closes his short. This should be closed at a loss.
+        {
+            uint256 shortProceeds = closeShort(
+                bob,
+                testParams.shortMaturityTime,
+                testParams.shortAmount
+            );
+            assertLt(shortProceeds, testParams.shortBasePaid);
+        }
+
+        // Alice closes her short. This should be closed for a profit.
+        {
+            uint256 longProceeds = closeLong(
+                alice,
+                aliceLongMaturityTime,
+                aliceLongAmount
+            );
+            assertGt(longProceeds, testParams.shortAmount * 2);
+        }
+
+        // Alice redeems her withdrawal shares.
+        uint256 aliceRedeemProceeds = redeemWithdrawalShares(
+            alice,
+            aliceWithdrawalShares
+        );
+        assertGt(
+            aliceBaseProceeds + aliceRedeemProceeds,
+            testParams.contribution
+        );
+
+        // Celine removes her liquidity.
+        (
+            uint256 celineBaseProceeds,
+            uint256 celineWithdrawalShares
+        ) = removeLiquidity(celine, celineLpShares);
+        assertGt(celineBaseProceeds, testParams.contribution);
+        assertEq(celineWithdrawalShares, 0);
     }
 }
