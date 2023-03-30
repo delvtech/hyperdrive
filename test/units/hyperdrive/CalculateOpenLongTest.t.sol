@@ -154,9 +154,7 @@ contract CalculateOpenLongTest is HyperdriveTest {
 
         // y^(1 - t) = (383887915.936952714535901926)^(0.954928311936805906)
         // y^(1 - t) = 157506998.923528080399004587041700209859953096737243167
-        y_pow_one_minus_t_stretch = bondReserves.pow(
-            one_minus_t_stretch
-        );
+        y_pow_one_minus_t_stretch = bondReserves.pow(one_minus_t_stretch);
         assertApproxEqAbs(
             y_pow_one_minus_t_stretch,
             157506998.923528080399004587e18,
@@ -375,7 +373,11 @@ contract CalculateOpenLongTest is HyperdriveTest {
         // Adding explicit delta assertions so that any change in how these
         // values are derived will fail the test
         // TODO Precision
-        assertWithDelta(shareReservesDelta, -49215, 81281.394539215112691086e18);
+        assertWithDelta(
+            shareReservesDelta,
+            -49215,
+            81281.394539215112691086e18
+        );
         assertWithDelta(
             bondReservesDelta,
             -691486610,
