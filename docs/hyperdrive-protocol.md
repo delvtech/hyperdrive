@@ -55,7 +55,7 @@ The trader supplies $\Delta x$ base and receives $\Delta y$ bonds. At the curren
 $$
 \begin{aligned}
 \Delta z_{curve} &= \Delta z \cdot t\\
-\Delta y_{flat}' &= \Delta z \cdot (1 - t)\\
+\Delta y_{flat}' &= c \cdot \Delta z \cdot (1 - t)\\
 \Delta y_{curve}' &= I_{BondsOutSharesIn}(\Delta z \cdot t)
 \end{aligned}
 $$
