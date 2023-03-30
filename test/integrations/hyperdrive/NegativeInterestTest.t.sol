@@ -100,7 +100,8 @@ contract NegativeInterestTest is HyperdriveTest {
         uint256 timeElapsed
     ) internal view returns (uint256) {
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
-        IHyperdrive.PoolConfig memory poolConfig = hyperdrive.getPoolConfiguration();
+        IHyperdrive.PoolConfig memory poolConfig = hyperdrive
+            .getPoolConfiguration();
 
         (, , uint256 expectedSharePayment) = HyperdriveMath.calculateCloseShort(
             poolInfo.shareReserves,
