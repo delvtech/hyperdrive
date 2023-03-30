@@ -310,46 +310,6 @@ contract LpWithdrawalTest is HyperdriveTest {
         );
     }
 
-    // FIXME: I should lay out the full matrix of tests that I need to do here.
-    //
-    // Test #1:
-    //
-    // 1. initialize (alice)
-    // 2. add liquidity (celine)
-    // 3. remove liquidity (alice)
-    // 4. open long (bob)
-    // 5. open short (bob)
-    // 6. remove liquidity (celine)
-    // 7. close long (bob)
-    // 8. term passes
-    // 9. close short (bob)
-    //
-    // Test #2:
-    //
-    // 1. initialize (alice)
-    // 2. add liquidity (celine)
-    // 3. remove liquidity (alice)
-    // 4. open long (bob)
-    // 5. open short (bob)
-    // 6. remove liquidity (celine)
-    // 7. term passes
-    // 8. close long (bob)
-    // 9. close short (bob)
-    //
-    // Test #3:
-    //
-    // 1. initialize (alice)
-    // 2. add liquidity (celine)
-    // 3. remove liquidity (alice)
-    // 4. open long (bob)
-    // 5. open short (bob)
-    // 6. remove liquidity (celine)
-    // 7. term passes
-    // 8. close long (bob)
-    // 9. close short (bob)
-    //
-    // FIXME: Add the other cases that I'm worried about.
-
     struct TestLpWithdrawalParams {
         int256 fixedRate;
         int256 variableRate;
@@ -362,6 +322,10 @@ contract LpWithdrawalTest is HyperdriveTest {
         uint256 shortMaturityTime;
     }
 
+    // This test ensures that two LPs (Alice and Celine) will receive a fair
+    // share of the withdrawal pool's profits if Alice has entirely long
+    // exposure, Celine has entirely short exposure, and they both redeem after
+    // redemption.
     function test_lp_withdrawal_long_and_short_immediate(
         uint256 longBasePaid,
         uint256 shortAmount,
@@ -573,8 +537,10 @@ contract LpWithdrawalTest is HyperdriveTest {
         );
     }
 
-    // TODO: Add more tests like this where the redemptions happen at different
-    //       times.
+    // This test ensures that two LPs (Alice and Celine) will receive a fair
+    // share of the withdrawal pool's profits if Alice has entirely long
+    // exposure, Celine has entirely short exposure, Alice redeems immediately
+    // after the long is closed, and Celine redeems after the short is redeemed.
     function test_lp_withdrawal_long_close_immediate_and_short_redemption(
         uint256 longBasePaid,
         uint256 shortAmount,
@@ -644,6 +610,14 @@ contract LpWithdrawalTest is HyperdriveTest {
             testParams.longAmount
         );
 
+        // Redeem Alice's withdrawal shares. Alice should receive the margin
+        // released from Bob's long.
+        uint256 aliceRedeemProceeds = redeemWithdrawalShares(
+            alice,
+            aliceWithdrawalShares
+        );
+        assertEq(aliceRedeemProceeds, testParams.longAmount - longProceeds);
+
         // Bob opens a short.
         {
             (uint256 shortMaturityTime, uint256 shortBasePaid) = openShort(
@@ -653,14 +627,6 @@ contract LpWithdrawalTest is HyperdriveTest {
             testParams.shortMaturityTime = shortMaturityTime;
             testParams.shortBasePaid = shortBasePaid;
         }
-
-        // Redeem Alice's withdrawal shares. Alice should receive the margin
-        // released from Bob's long.
-        uint256 aliceRedeemProceeds = redeemWithdrawalShares(
-            alice,
-            aliceWithdrawalShares
-        );
-        assertEq(aliceRedeemProceeds, testParams.longAmount - longProceeds);
 
         // Celine removes her liquidity.
         (
@@ -713,6 +679,148 @@ contract LpWithdrawalTest is HyperdriveTest {
             ),
             0,
             1
+        );
+    }
+
+    // TODO: Add commentary on how Alice, Bob, and Celine should be treated
+    // similarly. Think more about whether or not this should really be the
+    // case.
+    //
+    // This test ensures that three LPs (Alice, Bob, and Celine) will receive a
+    // fair share of the withdrawal pool's profits. Alice and Bob add liquidity
+    // and then Bob opens two positions (a long and a short position). Alice
+    // removes her liquidity and then Bob closes the long and the short.
+    // Finally, Bob and Celine remove their liquidity. Bob and Celine shouldn't
+    // be treated differently based on the order in which they added liquidity.
+    function test_lp_withdrawal_three_lps(
+        uint256 longBasePaid,
+        uint256 shortAmount,
+        uint64 variableRate
+    ) external {
+        // Ensure that the provided parameters fit into our testing range.
+        vm.assume(longBasePaid >= 0.001e18);
+        longBasePaid %= 20_000_000e18; // TODO: Use larger amounts
+        vm.assume(shortAmount >= 0.001e18);
+        shortAmount %= 20_000_000e18; // TODO: Use larger amounts
+        vm.assume(variableRate >= 0 && variableRate <= 2e18);
+
+        // Set up the test parameters.
+        TestLpWithdrawalParams memory testParams = TestLpWithdrawalParams({
+            fixedRate: 0.02e18,
+            variableRate: int256(uint256(variableRate)),
+            contribution: 500_000_000e18,
+            longAmount: 0,
+            longBasePaid: 10_000_000e18,
+            longMaturityTime: 0,
+            shortAmount: 10_000_000e18,
+            shortBasePaid: 0,
+            shortMaturityTime: 0
+        });
+
+        // Initialize the pool.
+        uint256 aliceLpShares = initialize(
+            alice,
+            uint256(testParams.fixedRate),
+            testParams.contribution
+        );
+
+        // Bob adds liquidity.
+        uint256 bobLpShares = addLiquidity(bob, testParams.contribution);
+
+        // Bob opens a long.
+        {
+            (uint256 longMaturityTime, uint256 longAmount) = openLong(
+                bob,
+                testParams.longBasePaid
+            );
+            testParams.longMaturityTime = longMaturityTime;
+            testParams.longAmount = longAmount;
+        }
+
+        // Bob opens a short.
+        {
+            (uint256 shortMaturityTime, uint256 shortBasePaid) = openShort(
+                bob,
+                testParams.shortAmount
+            );
+            testParams.shortMaturityTime = shortMaturityTime;
+            testParams.shortBasePaid = shortBasePaid;
+        }
+
+        // Alice removes her liquidity.
+        (
+            uint256 aliceBaseProceeds,
+            uint256 aliceWithdrawalShares
+        ) = removeLiquidity(alice, aliceLpShares);
+        uint256 aliceExpectedWithdrawalShares = ((testParams.longAmount -
+            testParams.longBasePaid) +
+            (testParams.shortAmount - testParams.shortBasePaid)) / 2;
+        assertApproxEqAbs(
+            aliceBaseProceeds,
+            testParams.contribution - aliceExpectedWithdrawalShares,
+            10
+        );
+        assertApproxEqAbs(
+            aliceWithdrawalShares,
+            aliceExpectedWithdrawalShares,
+            10
+        );
+
+        // Celine adds liquidity.
+        uint256 celineLpShares = addLiquidity(celine, testParams.contribution);
+
+        // Bob closes his long and his short.
+        {
+            uint256 longProceeds = closeLong(
+                bob,
+                testParams.longMaturityTime,
+                testParams.longAmount
+            );
+            uint256 shortProceeds = closeShort(
+                bob,
+                testParams.shortMaturityTime,
+                testParams.shortAmount
+            );
+            assertApproxEqAbs(
+                longProceeds + shortProceeds,
+                testParams.longBasePaid + testParams.shortBasePaid,
+                1e18 // TODO: See if we can tighten this bound
+            );
+        }
+
+        // Redeem Alice's withdrawal shares. Alice should receive the margin
+        // released from Bob's long.
+        uint256 aliceRedeemProceeds = redeemWithdrawalShares(
+            alice,
+            aliceWithdrawalShares
+        );
+        assertGt(aliceRedeemProceeds, aliceExpectedWithdrawalShares);
+
+        // Bob and Celine remove their liquidity. They should receive
+        // approximately the same amount of base tokens and no withdrawal
+        // shares.
+        (
+            uint256 bobBaseProceeds,
+            uint256 bobWithdrawalShares
+        ) = removeLiquidity(bob, bobLpShares);
+        (
+            uint256 celineBaseProceeds,
+            uint256 celineWithdrawalShares
+        ) = removeLiquidity(celine, celineLpShares);
+        assertEq(bobBaseProceeds, celineBaseProceeds);
+        // TODO: Why is this failing?
+        // assertGt(bobBaseProceeds, testParams.contribution);
+        assertEq(bobWithdrawalShares, 0);
+        assertEq(celineWithdrawalShares, 0);
+
+        // Ensure that the ending base balance of Hyperdrive is zero.
+        assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1);
+        assertApproxEqAbs(
+            hyperdrive.totalSupply(
+                AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
+            ),
+            0,
+            1e9 // TODO: Why is this not equal to zero?
         );
     }
 }

@@ -110,15 +110,18 @@ abstract contract HyperdriveLP is HyperdriveBase {
         // Perform a checkpoint.
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
 
-        // In the case that there are existing LP shares,
+        // In the case that there are existing LP shares, we calculate the
+        // amount of LP shares to mint as a function of the present value in
+        // the pool controlled by LPs. This ensures that LPs are fairly rewarded
+        // for adding liquidity. Otherwise, we mint the full amount of LP shares.
         if (totalSupply[AssetId._LP_ASSET_ID] > 0) {
-            // To ensure that our LP allocation scheme fairly rewards LPs for adding
-            // liquidity, we linearly interpolate between the present and future
-            // value of longs and shorts. These interpolated values are the long and
-            // short adjustments. The following calculation is used to determine the
-            // amount of LP shares rewarded to new LP:
+            // To ensure that our LP allocation scheme fairly rewards LPs for
+            // adding liquidity, we linearly interpolate between the present and
+            // future value of longs and shorts. These interpolated values are
+            // the long and short adjustments. The following calculation is used
+            // to determine the amount of LP shares rewarded to new LP:
             //
-            // lpShares = (dz * l) / (z + a_s - a_l)
+            // lpShares = (dz * l) / (z + a_s - a_l - w)
             uint256 longAdjustment = HyperdriveMath
                 .calculateLpAllocationAdjustment(
                     marketState.longsOutstanding,
@@ -135,22 +138,18 @@ abstract contract HyperdriveLP is HyperdriveBase {
                     ),
                     sharePrice
                 );
+            uint256 unclaimedWithdrawalShares = totalSupply[
+                AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
+            ] - withdrawPool.withdrawalSharesReadyToWithdraw;
             lpShares = shares
                 .mulDown(totalSupply[AssetId._LP_ASSET_ID])
                 .divDown(
-                    uint256(marketState.shareReserves).add(shortAdjustment).sub(
-                        longAdjustment
-                    )
+                    uint256(marketState.shareReserves) +
+                        shortAdjustment -
+                        longAdjustment -
+                        unclaimedWithdrawalShares
                 );
         } else {
-            // TODO: Ensure that this gives the LP a fair outcome. The existing
-            // longs and shorts will have been covered by the previous LP, but
-            // I don't believe that this is accounted for by the implementation
-            // at this time. This is also a problem in the case that there are
-            // existing LP shares and there are existing withdrawal shares as
-            // the withdrawal shares were minted to cover some of the margin
-            // that LPs are exposed to. We may need to incorporate withdrawal
-            // shares into the LP allocation and LP withdrawal mechanisms.
             lpShares = shares;
         }
 
@@ -205,17 +204,22 @@ abstract contract HyperdriveLP is HyperdriveBase {
         // Deduct the share proceeds from the liquidity pool reserves.
         _updateLiquidity(-int256(shareProceeds));
 
-        // Calculate the number of withdrawal shares for the withdrawing LP.
-        // This represents their share of the margin backing open positions,
-        // which can be redeemed for margin when it becomes available.
+        // Calculate the amount of unminted withdrawal shares. This is given
+        // by taking the aggregate margin in existence and subtracting the
+        // amount of withdrawal shares that have already been minted and haven't
+        // been claimed.
         uint256 withdrawalShares = marketState.longsOutstanding -
             longAggregates.baseVolume;
         withdrawalShares += shortAggregates.baseVolume;
-        withdrawalShares -=
-            totalSupply[
-                AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
-            ] -
-            withdrawPool.withdrawalSharesReadyToWithdraw;
+        uint256 unclaimedWithdrawalShares = totalSupply[
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
+        ] - withdrawPool.withdrawalSharesReadyToWithdraw;
+        withdrawalShares = withdrawalShares >= unclaimedWithdrawalShares
+            ? withdrawalShares - unclaimedWithdrawalShares
+            : 0;
+
+        // Calculate the amount of withdrawal shares to mint to the LP
+        // proportional to the amount of LP shares they are burning.
         withdrawalShares = withdrawalShares.mulDivDown(
             _shares,
             // NOTE: Dividing by the share price to convert shares.
