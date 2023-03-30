@@ -9,16 +9,19 @@ import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol"
 contract ConsistentLong is HyperdriveTest {
     using FixedPointMath for uint256;
 
+    // FAIL
     // [433008150368160477, 2004459342514105984026, 968944808] - error NegativeInterest()
-    //
+    // [97333899, 1000000000000000000000, 1737955964] - error NegativeInterest()
+    // [49091833, 2362315546939457484663205, 4294533110] - error NegativeInterest()
     function test_fixed_rate_does_not_change_from_positive_interest_accrual(
-        int256 variableRate,
+        uint32 _variableRate,
         uint256 baseAmount,
-        uint256 interim
+        uint32 interim
     ) external {
         uint256 fixedRate = 0.05e18;
 
         // 5% < variableRate < 100%
+        int256 variableRate = int256(scaleRate(_variableRate));
         vm.assume(variableRate < 1e18);
         vm.assume(variableRate >= 0);
 
@@ -26,9 +29,9 @@ contract ConsistentLong is HyperdriveTest {
         vm.assume(baseAmount < 5_000_000e18);
         vm.assume(baseAmount >= 1000e18);
 
-        // 5 years <= interim <= 100 years
-        vm.assume(interim >= POSITION_DURATION * 5);
-        vm.assume(interim <= POSITION_DURATION * 100);
+        // 5 years <= interim <= 136 years
+        vm.assume(interim >= uint32(POSITION_DURATION) * 5);
+        vm.assume(interim <= type(uint32).max);
 
         // Initialize the pool with capital.
         uint256 initialLiquidity = 500_000_000e18;
