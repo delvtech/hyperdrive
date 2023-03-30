@@ -138,9 +138,9 @@ library HyperdriveMath {
         )
     {
         // Calculate the flat part of the trade.
-        bondProceeds = _shareAmount.mulDown(
-            FixedPointMath.ONE_18.sub(_normalizedTimeRemaining)
-        );
+        bondProceeds = _shareAmount
+            .mulDown(FixedPointMath.ONE_18.sub(_normalizedTimeRemaining))
+            .mulDown(_sharePrice);
         shareReservesDelta = _shareAmount.mulDown(_normalizedTimeRemaining);
         // (time remaining)/(term length) is always 1 so we just use _timeStretch
         bondReservesDelta = YieldSpaceMath.calculateBondsOutGivenSharesIn(
