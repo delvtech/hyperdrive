@@ -76,7 +76,7 @@ contract ExtremeInputs is HyperdriveTest {
         assertApproxEqAbs(
             poolInfoAfter.shareReserves,
             0,
-            1e15,
+            1e10,
             "shareReserves should be approximately empty"
         );
         assertGt(aprAfter, aprBefore);
