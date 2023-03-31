@@ -91,12 +91,11 @@ interface IHyperdrive is IMultiToken {
         uint256 shortAverageMaturityTime;
         /// @dev The cumulative amount of base paid for oustanding shorts.
         uint256 shortBaseVolume;
-        /// @dev The total amount of shares which are not backing outstanding
-        ///      longs and short positions.
+        /// @dev The amount of withdrawal shares that are ready to be redeemed.
         uint256 withdrawalSharesReadyToWithdraw;
-        /// @dev The cumulative amount of base released from margin positions.
+        /// @dev The amount of margin recovered by the withdrawal pool.
         uint256 capital;
-        /// @dev The cumulative amount of base interest earned from margin positions.
+        /// @dev The amount of interest accrued to the withdrawal pool.
         uint256 interest;
     }
 
