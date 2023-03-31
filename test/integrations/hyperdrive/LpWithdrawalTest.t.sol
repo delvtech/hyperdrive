@@ -38,7 +38,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         // Bob opens a large long.
         vm.assume(
             basePaid >= 0.001e18 &&
-                basePaid <= HyperdriveUtils.calculateMaxOpenLong(hyperdrive)
+                basePaid <= HyperdriveUtils.calculateMaxLong(hyperdrive)
         );
         (uint256 maturityTime, uint256 longAmount) = openLong(bob, basePaid);
 
@@ -116,7 +116,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         // Bob opens a max long.
         vm.assume(
             basePaid >= 0.001e18 &&
-                basePaid <= HyperdriveUtils.calculateMaxOpenLong(hyperdrive)
+                basePaid <= HyperdriveUtils.calculateMaxLong(hyperdrive)
         );
         (uint256 maturityTime, uint256 longAmount) = openLong(bob, basePaid);
 
@@ -192,10 +192,8 @@ contract LpWithdrawalTest is HyperdriveTest {
 
         // Bob opens a large short.
         vm.assume(
-            // TODO: We should implement a calculation that gives us the maximum
-            // amount of bonds that can be shorted.
             shortAmount >= 0.001e18 &&
-                shortAmount <= hyperdrive.getPoolInfo().shareReserves
+                shortAmount <= HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
         (uint256 maturityTime, uint256 basePaid) = openShort(bob, shortAmount);
 
@@ -257,10 +255,8 @@ contract LpWithdrawalTest is HyperdriveTest {
 
         // Bob opens a large short.
         vm.assume(
-            // TODO: We should implement a calculation that gives us the maximum
-            // amount of bonds that can be shorted.
             shortAmount >= 0.001e18 &&
-                shortAmount <= hyperdrive.getPoolInfo().shareReserves
+                shortAmount <= HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
         (uint256 maturityTime, uint256 basePaid) = openShort(bob, shortAmount);
 
