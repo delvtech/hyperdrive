@@ -15,8 +15,7 @@ library HyperdriveUtils {
     ) internal view returns (uint256) {
         return
             block.timestamp -
-            (block.timestamp %
-                hyperdrive.getPoolConfig().checkpointDuration);
+            (block.timestamp % hyperdrive.getPoolConfig().checkpointDuration);
     }
 
     function calculateTimeRemaining(
@@ -43,8 +42,7 @@ library HyperdriveUtils {
     function calculateAPRFromReserves(
         IHyperdrive _hyperdrive
     ) internal view returns (uint256) {
-        IHyperdrive.PoolConfig memory poolConfig = _hyperdrive
-            .getPoolConfig();
+        IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
         IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
         return
             HyperdriveMath.calculateAPRFromReserves(
@@ -76,8 +74,7 @@ library HyperdriveUtils {
         IHyperdrive _hyperdrive
     ) internal view returns (uint256 baseAmount) {
         IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
-        IHyperdrive.PoolConfig memory poolConfig = _hyperdrive
-            .getPoolConfig();
+        IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
 
         uint256 tStretch = poolConfig.timeStretch;
         // As any long in the middle of a checkpoint duration is backdated,
@@ -179,8 +176,7 @@ library HyperdriveUtils {
         uint256 _bondAmount
     ) internal view returns (uint256) {
         // Retrieve hyperdrive pool state
-        IHyperdrive.PoolConfig memory poolConfig = _hyperdrive
-            .getPoolConfig();
+        IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
         IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
         uint256 openSharePrice;
         uint256 timeRemaining;

@@ -17,7 +17,9 @@ contract HyperdriveInitialize is Script {
         address deployerAddress = vm.addr(deployerPrivateKey);
         vm.startBroadcast(deployerPrivateKey);
 
-        IHyperdrive hyperdrive = IHyperdrive(address(0xB311B825171AF5A60d69aAD590B857B1E5ed23a2));
+        IHyperdrive hyperdrive = IHyperdrive(
+            address(0xB311B825171AF5A60d69aAD590B857B1E5ed23a2)
+        );
         IERC20 baseToken = IERC20(hyperdrive.baseToken());
         // Initialize Hyperdrive to have an APR equal to 1%.
         uint256 apr = 0.01e18;
