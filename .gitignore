@@ -20,3 +20,12 @@ remappings.txt
 
 # code coverage
 lcov.info
+
+# Ape
+.cache
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+
+# pytest
+.pytest_cache
