@@ -51,4 +51,4 @@ def test_deploy():
 
     with accounts.use_sender(deployer):
         base_ERC20.approve(hyperdrive, base_supply)
-        hyperdrive.initialize(base_supply, initial_apr, deployer, False)
+        hyperdrive.initialize(base_supply, initial_apr, deployer, True)
