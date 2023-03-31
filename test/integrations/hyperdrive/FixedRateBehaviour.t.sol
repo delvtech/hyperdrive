@@ -71,13 +71,11 @@ contract FixedRateBehaviour is HyperdriveTest {
             spotFixedRates[3],
             "fixed rate should decrease after dan opening and closing a long"
         );
-        // FAIL: [850158846099921994, 3555210678590931723272, 664330425]
         assertGt(
             celineBaseAmount,
             danBaseAmount,
             "The first long trade should return marginally more than the second"
         );
-        // FAIL: [850158846099921994, 3555210678590931723272, 664330425]
         assertGt(
             celineQuotedAPR,
             danQuotedAPR,
@@ -85,6 +83,21 @@ contract FixedRateBehaviour is HyperdriveTest {
         );
     }
 
+    //
+    // FAIL: [850158846099921994, 3555210678590931723272, 664330425]
+    //
+    // spotFixedRate0: 49999999999999999
+    // spotFixedRate1: 49999818857189771
+    // spotFixedRate2: 49999818857189771
+    // spotFixedRate3: 49999699170919011
+    // Error: The first long trade should return marginally more than the second
+    // Error: a > b not satisfied [uint]
+    //   Value a: 3732970890516026173847
+    //   Value b: 3732970923046814250303
+    // Error: The first long should imply a better fixed rate than the second
+    // Error: a > b not satisfied [uint]
+    //   Value a: 49999909427462604
+    //   Value b: 49999918577915528
     function test_fixed_rate_behaviour_breaking_case() external {
         int256 variableRate = 850158846099921994; // ~ 85%
         uint256 baseAmount = 3555210678590931723272; // ~3555.21
@@ -123,20 +136,23 @@ contract FixedRateBehaviour is HyperdriveTest {
             spotFixedRates[3],
             "fixed rate should decrease after dan opening and closing a long"
         );
-        // FAIL: [850158846099921994, 3555210678590931723272, 664330425]
+
+        console2.log("spotFixedRate0: %s", spotFixedRates[0]);
+        console2.log("spotFixedRate1: %s", spotFixedRates[1]);
+        console2.log("spotFixedRate2: %s", spotFixedRates[2]);
+        console2.log("spotFixedRate3: %s", spotFixedRates[3]);
+
         assertGt(
             celineBaseAmount,
             danBaseAmount,
             "The first long trade should return marginally more than the second"
         );
-        // FAIL: [850158846099921994, 3555210678590931723272, 664330425]
         assertGt(
             celineQuotedAPR,
             danQuotedAPR,
             "The first long should imply a better fixed rate than the second"
         );
     }
-
 
     function _scenarioLong(
         int256 variableRate,
