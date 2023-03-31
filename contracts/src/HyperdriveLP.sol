@@ -225,8 +225,10 @@ abstract contract HyperdriveLP is HyperdriveBase {
             withdrawPool.withdrawalSharesReadyToWithdraw;
         withdrawalShares = withdrawalShares.mulDivDown(
             _shares,
-            // NOTE: Dividing by the share price to convert shares.
-            lpTotalSupply.mulDown(sharePrice)
+            // NOTE: Dividing by the share price to convert shares. We
+            // overestimate to avoid overestimating the amount of withdrawal
+            // shares to mint.
+            lpTotalSupply.mulUp(sharePrice)
         );
 
         // Mint the withdrawal tokens.

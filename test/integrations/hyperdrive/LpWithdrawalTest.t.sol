@@ -6,6 +6,7 @@ import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
+import { Lib } from "../../utils/Lib.sol";
 
 // TODO: Some scenarios that we need to test.
 //
@@ -13,33 +14,36 @@ import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 // - [ ] LPs with different long and short weightings.
 contract LpWithdrawalTest is HyperdriveTest {
     using FixedPointMath for uint256;
+    using Lib for *;
 
     function test_lp_withdrawal_long_immediate_close(
-        uint128 basePaid,
-        int64 preTradingVariableRate
+        uint256 basePaid,
+        int256 preTradingVariableRate
     ) external {
         uint256 apr = 0.02e18;
         uint256 contribution = 500_000_000e18;
         uint256 lpShares = initialize(alice, apr, contribution);
 
+        // Normalize the fuzzing input.
+        basePaid = basePaid.normalizeToRange(
+            0.001e18,
+            HyperdriveUtils.calculateMaxOpenLong(hyperdrive)
+        );
         // TODO: We run into subtraction underflows when the pre trading APR is
         // negative because the spot price goes above 1. We should investigate
         // this further. The specific error is caused by a spot price that is 1
         // or 2 wei greater than 1e18:
         //
         // FAIL. Reason: FixedPointMath_SubOverflow() Counterexample: calldata=0xeb03bc3c00000000000000000000000000000000000000000056210439729b8099325834fffffffffffffffffffffffffffffffffffffffffffffffff923591560ca3e4c, args=[104123536507311086290229300, -494453585727570356]]
-        //
-        // Accrue interest before the trading period.
-        vm.assume(
-            preTradingVariableRate >= 0e18 && preTradingVariableRate <= 1e18
+        preTradingVariableRate = preTradingVariableRate.normalizeToRange(
+            0,
+            1e18
         );
+
+        // Accrue interest before the trading period.
         advanceTime(POSITION_DURATION, preTradingVariableRate);
 
         // Bob opens a large long.
-        vm.assume(
-            basePaid >= 0.001e18 &&
-                basePaid <= HyperdriveUtils.calculateMaxOpenLong(hyperdrive)
-        );
         (uint256 maturityTime, uint256 longAmount) = openLong(bob, basePaid);
 
         // Alice removes all of her LP shares.
@@ -108,18 +112,21 @@ contract LpWithdrawalTest is HyperdriveTest {
     // TODO: We should also test that the withdrawal shares receive interest
     // if the long isn't closed immediately.
     function test_lp_withdrawal_long_redemption(
-        uint128 basePaid,
-        int64 variableRate
+        uint256 basePaid,
+        int256 variableRate
     ) external {
         uint256 apr = 0.02e18;
         uint256 contribution = 500_000_000e18;
         uint256 lpShares = initialize(alice, apr, contribution);
 
-        // Bob opens a max long.
-        vm.assume(
-            basePaid >= 0.001e18 &&
-                basePaid <= HyperdriveUtils.calculateMaxOpenLong(hyperdrive)
+        // Normalize the fuzzing input.
+        basePaid = basePaid.normalizeToRange(
+            0.001e18,
+            HyperdriveUtils.calculateMaxOpenLong(hyperdrive)
         );
+        variableRate = variableRate.normalizeToRange(0, 2e18);
+
+        // Bob opens a max long.
         (uint256 maturityTime, uint256 longAmount) = openLong(bob, basePaid);
 
         // Alice removes all of her LP shares.
@@ -137,7 +144,6 @@ contract LpWithdrawalTest is HyperdriveTest {
         // Positive interest accrues over the term. We create a checkpoint for
         // the first checkpoint after opening the long to ensure that the
         // withdrawal shares will be accounted for properly.
-        vm.assume(variableRate >= 0 && variableRate <= 2e18);
         advanceTime(CHECKPOINT_DURATION, variableRate);
         hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
         advanceTime(POSITION_DURATION - CHECKPOINT_DURATION, variableRate);
@@ -175,31 +181,30 @@ contract LpWithdrawalTest is HyperdriveTest {
     }
 
     function test_lp_withdrawal_short_immediate_close(
-        uint128 shortAmount,
-        int64 preTradingVariableRate
+        uint256 shortAmount,
+        int256 preTradingVariableRate
     ) external {
         uint256 apr = 0.02e18;
         uint256 contribution = 500_000_000e18;
         uint256 lpShares = initialize(alice, apr, contribution);
 
+        // Normalize the fuzzing input.
+        shortAmount = shortAmount.normalizeToRange(
+            0.001e18,
+            HyperdriveUtils.getPoolInfo(hyperdrive).shareReserves
+        );
         // TODO: We run into subtraction underflows when the pre trading APR is
         // negative because the spot price goes above 1. We should investigate
         // this further.
-        //
-        // Accrue interest before the trading period.
-        vm.assume(
-            preTradingVariableRate >= 0e18 && preTradingVariableRate <= 1e18
+        preTradingVariableRate = preTradingVariableRate.normalizeToRange(
+            0,
+            1e18
         );
+
+        // Accrue interest before the trading period.
         advanceTime(POSITION_DURATION, preTradingVariableRate);
 
         // Bob opens a large short.
-        vm.assume(
-            // TODO: We should implement a calculation that gives us the maximum
-            // amount of bonds that can be shorted.
-            shortAmount >= 0.001e18 &&
-                shortAmount <=
-                HyperdriveUtils.getPoolInfo(hyperdrive).shareReserves
-        );
         (uint256 maturityTime, uint256 basePaid) = openShort(bob, shortAmount);
 
         // Alice removes all of her LP shares.
@@ -253,21 +258,21 @@ contract LpWithdrawalTest is HyperdriveTest {
     // TODO: We should also test that the withdrawal shares receive interest
     // if the long isn't closed immediately.
     function test_lp_withdrawal_short_redemption(
-        uint128 shortAmount,
-        int64 variableRate
+        uint256 shortAmount,
+        int256 variableRate
     ) external {
         uint256 apr = 0.02e18;
         uint256 contribution = 500_000_000e18;
         uint256 lpShares = initialize(alice, apr, contribution);
 
-        // Bob opens a large short.
-        vm.assume(
-            // TODO: We should implement a calculation that gives us the maximum
-            // amount of bonds that can be shorted.
-            shortAmount >= 0.001e18 &&
-                shortAmount <=
-                HyperdriveUtils.getPoolInfo(hyperdrive).shareReserves
+        // Normalize the fuzzing input.
+        shortAmount = shortAmount.normalizeToRange(
+            0.001e18,
+            HyperdriveUtils.getPoolInfo(hyperdrive).shareReserves
         );
+        variableRate = variableRate.normalizeToRange(0, 2e18);
+
+        // Bob opens a large short.
         (uint256 maturityTime, uint256 basePaid) = openShort(bob, shortAmount);
 
         // Alice removes all of her LP shares.
@@ -278,8 +283,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         assertEq(baseProceeds, contribution - (shortAmount - basePaid));
         assertEq(withdrawalShares, shortAmount - basePaid);
 
-        // Positive interest accrues over the term.
-        vm.assume(variableRate >= 0 && variableRate <= 2e18);
+        // Interest accrues over the term.
         advanceTime(POSITION_DURATION, variableRate);
 
         // Bob closes his short. His proceeds should be the variable interest
@@ -331,14 +335,12 @@ contract LpWithdrawalTest is HyperdriveTest {
     function test_lp_withdrawal_long_and_short_immediate(
         uint256 longBasePaid,
         uint256 shortAmount,
-        uint64 variableRate
+        uint256 variableRate
     ) external {
-        // Ensure that the provided parameters fit into our testing range.
-        vm.assume(longBasePaid >= 0.001e18);
-        longBasePaid %= 20_000_000e18; // TODO: Use larger amounts
-        vm.assume(shortAmount >= 0.001e18);
-        shortAmount %= 20_000_000e18; // TODO: Use larger amounts
-        vm.assume(variableRate >= 0 && variableRate <= 2e18);
+        // Normalize the fuzzing input.
+        longBasePaid = longBasePaid.normalizeToRange(0.001e18, 20_000_000e18); // TODO: use larger amounts.
+        shortAmount = shortAmount.normalizeToRange(0.001e18, 20_000_000e18); // TODO: use larger amounts.
+        variableRate = variableRate.normalizeToRange(0, 2e18);
 
         // Set up the test parameters.
         TestLpWithdrawalLongShortImmediateParams
