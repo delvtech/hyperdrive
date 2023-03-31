@@ -78,8 +78,7 @@ contract CloseShortTest is HyperdriveTest {
         (uint256 maturityTime, uint256 basePaid) = openShort(bob, bondAmount);
 
         // Get the reserves before closing the long.
-        HyperdriveUtils.PoolInfo memory poolInfoBefore = HyperdriveUtils
-            .getPoolInfo(hyperdrive);
+        IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
 
         // Immediately close the bonds.
         uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
@@ -103,8 +102,7 @@ contract CloseShortTest is HyperdriveTest {
         (uint256 maturityTime, uint256 basePaid) = openShort(bob, bondAmount);
 
         // Get the reserves before closing the long.
-        HyperdriveUtils.PoolInfo memory poolInfoBefore = HyperdriveUtils
-            .getPoolInfo(hyperdrive);
+        IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
 
         // Immediately close the bonds.
         uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
@@ -130,8 +128,7 @@ contract CloseShortTest is HyperdriveTest {
         (uint256 maturityTime, ) = openShort(bob, bondAmount);
 
         // Get the reserves before closing the long.
-        HyperdriveUtils.PoolInfo memory poolInfoBefore = HyperdriveUtils
-            .getPoolInfo(hyperdrive);
+        IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
 
         // The term passes.
         vm.warp(block.timestamp + 365 days);
@@ -161,8 +158,7 @@ contract CloseShortTest is HyperdriveTest {
         advanceTime(POSITION_DURATION, -0.2e18);
 
         // Get the reserves before closing the long.
-        HyperdriveUtils.PoolInfo memory poolInfoBefore = HyperdriveUtils
-            .getPoolInfo(hyperdrive);
+        IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
 
         // Redeem the bonds.
         uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
@@ -189,8 +185,7 @@ contract CloseShortTest is HyperdriveTest {
         advanceTime(POSITION_DURATION.mulDown(0.5e18), -0.2e18);
 
         // Get the reserves before closing the short.
-        HyperdriveUtils.PoolInfo memory poolInfoBefore = HyperdriveUtils
-            .getPoolInfo(hyperdrive);
+        IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
 
         // Redeem the bonds.
         uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
@@ -223,8 +218,7 @@ contract CloseShortTest is HyperdriveTest {
         advanceTime(POSITION_DURATION, 0.5e18);
 
         // Get the reserves before closing the short.
-        HyperdriveUtils.PoolInfo memory poolInfoBefore = HyperdriveUtils
-            .getPoolInfo(hyperdrive);
+        IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
 
         // Redeem the bonds.
         uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
@@ -252,8 +246,7 @@ contract CloseShortTest is HyperdriveTest {
         assertEq(block.timestamp, maturityTime);
 
         // Get the reserves before closing the short.
-        HyperdriveUtils.PoolInfo memory poolInfoBefore = HyperdriveUtils
-            .getPoolInfo(hyperdrive);
+        IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
 
         // Redeem the bonds.
         uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
@@ -270,7 +263,7 @@ contract CloseShortTest is HyperdriveTest {
     }
 
     function verifyCloseShort(
-        HyperdriveUtils.PoolInfo memory poolInfoBefore,
+        IHyperdrive.PoolInfo memory poolInfoBefore,
         uint256 bondAmount,
         uint256 maturityTime,
         bool wasCheckpointed
@@ -290,8 +283,8 @@ contract CloseShortTest is HyperdriveTest {
         );
 
         // Retrieve the pool info after the trade.
-        HyperdriveUtils.PoolInfo memory poolInfoAfter = HyperdriveUtils
-            .getPoolInfo(hyperdrive);
+        IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
+
         IHyperdrive.Checkpoint memory checkpoint = hyperdrive.checkpoints(
             checkpointTime
         );
@@ -321,9 +314,9 @@ contract CloseShortTest is HyperdriveTest {
                     poolInfoBefore.bondReserves,
                     bondAmount.mulDown(timeRemaining),
                     FixedPointMath.ONE_18 -
-                        HyperdriveUtils.getPoolConfig(hyperdrive).timeStretch,
+                        hyperdrive.getPoolConfig().timeStretch,
                     poolInfoBefore.sharePrice,
-                    HyperdriveUtils.getPoolConfig(hyperdrive).initialSharePrice
+                    hyperdrive.getPoolConfig().initialSharePrice
                 );
             assertApproxEqAbs(
                 poolInfoAfter.shareReserves,

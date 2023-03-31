@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
-import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol";
+import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
 
 contract ExtremeInputs is HyperdriveTest {
     using FixedPointMath for uint256;
@@ -14,8 +14,7 @@ contract ExtremeInputs is HyperdriveTest {
         initialize(alice, 0.05e18, 500_000_000e18);
 
         // Calculate amount of base
-        HyperdriveUtils.PoolInfo memory poolInfoBefore = HyperdriveUtils
-            .getPoolInfo(hyperdrive);
+        IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
 
         // Max base amount
         uint256 baseAmount = HyperdriveUtils.calculateMaxOpenLong(hyperdrive);
@@ -25,8 +24,7 @@ contract ExtremeInputs is HyperdriveTest {
 
         uint256 apr = HyperdriveUtils.calculateAPRFromReserves(hyperdrive);
 
-        HyperdriveUtils.PoolInfo memory poolInfoAfter = HyperdriveUtils
-            .getPoolInfo(hyperdrive);
+        IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
 
         // FIXME: Can we get a similar check, or is this now
         // fundamentally broken due to the way that the virtual
@@ -59,7 +57,7 @@ contract ExtremeInputs is HyperdriveTest {
                 poolInfoBefore.bondReserves - bondAmount,
                 INITIAL_SHARE_PRICE,
                 POSITION_DURATION,
-                HyperdriveUtils.getPoolConfig(hyperdrive).timeStretch
+                hyperdrive.getPoolConfig().timeStretch
             ),
             5
         );

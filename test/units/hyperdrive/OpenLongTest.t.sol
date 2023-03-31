@@ -35,9 +35,7 @@ contract OpenLongTest is HyperdriveTest {
         // Attempt to purchase more bonds than exist. This should fail.
         vm.stopPrank();
         vm.startPrank(bob);
-        uint256 baseAmount = HyperdriveUtils
-            .getPoolInfo(hyperdrive)
-            .bondReserves;
+        uint256 baseAmount = hyperdrive.getPoolInfo().bondReserves;
         baseToken.mint(baseAmount);
         baseToken.approve(address(hyperdrive), baseAmount);
         vm.expectRevert(Errors.NegativeInterest.selector);
@@ -52,8 +50,7 @@ contract OpenLongTest is HyperdriveTest {
         initialize(alice, apr, contribution);
 
         // Get the reserves before opening the long.
-        HyperdriveUtils.PoolInfo memory poolInfoBefore = HyperdriveUtils
-            .getPoolInfo(hyperdrive);
+        IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
 
         // Open a long.
         uint256 baseAmount = 10e18;
@@ -78,8 +75,7 @@ contract OpenLongTest is HyperdriveTest {
         initialize(alice, apr, contribution);
 
         // Get the reserves before opening the long.
-        HyperdriveUtils.PoolInfo memory poolInfoBefore = HyperdriveUtils
-            .getPoolInfo(hyperdrive);
+        IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
 
         // Purchase a small amount of bonds.
         uint256 baseAmount = .01e18;
@@ -97,7 +93,7 @@ contract OpenLongTest is HyperdriveTest {
     }
 
     function verifyOpenLong(
-        HyperdriveUtils.PoolInfo memory poolInfoBefore,
+        IHyperdrive.PoolInfo memory poolInfoBefore,
         uint256 contribution,
         uint256 baseAmount,
         uint256 bondAmount,
@@ -120,8 +116,8 @@ contract OpenLongTest is HyperdriveTest {
         initialize(alice, apr, contribution);
 
         // Open a long with fees.
-        HyperdriveUtils.PoolInfo memory poolInfoBeforeWithFees = HyperdriveUtils
-            .getPoolInfo(hyperdrive);
+        IHyperdrive.PoolInfo memory poolInfoBeforeWithFees = hyperdrive
+            .getPoolInfo();
         (, uint256 bondAmountWithFees) = openLong(celine, baseAmount);
 
         _verifyOpenLong(
@@ -139,13 +135,14 @@ contract OpenLongTest is HyperdriveTest {
         // p = 1 / (1 + r)
         // roughly ((1/.9523 - 1) * .1) * 10e18 * 1 = 5e16, or 10% of the 5% bond - base spread.
         uint256 p = (uint256(1 ether)).divDown(1 ether + 0.05 ether);
-        uint256 phi = HyperdriveUtils.getPoolConfig(hyperdrive).curveFee;
+        uint256 phi = hyperdrive.getPoolConfig().curveFee;
         uint256 curveFeeAmount = (uint256(1 ether).divDown(p) - 1 ether)
             .mulDown(phi)
             .mulDown(baseAmount);
 
-        HyperdriveUtils.PoolInfo memory poolInfoAfterWithFees = HyperdriveUtils
-            .getPoolInfo(hyperdrive);
+        IHyperdrive.PoolInfo memory poolInfoAfterWithFees = hyperdrive
+            .getPoolInfo();
+
         // bondAmount is from the hyperdrive without the curve fee
         assertApproxEqAbs(
             poolInfoAfterWithFees.longsOutstanding,
@@ -158,7 +155,7 @@ contract OpenLongTest is HyperdriveTest {
 
     function _verifyOpenLong(
         address user,
-        HyperdriveUtils.PoolInfo memory poolInfoBefore,
+        IHyperdrive.PoolInfo memory poolInfoBefore,
         uint256 contribution,
         uint256 baseAmount,
         uint256 bondAmount,
@@ -184,8 +181,8 @@ contract OpenLongTest is HyperdriveTest {
 
         // Ensure that the state changes to the share reserves were applied
         // correctly and that the other pieces of state were left untouched.
-        HyperdriveUtils.PoolInfo memory poolInfoAfter = HyperdriveUtils
-            .getPoolInfo(hyperdrive);
+        IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
+
         assertEq(
             poolInfoAfter.shareReserves,
             poolInfoBefore.shareReserves +
@@ -211,7 +208,7 @@ contract OpenLongTest is HyperdriveTest {
                 poolInfoBefore.bondReserves - bondAmount,
                 INITIAL_SHARE_PRICE,
                 POSITION_DURATION,
-                HyperdriveUtils.getPoolConfig(hyperdrive).timeStretch
+                hyperdrive.getPoolConfig().timeStretch
             ),
             5
         );
