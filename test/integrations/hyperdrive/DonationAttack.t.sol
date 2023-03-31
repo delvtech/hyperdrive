@@ -8,8 +8,8 @@ contract DonationAttackTest is HyperdriveTest {
     using Lib for *;
 
     // This test ensures that a malicious user cannot drain the pool by
-    // donating base to the pool and then removing all of their liquidity.
-    function test_donation_attack(
+    // donating base to the pool before initialization.
+    function test_donation_before_initialization_attack(
         uint256 contribution,
         uint256 donation
     ) external {
@@ -17,20 +17,43 @@ contract DonationAttackTest is HyperdriveTest {
         contribution = contribution.normalizeToRange(1e18, 10_000_000_000e18);
         donation = donation.normalizeToRange(0, 10_000_000_000e18);
 
-        // Initialize Hyperdrive with a small amount of base.
+        // A malicious donation is made to the pool.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        baseToken.mint(address(hyperdrive), donation);
+
+        // Initialize the pool.
+        uint256 lpShares = initialize(alice, 0.02e18, contribution);
+
+        // Ensure that the initial contribution is returned.
+        (uint256 baseProceeds, ) = removeLiquidity(alice, lpShares);
+        assertGe(baseProceeds, contribution);
+    }
+
+    // This test ensures that a malicious user cannot drain the pool by
+    // donating base to the pool and then removing all of their liquidity.
+    function test_donation_after_initialization_attack(
+        uint256 contribution,
+        uint256 donation
+    ) external {
+        // Ensure that the testing parameters are within bounds.
+        contribution = contribution.normalizeToRange(1e18, 10_000_000_000e18);
+        donation = donation.normalizeToRange(0, 10_000_000_000e18);
+
+        // Initialize the pool.
         uint256 initialContribution = 1e18;
         initialize(alice, 0.02e18, initialContribution);
 
-        // Donate 1 base to the pool.
+        // A malicious donation is made to the pool.
         vm.stopPrank();
         vm.startPrank(alice);
         baseToken.mint(address(hyperdrive), donation);
 
-        // Bob adds 1 base of liquidity.
-        uint256 bobLpShares = addLiquidity(bob, contribution);
+        // Bob adds liquidity.
+        uint256 lpShares = addLiquidity(bob, contribution);
 
-        // Ensure that Bob can remove all but a dust amount of his base.
-        (uint256 baseProceeds, ) = removeLiquidity(bob, bobLpShares);
+        // Ensure that Alice can withdraw almost all of her base.
+        (uint256 baseProceeds, ) = removeLiquidity(bob, lpShares);
         assertApproxEqAbs(baseProceeds, contribution, 1e11);
     }
 }

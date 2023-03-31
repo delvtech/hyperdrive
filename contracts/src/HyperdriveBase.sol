@@ -20,25 +20,31 @@ abstract contract HyperdriveBase is MultiToken {
     using FixedPointMath for uint256;
     using SafeCast for uint256;
 
+    /// Constants ///
+
+    /// @notice To prevent against donation attacks, we enforce that a minimum
+    ///         amount of shares are minted.
+    uint256 internal constant MINIMUM_SHARES_MINTED = 1e5;
+
     /// Tokens ///
 
-    // @notice The base asset.
+    /// @notice The base asset.
     IERC20 public immutable baseToken;
 
     /// Time ///
 
-    // @notice The amount of seconds between share price checkpoints.
+    /// @notice The amount of seconds between share price checkpoints.
     uint256 internal immutable checkpointDuration;
 
-    // @notice The amount of seconds that elapse before a bond can be redeemed.
+    /// @notice The amount of seconds that elapse before a bond can be redeemed.
     uint256 internal immutable positionDuration;
 
-    // @notice A parameter that decreases slippage around a target rate.
+    /// @notice A parameter that decreases slippage around a target rate.
     uint256 internal immutable timeStretch;
 
     /// Market State ///
 
-    // @notice The share price at the time the pool was created.
+    /// @notice The share price at the time the pool was created.
     uint256 internal immutable initialSharePrice;
 
     /// @notice The reserves and the buffers. This is the primary state used for
@@ -122,15 +128,37 @@ abstract contract HyperdriveBase is MultiToken {
     /// Yield Source ///
 
     /// @notice Transfers base from the user and commits it to the yield source.
+    /// @dev This function should never be called directly.
     /// @param amount The amount of base to deposit.
-    /// @param asUnderlying If true the yield source will transfer underlying tokens
-    ///                     if false it will transfer the yielding asset directly
+    /// @param asUnderlying If true the yield source will transfer underlying
+    ///        tokens if false it will transfer the yielding asset directly.
+    /// @return sharesMinted The shares this deposit creates.
+    /// @return sharePrice The share price at time of deposit.
+    function _depositUnsafe(
+        uint256 amount,
+        bool asUnderlying
+    ) internal virtual returns (uint256 sharesMinted, uint256 sharePrice);
+
+    /// @notice Transfers base from the user and commits it to the yield source.
+    /// @dev This function should always be called to handle deposits to avoid
+    ///      donation attacks.
+    /// @param amount The amount of base to deposit.
+    /// @param asUnderlying If true the yield source will transfer underlying
+    ///        tokens if false it will transfer the yielding asset directly.
     /// @return sharesMinted The shares this deposit creates.
     /// @return sharePrice The share price at time of deposit.
     function _deposit(
         uint256 amount,
         bool asUnderlying
-    ) internal virtual returns (uint256 sharesMinted, uint256 sharePrice);
+    ) internal returns (uint256 sharesMinted, uint256 sharePrice) {
+        // Call the implemented deposit function.
+        (sharesMinted, sharePrice) = _depositUnsafe(amount, asUnderlying);
+
+        // Ensure that the shares are sufficient to avoid a donation attack.
+        if (sharesMinted < MINIMUM_SHARES_MINTED) {
+            revert Errors.InsufficientSharesMinted();
+        }
+    }
 
     /// @notice Withdraws shares from the yield source and sends the base
     ///         released to the destination.

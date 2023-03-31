@@ -45,7 +45,7 @@ contract MockHyperdriveTestnet is Hyperdrive {
 
     error UnsupportedOption();
 
-    function _deposit(
+    function _depositUnsafe(
         uint256 _amount,
         bool _asUnderlying
     ) internal override returns (uint256 sharesMinted, uint256 sharePrice) {

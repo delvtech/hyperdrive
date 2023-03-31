@@ -62,13 +62,14 @@ contract MakerDsrHyperdrive is Hyperdrive {
         baseToken.approve(address(dsrManager), type(uint256).max);
     }
 
-    /// @notice Transfers base or shares from the user and commits it to the yield source.
+    /// @dev Transfers base or shares from the user and commits it to the yield
+    ///      source.
     /// @param amount The amount of base tokens to deposit.
-    /// @param asUnderlying If true the yield source will transfer underlying tokens
-    ///                     if false it will transfer the yielding asset directly
+    /// @param asUnderlying If true the yield source will transfer underlying
+    ///        tokens if false it will transfer the yielding asset directly.
     /// @return sharesMinted The shares this deposit creates.
     /// @return sharePrice The share price at time of deposit.
-    function _deposit(
+    function _depositUnsafe(
         uint256 amount,
         bool asUnderlying
     ) internal override returns (uint256 sharesMinted, uint256 sharePrice) {
@@ -87,18 +88,19 @@ contract MakerDsrHyperdrive is Hyperdrive {
         }
 
         // Get total invested balance of pool, deposits + interest
-        uint256 totalBase = dsrManager.daiBalance(address(this));
+        uint256 assets = dsrManager.daiBalance(address(this));
 
         // Deposit the base tokens into the dsr
         dsrManager.join(address(this), amount);
 
-        // Do share calculations
+        // If there are no shares, mint the initial shares 1:1. Otherwise,
+        // calculate the number of shares to mint using the current share price.
+        uint256 newShares;
         if (totalShares == 0) {
-            totalShares = amount;
-            // Initial deposits are always 1:1
-            return (amount, FixedPointMath.ONE_18);
+            totalShares = amount + assets;
+            return (totalShares, FixedPointMath.ONE_18);
         } else {
-            uint256 newShares = totalShares.mulDivDown(amount, totalBase);
+            newShares = totalShares.mulDivDown(amount, assets);
             totalShares += newShares;
             return (newShares, amount.divDown(newShares));
         }

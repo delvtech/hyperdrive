@@ -187,11 +187,13 @@ contract MockHyperdrive is Hyperdrive {
 
     /// Overrides ///
 
-    function _deposit(
+    function _depositUnsafe(
         uint256 amount,
         bool
     ) internal override returns (uint256, uint256) {
         uint256 assets = baseToken.balanceOf(address(this));
+
+        // Take custody of the base being deposited.
         bool success = baseToken.transferFrom(
             msg.sender,
             address(this),
@@ -200,11 +202,15 @@ contract MockHyperdrive is Hyperdrive {
         if (!success) {
             revert Errors.TransferFailed();
         }
+
+        // If there are no shares, mint the initial shares 1:1. Otherwise,
+        // calculate the number of shares to mint using the current share price.
+        uint256 newShares;
         if (totalShares == 0) {
-            totalShares = amount;
-            return (amount, FixedPointMath.ONE_18);
+            totalShares = amount + assets;
+            return (totalShares, FixedPointMath.ONE_18);
         } else {
-            uint256 newShares = totalShares.mulDivDown(amount, assets);
+            newShares = totalShares.mulDivDown(amount, assets);
             totalShares += newShares;
             return (newShares, amount.divDown(newShares));
         }

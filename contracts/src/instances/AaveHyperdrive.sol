@@ -59,13 +59,14 @@ contract AaveHyperdrive is Hyperdrive {
         pool = _pool;
     }
 
-    ///@notice Transfers amount of 'token' from the user and commits it to the yield source.
-    ///@param amount The amount of token to transfer
-    /// @param asUnderlying If true the yield source will transfer underlying tokens
-    ///                     if false it will transfer the yielding asset directly
-    ///@return sharesMinted The shares this deposit creates
-    ///@return sharePrice The share price at time of deposit
-    function _deposit(
+    /// @dev Transfers amount of 'token' from the user and commits it to the
+    ///      yield source.
+    /// @param amount The amount of tokens to transfer.
+    /// @param asUnderlying If true the yield source will transfer underlying
+    ///        tokens if false it will transfer the yielding asset directly.
+    /// @return sharesMinted The shares this deposit creates.
+    /// @return sharePrice The share price at time of deposit.
+    function _depositUnsafe(
         uint256 amount,
         bool asUnderlying
     ) internal override returns (uint256 sharesMinted, uint256 sharePrice) {
@@ -89,24 +90,27 @@ contract AaveHyperdrive is Hyperdrive {
             aToken.transferFrom(msg.sender, address(this), amount);
         }
 
-        // Do share calculations
+        // If there are no shares, mint the initial shares 1:1. Otherwise,
+        // calculate the number of shares to mint using the current share price.
+        uint256 newShares;
         if (totalShares == 0) {
-            totalShares = amount;
-            return (amount, FixedPointMath.ONE_18);
+            totalShares = amount + assets;
+            return (totalShares, FixedPointMath.ONE_18);
         } else {
-            uint256 newShares = totalShares.mulDivDown(amount, assets);
+            newShares = totalShares.mulDivDown(amount, assets);
             totalShares += newShares;
             return (newShares, amount.divDown(newShares));
         }
     }
 
-    ///@notice Withdraws shares from the yield source and sends the resulting tokens to the destination
-    ///@param shares The shares to withdraw from the yield source
-    /// @param asUnderlying If true the yield source will transfer underlying tokens
-    ///                     if false it will transfer the yielding asset directly
-    ///@param destination The address which is where to send the resulting tokens
-    ///@return amountWithdrawn the amount of 'token' produced by this withdraw
-    ///@return sharePrice The share price on withdraw.
+    /// @dev Withdraws shares from the yield source and sends the resulting
+    ///      tokens to the destination.
+    /// @param shares The shares to withdraw from the yield source
+    /// @param asUnderlying If true the yield source will transfer underlying
+    ///        tokens if false it will transfer the yielding asset directly.
+    /// @param destination The recipient of the resulting tokens.
+    /// @return amountWithdrawn the amount of tokens produced by this withdraw.
+    /// @return sharePrice The share price on withdraw.
     function _withdraw(
         uint256 shares,
         address destination,
