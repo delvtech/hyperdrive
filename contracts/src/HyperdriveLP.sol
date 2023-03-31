@@ -18,6 +18,8 @@ abstract contract HyperdriveLP is HyperdriveBase {
     using FixedPointMath for uint256;
     using SafeCast for uint256;
 
+    uint256 internal constant MINIMUM_INITIAL_CONTRIBUTION = 1e18;
+
     /// @notice Allows the first LP to initialize the market with a target APR.
     /// @param _contribution The amount of base to supply.
     /// @param _apr The target APR.
@@ -34,6 +36,11 @@ abstract contract HyperdriveLP is HyperdriveBase {
         // Ensure that the pool hasn't been initialized yet.
         if (marketState.isInitialized) {
             revert Errors.PoolAlreadyInitialized();
+        }
+
+        // Ensure that the contribution exceeds the minimum.
+        if (_contribution < MINIMUM_INITIAL_CONTRIBUTION) {
+            revert Errors.InitialContributionTooSmall();
         }
 
         // Deposit for the user, this transfers from them.

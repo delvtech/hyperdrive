@@ -10,7 +10,24 @@ import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol"
 contract InitializeTest is HyperdriveTest {
     using FixedPointMath for uint256;
 
-    function test_initialize_failure() external {
+    function test_initialize_failure_minimum_contribution(
+        uint256 contribution
+    ) external {
+        // Sanitize the input so that it is below the minimum initial contribution.
+        contribution = contribution % 1e18;
+
+        // Attempt to initialize the pool with a contribution that is too small.
+        // This should fail.
+        uint256 apr = 0.5e18;
+        vm.stopPrank();
+        vm.startPrank(bob);
+        baseToken.mint(contribution);
+        baseToken.approve(address(hyperdrive), contribution);
+        vm.expectRevert(Errors.InitialContributionTooSmall.selector);
+        hyperdrive.initialize(contribution, apr, bob, true);
+    }
+
+    function test_initialize_failure_reinitialization() external {
         uint256 apr = 0.5e18;
         uint256 contribution = 1000.0e18;
 
