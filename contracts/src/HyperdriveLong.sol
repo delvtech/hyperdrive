@@ -364,6 +364,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
             uint256 capitalFreed = withdrawalProceeds > lpInterest
                 ? withdrawalProceeds - lpInterest
                 : 0;
+            // FIXME: This may not be right.
+            capitalFreed = capitalFreed > lpMargin ? lpMargin : capitalFreed;
 
             // Pay out the withdrawal pool with the freed margin. The withdrawal
             // proceeds are split into the margin pool and the interest pool.

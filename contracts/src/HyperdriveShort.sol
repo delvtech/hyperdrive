@@ -342,6 +342,10 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 uint256 proceedsInBase = withdrawalProceeds.mulDown(
                     _sharePrice
                 );
+                // TODO: We are marking trading gains as interest. This
+                // effectively nullifies the idea of using margin to prevent LPs
+                // from stealing money through LP withdrawal shares.
+                //
                 // TODO: Why are we calling this interest? When is this accrued?
                 // We should document this.
                 uint256 interest = proceedsInBase >= lpMargin
@@ -350,8 +354,13 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 uint256 openSharePrice = checkpoints[
                     _maturityTime - positionDuration
                 ].sharePrice;
+                uint256 capitalFreed = withdrawalProceeds - interest;
+                // TODO: Think more about this.
+                capitalFreed = capitalFreed > lpMargin
+                    ? lpMargin
+                    : capitalFreed;
                 (uint256 marginUsed, uint256 interestUsed) = _freeMargin(
-                    withdrawalProceeds - interest,
+                    capitalFreed,
                     lpMargin.divDown(openSharePrice),
                     interest
                 );
