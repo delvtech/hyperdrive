@@ -1,10 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-// FIXME
-import "forge-std/console.sol";
-import "test/utils/Lib.sol";
-
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
@@ -599,7 +595,7 @@ contract LpWithdrawalTest is HyperdriveTest {
             aliceBaseProceeds,
             testParams.contribution -
                 (testParams.longAmount - testParams.longBasePaid),
-            1e9
+            1e9 // TODO: Try to shrink this bound.
         );
         assertApproxEqAbs(
             aliceWithdrawalShares,
@@ -802,10 +798,6 @@ contract LpWithdrawalTest is HyperdriveTest {
             aliceWithdrawalShares
         );
         assertGt(aliceRedeemProceeds, aliceExpectedWithdrawalShares);
-        console.log(
-            "alice proceeds: %s",
-            (aliceBaseProceeds + aliceRedeemProceeds).toString(18)
-        );
 
         // Bob and Celine remove their liquidity. They should receive
         // approximately the same amount of base tokens and no withdrawal
@@ -818,7 +810,6 @@ contract LpWithdrawalTest is HyperdriveTest {
             uint256 celineBaseProceeds,
             uint256 celineWithdrawalShares
         ) = removeLiquidity(celine, celineLpShares);
-        console.log("bob proceeds: %s", bobBaseProceeds.toString(18));
         assertEq(bobBaseProceeds, celineBaseProceeds);
         // TODO: This assertion fails with the following error:
         //
