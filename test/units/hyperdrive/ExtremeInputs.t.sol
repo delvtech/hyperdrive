@@ -21,8 +21,7 @@ contract ExtremeInputs is HyperdriveTest {
 
         // Open long with max base amount
         (, uint256 bondAmount) = openLong(bob, baseAmount);
-        HyperdriveUtils.PoolInfo memory poolInfoAfter = HyperdriveUtils
-            .getPoolInfo(hyperdrive);
+        IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
 
         // Ensure that the ending APR is approximately 0%.
         uint256 apr = HyperdriveUtils.calculateAPRFromReserves(hyperdrive);
@@ -56,8 +55,7 @@ contract ExtremeInputs is HyperdriveTest {
         initialize(alice, 0.05e18, 500_000_000e18);
 
         // Calculate amount of base
-        HyperdriveUtils.PoolInfo memory poolInfoBefore = HyperdriveUtils
-            .getPoolInfo(hyperdrive);
+        IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
 
         // Max amount of bonds to short
         uint256 bondAmount = HyperdriveUtils.calculateMaxShort(hyperdrive);
@@ -71,8 +69,7 @@ contract ExtremeInputs is HyperdriveTest {
 
         // Ensure the share reserves are approximately empty and that the apr
         // increased.
-        HyperdriveUtils.PoolInfo memory poolInfoAfter = HyperdriveUtils
-            .getPoolInfo(hyperdrive);
+        IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
         assertApproxEqAbs(
             poolInfoAfter.shareReserves,
             0,
@@ -93,7 +90,7 @@ contract ExtremeInputs is HyperdriveTest {
                 poolInfoBefore.bondReserves + bondAmount,
                 INITIAL_SHARE_PRICE,
                 POSITION_DURATION,
-                HyperdriveUtils.getPoolConfig(hyperdrive).timeStretch
+                hyperdrive.getPoolConfig().timeStretch
             ),
             5
         );

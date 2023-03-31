@@ -115,7 +115,7 @@ library HyperdriveUtils {
     function calculateMaxShort(
         IHyperdrive _hyperdrive
     ) internal view returns (uint256) {
-        PoolInfo memory poolInfo = getPoolInfo(_hyperdrive);
+        IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
 
         // As any long in the middle of a checkpoint duration is backdated,
         // we must use that backdate as the reference for the maturity time
@@ -128,7 +128,7 @@ library HyperdriveUtils {
         // t = normalized seconds until maturity
         // s = time stretch of the pool
         uint256 normalizedTimeRemaining = FixedPointMath.ONE_18.sub(
-            timeRemaining.mulDown(getPoolConfig(_hyperdrive).timeStretch)
+            timeRemaining.mulDown(_hyperdrive.getPoolConfig().timeStretch)
         );
 
         // The calculate bonds in given shares out function slightly
@@ -152,7 +152,7 @@ library HyperdriveUtils {
                     sharesOut,
                     normalizedTimeRemaining,
                     poolInfo.sharePrice,
-                    getPoolConfig(_hyperdrive).initialSharePrice
+                    _hyperdrive.getPoolConfig().initialSharePrice
                 )
                 .divDown(poolInfo.sharePrice);
     }
