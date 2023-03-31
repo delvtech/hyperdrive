@@ -53,31 +53,50 @@ interface IHyperdrive is IMultiToken {
         uint256 governance;
     }
 
-    // TODO Add documentation
     struct PoolConfig {
+        /// @dev The initial share price of the base asset.
         uint256 initialSharePrice;
+        /// @dev The duration of a long or short trade.
         uint256 positionDuration;
+        /// @dev The duration of a checkpoint.
         uint256 checkpointDuration;
+        /// @dev A parameter which decreases slippage around a target rate.
         uint256 timeStretch;
+        /// @dev The LP fee applied to the flat portion of a trade.
         uint256 flatFee;
+        /// @dev The LP fee applied to the curve portion of a trade.
         uint256 curveFee;
+        /// @dev The percentage fee applied to the LP fees.
         uint256 governanceFee;
     }
 
-    // TODO Add documentation
     struct PoolInfo {
+        /// @dev The reserves of shares held by the pool.
         uint256 shareReserves;
+        /// @dev The reserves of bonds held by the pool.
         uint256 bondReserves;
+        /// @dev The total supply of LP shares.
         uint256 lpTotalSupply;
+        /// @dev The current share price.
         uint256 sharePrice;
+        /// @dev An amount of bonds representating outstanding unmatured longs.
         uint256 longsOutstanding;
+        /// @dev The average maturity time of the outstanding longs.
         uint256 longAverageMaturityTime;
+        /// @dev The cumulative amount of base paid for oustanding longs.
         uint256 longBaseVolume;
+        /// @dev An amount of bonds representating outstanding unmatured shorts.
         uint256 shortsOutstanding;
+        /// @dev The average maturity time of the outstanding shorts.
         uint256 shortAverageMaturityTime;
+        /// @dev The cumulative amount of base paid for oustanding shorts.
         uint256 shortBaseVolume;
+        /// @dev The total amount of shares which are not backing outstanding
+        ///      longs and short positions.
         uint256 withdrawalSharesReadyToWithdraw;
+        /// @dev The cumulative amount of base released from margin positions.
         uint256 capital;
+        /// @dev The cumulative amount of base interest earned from margin positions.
         uint256 interest;
     }
 
