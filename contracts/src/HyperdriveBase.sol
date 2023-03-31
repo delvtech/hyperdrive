@@ -186,7 +186,7 @@ abstract contract HyperdriveBase is MultiToken {
     /// @dev These parameters are immutable, so this should only need to be
     ///      called once.
     /// @return The PoolConfig struct.
-    function getPoolConfiguration()
+    function getPoolConfig()
         external
         view
         returns (IHyperdrive.PoolConfig memory)

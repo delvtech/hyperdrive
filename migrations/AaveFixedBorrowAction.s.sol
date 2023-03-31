@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.18;
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
@@ -22,7 +22,7 @@ contract AaveFixedBorrowActionScript is Script {
 
         // Hyperdrive
         IHyperdrive hyperdrive = IHyperdrive(
-            address(0x8C9Ccd26fFB734658171EE2B0C6d087e72752c20)
+            address(0xB311B825171AF5A60d69aAD590B857B1E5ed23a2)
         );
 
         // Aave Pool

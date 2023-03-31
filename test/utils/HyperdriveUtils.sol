@@ -16,7 +16,7 @@ library HyperdriveUtils {
         return
             block.timestamp -
             (block.timestamp %
-                hyperdrive.getPoolConfiguration().checkpointDuration);
+                hyperdrive.getPoolConfig().checkpointDuration);
     }
 
     function calculateTimeRemaining(
@@ -27,7 +27,7 @@ library HyperdriveUtils {
             ? _maturityTime - block.timestamp
             : 0;
         timeRemaining = (timeRemaining).divDown(
-            _hyperdrive.getPoolConfiguration().positionDuration
+            _hyperdrive.getPoolConfig().positionDuration
         );
         return timeRemaining;
     }
@@ -37,14 +37,14 @@ library HyperdriveUtils {
     ) internal view returns (uint256) {
         return
             latestCheckpoint(_hyperdrive) +
-            _hyperdrive.getPoolConfiguration().positionDuration;
+            _hyperdrive.getPoolConfig().positionDuration;
     }
 
     function calculateAPRFromReserves(
         IHyperdrive _hyperdrive
     ) internal view returns (uint256) {
         IHyperdrive.PoolConfig memory poolConfig = _hyperdrive
-            .getPoolConfiguration();
+            .getPoolConfig();
         IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
         return
             HyperdriveMath.calculateAPRFromReserves(
@@ -77,7 +77,7 @@ library HyperdriveUtils {
     ) internal view returns (uint256 baseAmount) {
         IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
         IHyperdrive.PoolConfig memory poolConfig = _hyperdrive
-            .getPoolConfiguration();
+            .getPoolConfig();
 
         uint256 tStretch = poolConfig.timeStretch;
         // As any long in the middle of a checkpoint duration is backdated,
@@ -180,7 +180,7 @@ library HyperdriveUtils {
     ) internal view returns (uint256) {
         // Retrieve hyperdrive pool state
         IHyperdrive.PoolConfig memory poolConfig = _hyperdrive
-            .getPoolConfiguration();
+            .getPoolConfig();
         IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
         uint256 openSharePrice;
         uint256 timeRemaining;

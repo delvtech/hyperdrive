@@ -139,7 +139,7 @@ contract CheckpointTest is HyperdriveTest {
 
         uint256 previousCheckpoint = HyperdriveUtils.latestCheckpoint(
             hyperdrive
-        ) - hyperdrive.getPoolConfiguration().checkpointDuration;
+        ) - hyperdrive.getPoolConfig().checkpointDuration;
         hyperdrive.checkpoint(previousCheckpoint);
 
         // TODO: This should be either removed or uncommented when we decide

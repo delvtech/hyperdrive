@@ -56,7 +56,7 @@ contract InitializeTest is HyperdriveTest {
                     FixedPointMath.ONE_18,
                     apr,
                     POSITION_DURATION,
-                    hyperdrive.getPoolConfiguration().timeStretch
+                    hyperdrive.getPoolConfig().timeStretch
                 )
         );
     }

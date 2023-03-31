@@ -108,7 +108,7 @@ interface IHyperdrive is IMultiToken {
 
     function withdrawPool() external view returns (WithdrawPool memory);
 
-    function getPoolConfiguration() external view returns (PoolConfig memory);
+    function getPoolConfig() external view returns (PoolConfig memory);
 
     function getPoolInfo() external view returns (PoolInfo memory);
 
