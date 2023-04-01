@@ -109,6 +109,42 @@ library HyperdriveMath {
         return _shareReserves.divDown(2 * FixedPointMath.ONE_18).mulDown(rhs);
     }
 
+    /// @dev Calculates the bond reserves that will make the pool have a
+    ///      specified APR.
+    /// @param _shareReserves The pool's share reserves.
+    /// @param _lpTotalSupply The pool's total supply of LP shares.
+    /// @param _initialSharePrice The pool's initial share price as an 18 fixed-point number.
+    /// @param _apr The pool's APR as an 18 fixed-point number.
+    /// @param _positionDuration The amount of time until maturity in seconds.
+    /// @param _timeStretch The time stretch parameter as an 18 fixed-point number.
+    /// @return bondReserves The bond reserves that make the pool have a
+    ///         specified APR.
+    function calculateBondReserves(
+        uint256 _shareReserves,
+        uint256 _lpTotalSupply,
+        uint256 _initialSharePrice,
+        uint256 _apr,
+        uint256 _positionDuration,
+        uint256 _timeStretch
+    ) internal pure returns (uint256 bondReserves) {
+        // Solving for (1 + r * t) ** (1 / tau) here. t is the normalized time remaining which in
+        // this case is 1. Because bonds mature after the positionDuration, we need to scale the apr
+        // to the proportion of a year of the positionDuration. tau = t / time_stretch, or just
+        // 1 / time_stretch in this case.
+        uint256 t = _positionDuration.divDown(365 days);
+        uint256 tau = FixedPointMath.ONE_18.mulDown(_timeStretch);
+        uint256 interestFactor = FixedPointMath.ONE_18.add(_apr.mulDown(t)).pow(
+            FixedPointMath.ONE_18.divDown(tau)
+        );
+
+        // mu * z * (1 + apr * t) ** (1 / tau)
+        uint256 lhs = _initialSharePrice.mulDown(_shareReserves).mulDown(
+            interestFactor
+        );
+        // mu * z * (1 + apr * t) ** (1 / tau) - l
+        return lhs.sub(_lpTotalSupply);
+    }
+
     /// @dev Calculates the number of bonds a user will receive when opening a long position.
     /// @param _shareReserves The pool's share reserves.
     /// @param _bondReserves The pool's bond reserves.

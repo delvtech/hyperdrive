@@ -135,13 +135,12 @@ abstract contract HyperdriveLP is HyperdriveBase {
                     ),
                     sharePrice
                 );
-            lpShares = shares
-                .mulDown(totalSupply[AssetId._LP_ASSET_ID])
-                .divDown(
-                    uint256(marketState.shareReserves).add(shortAdjustment).sub(
-                        longAdjustment
-                    )
-                );
+            lpShares = shares.mulDivDown(
+                totalSupply[AssetId._LP_ASSET_ID],
+                uint256(marketState.shareReserves) +
+                    shortAdjustment -
+                    longAdjustment
+            );
         } else {
             // TODO: Ensure that this gives the LP a fair outcome. The existing
             // longs and shorts will have been covered by the previous LP, but

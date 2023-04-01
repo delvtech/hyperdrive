@@ -4,19 +4,18 @@ pragma solidity ^0.8.18;
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { Lib } from "test/utils/Lib.sol";
 
-contract DonationAttackTest is HyperdriveTest {
+contract InflationAttackTest is HyperdriveTest {
     using Lib for *;
 
     // TODO: This test is currently failing. If the share price is larger
-    // than the initial share price, then the pool can't be initialized. I'm
-    // guessing there is a clean way to solve this problem.
+    // than the initial share price, then the pool can't be initialized.
     //
     // This test ensures that a malicious user cannot drain the pool by
     // donating base to the pool before initialization.
-    function test_donation_before_initialization_attack(
+    function test_inflation_attack_before_initialization(
         uint256 contribution,
         uint256 donation
-    ) internal {
+    ) external {
         // Ensure that the testing parameters are within bounds.
         contribution = contribution.normalizeToRange(1e18, 10_000_000e18);
         donation = donation.normalizeToRange(0, 10_000_000e18);
@@ -31,19 +30,17 @@ contract DonationAttackTest is HyperdriveTest {
 
         // Ensure that the initial contribution is returned.
         (uint256 baseProceeds, ) = removeLiquidity(alice, lpShares);
-        assertApproxEqAbs(baseProceeds, contribution, 1e14);
+        assertApproxEqAbs(baseProceeds, contribution, 1e18);
     }
 
-    // FIXME: This test fails, but this is the most important case. Fix it.
-    //
     // This test ensures that a malicious user cannot drain the pool by
     // donating base to the pool and then removing all of their liquidity.
-    function test_donation_after_initialization_attack(
+    function test_inflation_attack_after_initialization(
         uint256 contribution,
         uint256 donation
     ) external {
         // Ensure that the testing parameters are within bounds.
-        contribution = contribution.normalizeToRange(1e18, 10_000_000e18);
+        contribution = contribution.normalizeToRange(1e18, 10_000_000_000e18);
         donation = donation.normalizeToRange(0, 10_000_000e18);
 
         // Initialize the pool.
@@ -60,6 +57,6 @@ contract DonationAttackTest is HyperdriveTest {
 
         // Ensure that Alice can withdraw almost all of her base.
         (uint256 baseProceeds, ) = removeLiquidity(bob, lpShares);
-        assertApproxEqAbs(baseProceeds, contribution, 1e14);
+        assertApproxEqAbs(baseProceeds, contribution, 1e18);
     }
 }
