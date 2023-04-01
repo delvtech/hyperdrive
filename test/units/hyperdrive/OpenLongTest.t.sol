@@ -132,9 +132,7 @@ contract OpenLongTest is HyperdriveTest {
     ) internal {
         // Verify that the open long updated the state correctly.
         _verifyOpenLong(
-            bob,
             poolInfoBefore,
-            contribution,
             baseAmount,
             bondAmount,
             maturityTime,
@@ -170,9 +168,7 @@ contract OpenLongTest is HyperdriveTest {
         );
 
         _verifyOpenLong(
-            celine,
             poolInfoBeforeWithFees,
-            contribution,
             baseAmount,
             bondAmountWithFees,
             maturityTime,
@@ -202,9 +198,7 @@ contract OpenLongTest is HyperdriveTest {
     }
 
     function _verifyOpenLong(
-        address user,
         HyperdriveUtils.PoolInfo memory poolInfoBefore,
-        uint256 contribution,
         uint256 baseAmount,
         uint256 bondAmount,
         uint256 maturityTime,

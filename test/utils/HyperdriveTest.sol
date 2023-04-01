@@ -219,6 +219,14 @@ contract HyperdriveTest is BaseTest {
         address trader,
         uint256 bondAmount
     ) internal returns (uint256 maturityTime, uint256 baseAmount) {
+        return openShort(trader, bondAmount, bondAmount);
+    }
+
+    function openShort(
+        address trader,
+        uint256 bondAmount,
+        uint256 maxDeposit
+    ) internal returns (uint256 maturityTime, uint256 baseAmount) {
         vm.stopPrank();
         vm.startPrank(trader);
 
@@ -226,13 +234,13 @@ contract HyperdriveTest is BaseTest {
         maturityTime = HyperdriveUtils.maturityTimeFromLatestCheckpoint(
             hyperdrive
         );
-        baseToken.mint(bondAmount);
-        baseToken.approve(address(hyperdrive), bondAmount);
+        baseToken.mint(maxDeposit);
+        baseToken.approve(address(hyperdrive), maxDeposit);
         uint256 baseBalanceBefore = baseToken.balanceOf(trader);
-        hyperdrive.openShort(bondAmount, bondAmount, trader, true);
+        hyperdrive.openShort(bondAmount, maxDeposit, trader, true);
 
         baseAmount = baseBalanceBefore - baseToken.balanceOf(trader);
-        baseToken.burn(bondAmount - baseAmount);
+        baseToken.burn(maxDeposit - baseAmount);
         return (maturityTime, baseAmount);
     }
 
