@@ -20,6 +20,8 @@ contract MakerDsrHyperdrive is BaseTest {
     IERC20 chai;
     DsrManager dsrManager;
 
+    uint256 constant INITIAL_CONTRIBUTION = 1e15;
+
     function setUp() public override __mainnet_fork(16_685_972) {
         super.setUp();
 
@@ -27,12 +29,37 @@ contract MakerDsrHyperdrive is BaseTest {
         dsrManager = DsrManager(
             address(0x373238337Bfe1146fb49989fc222523f83081dDb)
         );
+        address daiWhale = 0x075e72a5eDf65F0A5f44699c7654C1a76941Ddc8;
 
-        vm.startPrank(deployer);
-        hyperdrive = new MockMakerDsrHyperdrive(dsrManager);
+        // A whale transfers the initial contribution to the deployer.
+        vm.startPrank(daiWhale);
+        dai.transfer(deployer, INITIAL_CONTRIBUTION);
         vm.stopPrank();
 
-        address daiWhale = 0x075e72a5eDf65F0A5f44699c7654C1a76941Ddc8;
+        vm.startPrank(deployer);
+
+        // Approve the contract that will be deployed.
+        bytes32 salt = keccak256(abi.encodePacked(deployer, block.number));
+        bytes32 codeHash = keccak256(
+            abi.encodePacked(
+                type(MockMakerDsrHyperdrive).creationCode,
+                abi.encode(dsrManager)
+            )
+        );
+        address expectedAddress = address(
+            uint160(
+                uint256(
+                    keccak256(
+                        abi.encodePacked(bytes1(0xff), deployer, salt, codeHash)
+                    )
+                )
+            )
+        );
+        dai.approve(expectedAddress, INITIAL_CONTRIBUTION);
+
+        // Deploy the Hyperdrive contract.
+        hyperdrive = new MockMakerDsrHyperdrive{ salt: salt }(dsrManager);
+        vm.stopPrank();
 
         whaleTransfer(daiWhale, dai, alice);
 

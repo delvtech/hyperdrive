@@ -6,7 +6,7 @@ import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { MockHyperdrive } from "../../mocks/MockHyperdrive.sol";
-import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol";
+import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 
 contract FeeTest is HyperdriveTest {
@@ -18,7 +18,17 @@ contract FeeTest is HyperdriveTest {
         uint256 contribution = 500_000_000e18;
 
         // Deploy and initialize a new pool with fees.
-        deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18, governance);
+        deploy(
+            alice,
+            apr,
+            INITIAL_SHARE_PRICE,
+            IHyperdrive.Fees({
+                curve: 0.1e18,
+                flat: 0.1e18,
+                governance: 0.5e18
+            }),
+            governance
+        );
         initialize(alice, apr, contribution);
 
         // Open a long, record the accrued fees x share price
@@ -45,7 +55,17 @@ contract FeeTest is HyperdriveTest {
         uint256 contribution = 500_000_000e18;
 
         // Deploy and initialize a new pool with fees.
-        deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18, governance);
+        deploy(
+            alice,
+            apr,
+            INITIAL_SHARE_PRICE,
+            IHyperdrive.Fees({
+                curve: 0.1e18,
+                flat: 0.1e18,
+                governance: 0.5e18
+            }),
+            governance
+        );
         initialize(alice, apr, contribution);
 
         // Ensure that the governance initially has zero balance
@@ -100,7 +120,17 @@ contract FeeTest is HyperdriveTest {
         uint256 contribution = 500_000_000e18;
 
         // Deploy and initialize a new pool with fees.
-        deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18, governance);
+        deploy(
+            alice,
+            apr,
+            INITIAL_SHARE_PRICE,
+            IHyperdrive.Fees({
+                curve: 0.1e18,
+                flat: 0.1e18,
+                governance: 0.5e18
+            }),
+            governance
+        );
         initialize(alice, apr, contribution);
 
         // Ensure that the governance initially has zero balance
@@ -154,7 +184,17 @@ contract FeeTest is HyperdriveTest {
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
         // Deploy and initialize a new pool with fees.
-        deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18, governance);
+        deploy(
+            alice,
+            apr,
+            INITIAL_SHARE_PRICE,
+            IHyperdrive.Fees({
+                curve: 0.1e18,
+                flat: 0.1e18,
+                governance: 0.5e18
+            }),
+            governance
+        );
         initialize(alice, apr, contribution);
 
         (
@@ -201,7 +241,17 @@ contract FeeTest is HyperdriveTest {
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
         // Deploy and initialize a new pool with fees.
-        deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18, governance);
+        deploy(
+            alice,
+            apr,
+            INITIAL_SHARE_PRICE,
+            IHyperdrive.Fees({
+                curve: 0.1e18,
+                flat: 0.1e18,
+                governance: 0.5e18
+            }),
+            governance
+        );
         initialize(alice, apr, contribution);
         (
             uint256 totalCurveFee,
@@ -236,7 +286,17 @@ contract FeeTest is HyperdriveTest {
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
         // Deploy and initialize a new pool with fees.
-        deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18, governance);
+        deploy(
+            alice,
+            apr,
+            INITIAL_SHARE_PRICE,
+            IHyperdrive.Fees({
+                curve: 0.1e18,
+                flat: 0.1e18,
+                governance: 0.5e18
+            }),
+            governance
+        );
         initialize(alice, apr, contribution);
         (
             uint256 curveFee,

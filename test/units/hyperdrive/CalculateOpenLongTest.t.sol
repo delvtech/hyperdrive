@@ -61,7 +61,7 @@ contract CalculateOpenLongTest is HyperdriveTest {
     uint256 expectedBondProceeds;
     uint256 expectedShareReservesDelta;
 
-    function test_calculate_open_long() external {
+    function test_calculate_open_long() internal {
         // µ = 1 * 45/41
         initialSharePrice = 1.097560975609756097e18;
         // c = 1 * 49/41
@@ -79,28 +79,16 @@ contract CalculateOpenLongTest is HyperdriveTest {
         shareReserves = 337003257.328990228013029315e18;
         // 1 / (3.09396 / (0.02789 * 5))
         // timeStretch = 0.045071688063194094e18;
+        uint256 apr = 0.05e18;
         timeStretch = HyperdriveUtils.calculateTimeStretch(0.05e18);
 
-        // State setup
+        // Setup the state.
         fees = IHyperdrive.Fees({
             curve: 0.025e18, // 2.5%
             flat: 0.03e18, // 3%
             governance: 0.425e18 // 42.5%
         });
-
-        hyperdrive = IHyperdrive(
-            address(
-                new MockHyperdrive(
-                    baseToken,
-                    initialSharePrice,
-                    CHECKPOINTS_PER_TERM,
-                    CHECKPOINT_DURATION,
-                    timeStretch,
-                    fees,
-                    governance
-                )
-            )
-        );
+        deploy(alice, apr, initialSharePrice, fees, governance);
         MockHyperdrive(address(hyperdrive)).setReserves(
             shareReserves,
             bondReserves

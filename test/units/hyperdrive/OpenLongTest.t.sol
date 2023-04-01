@@ -142,7 +142,13 @@ contract OpenLongTest is HyperdriveTest {
         );
 
         // Deploy and initialize a new pool with fees.
-        deploy(alice, apr, 0.1e18, 0.1e18, 0, governance);
+        deploy(
+            alice,
+            apr,
+            INITIAL_SHARE_PRICE,
+            IHyperdrive.Fees({ curve: 0.1e18, flat: 0.1e18, governance: 0 }),
+            governance
+        );
         initialize(alice, apr, contribution);
 
         // Open a long with fees.

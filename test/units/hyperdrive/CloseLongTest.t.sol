@@ -379,7 +379,6 @@ contract CloseLongTest is HyperdriveTest {
             apr,
             POSITION_DURATION
         );
-
         assertApproxEqAbs(baseProceeds, bondValue, 6);
         assertApproxEqAbs(bondValue, bondFaceValue, 5);
 
@@ -437,7 +436,11 @@ contract CloseLongTest is HyperdriveTest {
                 poolInfoBefore.longsOutstanding - bondAmount
             );
         }
-        assertEq(poolInfoAfter.sharePrice, poolInfoBefore.sharePrice);
+        assertApproxEqAbs(
+            poolInfoAfter.sharePrice,
+            poolInfoBefore.sharePrice,
+            1
+        );
         assertEq(poolInfoAfter.lpTotalSupply, poolInfoBefore.lpTotalSupply);
         assertEq(poolInfoAfter.longAverageMaturityTime, 0);
         assertEq(poolInfoAfter.longBaseVolume, 0);

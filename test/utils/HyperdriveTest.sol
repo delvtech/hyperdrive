@@ -34,7 +34,13 @@ contract HyperdriveTest is BaseTest {
         baseToken = new ERC20Mintable();
 
         // Instantiate Hyperdrive.
-        deploy(alice, 0.05e18, 0, 0, 0, governance);
+        deploy(
+            alice,
+            0.05e18,
+            INITIAL_SHARE_PRICE,
+            IHyperdrive.Fees({ curve: 0, flat: 0, governance: 0 }),
+            governance
+        );
 
         // Advance time so that Hyperdrive can look back more than a position
         // duration.
@@ -44,9 +50,8 @@ contract HyperdriveTest is BaseTest {
     function deploy(
         address deployer,
         uint256 apr,
-        uint256 curveFee,
-        uint256 flatFee,
-        uint256 governanceFee,
+        uint256 initialSharePrice,
+        IHyperdrive.Fees memory fees,
         address governance
     ) internal {
         vm.stopPrank();
@@ -54,11 +59,6 @@ contract HyperdriveTest is BaseTest {
 
         // Mint base tokens for the initial contribution, and approve the
         // contract that will be deployed.
-        IHyperdrive.Fees memory fees = IHyperdrive.Fees({
-            curve: curveFee,
-            flat: flatFee,
-            governance: governanceFee
-        });
         baseToken.mint(INITIAL_CONTRIBUTION);
         bytes32 salt = keccak256(abi.encodePacked(deployer, block.number));
         bytes32 codeHash = keccak256(
@@ -66,7 +66,7 @@ contract HyperdriveTest is BaseTest {
                 type(MockHyperdrive).creationCode,
                 abi.encode(
                     baseToken,
-                    INITIAL_SHARE_PRICE,
+                    initialSharePrice,
                     CHECKPOINTS_PER_TERM,
                     CHECKPOINT_DURATION,
                     HyperdriveUtils.calculateTimeStretch(apr),
@@ -91,7 +91,7 @@ contract HyperdriveTest is BaseTest {
             address(
                 new MockHyperdrive{ salt: salt }(
                     baseToken,
-                    INITIAL_SHARE_PRICE,
+                    initialSharePrice,
                     CHECKPOINTS_PER_TERM,
                     CHECKPOINT_DURATION,
                     HyperdriveUtils.calculateTimeStretch(apr),
