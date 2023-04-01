@@ -35,7 +35,12 @@ contract MockHyperdrive is Hyperdrive {
             _fees,
             _governance
         )
-    {}
+    {
+        // Deposit a small amount of base to prevent inflation attacks. This
+        // is burned by the creator, which ensures that the contract always has
+        // a balance of at least the initial contribution.
+        _deposit(INITIAL_CONTRIBUTION, true);
+    }
 
     /// Mocks ///
 
@@ -187,7 +192,7 @@ contract MockHyperdrive is Hyperdrive {
 
     /// Overrides ///
 
-    function _depositUnsafe(
+    function _deposit(
         uint256 amount,
         bool
     ) internal override returns (uint256, uint256) {

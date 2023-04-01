@@ -57,7 +57,20 @@ contract OpenLongTest is HyperdriveTest {
 
         // Open a long.
         uint256 baseAmount = 10e18;
+        uint256 hyperdriveBaseBalanceBefore = baseToken.balanceOf(
+            address(hyperdrive)
+        );
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, baseAmount);
+        uint256 hyperdriveBaseBalanceAfter = baseToken.balanceOf(
+            address(hyperdrive)
+        );
+
+        // Verify the base transfers.
+        assertEq(baseToken.balanceOf(bob), 0);
+        assertEq(
+            hyperdriveBaseBalanceAfter,
+            hyperdriveBaseBalanceBefore + baseAmount
+        );
 
         // Verify that the open long updated the state correctly.
         verifyOpenLong(
@@ -83,7 +96,20 @@ contract OpenLongTest is HyperdriveTest {
 
         // Purchase a small amount of bonds.
         uint256 baseAmount = .01e18;
+        uint256 hyperdriveBaseBalanceBefore = baseToken.balanceOf(
+            address(hyperdrive)
+        );
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, baseAmount);
+        uint256 hyperdriveBaseBalanceAfter = baseToken.balanceOf(
+            address(hyperdrive)
+        );
+
+        // Verify the base transfers.
+        assertEq(baseToken.balanceOf(bob), 0);
+        assertEq(
+            hyperdriveBaseBalanceAfter,
+            hyperdriveBaseBalanceBefore + baseAmount
+        );
 
         // Verify that the open long updated the state correctly.
         verifyOpenLong(
@@ -122,7 +148,20 @@ contract OpenLongTest is HyperdriveTest {
         // Open a long with fees.
         HyperdriveUtils.PoolInfo memory poolInfoBeforeWithFees = HyperdriveUtils
             .getPoolInfo(hyperdrive);
+        uint256 hyperdriveBaseBalanceBefore = baseToken.balanceOf(
+            address(hyperdrive)
+        );
         (, uint256 bondAmountWithFees) = openLong(celine, baseAmount);
+        uint256 hyperdriveBaseBalanceAfter = baseToken.balanceOf(
+            address(hyperdrive)
+        );
+
+        // Verify the base transfers.
+        assertEq(baseToken.balanceOf(celine), 0);
+        assertEq(
+            hyperdriveBaseBalanceAfter,
+            hyperdriveBaseBalanceBefore + baseAmount
+        );
 
         _verifyOpenLong(
             celine,
@@ -166,13 +205,6 @@ contract OpenLongTest is HyperdriveTest {
         uint256 apr
     ) internal {
         uint256 checkpointTime = maturityTime - POSITION_DURATION;
-
-        // Verify the base transfers.
-        assertEq(baseToken.balanceOf(user), 0);
-        assertEq(
-            baseToken.balanceOf(address(hyperdrive)),
-            contribution + baseAmount
-        );
 
         // Verify that opening a long doesn't make the APR go up.
         uint256 realizedApr = HyperdriveUtils.calculateAPRFromRealizedPrice(

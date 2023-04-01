@@ -22,9 +22,8 @@ abstract contract HyperdriveBase is MultiToken {
 
     /// Constants ///
 
-    /// @notice To prevent against donation attacks, we enforce that a minimum
-    ///         amount of shares are minted.
-    uint256 internal constant MINIMUM_SHARES_MINTED = 1e5;
+    /// @notice The size of the initial contribution.
+    uint256 internal constant INITIAL_CONTRIBUTION = 1e15;
 
     /// Tokens ///
 
@@ -127,21 +126,7 @@ abstract contract HyperdriveBase is MultiToken {
 
     /// Yield Source ///
 
-    /// @notice Transfers base from the user and commits it to the yield source.
-    /// @dev This function should never be called directly.
-    /// @param amount The amount of base to deposit.
-    /// @param asUnderlying If true the yield source will transfer underlying
-    ///        tokens if false it will transfer the yielding asset directly.
-    /// @return sharesMinted The shares this deposit creates.
-    /// @return sharePrice The share price at time of deposit.
-    function _depositUnsafe(
-        uint256 amount,
-        bool asUnderlying
-    ) internal virtual returns (uint256 sharesMinted, uint256 sharePrice);
-
-    /// @notice Transfers base from the user and commits it to the yield source.
-    /// @dev This function should always be called to handle deposits to avoid
-    ///      donation attacks.
+    /// @dev Transfers base from the user and commits it to the yield source.
     /// @param amount The amount of base to deposit.
     /// @param asUnderlying If true the yield source will transfer underlying
     ///        tokens if false it will transfer the yielding asset directly.
@@ -150,17 +135,9 @@ abstract contract HyperdriveBase is MultiToken {
     function _deposit(
         uint256 amount,
         bool asUnderlying
-    ) internal returns (uint256 sharesMinted, uint256 sharePrice) {
-        // Call the implemented deposit function.
-        (sharesMinted, sharePrice) = _depositUnsafe(amount, asUnderlying);
+    ) internal virtual returns (uint256 sharesMinted, uint256 sharePrice);
 
-        // Ensure that the shares are sufficient to avoid a donation attack.
-        if (sharesMinted < MINIMUM_SHARES_MINTED) {
-            revert Errors.InsufficientSharesMinted();
-        }
-    }
-
-    /// @notice Withdraws shares from the yield source and sends the base
+    /// @dev Withdraws shares from the yield source and sends the base
     ///         released to the destination.
     /// @param shares The shares to withdraw from the yield source.
     /// @param destination The recipient of the withdrawal.
@@ -174,8 +151,8 @@ abstract contract HyperdriveBase is MultiToken {
         bool asUnderlying
     ) internal virtual returns (uint256 amountWithdrawn, uint256 sharePrice);
 
-    ///@notice Loads the share price from the yield source
-    ///@return sharePrice The current share price.
+    /// @dev Loads the share price from the yield source
+    /// @return sharePrice The current share price.
     function _pricePerShare()
         internal
         view

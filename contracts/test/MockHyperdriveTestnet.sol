@@ -39,13 +39,18 @@ contract MockHyperdriveTestnet is Hyperdrive {
     {
         rate = _initialRate;
         lastUpdated = block.timestamp;
+
+        // Deposit a small amount of base to prevent inflation attacks. This
+        // is burned by the creator, which ensures that the contract always has
+        // a balance of at least the initial contribution.
+        _deposit(INITIAL_CONTRIBUTION, true);
     }
 
     /// Overrides ///
 
     error UnsupportedOption();
 
-    function _depositUnsafe(
+    function _deposit(
         uint256 _amount,
         bool _asUnderlying
     ) internal override returns (uint256 sharesMinted, uint256 sharePrice) {

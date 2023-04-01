@@ -56,12 +56,34 @@ contract OpenShortTest is HyperdriveTest {
 
         // Short a small amount of bonds.
         uint256 bondAmount = 10e18;
+        uint256 hyperdriveBaseBalanceBefore = baseToken.balanceOf(
+            address(hyperdrive)
+        );
         (uint256 maturityTime, uint256 baseAmount) = openShort(bob, bondAmount);
+        uint256 hyperdriveBaseBalanceAfter = baseToken.balanceOf(
+            address(hyperdrive)
+        );
+
+        // Verify that Hyperdrive received Bob's deposit and that Bob received
+        // the short tokens.
+        assertEq(
+            hyperdriveBaseBalanceAfter,
+            hyperdriveBaseBalanceBefore + baseAmount
+        );
+        assertEq(
+            hyperdrive.balanceOf(
+                AssetId.encodeAssetId(
+                    AssetId.AssetIdPrefix.Short,
+                    maturityTime
+                ),
+                bob
+            ),
+            bondAmount
+        );
 
         // Verify the open short updates occurred correctly.
         verifyOpenShort(
             poolInfoBefore,
-            contribution,
             baseAmount,
             bondAmount,
             maturityTime,
@@ -81,35 +103,20 @@ contract OpenShortTest is HyperdriveTest {
             .getPoolInfo(hyperdrive);
 
         // Short a small amount of bonds.
-        uint256 bondAmount = .1e18;
-        (uint256 maturityTime, uint256 baseAmount) = openShort(bob, bondAmount);
-
-        // Verify the open short updates occurred correctly.
-        verifyOpenShort(
-            poolInfoBefore,
-            contribution,
-            baseAmount,
-            bondAmount,
-            maturityTime,
-            apr
+        uint256 bondAmount = 0.1e18;
+        uint256 hyperdriveBaseBalanceBefore = baseToken.balanceOf(
+            address(hyperdrive)
         );
-    }
+        (uint256 maturityTime, uint256 baseAmount) = openShort(bob, bondAmount);
+        uint256 hyperdriveBaseBalanceAfter = baseToken.balanceOf(
+            address(hyperdrive)
+        );
 
-    function verifyOpenShort(
-        HyperdriveUtils.PoolInfo memory poolInfoBefore,
-        uint256 contribution,
-        uint256 baseAmount,
-        uint256 bondAmount,
-        uint256 maturityTime,
-        uint256 apr
-    ) internal {
-        uint256 checkpointTime = maturityTime - POSITION_DURATION;
-
-        // Verify that Hyperdrive received the max loss and that Bob received
+        // Verify that Hyperdrive received Bob's deposit and that Bob received
         // the short tokens.
         assertEq(
-            baseToken.balanceOf(address(hyperdrive)),
-            contribution + baseAmount
+            hyperdriveBaseBalanceAfter,
+            hyperdriveBaseBalanceBefore + baseAmount
         );
         assertEq(
             hyperdrive.balanceOf(
@@ -121,6 +128,25 @@ contract OpenShortTest is HyperdriveTest {
             ),
             bondAmount
         );
+
+        // Verify the open short updates occurred correctly.
+        verifyOpenShort(
+            poolInfoBefore,
+            baseAmount,
+            bondAmount,
+            maturityTime,
+            apr
+        );
+    }
+
+    function verifyOpenShort(
+        HyperdriveUtils.PoolInfo memory poolInfoBefore,
+        uint256 baseAmount,
+        uint256 bondAmount,
+        uint256 maturityTime,
+        uint256 apr
+    ) internal {
+        uint256 checkpointTime = maturityTime - POSITION_DURATION;
 
         // Verify that the short didn't receive an APR higher than the pool's
         // APR.

@@ -10,20 +10,6 @@ import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol"
 contract InitializeTest is HyperdriveTest {
     using FixedPointMath for uint256;
 
-    function test_initialize_failure_minimum_contribution() external {
-        uint256 apr = 0.5e18;
-        uint256 contribution = 1e4;
-
-        // Attempt to initialize the pool with a contribution that is too small.
-        // This should fail.
-        vm.stopPrank();
-        vm.startPrank(bob);
-        baseToken.mint(contribution);
-        baseToken.approve(address(hyperdrive), contribution);
-        vm.expectRevert(Errors.InsufficientSharesMinted.selector);
-        hyperdrive.initialize(contribution, apr, bob, true);
-    }
-
     function test_initialize_failure_reinitialization() external {
         uint256 apr = 0.5e18;
         uint256 contribution = 1000.0e18;
@@ -51,7 +37,9 @@ contract InitializeTest is HyperdriveTest {
         uint256 contribution = 1000e18;
 
         // Initialize the pool with Alice.
+        uint256 baseBalanceBefore = baseToken.balanceOf(address(hyperdrive));
         uint256 lpShares = initialize(alice, apr, contribution);
+        uint256 baseBalanceAfter = baseToken.balanceOf(address(hyperdrive));
 
         // Ensure that the pool's APR is approximately equal to the target APR.
         uint256 poolApr = HyperdriveUtils.calculateAPRFromReserves(hyperdrive);
@@ -60,7 +48,7 @@ contract InitializeTest is HyperdriveTest {
         // Ensure that Alice's base balance has been depleted and that Alice
         // received the correct amount of LP shares.
         assertEq(baseToken.balanceOf(alice), 0);
-        assertEq(baseToken.balanceOf(address(hyperdrive)), contribution);
+        assertEq(baseBalanceAfter, baseBalanceBefore + contribution);
         assertEq(
             lpShares,
             HyperdriveUtils.getPoolInfo(hyperdrive).bondReserves -

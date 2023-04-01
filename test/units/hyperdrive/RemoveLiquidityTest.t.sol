@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
+// FIXME
+import "forge-std/console.sol";
+import "test/utils/Lib.sol";
+
 import { stdError } from "forge-std/StdError.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
@@ -9,6 +13,9 @@ import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
 
 contract RemoveLiquidityTest is HyperdriveTest {
+    // FIXME
+    using Lib for *;
+
     using FixedPointMath for uint256;
 
     function test_remove_liquidity_fail_zero_amount() external {
@@ -44,6 +51,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
 
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
+        uint256 baseBalanceBefore = baseToken.balanceOf(address(hyperdrive));
         uint256 lpShares = initialize(alice, apr, contribution);
 
         // Time passes and interest accrues.
@@ -52,6 +60,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
 
         // Alice removes all of her liquidity.
         (uint256 baseProceeds, ) = removeLiquidity(alice, lpShares);
+        uint256 baseBalanceAfter = baseToken.balanceOf(address(hyperdrive));
 
         // Ensure that the LP shares were properly accounted for.
         assertEq(hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice), 0);
@@ -60,10 +69,18 @@ contract RemoveLiquidityTest is HyperdriveTest {
         // Calculate how much interest has accrued on the initial contribution
         (uint256 contributionPlusInterest, ) = HyperdriveUtils
             .calculateCompoundInterest(contribution, int256(apr), timeAdvanced);
+        (uint256 baseBalanceBeforePlusInterest, ) = HyperdriveUtils
+            .calculateCompoundInterest(
+                baseBalanceBefore,
+                int256(apr),
+                timeAdvanced
+            );
 
-        // Ensure that Alice received the correct amount of base.
-        assertEq(baseProceeds, contributionPlusInterest);
-        assertEq(baseToken.balanceOf(address(hyperdrive)), 0);
+        // Ensure that Alice received the correct amount of base. The
+        // calculation is inaccurate by about a Gwei because of the imprecision
+        // in the share price calculations.
+        assertApproxEqAbs(baseProceeds, contributionPlusInterest, 1e9);
+        assertApproxEqAbs(baseBalanceAfter, baseBalanceBeforePlusInterest, 1e9);
 
         // Ensure that the reserves were updated correctly.
         HyperdriveUtils.PoolInfo memory poolInfo = HyperdriveUtils.getPoolInfo(
@@ -88,6 +105,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
 
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
+        uint256 baseBalanceBefore = baseToken.balanceOf(address(hyperdrive));
         uint256 lpShares = initialize(alice, apr, contribution);
 
         // Time passes and interest accrues.
@@ -101,14 +119,22 @@ contract RemoveLiquidityTest is HyperdriveTest {
 
         // Alice removes all of her liquidity.
         (uint256 baseProceeds, ) = removeLiquidity(alice, lpShares);
+        uint256 baseBalanceAfter = baseToken.balanceOf(address(hyperdrive));
 
         // Ensure that the LP shares were properly accounted for.
         assertEq(hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice), 0);
         assertEq(hyperdrive.totalSupply(AssetId._LP_ASSET_ID), 0);
 
-        // Calculate how much interest has accrued on the initial contribution
+        // Calculate how much interest has accrued on the prior base balance
+        // and Alice's contribution.
         (uint256 contributionPlusInterest, ) = HyperdriveUtils
             .calculateCompoundInterest(contribution, int256(apr), timeAdvanced);
+        (uint256 baseBalanceBeforePlusInterest, ) = HyperdriveUtils
+            .calculateCompoundInterest(
+                baseBalanceBefore,
+                int256(apr),
+                timeAdvanced
+            );
 
         // Ensure that Alice received the correct amount of base.
         uint256 baseExpected = contributionPlusInterest +
@@ -116,8 +142,8 @@ contract RemoveLiquidityTest is HyperdriveTest {
             bondAmount;
         assertApproxEqAbs(baseProceeds, baseExpected, 1);
         assertApproxEqAbs(
-            baseToken.balanceOf(address(hyperdrive)),
-            bondAmount,
+            baseBalanceAfter,
+            baseBalanceBeforePlusInterest + bondAmount,
             1
         );
         assertApproxEqAbs(baseToken.balanceOf(alice), baseProceeds, 1);
@@ -135,7 +161,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
         assertApproxEqAbs(
             HyperdriveUtils.calculateAPRFromReserves(hyperdrive),
             poolApr,
-            1 wei
+            1
         );
 
         // Ensure that Alice receives the right amount of withdrawal shares.
@@ -159,6 +185,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
 
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
+        uint256 baseBalanceBefore = baseToken.balanceOf(address(hyperdrive));
         uint256 lpShares = initialize(alice, apr, contribution);
 
         // Time passes and interest accrues.
@@ -171,6 +198,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
 
         // Alice removes all of her liquidity.
         (uint256 baseProceeds, ) = removeLiquidity(alice, lpShares);
+        uint256 baseBalanceAfter = baseToken.balanceOf(address(hyperdrive));
 
         // Ensure that the LP shares were properly accounted for.
         assertEq(hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice), 0);
@@ -179,6 +207,12 @@ contract RemoveLiquidityTest is HyperdriveTest {
         // Calculate how much interest has accrued on the initial contribution
         (uint256 contributionPlusInterest, ) = HyperdriveUtils
             .calculateCompoundInterest(contribution, int256(apr), timeAdvanced);
+        (uint256 baseBalanceBeforePlusInterest, ) = HyperdriveUtils
+            .calculateCompoundInterest(
+                baseBalanceBefore,
+                int256(apr),
+                timeAdvanced
+            );
 
         // Ensure that Alice received the correct amount of base.
         uint256 baseExpected = contributionPlusInterest -
@@ -187,8 +221,8 @@ contract RemoveLiquidityTest is HyperdriveTest {
         assertApproxEqAbs(baseProceeds, baseExpected, 3e7);
         // TODO: Improve this bound.
         assertApproxEqAbs(
-            baseToken.balanceOf(address(hyperdrive)),
-            bondAmount,
+            baseBalanceAfter,
+            baseBalanceBeforePlusInterest + bondAmount,
             3e7
         );
         assertEq(baseToken.balanceOf(alice), baseProceeds);

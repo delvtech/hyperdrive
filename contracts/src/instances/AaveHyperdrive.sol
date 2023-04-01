@@ -57,6 +57,11 @@ contract AaveHyperdrive is Hyperdrive {
     {
         aToken = _aToken;
         pool = _pool;
+
+        // Deposit a small amount of base to prevent inflation attacks. This
+        // is burned by the creator, which ensures that the contract always has
+        // a balance of at least the initial contribution.
+        _deposit(INITIAL_CONTRIBUTION, true);
     }
 
     /// @dev Transfers amount of 'token' from the user and commits it to the
@@ -66,7 +71,7 @@ contract AaveHyperdrive is Hyperdrive {
     ///        tokens if false it will transfer the yielding asset directly.
     /// @return sharesMinted The shares this deposit creates.
     /// @return sharePrice The share price at time of deposit.
-    function _depositUnsafe(
+    function _deposit(
         uint256 amount,
         bool asUnderlying
     ) internal override returns (uint256 sharesMinted, uint256 sharePrice) {

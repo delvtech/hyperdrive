@@ -12,7 +12,6 @@ library Errors {
     /// ### Hyperdrive ###
     /// ##################
     error BaseBufferExceedsShareReserves();
-    error InsufficientSharesMinted();
     error InvalidApr();
     error InvalidCheckpointTime();
     error InvalidCheckpointDuration();

@@ -19,6 +19,7 @@ contract HyperdriveTest is BaseTest {
     ERC20Mintable baseToken;
     IHyperdrive hyperdrive;
 
+    uint256 internal constant INITIAL_CONTRIBUTION = 1e15;
     uint256 internal constant INITIAL_SHARE_PRICE = FixedPointMath.ONE_18;
     uint256 internal constant CHECKPOINT_DURATION = 1 days;
     uint256 internal constant CHECKPOINTS_PER_TERM = 365;
@@ -31,26 +32,9 @@ contract HyperdriveTest is BaseTest {
 
         // Instantiate the base token.
         baseToken = new ERC20Mintable();
-        IHyperdrive.Fees memory fees = IHyperdrive.Fees({
-            curve: 0,
-            flat: 0,
-            governance: 0
-        });
+
         // Instantiate Hyperdrive.
-        uint256 apr = 0.05e18;
-        hyperdrive = IHyperdrive(
-            address(
-                new MockHyperdrive(
-                    baseToken,
-                    INITIAL_SHARE_PRICE,
-                    CHECKPOINTS_PER_TERM,
-                    CHECKPOINT_DURATION,
-                    HyperdriveUtils.calculateTimeStretch(apr),
-                    fees,
-                    governance
-                )
-            )
-        );
+        deploy(alice, 0.05e18, 0, 0, 0, governance);
 
         // Advance time so that Hyperdrive can look back more than a position
         // duration.
@@ -67,15 +51,45 @@ contract HyperdriveTest is BaseTest {
     ) internal {
         vm.stopPrank();
         vm.startPrank(deployer);
+
+        // Mint base tokens for the initial contribution, and approve the
+        // contract that will be deployed.
         IHyperdrive.Fees memory fees = IHyperdrive.Fees({
             curve: curveFee,
             flat: flatFee,
             governance: governanceFee
         });
+        baseToken.mint(INITIAL_CONTRIBUTION);
+        bytes32 salt = keccak256(abi.encodePacked(deployer, block.number));
+        bytes32 codeHash = keccak256(
+            abi.encodePacked(
+                type(MockHyperdrive).creationCode,
+                abi.encode(
+                    baseToken,
+                    INITIAL_SHARE_PRICE,
+                    CHECKPOINTS_PER_TERM,
+                    CHECKPOINT_DURATION,
+                    HyperdriveUtils.calculateTimeStretch(apr),
+                    fees,
+                    governance
+                )
+            )
+        );
+        address expectedAddress = address(
+            uint160(
+                uint256(
+                    keccak256(
+                        abi.encodePacked(bytes1(0xff), deployer, salt, codeHash)
+                    )
+                )
+            )
+        );
+        baseToken.approve(expectedAddress, INITIAL_CONTRIBUTION);
 
+        // Deploy the contract.
         hyperdrive = IHyperdrive(
             address(
-                new MockHyperdrive(
+                new MockHyperdrive{ salt: salt }(
                     baseToken,
                     INITIAL_SHARE_PRICE,
                     CHECKPOINTS_PER_TERM,
