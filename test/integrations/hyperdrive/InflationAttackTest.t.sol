@@ -65,6 +65,30 @@ contract InflationAttackTest is HyperdriveTest {
         assertApproxEqAbs(baseProceeds, contribution, 1e18);
     }
 
+    // This test ensures that a malicious user cannot steal from an LP removing
+    // liquidity by inflating the assets of the pool.
+    function test_inflation_attack_remove_liquidity(
+        uint256 contribution,
+        uint256 donation
+    ) external {
+        // Ensure that the testing parameters are within bounds.
+        contribution = contribution.normalizeToRange(1e18, 10_000_000_000e18);
+        donation = donation.normalizeToRange(0, 10_000_000e18);
+
+        // Initialize the pool.
+        uint256 lpShares = initialize(alice, 0.02e18, contribution);
+
+        // A malicious donation is made to the pool.
+        vm.stopPrank();
+        vm.startPrank(alice);
+        baseToken.mint(address(hyperdrive), donation);
+
+        // Ensure that Alice's withdrawal proceeds are greater than or equal
+        // to her contribution.
+        (uint256 baseProceeds, ) = removeLiquidity(alice, lpShares);
+        assertGe(baseProceeds, contribution);
+    }
+
     // This test ensures that a malicious user cannot steal from a long on open
     // by inflating the assets of the pool.
     function test_inflation_attack_open_long() external {
