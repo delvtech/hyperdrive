@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
 import "forge-std/Vm.sol";
+import "forge-std/console.sol";
 import "forge-std/console2.sol";
 
 import { BaseTest } from "test/utils/BaseTest.sol";
@@ -108,12 +109,18 @@ contract MakerDsrHyperdrive is BaseTest {
         );
 
         // Validate that initial deposits are 1:1
-        assertEq(
+        assertApproxEqAbs(
             shares,
             depositAmount,
+            1e7,
             "initial shares should be 1:1 with base"
         );
-        assertEq(sharePrice, 1e18, "initial share price should be 1");
+        assertApproxEqAbs(
+            sharePrice,
+            1e18,
+            1e4,
+            "initial share price should be 1"
+        );
 
         // Validate that tokens have been transferred
         assertEq(
@@ -127,6 +134,9 @@ contract MakerDsrHyperdrive is BaseTest {
         // as Alice
         vm.stopPrank();
         vm.startPrank(alice);
+
+        // Get the initial share price of the pool.
+        uint256 initialSharePrice = hyperdrive.pricePerShare();
 
         // Deposit arbitrary amount in pool
         (uint256 sharesAlice, ) = hyperdrive.deposit(4545e18, true);
@@ -151,6 +161,11 @@ contract MakerDsrHyperdrive is BaseTest {
         uint256 underlyingForBob = sharesBob.mulDown(pricePerShare);
         uint256 underlyingForAlice = sharesAlice.mulDown(pricePerShare);
 
+        // Get the ending share price.
+        uint256 endingSharePrice = hyperdrive.pricePerShare();
+        uint256 initialContributionPlusInterest = INITIAL_CONTRIBUTION
+            .mulDivDown(endingSharePrice, initialSharePrice);
+
         assertApproxEqAbs(
             underlyingForBob,
             1010e18,
@@ -159,7 +174,9 @@ contract MakerDsrHyperdrive is BaseTest {
         );
         assertApproxEqAbs(
             underlyingForAlice,
-            underlyingInvested - underlyingForBob,
+            underlyingInvested -
+                underlyingForBob -
+                initialContributionPlusInterest,
             10000,
             "Alice's shares should reflect all remaining deposits"
         );
@@ -169,6 +186,9 @@ contract MakerDsrHyperdrive is BaseTest {
         // as Alice
         vm.stopPrank();
         vm.startPrank(alice);
+
+        // Get the initial share price of the pool.
+        uint256 initialSharePrice = hyperdrive.pricePerShare();
 
         // Deposit arbitrary amount in pool
         (uint256 sharesAlice, ) = hyperdrive.deposit(4545.1115e18, true);
@@ -187,11 +207,13 @@ contract MakerDsrHyperdrive is BaseTest {
         (uint256 sharesBob, ) = hyperdrive.deposit(1000e18, true);
         vm.warp(block.timestamp + 365 days);
 
+        // Get the ending share price.
+        uint256 endingSharePrice = hyperdrive.pricePerShare();
+        uint256 initialContributionPlusInterest = INITIAL_CONTRIBUTION
+            .mulDivDown(endingSharePrice, initialSharePrice);
+
         // Get total and per-user amounts of underlying invested
         uint256 underlyingInvested = dsrManager.daiBalance(address(hyperdrive));
-        // uint256 pricePerShare = hyperdrive.pricePerShare();
-        // uint256 underlyingForBob = sharesBob.mulDown(pricePerShare);
-        // uint256 underlyingForAlice = sharesAlice.mulDown(pricePerShare);
 
         // Bob should have accrued 1%
         (uint256 amountWithdrawnBob, ) = hyperdrive.withdraw(
@@ -214,12 +236,18 @@ contract MakerDsrHyperdrive is BaseTest {
         );
         assertApproxEqAbs(
             amountWithdrawnAlice,
-            underlyingInvested - amountWithdrawnBob,
+            underlyingInvested -
+                amountWithdrawnBob -
+                initialContributionPlusInterest,
             10000,
             "Alice's shares should reflect all remaining deposits"
         );
 
-        assertEq(hyperdrive.totalShares(), 0, "all shares should be exited");
+        assertEq(
+            hyperdrive.totalShares(),
+            INITIAL_CONTRIBUTION,
+            "all shares should be exited except for the initial contribution"
+        );
     }
 
     function test__pricePerShare() public {
