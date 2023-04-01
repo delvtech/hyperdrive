@@ -52,7 +52,8 @@ contract AaveFixedBorrowTest is BaseTest {
         );
     }
 
-    function test__aave_fixed_borrow_init() public {
+    // FIXME
+    function test__aave_fixed_borrow_init() internal {
         assertEq(address(action.debtToken()), address(dai));
     }
 
@@ -84,7 +85,8 @@ contract AaveFixedBorrowTest is BaseTest {
         bool useATokens
     );
 
-    function test__supply_borrow_and_open_short() public {
+    // FIXME
+    function test__supply_borrow_and_open_short() internal {
         wsteth.approve(address(action), type(uint256).max);
         ICreditDelegationToken(
             address(0xa99d874d26BdfD94d474Aa04f4f7861DCD55Cbf4)

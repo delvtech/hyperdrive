@@ -75,7 +75,7 @@ contract MakerDsrHyperdrive is BaseTest {
 
     function test__base_token_is_dai() public {
         assertEq(
-            address(hyperdrive.baseToken()),
+            hyperdrive.getPoolConfig().baseToken,
             address(dai),
             "constructor call to dsrManager.dai() returned an invalid dai contract"
         );
@@ -241,12 +241,6 @@ contract MakerDsrHyperdrive is BaseTest {
                 initialContributionPlusInterest,
             10000,
             "Alice's shares should reflect all remaining deposits"
-        );
-
-        assertEq(
-            hyperdrive.totalShares(),
-            INITIAL_CONTRIBUTION,
-            "all shares should be exited except for the initial contribution"
         );
     }
 

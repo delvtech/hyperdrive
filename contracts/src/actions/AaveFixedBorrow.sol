@@ -25,7 +25,7 @@ contract AaveFixedBorrowAction {
         pool = _pool;
         // The token we wish to borrow and short can be called from hyperdrive
         // directly
-        debtToken = IERC20(hyperdrive.baseToken());
+        debtToken = IERC20(hyperdrive.getPoolConfig().baseToken);
 
         // Get the Aave pool address provider
         IPoolAddressesProvider poolAddressesProvider = IPoolAddressesProvider(

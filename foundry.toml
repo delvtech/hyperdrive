@@ -22,7 +22,8 @@ gas_limit = "18446744073709551615"
 deny_warnings = true
 # optimizer settings
 optimizer = true
-optimizer_runs = 7500
+# FIXME: Revert this to 7500 after creating a data contract to expose the getters
+optimizer_runs = 200
 # TODO: This led to a stack-too-deep error involving calculateShortProceeds 
 # (most likely in one of the apply functions). Re-evaluate this after more 
 # refactoring.

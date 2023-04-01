@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import "./IMultiToken.sol";
 
+// TODO: We should enforce this interface at the level of the Hyperdrive contract.
 interface IHyperdrive is IMultiToken {
     // TODO: Add documentation
     struct MarketState {
@@ -54,6 +55,10 @@ interface IHyperdrive is IMultiToken {
     }
 
     struct PoolConfig {
+        /// @dev The address of the base token.
+        address baseToken;
+        /// @dev The address of the governance contract.
+        address governance;
         /// @dev The initial share price of the base asset.
         uint256 initialSharePrice;
         /// @dev The duration of a long or short trade.
@@ -97,9 +102,9 @@ interface IHyperdrive is IMultiToken {
         uint256 capital;
         /// @dev The amount of interest accrued to the withdrawal pool.
         uint256 interest;
+        /// @dev The amount of governance fees that have accrued.
+        uint256 governanceFeesAccrued;
     }
-
-    function baseToken() external view returns (address);
 
     function checkpoints(
         uint256 _checkpoint

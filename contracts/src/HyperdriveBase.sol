@@ -10,6 +10,11 @@ import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 
+// TODO: It's probably unacceptable to have all of our state be accessible only
+// through getPoolInfo and getPoolConfig. It's worth considering a proxy pattern
+// so that we can expose a better data interface to integrating contracts that
+// is more a la carte (which reduces the gas cost).
+//
 /// @author Delve
 /// @title HyperdriveBase
 /// @notice The base contract of the Hyperdrive inheritance hierarchy.
@@ -28,7 +33,7 @@ abstract contract HyperdriveBase is MultiToken {
     /// Tokens ///
 
     /// @notice The base asset.
-    IERC20 public immutable baseToken;
+    IERC20 internal immutable baseToken;
 
     /// Time ///
 
@@ -73,14 +78,14 @@ abstract contract HyperdriveBase is MultiToken {
     // TODO: This shouldn't be public.
     //
     // Governance fees that haven't been collected yet denominated in shares.
-    uint256 public governanceFeesAccrued;
+    uint256 internal governanceFeesAccrued;
 
     // TODO: This shouldn't be public.
     //
     // TODO: Should this be immutable?
     //
     // The address that receives governance fees.
-    address public governance;
+    address internal governance;
 
     /// @notice Initializes a Hyperdrive pool.
     /// @param _linkerCodeHash The hash of the ERC20 linker contract's
@@ -198,6 +203,8 @@ abstract contract HyperdriveBase is MultiToken {
     {
         return
             IHyperdrive.PoolConfig({
+                baseToken: address(baseToken),
+                governance: governance,
                 initialSharePrice: initialSharePrice,
                 positionDuration: positionDuration,
                 checkpointDuration: checkpointDuration,
@@ -227,7 +234,8 @@ abstract contract HyperdriveBase is MultiToken {
                 withdrawalSharesReadyToWithdraw: withdrawPool
                     .withdrawalSharesReadyToWithdraw,
                 capital: withdrawPool.capital,
-                interest: withdrawPool.interest
+                interest: withdrawPool.interest,
+                governanceFeesAccrued: governanceFeesAccrued
             });
     }
 

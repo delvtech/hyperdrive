@@ -11,15 +11,24 @@ import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 contract MakerDsrHyperdrive is Hyperdrive {
     using FixedPointMath for uint256;
 
+    /// Constants ///
+
+    // @notice Maker constant
+    uint256 internal constant RAY = 1e27;
+
+    /// Maker ///
+
+    // @notice The pool management contract
+    DsrManager internal immutable dsrManager;
+
+    // @notice The core Maker accounting module for the Dai Savings Rate
+    Pot internal immutable pot;
+
+    /// Shares ///
+
     // @notice The shares created by this pool, starts at 1 to one with
     //         deposits and increases
-    uint256 public totalShares;
-    // @notice The pool management contract
-    DsrManager public immutable dsrManager;
-    // @notice The core Maker accounting module for the Dai Savings Rate
-    Pot public immutable pot;
-    // @notice Maker constant
-    uint256 public constant RAY = 1e27;
+    uint256 internal totalShares;
 
     /// @notice Initializes a Hyperdrive pool.
     /// @param _linkerCodeHash The hash of the ERC20 linker contract's
@@ -167,7 +176,7 @@ contract MakerDsrHyperdrive is Hyperdrive {
     ///      get the real chi value without interacting with the core maker
     ///      system and expensively mutating state.
     /// return chi The rate accumulator
-    function chi() public view returns (uint256) {
+    function chi() internal view returns (uint256) {
         // timestamp when drip was last called
         uint256 rho = pot.rho();
         // Rate accumulator as of last drip
