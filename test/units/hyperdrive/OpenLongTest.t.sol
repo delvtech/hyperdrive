@@ -195,7 +195,7 @@ contract OpenLongTest is HyperdriveTest {
     }
 
     function _verifyOpenLong(
-        HyperdriveUtils.PoolInfo memory poolInfoBefore,
+        IHyperdrive.PoolInfo memory poolInfoBefore,
         uint256 baseAmount,
         uint256 bondAmount,
         uint256 maturityTime,

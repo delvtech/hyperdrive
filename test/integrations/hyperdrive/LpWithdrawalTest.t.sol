@@ -28,7 +28,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         // Normalize the fuzzing input.
         basePaid = basePaid.normalizeToRange(
             0.001e18,
-            HyperdriveUtils.calculateMaxOpenLong(hyperdrive)
+            HyperdriveUtils.calculateMaxLong(hyperdrive)
         );
         // TODO: We run into subtraction underflows when the pre trading APR is
         // negative because the spot price goes above 1. We should investigate
@@ -136,7 +136,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         // Normalize the fuzzing input.
         basePaid = basePaid.normalizeToRange(
             0.001e18,
-            HyperdriveUtils.calculateMaxOpenLong(hyperdrive)
+            HyperdriveUtils.calculateMaxLong(hyperdrive)
         );
         variableRate = variableRate.normalizeToRange(0, 2e18);
 
@@ -215,7 +215,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         // Normalize the fuzzing input.
         shortAmount = shortAmount.normalizeToRange(
             0.001e18,
-            HyperdriveUtils.getPoolInfo(hyperdrive).shareReserves
+            HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
         // TODO: We run into subtraction underflows when the pre trading APR is
         // negative because the spot price goes above 1. We should investigate
@@ -291,7 +291,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         // Normalize the fuzzing input.
         shortAmount = shortAmount.normalizeToRange(
             0.001e18,
-            HyperdriveUtils.getPoolInfo(hyperdrive).shareReserves
+            HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
         variableRate = variableRate.normalizeToRange(0, 2e18);
 

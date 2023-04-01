@@ -136,7 +136,7 @@ contract OpenShortTest is HyperdriveTest {
     }
 
     function verifyOpenShort(
-        HyperdriveUtils.PoolInfo memory poolInfoBefore,
+        IHyperdrive.PoolInfo memory poolInfoBefore,
         uint256 baseAmount,
         uint256 bondAmount,
         uint256 maturityTime,
