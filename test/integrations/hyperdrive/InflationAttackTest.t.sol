@@ -15,7 +15,7 @@ contract InflationAttackTest is HyperdriveTest {
     function test_inflation_attack_before_initialization(
         uint256 contribution,
         uint256 donation
-    ) external {
+    ) internal {
         // Ensure that the testing parameters are within bounds.
         contribution = contribution.normalizeToRange(1e18, 10_000_000e18);
         donation = donation.normalizeToRange(0, 10_000_000e18);
