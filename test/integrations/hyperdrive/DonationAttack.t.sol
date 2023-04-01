@@ -34,6 +34,8 @@ contract DonationAttackTest is HyperdriveTest {
         assertApproxEqAbs(baseProceeds, contribution, 1e14);
     }
 
+    // FIXME: This test fails, but this is the most important case. Fix it.
+    //
     // This test ensures that a malicious user cannot drain the pool by
     // donating base to the pool and then removing all of their liquidity.
     function test_donation_after_initialization_attack(
@@ -45,7 +47,7 @@ contract DonationAttackTest is HyperdriveTest {
         donation = donation.normalizeToRange(0, 10_000_000e18);
 
         // Initialize the pool.
-        uint256 initialContribution = 1e18;
+        uint256 initialContribution = 1;
         initialize(alice, 0.02e18, initialContribution);
 
         // A malicious donation is made to the pool.
