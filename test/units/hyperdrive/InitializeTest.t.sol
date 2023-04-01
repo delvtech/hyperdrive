@@ -51,14 +51,14 @@ contract InitializeTest is HyperdriveTest {
         assertEq(baseBalanceAfter, baseBalanceBefore + contribution);
         assertEq(
             lpShares,
-            HyperdriveUtils.getPoolInfo(hyperdrive).bondReserves -
+            hyperdrive.getPoolInfo().bondReserves -
                 HyperdriveMath.calculateInitialBondReserves(
                     contribution,
                     FixedPointMath.ONE_18,
                     FixedPointMath.ONE_18,
                     apr,
                     POSITION_DURATION,
-                    HyperdriveUtils.getPoolConfig(hyperdrive).timeStretch
+                    hyperdrive.getPoolConfig().timeStretch
                 )
         );
     }

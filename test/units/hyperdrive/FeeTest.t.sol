@@ -37,7 +37,7 @@ contract FeeTest is HyperdriveTest {
         uint256 governanceFeesAfterOpenLong = MockHyperdrive(
             address(hyperdrive)
         ).getGovernanceFeesAccrued().mulDown(
-                HyperdriveUtils.getPoolInfo(hyperdrive).sharePrice
+                hyperdrive.getPoolInfo().sharePrice
             );
 
         // Time passes and the pool accrues interest at the current apr.

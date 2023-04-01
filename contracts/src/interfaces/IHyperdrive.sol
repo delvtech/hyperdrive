@@ -53,6 +53,52 @@ interface IHyperdrive is IMultiToken {
         uint256 governance;
     }
 
+    struct PoolConfig {
+        /// @dev The initial share price of the base asset.
+        uint256 initialSharePrice;
+        /// @dev The duration of a long or short trade.
+        uint256 positionDuration;
+        /// @dev The duration of a checkpoint.
+        uint256 checkpointDuration;
+        /// @dev A parameter which decreases slippage around a target rate.
+        uint256 timeStretch;
+        /// @dev The LP fee applied to the flat portion of a trade.
+        uint256 flatFee;
+        /// @dev The LP fee applied to the curve portion of a trade.
+        uint256 curveFee;
+        /// @dev The percentage fee applied to the LP fees.
+        uint256 governanceFee;
+    }
+
+    struct PoolInfo {
+        /// @dev The reserves of shares held by the pool.
+        uint256 shareReserves;
+        /// @dev The reserves of bonds held by the pool.
+        uint256 bondReserves;
+        /// @dev The total supply of LP shares.
+        uint256 lpTotalSupply;
+        /// @dev The current share price.
+        uint256 sharePrice;
+        /// @dev An amount of bonds representating outstanding unmatured longs.
+        uint256 longsOutstanding;
+        /// @dev The average maturity time of the outstanding longs.
+        uint256 longAverageMaturityTime;
+        /// @dev The cumulative amount of base paid for oustanding longs.
+        uint256 longBaseVolume;
+        /// @dev An amount of bonds representating outstanding unmatured shorts.
+        uint256 shortsOutstanding;
+        /// @dev The average maturity time of the outstanding shorts.
+        uint256 shortAverageMaturityTime;
+        /// @dev The cumulative amount of base paid for oustanding shorts.
+        uint256 shortBaseVolume;
+        /// @dev The amount of withdrawal shares that are ready to be redeemed.
+        uint256 withdrawalSharesReadyToWithdraw;
+        /// @dev The amount of margin recovered by the withdrawal pool.
+        uint256 capital;
+        /// @dev The amount of interest accrued to the withdrawal pool.
+        uint256 interest;
+    }
+
     function baseToken() external view returns (address);
 
     function checkpoints(
@@ -61,34 +107,9 @@ interface IHyperdrive is IMultiToken {
 
     function withdrawPool() external view returns (WithdrawPool memory);
 
-    function getPoolConfiguration()
-        external
-        view
-        returns (
-            uint256 _initialSharePrice_,
-            uint256 _positionDuration,
-            uint256 _checkpointDuration,
-            uint256 _timeStretch,
-            uint256 _flatFee,
-            uint256 _curveFee,
-            uint256 _governanceFee
-        );
+    function getPoolConfig() external view returns (PoolConfig memory);
 
-    function getPoolInfo()
-        external
-        view
-        returns (
-            uint256 _shareReserves,
-            uint256 _bondReserves_,
-            uint256 _lpTotalSupply,
-            uint256 _sharePrice,
-            uint256 _longsOutstanding,
-            uint256 _longAverageMaturityTime,
-            uint256 _longBaseVolume,
-            uint256 _shortsOutstanding,
-            uint256 _shortAverageMaturityTime,
-            uint256 _shortBaseVolume
-        );
+    function getPoolInfo() external view returns (PoolInfo memory);
 
     function checkpoint(uint256 _checkpointTime) external;
 

@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 
@@ -98,17 +99,17 @@ contract NegativeInterestTest is HyperdriveTest {
         int256 variableRate,
         uint256 timeElapsed
     ) internal view returns (uint256) {
-        HyperdriveUtils.PoolInfo memory poolInfo = HyperdriveUtils.getPoolInfo(
-            hyperdrive
-        );
+        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
+        IHyperdrive.PoolConfig memory poolConfig = hyperdrive.getPoolConfig();
+
         (, , uint256 expectedSharePayment) = HyperdriveMath.calculateCloseShort(
             poolInfo.shareReserves,
             poolInfo.bondReserves,
             shortAmount,
             timeElapsed.divDown(POSITION_DURATION),
-            HyperdriveUtils.getPoolConfig(hyperdrive).timeStretch,
+            poolConfig.timeStretch,
             poolInfo.sharePrice,
-            HyperdriveUtils.getPoolConfig(hyperdrive).initialSharePrice
+            poolConfig.initialSharePrice
         );
         (, int256 expectedInterest) = HyperdriveUtils.calculateCompoundInterest(
             shortAmount,

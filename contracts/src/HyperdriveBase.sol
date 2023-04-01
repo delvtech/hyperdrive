@@ -59,7 +59,7 @@ abstract contract HyperdriveBase is MultiToken {
     IHyperdrive.Aggregates internal shortAggregates;
 
     /// @notice The state corresponding to the withdraw pool, expressed as a struct.
-    IHyperdrive.WithdrawPool public withdrawPool;
+    IHyperdrive.WithdrawPool internal withdrawPool;
 
     /// @notice The fee percentages to be applied to the trade equation
     IHyperdrive.Fees internal fees;
@@ -190,80 +190,45 @@ abstract contract HyperdriveBase is MultiToken {
     /// @notice Gets the pool's configuration parameters.
     /// @dev These parameters are immutable, so this should only need to be
     ///      called once.
-    /// @return initialSharePrice_ The initial share price.
-    /// @return positionDuration_ The duration of positions.
-    /// @return checkpointDuration_ The duration of checkpoints.
-    /// @return timeStretch_ The time stretch configuration.
-    /// @return flatFee_ The flat fee parameter.
-    /// @return curveFee_ The flat fee parameter.
-    /// @return governanceFee_ The governance fee parameter.
-    function getPoolConfiguration()
+    /// @return The PoolConfig struct.
+    function getPoolConfig()
         external
         view
-        returns (
-            uint256 initialSharePrice_,
-            uint256 positionDuration_,
-            uint256 checkpointDuration_,
-            uint256 timeStretch_,
-            uint256 flatFee_,
-            uint256 curveFee_,
-            uint256 governanceFee_
-        )
+        returns (IHyperdrive.PoolConfig memory)
     {
-        return (
-            initialSharePrice,
-            positionDuration,
-            checkpointDuration,
-            timeStretch,
-            fees.flat,
-            fees.curve,
-            fees.governance
-        );
+        return
+            IHyperdrive.PoolConfig({
+                initialSharePrice: initialSharePrice,
+                positionDuration: positionDuration,
+                checkpointDuration: checkpointDuration,
+                timeStretch: timeStretch,
+                flatFee: fees.flat,
+                curveFee: fees.curve,
+                governanceFee: fees.governance
+            });
     }
 
     /// @notice Gets info about the pool's reserves and other state that is
     ///         important to evaluate potential trades.
-    /// @return shareReserves_ The share reserves.
-    /// @return bondReserves_ The bond reserves.
-    /// @return lpTotalSupply The total supply of LP shares.
-    /// @return sharePrice The share price.
-    /// @return longsOutstanding_ The outstanding longs that haven't matured.
-    /// @return longAverageMaturityTime_ The average maturity time of the
-    ///         outstanding longs.
-    /// @return longBaseVolume_ The amount of base paid by longs on opening.
-    /// @return shortsOutstanding_ The outstanding shorts that haven't matured.
-    /// @return shortAverageMaturityTime_ The average maturity time of the
-    ///         outstanding shorts.
-    /// @return shortBaseVolume_ The amount of base paid to shorts on
-    ///         opening.
-    function getPoolInfo()
-        external
-        view
-        returns (
-            uint256 shareReserves_,
-            uint256 bondReserves_,
-            uint256 lpTotalSupply,
-            uint256 sharePrice,
-            uint256 longsOutstanding_,
-            uint256 longAverageMaturityTime_,
-            uint256 longBaseVolume_,
-            uint256 shortsOutstanding_,
-            uint256 shortAverageMaturityTime_,
-            uint256 shortBaseVolume_
-        )
-    {
-        return (
-            marketState.shareReserves,
-            marketState.bondReserves,
-            totalSupply[AssetId._LP_ASSET_ID],
-            _pricePerShare(),
-            marketState.longsOutstanding,
-            longAggregates.averageMaturityTime,
-            longAggregates.baseVolume,
-            marketState.shortsOutstanding,
-            shortAggregates.averageMaturityTime,
-            shortAggregates.baseVolume
-        );
+    /// @return The PoolInfo struct.
+    function getPoolInfo() external view returns (IHyperdrive.PoolInfo memory) {
+        return
+            IHyperdrive.PoolInfo({
+                shareReserves: marketState.shareReserves,
+                bondReserves: marketState.bondReserves,
+                lpTotalSupply: totalSupply[AssetId._LP_ASSET_ID],
+                sharePrice: _pricePerShare(),
+                longsOutstanding: marketState.longsOutstanding,
+                longAverageMaturityTime: longAggregates.averageMaturityTime,
+                longBaseVolume: longAggregates.baseVolume,
+                shortsOutstanding: marketState.shortsOutstanding,
+                shortAverageMaturityTime: shortAggregates.averageMaturityTime,
+                shortBaseVolume: shortAggregates.baseVolume,
+                withdrawalSharesReadyToWithdraw: withdrawPool
+                    .withdrawalSharesReadyToWithdraw,
+                capital: withdrawPool.capital,
+                interest: withdrawPool.interest
+            });
     }
 
     /// Helpers ///

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.18;
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
@@ -37,12 +37,6 @@ contract MakerDsrHyperdriveScript is Script {
             _governance: address(0),
             _dsrManager: dsrManager
         });
-
-        // Initialize Hyperdrive to have an APR equal to 1%.
-        uint256 apr = 0.01e18;
-        uint256 contribution = 50_000e18;
-        hyperdrive.baseToken().approve(address(hyperdrive), contribution);
-        hyperdrive.initialize(contribution, apr, deployerAddress, true);
 
         vm.stopBroadcast();
 

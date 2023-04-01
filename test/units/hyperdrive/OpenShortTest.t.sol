@@ -34,9 +34,7 @@ contract OpenShortTest is HyperdriveTest {
         // Attempt to short an extreme amount of bonds. This should fail.
         vm.stopPrank();
         vm.startPrank(bob);
-        uint256 baseAmount = HyperdriveUtils
-            .getPoolInfo(hyperdrive)
-            .shareReserves;
+        uint256 baseAmount = hyperdrive.getPoolInfo().shareReserves;
         baseToken.mint(baseAmount);
         baseToken.approve(address(hyperdrive), baseAmount);
         vm.expectRevert(Errors.FixedPointMath_SubOverflow.selector);
@@ -51,8 +49,7 @@ contract OpenShortTest is HyperdriveTest {
         initialize(alice, apr, contribution);
 
         // Get the reserves before opening the short.
-        HyperdriveUtils.PoolInfo memory poolInfoBefore = HyperdriveUtils
-            .getPoolInfo(hyperdrive);
+        IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
 
         // Short a small amount of bonds.
         uint256 bondAmount = 10e18;
@@ -99,8 +96,7 @@ contract OpenShortTest is HyperdriveTest {
         initialize(alice, apr, contribution);
 
         // Get the reserves before opening the short.
-        HyperdriveUtils.PoolInfo memory poolInfoBefore = HyperdriveUtils
-            .getPoolInfo(hyperdrive);
+        IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
 
         // Short a small amount of bonds.
         uint256 bondAmount = 0.1e18;
@@ -161,8 +157,8 @@ contract OpenShortTest is HyperdriveTest {
         }
 
         // Verify that the reserves were updated correctly.
-        HyperdriveUtils.PoolInfo memory poolInfoAfter = HyperdriveUtils
-            .getPoolInfo(hyperdrive);
+        IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
+
         {
             IHyperdrive.Checkpoint memory checkpoint = hyperdrive.checkpoints(
                 checkpointTime
@@ -206,7 +202,7 @@ contract OpenShortTest is HyperdriveTest {
                 poolInfoBefore.bondReserves + bondAmount,
                 INITIAL_SHARE_PRICE,
                 POSITION_DURATION,
-                HyperdriveUtils.getPoolConfig(hyperdrive).timeStretch
+                hyperdrive.getPoolConfig().timeStretch
             ),
             5
         );

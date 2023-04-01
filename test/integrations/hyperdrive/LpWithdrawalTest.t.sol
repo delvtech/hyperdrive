@@ -51,9 +51,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         uint256 baseProceeds;
         uint256 withdrawalShares;
         {
-            uint256 preRemovalSharePrice = HyperdriveUtils
-                .getPoolInfo(hyperdrive)
-                .sharePrice;
+            uint256 preRemovalSharePrice = hyperdrive.getPoolInfo().sharePrice;
             (baseProceeds, withdrawalShares) = removeLiquidity(alice, lpShares);
             (contribution, ) = HyperdriveUtils.calculateCompoundInterest(
                 contribution,
@@ -87,9 +85,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         // as well as quite a bit of "interest" that was collected from Bob's
         // slippage.
         {
-            uint256 sharePrice = HyperdriveUtils
-                .getPoolInfo(hyperdrive)
-                .sharePrice;
+            uint256 sharePrice = hyperdrive.getPoolInfo().sharePrice;
             uint256 withdrawalProceeds = redeemWithdrawalShares(
                 alice,
                 withdrawalShares
@@ -236,9 +232,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         (uint256 maturityTime, uint256 basePaid) = openShort(bob, shortAmount);
 
         // Alice removes all of her LP shares.
-        uint256 preRemovalSharePrice = HyperdriveUtils
-            .getPoolInfo(hyperdrive)
-            .sharePrice;
+        uint256 preRemovalSharePrice = hyperdrive.getPoolInfo().sharePrice;
         (uint256 baseProceeds, uint256 withdrawalShares) = removeLiquidity(
             alice,
             lpShares
