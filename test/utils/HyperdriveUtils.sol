@@ -207,6 +207,7 @@ library HyperdriveUtils {
             totalAmount = _principal.divDown(
                 uint256(FixedPointMath.exp(int256(rt)))
             );
+
             interest = int256(totalAmount) - int256(_principal);
             return (totalAmount, interest);
         }
@@ -282,5 +283,154 @@ library HyperdriveUtils {
                     poolInfo.sharePrice
                 )
                 .mulDown(poolInfo.sharePrice);
+    }
+
+    function bondPrice(
+        IHyperdrive _hyperdrive,
+        uint256 normalizedTimeRemaining
+    ) internal returns (uint256) {
+        IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
+        IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
+        return
+            HyperdriveMath.calculateSpotPrice(
+                poolInfo.shareReserves,
+                poolInfo.bondReserves,
+                poolConfig.initialSharePrice,
+                normalizedTimeRemaining,
+                poolConfig.timeStretch
+            );
+    }
+
+    struct CloseShortTrade {
+        uint256 shareReservesDelta;
+        uint256 bondReservesDelta;
+        uint256 sharePayment;
+        uint256 spotPrice;
+        //
+        uint256 totalCurveFee;
+        uint256 totalFlatFee;
+        uint256 governanceCurveFee;
+        uint256 governanceFlatFee;
+        //
+        uint256 shareReservesDeltaBeforeFeeApplication;
+        uint256 sharePaymentBeforeFeeApplication;
+        //
+        uint256 openSharePrice;
+        uint256 closeSharePrice;
+        uint256 shortShareProceeds;
+        uint256 shortBaseProceeds;
+    }
+
+    function calculateCloseShortTrade(
+        IHyperdrive _hyperdrive,
+        uint256 _bondAmount,
+        uint256 _maturityTime
+    ) internal returns (CloseShortTrade memory _closeShort) {
+        IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
+        IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
+
+        (
+            uint256 shareReservesDelta,
+            uint256 bondReservesDelta,
+            uint256 sharePayment
+        ) = HyperdriveMath.calculateCloseShort(
+                poolInfo.shareReserves,
+                poolInfo.bondReserves,
+                _bondAmount,
+                _timeRemaining,
+                poolConfig.timeStretch,
+                poolInfo.sharePrice,
+                poolConfig.initialSharePrice
+            );
+
+        _closeShort.shareReservesDeltaBeforeFeeApplication = shareReservesDelta;
+        _closeShort.bondReservesDelta = bondReservesDelta;
+        _closeShort.sharePaymentBeforeFeeApplication = sharePayment;
+
+        _closeShort.spotPrice = poolInfo.bondReserves > 0
+            ? HyperdriveMath.calculateSpotPrice(
+                poolInfo.shareReserves,
+                poolInfo.bondReserves,
+                poolConfig.initialSharePrice,
+                _timeRemaining,
+                poolConfig.timeStretch
+            )
+            : FixedPointMath.ONE_18;
+
+        (
+            uint256 totalCurveFee,
+            uint256 totalFlatFee,
+            uint256 governanceCurveFee,
+            uint256 governanceFlatFee
+        ) = calculateFeesInGivenBondsOut(
+                _hyperdrive,
+                _bondAmount,
+                _timeRemaining,
+                spotPrice,
+                poolInfo.sharePrice
+            );
+        _closeShort.totalCurveFee = totalCurveFee;
+        _closeShort.totalFlatFee = totalFlatFee;
+        _closeShort.governanceCurveFee = governanceCurveFee;
+        _closeShort.governanceFlatFee = governanceFlatFee;
+
+        _closeShort.shareReservesDelta =
+            shareReservesDelta +
+            (totalCurveFee - governanceCurveFee);
+        _closeShort.sharePayment = sharePayment + totalCurveFee + totalFlatFee;
+
+        _closeShort.openSharePrice = hyperdrive.checkpoints(
+            _maturityTime - poolConfig.positionDuration
+        );
+        _closeShort.closeSharePrice = _maturityTime <= block.timestamp
+            ? hyperdrive.checkpoints(_maturityTime).sharePrice
+            : sharePrice;
+
+        _closeShort.shortShareProceeds = HyperdriveMath.calculateShortProceeds(
+            _bondAmount,
+            _closeShort.sharePayment,
+            _closeShort.openSharePrice,
+            _closeShort.closeSharePrice,
+            poolInfo.sharePrice
+        );
+        _closeShort.baseProceeds = _closeShort.shortShareProceeds.mulDown(
+            baseToken.balanceOf(address(hyperdrive)).divDown(
+                mockHyperdrive.totalShares()
+            )
+        );
+    }
+
+    function calculateFeesInGivenBondsOut(
+        IHyperdrive _hyperdrive,
+        uint256 _bondsOut,
+        uint256 _normalizedTimeRemaining,
+        uint256 _spotPrice,
+        uint256 _sharePrice
+    )
+        internal
+        view
+        returns (
+            uint256 totalCurveFee,
+            uint256 totalFlatFee,
+            uint256 governanceCurveFee,
+            uint256 governanceFlatFee
+        )
+    {
+        IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
+
+        totalCurveFee = FixedPointMath.ONE_18.sub(_spotPrice);
+        totalCurveFee = totalCurveFee
+            .mulDown(poolConfig.curveFee)
+            .mulDown(_bondsOut)
+            .mulDivDown(_normalizedTimeRemaining, _sharePrice);
+
+        uint256 flat = _bondsOut.mulDivDown(
+            FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
+            _sharePrice
+        );
+        totalFlatFee = (flat.mulDown(poolConfig.flatFee));
+
+        governanceCurveFee = totalCurveFee.mulDown(poolConfig.governanceFee);
+        governanceFlatFee = totalFlatFee.mulDown(poolConfig.governanceFee);
     }
 }

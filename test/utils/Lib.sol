@@ -5,6 +5,28 @@ import "forge-std/console2.sol";
 import "forge-std/Vm.sol";
 
 library Lib {
+    function toString(int256 num) internal pure returns (string memory result) {
+        return toString(num, 18);
+    }
+
+    function toString(
+        uint256 num
+    ) internal pure returns (string memory result) {
+        return toString(num, 18);
+    }
+
+    function toPercent(
+        int256 num
+    ) internal pure returns (string memory result) {
+        return string.concat(toString(num * 100, 18), " %");
+    }
+
+    function toPercent(
+        uint256 num
+    ) internal pure returns (string memory result) {
+        return string.concat(toString(num * 100, 18), " %");
+    }
+
     /// @dev Converts a signed integer to a string with a specified amount of
     ///      decimals. In the event that the integer doesn't have any digits to
     ///      the left of the decimal place, zeros will be filled in.
