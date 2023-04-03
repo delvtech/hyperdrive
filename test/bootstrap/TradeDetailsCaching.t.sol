@@ -62,12 +62,9 @@ contract TradeDetailsCaching is HyperdriveTest {
     }
 
     function test_bootstrap_closeShortTradeCache_storage() external {
-        (uint256 maturityTime,) = openShort(alice, 100000e18);
+        (uint256 maturityTime, ) = openShort(alice, 100000e18);
 
-        advanceTime(
-            maturityTime - block.timestamp,
-            0.05e18
-        );
+        advanceTime(maturityTime - block.timestamp, 0.05e18);
 
         uint256 t1 = block.timestamp;
         closeShort(alice, maturityTime, 25000e18);

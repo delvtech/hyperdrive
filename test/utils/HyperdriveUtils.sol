@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-
-import "forge-std/console2.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
@@ -309,6 +307,8 @@ library HyperdriveUtils {
         uint256 totalGovernanceFee;
         uint256 sharesDeposit;
         uint256 baseDeposit;
+        IHyperdrive.PoolInfo poolInfoBefore;
+        IHyperdrive.PoolInfo poolInfoAfter;
     }
 
     function openShortTradeDetails(
@@ -404,6 +404,8 @@ library HyperdriveUtils {
         _details.baseDeposit = _details.sharesDeposit.mulDown(
             poolInfo.sharePrice
         );
+
+        _details.poolInfoBefore = poolInfo;
     }
 
     struct CloseShortTradeDetails {
@@ -427,6 +429,8 @@ library HyperdriveUtils {
         uint256 closeSharePrice;
         uint256 shareProceeds;
         uint256 baseProceeds;
+        IHyperdrive.PoolInfo poolInfoBefore;
+        IHyperdrive.PoolInfo poolInfoAfter;
     }
 
     function closeShortTradeDetails(
@@ -525,10 +529,14 @@ library HyperdriveUtils {
             );
             uint256 totalShares = MockHyperdrive(address(_hyperdrive))
                 .totalShares();
-            uint256 shares = _details.shareProceeds > totalShares ? totalShares : _details.shareProceeds;
+            uint256 shares = _details.shareProceeds > totalShares
+                ? totalShares
+                : _details.shareProceeds;
             _details.baseProceeds = totalShares != 0
                 ? shares.mulDown(assets.divDown(totalShares))
                 : 0;
+
+            _details.poolInfoBefore = poolInfo;
         }
     }
 }

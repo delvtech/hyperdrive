@@ -224,7 +224,6 @@ contract HyperdriveTest is BaseTest {
         try hyperdrive.openShortTradeDetails(bondAmount, maturityTime) returns (
             HyperdriveUtils.OpenShortTradeDetails memory _details
         ) {
-            openShortTradeCache[trader][maturityTime].push(_details);
             details = _details;
             success = true;
         } catch {}
@@ -238,8 +237,15 @@ contract HyperdriveTest is BaseTest {
         baseAmount = baseBalanceBefore - baseToken.balanceOf(trader);
         baseToken.burn(bondAmount - baseAmount);
 
-        if (success && (details.baseDeposit != baseAmount)) {
-            revert HyperdriveTest__OpenShortTradeMismatch();
+        // If the details calculation was successful validate the result maps
+        // to the correct result and cache the trade
+        if (success) {
+            if (details.baseDeposit != baseAmount) {
+                revert HyperdriveTest__OpenShortTradeMismatch();
+            } else {
+                details.poolInfoAfter = hyperdrive.getPoolInfo();
+                openShortTradeCache[trader][maturityTime].push(details);
+            }
         }
 
         return (maturityTime, baseAmount);
@@ -259,7 +265,6 @@ contract HyperdriveTest is BaseTest {
         try
             hyperdrive.closeShortTradeDetails(bondAmount, maturityTime)
         returns (HyperdriveUtils.CloseShortTradeDetails memory _details) {
-            closeShortTradeCache[trader][maturityTime].push(_details);
             details = _details;
             success = true;
         } catch {}
@@ -270,10 +275,15 @@ contract HyperdriveTest is BaseTest {
 
         baseAmount = baseToken.balanceOf(trader) - baseBalanceBefore;
 
-        if (success && (details.baseProceeds != baseAmount)) {
-            console2.log("baseProceeds", details.baseProceeds);
-            console2.log("baseAmount", baseAmount);
-            revert HyperdriveTest__CloseShortTradeMismatch();
+        // If the details calculation was successful validate the result maps
+        // to the correct result and cache the trade
+        if (success) {
+            if (details.baseProceeds != baseAmount) {
+                revert HyperdriveTest__CloseShortTradeMismatch();
+            } else {
+                details.poolInfoAfter = hyperdrive.getPoolInfo();
+                closeShortTradeCache[trader][maturityTime].push(details);
+            }
         }
         return baseAmount;
     }
