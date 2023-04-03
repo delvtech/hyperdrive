@@ -29,9 +29,12 @@ contract HyperdriveTest is BaseTest {
     uint256 internal constant POSITION_DURATION =
         CHECKPOINT_DURATION * CHECKPOINTS_PER_TERM;
 
+    error HyperdriveTest__OpenLongTradeMismatch();
     error HyperdriveTest__OpenShortTradeMismatch();
     error HyperdriveTest__CloseShortTradeMismatch();
 
+    // trader => maturity => OpenLongTradeDetails[]
+    mapping(address => mapping(uint256 => HyperdriveUtils.OpenLongTradeDetails[])) openLongTradeCache;
     // trader => maturity => OpenShortTradeDetails[]
     mapping(address => mapping(uint256 => HyperdriveUtils.OpenShortTradeDetails[])) openShortTradeCache;
     // trader => maturity => OpenShortTradeDetails[]
@@ -177,6 +180,17 @@ contract HyperdriveTest is BaseTest {
         maturityTime = HyperdriveUtils.maturityTimeFromLatestCheckpoint(
             hyperdrive
         );
+
+        // If details calculation reverts don't halt execution
+        bool success;
+        HyperdriveUtils.OpenLongTradeDetails memory details;
+        try hyperdrive.openLongTradeDetails(baseAmount, maturityTime) returns (
+            HyperdriveUtils.OpenLongTradeDetails memory _details
+        ) {
+            details = _details;
+            success = true;
+        } catch {}
+
         uint256 bondBalanceBefore = hyperdrive.balanceOf(
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
             trader
@@ -190,7 +204,20 @@ contract HyperdriveTest is BaseTest {
             trader
         );
 
-        return (maturityTime, bondBalanceAfter.sub(bondBalanceBefore));
+        bondAmount = bondBalanceAfter.sub(bondBalanceBefore);
+
+        // If the details calculation was successful validate the result maps
+        // to the correct result and cache the trade
+        if (success) {
+            if (details.bondProceeds != bondAmount) {
+                revert HyperdriveTest__OpenLongTradeMismatch();
+            } else {
+                details.poolInfoAfter = hyperdrive.getPoolInfo();
+                openLongTradeCache[trader][maturityTime].push(details);
+            }
+        }
+
+        return (maturityTime, bondAmount);
     }
 
     function closeLong(

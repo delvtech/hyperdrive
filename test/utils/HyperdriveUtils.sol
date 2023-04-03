@@ -288,6 +288,123 @@ library HyperdriveUtils {
                 .mulDown(poolInfo.sharePrice);
     }
 
+    struct OpenLongTradeDetails {
+        uint256 timestamp;
+        uint256 latestCheckpoint;
+        uint256 maturityTime;
+        uint256 sharePrice;
+        uint256 baseAmount;
+        uint256 shares;
+        uint256 normalizedTimeRemaining;
+        uint256 initialShareReservesDelta;
+        uint256 initialBondReservesDelta;
+        uint256 initialBondProceeds;
+        uint256 bondReservesDelta;
+        uint256 shareReservesDelta;
+        uint256 bondProceeds;
+        uint256 spotPrice;
+        uint256 totalCurveFee;
+        uint256 totalFlatFee;
+        uint256 governanceCurveFee;
+        uint256 governanceFlatFee;
+        IHyperdrive.PoolInfo poolInfoBefore;
+        IHyperdrive.PoolInfo poolInfoAfter;
+    }
+
+    function openLongTradeDetails(
+        IHyperdrive _hyperdrive,
+        uint256 _baseAmount,
+        uint256 _maturityTime
+    ) external view returns (OpenLongTradeDetails memory _details) {
+        IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
+        IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
+        _details.poolInfoBefore = poolInfo;
+
+        _details.timestamp = block.timestamp;
+        _details.latestCheckpoint = latestCheckpoint(_hyperdrive);
+        _details.maturityTime = _maturityTime;
+        _details.baseAmount = _baseAmount;
+
+        {
+            // TODO Would be more elegant to have MockHyperdrive use ERC4626 for
+            // a more elegant solution to this
+            uint256 assets = IERC20(_hyperdrive.baseToken()).balanceOf(
+                address(_hyperdrive)
+            );
+            uint256 totalShares = MockHyperdrive(address(_hyperdrive))
+                .totalShares();
+
+            if (totalShares == 0) {
+                _details.shares = _baseAmount;
+                _details.sharePrice = FixedPointMath.ONE_18;
+            } else {
+                _details.shares = totalShares.mulDivDown(_baseAmount, assets);
+                _details.sharePrice = _baseAmount.divDown(_details.shares);
+            }
+        }
+
+        _details.normalizedTimeRemaining = calculateTimeRemaining(
+            _hyperdrive,
+            _maturityTime
+        );
+
+        (
+            uint256 shareReservesDelta,
+            uint256 bondReservesDelta,
+            uint256 bondProceeds
+        ) = HyperdriveMath.calculateOpenLong(
+                poolInfo.shareReserves,
+                poolInfo.bondReserves,
+                _details.shares,
+                _details.normalizedTimeRemaining,
+                poolConfig.timeStretch,
+                _details.sharePrice,
+                poolConfig.initialSharePrice
+            );
+
+        _details.initialShareReservesDelta = shareReservesDelta;
+        _details.initialBondProceeds = bondProceeds;
+        _details.bondReservesDelta = bondReservesDelta;
+
+        _details.spotPrice = HyperdriveMath.calculateSpotPrice(
+            poolInfo.shareReserves,
+            poolInfo.bondReserves,
+            poolConfig.initialSharePrice,
+            _details.normalizedTimeRemaining,
+            poolConfig.timeStretch
+        );
+
+        {
+            (
+                uint256 totalCurveFee,
+                uint256 totalFlatFee,
+                uint256 governanceCurveFee,
+                uint256 governanceFlatFee
+            ) = MockHyperdrive(address(_hyperdrive))
+                    .calculateFeesOutGivenSharesIn(
+                        _details.shares,
+                        _details.initialBondProceeds,
+                        _details.normalizedTimeRemaining,
+                        _details.spotPrice,
+                        poolInfo.sharePrice
+                    );
+            _details.totalCurveFee = totalCurveFee;
+            _details.totalFlatFee = totalFlatFee;
+            _details.governanceCurveFee = governanceCurveFee;
+            _details.governanceFlatFee = governanceFlatFee;
+
+            _details.bondReservesDelta =
+                bondReservesDelta -
+                (totalCurveFee - governanceCurveFee);
+            _details.bondProceeds =
+                bondProceeds -
+                (totalCurveFee + totalFlatFee);
+            _details.shareReservesDelta =
+                shareReservesDelta -
+                (governanceCurveFee.divDown(_details.sharePrice));
+        }
+    }
+
     struct OpenShortTradeDetails {
         uint256 timestamp;
         uint256 latestCheckpoint;
@@ -324,6 +441,7 @@ library HyperdriveUtils {
 
         IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
         IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
+        _details.poolInfoBefore = poolInfo;
 
         _details.sharePrice = poolInfo.sharePrice;
         {
@@ -404,8 +522,6 @@ library HyperdriveUtils {
         _details.baseDeposit = _details.sharesDeposit.mulDown(
             poolInfo.sharePrice
         );
-
-        _details.poolInfoBefore = poolInfo;
     }
 
     struct CloseShortTradeDetails {
@@ -446,9 +562,9 @@ library HyperdriveUtils {
 
         IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
         IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
+        _details.poolInfoBefore = poolInfo;
 
         _details.sharePrice = poolInfo.sharePrice;
-
         _details.normalizedTimeRemaining = calculateTimeRemaining(
             _hyperdrive,
             _maturityTime
@@ -504,39 +620,37 @@ library HyperdriveUtils {
                 shareReservesDelta +
                 (totalCurveFee - governanceCurveFee);
             _details.sharePayment = sharePayment + totalCurveFee + totalFlatFee;
-
-            _details.openSharePrice = _hyperdrive
-                .checkpoints(_maturityTime - poolConfig.positionDuration)
-                .sharePrice;
-            // NOTE This condition differs from real implementation as there is
-            // a preceding checkpoint application in such cases
-            _details.closeSharePrice = _maturityTime < block.timestamp
-                ? _hyperdrive.checkpoints(_maturityTime).sharePrice
-                : poolInfo.sharePrice;
-
-            _details.shareProceeds = HyperdriveMath.calculateShortProceeds(
-                _bondAmount,
-                _details.sharePayment,
-                _details.openSharePrice,
-                _details.closeSharePrice,
-                poolInfo.sharePrice
-            );
-
-            // TODO Would be more elegant to have MockHyperdrive use ERC4626 for
-            // a more elegant solutions to this
-            uint256 assets = IERC20(_hyperdrive.baseToken()).balanceOf(
-                address(_hyperdrive)
-            );
-            uint256 totalShares = MockHyperdrive(address(_hyperdrive))
-                .totalShares();
-            uint256 shares = _details.shareProceeds > totalShares
-                ? totalShares
-                : _details.shareProceeds;
-            _details.baseProceeds = totalShares != 0
-                ? shares.mulDown(assets.divDown(totalShares))
-                : 0;
-
-            _details.poolInfoBefore = poolInfo;
         }
+
+        _details.openSharePrice = _hyperdrive
+            .checkpoints(_maturityTime - poolConfig.positionDuration)
+            .sharePrice;
+        // NOTE This condition differs from real implementation as there is
+        // a preceding checkpoint application in such cases
+        _details.closeSharePrice = _maturityTime < block.timestamp
+            ? _hyperdrive.checkpoints(_maturityTime).sharePrice
+            : poolInfo.sharePrice;
+
+        _details.shareProceeds = HyperdriveMath.calculateShortProceeds(
+            _bondAmount,
+            _details.sharePayment,
+            _details.openSharePrice,
+            _details.closeSharePrice,
+            poolInfo.sharePrice
+        );
+
+        // TODO Would be more elegant to have MockHyperdrive use ERC4626 for
+        // a more elegant solutions to this
+        uint256 assets = IERC20(_hyperdrive.baseToken()).balanceOf(
+            address(_hyperdrive)
+        );
+        uint256 totalShares = MockHyperdrive(address(_hyperdrive))
+            .totalShares();
+        uint256 shares = _details.shareProceeds > totalShares
+            ? totalShares
+            : _details.shareProceeds;
+        _details.baseProceeds = totalShares != 0
+            ? shares.mulDown(assets.divDown(totalShares))
+            : 0;
     }
 }
