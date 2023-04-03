@@ -7,7 +7,6 @@ import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { MockHyperdrive } from "../mocks/MockHyperdrive.sol";
 
 library HyperdriveUtils {
