@@ -19,7 +19,6 @@ contract HyperdriveTest is BaseTest {
 
     ERC20Mintable baseToken;
     IHyperdrive hyperdrive;
-    MockHyperdrive mockHyperdrive;
 
     uint256 internal constant INITIAL_SHARE_PRICE = FixedPointMath.ONE_18;
     uint256 internal constant CHECKPOINT_DURATION = 1 days;
@@ -54,17 +53,19 @@ contract HyperdriveTest is BaseTest {
         });
         // Instantiate Hyperdrive.
         uint256 apr = 0.05e18;
-
-        mockHyperdrive = new MockHyperdrive(
-            baseToken,
-            INITIAL_SHARE_PRICE,
-            CHECKPOINTS_PER_TERM,
-            CHECKPOINT_DURATION,
-            HyperdriveUtils.calculateTimeStretch(apr),
-            fees,
-            governance
+        hyperdrive = IHyperdrive(
+            address(
+                new MockHyperdrive(
+                    baseToken,
+                    INITIAL_SHARE_PRICE,
+                    CHECKPOINTS_PER_TERM,
+                    CHECKPOINT_DURATION,
+                    HyperdriveUtils.calculateTimeStretch(apr),
+                    fees,
+                    governance
+                )
+            )
         );
-        hyperdrive = IHyperdrive(address(mockHyperdrive));
 
         // Advance time so that Hyperdrive can look back more than a position
         // duration.
@@ -86,17 +87,19 @@ contract HyperdriveTest is BaseTest {
             flat: flatFee,
             governance: governanceFee
         });
-
-        mockHyperdrive = new MockHyperdrive(
-            baseToken,
-            INITIAL_SHARE_PRICE,
-            CHECKPOINTS_PER_TERM,
-            CHECKPOINT_DURATION,
-            HyperdriveUtils.calculateTimeStretch(apr),
-            fees,
-            governance
+        hyperdrive = IHyperdrive(
+            address(
+                new MockHyperdrive(
+                    baseToken,
+                    INITIAL_SHARE_PRICE,
+                    CHECKPOINTS_PER_TERM,
+                    CHECKPOINT_DURATION,
+                    HyperdriveUtils.calculateTimeStretch(apr),
+                    fees,
+                    governance
+                )
+            )
         );
-        hyperdrive = IHyperdrive(address(mockHyperdrive));
     }
 
     /// Actions ///
