@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
+import "forge-std/console2.sol";
+
 import { BaseTest } from "./BaseTest.sol";
 import { ForwarderFactory } from "contracts/src/ForwarderFactory.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
@@ -28,9 +30,12 @@ contract HyperdriveTest is BaseTest {
         CHECKPOINT_DURATION * CHECKPOINTS_PER_TERM;
 
     error HyperdriveTest__OpenShortTradeMismatch();
+    error HyperdriveTest__CloseShortTradeMismatch();
 
     // trader => maturity => OpenShortTradeDetails[]
     mapping(address => mapping(uint256 => HyperdriveUtils.OpenShortTradeDetails[])) openShortTradeCache;
+    // trader => maturity => OpenShortTradeDetails[]
+    mapping(address => mapping(uint256 => HyperdriveUtils.CloseShortTradeDetails[])) closeShortTradeCache;
 
     function setUp() public virtual override {
         super.setUp();
@@ -248,11 +253,29 @@ contract HyperdriveTest is BaseTest {
         vm.stopPrank();
         vm.startPrank(trader);
 
+        // If details calculation reverts don't halt execution
+        bool success;
+        HyperdriveUtils.CloseShortTradeDetails memory details;
+        try
+            hyperdrive.closeShortTradeDetails(bondAmount, maturityTime)
+        returns (HyperdriveUtils.CloseShortTradeDetails memory _details) {
+            closeShortTradeCache[trader][maturityTime].push(_details);
+            details = _details;
+            success = true;
+        } catch {}
+
         // Close the short
         uint256 baseBalanceBefore = baseToken.balanceOf(trader);
         hyperdrive.closeShort(maturityTime, bondAmount, 0, trader, true);
 
-        return baseToken.balanceOf(trader) - baseBalanceBefore;
+        baseAmount = baseToken.balanceOf(trader) - baseBalanceBefore;
+
+        if (success && (details.baseProceeds != baseAmount)) {
+            console2.log("baseProceeds", details.baseProceeds);
+            console2.log("baseAmount", baseAmount);
+            revert HyperdriveTest__CloseShortTradeMismatch();
+        }
+        return baseAmount;
     }
 
     /// Utils ///
