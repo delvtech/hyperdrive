@@ -56,6 +56,43 @@ contract TradeDetailsCaching is HyperdriveTest {
         );
     }
 
+    function test_bootstrap_closeLongTradeCache_storage() external {
+        (uint256 maturityTime, ) = openLong(alice, 100000e18);
+
+        advanceTime(maturityTime - block.timestamp, 0.05e18);
+
+        uint256 t1 = block.timestamp;
+        closeLong(alice, maturityTime, 25000e18);
+        advanceTime(1 days, 0.05e18);
+
+        uint256 t2 = block.timestamp;
+        closeLong(alice, maturityTime, 25000e18);
+        advanceTime(POSITION_DURATION, 0.05e18);
+
+        uint256 t3 = block.timestamp;
+        closeLong(alice, maturityTime, 50000e18);
+
+        assertEq(
+            closeLongTradeCache[alice][maturityTime].length,
+            3,
+            "should have 3 trades cached"
+        );
+        assertEq(
+            closeLongTradeCache[alice][maturityTime][0].timestamp,
+            t1,
+            "timestamp 1 should be cached correctly"
+        );
+        assertEq(
+            closeLongTradeCache[alice][maturityTime][1].timestamp,
+            t2,
+            "timestamp 2 should be cached correctly"
+        );
+        assertEq(
+            closeLongTradeCache[alice][maturityTime][2].timestamp,
+            t3,
+            "timestamp 3 should be cached correctly"
+        );
+    }
 
     function test_bootstrap_openShortTradeCache_storage() external {
         advanceTime(

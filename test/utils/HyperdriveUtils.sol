@@ -7,7 +7,6 @@ import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { MockHyperdrive } from "../mocks/MockHyperdrive.sol";
 
@@ -403,6 +402,123 @@ library HyperdriveUtils {
                 shareReservesDelta -
                 (governanceCurveFee.divDown(_details.sharePrice));
         }
+    }
+
+    struct CloseLongTradeDetails {
+        uint256 timestamp;
+        uint256 latestCheckpoint;
+        uint256 maturityTime;
+        uint256 bondAmount;
+        uint256 sharePrice;
+        uint256 normalizedTimeRemaining;
+        uint256 closeSharePrice;
+        uint256 initialShareReservesDelta;
+        uint256 initialShareProceeds;
+        uint256 bondReservesDelta;
+        uint256 shareReservesDelta;
+        uint256 shareProceeds;
+        uint256 spotPrice;
+        uint256 totalCurveFee;
+        uint256 totalFlatFee;
+        uint256 totalGovernanceFee;
+        uint256 baseProceeds;
+        IHyperdrive.PoolInfo poolInfoBefore;
+        IHyperdrive.PoolInfo poolInfoAfter;
+    }
+
+    function closeLongTradeDetails(
+        IHyperdrive _hyperdrive,
+        uint256 _bondAmount,
+        uint256 _maturityTime
+    ) external view returns (CloseLongTradeDetails memory _details) {
+        _details.timestamp = block.timestamp;
+        _details.latestCheckpoint = latestCheckpoint(_hyperdrive);
+        _details.maturityTime = _maturityTime;
+        _details.bondAmount = _bondAmount;
+
+        IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
+        IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
+        _details.poolInfoBefore = poolInfo;
+
+        _details.sharePrice = poolInfo.sharePrice;
+        _details.normalizedTimeRemaining = calculateTimeRemaining(
+            _hyperdrive,
+            _maturityTime
+        );
+
+        // NOTE: Slight discrepancy to real implementation due to future
+        // checkpoint application
+        uint256 maturitySharePrice = _hyperdrive.checkpoints(_maturityTime).sharePrice;
+        _details.closeSharePrice = block.timestamp < _maturityTime
+            ? _details.sharePrice
+            : maturitySharePrice == 0 ? _details.sharePrice : maturitySharePrice;
+
+        (
+            uint256 shareReservesDelta,
+            uint256 bondReservesDelta,
+            uint256 shareProceeds
+        ) = HyperdriveMath.calculateCloseLong(
+                poolInfo.shareReserves,
+                poolInfo.bondReserves,
+                _bondAmount,
+                _details.normalizedTimeRemaining,
+                poolConfig.timeStretch,
+                _details.closeSharePrice,
+                poolInfo.sharePrice,
+                poolConfig.initialSharePrice
+            );
+
+        _details.initialShareReservesDelta = shareReservesDelta;
+        _details.bondReservesDelta = bondReservesDelta;
+        _details.initialShareProceeds = shareProceeds;
+
+        _details.spotPrice = poolInfo.bondReserves > 0
+            ? HyperdriveMath.calculateSpotPrice(
+                poolInfo.shareReserves,
+                poolInfo.bondReserves,
+                poolConfig.initialSharePrice,
+                _details.normalizedTimeRemaining,
+                poolConfig.timeStretch
+            )
+            : FixedPointMath.ONE_18;
+
+        {
+            (
+                uint256 totalCurveFee,
+                uint256 totalFlatFee,
+                uint256 totalGovernanceFee
+            ) = MockHyperdrive(address(_hyperdrive))
+                    .calculateFeesOutGivenBondsIn(
+                        _bondAmount,
+                        _details.normalizedTimeRemaining,
+                        _details.spotPrice,
+                        poolInfo.sharePrice
+                    );
+            _details.totalCurveFee = totalCurveFee;
+            _details.totalFlatFee = totalFlatFee;
+            _details.totalGovernanceFee = totalGovernanceFee;
+
+            _details.shareReservesDelta =
+                shareReservesDelta -
+                totalCurveFee;
+            _details.shareProceeds =
+                shareProceeds -
+                (totalCurveFee + totalFlatFee);
+        }
+
+        // TODO Would be more elegant to have MockHyperdrive use ERC4626 for
+        // a more elegant solutions to this
+        uint256 assets = IERC20(_hyperdrive.baseToken()).balanceOf(
+            address(_hyperdrive)
+        );
+        uint256 totalShares = MockHyperdrive(address(_hyperdrive))
+            .totalShares();
+        uint256 shares = _details.shareProceeds > totalShares
+            ? totalShares
+            : _details.shareProceeds;
+        _details.baseProceeds = totalShares != 0
+            ? shares.mulDown(assets.divDown(totalShares))
+            : 0;
     }
 
     struct OpenShortTradeDetails {

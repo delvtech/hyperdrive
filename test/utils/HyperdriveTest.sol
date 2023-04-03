@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import "forge-std/console2.sol";
-
 import { BaseTest } from "./BaseTest.sol";
 import { ForwarderFactory } from "contracts/src/ForwarderFactory.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
@@ -30,11 +28,14 @@ contract HyperdriveTest is BaseTest {
         CHECKPOINT_DURATION * CHECKPOINTS_PER_TERM;
 
     error HyperdriveTest__OpenLongTradeMismatch();
+    error HyperdriveTest__CloseLongTradeMismatch();
     error HyperdriveTest__OpenShortTradeMismatch();
     error HyperdriveTest__CloseShortTradeMismatch();
 
     // trader => maturity => OpenLongTradeDetails[]
     mapping(address => mapping(uint256 => HyperdriveUtils.OpenLongTradeDetails[])) openLongTradeCache;
+    // trader => maturity => CloseLongTradeDetails[]
+    mapping(address => mapping(uint256 => HyperdriveUtils.CloseLongTradeDetails[])) closeLongTradeCache;
     // trader => maturity => OpenShortTradeDetails[]
     mapping(address => mapping(uint256 => HyperdriveUtils.OpenShortTradeDetails[])) openShortTradeCache;
     // trader => maturity => OpenShortTradeDetails[]
@@ -228,12 +229,35 @@ contract HyperdriveTest is BaseTest {
         vm.stopPrank();
         vm.startPrank(trader);
 
+        // If details calculation reverts don't halt execution
+        bool success;
+        HyperdriveUtils.CloseLongTradeDetails memory details;
+        try hyperdrive.closeLongTradeDetails(bondAmount, maturityTime) returns (
+            HyperdriveUtils.CloseLongTradeDetails memory _details
+        ) {
+            details = _details;
+            success = true;
+        } catch {}
+
         // Close the long.
         uint256 baseBalanceBefore = baseToken.balanceOf(trader);
         hyperdrive.closeLong(maturityTime, bondAmount, 0, trader, true);
 
         uint256 baseBalanceAfter = baseToken.balanceOf(trader);
-        return baseBalanceAfter.sub(baseBalanceBefore);
+        baseAmount = baseBalanceAfter.sub(baseBalanceBefore);
+
+        // If the details calculation was successful validate the result maps
+        // to the correct result and cache the trade
+        if (success) {
+            if (details.baseProceeds != baseAmount) {
+                revert HyperdriveTest__CloseLongTradeMismatch();
+            } else {
+                details.poolInfoAfter = hyperdrive.getPoolInfo();
+                closeLongTradeCache[trader][maturityTime].push(details);
+            }
+        }
+
+        return baseAmount;
     }
 
     function openShort(
