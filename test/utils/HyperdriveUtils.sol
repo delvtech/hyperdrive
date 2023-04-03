@@ -325,28 +325,17 @@ library HyperdriveUtils {
         _details.baseAmount = _baseAmount;
 
         {
-            // TODO Would be more elegant to have MockHyperdrive use ERC4626 for
-            // a more elegant solution to this
-            uint256 assets = IERC20(_hyperdrive.baseToken()).balanceOf(
+            (uint256 shares, uint256 sharePrice) = MockHyperdrive(
                 address(_hyperdrive)
+            ).previewDeposit(_baseAmount);
+            _details.shares = shares;
+            _details.sharePrice = sharePrice;
+
+            _details.normalizedTimeRemaining = calculateTimeRemaining(
+                _hyperdrive,
+                _maturityTime
             );
-            uint256 totalShares = MockHyperdrive(address(_hyperdrive))
-                .totalShares();
-
-            if (totalShares == 0) {
-                _details.shares = _baseAmount;
-                _details.sharePrice = FixedPointMath.ONE_18;
-            } else {
-                _details.shares = totalShares.mulDivDown(_baseAmount, assets);
-                _details.sharePrice = _baseAmount.divDown(_details.shares);
-            }
         }
-
-        _details.normalizedTimeRemaining = calculateTimeRemaining(
-            _hyperdrive,
-            _maturityTime
-        );
-
         (
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
@@ -448,10 +437,14 @@ library HyperdriveUtils {
 
         // NOTE: Slight discrepancy to real implementation due to future
         // checkpoint application
-        uint256 maturitySharePrice = _hyperdrive.checkpoints(_maturityTime).sharePrice;
+        uint256 maturitySharePrice = _hyperdrive
+            .checkpoints(_maturityTime)
+            .sharePrice;
         _details.closeSharePrice = block.timestamp < _maturityTime
             ? _details.sharePrice
-            : maturitySharePrice == 0 ? _details.sharePrice : maturitySharePrice;
+            : maturitySharePrice == 0
+            ? _details.sharePrice
+            : maturitySharePrice;
 
         (
             uint256 shareReservesDelta,
@@ -498,27 +491,14 @@ library HyperdriveUtils {
             _details.totalFlatFee = totalFlatFee;
             _details.totalGovernanceFee = totalGovernanceFee;
 
-            _details.shareReservesDelta =
-                shareReservesDelta -
-                totalCurveFee;
+            _details.shareReservesDelta = shareReservesDelta - totalCurveFee;
             _details.shareProceeds =
                 shareProceeds -
                 (totalCurveFee + totalFlatFee);
         }
 
-        // TODO Would be more elegant to have MockHyperdrive use ERC4626 for
-        // a more elegant solutions to this
-        uint256 assets = IERC20(_hyperdrive.baseToken()).balanceOf(
-            address(_hyperdrive)
-        );
-        uint256 totalShares = MockHyperdrive(address(_hyperdrive))
-            .totalShares();
-        uint256 shares = _details.shareProceeds > totalShares
-            ? totalShares
-            : _details.shareProceeds;
-        _details.baseProceeds = totalShares != 0
-            ? shares.mulDown(assets.divDown(totalShares))
-            : 0;
+        _details.baseProceeds = MockHyperdrive(address(_hyperdrive))
+            .previewWithdraw(_details.shareProceeds);
     }
 
     struct OpenShortTradeDetails {
@@ -755,18 +735,7 @@ library HyperdriveUtils {
             poolInfo.sharePrice
         );
 
-        // TODO Would be more elegant to have MockHyperdrive use ERC4626 for
-        // a more elegant solutions to this
-        uint256 assets = IERC20(_hyperdrive.baseToken()).balanceOf(
-            address(_hyperdrive)
-        );
-        uint256 totalShares = MockHyperdrive(address(_hyperdrive))
-            .totalShares();
-        uint256 shares = _details.shareProceeds > totalShares
-            ? totalShares
-            : _details.shareProceeds;
-        _details.baseProceeds = totalShares != 0
-            ? shares.mulDown(assets.divDown(totalShares))
-            : 0;
+        _details.baseProceeds = MockHyperdrive(address(_hyperdrive))
+            .previewWithdraw(_details.shareProceeds);
     }
 }

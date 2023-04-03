@@ -13,7 +13,7 @@ import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 contract MockHyperdrive is Hyperdrive {
     using FixedPointMath for uint256;
 
-    uint256 public totalShares;
+    uint256 internal totalShares;
 
     constructor(
         ERC20Mintable baseToken,
@@ -183,6 +183,29 @@ contract MockHyperdrive is Hyperdrive {
     function setReserves(uint256 shareReserves, uint256 bondReserves) public {
         marketState.shareReserves = uint128(shareReserves);
         marketState.bondReserves = uint128(bondReserves);
+    }
+
+    function previewDeposit(
+        uint256 _baseAmount
+    ) public view returns (uint256 shares, uint256 sharePrice) {
+        uint256 assets = baseToken.balanceOf(address(this));
+
+        if (totalShares == 0) {
+            shares = _baseAmount;
+            sharePrice = FixedPointMath.ONE_18;
+        } else {
+            shares = totalShares.mulDivDown(_baseAmount, assets);
+            sharePrice = _baseAmount.divDown(shares);
+        }
+    }
+
+    function previewWithdraw(
+        uint256 shares
+    ) public view returns (uint256 base) {
+        uint256 assets = baseToken.balanceOf(address(this));
+        shares = shares > totalShares ? totalShares : shares;
+        return
+            totalShares != 0 ? shares.mulDown(assets.divDown(totalShares)) : 0;
     }
 
     /// Overrides ///
