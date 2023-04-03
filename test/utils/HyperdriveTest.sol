@@ -15,15 +15,22 @@ import { HyperdriveUtils } from "./HyperdriveUtils.sol";
 
 contract HyperdriveTest is BaseTest {
     using FixedPointMath for uint256;
+    using HyperdriveUtils for IHyperdrive;
 
     ERC20Mintable baseToken;
     IHyperdrive hyperdrive;
+    MockHyperdrive mockHyperdrive;
 
     uint256 internal constant INITIAL_SHARE_PRICE = FixedPointMath.ONE_18;
     uint256 internal constant CHECKPOINT_DURATION = 1 days;
     uint256 internal constant CHECKPOINTS_PER_TERM = 365;
     uint256 internal constant POSITION_DURATION =
         CHECKPOINT_DURATION * CHECKPOINTS_PER_TERM;
+
+    error HyperdriveTest__OpenShortTradeMismatch();
+
+    // trader => maturity => OpenShortTradeDetails[]
+    mapping(address => mapping(uint256 => HyperdriveUtils.OpenShortTradeDetails[])) openShortTradeCache;
 
     function setUp() public virtual override {
         super.setUp();
@@ -38,19 +45,17 @@ contract HyperdriveTest is BaseTest {
         });
         // Instantiate Hyperdrive.
         uint256 apr = 0.05e18;
-        hyperdrive = IHyperdrive(
-            address(
-                new MockHyperdrive(
-                    baseToken,
-                    INITIAL_SHARE_PRICE,
-                    CHECKPOINTS_PER_TERM,
-                    CHECKPOINT_DURATION,
-                    HyperdriveUtils.calculateTimeStretch(apr),
-                    fees,
-                    governance
-                )
-            )
+
+        mockHyperdrive = new MockHyperdrive(
+            baseToken,
+            INITIAL_SHARE_PRICE,
+            CHECKPOINTS_PER_TERM,
+            CHECKPOINT_DURATION,
+            HyperdriveUtils.calculateTimeStretch(apr),
+            fees,
+            governance
         );
+        hyperdrive = IHyperdrive(address(mockHyperdrive));
 
         // Advance time so that Hyperdrive can look back more than a position
         // duration.
@@ -73,19 +78,16 @@ contract HyperdriveTest is BaseTest {
             governance: governanceFee
         });
 
-        hyperdrive = IHyperdrive(
-            address(
-                new MockHyperdrive(
-                    baseToken,
-                    INITIAL_SHARE_PRICE,
-                    CHECKPOINTS_PER_TERM,
-                    CHECKPOINT_DURATION,
-                    HyperdriveUtils.calculateTimeStretch(apr),
-                    fees,
-                    governance
-                )
-            )
+        mockHyperdrive = new MockHyperdrive(
+            baseToken,
+            INITIAL_SHARE_PRICE,
+            CHECKPOINTS_PER_TERM,
+            CHECKPOINT_DURATION,
+            HyperdriveUtils.calculateTimeStretch(apr),
+            fees,
+            governance
         );
+        hyperdrive = IHyperdrive(address(mockHyperdrive));
     }
 
     /// Actions ///
@@ -182,6 +184,7 @@ contract HyperdriveTest is BaseTest {
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
             trader
         );
+
         return (maturityTime, bondBalanceAfter.sub(bondBalanceBefore));
     }
 
@@ -208,17 +211,32 @@ contract HyperdriveTest is BaseTest {
         vm.stopPrank();
         vm.startPrank(trader);
 
-        // Open the short
-        maturityTime = HyperdriveUtils.maturityTimeFromLatestCheckpoint(
-            hyperdrive
-        );
+        maturityTime = hyperdrive.maturityTimeFromLatestCheckpoint();
+
+        // If details calculation reverts don't halt execution
+        bool success;
+        HyperdriveUtils.OpenShortTradeDetails memory details;
+        try hyperdrive.openShortTradeDetails(bondAmount, maturityTime) returns (
+            HyperdriveUtils.OpenShortTradeDetails memory _details
+        ) {
+            openShortTradeCache[trader][maturityTime].push(_details);
+            details = _details;
+            success = true;
+        } catch {}
+
         baseToken.mint(bondAmount);
         baseToken.approve(address(hyperdrive), bondAmount);
         uint256 baseBalanceBefore = baseToken.balanceOf(trader);
+
         hyperdrive.openShort(bondAmount, bondAmount, trader, true);
 
         baseAmount = baseBalanceBefore - baseToken.balanceOf(trader);
         baseToken.burn(bondAmount - baseAmount);
+
+        if (success && (details.baseDeposit != baseAmount)) {
+            revert HyperdriveTest__OpenShortTradeMismatch();
+        }
+
         return (maturityTime, baseAmount);
     }
 
