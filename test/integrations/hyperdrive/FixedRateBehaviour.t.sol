@@ -174,7 +174,7 @@ contract FixedRateBehaviour is HyperdriveTest {
         uint256 baseAmount,
         uint256 interim,
         uint256 offset
-    ) external {
+    ) internal {
         int256 variableRate = -int256(
             _variableRate.normalizeToRange(0, 0.5e18)
         );
