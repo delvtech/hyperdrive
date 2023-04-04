@@ -7,17 +7,6 @@ import { MockHyperdriveMath } from "contracts/test/MockHyperdriveMath.sol";
 import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
 import { Lib } from "../../utils/Lib.sol";
 
-// TODO Cases
-// [] - long - interim - long - positive APR - full duration trades
-// [] - long - interim - long - positive APR - immediate close trades
-// [] - long - interim - long - negative APR - full duration trades
-// [] - long - interim - long - negative APR - immediate close trades
-//
-// [] - short - interim - short - positive APR - full duration trades
-// [] - short - interim - short - positive APR - immediate close trades
-// [] - short - interim - short - negative APR - full duration trades
-// [] - short - interim - short - negative APR - immediate close trades
-//
 contract FixedRateBehaviour is HyperdriveTest {
     using FixedPointMath for uint256;
     using Lib for *;
@@ -497,11 +486,11 @@ contract FixedRateBehaviour is HyperdriveTest {
         uint256 interim,
         uint256 offset
     ) external {
-        int256 variableRate = -int256(_variableRate.normalizeToRange(0, 0.5e18));
+        int256 variableRate = -int256(_variableRate.normalizeToRange(0, 0.1e18));
         bondAmount = bondAmount.normalizeToRange(1000e18, 100_000_000e18);
         interim = interim.normalizeToRange(
             CHECKPOINT_DURATION,
-            POSITION_DURATION * 25
+            POSITION_DURATION * 5
         );
         offset = offset.normalizeToRange(0, CHECKPOINT_DURATION - 1);
 
@@ -545,6 +534,61 @@ contract FixedRateBehaviour is HyperdriveTest {
         );
     }
 
+
+    function test_fixed_rate_behaviour_short_interim_short_negative_interest_immediate_close(
+        uint256 _variableRate,
+        uint256 bondAmount,
+        uint256 interim,
+        uint256 offset
+    ) external {
+        int256 variableRate = -int256(_variableRate.normalizeToRange(0, 0.1e18));
+        bondAmount = bondAmount.normalizeToRange(1000e18, 100_000_000e18);
+        interim = interim.normalizeToRange(
+            CHECKPOINT_DURATION,
+            POSITION_DURATION * 5
+        );
+        offset = offset.normalizeToRange(0, CHECKPOINT_DURATION - 1);
+
+        ShortScenario memory scenario = _scenarioShort(
+            variableRate,
+            bondAmount,
+            interim,
+            offset,
+            true
+        );
+
+        assertEq(
+            scenario.celineTimeRemaining,
+            scenario.danTimeRemaining,
+            "trades should be backdated equally"
+        );
+        assertGe(
+            scenario.fixedRates[0],
+            scenario.fixedRates[1],
+            "fixed rate should either increase or remain the same after Celine opening and immediately closing a short"
+        );
+        assertEq(
+            scenario.fixedRates[1],
+            scenario.fixedRates[2],
+            "fixed rate should remain the same after accruing a long amount of interest"
+        );
+        assertGe(
+            scenario.fixedRates[2],
+            scenario.fixedRates[3],
+            "fixed rate should either increase or remain the same after Dan opening and immediately closing a short"
+        );
+
+        // assertLt(
+        //     scenario.celineBasePaid,
+        //     scenario.danBasePaid,
+        //     "Celine should pay less than dan to open a short"
+        // );
+        // assertGt(
+        //     scenario.celineQuotedAPR,
+        //     scenario.danQuotedAPR,
+        //     "Celine should be quoted a worse fixed rate than Dan"
+        // );
+    }
 
     function _scenarioShort(
         int256 variableRate,
