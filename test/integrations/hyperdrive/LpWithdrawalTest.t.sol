@@ -8,9 +8,6 @@ import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 
 contract LpWithdrawalTest is HyperdriveTest {
-    // FIXME
-    using Lib for *;
-
     using FixedPointMath for uint256;
 
     function test_lp_withdrawal_long_immediate_close(
