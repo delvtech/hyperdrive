@@ -27,7 +27,9 @@ contract ScratchPad is HyperdriveTest {
     function test_open_long_tiny_negative_interest_full_update_liquidity_revert()
         external
     {
+        console2.log("sharePrice: %s", hyperdrive.getPoolInfo().sharePrice.toString(18));
         advanceTimeToNextCheckpoint(-0.000032446749640254e18);
+        console2.log("sharePrice: %s", hyperdrive.getPoolInfo().sharePrice.toString(18));
         (uint256 maturityTime, uint256 bondAmount) = openLong(celine, 1000e18);
     }
  }
