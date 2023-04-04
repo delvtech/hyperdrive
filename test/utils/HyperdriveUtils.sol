@@ -18,17 +18,6 @@ library HyperdriveUtils {
             (block.timestamp % hyperdrive.getPoolConfig().checkpointDuration);
     }
 
-    function nextCheckpoint(
-        IHyperdrive hyperdrive,
-        uint256 timestamp
-    ) internal view returns (uint256) {
-        uint256 checkpointDuration = hyperdrive
-            .getPoolConfig()
-            .checkpointDuration;
-        return
-            timestamp - (timestamp % checkpointDuration) + checkpointDuration;
-    }
-
     function calculateTimeRemaining(
         IHyperdrive _hyperdrive,
         uint256 _maturityTime
@@ -294,39 +283,5 @@ library HyperdriveUtils {
                     poolInfo.sharePrice
                 )
                 .mulDown(poolInfo.sharePrice);
-    }
-
-    function calculateFeesInGivenBondsOut(
-        IHyperdrive _hyperdrive,
-        uint256 _bondsOut,
-        uint256 _normalizedTimeRemaining,
-        uint256 _spotPrice,
-        uint256 _sharePrice
-    )
-        internal
-        view
-        returns (
-            uint256 totalCurveFee,
-            uint256 totalFlatFee,
-            uint256 governanceCurveFee,
-            uint256 governanceFlatFee
-        )
-    {
-        IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
-
-        totalCurveFee = FixedPointMath.ONE_18.sub(_spotPrice);
-        totalCurveFee = totalCurveFee
-            .mulDown(poolConfig.curveFee)
-            .mulDown(_bondsOut)
-            .mulDivDown(_normalizedTimeRemaining, _sharePrice);
-
-        uint256 flat = _bondsOut.mulDivDown(
-            FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
-            _sharePrice
-        );
-        totalFlatFee = (flat.mulDown(poolConfig.flatFee));
-
-        governanceCurveFee = totalCurveFee.mulDown(poolConfig.governanceFee);
-        governanceFlatFee = totalFlatFee.mulDown(poolConfig.governanceFee);
     }
 }
