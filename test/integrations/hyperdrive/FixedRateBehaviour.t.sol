@@ -46,7 +46,7 @@ contract FixedRateBehaviour is HyperdriveTest {
             CHECKPOINT_DURATION,
             POSITION_DURATION * 25
         );
-        offset = offset.normalizeToRange(0, CHECKPOINT_DURATION);
+        offset = offset.normalizeToRange(0, CHECKPOINT_DURATION - 1);
 
         LongScenario memory scenario = _scenarioLong(
             variableRate,
@@ -107,7 +107,7 @@ contract FixedRateBehaviour is HyperdriveTest {
             CHECKPOINT_DURATION,
             POSITION_DURATION * 25
         );
-        offset = offset.normalizeToRange(0, CHECKPOINT_DURATION);
+        offset = offset.normalizeToRange(0, CHECKPOINT_DURATION - 1);
 
         LongScenario memory scenario = _scenarioLong(
             variableRate,
@@ -173,7 +173,7 @@ contract FixedRateBehaviour is HyperdriveTest {
             CHECKPOINT_DURATION,
             POSITION_DURATION * 2
         );
-        offset = offset.normalizeToRange(0, CHECKPOINT_DURATION);
+        offset = offset.normalizeToRange(0, CHECKPOINT_DURATION - 1);
 
         LongScenario memory scenario = _scenarioLong(
             variableRate,
@@ -235,7 +235,7 @@ contract FixedRateBehaviour is HyperdriveTest {
             CHECKPOINT_DURATION,
             POSITION_DURATION * 2
         );
-        offset = offset.normalizeToRange(0, CHECKPOINT_DURATION);
+        offset = offset.normalizeToRange(0, CHECKPOINT_DURATION - 1);
 
         LongScenario memory scenario = _scenarioLong(
             variableRate,
@@ -486,7 +486,9 @@ contract FixedRateBehaviour is HyperdriveTest {
         uint256 interim,
         uint256 offset
     ) external {
-        int256 variableRate = -int256(_variableRate.normalizeToRange(0, 0.1e18));
+        int256 variableRate = -int256(
+            _variableRate.normalizeToRange(0, 0.1e18)
+        );
         bondAmount = bondAmount.normalizeToRange(1000e18, 100_000_000e18);
         interim = interim.normalizeToRange(
             CHECKPOINT_DURATION,
@@ -534,14 +536,15 @@ contract FixedRateBehaviour is HyperdriveTest {
         );
     }
 
-
     function test_fixed_rate_behaviour_short_interim_short_negative_interest_immediate_close(
         uint256 _variableRate,
         uint256 bondAmount,
         uint256 interim,
         uint256 offset
     ) external {
-        int256 variableRate = -int256(_variableRate.normalizeToRange(0, 0.1e18));
+        int256 variableRate = -int256(
+            _variableRate.normalizeToRange(0, 0.1e18)
+        );
         bondAmount = bondAmount.normalizeToRange(1000e18, 100_000_000e18);
         interim = interim.normalizeToRange(
             CHECKPOINT_DURATION,
@@ -624,7 +627,11 @@ contract FixedRateBehaviour is HyperdriveTest {
         if (!immediateClose) {
             advanceTime(maturityTime - block.timestamp, variableRate);
         }
-        scenario.celineBaseAmount = closeShort(celine, maturityTime, bondAmount);
+        scenario.celineBaseAmount = closeShort(
+            celine,
+            maturityTime,
+            bondAmount
+        );
 
         // Cache the fixed rate
         scenario.fixedRates[1] = HyperdriveUtils.calculateAPRFromReserves(
@@ -663,5 +670,4 @@ contract FixedRateBehaviour is HyperdriveTest {
             hyperdrive
         );
     }
-
 }
