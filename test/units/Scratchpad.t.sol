@@ -22,6 +22,8 @@ contract ScratchPad is HyperdriveTest {
         initialize(alice, fixedRate, initialLiquidity);
     }
 
+    // shareAmount: 997619135945448875395
+    // shareReservesDelta: 997619136157104164988
     function test_open_long_tiny_negative_interest_full_update_liquidity_revert()
         external
     {
