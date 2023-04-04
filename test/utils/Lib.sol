@@ -146,6 +146,36 @@ library Lib {
         console2.log("");
     }
 
+    function normalizeToRange(
+        uint256 value,
+        uint256 min,
+        uint256 max
+    ) internal pure returns (uint256) {
+        require(min <= max, "Lib: min > max");
+
+        uint256 rangeSize = max - min + 1;
+        uint256 modValue = value % rangeSize;
+
+        return modValue + min;
+    }
+
+    function normalizeToRange(
+        int256 value,
+        int256 min,
+        int256 max
+    ) internal pure returns (int256) {
+        require(min <= max, "Lib: min > max");
+
+        int256 rangeSize = max - min + 1;
+        int256 modValue = value % rangeSize;
+
+        if (modValue < 0) {
+            modValue += rangeSize;
+        }
+
+        return modValue + min;
+    }
+
     function eq(bytes memory b1, bytes memory b2) public pure returns (bool) {
         return
             keccak256(abi.encodePacked(b1)) == keccak256(abi.encodePacked(b2));
