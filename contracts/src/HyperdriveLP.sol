@@ -115,6 +115,12 @@ abstract contract HyperdriveLP is HyperdriveBase {
         // the pool controlled by LPs. This ensures that LPs are fairly rewarded
         // for adding liquidity. Otherwise, we mint the full amount of LP shares.
         if (totalSupply[AssetId._LP_ASSET_ID] > 0) {
+            // TODO: We need to revisit this calculation and make sure that it
+            // works well in a wider range of cases. An area of particular
+            // concern is the withdrawal shares component of the accounting.
+            // It would be great to develop a more robust explanation for why
+            // this works.
+            //
             // To ensure that our LP allocation scheme fairly rewards LPs for
             // adding liquidity, we linearly interpolate between the present and
             // future value of longs and shorts. These interpolated values are
