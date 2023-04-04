@@ -19,7 +19,6 @@ contract HyperdriveTest is BaseTest {
 
     ERC20Mintable baseToken;
     IHyperdrive hyperdrive;
-    MockHyperdrive mockHyperdrive;
 
     uint256 internal constant INITIAL_SHARE_PRICE = FixedPointMath.ONE_18;
     uint256 internal constant CHECKPOINT_DURATION = 1 days;

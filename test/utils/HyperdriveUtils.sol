@@ -207,7 +207,6 @@ library HyperdriveUtils {
             totalAmount = _principal.divDown(
                 uint256(FixedPointMath.exp(int256(rt)))
             );
-
             interest = int256(totalAmount) - int256(_principal);
             return (totalAmount, interest);
         }
