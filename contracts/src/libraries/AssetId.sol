@@ -18,6 +18,7 @@ library AssetId {
     // constants may be more appropriate. This would give the extraData more
     // range.
     enum AssetIdPrefix {
+        LP,
         Long,
         Short,
         WithdrawalShare
