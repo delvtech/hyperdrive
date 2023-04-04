@@ -15,9 +15,11 @@ import { HyperdriveUtils } from "./HyperdriveUtils.sol";
 
 contract HyperdriveTest is BaseTest {
     using FixedPointMath for uint256;
+    using HyperdriveUtils for IHyperdrive;
 
     ERC20Mintable baseToken;
     IHyperdrive hyperdrive;
+    MockHyperdrive mockHyperdrive;
 
     uint256 internal constant INITIAL_SHARE_PRICE = FixedPointMath.ONE_18;
     uint256 internal constant CHECKPOINT_DURATION = 1 days;
@@ -241,5 +243,21 @@ contract HyperdriveTest is BaseTest {
     function advanceTime(uint256 time, int256 apr) internal {
         MockHyperdrive(address(hyperdrive)).accrue(time, apr);
         vm.warp(block.timestamp + time);
+    }
+
+    function advanceTimeToNextCheckpoint(int256 apr) internal {
+        advanceTimeToNextCheckpoint(apr, 0);
+    }
+
+    function advanceTimeToNextCheckpoint(int256 apr, uint256 offset) internal {
+        require(
+            CHECKPOINT_DURATION > offset,
+            "should only offset within a checkpoint duration"
+        );
+        uint256 time = hyperdrive.latestCheckpoint() +
+            CHECKPOINT_DURATION +
+            offset -
+            block.timestamp;
+        advanceTime(time, apr);
     }
 }

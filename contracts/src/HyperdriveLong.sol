@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
+import "forge-std/console2.sol";
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { HyperdriveLP } from "./HyperdriveLP.sol";
 import { AssetId } from "./libraries/AssetId.sol";
@@ -41,7 +42,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
             _baseAmount,
             _asUnderlying
         );
-
         // Perform a checkpoint.
         uint256 latestCheckpoint = _latestCheckpoint();
         _applyCheckpoint(latestCheckpoint, sharePrice);
@@ -50,6 +50,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // backdate the bonds purchased to the beginning of the checkpoint.
         uint256 maturityTime = latestCheckpoint + positionDuration;
         uint256 timeRemaining = _calculateTimeRemaining(maturityTime);
+
+
         (
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
@@ -223,6 +225,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
         marketState.bondReserves -= _bondReservesDelta.toUint128();
         marketState.longsOutstanding += _bondProceeds.toUint128();
 
+        console2.log("shareAmount: %s", _baseAmount.divDown(_sharePrice));
+        console2.log("shareReservesDelta: %s", _shareReservesDelta);
         // Add the flat component of the trade to the pool's liquidity.
         _updateLiquidity(
             int256(_baseAmount.divDown(_sharePrice) - _shareReservesDelta)
