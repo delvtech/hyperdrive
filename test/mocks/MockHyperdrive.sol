@@ -13,7 +13,7 @@ import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 contract MockHyperdrive is Hyperdrive {
     using FixedPointMath for uint256;
 
-    uint256 public totalShares;
+    uint256 internal totalShares;
 
     constructor(
         ERC20Mintable baseToken,

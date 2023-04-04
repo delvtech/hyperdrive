@@ -169,6 +169,7 @@ contract FixedRateBehaviour is HyperdriveTest {
         // );
     }
 
+    // underflow in _updateLiquidity
     function test_fixed_rate_behaviour_long_interim_long_negative_interest_full_duration(
         uint256 _variableRate,
         uint256 baseAmount,
@@ -185,10 +186,6 @@ contract FixedRateBehaviour is HyperdriveTest {
         );
         offset = offset.normalizeToRange(0, CHECKPOINT_DURATION);
 
-        console2.log("variableRate: %s", variableRate.toString());
-        console2.log("baseAmount: %s", baseAmount.toString());
-        console2.log("interim: %s", interim.toString());
-        console2.log("offset: %s", offset.toString());
         LongScenario memory scenario = _scenarioLong(
             variableRate,
             baseAmount,
@@ -233,6 +230,70 @@ contract FixedRateBehaviour is HyperdriveTest {
             "Celine should be quoted a better fixed rate than Dan"
         );
     }
+
+    // underflow in _updateLiquidity
+    function test_fixed_rate_behaviour_long_interim_long_negative_interest_immediate_close(
+        uint256 _variableRate,
+        uint256 baseAmount,
+        uint256 interim,
+        uint256 offset
+    ) internal {
+        int256 variableRate = -int256(
+            _variableRate.normalizeToRange(0, 0.5e18)
+        );
+        baseAmount = baseAmount.normalizeToRange(1000e18, 100_000e18);
+        interim = interim.normalizeToRange(
+            CHECKPOINT_DURATION,
+            POSITION_DURATION * 2
+        );
+        offset = offset.normalizeToRange(0, CHECKPOINT_DURATION);
+
+        LongScenario memory scenario = _scenarioLong(
+            variableRate,
+            baseAmount,
+            interim,
+            offset,
+            true
+        );
+
+        assertEq(
+            scenario.celineTimeRemaining,
+            scenario.danTimeRemaining,
+            "trades should have equal amount of normalized time remaining"
+        );
+        assertGe(
+            scenario.fixedRates[0],
+            scenario.fixedRates[1],
+            "fixed rate should decrease after celine opening and closing a long"
+        );
+        assertEq(
+            scenario.fixedRates[1],
+            scenario.fixedRates[2],
+            "fixed rate should remain the same after accruing a long amount of interest"
+        );
+        assertGe(
+            scenario.fixedRates[2],
+            scenario.fixedRates[3],
+            "fixed rate should decrease after dan opening and closing a long"
+        );
+        // assertGt(
+        //     scenario.celineBondAmount,
+        //     scenario.danBondAmount,
+        //     "Celine should get more bonds than dan"
+        // );
+        // assertGt(
+        //     scenario.celineBaseAmount,
+        //     scenario.danBaseAmount,
+        //     "Celine should receive marginally more base than Dan"
+        // );
+        // assertGt(
+        //     scenario.celineQuotedAPR,
+        //     scenario.danQuotedAPR,
+        //     "Celine should be quoted a better fixed rate than Dan"
+        // );
+    }
+
+
 
     function test_negative_interest_full_duration_update_liquidity_revert()
         external
@@ -339,6 +400,7 @@ contract FixedRateBehaviour is HyperdriveTest {
 
         // Advance to the nearest checkpoint interim seconds into the future
         // + offset seconds
+        advanceTime(interim, variableRate);
         advanceTimeToNextCheckpoint(variableRate, offset);
 
         // Cache the fixed rate
@@ -367,168 +429,148 @@ contract FixedRateBehaviour is HyperdriveTest {
         );
     }
 
-    // function test_fixed_rate_behaviour_short_interim_short_positive_interest_full_duration()
-    //     external
-    // // uint64 _variableRate,
-    // // uint96 _bondAmount,
-    // // uint32 _interim,
-    // // uint16 _offset
-    // {
-    //     // 5% < variableRate < 100%
-    //     // 10000 < bondAmount < 450,000,000
-    //     // 1 year <= interim <= 100 years
-    //     //
-    //     // vm.assume(_variableRate <= 0.95e18);
-    //     // int256 variableRate = int256(uint256(_variableRate) + 0.05e18);
-    //     // vm.assume(_bondAmount <= 450_000_000e18);
-    //     // uint256 bondAmount = uint256(_bondAmount) + 10_000e18;
-    //     // vm.assume(_interim <= (POSITION_DURATION * 100));
-    //     // uint256 interim = uint256(_interim) + POSITION_DURATION;
+    struct ShortScenario {
+        uint256[4] fixedRates;
+        uint256 celineBondAmount;
+        uint256 celineBaseAmount;
+        uint256 celineBasePaid;
+        uint256 celineQuotedAPR;
+        uint256 celineTimeRemaining;
+        uint256 danBondAmount;
+        uint256 danBaseAmount;
+        uint256 danBasePaid;
+        uint256 danQuotedAPR;
+        uint256 danTimeRemaining;
+    }
 
-    //     int256 variableRate = 0.1e18;
-    //     uint256 bondAmount = 100_000e18;
-    //     uint256 interim = (POSITION_DURATION * 5);
+    function test_fixed_rate_behaviour_short_interim_short_positive_interest_full_duration(
+        uint256 _variableRate,
+        uint256 bondAmount,
+        uint256 interim,
+        uint256 offset
+    ) external {
+        int256 variableRate = int256(_variableRate.normalizeToRange(0, 1e18));
+        bondAmount = bondAmount.normalizeToRange(1000e18, 100_000_000e18);
+        interim = interim.normalizeToRange(
+            CHECKPOINT_DURATION,
+            POSITION_DURATION * 25
+        );
+        offset = offset.normalizeToRange(0, CHECKPOINT_DURATION);
 
-    //     // Initialize the pool with capital.
-    //     uint256 initialLiquidity = 500_000_000e18;
-    //     initialize(alice, fixedRate, initialLiquidity);
+        ShortScenario memory scenario = _scenarioShort(
+            variableRate,
+            bondAmount,
+            interim,
+            offset,
+            false
+        );
 
-    //     // Advance time a duration so that an amount of interest has accrued
-    //     advanceTime(1e8 + 12989889, variableRate);
+        assertEq(
+            scenario.celineTimeRemaining,
+            scenario.danTimeRemaining,
+            "trades should be backdated equally"
+        );
+        assertLt(
+            scenario.fixedRates[0],
+            scenario.fixedRates[1],
+            "fixed rate should increase after celine opening and closing a short"
+        );
+        assertEq(
+            scenario.fixedRates[1],
+            scenario.fixedRates[2],
+            "fixed rate should remain the same after accruing a long amount of interest"
+        );
+        assertLt(
+            scenario.fixedRates[2],
+            scenario.fixedRates[3],
+            "fixed rate should increase after dan opening and closing a short"
+        );
 
-    //     (
-    //         uint256[4] memory spotFixedRates,
-    //         ShortTrade memory celineShortTrade,
-    //         ShortTrade memory danShortTrade
-    //     ) = _scenarioShort(
-    //             int256(uint256(variableRate)),
-    //             bondAmount,
-    //             interim,
-    //             false
-    //         );
+        // TODO Will fail for large interims
+        // assertGt(
+        //     scenario.celineBaseAmount,
+        //     scenario.danBaseAmount,
+        //     "Celine should receive marginally more base than Dan"
+        // );
+        // assertGt(
+        //     scenario.celineQuotedAPR,
+        //     scenario.danQuotedAPR,
+        //     "Celine should be quoted a better fixed rate than Dan"
+        // );
+    }
 
-    //     // assertEq(celineShortTrade.baseProceeds, danShortTrade.baseProceeds);
+    function _scenarioShort(
+        int256 variableRate,
+        uint256 bondAmount,
+        uint256 interim,
+        uint256 offset,
+        bool immediateClose
+    ) internal returns (ShortScenario memory scenario) {
+        // Cache the fixed rate
+        scenario.fixedRates[0] = HyperdriveUtils.calculateAPRFromReserves(
+            hyperdrive
+        );
 
-    //     // assertLt(
-    //     //     spotFixedRates[0],
-    //     //     spotFixedRates[1],
-    //     //     "fixed rate should increase after celine opening and closing a short"
-    //     // );
-    //     // assertEq(
-    //     //     spotFixedRates[1],
-    //     //     spotFixedRates[2],
-    //     //     "fixed rate should remain the same after accruing a long amount of interest"
-    //     // );
-    //     // assertLt(
-    //     //     spotFixedRates[2],
-    //     //     spotFixedRates[3],
-    //     //     "fixed rate should increase after dan opening and closing a short"
-    //     // );
+        // Advance to next checkpoint + offset
+        advanceTimeToNextCheckpoint(variableRate, offset);
 
-    //     // A short is a promise to purchase at a future point in time
+        // Open and close a long
+        (uint256 maturityTime, uint256 basePaid) = openShort(
+            celine,
+            bondAmount
+        );
+        scenario.celineBondAmount = bondAmount;
+        scenario.celineBasePaid = basePaid;
+        scenario.celineQuotedAPR = HyperdriveUtils
+            .calculateAPRFromRealizedPrice(
+                bondAmount - basePaid,
+                bondAmount,
+                FixedPointMath.ONE_18
+            );
+        scenario.celineTimeRemaining = hyperdrive.calculateTimeRemaining(
+            maturityTime
+        );
+        if (!immediateClose) {
+            advanceTime(maturityTime - block.timestamp, variableRate);
+        }
+        scenario.celineBaseAmount = closeLong(celine, maturityTime, bondAmount);
 
-    //     // TODO Discern conditions which would incur this to be higher or lower
-    //     // assertGt(
-    //     //     scenario.celineShortInterestEarned,
-    //     //     scenario.danShortInterestEarned,
-    //     //     "interest earned on shorts should be the same"
-    //     // );
+        // Cache the fixed rate
+        scenario.fixedRates[1] = HyperdriveUtils.calculateAPRFromReserves(
+            hyperdrive
+        );
 
-    //     // // TODO Discern conditions which would incur this to be higher or lower
-    //     // assertLt(
-    //     //     scenario.celineQuotedAPR,
-    //     //     scenario.danQuotedAPR,
-    //     //     "The first quote should imply a better fixed rate than the second"
-    //     // );
-    // }
+        // Advance to the nearest checkpoint interim seconds into the future
+        // + offset seconds
+        advanceTime(interim, variableRate);
+        advanceTimeToNextCheckpoint(variableRate, offset);
 
-    // function _scenarioShort(
-    //     int256 variableRate,
-    //     uint256 bondAmount,
-    //     uint256 interim,
-    //     bool immediateClose
-    // )
-    //     internal
-    //     returns (
-    //         uint256[4] memory spotFixedRates,
-    //         ShortTrade memory celineShortTrade,
-    //         ShortTrade memory danShortTrade
-    //     )
-    // {
-    //     spotFixedRates[0] = HyperdriveUtils.calculateAPRFromReserves(
-    //         hyperdrive
-    //     );
+        // Cache the fixed rate
+        scenario.fixedRates[2] = HyperdriveUtils.calculateAPRFromReserves(
+            hyperdrive
+        );
 
-    //     _makeShortTrade(
-    //         celineShortTrade,
-    //         variableRate,
-    //         bondAmount,
-    //         immediateClose
-    //     );
+        // Open and close a long
+        (maturityTime, basePaid) = openLong(dan, bondAmount);
+        scenario.danBondAmount = bondAmount;
+        scenario.danBasePaid = basePaid;
+        scenario.danQuotedAPR = HyperdriveUtils.calculateAPRFromRealizedPrice(
+            bondAmount - basePaid,
+            bondAmount,
+            FixedPointMath.ONE_18
+        );
+        scenario.danTimeRemaining = hyperdrive.calculateTimeRemaining(
+            maturityTime
+        );
+        if (!immediateClose) {
+            advanceTime(maturityTime - block.timestamp, variableRate);
+        }
+        scenario.danBaseAmount = closeLong(dan, maturityTime, bondAmount);
 
-    //     spotFixedRates[1] = HyperdriveUtils.calculateAPRFromReserves(
-    //         hyperdrive
-    //     );
-    //     advanceTime(interim, variableRate);
-    //     spotFixedRates[2] = HyperdriveUtils.calculateAPRFromReserves(
-    //         hyperdrive
-    //     );
+        // Cache the fixed rate
+        scenario.fixedRates[3] = HyperdriveUtils.calculateAPRFromReserves(
+            hyperdrive
+        );
+    }
 
-    //     _makeShortTrade(
-    //         danShortTrade,
-    //         variableRate,
-    //         bondAmount,
-    //         immediateClose
-    //     );
-
-    //     spotFixedRates[3] = HyperdriveUtils.calculateAPRFromReserves(
-    //         hyperdrive
-    //     );
-
-    //     /// LOGGING ///
-
-    //     console2.log("\tfixedRate 1:\t\t%s", (spotFixedRates[0]).toPercent());
-    //     console2.log("\tfixedRate 2:\t\t%s", (spotFixedRates[1]).toPercent());
-    //     console2.log("\tfixedRate 3:\t\t%s", (spotFixedRates[2]).toPercent());
-    //     console2.log("\tfixedRate 4:\t\t%s", (spotFixedRates[3]).toPercent());
-    // }
-
-    // function _makeShortTrade(
-    //     ShortTrade memory _trade,
-    //     int256 variableRate,
-    //     uint256 bondAmount,
-    //     bool immediateClose
-    // ) internal {
-    //     _trade.openSharePrice = hyperdrive.getPoolInfo().sharePrice;
-    //     _trade.openBondPrice = hyperdrive.bondPrice(FixedPointMath.ONE_18);
-    //     _trade.bondAmount = bondAmount;
-    //     // Open and close a short
-    //     (uint256 maturityTime, uint256 basePaid) = openShort(
-    //         celine,
-    //         bondAmount
-    //     );
-    //     _trade.basePaid = basePaid;
-    //     _trade.quotedAPR = HyperdriveUtils.calculateAPRFromRealizedPrice(
-    //         bondAmount - basePaid,
-    //         bondAmount,
-    //         FixedPointMath.ONE_18
-    //     );
-    //     _trade.secondsBackdated =
-    //         block.timestamp -
-    //         hyperdrive.latestCheckpoint();
-    //     if (!immediateClose) {
-    //         advanceTime(POSITION_DURATION, variableRate);
-    //     }
-    //     _trade.closeBondPrice = hyperdrive.bondPrice(
-    //         hyperdrive.calculateTimeRemaining(maturityTime)
-    //     );
-    //     _trade.closeSharePrice = hyperdrive.getPoolInfo().sharePrice;
-    //     _trade.interestEarned = hyperdriveMath.calculateShortInterest(
-    //         bondAmount,
-    //         _trade.openSharePrice,
-    //         _trade.closeSharePrice,
-    //         _trade.closeSharePrice
-    //     );
-    //     _trade.baseProceeds = closeShort(celine, maturityTime, bondAmount);
-    // }
 }
