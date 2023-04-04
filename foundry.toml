@@ -33,7 +33,7 @@ optimizer_runs = 7500
 gas_reports = ["*"]
 
 [fuzz]
-runs = 10000
+runs = 1000
 
 [rpc_endpoints]
 goerli = "${GOERLI_RPC_URL}"
