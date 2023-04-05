@@ -22,8 +22,10 @@ contract AaveFixedBorrowAction {
     event SupplyBorrowAndOpenShort(
         uint256 costOfShort,
         address indexed who,
-        address assetBorrowed,
-        uint256 amountBorrowed
+        address collateralToken,
+        uint256 collateralDeposited, 
+        address borrowToken,
+        uint256 borrowAmount 
     );
 
     constructor(IHyperdrive _hyperdrive, IPool _pool) {
@@ -111,6 +113,8 @@ contract AaveFixedBorrowAction {
             baseDeposited,
             msg.sender,
             _collateralToken,
+            _supplyAmount,
+            address(debtToken),
             _borrowAmount
         );
     }

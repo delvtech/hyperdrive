@@ -87,8 +87,10 @@ contract AaveFixedBorrowTest is BaseTest {
     event SupplyBorrowAndOpenShort(
         uint256 costOfShort,
         address indexed who,
-        address assetBorrowed,
-        uint256 amountBorrowed
+        address collateralToken,
+        uint256 collateralDeposited, 
+        address borrowToken,
+        uint256 borrowAmount 
     );
 
     function test__supply_borrow_and_open_short() public {
@@ -144,6 +146,17 @@ contract AaveFixedBorrowTest is BaseTest {
         vm.expectEmit(true, true, true, true);
         emit Transfer(address(action), alice, borrowAmount);
 
+        // A 
+        vm.expectEmit(true, true, false, true);
+        emit SupplyBorrowAndOpenShort(
+            calculatedDeposit,
+            alice,
+            address(wsteth),
+            supplyAmount,
+            address(dai),
+            borrowAmount
+        );
+
         // Make the hedged loan and track Alice's dai balance
         uint256 daiBalanceBefore = dai.balanceOf(alice);
         uint256 deposit = action.supplyBorrowAndOpenShort(
@@ -154,15 +167,6 @@ contract AaveFixedBorrowTest is BaseTest {
             maxDeposit
         );
         uint256 daiBalanceAfter = dai.balanceOf(alice);
-
-        // Alice should receive the amount of specified borrowings
-        vm.expectEmit(true, true, false, true);
-        emit SupplyBorrowAndOpenShort(
-            calculatedDeposit,
-            alice,
-            address(wsteth),
-            borrowAmount
-        );
 
         assertEq(deposit, calculatedDeposit);
         assertEq(daiBalanceAfter - daiBalanceBefore, borrowAmount);
