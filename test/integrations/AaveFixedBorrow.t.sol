@@ -84,6 +84,13 @@ contract AaveFixedBorrowTest is BaseTest {
         bool useATokens
     );
 
+    event SupplyBorrowAndOpenShort(
+        uint256 costOfShort,
+        address indexed who,
+        address assetBorrowed,
+        uint256 amountBorrowed
+    );
+
     function test__supply_borrow_and_open_short() public {
         wsteth.approve(address(action), type(uint256).max);
         ICreditDelegationToken(
@@ -147,6 +154,15 @@ contract AaveFixedBorrowTest is BaseTest {
             maxDeposit
         );
         uint256 daiBalanceAfter = dai.balanceOf(alice);
+
+        // Alice should receive the amount of specified borrowings
+        vm.expectEmit(true, true, false, true);
+        emit SupplyBorrowAndOpenShort(
+            calculatedDeposit,
+            alice,
+            address(wsteth),
+            borrowAmount
+        );
 
         assertEq(deposit, calculatedDeposit);
         assertEq(daiBalanceAfter - daiBalanceBefore, borrowAmount);

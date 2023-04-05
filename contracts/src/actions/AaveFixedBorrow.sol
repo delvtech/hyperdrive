@@ -19,6 +19,13 @@ contract AaveFixedBorrowAction {
     /// Token which tracks users variable debt
     ICreditDelegationToken public variableDebtToken;
 
+    event SupplyBorrowAndOpenShort(
+        uint256 costOfShort,
+        address indexed who,
+        address assetBorrowed,
+        uint256 amountBorrowed
+    );
+
     constructor(IHyperdrive _hyperdrive, IPool _pool) {
         // Assign variables
         hyperdrive = _hyperdrive;
@@ -98,6 +105,14 @@ contract AaveFixedBorrowAction {
 
         // Transfer borrowAmount of base to user
         debtToken.transfer(msg.sender, _borrowAmount);
+
+        emit SupplyBorrowAndOpenShort(
+            // shortId, // TODO: where to get this?
+            baseDeposited,
+            msg.sender,
+            _collateralToken,
+            _borrowAmount
+        );
     }
 
     /// TODO Change to admin only function
