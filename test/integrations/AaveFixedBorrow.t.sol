@@ -85,6 +85,7 @@ contract AaveFixedBorrowTest is BaseTest {
     );
 
     event SupplyBorrowAndOpenShort(
+        uint256 shortId,
         uint256 costOfShort,
         address indexed who,
         address collateralToken,
@@ -146,9 +147,9 @@ contract AaveFixedBorrowTest is BaseTest {
         vm.expectEmit(true, true, true, true);
         emit Transfer(address(action), alice, borrowAmount);
 
-        // A 
-        vm.expectEmit(true, true, false, true);
+        vm.expectEmit(true, true, true, true);
         emit SupplyBorrowAndOpenShort(
+            HyperdriveUtils.latestCheckpoint(hyperdrive),
             calculatedDeposit,
             alice,
             address(wsteth),

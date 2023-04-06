@@ -8,6 +8,7 @@ import { ICreditDelegationToken } from "@aave/interfaces/ICreditDelegationToken.
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { DataTypes } from "@aave/protocol/libraries/types/DataTypes.sol";
+import { AssetId } from "../libraries/AssetId.sol";
 
 contract AaveFixedBorrowAction {
     // Hyperdrive contract
@@ -20,12 +21,13 @@ contract AaveFixedBorrowAction {
     ICreditDelegationToken public variableDebtToken;
 
     event SupplyBorrowAndOpenShort(
+        uint256 shortId,
         uint256 costOfShort,
         address indexed who,
         address collateralToken,
-        uint256 collateralDeposited, 
+        uint256 collateralDeposited,
         address borrowToken,
-        uint256 borrowAmount 
+        uint256 borrowAmount
     );
 
     constructor(IHyperdrive _hyperdrive, IPool _pool) {
@@ -108,8 +110,13 @@ contract AaveFixedBorrowAction {
         // Transfer borrowAmount of base to user
         debtToken.transfer(msg.sender, _borrowAmount);
 
+        uint256 shortId = AssetId.encodeAssetId(
+            AssetId.AssetIdPrefix.Short,
+            _latestCheckpoint()
+        );
+
         emit SupplyBorrowAndOpenShort(
-            // shortId, // TODO: where to get this?
+            shortId,
             baseDeposited,
             msg.sender,
             _collateralToken,
@@ -133,5 +140,17 @@ contract AaveFixedBorrowAction {
         uint256 _amount
     ) public {
         IERC20(_token).approve(_spender, _amount);
+    }
+
+    /// @dev Gets the most recent checkpoint time.
+    /// @return latestCheckpoint The latest checkpoint.
+    function _latestCheckpoint()
+        internal
+        view
+        returns (uint256 latestCheckpoint)
+    {
+        return
+            block.timestamp -
+            (block.timestamp % hyperdrive.getPoolConfig().checkpointDuration);
     }
 }
