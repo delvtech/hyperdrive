@@ -75,7 +75,9 @@ contract AaveFixedBorrowAction {
         );
 
         // Supply the aave pool with collateral on behalf of user.
-        pool.supply(_collateralToken, _supplyAmount, msg.sender, 0);
+        if (_supplyAmount > 0) {
+            pool.supply(_collateralToken, _supplyAmount, msg.sender, 0);
+        }
 
         // Borrow the users requested _borrowAmount and _maxDeposit so the
         // amount of base the user receives and the amount of base the user

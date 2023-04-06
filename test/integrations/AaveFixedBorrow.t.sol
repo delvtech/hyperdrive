@@ -4,6 +4,7 @@ pragma solidity ^0.8.18;
 import { BaseTest } from "test/utils/BaseTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { AaveFixedBorrowAction, IHyperdrive, IPool } from "contracts/src/actions/AaveFixedBorrow.sol";
+import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { DsrManager } from "contracts/src/interfaces/IMaker.sol";
 import { IERC20Mint } from "contracts/src/interfaces/IERC20Mint.sol";
@@ -89,9 +90,9 @@ contract AaveFixedBorrowTest is BaseTest {
         uint256 costOfShort,
         address indexed who,
         address collateralToken,
-        uint256 collateralDeposited, 
+        uint256 collateralDeposited,
         address borrowToken,
-        uint256 borrowAmount 
+        uint256 borrowAmount
     );
 
     function test__supply_borrow_and_open_short() public {
@@ -148,8 +149,13 @@ contract AaveFixedBorrowTest is BaseTest {
         emit Transfer(address(action), alice, borrowAmount);
 
         vm.expectEmit(true, true, true, true);
+
+        uint256 shortId = AssetId.encodeAssetId(
+            AssetId.AssetIdPrefix.Short,
+            HyperdriveUtils.latestCheckpoint(hyperdrive)
+        );
         emit SupplyBorrowAndOpenShort(
-            HyperdriveUtils.latestCheckpoint(hyperdrive),
+            shortId,
             calculatedDeposit,
             alice,
             address(wsteth),
