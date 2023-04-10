@@ -1,10 +1,6 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-// FIXME
-import "forge-std/console.sol";
-import "test/utils/Lib.sol";
-
 import { Errors } from "./Errors.sol";
 import { FixedPointMath } from "./FixedPointMath.sol";
 import { YieldSpaceMath } from "./YieldSpaceMath.sol";
@@ -16,9 +12,6 @@ import { YieldSpaceMath } from "./YieldSpaceMath.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 library HyperdriveMath {
-    // FIXME
-    using Lib for *;
-
     using FixedPointMath for uint256;
 
     /// @dev Calculates the spot price without slippage of bonds in terms of shares.
@@ -187,9 +180,8 @@ library HyperdriveMath {
         uint256 _initialSharePrice
     )
         internal
-        view
+        pure
         returns (
-            // FIXME: pure
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
             uint256 shareProceeds
@@ -201,16 +193,10 @@ library HyperdriveMath {
         // (our result is given in shares, so we divide the one-to-one
         // redemption by the share price) and the newly minted bonds are
         // traded on a YieldSpace curve configured to timeRemaining = 1.
-        console.log(1);
-        console.log(
-            "_normalizedTimeRemaining",
-            _normalizedTimeRemaining.toString(18)
-        );
         shareProceeds = _amountIn.mulDivDown(
             FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
             _sharePrice
         );
-        console.log(2);
 
         // TODO: We need better testing for this. This may be correct but the
         // intuition that longs only take a loss on the flat component of their
@@ -227,12 +213,10 @@ library HyperdriveMath {
                 _initialSharePrice
             );
         }
-        console.log(3);
 
         if (_normalizedTimeRemaining > 0) {
             // Calculate the curved part of the trade.
             bondReservesDelta = _amountIn.mulDown(_normalizedTimeRemaining);
-            console.log(4);
             // (time remaining)/(term length) is always 1 so we just use _timeStretch
             shareReservesDelta = YieldSpaceMath.calculateSharesOutGivenBondsIn(
                 _shareReserves,
@@ -242,9 +226,7 @@ library HyperdriveMath {
                 _sharePrice,
                 _initialSharePrice
             );
-            console.log(5);
             shareProceeds += shareReservesDelta;
-            console.log(6);
         }
         return (shareReservesDelta, bondReservesDelta, shareProceeds);
     }
@@ -408,14 +390,10 @@ library HyperdriveMath {
             _bondReserves -= uint256(-netCurveTrade);
         }
 
-        // FIXME
-        console.log(10);
-        console.log(_longAverageTimeRemaining.toString(18));
         _shareReserves -= _longsOutstanding.mulDivDown(
             FixedPointMath.ONE_18 - _longAverageTimeRemaining,
             _sharePrice
         );
-        console.log(11);
 
         // Shorts add liquidity and longs remove liquidity. We apply this to
         // the share reserves to complete the computation of the present value.
@@ -423,7 +401,6 @@ library HyperdriveMath {
             FixedPointMath.ONE_18 - _shortAverageTimeRemaining,
             _sharePrice
         );
-        console.log(12);
 
         return _shareReserves;
     }

@@ -4,12 +4,14 @@ pragma solidity ^0.8.18;
 import "forge-std/console.sol";
 import { Lib } from "test/utils/Lib.sol";
 
+import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 
 contract PresentValueTest is HyperdriveTest {
     using Lib for *;
+    using FixedPointMath for *;
 
     // FIXME:
     // - Test different combinations of trades
@@ -219,23 +221,15 @@ contract PresentValueTest is HyperdriveTest {
             console.log("presentValue: %s", presentValue().toString(18));
 
             // Close the long position.
-            closeLong(alice, longMaturityTime, longAmount / 2 - 1);
+            closeLong(alice, longMaturityTime, longAmount / 2 - 1e18);
             console.log("presentValue: %s", presentValue().toString(18));
-            // closeLong(alice, longMaturityTime, 1e18);
+            closeLong(alice, longMaturityTime, 1e18);
         }
 
         // FIXME: Test with different amounts of time elapsed.
     }
 
     function presentValue() internal view returns (uint256) {
-        console.log(
-            "longAverageMaturityTime: %s",
-            hyperdrive.getPoolInfo().longAverageMaturityTime.toString(18)
-        );
-        console.log(
-            "shortAverageMaturityTime: %s",
-            hyperdrive.getPoolInfo().shortAverageMaturityTime.toString(18)
-        );
         return
             HyperdriveMath.calculatePresentValue(
                 hyperdrive.getPoolInfo().shareReserves,
@@ -246,12 +240,14 @@ contract PresentValueTest is HyperdriveTest {
                 hyperdrive.getPoolInfo().longsOutstanding,
                 HyperdriveUtils.calculateTimeRemaining(
                     hyperdrive,
-                    hyperdrive.getPoolInfo().longAverageMaturityTime
+                    uint256(hyperdrive.getPoolInfo().longAverageMaturityTime)
+                        .divUp(1e36)
                 ),
                 hyperdrive.getPoolInfo().shortsOutstanding,
                 HyperdriveUtils.calculateTimeRemaining(
                     hyperdrive,
-                    hyperdrive.getPoolInfo().shortAverageMaturityTime
+                    uint256(hyperdrive.getPoolInfo().shortAverageMaturityTime)
+                        .divUp(1e36)
                 )
             );
     }
