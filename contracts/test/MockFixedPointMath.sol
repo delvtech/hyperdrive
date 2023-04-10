@@ -75,7 +75,14 @@ contract MockFixedPointMath {
         uint256 _delta,
         uint256 _deltaWeight,
         bool _isAdding
-    ) external pure returns (uint256 average) {
+    )
+        external
+        view
+        returns (
+            // FIXME: pure
+            uint256 average
+        )
+    {
         uint256 result = FixedPointMath.updateWeightedAverage(
             _average,
             _totalWeight,
