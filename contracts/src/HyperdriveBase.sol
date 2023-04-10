@@ -172,9 +172,10 @@ abstract contract HyperdriveBase is MultiToken {
     /// @notice This function collects the governance fees accrued by the pool.
     /// @return proceeds The amount of base collected.
     function collectGovernanceFee() external returns (uint256 proceeds) {
-        // TODO: We should make an immutable asUnderlying parameter
-        (proceeds, ) = _withdraw(governanceFeesAccrued, governance, true);
+        uint256 _governanceFeesAccrued = governanceFeesAccrued;
         governanceFeesAccrued = 0;
+        // TODO: We should make an immutable asUnderlying parameter
+        (proceeds, ) = _withdraw(_governanceFeesAccrued, governance, true);
     }
 
     /// Getters ///
