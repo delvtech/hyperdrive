@@ -219,9 +219,9 @@ contract PresentValueTest is HyperdriveTest {
             console.log("presentValue: %s", presentValue().toString(18));
 
             // Close the long position.
-            closeLong(alice, longMaturityTime, longAmount / 2 - 1e18 - 10);
-            // FIXME: The long average maturity time is way too large here.
+            closeLong(alice, longMaturityTime, longAmount / 2 - 1);
             console.log("presentValue: %s", presentValue().toString(18));
+            // closeLong(alice, longMaturityTime, 1e18);
         }
 
         // FIXME: Test with different amounts of time elapsed.

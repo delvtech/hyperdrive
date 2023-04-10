@@ -1,11 +1,18 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
+// FIXME
+import "forge-std/console.sol";
+import "test/utils/Lib.sol";
+
 import "./Errors.sol";
 
 /// @notice A fixed-point math library.
 /// @author Delve
 library FixedPointMath {
+    // FIXME
+    using Lib for *;
+
     using FixedPointMath for uint256;
 
     int256 internal constant _ONE_18 = 1e18;
@@ -315,7 +322,7 @@ library FixedPointMath {
         uint256 _delta,
         uint256 _deltaWeight,
         bool _isAdding
-    ) internal pure returns (uint256 average) {
+    ) internal view returns (uint256 average) {
         if (_isAdding) {
             return
                 (_totalWeight.mulDown(_average))
@@ -323,13 +330,28 @@ library FixedPointMath {
                     .divUp(_totalWeight.add(_deltaWeight));
         } else {
             if (_totalWeight == _deltaWeight) return 0;
+            console.log(
+                "normalized time",
+                (
+                    (_totalWeight.mulDown(_average)).sub(
+                        _deltaWeight.mulDown(_delta)
+                    )
+                ).divUp(_totalWeight.sub(_deltaWeight))
+            );
+            console.log(
+                "normalized time",
+                ((_totalWeight.mulDown(_average)).sub(
+                    _deltaWeight.mulDown(_delta)
+                ) * 1e10)
+                    .mulDivUp(1e28, _totalWeight.sub(_deltaWeight) * 1e10)
+                    .divUp(1e28)
+            );
             return
                 ((_totalWeight.mulDown(_average)).sub(
                     _deltaWeight.mulDown(_delta)
-                ) * 1e10).mulDivUp(
-                        1e28,
-                        _totalWeight.sub(_deltaWeight) * 1e10
-                    ) / 1e10;
+                ) * 1e10)
+                    .mulDivUp(1e28, _totalWeight.sub(_deltaWeight) * 1e10)
+                    .divUp(1e28);
         }
     }
 }

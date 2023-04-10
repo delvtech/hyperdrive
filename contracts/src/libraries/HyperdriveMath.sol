@@ -187,8 +187,9 @@ library HyperdriveMath {
         uint256 _initialSharePrice
     )
         internal
-        pure
+        view
         returns (
+            // FIXME: pure
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
             uint256 shareProceeds
@@ -200,10 +201,16 @@ library HyperdriveMath {
         // (our result is given in shares, so we divide the one-to-one
         // redemption by the share price) and the newly minted bonds are
         // traded on a YieldSpace curve configured to timeRemaining = 1.
+        console.log(1);
+        console.log(
+            "_normalizedTimeRemaining",
+            _normalizedTimeRemaining.toString(18)
+        );
         shareProceeds = _amountIn.mulDivDown(
             FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
             _sharePrice
         );
+        console.log(2);
 
         // TODO: We need better testing for this. This may be correct but the
         // intuition that longs only take a loss on the flat component of their
@@ -220,10 +227,12 @@ library HyperdriveMath {
                 _initialSharePrice
             );
         }
+        console.log(3);
 
         if (_normalizedTimeRemaining > 0) {
             // Calculate the curved part of the trade.
             bondReservesDelta = _amountIn.mulDown(_normalizedTimeRemaining);
+            console.log(4);
             // (time remaining)/(term length) is always 1 so we just use _timeStretch
             shareReservesDelta = YieldSpaceMath.calculateSharesOutGivenBondsIn(
                 _shareReserves,
@@ -233,7 +242,9 @@ library HyperdriveMath {
                 _sharePrice,
                 _initialSharePrice
             );
+            console.log(5);
             shareProceeds += shareReservesDelta;
+            console.log(6);
         }
         return (shareReservesDelta, bondReservesDelta, shareProceeds);
     }

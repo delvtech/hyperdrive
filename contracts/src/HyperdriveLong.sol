@@ -121,12 +121,22 @@ abstract contract HyperdriveLong is HyperdriveLP {
         uint256 sharePrice = _pricePerShare();
         _applyCheckpoint(_maturityTime, sharePrice);
 
+        console.log("closeLong: %s", 1);
+        console.log(
+            totalSupply[
+                AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _maturityTime)
+            ]
+        );
+        console.log(_bondAmount);
+
         // Burn the longs that are being closed.
         _burn(
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _maturityTime),
             msg.sender,
             _bondAmount
         );
+
+        console.log("closeLong: %s", 2);
 
         // Calculate the pool and user deltas using the trading function.
         (
@@ -135,6 +145,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
             uint256 shareProceeds,
             uint256 totalGovernanceFee
         ) = _calculateCloseLong(_bondAmount, sharePrice, _maturityTime);
+
+        console.log("closeLong: %s", 3);
 
         // Attribute the governance fee.
         governanceFeesAccrued += totalGovernanceFee;
@@ -500,10 +512,14 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // Calculate the effect that closing the long should have on the pool's
         // reserves as well as the amount of shares the trader receives for
         // selling the bonds at the market price.
+        console.log(10);
         uint256 timeRemaining = _calculateTimeRemaining(_maturityTime);
+        console.log(11);
         uint256 closeSharePrice = block.timestamp < _maturityTime
             ? _sharePrice
             : checkpoints[_maturityTime].sharePrice;
+        console.log(12);
+        console.log(timeRemaining.toString(18));
         (shareReservesDelta, bondReservesDelta, shareProceeds) = HyperdriveMath
             .calculateCloseLong(
                 marketState.shareReserves,
@@ -515,6 +531,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 _sharePrice,
                 initialSharePrice
             );
+        console.log(13);
 
         // Calculate the fees charged on the curve and flat parts of the trade.
         // Since we calculate the amount of shares received given bonds in, we
