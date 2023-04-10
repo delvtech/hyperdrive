@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
+// FIXME
+import "forge-std/console.sol";
+import "test/utils/Lib.sol";
+
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { HyperdriveLP } from "./HyperdriveLP.sol";
 import { AssetId } from "./libraries/AssetId.sol";
@@ -15,6 +19,9 @@ import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveLong is HyperdriveLP {
+    // FIXME
+    using Lib for *;
+
     using FixedPointMath for uint256;
     using SafeCast for uint256;
 
@@ -259,6 +266,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         uint256 _maturityTime,
         uint256 _sharePrice
     ) internal {
+        console.log(1);
         // Update the long average maturity time.
         longAggregates.averageMaturityTime = uint256(
             longAggregates.averageMaturityTime
@@ -270,6 +278,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 false
             )
             .toUint128();
+        console.log(2);
 
         // TODO: Is it possible to abstract out the process of updating
         // aggregates in a way that is nice?
@@ -302,6 +311,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 .longBaseVolume -= proportionalBaseVolume;
             lpMargin = _bondAmount - proportionalBaseVolume;
         }
+        console.log(3);
 
         // Reduce the amount of outstanding longs.
         marketState.longsOutstanding -= _bondAmount.toUint128();

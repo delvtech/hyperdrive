@@ -1,6 +1,10 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
+// FIXME
+import "forge-std/console.sol";
+import "test/utils/Lib.sol";
+
 import { Errors } from "./Errors.sol";
 import { FixedPointMath } from "./FixedPointMath.sol";
 import { YieldSpaceMath } from "./YieldSpaceMath.sol";
@@ -12,6 +16,9 @@ import { YieldSpaceMath } from "./YieldSpaceMath.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 library HyperdriveMath {
+    // FIXME
+    using Lib for *;
+
     using FixedPointMath for uint256;
 
     /// @dev Calculates the spot price without slippage of bonds in terms of shares.
@@ -334,6 +341,80 @@ library HyperdriveMath {
         }
 
         return (shareReservesDelta, bondReservesDelta, sharePayment);
+    }
+
+    // FIXME: Add Natspec.
+    //
+    // FIXME: Right now, this is measured in shares
+    function calculatePresentValue(
+        uint256 _shareReserves,
+        uint256 _bondReserves,
+        uint256 _sharePrice,
+        uint256 _initialSharePrice,
+        uint256 _timeStretch,
+        uint256 _longsOutstanding,
+        uint256 _longAverageTimeRemaining,
+        uint256 _shortsOutstanding,
+        uint256 _shortAverageTimeRemaining
+    )
+        internal
+        view
+        returns (
+            // FIXME: pure
+            uint256
+        )
+    {
+        // FIXME: How to handle the case of positive shorts outstanding but
+        // no liquidity? This can happen if the only LP removes all of their
+        // liquidity. We should probably just assume the short gets their
+        // starting base volume or something like that (this is the margin they
+        // would get back if they closed the trade).
+        //
+        // Compute the net of the longs and shorts that will be traded on the
+        // curve and apply this net to the reserves.
+        int256 netCurveTrade = int256(
+            _longsOutstanding.mulDown(_longAverageTimeRemaining)
+        ) - int256(_shortsOutstanding.mulDown(_shortAverageTimeRemaining));
+        if (netCurveTrade > 0) {
+            _shareReserves -= YieldSpaceMath.calculateSharesOutGivenBondsIn(
+                _shareReserves,
+                _bondReserves,
+                uint256(netCurveTrade),
+                FixedPointMath.ONE_18.sub(_timeStretch),
+                _sharePrice,
+                _initialSharePrice
+            );
+            _bondReserves += uint256(netCurveTrade);
+        } else if (netCurveTrade < 0) {
+            _shareReserves += YieldSpaceMath.calculateSharesInGivenBondsOut(
+                _shareReserves,
+                _bondReserves,
+                uint256(-netCurveTrade),
+                FixedPointMath.ONE_18.sub(_timeStretch),
+                _sharePrice,
+                _initialSharePrice
+            );
+            _bondReserves -= uint256(-netCurveTrade);
+        }
+
+        // FIXME
+        console.log(10);
+        console.log(_longAverageTimeRemaining.toString(18));
+        _shareReserves -= _longsOutstanding.mulDivDown(
+            FixedPointMath.ONE_18 - _longAverageTimeRemaining,
+            _sharePrice
+        );
+        console.log(11);
+
+        // Shorts add liquidity and longs remove liquidity. We apply this to
+        // the share reserves to complete the computation of the present value.
+        _shareReserves += _shortsOutstanding.mulDivDown(
+            FixedPointMath.ONE_18 - _shortAverageTimeRemaining,
+            _sharePrice
+        );
+        console.log(12);
+
+        return _shareReserves;
     }
 
     /// @dev Calculates the proceeds in shares of closing a short position. This

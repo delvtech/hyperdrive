@@ -324,9 +324,12 @@ library FixedPointMath {
         } else {
             if (_totalWeight == _deltaWeight) return 0;
             return
-                (_totalWeight.mulDown(_average))
-                    .sub(_deltaWeight.mulDown(_delta))
-                    .divUp(_totalWeight.sub(_deltaWeight));
+                ((_totalWeight.mulDown(_average)).sub(
+                    _deltaWeight.mulDown(_delta)
+                ) * 1e10).mulDivUp(
+                        1e28,
+                        _totalWeight.sub(_deltaWeight) * 1e10
+                    ) / 1e10;
         }
     }
 }
