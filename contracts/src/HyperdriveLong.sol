@@ -1,10 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-// FIXME
-import "forge-std/console.sol";
-import "test/utils/Lib.sol";
-
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { HyperdriveLP } from "./HyperdriveLP.sol";
 import { AssetId } from "./libraries/AssetId.sol";
@@ -19,9 +15,6 @@ import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveLong is HyperdriveLP {
-    // FIXME
-    using Lib for *;
-
     using FixedPointMath for uint256;
     using SafeCast for uint256;
 
@@ -121,22 +114,12 @@ abstract contract HyperdriveLong is HyperdriveLP {
         uint256 sharePrice = _pricePerShare();
         _applyCheckpoint(_maturityTime, sharePrice);
 
-        console.log("closeLong: %s", 1);
-        console.log(
-            totalSupply[
-                AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _maturityTime)
-            ]
-        );
-        console.log(_bondAmount);
-
         // Burn the longs that are being closed.
         _burn(
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _maturityTime),
             msg.sender,
             _bondAmount
         );
-
-        console.log("closeLong: %s", 2);
 
         // Calculate the pool and user deltas using the trading function.
         (
@@ -145,8 +128,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
             uint256 shareProceeds,
             uint256 totalGovernanceFee
         ) = _calculateCloseLong(_bondAmount, sharePrice, _maturityTime);
-
-        console.log("closeLong: %s", 3);
 
         // Attribute the governance fee.
         governanceFeesAccrued += totalGovernanceFee;
@@ -278,7 +259,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
         uint256 _maturityTime,
         uint256 _sharePrice
     ) internal {
-        console.log(1);
         // Update the long average maturity time.
         longAggregates.averageMaturityTime = uint256(
             longAggregates.averageMaturityTime
@@ -290,7 +270,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 false
             )
             .toUint128();
-        console.log(2);
 
         // TODO: Is it possible to abstract out the process of updating
         // aggregates in a way that is nice?
@@ -323,7 +302,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 .longBaseVolume -= proportionalBaseVolume;
             lpMargin = _bondAmount - proportionalBaseVolume;
         }
-        console.log(3);
 
         // Reduce the amount of outstanding longs.
         marketState.longsOutstanding -= _bondAmount.toUint128();
@@ -512,14 +490,10 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // Calculate the effect that closing the long should have on the pool's
         // reserves as well as the amount of shares the trader receives for
         // selling the bonds at the market price.
-        console.log(10);
         uint256 timeRemaining = _calculateTimeRemaining(_maturityTime);
-        console.log(11);
         uint256 closeSharePrice = block.timestamp < _maturityTime
             ? _sharePrice
             : checkpoints[_maturityTime].sharePrice;
-        console.log(12);
-        console.log(timeRemaining.toString(18));
         (shareReservesDelta, bondReservesDelta, shareProceeds) = HyperdriveMath
             .calculateCloseLong(
                 marketState.shareReserves,
@@ -531,7 +505,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 _sharePrice,
                 initialSharePrice
             );
-        console.log(13);
 
         // Calculate the fees charged on the curve and flat parts of the trade.
         // Since we calculate the amount of shares received given bonds in, we
