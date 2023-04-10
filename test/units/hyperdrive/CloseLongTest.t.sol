@@ -144,6 +144,40 @@ contract CloseLongTest is HyperdriveTest {
         );
     }
 
+    // This stress tests the aggregate accounting by making the bond amount of
+    // the second trade is off by 1 wei.
+    function test_close_long_dust_amount() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Open a long position.
+        uint256 basePaid = 10_000_000e18;
+        (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
+
+        // Immediately close the bonds. We close the long in two transactions
+        // to ensure that the close long function can handle small input amounts.
+        uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount / 2);
+        baseProceeds += closeLong(bob, maturityTime, bondAmount / 2 - 1);
+
+        // Verify that Bob didn't receive more base than he put in.
+        assertLe(baseProceeds, basePaid);
+
+        // Ensure that the average maturity time was updated correctly.
+        assertEq(
+            hyperdrive.getPoolInfo().longAverageMaturityTime,
+            maturityTime * 1e18
+        );
+
+        // Ensure that the average open share price was updated correctly.
+        assertEq(
+            hyperdrive.checkpoints(block.timestamp).longSharePrice,
+            hyperdrive.getPoolInfo().sharePrice
+        );
+    }
+
     function test_close_long_halfway_through_term() external {
         // Initialize the market.
         uint apr = 0.05e18;

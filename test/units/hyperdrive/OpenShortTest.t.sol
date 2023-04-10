@@ -157,7 +157,7 @@ contract OpenShortTest is HyperdriveTest {
             );
             assertApproxEqAbs(
                 poolInfoAfter.shortAverageMaturityTime,
-                maturityTime,
+                maturityTime * 1e18,
                 1
             );
             assertEq(poolInfoAfter.shortBaseVolume, baseProceeds);

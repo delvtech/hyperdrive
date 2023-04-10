@@ -185,7 +185,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         )
             .updateWeightedAverage(
                 uint256(marketState.longsOutstanding),
-                _maturityTime,
+                _maturityTime * 1e18, // scale up to fixed point scale
                 _bondProceeds,
                 true
             )
@@ -265,7 +265,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         )
             .updateWeightedAverage(
                 marketState.longsOutstanding,
-                _maturityTime,
+                _maturityTime * 1e18, // scale up to fixed point scale
                 _bondAmount,
                 false
             )
