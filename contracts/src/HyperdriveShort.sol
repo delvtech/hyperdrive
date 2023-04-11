@@ -214,7 +214,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 shortAggregates.averageMaturityTime
             ).updateWeightedAverage(
                     marketState.shortsOutstanding,
-                    _maturityTime,
+                    _maturityTime * 1e18, // scale up to fixed point scale
                     _bondAmount,
                     true
                 );
@@ -277,7 +277,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 shortAggregates.averageMaturityTime
             ).updateWeightedAverage(
                     marketState.shortsOutstanding,
-                    _maturityTime,
+                    _maturityTime * 1e18, // scale up to fixed point scale
                     _bondAmount,
                     false
                 );

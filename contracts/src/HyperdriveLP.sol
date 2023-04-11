@@ -132,7 +132,9 @@ abstract contract HyperdriveLP is HyperdriveBase {
                 .calculateLpAllocationAdjustment(
                     marketState.longsOutstanding,
                     longAggregates.baseVolume,
-                    _calculateTimeRemaining(longAggregates.averageMaturityTime),
+                    _calculateTimeRemaining(
+                        uint256(longAggregates.averageMaturityTime).divUp(1e36) // scale to seconds
+                    ),
                     sharePrice
                 );
             uint256 shortAdjustment = HyperdriveMath
@@ -140,7 +142,7 @@ abstract contract HyperdriveLP is HyperdriveBase {
                     marketState.shortsOutstanding,
                     shortAggregates.baseVolume,
                     _calculateTimeRemaining(
-                        shortAggregates.averageMaturityTime
+                        uint256(shortAggregates.averageMaturityTime).divUp(1e36) // scale to seconds
                     ),
                     sharePrice
                 );
