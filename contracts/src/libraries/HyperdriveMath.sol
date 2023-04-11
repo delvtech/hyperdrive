@@ -336,19 +336,25 @@ library HyperdriveMath {
         return (shareReservesDelta, bondReservesDelta, sharePayment);
     }
 
+    struct PresentValueParams {
+        uint256 shareReserves;
+        uint256 bondReserves;
+        uint256 sharePrice;
+        uint256 initialSharePrice;
+        uint256 timeStretch;
+        uint256 longsOutstanding;
+        uint256 longAverageTimeRemaining;
+        uint256 longBaseVolume;
+        uint256 shortsOutstanding;
+        uint256 shortAverageTimeRemaining;
+        uint256 shortBaseVolume;
+    }
+
     // FIXME: Add Natspec.
     //
     // FIXME: Right now, this is measured in shares
     function calculatePresentValue(
-        uint256 _shareReserves,
-        uint256 _bondReserves,
-        uint256 _sharePrice,
-        uint256 _initialSharePrice,
-        uint256 _timeStretch,
-        uint256 _longsOutstanding,
-        uint256 _longAverageTimeRemaining,
-        uint256 _shortsOutstanding,
-        uint256 _shortAverageTimeRemaining
+        PresentValueParams memory _params
     ) internal pure returns (uint256) {
         // FIXME: How to handle the case of positive shorts outstanding but
         // no liquidity? This can happen if the only LP removes all of their
@@ -359,41 +365,59 @@ library HyperdriveMath {
         // Compute the net of the longs and shorts that will be traded on the
         // curve and apply this net to the reserves.
         int256 netCurveTrade = int256(
-            _longsOutstanding.mulDown(_longAverageTimeRemaining)
-        ) - int256(_shortsOutstanding.mulDown(_shortAverageTimeRemaining));
+            _params.longsOutstanding.mulDown(_params.longAverageTimeRemaining)
+        ) -
+            int256(
+                _params.shortsOutstanding.mulDown(
+                    _params.shortAverageTimeRemaining
+                )
+            );
         if (netCurveTrade > 0) {
-            _shareReserves -= YieldSpaceMath.calculateSharesOutGivenBondsIn(
-                _shareReserves,
-                _bondReserves,
-                uint256(netCurveTrade),
-                FixedPointMath.ONE_18.sub(_timeStretch),
-                _sharePrice,
-                _initialSharePrice
-            );
-            _bondReserves += uint256(netCurveTrade);
+            _params.shareReserves -= YieldSpaceMath
+                .calculateSharesOutGivenBondsIn(
+                    _params.shareReserves,
+                    _params.bondReserves,
+                    uint256(netCurveTrade),
+                    FixedPointMath.ONE_18.sub(_params.timeStretch),
+                    _params.sharePrice,
+                    _params.initialSharePrice
+                );
+            _params.bondReserves += uint256(netCurveTrade);
         } else if (netCurveTrade < 0) {
-            _shareReserves += YieldSpaceMath.calculateSharesInGivenBondsOut(
-                _shareReserves,
-                _bondReserves,
-                uint256(-netCurveTrade),
-                FixedPointMath.ONE_18.sub(_timeStretch),
-                _sharePrice,
-                _initialSharePrice
-            );
-            _bondReserves -= uint256(-netCurveTrade);
+            // FIXME: We can be smarter about this.
+            if (
+                int256(_params.bondReserves) + netCurveTrade <
+                int256(_params.shareReserves)
+            ) {
+                _params.shareReserves += _params.shortBaseVolume.mulDivDown(
+                    _params.shortAverageTimeRemaining,
+                    _params.sharePrice
+                );
+            } else {
+                _params.shareReserves += YieldSpaceMath
+                    .calculateSharesInGivenBondsOut(
+                        _params.shareReserves,
+                        _params.bondReserves,
+                        uint256(-netCurveTrade),
+                        FixedPointMath.ONE_18.sub(_params.timeStretch),
+                        _params.sharePrice,
+                        _params.initialSharePrice
+                    );
+                _params.bondReserves -= uint256(-netCurveTrade);
+            }
         }
 
         // FIXME: Is this where the update should be?
-        _shareReserves += _shortsOutstanding.mulDivDown(
-            FixedPointMath.ONE_18 - _shortAverageTimeRemaining,
-            _sharePrice
+        _params.shareReserves += _params.shortsOutstanding.mulDivDown(
+            FixedPointMath.ONE_18 - _params.shortAverageTimeRemaining,
+            _params.sharePrice
         );
-        _shareReserves -= _longsOutstanding.mulDivDown(
-            FixedPointMath.ONE_18 - _longAverageTimeRemaining,
-            _sharePrice
+        _params.shareReserves -= _params.longsOutstanding.mulDivDown(
+            FixedPointMath.ONE_18 - _params.longAverageTimeRemaining,
+            _params.sharePrice
         );
 
-        return _shareReserves;
+        return _params.shareReserves;
     }
 
     /// @dev Calculates the proceeds in shares of closing a short position. This

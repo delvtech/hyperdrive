@@ -27,8 +27,13 @@ contract PresentValueTest is HyperdriveTest {
     // only way to manipulate the present value so far is to close an old trade
     // and the difference is quite small. This needs to be investigated more
     // deeply to ensure that the protocol is secure and as fair as possible.
+    //
+    // FIXME:
+    // Large trades can result in the present value increasing or decreasing
+    // after a trade is made. This shouldn't be a problem with fees, but fees
+    // present a different challenge.
     function test_present_value_example() external {
-        initialize(alice, 0.02e18, 500_000_000e18);
+        uint256 lpShares = initialize(alice, 0.02e18, 500_000_000e18);
 
         console.log("    presentValue: %s", presentValue().toString(18));
 
@@ -233,6 +238,77 @@ contract PresentValueTest is HyperdriveTest {
             closeLong(alice, longMaturityTime, 1e18);
         }
 
+        console.log("large trades - dt = 0.5");
+        {
+            // Open a long position.
+            uint256 longPaid = 150_000_000e18;
+            (uint256 longMaturityTime, uint256 longAmount) = openLong(
+                alice,
+                longPaid
+            );
+            console.log("    presentValue: %s", presentValue().toString(18));
+
+            // Open a short position.
+            uint256 shortAmount = 150_000_000e18;
+            (uint256 maturityTime, ) = openShort(alice, shortAmount);
+            console.log("    presentValue: %s", presentValue().toString(18));
+
+            // Advance time.
+            advanceTime(POSITION_DURATION / 2, 0.2e18);
+            console.log("    presentValue: %s", presentValue().toString(18));
+
+            // Close the long position.
+            closeLong(alice, longMaturityTime, longAmount);
+            console.log("    presentValue: %s", presentValue().toString(18));
+
+            // Close the short position.
+            closeShort(alice, maturityTime, shortAmount);
+            console.log("    presentValue: %s", presentValue().toString(18));
+        }
+
+        console.log("open short and LP removes liquidity");
+        {
+            // Open a short position.
+            uint256 shortAmount = 150_000_000e18;
+            (uint256 maturityTime, ) = openShort(alice, shortAmount);
+            console.log("    presentValue: %s", presentValue().toString(18));
+
+            // FIXME: This is the real problem that we have. If there isn't
+            // liquidity for the short, one solution is to mark the rest of
+            // their trade to the base volume. We'll need to make sure that
+            // this is actually kosher. There are actually two different
+            // situations:
+            //
+            // 1. There is some liquidity, but not enough to fill the short.
+            // 2. There is no liquidity at all.
+            //
+            // The latter situation is safer to handle because we can just
+            // interpolate between the base volume and the bond amount to
+            // give the pool exposure to the fixed interest, and we're
+            // guaranteed that the pool can't be re-initialized (this is
+            // something we need to check on). The former situation is
+            // potentially more dangerous because it could lead to new LPs
+            // getting a good or bad deal. We'll cross that bridge when we
+            // come to it.
+            //
+            // I'm just going to focus on the case of no liquidity first, and
+            // then I'll add more examples after getting that to work.
+            //
+            // ============================================================
+            //
+            // The LP removes liquidity.
+            removeLiquidity(alice, lpShares);
+            console.log("    presentValue: %s", presentValue().toString(18));
+
+            // Time passes and interest accrues.
+            advanceTime(POSITION_DURATION, 0.2e18);
+            console.log("    presentValue: %s", presentValue().toString(18));
+
+            // Close the short position.
+            closeShort(alice, maturityTime, shortAmount);
+            console.log("    presentValue: %s", presentValue().toString(18));
+        }
+
         // FIXME: Test with different amounts of time elapsed.
     }
 
@@ -282,6 +358,12 @@ contract PresentValueTest is HyperdriveTest {
             currentPresentValue = nextPresentValue;
         }
     }
+
+    // FIXME: We'll want to have a test that removing liquidity doesn't cause
+    // the present value computation to fail. Ultimately, we'll want to ensure
+    // that the invariant is preserved in different tests too. For example with
+    // add liquidity, remove liquidity, and closing trades with withdrawal
+    // shares.
 
     /// Random Trading ///
 
@@ -372,24 +454,46 @@ contract PresentValueTest is HyperdriveTest {
 
     function presentValue() internal view returns (uint256) {
         return
-            HyperdriveMath.calculatePresentValue(
-                hyperdrive.getPoolInfo().shareReserves,
-                hyperdrive.getPoolInfo().bondReserves,
-                hyperdrive.getPoolInfo().sharePrice,
-                hyperdrive.getPoolConfig().initialSharePrice,
-                hyperdrive.getPoolConfig().timeStretch,
-                hyperdrive.getPoolInfo().longsOutstanding,
-                HyperdriveUtils.calculateTimeRemaining(
-                    hyperdrive,
-                    uint256(hyperdrive.getPoolInfo().longAverageMaturityTime)
-                        .divUp(1e36)
-                ),
-                hyperdrive.getPoolInfo().shortsOutstanding,
-                HyperdriveUtils.calculateTimeRemaining(
-                    hyperdrive,
-                    uint256(hyperdrive.getPoolInfo().shortAverageMaturityTime)
-                        .divUp(1e36)
+            HyperdriveMath
+                .calculatePresentValue(
+                    HyperdriveMath.PresentValueParams({
+                        shareReserves: hyperdrive.getPoolInfo().shareReserves,
+                        bondReserves: hyperdrive.getPoolInfo().bondReserves,
+                        sharePrice: hyperdrive.getPoolInfo().sharePrice,
+                        initialSharePrice: hyperdrive
+                            .getPoolConfig()
+                            .initialSharePrice,
+                        timeStretch: hyperdrive.getPoolConfig().timeStretch,
+                        longsOutstanding: hyperdrive
+                            .getPoolInfo()
+                            .longsOutstanding,
+                        longAverageTimeRemaining: HyperdriveUtils
+                            .calculateTimeRemaining(
+                                hyperdrive,
+                                uint256(
+                                    hyperdrive
+                                        .getPoolInfo()
+                                        .longAverageMaturityTime
+                                ).divUp(1e36)
+                            ),
+                        longBaseVolume: hyperdrive.getPoolInfo().longBaseVolume,
+                        shortsOutstanding: hyperdrive
+                            .getPoolInfo()
+                            .shortsOutstanding,
+                        shortAverageTimeRemaining: HyperdriveUtils
+                            .calculateTimeRemaining(
+                                hyperdrive,
+                                uint256(
+                                    hyperdrive
+                                        .getPoolInfo()
+                                        .shortAverageMaturityTime
+                                ).divUp(1e36)
+                            ),
+                        shortBaseVolume: hyperdrive
+                            .getPoolInfo()
+                            .shortBaseVolume
+                    })
                 )
-            );
+                .mulDown(hyperdrive.getPoolInfo().sharePrice);
     }
 }
