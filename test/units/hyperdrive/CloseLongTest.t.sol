@@ -145,7 +145,7 @@ contract CloseLongTest is HyperdriveTest {
     }
 
     // This stress tests the aggregate accounting by making the bond amount of
-    // the second trade is off by 1 wei.
+    // the second trade off by 1 wei.
     function test_close_long_dust_amount() external {
         uint256 apr = 0.05e18;
 
