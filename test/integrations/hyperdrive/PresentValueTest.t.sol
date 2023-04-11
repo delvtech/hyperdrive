@@ -17,8 +17,16 @@ contract PresentValueTest is HyperdriveTest {
     bytes32 internal _seed;
 
     // FIXME:
-    // - Test different combinations of trades
-    // - Test with fees
+    // - [ ] Test different combinations of trades
+    // - [ ] Test with add and remove liquidity (especially the short case)
+    // - [ ] Test with fees
+    //
+    // FIXME:
+    // So far, this test illustrates that the present value is always being
+    // overestimated, which is good from the perspective of add liquidity. The
+    // only way to manipulate the present value so far is to close an old trade
+    // and the difference is quite small. This needs to be investigated more
+    // deeply to ensure that the protocol is secure and as fair as possible.
     function test_present_value_example() external {
         initialize(alice, 0.02e18, 500_000_000e18);
 
@@ -275,6 +283,8 @@ contract PresentValueTest is HyperdriveTest {
         }
     }
 
+    /// Random Trading ///
+
     enum TradeType {
         Empty,
         OpenLong,
@@ -357,6 +367,8 @@ contract PresentValueTest is HyperdriveTest {
         _seed = keccak256(abi.encodePacked(seed_));
         return seed_;
     }
+
+    /// Present Value ///
 
     function presentValue() internal view returns (uint256) {
         return

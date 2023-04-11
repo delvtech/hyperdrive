@@ -349,14 +349,7 @@ library HyperdriveMath {
         uint256 _longAverageTimeRemaining,
         uint256 _shortsOutstanding,
         uint256 _shortAverageTimeRemaining
-    )
-        internal
-        view
-        returns (
-            // FIXME: pure
-            uint256
-        )
-    {
+    ) internal pure returns (uint256) {
         // FIXME: How to handle the case of positive shorts outstanding but
         // no liquidity? This can happen if the only LP removes all of their
         // liquidity. We should probably just assume the short gets their
@@ -390,15 +383,13 @@ library HyperdriveMath {
             _bondReserves -= uint256(-netCurveTrade);
         }
 
-        _shareReserves -= _longsOutstanding.mulDivDown(
-            FixedPointMath.ONE_18 - _longAverageTimeRemaining,
-            _sharePrice
-        );
-
-        // Shorts add liquidity and longs remove liquidity. We apply this to
-        // the share reserves to complete the computation of the present value.
+        // FIXME: Is this where the update should be?
         _shareReserves += _shortsOutstanding.mulDivDown(
             FixedPointMath.ONE_18 - _shortAverageTimeRemaining,
+            _sharePrice
+        );
+        _shareReserves -= _longsOutstanding.mulDivDown(
+            FixedPointMath.ONE_18 - _longAverageTimeRemaining,
             _sharePrice
         );
 
