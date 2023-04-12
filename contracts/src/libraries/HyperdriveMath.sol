@@ -350,18 +350,12 @@ library HyperdriveMath {
         uint256 shortBaseVolume;
     }
 
-    // FIXME: Add Natspec.
-    //
-    // FIXME: Right now, this is measured in shares
+    /// @dev Calculates the present value LPs capital in the pool.
+    /// @param _params The parameters for the present value calculation.
+    /// @return The present value of the pool.
     function calculatePresentValue(
         PresentValueParams memory _params
     ) internal pure returns (uint256) {
-        // FIXME: How to handle the case of positive shorts outstanding but
-        // no liquidity? This can happen if the only LP removes all of their
-        // liquidity. We should probably just assume the short gets their
-        // starting base volume or something like that (this is the margin they
-        // would get back if they closed the trade).
-        //
         // Compute the net of the longs and shorts that will be traded on the
         // curve and apply this net to the reserves.
         int256 netCurveTrade = int256(
@@ -382,39 +376,59 @@ library HyperdriveMath {
                     _params.sharePrice,
                     _params.initialSharePrice
                 );
-            _params.bondReserves += uint256(netCurveTrade);
         } else if (netCurveTrade < 0) {
-            // FIXME: We can be smarter about this.
-            if (
-                int256(_params.bondReserves) + netCurveTrade <
-                int256(_params.shareReserves)
-            ) {
-                _params.shareReserves += _params.shortBaseVolume.mulDivDown(
+            // It's possible that the exchange gets into a state where the
+            // net curve trade can't be applied to the reserves. In particular,
+            // this can happen if all of the liquidity is removed. We first
+            // attempt to trade as much as possible on the curve, and then we
+            // mark the remaining amount to the base volume.
+            uint256 maxCurveTrade = _params.bondReserves -
+                _params.shareReserves;
+            maxCurveTrade = uint256(-netCurveTrade) <= maxCurveTrade
+                ? uint256(-netCurveTrade)
+                : maxCurveTrade;
+            _params.shareReserves += YieldSpaceMath
+                .calculateSharesInGivenBondsOut(
+                    _params.shareReserves,
+                    _params.bondReserves,
+                    maxCurveTrade,
+                    FixedPointMath.ONE_18.sub(_params.timeStretch),
+                    _params.sharePrice,
+                    _params.initialSharePrice
+                );
+            _params.shareReserves += _params
+                .shortBaseVolume
+                .mulDivDown(
                     _params.shortAverageTimeRemaining,
                     _params.sharePrice
+                )
+                .mulDivDown(
+                    uint256(-netCurveTrade) - maxCurveTrade,
+                    _params.shortsOutstanding
                 );
-            } else {
-                _params.shareReserves += YieldSpaceMath
-                    .calculateSharesInGivenBondsOut(
-                        _params.shareReserves,
-                        _params.bondReserves,
-                        uint256(-netCurveTrade),
-                        FixedPointMath.ONE_18.sub(_params.timeStretch),
-                        _params.sharePrice,
-                        _params.initialSharePrice
-                    );
-                _params.bondReserves -= uint256(-netCurveTrade);
-            }
         }
 
-        // FIXME: Is this where the update should be?
-        _params.shareReserves += _params.shortsOutstanding.mulDivDown(
-            FixedPointMath.ONE_18 - _params.shortAverageTimeRemaining,
-            _params.sharePrice
-        );
-        _params.shareReserves -= _params.longsOutstanding.mulDivDown(
-            FixedPointMath.ONE_18 - _params.longAverageTimeRemaining,
-            _params.sharePrice
+        // TODO: We need to consider increasing the liquidity before the
+        // curve trade to create the worst case scenario. At present, this
+        // calculation is attempting to hit a "sweet spot" between the worst
+        // and best case scenarios.
+        //
+        // Compute the net of the longs and shorts that will be traded flat
+        // and apply this net to the reserves.
+        int256 netFlatTrade = int256(
+            _params.shortsOutstanding.mulDivDown(
+                FixedPointMath.ONE_18 - _params.shortAverageTimeRemaining,
+                _params.sharePrice
+            )
+        ) -
+            int256(
+                _params.longsOutstanding.mulDivDown(
+                    FixedPointMath.ONE_18 - _params.longAverageTimeRemaining,
+                    _params.sharePrice
+                )
+            );
+        _params.shareReserves = uint256(
+            int256(_params.shareReserves) + netFlatTrade
         );
 
         return _params.shareReserves;
