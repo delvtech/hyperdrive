@@ -4,15 +4,18 @@ pragma solidity ^0.8.15;
 import { ERC20PresetFixedSupply } from "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import { Test } from "forge-std/Test.sol";
 import { ForwarderFactory } from "contracts/src/ForwarderFactory.sol";
+import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
+import { YieldSpaceMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { MockHyperdriveMath } from "contracts/test/MockHyperdriveMath.sol";
-import "contracts/src/libraries/FixedPointMath.sol";
+import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 
 contract HyperdriveMathTest is Test {
     using FixedPointMath for uint256;
 
-    function setUp() public {}
+    function setUp() external {}
 
-    function test__calcSpotPrice() public {
+    function test__calcSpotPrice() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
         assertEq(
@@ -39,7 +42,7 @@ contract HyperdriveMathTest is Test {
         );
     }
 
-    function test__calcAPRFromReserves() public {
+    function test__calcAPRFromReserves() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
         // equal reserves should make 0% APR
@@ -68,7 +71,7 @@ contract HyperdriveMathTest is Test {
         );
     }
 
-    function test__calculateInitialBondReserves() public {
+    function test__calculateInitialBondReserves() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
 
@@ -216,7 +219,7 @@ contract HyperdriveMathTest is Test {
         assertApproxEqAbs(result, apr, 4 wei);
     }
 
-    function test__calculateOpenLong() public {
+    function test__calculateOpenLong() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
 
@@ -259,7 +262,7 @@ contract HyperdriveMathTest is Test {
         assertApproxEqAbs(result, expectedAPR.divDown(100e18), 3e12);
     }
 
-    function test__calculateCloseLongBeforeMaturity() public {
+    function test__calculateCloseLongBeforeMaturity() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
 
@@ -305,7 +308,7 @@ contract HyperdriveMathTest is Test {
         assertApproxEqAbs(result, expectedAPR.divDown(100e18), 4e12);
     }
 
-    function test__calculateCloseLongAtMaturity() public {
+    function test__calculateCloseLongAtMaturity() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
 
@@ -341,7 +344,7 @@ contract HyperdriveMathTest is Test {
         assertEq(shareProceeds, amountIn);
     }
 
-    function test__calculateCloseLongAtMaturityNegativeInterest() public {
+    function test__calculateCloseLongAtMaturityNegativeInterest() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
 
@@ -407,7 +410,7 @@ contract HyperdriveMathTest is Test {
         );
     }
 
-    function test__calculateOpenShort() public {
+    function test__calculateOpenShort() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
 
@@ -452,7 +455,7 @@ contract HyperdriveMathTest is Test {
         assertApproxEqAbs(result, expectedAPR.divDown(100e18), 6e12);
     }
 
-    function test__calculateCloseShortAtMaturity() public {
+    function test__calculateCloseShortAtMaturity() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
 
@@ -486,7 +489,7 @@ contract HyperdriveMathTest is Test {
         assertEq(sharePayment, amountOut);
     }
 
-    function test__calculateCloseShortBeforeMaturity() public {
+    function test__calculateCloseShortBeforeMaturity() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
 
@@ -530,7 +533,231 @@ contract HyperdriveMathTest is Test {
         assertApproxEqAbs(result, expectedAPR.divDown(100e18), 3e12);
     }
 
-    function test__calculateShortProceeds() public {
+    function test__calculatePresentValue() external {
+        // NOTE: Coverage only works if I initialize the fixture in the test function
+        MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
+
+        uint256 apr = 0.02e18;
+        uint256 initialSharePrice = 1e18;
+        uint256 positionDuration = 365 days;
+        uint256 timeStretch = HyperdriveUtils.calculateTimeStretch(apr);
+
+        // No open positions.
+        {
+            HyperdriveMath.PresentValueParams memory params = HyperdriveMath
+                .PresentValueParams({
+                    shareReserves: 500_000_000e18,
+                    bondReserves: calculateBondReserves(
+                        500_000_000e18,
+                        initialSharePrice,
+                        apr,
+                        positionDuration,
+                        timeStretch
+                    ),
+                    sharePrice: 2e18,
+                    initialSharePrice: 1e18,
+                    timeStretch: timeStretch,
+                    longsOutstanding: 0,
+                    longAverageTimeRemaining: 0,
+                    longBaseVolume: 0,
+                    shortsOutstanding: 0,
+                    shortAverageTimeRemaining: 0,
+                    shortBaseVolume: 0
+                });
+            uint256 presentValue = hyperdriveMath.calculatePresentValue(params);
+            assertEq(presentValue, params.shareReserves);
+        }
+
+        // All longs on the curve.
+        {
+            HyperdriveMath.PresentValueParams memory params = HyperdriveMath
+                .PresentValueParams({
+                    shareReserves: 500_000_000e18,
+                    bondReserves: calculateBondReserves(
+                        500_000_000e18,
+                        initialSharePrice,
+                        apr,
+                        positionDuration,
+                        timeStretch
+                    ),
+                    sharePrice: 2e18,
+                    initialSharePrice: 1e18,
+                    timeStretch: timeStretch,
+                    longsOutstanding: 10_000_000e18,
+                    longAverageTimeRemaining: 1e18,
+                    longBaseVolume: 9_500_000e18,
+                    shortsOutstanding: 0,
+                    shortAverageTimeRemaining: 0,
+                    shortBaseVolume: 0
+                });
+            uint256 presentValue = hyperdriveMath.calculatePresentValue(params);
+            params.shareReserves -= YieldSpaceMath
+                .calculateSharesOutGivenBondsIn(
+                    params.shareReserves,
+                    params.bondReserves,
+                    params.longsOutstanding,
+                    FixedPointMath.ONE_18.sub(params.timeStretch),
+                    params.sharePrice,
+                    params.initialSharePrice
+                );
+            assertEq(presentValue, params.shareReserves);
+        }
+
+        // All longs on the flat.
+        {
+            HyperdriveMath.PresentValueParams memory params = HyperdriveMath
+                .PresentValueParams({
+                    shareReserves: 500_000_000e18,
+                    bondReserves: calculateBondReserves(
+                        500_000_000e18,
+                        initialSharePrice,
+                        apr,
+                        positionDuration,
+                        timeStretch
+                    ),
+                    sharePrice: 2e18,
+                    initialSharePrice: 1e18,
+                    timeStretch: timeStretch,
+                    longsOutstanding: 10_000_000e18,
+                    longAverageTimeRemaining: 0,
+                    longBaseVolume: 9_500_000e18,
+                    shortsOutstanding: 0,
+                    shortAverageTimeRemaining: 0,
+                    shortBaseVolume: 0
+                });
+            uint256 presentValue = hyperdriveMath.calculatePresentValue(params);
+            params.shareReserves -= params.longsOutstanding.divDown(
+                params.sharePrice
+            );
+            assertEq(presentValue, params.shareReserves);
+        }
+
+        // All shorts on the curve.
+        {
+            HyperdriveMath.PresentValueParams memory params = HyperdriveMath
+                .PresentValueParams({
+                    shareReserves: 500_000_000e18,
+                    bondReserves: calculateBondReserves(
+                        500_000_000e18,
+                        initialSharePrice,
+                        apr,
+                        positionDuration,
+                        timeStretch
+                    ),
+                    sharePrice: 2e18,
+                    initialSharePrice: 1e18,
+                    timeStretch: timeStretch,
+                    longsOutstanding: 0,
+                    longAverageTimeRemaining: 0,
+                    longBaseVolume: 0,
+                    shortsOutstanding: 10_000_000e18,
+                    shortAverageTimeRemaining: 1e18,
+                    shortBaseVolume: 9_500_000e18
+                });
+            uint256 presentValue = hyperdriveMath.calculatePresentValue(params);
+            params.shareReserves += YieldSpaceMath
+                .calculateSharesInGivenBondsOut(
+                    params.shareReserves,
+                    params.bondReserves,
+                    params.shortsOutstanding,
+                    FixedPointMath.ONE_18.sub(params.timeStretch),
+                    params.sharePrice,
+                    params.initialSharePrice
+                );
+            assertEq(presentValue, params.shareReserves);
+        }
+
+        // All shorts on the flat.
+        {
+            HyperdriveMath.PresentValueParams memory params = HyperdriveMath
+                .PresentValueParams({
+                    shareReserves: 500_000_000e18,
+                    bondReserves: calculateBondReserves(
+                        500_000_000e18,
+                        initialSharePrice,
+                        apr,
+                        positionDuration,
+                        timeStretch
+                    ),
+                    sharePrice: 2e18,
+                    initialSharePrice: 1e18,
+                    timeStretch: timeStretch,
+                    longsOutstanding: 0,
+                    longAverageTimeRemaining: 0,
+                    longBaseVolume: 0,
+                    shortsOutstanding: 10_000_000e18,
+                    shortAverageTimeRemaining: 0,
+                    shortBaseVolume: 9_500_000e18
+                });
+            uint256 presentValue = hyperdriveMath.calculatePresentValue(params);
+            params.shareReserves += params.shortsOutstanding.divDown(
+                params.sharePrice
+            );
+            assertEq(presentValue, params.shareReserves);
+        }
+
+        // Longs and shorts completely net.
+        {
+            HyperdriveMath.PresentValueParams memory params = HyperdriveMath
+                .PresentValueParams({
+                    shareReserves: 500_000_000e18,
+                    bondReserves: calculateBondReserves(
+                        500_000_000e18,
+                        initialSharePrice,
+                        apr,
+                        positionDuration,
+                        timeStretch
+                    ),
+                    sharePrice: 2e18,
+                    initialSharePrice: 1e18,
+                    timeStretch: timeStretch,
+                    longsOutstanding: 10_000_000e18,
+                    longAverageTimeRemaining: 0.3e18,
+                    longBaseVolume: 9_800_000e18,
+                    shortsOutstanding: 10_000_000e18,
+                    shortAverageTimeRemaining: 0.3e18,
+                    shortBaseVolume: 9_500_000e18
+                });
+            uint256 presentValue = hyperdriveMath.calculatePresentValue(params);
+            assertEq(presentValue, params.shareReserves);
+        }
+
+        // All shorts on the curve, all longs on the flat.
+
+        // All longs on the curve, all shorts on the flat.
+
+        // Small amount of longs, large amount of shorts
+
+        // Large amount of longs, small amount of shorts
+
+        // Small amount of longs, large amount of shorts, no excess liquidity
+    }
+
+    function calculateBondReserves(
+        uint256 _shareReserves,
+        uint256 _initialSharePrice,
+        uint256 _apr,
+        uint256 _positionDuration,
+        uint256 _timeStretch
+    ) internal pure returns (uint256 bondReserves) {
+        // Solving for (1 + r * t) ** (1 / tau) here. t is the normalized time remaining which in
+        // this case is 1. Because bonds mature after the positionDuration, we need to scale the apr
+        // to the proportion of a year of the positionDuration. tau = t / time_stretch, or just
+        // 1 / time_stretch in this case.
+        uint256 t = _positionDuration.divDown(365 days);
+        uint256 tau = FixedPointMath.ONE_18.mulDown(_timeStretch);
+        uint256 interestFactor = FixedPointMath.ONE_18.add(_apr.mulDown(t)).pow(
+            FixedPointMath.ONE_18.divDown(tau)
+        );
+
+        // mu * z * (1 + apr * t) ** (1 / tau)
+        bondReserves = _initialSharePrice.mulDown(_shareReserves).mulDown(
+            interestFactor
+        );
+        return bondReserves;
+    }
+
+    function test__calculateShortProceeds() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
 
@@ -644,7 +871,7 @@ contract HyperdriveMathTest is Test {
         // assertEq(shortProceeds, 0);
     }
 
-    function test__calculateShortInterest() public {
+    function test__calculateShortInterest() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
 
@@ -721,7 +948,7 @@ contract HyperdriveMathTest is Test {
         assertEq(shortInterest, 0);
     }
 
-    function test__calculateBaseVolume() public {
+    function test__calculateBaseVolume() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
         uint256 baseVolume = hyperdriveMath.calculateBaseVolume(
@@ -733,7 +960,7 @@ contract HyperdriveMathTest is Test {
         assertEq(baseVolume, 8 ether);
     }
 
-    function test__calculateBaseVolumeWithZeroTimeRemaining() public {
+    function test__calculateBaseVolumeWithZeroTimeRemaining() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
         uint256 baseVolume = hyperdriveMath.calculateBaseVolume(
@@ -744,7 +971,7 @@ contract HyperdriveMathTest is Test {
         assertEq(baseVolume, 0);
     }
 
-    function test__calculateLpAllocationAdjustment() public {
+    function test__calculateLpAllocationAdjustment() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
         uint256 lpAllocationAdjustment = hyperdriveMath
@@ -759,7 +986,7 @@ contract HyperdriveMathTest is Test {
         assertEq(lpAllocationAdjustment, 2 ether);
     }
 
-    function test__calculateOutForLpSharesIn() public {
+    function test__calculateOutForLpSharesIn() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
         uint256 out = hyperdriveMath.calculateOutForLpSharesIn(
