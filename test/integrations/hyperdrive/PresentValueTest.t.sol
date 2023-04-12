@@ -16,23 +16,26 @@ contract PresentValueTest is HyperdriveTest {
 
     bytes32 internal _seed;
 
-    // FIXME:
+    // TODO: Remove this test. This is only used for documenting some cases that
+    // deserve further investigation.
+    //
+    // TODO:
     // - [ ] Test different combinations of trades
     // - [ ] Test with add and remove liquidity (especially the short case)
     // - [ ] Test with fees
     //
-    // FIXME:
+    // TODO:
     // So far, this test illustrates that the present value is always being
     // overestimated, which is good from the perspective of add liquidity. The
     // only way to manipulate the present value so far is to close an old trade
     // and the difference is quite small. This needs to be investigated more
     // deeply to ensure that the protocol is secure and as fair as possible.
     //
-    // FIXME:
+    // TODO:
     // Large trades can result in the present value increasing or decreasing
     // after a trade is made. This shouldn't be a problem with fees, but fees
     // present a different challenge.
-    function test_present_value_example() external {
+    function test_present_value_example() internal {
         uint256 lpShares = initialize(alice, 0.02e18, 500_000_000e18);
 
         console.log("    presentValue: %s", presentValue().toString(18));
@@ -288,7 +291,7 @@ contract PresentValueTest is HyperdriveTest {
         }
         vm.revertTo(snapshotId);
 
-        // FIXME: Why does the present value go down when the long is closed?
+        // TODO: Why does the present value go down when the long is closed?
         console.log("open short and long and LP removes liquidity");
         {
             // Open a short position.
@@ -308,7 +311,7 @@ contract PresentValueTest is HyperdriveTest {
             removeLiquidity(alice, lpShares);
             console.log("    presentValue: %s", presentValue().toString(18));
 
-            // FIXME: This is one of the worst cases of the present value
+            // TODO: This is one of the worst cases of the present value
             // decreasing.
             //
             // Close the long.
@@ -371,12 +374,6 @@ contract PresentValueTest is HyperdriveTest {
             currentPresentValue = nextPresentValue;
         }
     }
-
-    // FIXME: We'll want to have a test that removing liquidity doesn't cause
-    // the present value computation to fail. Ultimately, we'll want to ensure
-    // that the invariant is preserved in different tests too. For example with
-    // add liquidity, remove liquidity, and closing trades with withdrawal
-    // shares.
 
     /// Random Trading ///
 

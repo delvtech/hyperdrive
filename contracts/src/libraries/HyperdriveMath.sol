@@ -367,6 +367,11 @@ library HyperdriveMath {
                 )
             );
         if (netCurveTrade > 0) {
+            // Apply the curve trade directly to the reserves. Unlike shorts,
+            // the capital that backs longs is accounted for within the share
+            // reserves (the capital backing shorts is taken out of the
+            // reserves). This ensures that even if all the liquidity is
+            // removed, there is always liquidity available for longs to close.
             _params.shareReserves -= YieldSpaceMath
                 .calculateSharesOutGivenBondsIn(
                     _params.shareReserves,
@@ -382,8 +387,9 @@ library HyperdriveMath {
             // this can happen if all of the liquidity is removed. We first
             // attempt to trade as much as possible on the curve, and then we
             // mark the remaining amount to the base volume.
-            uint256 maxCurveTrade = _params.bondReserves -
-                _params.shareReserves;
+            uint256 maxCurveTrade = _params.bondReserves.divDown(
+                _params.initialSharePrice
+            ) - _params.shareReserves;
             maxCurveTrade = uint256(-netCurveTrade) <= maxCurveTrade
                 ? uint256(-netCurveTrade)
                 : maxCurveTrade;
@@ -396,16 +402,10 @@ library HyperdriveMath {
                     _params.sharePrice,
                     _params.initialSharePrice
                 );
-            _params.shareReserves += _params
-                .shortBaseVolume
-                .mulDivDown(
-                    _params.shortAverageTimeRemaining,
-                    _params.sharePrice
-                )
-                .mulDivDown(
-                    uint256(-netCurveTrade) - maxCurveTrade,
-                    _params.shortsOutstanding
-                );
+            _params.shareReserves += _params.shortBaseVolume.mulDivDown(
+                uint256(-netCurveTrade) - maxCurveTrade,
+                _params.shortsOutstanding.mulDown(_params.sharePrice)
+            );
         }
 
         // TODO: We need to consider increasing the liquidity before the
