@@ -542,7 +542,7 @@ contract HyperdriveMathTest is Test {
         uint256 positionDuration = 365 days;
         uint256 timeStretch = HyperdriveUtils.calculateTimeStretch(apr);
 
-        // No open positions.
+        // no open positions.
         {
             HyperdriveMath.PresentValueParams memory params = HyperdriveMath
                 .PresentValueParams({
@@ -568,7 +568,7 @@ contract HyperdriveMathTest is Test {
             assertEq(presentValue, params.shareReserves);
         }
 
-        // All longs on the curve.
+        // all longs on the curve.
         {
             HyperdriveMath.PresentValueParams memory params = HyperdriveMath
                 .PresentValueParams({
@@ -603,7 +603,7 @@ contract HyperdriveMathTest is Test {
             assertEq(presentValue, params.shareReserves);
         }
 
-        // All longs on the flat.
+        // all longs on the flat.
         {
             HyperdriveMath.PresentValueParams memory params = HyperdriveMath
                 .PresentValueParams({
@@ -632,7 +632,7 @@ contract HyperdriveMathTest is Test {
             assertEq(presentValue, params.shareReserves);
         }
 
-        // All shorts on the curve.
+        // all shorts on the curve.
         {
             HyperdriveMath.PresentValueParams memory params = HyperdriveMath
                 .PresentValueParams({
@@ -667,7 +667,7 @@ contract HyperdriveMathTest is Test {
             assertEq(presentValue, params.shareReserves);
         }
 
-        // All shorts on the flat.
+        // all shorts on the flat.
         {
             HyperdriveMath.PresentValueParams memory params = HyperdriveMath
                 .PresentValueParams({
@@ -696,7 +696,7 @@ contract HyperdriveMathTest is Test {
             assertEq(presentValue, params.shareReserves);
         }
 
-        // Longs and shorts completely net.
+        // longs and shorts completely net.
         {
             HyperdriveMath.PresentValueParams memory params = HyperdriveMath
                 .PresentValueParams({
@@ -722,15 +722,248 @@ contract HyperdriveMathTest is Test {
             assertEq(presentValue, params.shareReserves);
         }
 
-        // All shorts on the curve, all longs on the flat.
+        // all shorts on the curve, all longs on the flat.
+        {
+            HyperdriveMath.PresentValueParams memory params = HyperdriveMath
+                .PresentValueParams({
+                    shareReserves: 500_000_000e18,
+                    bondReserves: calculateBondReserves(
+                        500_000_000e18,
+                        initialSharePrice,
+                        apr,
+                        positionDuration,
+                        timeStretch
+                    ),
+                    sharePrice: 2e18,
+                    initialSharePrice: 1e18,
+                    timeStretch: timeStretch,
+                    longsOutstanding: 10_000_000e18,
+                    longAverageTimeRemaining: 0,
+                    longBaseVolume: 9_800_000e18,
+                    shortsOutstanding: 10_000_000e18,
+                    shortAverageTimeRemaining: 1e18,
+                    shortBaseVolume: 9_500_000e18
+                });
+            uint256 presentValue = hyperdriveMath.calculatePresentValue(params);
+            params.shareReserves += YieldSpaceMath
+                .calculateSharesInGivenBondsOut(
+                    params.shareReserves,
+                    params.bondReserves,
+                    params.shortsOutstanding,
+                    FixedPointMath.ONE_18.sub(params.timeStretch),
+                    params.sharePrice,
+                    params.initialSharePrice
+                );
+            params.shareReserves -= params.longsOutstanding.divDown(
+                params.sharePrice
+            );
+            assertEq(presentValue, params.shareReserves);
+        }
 
-        // All longs on the curve, all shorts on the flat.
+        // all longs on the curve, all shorts on the flat.
+        {
+            HyperdriveMath.PresentValueParams memory params = HyperdriveMath
+                .PresentValueParams({
+                    shareReserves: 500_000_000e18,
+                    bondReserves: calculateBondReserves(
+                        500_000_000e18,
+                        initialSharePrice,
+                        apr,
+                        positionDuration,
+                        timeStretch
+                    ),
+                    sharePrice: 2e18,
+                    initialSharePrice: 1e18,
+                    timeStretch: timeStretch,
+                    longsOutstanding: 10_000_000e18,
+                    longAverageTimeRemaining: 1e18,
+                    longBaseVolume: 9_800_000e18,
+                    shortsOutstanding: 10_000_000e18,
+                    shortAverageTimeRemaining: 0,
+                    shortBaseVolume: 9_500_000e18
+                });
+            uint256 presentValue = hyperdriveMath.calculatePresentValue(params);
+            params.shareReserves -= YieldSpaceMath
+                .calculateSharesOutGivenBondsIn(
+                    params.shareReserves,
+                    params.bondReserves,
+                    params.longsOutstanding,
+                    FixedPointMath.ONE_18.sub(params.timeStretch),
+                    params.sharePrice,
+                    params.initialSharePrice
+                );
+            params.shareReserves += params.shortsOutstanding.divDown(
+                params.sharePrice
+            );
+            assertEq(presentValue, params.shareReserves);
+        }
 
-        // Small amount of longs, large amount of shorts
+        // small amount of longs, large amount of shorts
+        {
+            HyperdriveMath.PresentValueParams memory params = HyperdriveMath
+                .PresentValueParams({
+                    shareReserves: 500_000_000e18,
+                    bondReserves: calculateBondReserves(
+                        500_000_000e18,
+                        initialSharePrice,
+                        apr,
+                        positionDuration,
+                        timeStretch
+                    ),
+                    sharePrice: 2e18,
+                    initialSharePrice: 1e18,
+                    timeStretch: timeStretch,
+                    longsOutstanding: 100_000e18,
+                    longAverageTimeRemaining: 0.75e18,
+                    longBaseVolume: 98_000e18,
+                    shortsOutstanding: 10_000_000e18,
+                    shortAverageTimeRemaining: 0.25e18,
+                    shortBaseVolume: 9_500_000e18
+                });
+            uint256 presentValue = hyperdriveMath.calculatePresentValue(params);
 
-        // Large amount of longs, small amount of shorts
+            // net curve short and net flat short
+            params.shareReserves += YieldSpaceMath
+                .calculateSharesInGivenBondsOut(
+                    params.shareReserves,
+                    params.bondReserves,
+                    params.shortsOutstanding.mulDown(
+                        params.shortAverageTimeRemaining
+                    ) -
+                        params.longsOutstanding.mulDown(
+                            params.longAverageTimeRemaining
+                        ),
+                    FixedPointMath.ONE_18.sub(params.timeStretch),
+                    params.sharePrice,
+                    params.initialSharePrice
+                );
+            params.shareReserves +=
+                params.shortsOutstanding.mulDivDown(
+                    1e18 - params.shortAverageTimeRemaining,
+                    params.sharePrice
+                ) -
+                params.longsOutstanding.mulDivDown(
+                    1e18 - params.longAverageTimeRemaining,
+                    params.sharePrice
+                );
+            assertEq(presentValue, params.shareReserves);
+        }
 
-        // Small amount of longs, large amount of shorts, no excess liquidity
+        // large amount of longs, small amount of shorts
+        {
+            HyperdriveMath.PresentValueParams memory params = HyperdriveMath
+                .PresentValueParams({
+                    shareReserves: 500_000_000e18,
+                    bondReserves: calculateBondReserves(
+                        500_000_000e18,
+                        initialSharePrice,
+                        apr,
+                        positionDuration,
+                        timeStretch
+                    ),
+                    sharePrice: 2e18,
+                    initialSharePrice: 1e18,
+                    timeStretch: timeStretch,
+                    longsOutstanding: 10_000_000e18,
+                    longAverageTimeRemaining: 0.75e18,
+                    longBaseVolume: 9_500_000e18,
+                    shortsOutstanding: 100_000e18,
+                    shortAverageTimeRemaining: 0.25e18,
+                    shortBaseVolume: 98_000e18
+                });
+            uint256 presentValue = hyperdriveMath.calculatePresentValue(params);
+
+            // net curve long and net flat long
+            params.shareReserves -= YieldSpaceMath
+                .calculateSharesOutGivenBondsIn(
+                    params.shareReserves,
+                    params.bondReserves,
+                    params.longsOutstanding.mulDown(
+                        params.longAverageTimeRemaining
+                    ) -
+                        params.shortsOutstanding.mulDown(
+                            params.shortAverageTimeRemaining
+                        ),
+                    FixedPointMath.ONE_18.sub(params.timeStretch),
+                    params.sharePrice,
+                    params.initialSharePrice
+                );
+            params.shareReserves -=
+                params.longsOutstanding.mulDivDown(
+                    1e18 - params.longAverageTimeRemaining,
+                    params.sharePrice
+                ) -
+                params.shortsOutstanding.mulDivDown(
+                    1e18 - params.shortAverageTimeRemaining,
+                    params.sharePrice
+                );
+            assertEq(presentValue, params.shareReserves);
+        }
+
+        // small amount of longs, large amount of shorts, no excess liquidity
+        //
+        // This scenario simulates all of the LPs losing their liqudiity. What
+        // is important is that the calculation won't fail in this scenario.
+        {
+            HyperdriveMath.PresentValueParams memory params = HyperdriveMath
+                .PresentValueParams({
+                    shareReserves: 100_000e18,
+                    bondReserves: calculateBondReserves(
+                        100_000e18,
+                        initialSharePrice,
+                        apr,
+                        positionDuration,
+                        timeStretch
+                    ),
+                    sharePrice: 2e18,
+                    initialSharePrice: 1e18,
+                    timeStretch: timeStretch,
+                    longsOutstanding: 100_000e18,
+                    longAverageTimeRemaining: 0.75e18,
+                    longBaseVolume: 98_000e18,
+                    shortsOutstanding: 10_000_000e18,
+                    shortAverageTimeRemaining: 0.25e18,
+                    shortBaseVolume: 9_500_000e18
+                });
+            uint256 presentValue = hyperdriveMath.calculatePresentValue(params);
+
+            // Apply as much as possible to the curve and mark the rest of the
+            // curve trade to the short base volume.
+            uint256 netCurveTrade = params.shortsOutstanding.mulDown(
+                params.shortAverageTimeRemaining
+            ) -
+                params.longsOutstanding.mulDown(
+                    params.longAverageTimeRemaining
+                );
+            uint256 maxCurveTrade = params.bondReserves.divDown(
+                params.initialSharePrice
+            ) - params.shareReserves;
+            params.shareReserves += YieldSpaceMath
+                .calculateSharesInGivenBondsOut(
+                    params.shareReserves,
+                    params.bondReserves,
+                    maxCurveTrade,
+                    FixedPointMath.ONE_18.sub(params.timeStretch),
+                    params.sharePrice,
+                    params.initialSharePrice
+                );
+            params.shareReserves += params.shortBaseVolume.mulDivDown(
+                netCurveTrade - maxCurveTrade,
+                params.shortsOutstanding.mulDown(params.sharePrice)
+            );
+
+            // Apply the flat part to the reserves.
+            params.shareReserves +=
+                params.shortsOutstanding.mulDivDown(
+                    1e18 - params.shortAverageTimeRemaining,
+                    params.sharePrice
+                ) -
+                params.longsOutstanding.mulDivDown(
+                    1e18 - params.longAverageTimeRemaining,
+                    params.sharePrice
+                );
+            assertEq(presentValue, params.shareReserves);
+        }
     }
 
     function calculateBondReserves(
