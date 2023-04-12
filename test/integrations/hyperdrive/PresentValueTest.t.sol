@@ -266,6 +266,7 @@ contract PresentValueTest is HyperdriveTest {
             console.log("    presentValue: %s", presentValue().toString(18));
         }
 
+        uint256 snapshotId = vm.snapshot();
         console.log("open short and LP removes liquidity");
         {
             // Open a short position.
@@ -273,29 +274,6 @@ contract PresentValueTest is HyperdriveTest {
             (uint256 maturityTime, ) = openShort(alice, shortAmount);
             console.log("    presentValue: %s", presentValue().toString(18));
 
-            // FIXME: This is the real problem that we have. If there isn't
-            // liquidity for the short, one solution is to mark the rest of
-            // their trade to the base volume. We'll need to make sure that
-            // this is actually kosher. There are actually two different
-            // situations:
-            //
-            // 1. There is some liquidity, but not enough to fill the short.
-            // 2. There is no liquidity at all.
-            //
-            // The latter situation is safer to handle because we can just
-            // interpolate between the base volume and the bond amount to
-            // give the pool exposure to the fixed interest, and we're
-            // guaranteed that the pool can't be re-initialized (this is
-            // something we need to check on). The former situation is
-            // potentially more dangerous because it could lead to new LPs
-            // getting a good or bad deal. We'll cross that bridge when we
-            // come to it.
-            //
-            // I'm just going to focus on the case of no liquidity first, and
-            // then I'll add more examples after getting that to work.
-            //
-            // ============================================================
-            //
             // The LP removes liquidity.
             removeLiquidity(alice, lpShares);
             console.log("    presentValue: %s", presentValue().toString(18));
@@ -308,8 +286,43 @@ contract PresentValueTest is HyperdriveTest {
             closeShort(alice, maturityTime, shortAmount);
             console.log("    presentValue: %s", presentValue().toString(18));
         }
+        vm.revertTo(snapshotId);
 
-        // FIXME: Test with different amounts of time elapsed.
+        // FIXME: Why does the present value go down when the long is closed?
+        console.log("open short and long and LP removes liquidity");
+        {
+            // Open a short position.
+            uint256 shortAmount = 150_000_000e18;
+            (uint256 shortMaturityTime, ) = openShort(alice, shortAmount);
+            console.log("    presentValue: %s", presentValue().toString(18));
+
+            // Open a long position.
+            uint256 longPaid = 10_000_000e18;
+            (uint256 longMaturityTime, uint256 longAmount) = openLong(
+                alice,
+                longPaid
+            );
+            console.log("    presentValue: %s", presentValue().toString(18));
+
+            // The LP removes liquidity.
+            removeLiquidity(alice, lpShares);
+            console.log("    presentValue: %s", presentValue().toString(18));
+
+            // FIXME: This is one of the worst cases of the present value
+            // decreasing.
+            //
+            // Close the long.
+            closeLong(alice, longMaturityTime, longAmount).toString(18);
+            console.log("    presentValue: %s", presentValue().toString(18));
+
+            // Time passes and interest accrues.
+            advanceTime(POSITION_DURATION, 0.2e18);
+            console.log("    presentValue: %s", presentValue().toString(18));
+
+            // Close the short position.
+            closeShort(alice, shortMaturityTime, shortAmount);
+            console.log("    presentValue: %s", presentValue().toString(18));
+        }
     }
 
     function test_present_value_instantaneous(bytes32 __seed) external {
