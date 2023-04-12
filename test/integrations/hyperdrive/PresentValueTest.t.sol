@@ -7,8 +7,7 @@ import { Lib } from "test/utils/Lib.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
-import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
+import { IHyperdrive, HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol";
 
 contract PresentValueTest is HyperdriveTest {
     using Lib for *;
@@ -463,47 +462,36 @@ contract PresentValueTest is HyperdriveTest {
     /// Present Value ///
 
     function presentValue() internal view returns (uint256) {
+        IHyperdrive.PoolConfig memory poolConfig = hyperdrive.getPoolConfig();
+        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
         return
             HyperdriveMath
                 .calculatePresentValue(
                     HyperdriveMath.PresentValueParams({
-                        shareReserves: hyperdrive.getPoolInfo().shareReserves,
-                        bondReserves: hyperdrive.getPoolInfo().bondReserves,
-                        sharePrice: hyperdrive.getPoolInfo().sharePrice,
-                        initialSharePrice: hyperdrive
-                            .getPoolConfig()
-                            .initialSharePrice,
-                        timeStretch: hyperdrive.getPoolConfig().timeStretch,
-                        longsOutstanding: hyperdrive
-                            .getPoolInfo()
-                            .longsOutstanding,
+                        shareReserves: poolInfo.shareReserves,
+                        bondReserves: poolInfo.bondReserves,
+                        sharePrice: poolInfo.sharePrice,
+                        initialSharePrice: poolConfig.initialSharePrice,
+                        timeStretch: poolConfig.timeStretch,
+                        longsOutstanding: poolInfo.longsOutstanding,
                         longAverageTimeRemaining: HyperdriveUtils
                             .calculateTimeRemaining(
                                 hyperdrive,
-                                uint256(
-                                    hyperdrive
-                                        .getPoolInfo()
-                                        .longAverageMaturityTime
-                                ).divUp(1e36)
+                                uint256(poolInfo.longAverageMaturityTime).divUp(
+                                    1e36
+                                )
                             ),
-                        longBaseVolume: hyperdrive.getPoolInfo().longBaseVolume,
-                        shortsOutstanding: hyperdrive
-                            .getPoolInfo()
-                            .shortsOutstanding,
+                        longBaseVolume: poolInfo.longBaseVolume,
+                        shortsOutstanding: poolInfo.shortsOutstanding,
                         shortAverageTimeRemaining: HyperdriveUtils
                             .calculateTimeRemaining(
                                 hyperdrive,
-                                uint256(
-                                    hyperdrive
-                                        .getPoolInfo()
-                                        .shortAverageMaturityTime
-                                ).divUp(1e36)
+                                uint256(poolInfo.shortAverageMaturityTime)
+                                    .divUp(1e36)
                             ),
-                        shortBaseVolume: hyperdrive
-                            .getPoolInfo()
-                            .shortBaseVolume
+                        shortBaseVolume: poolInfo.shortBaseVolume
                     })
                 )
-                .mulDown(hyperdrive.getPoolInfo().sharePrice);
+                .mulDown(poolInfo.sharePrice);
     }
 }
