@@ -1219,17 +1219,196 @@ contract HyperdriveMathTest is Test {
         assertEq(lpAllocationAdjustment, 2 ether);
     }
 
-    function test__calculateOutForLpSharesIn() external {
+    // FIXME: Test this thoroughly.
+    function test__calculateLpProceeds() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
-        uint256 out = hyperdriveMath.calculateOutForLpSharesIn(
-            100 ether, //_shares
-            1000 ether, //_shareReserves
-            1000 ether, //_lpTotalSupply
-            0 ether, // _longsOutstanding
-            1.5 ether //_sharePrice
-        );
-        // (1000 - 0 / 1.5) * (100 / 1000) = 100
-        assertEq(out, 100 ether);
+
+        uint256 apr = 0.02e18;
+        uint256 initialSharePrice = 1e18;
+        uint256 positionDuration = 365 days;
+        uint256 timeStretch = HyperdriveUtils.calculateTimeStretch(apr);
+
+        // some idle, no longs, no shorts
+        {
+            uint256 lpTotalSupply = 500_000_000e18;
+            uint256 lpShares = 20_000_000e18;
+            HyperdriveMath.PresentValueParams memory params = HyperdriveMath
+                .PresentValueParams({
+                    shareReserves: 500_000_000e18,
+                    bondReserves: calculateBondReserves(
+                        500_000_000e18,
+                        initialSharePrice,
+                        apr,
+                        positionDuration,
+                        timeStretch
+                    ),
+                    sharePrice: 2e18,
+                    initialSharePrice: 1e18,
+                    timeStretch: timeStretch,
+                    longsOutstanding: 0,
+                    longAverageTimeRemaining: 0,
+                    longBaseVolume: 0,
+                    shortsOutstanding: 0,
+                    shortAverageTimeRemaining: 0,
+                    shortBaseVolume: 0
+                });
+            (uint256 shareProceeds, uint256 withdrawalShares) = hyperdriveMath
+                .calculateLpProceeds(params, lpShares, lpTotalSupply);
+            assertEq(
+                shareProceeds,
+                params.shareReserves.mulDivDown(lpShares, lpTotalSupply)
+            );
+            assertEq(withdrawalShares, 0);
+        }
+
+        // some idle, some longs, no shorts
+        {
+            uint256 lpTotalSupply = 500_000_000e18;
+            uint256 lpShares = 20_000_000e18;
+            HyperdriveMath.PresentValueParams memory params = HyperdriveMath
+                .PresentValueParams({
+                    shareReserves: 500_000_000e18,
+                    bondReserves: calculateBondReserves(
+                        500_000_000e18,
+                        initialSharePrice,
+                        apr,
+                        positionDuration,
+                        timeStretch
+                    ),
+                    sharePrice: 2e18,
+                    initialSharePrice: 1e18,
+                    timeStretch: timeStretch,
+                    longsOutstanding: 10_000_000e18,
+                    longAverageTimeRemaining: 0.5e18,
+                    longBaseVolume: 9_800_000e18,
+                    shortsOutstanding: 0,
+                    shortAverageTimeRemaining: 0,
+                    shortBaseVolume: 0
+                });
+            (uint256 shareProceeds, uint256 withdrawalShares) = hyperdriveMath
+                .calculateLpProceeds(params, lpShares, lpTotalSupply);
+            uint256 expectedShareProceeds = (params.shareReserves -
+                params.longsOutstanding.divDown(params.sharePrice)).mulDivDown(
+                    lpShares,
+                    lpTotalSupply
+                );
+            uint256 expectedWithdrawalShares = lpShares -
+                expectedShareProceeds.mulDivDown(
+                    lpTotalSupply,
+                    HyperdriveMath.calculatePresentValue(params)
+                );
+            assertEq(shareProceeds, expectedShareProceeds);
+            assertEq(withdrawalShares, expectedWithdrawalShares);
+        }
+
+        // some idle, no longs, some shorts
+        {
+            uint256 lpTotalSupply = 500_000_000e18;
+            uint256 lpShares = 20_000_000e18;
+            HyperdriveMath.PresentValueParams memory params = HyperdriveMath
+                .PresentValueParams({
+                    shareReserves: 500_000_000e18,
+                    bondReserves: calculateBondReserves(
+                        500_000_000e18,
+                        initialSharePrice,
+                        apr,
+                        positionDuration,
+                        timeStretch
+                    ),
+                    sharePrice: 2e18,
+                    initialSharePrice: 1e18,
+                    timeStretch: timeStretch,
+                    longsOutstanding: 0,
+                    longAverageTimeRemaining: 0,
+                    longBaseVolume: 0,
+                    shortsOutstanding: 10_000_000e18,
+                    shortAverageTimeRemaining: 0.3e18,
+                    shortBaseVolume: 9_800_000e18
+                });
+            (uint256 shareProceeds, uint256 withdrawalShares) = hyperdriveMath
+                .calculateLpProceeds(params, lpShares, lpTotalSupply);
+            uint256 expectedShareProceeds = params.shareReserves.mulDivDown(
+                lpShares,
+                lpTotalSupply
+            );
+            uint256 expectedWithdrawalShares = lpShares -
+                expectedShareProceeds.mulDivDown(
+                    lpTotalSupply,
+                    HyperdriveMath.calculatePresentValue(params)
+                );
+            assertEq(shareProceeds, expectedShareProceeds);
+            assertEq(withdrawalShares, expectedWithdrawalShares);
+        }
+
+        // some idle, some longs, some shorts
+        {
+            uint256 lpTotalSupply = 500_000_000e18;
+            uint256 lpShares = 20_000_000e18;
+            HyperdriveMath.PresentValueParams memory params = HyperdriveMath
+                .PresentValueParams({
+                    shareReserves: 500_000_000e18,
+                    bondReserves: calculateBondReserves(
+                        500_000_000e18,
+                        initialSharePrice,
+                        apr,
+                        positionDuration,
+                        timeStretch
+                    ),
+                    sharePrice: 2e18,
+                    initialSharePrice: 1e18,
+                    timeStretch: timeStretch,
+                    longsOutstanding: 50_000_000e18,
+                    longAverageTimeRemaining: 0.5e18,
+                    longBaseVolume: 40_000_000e18,
+                    shortsOutstanding: 10_000_000e18,
+                    shortAverageTimeRemaining: 0.3e18,
+                    shortBaseVolume: 9_800_000e18
+                });
+            (uint256 shareProceeds, uint256 withdrawalShares) = hyperdriveMath
+                .calculateLpProceeds(params, lpShares, lpTotalSupply);
+            uint256 expectedShareProceeds = (params.shareReserves -
+                params.longsOutstanding.divDown(params.sharePrice)).mulDivDown(
+                    lpShares,
+                    lpTotalSupply
+                );
+            uint256 expectedWithdrawalShares = lpShares -
+                expectedShareProceeds.mulDivDown(
+                    lpTotalSupply,
+                    HyperdriveMath.calculatePresentValue(params)
+                );
+            assertEq(shareProceeds, expectedShareProceeds);
+            assertEq(withdrawalShares, expectedWithdrawalShares);
+        }
+
+        // no idle, some longs, some shorts
+        {
+            uint256 lpTotalSupply = 500_000_000e18;
+            uint256 lpShares = 20_000_000e18;
+            HyperdriveMath.PresentValueParams memory params = HyperdriveMath
+                .PresentValueParams({
+                    shareReserves: 25_000_000e18,
+                    bondReserves: calculateBondReserves(
+                        25_000_000e18,
+                        initialSharePrice,
+                        apr,
+                        positionDuration,
+                        timeStretch
+                    ),
+                    sharePrice: 2e18,
+                    initialSharePrice: 1e18,
+                    timeStretch: timeStretch,
+                    longsOutstanding: 50_000_000e18,
+                    longAverageTimeRemaining: 0.5e18,
+                    longBaseVolume: 40_000_000e18,
+                    shortsOutstanding: 10_000_000e18,
+                    shortAverageTimeRemaining: 0.3e18,
+                    shortBaseVolume: 9_800_000e18
+                });
+            (uint256 shareProceeds, uint256 withdrawalShares) = hyperdriveMath
+                .calculateLpProceeds(params, lpShares, lpTotalSupply);
+            assertEq(shareProceeds, 0);
+            assertEq(withdrawalShares, lpShares);
+        }
     }
 }

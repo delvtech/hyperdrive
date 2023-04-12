@@ -194,17 +194,29 @@ abstract contract HyperdriveLP is HyperdriveBase {
         uint256 sharePrice = _pricePerShare();
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
 
-        // Calculate the withdrawal proceeds of the LP. This includes the base,
-        // long withdrawal shares, and short withdrawal shares that the LP
-        // receives.
-        uint256 lpTotalSupply = totalSupply[AssetId._LP_ASSET_ID];
-        uint256 shareProceeds = HyperdriveMath.calculateOutForLpSharesIn(
-            _shares,
-            marketState.shareReserves,
-            lpTotalSupply,
-            marketState.longsOutstanding,
-            sharePrice
-        );
+        // Calculate the share proceeds and withdrawal shares owed to the LP.
+        (uint256 shareProceeds, uint256 withdrawalShares) = HyperdriveMath
+            .calculateLpProceeds(
+                HyperdriveMath.PresentValueParams({
+                    shareReserves: marketState.shareReserves,
+                    bondReserves: marketState.bondReserves,
+                    sharePrice: sharePrice,
+                    initialSharePrice: initialSharePrice,
+                    timeStretch: timeStretch,
+                    longsOutstanding: marketState.longsOutstanding,
+                    longAverageTimeRemaining: _calculateTimeRemaining(
+                        uint256(longAggregates.averageMaturityTime).divUp(1e36) // scale to seconds
+                    ),
+                    longBaseVolume: longAggregates.baseVolume, // TODO: This isn't used.
+                    shortsOutstanding: marketState.shortsOutstanding,
+                    shortAverageTimeRemaining: _calculateTimeRemaining(
+                        uint256(shortAggregates.averageMaturityTime).divUp(1e36) // scale to seconds
+                    ),
+                    shortBaseVolume: shortAggregates.baseVolume
+                }),
+                _shares,
+                totalSupply[AssetId._LP_ASSET_ID]
+            );
 
         // Burn the LP shares.
         _burn(AssetId._LP_ASSET_ID, msg.sender, _shares);
@@ -212,29 +224,7 @@ abstract contract HyperdriveLP is HyperdriveBase {
         // Deduct the share proceeds from the liquidity pool reserves.
         _updateLiquidity(-int256(shareProceeds));
 
-        // Calculate the amount of unminted withdrawal shares. This is given
-        // by taking the aggregate margin in existence and subtracting the
-        // amount of withdrawal shares that have already been minted and haven't
-        // been claimed.
-        uint256 withdrawalShares = marketState.longsOutstanding -
-            longAggregates.baseVolume;
-        withdrawalShares += shortAggregates.baseVolume;
-        uint256 unclaimedWithdrawalShares = totalSupply[
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
-        ] - withdrawPool.withdrawalSharesReadyToWithdraw;
-        withdrawalShares = withdrawalShares >= unclaimedWithdrawalShares
-            ? withdrawalShares - unclaimedWithdrawalShares
-            : 0;
-
-        // Calculate the amount of withdrawal shares to mint to the LP
-        // proportional to the amount of LP shares they are burning.
-        withdrawalShares = withdrawalShares.mulDivDown(
-            _shares,
-            // NOTE: Dividing by the share price to convert shares.
-            lpTotalSupply.mulDown(sharePrice)
-        );
-
-        // Mint the withdrawal tokens.
+        // Mint the withdrawal shares to the LP.
         _mint(
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0),
             _destination,
@@ -242,16 +232,16 @@ abstract contract HyperdriveLP is HyperdriveBase {
         );
 
         // Withdraw the shares from the yield source.
-        (uint256 baseOutput, ) = _withdraw(
+        (uint256 baseProceeds, ) = _withdraw(
             shareProceeds,
             _destination,
             _asUnderlying
         );
 
         // Enforce min user outputs
-        if (_minOutput > baseOutput) revert Errors.OutputLimit();
+        if (_minOutput > baseProceeds) revert Errors.OutputLimit();
 
-        return (baseOutput, withdrawalShares);
+        return (baseProceeds, withdrawalShares);
     }
 
     /// @notice Redeems withdrawal shares if enough margin has been freed to do so.

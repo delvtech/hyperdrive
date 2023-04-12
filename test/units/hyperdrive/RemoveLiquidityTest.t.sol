@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
+// FIXME
+import "forge-std/console.sol";
+import "test/utils/Lib.sol";
+
 import { stdError } from "forge-std/StdError.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
@@ -9,6 +13,9 @@ import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
 
 contract RemoveLiquidityTest is HyperdriveTest {
+    // FIXME
+    using Lib for *;
+
     using FixedPointMath for uint256;
 
     function test_remove_liquidity_fail_zero_amount() external {
@@ -99,21 +106,37 @@ contract RemoveLiquidityTest is HyperdriveTest {
         uint256 poolApr = HyperdriveUtils.calculateAPRFromReserves(hyperdrive);
 
         // Alice removes all of her liquidity.
-        (uint256 baseProceeds, ) = removeLiquidity(alice, lpShares);
+        uint256 expectedBaseProceeds;
+        uint256 expectedWithdrawalShares;
+        {
+            (
+                expectedBaseProceeds,
+                expectedWithdrawalShares
+            ) = calculateLpProceeds(lpShares);
+            expectedBaseProceeds = expectedBaseProceeds.mulDown(
+                hyperdrive.getPoolInfo().sharePrice
+            );
+        }
+        (uint256 baseProceeds, uint256 withdrawalShares) = removeLiquidity(
+            alice,
+            lpShares
+        );
+        assertEq(baseProceeds, expectedBaseProceeds);
+        assertEq(withdrawalShares, expectedWithdrawalShares);
 
         // Ensure that the LP shares were properly accounted for.
         assertEq(hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice), 0);
         assertEq(hyperdrive.totalSupply(AssetId._LP_ASSET_ID), 0);
 
-        // Calculate how much interest has accrued on the initial contribution
+        // Ensure that Alice received the correct amount of base.
         (uint256 contributionPlusInterest, ) = HyperdriveUtils
             .calculateCompoundInterest(contribution, int256(apr), timeAdvanced);
-
-        // Ensure that Alice received the correct amount of base.
-        uint256 baseExpected = contributionPlusInterest +
-            baseAmount -
-            bondAmount;
-        assertApproxEqAbs(baseProceeds, baseExpected, 1);
+        assertApproxEqAbs(
+            expectedBaseProceeds,
+            contributionPlusInterest - (bondAmount - baseAmount),
+            1
+        );
+        assertApproxEqAbs(baseProceeds, expectedBaseProceeds, 1);
         assertApproxEqAbs(
             baseToken.balanceOf(address(hyperdrive)),
             bondAmount,
@@ -123,7 +146,6 @@ contract RemoveLiquidityTest is HyperdriveTest {
 
         // Ensure that the reserves were updated correctly.
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
-
         assertEq(
             poolInfo.shareReserves,
             bondAmount.divDown(hyperdrive.getPoolInfo().sharePrice)
@@ -131,20 +153,16 @@ contract RemoveLiquidityTest is HyperdriveTest {
         assertApproxEqAbs(
             HyperdriveUtils.calculateAPRFromReserves(hyperdrive),
             poolApr,
-            1 wei
+            1
         );
 
         // Ensure that Alice receives the right amount of withdrawal shares.
-        uint256 withdrawSharesExpected = (hyperdrive
-            .getPoolInfo()
-            .longsOutstanding - hyperdrive.getPoolInfo().longBaseVolume)
-            .divDown(poolInfo.sharePrice);
         assertEq(
             hyperdrive.balanceOf(
                 AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0),
                 alice
             ),
-            withdrawSharesExpected
+            expectedWithdrawalShares
         );
     }
 
@@ -164,21 +182,39 @@ contract RemoveLiquidityTest is HyperdriveTest {
         (, uint256 basePaid) = openShort(bob, bondAmount);
 
         // Alice removes all of her liquidity.
-        (uint256 baseProceeds, ) = removeLiquidity(alice, lpShares);
+        uint256 expectedBaseProceeds;
+        uint256 expectedWithdrawalShares;
+        {
+            (
+                expectedBaseProceeds,
+                expectedWithdrawalShares
+            ) = calculateLpProceeds(lpShares);
+            expectedBaseProceeds = expectedBaseProceeds.mulDown(
+                hyperdrive.getPoolInfo().sharePrice
+            );
+        }
+        (uint256 baseProceeds, uint256 withdrawalShares) = removeLiquidity(
+            alice,
+            lpShares
+        );
+        assertEq(baseProceeds, expectedBaseProceeds);
+        assertEq(withdrawalShares, expectedWithdrawalShares);
 
         // Ensure that the LP shares were properly accounted for.
         assertEq(hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice), 0);
         assertEq(hyperdrive.totalSupply(AssetId._LP_ASSET_ID), 0);
 
-        // Calculate how much interest has accrued on the initial contribution
+        // Ensure that Alice received the correct amount of base.
         (uint256 contributionPlusInterest, ) = HyperdriveUtils
             .calculateCompoundInterest(contribution, int256(apr), timeAdvanced);
-
-        // Ensure that Alice received the correct amount of base.
-        uint256 baseExpected = contributionPlusInterest -
-            (bondAmount - basePaid);
         // TODO: Improve this bound.
-        assertApproxEqAbs(baseProceeds, baseExpected, 3e7);
+        assertApproxEqAbs(
+            expectedBaseProceeds,
+            contributionPlusInterest - (bondAmount - basePaid),
+            3e7
+        );
+        // TODO: Improve this bound.
+        assertApproxEqAbs(baseProceeds, expectedBaseProceeds, 3e7);
         // TODO: Improve this bound.
         assertApproxEqAbs(
             baseToken.balanceOf(address(hyperdrive)),
@@ -193,15 +229,45 @@ contract RemoveLiquidityTest is HyperdriveTest {
         assertEq(poolInfo.bondReserves, 0);
 
         // Ensure that Alice receives the right amount of withdrawal shares.
-        uint256 withdrawSharesExpected = uint256(
-            hyperdrive.getPoolInfo().shortBaseVolume
-        ).divDown(poolInfo.sharePrice);
         assertEq(
             hyperdrive.balanceOf(
                 AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0),
                 alice
             ),
-            withdrawSharesExpected
+            expectedWithdrawalShares
         );
+    }
+
+    function calculateLpProceeds(
+        uint256 _lpShares
+    ) internal view returns (uint256 shareProceeds, uint256 withdrawalShares) {
+        IHyperdrive.PoolConfig memory poolConfig = hyperdrive.getPoolConfig();
+        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
+        return
+            HyperdriveMath.calculateLpProceeds(
+                HyperdriveMath.PresentValueParams({
+                    shareReserves: poolInfo.shareReserves,
+                    bondReserves: poolInfo.bondReserves,
+                    sharePrice: poolInfo.sharePrice,
+                    initialSharePrice: poolConfig.initialSharePrice,
+                    timeStretch: poolConfig.timeStretch,
+                    longsOutstanding: poolInfo.longsOutstanding,
+                    longAverageTimeRemaining: HyperdriveUtils
+                        .calculateTimeRemaining(
+                            hyperdrive,
+                            poolInfo.longAverageMaturityTime.divUp(1e36)
+                        ),
+                    longBaseVolume: poolInfo.longBaseVolume,
+                    shortsOutstanding: poolInfo.shortsOutstanding,
+                    shortAverageTimeRemaining: HyperdriveUtils
+                        .calculateTimeRemaining(
+                            hyperdrive,
+                            poolInfo.shortAverageMaturityTime.divUp(1e36)
+                        ),
+                    shortBaseVolume: poolInfo.shortBaseVolume
+                }),
+                _lpShares,
+                hyperdrive.totalSupply(AssetId._LP_ASSET_ID)
+            );
     }
 }

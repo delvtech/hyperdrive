@@ -564,25 +564,47 @@ library HyperdriveMath {
         adjustment = adjustment.divDown(_sharePrice);
     }
 
-    /// @dev Calculates the amount of base shares released from burning a
-    ///      a specified amount of LP shares from the pool.
-    /// @param _shares The amount of LP shares burned from the pool.
-    /// @param _shareReserves The pool's share reserves.
-    /// @param _lpTotalSupply The pool's total supply of LP shares.
-    /// @param _longsOutstanding The amount of longs that haven't been closed.
-    /// @param _sharePrice The pool's share price.
-    /// @return shares The amount of base shares released.
-    function calculateOutForLpSharesIn(
-        uint256 _shares,
-        uint256 _shareReserves,
-        uint256 _lpTotalSupply,
-        uint256 _longsOutstanding,
-        uint256 _sharePrice
-    ) internal pure returns (uint256 shares) {
-        // (z - o_l / c) * (dl / l)
-        shares = _shareReserves
-            .sub(_longsOutstanding.divDown(_sharePrice))
-            .mulDivDown(_shares, _lpTotalSupply);
-        return shares;
+    /// @dev Calculates the LP proceeds from burning a specified amount of
+    ///     LP shares. LPs are entitled to a proportion of the idle reserves
+    ///     and are given withdrawal shares to compensate them for the LP
+    ///     shares that could not be withdrawn immediately.
+    /// @param _params The present value parameters.
+    /// @param _lpShares The amount of LP shares to burn.
+    /// @param _lpTotalSupply The total amount of LP shares.
+    /// @return shareProceeds The shares the LP withdraws immediately.
+    /// @return withdrawalShares The withdrawal shares the LP receives.
+    function calculateLpProceeds(
+        HyperdriveMath.PresentValueParams memory _params,
+        uint256 _lpShares,
+        uint256 _lpTotalSupply
+    ) internal pure returns (uint256 shareProceeds, uint256 withdrawalShares) {
+        // TODO: This calculation likely causes an issue with double counting
+        // of interest. Fix this.
+        //
+        // Calculate the amount of the idle reserves that can be withdrawn
+        // immediately. The calculation is given by:
+        //
+        // idle = (z - (o_l / c)) * (dl / l)
+        uint256 idle = _params.shareReserves -
+            _params.longsOutstanding.divDown(_params.sharePrice);
+        shareProceeds = idle.mulDivDown(_lpShares, _lpTotalSupply);
+
+        // Calculate the amount of LP shares that weren't able to be withdrawn
+        // immediately. We first use the present value calculation to calculate
+        // the amount of LP shares that were withdrawn immediately, which is
+        // given by:
+        //
+        // lpSharesWithdrawn = dz * (l / PV)
+        //
+        // Then we simply subtract the amount of shares being burned by the
+        // amount that have already been withdrawn as follows:
+        //
+        // withdrawalShares = lpShares - lpSharesWithdrawn
+        uint256 presentValue = HyperdriveMath.calculatePresentValue(_params);
+        withdrawalShares =
+            _lpShares -
+            shareProceeds.mulDivDown(_lpTotalSupply, presentValue);
+
+        return (shareProceeds, withdrawalShares);
     }
 }
