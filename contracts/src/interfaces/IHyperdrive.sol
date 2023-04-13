@@ -2,6 +2,7 @@
 pragma solidity ^0.8.18;
 
 import "./IMultiToken.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface IHyperdrive is IMultiToken {
     // TODO: Add documentation
