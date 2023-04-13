@@ -215,7 +215,14 @@ abstract contract HyperdriveLP is HyperdriveBase {
                     shortBaseVolume: shortAggregates.baseVolume
                 }),
                 _shares,
-                totalSupply[AssetId._LP_ASSET_ID]
+                totalSupply[AssetId._LP_ASSET_ID] +
+                    totalSupply[
+                        AssetId.encodeAssetId(
+                            AssetId.AssetIdPrefix.WithdrawalShare,
+                            0
+                        )
+                    ] -
+                    withdrawPool.withdrawalSharesReadyToWithdraw
             );
 
         // Burn the LP shares.
@@ -328,6 +335,66 @@ abstract contract HyperdriveLP is HyperdriveBase {
                 .mulDivDown(marketState.shareReserves, shareReserves)
                 .toUint128();
         }
+    }
+
+    /// @dev Pays out the maximum amount of withdrawal shares given a specified
+    ///      amount of withdrawal proceeds.
+    /// @param _withdrawalProceeds The amount of withdrawal proceeds to pay out.
+    /// @param _withdrawalSharesOutstanding The amount of withdrawal shares
+    ///        that haven't been paid out.
+    /// @param _sharePrice The current share price.
+    function _applyWithdrawalProceeds(
+        uint256 _withdrawalProceeds,
+        uint256 _withdrawalSharesOutstanding,
+        uint256 _sharePrice
+    ) internal {
+        // Calculate the maximum amount of LP shares that could be paid out by
+        // the withdrawal proceeds. The calculation uses the ratio of present
+        // value to LP total supply as follows:
+        //
+        // maxSharesReleased = withdrawalProceeds * (l / PV)
+        uint256 presentValue = HyperdriveMath.calculatePresentValue(
+            HyperdriveMath.PresentValueParams({
+                shareReserves: marketState.shareReserves,
+                bondReserves: marketState.bondReserves,
+                sharePrice: _sharePrice,
+                initialSharePrice: initialSharePrice,
+                timeStretch: timeStretch,
+                longsOutstanding: marketState.longsOutstanding,
+                longAverageTimeRemaining: _calculateTimeRemaining(
+                    uint256(longAggregates.averageMaturityTime).divUp(1e36) // scale to seconds
+                ),
+                longBaseVolume: longAggregates.baseVolume, // TODO: This isn't used.
+                shortsOutstanding: marketState.shortsOutstanding,
+                shortAverageTimeRemaining: _calculateTimeRemaining(
+                    uint256(shortAggregates.averageMaturityTime).divUp(1e36) // scale to seconds
+                ),
+                shortBaseVolume: shortAggregates.baseVolume
+            })
+        );
+        uint256 lpTotalSupply = totalSupply[AssetId._LP_ASSET_ID] +
+            _withdrawalSharesOutstanding;
+        uint256 maxSharesReleased = _withdrawalProceeds.mulDivDown(
+            lpTotalSupply,
+            presentValue
+        );
+
+        // Calculate the amount of withdrawal shares that will be released and
+        // the amount of capital that will be used to pay out the withdrawal
+        // pool.
+        uint256 sharesReleased = maxSharesReleased <=
+            _withdrawalSharesOutstanding
+            ? maxSharesReleased
+            : _withdrawalSharesOutstanding;
+        uint256 withdrawalPoolProceeds = _withdrawalProceeds.mulDivDown(
+            sharesReleased,
+            maxSharesReleased
+        );
+        withdrawPool.withdrawalSharesReadyToWithdraw += uint128(sharesReleased);
+        withdrawPool.capital += uint128(withdrawalPoolProceeds);
+
+        // Remove the withdrawal pool proceeds from the reserves.
+        _updateLiquidity(-int256(withdrawalPoolProceeds));
     }
 
     /// @dev Moves capital into the withdrawal pool and marks shares ready to withdraw.

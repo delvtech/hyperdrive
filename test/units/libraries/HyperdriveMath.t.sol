@@ -1219,7 +1219,6 @@ contract HyperdriveMathTest is Test {
         assertEq(lpAllocationAdjustment, 2 ether);
     }
 
-    // FIXME: Test this thoroughly.
     function test__calculateLpProceeds() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();

@@ -41,8 +41,11 @@ interface IHyperdrive is IMultiToken {
 
     // TODO: Add documentation
     struct WithdrawPool {
+        // FIXME: Rename this.
         uint128 withdrawalSharesReadyToWithdraw;
+        // FIXME: Rename these variables. They'll need to be recomputed anyways.
         uint128 capital;
+        // FIXME: Remove this variable.
         uint128 interest;
     }
 

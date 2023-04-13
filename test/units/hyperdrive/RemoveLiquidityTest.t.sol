@@ -1,10 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-// FIXME
-import "forge-std/console.sol";
-import "test/utils/Lib.sol";
-
 import { stdError } from "forge-std/StdError.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
@@ -13,9 +9,6 @@ import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
 
 contract RemoveLiquidityTest is HyperdriveTest {
-    // FIXME
-    using Lib for *;
-
     using FixedPointMath for uint256;
 
     function test_remove_liquidity_fail_zero_amount() external {
