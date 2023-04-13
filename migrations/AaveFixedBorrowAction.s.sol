@@ -35,6 +35,9 @@ contract AaveFixedBorrowActionScript is Script {
         );
 
         // Set approvals for supplying, borrowing and shorting
+        // Note: Forge struggles with the number the txs in this script. You may
+        // have to run it again, commenting out lines that don't need to be
+        // repeated, in order to complete the migration.
         IERC20 wsteth = IERC20(
             address(0x6E4F1e8d4c5E5E6e2781FD814EE0744cc16Eb352)
         );

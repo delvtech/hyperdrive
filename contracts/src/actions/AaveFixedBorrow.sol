@@ -8,6 +8,7 @@ import { ICreditDelegationToken } from "@aave/interfaces/ICreditDelegationToken.
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { DataTypes } from "@aave/protocol/libraries/types/DataTypes.sol";
+import { AssetId } from "../libraries/AssetId.sol";
 
 contract AaveFixedBorrowAction {
     // Hyperdrive contract
@@ -18,6 +19,16 @@ contract AaveFixedBorrowAction {
     IERC20 public debtToken;
     /// Token which tracks users variable debt
     ICreditDelegationToken public variableDebtToken;
+
+    event SupplyBorrowAndOpenShort(
+        uint256 shortId,
+        uint256 costOfShort,
+        address indexed who,
+        address collateralToken,
+        uint256 collateralDeposited,
+        address borrowToken,
+        uint256 borrowAmount
+    );
 
     constructor(IHyperdrive _hyperdrive, IPool _pool) {
         // Assign variables
@@ -64,7 +75,9 @@ contract AaveFixedBorrowAction {
         );
 
         // Supply the aave pool with collateral on behalf of user.
-        pool.supply(_collateralToken, _supplyAmount, msg.sender, 0);
+        if (_supplyAmount > 0) {
+            pool.supply(_collateralToken, _supplyAmount, msg.sender, 0);
+        }
 
         // Borrow the users requested _borrowAmount and _maxDeposit so the
         // amount of base the user receives and the amount of base the user
@@ -98,6 +111,21 @@ contract AaveFixedBorrowAction {
 
         // Transfer borrowAmount of base to user
         debtToken.transfer(msg.sender, _borrowAmount);
+
+        uint256 shortId = AssetId.encodeAssetId(
+            AssetId.AssetIdPrefix.Short,
+            _latestCheckpoint()
+        );
+
+        emit SupplyBorrowAndOpenShort(
+            shortId,
+            baseDeposited,
+            msg.sender,
+            _collateralToken,
+            _supplyAmount,
+            address(debtToken),
+            _borrowAmount
+        );
     }
 
     /// TODO Change to admin only function
@@ -114,5 +142,17 @@ contract AaveFixedBorrowAction {
         uint256 _amount
     ) public {
         IERC20(_token).approve(_spender, _amount);
+    }
+
+    /// @dev Gets the most recent checkpoint time.
+    /// @return latestCheckpoint The latest checkpoint.
+    function _latestCheckpoint()
+        internal
+        view
+        returns (uint256 latestCheckpoint)
+    {
+        return
+            block.timestamp -
+            (block.timestamp % hyperdrive.getPoolConfig().checkpointDuration);
     }
 }
