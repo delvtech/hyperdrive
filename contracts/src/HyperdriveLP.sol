@@ -124,7 +124,7 @@ abstract contract HyperdriveLP is HyperdriveBase {
             totalSupply[
                 AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
             ] -
-            withdrawPool.withdrawalSharesReadyToWithdraw;
+            withdrawPool.readyToWithdraw;
         if (lpTotalSupply > 0) {
             // Calculate the present value before updating the reserves.
             HyperdriveMath.PresentValueParams memory params = HyperdriveMath
@@ -240,7 +240,7 @@ abstract contract HyperdriveLP is HyperdriveBase {
                             0
                         )
                     ] -
-                    withdrawPool.withdrawalSharesReadyToWithdraw
+                    withdrawPool.readyToWithdraw
             );
 
         // Burn the LP shares.
@@ -269,8 +269,11 @@ abstract contract HyperdriveLP is HyperdriveBase {
         return (baseProceeds, withdrawalShares);
     }
 
-    /// @notice Redeems withdrawal shares if enough margin has been freed to do so.
-    /// @param _shares The withdrawal shares to redeem
+    /// @notice Redeems withdrawal shares by giving the LP a pro-rata amount of
+    ///         the withdrawal pool's proceeds. This function redeems the
+    ///         maximum amount of the specified withdrawal shares given the
+    ///         amount of withdrawal shares ready to withdraw.
+    /// @param _shares The withdrawal shares to redeem.
     /// @param _minOutput The minimum amount of base the LP expects to receive.
     /// @param _destination The address which receive the withdraw proceeds
     /// @param _asUnderlying If true the user is paid in underlying if false
@@ -289,9 +292,9 @@ abstract contract HyperdriveLP is HyperdriveBase {
 
         // Clamp the shares to the total amount of shares ready for withdrawal
         // to avoid unnecessary reverts.
-        _shares = _shares <= withdrawPool.withdrawalSharesReadyToWithdraw
+        _shares = _shares <= withdrawPool.readyToWithdraw
             ? _shares
-            : withdrawPool.withdrawalSharesReadyToWithdraw;
+            : withdrawPool.readyToWithdraw;
 
         // We burn the shares from the user
         _burn(
@@ -300,33 +303,18 @@ abstract contract HyperdriveLP is HyperdriveBase {
             _shares
         );
 
-        // The user gets a refund on their margin equal to the face
-        // value of their withdraw shares times the percent of the withdraw
-        // pool which has been lost.
-        uint256 recoveredMargin = _shares.mulDivDown(
-            uint128(withdrawPool.capital),
-            uint128(withdrawPool.withdrawalSharesReadyToWithdraw)
-        );
-        // The user gets interest equal to their percent of the withdraw pool
-        // times the withdraw pool interest
-        uint256 recoveredInterest = _shares.mulDivDown(
-            uint128(withdrawPool.interest),
-            uint128(withdrawPool.withdrawalSharesReadyToWithdraw)
+        // The LP gets the pro-rata amount of the collected proceeds.
+        uint256 proceeds = _shares.mulDivDown(
+            uint128(withdrawPool.proceeds),
+            uint128(withdrawPool.readyToWithdraw)
         );
 
-        // Update the pool state
-        // Note - Will revert here if not enough margin has been reclaimed by checkpoints or
-        //        by position closes
-        withdrawPool.withdrawalSharesReadyToWithdraw -= uint128(_shares);
-        withdrawPool.capital -= uint128(recoveredMargin);
-        withdrawPool.interest -= uint128(recoveredInterest);
+        // Apply the update to the withdrawal pool.
+        withdrawPool.readyToWithdraw -= uint128(_shares);
+        withdrawPool.proceeds -= uint128(proceeds);
 
         // Withdraw for the user
-        (_proceeds, ) = _withdraw(
-            recoveredMargin + recoveredInterest,
-            _destination,
-            _asUnderlying
-        );
+        (_proceeds, ) = _withdraw(proceeds, _destination, _asUnderlying);
 
         // Enforce min user outputs
         if (_minOutput > _proceeds) revert Errors.OutputLimit();
@@ -408,63 +396,10 @@ abstract contract HyperdriveLP is HyperdriveBase {
             sharesReleased,
             maxSharesReleased
         );
-        withdrawPool.withdrawalSharesReadyToWithdraw += uint128(sharesReleased);
-        withdrawPool.capital += uint128(withdrawalPoolProceeds);
+        withdrawPool.readyToWithdraw += uint128(sharesReleased);
+        withdrawPool.proceeds += uint128(withdrawalPoolProceeds);
 
         // Remove the withdrawal pool proceeds from the reserves.
         _updateLiquidity(-int256(withdrawalPoolProceeds));
-    }
-
-    /// @dev Moves capital into the withdrawal pool and marks shares ready to withdraw.
-    /// @param freedCapital The amount of capital to add to the withdraw pool, must not be more than the max capital
-    /// @param maxCapital The margin which the LP used to back the position which is being closed.
-    /// @param interest The interest earned by this margin position, fixed interest for LP shorts and variable for longs.
-    /// @return (the capital added to the withdraw pool, the interest added to the interest pool)
-    function _freeMargin(
-        uint256 freedCapital,
-        uint256 maxCapital,
-        uint256 interest
-    ) internal returns (uint256, uint256) {
-        // If we don't have capital to free then simply return zero
-        uint256 withdrawShareSupply = totalSupply[
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
-        ];
-        if (
-            withdrawShareSupply <= withdrawPool.withdrawalSharesReadyToWithdraw
-        ) {
-            return (0, 0);
-        }
-        // If we have more capital freed than needed we adjust down all values
-        if (
-            maxCapital + uint256(withdrawPool.withdrawalSharesReadyToWithdraw) >
-            uint256(withdrawShareSupply)
-        ) {
-            // In this case we want maxCapital*adjustment + withdrawPool.withdrawalSharesReadyToWithdraw = withdrawShareSupply
-            // so adjustment = (withdrawShareSupply - withdrawPool.withdrawalSharesReadyToWithdraw)/maxCapital
-            // We adjust maxCapital and do corresponding reduction in freedCapital and interest
-            uint256 adjustment = uint256(
-                withdrawShareSupply -
-                    withdrawPool.withdrawalSharesReadyToWithdraw
-            ).divDown(maxCapital);
-            freedCapital = freedCapital.mulDown(adjustment);
-            interest = interest.mulDown(adjustment);
-            maxCapital = maxCapital.mulDown(adjustment);
-        }
-
-        // Now we update the withdraw pool.
-        withdrawPool.withdrawalSharesReadyToWithdraw += maxCapital.toUint128();
-        withdrawPool.capital += freedCapital.toUint128();
-        withdrawPool.interest += interest.toUint128();
-        // Finally return the amount used by this action and the caller can update reserves.
-        return (freedCapital, interest);
-    }
-
-    /// @dev Checks if margin needs to be freed.
-    /// @return Returns true if margin needs to be freed.
-    function _needsToBeFreed() internal view returns (bool) {
-        return
-            totalSupply[
-                AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
-            ] > uint256(withdrawPool.withdrawalSharesReadyToWithdraw);
     }
 }

@@ -39,14 +39,12 @@ interface IHyperdrive is IMultiToken {
         uint128 shortBaseVolume;
     }
 
+    // FIXME: Fix the documentation in this PR.
+    //
     // TODO: Add documentation
     struct WithdrawPool {
-        // FIXME: Rename this.
-        uint128 withdrawalSharesReadyToWithdraw;
-        // FIXME: Rename these variables. They'll need to be recomputed anyways.
-        uint128 capital;
-        // FIXME: Remove this variable.
-        uint128 interest;
+        uint128 readyToWithdraw;
+        uint128 proceeds;
     }
 
     // TODO: Add documentation
@@ -96,10 +94,8 @@ interface IHyperdrive is IMultiToken {
         uint256 shortBaseVolume;
         /// @dev The amount of withdrawal shares that are ready to be redeemed.
         uint256 withdrawalSharesReadyToWithdraw;
-        /// @dev The amount of margin recovered by the withdrawal pool.
-        uint256 capital;
-        /// @dev The amount of interest accrued to the withdrawal pool.
-        uint256 interest;
+        /// @dev The proceeds recovered by the withdrawal pool.
+        uint256 withdrawalSharesProceeds;
     }
 
     function baseToken() external view returns (address);

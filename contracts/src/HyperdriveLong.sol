@@ -319,7 +319,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // every trade.
         uint256 withdrawalSharesOutstanding = totalSupply[
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
-        ] - withdrawPool.withdrawalSharesReadyToWithdraw;
+        ] - withdrawPool.readyToWithdraw;
         if (withdrawalSharesOutstanding > 0) {
             // TODO: Test this logic to ensure that opening and closing a long
             // doesn't unfairly treat the withdrawal pool. There are concerns

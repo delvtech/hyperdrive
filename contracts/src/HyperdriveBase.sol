@@ -220,10 +220,8 @@ abstract contract HyperdriveBase is MultiToken {
                 shortsOutstanding: marketState.shortsOutstanding,
                 shortAverageMaturityTime: shortAggregates.averageMaturityTime,
                 shortBaseVolume: shortAggregates.baseVolume,
-                withdrawalSharesReadyToWithdraw: withdrawPool
-                    .withdrawalSharesReadyToWithdraw,
-                capital: withdrawPool.capital,
-                interest: withdrawPool.interest
+                withdrawalSharesReadyToWithdraw: withdrawPool.readyToWithdraw,
+                withdrawalSharesProceeds: withdrawPool.proceeds
             });
     }
 
