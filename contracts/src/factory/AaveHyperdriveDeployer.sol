@@ -6,10 +6,6 @@ import "../interfaces/IHyperdrive.sol";
 import "../interfaces/IHyperdriveDeployer.sol";
 import { IPool } from "@aave/interfaces/IPool.sol";
 
-/// This is a minimal factory which contains only the logic to deploy hyperdrive
-/// and is called by a more complex factory which also initializes hyperdrives.
-/// We use two contracts to avoid any code size limit issues with Hyperdrive
-
 interface IAToken {
     function UNDERLYING_ASSET_ADDRESS() external view returns (address);
 }
