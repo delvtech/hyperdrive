@@ -14,6 +14,14 @@ interface IAToken {
     function UNDERLYING_ASSET_ADDRESS() external view returns (address);
 }
 
+/// @author DELV
+/// @title AaveHyperdriveDeployer
+/// @notice This is a minimal factory which contains only the logic to deploy hyperdrive
+///                and is called by a more complex factory which also initializes hyperdrives.
+/// @dev We use two contracts to avoid any code size limit issues with Hyperdrive.
+/// @custom:disclaimer The language used in this code is for coding convenience
+///                    only, and is not intended to, and does not, have any
+///                    particular legal or regulatory significance.
 contract AaveHyperdriveDeployer is IHyperdriveDeployer {
 
     IPool immutable pool;
