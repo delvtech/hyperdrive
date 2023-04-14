@@ -34,6 +34,9 @@ jobs:
         with:
           version: nightly
 
+      - name: Log files
+        run: ls contracts/src/factory
+
       - name: test forge
         run: forge test -vvv
 
