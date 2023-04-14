@@ -19,7 +19,6 @@ interface IAToken {
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract AaveHyperdriveDeployer is IHyperdriveDeployer {
-
     IPool immutable pool;
 
     constructor(IPool _pool) {
@@ -53,7 +52,7 @@ contract AaveHyperdriveDeployer is IHyperdriveDeployer {
         IHyperdrive.Fees memory _fees,
         address _governance,
         bytes32[] calldata _extraData
-    ) external override returns(address) {
+    ) external override returns (address) {
         // We force convert
         bytes32 loaded = _extraData[0];
         IERC20 aToken;
@@ -62,20 +61,20 @@ contract AaveHyperdriveDeployer is IHyperdriveDeployer {
         }
         // Need a hard convert cause no direct bytes32 -> address
         return (
-                address(
-                    new AaveHyperdrive(
-                        _linkerCodeHash, 
-                        _linkerFactory,
-                        _baseToken,
-                        _checkpointsPerTerm, 
-                        _checkpointDuration, 
-                        _timeStretch,
-                        aToken,
-                        pool,
-                        _fees,
-                        _governance
-                    )
+            address(
+                new AaveHyperdrive(
+                    _linkerCodeHash,
+                    _linkerFactory,
+                    _baseToken,
+                    _checkpointsPerTerm,
+                    _checkpointDuration,
+                    _timeStretch,
+                    aToken,
+                    pool,
+                    _fees,
+                    _governance
                 )
-            );
+            )
+        );
     }
 }

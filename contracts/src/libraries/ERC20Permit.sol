@@ -22,8 +22,8 @@ abstract contract ERC20Permit is IERC20Permit {
     // A mapping which tracks the permit signature nonces for users
     mapping(address => uint256) public override nonces;
 
-    function totalSupply() public override pure returns(uint256) {
-        return(0);
+    function totalSupply() public pure override returns (uint256) {
+        return (0);
     }
 
     // --- EIP712 niceties ---

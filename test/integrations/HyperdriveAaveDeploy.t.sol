@@ -9,7 +9,7 @@ import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
 import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {FixedPointMath} from "contracts/src/libraries/FixedPointMath.sol";
+import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { IPool } from "@aave/interfaces/IPool.sol";
 import "forge-std/console.sol";
 
@@ -26,12 +26,10 @@ contract HyperdriveDSRTest is HyperdriveTest {
 
         vm.startPrank(deployer);
 
-        AaveHyperdriveDeployer simpleDeployer = new AaveHyperdriveDeployer(pool);
-        factory = new HyperdriveFactory(
-            alice, 
-            simpleDeployer,
-            bob
-        );  
+        AaveHyperdriveDeployer simpleDeployer = new AaveHyperdriveDeployer(
+            pool
+        );
+        factory = new HyperdriveFactory(alice, simpleDeployer, bob);
 
         vm.stopPrank();
 
@@ -50,8 +48,9 @@ contract HyperdriveDSRTest is HyperdriveTest {
     }
 
     function test_aave_factory_should_be_mainnet_deployable() external {
-
-        AaveHyperdriveDeployer simpleDeployer = new AaveHyperdriveDeployer(pool);
+        AaveHyperdriveDeployer simpleDeployer = new AaveHyperdriveDeployer(
+            pool
+        );
         uint256 codeSize;
         assembly {
             codeSize := extcodesize(simpleDeployer)
@@ -60,7 +59,6 @@ contract HyperdriveDSRTest is HyperdriveTest {
         assertGt(codeSize, 0, "Must have code");
         assertLt(codeSize, 24576, "Not Mainnet deployable");
     }
-
 
     function test_hyperdrive_aave_deploy_and_init() external {
         setUp();
@@ -91,7 +89,7 @@ contract HyperdriveDSRTest is HyperdriveTest {
             1e16
         );
 
-        // The initial price per share is one so we should have that the 
+        // The initial price per share is one so we should have that the
         // shares in the alice account are 1
         uint256 createdShares = hyperdrive.balanceOf(
             AssetId._LP_ASSET_ID,

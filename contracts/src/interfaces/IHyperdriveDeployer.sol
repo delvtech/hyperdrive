@@ -16,5 +16,5 @@ interface IHyperdriveDeployer {
         IHyperdrive.Fees memory _fees,
         address _governance,
         bytes32[] memory _extraData
-    ) external returns(address);
+    ) external returns (address);
 }

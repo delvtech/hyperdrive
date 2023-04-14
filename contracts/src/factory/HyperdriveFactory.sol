@@ -12,7 +12,6 @@ import "../libraries/Errors.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract HyperdriveFactory {
-
     // The address of the hyperdrive deployer of the most recent code.
     IHyperdriveDeployer public hyperdriveDeployer;
     // The address which coordinates upgrades of the official version of the code
@@ -29,13 +28,16 @@ contract HyperdriveFactory {
     /// @param _governance The address which can update this factory.
     /// @param _deployer The contract which holds the bytecode and deploys new versions.
     /// @param _hyperdriveGovernance The address which is set as the governor of hyperdrive
-    constructor(address _governance, IHyperdriveDeployer _deployer, address _hyperdriveGovernance) {
+    constructor(
+        address _governance,
+        IHyperdriveDeployer _deployer,
+        address _hyperdriveGovernance
+    ) {
         governance = _governance;
         hyperdriveDeployer = _deployer;
         versionCounter = 1;
         hyperdriveGovernance = _hyperdriveGovernance;
     }
-
 
     /// @notice Allows governance to deploy new versions
     /// @param newDeployer The new deployment contract
@@ -86,31 +88,28 @@ contract HyperdriveFactory {
         bytes32[] memory _extraData,
         uint256 _contribution,
         uint256 _apr
-    ) external returns(IHyperdrive) {
+    ) external returns (IHyperdrive) {
         // First we call the simplified factory
-        IHyperdrive hyperdrive = IHyperdrive(hyperdriveDeployer.deploy(
-            _linkerCodeHash,
-            _linkerFactory,
-            _baseToken,
-            _initialSharePrice,
-            _checkpointsPerTerm,
-            _checkpointDuration,
-            _timeStretch,
-            _fees,
-            hyperdriveGovernance,
-            _extraData
-        ));
+        IHyperdrive hyperdrive = IHyperdrive(
+            hyperdriveDeployer.deploy(
+                _linkerCodeHash,
+                _linkerFactory,
+                _baseToken,
+                _initialSharePrice,
+                _checkpointsPerTerm,
+                _checkpointDuration,
+                _timeStretch,
+                _fees,
+                hyperdriveGovernance,
+                _extraData
+            )
+        );
 
         // Then start the process to init
         _baseToken.transferFrom(msg.sender, address(this), _contribution);
         _baseToken.approve(address(hyperdrive), type(uint256).max);
         // Initialize
-        hyperdrive.initialize(
-            _contribution,
-            _apr,
-            msg.sender,
-            true
-        );
+        hyperdrive.initialize(_contribution, _apr, msg.sender, true);
 
         // Mark as a version
         isOfficial[address(hyperdrive)] = versionCounter;
