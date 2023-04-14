@@ -15,7 +15,6 @@ import { DsrManager } from "../interfaces/IMaker.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract MakerDsrHyperdriveDeployer is IHyperdriveDeployer {
-
     DsrManager immutable dsrManager;
 
     constructor(DsrManager _dsrManager) {
@@ -46,7 +45,7 @@ contract MakerDsrHyperdriveDeployer is IHyperdriveDeployer {
         IHyperdrive.Fees memory _fees,
         address _governance,
         bytes32[] calldata
-    ) external override returns(address) {
+    ) external override returns (address) {
         return (
             address(
                 new MakerDsrHyperdrive(
