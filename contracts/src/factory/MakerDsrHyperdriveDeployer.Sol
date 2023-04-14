@@ -6,10 +6,14 @@ import "../interfaces/IHyperdrive.sol";
 import "../interfaces/IHyperdriveDeployer.sol";
 import { DsrManager } from "../interfaces/IMaker.sol";
 
-/// This is a minimal factory which contains only the logic to deploy hyperdrive
-/// and is called by a more complex factory which also initializes hyperdrives.
-/// We use two contracts to avoid any code size limit issues with Hyperdrive
-
+/// @author DELV
+/// @title MakerDsrHyperdriveFactory
+/// @notice This is a minimal factory which contains only the logic to deploy hyperdrive
+///                 and is called by a more complex factory which also initializes hyperdrives.
+/// @dev We use two contracts to avoid any code size limit issues with Hyperdrive.
+/// @custom:disclaimer The language used in this code is for coding convenience
+///                    only, and is not intended to, and does not, have any
+///                    particular legal or regulatory significance.
 contract MakerDsrHyperdriveDeployer is IHyperdriveDeployer {
 
     DsrManager immutable dsrManager;
