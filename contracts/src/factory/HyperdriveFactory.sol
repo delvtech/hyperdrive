@@ -4,8 +4,13 @@ pragma solidity ^0.8.18;
 import "../interfaces/IHyperdriveDeployer.sol";
 import "../libraries/Errors.sol";
 
-/// Deploys hyperdrive instances and initializes them. It also holds a registry of all deployed hyperdrive
-/// instances
+/// @author DELV
+/// @title HyperdriveFactory
+/// @notice Deploys hyperdrive instances and initializes them. It also holds a registry of
+///                all deployed hyperdrive instances.
+/// @custom:disclaimer The language used in this code is for coding convenience
+///                    only, and is not intended to, and does not, have any
+///                    particular legal or regulatory significance.
 contract HyperdriveFactory {
 
     // The address of the hyperdrive deployer of the most recent code.
