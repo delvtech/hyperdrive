@@ -198,21 +198,6 @@ contract MockHyperdriveMath {
         return result;
     }
 
-    function calculateLpAllocationAdjustment(
-        uint256 _positionsOutstanding,
-        uint256 _baseVolume,
-        uint256 _averageTimeRemaining,
-        uint256 _sharePrice
-    ) external pure returns (uint256) {
-        uint256 result = HyperdriveMath.calculateLpAllocationAdjustment(
-            _positionsOutstanding,
-            _baseVolume,
-            _averageTimeRemaining,
-            _sharePrice
-        );
-        return result;
-    }
-
     function calculateLpProceeds(
         HyperdriveMath.PresentValueParams memory _params,
         uint256 _lpShares,

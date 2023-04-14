@@ -540,30 +540,6 @@ library HyperdriveMath {
         ).divDown(_timeRemaining);
     }
 
-    /// @dev Computes the LP allocation adjustment for a position. This is used
-    ///      to accurately account for the duration risk that LPs take on when
-    ///      adding liquidity so that LP shares can be rewarded fairly.
-    /// @param _positionsOutstanding The position balance outstanding.
-    /// @param _baseVolume The base volume created by opening the positions.
-    /// @param _averageTimeRemaining The average time remaining of the positions.
-    /// @param _sharePrice The pool's share price.
-    /// @return adjustment The allocation adjustment.
-    function calculateLpAllocationAdjustment(
-        uint256 _positionsOutstanding,
-        uint256 _baseVolume,
-        uint256 _averageTimeRemaining,
-        uint256 _sharePrice
-    ) internal pure returns (uint256 adjustment) {
-        // baseAdjustment = t * _baseVolume + (1 - t) * _positionsOutstanding
-        adjustment = (_averageTimeRemaining.mulDown(_baseVolume)).add(
-            (FixedPointMath.ONE_18.sub(_averageTimeRemaining)).mulDown(
-                _positionsOutstanding
-            )
-        );
-        // adjustment = baseAdjustment / c
-        adjustment = adjustment.divDown(_sharePrice);
-    }
-
     /// @dev Calculates the LP proceeds from burning a specified amount of
     ///     LP shares. LPs are entitled to a proportion of the idle reserves
     ///     and are given withdrawal shares to compensate them for the LP

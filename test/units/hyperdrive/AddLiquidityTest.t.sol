@@ -76,120 +76,220 @@ contract AddLiquidityTest is HyperdriveTest {
         assertApproxEqAbs(poolApr, apr, 1);
     }
 
-    function test_add_liquidity_with_long_immediately() external {
+    function test_add_liquidity_with_long_at_open() external {
         uint256 apr = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
-        uint256 lpSupplyBefore = hyperdrive.totalSupply(AssetId._LP_ASSET_ID);
+        uint256 aliceLpShares = initialize(alice, apr, contribution);
 
         // Celine opens a long.
-        openLong(celine, 50_000_000e18);
+        uint256 basePaid = 50_000_000e18;
+        (uint256 maturityTime, uint256 longAmount) = openLong(celine, basePaid);
+
+        // Get Alice's withdrawal proceeds if the long is closed immediately.
+        uint256 aliceWithdrawalProceeds;
+        {
+            uint256 snapshotId = vm.snapshot();
+
+            // Close the long and remove Alice's liquidity.
+            closeLong(celine, maturityTime, longAmount);
+            (aliceWithdrawalProceeds, ) = removeLiquidity(alice, aliceLpShares);
+
+            vm.revertTo(snapshotId);
+        }
 
         // Add liquidity with the same amount as the original contribution.
         uint256 aprBefore = HyperdriveUtils.calculateAPRFromReserves(
             hyperdrive
         );
-        uint256 baseBalance = baseToken.balanceOf(address(hyperdrive));
-        uint256 lpShares = addLiquidity(bob, contribution);
+        uint256 baseBalanceBefore = baseToken.balanceOf(address(hyperdrive));
+        uint256 presentValueRatioBefore = presentValueRatio();
+        uint256 bobLpShares = addLiquidity(bob, contribution);
+
+        // Ensure that adding liquidity didn't change Alice's LP share balance.
+        assertEq(
+            hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
+            aliceLpShares
+        );
+
+        // Ensure that the present value ratio was preserved.
+        assertEq(presentValueRatio(), presentValueRatioBefore);
 
         // Ensure that the contribution was transferred to Hyperdrive.
         assertEq(baseToken.balanceOf(bob), 0);
         assertEq(
             baseToken.balanceOf(address(hyperdrive)),
-            baseBalance.add(contribution)
-        );
-
-        // Ensure that the new LP receives the same amount of LP shares as
-        // the initializer.
-        assertEq(lpShares, lpSupplyBefore);
-        assertEq(
-            hyperdrive.totalSupply(AssetId._LP_ASSET_ID),
-            lpSupplyBefore * 2
+            baseBalanceBefore + contribution
         );
 
         // Ensure the pool APR is still approximately equal to the target APR.
         uint256 aprAfter = HyperdriveUtils.calculateAPRFromReserves(hyperdrive);
         assertApproxEqAbs(aprAfter, aprBefore, 1);
+
+        // Close Celine's long.
+        uint256 longProceeds = closeLong(celine, maturityTime, longAmount);
+
+        // Ensure that Alice's withdrawal proceeds are equivalent to what they
+        // would have been had Bob not added liquidity.
+        (uint256 withdrawalProceeds, ) = removeLiquidity(alice, aliceLpShares);
+        assertEq(withdrawalProceeds, aliceWithdrawalProceeds);
+
+        // Ensure that Bob received his contribution minus Celine's profits.
+        (withdrawalProceeds, ) = removeLiquidity(bob, bobLpShares);
+        assertApproxEqAbs(
+            withdrawalProceeds,
+            contribution - (longProceeds - basePaid),
+            1e10
+        );
+
+        // Ensure that all of the capital has been removed from the system.
+        assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1);
     }
 
-    function test_add_liquidity_with_short_immediately() external {
+    function test_add_liquidity_with_short_at_open() external {
         uint256 apr = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
-        uint256 lpSupplyBefore = hyperdrive.totalSupply(AssetId._LP_ASSET_ID);
+        uint256 aliceLpShares = initialize(alice, apr, contribution);
 
         // Celine opens a short.
-        openShort(celine, 50_000_000e18);
+        uint256 shortAmount = 50_000_000e18;
+        (uint256 maturityTime, uint256 basePaid) = openShort(
+            celine,
+            shortAmount
+        );
+
+        // Get Alice's withdrawal proceeds if the short is closed immediately.
+        uint256 aliceWithdrawalProceeds;
+        {
+            uint256 snapshotId = vm.snapshot();
+
+            // Close the short and remove Alice's liquidity.
+            closeShort(celine, maturityTime, shortAmount);
+            (aliceWithdrawalProceeds, ) = removeLiquidity(alice, aliceLpShares);
+
+            vm.revertTo(snapshotId);
+        }
 
         // Add liquidity with the same amount as the original contribution.
         uint256 aprBefore = HyperdriveUtils.calculateAPRFromReserves(
             hyperdrive
         );
-        uint256 baseBalance = baseToken.balanceOf(address(hyperdrive));
-        uint256 lpShares = addLiquidity(bob, contribution);
+        uint256 baseBalanceBefore = baseToken.balanceOf(address(hyperdrive));
+        uint256 presentValueRatioBefore = presentValueRatio();
+        uint256 bobLpShares = addLiquidity(bob, contribution);
+
+        // Ensure that adding liquidity didn't change Alice's LP share balance.
+        assertEq(
+            hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
+            aliceLpShares
+        );
+
+        // Ensure that the present value ratio was preserved.
+        assertEq(presentValueRatio(), presentValueRatioBefore);
 
         // Ensure that the contribution was transferred to Hyperdrive.
         assertEq(baseToken.balanceOf(bob), 0);
         assertEq(
             baseToken.balanceOf(address(hyperdrive)),
-            baseBalance.add(contribution)
-        );
-
-        // Ensure that the new LP receives the same amount of LP shares as
-        // the initializer.
-        assertEq(lpShares, lpSupplyBefore);
-        assertEq(
-            hyperdrive.totalSupply(AssetId._LP_ASSET_ID),
-            lpSupplyBefore * 2
+            baseBalanceBefore.add(contribution)
         );
 
         // Ensure the pool APR is still approximately equal to the target APR.
         uint256 aprAfter = HyperdriveUtils.calculateAPRFromReserves(hyperdrive);
         assertApproxEqAbs(aprAfter, aprBefore, 1);
+
+        // Close Celine's short.
+        uint256 shortProceeds = closeShort(celine, maturityTime, shortAmount);
+
+        // Ensure that Alice's withdrawal proceeds are equivalent to what they
+        // would have been had Bob not added liquidity.
+        (uint256 withdrawalProceeds, ) = removeLiquidity(alice, aliceLpShares);
+        assertEq(withdrawalProceeds, aliceWithdrawalProceeds);
+
+        // Ensure that Bob received his contribution minus Celine's profits.
+        (withdrawalProceeds, ) = removeLiquidity(bob, bobLpShares);
+        assertApproxEqAbs(
+            withdrawalProceeds,
+            contribution - (shortProceeds - basePaid),
+            1e10
+        );
+
+        // Ensure that all of the capital has been removed from the system.
+        assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1);
     }
 
+    // FIXME
     function test_add_liquidity_with_long_at_maturity() external {
         uint256 apr = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
-        hyperdrive.totalSupply(AssetId._LP_ASSET_ID);
+        uint256 aliceLpShares = initialize(alice, apr, contribution);
 
         // Celine opens a long.
-        openLong(celine, 50_000_000e18);
+        uint256 basePaid = 50_000_000e18;
+        (uint256 maturityTime, uint256 longAmount) = openLong(celine, basePaid);
 
         // The term passes.
         vm.warp(block.timestamp + POSITION_DURATION);
+
+        // Get Alice's withdrawal proceeds if the long is closed immediately.
+        uint256 aliceWithdrawalProceeds;
+        {
+            uint256 snapshotId = vm.snapshot();
+
+            // Close the long and remove Alice's liquidity.
+            closeLong(celine, maturityTime, longAmount);
+            (aliceWithdrawalProceeds, ) = removeLiquidity(alice, aliceLpShares);
+
+            vm.revertTo(snapshotId);
+        }
 
         // Add liquidity with the same amount as the original contribution.
         uint256 aprBefore = HyperdriveUtils.calculateAPRFromReserves(
             hyperdrive
         );
-        uint256 baseBalance = baseToken.balanceOf(address(hyperdrive));
-        uint256 lpShares = addLiquidity(bob, contribution);
+        uint256 baseBalanceBefore = baseToken.balanceOf(address(hyperdrive));
+        uint256 presentValueRatioBefore = presentValueRatio();
+        uint256 bobLpShares = addLiquidity(bob, contribution);
 
-        // TODO: This suggests an issue with the flat+curve usage in the
-        //       checkpointing mechanism. These APR figures should be the same.
-        //
-        // Ensure the pool APR hasn't decreased after adding liquidity.
-        uint256 aprAfter = HyperdriveUtils.calculateAPRFromReserves(hyperdrive);
-        assertGe(aprAfter, aprBefore);
+        // Ensure that adding liquidity didn't change Alice's LP share balance.
+        assertEq(
+            hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
+            aliceLpShares
+        );
+
+        // Ensure that the present value ratio was preserved.
+        assertEq(presentValueRatio(), presentValueRatioBefore);
 
         // Ensure that the contribution was transferred to Hyperdrive.
         assertEq(baseToken.balanceOf(bob), 0);
         assertEq(
             baseToken.balanceOf(address(hyperdrive)),
-            baseBalance.add(contribution)
+            baseBalanceBefore.add(contribution)
         );
 
-        // Ensure that if the new LP withdraws, they get their money back.
-        (uint256 withdrawalProceeds, ) = removeLiquidity(bob, lpShares);
-        assertApproxEqAbs(withdrawalProceeds, contribution, 1e9);
+        // Ensure the pool APR hasn't decreased after adding liquidity.
+        uint256 aprAfter = HyperdriveUtils.calculateAPRFromReserves(hyperdrive);
+        assertEq(aprAfter, aprBefore);
+
+        // Close Celine's long.
+        closeLong(celine, maturityTime, longAmount);
+
+        // Ensure that Alice's withdrawal proceeds are equivalent to what they
+        // would have been had Bob not added liquidity.
+        (uint256 withdrawalProceeds, ) = removeLiquidity(alice, aliceLpShares);
+        assertEq(withdrawalProceeds, aliceWithdrawalProceeds);
+
+        // Ensure that Bob receives his contribution back.
+        (withdrawalProceeds, ) = removeLiquidity(bob, bobLpShares);
+        assertApproxEqAbs(withdrawalProceeds, contribution, 1);
+
+        // Ensure that all of the capital has been removed from the system.
+        assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1);
     }
 
     function test_add_liquidity_with_short_at_maturity() external {
@@ -197,37 +297,82 @@ contract AddLiquidityTest is HyperdriveTest {
 
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        uint256 aliceLpShares = initialize(alice, apr, contribution);
 
         // Celine opens a short.
-        openShort(celine, 50_000_000e18);
+        uint256 shortAmount = 50_000_000e18;
+        (uint256 maturityTime, ) = openShort(celine, shortAmount);
 
         // The term passes.
         vm.warp(block.timestamp + POSITION_DURATION);
+
+        // Get Alice's withdrawal proceeds if the short is closed immediately.
+        uint256 aliceWithdrawalProceeds;
+        {
+            uint256 snapshotId = vm.snapshot();
+
+            // Close the short and remove Alice's liquidity.
+            closeShort(celine, maturityTime, shortAmount);
+            (aliceWithdrawalProceeds, ) = removeLiquidity(alice, aliceLpShares);
+
+            vm.revertTo(snapshotId);
+        }
 
         // Add liquidity with the same amount as the original contribution.
         uint256 aprBefore = HyperdriveUtils.calculateAPRFromReserves(
             hyperdrive
         );
-        uint256 baseBalance = baseToken.balanceOf(address(hyperdrive));
-        uint256 lpShares = addLiquidity(bob, contribution);
+        uint256 baseBalanceBefore = baseToken.balanceOf(address(hyperdrive));
+        uint256 presentValueRatioBefore = presentValueRatio();
+        uint256 bobLpShares = addLiquidity(bob, contribution);
 
-        // TODO: This suggests an issue with the flat+curve usage in the
-        //       checkpointing mechanism. These APR figures should be the same.
-        //
         // Ensure the pool APR hasn't increased after adding liquidity.
         uint256 aprAfter = HyperdriveUtils.calculateAPRFromReserves(hyperdrive);
-        assertLe(aprAfter, aprBefore);
+        assertEq(aprAfter, aprBefore);
+
+        // Ensure that adding liquidity didn't change Alice's LP share balance.
+        assertEq(
+            hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
+            aliceLpShares
+        );
+
+        // Ensure that the present value ratio was preserved.
+        assertEq(presentValueRatio(), presentValueRatioBefore);
 
         // Ensure that the contribution was transferred to Hyperdrive.
         assertEq(baseToken.balanceOf(bob), 0);
         assertEq(
             baseToken.balanceOf(address(hyperdrive)),
-            baseBalance.add(contribution)
+            baseBalanceBefore.add(contribution)
         );
 
-        // Ensure that if the new LP withdraws, they get their money back.
-        (uint256 withdrawalProceeds, ) = removeLiquidity(bob, lpShares);
-        assertApproxEqAbs(withdrawalProceeds, contribution, 1e9);
+        // Close Celine's short.
+        closeShort(celine, maturityTime, shortAmount);
+
+        // Ensure that Alice's withdrawal proceeds are equivalent to what they
+        // would have been had Bob not added liquidity.
+        (uint256 withdrawalProceeds, ) = removeLiquidity(alice, aliceLpShares);
+        assertEq(withdrawalProceeds, aliceWithdrawalProceeds);
+
+        // Ensure that Bob received his contribution minus Celine's profits.
+        (withdrawalProceeds, ) = removeLiquidity(bob, bobLpShares);
+        assertApproxEqAbs(withdrawalProceeds, contribution, 1);
+
+        // Ensure that all of the capital has been removed from the system.
+        assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1);
+    }
+
+    function presentValueRatio() internal view returns (uint256) {
+        return
+            HyperdriveUtils.presentValue(hyperdrive).divDown(
+                hyperdrive.totalSupply(AssetId._LP_ASSET_ID) +
+                    hyperdrive.totalSupply(
+                        AssetId.encodeAssetId(
+                            AssetId.AssetIdPrefix.WithdrawalShare,
+                            0
+                        )
+                    ) -
+                    hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw
+            );
     }
 }
