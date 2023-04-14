@@ -336,6 +336,104 @@ library HyperdriveMath {
         return (shareReservesDelta, bondReservesDelta, sharePayment);
     }
 
+    struct PresentValueParams {
+        uint256 shareReserves;
+        uint256 bondReserves;
+        uint256 sharePrice;
+        uint256 initialSharePrice;
+        uint256 timeStretch;
+        uint256 longsOutstanding;
+        uint256 longAverageTimeRemaining;
+        uint256 longBaseVolume;
+        uint256 shortsOutstanding;
+        uint256 shortAverageTimeRemaining;
+        uint256 shortBaseVolume;
+    }
+
+    /// @dev Calculates the present value LPs capital in the pool.
+    /// @param _params The parameters for the present value calculation.
+    /// @return The present value of the pool.
+    function calculatePresentValue(
+        PresentValueParams memory _params
+    ) internal pure returns (uint256) {
+        // Compute the net of the longs and shorts that will be traded on the
+        // curve and apply this net to the reserves.
+        int256 netCurveTrade = int256(
+            _params.longsOutstanding.mulDown(_params.longAverageTimeRemaining)
+        ) -
+            int256(
+                _params.shortsOutstanding.mulDown(
+                    _params.shortAverageTimeRemaining
+                )
+            );
+        if (netCurveTrade > 0) {
+            // Apply the curve trade directly to the reserves. Unlike shorts,
+            // the capital that backs longs is accounted for within the share
+            // reserves (the capital backing shorts is taken out of the
+            // reserves). This ensures that even if all the liquidity is
+            // removed, there is always liquidity available for longs to close.
+            _params.shareReserves -= YieldSpaceMath
+                .calculateSharesOutGivenBondsIn(
+                    _params.shareReserves,
+                    _params.bondReserves,
+                    uint256(netCurveTrade),
+                    FixedPointMath.ONE_18.sub(_params.timeStretch),
+                    _params.sharePrice,
+                    _params.initialSharePrice
+                );
+        } else if (netCurveTrade < 0) {
+            // It's possible that the exchange gets into a state where the
+            // net curve trade can't be applied to the reserves. In particular,
+            // this can happen if all of the liquidity is removed. We first
+            // attempt to trade as much as possible on the curve, and then we
+            // mark the remaining amount to the base volume.
+            uint256 maxCurveTrade = _params.bondReserves.divDown(
+                _params.initialSharePrice
+            ) - _params.shareReserves;
+            maxCurveTrade = uint256(-netCurveTrade) <= maxCurveTrade
+                ? uint256(-netCurveTrade)
+                : maxCurveTrade;
+            _params.shareReserves += YieldSpaceMath
+                .calculateSharesInGivenBondsOut(
+                    _params.shareReserves,
+                    _params.bondReserves,
+                    maxCurveTrade,
+                    FixedPointMath.ONE_18.sub(_params.timeStretch),
+                    _params.sharePrice,
+                    _params.initialSharePrice
+                );
+            _params.shareReserves += _params.shortBaseVolume.mulDivDown(
+                uint256(-netCurveTrade) - maxCurveTrade,
+                _params.shortsOutstanding.mulDown(_params.sharePrice)
+            );
+        }
+
+        // TODO: We need to consider increasing the liquidity before the
+        // curve trade to create the worst case scenario. At present, this
+        // calculation is attempting to hit a "sweet spot" between the worst
+        // and best case scenarios.
+        //
+        // Compute the net of the longs and shorts that will be traded flat
+        // and apply this net to the reserves.
+        int256 netFlatTrade = int256(
+            _params.shortsOutstanding.mulDivDown(
+                FixedPointMath.ONE_18 - _params.shortAverageTimeRemaining,
+                _params.sharePrice
+            )
+        ) -
+            int256(
+                _params.longsOutstanding.mulDivDown(
+                    FixedPointMath.ONE_18 - _params.longAverageTimeRemaining,
+                    _params.sharePrice
+                )
+            );
+        _params.shareReserves = uint256(
+            int256(_params.shareReserves) + netFlatTrade
+        );
+
+        return _params.shareReserves;
+    }
+
     /// @dev Calculates the proceeds in shares of closing a short position. This
     ///      takes into account the trading profits, the interest that was
     ///      earned by the short, and the amount of margin that was released
