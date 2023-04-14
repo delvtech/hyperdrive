@@ -60,4 +60,5 @@ library Errors {
     /// ### Factory ###
     /// #####################
     error Unauthorized();
+    error InvalidContribution();
 }

@@ -89,6 +89,8 @@ contract HyperdriveFactory {
         uint256 _contribution,
         uint256 _apr
     ) external returns (IHyperdrive) {
+        // No invalid deployments
+        if (_contribution == 0) revert Errors.InvalidContribution();
         // First we call the simplified factory
         IHyperdrive hyperdrive = IHyperdrive(
             hyperdriveDeployer.deploy(
