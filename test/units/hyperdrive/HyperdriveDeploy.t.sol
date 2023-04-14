@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
-import { MakerDsrHyperdriveDeployer } from "../../../contracts/src/factory/MakerDsrHyperdriveDeployer.sol";
+import { MakerDsrHyperdriveDeployer } from "contracts/src/factory/MakerDsrHyperdriveDeployer.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { DsrManager } from "contracts/test/MockMakerDsrHyperdrive.sol";
