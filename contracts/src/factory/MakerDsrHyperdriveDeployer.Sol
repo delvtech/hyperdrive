@@ -50,10 +50,10 @@ contract MakerDsrHyperdriveDeployer is IHyperdriveDeployer {
         return (
             address(
                 new MakerDsrHyperdrive(
-                    _linkerCodeHash, 
+                    _linkerCodeHash,
                     _linkerFactory,
-                    _checkpointsPerTerm, 
-                    _checkpointDuration, 
+                    _checkpointsPerTerm,
+                    _checkpointDuration,
                     _timeStretch,
                     _fees,
                     _governance,

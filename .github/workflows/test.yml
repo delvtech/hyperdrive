@@ -37,6 +37,9 @@ jobs:
       - name: Log files
         run: ls contracts/src/factory
 
+      - name: build forge
+        run: forge build
+
       - name: test forge
         run: forge test -vvv
 
