@@ -359,6 +359,10 @@ abstract contract HyperdriveLP is HyperdriveBase {
         // value to LP total supply as follows:
         //
         // maxSharesReleased = withdrawalProceeds * (l / PV)
+        //
+        // In the event that all of the LPs have removed their liquidity and the
+        // remaining positions hit maturity, all of the withdrawal shares are
+        // marked as ready to withdraw.
         uint256 presentValue = HyperdriveMath.calculatePresentValue(
             HyperdriveMath.PresentValueParams({
                 shareReserves: marketState.shareReserves,
@@ -380,10 +384,9 @@ abstract contract HyperdriveLP is HyperdriveBase {
         );
         uint256 lpTotalSupply = totalSupply[AssetId._LP_ASSET_ID] +
             _withdrawalSharesOutstanding;
-        uint256 maxSharesReleased = _withdrawalProceeds.mulDivDown(
-            lpTotalSupply,
-            presentValue
-        );
+        uint256 maxSharesReleased = presentValue > 0
+            ? _withdrawalProceeds.mulDivDown(lpTotalSupply, presentValue)
+            : lpTotalSupply;
 
         // Calculate the amount of withdrawal shares that will be released and
         // the amount of capital that will be used to pay out the withdrawal

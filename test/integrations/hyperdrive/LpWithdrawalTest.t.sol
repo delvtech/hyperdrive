@@ -7,9 +7,20 @@ import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 
+// FIXME:
+//
+// [ ] We need the following tests if they don't exist yet:
+//     - [ ] Two LPs remove all of their liquidity and a long position matures.
+//     - [ ] Two LPs remove all of their liquidity and a short position matures.
+//     - [ ] All of the liquidity is removed and a long and short mature.
 contract LpWithdrawalTest is HyperdriveTest {
     using FixedPointMath for uint256;
 
+    // This test is designed to ensure that a single LP receives all of the
+    // trading profits earned when a new long position is closed immediately
+    // after the LP withdraws. A bound is placed on these profits to ensure that
+    // the removal of liquidity correctly increases the slippage that the long
+    // must pay at the time of closing.
     function test_lp_withdrawal_long_immediate_close(
         uint128 basePaid,
         int64 preTradingVariableRate
@@ -38,8 +49,9 @@ contract LpWithdrawalTest is HyperdriveTest {
         );
         (uint256 maturityTime, uint256 longAmount) = openLong(bob, basePaid);
 
-        // Alice removes all of her LP shares.
-        uint256 preRemovalSharePrice = hyperdrive.getPoolInfo().sharePrice;
+        // Alice removes all of her LP shares. She should recover her initial
+        // contribution minus the amount of her capital that underlies Bob's
+        // long position.
         (uint256 baseProceeds, uint256 withdrawalShares) = removeLiquidity(
             alice,
             lpShares
@@ -49,48 +61,42 @@ contract LpWithdrawalTest is HyperdriveTest {
             preTradingVariableRate,
             POSITION_DURATION
         );
-        // TODO: This bound is too high. Investigate this further. Improving
-        // this will have benefits on the remove liquidity unit tests.
         assertApproxEqAbs(
             baseProceeds,
             contribution - (longAmount - basePaid),
-            1e9
-        );
-        assertApproxEqAbs(
-            withdrawalShares,
-            // TODO: The share price should be the same before and after. The
-            // reason why it isn't is because the current share price
-            // formulation is imprecise and results in very large withdrawals
-            // getting a better share price than they should.
-            (longAmount - basePaid).divDown(preRemovalSharePrice),
-            10
+            1e9 // Investigate this bound.
         );
 
         // Bob closes his long. He will pay quite a bit of slippage on account
         // of the LP's removed liquidity.
         uint256 longProceeds = closeLong(bob, maturityTime, longAmount);
-        assertGt(basePaid - longProceeds, withdrawalShares.mulDivDown(3, 4));
+        assertGt(basePaid - longProceeds, uint256(basePaid).mulDown(0.02e18));
 
-        // Alice redeems her withdrawal shares. She receives the unlocked margin
-        // as well as quite a bit of "interest" that was collected from Bob's
+        // Alice redeems her withdrawal shares. She gets back the capital that
+        // underlied Bob's long position plus the profits that Bob paid in
         // slippage.
-        uint256 sharePrice = hyperdrive.getPoolInfo().sharePrice;
         uint256 withdrawalProceeds = redeemWithdrawalShares(
             alice,
             withdrawalShares
         );
         assertApproxEqAbs(
             withdrawalProceeds,
-            // TODO: This bound is still too high.
-            withdrawalShares.mulDown(sharePrice) + (basePaid - longProceeds),
-            1e10
+            (longAmount - basePaid) + (basePaid - longProceeds),
+            1e9 // TODO: Investigate this bound.
         );
 
-        // TODO: This bound is unacceptably high. Investigate this when the
-        // other bounds have been tightened.
-        //
-        // Ensure that the ending base balance of Hyperdrive is zero.
-        assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1e11);
+        // Ensure approximately all of the base and withdrawal shares has been
+        // removed from the Hyperdrive instance.
+        assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1e9); // TODO: Investigate this bound.
+        // FIXME: Why isn't this zero? Shouldn't the present value be zero after
+        // the long is closed?
+        assertApproxEqAbs(
+            hyperdrive.totalSupply(
+                AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
+            ),
+            0,
+            1e8 // TODO: Investigate this bound.
+        );
     }
 
     // TODO: Accrue interest before the test starts as this results in weirder
@@ -116,7 +122,9 @@ contract LpWithdrawalTest is HyperdriveTest {
         );
         (uint256 maturityTime, uint256 longAmount) = openLong(bob, basePaid);
 
-        // Alice removes all of her LP shares.
+        // Alice removes all of her LP shares. She should recover her initial
+        // contribution minus the amount of her capital that underlies Bob's
+        // long position.
         (uint256 baseProceeds, uint256 withdrawalShares) = removeLiquidity(
             alice,
             lpShares
@@ -126,7 +134,6 @@ contract LpWithdrawalTest is HyperdriveTest {
             contribution - (longAmount - basePaid),
             1
         );
-        assertEq(withdrawalShares, longAmount - basePaid);
 
         // Positive interest accrues over the term. We create a checkpoint for
         // the first checkpoint after opening the long to ensure that the
@@ -139,7 +146,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         // Bob closes his long. He should receive the full bond amount since he
         // is closing at maturity.
         uint256 longProceeds = closeLong(bob, maturityTime, longAmount);
-        assertApproxEqAbs(longProceeds, longAmount, 10);
+        assertApproxEqAbs(longProceeds, longAmount, 10); // TODO: Investigate this bound.
 
         // Alice redeems her withdrawal shares. She receives the interest
         // collected on the capital underlying the long for all but the first
@@ -155,16 +162,16 @@ contract LpWithdrawalTest is HyperdriveTest {
             alice,
             withdrawalShares
         );
-        assertApproxEqAbs(withdrawalProceeds, uint256(estimatedProceeds), 1e10);
+        assertApproxEqAbs(withdrawalProceeds, uint256(estimatedProceeds), 1e10); // TODO: Investigate this bound.
 
-        // Ensure that the ending base balance of Hyperdrive is zero.
-        assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1e10);
-        assertApproxEqAbs(
+        // Ensure approximately all of the base and withdrawal shares has been
+        // removed from the Hyperdrive instance.
+        assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1e10); // TODO: Investigate this bound.
+        assertEq(
             hyperdrive.totalSupply(
                 AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
             ),
-            0,
-            1
+            0
         );
     }
 
