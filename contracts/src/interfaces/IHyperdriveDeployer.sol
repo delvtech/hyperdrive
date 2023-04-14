@@ -14,6 +14,7 @@ interface IHyperdriveDeployer {
         uint256 _checkpointDuration,
         uint256 _timeStretch,
         IHyperdrive.Fees memory _fees,
-        address _governance
+        address _governance,
+        bytes32[] memory _extraData
     ) external returns(address);
 }

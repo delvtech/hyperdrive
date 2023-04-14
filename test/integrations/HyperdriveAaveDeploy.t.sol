@@ -67,7 +67,16 @@ contract HyperdriveDSRTest is HyperdriveTest {
         // We've just copied the values used by the original tests to ensure this runs
 
         vm.prank(alice);
-        factory.deployAndImplement(
+        bytes32[] memory aToken = new bytes32[](1);
+        // we do a little force convert
+        bytes32 aTokenEncode;
+        assembly {
+            aTokenEncode := sload(aDai.slot)
+        }
+        aToken[0] = aTokenEncode;
+        dai.approve(address(factory), type(uint256).max);
+        vm.prank(alice);
+        hyperdrive = factory.deployAndImplement(
             bytes32(0),
             address(0),
             dai,
@@ -76,6 +85,7 @@ contract HyperdriveDSRTest is HyperdriveTest {
             1 days,
             FixedPointMath.ONE_18.divDown(22.186877016851916266e18),
             IHyperdrive.Fees(0, 0, 0),
+            aToken,
             2500e18,
             //1% apr
             1e16
@@ -87,6 +97,6 @@ contract HyperdriveDSRTest is HyperdriveTest {
             AssetId._LP_ASSET_ID,
             alice
         );
-        assertEq(createdShares, 2500e18);
+        assertEq(createdShares, 2808790684246250377500);
     }
 }

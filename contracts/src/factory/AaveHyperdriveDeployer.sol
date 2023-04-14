@@ -51,20 +51,26 @@ contract AaveHyperdriveDeployer is IHyperdriveDeployer {
         uint256 _checkpointDuration,
         uint256 _timeStretch,
         IHyperdrive.Fees memory _fees,
-        address _governance
+        address _governance,
+        bytes32[] calldata _extraData
     ) external override returns(address) {
-        IERC20 base = IERC20(IAToken(address(_baseToken)).UNDERLYING_ASSET_ADDRESS());
+        // We force convert
+        bytes32 loaded = _extraData[0];
+        IERC20 aToken;
+        assembly {
+            aToken := loaded
+        }
         // Need a hard convert cause no direct bytes32 -> address
         return (
                 address(
                     new AaveHyperdrive(
                         _linkerCodeHash, 
                         _linkerFactory,
-                        base,
+                        _baseToken,
                         _checkpointsPerTerm, 
                         _checkpointDuration, 
                         _timeStretch,
-                        _baseToken,
+                        aToken,
                         pool,
                         _fees,
                         _governance
