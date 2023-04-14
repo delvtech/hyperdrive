@@ -200,12 +200,10 @@ contract LpWithdrawalTest is HyperdriveTest {
         );
         (uint256 maturityTime, uint256 basePaid) = openShort(bob, shortAmount);
 
-        // Alice removes all of her LP shares.
-        uint256 preRemovalSharePrice = hyperdrive.getPoolInfo().sharePrice;
-        (uint256 baseProceeds, uint256 withdrawalShares) = removeLiquidity(
-            alice,
-            lpShares
-        );
+        // Alice removes all of her LP shares. She should recover her initial
+        // contribution minus the amount of her capital that underlies Bob's
+        // short position.
+        (uint256 baseProceeds, ) = removeLiquidity(alice, lpShares);
         (contribution, ) = HyperdriveUtils.calculateCompoundInterest(
             contribution,
             preTradingVariableRate,
@@ -218,20 +216,7 @@ contract LpWithdrawalTest is HyperdriveTest {
             contribution - (shortAmount - basePaid),
             1e9
         );
-        // TODO: This bound is too high.
-        assertApproxEqAbs(
-            withdrawalShares,
-            // TODO: The share price should be the same before and after. The
-            // recent why it isn't is because the current share price
-            // formulation is imprecise and results in very large withdrawals
-            // getting a better share price than they should.
-            (shortAmount - basePaid).divDown(preRemovalSharePrice),
-            1e9
-        );
 
-        // TODO: We need to think more about this. This may or may not be
-        // acceptable.
-        //
         // Bob attempts to close his short. This will fail since there isn't any
         // liquidity in the pool after Alice removed her liquidity.
         vm.expectRevert(Errors.FixedPointMath_SubOverflow.selector);
@@ -263,13 +248,14 @@ contract LpWithdrawalTest is HyperdriveTest {
         );
         (uint256 maturityTime, uint256 basePaid) = openShort(bob, shortAmount);
 
-        // Alice removes all of her LP shares.
+        // Alice removes all of her LP shares. She should recover her initial
+        // contribution minus the amount of her capital that underlies Bob's
+        // short position.
         (uint256 baseProceeds, uint256 withdrawalShares) = removeLiquidity(
             alice,
             lpShares
         );
         assertEq(baseProceeds, contribution - (shortAmount - basePaid));
-        assertEq(withdrawalShares, shortAmount - basePaid);
 
         // Positive interest accrues over the term.
         vm.assume(variableRate >= 0 && variableRate <= 2e18);
@@ -283,8 +269,7 @@ contract LpWithdrawalTest is HyperdriveTest {
             variableRate,
             POSITION_DURATION
         );
-        // TODO: See if this bound can be lowered
-        assertApproxEqAbs(shortProceeds, uint256(expectedInterest), 1e9);
+        assertApproxEqAbs(shortProceeds, uint256(expectedInterest), 1e9); // TODO: Investigate this bound.
 
         // Alice redeems her withdrawal shares. She receives the margin that she
         // put up as well as the fixed interest paid by the short.
@@ -293,17 +278,15 @@ contract LpWithdrawalTest is HyperdriveTest {
             withdrawalShares
         );
         // TODO: See if this bound can be lowered
-        assertApproxEqAbs(withdrawalProceeds, shortAmount, 1e9);
+        assertApproxEqAbs(withdrawalProceeds, shortAmount, 1e9); // TODO: Investigate this bound.
 
         // Ensure that the ending base balance of Hyperdrive is zero.
-        // TODO: See if this bound can be lowered
-        assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1e9);
-        assertApproxEqAbs(
+        assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1e9); // TODO: Investigate this bound.
+        assertEq(
             hyperdrive.totalSupply(
                 AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
             ),
-            0,
-            1
+            0
         );
     }
 

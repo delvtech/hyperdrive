@@ -288,9 +288,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // TODO: Is it possible to abstract out the process of updating
         // aggregates in a way that is nice?
         //
-        // Calculate the amount of margin that LPs provided on the short
-        // position and update the base volume aggregates.
-        uint256 lpMargin;
+        // Update the base volume aggregates.
         {
             // Get the total supply of shorts in the checkpoint of the shorts
             // being closed. If the shorts are closed before maturity, we add the
@@ -307,8 +305,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             }
 
             // Remove a proportional amount of the checkpoints base volume from
-            // the aggregates. We calculate the margin that the LP provided
-            // using this proportional base volume.
+            // the aggregates.
             uint256 checkpointTime = _maturityTime - positionDuration;
             uint128 proportionalBaseVolume = uint256(
                 checkpoints[checkpointTime].shortBaseVolume
@@ -316,7 +313,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
             shortAggregates.baseVolume -= proportionalBaseVolume;
             checkpoints[checkpointTime]
                 .shortBaseVolume -= proportionalBaseVolume;
-            lpMargin = proportionalBaseVolume;
         }
 
         // Decrease the amount of shorts outstanding.

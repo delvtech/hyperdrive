@@ -323,10 +323,19 @@ abstract contract HyperdriveLP is HyperdriveBase {
     /// @dev Updates the pool's liquidity and holds the pool's APR constant.
     /// @param _shareReservesDelta The delta that should be applied to share reserves.
     function _updateLiquidity(int256 _shareReservesDelta) internal {
-        if (_shareReservesDelta != 0) {
-            // Apply the update to the pool's share reserves and solve for the bond
-            // reserves that maintains the current pool APR.
-            uint256 shareReserves = marketState.shareReserves;
+        // TODO: We need to stress test the assumption that the pool's share
+        // reserves will only be equal to zero in the narrow case outlined
+        // below.
+        //
+        // If the share reserves delta is equal to zero, there is no need to
+        // update the reserves. If the share reserves are equal to zero, the
+        // APR is undefined and the reserves cannot be updated. This only occurs
+        // when all of the liquidity has been removed from the pool and the
+        // only remaining positions are shorts. Otherwise, we update the pool
+        // by increasing the share reserves and preserving the previous ratio of
+        // share reserves to bond reserves.
+        uint256 shareReserves = marketState.shareReserves;
+        if (_shareReservesDelta != 0 && shareReserves > 0) {
             int256 updatedShareReserves = int256(shareReserves) +
                 _shareReservesDelta;
             marketState.shareReserves = uint256(

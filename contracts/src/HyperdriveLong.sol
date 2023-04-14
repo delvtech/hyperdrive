@@ -274,10 +274,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // TODO: Is it possible to abstract out the process of updating
         // aggregates in a way that is nice?
         //
-        // Calculate the amount of margin that LPs provided on the long
-        // position and update the base volume aggregates. Also, get the open
-        // share price and update the long share price of the checkpoint.
-        uint256 lpMargin;
+        // Update the base volume aggregates, get the open share price, and
+        // update the long share price of the checkpoint.
         {
             // Get the total supply of longs in the checkpoint of the longs
             // being closed. If the longs are closed before maturity, we add the
@@ -291,8 +289,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
             }
 
             // Remove a proportional amount of the checkpoints base volume from
-            // the aggregates. We calculate the margin that the LP provided
-            // using this proportional base volume.
+            // the aggregates.
             uint256 checkpointTime = _maturityTime - positionDuration;
             uint128 proportionalBaseVolume = uint256(
                 checkpoints[checkpointTime].longBaseVolume
@@ -300,7 +297,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
             longAggregates.baseVolume -= proportionalBaseVolume;
             checkpoints[checkpointTime]
                 .longBaseVolume -= proportionalBaseVolume;
-            lpMargin = _bondAmount - proportionalBaseVolume;
         }
 
         // Reduce the amount of outstanding longs.
