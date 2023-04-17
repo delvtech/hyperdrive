@@ -227,6 +227,26 @@ abstract contract HyperdriveBase is MultiToken {
             });
     }
 
+    ///@notice Allows plugin data libs to provide getters or other complex logic instead of the main
+    ///@param _slots The storage slots the caller wants the data from
+    ///@return A raw array of loaded data
+    function load(
+        uint256[] calldata _slots
+    ) external view returns (bytes32[] memory) {
+        bytes32[] memory loaded = new bytes32[](_slots.length);
+
+        // Iterate on requested loads and then do them
+        for (uint256 i = 0; i < _slots.length; i++) {
+            uint256 slot = _slots[i];
+            bytes32 data;
+            assembly {
+                data := sload(slot)
+            }
+            loaded[i] = data;
+        }
+        return loaded;
+    }
+
     /// Helpers ///
 
     /// @dev Calculates the normalized time remaining of a position.
