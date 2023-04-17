@@ -177,7 +177,7 @@ contract MakerDsrHyperdrive is Hyperdrive {
     /// @notice Taken from https://github.com/makerdao/dss/blob/master/src/pot.sol#L85
     /// @return z
     function _rpow(uint x, uint n, uint base) internal pure returns (uint z) {
-        assembly {
+        assembly ("memory-safe") {
             switch x
             case 0 {
                 switch n

@@ -55,4 +55,10 @@ library Errors {
     error BondMatured();
     error BondNotMatured();
     error InsufficientPrice();
+
+    /// #####################
+    /// ### Factory ###
+    /// #####################
+    error Unauthorized();
+    error InvalidContribution();
 }
