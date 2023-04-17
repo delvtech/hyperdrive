@@ -51,7 +51,7 @@ contract HyperdriveDSRTest is HyperdriveTest {
                 manager
             );
         uint256 codeSize;
-        assembly {
+        assembly ("memory-safe") {
             codeSize := extcodesize(simpleDeployer)
         }
         console.log("DSR factory codesize: ", codeSize);

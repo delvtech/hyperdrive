@@ -239,7 +239,7 @@ abstract contract HyperdriveBase is MultiToken {
         for (uint256 i = 0; i < _slots.length; i++) {
             uint256 slot = _slots[i];
             bytes32 data;
-            assembly {
+            assembly ("memory-safe") {
                 data := sload(slot)
             }
             loaded[i] = data;

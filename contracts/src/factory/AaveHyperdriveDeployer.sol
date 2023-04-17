@@ -56,7 +56,7 @@ contract AaveHyperdriveDeployer is IHyperdriveDeployer {
         // We force convert
         bytes32 loaded = _extraData[0];
         IERC20 aToken;
-        assembly {
+        assembly ("memory-safe") {
             aToken := loaded
         }
         // Need a hard convert cause no direct bytes32 -> address

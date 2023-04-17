@@ -52,7 +52,7 @@ contract HyperdriveDSRTest is HyperdriveTest {
             pool
         );
         uint256 codeSize;
-        assembly {
+        assembly ("memory-safe") {
             codeSize := extcodesize(simpleDeployer)
         }
         console.log("Aave factory codesize: ", codeSize);
@@ -68,7 +68,7 @@ contract HyperdriveDSRTest is HyperdriveTest {
         bytes32[] memory aToken = new bytes32[](1);
         // we do a little force convert
         bytes32 aTokenEncode;
-        assembly {
+        assembly ("memory-safe") {
             aTokenEncode := sload(aDai.slot)
         }
         aToken[0] = aTokenEncode;
