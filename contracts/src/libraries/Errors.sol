@@ -61,4 +61,9 @@ library Errors {
     /// #####################
     error Unauthorized();
     error InvalidContribution();
+
+    /// #####################
+    /// ### DataViewer ###
+    /// #####################
+    error Unimplemented();
 }
