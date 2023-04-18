@@ -7,18 +7,19 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 
 interface ILoad {
-    function load(uint256[] calldata _slots) external view returns (bytes32[] memory);
+    function load(
+        uint256[] calldata _slots
+    ) external view returns (bytes32[] memory);
 }
 
 /// @author Delve
 /// @title DataViewer
-/// @notice This contract uses the load function of a Hyperdrive instance to let you 
+/// @notice This contract uses the load function of a Hyperdrive instance to let you
 ///         implement custom getters
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract DataViewer is HyperdriveBase {
-
     ILoad public hyperdrive;
 
     /// @notice These will still be set as immutables which we may expose here
@@ -49,7 +50,8 @@ contract DataViewer is HyperdriveBase {
         IHyperdrive.Fees memory _fees,
         address _governance,
         address _hyperdrive
-    )  HyperdriveBase(
+    )
+        HyperdriveBase(
             _linkerCodeHash,
             _linkerFactory,
             _baseToken,
@@ -68,22 +70,22 @@ contract DataViewer is HyperdriveBase {
     // the constructor of THIS contract and so must be deploy linked with the other one.
 
     // @notice The amount of seconds between share price checkpoints.
-    function getCheckpointDuration() external view returns(uint256) {
+    function getCheckpointDuration() external view returns (uint256) {
         return checkpointDuration;
     }
 
     // @notice The amount of seconds that elapse before a bond can be redeemed.
-    function getPositionDuration() external view returns(uint256) {
+    function getPositionDuration() external view returns (uint256) {
         return positionDuration;
     }
 
     // @notice A parameter that decreases slippage around a target rate.
-    function getTimeStretch() external view returns(uint256) {
+    function getTimeStretch() external view returns (uint256) {
         return timeStretch;
     }
 
     // @notice The share price at the time the pool was created.
-    function getInitialSharePrice() external view returns(uint256) {
+    function getInitialSharePrice() external view returns (uint256) {
         return initialSharePrice;
     }
 
@@ -91,7 +93,11 @@ contract DataViewer is HyperdriveBase {
 
     /// @notice The reserves and the buffers. This is the primary state used for
     ///         pricing trades and maintaining solvency.
-    function getMarketState() external view returns(IHyperdrive.MarketState memory current) {
+    function getMarketState()
+        external
+        view
+        returns (IHyperdrive.MarketState memory current)
+    {
         uint256 slot;
         assembly ("memory-safe") {
             slot := marketState.slot
@@ -106,7 +112,7 @@ contract DataViewer is HyperdriveBase {
 
         uint256 packed = hardCast(data[0]);
         current.shareReserves = (uint128)((packed << 128) >> 128);
-        current.bondReserves =  (uint128)(packed >> 128);
+        current.bondReserves = (uint128)(packed >> 128);
 
         packed = hardCast(data[1]);
         current.longsOutstanding = (uint128)((packed << 128) >> 128);
@@ -115,15 +121,19 @@ contract DataViewer is HyperdriveBase {
         current.isInitialized = hardCast(data[2]) == 1;
     }
 
-    function hardCast(bytes32 i) internal pure returns(uint256 o) {
-        assembly ("memory-safe"){
+    function hardCast(bytes32 i) internal pure returns (uint256 o) {
+        assembly ("memory-safe") {
             o := i
         }
     }
 
     /// @notice Aggregate values for long positions that are used to enforce
     ///         fairness guarantees.
-    function getLongAggregates() external view returns(IHyperdrive.Aggregates memory current) {
+    function getLongAggregates()
+        external
+        view
+        returns (IHyperdrive.Aggregates memory current)
+    {
         uint256 slot;
         assembly ("memory-safe") {
             slot := longAggregates.slot
@@ -136,12 +146,16 @@ contract DataViewer is HyperdriveBase {
 
         uint256 packed = hardCast(data[0]);
         current.averageMaturityTime = (uint128)((packed << 128) >> 128);
-        current.baseVolume = (uint128)(packed >> 128); 
+        current.baseVolume = (uint128)(packed >> 128);
     }
 
     /// @notice Aggregate values for short positions that are used to enforce
     ///         fairness guarantees.
-    function getShortAggregates() external view returns(IHyperdrive.Aggregates memory current) {
+    function getShortAggregates()
+        external
+        view
+        returns (IHyperdrive.Aggregates memory current)
+    {
         uint256 slot;
         assembly ("memory-safe") {
             slot := shortAggregates.slot
@@ -157,9 +171,12 @@ contract DataViewer is HyperdriveBase {
         current.baseVolume = (uint128)(packed >> 128);
     }
 
-
     /// @notice The state corresponding to the withdraw pool, expressed as a struct.
-    function getWithdrawPool() external view returns(IHyperdrive.WithdrawPool memory current) {
+    function getWithdrawPool()
+        external
+        view
+        returns (IHyperdrive.WithdrawPool memory current)
+    {
         uint256 slot;
         assembly ("memory-safe") {
             slot := withdrawPool.slot
@@ -172,7 +189,9 @@ contract DataViewer is HyperdriveBase {
         bytes32[] memory data = hyperdrive.load(slots);
 
         uint256 packed = hardCast(data[0]);
-        current.withdrawalSharesReadyToWithdraw = (uint128)((packed << 128) >> 128);
+        current.withdrawalSharesReadyToWithdraw = (uint128)(
+            (packed << 128) >> 128
+        );
         current.capital = (uint128)(packed >> 128);
 
         packed = hardCast(data[1]);
@@ -180,7 +199,7 @@ contract DataViewer is HyperdriveBase {
     }
 
     /// @notice The fee percentages to be applied to the trade equation
-    function getFees() external view returns(IHyperdrive.Fees memory current) {
+    function getFees() external view returns (IHyperdrive.Fees memory current) {
         uint256 slot;
         assembly ("memory-safe") {
             slot := fees.slot
@@ -198,17 +217,24 @@ contract DataViewer is HyperdriveBase {
         current.governance = hardCast(data[2]);
     }
 
-    // Note - we only inherit so that the solidity compiler will tell us slot data for the 
+    // Note - we only inherit so that the solidity compiler will tell us slot data for the
     // state layout. Therefore we override all of these functions to reverts
-    function _deposit( uint256, bool) internal pure override returns (uint256, uint256) {
+    function _deposit(
+        uint256,
+        bool
+    ) internal pure override returns (uint256, uint256) {
         revert Errors.Unimplemented();
     }
 
-    function _withdraw(uint256, address, bool) internal pure override returns (uint256, uint256) {
+    function _withdraw(
+        uint256,
+        address,
+        bool
+    ) internal pure override returns (uint256, uint256) {
         revert Errors.Unimplemented();
     }
 
-    function _pricePerShare() internal pure override  returns (uint256) {
+    function _pricePerShare() internal pure override returns (uint256) {
         revert Errors.Unimplemented();
     }
 
@@ -216,7 +242,10 @@ contract DataViewer is HyperdriveBase {
         revert Errors.Unimplemented();
     }
 
-    function _applyCheckpoint(uint256, uint256) internal override pure returns (uint256) {
+    function _applyCheckpoint(
+        uint256,
+        uint256
+    ) internal pure override returns (uint256) {
         revert Errors.Unimplemented();
-    } 
+    }
 }
