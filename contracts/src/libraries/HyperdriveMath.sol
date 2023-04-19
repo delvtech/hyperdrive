@@ -218,9 +218,7 @@ library HyperdriveMath {
         // interest to the long since it's difficult or impossible to attribute
         // the negative interest to the short in practice.
         if (_initialSharePrice > _closeSharePrice) {
-            shareProceeds = (shareProceeds.mulUp(_closeSharePrice)).divDown(
-                _initialSharePrice
-            );
+            shareProceeds = shareProceeds.mulDivDown(_closeSharePrice, _initialSharePrice);
         }
 
         return (shareReservesDelta, bondReservesDelta, shareProceeds);
