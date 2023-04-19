@@ -198,22 +198,6 @@ library HyperdriveMath {
             _sharePrice
         );
 
-        // TODO: We need better testing for this. This may be correct but the
-        // intuition that longs only take a loss on the flat component of their
-        // trade feels a bit handwavy because negative interest accrued on the
-        // entire trade amount.
-        //
-        // If there's net negative interest over the period, the flat portion of
-        // the trade is reduced in proportion to the negative interest. We
-        // always attribute negative interest to the long since it's difficult
-        // or impossible to attribute the negative interest to the short in
-        // practice.
-        if (_initialSharePrice > _closeSharePrice) {
-            shareProceeds = (shareProceeds.mulUp(_closeSharePrice)).divDown(
-                _initialSharePrice
-            );
-        }
-
         if (_normalizedTimeRemaining > 0) {
             // Calculate the curved part of the trade.
             bondReservesDelta = _amountIn.mulDown(_normalizedTimeRemaining);
@@ -228,6 +212,17 @@ library HyperdriveMath {
             );
             shareProceeds += shareReservesDelta;
         }
+
+        // If there's net negative interest over the period, the result of close long
+        // is adjusted down by the rate of negative interest. We always attribute negative
+        // interest to the long since it's difficult or impossible to attribute 
+        // the negative interest to the short in practice.
+        if (_initialSharePrice > _closeSharePrice) {
+            shareProceeds = (shareProceeds.mulUp(_closeSharePrice)).divDown(
+                _initialSharePrice
+            );
+        }
+
         return (shareReservesDelta, bondReservesDelta, shareProceeds);
     }
 
