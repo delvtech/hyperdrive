@@ -355,15 +355,11 @@ contract CloseLongTest is HyperdriveTest {
             )
             .mulDown(poolInfoBefore.sharePrice);
 
-        bondsValue = bondsValue
-            .divDown(initialSharePrice)
-            .mulDown(poolInfoBefore.sharePrice);
-
-        assertApproxEqAbs(
-            baseProceeds,
-            bondsValue,
-            6
+        bondsValue = bondsValue.divDown(initialSharePrice).mulDown(
+            poolInfoBefore.sharePrice
         );
+
+        assertApproxEqAbs(baseProceeds, bondsValue, 6);
 
         // Verify that the close long updates were correct.
         verifyCloseLong(

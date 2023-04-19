@@ -215,7 +215,7 @@ library HyperdriveMath {
 
         // If there's net negative interest over the period, the result of close long
         // is adjusted down by the rate of negative interest. We always attribute negative
-        // interest to the long since it's difficult or impossible to attribute 
+        // interest to the long since it's difficult or impossible to attribute
         // the negative interest to the short in practice.
         if (_initialSharePrice > _closeSharePrice) {
             shareProceeds = (shareProceeds.mulUp(_closeSharePrice)).divDown(
