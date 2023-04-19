@@ -197,17 +197,4 @@ contract MockHyperdriveMath {
         );
         return result;
     }
-
-    function calculateLpProceeds(
-        HyperdriveMath.PresentValueParams memory _params,
-        uint256 _lpShares,
-        uint256 _lpTotalSupply
-    ) external pure returns (uint256, uint256) {
-        (uint256 result1, uint256 result2) = HyperdriveMath.calculateLpProceeds(
-            _params,
-            _lpShares,
-            _lpTotalSupply
-        );
-        return (result1, result2);
-    }
 }

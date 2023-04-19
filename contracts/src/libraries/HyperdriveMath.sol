@@ -109,6 +109,38 @@ library HyperdriveMath {
         return _shareReserves.divDown(2 * FixedPointMath.ONE_18).mulDown(rhs);
     }
 
+    /// @dev Calculates the bond reserves that imply a specified APR.
+    /// @param _shareReserves The pool's share reserves.
+    /// @param _initialSharePrice The pool's initial share price.
+    /// @param _apr The pool's APR.
+    /// @param _positionDuration The amount of time until maturity in seconds.
+    /// @param _timeStretch The time stretch parameter.
+    /// @return bondReserves The bond reserves (without adjustment) that make
+    ///         the pool have a specified APR.
+    function calculateBondReserves(
+        uint256 _shareReserves,
+        uint256 _initialSharePrice,
+        uint256 _apr,
+        uint256 _positionDuration,
+        uint256 _timeStretch
+    ) internal pure returns (uint256 bondReserves) {
+        // Solving for (1 + r * t) ** (1 / tau) here. t is the normalized time remaining which in
+        // this case is 1. Because bonds mature after the positionDuration, we need to scale the apr
+        // to the proportion of a year of the positionDuration. tau = t / time_stretch, or just
+        // 1 / time_stretch in this case.
+        uint256 t = _positionDuration.divDown(365 days);
+        uint256 tau = FixedPointMath.ONE_18.mulDown(_timeStretch);
+        uint256 interestFactor = FixedPointMath.ONE_18.add(_apr.mulDown(t)).pow(
+            FixedPointMath.ONE_18.divDown(tau)
+        );
+
+        // bondReserves = mu * z * (1 + apr * t) ** (1 / tau)
+        bondReserves = _initialSharePrice.mulDown(_shareReserves).mulDown(
+            interestFactor
+        );
+        return bondReserves;
+    }
+
     /// @dev Calculates the number of bonds a user will receive when opening a long position.
     /// @param _shareReserves The pool's share reserves.
     /// @param _bondReserves The pool's bond reserves.
@@ -538,49 +570,5 @@ library HyperdriveMath {
                 (FixedPointMath.ONE_18.sub(_timeRemaining)).mulDown(_bondAmount)
             )
         ).divDown(_timeRemaining);
-    }
-
-    /// @dev Calculates the LP proceeds from burning a specified amount of
-    ///     LP shares. LPs are entitled to a proportion of the idle reserves
-    ///     and are given withdrawal shares to compensate them for the LP
-    ///     shares that could not be withdrawn immediately.
-    /// @param _params The present value parameters.
-    /// @param _lpShares The amount of LP shares to burn.
-    /// @param _lpTotalSupply The total amount of LP shares.
-    /// @return shareProceeds The shares the LP withdraws immediately.
-    /// @return withdrawalShares The withdrawal shares the LP receives.
-    function calculateLpProceeds(
-        HyperdriveMath.PresentValueParams memory _params,
-        uint256 _lpShares,
-        uint256 _lpTotalSupply
-    ) internal pure returns (uint256 shareProceeds, uint256 withdrawalShares) {
-        // TODO: This calculation likely causes an issue with double counting
-        // of interest. Fix this.
-        //
-        // Calculate the amount of the idle reserves that can be withdrawn
-        // immediately. The calculation is given by:
-        //
-        // idle = (z - (o_l / c)) * (dl / l)
-        uint256 idle = _params.shareReserves -
-            _params.longsOutstanding.divDown(_params.sharePrice);
-        shareProceeds = idle.mulDivDown(_lpShares, _lpTotalSupply);
-
-        // Calculate the amount of LP shares that weren't able to be withdrawn
-        // immediately. We first use the present value calculation to calculate
-        // the amount of LP shares that were withdrawn immediately, which is
-        // given by:
-        //
-        // lpSharesWithdrawn = dz * (l / PV)
-        //
-        // Then we simply subtract the amount of shares being burned by the
-        // amount that have already been withdrawn as follows:
-        //
-        // withdrawalShares = lpShares - lpSharesWithdrawn
-        uint256 presentValue = HyperdriveMath.calculatePresentValue(_params);
-        withdrawalShares =
-            _lpShares -
-            shareProceeds.mulDivDown(_lpTotalSupply, presentValue);
-
-        return (shareProceeds, withdrawalShares);
     }
 }
