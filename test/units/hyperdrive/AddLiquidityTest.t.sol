@@ -246,7 +246,6 @@ contract AddLiquidityTest is HyperdriveTest {
         assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1);
     }
 
-    // FIXME
     function test_add_liquidity_with_long_at_maturity() external {
         uint256 apr = 0.05e18;
 
