@@ -110,80 +110,66 @@ abstract contract HyperdriveLP is HyperdriveBase {
         // Perform a checkpoint.
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
 
-        // FIXME: Can the LP total supply ever dip to zero and then go back up?
-        // Think more about this. If it shouldn't be possible, then we should
-        // have a strict error that prohibits this.
+        // If the LP total supply is zero, then the pool has never been
+        // initialized or all of the active LP shares have been removed from
+        // the pool and the withdrawal shares have all been paid out. We don't
+        // need to check for this case because the share and bond reserves will
+        // be zero, which will cause several function calls to fail.
         //
-        // In the case that there are existing LP shares, we calculate the
-        // amount of LP shares to mint as a function of the present value in
-        // the pool controlled by LPs. This ensures that LPs are fairly rewarded
-        // for adding liquidity. Otherwise, we mint the full amount of LP shares.
-        //
-        // TODO: We should have a constant for the withdrawal shares asset ID if we're not going to tranche.
+        // TODO: We should have a constant for the withdrawal shares asset ID if
+        // we're not going to tranche.
         uint256 lpTotalSupply = totalSupply[AssetId._LP_ASSET_ID] +
             totalSupply[
                 AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
             ] -
             withdrawPool.readyToWithdraw;
-        if (lpTotalSupply > 0) {
-            // Calculate the present value before updating the reserves.
-            HyperdriveMath.PresentValueParams memory params = HyperdriveMath
-                .PresentValueParams({
-                    shareReserves: marketState.shareReserves,
-                    bondReserves: marketState.bondReserves,
-                    sharePrice: sharePrice,
-                    initialSharePrice: initialSharePrice,
-                    timeStretch: timeStretch,
-                    longsOutstanding: marketState.longsOutstanding,
-                    longAverageTimeRemaining: _calculateTimeRemaining(
-                        uint256(longAggregates.averageMaturityTime).divUp(1e36) // scale to seconds
-                    ),
-                    longBaseVolume: longAggregates.baseVolume, // TODO: This isn't used.
-                    shortsOutstanding: marketState.shortsOutstanding,
-                    shortAverageTimeRemaining: _calculateTimeRemaining(
-                        uint256(shortAggregates.averageMaturityTime).divUp(1e36) // scale to seconds
-                    ),
-                    shortBaseVolume: shortAggregates.baseVolume
-                });
-            uint256 startingPresentValue = HyperdriveMath.calculatePresentValue(
-                params
-            );
 
-            // TODO: If we start caching state changes in memory (which would
-            // be preferable), then we could bundle all of this into a single
-            // calculation in HyperdriveMath.
-            //
-            // Add the liquidity to the pool's reserves and calculate the new
-            // present value.
-            _updateLiquidity(int256(shares));
-            params.shareReserves = marketState.shareReserves;
-            params.bondReserves = marketState.bondReserves;
-            uint256 endingPresentValue = HyperdriveMath.calculatePresentValue(
-                params
-            );
+        // Calculate the present value before updating the reserves.
+        HyperdriveMath.PresentValueParams memory params = HyperdriveMath
+            .PresentValueParams({
+                shareReserves: marketState.shareReserves,
+                bondReserves: marketState.bondReserves,
+                sharePrice: sharePrice,
+                initialSharePrice: initialSharePrice,
+                timeStretch: timeStretch,
+                longsOutstanding: marketState.longsOutstanding,
+                longAverageTimeRemaining: _calculateTimeRemaining(
+                    uint256(longAggregates.averageMaturityTime).divUp(1e36) // scale to seconds
+                ),
+                longBaseVolume: longAggregates.baseVolume, // TODO: This isn't used.
+                shortsOutstanding: marketState.shortsOutstanding,
+                shortAverageTimeRemaining: _calculateTimeRemaining(
+                    uint256(shortAggregates.averageMaturityTime).divUp(1e36) // scale to seconds
+                ),
+                shortBaseVolume: shortAggregates.baseVolume
+            });
+        uint256 startingPresentValue = HyperdriveMath.calculatePresentValue(
+            params
+        );
 
-            // The LP shares minted to the LP is derived by solving for the
-            // change in LP shares that preserves the ratio of present value to
-            // total LP shares. This is given by:
-            //
-            // PV0 / l0 = PV1 / (l0 + dl) => dl = ((PV1 - PV0) * l0) / PV0
-            lpShares = (endingPresentValue - startingPresentValue).mulDivDown(
-                lpTotalSupply,
-                startingPresentValue
-            );
-        } else {
-            // FIXME: See if making the initialize flow consistent with this
-            // fixes the current problem.
-            //
-            // TODO: Explain why we do this instead of minting the amount
-            //       of LP shares used on initialization.
-            //
-            // If there are no LP shares, we mint them 1:1 with
-            lpShares = shares;
+        // TODO: If we start caching state changes in memory (which would
+        // be preferable), then we could bundle all of this into a single
+        // calculation in HyperdriveMath.
+        //
+        // Add the liquidity to the pool's reserves and calculate the new
+        // present value.
+        _updateLiquidity(int256(shares));
+        params.shareReserves = marketState.shareReserves;
+        params.bondReserves = marketState.bondReserves;
+        uint256 endingPresentValue = HyperdriveMath.calculatePresentValue(
+            params
+        );
 
-            // Add the liquidity to the pool's reserves.
-            _updateLiquidity(int256(shares));
-        }
+        // The LP shares minted to the LP is derived by solving for the
+        // change in LP shares that preserves the ratio of present value to
+        // total LP shares. This ensures that LPs are fairly rewarded for
+        // adding liquidity.This is given by:
+        //
+        // PV0 / l0 = PV1 / (l0 + dl) => dl = ((PV1 - PV0) * l0) / PV0
+        lpShares = (endingPresentValue - startingPresentValue).mulDivDown(
+            lpTotalSupply,
+            startingPresentValue
+        );
 
         // Mint LP shares to the supplier.
         _mint(AssetId._LP_ASSET_ID, _destination, lpShares);
