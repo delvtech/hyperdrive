@@ -5,7 +5,7 @@ import { Errors } from "./Errors.sol";
 import { FixedPointMath } from "./FixedPointMath.sol";
 import { YieldSpaceMath } from "./YieldSpaceMath.sol";
 
-/// @author Delve
+/// @author DELV
 /// @title Hyperdrive
 /// @notice Math for the Hyperdrive pricing model.
 /// @custom:disclaimer The language used in this code is for coding convenience

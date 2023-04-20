@@ -9,7 +9,7 @@ import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "./libraries/YieldSpaceMath.sol";
 
-/// @author Delve
+/// @author DELV
 /// @title HyperdriveShort
 /// @notice Implements the short accounting for Hyperdrive.
 /// @custom:disclaimer The language used in this code is for coding convenience

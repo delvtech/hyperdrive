@@ -8,7 +8,7 @@ import { Errors } from "./libraries/Errors.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 
-/// @author Delve
+/// @author DELV
 /// @title HyperdriveLP
 /// @notice Implements the LP accounting for Hyperdrive.
 /// @custom:disclaimer The language used in this code is for coding convenience
@@ -266,11 +266,16 @@ abstract contract HyperdriveLP is HyperdriveBase {
         // solve for this value by solving the present value equation as
         // follows:
         //
-        // PV0 / l0 = PV1 / (l0 - dl + dw) => dw = (PV1 * l0 + PV0 * dl - PV0 * l0) / PV0
-        uint256 withdrawalShares = endingPresentValue.mulDown(lpTotalSupply);
-        withdrawalShares += startingPresentValue.mulDown(_shares);
-        withdrawalShares -= startingPresentValue.mulDown(lpTotalSupply);
-        withdrawalShares = withdrawalShares.divDown(startingPresentValue);
+        // PV0 / l0 = PV1 / (l0 - dl + dw) => dw = (PV1 / PV0) * l0 - (l0 - dl)
+        uint256 withdrawalShares = lpTotalSupply.mulDivDown(
+            endingPresentValue,
+            startingPresentValue
+        );
+        withdrawalShares -= lpTotalSupply - _shares;
+        // TODO: This is a hack to avoid a numerical error that results in
+        // stuck LP tokens. We need to stress test the system to see if this
+        // is adequate protection.
+        withdrawalShares = withdrawalShares < 1e4 ? 0 : withdrawalShares;
 
         // Mint the withdrawal shares to the LP.
         _mint(

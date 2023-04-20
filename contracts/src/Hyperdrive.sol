@@ -12,7 +12,7 @@ import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 
-/// @author Delve
+/// @author DELV
 /// @title Hyperdrive
 /// @notice A fixed-rate AMM that mints bonds on demand for longs and shorts.
 /// @custom:disclaimer The language used in this code is for coding convenience
