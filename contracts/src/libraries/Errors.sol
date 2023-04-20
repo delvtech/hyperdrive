@@ -24,6 +24,7 @@ library Errors {
     error UnexpectedAssetId();
     error UnsupportedToken();
     error ZeroAmount();
+    error Paused();
 
     /// ######################
     /// ### ERC20Forwarder ###

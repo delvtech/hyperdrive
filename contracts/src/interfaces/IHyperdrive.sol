@@ -12,6 +12,7 @@ interface IHyperdrive is IMultiToken {
         uint128 longsOutstanding;
         uint128 shortsOutstanding;
         bool isInitialized;
+        bool isPaused;
     }
 
     // TODO: Add documentation
@@ -113,6 +114,10 @@ interface IHyperdrive is IMultiToken {
     function getPoolInfo() external view returns (PoolInfo memory);
 
     function checkpoint(uint256 _checkpointTime) external;
+
+    function setPauser(address who, bool status) external;
+
+    function pause(bool status) external;
 
     function initialize(
         uint256 _contribution,
