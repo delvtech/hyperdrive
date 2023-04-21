@@ -65,6 +65,10 @@ abstract contract HyperdriveBase is MultiToken {
     ///         the checkpoint as well as aggregate volume values.
     mapping(uint256 => IHyperdrive.Checkpoint) public checkpoints;
 
+    /// @notice Addresses approved in this mapping can pause all deposits into
+    ///         the contract and other non essential functionality.
+    mapping(address => bool) public pausers;
+
     // TODO: This shouldn't be public.
     //
     // Governance fees that haven't been collected yet denominated in shares.
@@ -225,6 +229,27 @@ abstract contract HyperdriveBase is MultiToken {
                 capital: withdrawPool.capital,
                 interest: withdrawPool.interest
             });
+    }
+
+    ///@notice Allows governance to set the ability of an address to pause deposits
+    ///@param who The address to change
+    ///@param status The new pauser status
+    function setPauser(address who, bool status) external {
+        if (msg.sender != governance) revert Errors.Unauthorized();
+        pausers[who] = status;
+    }
+
+    ///@notice Allows an authorized address to pause this contract
+    ///@param status True to pause all deposits and false to unpause them
+    function pause(bool status) external {
+        if (!pausers[msg.sender]) revert Errors.Unauthorized();
+        marketState.isPaused = status;
+    }
+
+    ///@notice Blocks a function execution if the contract is paused
+    modifier isNotPaused() {
+        if (marketState.isPaused) revert Errors.Paused();
+        _;
     }
 
     ///@notice Allows plugin data libs to provide getters or other complex logic instead of the main
