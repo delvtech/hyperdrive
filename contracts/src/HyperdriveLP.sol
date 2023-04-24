@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
+// FIXME
+import "forge-std/console.sol";
+import "test/utils/Lib.sol";
+
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { HyperdriveBase } from "./HyperdriveBase.sol";
 import { AssetId } from "./libraries/AssetId.sol";
@@ -15,6 +19,9 @@ import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveLP is HyperdriveBase {
+    // FIXME
+    using Lib for *;
+
     using FixedPointMath for uint256;
     using SafeCast for uint256;
 
@@ -92,6 +99,7 @@ abstract contract HyperdriveLP is HyperdriveBase {
         }
 
         // Enforce the slippage guard.
+        console.log("addLiquidity: 1");
         uint256 apr = HyperdriveMath.calculateAPRFromReserves(
             marketState.shareReserves,
             marketState.bondReserves,
@@ -100,15 +108,18 @@ abstract contract HyperdriveLP is HyperdriveBase {
             timeStretch
         );
         if (apr < _minApr || apr > _maxApr) revert Errors.InvalidApr();
+        console.log("addLiquidity: 2");
 
         // Deposit for the user, this call also transfers from them
         (uint256 shares, uint256 sharePrice) = _deposit(
             _contribution,
             _asUnderlying
         );
+        console.log("addLiquidity: 3");
 
         // Perform a checkpoint.
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
+        console.log("addLiquidity: 4");
 
         // If the LP total supply is zero, then the pool has never been
         // initialized or all of the active LP shares have been removed from
@@ -118,61 +129,120 @@ abstract contract HyperdriveLP is HyperdriveBase {
         //
         // TODO: We should have a constant for the withdrawal shares asset ID if
         // we're not going to tranche.
+        uint256 withdrawalSharesOutstanding = totalSupply[
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
+        ] - withdrawPool.readyToWithdraw;
         uint256 lpTotalSupply = totalSupply[AssetId._LP_ASSET_ID] +
-            totalSupply[
-                AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
-            ] -
-            withdrawPool.readyToWithdraw;
+            withdrawalSharesOutstanding;
+        console.log("addLiquidity: 5");
 
-        // Calculate the present value before updating the reserves.
-        HyperdriveMath.PresentValueParams memory params = HyperdriveMath
-            .PresentValueParams({
-                shareReserves: marketState.shareReserves,
-                bondReserves: marketState.bondReserves,
-                sharePrice: sharePrice,
-                initialSharePrice: initialSharePrice,
-                timeStretch: timeStretch,
-                longsOutstanding: marketState.longsOutstanding,
-                longAverageTimeRemaining: _calculateTimeRemaining(
-                    uint256(longAggregates.averageMaturityTime).divUp(1e36) // scale to seconds
-                ),
-                longBaseVolume: longAggregates.baseVolume, // TODO: This isn't used.
-                shortsOutstanding: marketState.shortsOutstanding,
-                shortAverageTimeRemaining: _calculateTimeRemaining(
-                    uint256(shortAggregates.averageMaturityTime).divUp(1e36) // scale to seconds
-                ),
-                shortBaseVolume: shortAggregates.baseVolume
-            });
-        uint256 startingPresentValue = HyperdriveMath.calculatePresentValue(
-            params
-        );
+        // Calculate the number of LP shares to mint.
+        uint256 endingPresentValue;
+        {
+            // Calculate the present value before updating the reserves.
+            HyperdriveMath.PresentValueParams memory params = HyperdriveMath
+                .PresentValueParams({
+                    shareReserves: marketState.shareReserves,
+                    bondReserves: marketState.bondReserves,
+                    sharePrice: sharePrice,
+                    initialSharePrice: initialSharePrice,
+                    timeStretch: timeStretch,
+                    longsOutstanding: marketState.longsOutstanding,
+                    longAverageTimeRemaining: _calculateTimeRemaining(
+                        uint256(longAggregates.averageMaturityTime).divUp(1e36) // scale to seconds
+                    ),
+                    longBaseVolume: longAggregates.baseVolume, // TODO: This isn't used.
+                    shortsOutstanding: marketState.shortsOutstanding,
+                    shortAverageTimeRemaining: _calculateTimeRemaining(
+                        uint256(shortAggregates.averageMaturityTime).divUp(1e36) // scale to seconds
+                    ),
+                    shortBaseVolume: shortAggregates.baseVolume
+                });
+            uint256 startingPresentValue = HyperdriveMath.calculatePresentValue(
+                params
+            );
 
-        // TODO: If we start caching state changes in memory (which would
-        // be preferable), then we could bundle all of this into a single
-        // calculation in HyperdriveMath.
-        //
-        // Add the liquidity to the pool's reserves and calculate the new
-        // present value.
-        _updateLiquidity(int256(shares));
-        params.shareReserves = marketState.shareReserves;
-        params.bondReserves = marketState.bondReserves;
-        uint256 endingPresentValue = HyperdriveMath.calculatePresentValue(
-            params
-        );
+            // TODO: If we start caching state changes in memory (which would
+            // be preferable), then we could bundle all of this into a single
+            // calculation in HyperdriveMath.
+            //
+            // Add the liquidity to the pool's reserves and calculate the new
+            // present value.
+            _updateLiquidity(int256(shares));
+            params.shareReserves = marketState.shareReserves;
+            params.bondReserves = marketState.bondReserves;
+            endingPresentValue = HyperdriveMath.calculatePresentValue(params);
+            console.log(
+                "startingPresentValue: %s",
+                startingPresentValue.toString(18)
+            );
+            console.log(
+                "endingPresentValue: %s",
+                endingPresentValue.toString(18)
+            );
 
-        // The LP shares minted to the LP is derived by solving for the
-        // change in LP shares that preserves the ratio of present value to
-        // total LP shares. This ensures that LPs are fairly rewarded for
-        // adding liquidity.This is given by:
-        //
-        // PV0 / l0 = PV1 / (l0 + dl) => dl = ((PV1 - PV0) * l0) / PV0
-        lpShares = (endingPresentValue - startingPresentValue).mulDivDown(
-            lpTotalSupply,
-            startingPresentValue
-        );
+            // The LP shares minted to the LP is derived by solving for the
+            // change in LP shares that preserves the ratio of present value to
+            // total LP shares. This ensures that LPs are fairly rewarded for
+            // adding liquidity.This is given by:
+            //
+            // PV0 / l0 = PV1 / (l0 + dl) => dl = ((PV1 - PV0) * l0) / PV0
+            lpShares = (endingPresentValue - startingPresentValue).mulDivDown(
+                lpTotalSupply,
+                startingPresentValue
+            );
+            console.log(
+                "starting ratio: %s",
+                startingPresentValue.divDown(lpTotalSupply).toString(18)
+            );
+            console.log(
+                "ending ratio: %s",
+                endingPresentValue.divDown(lpTotalSupply + lpShares).toString(
+                    18
+                )
+            );
+        }
+        console.log("addLiquidity: 6");
 
         // Mint LP shares to the supplier.
         _mint(AssetId._LP_ASSET_ID, _destination, lpShares);
+        console.log("addLiquidity: 7");
+
+        // FIXME: Clean this up.
+        //
+        // FIXME: Identify the amount of capital the LP is giving to the other
+        // LPs. Then we give some to the withdrawal pool since this is the same
+        // as increasing the idle of active LPs.
+        if (withdrawalSharesOutstanding > 0) {
+            console.log("addLiquidity: 7.1");
+            uint256 currentValue = lpShares.mulDivDown(
+                endingPresentValue,
+                lpTotalSupply + lpShares
+            );
+            console.log("addLiquidity: 7.2");
+            console.log("shares: %s", shares.toString(18));
+            console.log("currentValue: %s", currentValue.toString(18));
+            // FIXME: Should we add the lp shares to this calculation? I think not
+            // because this is the amount of capital that was given to other LPs
+            // (by definition).
+            uint256 withdrawalPoolProceeds = (shares - currentValue).mulDivDown(
+                withdrawalSharesOutstanding,
+                lpTotalSupply
+            );
+            console.log("addLiquidity: 7.3");
+
+            // FIXME: We probably need to have a lower level function that is
+            // used by this function. We already have the present value at this
+            // point, so there isn't a need to recalculate it in the called
+            // function.
+            _applyWithdrawalProceeds(
+                withdrawalPoolProceeds,
+                withdrawalSharesOutstanding,
+                sharePrice
+            );
+            console.log("addLiquidity: 7.4");
+        }
+        console.log("addLiquidity: 8");
     }
 
     /// @notice Allows an LP to burn shares and withdraw from the pool.
@@ -366,6 +436,8 @@ abstract contract HyperdriveLP is HyperdriveBase {
         }
     }
 
+    // FIXME: Consider renaming this.
+    //
     /// @dev Pays out the maximum amount of withdrawal shares given a specified
     ///      amount of withdrawal proceeds.
     /// @param _withdrawalProceeds The amount of withdrawal proceeds to pay out.
@@ -377,15 +449,6 @@ abstract contract HyperdriveLP is HyperdriveBase {
         uint256 _withdrawalSharesOutstanding,
         uint256 _sharePrice
     ) internal {
-        // Calculate the maximum amount of LP shares that could be paid out by
-        // the withdrawal proceeds. The calculation uses the ratio of present
-        // value to LP total supply as follows:
-        //
-        // maxSharesReleased = withdrawalProceeds * (l / PV)
-        //
-        // In the event that all of the LPs have removed their liquidity and the
-        // remaining positions hit maturity, all of the withdrawal shares are
-        // marked as ready to withdraw.
         uint256 presentValue = HyperdriveMath.calculatePresentValue(
             HyperdriveMath.PresentValueParams({
                 shareReserves: marketState.shareReserves,
@@ -407,9 +470,35 @@ abstract contract HyperdriveLP is HyperdriveBase {
         );
         uint256 lpTotalSupply = totalSupply[AssetId._LP_ASSET_ID] +
             _withdrawalSharesOutstanding;
-        uint256 maxSharesReleased = presentValue > 0
-            ? _withdrawalProceeds.mulDivDown(lpTotalSupply, presentValue)
-            : lpTotalSupply;
+        _compensateWithdrawalPool(
+            _withdrawalProceeds,
+            presentValue,
+            lpTotalSupply,
+            _withdrawalSharesOutstanding
+        );
+    }
+
+    // FIXME: Rename this.
+    //
+    // FIXME: Comment this.
+    function _compensateWithdrawalPool(
+        uint256 _withdrawalProceeds,
+        uint256 _presentValue,
+        uint256 _lpTotalSupply,
+        uint256 _withdrawalSharesOutstanding
+    ) internal {
+        // Calculate the maximum amount of LP shares that could be paid out by
+        // the withdrawal proceeds. The calculation uses the ratio of present
+        // value to LP total supply as follows:
+        //
+        // maxSharesReleased = withdrawalProceeds * (l / PV)
+        //
+        // In the event that all of the LPs have removed their liquidity and the
+        // remaining positions hit maturity, all of the withdrawal shares are
+        // marked as ready to withdraw.
+        uint256 maxSharesReleased = _presentValue > 0
+            ? _withdrawalProceeds.mulDivDown(_lpTotalSupply, _presentValue)
+            : _lpTotalSupply;
 
         // Calculate the amount of withdrawal shares that will be released and
         // the amount of capital that will be used to pay out the withdrawal

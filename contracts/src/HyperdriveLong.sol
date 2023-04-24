@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
+// FIXME
+import "forge-std/console.sol";
+import "test/utils/Lib.sol";
+
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { HyperdriveLP } from "./HyperdriveLP.sol";
 import { AssetId } from "./libraries/AssetId.sol";
@@ -15,6 +19,9 @@ import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveLong is HyperdriveLP {
+    // FIXME
+    using Lib for *;
+
     using FixedPointMath for uint256;
     using SafeCast for uint256;
 
@@ -128,6 +135,33 @@ abstract contract HyperdriveLong is HyperdriveLP {
             uint256 shareProceeds,
             uint256 totalGovernanceFee
         ) = _calculateCloseLong(_bondAmount, sharePrice, _maturityTime);
+
+        // FIXME
+        {
+            uint256 presentValue = HyperdriveMath.calculatePresentValue(
+                HyperdriveMath.PresentValueParams({
+                    shareReserves: marketState.shareReserves,
+                    bondReserves: marketState.bondReserves,
+                    sharePrice: sharePrice,
+                    initialSharePrice: initialSharePrice,
+                    timeStretch: timeStretch,
+                    longsOutstanding: marketState.longsOutstanding,
+                    longAverageTimeRemaining: _calculateTimeRemaining(
+                        uint256(longAggregates.averageMaturityTime).divUp(1e36) // scale to seconds
+                    ),
+                    longBaseVolume: longAggregates.baseVolume, // TODO: This isn't used.
+                    shortsOutstanding: marketState.shortsOutstanding,
+                    shortAverageTimeRemaining: _calculateTimeRemaining(
+                        uint256(shortAggregates.averageMaturityTime).divUp(1e36) // scale to seconds
+                    ),
+                    shortBaseVolume: shortAggregates.baseVolume
+                })
+            );
+            console.log(
+                "close long: presentValue: %s",
+                presentValue.toString(18)
+            );
+        }
 
         // Attribute the governance fee.
         governanceFeesAccrued += totalGovernanceFee;
