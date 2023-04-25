@@ -1,10 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-// FIXME
-import "forge-std/console.sol";
-import "test/utils/Lib.sol";
-
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { HyperdriveBase } from "./HyperdriveBase.sol";
 import { AssetId } from "./libraries/AssetId.sol";
@@ -19,9 +15,6 @@ import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveLP is HyperdriveBase {
-    // FIXME
-    using Lib for *;
-
     using FixedPointMath for uint256;
     using SafeCast for uint256;
 
@@ -99,7 +92,6 @@ abstract contract HyperdriveLP is HyperdriveBase {
         }
 
         // Enforce the slippage guard.
-        console.log("addLiquidity: 1");
         uint256 apr = HyperdriveMath.calculateAPRFromReserves(
             marketState.shareReserves,
             marketState.bondReserves,
@@ -108,18 +100,15 @@ abstract contract HyperdriveLP is HyperdriveBase {
             timeStretch
         );
         if (apr < _minApr || apr > _maxApr) revert Errors.InvalidApr();
-        console.log("addLiquidity: 2");
 
         // Deposit for the user, this call also transfers from them
         (uint256 shares, uint256 sharePrice) = _deposit(
             _contribution,
             _asUnderlying
         );
-        console.log("addLiquidity: 3");
 
         // Perform a checkpoint.
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
-        console.log("addLiquidity: 4");
 
         // If the LP total supply is zero, then the pool has never been
         // initialized or all of the active LP shares have been removed from
@@ -134,7 +123,6 @@ abstract contract HyperdriveLP is HyperdriveBase {
         ] - withdrawPool.readyToWithdraw;
         uint256 lpTotalSupply = totalSupply[AssetId._LP_ASSET_ID] +
             withdrawalSharesOutstanding;
-        console.log("addLiquidity: 5");
 
         // Calculate the number of LP shares to mint.
         uint256 endingPresentValue;
@@ -172,14 +160,6 @@ abstract contract HyperdriveLP is HyperdriveBase {
             params.shareReserves = marketState.shareReserves;
             params.bondReserves = marketState.bondReserves;
             endingPresentValue = HyperdriveMath.calculatePresentValue(params);
-            console.log(
-                "startingPresentValue: %s",
-                startingPresentValue.toString(18)
-            );
-            console.log(
-                "endingPresentValue: %s",
-                endingPresentValue.toString(18)
-            );
 
             // The LP shares minted to the LP is derived by solving for the
             // change in LP shares that preserves the ratio of present value to
@@ -191,22 +171,10 @@ abstract contract HyperdriveLP is HyperdriveBase {
                 lpTotalSupply,
                 startingPresentValue
             );
-            console.log(
-                "starting ratio: %s",
-                startingPresentValue.divDown(lpTotalSupply).toString(18)
-            );
-            console.log(
-                "ending ratio: %s",
-                endingPresentValue.divDown(lpTotalSupply + lpShares).toString(
-                    18
-                )
-            );
         }
-        console.log("addLiquidity: 6");
 
         // Mint LP shares to the supplier.
         _mint(AssetId._LP_ASSET_ID, _destination, lpShares);
-        console.log("addLiquidity: 7");
 
         // FIXME: Clean this up.
         //
@@ -214,14 +182,10 @@ abstract contract HyperdriveLP is HyperdriveBase {
         // LPs. Then we give some to the withdrawal pool since this is the same
         // as increasing the idle of active LPs.
         if (withdrawalSharesOutstanding > 0) {
-            console.log("addLiquidity: 7.1");
             uint256 currentValue = lpShares.mulDivDown(
                 endingPresentValue,
                 lpTotalSupply + lpShares
             );
-            console.log("addLiquidity: 7.2");
-            console.log("shares: %s", shares.toString(18));
-            console.log("currentValue: %s", currentValue.toString(18));
             // FIXME: Should we add the lp shares to this calculation? I think not
             // because this is the amount of capital that was given to other LPs
             // (by definition).
@@ -229,7 +193,6 @@ abstract contract HyperdriveLP is HyperdriveBase {
                 withdrawalSharesOutstanding,
                 lpTotalSupply
             );
-            console.log("addLiquidity: 7.3");
 
             // FIXME: We probably need to have a lower level function that is
             // used by this function. We already have the present value at this
@@ -240,9 +203,7 @@ abstract contract HyperdriveLP is HyperdriveBase {
                 withdrawalSharesOutstanding,
                 sharePrice
             );
-            console.log("addLiquidity: 7.4");
         }
-        console.log("addLiquidity: 8");
     }
 
     /// @notice Allows an LP to burn shares and withdraw from the pool.
