@@ -752,9 +752,9 @@ contract LpWithdrawalTest is HyperdriveTest {
             variableRate: 0,
             contribution: 500_000_000e18,
             longAmount: 0,
-            longBasePaid: 10_000_000e18,
+            longBasePaid: 0,
             longMaturityTime: 0,
-            shortAmount: 10_000_000e18,
+            shortAmount: 0,
             shortBasePaid: 0,
             shortMaturityTime: 0
         });
@@ -773,11 +773,8 @@ contract LpWithdrawalTest is HyperdriveTest {
         ratio = presentValueRatio();
 
         // Bob opens a long.
-        //
-        // FIXME: This test doesn't work unless the longs and shorts are
-        // restricted to be greater than 1000e18.
         longBasePaid = longBasePaid.normalizeToRange(
-            1_000_000e18,
+            0.001e18,
             HyperdriveUtils.calculateMaxLong(hyperdrive)
         );
         testParams.longBasePaid = longBasePaid;
@@ -794,7 +791,7 @@ contract LpWithdrawalTest is HyperdriveTest {
 
         // Bob opens a short.
         shortAmount = shortAmount.normalizeToRange(
-            1_000_000e18,
+            0.001e18,
             HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
         testParams.shortAmount = shortAmount;
@@ -871,7 +868,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             hyperdrive.totalSupply(
                 AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
-            ),
+            ) - hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw,
             0,
             1e9 // TODO: Why is this not equal to zero?
         );
@@ -879,15 +876,15 @@ contract LpWithdrawalTest is HyperdriveTest {
 
     function presentValueRatio() internal view returns (uint256) {
         return
-            HyperdriveUtils.presentValue(hyperdrive).divDown(lpTotalSupply());
-    }
-
-    function lpTotalSupply() internal view returns (uint256) {
-        return
-            hyperdrive.totalSupply(AssetId._LP_ASSET_ID) +
-            hyperdrive.totalSupply(
-                AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
-            ) -
-            hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw;
+            HyperdriveUtils.presentValue(hyperdrive).divDown(
+                hyperdrive.totalSupply(AssetId._LP_ASSET_ID) +
+                    hyperdrive.totalSupply(
+                        AssetId.encodeAssetId(
+                            AssetId.AssetIdPrefix.WithdrawalShare,
+                            0
+                        )
+                    ) -
+                    hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw
+            );
     }
 }

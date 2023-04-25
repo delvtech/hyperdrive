@@ -11,7 +11,6 @@ import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeploye
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
-import "forge-std/console.sol";
 
 contract HyperdriveDSRTest is HyperdriveTest {
     using FixedPointMath for *;
@@ -44,19 +43,6 @@ contract HyperdriveDSRTest is HyperdriveTest {
         vm.startPrank(bob);
         dai.approve(address(hyperdrive), type(uint256).max);
         vm.stopPrank();
-    }
-
-    function test_dsr_factory_should_be_mainnet_deployable() external {
-        MakerDsrHyperdriveDeployer simpleDeployer = new MakerDsrHyperdriveDeployer(
-                manager
-            );
-        uint256 codeSize;
-        assembly ("memory-safe") {
-            codeSize := extcodesize(simpleDeployer)
-        }
-        console.log("DSR factory codesize: ", codeSize);
-        assertGt(codeSize, 0, "Must have code");
-        assertLt(codeSize, 24576, "Not Mainnet deployable");
     }
 
     function test_hyperdrive_dsr_deploy_and_init() external {

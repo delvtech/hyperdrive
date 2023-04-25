@@ -178,14 +178,16 @@ abstract contract HyperdriveLP is HyperdriveBase {
 
         // FIXME: Clean this up.
         //
+        // FIXME: Why is the current value ever greater than the number of shares.
+        //
         // FIXME: Identify the amount of capital the LP is giving to the other
         // LPs. Then we give some to the withdrawal pool since this is the same
         // as increasing the idle of active LPs.
-        if (withdrawalSharesOutstanding > 0) {
-            uint256 currentValue = lpShares.mulDivDown(
-                endingPresentValue,
-                lpTotalSupply + lpShares
-            );
+        uint256 currentValue = lpShares.mulDivDown(
+            endingPresentValue,
+            lpTotalSupply + lpShares
+        );
+        if (withdrawalSharesOutstanding > 0 && shares > currentValue) {
             // FIXME: Should we add the lp shares to this calculation? I think not
             // because this is the amount of capital that was given to other LPs
             // (by definition).
@@ -234,11 +236,11 @@ abstract contract HyperdriveLP is HyperdriveBase {
 
         // Burn the LP shares.
         uint256 activeLpTotalSupply = totalSupply[AssetId._LP_ASSET_ID];
+        uint256 withdrawalSharesOutstanding = totalSupply[
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
+        ] - withdrawPool.readyToWithdraw;
         uint256 lpTotalSupply = activeLpTotalSupply +
-            totalSupply[
-                AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
-            ] -
-            withdrawPool.readyToWithdraw;
+            withdrawalSharesOutstanding;
         _burn(AssetId._LP_ASSET_ID, msg.sender, _shares);
 
         // Calculate the starting present value of the pool.
@@ -284,21 +286,41 @@ abstract contract HyperdriveLP is HyperdriveBase {
         // follows:
         //
         // PV0 / l0 = PV1 / (l0 - dl + dw) => dw = (PV1 / PV0) * l0 - (l0 - dl)
-        uint256 withdrawalShares = lpTotalSupply.mulDivDown(
-            endingPresentValue,
-            startingPresentValue
+        int256 withdrawalShares = int256(
+            lpTotalSupply.mulDivDown(endingPresentValue, startingPresentValue)
         );
-        withdrawalShares -= lpTotalSupply - _shares;
-        // TODO: This is a hack to avoid a numerical error that results in
-        // stuck LP tokens. We need to stress test the system to see if this
-        // is adequate protection.
-        withdrawalShares = withdrawalShares < 1e4 ? 0 : withdrawalShares;
+        withdrawalShares -= int256(lpTotalSupply) - int256(_shares);
+        if (withdrawalShares > 0) {
+            // TODO: This is a hack to avoid a numerical error that results in
+            // stuck LP tokens. We need to stress test the system to see if this
+            // is adequate protection.
+            withdrawalShares = withdrawalShares < 1e4
+                ? int256(0)
+                : withdrawalShares;
+        } else if (withdrawalShares < 0) {
+            // FIXME: This is horribly inefficient.
+            //
+            // TODO: This is a hack to ensure that we have safety while
+            // sacrificing some fairness.
+            //
+            // We backtrack by calculating the amount of the idle that should
+            // be returned to the pool using the original present value ratio.
+            uint256 overestimatedProceeds = uint256(-withdrawalShares)
+                .mulDivDown(startingPresentValue, lpTotalSupply);
+            _updateLiquidity(int256(overestimatedProceeds));
+            _applyWithdrawalProceeds(
+                overestimatedProceeds,
+                withdrawalSharesOutstanding,
+                sharePrice
+            );
+            withdrawalShares = 0;
+        }
 
         // Mint the withdrawal shares to the LP.
         _mint(
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0),
             _destination,
-            withdrawalShares
+            uint256(withdrawalShares)
         );
 
         // Withdraw the shares from the yield source.
@@ -311,7 +333,7 @@ abstract contract HyperdriveLP is HyperdriveBase {
         // Enforce min user outputs
         if (_minOutput > baseProceeds) revert Errors.OutputLimit();
 
-        return (baseProceeds, withdrawalShares);
+        return (baseProceeds, uint256(withdrawalShares));
     }
 
     /// @notice Redeems withdrawal shares by giving the LP a pro-rata amount of
@@ -460,6 +482,7 @@ abstract contract HyperdriveLP is HyperdriveBase {
         uint256 maxSharesReleased = _presentValue > 0
             ? _withdrawalProceeds.mulDivDown(_lpTotalSupply, _presentValue)
             : _lpTotalSupply;
+        if (maxSharesReleased == 0) return;
 
         // Calculate the amount of withdrawal shares that will be released and
         // the amount of capital that will be used to pay out the withdrawal

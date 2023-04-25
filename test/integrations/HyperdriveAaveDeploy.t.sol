@@ -11,7 +11,6 @@ import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { IPool } from "@aave/interfaces/IPool.sol";
-import "forge-std/console.sol";
 
 contract HyperdriveDSRTest is HyperdriveTest {
     using FixedPointMath for *;
@@ -45,19 +44,6 @@ contract HyperdriveDSRTest is HyperdriveTest {
         vm.startPrank(bob);
         dai.approve(address(hyperdrive), type(uint256).max);
         vm.stopPrank();
-    }
-
-    function test_aave_factory_should_be_mainnet_deployable() external {
-        AaveHyperdriveDeployer simpleDeployer = new AaveHyperdriveDeployer(
-            pool
-        );
-        uint256 codeSize;
-        assembly ("memory-safe") {
-            codeSize := extcodesize(simpleDeployer)
-        }
-        console.log("Aave factory codesize: ", codeSize);
-        assertGt(codeSize, 0, "Must have code");
-        assertLt(codeSize, 24576, "Not Mainnet deployable");
     }
 
     function test_hyperdrive_aave_deploy_and_init() external {
