@@ -32,7 +32,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         uint256 _maxDeposit,
         address _destination,
         bool _asUnderlying
-    ) external returns (uint256) {
+    ) external isNotPaused returns (uint256) {
         if (_bondAmount == 0) {
             revert Errors.ZeroAmount();
         }

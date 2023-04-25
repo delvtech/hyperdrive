@@ -27,6 +27,7 @@ contract BaseTest is Test {
     address minter;
     address deployer;
     address governance;
+    address pauser;
 
     error WhaleBalanceExceeded();
     error WhaleIsContract();
@@ -56,6 +57,7 @@ contract BaseTest is Test {
         deployer = createUser("deployer");
         minter = createUser("minter");
         governance = createUser("governance");
+        pauser = createUser("pauser");
 
         __init__ = block.timestamp;
     }

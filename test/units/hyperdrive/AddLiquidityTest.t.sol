@@ -24,6 +24,23 @@ contract AddLiquidityTest is HyperdriveTest {
         hyperdrive.addLiquidity(0, 0, type(uint256).max, bob, true);
     }
 
+    function test_add_liquidity_failure_pause() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Attempt to add zero base as liquidity. This should fail.
+        vm.stopPrank();
+        pause(true);
+        vm.startPrank(bob);
+        vm.expectRevert(Errors.Paused.selector);
+        hyperdrive.addLiquidity(0, 0, type(uint256).max, bob, true);
+        vm.stopPrank();
+        pause(false);
+    }
+
     function test_add_liquidity_failure_invalid_apr() external {
         uint256 apr = 0.05e18;
 

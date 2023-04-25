@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IMultiToken } from "./IMultiToken.sol";
 
 interface IHyperdrive is IMultiToken {
@@ -15,6 +16,7 @@ interface IHyperdrive is IMultiToken {
         uint128 shortsOutstanding;
         /// @dev A flag indicating whether or not the pool has been initialized.
         bool isInitialized;
+        bool isPaused;
     }
 
     struct Aggregates {
@@ -121,6 +123,10 @@ interface IHyperdrive is IMultiToken {
     function getPoolInfo() external view returns (PoolInfo memory);
 
     function checkpoint(uint256 _checkpointTime) external;
+
+    function setPauser(address who, bool status) external;
+
+    function pause(bool status) external;
 
     function initialize(
         uint256 _contribution,

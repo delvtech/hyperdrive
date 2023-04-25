@@ -51,6 +51,9 @@ contract HyperdriveTest is BaseTest {
                 )
             )
         );
+        vm.stopPrank();
+        vm.startPrank(governance);
+        hyperdrive.setPauser(pauser, true);
 
         // Advance time so that Hyperdrive can look back more than a position
         // duration.
@@ -241,5 +244,11 @@ contract HyperdriveTest is BaseTest {
     function advanceTime(uint256 time, int256 apr) internal {
         MockHyperdrive(address(hyperdrive)).accrue(time, apr);
         vm.warp(block.timestamp + time);
+    }
+
+    function pause(bool paused) internal {
+        vm.startPrank(pauser);
+        hyperdrive.pause(paused);
+        vm.stopPrank();
     }
 }

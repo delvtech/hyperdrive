@@ -19,6 +19,7 @@ library Errors {
     error InvalidMaturityTime();
     error NegativeInterest();
     error OutputLimit();
+    error Paused();
     error PoolAlreadyInitialized();
     error TransferFailed();
     error UnexpectedAssetId();
@@ -56,4 +57,10 @@ library Errors {
     error BondMatured();
     error BondNotMatured();
     error InsufficientPrice();
+
+    /// #####################
+    /// ### Factory ###
+    /// #####################
+    error Unauthorized();
+    error InvalidContribution();
 }

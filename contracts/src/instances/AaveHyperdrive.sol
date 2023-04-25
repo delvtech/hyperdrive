@@ -57,6 +57,7 @@ contract AaveHyperdrive is Hyperdrive {
     {
         aToken = _aToken;
         pool = _pool;
+        _baseToken.approve(address(pool), type(uint256).max);
     }
 
     ///@notice Transfers amount of 'token' from the user and commits it to the yield source.

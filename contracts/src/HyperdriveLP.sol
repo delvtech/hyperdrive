@@ -86,7 +86,7 @@ abstract contract HyperdriveLP is HyperdriveBase {
         uint256 _maxApr,
         address _destination,
         bool _asUnderlying
-    ) external returns (uint256 lpShares) {
+    ) external isNotPaused returns (uint256 lpShares) {
         if (_contribution == 0) {
             revert Errors.ZeroAmount();
         }
