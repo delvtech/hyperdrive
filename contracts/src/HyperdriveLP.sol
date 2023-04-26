@@ -289,9 +289,9 @@ abstract contract HyperdriveLP is HyperdriveBase {
             // TODO: This is a hack to avoid a numerical error that results in
             // stuck LP tokens. We need to stress test the system to see if this
             // is adequate protection.
-            withdrawalShares = withdrawalShares < 1e4
-                ? int256(0)
-                : withdrawalShares;
+            // withdrawalShares = withdrawalShares < 1e4
+            //     ? int256(0)
+            //     : withdrawalShares;
         } else if (withdrawalShares < 0) {
             // FIXME: This is horribly inefficient.
             //

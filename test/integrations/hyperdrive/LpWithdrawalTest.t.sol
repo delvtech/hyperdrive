@@ -860,8 +860,8 @@ contract LpWithdrawalTest is HyperdriveTest {
         ) = removeLiquidity(celine, celineLpShares);
         assertGt(bobBaseProceeds, celineBaseProceeds);
         assertGt(bobBaseProceeds, testParams.contribution);
-        assertEq(bobWithdrawalShares, 0);
-        assertEq(celineWithdrawalShares, 0);
+        assertApproxEqAbs(bobWithdrawalShares, 0, 1);
+        assertApproxEqAbs(celineWithdrawalShares, 0, 1);
 
         // Ensure that the ending base balance of Hyperdrive is zero.
         assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1);
