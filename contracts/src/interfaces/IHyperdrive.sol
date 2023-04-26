@@ -16,6 +16,7 @@ interface IHyperdrive is IMultiToken {
         uint128 shortsOutstanding;
         /// @dev A flag indicating whether or not the pool has been initialized.
         bool isInitialized;
+        /// @dev A flag indicating whether or not the pool is paused.
         bool isPaused;
     }
 

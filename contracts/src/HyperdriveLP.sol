@@ -285,14 +285,7 @@ abstract contract HyperdriveLP is HyperdriveBase {
             lpTotalSupply.mulDivDown(endingPresentValue, startingPresentValue)
         );
         withdrawalShares -= int256(lpTotalSupply) - int256(_shares);
-        if (withdrawalShares > 0) {
-            // TODO: This is a hack to avoid a numerical error that results in
-            // stuck LP tokens. We need to stress test the system to see if this
-            // is adequate protection.
-            // withdrawalShares = withdrawalShares < 1e4
-            //     ? int256(0)
-            //     : withdrawalShares;
-        } else if (withdrawalShares < 0) {
+        if (withdrawalShares < 0) {
             // FIXME: This is horribly inefficient.
             //
             // TODO: This is a hack to ensure that we have safety while
@@ -485,14 +478,15 @@ abstract contract HyperdriveLP is HyperdriveBase {
         // Calculate the amount of withdrawal shares that will be released and
         // the amount of capital that will be used to pay out the withdrawal
         // pool.
-        uint256 sharesReleased = maxSharesReleased <=
-            _withdrawalSharesOutstanding
-            ? maxSharesReleased
-            : _withdrawalSharesOutstanding;
-        uint256 withdrawalPoolProceeds = _withdrawalProceeds.mulDivDown(
-            sharesReleased,
-            maxSharesReleased
-        );
+        uint256 sharesReleased = maxSharesReleased;
+        uint256 withdrawalPoolProceeds = _withdrawalProceeds;
+        if (maxSharesReleased > _withdrawalSharesOutstanding) {
+            sharesReleased = _withdrawalSharesOutstanding;
+            withdrawalPoolProceeds = _withdrawalProceeds.mulDivDown(
+                sharesReleased,
+                maxSharesReleased
+            );
+        }
         withdrawPool.readyToWithdraw += uint128(sharesReleased);
         withdrawPool.proceeds += uint128(withdrawalPoolProceeds);
 
