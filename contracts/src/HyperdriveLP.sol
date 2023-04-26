@@ -173,39 +173,34 @@ abstract contract HyperdriveLP is HyperdriveBase {
             );
         }
 
-        // Mint LP shares to the supplier.
-        _mint(AssetId._LP_ASSET_ID, _destination, lpShares);
-
-        // FIXME: Clean this up.
+        // TODO: It's not exactly clear why the current value would ever be
+        // greater than the contribution. Getting a better understanding of
+        // this would be good to ensure that the system is still fair.
         //
-        // FIXME: Why is the current value ever greater than the number of shares.
-        //
-        // FIXME: Identify the amount of capital the LP is giving to the other
-        // LPs. Then we give some to the withdrawal pool since this is the same
-        // as increasing the idle of active LPs.
+        // By maintaining the ratio of present value to total LP shares, we may
+        // end up increasing the idle that is available to withdraw by other
+        // LPs. In this case, we pay out the proportional amount to the
+        // withdrawal pool so that the withdrawal shares receive a corresponding
+        // bump in their "idle" capital.
         uint256 currentValue = lpShares.mulDivDown(
             endingPresentValue,
             lpTotalSupply + lpShares
         );
         if (withdrawalSharesOutstanding > 0 && shares > currentValue) {
-            // FIXME: Should we add the lp shares to this calculation? I think not
-            // because this is the amount of capital that was given to other LPs
-            // (by definition).
             uint256 withdrawalPoolProceeds = (shares - currentValue).mulDivDown(
                 withdrawalSharesOutstanding,
                 lpTotalSupply
             );
-
-            // FIXME: We probably need to have a lower level function that is
-            // used by this function. We already have the present value at this
-            // point, so there isn't a need to recalculate it in the called
-            // function.
-            _applyWithdrawalProceeds(
+            _compensateWithdrawalPool(
                 withdrawalPoolProceeds,
-                withdrawalSharesOutstanding,
-                sharePrice
+                endingPresentValue,
+                lpTotalSupply + lpShares,
+                withdrawalSharesOutstanding
             );
         }
+
+        // Mint LP shares to the supplier.
+        _mint(AssetId._LP_ASSET_ID, _destination, lpShares);
     }
 
     /// @notice Allows an LP to burn shares and withdraw from the pool.
@@ -419,8 +414,6 @@ abstract contract HyperdriveLP is HyperdriveBase {
         }
     }
 
-    // FIXME: Consider renaming this.
-    //
     /// @dev Pays out the maximum amount of withdrawal shares given a specified
     ///      amount of withdrawal proceeds.
     /// @param _withdrawalProceeds The amount of withdrawal proceeds to pay out.
@@ -461,9 +454,14 @@ abstract contract HyperdriveLP is HyperdriveBase {
         );
     }
 
-    // FIXME: Rename this.
-    //
-    // FIXME: Comment this.
+    /// @dev Pays out a specified amount of withdrawal proceeds to the
+    ///      withdrawal pool. This function is useful for circumstances in which
+    ///      core calculations have already been performed to avoid reloading
+    ///      state.
+    /// @param _withdrawalProceeds The amount of withdrawal proceeds to pay out.
+    /// @param _presentValue The present value of the pool.
+    /// @param _lpTotalSupply The total supply of LP shares.
+    /// @param _withdrawalSharesOutstanding The outstanding withdrawal shares.
     function _compensateWithdrawalPool(
         uint256 _withdrawalProceeds,
         uint256 _presentValue,
