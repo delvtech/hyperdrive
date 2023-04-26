@@ -109,12 +109,12 @@ abstract contract Hyperdrive is
     // the computation.
     //
     /// @dev Creates a new checkpoint if necessary.
+    /// @param _poolInfo An in-memory representation of the pool's state.
     /// @param _checkpointTime The time of the checkpoint to create.
-    /// @param _sharePrice The current share price.
     /// @return openSharePrice The open share price of the latest checkpoint.
     function _applyCheckpoint(
-        uint256 _checkpointTime,
-        uint256 _sharePrice
+        IHyperdrive.PoolInfo memory _poolInfo,
+        uint256 _checkpointTime
     ) internal override returns (uint256 openSharePrice) {
         // Return early if the checkpoint has already been updated.
         if (
@@ -125,7 +125,9 @@ abstract contract Hyperdrive is
         }
 
         // Create the share price checkpoint.
-        checkpoints[_checkpointTime].sharePrice = _sharePrice.toUint128();
+        checkpoints[_checkpointTime].sharePrice = _poolInfo
+            .sharePrice
+            .toUint128();
 
         // Pay out the long withdrawal pool for longs that have matured.
         uint256 maturedLongsAmount = totalSupply[
@@ -133,12 +135,12 @@ abstract contract Hyperdrive is
         ];
         if (maturedLongsAmount > 0) {
             _applyCloseLong(
+                _poolInfo,
                 maturedLongsAmount,
                 0,
-                maturedLongsAmount.divDown(_sharePrice),
+                maturedLongsAmount.divDown(_poolInfo.sharePrice),
                 0,
-                _checkpointTime,
-                _sharePrice
+                _checkpointTime
             );
         }
 
@@ -150,10 +152,10 @@ abstract contract Hyperdrive is
             _applyCloseShort(
                 maturedShortsAmount,
                 0,
-                maturedShortsAmount.divDown(_sharePrice),
+                maturedShortsAmount.divDown(_poolInfo.sharePrice),
                 0,
                 _checkpointTime,
-                _sharePrice
+                _poolInfo.sharePrice
             );
         }
 

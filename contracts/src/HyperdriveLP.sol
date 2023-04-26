@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { HyperdriveBase } from "./HyperdriveBase.sol";
+import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { AssetId } from "./libraries/AssetId.sol";
 import { Errors } from "./libraries/Errors.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
@@ -376,8 +377,12 @@ abstract contract HyperdriveLP is HyperdriveBase {
     }
 
     /// @dev Updates the pool's liquidity and holds the pool's APR constant.
+    /// @param _poolInfo An in-memory representation of the pool's state.
     /// @param _shareReservesDelta The delta that should be applied to share reserves.
-    function _updateLiquidity(int256 _shareReservesDelta) internal {
+    function _updateLiquidity(
+        IHyperdrive.PoolInfo memory _poolInfo,
+        int256 _shareReservesDelta
+    ) internal {
         // TODO: We need to stress test the assumption that the pool's share
         // reserves will only be equal to zero in the narrow case outlined
         // below.
@@ -389,57 +394,62 @@ abstract contract HyperdriveLP is HyperdriveBase {
         // only remaining positions are shorts. Otherwise, we update the pool
         // by increasing the share reserves and preserving the previous ratio of
         // share reserves to bond reserves.
-        uint256 shareReserves = marketState.shareReserves;
+        uint256 shareReserves = _poolInfo.shareReserves;
         if (_shareReservesDelta != 0 && shareReserves > 0) {
             int256 updatedShareReserves = int256(shareReserves) +
                 _shareReservesDelta;
-            marketState.shareReserves = uint256(
+            _poolInfo.shareReserves = uint256(
                 // TODO: This seems to be masking a numerical problem. This
                 // should be investigated more.
                 //
                 // NOTE: There is a 1 wei discrepancy in some of the
                 // calculations which results in this clamping being required.
                 updatedShareReserves >= 0 ? updatedShareReserves : int256(0)
-            ).toUint128();
-            marketState.bondReserves = uint256(marketState.bondReserves)
-                .mulDivDown(marketState.shareReserves, shareReserves)
-                .toUint128();
+            );
+            _poolInfo.bondReserves = uint256(_poolInfo.bondReserves).mulDivDown(
+                _poolInfo.shareReserves,
+                shareReserves
+            );
         }
     }
 
     /// @dev Pays out the maximum amount of withdrawal shares given a specified
     ///      amount of withdrawal proceeds.
+    /// @param _poolInfo An in-memory representation of the pool's state.
     /// @param _withdrawalProceeds The amount of withdrawal proceeds to pay out.
     /// @param _withdrawalSharesOutstanding The amount of withdrawal shares
     ///        that haven't been paid out.
-    /// @param _sharePrice The current share price.
     function _applyWithdrawalProceeds(
+        IHyperdrive.PoolInfo memory _poolInfo,
         uint256 _withdrawalProceeds,
-        uint256 _withdrawalSharesOutstanding,
-        uint256 _sharePrice
+        uint256 _withdrawalSharesOutstanding
     ) internal {
+        // FIXME: Can we pass pool info instead to make this cleaner?
+        //
+        // FIXME: Calculate present value shouldn't mutate any state.
         uint256 presentValue = HyperdriveMath.calculatePresentValue(
             HyperdriveMath.PresentValueParams({
-                shareReserves: marketState.shareReserves,
-                bondReserves: marketState.bondReserves,
-                sharePrice: _sharePrice,
+                shareReserves: _poolInfo.shareReserves,
+                bondReserves: _poolInfo.bondReserves,
+                sharePrice: _poolInfo.sharePrice,
                 initialSharePrice: initialSharePrice,
                 timeStretch: timeStretch,
-                longsOutstanding: marketState.longsOutstanding,
+                longsOutstanding: _poolInfo.longsOutstanding,
                 longAverageTimeRemaining: _calculateTimeRemaining(
-                    uint256(longAggregates.averageMaturityTime).divUp(1e36) // scale to seconds
+                    _poolInfo.longAverageMaturityTime.divUp(1e36) // scale to seconds
                 ),
-                longBaseVolume: longAggregates.baseVolume, // TODO: This isn't used.
-                shortsOutstanding: marketState.shortsOutstanding,
+                longBaseVolume: _poolInfo.longBaseVolume, // TODO: This isn't used.
+                shortsOutstanding: _poolInfo.shortsOutstanding,
                 shortAverageTimeRemaining: _calculateTimeRemaining(
-                    uint256(shortAggregates.averageMaturityTime).divUp(1e36) // scale to seconds
+                    _poolInfo.shortAverageMaturityTime.divUp(1e36) // scale to seconds
                 ),
-                shortBaseVolume: shortAggregates.baseVolume
+                shortBaseVolume: _poolInfo.shortBaseVolume
             })
         );
-        uint256 lpTotalSupply = totalSupply[AssetId._LP_ASSET_ID] +
+        uint256 lpTotalSupply = _poolInfo.lpTotalSupply +
             _withdrawalSharesOutstanding;
         _compensateWithdrawalPool(
+            _poolInfo,
             _withdrawalProceeds,
             presentValue,
             lpTotalSupply,
@@ -451,11 +461,13 @@ abstract contract HyperdriveLP is HyperdriveBase {
     ///      withdrawal pool. This function is useful for circumstances in which
     ///      core calculations have already been performed to avoid reloading
     ///      state.
+    /// @param _poolInfo An in-memory representation of the pool's state.
     /// @param _withdrawalProceeds The amount of withdrawal proceeds to pay out.
     /// @param _presentValue The present value of the pool.
     /// @param _lpTotalSupply The total supply of LP shares.
     /// @param _withdrawalSharesOutstanding The outstanding withdrawal shares.
     function _compensateWithdrawalPool(
+        IHyperdrive.PoolInfo memory _poolInfo,
         uint256 _withdrawalProceeds,
         uint256 _presentValue,
         uint256 _lpTotalSupply,
@@ -487,10 +499,10 @@ abstract contract HyperdriveLP is HyperdriveBase {
                 maxSharesReleased
             );
         }
-        withdrawPool.readyToWithdraw += uint128(sharesReleased);
-        withdrawPool.proceeds += uint128(withdrawalPoolProceeds);
+        _poolInfo.withdrawalSharesReadyToWithdraw += uint128(sharesReleased);
+        _poolInfo.withdrawalSharesProceeds += uint128(withdrawalPoolProceeds);
 
         // Remove the withdrawal pool proceeds from the reserves.
-        _updateLiquidity(-int256(withdrawalPoolProceeds));
+        _updateLiquidity(_poolInfo, -int256(withdrawalPoolProceeds));
     }
 }

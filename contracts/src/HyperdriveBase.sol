@@ -165,12 +165,12 @@ abstract contract HyperdriveBase is MultiToken {
     function checkpoint(uint256 _checkpointTime) public virtual;
 
     /// @dev Creates a new checkpoint if necessary.
+    /// @param _poolInfo An in-memory representation of the pool's state.
     /// @param _checkpointTime The time of the checkpoint to create.
-    /// @param _sharePrice The current share price.
     /// @return openSharePrice The open share price of the latest checkpoint.
     function _applyCheckpoint(
-        uint256 _checkpointTime,
-        uint256 _sharePrice
+        IHyperdrive.PoolInfo memory _poolInfo,
+        uint256 _checkpointTime
     ) internal virtual returns (uint256 openSharePrice);
 
     /// @notice This function collects the governance fees accrued by the pool.
@@ -182,52 +182,7 @@ abstract contract HyperdriveBase is MultiToken {
         (proceeds, ) = _withdraw(_governanceFeesAccrued, governance, true);
     }
 
-    /// Getters ///
-
-    // TODO: The fee parameters aren't immutable right now, but arguably they
-    //       should be.
-    //
-    /// @notice Gets the pool's configuration parameters.
-    /// @dev These parameters are immutable, so this should only need to be
-    ///      called once.
-    /// @return The PoolConfig struct.
-    function getPoolConfig()
-        external
-        view
-        returns (IHyperdrive.PoolConfig memory)
-    {
-        return
-            IHyperdrive.PoolConfig({
-                initialSharePrice: initialSharePrice,
-                positionDuration: positionDuration,
-                checkpointDuration: checkpointDuration,
-                timeStretch: timeStretch,
-                flatFee: fees.flat,
-                curveFee: fees.curve,
-                governanceFee: fees.governance
-            });
-    }
-
-    /// @notice Gets info about the pool's reserves and other state that is
-    ///         important to evaluate potential trades.
-    /// @return The PoolInfo struct.
-    function getPoolInfo() external view returns (IHyperdrive.PoolInfo memory) {
-        return
-            IHyperdrive.PoolInfo({
-                shareReserves: marketState.shareReserves,
-                bondReserves: marketState.bondReserves,
-                lpTotalSupply: totalSupply[AssetId._LP_ASSET_ID],
-                sharePrice: _pricePerShare(),
-                longsOutstanding: marketState.longsOutstanding,
-                longAverageMaturityTime: longAggregates.averageMaturityTime,
-                longBaseVolume: longAggregates.baseVolume,
-                shortsOutstanding: marketState.shortsOutstanding,
-                shortAverageMaturityTime: shortAggregates.averageMaturityTime,
-                shortBaseVolume: shortAggregates.baseVolume,
-                withdrawalSharesReadyToWithdraw: withdrawPool.readyToWithdraw,
-                withdrawalSharesProceeds: withdrawPool.proceeds
-            });
-    }
+    /// Pauser ///
 
     ///@notice Allows governance to set the ability of an address to pause deposits
     ///@param who The address to change
@@ -248,6 +203,53 @@ abstract contract HyperdriveBase is MultiToken {
     modifier isNotPaused() {
         if (marketState.isPaused) revert Errors.Paused();
         _;
+    }
+
+    /// Getters ///
+
+    // TODO: The fee parameters aren't immutable right now, but arguably they
+    //       should be.
+    //
+    /// @notice Gets the pool's configuration parameters.
+    /// @dev These parameters are immutable, so this should only need to be
+    ///      called once.
+    /// @return The PoolConfig struct.
+    function getPoolConfig()
+        public
+        view
+        returns (IHyperdrive.PoolConfig memory)
+    {
+        return
+            IHyperdrive.PoolConfig({
+                initialSharePrice: initialSharePrice,
+                positionDuration: positionDuration,
+                checkpointDuration: checkpointDuration,
+                timeStretch: timeStretch,
+                flatFee: fees.flat,
+                curveFee: fees.curve,
+                governanceFee: fees.governance
+            });
+    }
+
+    /// @notice Gets info about the pool's reserves and other state that is
+    ///         important to evaluate potential trades.
+    /// @return The PoolInfo struct.
+    function getPoolInfo() public view returns (IHyperdrive.PoolInfo memory) {
+        return
+            IHyperdrive.PoolInfo({
+                shareReserves: marketState.shareReserves,
+                bondReserves: marketState.bondReserves,
+                lpTotalSupply: totalSupply[AssetId._LP_ASSET_ID],
+                sharePrice: _pricePerShare(),
+                longsOutstanding: marketState.longsOutstanding,
+                longAverageMaturityTime: longAggregates.averageMaturityTime,
+                longBaseVolume: longAggregates.baseVolume,
+                shortsOutstanding: marketState.shortsOutstanding,
+                shortAverageMaturityTime: shortAggregates.averageMaturityTime,
+                shortBaseVolume: shortAggregates.baseVolume,
+                withdrawalSharesReadyToWithdraw: withdrawPool.readyToWithdraw,
+                withdrawalSharesProceeds: withdrawPool.proceeds
+            });
     }
 
     ///@notice Allows plugin data libs to provide getters or other complex logic instead of the main
@@ -271,6 +273,74 @@ abstract contract HyperdriveBase is MultiToken {
     }
 
     /// Helpers ///
+
+    /// @dev Applies a state update to the pool.
+    /// @param _initialPoolInfo The pool's state before the update.
+    /// @param _poolInfo The pool's state after the update.
+    function _applyStateUpdate(
+        IHyperdrive.PoolInfo memory _initialPoolInfo,
+        IHyperdrive.PoolInfo memory _poolInfo
+    ) internal {
+        // Apply the updates to the market state.
+        if (_initialPoolInfo.shareReserves != _poolInfo.shareReserves) {
+            marketState.shareReserves = _poolInfo.shareReserves.toUint128();
+        }
+        if (_initialPoolInfo.bondReserves != _poolInfo.bondReserves) {
+            marketState.bondReserves = _poolInfo.bondReserves.toUint128();
+        }
+        if (_initialPoolInfo.longsOutstanding != _poolInfo.longsOutstanding) {
+            marketState.longsOutstanding = _poolInfo
+                .longsOutstanding
+                .toUint128();
+        }
+        if (_initialPoolInfo.shortsOutstanding != _poolInfo.shortsOutstanding) {
+            marketState.shortsOutstanding = _poolInfo
+                .shortsOutstanding
+                .toUint128();
+        }
+
+        // Apply the updates to the aggregates.
+        if (
+            _initialPoolInfo.longAverageMaturityTime !=
+            _poolInfo.longAverageMaturityTime
+        ) {
+            longAggregates.averageMaturityTime = _poolInfo
+                .longAverageMaturityTime
+                .toUint128();
+        }
+        if (
+            _initialPoolInfo.shortAverageMaturityTime !=
+            _poolInfo.shortAverageMaturityTime
+        ) {
+            shortAggregates.averageMaturityTime = _poolInfo
+                .shortAverageMaturityTime
+                .toUint128();
+        }
+        if (_initialPoolInfo.longBaseVolume != _poolInfo.longBaseVolume) {
+            longAggregates.baseVolume = _poolInfo.longBaseVolume.toUint128();
+        }
+        if (_initialPoolInfo.shortBaseVolume != _poolInfo.shortBaseVolume) {
+            shortAggregates.baseVolume = _poolInfo.shortBaseVolume.toUint128();
+        }
+
+        // Apply the updates to the withdrawal pool.
+        if (
+            _initialPoolInfo.withdrawalSharesReadyToWithdraw !=
+            _poolInfo.withdrawalSharesReadyToWithdraw
+        ) {
+            withdrawPool.readyToWithdraw = _poolInfo
+                .withdrawalSharesReadyToWithdraw
+                .toUint128();
+        }
+        if (
+            _initialPoolInfo.withdrawalSharesProceeds !=
+            _poolInfo.withdrawalSharesProceeds
+        ) {
+            withdrawPool.proceeds = _poolInfo
+                .withdrawalSharesProceeds
+                .toUint128();
+        }
+    }
 
     /// @dev Calculates the normalized time remaining of a position.
     /// @param _maturityTime The maturity time of the position.
