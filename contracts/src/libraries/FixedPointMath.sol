@@ -1,7 +1,7 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import "./Errors.sol";
+import { Errors } from "./Errors.sol";
 
 /// @author DELV
 /// @title FixedPointMath

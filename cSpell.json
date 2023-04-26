@@ -24,6 +24,7 @@
         "checkpointing",
         "concat",
         "cusdc",
+        "DELV",
         "deauthorize",
         "degradation",
         "delegatecall",
