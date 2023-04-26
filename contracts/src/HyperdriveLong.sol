@@ -5,10 +5,10 @@ import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { HyperdriveLP } from "./HyperdriveLP.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { AssetId } from "./libraries/AssetId.sol";
+import { Copy } from "./libraries/Copy.sol";
 import { Errors } from "./libraries/Errors.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
-import { Copy } from "./libraries/Copy.sol";
 
 /// @author DELV
 /// @title HyperdriveLong
@@ -138,7 +138,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // Perform a checkpoint at the maturity time. This ensures the long and
         // all of the other positions in the checkpoint are closed. This will
         // have no effect if the maturity time is in the future.
-        uint256 sharePrice = _pricePerShare();
         _applyCheckpoint(poolInfo, _maturityTime);
 
         // Burn the longs that are being closed.
@@ -506,7 +505,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // isn't calculated when the curve fee is 0. The bond reserves are only
         // 0 in the scenario that the LPs have fully withdrawn and the last
         // trader redeems.
-        uint256 spotPrice = marketState.bondReserves > 0
+        uint256 spotPrice = _poolInfo.bondReserves > 0
             ? HyperdriveMath.calculateSpotPrice(
                 _poolInfo.shareReserves,
                 _poolInfo.bondReserves,
