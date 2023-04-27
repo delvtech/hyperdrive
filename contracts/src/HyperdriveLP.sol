@@ -47,9 +47,6 @@ abstract contract HyperdriveLP is HyperdriveBase {
             _asUnderlying
         );
 
-        // FIXME: We can optimize getPoolInfo by accepting the share price to
-        // avoid reloading it.
-        //
         // Get the pool state and create a copy. This copy will used as an
         // in-memory state object and the updates will be applied at the end
         // of the function.
@@ -105,9 +102,6 @@ abstract contract HyperdriveLP is HyperdriveBase {
             revert Errors.ZeroAmount();
         }
 
-        // FIXME: We can optimize getPoolInfo by accepting the share price to
-        // avoid reloading it.
-        //
         // Get the pool state and create a copy. This copy will used as an
         // in-memory state object and the updates will be applied at the end
         // of the function.
@@ -161,7 +155,7 @@ abstract contract HyperdriveLP is HyperdriveBase {
                         poolInfo.longAverageMaturityTime.divUp(1e36) // scale to seconds
                     ),
                     longBaseVolume: poolInfo.longBaseVolume, // TODO: This isn't used.
-                    shortsOutstanding: marketState.shortsOutstanding,
+                    shortsOutstanding: poolInfo.shortsOutstanding,
                     shortAverageTimeRemaining: _calculateTimeRemaining(
                         poolInfo.shortAverageMaturityTime.divUp(1e36) // scale to seconds
                     ),
@@ -371,9 +365,6 @@ abstract contract HyperdriveLP is HyperdriveBase {
         address _destination,
         bool _asUnderlying
     ) external returns (uint256 _proceeds) {
-        // FIXME: We can optimize getPoolInfo by accepting the share price to
-        // avoid reloading it.
-        //
         // Get the pool state and create a copy. This copy will used as an
         // in-memory state object and the updates will be applied at the end
         // of the function.
@@ -467,7 +458,7 @@ abstract contract HyperdriveLP is HyperdriveBase {
         IHyperdrive.PoolInfo memory _poolInfo,
         uint256 _withdrawalProceeds,
         uint256 _withdrawalSharesOutstanding
-    ) internal {
+    ) internal view {
         // FIXME: Can we pass pool info instead to make this cleaner?
         //
         // FIXME: Calculate present value shouldn't mutate any state.
@@ -516,7 +507,7 @@ abstract contract HyperdriveLP is HyperdriveBase {
         uint256 _presentValue,
         uint256 _lpTotalSupply,
         uint256 _withdrawalSharesOutstanding
-    ) internal {
+    ) internal pure {
         // Calculate the maximum amount of LP shares that could be paid out by
         // the withdrawal proceeds. The calculation uses the ratio of present
         // value to LP total supply as follows:

@@ -100,10 +100,13 @@ abstract contract Hyperdrive is
         } else {
             for (uint256 time = _checkpointTime; ; time += checkpointDuration) {
                 uint256 closestSharePrice = checkpoints[time].sharePrice;
-                if (time != latestCheckpoint) {
-                    poolInfo.sharePrice = closestSharePrice;
+                if (time == latestCheckpoint) {
+                    closestSharePrice = poolInfo.sharePrice;
                 }
                 if (closestSharePrice != 0) {
+                    if (time != latestCheckpoint) {
+                        poolInfo.sharePrice = closestSharePrice;
+                    }
                     _applyCheckpoint(poolInfo, _checkpointTime);
                     break;
                 }
@@ -147,10 +150,13 @@ abstract contract Hyperdrive is
         if (maturedLongsAmount > 0) {
             _applyCloseLong(
                 _poolInfo,
+                TradeResult({
+                    shareReservesDelta: 0,
+                    bondReservesDelta: 0,
+                    totalGovernanceFee: 0
+                }),
                 maturedLongsAmount,
-                0,
                 maturedLongsAmount.divDown(_poolInfo.sharePrice),
-                0,
                 _checkpointTime
             );
         }
@@ -162,10 +168,13 @@ abstract contract Hyperdrive is
         if (maturedShortsAmount > 0) {
             _applyCloseShort(
                 _poolInfo,
+                TradeResult({
+                    shareReservesDelta: 0,
+                    bondReservesDelta: 0,
+                    totalGovernanceFee: 0
+                }),
                 maturedShortsAmount,
-                0,
                 maturedShortsAmount.divDown(_poolInfo.sharePrice),
-                0,
                 _checkpointTime
             );
         }

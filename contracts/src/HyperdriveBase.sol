@@ -20,6 +20,15 @@ abstract contract HyperdriveBase is MultiToken {
     using FixedPointMath for uint256;
     using SafeCast for uint256;
 
+    struct TradeResult {
+        /// @dev The amount the share reserves should be effected by a trade.
+        uint256 shareReservesDelta;
+        /// @dev The amount the bond reserves should be effected by a trade.
+        uint256 bondReservesDelta;
+        /// @dev The total governance fee paid on a trade.
+        uint256 totalGovernanceFee;
+    }
+
     /// Tokens ///
 
     // @notice The base asset.
