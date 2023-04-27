@@ -6,11 +6,12 @@ import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { HyperdriveBase } from "./HyperdriveBase.sol";
 import { HyperdriveLong } from "./HyperdriveLong.sol";
 import { HyperdriveShort } from "./HyperdriveShort.sol";
+import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { AssetId } from "./libraries/AssetId.sol";
+import { Copy } from "./libraries/Copy.sol";
 import { Errors } from "./libraries/Errors.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
-import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 
 /// @author DELV
 /// @title Hyperdrive
@@ -23,6 +24,7 @@ abstract contract Hyperdrive is
     HyperdriveLong,
     HyperdriveShort
 {
+    using Copy for IHyperdrive.PoolInfo;
     using FixedPointMath for uint256;
     using SafeCast for uint256;
 
@@ -84,23 +86,32 @@ abstract contract Hyperdrive is
             revert Errors.InvalidCheckpointTime();
         }
 
+        // Get the pool state and create a copy. This copy will used as an
+        // in-memory state object and the updates will be applied at the end
+        // of the function.
+        IHyperdrive.PoolInfo memory initialPoolInfo = getPoolInfo();
+        IHyperdrive.PoolInfo memory poolInfo = initialPoolInfo.copy();
+
         // If the checkpoint time is the latest checkpoint, we use the current
         // share price. Otherwise, we use a linear search to find the closest
         // share price and use that to perform the checkpoint.
         if (_checkpointTime == latestCheckpoint) {
-            _applyCheckpoint(latestCheckpoint, _pricePerShare());
+            _applyCheckpoint(poolInfo, latestCheckpoint);
         } else {
             for (uint256 time = _checkpointTime; ; time += checkpointDuration) {
                 uint256 closestSharePrice = checkpoints[time].sharePrice;
-                if (time == latestCheckpoint) {
-                    closestSharePrice = _pricePerShare();
+                if (time != latestCheckpoint) {
+                    poolInfo.sharePrice = closestSharePrice;
                 }
                 if (closestSharePrice != 0) {
-                    _applyCheckpoint(_checkpointTime, closestSharePrice);
+                    _applyCheckpoint(poolInfo, _checkpointTime);
                     break;
                 }
             }
         }
+
+        // Update the pool's state.
+        _applyStateUpdate(initialPoolInfo, poolInfo);
     }
 
     // TODO: If we find that this checkpointing flow is too heavy (which is
@@ -150,12 +161,12 @@ abstract contract Hyperdrive is
         ];
         if (maturedShortsAmount > 0) {
             _applyCloseShort(
+                _poolInfo,
                 maturedShortsAmount,
                 0,
                 maturedShortsAmount.divDown(_poolInfo.sharePrice),
                 0,
-                _checkpointTime,
-                _poolInfo.sharePrice
+                _checkpointTime
             );
         }
 

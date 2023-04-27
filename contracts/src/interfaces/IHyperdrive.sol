@@ -84,11 +84,19 @@ interface IHyperdrive is IMultiToken {
         uint256 governanceFee;
     }
 
+    // FIXME: Consider restructuring this.
     struct PoolInfo {
         /// @dev The reserves of shares held by the pool.
         uint256 shareReserves;
         /// @dev The reserves of bonds held by the pool.
         uint256 bondReserves;
+        // FIXME: There is a case to be made that this should either include the
+        // withdrawal shares value or should be renamed. activeLpSupply would be
+        // good.
+        //
+        // FIXME: We should start using totalLpSupply and activeLpSupply. It
+        // sounds better.
+        //
         /// @dev The total supply of LP shares.
         uint256 lpTotalSupply;
         /// @dev The current share price.

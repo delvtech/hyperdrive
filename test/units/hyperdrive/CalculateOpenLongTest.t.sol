@@ -345,7 +345,6 @@ contract CalculateOpenLongTest is HyperdriveTest {
             uint256 totalGovernanceFee
         ) = MockHyperdrive(address(hyperdrive)).calculateOpenLong(
                 shareAmount,
-                sharePrice,
                 normalizedTimeRemaining
             );
 

@@ -165,7 +165,6 @@ contract MockHyperdrive is Hyperdrive {
     // Calls Hyperdrive._calculateOpenLong
     function calculateOpenLong(
         uint256 _shareAmount,
-        uint256 _sharePrice,
         uint256 _timeRemaining
     )
         external
@@ -177,7 +176,8 @@ contract MockHyperdrive is Hyperdrive {
             uint256 totalGovernanceFee
         )
     {
-        return _calculateOpenLong(_shareAmount, _sharePrice, _timeRemaining);
+        IHyperdrive.PoolInfo memory poolInfo = getPoolInfo();
+        return _calculateOpenLong(poolInfo, _shareAmount, _timeRemaining);
     }
 
     function setReserves(uint256 shareReserves, uint256 bondReserves) public {

@@ -39,12 +39,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
             revert Errors.ZeroAmount();
         }
 
-        // Deposit the user's base.
-        (uint256 shares, uint256 sharePrice) = _deposit(
-            _baseAmount,
-            _asUnderlying
-        );
-
         // FIXME: Perhaps we should make all of the variables in HyperdriveBase
         // private to avoid any use of these variables.
         //
@@ -57,9 +51,13 @@ abstract contract HyperdriveLong is HyperdriveLP {
         IHyperdrive.PoolInfo memory initialPoolInfo = getPoolInfo();
         IHyperdrive.PoolInfo memory poolInfo = initialPoolInfo.copy();
 
+        // Deposit the user's base.
+        uint256 shares;
+        (shares, poolInfo.sharePrice) = _deposit(_baseAmount, _asUnderlying);
+
         // Perform a checkpoint.
         uint256 latestCheckpoint = _latestCheckpoint();
-        _applyCheckpoint(poolInfo, sharePrice);
+        _applyCheckpoint(poolInfo, latestCheckpoint);
 
         // Calculate the pool and user deltas using the trading function. We
         // backdate the bonds purchased to the beginning of the checkpoint.
