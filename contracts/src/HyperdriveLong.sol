@@ -79,8 +79,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
             _baseAmount,
             bondProceeds,
             latestCheckpoint,
-            maturityTime,
-            timeRemaining
+            maturityTime
         );
 
         // Update the pool's state.
@@ -179,15 +178,13 @@ abstract contract HyperdriveLong is HyperdriveLP {
     /// @param _bondProceeds The amount of bonds purchased by the trader.
     /// @param _checkpointTime The time of the latest checkpoint.
     /// @param _maturityTime The maturity time of the long.
-    /// @param _timeRemaining The time remaining until maturity.
     function _applyOpenLong(
         IHyperdrive.PoolInfo memory _poolInfo,
         TradeResult memory _tradeResult,
         uint256 _baseAmount,
         uint256 _bondProceeds,
         uint256 _checkpointTime,
-        uint256 _maturityTime,
-        uint256 _timeRemaining
+        uint256 _maturityTime
     ) internal {
         // Calculate the base that goes to the reserves by removing the
         // governance fee from the base the trader actually paid.
@@ -221,15 +218,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 true
             )
             .toUint128();
-
-        // Update the base volume of long positions.
-        uint256 baseVolume = HyperdriveMath.calculateBaseVolume(
-            _baseAmount,
-            _bondProceeds,
-            _timeRemaining
-        );
-        _poolInfo.longBaseVolume += baseVolume;
-        checkpoints[_checkpointTime].longBaseVolume += baseVolume.toUint128();
 
         // Apply the trading deltas to the reserves and update the amount of
         // longs outstanding.
@@ -277,7 +265,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         uint256 _bondAmount,
         uint256 _shareProceeds,
         uint256 _maturityTime
-    ) internal {
+    ) internal view {
         // Update the long average maturity time.
         _poolInfo.longAverageMaturityTime = _poolInfo
             .longAverageMaturityTime
@@ -287,34 +275,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 _bondAmount,
                 false
             );
-
-        // TODO: Is it possible to abstract out the process of updating
-        // aggregates in a way that is nice?
-        //
-        // Update the base volume aggregates, get the open share price, and
-        // update the long share price of the checkpoint.
-        {
-            // Get the total supply of longs in the checkpoint of the longs
-            // being closed. If the longs are closed before maturity, we add the
-            // amount of longs being closed since the total supply is decreased
-            // when burning the long tokens.
-            uint256 checkpointAmount = totalSupply[
-                AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _maturityTime)
-            ];
-            if (block.timestamp < _maturityTime) {
-                checkpointAmount += _bondAmount;
-            }
-
-            // Remove a proportional amount of the checkpoints base volume from
-            // the aggregates.
-            uint256 checkpointTime = _maturityTime - positionDuration;
-            uint256 proportionalBaseVolume = uint256(
-                checkpoints[checkpointTime].longBaseVolume
-            ).mulDown(_bondAmount.divDown(checkpointAmount));
-            _poolInfo.longBaseVolume -= proportionalBaseVolume;
-            checkpoints[checkpointTime].longBaseVolume -= proportionalBaseVolume
-                .toUint128();
-        }
 
         // Reduce the amount of outstanding longs.
         _poolInfo.longsOutstanding -= _bondAmount;

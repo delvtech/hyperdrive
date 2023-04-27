@@ -252,7 +252,6 @@ abstract contract HyperdriveBase is MultiToken {
                 sharePrice: _pricePerShare(),
                 longsOutstanding: marketState.longsOutstanding,
                 longAverageMaturityTime: longAggregates.averageMaturityTime,
-                longBaseVolume: longAggregates.baseVolume,
                 shortsOutstanding: marketState.shortsOutstanding,
                 shortAverageMaturityTime: shortAggregates.averageMaturityTime,
                 shortBaseVolume: shortAggregates.baseVolume,
@@ -324,9 +323,6 @@ abstract contract HyperdriveBase is MultiToken {
             shortAggregates.averageMaturityTime = _poolInfo
                 .shortAverageMaturityTime
                 .toUint128();
-        }
-        if (_initialPoolInfo.longBaseVolume != _poolInfo.longBaseVolume) {
-            longAggregates.baseVolume = _poolInfo.longBaseVolume.toUint128();
         }
         if (_initialPoolInfo.shortBaseVolume != _poolInfo.shortBaseVolume) {
             shortAggregates.baseVolume = _poolInfo.shortBaseVolume.toUint128();

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import "../interfaces/IHyperdrive.sol";
+import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 
 /// @author DELV
 /// @title Copy
@@ -10,6 +10,9 @@ import "../interfaces/IHyperdrive.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 library Copy {
+    /// @dev Copies a PoolInfo struct.
+    /// @param _info The PoolInfo struct to copy.
+    /// @return A copy of the PoolInfo struct.
     function copy(
         IHyperdrive.PoolInfo memory _info
     ) internal pure returns (IHyperdrive.PoolInfo memory) {
@@ -21,7 +24,6 @@ library Copy {
                 sharePrice: _info.sharePrice,
                 longsOutstanding: _info.longsOutstanding,
                 longAverageMaturityTime: _info.longAverageMaturityTime,
-                longBaseVolume: _info.longBaseVolume,
                 shortsOutstanding: _info.shortsOutstanding,
                 shortAverageMaturityTime: _info.shortAverageMaturityTime,
                 shortBaseVolume: _info.shortBaseVolume,

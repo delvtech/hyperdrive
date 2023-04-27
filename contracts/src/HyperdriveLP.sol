@@ -154,7 +154,6 @@ abstract contract HyperdriveLP is HyperdriveBase {
                     longAverageTimeRemaining: _calculateTimeRemaining(
                         poolInfo.longAverageMaturityTime.divUp(1e36) // scale to seconds
                     ),
-                    longBaseVolume: poolInfo.longBaseVolume, // TODO: This isn't used.
                     shortsOutstanding: poolInfo.shortsOutstanding,
                     shortAverageTimeRemaining: _calculateTimeRemaining(
                         poolInfo.shortAverageMaturityTime.divUp(1e36) // scale to seconds
@@ -273,7 +272,6 @@ abstract contract HyperdriveLP is HyperdriveBase {
                 longAverageTimeRemaining: _calculateTimeRemaining(
                     poolInfo.longAverageMaturityTime.divUp(1e36) // scale to seconds
                 ),
-                longBaseVolume: poolInfo.longBaseVolume, // TODO: This isn't used.
                 shortsOutstanding: poolInfo.shortsOutstanding,
                 shortAverageTimeRemaining: _calculateTimeRemaining(
                     poolInfo.shortAverageMaturityTime.divUp(1e36) // scale to seconds
@@ -473,7 +471,6 @@ abstract contract HyperdriveLP is HyperdriveBase {
                 longAverageTimeRemaining: _calculateTimeRemaining(
                     _poolInfo.longAverageMaturityTime.divUp(1e36) // scale to seconds
                 ),
-                longBaseVolume: _poolInfo.longBaseVolume, // TODO: This isn't used.
                 shortsOutstanding: _poolInfo.shortsOutstanding,
                 shortAverageTimeRemaining: _calculateTimeRemaining(
                     _poolInfo.shortAverageMaturityTime.divUp(1e36) // scale to seconds

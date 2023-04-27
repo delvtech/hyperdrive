@@ -472,8 +472,6 @@ contract CloseLongTest is HyperdriveTest {
         assertEq(poolInfoAfter.sharePrice, poolInfoBefore.sharePrice);
         assertEq(poolInfoAfter.lpTotalSupply, poolInfoBefore.lpTotalSupply);
         assertEq(poolInfoAfter.longAverageMaturityTime, 0);
-        assertEq(poolInfoAfter.longBaseVolume, 0);
-        assertEq(checkpoint.longBaseVolume, 0);
         assertEq(
             poolInfoAfter.shortsOutstanding,
             poolInfoBefore.shortsOutstanding

@@ -80,6 +80,7 @@
         "rebalancing",
         "reentrancy",
         "remappings",
+        "reinitialization",
         "repayer",
         "remco",
         "returndata",

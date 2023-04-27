@@ -43,9 +43,6 @@ interface IHyperdrive is IMultiToken {
         ///      on longs to the withdrawal pool and prevent dust from being
         ///      stuck in the contract.
         uint128 longSharePrice;
-        /// @dev The aggregate amount of base that was paid to open longs in the
-        ///      checkpoint.
-        uint128 longBaseVolume;
         /// @dev The aggregate amount of base that was committed by LPs to pay
         ///      for the bonds that were sold short in the checkpoint.
         uint128 shortBaseVolume;
@@ -105,8 +102,6 @@ interface IHyperdrive is IMultiToken {
         uint256 longsOutstanding;
         /// @dev The average maturity time of the outstanding longs.
         uint256 longAverageMaturityTime;
-        /// @dev The cumulative amount of base paid for oustanding longs.
-        uint256 longBaseVolume;
         /// @dev An amount of bonds representating outstanding unmatured shorts.
         uint256 shortsOutstanding;
         /// @dev The average maturity time of the outstanding shorts.
