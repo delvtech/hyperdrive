@@ -9,7 +9,7 @@ import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "./libraries/YieldSpaceMath.sol";
 
-/// @author Delve
+/// @author DELV
 /// @title HyperdriveShort
 /// @notice Implements the short accounting for Hyperdrive.
 /// @custom:disclaimer The language used in this code is for coding convenience
@@ -288,9 +288,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // TODO: Is it possible to abstract out the process of updating
         // aggregates in a way that is nice?
         //
-        // Calculate the amount of margin that LPs provided on the short
-        // position and update the base volume aggregates.
-        uint256 lpMargin;
+        // Update the base volume aggregates.
         {
             // Get the total supply of shorts in the checkpoint of the shorts
             // being closed. If the shorts are closed before maturity, we add the
@@ -307,8 +305,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             }
 
             // Remove a proportional amount of the checkpoints base volume from
-            // the aggregates. We calculate the margin that the LP provided
-            // using this proportional base volume.
+            // the aggregates.
             uint256 checkpointTime = _maturityTime - positionDuration;
             uint128 proportionalBaseVolume = uint256(
                 checkpoints[checkpointTime].shortBaseVolume
@@ -316,7 +313,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
             shortAggregates.baseVolume -= proportionalBaseVolume;
             checkpoints[checkpointTime]
                 .shortBaseVolume -= proportionalBaseVolume;
-            lpMargin = proportionalBaseVolume;
         }
 
         // Decrease the amount of shorts outstanding.
@@ -326,46 +322,26 @@ abstract contract HyperdriveShort is HyperdriveLP {
         marketState.shareReserves += _shareReservesDelta.toUint128();
         marketState.bondReserves -= _bondReservesDelta.toUint128();
 
-        // The flat component of the trade is added to the pool's liquidity
-        // since it represents the fixed interest that the short pays to the
-        // pool.
-        int256 shareAdjustment = int256(_sharePayment - _shareReservesDelta);
+        // Add the flat part of the trade to the pool's liquidity. We add to
+        // the pool's liquidity because the LPs have a long position and thus
+        // receive their principal and some fixed interest along with any
+        // trading profits that have accrued.
+        _updateLiquidity(int256(_sharePayment - _shareReservesDelta));
 
-        // If there is a withdraw processing, we pay out as much of the
-        // withdrawal pool as possible with the margin released and interest
-        // accrued on the position to the withdrawal pool.
-        if (_needsToBeFreed()) {
-            // Add capital and interest to their respective withdraw pools
-            // the interest freed is the withdraw minus the margin
-            uint256 withdrawalProceeds = _sharePayment;
-            {
-                uint256 proceedsInBase = withdrawalProceeds.mulDown(
-                    _sharePrice
-                );
-                // TODO: Why are we calling this interest? When is this accrued?
-                // We should document this.
-                uint256 interest = proceedsInBase >= lpMargin
-                    ? (proceedsInBase - lpMargin).divDown(_sharePrice)
-                    : 0;
-                uint256 openSharePrice = checkpoints[
-                    _maturityTime - positionDuration
-                ].sharePrice;
-                (uint256 marginUsed, uint256 interestUsed) = _freeMargin(
-                    withdrawalProceeds - interest,
-                    lpMargin.divDown(openSharePrice),
-                    interest
-                );
-                withdrawalProceeds = (marginUsed + interestUsed);
-            }
-
-            // The withdrawal proceeds are removed from the pool's liquidity.
-            shareAdjustment -= int256(withdrawalProceeds);
+        // If there are withdrawal shares outstanding, we pay out the maximum
+        // amount of withdrawal shares. The proceeds owed to LPs when a long is
+        // closed is equivalent to short proceeds as LPs take the other side of
+        // every trade.
+        uint256 withdrawalSharesOutstanding = totalSupply[
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
+        ] - withdrawPool.readyToWithdraw;
+        if (withdrawalSharesOutstanding > 0) {
+            _applyWithdrawalProceeds(
+                _sharePayment,
+                withdrawalSharesOutstanding,
+                _sharePrice
+            );
         }
-
-        // Add the flat component of the trade to the pool's liquidity and
-        // remove any LP proceeds paid to the withdrawal pool from the pool's
-        // liquidity.
-        _updateLiquidity(shareAdjustment);
     }
 
     /// @dev Calculate the pool reserve and trader deltas that result from

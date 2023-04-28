@@ -8,7 +8,7 @@ import { Errors } from "./libraries/Errors.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 
-/// @author Delve
+/// @author DELV
 /// @title HyperdriveLong
 /// @notice Implements the long accounting for Hyperdrive.
 /// @custom:disclaimer The language used in this code is for coding convenience
@@ -274,10 +274,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // TODO: Is it possible to abstract out the process of updating
         // aggregates in a way that is nice?
         //
-        // Calculate the amount of margin that LPs provided on the long
-        // position and update the base volume aggregates. Also, get the open
-        // share price and update the long share price of the checkpoint.
-        uint256 lpMargin;
+        // Update the base volume aggregates, get the open share price, and
+        // update the long share price of the checkpoint.
         {
             // Get the total supply of longs in the checkpoint of the longs
             // being closed. If the longs are closed before maturity, we add the
@@ -291,8 +289,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
             }
 
             // Remove a proportional amount of the checkpoints base volume from
-            // the aggregates. We calculate the margin that the LP provided
-            // using this proportional base volume.
+            // the aggregates.
             uint256 checkpointTime = _maturityTime - positionDuration;
             uint128 proportionalBaseVolume = uint256(
                 checkpoints[checkpointTime].longBaseVolume
@@ -300,7 +297,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
             longAggregates.baseVolume -= proportionalBaseVolume;
             checkpoints[checkpointTime]
                 .longBaseVolume -= proportionalBaseVolume;
-            lpMargin = _bondAmount - proportionalBaseVolume;
         }
 
         // Reduce the amount of outstanding longs.
@@ -310,26 +306,24 @@ abstract contract HyperdriveLong is HyperdriveLP {
         marketState.shareReserves -= _shareReservesDelta.toUint128();
         marketState.bondReserves += _bondReservesDelta.toUint128();
 
-        // Calculate the amount of liquidity that needs to be removed.
-        int256 shareAdjustment = -int256(_shareProceeds - _shareReservesDelta);
+        // Remove the flat part of the trade from the pool's liquidity.
+        _updateLiquidity(-int256(_shareProceeds - _shareReservesDelta));
 
-        // If there is a withdraw processing, we pay out as much of the
-        // withdrawal pool as possible with the the margin released and interest
-        // accrued on the position to the withdrawal pool.
-        if (_needsToBeFreed()) {
-            // Get the open share price. This is the weighted average of the
-            // share prices at the time that longs were opened, so the withdrawal
-            // pool will receive as much of the long interest as possible. We
-            // don't need to update this value as the weighted average will be
-            // correctly computed in the event that longs are closed in the
-            // first checkpoint since the balance will be reduced.
+        // If there are withdrawal shares outstanding, we pay out the maximum
+        // amount of withdrawal shares. The proceeds owed to LPs when a long is
+        // closed is equivalent to short proceeds as LPs take the other side of
+        // every trade.
+        uint256 withdrawalSharesOutstanding = totalSupply[
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
+        ] - withdrawPool.readyToWithdraw;
+        if (withdrawalSharesOutstanding > 0) {
+            // TODO: Test this logic to ensure that opening and closing a long
+            // doesn't unfairly treat the withdrawal pool. There are concerns
+            // that this allows interest to be dripped out of the long
+            // positions.
             uint256 openSharePrice = checkpoints[
                 _maturityTime - positionDuration
             ].longSharePrice;
-
-            // The withdrawal pool has preferential access to the proceeds
-            // generated from closing longs. The LP proceeds when longs are
-            // closed are equivalent to the proceeds of short positions.
             uint256 withdrawalProceeds = HyperdriveMath.calculateShortProceeds(
                 _bondAmount,
                 _shareProceeds,
@@ -340,52 +334,12 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 _sharePrice,
                 _sharePrice
             );
-
-            // TODO: I think there may be some problems with the new withdrawal
-            // pool system. In particular, it seems like short-heavy LPs will
-            // get too much interest. We should write out the payoffs in a bunch
-            // of different cases.
-            //
-            // TODO: We should explain somewhere why we decompose the withdrawal
-            // pool into margin and interest.
-            //
-            // TODO: Is this comment accurate? Regardless, we can make it more
-            // readable.
-            //
-            // If the short has net lost despite being still positive
-            // interest we set capital recovered to 0.
-            // Note - This happens when there's negative interest
-            uint256 lpInterest = HyperdriveMath.calculateShortInterest(
-                _bondAmount,
-                openSharePrice,
-                _sharePrice,
+            _applyWithdrawalProceeds(
+                withdrawalProceeds,
+                withdrawalSharesOutstanding,
                 _sharePrice
             );
-            uint256 capitalFreed = withdrawalProceeds > lpInterest
-                ? withdrawalProceeds - lpInterest
-                : 0;
-
-            // Pay out the withdrawal pool with the freed margin. The withdrawal
-            // proceeds are split into the margin pool and the interest pool.
-            // The proceeds that are distributed to the margin and interest
-            // pools are removed from the pool's liquidity.
-            (uint256 capitalWithdrawn, uint256 interestWithdrawn) = _freeMargin(
-                capitalFreed,
-                // TODO: Make sure that the withdrawal shares are actually
-                // instantiated with the open share price. Think more about this as
-                // it seems weird to have to convert back using an old share price
-                // considering that this may not have been the share price at the
-                // time the withdrawal was initiated.
-                lpMargin.divDown(openSharePrice),
-                lpInterest
-            );
-            withdrawalProceeds = capitalWithdrawn + interestWithdrawn;
-            shareAdjustment -= int256(withdrawalProceeds);
         }
-
-        // Remove the flat component of the trade as well as any LP proceeds
-        // paid to the withdrawal pool from the pool's liquidity.
-        _updateLiquidity(shareAdjustment);
     }
 
     /// @dev Calculate the pool reserve and trader deltas that result from

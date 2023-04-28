@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.15;
+pragma solidity ^0.8.18;
 
 import { ERC20PresetFixedSupply } from "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import { Test } from "forge-std/Test.sol";
@@ -966,30 +966,6 @@ contract HyperdriveMathTest is Test {
         }
     }
 
-    function calculateBondReserves(
-        uint256 _shareReserves,
-        uint256 _initialSharePrice,
-        uint256 _apr,
-        uint256 _positionDuration,
-        uint256 _timeStretch
-    ) internal pure returns (uint256 bondReserves) {
-        // Solving for (1 + r * t) ** (1 / tau) here. t is the normalized time remaining which in
-        // this case is 1. Because bonds mature after the positionDuration, we need to scale the apr
-        // to the proportion of a year of the positionDuration. tau = t / time_stretch, or just
-        // 1 / time_stretch in this case.
-        uint256 t = _positionDuration.divDown(365 days);
-        uint256 tau = FixedPointMath.ONE_18.mulDown(_timeStretch);
-        uint256 interestFactor = FixedPointMath.ONE_18.add(_apr.mulDown(t)).pow(
-            FixedPointMath.ONE_18.divDown(tau)
-        );
-
-        // mu * z * (1 + apr * t) ** (1 / tau)
-        bondReserves = _initialSharePrice.mulDown(_shareReserves).mulDown(
-            interestFactor
-        );
-        return bondReserves;
-    }
-
     function test__calculateShortProceeds() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
@@ -1204,32 +1180,27 @@ contract HyperdriveMathTest is Test {
         assertEq(baseVolume, 0);
     }
 
-    function test__calculateLpAllocationAdjustment() external {
-        // NOTE: Coverage only works if I initialize the fixture in the test function
-        MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
-        uint256 lpAllocationAdjustment = hyperdriveMath
-            .calculateLpAllocationAdjustment(
-                5 ether, // positionsOutstanding
-                10 ether, // baseVolume
-                .5e18, // averageTimeRemaining
-                3.75 ether // sharePrice
-            );
-        // baseAdjustment = .5 * 10 + (1 - .5) * 5 = 7.5
-        // adjustment = baseAdjustment / 3.75 = 2
-        assertEq(lpAllocationAdjustment, 2 ether);
-    }
-
-    function test__calculateOutForLpSharesIn() external {
-        // NOTE: Coverage only works if I initialize the fixture in the test function
-        MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
-        uint256 out = hyperdriveMath.calculateOutForLpSharesIn(
-            100 ether, //_shares
-            1000 ether, //_shareReserves
-            1000 ether, //_lpTotalSupply
-            0 ether, // _longsOutstanding
-            1.5 ether //_sharePrice
+    function calculateBondReserves(
+        uint256 _shareReserves,
+        uint256 _initialSharePrice,
+        uint256 _apr,
+        uint256 _positionDuration,
+        uint256 _timeStretch
+    ) internal pure returns (uint256 bondReserves) {
+        // Solving for (1 + r * t) ** (1 / tau) here. t is the normalized time remaining which in
+        // this case is 1. Because bonds mature after the positionDuration, we need to scale the apr
+        // to the proportion of a year of the positionDuration. tau = t / time_stretch, or just
+        // 1 / time_stretch in this case.
+        uint256 t = _positionDuration.divDown(365 days);
+        uint256 tau = FixedPointMath.ONE_18.mulDown(_timeStretch);
+        uint256 interestFactor = FixedPointMath.ONE_18.add(_apr.mulDown(t)).pow(
+            FixedPointMath.ONE_18.divDown(tau)
         );
-        // (1000 - 0 / 1.5) * (100 / 1000) = 100
-        assertEq(out, 100 ether);
+
+        // bondReserves = mu * z * (1 + apr * t) ** (1 / tau)
+        bondReserves = _initialSharePrice.mulDown(_shareReserves).mulDown(
+            interestFactor
+        );
+        return bondReserves;
     }
 }

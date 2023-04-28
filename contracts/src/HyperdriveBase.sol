@@ -10,7 +10,7 @@ import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 
-/// @author Delve
+/// @author DELV
 /// @title HyperdriveBase
 /// @notice The base contract of the Hyperdrive inheritance hierarchy.
 /// @custom:disclaimer The language used in this code is for coding convenience
@@ -224,10 +224,8 @@ abstract contract HyperdriveBase is MultiToken {
                 shortsOutstanding: marketState.shortsOutstanding,
                 shortAverageMaturityTime: shortAggregates.averageMaturityTime,
                 shortBaseVolume: shortAggregates.baseVolume,
-                withdrawalSharesReadyToWithdraw: withdrawPool
-                    .withdrawalSharesReadyToWithdraw,
-                capital: withdrawPool.capital,
-                interest: withdrawPool.interest
+                withdrawalSharesReadyToWithdraw: withdrawPool.readyToWithdraw,
+                withdrawalSharesProceeds: withdrawPool.proceeds
             });
     }
 

@@ -62,7 +62,6 @@ contract BondWrapper_close is CombinatorialTest {
 
     function setUp() public override {
         super.setUp();
-        vm.stopPrank();
         vm.startPrank(deployer);
 
         hyperdrive = new __MockHyperDrive__();

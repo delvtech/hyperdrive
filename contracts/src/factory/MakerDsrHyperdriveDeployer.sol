@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import "../instances/MakerDsrHyperdrive.sol";
-import "../interfaces/IHyperdrive.sol";
-import "../interfaces/IHyperdriveDeployer.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { MakerDsrHyperdrive } from "../instances/MakerDsrHyperdrive.sol";
+import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
 import { DsrManager } from "../interfaces/IMaker.sol";
 
 /// @author DELV
@@ -15,7 +16,7 @@ import { DsrManager } from "../interfaces/IMaker.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract MakerDsrHyperdriveDeployer is IHyperdriveDeployer {
-    DsrManager immutable dsrManager;
+    DsrManager internal immutable dsrManager;
 
     constructor(DsrManager _dsrManager) {
         dsrManager = _dsrManager;

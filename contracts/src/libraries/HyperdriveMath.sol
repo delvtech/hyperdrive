@@ -5,7 +5,7 @@ import { Errors } from "./Errors.sol";
 import { FixedPointMath } from "./FixedPointMath.sol";
 import { YieldSpaceMath } from "./YieldSpaceMath.sol";
 
-/// @author Delve
+/// @author DELV
 /// @title Hyperdrive
 /// @notice Math for the Hyperdrive pricing model.
 /// @custom:disclaimer The language used in this code is for coding convenience
@@ -534,51 +534,5 @@ library HyperdriveMath {
                 (FixedPointMath.ONE_18.sub(_timeRemaining)).mulDown(_bondAmount)
             )
         ).divDown(_timeRemaining);
-    }
-
-    /// @dev Computes the LP allocation adjustment for a position. This is used
-    ///      to accurately account for the duration risk that LPs take on when
-    ///      adding liquidity so that LP shares can be rewarded fairly.
-    /// @param _positionsOutstanding The position balance outstanding.
-    /// @param _baseVolume The base volume created by opening the positions.
-    /// @param _averageTimeRemaining The average time remaining of the positions.
-    /// @param _sharePrice The pool's share price.
-    /// @return adjustment The allocation adjustment.
-    function calculateLpAllocationAdjustment(
-        uint256 _positionsOutstanding,
-        uint256 _baseVolume,
-        uint256 _averageTimeRemaining,
-        uint256 _sharePrice
-    ) internal pure returns (uint256 adjustment) {
-        // baseAdjustment = t * _baseVolume + (1 - t) * _positionsOutstanding
-        adjustment = (_averageTimeRemaining.mulDown(_baseVolume)).add(
-            (FixedPointMath.ONE_18.sub(_averageTimeRemaining)).mulDown(
-                _positionsOutstanding
-            )
-        );
-        // adjustment = baseAdjustment / c
-        adjustment = adjustment.divDown(_sharePrice);
-    }
-
-    /// @dev Calculates the amount of base shares released from burning a
-    ///      a specified amount of LP shares from the pool.
-    /// @param _shares The amount of LP shares burned from the pool.
-    /// @param _shareReserves The pool's share reserves.
-    /// @param _lpTotalSupply The pool's total supply of LP shares.
-    /// @param _longsOutstanding The amount of longs that haven't been closed.
-    /// @param _sharePrice The pool's share price.
-    /// @return shares The amount of base shares released.
-    function calculateOutForLpSharesIn(
-        uint256 _shares,
-        uint256 _shareReserves,
-        uint256 _lpTotalSupply,
-        uint256 _longsOutstanding,
-        uint256 _sharePrice
-    ) internal pure returns (uint256 shares) {
-        // (z - o_l / c) * (dl / l)
-        shares = _shareReserves
-            .sub(_longsOutstanding.divDown(_sharePrice))
-            .mulDivDown(_shares, _lpTotalSupply);
-        return shares;
     }
 }

@@ -1,7 +1,7 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-/// @author Delve
+/// @author DELV
 /// @title Errors
 /// @notice A library containing the errors used in this codebase.
 /// @custom:disclaimer The language used in this code is for coding convenience
@@ -19,12 +19,13 @@ library Errors {
     error InvalidMaturityTime();
     error NegativeInterest();
     error OutputLimit();
+    error Paused();
     error PoolAlreadyInitialized();
     error TransferFailed();
     error UnexpectedAssetId();
     error UnsupportedToken();
     error ZeroAmount();
-    error Paused();
+    error ZeroLpTotalSupply();
 
     /// ######################
     /// ### ERC20Forwarder ###

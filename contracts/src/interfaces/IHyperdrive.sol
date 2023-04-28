@@ -1,23 +1,33 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import "./IMultiToken.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IMultiToken } from "./IMultiToken.sol";
 
 interface IHyperdrive is IMultiToken {
-    // TODO: Add documentation
     struct MarketState {
+        /// @dev The pool's share reserves.
         uint128 shareReserves;
+        /// @dev The pool's bond reserves.
         uint128 bondReserves;
+        /// @dev The amount of longs that are still open.
         uint128 longsOutstanding;
+        /// @dev The amount of shorts that are still open.
         uint128 shortsOutstanding;
+        /// @dev A flag indicating whether or not the pool has been initialized.
         bool isInitialized;
+        /// @dev A flag indicating whether or not the pool is paused.
         bool isPaused;
     }
 
-    // TODO: Add documentation
     struct Aggregates {
+        /// @dev The average maturity time of outstanding positions.
         uint128 averageMaturityTime;
+        /// @dev The total amount of base that was transferred as a result of
+        ///      opening the outstanding positions. This is an idealized value
+        ///      that reflects the base that would have been transferred if all
+        ///      positions were opened at the beginning of their respective
+        ///      checkpoints.
         uint128 baseVolume;
     }
 
@@ -41,17 +51,19 @@ interface IHyperdrive is IMultiToken {
         uint128 shortBaseVolume;
     }
 
-    // TODO: Add documentation
     struct WithdrawPool {
-        uint128 withdrawalSharesReadyToWithdraw;
-        uint128 capital;
-        uint128 interest;
+        /// @dev The amount of withdrawal shares that are ready to be redeemed.
+        uint128 readyToWithdraw;
+        /// @dev The proceeds recovered by the withdrawal pool.
+        uint128 proceeds;
     }
 
-    // TODO: Add documentation
     struct Fees {
+        /// @dev The LP fee applied to the curve portion of a trade.
         uint256 curve;
+        /// @dev The LP fee applied to the flat portion of a trade.
         uint256 flat;
+        /// @dev The portion of the LP fee that goes to governance.
         uint256 governance;
     }
 
@@ -95,10 +107,8 @@ interface IHyperdrive is IMultiToken {
         uint256 shortBaseVolume;
         /// @dev The amount of withdrawal shares that are ready to be redeemed.
         uint256 withdrawalSharesReadyToWithdraw;
-        /// @dev The amount of margin recovered by the withdrawal pool.
-        uint256 capital;
-        /// @dev The amount of interest accrued to the withdrawal pool.
-        uint256 interest;
+        /// @dev The proceeds recovered by the withdrawal pool.
+        uint256 withdrawalSharesProceeds;
     }
 
     function baseToken() external view returns (address);
