@@ -21,16 +21,12 @@ contract HyperdriveDSRTest is HyperdriveTest {
     IERC20 aDai = IERC20(address(0xfC1E690f61EFd961294b3e1Ce3313fBD8aa4f85d));
 
     function setUp() public override __mainnet_fork(16_685_972) {
-        vm.stopPrank();
-
         vm.startPrank(deployer);
 
         AaveHyperdriveDeployer simpleDeployer = new AaveHyperdriveDeployer(
             pool
         );
         factory = new HyperdriveFactory(alice, simpleDeployer, bob);
-
-        vm.stopPrank();
 
         address daiWhale = 0x075e72a5eDf65F0A5f44699c7654C1a76941Ddc8;
 

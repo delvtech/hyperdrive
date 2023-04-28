@@ -20,7 +20,6 @@ contract BondWrapper_mint is CombinatorialTest {
 
     function setUp() public override {
         super.setUp();
-        vm.stopPrank();
         vm.startPrank(deployer);
 
         multiToken = new MockMultiToken(bytes32(0), address(forwarderFactory));

@@ -40,7 +40,6 @@ contract AaveFixedBorrowTest is BaseTest {
 
         action = new AaveFixedBorrowAction(hyperdrive, pool);
 
-        vm.stopPrank();
         vm.startPrank(alice);
         IERC20Mint(address(wsteth)).mint(1000e18);
 

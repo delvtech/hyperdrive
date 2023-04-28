@@ -21,15 +21,12 @@ contract HyperdriveDSRTest is HyperdriveTest {
         DsrManager(address(0x373238337Bfe1146fb49989fc222523f83081dDb));
 
     function setUp() public override __mainnet_fork(16_685_972) {
-        vm.stopPrank();
         vm.startPrank(deployer);
 
         MakerDsrHyperdriveDeployer simpleDeployer = new MakerDsrHyperdriveDeployer(
                 manager
             );
         factory = new HyperdriveFactory(alice, simpleDeployer, bob);
-
-        vm.stopPrank();
 
         address daiWhale = 0x075e72a5eDf65F0A5f44699c7654C1a76941Ddc8;
 
