@@ -403,7 +403,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
         uint256 _timeRemaining
     )
         internal
-        view
         returns (
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
@@ -435,6 +434,10 @@ abstract contract HyperdriveLong is HyperdriveLP {
             _timeRemaining,
             timeStretch
         );
+
+        // Record an oracle update
+        recordPrice(spotPrice);
+
         (
             uint256 totalCurveFee,
             uint256 totalFlatFee,
@@ -479,7 +482,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
         uint256 _maturityTime
     )
         internal
-        view
         returns (
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
@@ -524,6 +526,10 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 timeStretch
             )
             : FixedPointMath.ONE_18;
+
+        // Record an oracle update
+        recordPrice(spotPrice);
+
         uint256 totalCurveFee;
         uint256 totalFlatFee;
         (

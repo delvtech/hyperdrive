@@ -72,6 +72,8 @@ contract HyperdriveFactory {
     ///        duration.
     /// @param _timeStretch The time stretch of the pool.
     /// @param _fees The fees to apply to trades.
+    /// @param _oracleSize The length of the oracle buffer
+    /// @param _updateGap The time between oracle updates
     /// @param _extraData The extra data is used by some factories
     /// @param _contribution Base token to call init with
     /// @param _apr The apr to call init with
@@ -85,6 +87,8 @@ contract HyperdriveFactory {
         uint256 _checkpointDuration,
         uint256 _timeStretch,
         IHyperdrive.Fees memory _fees,
+        uint256 _oracleSize,
+        uint256 _updateGap,
         bytes32[] memory _extraData,
         uint256 _contribution,
         uint256 _apr
@@ -103,6 +107,8 @@ contract HyperdriveFactory {
                 _timeStretch,
                 _fees,
                 hyperdriveGovernance,
+                _oracleSize,
+                _updateGap,
                 _extraData
             )
         );

@@ -34,7 +34,9 @@ contract MockHyperdriveTestnet is Hyperdrive {
             _checkpointDuration,
             _timeStretch,
             _fees,
-            _governance
+            _governance,
+            2,
+            0
         )
     {
         rate = _initialRate;

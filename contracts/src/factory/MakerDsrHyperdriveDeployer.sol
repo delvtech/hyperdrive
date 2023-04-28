@@ -34,6 +34,8 @@ contract MakerDsrHyperdriveDeployer is IHyperdriveDeployer {
     /// @param _timeStretch The time stretch of the pool.
     /// @param _fees The fees to apply to trades.
     /// @param _governance The address of the governance contract.
+    /// @param _oracleSize The length of the oracle buffer
+    /// @param _updateGap The time between oracle updates
     function deploy(
         bytes32 _linkerCodeHash,
         address _linkerFactory,
@@ -44,6 +46,8 @@ contract MakerDsrHyperdriveDeployer is IHyperdriveDeployer {
         uint256 _timeStretch,
         IHyperdrive.Fees memory _fees,
         address _governance,
+        uint256 _oracleSize,
+        uint256 _updateGap,
         bytes32[] calldata
     ) external override returns (address) {
         return (
@@ -56,6 +60,8 @@ contract MakerDsrHyperdriveDeployer is IHyperdriveDeployer {
                     _timeStretch,
                     _fees,
                     _governance,
+                    _oracleSize,
+                    _updateGap,
                     dsrManager
                 )
             )

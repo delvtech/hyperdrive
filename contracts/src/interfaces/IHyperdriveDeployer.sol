@@ -15,6 +15,8 @@ interface IHyperdriveDeployer {
         uint256 _timeStretch,
         IHyperdrive.Fees memory _fees,
         address _governance,
+        uint256 _oracleSize,
+        uint256 _updateGap,
         bytes32[] memory _extraData
     ) external returns (address);
 }

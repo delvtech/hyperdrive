@@ -33,7 +33,9 @@ contract MockHyperdrive is Hyperdrive {
             _checkpointDuration,
             _timeStretch,
             _fees,
-            _governance
+            _governance,
+            2,
+            0
         )
     {}
 
@@ -169,7 +171,6 @@ contract MockHyperdrive is Hyperdrive {
         uint256 _timeRemaining
     )
         external
-        view
         returns (
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,

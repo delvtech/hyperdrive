@@ -35,6 +35,8 @@ contract MakerDsrHyperdrive is Hyperdrive {
     /// @param _fees The fees to apply to trades.
     /// @param _governance The governance address.
     /// @param _dsrManager The "dai savings rate" manager contract
+    /// @param _oracleSize The length of the oracle buffer
+    /// @param _updateGap The time between oracle updates
     constructor(
         bytes32 _linkerCodeHash,
         address _linkerFactory,
@@ -43,6 +45,8 @@ contract MakerDsrHyperdrive is Hyperdrive {
         uint256 _timeStretch,
         IHyperdrive.Fees memory _fees,
         address _governance,
+        uint256 _oracleSize,
+        uint256 _updateGap,
         DsrManager _dsrManager
     )
         Hyperdrive(
@@ -54,7 +58,9 @@ contract MakerDsrHyperdrive is Hyperdrive {
             _checkpointDuration,
             _timeStretch,
             _fees,
-            _governance
+            _governance,
+            _oracleSize,
+            _updateGap
         )
     {
         dsrManager = _dsrManager;

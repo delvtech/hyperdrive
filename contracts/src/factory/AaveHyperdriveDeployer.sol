@@ -41,6 +41,8 @@ contract AaveHyperdriveDeployer is IHyperdriveDeployer {
     /// @param _timeStretch The time stretch of the pool.
     /// @param _fees The fees to apply to trades.
     /// @param _governance The address of the governance contract.
+    /// @param _oracleSize The length of the oracle buffer
+    /// @param _updateGap The time between oracle updates
     function deploy(
         bytes32 _linkerCodeHash,
         address _linkerFactory,
@@ -51,14 +53,12 @@ contract AaveHyperdriveDeployer is IHyperdriveDeployer {
         uint256 _timeStretch,
         IHyperdrive.Fees memory _fees,
         address _governance,
+        uint256 _oracleSize,
+        uint256 _updateGap,
         bytes32[] calldata _extraData
     ) external override returns (address) {
         // We force convert
-        bytes32 loaded = _extraData[0];
-        IERC20 aToken;
-        assembly ("memory-safe") {
-            aToken := loaded
-        }
+        IERC20 aToken = IERC20(address(uint160((uint256)(_extraData[0]))));
         // Need a hard convert cause no direct bytes32 -> address
         return (
             address(
@@ -72,7 +72,9 @@ contract AaveHyperdriveDeployer is IHyperdriveDeployer {
                     aToken,
                     pool,
                     _fees,
-                    _governance
+                    _governance,
+                    _oracleSize,
+                    _updateGap
                 )
             )
         );

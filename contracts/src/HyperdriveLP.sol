@@ -7,6 +7,7 @@ import { AssetId } from "./libraries/AssetId.sol";
 import { Errors } from "./libraries/Errors.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
+import { HyperdriveTWAP } from "./HyperdriveTWAP.sol";
 
 /// @author Delve
 /// @title HyperdriveLP
@@ -14,7 +15,7 @@ import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract HyperdriveLP is HyperdriveBase {
+abstract contract HyperdriveLP is HyperdriveTWAP {
     using FixedPointMath for uint256;
     using SafeCast for uint256;
 

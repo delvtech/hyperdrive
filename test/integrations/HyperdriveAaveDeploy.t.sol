@@ -66,12 +66,7 @@ contract HyperdriveDSRTest is HyperdriveTest {
 
         vm.prank(alice);
         bytes32[] memory aToken = new bytes32[](1);
-        // we do a little force convert
-        bytes32 aTokenEncode;
-        assembly ("memory-safe") {
-            aTokenEncode := sload(aDai.slot)
-        }
-        aToken[0] = aTokenEncode;
+        aToken[0] = bytes32(uint256(uint160(address(aDai))));
         dai.approve(address(factory), type(uint256).max);
         vm.prank(alice);
         hyperdrive = factory.deployAndImplement(
@@ -83,6 +78,8 @@ contract HyperdriveDSRTest is HyperdriveTest {
             1 days,
             FixedPointMath.ONE_18.divDown(22.186877016851916266e18),
             IHyperdrive.Fees(0, 0, 0),
+            2,
+            0,
             aToken,
             2500e18,
             //1% apr

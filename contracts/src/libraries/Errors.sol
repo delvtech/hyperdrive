@@ -62,4 +62,9 @@ library Errors {
     /// #####################
     error Unauthorized();
     error InvalidContribution();
+
+    /// #####################
+    /// ### Factory ###
+    /// #####################
+    error QueryOutOfRange();
 }

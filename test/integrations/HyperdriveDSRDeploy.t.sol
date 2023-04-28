@@ -76,6 +76,8 @@ contract HyperdriveDSRTest is HyperdriveTest {
             1 days,
             FixedPointMath.ONE_18.divDown(22.186877016851916266e18),
             IHyperdrive.Fees(0, 0, 0),
+            2,
+            0,
             empty,
             2500e18,
             //1% apr

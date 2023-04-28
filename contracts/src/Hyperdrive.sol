@@ -41,6 +41,8 @@ abstract contract Hyperdrive is
     /// @param _timeStretch The time stretch of the pool.
     /// @param _fees The fees to apply to trades.
     /// @param _governance The address of the governance contract.
+    /// @param _oracleSize The length of the oracle buffer
+    /// @param _updateGap The time between oracle updates
     constructor(
         bytes32 _linkerCodeHash,
         address _linkerFactory,
@@ -50,7 +52,9 @@ abstract contract Hyperdrive is
         uint256 _checkpointDuration,
         uint256 _timeStretch,
         IHyperdrive.Fees memory _fees,
-        address _governance
+        address _governance,
+        uint256 _oracleSize,
+        uint256 _updateGap
     )
         HyperdriveBase(
             _linkerCodeHash,
@@ -61,7 +65,9 @@ abstract contract Hyperdrive is
             _checkpointDuration,
             _timeStretch,
             _fees,
-            _governance
+            _governance,
+            _oracleSize,
+            _updateGap
         )
     {} // solhint-disable-line no-empty-blocks
 

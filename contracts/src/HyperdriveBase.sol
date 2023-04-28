@@ -81,6 +81,23 @@ abstract contract HyperdriveBase is MultiToken {
     // The address that receives governance fees.
     address public governance;
 
+    /// @notice A struct to hold packed oracle entries
+    struct OracleData {
+        // The timestamp this data was added at
+        uint32 timestamp;
+        // The running sun of all previous data entries weighted by time
+        uint224 data;
+    }
+
+    /// @notice This buffer contains the timestamps and data recorded in the oracle
+    OracleData[] internal buffer;
+    /// @notice The pointer to the most recent buffer entry
+    uint128 internal head;
+    /// @notice The last timestamp we wrote to the buffer
+    uint128 internal lastTimestamp;
+    /// @notice The amount of time between oracle data sample updates
+    uint256 internal immutable updateGap;
+
     /// @notice Initializes a Hyperdrive pool.
     /// @param _linkerCodeHash The hash of the ERC20 linker contract's
     ///        constructor code.
@@ -96,6 +113,8 @@ abstract contract HyperdriveBase is MultiToken {
     /// @param _timeStretch The time stretch of the pool.
     /// @param _fees The fees to apply to trades.
     /// @param _governance The address that receives governance fees.
+    /// @param _oracleSize The length of the oracle buffer
+    /// @param _updateGap The time between oracle updates
     constructor(
         bytes32 _linkerCodeHash,
         address _linkerFactory,
@@ -105,7 +124,9 @@ abstract contract HyperdriveBase is MultiToken {
         uint256 _checkpointDuration,
         uint256 _timeStretch,
         IHyperdrive.Fees memory _fees,
-        address _governance
+        address _governance,
+        uint256 _oracleSize,
+        uint256 _updateGap
     ) MultiToken(_linkerCodeHash, _linkerFactory) {
         // Initialize the base token address.
         baseToken = _baseToken;
@@ -121,6 +142,11 @@ abstract contract HyperdriveBase is MultiToken {
         initialSharePrice = _initialSharePrice;
         fees = _fees;
         governance = _governance;
+        // Initialize the oracle
+        updateGap = _updateGap;
+        for (uint256 i = 0; i < _oracleSize; i++) {
+            buffer.push(OracleData(0,0));
+        }
     }
 
     /// Yield Source ///

@@ -67,6 +67,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
             governanceFeesAccrued += totalGovernanceFee;
         }
 
+
+
         // Take custody of the trader's deposit and ensure that the trader
         // doesn't pay more than their max deposit. The trader's deposit is
         // equal to the proceeds that they would receive if they closed
@@ -383,7 +385,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
         uint256 _timeRemaining
     )
         internal
-        view
         returns (
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
@@ -422,6 +423,9 @@ abstract contract HyperdriveShort is HyperdriveLP {
             _timeRemaining,
             timeStretch
         );
+        // Add the spot price to the oracle if an oracle update is required
+        recordPrice(spotPrice);
+
         uint256 totalCurveFee;
         uint256 totalFlatFee;
         (
@@ -460,7 +464,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
         uint256 _maturityTime
     )
         internal
-        view
         returns (
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
@@ -500,6 +503,10 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 timeStretch
             )
             : FixedPointMath.ONE_18;
+        
+        // Record an oracle update
+        recordPrice(spotPrice);
+
         (
             uint256 totalCurveFee,
             uint256 totalFlatFee,

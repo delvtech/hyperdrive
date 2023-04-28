@@ -31,6 +31,8 @@ contract AaveHyperdrive is Hyperdrive {
     /// @param _timeStretch The time stretch of the pool.
     /// @param _fees The fees to apply to trades.
     /// @param _governance The governance address.
+    /// @param _oracleSize The length of the oracle buffer
+    /// @param _updateGap The time between oracle updates
     constructor(
         bytes32 _linkerCodeHash,
         address _linkerFactory,
@@ -41,7 +43,9 @@ contract AaveHyperdrive is Hyperdrive {
         IERC20 _aToken,
         IPool _pool,
         IHyperdrive.Fees memory _fees,
-        address _governance
+        address _governance,
+        uint256 _oracleSize,
+        uint256 _updateGap
     )
         Hyperdrive(
             _linkerCodeHash,
@@ -52,7 +56,9 @@ contract AaveHyperdrive is Hyperdrive {
             _checkpointDuration,
             _timeStretch,
             _fees,
-            _governance
+            _governance,
+            _oracleSize,
+            _updateGap
         )
     {
         aToken = _aToken;
