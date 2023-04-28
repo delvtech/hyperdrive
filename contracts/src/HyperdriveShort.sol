@@ -209,18 +209,16 @@ abstract contract HyperdriveShort is HyperdriveLP {
         uint256 _maturityTime
     ) internal {
         // Update the average maturity time of long positions.
-        {
-            uint256 averageMaturityTime = uint256(
-                shortAggregates.averageMaturityTime
-            ).updateWeightedAverage(
-                    marketState.shortsOutstanding,
-                    _maturityTime * 1e18, // scale up to fixed point scale
-                    _bondAmount,
-                    true
-                );
-            shortAggregates.averageMaturityTime = averageMaturityTime
-                .toUint128();
-        }
+        marketState.shortAverageMaturityTime = uint256(
+            marketState.shortAverageMaturityTime
+        )
+            .updateWeightedAverage(
+                marketState.shortsOutstanding,
+                _maturityTime * 1e18, // scale up to fixed point scale
+                _bondAmount,
+                true
+            )
+            .toUint128();
 
         // Update the base volume of short positions.
         uint128 baseVolume = HyperdriveMath
@@ -230,7 +228,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 _timeRemaining
             )
             .toUint128();
-        shortAggregates.baseVolume += baseVolume;
+        marketState.shortBaseVolume += baseVolume;
         // TODO: We shouldn't need to call _latestCheckpoint() again.
         checkpoints[_latestCheckpoint()].shortBaseVolume += baseVolume;
 
@@ -272,18 +270,16 @@ abstract contract HyperdriveShort is HyperdriveLP {
         uint256 _sharePrice
     ) internal {
         // Update the short average maturity time.
-        {
-            uint256 averageMaturityTime = uint256(
-                shortAggregates.averageMaturityTime
-            ).updateWeightedAverage(
-                    marketState.shortsOutstanding,
-                    _maturityTime * 1e18, // scale up to fixed point scale
-                    _bondAmount,
-                    false
-                );
-            shortAggregates.averageMaturityTime = averageMaturityTime
-                .toUint128();
-        }
+        marketState.shortAverageMaturityTime = uint256(
+            marketState.shortAverageMaturityTime
+        )
+            .updateWeightedAverage(
+                marketState.shortsOutstanding,
+                _maturityTime * 1e18, // scale up to fixed point scale
+                _bondAmount,
+                false
+            )
+            .toUint128();
 
         // TODO: Is it possible to abstract out the process of updating
         // aggregates in a way that is nice?
@@ -310,7 +306,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             uint128 proportionalBaseVolume = uint256(
                 checkpoints[checkpointTime].shortBaseVolume
             ).mulDown(_bondAmount.divDown(checkpointAmount)).toUint128();
-            shortAggregates.baseVolume -= proportionalBaseVolume;
+            marketState.shortBaseVolume -= proportionalBaseVolume;
             checkpoints[checkpointTime]
                 .shortBaseVolume -= proportionalBaseVolume;
         }

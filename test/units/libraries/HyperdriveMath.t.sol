@@ -559,7 +559,6 @@ contract HyperdriveMathTest is Test {
                     timeStretch: timeStretch,
                     longsOutstanding: 0,
                     longAverageTimeRemaining: 0,
-                    longBaseVolume: 0,
                     shortsOutstanding: 0,
                     shortAverageTimeRemaining: 0,
                     shortBaseVolume: 0
@@ -585,7 +584,6 @@ contract HyperdriveMathTest is Test {
                     timeStretch: timeStretch,
                     longsOutstanding: 10_000_000e18,
                     longAverageTimeRemaining: 1e18,
-                    longBaseVolume: 9_500_000e18,
                     shortsOutstanding: 0,
                     shortAverageTimeRemaining: 0,
                     shortBaseVolume: 0
@@ -620,7 +618,6 @@ contract HyperdriveMathTest is Test {
                     timeStretch: timeStretch,
                     longsOutstanding: 10_000_000e18,
                     longAverageTimeRemaining: 0,
-                    longBaseVolume: 9_500_000e18,
                     shortsOutstanding: 0,
                     shortAverageTimeRemaining: 0,
                     shortBaseVolume: 0
@@ -649,7 +646,6 @@ contract HyperdriveMathTest is Test {
                     timeStretch: timeStretch,
                     longsOutstanding: 0,
                     longAverageTimeRemaining: 0,
-                    longBaseVolume: 0,
                     shortsOutstanding: 10_000_000e18,
                     shortAverageTimeRemaining: 1e18,
                     shortBaseVolume: 9_500_000e18
@@ -684,7 +680,6 @@ contract HyperdriveMathTest is Test {
                     timeStretch: timeStretch,
                     longsOutstanding: 0,
                     longAverageTimeRemaining: 0,
-                    longBaseVolume: 0,
                     shortsOutstanding: 10_000_000e18,
                     shortAverageTimeRemaining: 0,
                     shortBaseVolume: 9_500_000e18
@@ -713,7 +708,6 @@ contract HyperdriveMathTest is Test {
                     timeStretch: timeStretch,
                     longsOutstanding: 10_000_000e18,
                     longAverageTimeRemaining: 0.3e18,
-                    longBaseVolume: 9_800_000e18,
                     shortsOutstanding: 10_000_000e18,
                     shortAverageTimeRemaining: 0.3e18,
                     shortBaseVolume: 9_500_000e18
@@ -739,7 +733,6 @@ contract HyperdriveMathTest is Test {
                     timeStretch: timeStretch,
                     longsOutstanding: 10_000_000e18,
                     longAverageTimeRemaining: 0,
-                    longBaseVolume: 9_800_000e18,
                     shortsOutstanding: 10_000_000e18,
                     shortAverageTimeRemaining: 1e18,
                     shortBaseVolume: 9_500_000e18
@@ -777,7 +770,6 @@ contract HyperdriveMathTest is Test {
                     timeStretch: timeStretch,
                     longsOutstanding: 10_000_000e18,
                     longAverageTimeRemaining: 1e18,
-                    longBaseVolume: 9_800_000e18,
                     shortsOutstanding: 10_000_000e18,
                     shortAverageTimeRemaining: 0,
                     shortBaseVolume: 9_500_000e18
@@ -815,7 +807,6 @@ contract HyperdriveMathTest is Test {
                     timeStretch: timeStretch,
                     longsOutstanding: 100_000e18,
                     longAverageTimeRemaining: 0.75e18,
-                    longBaseVolume: 98_000e18,
                     shortsOutstanding: 10_000_000e18,
                     shortAverageTimeRemaining: 0.25e18,
                     shortBaseVolume: 9_500_000e18
@@ -866,7 +857,6 @@ contract HyperdriveMathTest is Test {
                     timeStretch: timeStretch,
                     longsOutstanding: 10_000_000e18,
                     longAverageTimeRemaining: 0.75e18,
-                    longBaseVolume: 9_500_000e18,
                     shortsOutstanding: 100_000e18,
                     shortAverageTimeRemaining: 0.25e18,
                     shortBaseVolume: 98_000e18
@@ -920,7 +910,6 @@ contract HyperdriveMathTest is Test {
                     timeStretch: timeStretch,
                     longsOutstanding: 100_000e18,
                     longAverageTimeRemaining: 0.75e18,
-                    longBaseVolume: 98_000e18,
                     shortsOutstanding: 10_000_000e18,
                     shortAverageTimeRemaining: 0.25e18,
                     shortBaseVolume: 9_500_000e18

@@ -137,14 +137,15 @@ abstract contract HyperdriveLP is HyperdriveBase {
                     timeStretch: timeStretch,
                     longsOutstanding: marketState.longsOutstanding,
                     longAverageTimeRemaining: _calculateTimeRemaining(
-                        uint256(longAggregates.averageMaturityTime).divUp(1e36) // scale to seconds
+                        uint256(marketState.longAverageMaturityTime).divUp(1e36) // scale to seconds
                     ),
-                    longBaseVolume: longAggregates.baseVolume, // TODO: This isn't used.
                     shortsOutstanding: marketState.shortsOutstanding,
                     shortAverageTimeRemaining: _calculateTimeRemaining(
-                        uint256(shortAggregates.averageMaturityTime).divUp(1e36) // scale to seconds
+                        uint256(marketState.shortAverageMaturityTime).divUp(
+                            1e36
+                        ) // scale to seconds
                     ),
-                    shortBaseVolume: shortAggregates.baseVolume
+                    shortBaseVolume: marketState.shortBaseVolume
                 });
             uint256 startingPresentValue = HyperdriveMath.calculatePresentValue(
                 params
@@ -248,27 +249,32 @@ abstract contract HyperdriveLP is HyperdriveBase {
                 timeStretch: timeStretch,
                 longsOutstanding: marketState.longsOutstanding,
                 longAverageTimeRemaining: _calculateTimeRemaining(
-                    uint256(longAggregates.averageMaturityTime).divUp(1e36) // scale to seconds
+                    uint256(marketState.longAverageMaturityTime).divUp(1e36) // scale to seconds
                 ),
-                longBaseVolume: longAggregates.baseVolume, // TODO: This isn't used.
                 shortsOutstanding: marketState.shortsOutstanding,
                 shortAverageTimeRemaining: _calculateTimeRemaining(
-                    uint256(shortAggregates.averageMaturityTime).divUp(1e36) // scale to seconds
+                    uint256(marketState.shortAverageMaturityTime).divUp(1e36) // scale to seconds
                 ),
-                shortBaseVolume: shortAggregates.baseVolume
+                shortBaseVolume: marketState.shortBaseVolume
             });
         uint256 startingPresentValue = HyperdriveMath.calculatePresentValue(
             params
         );
 
         // The LP is given their share of the idle capital in the pool. This
-        // is removed from the pool's reserves and paid out immediately. The
-        // idle amount is given by:
+        // is removed from the pool's reserves and paid out immediately. We use
+        // the average opening share price of longs to avoid double counting
+        // the variable rate interest accrued on long positions. The idle amount
+        // is given by:
         //
-        // idle = (z - (o_l / c)) * (dl / l_a)
-        uint256 shareProceeds = (marketState.shareReserves -
-            uint256(marketState.longsOutstanding).divDown(params.sharePrice))
-            .mulDivDown(_shares, activeLpTotalSupply);
+        // idle = (z - (o_l / c_0)) * (dl / l_a)
+        uint256 shareProceeds = marketState.shareReserves;
+        if (marketState.longsOutstanding > 0) {
+            shareProceeds -= uint256(marketState.longsOutstanding).divDown(
+                marketState.longOpenSharePrice
+            );
+        }
+        shareProceeds = shareProceeds.mulDivDown(_shares, activeLpTotalSupply);
         _updateLiquidity(-int256(shareProceeds));
         params.shareReserves = marketState.shareReserves;
         params.bondReserves = marketState.bondReserves;
@@ -346,10 +352,12 @@ abstract contract HyperdriveLP is HyperdriveBase {
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
 
         // Clamp the shares to the total amount of shares ready for withdrawal
-        // to avoid unnecessary reverts.
+        // to avoid unnecessary reverts. We exit early if the user has no shares
+        // available to redeem.
         _shares = _shares <= withdrawPool.readyToWithdraw
             ? _shares
             : withdrawPool.readyToWithdraw;
+        if (_shares == 0) return 0;
 
         // We burn the shares from the user
         _burn(
@@ -427,14 +435,13 @@ abstract contract HyperdriveLP is HyperdriveBase {
                 timeStretch: timeStretch,
                 longsOutstanding: marketState.longsOutstanding,
                 longAverageTimeRemaining: _calculateTimeRemaining(
-                    uint256(longAggregates.averageMaturityTime).divUp(1e36) // scale to seconds
+                    uint256(marketState.longAverageMaturityTime).divUp(1e36) // scale to seconds
                 ),
-                longBaseVolume: longAggregates.baseVolume, // TODO: This isn't used.
                 shortsOutstanding: marketState.shortsOutstanding,
                 shortAverageTimeRemaining: _calculateTimeRemaining(
-                    uint256(shortAggregates.averageMaturityTime).divUp(1e36) // scale to seconds
+                    uint256(marketState.shortAverageMaturityTime).divUp(1e36) // scale to seconds
                 ),
-                shortBaseVolume: shortAggregates.baseVolume
+                shortBaseVolume: marketState.shortBaseVolume
             })
         );
         uint256 lpTotalSupply = totalSupply[AssetId._LP_ASSET_ID] +

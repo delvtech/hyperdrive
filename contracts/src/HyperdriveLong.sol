@@ -75,8 +75,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
             bondReservesDelta,
             sharePrice,
             latestCheckpoint,
-            maturityTime,
-            timeRemaining
+            maturityTime
         );
 
         // Mint the bonds to the trader with an ID of the maturity time.
@@ -168,7 +167,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
     /// @param _sharePrice The share price.
     /// @param _checkpointTime The time of the latest checkpoint.
     /// @param _maturityTime The maturity time of the long.
-    /// @param _timeRemaining The time remaining until maturity.
     function _applyOpenLong(
         uint256 _baseAmount,
         uint256 _shareReservesDelta,
@@ -176,12 +174,11 @@ abstract contract HyperdriveLong is HyperdriveLP {
         uint256 _bondReservesDelta,
         uint256 _sharePrice,
         uint256 _checkpointTime,
-        uint256 _maturityTime,
-        uint256 _timeRemaining
+        uint256 _maturityTime
     ) internal {
         // Update the average maturity time of long positions.
-        longAggregates.averageMaturityTime = uint256(
-            longAggregates.averageMaturityTime
+        marketState.longAverageMaturityTime = uint256(
+            marketState.longAverageMaturityTime
         )
             .updateWeightedAverage(
                 uint256(marketState.longsOutstanding),
@@ -191,7 +188,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
             )
             .toUint128();
 
-        // Update the long share price of the checkpoint.
+        // Update the long share price of the checkpoint and the global long
+        // open share price.
         checkpoints[_checkpointTime].longSharePrice = uint256(
             checkpoints[_checkpointTime].longSharePrice
         )
@@ -209,13 +207,14 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 true
             )
             .toUint128();
-
-        // Update the base volume of long positions.
-        uint128 baseVolume = HyperdriveMath
-            .calculateBaseVolume(_baseAmount, _bondProceeds, _timeRemaining)
+        marketState.longOpenSharePrice = uint256(marketState.longOpenSharePrice)
+            .updateWeightedAverage(
+                uint256(marketState.longsOutstanding),
+                _sharePrice,
+                _bondProceeds,
+                true
+            )
             .toUint128();
-        longAggregates.baseVolume += baseVolume;
-        checkpoints[_checkpointTime].longBaseVolume += baseVolume;
 
         // Apply the trading deltas to the reserves and update the amount of
         // longs outstanding.
@@ -260,8 +259,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
         uint256 _sharePrice
     ) internal {
         // Update the long average maturity time.
-        longAggregates.averageMaturityTime = uint256(
-            longAggregates.averageMaturityTime
+        marketState.longAverageMaturityTime = uint256(
+            marketState.longAverageMaturityTime
         )
             .updateWeightedAverage(
                 marketState.longsOutstanding,
@@ -271,33 +270,15 @@ abstract contract HyperdriveLong is HyperdriveLP {
             )
             .toUint128();
 
-        // TODO: Is it possible to abstract out the process of updating
-        // aggregates in a way that is nice?
-        //
-        // Update the base volume aggregates, get the open share price, and
-        // update the long share price of the checkpoint.
-        {
-            // Get the total supply of longs in the checkpoint of the longs
-            // being closed. If the longs are closed before maturity, we add the
-            // amount of longs being closed since the total supply is decreased
-            // when burning the long tokens.
-            uint256 checkpointAmount = totalSupply[
-                AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _maturityTime)
-            ];
-            if (block.timestamp < _maturityTime) {
-                checkpointAmount += _bondAmount;
-            }
-
-            // Remove a proportional amount of the checkpoints base volume from
-            // the aggregates.
-            uint256 checkpointTime = _maturityTime - positionDuration;
-            uint128 proportionalBaseVolume = uint256(
-                checkpoints[checkpointTime].longBaseVolume
-            ).mulDown(_bondAmount.divDown(checkpointAmount)).toUint128();
-            longAggregates.baseVolume -= proportionalBaseVolume;
-            checkpoints[checkpointTime]
-                .longBaseVolume -= proportionalBaseVolume;
-        }
+        // Update the global long open share price.
+        marketState.longOpenSharePrice = uint256(marketState.longOpenSharePrice)
+            .updateWeightedAverage(
+                marketState.longsOutstanding,
+                checkpoints[_maturityTime - positionDuration].longSharePrice,
+                _bondAmount,
+                false
+            )
+            .toUint128();
 
         // Reduce the amount of outstanding longs.
         marketState.longsOutstanding -= _bondAmount.toUint128();
