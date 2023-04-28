@@ -191,7 +191,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
             )
             .toUint128();
 
-        // Update the long share price of the checkpoint.
+        // Update the long share price of the checkpoint and the global long
+        // open share price.
         checkpoints[_checkpointTime].longSharePrice = uint256(
             checkpoints[_checkpointTime].longSharePrice
         )
@@ -204,6 +205,14 @@ abstract contract HyperdriveLong is HyperdriveLP {
                         )
                     ]
                 ),
+                _sharePrice,
+                _bondProceeds,
+                true
+            )
+            .toUint128();
+        marketState.longOpenSharePrice = uint256(marketState.longOpenSharePrice)
+            .updateWeightedAverage(
+                uint256(marketState.longsOutstanding),
                 _sharePrice,
                 _bondProceeds,
                 true
@@ -297,6 +306,18 @@ abstract contract HyperdriveLong is HyperdriveLP {
             longAggregates.baseVolume -= proportionalBaseVolume;
             checkpoints[checkpointTime]
                 .longBaseVolume -= proportionalBaseVolume;
+
+            // Update the global long open share price.
+            marketState.longOpenSharePrice = uint256(
+                marketState.longOpenSharePrice
+            )
+                .updateWeightedAverage(
+                    marketState.longsOutstanding,
+                    checkpoints[checkpointTime].longSharePrice,
+                    _bondAmount,
+                    false
+                )
+                .toUint128();
         }
 
         // Reduce the amount of outstanding longs.

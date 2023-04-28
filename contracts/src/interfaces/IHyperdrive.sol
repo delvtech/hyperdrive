@@ -14,6 +14,8 @@ interface IHyperdrive is IMultiToken {
         uint128 longsOutstanding;
         /// @dev The amount of shorts that are still open.
         uint128 shortsOutstanding;
+        /// @dev The average open share price of longs.
+        uint128 longOpenSharePrice;
         /// @dev A flag indicating whether or not the pool has been initialized.
         bool isInitialized;
         /// @dev A flag indicating whether or not the pool is paused.
