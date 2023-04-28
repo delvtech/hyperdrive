@@ -729,6 +729,9 @@ contract LpWithdrawalTest is HyperdriveTest {
         );
     }
 
+    // FIXME: This test is super flaky. There are some underlying problems that
+    // need to be addressed.
+    //
     // TODO: Add commentary on how Alice, Bob, and Celine should be treated
     // similarly. Think more about whether or not this should really be the
     // case.
