@@ -45,14 +45,6 @@ abstract contract HyperdriveBase is MultiToken {
     ///         pricing trades and maintaining solvency.
     IHyperdrive.MarketState internal marketState;
 
-    /// @notice Aggregate values for long positions that are used to enforce
-    ///         fairness guarantees.
-    IHyperdrive.Aggregates internal longAggregates;
-
-    /// @notice Aggregate values for short positions that are used to enforce
-    ///         fairness guarantees.
-    IHyperdrive.Aggregates internal shortAggregates;
-
     /// @notice The state corresponding to the withdraw pool, expressed as a struct.
     IHyperdrive.WithdrawPool internal withdrawPool;
 
@@ -219,11 +211,10 @@ abstract contract HyperdriveBase is MultiToken {
                 lpTotalSupply: totalSupply[AssetId._LP_ASSET_ID],
                 sharePrice: _pricePerShare(),
                 longsOutstanding: marketState.longsOutstanding,
-                longAverageMaturityTime: longAggregates.averageMaturityTime,
-                longBaseVolume: longAggregates.baseVolume,
+                longAverageMaturityTime: marketState.longAverageMaturityTime,
                 shortsOutstanding: marketState.shortsOutstanding,
-                shortAverageMaturityTime: shortAggregates.averageMaturityTime,
-                shortBaseVolume: shortAggregates.baseVolume,
+                shortAverageMaturityTime: marketState.shortAverageMaturityTime,
+                shortBaseVolume: marketState.shortBaseVolume,
                 withdrawalSharesReadyToWithdraw: withdrawPool.readyToWithdraw,
                 withdrawalSharesProceeds: withdrawPool.proceeds
             });

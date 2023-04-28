@@ -137,14 +137,15 @@ abstract contract HyperdriveLP is HyperdriveBase {
                     timeStretch: timeStretch,
                     longsOutstanding: marketState.longsOutstanding,
                     longAverageTimeRemaining: _calculateTimeRemaining(
-                        uint256(longAggregates.averageMaturityTime).divUp(1e36) // scale to seconds
+                        uint256(marketState.longAverageMaturityTime).divUp(1e36) // scale to seconds
                     ),
-                    longBaseVolume: longAggregates.baseVolume, // TODO: This isn't used.
                     shortsOutstanding: marketState.shortsOutstanding,
                     shortAverageTimeRemaining: _calculateTimeRemaining(
-                        uint256(shortAggregates.averageMaturityTime).divUp(1e36) // scale to seconds
+                        uint256(marketState.shortAverageMaturityTime).divUp(
+                            1e36
+                        ) // scale to seconds
                     ),
-                    shortBaseVolume: shortAggregates.baseVolume
+                    shortBaseVolume: marketState.shortBaseVolume
                 });
             uint256 startingPresentValue = HyperdriveMath.calculatePresentValue(
                 params
@@ -248,14 +249,13 @@ abstract contract HyperdriveLP is HyperdriveBase {
                 timeStretch: timeStretch,
                 longsOutstanding: marketState.longsOutstanding,
                 longAverageTimeRemaining: _calculateTimeRemaining(
-                    uint256(longAggregates.averageMaturityTime).divUp(1e36) // scale to seconds
+                    uint256(marketState.longAverageMaturityTime).divUp(1e36) // scale to seconds
                 ),
-                longBaseVolume: longAggregates.baseVolume, // TODO: This isn't used.
                 shortsOutstanding: marketState.shortsOutstanding,
                 shortAverageTimeRemaining: _calculateTimeRemaining(
-                    uint256(shortAggregates.averageMaturityTime).divUp(1e36) // scale to seconds
+                    uint256(marketState.shortAverageMaturityTime).divUp(1e36) // scale to seconds
                 ),
-                shortBaseVolume: shortAggregates.baseVolume
+                shortBaseVolume: marketState.shortBaseVolume
             });
         uint256 startingPresentValue = HyperdriveMath.calculatePresentValue(
             params
@@ -435,14 +435,13 @@ abstract contract HyperdriveLP is HyperdriveBase {
                 timeStretch: timeStretch,
                 longsOutstanding: marketState.longsOutstanding,
                 longAverageTimeRemaining: _calculateTimeRemaining(
-                    uint256(longAggregates.averageMaturityTime).divUp(1e36) // scale to seconds
+                    uint256(marketState.longAverageMaturityTime).divUp(1e36) // scale to seconds
                 ),
-                longBaseVolume: longAggregates.baseVolume, // TODO: This isn't used.
                 shortsOutstanding: marketState.shortsOutstanding,
                 shortAverageTimeRemaining: _calculateTimeRemaining(
-                    uint256(shortAggregates.averageMaturityTime).divUp(1e36) // scale to seconds
+                    uint256(marketState.shortAverageMaturityTime).divUp(1e36) // scale to seconds
                 ),
-                shortBaseVolume: shortAggregates.baseVolume
+                shortBaseVolume: marketState.shortBaseVolume
             })
         );
         uint256 lpTotalSupply = totalSupply[AssetId._LP_ASSET_ID] +

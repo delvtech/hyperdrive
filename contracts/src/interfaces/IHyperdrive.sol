@@ -14,23 +14,22 @@ interface IHyperdrive is IMultiToken {
         uint128 longsOutstanding;
         /// @dev The amount of shorts that are still open.
         uint128 shortsOutstanding;
+        /// @dev The average maturity time of outstanding positions.
+        uint128 longAverageMaturityTime;
         /// @dev The average open share price of longs.
         uint128 longOpenSharePrice;
-        /// @dev A flag indicating whether or not the pool has been initialized.
-        bool isInitialized;
-        /// @dev A flag indicating whether or not the pool is paused.
-        bool isPaused;
-    }
-
-    struct Aggregates {
         /// @dev The average maturity time of outstanding positions.
-        uint128 averageMaturityTime;
+        uint128 shortAverageMaturityTime;
         /// @dev The total amount of base that was transferred as a result of
         ///      opening the outstanding positions. This is an idealized value
         ///      that reflects the base that would have been transferred if all
         ///      positions were opened at the beginning of their respective
         ///      checkpoints.
-        uint128 baseVolume;
+        uint128 shortBaseVolume;
+        /// @dev A flag indicating whether or not the pool has been initialized.
+        bool isInitialized;
+        /// @dev A flag indicating whether or not the pool is paused.
+        bool isPaused;
     }
 
     struct Checkpoint {
@@ -45,9 +44,6 @@ interface IHyperdrive is IMultiToken {
         ///      on longs to the withdrawal pool and prevent dust from being
         ///      stuck in the contract.
         uint128 longSharePrice;
-        /// @dev The aggregate amount of base that was paid to open longs in the
-        ///      checkpoint.
-        uint128 longBaseVolume;
         /// @dev The aggregate amount of base that was committed by LPs to pay
         ///      for the bonds that were sold short in the checkpoint.
         uint128 shortBaseVolume;
@@ -99,8 +95,6 @@ interface IHyperdrive is IMultiToken {
         uint256 longsOutstanding;
         /// @dev The average maturity time of the outstanding longs.
         uint256 longAverageMaturityTime;
-        /// @dev The cumulative amount of base paid for oustanding longs.
-        uint256 longBaseVolume;
         /// @dev An amount of bonds representating outstanding unmatured shorts.
         uint256 shortsOutstanding;
         /// @dev The average maturity time of the outstanding shorts.

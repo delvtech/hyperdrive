@@ -340,7 +340,6 @@ library HyperdriveMath {
         uint256 timeStretch;
         uint256 longsOutstanding;
         uint256 longAverageTimeRemaining;
-        uint256 longBaseVolume;
         uint256 shortsOutstanding;
         uint256 shortAverageTimeRemaining;
         uint256 shortBaseVolume;

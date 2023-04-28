@@ -166,8 +166,6 @@ contract OpenShortTest is HyperdriveTest {
                 poolInfoBefore.longsOutstanding
             );
             assertEq(poolInfoAfter.longAverageMaturityTime, 0);
-            assertEq(poolInfoAfter.longBaseVolume, 0);
-            assertEq(checkpoint.longBaseVolume, 0);
             assertEq(
                 poolInfoAfter.shortsOutstanding,
                 poolInfoBefore.shortsOutstanding + bondAmount

@@ -306,7 +306,6 @@ library HyperdriveUtils {
                                 1e36
                             )
                         ),
-                        longBaseVolume: poolInfo.longBaseVolume,
                         shortsOutstanding: poolInfo.shortsOutstanding,
                         shortAverageTimeRemaining: calculateTimeRemaining(
                             hyperdrive,
