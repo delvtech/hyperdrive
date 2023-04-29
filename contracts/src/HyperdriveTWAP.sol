@@ -7,7 +7,8 @@ import "./libraries/Errors.sol";
 
 /// @author Delve
 /// @title HyperdriveTWAP
-/// @notice Adds an 
+/// @notice Adds an oracle which records data on an interval and then loads the
+///         average price between intervals.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
@@ -29,7 +30,11 @@ abstract contract HyperdriveTWAP is HyperdriveBase {
         
         // Calculate sum
         uint256 delta = block.timestamp - previousTime;
-        uint256 sum = price * delta + previousSum;
+        // NOTE - We do not expect this should ever overflow under normal conditions
+        //        but if it would we would prefer that the oracle does not lock trade closes
+        unchecked {
+            uint256 sum = price * delta + previousSum;
+        }
 
         // If we are updating first we calculate the index to update
         uint256 toUpdate = uint256(head) + 1 % buffer.length;
@@ -49,11 +54,11 @@ abstract contract HyperdriveTWAP is HyperdriveBase {
         uint256 targetTime = uint256(lastTimestamp) - period;
         uint256 head = uint256(head);
         // Get the last index
-        uint256 lastIndex = head == buffer.length? (head + 1) % buffer.length: 0;
+        uint256 lastIndex = (head + 1) % buffer.length;
 
         // We search for the greatest timestamp before the last, note this is not
         // an efficient search as we expect the buffer to be small.
-        uint256 currentIndex = head == 0? buffer.length: head - 1;
+        uint256 currentIndex = head == 0? buffer.length - 1: head - 1;
         OracleData memory oldData = OracleData(0,0);
         while (lastIndex != currentIndex) {
             // If the timestamp of the current index has older data than the target
