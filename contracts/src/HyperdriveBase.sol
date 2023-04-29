@@ -10,7 +10,7 @@ import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 
-/// @author Delve
+/// @author DELV
 /// @title HyperdriveBase
 /// @notice The base contract of the Hyperdrive inheritance hierarchy.
 /// @custom:disclaimer The language used in this code is for coding convenience
@@ -44,14 +44,6 @@ abstract contract HyperdriveBase is MultiToken {
     /// @notice The reserves and the buffers. This is the primary state used for
     ///         pricing trades and maintaining solvency.
     IHyperdrive.MarketState internal marketState;
-
-    /// @notice Aggregate values for long positions that are used to enforce
-    ///         fairness guarantees.
-    IHyperdrive.Aggregates internal longAggregates;
-
-    /// @notice Aggregate values for short positions that are used to enforce
-    ///         fairness guarantees.
-    IHyperdrive.Aggregates internal shortAggregates;
 
     /// @notice The state corresponding to the withdraw pool, expressed as a struct.
     IHyperdrive.WithdrawPool internal withdrawPool;
@@ -228,15 +220,12 @@ abstract contract HyperdriveBase is MultiToken {
                 lpTotalSupply: totalSupply[AssetId._LP_ASSET_ID],
                 sharePrice: _pricePerShare(),
                 longsOutstanding: marketState.longsOutstanding,
-                longAverageMaturityTime: longAggregates.averageMaturityTime,
-                longBaseVolume: longAggregates.baseVolume,
+                longAverageMaturityTime: marketState.longAverageMaturityTime,
                 shortsOutstanding: marketState.shortsOutstanding,
-                shortAverageMaturityTime: shortAggregates.averageMaturityTime,
-                shortBaseVolume: shortAggregates.baseVolume,
-                withdrawalSharesReadyToWithdraw: withdrawPool
-                    .withdrawalSharesReadyToWithdraw,
-                capital: withdrawPool.capital,
-                interest: withdrawPool.interest
+                shortAverageMaturityTime: marketState.shortAverageMaturityTime,
+                shortBaseVolume: marketState.shortBaseVolume,
+                withdrawalSharesReadyToWithdraw: withdrawPool.readyToWithdraw,
+                withdrawalSharesProceeds: withdrawPool.proceeds
             });
     }
 

@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 
 import { FixedPointMath } from "./FixedPointMath.sol";
 
-/// @author Delve
+/// @author DELV
 /// @title YieldSpaceMath
 /// @notice Math for the YieldSpace pricing model.
 /// @custom:disclaimer The language used in this code is for coding convenience

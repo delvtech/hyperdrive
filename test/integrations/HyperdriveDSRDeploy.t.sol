@@ -28,8 +28,6 @@ contract HyperdriveDSRTest is HyperdriveTest {
             );
         factory = new HyperdriveFactory(alice, simpleDeployer, bob);
 
-        vm.stopPrank();
-
         address daiWhale = 0x075e72a5eDf65F0A5f44699c7654C1a76941Ddc8;
 
         whaleTransfer(daiWhale, dai, alice);

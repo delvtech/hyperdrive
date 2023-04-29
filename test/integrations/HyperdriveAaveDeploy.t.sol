@@ -10,6 +10,7 @@ import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeploye
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { IPool } from "@aave/interfaces/IPool.sol";
 import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
 
 contract HyperdriveDSRTest is HyperdriveTest {
@@ -27,8 +28,6 @@ contract HyperdriveDSRTest is HyperdriveTest {
             pool
         );
         factory = new HyperdriveFactory(alice, simpleDeployer, bob);
-
-        vm.stopPrank();
 
         address daiWhale = 0x075e72a5eDf65F0A5f44699c7654C1a76941Ddc8;
 

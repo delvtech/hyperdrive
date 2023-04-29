@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import "./interfaces/IHyperdrive.sol";
+import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./libraries/ERC20Permit.sol";
-import "./libraries/Errors.sol";
-import "./libraries/AssetId.sol";
+import { ERC20Permit } from "./libraries/ERC20Permit.sol";
+import { AssetId } from "./libraries/AssetId.sol";
+import { Errors } from "./libraries/Errors.sol";
 
 contract BondWrapper is ERC20Permit {
     // The multitoken of the bond

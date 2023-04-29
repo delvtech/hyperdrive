@@ -8,7 +8,6 @@ import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { DsrManager } from "contracts/test/MockMakerDsrHyperdrive.sol";
 import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
-import "forge-std/console.sol";
 
 contract HyperdriveFactoryTest is HyperdriveTest {
     function test_hyperdrive_factory_admin_functions() external {

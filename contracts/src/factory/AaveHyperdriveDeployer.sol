@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import "../instances/AaveHyperdrive.sol";
-import "../interfaces/IHyperdrive.sol";
-import "../interfaces/IHyperdriveDeployer.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { AaveHyperdrive } from "../instances/AaveHyperdrive.sol";
+import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
 import { IPool } from "@aave/interfaces/IPool.sol";
 
 interface IAToken {
+    // solhint-disable-next-line func-name-mixedcase
     function UNDERLYING_ASSET_ADDRESS() external view returns (address);
 }
 
@@ -20,7 +22,7 @@ interface IAToken {
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract AaveHyperdriveDeployer is IHyperdriveDeployer {
-    IPool immutable pool;
+    IPool internal immutable pool;
 
     constructor(IPool _pool) {
         pool = _pool;

@@ -1,10 +1,14 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import "./Errors.sol";
+import { Errors } from "./Errors.sol";
 
+/// @author DELV
+/// @title FixedPointMath
 /// @notice A fixed-point math library.
-/// @author Delve
+/// @custom:disclaimer The language used in this code is for coding convenience
+///                    only, and is not intended to, and does not, have any
+///                    particular legal or regulatory significance.
 library FixedPointMath {
     using FixedPointMath for uint256;
 

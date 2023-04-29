@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import { Errors } from "./Errors.sol";
 import { FixedPointMath } from "./FixedPointMath.sol";
 
-/// @author Delve
+/// @author DELV
 /// @title Hyperdrive
 /// @notice A library that handles the encoding and decoding of asset IDs for
 ///         Hyperdrive.

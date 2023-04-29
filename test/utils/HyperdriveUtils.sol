@@ -220,6 +220,7 @@ library HyperdriveUtils {
         return FixedPointMath.ONE_18.divDown(timeStretch);
     }
 
+    // FIXME: This should be removed.
     function calculateOpenShortDeposit(
         IHyperdrive _hyperdrive,
         uint256 _bondAmount
@@ -280,6 +281,40 @@ library HyperdriveUtils {
                     openSharePrice,
                     poolInfo.sharePrice,
                     poolInfo.sharePrice
+                )
+                .mulDown(poolInfo.sharePrice);
+    }
+
+    function presentValue(
+        IHyperdrive hyperdrive
+    ) internal view returns (uint256) {
+        IHyperdrive.PoolConfig memory poolConfig = hyperdrive.getPoolConfig();
+        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
+        return
+            HyperdriveMath
+                .calculatePresentValue(
+                    HyperdriveMath.PresentValueParams({
+                        shareReserves: poolInfo.shareReserves,
+                        bondReserves: poolInfo.bondReserves,
+                        sharePrice: poolInfo.sharePrice,
+                        initialSharePrice: poolConfig.initialSharePrice,
+                        timeStretch: poolConfig.timeStretch,
+                        longsOutstanding: poolInfo.longsOutstanding,
+                        longAverageTimeRemaining: calculateTimeRemaining(
+                            hyperdrive,
+                            uint256(poolInfo.longAverageMaturityTime).divUp(
+                                1e36
+                            )
+                        ),
+                        shortsOutstanding: poolInfo.shortsOutstanding,
+                        shortAverageTimeRemaining: calculateTimeRemaining(
+                            hyperdrive,
+                            uint256(poolInfo.shortAverageMaturityTime).divUp(
+                                1e36
+                            )
+                        ),
+                        shortBaseVolume: poolInfo.shortBaseVolume
+                    })
                 )
                 .mulDown(poolInfo.sharePrice);
     }

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import "./interfaces/IERC20.sol";
-import "./interfaces/IMultiToken.sol";
-import "./interfaces/IForwarderFactory.sol";
-import "./libraries/Errors.sol";
+import { IERC20 } from "./interfaces/IERC20.sol";
+import { IForwarderFactory } from "./interfaces/IForwarderFactory.sol";
+import { IMultiToken } from "./interfaces/IMultiToken.sol";
+import { Errors } from "./libraries/Errors.sol";
 
 // This ERC20 forwarder forwards calls through an ERC20-compliant interface
 // to move the sub tokens in our multi-token contract. This enables our

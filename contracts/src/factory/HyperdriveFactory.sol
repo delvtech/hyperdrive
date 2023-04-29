@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
 import { Errors } from "../libraries/Errors.sol";
 
@@ -23,7 +23,7 @@ contract HyperdriveFactory {
     uint256 public versionCounter;
 
     // The address which should control hyperdrive instances
-    address hyperdriveGovernance;
+    address internal hyperdriveGovernance;
 
     /// @notice Deploys the contract
     /// @param _governance The address which can update this factory.
