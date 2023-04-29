@@ -22,41 +22,26 @@ contract MakerDsrHyperdrive is Hyperdrive {
     uint256 public constant RAY = 1e27;
 
     /// @notice Initializes a Hyperdrive pool.
+    /// @param _config The configuration of the Hyperdrive pool.
     /// @param _linkerCodeHash The hash of the ERC20 linker contract's
     ///        constructor code.
     /// @param _linkerFactory The factory which is used to deploy the ERC20
     ///        linker contracts.
-    /// @param _checkpointsPerTerm The number of checkpoints that elapses before
-    ///        bonds can be redeemed one-to-one for base.
-    /// @param _checkpointDuration The time in seconds between share price
-    ///        checkpoints. Position duration must be a multiple of checkpoint
-    ///        duration.
-    /// @param _timeStretch The time stretch of the pool.
-    /// @param _fees The fees to apply to trades.
-    /// @param _governance The governance address.
     /// @param _dsrManager The "dai savings rate" manager contract
     constructor(
+        IHyperdrive.HyperdriveConfig memory _config,
         bytes32 _linkerCodeHash,
         address _linkerFactory,
-        uint256 _checkpointsPerTerm,
-        uint256 _checkpointDuration,
-        uint256 _timeStretch,
-        IHyperdrive.Fees memory _fees,
-        address _governance,
         DsrManager _dsrManager
-    )
-        Hyperdrive(
-            _linkerCodeHash,
-            _linkerFactory,
-            IERC20(address(_dsrManager.dai())), // baseToken will always be DAI
-            FixedPointMath.ONE_18,
-            _checkpointsPerTerm,
-            _checkpointDuration,
-            _timeStretch,
-            _fees,
-            _governance
-        )
-    {
+    ) Hyperdrive(_config, _linkerCodeHash, _linkerFactory) {
+        // Ensure that the Hyperdrive pool was configured properly.
+        if (address(_config.baseToken) != address(_dsrManager.dai())) {
+            revert Errors.InvalidBaseToken();
+        }
+        if (_config.initialSharePrice != FixedPointMath.ONE_18) {
+            revert Errors.InvalidInitialSharePrice();
+        }
+
         dsrManager = _dsrManager;
         pot = Pot(dsrManager.pot());
         baseToken.approve(address(dsrManager), type(uint256).max);

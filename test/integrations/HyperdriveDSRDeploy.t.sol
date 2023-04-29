@@ -51,14 +51,19 @@ contract HyperdriveDSRTest is HyperdriveTest {
         dai.approve(address(factory), type(uint256).max);
         vm.prank(alice);
         hyperdrive = factory.deployAndImplement(
+            IHyperdrive.HyperdriveConfig({
+                baseToken: dai,
+                initialSharePrice: FixedPointMath.ONE_18,
+                checkpointsPerTerm: 365,
+                checkpointDuration: 1 days,
+                timeStretch: FixedPointMath.ONE_18.divDown(
+                    22.186877016851916266e18
+                ),
+                governance: address(0),
+                fees: IHyperdrive.Fees(0, 0, 0)
+            }),
             bytes32(0),
             address(0),
-            dai,
-            0,
-            365,
-            1 days,
-            FixedPointMath.ONE_18.divDown(22.186877016851916266e18),
-            IHyperdrive.Fees(0, 0, 0),
             empty,
             2500e18,
             //1% apr

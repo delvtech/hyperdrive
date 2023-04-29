@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { Errors } from "contracts/src/libraries/Errors.sol";
+import { IPool } from "@aave/interfaces/IPool.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { AaveHyperdriveDeployer, IPool } from "contracts/src/factory/AaveHyperdriveDeployer.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
-import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
-import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
+import { AssetId } from "contracts/src/libraries/AssetId.sol";
+import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
-import { IPool } from "@aave/interfaces/IPool.sol";
+import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
 
 contract HyperdriveDSRTest is HyperdriveTest {
     using FixedPointMath for *;
@@ -57,14 +57,19 @@ contract HyperdriveDSRTest is HyperdriveTest {
         dai.approve(address(factory), type(uint256).max);
         vm.prank(alice);
         hyperdrive = factory.deployAndImplement(
+            IHyperdrive.HyperdriveConfig({
+                baseToken: dai,
+                initialSharePrice: FixedPointMath.ONE_18,
+                checkpointsPerTerm: 365,
+                checkpointDuration: 1 days,
+                timeStretch: FixedPointMath.ONE_18.divDown(
+                    22.186877016851916266e18
+                ),
+                governance: address(0),
+                fees: IHyperdrive.Fees(0, 0, 0)
+            }),
             bytes32(0),
             address(0),
-            dai,
-            0,
-            365,
-            1 days,
-            FixedPointMath.ONE_18.divDown(22.186877016851916266e18),
-            IHyperdrive.Fees(0, 0, 0),
             aToken,
             2500e18,
             //1% apr

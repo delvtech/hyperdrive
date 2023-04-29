@@ -74,45 +74,32 @@ abstract contract HyperdriveBase is MultiToken {
     address public governance;
 
     /// @notice Initializes a Hyperdrive pool.
+    /// @param _config The configuration of the Hyperdrive pool.
     /// @param _linkerCodeHash The hash of the ERC20 linker contract's
     ///        constructor code.
     /// @param _linkerFactory The address of the factory which is used to deploy
     ///        the ERC20 linker contracts.
-    /// @param _baseToken The base token contract.
-    /// @param _initialSharePrice The initial share price.
-    /// @param _checkpointsPerTerm The number of checkpoints that elapses before
-    ///        bonds can be redeemed one-to-one for base.
-    /// @param _checkpointDuration The time in seconds between share price
-    ///        checkpoints. Position duration must be a multiple of checkpoint
-    ///        duration.
-    /// @param _timeStretch The time stretch of the pool.
-    /// @param _fees The fees to apply to trades.
-    /// @param _governance The address that receives governance fees.
     constructor(
+        IHyperdrive.HyperdriveConfig memory _config,
         bytes32 _linkerCodeHash,
-        address _linkerFactory,
-        IERC20 _baseToken,
-        uint256 _initialSharePrice,
-        uint256 _checkpointsPerTerm,
-        uint256 _checkpointDuration,
-        uint256 _timeStretch,
-        IHyperdrive.Fees memory _fees,
-        address _governance
+        address _linkerFactory
     ) MultiToken(_linkerCodeHash, _linkerFactory) {
         // Initialize the base token address.
-        baseToken = _baseToken;
+        baseToken = _config.baseToken;
 
         // Initialize the time configurations. There must be at least one
         // checkpoint per term to avoid having a position duration of zero.
-        if (_checkpointsPerTerm == 0) {
+        if (_config.checkpointsPerTerm == 0) {
             revert Errors.InvalidCheckpointsPerTerm();
         }
-        positionDuration = _checkpointsPerTerm * _checkpointDuration;
-        checkpointDuration = _checkpointDuration;
-        timeStretch = _timeStretch;
-        initialSharePrice = _initialSharePrice;
-        fees = _fees;
-        governance = _governance;
+        positionDuration =
+            _config.checkpointsPerTerm *
+            _config.checkpointDuration;
+        checkpointDuration = _config.checkpointDuration;
+        timeStretch = _config.timeStretch;
+        initialSharePrice = _config.initialSharePrice;
+        fees = _config.fees;
+        governance = _config.governance;
     }
 
     /// Yield Source ///

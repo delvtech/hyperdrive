@@ -16,7 +16,7 @@ contract MockHyperdriveTestnet is Hyperdrive {
     uint256 internal totalShares;
 
     constructor(
-        ERC20Mintable baseToken,
+        ERC20Mintable _baseToken,
         uint256 _initialRate,
         uint256 _initialSharePrice,
         uint256 _checkpointsPerTerm,
@@ -26,15 +26,17 @@ contract MockHyperdriveTestnet is Hyperdrive {
         address _governance
     )
         Hyperdrive(
+            IHyperdrive.HyperdriveConfig({
+                baseToken: _baseToken,
+                initialSharePrice: _initialSharePrice,
+                checkpointsPerTerm: _checkpointsPerTerm,
+                checkpointDuration: _checkpointDuration,
+                timeStretch: _timeStretch,
+                governance: _governance,
+                fees: _fees
+            }),
             bytes32(0),
-            address(0),
-            baseToken,
-            _initialSharePrice,
-            _checkpointsPerTerm,
-            _checkpointDuration,
-            _timeStretch,
-            _fees,
-            _governance
+            address(0)
         )
     {
         rate = _initialRate;
