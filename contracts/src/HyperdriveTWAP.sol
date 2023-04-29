@@ -5,7 +5,7 @@ import "./HyperdriveBase.sol";
 import "./libraries/FixedPointMath.sol";
 import "./libraries/Errors.sol";
 
-/// @author Delve
+/// @author DELV
 /// @title HyperdriveTWAP
 /// @notice Adds an oracle which records data on an interval and then loads the
 ///         average price between intervals.
