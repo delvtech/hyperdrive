@@ -67,8 +67,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
             governanceFeesAccrued += totalGovernanceFee;
         }
 
-
-
         // Take custody of the trader's deposit and ensure that the trader
         // doesn't pay more than their max deposit. The trader's deposit is
         // equal to the proceeds that they would receive if they closed
@@ -503,7 +501,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 timeStretch
             )
             : FixedPointMath.ONE_18;
-        
+
         // Record an oracle update
         recordPrice(spotPrice);
 
