@@ -56,7 +56,7 @@ abstract contract HyperdriveTWAP is HyperdriveBase {
         OracleData memory currentData = buffer[head];
         uint256 targetTime = uint256(lastTimestamp) - period;
         uint256 head = uint256(head);
-        // Get the last index
+        // Get the index of the oldest element in the buffer.
         uint256 lastIndex = (head + 1) % buffer.length;
 
         // We search for the greatest timestamp before the last, note this is not
