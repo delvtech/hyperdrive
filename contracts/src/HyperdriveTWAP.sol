@@ -36,8 +36,9 @@ abstract contract HyperdriveTWAP is HyperdriveBase {
         uint256 delta = block.timestamp - previousTime;
         // NOTE - We do not expect this should ever overflow under normal conditions
         //        but if it would we would prefer that the oracle does not lock trade closes
+        uint256 sum;
         unchecked {
-            uint256 sum = price * delta + previousSum;
+            sum = price * delta + previousSum;
         }
 
         // If we are updating first we calculate the index to update
