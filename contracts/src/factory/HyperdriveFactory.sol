@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import "../interfaces/IHyperdriveDeployer.sol";
-import "../libraries/Errors.sol";
+import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
+import { Errors } from "../libraries/Errors.sol";
 
 /// @author DELV
 /// @title HyperdriveFactory
-/// @notice Deploys hyperdrive instances and initializes them. It also holds a registry of
-///                all deployed hyperdrive instances.
+/// @notice Deploys hyperdrive instances and initializes them. It also holds a
+///         registry of all deployed hyperdrive instances.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
@@ -59,64 +60,46 @@ contract HyperdriveFactory {
     }
 
     /// @notice Deploys a copy of hyperdrive with the given params
+    /// @param _config The configuration of the Hyperdrive pool.
     /// @param _linkerCodeHash The hash of the ERC20 linker contract's
     ///        constructor code.
     /// @param _linkerFactory The address of the factory which is used to deploy
     ///        the ERC20 linker contracts.
-    /// @param _baseToken The base token contract.
-    /// @param _initialSharePrice The initial share price.
-    /// @param _checkpointsPerTerm The number of checkpoints that elapses before
-    ///        bonds can be redeemed one-to-one for base.
-    /// @param _checkpointDuration The time in seconds between share price
-    ///        checkpoints. Position duration must be a multiple of checkpoint
-    ///        duration.
-    /// @param _timeStretch The time stretch of the pool.
-    /// @param _fees The fees to apply to trades.
-    /// @param _oracleSize The length of the oracle buffer
-    /// @param _updateGap The time between oracle updates
     /// @param _extraData The extra data is used by some factories
     /// @param _contribution Base token to call init with
     /// @param _apr The apr to call init with
     /// @return The hyperdrive address deployed
     function deployAndImplement(
+        IHyperdrive.HyperdriveConfig memory _config,
         bytes32 _linkerCodeHash,
         address _linkerFactory,
-        IERC20 _baseToken,
-        uint256 _initialSharePrice,
-        uint256 _checkpointsPerTerm,
-        uint256 _checkpointDuration,
-        uint256 _timeStretch,
-        IHyperdrive.Fees memory _fees,
-        uint256 _oracleSize,
-        uint256 _updateGap,
         bytes32[] memory _extraData,
         uint256 _contribution,
         uint256 _apr
     ) external returns (IHyperdrive) {
         // No invalid deployments
         if (_contribution == 0) revert Errors.InvalidContribution();
+        // TODO: We should also overwrite the governance fee field.
+        //
+        // Overwrite the governance field of the config.
+        _config.governance = hyperdriveGovernance;
         // First we call the simplified factory
         IHyperdrive hyperdrive = IHyperdrive(
             hyperdriveDeployer.deploy(
+                _config,
                 _linkerCodeHash,
                 _linkerFactory,
-                _baseToken,
-                _initialSharePrice,
-                _checkpointsPerTerm,
-                _checkpointDuration,
-                _timeStretch,
-                _fees,
-                hyperdriveGovernance,
-                _oracleSize,
-                _updateGap,
                 _extraData
             )
         );
 
-        // Then start the process to init
-        _baseToken.transferFrom(msg.sender, address(this), _contribution);
-        _baseToken.approve(address(hyperdrive), type(uint256).max);
-        // Initialize
+        // Initialize the Hyperdrive instance.
+        _config.baseToken.transferFrom(
+            msg.sender,
+            address(this),
+            _contribution
+        );
+        _config.baseToken.approve(address(hyperdrive), type(uint256).max);
         hyperdrive.initialize(_contribution, _apr, msg.sender, true);
 
         // Mark as a version

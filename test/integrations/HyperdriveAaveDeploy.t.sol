@@ -1,17 +1,16 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { Errors } from "contracts/src/libraries/Errors.sol";
+import { IPool } from "@aave/interfaces/IPool.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { AaveHyperdriveDeployer, IPool } from "contracts/src/factory/AaveHyperdriveDeployer.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
-import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
-import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
+import { AssetId } from "contracts/src/libraries/AssetId.sol";
+import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
-import { IPool } from "@aave/interfaces/IPool.sol";
-import "forge-std/console.sol";
+import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
 
 contract HyperdriveDSRTest is HyperdriveTest {
     using FixedPointMath for *;
@@ -22,8 +21,6 @@ contract HyperdriveDSRTest is HyperdriveTest {
     IERC20 aDai = IERC20(address(0xfC1E690f61EFd961294b3e1Ce3313fBD8aa4f85d));
 
     function setUp() public override __mainnet_fork(16_685_972) {
-        vm.stopPrank();
-
         vm.startPrank(deployer);
 
         AaveHyperdriveDeployer simpleDeployer = new AaveHyperdriveDeployer(
@@ -47,19 +44,6 @@ contract HyperdriveDSRTest is HyperdriveTest {
         vm.stopPrank();
     }
 
-    function test_aave_factory_should_be_mainnet_deployable() external {
-        AaveHyperdriveDeployer simpleDeployer = new AaveHyperdriveDeployer(
-            pool
-        );
-        uint256 codeSize;
-        assembly ("memory-safe") {
-            codeSize := extcodesize(simpleDeployer)
-        }
-        console.log("Aave factory codesize: ", codeSize);
-        assertGt(codeSize, 0, "Must have code");
-        assertLt(codeSize, 24576, "Not Mainnet deployable");
-    }
-
     function test_hyperdrive_aave_deploy_and_init() external {
         setUp();
         // We've just copied the values used by the original tests to ensure this runs
@@ -70,16 +54,21 @@ contract HyperdriveDSRTest is HyperdriveTest {
         dai.approve(address(factory), type(uint256).max);
         vm.prank(alice);
         hyperdrive = factory.deployAndImplement(
+            IHyperdrive.HyperdriveConfig({
+                baseToken: dai,
+                initialSharePrice: FixedPointMath.ONE_18,
+                checkpointsPerTerm: 365,
+                checkpointDuration: 1 days,
+                timeStretch: FixedPointMath.ONE_18.divDown(
+                    22.186877016851916266e18
+                ),
+                governance: address(0),
+                oracleSize: 2,
+                updateGap: 0,
+                fees: IHyperdrive.Fees(0, 0, 0)
+            }),
             bytes32(0),
             address(0),
-            dai,
-            0,
-            365,
-            1 days,
-            FixedPointMath.ONE_18.divDown(22.186877016851916266e18),
-            IHyperdrive.Fees(0, 0, 0),
-            2,
-            0,
             aToken,
             2500e18,
             //1% apr

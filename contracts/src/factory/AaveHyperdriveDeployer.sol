@@ -12,8 +12,9 @@ interface IAToken {
 
 /// @author DELV
 /// @title AaveHyperdriveDeployer
-/// @notice This is a minimal factory which contains only the logic to deploy hyperdrive
-///                and is called by a more complex factory which also initializes hyperdrives.
+/// @notice This is a minimal factory which contains only the logic to deploy
+///         hyperdrive and is called by a more complex factory which
+///         initializes the Hyperdrive instances and acts as a registry.
 /// @dev We use two contracts to avoid any code size limit issues with Hyperdrive.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
@@ -25,56 +26,31 @@ contract AaveHyperdriveDeployer is IHyperdriveDeployer {
         pool = _pool;
     }
 
-    /// @notice Deploys a copy of hyperdrive with the given params. NOTE -
-    ///         This function varies from interface by requring aToken in the baseToken
-    ///         field.
+    /// @notice Deploys a copy of hyperdrive with the given params.
+    /// @param _config The configuration of the Hyperdrive pool.
     /// @param _linkerCodeHash The hash of the ERC20 linker contract's
     ///        constructor code.
     /// @param _linkerFactory The address of the factory which is used to deploy
     ///        the ERC20 linker contracts.
-    /// @param _baseToken The a token of the aave pool
-    /// @param _checkpointsPerTerm The number of checkpoints that elapses before
-    ///        bonds can be redeemed one-to-one for base.
-    /// @param _checkpointDuration The time in seconds between share price
-    ///        checkpoints. Position duration must be a multiple of checkpoint
-    ///        duration.
-    /// @param _timeStretch The time stretch of the pool.
-    /// @param _fees The fees to apply to trades.
-    /// @param _governance The address of the governance contract.
-    /// @param _oracleSize The length of the oracle buffer
-    /// @param _updateGap The time between oracle updates
+    /// FIXME: We should ensure that the aToken address is a valid aToken.
+    /// @param _extraData This extra data contains the address of the aToken.
     function deploy(
+        IHyperdrive.HyperdriveConfig memory _config,
         bytes32 _linkerCodeHash,
         address _linkerFactory,
-        IERC20 _baseToken,
-        uint256,
-        uint256 _checkpointsPerTerm,
-        uint256 _checkpointDuration,
-        uint256 _timeStretch,
-        IHyperdrive.Fees memory _fees,
-        address _governance,
-        uint256 _oracleSize,
-        uint256 _updateGap,
         bytes32[] calldata _extraData
     ) external override returns (address) {
         // We force convert
-        IERC20 aToken = IERC20(address(uint160((uint256)(_extraData[0]))));
+        IERC20 aToken = IERC20(address(uint160(uint256(_extraData[0]))));
         // Need a hard convert cause no direct bytes32 -> address
         return (
             address(
                 new AaveHyperdrive(
+                    _config,
                     _linkerCodeHash,
                     _linkerFactory,
-                    _baseToken,
-                    _checkpointsPerTerm,
-                    _checkpointDuration,
-                    _timeStretch,
                     aToken,
-                    pool,
-                    _fees,
-                    _governance,
-                    _oracleSize,
-                    _updateGap
+                    pool
                 )
             )
         );

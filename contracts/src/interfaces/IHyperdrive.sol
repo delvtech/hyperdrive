@@ -55,6 +55,28 @@ interface IHyperdrive is IMultiToken {
         uint256 governance;
     }
 
+    // TODO: This should be renamed or the PoolConfig struct should be removed.
+    struct HyperdriveConfig {
+        /// @dev The address of the base token.
+        IERC20 baseToken;
+        /// @dev The initial share price.
+        uint256 initialSharePrice;
+        /// @dev The number of checkpoints per term.
+        uint256 checkpointsPerTerm;
+        /// @dev The duration of a checkpoint.
+        uint256 checkpointDuration;
+        /// @dev A parameter which decreases slippage around a target rate.
+        uint256 timeStretch;
+        /// @dev The address of the governance contract.
+        address governance;
+        /// @dev The amount of TWAP entries to store.
+        uint256 oracleSize;
+        /// @dev The amount of time between TWAP updates.
+        uint256 updateGap;
+        /// @dev The fees applied to trades.
+        IHyperdrive.Fees fees;
+    }
+
     struct PoolConfig {
         /// @dev The initial share price of the base asset.
         uint256 initialSharePrice;

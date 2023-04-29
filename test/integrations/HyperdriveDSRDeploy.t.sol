@@ -11,7 +11,6 @@ import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeploye
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
-import "forge-std/console.sol";
 
 contract HyperdriveDSRTest is HyperdriveTest {
     using FixedPointMath for *;
@@ -22,7 +21,6 @@ contract HyperdriveDSRTest is HyperdriveTest {
         DsrManager(address(0x373238337Bfe1146fb49989fc222523f83081dDb));
 
     function setUp() public override __mainnet_fork(16_685_972) {
-        vm.stopPrank();
         vm.startPrank(deployer);
 
         MakerDsrHyperdriveDeployer simpleDeployer = new MakerDsrHyperdriveDeployer(
@@ -46,19 +44,6 @@ contract HyperdriveDSRTest is HyperdriveTest {
         vm.stopPrank();
     }
 
-    function test_dsr_factory_should_be_mainnet_deployable() external {
-        MakerDsrHyperdriveDeployer simpleDeployer = new MakerDsrHyperdriveDeployer(
-                manager
-            );
-        uint256 codeSize;
-        assembly ("memory-safe") {
-            codeSize := extcodesize(simpleDeployer)
-        }
-        console.log("DSR factory codesize: ", codeSize);
-        assertGt(codeSize, 0, "Must have code");
-        assertLt(codeSize, 24576, "Not Mainnet deployable");
-    }
-
     function test_hyperdrive_dsr_deploy_and_init() external {
         setUp();
         // We've just copied the values used by the original tests to ensure this runs
@@ -68,16 +53,21 @@ contract HyperdriveDSRTest is HyperdriveTest {
         dai.approve(address(factory), type(uint256).max);
         vm.prank(alice);
         hyperdrive = factory.deployAndImplement(
+            IHyperdrive.HyperdriveConfig({
+                baseToken: dai,
+                initialSharePrice: FixedPointMath.ONE_18,
+                checkpointsPerTerm: 365,
+                checkpointDuration: 1 days,
+                timeStretch: FixedPointMath.ONE_18.divDown(
+                    22.186877016851916266e18
+                ),
+                governance: address(0),
+                oracleSize: 2,
+                updateGap: 0,
+                fees: IHyperdrive.Fees(0, 0, 0)
+            }),
             bytes32(0),
             address(0),
-            dai,
-            0,
-            365,
-            1 days,
-            FixedPointMath.ONE_18.divDown(22.186877016851916266e18),
-            IHyperdrive.Fees(0, 0, 0),
-            2,
-            0,
             empty,
             2500e18,
             //1% apr

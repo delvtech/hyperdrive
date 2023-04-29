@@ -27,49 +27,16 @@ abstract contract Hyperdrive is
     using SafeCast for uint256;
 
     /// @notice Initializes a Hyperdrive pool.
+    /// @param _config The configuration of the Hyperdrive pool.
     /// @param _linkerCodeHash The hash of the ERC20 linker contract's
     ///        constructor code.
     /// @param _linkerFactory The address of the factory which is used to deploy
     ///        the ERC20 linker contracts.
-    /// @param _baseToken The base token contract.
-    /// @param _initialSharePrice The initial share price.
-    /// @param _checkpointsPerTerm The number of checkpoints that elapses before
-    ///        bonds can be redeemed one-to-one for base.
-    /// @param _checkpointDuration The time in seconds between share price
-    ///        checkpoints. Position duration must be a multiple of checkpoint
-    ///        duration.
-    /// @param _timeStretch The time stretch of the pool.
-    /// @param _fees The fees to apply to trades.
-    /// @param _governance The address of the governance contract.
-    /// @param _oracleSize The length of the oracle buffer
-    /// @param _updateGap The time between oracle updates
     constructor(
+        IHyperdrive.HyperdriveConfig memory _config,
         bytes32 _linkerCodeHash,
-        address _linkerFactory,
-        IERC20 _baseToken,
-        uint256 _initialSharePrice,
-        uint256 _checkpointsPerTerm,
-        uint256 _checkpointDuration,
-        uint256 _timeStretch,
-        IHyperdrive.Fees memory _fees,
-        address _governance,
-        uint256 _oracleSize,
-        uint256 _updateGap
-    )
-        HyperdriveBase(
-            _linkerCodeHash,
-            _linkerFactory,
-            _baseToken,
-            _initialSharePrice,
-            _checkpointsPerTerm,
-            _checkpointDuration,
-            _timeStretch,
-            _fees,
-            _governance,
-            _oracleSize,
-            _updateGap
-        )
-    {} // solhint-disable-line no-empty-blocks
+        address _linkerFactory
+    ) HyperdriveBase(_config, _linkerCodeHash, _linkerFactory) {} // solhint-disable-line no-empty-blocks
 
     /// @notice Allows anyone to mint a new checkpoint.
     /// @param _checkpointTime The time of the checkpoint to create.

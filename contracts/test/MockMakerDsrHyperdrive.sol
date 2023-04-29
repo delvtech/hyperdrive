@@ -14,15 +14,21 @@ contract MockMakerDsrHyperdrive is MakerDsrHyperdrive {
         DsrManager _dsrManager
     )
         MakerDsrHyperdrive(
+            IHyperdrive.HyperdriveConfig({
+                baseToken: IERC20(address(_dsrManager.dai())),
+                initialSharePrice: FixedPointMath.ONE_18,
+                checkpointsPerTerm: 365,
+                checkpointDuration: 1 days,
+                timeStretch: FixedPointMath.ONE_18.divDown(
+                    22.186877016851916266e18
+                ),
+                governance: address(0),
+                oracleSize: 2,
+                updateGap: 0,
+                fees: IHyperdrive.Fees({ curve: 0, flat: 0, governance: 0 })
+            }),
             bytes32(0),
             address(0),
-            365,
-            1 days,
-            FixedPointMath.ONE_18.divDown(22.186877016851916266e18),
-            IHyperdrive.Fees({ curve: 0, flat: 0, governance: 0 }),
-            address(0),
-            2,
-            0,
             _dsrManager
         )
     {}

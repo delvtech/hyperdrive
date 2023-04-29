@@ -13,9 +13,11 @@ library Errors {
     /// ##################
     error BaseBufferExceedsShareReserves();
     error InvalidApr();
+    error InvalidBaseToken();
     error InvalidCheckpointTime();
     error InvalidCheckpointDuration();
     error InvalidCheckpointsPerTerm();
+    error InvalidInitialSharePrice();
     error InvalidMaturityTime();
     error NegativeInterest();
     error OutputLimit();
