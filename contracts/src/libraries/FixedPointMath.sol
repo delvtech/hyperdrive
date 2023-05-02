@@ -127,10 +127,19 @@ library FixedPointMath {
     /// @param y Fixed point number in 1e18 format.
     /// @return The result of x^y.
     function pow(uint256 x, uint256 y) internal pure returns (uint256) {
+        // If the exponent is 0, return 1.
+        if (y == 0) {
+            return ONE_18;
+        }
+
+        // If the base is 0, return 0.
+        if (x == 0) {
+            return 0;
+        }
+
         // Using properties of logarithms we calculate x^y:
         // -> ln(x^y) = y * ln(x)
         // -> e^(y * ln(x)) = x^y
-
         int256 y_int256 = int256(y); // solhint-disable-line var-name-mixedcase
 
         // Compute y*ln(x)
