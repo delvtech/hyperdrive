@@ -7,6 +7,7 @@ import { AssetId } from "./libraries/AssetId.sol";
 import { Errors } from "./libraries/Errors.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
+import "forge-std/console2.sol";
 
 /// @author Delve
 /// @title HyperdriveLong
@@ -423,7 +424,12 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 _sharePrice,
                 initialSharePrice
             );
-
+        console2.log("calculateOpenLong: bondReservesDelta", bondReservesDelta);
+        console2.log("calculateOpenLong: shareReservesDelta", shareReservesDelta);
+        console2.log("calculateOpenLong: bondProceeds", bondProceeds);
+        // console2.log("_timeRemaining", _timeRemaining);
+        // console2.log("_sharePrice", _sharePrice);
+        // console2.log("initialSharePrice", initialSharePrice);
         // Calculate the fees charged on the curve and flat parts of the trade.
         // Since we calculate the amount of bonds received given shares in, we
         // subtract the fee from the bond deltas so that the trader receives
@@ -449,6 +455,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
             );
         bondReservesDelta -= totalCurveFee - governanceCurveFee;
         bondProceeds -= totalCurveFee + totalFlatFee;
+        console2.log("afterFee: bondReservesDelta", bondReservesDelta);
+        console2.log("afterFee: bondProceeds", bondProceeds);
 
         // Calculate the fees owed to governance in shares.
         shareReservesDelta -= governanceCurveFee.divDown(_sharePrice);
@@ -505,7 +513,10 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 _sharePrice,
                 initialSharePrice
             );
-
+        console2.log("timeRemaining", timeRemaining);
+        console2.log("closeSharePrice", closeSharePrice);
+        console2.log("_sharePrice", _sharePrice);
+        console2.log("initialSharePrice", initialSharePrice);
         // Calculate the fees charged on the curve and flat parts of the trade.
         // Since we calculate the amount of shares received given bonds in, we
         // subtract the fee from the share deltas so that the trader receives

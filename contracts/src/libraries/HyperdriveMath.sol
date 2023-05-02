@@ -4,6 +4,7 @@ pragma solidity ^0.8.18;
 import { Errors } from "./Errors.sol";
 import { FixedPointMath } from "./FixedPointMath.sol";
 import { YieldSpaceMath } from "./YieldSpaceMath.sol";
+import "forge-std/console2.sol";
 
 /// @author Delve
 /// @title Hyperdrive
@@ -130,7 +131,7 @@ library HyperdriveMath {
         uint256 _initialSharePrice
     )
         internal
-        pure
+        view
         returns (
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
@@ -141,6 +142,8 @@ library HyperdriveMath {
         bondProceeds = _shareAmount
             .mulDown(FixedPointMath.ONE_18.sub(_normalizedTimeRemaining))
             .mulDown(_sharePrice);
+        console2.log("_shareAmount", _shareAmount);
+        console2.log("bondProceeds", bondProceeds);
         shareReservesDelta = _shareAmount.mulDown(_normalizedTimeRemaining);
         // (time remaining)/(term length) is always 1 so we just use _timeStretch
         bondReservesDelta = YieldSpaceMath.calculateBondsOutGivenSharesIn(
@@ -151,7 +154,16 @@ library HyperdriveMath {
             _sharePrice,
             _initialSharePrice
         );
-        bondProceeds += bondReservesDelta;
+        console2.log("shareReservesDelta", shareReservesDelta);
+        console2.log("bondReservesDelta", bondReservesDelta);
+        uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
+            _shareReserves+shareReservesDelta,
+            _bondReserves-bondReservesDelta,
+            _initialSharePrice,
+            _normalizedTimeRemaining,
+            _timeStretch
+        );
+        bondProceeds = bondProceeds.mulDown(spotPrice) + bondReservesDelta;
         return (shareReservesDelta, bondReservesDelta, bondProceeds);
     }
 
@@ -180,7 +192,7 @@ library HyperdriveMath {
         uint256 _initialSharePrice
     )
         internal
-        pure
+        view
         returns (
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
@@ -197,7 +209,8 @@ library HyperdriveMath {
             FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
             _sharePrice
         );
-
+        console2.log("\n_amountIn", _amountIn);
+        console2.log("shareProceeds", shareProceeds);
         // TODO: We need better testing for this. This may be correct but the
         // intuition that longs only take a loss on the flat component of their
         // trade feels a bit handwavy because negative interest accrued on the
@@ -226,6 +239,8 @@ library HyperdriveMath {
                 _sharePrice,
                 _initialSharePrice
             );
+            console2.log("bondReservesDelta", bondReservesDelta);
+            console2.log("shareReservesDelta", shareReservesDelta);
             shareProceeds += shareReservesDelta;
         }
         return (shareReservesDelta, bondReservesDelta, shareProceeds);
