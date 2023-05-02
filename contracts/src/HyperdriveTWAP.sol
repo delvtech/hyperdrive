@@ -21,7 +21,7 @@ abstract contract HyperdriveTWAP is HyperdriveBase {
     ///              into 2^224 after being summed and so should be relatively small.
     function recordPrice(uint256 price) internal {
         // If there's no need to update we return
-        if (uint256(lastTimestamp) + updateGap < block.timestamp) {
+        if (uint256(lastTimestamp) + updateGap > block.timestamp) {
             return;
         }
 
