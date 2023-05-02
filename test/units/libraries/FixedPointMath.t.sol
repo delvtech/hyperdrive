@@ -152,10 +152,29 @@ contract FixedPointMathTest is Test {
     function test_pow() public {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
-        uint256 x = 300000000000000000000000;
-        uint256 y = 977464155968402951;
+
+        uint256 x = 0;
+        uint256 y = 0;
         uint256 result = mockFixedPointMath.pow(x, y);
         uint256 expected = LogExpMath.pow(x, y);
+        assertEq(result, expected);
+
+        x = 300000000000000000000000;
+        y = 0;
+        result = mockFixedPointMath.pow(x, y);
+        expected = LogExpMath.pow(x, y);
+        assertEq(result, expected);
+
+        x = 0;
+        y = 977464155968402951;
+        result = mockFixedPointMath.pow(x, y);
+        expected = LogExpMath.pow(x, y);
+        assertEq(result, expected);
+
+        x = 300000000000000000000000;
+        y = 977464155968402951;
+        result = mockFixedPointMath.pow(x, y);
+        expected = LogExpMath.pow(x, y);
         assertApproxEqAbs(result, expected, 1e5 wei);
 
         x = 180000000000000000000000;
