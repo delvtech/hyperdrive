@@ -129,6 +129,13 @@ interface IHyperdrive is IMultiToken {
         uint256 withdrawalSharesProceeds;
     }
 
+    struct OracleState {
+        /// @notice The pointer to the most recent buffer entry
+        uint128 head;
+        /// @notice The last timestamp we wrote to the buffer
+        uint128 lastTimestamp;
+    }
+
     function baseToken() external view returns (address);
 
     function checkpoints(

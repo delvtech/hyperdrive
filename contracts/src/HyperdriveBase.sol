@@ -83,10 +83,8 @@ abstract contract HyperdriveBase is MultiToken {
 
     /// @notice This buffer contains the timestamps and data recorded in the oracle
     OracleData[] internal buffer;
-    /// @notice The pointer to the most recent buffer entry
-    uint128 internal head;
-    /// @notice The last timestamp we wrote to the buffer
-    uint128 internal lastTimestamp;
+    /// @notice The struct holding the head and last timestamp
+    IHyperdrive.OracleState internal oracle;
     /// @notice The amount of time between oracle data sample updates
     uint256 internal immutable updateGap;
 

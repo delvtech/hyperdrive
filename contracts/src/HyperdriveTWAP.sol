@@ -4,6 +4,7 @@ pragma solidity ^0.8.18;
 import { HyperdriveBase } from "./HyperdriveBase.sol";
 import { Errors } from "./libraries/Errors.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
+import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 
 /// @author DELV
 /// @title HyperdriveTWAP
@@ -20,13 +21,15 @@ abstract contract HyperdriveTWAP is HyperdriveBase {
     /// @param price This is the data to be recorded into the oracle. Warn - the data should be able to fit
     ///              into 2^224 after being summed and so should be relatively small.
     function recordPrice(uint256 price) internal {
+        uint256 lastTimestamp = uint256(oracle.lastTimestamp);
+        uint256 head = uint256(oracle.head);
+
         // If there's no need to update we return
-        if (uint256(lastTimestamp) + updateGap > block.timestamp) {
+        if (lastTimestamp + updateGap > block.timestamp) {
             return;
         }
 
         // To do a cumulative sum we load the previous sum
-        uint256 head = uint256(head);
         uint256 toRead = head == 0 ? buffer.length - 1 : head - 1;
         // Load from storage
         uint256 previousTime = uint256(buffer[toRead].timestamp);
@@ -45,8 +48,10 @@ abstract contract HyperdriveTWAP is HyperdriveBase {
         uint256 toUpdate = (uint256(head) + 1) % buffer.length;
         // Now we update the slot with this data
         buffer[toUpdate] = OracleData(uint32(block.timestamp), uint224(sum));
-        head = uint128(toUpdate);
-        lastTimestamp = uint128(block.timestamp);
+        oracle = IHyperdrive.OracleState(
+            uint128(toUpdate),
+            uint128(block.timestamp)
+        );
     }
 
     /// @notice Returns the average price between the last recorded timestamp looking a user determined
@@ -54,9 +59,12 @@ abstract contract HyperdriveTWAP is HyperdriveBase {
     /// @param period The gap in our time sample.
     /// @return The average price in that time
     function query(uint256 period) external view returns (uint256) {
+        // Load the storage data
+        uint256 lastTimestamp = uint256(oracle.lastTimestamp);
+        uint256 head = uint256(oracle.head);
+
         OracleData memory currentData = buffer[head];
         uint256 targetTime = uint256(lastTimestamp) - period;
-        uint256 head = uint256(head);
         // Get the index of the oldest element in the buffer.
         uint256 lastIndex = (head + 1) % buffer.length;
 
