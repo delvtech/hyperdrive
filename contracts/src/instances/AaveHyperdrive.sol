@@ -19,6 +19,7 @@ contract AaveHyperdrive is Hyperdrive {
 
     /// @notice Initializes a Hyperdrive pool.
     /// @param _config The configuration of the Hyperdrive pool.
+    /// @param _dataProvider The address of the data provider.
     /// @param _linkerCodeHash The hash of the ERC20 linker contract's
     ///        constructor code.
     /// @param _linkerFactory The factory which is used to deploy the ERC20
@@ -27,11 +28,12 @@ contract AaveHyperdrive is Hyperdrive {
     /// @param _pool The aave pool.
     constructor(
         IHyperdrive.HyperdriveConfig memory _config,
+        address _dataProvider,
         bytes32 _linkerCodeHash,
         address _linkerFactory,
         IERC20 _aToken,
         IPool _pool
-    ) Hyperdrive(_config, _linkerCodeHash, _linkerFactory) {
+    ) Hyperdrive(_config, _dataProvider, _linkerCodeHash, _linkerFactory) {
         // Ensure that the Hyperdrive pool was configured properly.
         if (_config.initialSharePrice != FixedPointMath.ONE_18) {
             revert Errors.InvalidInitialSharePrice();

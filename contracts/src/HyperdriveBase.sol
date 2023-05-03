@@ -75,15 +75,17 @@ abstract contract HyperdriveBase is MultiToken {
 
     /// @notice Initializes a Hyperdrive pool.
     /// @param _config The configuration of the Hyperdrive pool.
+    /// @param _dataProvider The address of the data provider.
     /// @param _linkerCodeHash The hash of the ERC20 linker contract's
     ///        constructor code.
     /// @param _linkerFactory The address of the factory which is used to deploy
     ///        the ERC20 linker contracts.
     constructor(
         IHyperdrive.HyperdriveConfig memory _config,
+        address _dataProvider,
         bytes32 _linkerCodeHash,
         address _linkerFactory
-    ) MultiToken(_linkerCodeHash, _linkerFactory) {
+    ) MultiToken(_dataProvider, _linkerCodeHash, _linkerFactory) {
         // Initialize the base token address.
         baseToken = _config.baseToken;
 

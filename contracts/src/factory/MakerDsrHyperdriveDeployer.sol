@@ -24,12 +24,14 @@ contract MakerDsrHyperdriveDeployer is IHyperdriveDeployer {
 
     /// @notice Deploys a copy of hyperdrive with the given params.
     /// @param _config The configuration of the Hyperdrive pool.
+    /// @param _dataProvider The address of the data provider.
     /// @param _linkerCodeHash The hash of the ERC20 linker contract's
     ///        constructor code.
     /// @param _linkerFactory The address of the factory which is used to deploy
     ///        the ERC20 linker contracts.
     function deploy(
         IHyperdrive.HyperdriveConfig memory _config,
+        address _dataProvider,
         bytes32 _linkerCodeHash,
         address _linkerFactory,
         bytes32[] calldata
@@ -38,6 +40,7 @@ contract MakerDsrHyperdriveDeployer is IHyperdriveDeployer {
             address(
                 new MakerDsrHyperdrive(
                     _config,
+                    _dataProvider,
                     _linkerCodeHash,
                     _linkerFactory,
                     dsrManager

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
+import { DataProvider } from "./DataProvider.sol";
 import { IMultiToken } from "./interfaces/IMultiToken.sol";
 import { Errors } from "./libraries/Errors.sol";
 
@@ -10,7 +11,7 @@ import { Errors } from "./libraries/Errors.sol";
 // NOTE - We remove on transfer callbacks and safe transfer because of the
 //        risk of external calls to untrusted code.
 
-contract MultiToken is IMultiToken {
+contract MultiToken is DataProvider, IMultiToken {
     // TODO - Choose to change names to perfect match the 1155 ie adding 'safe',
     //        choose whether to support the batch methods, and to support token uris
     //        or names
@@ -51,9 +52,14 @@ contract MultiToken is IMultiToken {
     mapping(address => uint256) public nonces;
 
     /// @notice Runs the initial deployment code
+    /// @param _dataProvider The address of the data provider
     /// @param _linkerCodeHash The hash of the erc20 linker contract deploy code
     /// @param _factory The factory which is used to deploy the linking contracts
-    constructor(bytes32 _linkerCodeHash, address _factory) {
+    constructor(
+        address _dataProvider,
+        bytes32 _linkerCodeHash,
+        address _factory
+    ) DataProvider(_dataProvider) {
         // Set the immutables
         factory = _factory;
         linkerCodeHash = _linkerCodeHash;

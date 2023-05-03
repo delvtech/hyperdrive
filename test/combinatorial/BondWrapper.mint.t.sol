@@ -22,7 +22,12 @@ contract BondWrapper_mint is CombinatorialTest {
         super.setUp();
         vm.startPrank(deployer);
 
-        multiToken = new MockMultiToken(bytes32(0), address(forwarderFactory));
+        // FIXME: Use a real data provider.
+        multiToken = new MockMultiToken(
+            address(0),
+            bytes32(0),
+            address(forwarderFactory)
+        );
         baseToken = new ERC20Mintable();
     }
 

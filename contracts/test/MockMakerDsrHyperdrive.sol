@@ -11,6 +11,7 @@ contract MockMakerDsrHyperdrive is MakerDsrHyperdrive {
     using FixedPointMath for uint256;
 
     constructor(
+        address _dataProvider,
         DsrManager _dsrManager
     )
         MakerDsrHyperdrive(
@@ -25,6 +26,7 @@ contract MockMakerDsrHyperdrive is MakerDsrHyperdrive {
                 governance: address(0),
                 fees: IHyperdrive.Fees({ curve: 0, flat: 0, governance: 0 })
             }),
+            _dataProvider,
             bytes32(0),
             address(0),
             _dsrManager

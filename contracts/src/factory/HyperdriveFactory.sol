@@ -59,8 +59,13 @@ contract HyperdriveFactory {
         governance = newGovernance;
     }
 
+    // TODO: Consider adding the data provider deployments to the factory so
+    //       that (1) we can ensure they are deployed properly and (2) we can
+    //       keep track of them.
+    //
     /// @notice Deploys a copy of hyperdrive with the given params
     /// @param _config The configuration of the Hyperdrive pool.
+    /// @param _dataProvider The address of the data provider.
     /// @param _linkerCodeHash The hash of the ERC20 linker contract's
     ///        constructor code.
     /// @param _linkerFactory The address of the factory which is used to deploy
@@ -69,8 +74,9 @@ contract HyperdriveFactory {
     /// @param _contribution Base token to call init with
     /// @param _apr The apr to call init with
     /// @return The hyperdrive address deployed
-    function deployAndImplement(
+    function deployAndInitialize(
         IHyperdrive.HyperdriveConfig memory _config,
+        address _dataProvider,
         bytes32 _linkerCodeHash,
         address _linkerFactory,
         bytes32[] memory _extraData,
@@ -87,6 +93,7 @@ contract HyperdriveFactory {
         IHyperdrive hyperdrive = IHyperdrive(
             hyperdriveDeployer.deploy(
                 _config,
+                _dataProvider,
                 _linkerCodeHash,
                 _linkerFactory,
                 _extraData

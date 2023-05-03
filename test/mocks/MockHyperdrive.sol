@@ -16,6 +16,7 @@ contract MockHyperdrive is Hyperdrive {
     uint256 internal totalShares;
 
     constructor(
+        address _dataProvider,
         ERC20Mintable _baseToken,
         uint256 _initialSharePrice,
         uint256 _checkpointsPerTerm,
@@ -34,6 +35,7 @@ contract MockHyperdrive is Hyperdrive {
                 governance: _governance,
                 fees: _fees
             }),
+            _dataProvider,
             bytes32(0),
             address(new ForwarderFactory())
         )

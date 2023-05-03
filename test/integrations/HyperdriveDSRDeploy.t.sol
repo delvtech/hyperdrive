@@ -50,7 +50,7 @@ contract HyperdriveDSRTest is HyperdriveTest {
         bytes32[] memory empty = new bytes32[](0);
         dai.approve(address(factory), type(uint256).max);
         vm.prank(alice);
-        hyperdrive = factory.deployAndImplement(
+        hyperdrive = factory.deployAndInitialize(
             IHyperdrive.HyperdriveConfig({
                 baseToken: dai,
                 initialSharePrice: FixedPointMath.ONE_18,
@@ -62,6 +62,8 @@ contract HyperdriveDSRTest is HyperdriveTest {
                 governance: address(0),
                 fees: IHyperdrive.Fees(0, 0, 0)
             }),
+            // FIXME: Use a real data provider.
+            address(0),
             bytes32(0),
             address(0),
             empty,

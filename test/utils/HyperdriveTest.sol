@@ -41,6 +41,8 @@ contract HyperdriveTest is BaseTest {
         hyperdrive = IHyperdrive(
             address(
                 new MockHyperdrive(
+                    // FIXME: Use a real data provider.
+                    address(0),
                     baseToken,
                     INITIAL_SHARE_PRICE,
                     CHECKPOINTS_PER_TERM,
@@ -79,6 +81,8 @@ contract HyperdriveTest is BaseTest {
         hyperdrive = IHyperdrive(
             address(
                 new MockHyperdrive(
+                    // FIXME: Use a real data provider.
+                    address(0),
                     baseToken,
                     INITIAL_SHARE_PRICE,
                     CHECKPOINTS_PER_TERM,

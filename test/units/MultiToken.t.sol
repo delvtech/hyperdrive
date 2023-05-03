@@ -12,7 +12,12 @@ contract MultiTokenTest is BaseTest {
         super.setUp();
         vm.startPrank(deployer);
         forwarderFactory = new ForwarderFactory();
-        multiToken = new MockMultiToken(bytes32(0), address(forwarderFactory));
+        // FIXME: Use a real data provider.
+        multiToken = new MockMultiToken(
+            address(0),
+            bytes32(0),
+            address(forwarderFactory)
+        );
         vm.stopPrank();
     }
 

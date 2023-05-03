@@ -23,6 +23,7 @@ contract MakerDsrHyperdrive is Hyperdrive {
 
     /// @notice Initializes a Hyperdrive pool.
     /// @param _config The configuration of the Hyperdrive pool.
+    /// @param _dataProvider The address of the data provider.
     /// @param _linkerCodeHash The hash of the ERC20 linker contract's
     ///        constructor code.
     /// @param _linkerFactory The factory which is used to deploy the ERC20
@@ -30,10 +31,11 @@ contract MakerDsrHyperdrive is Hyperdrive {
     /// @param _dsrManager The "dai savings rate" manager contract
     constructor(
         IHyperdrive.HyperdriveConfig memory _config,
+        address _dataProvider,
         bytes32 _linkerCodeHash,
         address _linkerFactory,
         DsrManager _dsrManager
-    ) Hyperdrive(_config, _linkerCodeHash, _linkerFactory) {
+    ) Hyperdrive(_config, _dataProvider, _linkerCodeHash, _linkerFactory) {
         // Ensure that the Hyperdrive pool was configured properly.
         if (address(_config.baseToken) != address(_dsrManager.dai())) {
             revert Errors.InvalidBaseToken();
