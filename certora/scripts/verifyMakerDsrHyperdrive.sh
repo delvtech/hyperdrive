@@ -9,6 +9,8 @@ then
 fi
 
 certoraRun contracts/src/instances/MakerDsrHyperdrive.sol \
+    certora/helpers/DummyERC20A.sol \
+    certora/helpers/DummyERC20B.sol \
     --verify MakerDsrHyperdrive:certora/spec/MakerDsrHyperdrive.spec \
     --solc solc8.18 \
     --loop_iter 3 \
