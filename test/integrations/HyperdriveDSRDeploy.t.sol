@@ -47,10 +47,9 @@ contract HyperdriveDSRTest is HyperdriveTest {
         setUp();
         // We've just copied the values used by the original tests to ensure this runs
 
-        vm.prank(alice);
+        vm.startPrank(alice);
         bytes32[] memory empty = new bytes32[](0);
         dai.approve(address(factory), type(uint256).max);
-        vm.prank(alice);
         address dataProvider = address(
             new MakerDsrHyperdriveDataProvider(manager)
         );

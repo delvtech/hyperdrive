@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.15;
+pragma solidity ^0.8.18;
 
 import { MultiToken } from "../src/MultiToken.sol";
 import { IMultiToken } from "../src/interfaces/IMultiToken.sol";

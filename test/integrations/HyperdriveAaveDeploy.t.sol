@@ -47,7 +47,7 @@ contract HyperdriveDSRTest is HyperdriveTest {
         setUp();
         // We've just copied the values used by the original tests to ensure this runs
 
-        vm.prank(alice);
+        vm.startPrank(alice);
         bytes32[] memory aToken = new bytes32[](1);
         // we do a little force convert
         bytes32 aTokenEncode;
@@ -56,7 +56,6 @@ contract HyperdriveDSRTest is HyperdriveTest {
         }
         aToken[0] = aTokenEncode;
         dai.approve(address(factory), type(uint256).max);
-        vm.prank(alice);
         address dataProvider = address(new AaveHyperdriveDataProvider(aDai));
         hyperdrive = factory.deployAndInitialize(
             IHyperdrive.HyperdriveConfig({

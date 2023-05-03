@@ -41,7 +41,6 @@ contract BaseTest is Test {
     string GOERLI_RPC_URL = vm.envString("GOERLI_RPC_URL");
 
     constructor() {
-        // TODO Hide these in environment variables
         mainnetForkId = vm.createFork(MAINNET_RPC_URL);
         goerliForkId = vm.createFork(GOERLI_RPC_URL);
     }
