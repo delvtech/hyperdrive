@@ -36,8 +36,13 @@ def test_deploy():
     base_ERC20.mint(base_supply, sender=deployer)
     time_stretch = fixed_math.divDown(int(1e18), t_stretch)
 
+    hyperdrive_data_provider_address = deployer.deploy(
+        project.MockHyperdriveDataProviderTestnet,
+        base_ERC20,
+    )
     hyperdrive_address = deployer.deploy(
         project.MockHyperdriveTestnet,
+        hyperdrive_data_provider_address,
         base_ERC20,
         initial_apr,
         share_price,
