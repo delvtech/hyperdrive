@@ -29,3 +29,8 @@ __pycache__/
 
 # pytest
 .pytest_cache
+
+# Certora
+.certora*
+.last_confs
+certora_*
