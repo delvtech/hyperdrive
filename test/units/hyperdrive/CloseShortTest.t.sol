@@ -313,7 +313,7 @@ contract CloseShortTest is HyperdriveTest {
         // Retrieve the pool info after the trade.
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
 
-        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.checkpoints(
+        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
             checkpointTime
         );
 

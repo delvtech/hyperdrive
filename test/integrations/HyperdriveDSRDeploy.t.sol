@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { Errors } from "contracts/src/libraries/Errors.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { MakerDsrHyperdriveDeployer } from "contracts/src/factory/MakerDsrHyperdriveDeployer.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
-import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
-import { DsrManager } from "contracts/test/MockMakerDsrHyperdrive.sol";
+import { MakerDsrHyperdriveDataProvider } from "contracts/src/instances/MakerDsrHyperdriveDataProvider.sol";
 import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { AssetId } from "contracts/src/libraries/AssetId.sol";
+import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { DsrManager } from "contracts/test/MockMakerDsrHyperdrive.sol";
+import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
 
 contract HyperdriveDSRTest is HyperdriveTest {
     using FixedPointMath for *;
@@ -50,6 +51,9 @@ contract HyperdriveDSRTest is HyperdriveTest {
         bytes32[] memory empty = new bytes32[](0);
         dai.approve(address(factory), type(uint256).max);
         vm.prank(alice);
+        address dataProvider = address(
+            new MakerDsrHyperdriveDataProvider(manager)
+        );
         hyperdrive = factory.deployAndInitialize(
             IHyperdrive.HyperdriveConfig({
                 baseToken: dai,
@@ -62,8 +66,7 @@ contract HyperdriveDSRTest is HyperdriveTest {
                 governance: address(0),
                 fees: IHyperdrive.Fees(0, 0, 0)
             }),
-            // FIXME: Use a real data provider.
-            address(0),
+            dataProvider,
             bytes32(0),
             address(0),
             empty,

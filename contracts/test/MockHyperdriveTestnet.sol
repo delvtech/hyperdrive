@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.15;
+pragma solidity ^0.8.18;
 
 import { ERC20PresetMinterPauser } from "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
 import { Hyperdrive } from "../src/Hyperdrive.sol";
+import { HyperdriveDataProvider } from "../src/HyperdriveDataProvider.sol";
 import { FixedPointMath } from "../src/libraries/FixedPointMath.sol";
 import { Errors } from "../src/libraries/Errors.sol";
 import { ERC20Mintable } from "./ERC20Mintable.sol";
@@ -131,5 +132,38 @@ contract MockHyperdriveTestnet is Hyperdrive {
     function accrueInterest() internal {
         ERC20Mintable(address(baseToken)).mint(getAccruedInterest());
         lastUpdated = block.timestamp;
+    }
+}
+
+contract MockHyperdriveDataProviderTestnet is HyperdriveDataProvider {
+    using FixedPointMath for uint256;
+
+    ERC20Mintable internal immutable baseToken;
+
+    uint256 internal rate;
+    uint256 internal lastUpdated;
+    uint256 internal totalShares;
+
+    constructor(ERC20Mintable _baseToken) {
+        baseToken = _baseToken;
+    }
+
+    /// Overrides ///
+
+    function _pricePerShare() internal view override returns (uint256) {
+        uint256 underlying = baseToken.balanceOf(address(this)) +
+            getAccruedInterest();
+        return underlying.divDown(totalShares);
+    }
+
+    /// Helpers ///
+
+    function getAccruedInterest() internal view returns (uint256) {
+        // base_balance = base_balance * (1 + r * t)
+        uint256 timeElapsed = (block.timestamp - lastUpdated).divDown(365 days);
+        return
+            baseToken.balanceOf(address(this)).mulDown(
+                rate.mulDown(timeElapsed)
+            );
     }
 }

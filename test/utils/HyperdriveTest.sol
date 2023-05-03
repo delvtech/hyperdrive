@@ -9,7 +9,7 @@ import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { HyperdriveBase } from "contracts/src/HyperdriveBase.sol";
-import { MockHyperdrive } from "../mocks/MockHyperdrive.sol";
+import { MockHyperdrive, MockHyperdriveDataProvider } from "../mocks/MockHyperdrive.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { HyperdriveUtils } from "./HyperdriveUtils.sol";
 
@@ -38,11 +38,13 @@ contract HyperdriveTest is BaseTest {
         });
         // Instantiate Hyperdrive.
         uint256 apr = 0.05e18;
+        address dataProvider = address(
+            new MockHyperdriveDataProvider(baseToken)
+        );
         hyperdrive = IHyperdrive(
             address(
                 new MockHyperdrive(
-                    // FIXME: Use a real data provider.
-                    address(0),
+                    dataProvider,
                     baseToken,
                     INITIAL_SHARE_PRICE,
                     CHECKPOINTS_PER_TERM,
@@ -78,11 +80,13 @@ contract HyperdriveTest is BaseTest {
             governance: governanceFee
         });
 
+        address dataProvider = address(
+            new MockHyperdriveDataProvider(baseToken)
+        );
         hyperdrive = IHyperdrive(
             address(
                 new MockHyperdrive(
-                    // FIXME: Use a real data provider.
-                    address(0),
+                    dataProvider,
                     baseToken,
                     INITIAL_SHARE_PRICE,
                     CHECKPOINTS_PER_TERM,

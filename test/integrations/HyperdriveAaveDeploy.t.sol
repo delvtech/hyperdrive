@@ -5,6 +5,7 @@ import { IPool } from "@aave/interfaces/IPool.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { AaveHyperdriveDeployer, IPool } from "contracts/src/factory/AaveHyperdriveDeployer.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
+import { AaveHyperdriveDataProvider } from "contracts/src/instances/AaveHyperdriveDataProvider.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
@@ -56,6 +57,7 @@ contract HyperdriveDSRTest is HyperdriveTest {
         aToken[0] = aTokenEncode;
         dai.approve(address(factory), type(uint256).max);
         vm.prank(alice);
+        address dataProvider = address(new AaveHyperdriveDataProvider(aDai));
         hyperdrive = factory.deployAndInitialize(
             IHyperdrive.HyperdriveConfig({
                 baseToken: dai,
@@ -68,8 +70,7 @@ contract HyperdriveDSRTest is HyperdriveTest {
                 governance: address(0),
                 fees: IHyperdrive.Fees(0, 0, 0)
             }),
-            // FIXME: Use a real data provider.
-            address(0),
+            dataProvider,
             bytes32(0),
             address(0),
             aToken,

@@ -7,6 +7,23 @@ import { FixedPointMath } from "../src/libraries/FixedPointMath.sol";
 import { ForwarderFactory } from "../src/ForwarderFactory.sol";
 import { IHyperdrive } from "../src/interfaces/IHyperdrive.sol";
 
+interface IMockMakerDsrHyperdrive is IHyperdrive {
+    function totalShares() external view returns (uint256);
+
+    function deposit(
+        uint256 amount,
+        bool asUnderlying
+    ) external returns (uint256, uint256);
+
+    function withdraw(
+        uint256 shares,
+        address destination,
+        bool asUnderlying
+    ) external returns (uint256, uint256);
+
+    function pricePerShare() external view returns (uint256);
+}
+
 contract MockMakerDsrHyperdrive is MakerDsrHyperdrive {
     using FixedPointMath for uint256;
 

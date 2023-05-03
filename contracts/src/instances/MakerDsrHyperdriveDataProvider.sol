@@ -2,126 +2,44 @@
 pragma solidity ^0.8.18;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { Hyperdrive } from "../Hyperdrive.sol";
+import { HyperdriveDataProvider } from "../HyperdriveDataProvider.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { Errors } from "../libraries/Errors.sol";
 import { Pot, DsrManager } from "../interfaces/IMaker.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 
-contract MakerDsrHyperdrive is Hyperdrive {
+contract MakerDsrHyperdriveDataProvider is HyperdriveDataProvider {
     using FixedPointMath for uint256;
 
     // @notice The shares created by this pool, starts at 1 to one with
     //         deposits and increases
-    uint256 internal totalShares;
+    uint256 internal _totalShares;
 
     // @notice The pool management contract
-    DsrManager public immutable dsrManager;
+    DsrManager internal immutable dsrManager;
 
     // @notice The core Maker accounting module for the Dai Savings Rate
-    Pot public immutable pot;
+    Pot internal immutable pot;
 
     // @notice Maker constant
-    uint256 public constant RAY = 1e27;
+    uint256 internal constant RAY = 1e27;
 
-    /// @notice Initializes a Hyperdrive pool.
-    /// @param _config The configuration of the Hyperdrive pool.
-    /// @param _dataProvider The address of the data provider.
-    /// @param _linkerCodeHash The hash of the ERC20 linker contract's
-    ///        constructor code.
-    /// @param _linkerFactory The factory which is used to deploy the ERC20
-    ///        linker contracts.
+    /// @notice Initializes the data provider.
     /// @param _dsrManager The "dai savings rate" manager contract
-    constructor(
-        IHyperdrive.HyperdriveConfig memory _config,
-        address _dataProvider,
-        bytes32 _linkerCodeHash,
-        address _linkerFactory,
-        DsrManager _dsrManager
-    ) Hyperdrive(_config, _dataProvider, _linkerCodeHash, _linkerFactory) {
-        // Ensure that the Hyperdrive pool was configured properly.
-        if (address(_config.baseToken) != address(_dsrManager.dai())) {
-            revert Errors.InvalidBaseToken();
-        }
-        if (_config.initialSharePrice != FixedPointMath.ONE_18) {
-            revert Errors.InvalidInitialSharePrice();
-        }
-
+    constructor(DsrManager _dsrManager) {
         dsrManager = _dsrManager;
         pot = Pot(dsrManager.pot());
-        baseToken.approve(address(dsrManager), type(uint256).max);
     }
 
-    /// @notice Transfers base or shares from the user and commits it to the yield source.
-    /// @param amount The amount of base tokens to deposit.
-    /// @param asUnderlying If true the yield source will transfer underlying tokens
-    ///                     if false it will transfer the yielding asset directly
-    /// @return sharesMinted The shares this deposit creates.
-    /// @return sharePrice The share price at time of deposit.
-    function _deposit(
-        uint256 amount,
-        bool asUnderlying
-    ) internal override returns (uint256 sharesMinted, uint256 sharePrice) {
-        if (!asUnderlying) {
-            revert Errors.UnsupportedToken();
-        }
+    /// Getters ///
 
-        // Transfer the base token from the user to this contract
-        bool success = baseToken.transferFrom(
-            msg.sender,
-            address(this),
-            amount
-        );
-        if (!success) {
-            revert Errors.TransferFailed();
-        }
-
-        // Get total invested balance of pool, deposits + interest
-        uint256 totalBase = dsrManager.daiBalance(address(this));
-
-        // Deposit the base tokens into the dsr
-        dsrManager.join(address(this), amount);
-
-        // Do share calculations
-        if (totalShares == 0) {
-            totalShares = amount;
-            // Initial deposits are always 1:1
-            return (amount, FixedPointMath.ONE_18);
-        } else {
-            uint256 newShares = totalShares.mulDivDown(amount, totalBase);
-            totalShares += newShares;
-            return (newShares, amount.divDown(newShares));
-        }
+    /// @notice Gets the total number of shares in existence.
+    /// @return The total number of shares.
+    function totalShares() external view returns (uint256) {
+        _revert(abi.encode(_totalShares));
     }
 
-    /// @notice Withdraws shares from the yield source and sends the resulting tokens to the destination
-    /// @param shares The shares to withdraw from the yield source
-    /// @param destination The address which is where to send the resulting tokens
-    /// @return amountWithdrawn the amount of 'token' produced by this withdraw
-    /// @return sharePrice The share price on withdraw.
-    function _withdraw(
-        uint256 shares,
-        address destination,
-        bool asUnderlying
-    ) internal override returns (uint256 amountWithdrawn, uint256 sharePrice) {
-        if (!asUnderlying) {
-            revert Errors.UnsupportedToken();
-        }
-        // Load the balance of this contract - this calls drip internally so
-        // this is real deposits + interest accrued at point in time
-        uint256 totalBase = dsrManager.daiBalance(address(this));
-
-        // The withdraw is the percent of shares the user has times the total assets
-        amountWithdrawn = totalBase.mulDivDown(shares, totalShares);
-
-        // Remove shares from the total supply
-        totalShares -= shares;
-
-        // Withdraw pro-rata share of underlying to user
-        dsrManager.exit(destination, amountWithdrawn);
-
-        return (amountWithdrawn, amountWithdrawn.divDown(shares));
-    }
+    /// Yield Source ///
 
     /// @notice Loads the share price from the yield source.
     /// @return sharePrice The current share price.
@@ -136,7 +54,7 @@ contract MakerDsrHyperdrive is Hyperdrive {
         // Load the balance of this contract
         uint256 totalBase = pie.mulDivDown(chi(), RAY);
         // The share price is assets divided by shares
-        return (totalBase.divDown(totalShares));
+        return (totalBase.divDown(_totalShares));
     }
 
     /// TODO Is this actually worthwhile versus using drip?

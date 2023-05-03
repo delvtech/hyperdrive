@@ -242,7 +242,7 @@ contract OpenLongTest is HyperdriveTest {
 
         // TODO: This problem gets much worse as the baseAmount to open a long gets smaller.
         // Figure out a solution to this.
-        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.checkpoints(
+        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
             checkpointTime
         );
         assertApproxEqAbs(

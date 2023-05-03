@@ -44,7 +44,7 @@ contract CheckpointTest is HyperdriveTest {
 
         // Ensure that the checkpoint contains the share price prior to the
         // share price update.
-        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.checkpoints(
+        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
             HyperdriveUtils.latestCheckpoint(hyperdrive)
         );
         assertEq(checkpoint.sharePrice, sharePrice);
@@ -80,7 +80,7 @@ contract CheckpointTest is HyperdriveTest {
         );
 
         // Ensure that the checkpoint contains the latest share price.
-        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.checkpoints(
+        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
             HyperdriveUtils.latestCheckpoint(hyperdrive)
         );
         assertEq(checkpoint.sharePrice, sharePrice);
@@ -110,7 +110,7 @@ contract CheckpointTest is HyperdriveTest {
 
         // Ensure that the checkpoint contains the share price prior to the
         // share price update.
-        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.checkpoints(
+        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
             HyperdriveUtils.latestCheckpoint(hyperdrive)
         );
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
@@ -151,14 +151,14 @@ contract CheckpointTest is HyperdriveTest {
 
         // Ensure that the checkpoint contains the share price prior to the
         // share price update.
-        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.checkpoints(
+        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
             HyperdriveUtils.latestCheckpoint(hyperdrive)
         );
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
         assertEq(checkpoint.sharePrice, poolInfo.sharePrice);
 
         // Ensure that the previous checkpoint contains the closest share price.
-        checkpoint = hyperdrive.checkpoints(previousCheckpoint);
+        checkpoint = hyperdrive.getCheckpoint(previousCheckpoint);
         assertEq(checkpoint.sharePrice, poolInfo.sharePrice);
 
         // Ensure that the long and short balance has gone to zero (all of the

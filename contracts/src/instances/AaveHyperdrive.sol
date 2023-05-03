@@ -15,7 +15,7 @@ contract AaveHyperdrive is Hyperdrive {
     IERC20 public immutable aToken;
     IPool public immutable pool;
     // The shares created by this pool, starts at 1 to one with deposits and increases
-    uint256 public totalShares;
+    uint256 internal totalShares;
 
     /// @notice Initializes a Hyperdrive pool.
     /// @param _config The configuration of the Hyperdrive pool.

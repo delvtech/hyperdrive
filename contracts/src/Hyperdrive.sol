@@ -103,7 +103,7 @@ abstract contract Hyperdrive is
         checkpoints[_checkpointTime].sharePrice = _sharePrice.toUint128();
 
         // Pay out the long withdrawal pool for longs that have matured.
-        uint256 maturedLongsAmount = totalSupply[
+        uint256 maturedLongsAmount = _totalSupply[
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _checkpointTime)
         ];
         if (maturedLongsAmount > 0) {
@@ -118,7 +118,7 @@ abstract contract Hyperdrive is
         }
 
         // Pay out the short withdrawal pool for shorts that have matured.
-        uint256 maturedShortsAmount = totalSupply[
+        uint256 maturedShortsAmount = _totalSupply[
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _checkpointTime)
         ];
         if (maturedShortsAmount > 0) {

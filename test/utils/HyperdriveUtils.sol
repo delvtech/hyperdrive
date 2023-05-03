@@ -234,7 +234,7 @@ library HyperdriveUtils {
             uint256 checkpoint = latestCheckpoint(_hyperdrive);
             uint256 maturityTime = checkpoint + poolConfig.positionDuration;
             timeRemaining = calculateTimeRemaining(_hyperdrive, maturityTime);
-            openSharePrice = _hyperdrive.checkpoints(checkpoint).sharePrice;
+            openSharePrice = _hyperdrive.getCheckpoint(checkpoint).sharePrice;
         }
 
         // Calculate the openShort trade
