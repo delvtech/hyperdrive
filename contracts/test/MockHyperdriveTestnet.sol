@@ -149,11 +149,28 @@ contract MockHyperdriveDataProviderTestnet is
     uint256 internal totalShares;
 
     constructor(
-        IHyperdrive.PoolConfig memory _config,
-        bytes32 _linkerCodeHash_,
-        address _factory_
+        ERC20Mintable _baseToken,
+        uint256 _initialRate,
+        uint256 _initialSharePrice,
+        uint256 _positionDuration,
+        uint256 _checkpointDuration,
+        uint256 _timeStretch,
+        IHyperdrive.Fees memory _fees,
+        address _governance
     )
-        HyperdriveDataProvider(_config)
+        HyperdriveDataProvider(
+            IHyperdrive.PoolConfig({
+                baseToken: _baseToken,
+                initialSharePrice: _initialSharePrice,
+                positionDuration: _positionDuration,
+                checkpointDuration: _checkpointDuration,
+                timeStretch: _timeStretch,
+                governance: _governance,
+                fees: _fees,
+                oracleSize: 2,
+                updateGap: 0
+            })
+        )
         MultiTokenDataProvider(_linkerCodeHash, _factory)
     {}
 

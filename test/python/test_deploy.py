@@ -40,6 +40,13 @@ def test_deploy():
     hyperdrive_data_provider_address = deployer.deploy(
         project.MockHyperdriveDataProviderTestnet,
         base_ERC20,
+        initial_apr,
+        share_price,
+        position_duration,
+        checkpoint_duration,
+        int(time_stretch),
+        (curve_fee, flat_fee, gov_fee),
+        deployer,
     )
     hyperdrive_address = deployer.deploy(
         project.MockHyperdriveTestnet,
