@@ -18,7 +18,7 @@ contract AaveHyperdriveDataProvider is HyperdriveDataProvider {
 
     // The aave deployment details, the aave pool
     IERC20 internal immutable aToken;
-    // The shares created by this pool, starts at 1 to one with deposits and increases
+    // The shares created by this pool, starts at one to one with deposits and increases
     uint256 public totalShares;
 
     /// @notice Initializes the data provider.
