@@ -18,6 +18,12 @@ prettify the source code. Proceed through the following steps to set up the repo
 - Install lib/forge-std dependencies by running `forge install` from the project root
 - Install node.js dependencies by running `yarn` from the project root
 
+## Environment Variables
+
+The test suite and migration scripts make use of several environment variables.
+Copy `.env_template` to `.env` and populate the file with your private key and
+provider URLs.
+
 ## Build
 
 To build the smart contracts, run `yarn build`.

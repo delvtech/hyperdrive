@@ -37,14 +37,12 @@ contract BaseTest is Test {
 
     uint256 __init__; // time setup function was ran
 
+    string MAINNET_RPC_URL = vm.envString("MAINNET_RPC_URL");
+    string GOERLI_RPC_URL = vm.envString("GOERLI_RPC_URL");
+
     constructor() {
-        // TODO Hide these in environment variables
-        mainnetForkId = vm.createFork(
-            "https://eth-mainnet.alchemyapi.io/v2/kwjMP-X-Vajdk1ItCfU-56Uaq1wwhamK"
-        );
-        goerliForkId = vm.createFork(
-            "https://eth-goerli.alchemyapi.io/v2/kwjMP-X-Vajdk1ItCfU-56Uaq1wwhamK"
-        );
+        mainnetForkId = vm.createFork(MAINNET_RPC_URL);
+        goerliForkId = vm.createFork(GOERLI_RPC_URL);
     }
 
     function setUp() public virtual {

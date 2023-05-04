@@ -9,7 +9,7 @@ import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { HyperdriveBase } from "contracts/src/HyperdriveBase.sol";
-import { MockHyperdrive } from "../mocks/MockHyperdrive.sol";
+import { MockHyperdrive, MockHyperdriveDataProvider } from "../mocks/MockHyperdrive.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { HyperdriveUtils } from "./HyperdriveUtils.sol";
 
@@ -21,9 +21,7 @@ contract HyperdriveTest is BaseTest {
 
     uint256 internal constant INITIAL_SHARE_PRICE = FixedPointMath.ONE_18;
     uint256 internal constant CHECKPOINT_DURATION = 1 days;
-    uint256 internal constant CHECKPOINTS_PER_TERM = 365;
-    uint256 internal constant POSITION_DURATION =
-        CHECKPOINT_DURATION * CHECKPOINTS_PER_TERM;
+    uint256 internal constant POSITION_DURATION = 365 days;
 
     function setUp() public virtual override {
         super.setUp();
@@ -38,12 +36,16 @@ contract HyperdriveTest is BaseTest {
         });
         // Instantiate Hyperdrive.
         uint256 apr = 0.05e18;
+        address dataProvider = address(
+            new MockHyperdriveDataProvider(baseToken)
+        );
         hyperdrive = IHyperdrive(
             address(
                 new MockHyperdrive(
+                    dataProvider,
                     baseToken,
                     INITIAL_SHARE_PRICE,
-                    CHECKPOINTS_PER_TERM,
+                    POSITION_DURATION,
                     CHECKPOINT_DURATION,
                     HyperdriveUtils.calculateTimeStretch(apr),
                     fees,
@@ -76,12 +78,16 @@ contract HyperdriveTest is BaseTest {
             governance: governanceFee
         });
 
+        address dataProvider = address(
+            new MockHyperdriveDataProvider(baseToken)
+        );
         hyperdrive = IHyperdrive(
             address(
                 new MockHyperdrive(
+                    dataProvider,
                     baseToken,
                     INITIAL_SHARE_PRICE,
-                    CHECKPOINTS_PER_TERM,
+                    POSITION_DURATION,
                     CHECKPOINT_DURATION,
                     HyperdriveUtils.calculateTimeStretch(apr),
                     fees,

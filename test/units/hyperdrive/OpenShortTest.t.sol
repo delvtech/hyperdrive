@@ -151,7 +151,7 @@ contract OpenShortTest is HyperdriveTest {
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
 
         {
-            IHyperdrive.Checkpoint memory checkpoint = hyperdrive.checkpoints(
+            IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
                 checkpointTime
             );
             assertEq(

@@ -4,18 +4,28 @@ pragma solidity ^0.8.18;
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
-import { CombinatorialTest } from "test/utils/CombinatorialTest.sol";
-import { MockMultiToken } from "contracts/test/MockMultiToken.sol";
 import { ForwarderFactory } from "contracts/src/ForwarderFactory.sol";
+import { MultiTokenDataProvider } from "contracts/src/MultiTokenDataProvider.sol";
+import { MockMultiToken, IMockMultiToken } from "contracts/test/MockMultiToken.sol";
+import { CombinatorialTest } from "test/utils/CombinatorialTest.sol";
 
 contract MultiToken__transferFrom is CombinatorialTest {
-    MockMultiToken multiToken;
+    IMockMultiToken multiToken;
 
     function setUp() public override {
         // MultiToken deployment
         super.setUp();
         vm.startPrank(deployer);
-        multiToken = new MockMultiToken(bytes32(0), address(forwarderFactory));
+        address dataProvider = address(new MultiTokenDataProvider());
+        multiToken = IMockMultiToken(
+            address(
+                new MockMultiToken(
+                    dataProvider,
+                    bytes32(0),
+                    address(forwarderFactory)
+                )
+            )
+        );
         vm.stopPrank();
     }
 

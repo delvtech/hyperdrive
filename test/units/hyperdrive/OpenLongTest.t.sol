@@ -162,7 +162,7 @@ contract OpenLongTest is HyperdriveTest {
         // p = 1 / (1 + r)
         // roughly ((1/.9523 - 1) * .1) * 10e18 * 1 = 5e16, or 10% of the 5% bond - base spread.
         uint256 p = (uint256(1 ether)).divDown(1 ether + 0.05 ether);
-        uint256 phi = hyperdrive.getPoolConfig().curveFee;
+        uint256 phi = hyperdrive.getPoolConfig().fees.curve;
         uint256 curveFeeAmount = (uint256(1 ether).divDown(p) - 1 ether)
             .mulDown(phi)
             .mulDown(baseAmount);
@@ -242,7 +242,7 @@ contract OpenLongTest is HyperdriveTest {
 
         // TODO: This problem gets much worse as the baseAmount to open a long gets smaller.
         // Figure out a solution to this.
-        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.checkpoints(
+        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
             checkpointTime
         );
         assertApproxEqAbs(

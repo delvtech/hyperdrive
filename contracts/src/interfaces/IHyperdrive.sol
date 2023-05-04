@@ -2,9 +2,11 @@
 pragma solidity ^0.8.18;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IHyperdriveRead } from "./IHyperdriveRead.sol";
+import { IHyperdriveWrite } from "./IHyperdriveWrite.sol";
 import { IMultiToken } from "./IMultiToken.sol";
 
-interface IHyperdrive is IMultiToken {
+interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
     struct MarketState {
         /// @dev The pool's share reserves.
         uint128 shareReserves;
@@ -66,20 +68,20 @@ interface IHyperdrive is IMultiToken {
     }
 
     struct PoolConfig {
-        /// @dev The initial share price of the base asset.
+        /// @dev The address of the base token.
+        IERC20 baseToken;
+        /// @dev The initial share price.
         uint256 initialSharePrice;
-        /// @dev The duration of a long or short trade.
+        /// @dev The duration of a position prior to maturity.
         uint256 positionDuration;
         /// @dev The duration of a checkpoint.
         uint256 checkpointDuration;
         /// @dev A parameter which decreases slippage around a target rate.
         uint256 timeStretch;
-        /// @dev The LP fee applied to the flat portion of a trade.
-        uint256 flatFee;
-        /// @dev The LP fee applied to the curve portion of a trade.
-        uint256 curveFee;
-        /// @dev The percentage fee applied to the LP fees.
-        uint256 governanceFee;
+        /// @dev The address of the governance contract.
+        address governance;
+        /// @dev The fees applied to trades.
+        IHyperdrive.Fees fees;
     }
 
     struct PoolInfo {
@@ -106,81 +108,4 @@ interface IHyperdrive is IMultiToken {
         /// @dev The proceeds recovered by the withdrawal pool.
         uint256 withdrawalSharesProceeds;
     }
-
-    function baseToken() external view returns (address);
-
-    function checkpoints(
-        uint256 _checkpoint
-    ) external view returns (Checkpoint memory);
-
-    function withdrawPool() external view returns (WithdrawPool memory);
-
-    function getPoolConfig() external view returns (PoolConfig memory);
-
-    function getPoolInfo() external view returns (PoolInfo memory);
-
-    function checkpoint(uint256 _checkpointTime) external;
-
-    function setPauser(address who, bool status) external;
-
-    function pause(bool status) external;
-
-    function initialize(
-        uint256 _contribution,
-        uint256 _apr,
-        address _destination,
-        bool _asUnderlying
-    ) external;
-
-    function addLiquidity(
-        uint256 _contribution,
-        uint256 _minApr,
-        uint256 _maxApr,
-        address _destination,
-        bool _asUnderlying
-    ) external returns (uint256);
-
-    function removeLiquidity(
-        uint256 _shares,
-        uint256 _minOutput,
-        address _destination,
-        bool _asUnderlying
-    ) external returns (uint256, uint256);
-
-    function redeemWithdrawalShares(
-        uint256 _shares,
-        uint256 _minOutput,
-        address _destination,
-        bool _asUnderlying
-    ) external returns (uint256 _proceeds);
-
-    function openLong(
-        uint256 _baseAmount,
-        uint256 _minOutput,
-        address _destination,
-        bool _asUnderlying
-    ) external returns (uint256);
-
-    function closeLong(
-        uint256 _maturityTime,
-        uint256 _bondAmount,
-        uint256 _minOutput,
-        address _destination,
-        bool _asUnderlying
-    ) external returns (uint256);
-
-    function openShort(
-        uint256 _bondAmount,
-        uint256 _maxDeposit,
-        address _destination,
-        bool _asUnderlying
-    ) external returns (uint256);
-
-    function closeShort(
-        uint256 _maturityTime,
-        uint256 _bondAmount,
-        uint256 _minOutput,
-        address _destination,
-        bool _asUnderlying
-    ) external returns (uint256);
 }

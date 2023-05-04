@@ -7,19 +7,44 @@ import { FixedPointMath } from "../src/libraries/FixedPointMath.sol";
 import { ForwarderFactory } from "../src/ForwarderFactory.sol";
 import { IHyperdrive } from "../src/interfaces/IHyperdrive.sol";
 
+interface IMockMakerDsrHyperdrive is IHyperdrive {
+    function totalShares() external view returns (uint256);
+
+    function deposit(
+        uint256 amount,
+        bool asUnderlying
+    ) external returns (uint256, uint256);
+
+    function withdraw(
+        uint256 shares,
+        address destination,
+        bool asUnderlying
+    ) external returns (uint256, uint256);
+
+    function pricePerShare() external view returns (uint256);
+}
+
 contract MockMakerDsrHyperdrive is MakerDsrHyperdrive {
     using FixedPointMath for uint256;
 
     constructor(
+        address _dataProvider,
         DsrManager _dsrManager
     )
         MakerDsrHyperdrive(
+            IHyperdrive.PoolConfig({
+                baseToken: IERC20(address(_dsrManager.dai())),
+                initialSharePrice: FixedPointMath.ONE_18,
+                positionDuration: 365 days,
+                checkpointDuration: 1 days,
+                timeStretch: FixedPointMath.ONE_18.divDown(
+                    22.186877016851916266e18
+                ),
+                governance: address(0),
+                fees: IHyperdrive.Fees({ curve: 0, flat: 0, governance: 0 })
+            }),
+            _dataProvider,
             bytes32(0),
-            address(0),
-            365,
-            1 days,
-            FixedPointMath.ONE_18.divDown(22.186877016851916266e18),
-            IHyperdrive.Fees({ curve: 0, flat: 0, governance: 0 }),
             address(0),
             _dsrManager
         )

@@ -14,50 +14,34 @@ contract AaveHyperdrive is Hyperdrive {
     // The aave deployment details, the a token for this asset and the aave pool
     IERC20 public immutable aToken;
     IPool public immutable pool;
-    // The shares created by this pool, starts at 1 to one with deposits and increases
-    uint256 public totalShares;
+    // The shares created by this pool, starts at one to one with deposits and increases
+    uint256 internal totalShares;
 
     /// @notice Initializes a Hyperdrive pool.
+    /// @param _config The configuration of the Hyperdrive pool.
+    /// @param _dataProvider The address of the data provider.
     /// @param _linkerCodeHash The hash of the ERC20 linker contract's
     ///        constructor code.
     /// @param _linkerFactory The factory which is used to deploy the ERC20
     ///        linker contracts.
-    /// @param _baseToken The base token contract.
-    /// @param _checkpointsPerTerm The number of checkpoints that elapses before
-    ///        bonds can be redeemed one-to-one for base.
-    /// @param _checkpointDuration The time in seconds between share price
-    ///        checkpoints. Position duration must be a multiple of checkpoint
-    ///        duration.
-    /// @param _timeStretch The time stretch of the pool.
-    /// @param _fees The fees to apply to trades.
-    /// @param _governance The governance address.
+    /// @param _aToken The assets aToken.
+    /// @param _pool The aave pool.
     constructor(
+        IHyperdrive.PoolConfig memory _config,
+        address _dataProvider,
         bytes32 _linkerCodeHash,
         address _linkerFactory,
-        IERC20 _baseToken,
-        uint256 _checkpointsPerTerm,
-        uint256 _checkpointDuration,
-        uint256 _timeStretch,
         IERC20 _aToken,
-        IPool _pool,
-        IHyperdrive.Fees memory _fees,
-        address _governance
-    )
-        Hyperdrive(
-            _linkerCodeHash,
-            _linkerFactory,
-            _baseToken,
-            FixedPointMath.ONE_18,
-            _checkpointsPerTerm,
-            _checkpointDuration,
-            _timeStretch,
-            _fees,
-            _governance
-        )
-    {
+        IPool _pool
+    ) Hyperdrive(_config, _dataProvider, _linkerCodeHash, _linkerFactory) {
+        // Ensure that the Hyperdrive pool was configured properly.
+        if (_config.initialSharePrice != FixedPointMath.ONE_18) {
+            revert Errors.InvalidInitialSharePrice();
+        }
+
         aToken = _aToken;
         pool = _pool;
-        _baseToken.approve(address(pool), type(uint256).max);
+        _config.baseToken.approve(address(pool), type(uint256).max);
     }
 
     ///@notice Transfers amount of 'token' from the user and commits it to the yield source.
