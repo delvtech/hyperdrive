@@ -159,6 +159,6 @@ abstract contract HyperdriveDataProvider is
         uint256 deltaSum = uint256(currentData.data) - uint256(oldData.data);
         uint256 deltaTime = uint256(currentData.timestamp) -
             uint256(oldData.timestamp);
-        return (deltaSum.divDown(deltaTime * 1e18));
+        _revert(abi.encode(deltaSum.divDown(deltaTime * 1e18)));
     }
 }
