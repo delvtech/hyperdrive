@@ -44,8 +44,8 @@ contract HyperdriveTest is BaseTest {
             timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
             governance: governance,
             fees: fees,
-            oracleSize: 2,
-            updateGap: 0
+            oracleSize: 5,
+            updateGap: 1000
         });
         address dataProvider = address(new MockHyperdriveDataProvider(config));
         hyperdrive = IHyperdrive(

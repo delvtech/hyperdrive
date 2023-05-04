@@ -8,6 +8,7 @@ import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
 import { MockHyperdrive } from "../../mocks/MockHyperdrive.sol";
+import { HyperdriveDataProvider } from "contracts/src/HyperdriveDataProvider.sol";
 
 contract TWAPTest is HyperdriveTest {
     using FixedPointMath for uint256;
@@ -161,7 +162,9 @@ contract TWAPTest is HyperdriveTest {
         uint256 finalData = 12;
         uint256 currentData = 12;
         for (uint256 i = 2; i != 3; i = i == 0 ? 4 : i - 1) {
-            uint256 avg = MockHyperdrive(address(hyperdrive)).query(period);
+            uint256 avg = HyperdriveDataProvider(address(hyperdrive)).query(
+                period
+            );
             assertEq(avg, (finalData * 1e18 + currentData * 1e18) / 2);
 
             currentData -= 1;

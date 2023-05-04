@@ -124,8 +124,8 @@ abstract contract HyperdriveDataProvider is
         _revert(abi.encode(loaded));
     }
 
-    /// @notice Returns the average price between the last recorded timestamp
-    ///         looking a user determined time into the past.
+    /// @notice Returns the average price between the last recorded timestamp looking a user determined
+    ///         time into the past
     /// @param period The gap in our time sample.
     /// @return The average price in that time
     function query(uint256 period) external view returns (uint256) {
@@ -135,22 +135,20 @@ abstract contract HyperdriveDataProvider is
 
         OracleData memory currentData = _buffer[head];
         uint256 targetTime = uint256(lastTimestamp) - period;
-        // Get the index of the oldest element in the buffer.
-        uint256 lastIndex = (head + 1) % _buffer.length;
 
         // We search for the greatest timestamp before the last, note this is not
         // an efficient search as we expect the buffer to be small.
         uint256 currentIndex = head == 0 ? _buffer.length - 1 : head - 1;
         OracleData memory oldData = OracleData(0, 0);
-        while (lastIndex != currentIndex) {
+        while (currentIndex != head) {
             // If the timestamp of the current index has older data than the target
             // this is the newest data which is older than the target so we break
-            if (uint256(_buffer[currentIndex].timestamp) < targetTime) {
+            if (uint256(_buffer[currentIndex].timestamp) <= targetTime) {
                 oldData = _buffer[currentIndex];
                 break;
             }
             currentIndex = currentIndex == 0
-                ? _buffer.length
+                ? _buffer.length - 1
                 : currentIndex - 1;
         }
 
@@ -161,6 +159,6 @@ abstract contract HyperdriveDataProvider is
         uint256 deltaSum = uint256(currentData.data) - uint256(oldData.data);
         uint256 deltaTime = uint256(currentData.timestamp) -
             uint256(oldData.timestamp);
-        return (deltaSum.divDown(deltaTime));
+        return (deltaSum.divDown(deltaTime * 1e18));
     }
 }

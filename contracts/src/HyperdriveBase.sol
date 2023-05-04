@@ -39,7 +39,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     {
         // Initialize the oracle.
         for (uint256 i = 0; i < _config.oracleSize; i++) {
-            buffer.push(OracleData(uint32(block.timestamp), 0));
+            _buffer.push(OracleData(uint32(block.timestamp), 0));
         }
     }
 

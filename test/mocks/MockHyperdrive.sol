@@ -113,13 +113,16 @@ contract MockHyperdrive is Hyperdrive {
     }
 
     function getOracleState() external view returns (uint256, uint256) {
-        return (uint256(oracle.head), uint256(oracle.lastTimestamp));
+        return (uint256(_oracle.head), uint256(_oracle.lastTimestamp));
     }
 
     function loadOracle(
         uint256 index
     ) external view returns (uint256, uint256) {
-        return (uint256(buffer[index].data), uint256(buffer[index].timestamp));
+        return (
+            uint256(_buffer[index].data),
+            uint256(_buffer[index].timestamp)
+        );
     }
 
     function recordOracle(uint256 data) external {

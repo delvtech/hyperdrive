@@ -30,8 +30,8 @@ abstract contract HyperdriveTWAP is HyperdriveBase {
         }
 
         // Load the current data from storage
-        uint256 previousTime = uint256(buffer[head].timestamp);
-        uint256 previousSum = uint256(buffer[head].data);
+        uint256 previousTime = uint256(_buffer[head].timestamp);
+        uint256 previousSum = uint256(_buffer[head].data);
 
         // Calculate sum
         uint256 delta = block.timestamp - previousTime;
