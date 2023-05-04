@@ -1,8 +1,5 @@
-methods {
-}
+import "Sanity.spec";
+use rule sanity;
 
-rule sanity(env e, method f) {
-    calldataarg args;
-    f(e, args);
-    assert false;
+methods {
 }

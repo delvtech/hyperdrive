@@ -1,4 +1,6 @@
 import "erc20.spec";
+import "Sanity.spec";
+use rule sanity;
 
 methods {
     function _.mulDivDown(uint256 x, uint256 y, uint256 d) internal library => mulDivDownCVL(x, y, d) expect uint256;
@@ -22,10 +24,4 @@ function mulDivUpCVL(uint256 x, uint256 y, uint256 z) returns uint256 {
         return w;
     }
     return require_uint256(w+1);
-}
-
-rule sanity(env e, method f) {
-    calldataarg args;
-    f(e, args);
-    assert false;
 }
