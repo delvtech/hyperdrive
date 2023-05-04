@@ -9,7 +9,11 @@ then
 fi
 
 certoraRun contracts/src/BondWrapper.sol \
+    contracts/src/instances/MakerDsrHyperdrive.sol \
+    certora/helpers/DummyERC20A.sol \
+    certora/helpers/DummyERC20B.sol \
     --verify BondWrapper:certora/spec/BondWrapper.spec \
+    --link BondWrapper:hyperdrive=MakerDsrHyperdrive \
     --solc solc8.18 \
     --loop_iter 3 \
     --staging \

@@ -9,7 +9,12 @@ then
 fi
 
 certoraRun contracts/src/factory/HyperdriveFactory.sol \
+    contracts/src/factory/MakerDsrHyperdriveDeployer.sol \
+    contracts/src/instances/MakerDsrHyperdrive.sol \
+    certora/helpers/DummyERC20A.sol \
+    certora/helpers/DummyERC20B.sol \
     --verify HyperdriveFactory:certora/spec/HyperdriveFactory.spec \
+    --link HyperdriveFactory:hyperdriveDeployer=MakerDsrHyperdriveDeployer \
     --solc solc8.18 \
     --loop_iter 3 \
     --staging \
