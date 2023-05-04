@@ -57,10 +57,10 @@ contract AaveFixedBorrowTest is BaseTest {
         hyperdrive = IHyperdrive(
             address(
                 new MakerDsrHyperdrive(
-                    IHyperdrive.HyperdriveConfig({
+                    IHyperdrive.PoolConfig({
                         baseToken: dai,
                         initialSharePrice: FixedPointMath.ONE_18,
-                        checkpointsPerTerm: 365, // 1 year term
+                        positionDuration: 365 days, // 1 year term
                         checkpointDuration: 1 days, // 1 day checkpoints
                         timeStretch: HyperdriveUtils.calculateTimeStretch(
                             0.02e18

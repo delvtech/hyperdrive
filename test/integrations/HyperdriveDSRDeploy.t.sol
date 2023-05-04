@@ -54,10 +54,10 @@ contract HyperdriveDSRTest is HyperdriveTest {
             new MakerDsrHyperdriveDataProvider(manager)
         );
         hyperdrive = factory.deployAndInitialize(
-            IHyperdrive.HyperdriveConfig({
+            IHyperdrive.PoolConfig({
                 baseToken: dai,
                 initialSharePrice: FixedPointMath.ONE_18,
-                checkpointsPerTerm: 365,
+                positionDuration: 365 days,
                 checkpointDuration: 1 days,
                 timeStretch: FixedPointMath.ONE_18.divDown(
                     22.186877016851916266e18

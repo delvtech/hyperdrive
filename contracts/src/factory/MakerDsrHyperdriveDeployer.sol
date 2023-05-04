@@ -30,7 +30,7 @@ contract MakerDsrHyperdriveDeployer is IHyperdriveDeployer {
     /// @param _linkerFactory The address of the factory which is used to deploy
     ///        the ERC20 linker contracts.
     function deploy(
-        IHyperdrive.HyperdriveConfig memory _config,
+        IHyperdrive.PoolConfig memory _config,
         address _dataProvider,
         bytes32 _linkerCodeHash,
         address _linkerFactory,

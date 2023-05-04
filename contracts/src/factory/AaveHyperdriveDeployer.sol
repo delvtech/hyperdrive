@@ -38,7 +38,7 @@ contract AaveHyperdriveDeployer is IHyperdriveDeployer {
     /// FIXME: We should ensure that the aToken address is a valid aToken.
     /// @param _extraData This extra data contains the address of the aToken.
     function deploy(
-        IHyperdrive.HyperdriveConfig memory _config,
+        IHyperdrive.PoolConfig memory _config,
         address _dataProvider,
         bytes32 _linkerCodeHash,
         address _linkerFactory,

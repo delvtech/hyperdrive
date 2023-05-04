@@ -35,13 +35,9 @@ abstract contract HyperdriveStorage is MultiTokenStorage {
     ///         the contract and other non essential functionality.
     mapping(address => bool) internal pausers;
 
-    // TODO: This shouldn't be public.
-    //
     // Governance fees that haven't been collected yet denominated in shares.
     uint256 internal governanceFeesAccrued;
 
-    // TODO: This shouldn't be public.
-    //
     // TODO: Should this be immutable?
     //
     // The address that receives governance fees.

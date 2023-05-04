@@ -87,17 +87,17 @@ contract MockHyperdrive is Hyperdrive {
         address _dataProvider,
         ERC20Mintable _baseToken,
         uint256 _initialSharePrice,
-        uint256 _checkpointsPerTerm,
+        uint256 _positionDuration,
         uint256 _checkpointDuration,
         uint256 _timeStretch,
         IHyperdrive.Fees memory _fees,
         address _governance
     )
         Hyperdrive(
-            IHyperdrive.HyperdriveConfig({
+            IHyperdrive.PoolConfig({
                 baseToken: _baseToken,
                 initialSharePrice: _initialSharePrice,
-                checkpointsPerTerm: _checkpointsPerTerm,
+                positionDuration: _positionDuration,
                 checkpointDuration: _checkpointDuration,
                 timeStretch: _timeStretch,
                 governance: _governance,

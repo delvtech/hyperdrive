@@ -261,7 +261,7 @@ library HyperdriveUtils {
         uint256 curveFee = FixedPointMath
             .ONE_18
             .sub(spotPrice)
-            .mulDown(poolConfig.curveFee)
+            .mulDown(poolConfig.fees.curve)
             .mulDown(_bondAmount)
             .mulDivDown(timeRemaining, poolInfo.sharePrice);
         uint256 flatFee = (
@@ -269,7 +269,7 @@ library HyperdriveUtils {
                 FixedPointMath.ONE_18.sub(timeRemaining),
                 poolInfo.sharePrice
             )
-        ).mulDown(poolConfig.flatFee);
+        ).mulDown(poolConfig.fees.flat);
         shareProceeds -= curveFee + flatFee;
 
         // Return the proceeds of the short

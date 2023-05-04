@@ -75,7 +75,7 @@ contract HyperdriveFactory {
     /// @param _apr The apr to call init with
     /// @return The hyperdrive address deployed
     function deployAndInitialize(
-        IHyperdrive.HyperdriveConfig memory _config,
+        IHyperdrive.PoolConfig memory _config,
         address _dataProvider,
         bytes32 _linkerCodeHash,
         address _linkerFactory,

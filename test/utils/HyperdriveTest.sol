@@ -21,9 +21,7 @@ contract HyperdriveTest is BaseTest {
 
     uint256 internal constant INITIAL_SHARE_PRICE = FixedPointMath.ONE_18;
     uint256 internal constant CHECKPOINT_DURATION = 1 days;
-    uint256 internal constant CHECKPOINTS_PER_TERM = 365;
-    uint256 internal constant POSITION_DURATION =
-        CHECKPOINT_DURATION * CHECKPOINTS_PER_TERM;
+    uint256 internal constant POSITION_DURATION = 365 days;
 
     function setUp() public virtual override {
         super.setUp();
@@ -47,7 +45,7 @@ contract HyperdriveTest is BaseTest {
                     dataProvider,
                     baseToken,
                     INITIAL_SHARE_PRICE,
-                    CHECKPOINTS_PER_TERM,
+                    POSITION_DURATION,
                     CHECKPOINT_DURATION,
                     HyperdriveUtils.calculateTimeStretch(apr),
                     fees,
@@ -89,7 +87,7 @@ contract HyperdriveTest is BaseTest {
                     dataProvider,
                     baseToken,
                     INITIAL_SHARE_PRICE,
-                    CHECKPOINTS_PER_TERM,
+                    POSITION_DURATION,
                     CHECKPOINT_DURATION,
                     HyperdriveUtils.calculateTimeStretch(apr),
                     fees,

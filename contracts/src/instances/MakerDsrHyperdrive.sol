@@ -33,7 +33,7 @@ contract MakerDsrHyperdrive is Hyperdrive {
     ///        linker contracts.
     /// @param _dsrManager The "dai savings rate" manager contract
     constructor(
-        IHyperdrive.HyperdriveConfig memory _config,
+        IHyperdrive.PoolConfig memory _config,
         address _dataProvider,
         bytes32 _linkerCodeHash,
         address _linkerFactory,

@@ -17,6 +17,7 @@ def test_deploy():
     share_price = int(1e18)
     checkpoints = 365
     checkpoint_duration = 86400
+    position_duration = checkpoints * checkpoint_duration
     curve_fee = 0
     flat_fee = 0
     gov_fee = 0
@@ -46,7 +47,7 @@ def test_deploy():
         base_ERC20,
         initial_apr,
         share_price,
-        checkpoints,
+        position_duration,
         checkpoint_duration,
         int(time_stretch),
         (curve_fee, flat_fee, gov_fee),

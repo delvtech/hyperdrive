@@ -16,9 +16,9 @@ library Errors {
     error InvalidBaseToken();
     error InvalidCheckpointTime();
     error InvalidCheckpointDuration();
-    error InvalidCheckpointsPerTerm();
     error InvalidInitialSharePrice();
     error InvalidMaturityTime();
+    error InvalidPositionDuration();
     error NegativeInterest();
     error OutputLimit();
     error Paused();

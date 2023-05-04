@@ -58,10 +58,10 @@ contract HyperdriveDSRTest is HyperdriveTest {
         dai.approve(address(factory), type(uint256).max);
         address dataProvider = address(new AaveHyperdriveDataProvider(aDai));
         hyperdrive = factory.deployAndInitialize(
-            IHyperdrive.HyperdriveConfig({
+            IHyperdrive.PoolConfig({
                 baseToken: dai,
                 initialSharePrice: FixedPointMath.ONE_18,
-                checkpointsPerTerm: 365,
+                positionDuration: 365 days,
                 checkpointDuration: 1 days,
                 timeStretch: FixedPointMath.ONE_18.divDown(
                     22.186877016851916266e18

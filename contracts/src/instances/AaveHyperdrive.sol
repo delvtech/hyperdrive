@@ -14,7 +14,7 @@ contract AaveHyperdrive is Hyperdrive {
     // The aave deployment details, the a token for this asset and the aave pool
     IERC20 public immutable aToken;
     IPool public immutable pool;
-    // The shares created by this pool, starts at 1 to one with deposits and increases
+    // The shares created by this pool, starts at one to one with deposits and increases
     uint256 internal totalShares;
 
     /// @notice Initializes a Hyperdrive pool.
@@ -27,7 +27,7 @@ contract AaveHyperdrive is Hyperdrive {
     /// @param _aToken The assets aToken.
     /// @param _pool The aave pool.
     constructor(
-        IHyperdrive.HyperdriveConfig memory _config,
+        IHyperdrive.PoolConfig memory _config,
         address _dataProvider,
         bytes32 _linkerCodeHash,
         address _linkerFactory,

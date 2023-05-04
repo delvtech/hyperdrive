@@ -50,7 +50,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     /// @param _linkerFactory The address of the factory which is used to deploy
     ///        the ERC20 linker contracts.
     constructor(
-        IHyperdrive.HyperdriveConfig memory _config,
+        IHyperdrive.PoolConfig memory _config,
         address _dataProvider,
         bytes32 _linkerCodeHash,
         address _linkerFactory
@@ -60,13 +60,17 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
 
         // Initialize the time configurations. There must be at least one
         // checkpoint per term to avoid having a position duration of zero.
-        if (_config.checkpointsPerTerm == 0) {
-            revert Errors.InvalidCheckpointsPerTerm();
+        if (_config.checkpointDuration == 0) {
+            revert Errors.InvalidCheckpointDuration();
         }
-        positionDuration =
-            _config.checkpointsPerTerm *
-            _config.checkpointDuration;
         checkpointDuration = _config.checkpointDuration;
+        if (
+            _config.positionDuration < _config.checkpointDuration ||
+            _config.positionDuration % _config.checkpointDuration != 0
+        ) {
+            revert Errors.InvalidPositionDuration();
+        }
+        positionDuration = _config.positionDuration;
         timeStretch = _config.timeStretch;
         initialSharePrice = _config.initialSharePrice;
         fees = _config.fees;
@@ -171,13 +175,13 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     {
         return
             IHyperdrive.PoolConfig({
+                baseToken: baseToken,
                 initialSharePrice: initialSharePrice,
                 positionDuration: positionDuration,
                 checkpointDuration: checkpointDuration,
                 timeStretch: timeStretch,
-                flatFee: fees.flat,
-                curveFee: fees.curve,
-                governanceFee: fees.governance
+                governance: governance,
+                fees: fees
             });
     }
 

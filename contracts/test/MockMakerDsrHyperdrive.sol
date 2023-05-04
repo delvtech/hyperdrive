@@ -32,10 +32,10 @@ contract MockMakerDsrHyperdrive is MakerDsrHyperdrive {
         DsrManager _dsrManager
     )
         MakerDsrHyperdrive(
-            IHyperdrive.HyperdriveConfig({
+            IHyperdrive.PoolConfig({
                 baseToken: IERC20(address(_dsrManager.dai())),
                 initialSharePrice: FixedPointMath.ONE_18,
-                checkpointsPerTerm: 365,
+                positionDuration: 365 days,
                 checkpointDuration: 1 days,
                 timeStretch: FixedPointMath.ONE_18.divDown(
                     22.186877016851916266e18

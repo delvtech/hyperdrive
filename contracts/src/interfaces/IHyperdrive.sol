@@ -67,14 +67,13 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
         uint256 governance;
     }
 
-    // TODO: This should be renamed or the PoolConfig struct should be removed.
-    struct HyperdriveConfig {
+    struct PoolConfig {
         /// @dev The address of the base token.
         IERC20 baseToken;
         /// @dev The initial share price.
         uint256 initialSharePrice;
-        /// @dev The number of checkpoints per term.
-        uint256 checkpointsPerTerm;
+        /// @dev The duration of a position prior to maturity.
+        uint256 positionDuration;
         /// @dev The duration of a checkpoint.
         uint256 checkpointDuration;
         /// @dev A parameter which decreases slippage around a target rate.
@@ -83,23 +82,6 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
         address governance;
         /// @dev The fees applied to trades.
         IHyperdrive.Fees fees;
-    }
-
-    struct PoolConfig {
-        /// @dev The initial share price of the base asset.
-        uint256 initialSharePrice;
-        /// @dev The duration of a long or short trade.
-        uint256 positionDuration;
-        /// @dev The duration of a checkpoint.
-        uint256 checkpointDuration;
-        /// @dev A parameter which decreases slippage around a target rate.
-        uint256 timeStretch;
-        /// @dev The LP fee applied to the flat portion of a trade.
-        uint256 flatFee;
-        /// @dev The LP fee applied to the curve portion of a trade.
-        uint256 curveFee;
-        /// @dev The percentage fee applied to the LP fees.
-        uint256 governanceFee;
     }
 
     struct PoolInfo {
