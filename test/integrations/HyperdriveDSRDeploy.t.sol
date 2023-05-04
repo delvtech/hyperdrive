@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { Errors } from "contracts/src/libraries/Errors.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { MakerDsrHyperdriveDeployer } from "contracts/src/factory/MakerDsrHyperdriveDeployer.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
-import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
-import { DsrManager } from "contracts/test/MockMakerDsrHyperdrive.sol";
+import { MakerDsrHyperdriveDataProvider } from "contracts/src/instances/MakerDsrHyperdriveDataProvider.sol";
 import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { AssetId } from "contracts/src/libraries/AssetId.sol";
+import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { DsrManager } from "contracts/test/MockMakerDsrHyperdrive.sol";
+import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
 
 contract HyperdriveDSRTest is HyperdriveTest {
     using FixedPointMath for *;
@@ -46,24 +47,33 @@ contract HyperdriveDSRTest is HyperdriveTest {
         setUp();
         // We've just copied the values used by the original tests to ensure this runs
 
-        vm.prank(alice);
+        vm.startPrank(alice);
         bytes32[] memory empty = new bytes32[](0);
         dai.approve(address(factory), type(uint256).max);
-        vm.prank(alice);
-        hyperdrive = factory.deployAndImplement(
-            IHyperdrive.HyperdriveConfig({
-                baseToken: dai,
-                initialSharePrice: FixedPointMath.ONE_18,
-                checkpointsPerTerm: 365,
-                checkpointDuration: 1 days,
-                timeStretch: FixedPointMath.ONE_18.divDown(
-                    22.186877016851916266e18
-                ),
-                governance: address(0),
-                oracleSize: 2,
-                updateGap: 0,
-                fees: IHyperdrive.Fees(0, 0, 0)
-            }),
+        IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
+            baseToken: dai,
+            initialSharePrice: FixedPointMath.ONE_18,
+            positionDuration: 365 days,
+            checkpointDuration: 1 days,
+            timeStretch: FixedPointMath.ONE_18.divDown(
+                22.186877016851916266e18
+            ),
+            governance: address(0),
+            fees: IHyperdrive.Fees(0, 0, 0),
+            oracleSize: 2,
+            updateGap: 0
+        });
+        address dataProvider = address(
+            new MakerDsrHyperdriveDataProvider(
+                config,
+                bytes32(0),
+                address(0),
+                manager
+            )
+        );
+        hyperdrive = factory.deployAndInitialize(
+            config,
+            dataProvider,
             bytes32(0),
             address(0),
             empty,

@@ -25,7 +25,7 @@ contract MockHyperdriveScript is Script {
             BASE,
             5e18,
             FixedPointMath.ONE_18,
-            365,
+            365 days,
             1 days,
             FixedPointMath.ONE_18.divDown(22.186877016851916266e18),
             IHyperdrive.Fees({

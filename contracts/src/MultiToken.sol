@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import { IMultiToken } from "./interfaces/IMultiToken.sol";
+import { DataProvider } from "./DataProvider.sol";
+import { MultiTokenStorage } from "./MultiTokenStorage.sol";
+import { IMultiTokenWrite } from "./interfaces/IMultiTokenWrite.sol";
 import { Errors } from "./libraries/Errors.sol";
 
 // A lite version of a semi fungible, which removes some methods and so
@@ -10,33 +12,10 @@ import { Errors } from "./libraries/Errors.sol";
 // NOTE - We remove on transfer callbacks and safe transfer because of the
 //        risk of external calls to untrusted code.
 
-contract MultiToken is IMultiToken {
+contract MultiToken is DataProvider, MultiTokenStorage, IMultiTokenWrite {
     // TODO - Choose to change names to perfect match the 1155 ie adding 'safe',
     //        choose whether to support the batch methods, and to support token uris
     //        or names
-
-    // Allows loading of each balance
-    mapping(uint256 => mapping(address => uint256)) public balanceOf;
-    // Allows loading of each total supply
-    mapping(uint256 => uint256) public totalSupply;
-    // Uniform approval for all tokens
-    mapping(address => mapping(address => bool))
-        public
-        override isApprovedForAll;
-    // Additional optional per token approvals
-    // Note - non standard for erc1150 but we want to replicate erc20 interface
-    mapping(uint256 => mapping(address => mapping(address => uint256)))
-        public
-        override perTokenApprovals;
-    // Sub Token Name and Symbol, created by inheriting contracts
-    mapping(uint256 => string) internal _name;
-    mapping(uint256 => string) internal _symbol;
-
-    // The contract which deployed this one
-    address public immutable factory;
-    // The bytecode hash of the contract which forwards purely erc20 calls
-    // to this contract
-    bytes32 public immutable linkerCodeHash;
 
     // EIP712
     // DOMAIN_SEPARATOR changes based on token name
@@ -47,17 +26,15 @@ contract MultiToken is IMultiToken {
             "PermitForAll(address owner,address spender,bool _approved,uint256 nonce,uint256 deadline"
         );
 
-    // A mapping to track the permitForAll signature nonces
-    mapping(address => uint256) public nonces;
-
     /// @notice Runs the initial deployment code
+    /// @param _dataProvider The address of the data provider
     /// @param _linkerCodeHash The hash of the erc20 linker contract deploy code
     /// @param _factory The factory which is used to deploy the linking contracts
-    constructor(bytes32 _linkerCodeHash, address _factory) {
-        // Set the immutables
-        factory = _factory;
-        linkerCodeHash = _linkerCodeHash;
-
+    constructor(
+        address _dataProvider,
+        bytes32 _linkerCodeHash,
+        address _factory
+    ) DataProvider(_dataProvider) MultiTokenStorage(_linkerCodeHash, _factory) {
         // Computes the EIP 712 domain separator which prevents user signed messages for
         // this contract to be replayed in other contracts.
         // https://eips.ethereum.org/EIPS/eip-712
@@ -101,29 +78,9 @@ contract MultiToken is IMultiToken {
         bytes32 salt = keccak256(abi.encode(address(this), tokenId));
         // Preform the hash which determines the address of a create2 deployment
         bytes32 addressBytes = keccak256(
-            abi.encodePacked(bytes1(0xff), factory, salt, linkerCodeHash)
+            abi.encodePacked(bytes1(0xff), _factory, salt, _linkerCodeHash)
         );
         return address(uint160(uint256(addressBytes)));
-    }
-
-    /// @notice Returns the name of the sub token i.e PTs or YTs token supported
-    ///         by this contract.
-    /// @param id The pool id to load the name of
-    /// @return Returns the name of this token
-    function name(
-        uint256 id
-    ) external view virtual override returns (string memory) {
-        return _name[id];
-    }
-
-    /// @notice Returns the symbol of the sub token i.e PTs or YTs token supported
-    ///         by this contract.
-    /// @param id The pool id to load the name of
-    /// @return Returns the symbol of this token
-    function symbol(
-        uint256 id
-    ) external view virtual override returns (string memory) {
-        return _symbol[id];
     }
 
     /// @notice Transfers an amount of assets from the source to the destination
@@ -176,33 +133,36 @@ contract MultiToken is IMultiToken {
         if (caller != from) {
             // Or if the transaction sender can access all user assets, no need for
             // more validation
-            if (!isApprovedForAll[from][caller]) {
+            if (!_isApprovedForAll[from][caller]) {
                 // Finally we load the per asset approval
-                uint256 approved = perTokenApprovals[tokenID][from][caller];
+                uint256 approved = _perTokenApprovals[tokenID][from][caller];
                 // If it is not an infinite approval
                 if (approved != type(uint256).max) {
                     // Then we subtract the amount the caller wants to use
                     // from how much they can use, reverting on underflow.
                     // NOTE - This reverts without message for unapproved callers when
                     //         debugging that's the likely source of any mystery reverts
-                    perTokenApprovals[tokenID][from][caller] -= amount;
+                    _perTokenApprovals[tokenID][from][caller] -= amount;
                 }
             }
         }
 
         // Reaching this point implies the transfer is authorized so we remove
         // from the source and add to the destination.
-        balanceOf[tokenID][from] -= amount;
-        balanceOf[tokenID][to] += amount;
+        _balanceOf[tokenID][from] -= amount;
+        _balanceOf[tokenID][to] += amount;
         emit TransferSingle(caller, from, to, tokenID, amount);
     }
 
     /// @notice Allows a user to approve an operator to use all of their assets
     /// @param operator The eth address which can access the caller's assets
     /// @param approved True to approve, false to remove approval
-    function setApprovalForAll(address operator, bool approved) public {
+    function setApprovalForAll(
+        address operator,
+        bool approved
+    ) external override {
         // set the appropriate state
-        isApprovedForAll[msg.sender][operator] = approved;
+        _isApprovedForAll[msg.sender][operator] = approved;
         // Emit an event to track approval
         emit ApprovalForAll(msg.sender, operator, approved);
     }
@@ -247,7 +207,7 @@ contract MultiToken is IMultiToken {
         uint256 amount,
         address caller
     ) internal {
-        perTokenApprovals[tokenID][caller][operator] = amount;
+        _perTokenApprovals[tokenID][caller][operator] = amount;
         // Emit an event to track approval
         emit Approval(caller, operator, amount);
     }
@@ -262,8 +222,8 @@ contract MultiToken is IMultiToken {
         address to,
         uint256 amount
     ) internal virtual {
-        balanceOf[tokenID][to] += amount;
-        totalSupply[tokenID] += amount;
+        _balanceOf[tokenID][to] += amount;
+        _totalSupply[tokenID] += amount;
         // Emit an event to track minting
         emit TransferSingle(msg.sender, address(0), to, tokenID, amount);
     }
@@ -275,8 +235,8 @@ contract MultiToken is IMultiToken {
     /// @dev Must be used from inheriting contracts
     function _burn(uint256 tokenID, address from, uint256 amount) internal {
         // Decrement from the source and supply
-        balanceOf[tokenID][from] -= amount;
-        totalSupply[tokenID] -= amount;
+        _balanceOf[tokenID][from] -= amount;
+        _totalSupply[tokenID] -= amount;
         // Emit an event to track burning
         emit TransferSingle(msg.sender, from, address(0), tokenID, amount);
     }
@@ -343,7 +303,7 @@ contract MultiToken is IMultiToken {
                         owner,
                         spender,
                         _approved,
-                        nonces[owner],
+                        _nonces[owner],
                         deadline
                     )
                 )
@@ -355,9 +315,9 @@ contract MultiToken is IMultiToken {
         if (signer != owner) revert Errors.InvalidSignature();
 
         // Increment the signature nonce
-        nonces[owner]++;
+        _nonces[owner]++;
         // set the state
-        isApprovedForAll[owner][spender] = _approved;
+        _isApprovedForAll[owner][spender] = _approved;
         // Emit an event to track approval
         emit ApprovalForAll(owner, spender, _approved);
     }

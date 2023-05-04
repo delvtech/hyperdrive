@@ -9,7 +9,7 @@ import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { HyperdriveBase } from "contracts/src/HyperdriveBase.sol";
-import { MockHyperdrive } from "../mocks/MockHyperdrive.sol";
+import { MockHyperdrive, MockHyperdriveDataProvider } from "../mocks/MockHyperdrive.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { HyperdriveUtils } from "./HyperdriveUtils.sol";
 
@@ -21,9 +21,7 @@ contract HyperdriveTest is BaseTest {
 
     uint256 internal constant INITIAL_SHARE_PRICE = FixedPointMath.ONE_18;
     uint256 internal constant CHECKPOINT_DURATION = 1 days;
-    uint256 internal constant CHECKPOINTS_PER_TERM = 365;
-    uint256 internal constant POSITION_DURATION =
-        CHECKPOINT_DURATION * CHECKPOINTS_PER_TERM;
+    uint256 internal constant POSITION_DURATION = 365 days;
 
     function setUp() public virtual override {
         super.setUp();
@@ -38,18 +36,20 @@ contract HyperdriveTest is BaseTest {
         });
         // Instantiate Hyperdrive.
         uint256 apr = 0.05e18;
+        IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
+            baseToken: baseToken,
+            initialSharePrice: INITIAL_SHARE_PRICE,
+            positionDuration: POSITION_DURATION,
+            checkpointDuration: CHECKPOINT_DURATION,
+            timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
+            governance: governance,
+            fees: fees,
+            oracleSize: 2,
+            updateGap: 0
+        });
+        address dataProvider = address(new MockHyperdriveDataProvider(config));
         hyperdrive = IHyperdrive(
-            address(
-                new MockHyperdrive(
-                    baseToken,
-                    INITIAL_SHARE_PRICE,
-                    CHECKPOINTS_PER_TERM,
-                    CHECKPOINT_DURATION,
-                    HyperdriveUtils.calculateTimeStretch(apr),
-                    fees,
-                    governance
-                )
-            )
+            address(new MockHyperdrive(config, dataProvider))
         );
         vm.stopPrank();
         vm.startPrank(governance);
@@ -75,19 +75,20 @@ contract HyperdriveTest is BaseTest {
             flat: flatFee,
             governance: governanceFee
         });
-
+        IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
+            baseToken: baseToken,
+            initialSharePrice: INITIAL_SHARE_PRICE,
+            positionDuration: POSITION_DURATION,
+            checkpointDuration: CHECKPOINT_DURATION,
+            timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
+            governance: governance,
+            fees: fees,
+            oracleSize: 2,
+            updateGap: 0
+        });
+        address dataProvider = address(new MockHyperdriveDataProvider(config));
         hyperdrive = IHyperdrive(
-            address(
-                new MockHyperdrive(
-                    baseToken,
-                    INITIAL_SHARE_PRICE,
-                    CHECKPOINTS_PER_TERM,
-                    CHECKPOINT_DURATION,
-                    HyperdriveUtils.calculateTimeStretch(apr),
-                    fees,
-                    governance
-                )
-            )
+            address(new MockHyperdrive(config, dataProvider))
         );
     }
 

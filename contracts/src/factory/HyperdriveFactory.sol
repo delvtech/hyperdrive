@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { Errors } from "../libraries/Errors.sol";
@@ -60,8 +60,13 @@ contract HyperdriveFactory {
         governance = newGovernance;
     }
 
+    // TODO: Consider adding the data provider deployments to the factory so
+    //       that (1) we can ensure they are deployed properly and (2) we can
+    //       keep track of them.
+    //
     /// @notice Deploys a copy of hyperdrive with the given params
     /// @param _config The configuration of the Hyperdrive pool.
+    /// @param _dataProvider The address of the data provider.
     /// @param _linkerCodeHash The hash of the ERC20 linker contract's
     ///        constructor code.
     /// @param _linkerFactory The address of the factory which is used to deploy
@@ -70,8 +75,9 @@ contract HyperdriveFactory {
     /// @param _contribution Base token to call init with
     /// @param _apr The apr to call init with
     /// @return The hyperdrive address deployed
-    function deployAndImplement(
-        IHyperdrive.HyperdriveConfig memory _config,
+    function deployAndInitialize(
+        IHyperdrive.PoolConfig memory _config,
+        address _dataProvider,
         bytes32 _linkerCodeHash,
         address _linkerFactory,
         bytes32[] memory _extraData,
@@ -88,6 +94,7 @@ contract HyperdriveFactory {
         IHyperdrive hyperdrive = IHyperdrive(
             hyperdriveDeployer.deploy(
                 _config,
+                _dataProvider,
                 _linkerCodeHash,
                 _linkerFactory,
                 _extraData

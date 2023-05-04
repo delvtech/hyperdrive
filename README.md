@@ -1,5 +1,5 @@
-[![Tests](https://github.com/element-fi/hyperdrive/actions/workflows/test.yml/badge.svg)](https://github.com/element-fi/hyperdrive/actions/workflows/test.yml)
-[![Coverage](https://coveralls.io/repos/github/element-fi/hyperdrive/badge.svg?branch=main&t=US78Aq&kill_cache=1&service=github)](https://coveralls.io/github/element-fi/hyperdrive?branch=main)
+[![Tests](https://github.com/delvtech/hyperdrive/actions/workflows/test.yml/badge.svg)](https://github.com/delvtech/hyperdrive/actions/workflows/test.yml)
+[![Coverage](https://coveralls.io/repos/github/delvtech/hyperdrive/badge.svg?branch=main&t=vnW3xG&kill_cache=1&service=github)](https://coveralls.io/github/delvtech/hyperdrive?branch=main)
 
 # Hyperdrive
 
@@ -17,6 +17,12 @@ prettify the source code. Proceed through the following steps to set up the repo
 - [Install yarn](https://yarnpkg.com/getting-started/install)
 - Install lib/forge-std dependencies by running `forge install` from the project root
 - Install node.js dependencies by running `yarn` from the project root
+
+## Environment Variables
+
+The test suite and migration scripts make use of several environment variables.
+Copy `.env_template` to `.env` and populate the file with your private key and
+provider URLs.
 
 ## Build
 

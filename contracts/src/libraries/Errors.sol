@@ -16,9 +16,9 @@ library Errors {
     error InvalidBaseToken();
     error InvalidCheckpointTime();
     error InvalidCheckpointDuration();
-    error InvalidCheckpointsPerTerm();
     error InvalidInitialSharePrice();
     error InvalidMaturityTime();
+    error InvalidPositionDuration();
     error NegativeInterest();
     error OutputLimit();
     error Paused();
@@ -29,6 +29,22 @@ library Errors {
     error ZeroAmount();
     error ZeroLpTotalSupply();
 
+    /// ############
+    /// ### TWAP ###
+    /// ############
+    error QueryOutOfRange();
+
+    /// ####################
+    /// ### DataProvider ###
+    /// ####################
+    error UnexpectedSuccess();
+
+    /// ###############
+    /// ### Factory ###
+    /// ###############
+    error Unauthorized();
+    error InvalidContribution();
+
     /// ######################
     /// ### ERC20Forwarder ###
     /// ######################
@@ -38,20 +54,6 @@ library Errors {
     error InvalidERC20Bridge();
     error RestrictedZeroAddress();
 
-    /// ######################
-    /// ### FixedPointMath ###
-    /// ######################
-    error FixedPointMath_AddOverflow();
-    error FixedPointMath_SubOverflow();
-    error FixedPointMath_InvalidExponent();
-    error FixedPointMath_NegativeOrZeroInput();
-    error FixedPointMath_NegativeInput();
-
-    /// ###############
-    /// ### AssetId ###
-    /// ###############
-    error InvalidTimestamp();
-
     /// #####################
     /// ### BondWrapper ###
     /// #####################
@@ -60,14 +62,17 @@ library Errors {
     error BondNotMatured();
     error InsufficientPrice();
 
-    /// #####################
-    /// ### Factory ###
-    /// #####################
-    error Unauthorized();
-    error InvalidContribution();
+    /// ###############
+    /// ### AssetId ###
+    /// ###############
+    error InvalidTimestamp();
 
-    /// #####################
-    /// ### Factory ###
-    /// #####################
-    error QueryOutOfRange();
+    /// ######################
+    /// ### FixedPointMath ###
+    /// ######################
+    error FixedPointMath_AddOverflow();
+    error FixedPointMath_SubOverflow();
+    error FixedPointMath_InvalidExponent();
+    error FixedPointMath_NegativeOrZeroInput();
+    error FixedPointMath_NegativeInput();
 }

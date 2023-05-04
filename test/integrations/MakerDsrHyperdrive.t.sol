@@ -1,21 +1,17 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import "forge-std/Test.sol";
-import "forge-std/Vm.sol";
-import "forge-std/console2.sol";
-
-import { BaseTest } from "test/utils/BaseTest.sol";
-import { MockMakerDsrHyperdrive, DsrManager } from "contracts/test/MockMakerDsrHyperdrive.sol";
-import { ForwarderFactory } from "contracts/src/ForwarderFactory.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { ForwarderFactory } from "contracts/src/ForwarderFactory.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
+import { IMockMakerDsrHyperdrive, MockMakerDsrHyperdrive, MockMakerDsrHyperdriveDataProvider, DsrManager } from "contracts/test/MockMakerDsrHyperdrive.sol";
+import { BaseTest } from "test/utils/BaseTest.sol";
 
 contract MakerDsrHyperdrive is BaseTest {
     using FixedPointMath for uint256;
 
-    MockMakerDsrHyperdrive hyperdrive;
+    IMockMakerDsrHyperdrive hyperdrive;
     IERC20 dai;
     IERC20 chai;
     DsrManager dsrManager;
@@ -29,7 +25,12 @@ contract MakerDsrHyperdrive is BaseTest {
         );
 
         vm.startPrank(deployer);
-        hyperdrive = new MockMakerDsrHyperdrive(dsrManager);
+        address dataProvider = address(
+            new MockMakerDsrHyperdriveDataProvider(dsrManager)
+        );
+        hyperdrive = IMockMakerDsrHyperdrive(
+            address(new MockMakerDsrHyperdrive(dataProvider, dsrManager))
+        );
 
         address daiWhale = 0x075e72a5eDf65F0A5f44699c7654C1a76941Ddc8;
 
@@ -161,9 +162,6 @@ contract MakerDsrHyperdrive is BaseTest {
 
         // Get total and per-user amounts of underlying invested
         uint256 underlyingInvested = dsrManager.daiBalance(address(hyperdrive));
-        // uint256 pricePerShare = hyperdrive.pricePerShare();
-        // uint256 underlyingForBob = sharesBob.mulDown(pricePerShare);
-        // uint256 underlyingForAlice = sharesAlice.mulDown(pricePerShare);
 
         // Bob should have accrued 1%
         (uint256 amountWithdrawnBob, ) = hyperdrive.withdraw(

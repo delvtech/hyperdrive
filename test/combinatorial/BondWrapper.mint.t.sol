@@ -4,25 +4,36 @@ pragma solidity ^0.8.18;
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
-import { CombinatorialTest } from "test/utils/CombinatorialTest.sol";
-import { MockMultiToken } from "contracts/test/MockMultiToken.sol";
-import { MockBondWrapper } from "contracts/test/MockBondWrapper.sol";
-import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { MultiTokenDataProvider } from "contracts/src/MultiTokenDataProvider.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
+import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
+import { MockBondWrapper } from "contracts/test/MockBondWrapper.sol";
+import { MockMultiToken, IMockMultiToken } from "contracts/test/MockMultiToken.sol";
+import { CombinatorialTest } from "test/utils/CombinatorialTest.sol";
 
 contract BondWrapper_mint is CombinatorialTest {
-    MockMultiToken multiToken;
+    IMockMultiToken multiToken;
     MockBondWrapper bondWrapper;
     ERC20Mintable baseToken;
 
     function setUp() public override {
         super.setUp();
         vm.startPrank(deployer);
-
-        multiToken = new MockMultiToken(bytes32(0), address(forwarderFactory));
+        address dataProvider = address(
+            new MultiTokenDataProvider(bytes32(0), address(forwarderFactory))
+        );
+        multiToken = IMockMultiToken(
+            address(
+                new MockMultiToken(
+                    dataProvider,
+                    bytes32(0),
+                    address(forwarderFactory)
+                )
+            )
+        );
         baseToken = new ERC20Mintable();
     }
 

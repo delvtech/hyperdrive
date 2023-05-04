@@ -30,6 +30,7 @@ contract AaveHyperdriveDeployer is IHyperdriveDeployer {
 
     /// @notice Deploys a copy of hyperdrive with the given params.
     /// @param _config The configuration of the Hyperdrive pool.
+    /// @param _dataProvider The address of the data provider.
     /// @param _linkerCodeHash The hash of the ERC20 linker contract's
     ///        constructor code.
     /// @param _linkerFactory The address of the factory which is used to deploy
@@ -37,7 +38,8 @@ contract AaveHyperdriveDeployer is IHyperdriveDeployer {
     /// FIXME: We should ensure that the aToken address is a valid aToken.
     /// @param _extraData This extra data contains the address of the aToken.
     function deploy(
-        IHyperdrive.HyperdriveConfig memory _config,
+        IHyperdrive.PoolConfig memory _config,
+        address _dataProvider,
         bytes32 _linkerCodeHash,
         address _linkerFactory,
         bytes32[] calldata _extraData
@@ -49,6 +51,7 @@ contract AaveHyperdriveDeployer is IHyperdriveDeployer {
             address(
                 new AaveHyperdrive(
                     _config,
+                    _dataProvider,
                     _linkerCodeHash,
                     _linkerFactory,
                     aToken,

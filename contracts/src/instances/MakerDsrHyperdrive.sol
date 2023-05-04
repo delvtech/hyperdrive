@@ -13,27 +13,32 @@ contract MakerDsrHyperdrive is Hyperdrive {
 
     // @notice The shares created by this pool, starts at 1 to one with
     //         deposits and increases
-    uint256 public totalShares;
+    uint256 internal totalShares;
+
     // @notice The pool management contract
-    DsrManager public immutable dsrManager;
+    DsrManager internal immutable dsrManager;
+
     // @notice The core Maker accounting module for the Dai Savings Rate
-    Pot public immutable pot;
+    Pot internal immutable pot;
+
     // @notice Maker constant
-    uint256 public constant RAY = 1e27;
+    uint256 internal constant RAY = 1e27;
 
     /// @notice Initializes a Hyperdrive pool.
     /// @param _config The configuration of the Hyperdrive pool.
+    /// @param _dataProvider The address of the data provider.
     /// @param _linkerCodeHash The hash of the ERC20 linker contract's
     ///        constructor code.
     /// @param _linkerFactory The factory which is used to deploy the ERC20
     ///        linker contracts.
     /// @param _dsrManager The "dai savings rate" manager contract
     constructor(
-        IHyperdrive.HyperdriveConfig memory _config,
+        IHyperdrive.PoolConfig memory _config,
+        address _dataProvider,
         bytes32 _linkerCodeHash,
         address _linkerFactory,
         DsrManager _dsrManager
-    ) Hyperdrive(_config, _linkerCodeHash, _linkerFactory) {
+    ) Hyperdrive(_config, _dataProvider, _linkerCodeHash, _linkerFactory) {
         // Ensure that the Hyperdrive pool was configured properly.
         if (address(_config.baseToken) != address(_dsrManager.dai())) {
             revert Errors.InvalidBaseToken();
@@ -44,7 +49,7 @@ contract MakerDsrHyperdrive is Hyperdrive {
 
         dsrManager = _dsrManager;
         pot = Pot(dsrManager.pot());
-        baseToken.approve(address(dsrManager), type(uint256).max);
+        _baseToken.approve(address(dsrManager), type(uint256).max);
     }
 
     /// @notice Transfers base or shares from the user and commits it to the yield source.
@@ -62,7 +67,7 @@ contract MakerDsrHyperdrive is Hyperdrive {
         }
 
         // Transfer the base token from the user to this contract
-        bool success = baseToken.transferFrom(
+        bool success = _baseToken.transferFrom(
             msg.sender,
             address(this),
             amount
@@ -145,7 +150,7 @@ contract MakerDsrHyperdrive is Hyperdrive {
     ///      get the real chi value without interacting with the core maker
     ///      system and expensively mutating state.
     /// return chi The rate accumulator
-    function chi() public view returns (uint256) {
+    function chi() internal view returns (uint256) {
         // timestamp when drip was last called
         uint256 rho = pot.rho();
         // Rate accumulator as of last drip
