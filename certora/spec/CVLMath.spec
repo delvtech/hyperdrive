@@ -23,6 +23,7 @@ definition constQuotient(uint256 x, uint256 y, uint256 z,
         ( to_mathint(y) == q * z && to_mathint(f) == q * x ) || 
         ( q * y == to_mathint(z) && to_mathint(f) == x / q );
 
+definition ONE18() returns uint256 = 1000000000000000000;
 
 function mulDivDownAbstract(uint256 x, uint256 y, uint256 z) returns uint256 {
     require z !=0;
@@ -37,17 +38,8 @@ function mulDivDownAbstract(uint256 x, uint256 y, uint256 z) returns uint256 {
 function mulDivDownAbstractPlus(uint256 x, uint256 y, uint256 z) returns uint256 {
     uint256 f;
     require z != 0;
-    uint256 xy = require_uint256(x*y);
-    /*
-    require x ==0 || y==0 => f == 0;
-    require xy < z => f ==0;
-    require xy >= z => f > 0;
-    require y >= z => f >= x;
-    require x >= z => f >= y;
-    require y < z => f < x;
-    require x < z => f < y;
-    */
-    // Fix: tighter bounds 
+    uint256 xy = assert_uint256(x*y);
+
     require f * z <= x * y;
     require f * z + to_mathint(z) > x * y;
     return f; 
@@ -56,7 +48,7 @@ function mulDivDownAbstractPlus(uint256 x, uint256 y, uint256 z) returns uint256
 function mulDivUpAbstractPlus(uint256 x, uint256 y, uint256 z) returns uint256 {
     uint256 f;
     require z != 0;
-    uint256 xy = require_uint256(x*y);
+    uint256 xy = assert_uint256(x*y);
 
     mathint r = x * y - f * z;
     require r >= 0;
@@ -64,7 +56,7 @@ function mulDivUpAbstractPlus(uint256 x, uint256 y, uint256 z) returns uint256 {
     if(r == 0) {
         return f;
     } 
-    return require_uint256(f + 1);
+    return assert_uint256(f + 1);
 }
 
 function discreteQuotientMulDiv(uint256 x, uint256 y, uint256 z) returns uint256 
@@ -104,3 +96,26 @@ function noOverFlowMul(uint256 x, uint256 y) returns bool
 {
     return x * y <= max_uint;
 }
+
+ghost _ghostPow(uint256, uint256) returns uint256 {
+    /// x^1 = x
+    axiom forall uint256 x. _ghostPow(x, ONE18()) == x;
+    /// 1^y = 1
+    axiom forall uint256 y. _ghostPow(ONE18(), y) == ONE18();
+    /// I. x > 1 && y1 > y2 => x^y1 < x^y2
+    /// II. x < 1 && y1 > y2 => x^y1 > x^y2
+    axiom forall uint256 x. uint256 y1. uint256 y2.
+        x >= ONE18() && y1 > y2 => _ghostPow(x, y1) >= _ghostPow(x, y2);
+    axiom forall uint256 x. uint256 y1. uint256 y2.
+        x < ONE18() && y1 > y2 => _ghostPow(x, y1) <= _ghostPow(x, y2);
+    /// x1 > x2 && y > 0 => x1^y > x2^y
+    axiom forall uint256 x1. uint256 x2. uint256 y.
+        x1 > x2 => _ghostPow(x1, y) >= _ghostPow(x1, y);
+}
+
+function CVLPow(uint256 x, uint256 y) returns uint256 {
+    if (y == 0) {return ONE18();}
+    if (x == 0) {return 0;}
+    return _ghostPow(x, y);
+}
+        
