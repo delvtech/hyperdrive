@@ -13,6 +13,7 @@ certoraRun contracts/src/factory/HyperdriveFactory.sol \
     contracts/src/instances/MakerDsrHyperdrive.sol \
     certora/helpers/DummyERC20A.sol \
     certora/helpers/DummyERC20B.sol \
+    certora/helpers/DummyDsrManager.sol \
     --verify HyperdriveFactory:certora/spec/HyperdriveFactory.spec \
     --link HyperdriveFactory:hyperdriveDeployer=MakerDsrHyperdriveDeployer \
     --solc solc8.18 \
@@ -23,4 +24,4 @@ certoraRun contracts/src/factory/HyperdriveFactory.sol \
     --send_only \
     --packages @openzeppelin=node_modules/@openzeppelin \
     $RULE \
-    --msg "HyperdriveFactory: $RULE $MSG" 
+    --msg "HyperdriveFactory: $RULE $MSG"
