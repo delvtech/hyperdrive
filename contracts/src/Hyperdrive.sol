@@ -28,15 +28,17 @@ abstract contract Hyperdrive is
 
     /// @notice Initializes a Hyperdrive pool.
     /// @param _config The configuration of the Hyperdrive pool.
+    /// @param _dataProvider The address of the data provider.
     /// @param _linkerCodeHash The hash of the ERC20 linker contract's
     ///        constructor code.
     /// @param _linkerFactory The address of the factory which is used to deploy
     ///        the ERC20 linker contracts.
     constructor(
-        IHyperdrive.HyperdriveConfig memory _config,
+        IHyperdrive.PoolConfig memory _config,
+        address _dataProvider,
         bytes32 _linkerCodeHash,
         address _linkerFactory
-    ) HyperdriveBase(_config, _linkerCodeHash, _linkerFactory) {} // solhint-disable-line no-empty-blocks
+    ) HyperdriveBase(_config, _dataProvider, _linkerCodeHash, _linkerFactory) {} // solhint-disable-line no-empty-blocks
 
     /// @notice Allows anyone to mint a new checkpoint.
     /// @param _checkpointTime The time of the checkpoint to create.
@@ -101,7 +103,7 @@ abstract contract Hyperdrive is
         checkpoints[_checkpointTime].sharePrice = _sharePrice.toUint128();
 
         // Pay out the long withdrawal pool for longs that have matured.
-        uint256 maturedLongsAmount = totalSupply[
+        uint256 maturedLongsAmount = _totalSupply[
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _checkpointTime)
         ];
         if (maturedLongsAmount > 0) {
@@ -116,7 +118,7 @@ abstract contract Hyperdrive is
         }
 
         // Pay out the short withdrawal pool for shorts that have matured.
-        uint256 maturedShortsAmount = totalSupply[
+        uint256 maturedShortsAmount = _totalSupply[
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _checkpointTime)
         ];
         if (maturedShortsAmount > 0) {

@@ -119,10 +119,10 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         //
         // TODO: We should have a constant for the withdrawal shares asset ID if
         // we're not going to tranche.
-        uint256 withdrawalSharesOutstanding = totalSupply[
+        uint256 withdrawalSharesOutstanding = _totalSupply[
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
         ] - withdrawPool.readyToWithdraw;
-        uint256 lpTotalSupply = totalSupply[AssetId._LP_ASSET_ID] +
+        uint256 lpTotalSupply = _totalSupply[AssetId._LP_ASSET_ID] +
             withdrawalSharesOutstanding;
 
         // Calculate the number of LP shares to mint.
@@ -232,8 +232,8 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
 
         // Burn the LP shares.
-        uint256 activeLpTotalSupply = totalSupply[AssetId._LP_ASSET_ID];
-        uint256 withdrawalSharesOutstanding = totalSupply[
+        uint256 activeLpTotalSupply = _totalSupply[AssetId._LP_ASSET_ID];
+        uint256 withdrawalSharesOutstanding = _totalSupply[
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
         ] - withdrawPool.readyToWithdraw;
         uint256 lpTotalSupply = activeLpTotalSupply +
@@ -445,7 +445,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
                 shortBaseVolume: marketState.shortBaseVolume
             })
         );
-        uint256 lpTotalSupply = totalSupply[AssetId._LP_ASSET_ID] +
+        uint256 lpTotalSupply = _totalSupply[AssetId._LP_ASSET_ID] +
             _withdrawalSharesOutstanding;
         _compensateWithdrawalPool(
             _withdrawalProceeds,

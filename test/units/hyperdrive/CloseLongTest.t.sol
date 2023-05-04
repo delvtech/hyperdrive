@@ -173,7 +173,7 @@ contract CloseLongTest is HyperdriveTest {
 
         // Ensure that the average open share price was updated correctly.
         assertEq(
-            hyperdrive.checkpoints(block.timestamp).longSharePrice,
+            hyperdrive.getCheckpoint(block.timestamp).longSharePrice,
             hyperdrive.getPoolInfo().sharePrice
         );
     }
@@ -446,7 +446,7 @@ contract CloseLongTest is HyperdriveTest {
         // Verify that the other states were correct.
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
 
-        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.checkpoints(
+        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
             checkpointTime
         );
         if (wasCheckpointed) {

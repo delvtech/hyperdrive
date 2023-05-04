@@ -290,7 +290,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             // being closed. If the shorts are closed before maturity, we add the
             // amount of shorts being closed since the total supply is decreased
             // when burning the short tokens.
-            uint256 checkpointAmount = totalSupply[
+            uint256 checkpointAmount = _totalSupply[
                 AssetId.encodeAssetId(
                     AssetId.AssetIdPrefix.Short,
                     _maturityTime
@@ -328,7 +328,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // amount of withdrawal shares. The proceeds owed to LPs when a long is
         // closed is equivalent to short proceeds as LPs take the other side of
         // every trade.
-        uint256 withdrawalSharesOutstanding = totalSupply[
+        uint256 withdrawalSharesOutstanding = _totalSupply[
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
         ] - withdrawPool.readyToWithdraw;
         if (withdrawalSharesOutstanding > 0) {

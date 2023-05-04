@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import { HyperdriveStorage } from "./HyperdriveStorage.sol";
 import { MultiToken } from "./MultiToken.sol";
 import { AssetId } from "./libraries/AssetId.sol";
 import { Errors } from "./libraries/Errors.sol";
@@ -16,7 +17,7 @@ import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract HyperdriveBase is MultiToken {
+abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     using FixedPointMath for uint256;
     using SafeCast for uint256;
 
@@ -41,80 +42,45 @@ abstract contract HyperdriveBase is MultiToken {
     // @notice The share price at the time the pool was created.
     uint256 internal immutable initialSharePrice;
 
-    /// @notice The reserves and the buffers. This is the primary state used for
-    ///         pricing trades and maintaining solvency.
-    IHyperdrive.MarketState internal marketState;
+    /// TWAP ///
 
-    /// @notice The state corresponding to the withdraw pool, expressed as a struct.
-    IHyperdrive.WithdrawPool internal withdrawPool;
-
-    /// @notice The fee percentages to be applied to the trade equation
-    IHyperdrive.Fees internal fees;
-
-    /// @notice Hyperdrive positions are bucketed into checkpoints, which
-    ///         allows us to avoid poking in any period that has LP or trading
-    ///         activity. The checkpoints contain the starting share price from
-    ///         the checkpoint as well as aggregate volume values.
-    mapping(uint256 => IHyperdrive.Checkpoint) public checkpoints;
-
-    /// @notice Addresses approved in this mapping can pause all deposits into
-    ///         the contract and other non essential functionality.
-    mapping(address => bool) public pausers;
-
-    // TODO: This shouldn't be public.
-    //
-    // Governance fees that haven't been collected yet denominated in shares.
-    uint256 public governanceFeesAccrued;
-
-    // TODO: This shouldn't be public.
-    //
-    // TODO: Should this be immutable?
-    //
-    // The address that receives governance fees.
-    address public governance;
-
-    /// @notice A struct to hold packed oracle entries
-    struct OracleData {
-        // The timestamp this data was added at
-        uint32 timestamp;
-        // The running sun of all previous data entries weighted by time
-        uint224 data;
-    }
-
-    /// @notice This buffer contains the timestamps and data recorded in the oracle
-    OracleData[] internal buffer;
-    /// @notice The struct holding the head and last timestamp
-    IHyperdrive.OracleState internal oracle;
     /// @notice The amount of time between oracle data sample updates
     uint256 internal immutable updateGap;
 
     /// @notice Initializes a Hyperdrive pool.
     /// @param _config The configuration of the Hyperdrive pool.
+    /// @param _dataProvider The address of the data provider.
     /// @param _linkerCodeHash The hash of the ERC20 linker contract's
     ///        constructor code.
     /// @param _linkerFactory The address of the factory which is used to deploy
     ///        the ERC20 linker contracts.
     constructor(
-        IHyperdrive.HyperdriveConfig memory _config,
+        IHyperdrive.PoolConfig memory _config,
+        address _dataProvider,
         bytes32 _linkerCodeHash,
         address _linkerFactory
-    ) MultiToken(_linkerCodeHash, _linkerFactory) {
+    ) MultiToken(_dataProvider, _linkerCodeHash, _linkerFactory) {
         // Initialize the base token address.
         baseToken = _config.baseToken;
 
         // Initialize the time configurations. There must be at least one
         // checkpoint per term to avoid having a position duration of zero.
-        if (_config.checkpointsPerTerm == 0) {
-            revert Errors.InvalidCheckpointsPerTerm();
+        if (_config.checkpointDuration == 0) {
+            revert Errors.InvalidCheckpointDuration();
         }
-        positionDuration =
-            _config.checkpointsPerTerm *
-            _config.checkpointDuration;
         checkpointDuration = _config.checkpointDuration;
+        if (
+            _config.positionDuration < _config.checkpointDuration ||
+            _config.positionDuration % _config.checkpointDuration != 0
+        ) {
+            revert Errors.InvalidPositionDuration();
+        }
+        positionDuration = _config.positionDuration;
         timeStretch = _config.timeStretch;
         initialSharePrice = _config.initialSharePrice;
         fees = _config.fees;
         governance = _config.governance;
+
         // Initialize the oracle
         updateGap = _config.updateGap;
         for (uint256 i = 0; i < _config.oracleSize; i++) {
@@ -157,6 +123,29 @@ abstract contract HyperdriveBase is MultiToken {
         virtual
         returns (uint256 sharePrice);
 
+    /// Pause ///
+
+    ///@notice Allows governance to set the ability of an address to pause deposits
+    ///@param who The address to change
+    ///@param status The new pauser status
+    function setPauser(address who, bool status) external {
+        if (msg.sender != governance) revert Errors.Unauthorized();
+        pausers[who] = status;
+    }
+
+    ///@notice Allows an authorized address to pause this contract
+    ///@param status True to pause all deposits and false to unpause them
+    function pause(bool status) external {
+        if (!pausers[msg.sender]) revert Errors.Unauthorized();
+        marketState.isPaused = status;
+    }
+
+    ///@notice Blocks a function execution if the contract is paused
+    modifier isNotPaused() {
+        if (marketState.isPaused) revert Errors.Paused();
+        _;
+    }
+
     /// Checkpoint ///
 
     /// @notice Allows anyone to mint a new checkpoint.
@@ -197,75 +186,16 @@ abstract contract HyperdriveBase is MultiToken {
     {
         return
             IHyperdrive.PoolConfig({
+                baseToken: baseToken,
                 initialSharePrice: initialSharePrice,
                 positionDuration: positionDuration,
                 checkpointDuration: checkpointDuration,
                 timeStretch: timeStretch,
-                flatFee: fees.flat,
-                curveFee: fees.curve,
-                governanceFee: fees.governance
+                governance: governance,
+                fees: fees,
+                updateGap: updateGap,
+                oracleSize: buffer.length
             });
-    }
-
-    /// @notice Gets info about the pool's reserves and other state that is
-    ///         important to evaluate potential trades.
-    /// @return The PoolInfo struct.
-    function getPoolInfo() external view returns (IHyperdrive.PoolInfo memory) {
-        return
-            IHyperdrive.PoolInfo({
-                shareReserves: marketState.shareReserves,
-                bondReserves: marketState.bondReserves,
-                lpTotalSupply: totalSupply[AssetId._LP_ASSET_ID],
-                sharePrice: _pricePerShare(),
-                longsOutstanding: marketState.longsOutstanding,
-                longAverageMaturityTime: marketState.longAverageMaturityTime,
-                shortsOutstanding: marketState.shortsOutstanding,
-                shortAverageMaturityTime: marketState.shortAverageMaturityTime,
-                shortBaseVolume: marketState.shortBaseVolume,
-                withdrawalSharesReadyToWithdraw: withdrawPool.readyToWithdraw,
-                withdrawalSharesProceeds: withdrawPool.proceeds
-            });
-    }
-
-    ///@notice Allows governance to set the ability of an address to pause deposits
-    ///@param who The address to change
-    ///@param status The new pauser status
-    function setPauser(address who, bool status) external {
-        if (msg.sender != governance) revert Errors.Unauthorized();
-        pausers[who] = status;
-    }
-
-    ///@notice Allows an authorized address to pause this contract
-    ///@param status True to pause all deposits and false to unpause them
-    function pause(bool status) external {
-        if (!pausers[msg.sender]) revert Errors.Unauthorized();
-        marketState.isPaused = status;
-    }
-
-    ///@notice Blocks a function execution if the contract is paused
-    modifier isNotPaused() {
-        if (marketState.isPaused) revert Errors.Paused();
-        _;
-    }
-
-    ///@notice Allows plugin data libs to provide getters or other complex logic instead of the main
-    ///@param _slots The storage slots the caller wants the data from
-    ///@return A raw array of loaded data
-    function load(
-        uint256[] calldata _slots
-    ) external view returns (bytes32[] memory) {
-        bytes32[] memory loaded = new bytes32[](_slots.length);
-
-        // Iterate on requested loads and then do them
-        for (uint256 i = 0; i < _slots.length; i++) {
-            uint256 slot = _slots[i];
-            bytes32 data;
-            assembly ("memory-safe") {
-                data := sload(slot)
-            }
-            loaded[i] = data;
-        }
-        return loaded;
     }
 
     /// Helpers ///

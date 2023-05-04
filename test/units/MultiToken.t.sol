@@ -1,18 +1,28 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import { BaseTest } from "test/utils/BaseTest.sol";
-import { MockMultiToken } from "contracts/test/MockMultiToken.sol";
 import { ForwarderFactory } from "contracts/src/ForwarderFactory.sol";
+import { MultiTokenDataProvider } from "contracts/src/MultiTokenDataProvider.sol";
+import { MockMultiToken, IMockMultiToken } from "contracts/test/MockMultiToken.sol";
+import { BaseTest } from "test/utils/BaseTest.sol";
 
 contract MultiTokenTest is BaseTest {
-    MockMultiToken multiToken;
+    IMockMultiToken multiToken;
 
     function setUp() public override {
         super.setUp();
         vm.startPrank(deployer);
         forwarderFactory = new ForwarderFactory();
-        multiToken = new MockMultiToken(bytes32(0), address(forwarderFactory));
+        address dataProvider = address(new MultiTokenDataProvider());
+        multiToken = IMockMultiToken(
+            address(
+                new MockMultiToken(
+                    dataProvider,
+                    bytes32(0),
+                    address(forwarderFactory)
+                )
+            )
+        );
         vm.stopPrank();
     }
 
