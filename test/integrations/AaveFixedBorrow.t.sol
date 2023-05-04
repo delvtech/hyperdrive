@@ -51,29 +51,33 @@ contract AaveFixedBorrowTest is BaseTest {
         faucet.mint(address(dai), deployer, 50_000e18);
 
         // Deploy the Hyperdrive instance.
+        IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
+            baseToken: dai,
+            initialSharePrice: FixedPointMath.ONE_18,
+            positionDuration: 365 days, // 1 year term
+            checkpointDuration: 1 days, // 1 day checkpoints
+            timeStretch: HyperdriveUtils.calculateTimeStretch(0.02e18), // 2% APR time stretch
+            governance: address(0),
+            fees: IHyperdrive.Fees({
+                curve: 0.1e18, // 10% curve fee
+                flat: 0.05e18, // 5% flat fee
+                governance: 0.1e18 // 10% governance fee
+            }),
+            updateGap: 0,
+            oracleSize: 2
+        });
         address dataProvider = address(
-            new MakerDsrHyperdriveDataProvider(dsrManager)
+            new MakerDsrHyperdriveDataProvider(
+                config,
+                bytes32(0),
+                address(0),
+                dsrManager
+            )
         );
         hyperdrive = IHyperdrive(
             address(
                 new MakerDsrHyperdrive(
-                    IHyperdrive.PoolConfig({
-                        baseToken: dai,
-                        initialSharePrice: FixedPointMath.ONE_18,
-                        positionDuration: 365 days, // 1 year term
-                        checkpointDuration: 1 days, // 1 day checkpoints
-                        timeStretch: HyperdriveUtils.calculateTimeStretch(
-                            0.02e18
-                        ), // 2% APR time stretch
-                        governance: address(0),
-                        fees: IHyperdrive.Fees({
-                            curve: 0.1e18, // 10% curve fee
-                            flat: 0.05e18, // 5% flat fee
-                            governance: 0.1e18 // 10% governance fee
-                        }),
-                        updateGap: 0,
-                        oracleSize: 2
-                    }),
+                    config,
                     dataProvider,
                     bytes32(0),
                     address(0),

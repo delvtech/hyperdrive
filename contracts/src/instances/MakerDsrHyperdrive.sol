@@ -49,7 +49,7 @@ contract MakerDsrHyperdrive is Hyperdrive {
 
         dsrManager = _dsrManager;
         pot = Pot(dsrManager.pot());
-        baseToken.approve(address(dsrManager), type(uint256).max);
+        _baseToken.approve(address(dsrManager), type(uint256).max);
     }
 
     /// @notice Transfers base or shares from the user and commits it to the yield source.
@@ -67,7 +67,7 @@ contract MakerDsrHyperdrive is Hyperdrive {
         }
 
         // Transfer the base token from the user to this contract
-        bool success = baseToken.transferFrom(
+        bool success = _baseToken.transferFrom(
             msg.sender,
             address(this),
             amount

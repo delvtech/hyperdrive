@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { HyperdriveDataProvider } from "../HyperdriveDataProvider.sol";
+import { MultiTokenDataProvider } from "../MultiTokenDataProvider.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { Errors } from "../libraries/Errors.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
@@ -13,7 +14,10 @@ import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract AaveHyperdriveDataProvider is HyperdriveDataProvider {
+contract AaveHyperdriveDataProvider is
+    MultiTokenDataProvider,
+    HyperdriveDataProvider
+{
     using FixedPointMath for uint256;
 
     // The aave deployment details, the aave pool
@@ -22,8 +26,18 @@ contract AaveHyperdriveDataProvider is HyperdriveDataProvider {
     uint256 internal totalShares;
 
     /// @notice Initializes the data provider.
+    /// @param _linkerCodeHash_ The hash of the erc20 linker contract deploy code
+    /// @param _factory_ The factory which is used to deploy the linking contracts
     /// @param _aToken The assets aToken.
-    constructor(IERC20 _aToken) {
+    constructor(
+        IHyperdrive.PoolConfig memory _config,
+        bytes32 _linkerCodeHash_,
+        address _factory_,
+        IERC20 _aToken
+    )
+        HyperdriveDataProvider(_config)
+        MultiTokenDataProvider(_linkerCodeHash_, _factory_)
+    {
         aToken = _aToken;
     }
 

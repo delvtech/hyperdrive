@@ -14,26 +14,26 @@ import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveTWAP is HyperdriveBase {
-    using FixedPointMath for *;
+    using FixedPointMath for uint256;
 
     /// @notice Records data into a time weighted sum oracle entry. This function only writes to the oracle
     ///         if some amount of time has passed since the previous update.
     /// @param price This is the data to be recorded into the oracle. Warn - the data should be able to fit
     ///              into 2^224 after being summed and so should be relatively small.
     function recordPrice(uint256 price) internal {
-        uint256 lastTimestamp = uint256(oracle.lastTimestamp);
-        uint256 head = uint256(oracle.head);
+        uint256 lastTimestamp = uint256(_oracle.lastTimestamp);
+        uint256 head = uint256(_oracle.head);
 
         // If there's no need to update we return
-        if (lastTimestamp + updateGap > block.timestamp) {
+        if (lastTimestamp + _updateGap > block.timestamp) {
             return;
         }
 
         // To do a cumulative sum we load the previous sum
-        uint256 toRead = head == 0 ? buffer.length - 1 : head - 1;
+        uint256 toRead = head == 0 ? _buffer.length - 1 : head - 1;
         // Load from storage
-        uint256 previousTime = uint256(buffer[toRead].timestamp);
-        uint256 previousSum = uint256(buffer[toRead].data);
+        uint256 previousTime = uint256(_buffer[toRead].timestamp);
+        uint256 previousSum = uint256(_buffer[toRead].data);
 
         // Calculate sum
         uint256 delta = block.timestamp - previousTime;
@@ -45,50 +45,12 @@ abstract contract HyperdriveTWAP is HyperdriveBase {
         }
 
         // If we are updating first we calculate the index to update
-        uint256 toUpdate = (uint256(head) + 1) % buffer.length;
+        uint256 toUpdate = (uint256(head) + 1) % _buffer.length;
         // Now we update the slot with this data
-        buffer[toUpdate] = OracleData(uint32(block.timestamp), uint224(sum));
-        oracle = IHyperdrive.OracleState(
+        _buffer[toUpdate] = OracleData(uint32(block.timestamp), uint224(sum));
+        _oracle = IHyperdrive.OracleState(
             uint128(toUpdate),
             uint128(block.timestamp)
         );
-    }
-
-    /// @notice Returns the average price between the last recorded timestamp looking a user determined
-    ///         time into the past
-    /// @param period The gap in our time sample.
-    /// @return The average price in that time
-    function query(uint256 period) external view returns (uint256) {
-        // Load the storage data
-        uint256 lastTimestamp = uint256(oracle.lastTimestamp);
-        uint256 head = uint256(oracle.head);
-
-        OracleData memory currentData = buffer[head];
-        uint256 targetTime = uint256(lastTimestamp) - period;
-        // Get the index of the oldest element in the buffer.
-        uint256 lastIndex = (head + 1) % buffer.length;
-
-        // We search for the greatest timestamp before the last, note this is not
-        // an efficient search as we expect the buffer to be small.
-        uint256 currentIndex = head == 0 ? buffer.length - 1 : head - 1;
-        OracleData memory oldData = OracleData(0, 0);
-        while (lastIndex != currentIndex) {
-            // If the timestamp of the current index has older data than the target
-            // this is the newest data which is older than the target so we break
-            if (uint256(buffer[currentIndex].timestamp) < targetTime) {
-                oldData = buffer[currentIndex];
-                break;
-            }
-            currentIndex = currentIndex == 0 ? buffer.length : currentIndex - 1;
-        }
-
-        if (oldData.timestamp == 0) revert Errors.QueryOutOfRange();
-
-        // To get twap in period we take the increase in the sum then divide by
-        // the amount of time passed
-        uint256 deltaSum = uint256(currentData.data) - uint256(oldData.data);
-        uint256 deltaTime = uint256(currentData.timestamp) -
-            uint256(oldData.timestamp);
-        return (deltaSum.divDown(deltaTime));
     }
 }

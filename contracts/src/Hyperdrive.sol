@@ -44,7 +44,7 @@ abstract contract Hyperdrive is
     /// @param _checkpointTime The time of the checkpoint to create.
     function checkpoint(uint256 _checkpointTime) public override {
         // If the checkpoint has already been set, return early.
-        if (checkpoints[_checkpointTime].sharePrice != 0) {
+        if (_checkpoints[_checkpointTime].sharePrice != 0) {
             return;
         }
 
@@ -53,7 +53,7 @@ abstract contract Hyperdrive is
         // revert.
         uint256 latestCheckpoint = _latestCheckpoint();
         if (
-            _checkpointTime % checkpointDuration != 0 ||
+            _checkpointTime % _checkpointDuration != 0 ||
             latestCheckpoint < _checkpointTime
         ) {
             revert Errors.InvalidCheckpointTime();
@@ -65,8 +65,12 @@ abstract contract Hyperdrive is
         if (_checkpointTime == latestCheckpoint) {
             _applyCheckpoint(latestCheckpoint, _pricePerShare());
         } else {
-            for (uint256 time = _checkpointTime; ; time += checkpointDuration) {
-                uint256 closestSharePrice = checkpoints[time].sharePrice;
+            for (
+                uint256 time = _checkpointTime;
+                ;
+                time += _checkpointDuration
+            ) {
+                uint256 closestSharePrice = _checkpoints[time].sharePrice;
                 if (time == latestCheckpoint) {
                     closestSharePrice = _pricePerShare();
                 }
@@ -93,14 +97,14 @@ abstract contract Hyperdrive is
     ) internal override returns (uint256 openSharePrice) {
         // Return early if the checkpoint has already been updated.
         if (
-            checkpoints[_checkpointTime].sharePrice != 0 ||
+            _checkpoints[_checkpointTime].sharePrice != 0 ||
             _checkpointTime > block.timestamp
         ) {
-            return checkpoints[_checkpointTime].sharePrice;
+            return _checkpoints[_checkpointTime].sharePrice;
         }
 
         // Create the share price checkpoint.
-        checkpoints[_checkpointTime].sharePrice = _sharePrice.toUint128();
+        _checkpoints[_checkpointTime].sharePrice = _sharePrice.toUint128();
 
         // Pay out the long withdrawal pool for longs that have matured.
         uint256 maturedLongsAmount = _totalSupply[
@@ -132,6 +136,6 @@ abstract contract Hyperdrive is
             );
         }
 
-        return checkpoints[_checkpointTime].sharePrice;
+        return _checkpoints[_checkpointTime].sharePrice;
     }
 }

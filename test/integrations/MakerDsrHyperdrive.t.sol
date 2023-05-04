@@ -3,10 +3,9 @@ pragma solidity ^0.8.18;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { ForwarderFactory } from "contracts/src/ForwarderFactory.sol";
-import { MakerDsrHyperdriveDataProvider } from "contracts/src/instances/MakerDsrHyperdriveDataProvider.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
-import { IMockMakerDsrHyperdrive, MockMakerDsrHyperdrive, DsrManager } from "contracts/test/MockMakerDsrHyperdrive.sol";
+import { IMockMakerDsrHyperdrive, MockMakerDsrHyperdrive, MockMakerDsrHyperdriveDataProvider, DsrManager } from "contracts/test/MockMakerDsrHyperdrive.sol";
 import { BaseTest } from "test/utils/BaseTest.sol";
 
 contract MakerDsrHyperdrive is BaseTest {
@@ -27,7 +26,7 @@ contract MakerDsrHyperdrive is BaseTest {
 
         vm.startPrank(deployer);
         address dataProvider = address(
-            new MakerDsrHyperdriveDataProvider(dsrManager)
+            new MockMakerDsrHyperdriveDataProvider(dsrManager)
         );
         hyperdrive = IMockMakerDsrHyperdrive(
             address(new MockMakerDsrHyperdrive(dataProvider, dsrManager))

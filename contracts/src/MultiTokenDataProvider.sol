@@ -11,6 +11,26 @@ import { IMultiTokenRead } from "./interfaces/IMultiTokenRead.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract MultiTokenDataProvider is MultiTokenStorage, IMultiTokenRead {
+    /// @notice Initializes the MultiToken's data provider.
+    /// @param _linkerCodeHash_ The hash of the erc20 linker contract deploy code
+    /// @param _factory_ The factory which is used to deploy the linking contracts
+    constructor(
+        bytes32 _linkerCodeHash_,
+        address _factory_
+    ) MultiTokenStorage(_linkerCodeHash_, _factory_) {}
+
+    /// @notice Gets the code hash of the erc20 linker contract.
+    /// @return The code hash.
+    function linkerCodeHash() external view returns (bytes32) {
+        _revert(abi.encode(_linkerCodeHash));
+    }
+
+    /// @notice Gets the factory which is used to deploy the linking contracts.
+    /// @return The linking factory.
+    function factory() external view returns (address) {
+        _revert(abi.encode(_factory));
+    }
+
     /// @notice Gets an account's balance of a sub-token.
     /// @param tokenId The sub-token id.
     /// @param account The account.

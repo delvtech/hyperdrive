@@ -33,7 +33,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         bool _asUnderlying
     ) external {
         // Ensure that the pool hasn't been initialized yet.
-        if (marketState.isInitialized) {
+        if (_marketState.isInitialized) {
             revert Errors.PoolAlreadyInitialized();
         }
 
@@ -47,23 +47,23 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
 
         // Set the initialized state to true.
-        marketState.isInitialized = true;
+        _marketState.isInitialized = true;
 
         // Update the reserves. The bond reserves are calculated so that the
         // pool is initialized with the target APR.
-        marketState.shareReserves = shares.toUint128();
+        _marketState.shareReserves = shares.toUint128();
         uint256 unadjustedBondReserves = HyperdriveMath
             .calculateInitialBondReserves(
                 shares,
                 sharePrice,
-                initialSharePrice,
+                _initialSharePrice,
                 _apr,
-                positionDuration,
-                timeStretch
+                _positionDuration,
+                _timeStretch
             );
         uint256 initialLpShares = unadjustedBondReserves +
             sharePrice.mulDown(shares);
-        marketState.bondReserves = (unadjustedBondReserves + initialLpShares)
+        _marketState.bondReserves = (unadjustedBondReserves + initialLpShares)
             .toUint128();
 
         // Mint LP shares to the initializer.
@@ -94,11 +94,11 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
 
         // Enforce the slippage guard.
         uint256 apr = HyperdriveMath.calculateAPRFromReserves(
-            marketState.shareReserves,
-            marketState.bondReserves,
-            initialSharePrice,
-            positionDuration,
-            timeStretch
+            _marketState.shareReserves,
+            _marketState.bondReserves,
+            _initialSharePrice,
+            _positionDuration,
+            _timeStretch
         );
         if (apr < _minApr || apr > _maxApr) revert Errors.InvalidApr();
 
@@ -121,7 +121,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // we're not going to tranche.
         uint256 withdrawalSharesOutstanding = _totalSupply[
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
-        ] - withdrawPool.readyToWithdraw;
+        ] - _withdrawPool.readyToWithdraw;
         uint256 lpTotalSupply = _totalSupply[AssetId._LP_ASSET_ID] +
             withdrawalSharesOutstanding;
 
@@ -131,22 +131,24 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             // Calculate the present value before updating the reserves.
             HyperdriveMath.PresentValueParams memory params = HyperdriveMath
                 .PresentValueParams({
-                    shareReserves: marketState.shareReserves,
-                    bondReserves: marketState.bondReserves,
+                    shareReserves: _marketState.shareReserves,
+                    bondReserves: _marketState.bondReserves,
                     sharePrice: sharePrice,
-                    initialSharePrice: initialSharePrice,
-                    timeStretch: timeStretch,
-                    longsOutstanding: marketState.longsOutstanding,
+                    initialSharePrice: _initialSharePrice,
+                    timeStretch: _timeStretch,
+                    longsOutstanding: _marketState.longsOutstanding,
                     longAverageTimeRemaining: _calculateTimeRemaining(
-                        uint256(marketState.longAverageMaturityTime).divUp(1e36) // scale to seconds
-                    ),
-                    shortsOutstanding: marketState.shortsOutstanding,
-                    shortAverageTimeRemaining: _calculateTimeRemaining(
-                        uint256(marketState.shortAverageMaturityTime).divUp(
+                        uint256(_marketState.longAverageMaturityTime).divUp(
                             1e36
                         ) // scale to seconds
                     ),
-                    shortBaseVolume: marketState.shortBaseVolume
+                    shortsOutstanding: _marketState.shortsOutstanding,
+                    shortAverageTimeRemaining: _calculateTimeRemaining(
+                        uint256(_marketState.shortAverageMaturityTime).divUp(
+                            1e36
+                        ) // scale to seconds
+                    ),
+                    shortBaseVolume: _marketState.shortBaseVolume
                 });
             uint256 startingPresentValue = HyperdriveMath.calculatePresentValue(
                 params
@@ -159,8 +161,8 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             // Add the liquidity to the pool's reserves and calculate the new
             // present value.
             _updateLiquidity(int256(shares));
-            params.shareReserves = marketState.shareReserves;
-            params.bondReserves = marketState.bondReserves;
+            params.shareReserves = _marketState.shareReserves;
+            params.bondReserves = _marketState.bondReserves;
             endingPresentValue = HyperdriveMath.calculatePresentValue(params);
 
             // The LP shares minted to the LP is derived by solving for the
@@ -235,7 +237,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         uint256 activeLpTotalSupply = _totalSupply[AssetId._LP_ASSET_ID];
         uint256 withdrawalSharesOutstanding = _totalSupply[
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
-        ] - withdrawPool.readyToWithdraw;
+        ] - _withdrawPool.readyToWithdraw;
         uint256 lpTotalSupply = activeLpTotalSupply +
             withdrawalSharesOutstanding;
         _burn(AssetId._LP_ASSET_ID, msg.sender, _shares);
@@ -243,20 +245,20 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // Calculate the starting present value of the pool.
         HyperdriveMath.PresentValueParams memory params = HyperdriveMath
             .PresentValueParams({
-                shareReserves: marketState.shareReserves,
-                bondReserves: marketState.bondReserves,
+                shareReserves: _marketState.shareReserves,
+                bondReserves: _marketState.bondReserves,
                 sharePrice: sharePrice,
-                initialSharePrice: initialSharePrice,
-                timeStretch: timeStretch,
-                longsOutstanding: marketState.longsOutstanding,
+                initialSharePrice: _initialSharePrice,
+                timeStretch: _timeStretch,
+                longsOutstanding: _marketState.longsOutstanding,
                 longAverageTimeRemaining: _calculateTimeRemaining(
-                    uint256(marketState.longAverageMaturityTime).divUp(1e36) // scale to seconds
+                    uint256(_marketState.longAverageMaturityTime).divUp(1e36) // scale to seconds
                 ),
-                shortsOutstanding: marketState.shortsOutstanding,
+                shortsOutstanding: _marketState.shortsOutstanding,
                 shortAverageTimeRemaining: _calculateTimeRemaining(
-                    uint256(marketState.shortAverageMaturityTime).divUp(1e36) // scale to seconds
+                    uint256(_marketState.shortAverageMaturityTime).divUp(1e36) // scale to seconds
                 ),
-                shortBaseVolume: marketState.shortBaseVolume
+                shortBaseVolume: _marketState.shortBaseVolume
             });
         uint256 startingPresentValue = HyperdriveMath.calculatePresentValue(
             params
@@ -269,16 +271,16 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // is given by:
         //
         // idle = (z - (o_l / c_0)) * (dl / l_a)
-        uint256 shareProceeds = marketState.shareReserves;
-        if (marketState.longsOutstanding > 0) {
-            shareProceeds -= uint256(marketState.longsOutstanding).divDown(
-                marketState.longOpenSharePrice
+        uint256 shareProceeds = _marketState.shareReserves;
+        if (_marketState.longsOutstanding > 0) {
+            shareProceeds -= uint256(_marketState.longsOutstanding).divDown(
+                _marketState.longOpenSharePrice
             );
         }
         shareProceeds = shareProceeds.mulDivDown(_shares, activeLpTotalSupply);
         _updateLiquidity(-int256(shareProceeds));
-        params.shareReserves = marketState.shareReserves;
-        params.bondReserves = marketState.bondReserves;
+        params.shareReserves = _marketState.shareReserves;
+        params.bondReserves = _marketState.bondReserves;
         uint256 endingPresentValue = HyperdriveMath.calculatePresentValue(
             params
         );
@@ -355,9 +357,9 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // Clamp the shares to the total amount of shares ready for withdrawal
         // to avoid unnecessary reverts. We exit early if the user has no shares
         // available to redeem.
-        _shares = _shares <= withdrawPool.readyToWithdraw
+        _shares = _shares <= _withdrawPool.readyToWithdraw
             ? _shares
-            : withdrawPool.readyToWithdraw;
+            : _withdrawPool.readyToWithdraw;
         if (_shares == 0) return 0;
 
         // We burn the shares from the user
@@ -369,13 +371,13 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
 
         // The LP gets the pro-rata amount of the collected proceeds.
         uint256 proceeds = _shares.mulDivDown(
-            uint128(withdrawPool.proceeds),
-            uint128(withdrawPool.readyToWithdraw)
+            uint128(_withdrawPool.proceeds),
+            uint128(_withdrawPool.readyToWithdraw)
         );
 
         // Apply the update to the withdrawal pool.
-        withdrawPool.readyToWithdraw -= uint128(_shares);
-        withdrawPool.proceeds -= uint128(proceeds);
+        _withdrawPool.readyToWithdraw -= uint128(_shares);
+        _withdrawPool.proceeds -= uint128(proceeds);
 
         // Withdraw for the user
         (_proceeds, ) = _withdraw(proceeds, _destination, _asUnderlying);
@@ -398,11 +400,11 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // only remaining positions are shorts. Otherwise, we update the pool
         // by increasing the share reserves and preserving the previous ratio of
         // share reserves to bond reserves.
-        uint256 shareReserves = marketState.shareReserves;
+        uint256 shareReserves = _marketState.shareReserves;
         if (_shareReservesDelta != 0 && shareReserves > 0) {
             int256 updatedShareReserves = int256(shareReserves) +
                 _shareReservesDelta;
-            marketState.shareReserves = uint256(
+            _marketState.shareReserves = uint256(
                 // TODO: This seems to be masking a numerical problem. This
                 // should be investigated more.
                 //
@@ -410,8 +412,8 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
                 // calculations which results in this clamping being required.
                 updatedShareReserves >= 0 ? updatedShareReserves : int256(0)
             ).toUint128();
-            marketState.bondReserves = uint256(marketState.bondReserves)
-                .mulDivDown(marketState.shareReserves, shareReserves)
+            _marketState.bondReserves = uint256(_marketState.bondReserves)
+                .mulDivDown(_marketState.shareReserves, shareReserves)
                 .toUint128();
         }
     }
@@ -429,20 +431,20 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
     ) internal {
         uint256 presentValue = HyperdriveMath.calculatePresentValue(
             HyperdriveMath.PresentValueParams({
-                shareReserves: marketState.shareReserves,
-                bondReserves: marketState.bondReserves,
+                shareReserves: _marketState.shareReserves,
+                bondReserves: _marketState.bondReserves,
                 sharePrice: _sharePrice,
-                initialSharePrice: initialSharePrice,
-                timeStretch: timeStretch,
-                longsOutstanding: marketState.longsOutstanding,
+                initialSharePrice: _initialSharePrice,
+                timeStretch: _timeStretch,
+                longsOutstanding: _marketState.longsOutstanding,
                 longAverageTimeRemaining: _calculateTimeRemaining(
-                    uint256(marketState.longAverageMaturityTime).divUp(1e36) // scale to seconds
+                    uint256(_marketState.longAverageMaturityTime).divUp(1e36) // scale to seconds
                 ),
-                shortsOutstanding: marketState.shortsOutstanding,
+                shortsOutstanding: _marketState.shortsOutstanding,
                 shortAverageTimeRemaining: _calculateTimeRemaining(
-                    uint256(marketState.shortAverageMaturityTime).divUp(1e36) // scale to seconds
+                    uint256(_marketState.shortAverageMaturityTime).divUp(1e36) // scale to seconds
                 ),
-                shortBaseVolume: marketState.shortBaseVolume
+                shortBaseVolume: _marketState.shortBaseVolume
             })
         );
         uint256 lpTotalSupply = _totalSupply[AssetId._LP_ASSET_ID] +
@@ -495,8 +497,8 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
                 maxSharesReleased
             );
         }
-        withdrawPool.readyToWithdraw += uint128(sharesReleased);
-        withdrawPool.proceeds += uint128(withdrawalPoolProceeds);
+        _withdrawPool.readyToWithdraw += uint128(sharesReleased);
+        _withdrawPool.proceeds += uint128(withdrawalPoolProceeds);
 
         // Remove the withdrawal pool proceeds from the reserves.
         _updateLiquidity(-int256(withdrawalPoolProceeds));

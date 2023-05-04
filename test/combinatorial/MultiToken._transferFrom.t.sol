@@ -16,7 +16,9 @@ contract MultiToken__transferFrom is CombinatorialTest {
         // MultiToken deployment
         super.setUp();
         vm.startPrank(deployer);
-        address dataProvider = address(new MultiTokenDataProvider());
+        address dataProvider = address(
+            new MultiTokenDataProvider(bytes32(0), address(forwarderFactory))
+        );
         multiToken = IMockMultiToken(
             address(
                 new MockMultiToken(

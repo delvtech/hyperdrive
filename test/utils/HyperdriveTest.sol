@@ -36,22 +36,20 @@ contract HyperdriveTest is BaseTest {
         });
         // Instantiate Hyperdrive.
         uint256 apr = 0.05e18;
-        address dataProvider = address(
-            new MockHyperdriveDataProvider(baseToken)
-        );
+        IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
+            baseToken: baseToken,
+            initialSharePrice: INITIAL_SHARE_PRICE,
+            positionDuration: POSITION_DURATION,
+            checkpointDuration: CHECKPOINT_DURATION,
+            timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
+            governance: governance,
+            fees: fees,
+            oracleSize: 2,
+            updateGap: 0
+        });
+        address dataProvider = address(new MockHyperdriveDataProvider(config));
         hyperdrive = IHyperdrive(
-            address(
-                new MockHyperdrive(
-                    dataProvider,
-                    baseToken,
-                    INITIAL_SHARE_PRICE,
-                    POSITION_DURATION,
-                    CHECKPOINT_DURATION,
-                    HyperdriveUtils.calculateTimeStretch(apr),
-                    fees,
-                    governance
-                )
-            )
+            address(new MockHyperdrive(config, dataProvider))
         );
         vm.stopPrank();
         vm.startPrank(governance);
@@ -77,23 +75,20 @@ contract HyperdriveTest is BaseTest {
             flat: flatFee,
             governance: governanceFee
         });
-
-        address dataProvider = address(
-            new MockHyperdriveDataProvider(baseToken)
-        );
+        IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
+            baseToken: baseToken,
+            initialSharePrice: INITIAL_SHARE_PRICE,
+            positionDuration: POSITION_DURATION,
+            checkpointDuration: CHECKPOINT_DURATION,
+            timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
+            governance: governance,
+            fees: fees,
+            oracleSize: 2,
+            updateGap: 0
+        });
+        address dataProvider = address(new MockHyperdriveDataProvider(config));
         hyperdrive = IHyperdrive(
-            address(
-                new MockHyperdrive(
-                    dataProvider,
-                    baseToken,
-                    INITIAL_SHARE_PRICE,
-                    POSITION_DURATION,
-                    CHECKPOINT_DURATION,
-                    HyperdriveUtils.calculateTimeStretch(apr),
-                    fees,
-                    governance
-                )
-            )
+            address(new MockHyperdrive(config, dataProvider))
         );
     }
 

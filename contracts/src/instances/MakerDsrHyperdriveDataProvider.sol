@@ -3,12 +3,16 @@ pragma solidity ^0.8.18;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { HyperdriveDataProvider } from "../HyperdriveDataProvider.sol";
+import { MultiTokenDataProvider } from "../MultiTokenDataProvider.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { Errors } from "../libraries/Errors.sol";
 import { Pot, DsrManager } from "../interfaces/IMaker.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 
-contract MakerDsrHyperdriveDataProvider is HyperdriveDataProvider {
+contract MakerDsrHyperdriveDataProvider is
+    MultiTokenDataProvider,
+    HyperdriveDataProvider
+{
     using FixedPointMath for uint256;
 
     // @notice The shares created by this pool, starts at 1 to one with
@@ -25,8 +29,19 @@ contract MakerDsrHyperdriveDataProvider is HyperdriveDataProvider {
     uint256 internal constant RAY = 1e27;
 
     /// @notice Initializes the data provider.
+    /// @param _config The configuration of the Hyperdrive pool.
+    /// @param _linkerCodeHash_ The hash of the erc20 linker contract deploy code
+    /// @param _factory_ The factory which is used to deploy the linking contracts
     /// @param _dsrManager The "dai savings rate" manager contract
-    constructor(DsrManager _dsrManager) {
+    constructor(
+        IHyperdrive.PoolConfig memory _config,
+        bytes32 _linkerCodeHash_,
+        address _factory_,
+        DsrManager _dsrManager
+    )
+        HyperdriveDataProvider(_config)
+        MultiTokenDataProvider(_linkerCodeHash_, _factory_)
+    {
         dsrManager = _dsrManager;
         pot = Pot(dsrManager.pot());
     }
