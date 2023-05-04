@@ -1,6 +1,3 @@
-import "./erc20.spec";
-import "./MathSummaries.spec";
-
 rule sanity(method f) {
     env e;
     calldataarg args;
