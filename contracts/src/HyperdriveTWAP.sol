@@ -29,11 +29,9 @@ abstract contract HyperdriveTWAP is HyperdriveBase {
             return;
         }
 
-        // To do a cumulative sum we load the previous sum
-        uint256 toRead = head == 0 ? buffer.length - 1 : head - 1;
-        // Load from storage
-        uint256 previousTime = uint256(buffer[toRead].timestamp);
-        uint256 previousSum = uint256(buffer[toRead].data);
+        // Load the current data from storage
+        uint256 previousTime = uint256(buffer[head].timestamp);
+        uint256 previousSum = uint256(buffer[head].data);
 
         // Calculate sum
         uint256 delta = block.timestamp - previousTime;
@@ -65,21 +63,21 @@ abstract contract HyperdriveTWAP is HyperdriveBase {
 
         OracleData memory currentData = buffer[head];
         uint256 targetTime = uint256(lastTimestamp) - period;
-        // Get the index of the oldest element in the buffer.
-        uint256 lastIndex = (head + 1) % buffer.length;
 
         // We search for the greatest timestamp before the last, note this is not
         // an efficient search as we expect the buffer to be small.
         uint256 currentIndex = head == 0 ? buffer.length - 1 : head - 1;
         OracleData memory oldData = OracleData(0, 0);
-        while (lastIndex != currentIndex) {
+        while (currentIndex != head) {
             // If the timestamp of the current index has older data than the target
             // this is the newest data which is older than the target so we break
-            if (uint256(buffer[currentIndex].timestamp) < targetTime) {
+            if (uint256(buffer[currentIndex].timestamp) <= targetTime) {
                 oldData = buffer[currentIndex];
                 break;
             }
-            currentIndex = currentIndex == 0 ? buffer.length : currentIndex - 1;
+            currentIndex = currentIndex == 0
+                ? buffer.length - 1
+                : currentIndex - 1;
         }
 
         if (oldData.timestamp == 0) revert Errors.QueryOutOfRange();
@@ -89,6 +87,6 @@ abstract contract HyperdriveTWAP is HyperdriveBase {
         uint256 deltaSum = uint256(currentData.data) - uint256(oldData.data);
         uint256 deltaTime = uint256(currentData.timestamp) -
             uint256(oldData.timestamp);
-        return (deltaSum.divDown(deltaTime));
+        return (deltaSum.divDown(deltaTime * 1e18));
     }
 }

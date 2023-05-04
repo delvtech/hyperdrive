@@ -118,7 +118,7 @@ abstract contract HyperdriveBase is MultiToken {
         // Initialize the oracle
         updateGap = _config.updateGap;
         for (uint256 i = 0; i < _config.oracleSize; i++) {
-            buffer.push(OracleData(0, 0));
+            buffer.push(OracleData(uint32(block.timestamp), 0));
         }
     }
 

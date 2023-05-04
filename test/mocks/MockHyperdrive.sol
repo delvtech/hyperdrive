@@ -32,8 +32,8 @@ contract MockHyperdrive is Hyperdrive {
                 checkpointDuration: _checkpointDuration,
                 timeStretch: _timeStretch,
                 governance: _governance,
-                oracleSize: 2,
-                updateGap: 0,
+                oracleSize: 5,
+                updateGap: 1000,
                 fees: _fees
             }),
             bytes32(0),
@@ -67,6 +67,20 @@ contract MockHyperdrive is Hyperdrive {
                 uint256(-interest)
             );
         }
+    }
+
+    function getOracleState() external view returns (uint256, uint256) {
+        return (uint256(oracle.head), uint256(oracle.lastTimestamp));
+    }
+
+    function loadOracle(
+        uint256 index
+    ) external view returns (uint256, uint256) {
+        return (uint256(buffer[index].data), uint256(buffer[index].timestamp));
+    }
+
+    function recordOracle(uint256 data) external {
+        recordPrice(data);
     }
 
     function calculateFeesOutGivenSharesIn(
