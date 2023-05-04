@@ -1,5 +1,5 @@
 [![Tests](https://github.com/delvtech/hyperdrive/actions/workflows/test.yml/badge.svg)](https://github.com/delvtech/hyperdrive/actions/workflows/test.yml)
-[![Coverage](https://coveralls.io/repos/github/delvtech/hyperdrive/badge.svg?branch=main&t=US78Aq&kill_cache=1&service=github)](https://coveralls.io/github/delvtech/hyperdrive?branch=main)
+[![Coverage](https://coveralls.io/repos/github/delvtech/hyperdrive/badge.svg?branch=main&t=vnW3xG&kill_cache=1&service=github)](https://coveralls.io/github/delvtech/hyperdrive?branch=main)
 
 # Hyperdrive
 
