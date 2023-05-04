@@ -20,10 +20,10 @@ contract MakerDsrHyperdriveDataProvider is
     uint256 internal _totalShares;
 
     // @notice The pool management contract
-    DsrManager internal immutable dsrManager;
+    DsrManager internal immutable _dsrManager;
 
     // @notice The core Maker accounting module for the Dai Savings Rate
-    Pot internal immutable pot;
+    Pot internal immutable _pot;
 
     // @notice Maker constant
     uint256 internal constant RAY = 1e27;
@@ -32,21 +32,33 @@ contract MakerDsrHyperdriveDataProvider is
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _linkerCodeHash_ The hash of the erc20 linker contract deploy code
     /// @param _factory_ The factory which is used to deploy the linking contracts
-    /// @param _dsrManager The "dai savings rate" manager contract
+    /// @param _dsrManager_ The "dai savings rate" manager contract
     constructor(
         IHyperdrive.PoolConfig memory _config,
         bytes32 _linkerCodeHash_,
         address _factory_,
-        DsrManager _dsrManager
+        DsrManager _dsrManager_
     )
         HyperdriveDataProvider(_config)
         MultiTokenDataProvider(_linkerCodeHash_, _factory_)
     {
-        dsrManager = _dsrManager;
-        pot = Pot(dsrManager.pot());
+        _dsrManager = _dsrManager_;
+        _pot = Pot(_dsrManager_.pot());
     }
 
     /// Getters ///
+
+    /// @notice Gets the DSRManager.
+    /// @return The DSRManager.
+    function dsrManager() external view returns (DsrManager) {
+        _revert(abi.encode(_dsrManager));
+    }
+
+    /// @notice The accounting module for the Dai Savings Rate.
+    /// @return Maker's Pot contract.
+    function pot() external view returns (Pot) {
+        _revert(abi.encode(_pot));
+    }
 
     /// @notice Gets the total number of shares in existence.
     /// @return The total number of shares.
@@ -65,7 +77,7 @@ contract MakerDsrHyperdriveDataProvider is
         returns (uint256 sharePrice)
     {
         // The normalized DAI amount owned by this contract
-        uint256 pie = dsrManager.pieOf(address(this));
+        uint256 pie = _dsrManager.pieOf(address(this));
         // Load the balance of this contract
         uint256 totalBase = pie.mulDivDown(chi(), RAY);
         // The share price is assets divided by shares
@@ -83,13 +95,13 @@ contract MakerDsrHyperdriveDataProvider is
     ///      get the real chi value without interacting with the core maker
     ///      system and expensively mutating state.
     /// return chi The rate accumulator
-    function chi() public view returns (uint256) {
+    function chi() internal view returns (uint256) {
         // timestamp when drip was last called
-        uint256 rho = pot.rho();
+        uint256 rho = _pot.rho();
         // Rate accumulator as of last drip
-        uint256 _chi = pot.chi();
+        uint256 _chi = _pot.chi();
         // Annualized interest rate
-        uint256 dsr = pot.dsr();
+        uint256 dsr = _pot.dsr();
         // Calibrates the rate accumulator to current time
         return
             (block.timestamp > rho)

@@ -65,7 +65,13 @@ contract HyperdriveDSRTest is HyperdriveTest {
             updateGap: 0
         });
         address dataProvider = address(
-            new AaveHyperdriveDataProvider(config, bytes32(0), address(0), aDai)
+            new AaveHyperdriveDataProvider(
+                config,
+                bytes32(0),
+                address(0),
+                aDai,
+                pool
+            )
         );
         hyperdrive = factory.deployAndInitialize(
             config,
