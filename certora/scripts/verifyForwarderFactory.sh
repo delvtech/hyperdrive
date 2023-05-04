@@ -14,7 +14,9 @@ certoraRun contracts/src/ForwarderFactory.sol \
     --loop_iter 3 \
     --staging \
     --optimistic_loop \
+    --optimistic_hashing \
+    --hashing_length_bound 448 \
     --rule_sanity \
     --send_only \
     $RULE \
-    --msg "ForwarderFactory: $RULE $MSG" 
+    --msg "ForwarderFactory: $RULE $MSG"
