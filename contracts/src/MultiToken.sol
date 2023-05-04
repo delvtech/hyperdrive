@@ -93,22 +93,6 @@ contract MultiToken is DataProvider, MultiTokenStorage, IMultiTokenWrite {
         return address(uint160(uint256(addressBytes)));
     }
 
-    /// @notice Returns the name of the sub token i.e PTs or YTs token supported
-    ///         by this contract.
-    /// @param id The pool id to load the name of
-    /// @return Returns the name of this token
-    function name(uint256 id) external view virtual returns (string memory) {
-        return _name[id];
-    }
-
-    /// @notice Returns the symbol of the sub token i.e PTs or YTs token supported
-    ///         by this contract.
-    /// @param id The pool id to load the name of
-    /// @return Returns the symbol of this token
-    function symbol(uint256 id) external view virtual returns (string memory) {
-        return _symbol[id];
-    }
-
     /// @notice Transfers an amount of assets from the source to the destination
     /// @param tokenID The token identifier
     /// @param from The address who's balance will be reduced
