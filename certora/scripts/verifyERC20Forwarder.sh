@@ -9,7 +9,9 @@ then
 fi
 
 certoraRun contracts/src/ERC20Forwarder.sol \
+    contracts/src/MultiToken.sol \
     --verify ERC20Forwarder:certora/spec/ERC20Forwarder.spec \
+    --link ERC20Forwarder:token=MultiToken \
     --solc solc8.18 \
     --loop_iter 3 \
     --staging \

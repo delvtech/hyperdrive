@@ -1,3 +1,5 @@
+import "erc20.spec";
+
 methods {
 }
 
