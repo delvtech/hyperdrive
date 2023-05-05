@@ -14,8 +14,10 @@ certoraRun contracts/src/factory/HyperdriveFactory.sol \
     certora/helpers/DummyERC20A.sol \
     certora/helpers/DummyERC20B.sol \
     certora/helpers/DummyDsrManager.sol \
+    certora/helpers/PotLikeImpl.sol \
     --verify HyperdriveFactory:certora/spec/HyperdriveFactory.spec \
     --link HyperdriveFactory:hyperdriveDeployer=MakerDsrHyperdriveDeployer \
+           DummyDsrManager:_pot=PotLikeImpl \
     --solc solc8.18 \
     --loop_iter 3 \
     --staging \

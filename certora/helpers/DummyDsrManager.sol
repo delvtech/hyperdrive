@@ -1,6 +1,7 @@
 import {DsrManager} from "../../contracts/src/interfaces/IMaker.sol";
 import {DummyERC20A} from "./DummyERC20A.sol";
 import {DummyERC20B} from "./DummyERC20B.sol";
+import {PotLikeImpl} from "./PotLikeImpl.sol";
 // import {DummyPot} from "./DummyPot.sol";
 
 
@@ -15,14 +16,6 @@ interface VatLike {
 //     function exit(address, uint256) external;
 // }
 
-interface PotLike {
-    function vat() external view returns (address);
-    function chi() external view returns (uint256);
-    function rho() external view returns (uint256);
-    function drip() external returns (uint256);
-    function join(uint256) external;
-    function exit(uint256) external;
-}
 
 // minimal Vat contract based on https://github.com/makerdao/dss/blob/master/src/vat.sol
 // TODO: review, that this minimal version is enough.
@@ -39,40 +32,7 @@ contract VatLikeImpl is VatLike {
 }
 
 
-contract PotLikeImpl is PotLike {
-    // TODO: Delete these munged values
-    address _pot;
 
-    address randAddress;
-    uint256 randUint1;
-    uint256 randUint2;
-    uint256 randUint3;
-    constructor(address pot) {
-        _pot = pot;
-    }
-    function vat() external view returns (address) {
-        //TODO: implement
-        return randAddress;
-    }
-    function chi() external view returns (uint256) {
-        //TODO: implement
-        return randUint1;
-    }
-    function rho() external view returns (uint256) {
-        //TODO: implement
-        return randUint2;
-    }
-    function drip() external returns (uint256) {
-        //TODO: implement
-        return randUint3;
-    }
-    function join(uint256) external {
-        //TODO: implement
-    }
-    function exit(uint256) external {
-        //TODO: implement
-    }
-}
 
 
 contract JoinLikeImpl is DummyERC20B {
