@@ -5,6 +5,8 @@ import { MultiTokenDataProvider } from "./MultiTokenDataProvider.sol";
 import { HyperdriveStorage } from "./HyperdriveStorage.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { AssetId } from "./libraries/AssetId.sol";
+import { Errors } from "./libraries/Errors.sol";
+import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 
 /// @author DELV
 /// @title HyperdriveDataProvider
@@ -16,6 +18,14 @@ abstract contract HyperdriveDataProvider is
     HyperdriveStorage,
     MultiTokenDataProvider
 {
+    using FixedPointMath for uint256;
+
+    /// @notice Initializes Hyperdrive's data provider.
+    /// @param _config The configuration of the Hyperdrive pool.
+    constructor(
+        IHyperdrive.PoolConfig memory _config
+    ) HyperdriveStorage(_config) {}
+
     /// Yield Source ///
 
     ///@notice Loads the share price from the yield source
@@ -28,13 +38,48 @@ abstract contract HyperdriveDataProvider is
 
     /// Getters ///
 
+    /// @notice Gets the base token.
+    /// @return The base token.
+    function baseToken() external view returns (address) {
+        _revert(abi.encode(_baseToken));
+    }
+
     /// @notice Gets a specified checkpoint.
     /// @param _checkpointId The checkpoint ID.
     /// @return The checkpoint.
     function getCheckpoint(
         uint256 _checkpointId
     ) external view returns (IHyperdrive.Checkpoint memory) {
-        _revert(abi.encode(checkpoints[_checkpointId]));
+        _revert(abi.encode(_checkpoints[_checkpointId]));
+    }
+
+    // TODO: The fee parameters aren't immutable right now, but arguably they
+    //       should be.
+    //
+    /// @notice Gets the pool's configuration parameters.
+    /// @dev These parameters are immutable, so this should only need to be
+    ///      called once.
+    /// @return The PoolConfig struct.
+    function getPoolConfig()
+        external
+        view
+        returns (IHyperdrive.PoolConfig memory)
+    {
+        _revert(
+            abi.encode(
+                IHyperdrive.PoolConfig({
+                    baseToken: _baseToken,
+                    initialSharePrice: _initialSharePrice,
+                    positionDuration: _positionDuration,
+                    checkpointDuration: _checkpointDuration,
+                    timeStretch: _timeStretch,
+                    governance: _governance,
+                    fees: _fees,
+                    updateGap: _updateGap,
+                    oracleSize: _buffer.length
+                })
+            )
+        );
     }
 
     /// @notice Gets info about the pool's reserves and other state that is
@@ -42,17 +87,17 @@ abstract contract HyperdriveDataProvider is
     /// @return The PoolInfo struct.
     function getPoolInfo() external view returns (IHyperdrive.PoolInfo memory) {
         IHyperdrive.PoolInfo memory poolInfo = IHyperdrive.PoolInfo({
-            shareReserves: marketState.shareReserves,
-            bondReserves: marketState.bondReserves,
+            shareReserves: _marketState.shareReserves,
+            bondReserves: _marketState.bondReserves,
             lpTotalSupply: _totalSupply[AssetId._LP_ASSET_ID],
             sharePrice: _pricePerShare(),
-            longsOutstanding: marketState.longsOutstanding,
-            longAverageMaturityTime: marketState.longAverageMaturityTime,
-            shortsOutstanding: marketState.shortsOutstanding,
-            shortAverageMaturityTime: marketState.shortAverageMaturityTime,
-            shortBaseVolume: marketState.shortBaseVolume,
-            withdrawalSharesReadyToWithdraw: withdrawPool.readyToWithdraw,
-            withdrawalSharesProceeds: withdrawPool.proceeds
+            longsOutstanding: _marketState.longsOutstanding,
+            longAverageMaturityTime: _marketState.longAverageMaturityTime,
+            shortsOutstanding: _marketState.shortsOutstanding,
+            shortAverageMaturityTime: _marketState.shortAverageMaturityTime,
+            shortBaseVolume: _marketState.shortBaseVolume,
+            withdrawalSharesReadyToWithdraw: _withdrawPool.readyToWithdraw,
+            withdrawalSharesProceeds: _withdrawPool.proceeds
         });
         _revert(abi.encode(poolInfo));
     }
@@ -77,5 +122,43 @@ abstract contract HyperdriveDataProvider is
         }
 
         _revert(abi.encode(loaded));
+    }
+
+    /// @notice Returns the average price between the last recorded timestamp looking a user determined
+    ///         time into the past
+    /// @param period The gap in our time sample.
+    /// @return The average price in that time
+    function query(uint256 period) external view returns (uint256) {
+        // Load the storage data
+        uint256 lastTimestamp = uint256(_oracle.lastTimestamp);
+        uint256 head = uint256(_oracle.head);
+
+        OracleData memory currentData = _buffer[head];
+        uint256 targetTime = uint256(lastTimestamp) - period;
+
+        // We search for the greatest timestamp before the last, note this is not
+        // an efficient search as we expect the buffer to be small.
+        uint256 currentIndex = head == 0 ? _buffer.length - 1 : head - 1;
+        OracleData memory oldData = OracleData(0, 0);
+        while (currentIndex != head) {
+            // If the timestamp of the current index has older data than the target
+            // this is the newest data which is older than the target so we break
+            if (uint256(_buffer[currentIndex].timestamp) <= targetTime) {
+                oldData = _buffer[currentIndex];
+                break;
+            }
+            currentIndex = currentIndex == 0
+                ? _buffer.length - 1
+                : currentIndex - 1;
+        }
+
+        if (oldData.timestamp == 0) revert Errors.QueryOutOfRange();
+
+        // To get twap in period we take the increase in the sum then divide by
+        // the amount of time passed
+        uint256 deltaSum = uint256(currentData.data) - uint256(oldData.data);
+        uint256 deltaTime = uint256(currentData.timestamp) -
+            uint256(oldData.timestamp);
+        _revert(abi.encode(deltaSum.divDown(deltaTime * 1e18)));
     }
 }

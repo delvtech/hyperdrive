@@ -2,9 +2,9 @@
 pragma solidity ^0.8.18;
 
 import { ERC20PresetMinterPauser } from "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
-import { ForwarderFactory } from "contracts/src/ForwarderFactory.sol";
 import { Hyperdrive } from "contracts/src/Hyperdrive.sol";
 import { HyperdriveDataProvider } from "contracts/src/HyperdriveDataProvider.sol";
+import { MultiTokenDataProvider } from "contracts/src/MultiTokenDataProvider.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
@@ -84,30 +84,9 @@ contract MockHyperdrive is Hyperdrive {
     uint256 internal totalShares;
 
     constructor(
-        address _dataProvider,
-        ERC20Mintable _baseToken,
-        uint256 _initialSharePrice,
-        uint256 _positionDuration,
-        uint256 _checkpointDuration,
-        uint256 _timeStretch,
-        IHyperdrive.Fees memory _fees,
-        address _governance
-    )
-        Hyperdrive(
-            IHyperdrive.PoolConfig({
-                baseToken: _baseToken,
-                initialSharePrice: _initialSharePrice,
-                positionDuration: _positionDuration,
-                checkpointDuration: _checkpointDuration,
-                timeStretch: _timeStretch,
-                governance: _governance,
-                fees: _fees
-            }),
-            _dataProvider,
-            bytes32(0),
-            address(new ForwarderFactory())
-        )
-    {}
+        IHyperdrive.PoolConfig memory _config,
+        address _dataProvider
+    ) Hyperdrive(_config, _dataProvider, bytes32(0), address(0)) {}
 
     /// Mocks ///
 
@@ -115,22 +94,39 @@ contract MockHyperdrive is Hyperdrive {
     // share price to reflect such compounding
     function accrue(uint256 time, int256 apr) external {
         (, int256 interest) = HyperdriveUtils.calculateCompoundInterest(
-            baseToken.balanceOf(address(this)),
+            _baseToken.balanceOf(address(this)),
             apr,
             time
         );
 
         if (interest > 0) {
-            ERC20Mintable(address(baseToken)).mint(
+            ERC20Mintable(address(_baseToken)).mint(
                 address(this),
                 uint256(interest)
             );
         } else if (interest < 0) {
-            ERC20Mintable(address(baseToken)).burn(
+            ERC20Mintable(address(_baseToken)).burn(
                 address(this),
                 uint256(-interest)
             );
         }
+    }
+
+    function getOracleState() external view returns (uint256, uint256) {
+        return (uint256(_oracle.head), uint256(_oracle.lastTimestamp));
+    }
+
+    function loadOracle(
+        uint256 index
+    ) external view returns (uint256, uint256) {
+        return (
+            uint256(_buffer[index].data),
+            uint256(_buffer[index].timestamp)
+        );
+    }
+
+    function recordOracle(uint256 data) external {
+        recordPrice(data);
     }
 
     function calculateFeesOutGivenSharesIn(
@@ -237,7 +233,6 @@ contract MockHyperdrive is Hyperdrive {
         uint256 _timeRemaining
     )
         external
-        view
         returns (
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
@@ -249,8 +244,8 @@ contract MockHyperdrive is Hyperdrive {
     }
 
     function setReserves(uint256 shareReserves, uint256 bondReserves) external {
-        marketState.shareReserves = uint128(shareReserves);
-        marketState.bondReserves = uint128(bondReserves);
+        _marketState.shareReserves = uint128(shareReserves);
+        _marketState.bondReserves = uint128(bondReserves);
     }
 
     /// Overrides ///
@@ -259,8 +254,8 @@ contract MockHyperdrive is Hyperdrive {
         uint256 amount,
         bool
     ) internal override returns (uint256, uint256) {
-        uint256 assets = baseToken.balanceOf(address(this));
-        bool success = baseToken.transferFrom(
+        uint256 assets = _baseToken.balanceOf(address(this));
+        bool success = _baseToken.transferFrom(
             msg.sender,
             address(this),
             amount
@@ -283,12 +278,12 @@ contract MockHyperdrive is Hyperdrive {
         address destination,
         bool
     ) internal override returns (uint256 withdrawValue, uint256 sharePrice) {
-        uint256 assets = baseToken.balanceOf(address(this));
+        uint256 assets = _baseToken.balanceOf(address(this));
         shares = shares > totalShares ? totalShares : shares;
         withdrawValue = totalShares != 0
             ? shares.mulDown(assets.divDown(totalShares))
             : 0;
-        bool success = baseToken.transfer(destination, withdrawValue);
+        bool success = _baseToken.transfer(destination, withdrawValue);
         if (!success) {
             revert Errors.TransferFailed();
         }
@@ -303,27 +298,31 @@ contract MockHyperdrive is Hyperdrive {
         override
         returns (uint256 sharePrice)
     {
-        uint256 assets = baseToken.balanceOf(address(this));
+        uint256 assets = _baseToken.balanceOf(address(this));
         sharePrice = totalShares != 0 ? assets.divDown(totalShares) : 0;
         return sharePrice;
     }
 }
 
-contract MockHyperdriveDataProvider is HyperdriveDataProvider {
+contract MockHyperdriveDataProvider is
+    MultiTokenDataProvider,
+    HyperdriveDataProvider
+{
     using FixedPointMath for uint256;
-
-    ERC20Mintable internal immutable baseToken;
 
     uint256 internal totalShares;
 
-    constructor(ERC20Mintable _baseToken) {
-        baseToken = _baseToken;
-    }
+    constructor(
+        IHyperdrive.PoolConfig memory _config
+    )
+        HyperdriveDataProvider(_config)
+        MultiTokenDataProvider(bytes32(0), address(0))
+    {}
 
     /// Mocks ///
 
     function getGovernanceFeesAccrued() external view returns (uint256) {
-        _revert(abi.encode(governanceFeesAccrued));
+        _revert(abi.encode(_governanceFeesAccrued));
     }
 
     /// Overrides ///
@@ -334,7 +333,7 @@ contract MockHyperdriveDataProvider is HyperdriveDataProvider {
         override
         returns (uint256 sharePrice)
     {
-        uint256 assets = baseToken.balanceOf(address(this));
+        uint256 assets = _baseToken.balanceOf(address(this));
         sharePrice = totalShares != 0 ? assets.divDown(totalShares) : 0;
         return sharePrice;
     }

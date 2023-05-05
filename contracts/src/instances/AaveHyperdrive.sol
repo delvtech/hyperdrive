@@ -12,8 +12,9 @@ contract AaveHyperdrive is Hyperdrive {
     using FixedPointMath for uint256;
 
     // The aave deployment details, the a token for this asset and the aave pool
-    IERC20 public immutable aToken;
-    IPool public immutable pool;
+    IERC20 internal immutable aToken;
+    IPool internal immutable pool;
+
     // The shares created by this pool, starts at one to one with deposits and increases
     uint256 internal totalShares;
 
@@ -59,7 +60,7 @@ contract AaveHyperdrive is Hyperdrive {
 
         if (asUnderlying) {
             // Transfer from user
-            bool success = baseToken.transferFrom(
+            bool success = _baseToken.transferFrom(
                 msg.sender,
                 address(this),
                 amount
@@ -68,7 +69,7 @@ contract AaveHyperdrive is Hyperdrive {
                 revert Errors.TransferFailed();
             }
             // Supply for the user
-            pool.supply(address(baseToken), amount, address(this), 0);
+            pool.supply(address(_baseToken), amount, address(this), 0);
         } else {
             // aTokens are known to be revert on failed transfer tokens
             aToken.transferFrom(msg.sender, address(this), amount);
@@ -114,7 +115,7 @@ contract AaveHyperdrive is Hyperdrive {
         // If the user wants underlying we withdraw for them otherwise send the base
         if (asUnderlying) {
             // Now we call aave to fulfill this withdraw for the user
-            pool.withdraw(address(baseToken), withdrawValue, destination);
+            pool.withdraw(address(_baseToken), withdrawValue, destination);
         } else {
             // Otherwise we simply transfer to them
             aToken.transfer(destination, withdrawValue);

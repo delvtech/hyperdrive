@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
+import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { Errors } from "../libraries/Errors.sol";
 
 /// @author DELV

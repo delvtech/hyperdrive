@@ -82,6 +82,10 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
         address governance;
         /// @dev The fees applied to trades.
         IHyperdrive.Fees fees;
+        /// @dev The amount of TWAP entries to store.
+        uint256 oracleSize;
+        /// @dev The amount of time between TWAP updates.
+        uint256 updateGap;
     }
 
     struct PoolInfo {
@@ -107,5 +111,12 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
         uint256 withdrawalSharesReadyToWithdraw;
         /// @dev The proceeds recovered by the withdrawal pool.
         uint256 withdrawalSharesProceeds;
+    }
+
+    struct OracleState {
+        /// @notice The pointer to the most recent buffer entry
+        uint128 head;
+        /// @notice The last timestamp we wrote to the buffer
+        uint128 lastTimestamp;
     }
 }

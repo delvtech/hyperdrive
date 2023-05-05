@@ -29,6 +29,11 @@ library Errors {
     error ZeroAmount();
     error ZeroLpTotalSupply();
 
+    /// ############
+    /// ### TWAP ###
+    /// ############
+    error QueryOutOfRange();
+
     /// ####################
     /// ### DataProvider ###
     /// ####################

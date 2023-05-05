@@ -22,7 +22,9 @@ contract BondWrapper_mint is CombinatorialTest {
     function setUp() public override {
         super.setUp();
         vm.startPrank(deployer);
-        address dataProvider = address(new MultiTokenDataProvider());
+        address dataProvider = address(
+            new MultiTokenDataProvider(bytes32(0), address(forwarderFactory))
+        );
         multiToken = IMockMultiToken(
             address(
                 new MockMultiToken(

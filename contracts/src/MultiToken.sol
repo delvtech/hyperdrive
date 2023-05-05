@@ -17,12 +17,6 @@ contract MultiToken is DataProvider, MultiTokenStorage, IMultiTokenWrite {
     //        choose whether to support the batch methods, and to support token uris
     //        or names
 
-    // The contract which deployed this one
-    address public immutable factory;
-    // The bytecode hash of the contract which forwards purely erc20 calls
-    // to this contract
-    bytes32 public immutable linkerCodeHash;
-
     // EIP712
     // DOMAIN_SEPARATOR changes based on token name
     bytes32 public immutable DOMAIN_SEPARATOR; // solhint-disable-line var-name-mixedcase
@@ -40,11 +34,7 @@ contract MultiToken is DataProvider, MultiTokenStorage, IMultiTokenWrite {
         address _dataProvider,
         bytes32 _linkerCodeHash,
         address _factory
-    ) DataProvider(_dataProvider) {
-        // Set the immutables
-        factory = _factory;
-        linkerCodeHash = _linkerCodeHash;
-
+    ) DataProvider(_dataProvider) MultiTokenStorage(_linkerCodeHash, _factory) {
         // Computes the EIP 712 domain separator which prevents user signed messages for
         // this contract to be replayed in other contracts.
         // https://eips.ethereum.org/EIPS/eip-712
@@ -88,7 +78,7 @@ contract MultiToken is DataProvider, MultiTokenStorage, IMultiTokenWrite {
         bytes32 salt = keccak256(abi.encode(address(this), tokenId));
         // Preform the hash which determines the address of a create2 deployment
         bytes32 addressBytes = keccak256(
-            abi.encodePacked(bytes1(0xff), factory, salt, linkerCodeHash)
+            abi.encodePacked(bytes1(0xff), _factory, salt, _linkerCodeHash)
         );
         return address(uint160(uint256(addressBytes)));
     }

@@ -8,6 +8,13 @@ pragma solidity ^0.8.18;
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract MultiTokenStorage {
+    // The contract which deployed this one
+    address internal immutable _factory;
+
+    // The bytecode hash of the contract which forwards purely erc20 calls
+    // to this contract
+    bytes32 internal immutable _linkerCodeHash;
+
     // Allows loading of each balance
     mapping(uint256 => mapping(address => uint256)) internal _balanceOf;
 
@@ -28,4 +35,13 @@ contract MultiTokenStorage {
 
     // A mapping to track the permitForAll signature nonces
     mapping(address => uint256) internal _nonces;
+
+    /// @notice Initializes the MultiToken's storage.
+    /// @param _linkerCodeHash_ The hash of the erc20 linker contract deploy code
+    /// @param _factory_ The factory which is used to deploy the linking contracts
+    constructor(bytes32 _linkerCodeHash_, address _factory_) {
+        // Set the immutables
+        _factory = _factory_;
+        _linkerCodeHash = _linkerCodeHash_;
+    }
 }

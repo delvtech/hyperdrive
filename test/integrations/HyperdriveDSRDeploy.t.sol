@@ -50,21 +50,29 @@ contract HyperdriveDSRTest is HyperdriveTest {
         vm.startPrank(alice);
         bytes32[] memory empty = new bytes32[](0);
         dai.approve(address(factory), type(uint256).max);
+        IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
+            baseToken: dai,
+            initialSharePrice: FixedPointMath.ONE_18,
+            positionDuration: 365 days,
+            checkpointDuration: 1 days,
+            timeStretch: FixedPointMath.ONE_18.divDown(
+                22.186877016851916266e18
+            ),
+            governance: address(0),
+            fees: IHyperdrive.Fees(0, 0, 0),
+            oracleSize: 2,
+            updateGap: 0
+        });
         address dataProvider = address(
-            new MakerDsrHyperdriveDataProvider(manager)
+            new MakerDsrHyperdriveDataProvider(
+                config,
+                bytes32(0),
+                address(0),
+                manager
+            )
         );
         hyperdrive = factory.deployAndInitialize(
-            IHyperdrive.PoolConfig({
-                baseToken: dai,
-                initialSharePrice: FixedPointMath.ONE_18,
-                positionDuration: 365 days,
-                checkpointDuration: 1 days,
-                timeStretch: FixedPointMath.ONE_18.divDown(
-                    22.186877016851916266e18
-                ),
-                governance: address(0),
-                fees: IHyperdrive.Fees(0, 0, 0)
-            }),
+            config,
             dataProvider,
             bytes32(0),
             address(0),

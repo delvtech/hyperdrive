@@ -4,6 +4,7 @@ pragma solidity ^0.8.18;
 import { ERC20PresetMinterPauser } from "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
 import { Hyperdrive } from "../src/Hyperdrive.sol";
 import { HyperdriveDataProvider } from "../src/HyperdriveDataProvider.sol";
+import { MultiTokenDataProvider } from "../src/MultiTokenDataProvider.sol";
 import { FixedPointMath } from "../src/libraries/FixedPointMath.sol";
 import { Errors } from "../src/libraries/Errors.sol";
 import { ERC20Mintable } from "./ERC20Mintable.sol";
@@ -35,7 +36,9 @@ contract MockHyperdriveTestnet is Hyperdrive {
                 checkpointDuration: _checkpointDuration,
                 timeStretch: _timeStretch,
                 governance: _governance,
-                fees: _fees
+                fees: _fees,
+                oracleSize: 2,
+                updateGap: 0
             }),
             _dataProvider,
             bytes32(0),
@@ -60,7 +63,7 @@ contract MockHyperdriveTestnet is Hyperdrive {
         accrueInterest();
 
         // Take custody of the base.
-        bool success = baseToken.transferFrom(
+        bool success = _baseToken.transferFrom(
             msg.sender,
             address(this),
             _amount
@@ -94,7 +97,7 @@ contract MockHyperdriveTestnet is Hyperdrive {
         // Transfer the base to the destination.
         sharePrice = _pricePerShare();
         amountWithdrawn = _shares.mulDown(sharePrice);
-        bool success = baseToken.transfer(_destination, amountWithdrawn);
+        bool success = _baseToken.transfer(_destination, amountWithdrawn);
         if (!success) {
             revert Errors.TransferFailed();
         }
@@ -103,7 +106,7 @@ contract MockHyperdriveTestnet is Hyperdrive {
     }
 
     function _pricePerShare() internal view override returns (uint256) {
-        uint256 underlying = baseToken.balanceOf(address(this)) +
+        uint256 underlying = _baseToken.balanceOf(address(this)) +
             getAccruedInterest();
         return underlying.divDown(totalShares);
     }
@@ -124,34 +127,57 @@ contract MockHyperdriveTestnet is Hyperdrive {
         // base_balance = base_balance * (1 + r * t)
         uint256 timeElapsed = (block.timestamp - lastUpdated).divDown(365 days);
         return
-            baseToken.balanceOf(address(this)).mulDown(
+            _baseToken.balanceOf(address(this)).mulDown(
                 rate.mulDown(timeElapsed)
             );
     }
 
     function accrueInterest() internal {
-        ERC20Mintable(address(baseToken)).mint(getAccruedInterest());
+        ERC20Mintable(address(_baseToken)).mint(getAccruedInterest());
         lastUpdated = block.timestamp;
     }
 }
 
-contract MockHyperdriveDataProviderTestnet is HyperdriveDataProvider {
+contract MockHyperdriveDataProviderTestnet is
+    MultiTokenDataProvider,
+    HyperdriveDataProvider
+{
     using FixedPointMath for uint256;
-
-    ERC20Mintable internal immutable baseToken;
 
     uint256 internal rate;
     uint256 internal lastUpdated;
     uint256 internal totalShares;
 
-    constructor(ERC20Mintable _baseToken) {
-        baseToken = _baseToken;
-    }
+    constructor(
+        ERC20Mintable _baseToken,
+        uint256 _initialRate,
+        uint256 _initialSharePrice,
+        uint256 _positionDuration,
+        uint256 _checkpointDuration,
+        uint256 _timeStretch,
+        IHyperdrive.Fees memory _fees,
+        address _governance
+    )
+        HyperdriveDataProvider(
+            IHyperdrive.PoolConfig({
+                baseToken: _baseToken,
+                initialSharePrice: _initialSharePrice,
+                positionDuration: _positionDuration,
+                checkpointDuration: _checkpointDuration,
+                timeStretch: _timeStretch,
+                governance: _governance,
+                fees: _fees,
+                oracleSize: 2,
+                updateGap: 0
+            })
+        )
+        MultiTokenDataProvider(_linkerCodeHash, _factory)
+    {}
 
     /// Overrides ///
 
     function _pricePerShare() internal view override returns (uint256) {
-        uint256 underlying = baseToken.balanceOf(address(this)) +
+        uint256 underlying = _baseToken.balanceOf(address(this)) +
             getAccruedInterest();
         return underlying.divDown(totalShares);
     }
@@ -162,7 +188,7 @@ contract MockHyperdriveDataProviderTestnet is HyperdriveDataProvider {
         // base_balance = base_balance * (1 + r * t)
         uint256 timeElapsed = (block.timestamp - lastUpdated).divDown(365 days);
         return
-            baseToken.balanceOf(address(this)).mulDown(
+            _baseToken.balanceOf(address(this)).mulDown(
                 rate.mulDown(timeElapsed)
             );
     }

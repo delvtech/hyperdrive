@@ -49,26 +49,32 @@ contract HyperdriveDSRTest is HyperdriveTest {
 
         vm.startPrank(alice);
         bytes32[] memory aToken = new bytes32[](1);
-        // we do a little force convert
-        bytes32 aTokenEncode;
-        assembly ("memory-safe") {
-            aTokenEncode := sload(aDai.slot)
-        }
-        aToken[0] = aTokenEncode;
+        aToken[0] = bytes32(uint256(uint160(address(aDai))));
         dai.approve(address(factory), type(uint256).max);
-        address dataProvider = address(new AaveHyperdriveDataProvider(aDai));
+        IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
+            baseToken: dai,
+            initialSharePrice: FixedPointMath.ONE_18,
+            positionDuration: 365 days,
+            checkpointDuration: 1 days,
+            timeStretch: FixedPointMath.ONE_18.divDown(
+                22.186877016851916266e18
+            ),
+            governance: address(0),
+            fees: IHyperdrive.Fees(0, 0, 0),
+            oracleSize: 2,
+            updateGap: 0
+        });
+        address dataProvider = address(
+            new AaveHyperdriveDataProvider(
+                config,
+                bytes32(0),
+                address(0),
+                aDai,
+                pool
+            )
+        );
         hyperdrive = factory.deployAndInitialize(
-            IHyperdrive.PoolConfig({
-                baseToken: dai,
-                initialSharePrice: FixedPointMath.ONE_18,
-                positionDuration: 365 days,
-                checkpointDuration: 1 days,
-                timeStretch: FixedPointMath.ONE_18.divDown(
-                    22.186877016851916266e18
-                ),
-                governance: address(0),
-                fees: IHyperdrive.Fees(0, 0, 0)
-            }),
+            config,
             dataProvider,
             bytes32(0),
             address(0),
