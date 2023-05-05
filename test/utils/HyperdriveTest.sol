@@ -22,6 +22,8 @@ contract HyperdriveTest is BaseTest {
     uint256 internal constant INITIAL_SHARE_PRICE = FixedPointMath.ONE_18;
     uint256 internal constant CHECKPOINT_DURATION = 1 days;
     uint256 internal constant POSITION_DURATION = 365 days;
+    uint256 internal constant ORACLE_SIZE = 5;
+    uint256 internal constant UPDATE_GAP = 1000;
 
     function setUp() public virtual override {
         super.setUp();
@@ -44,8 +46,8 @@ contract HyperdriveTest is BaseTest {
             timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
             governance: governance,
             fees: fees,
-            oracleSize: 5,
-            updateGap: 1000
+            oracleSize: ORACLE_SIZE,
+            updateGap: UPDATE_GAP
         });
         address dataProvider = address(new MockHyperdriveDataProvider(config));
         hyperdrive = IHyperdrive(
@@ -83,8 +85,8 @@ contract HyperdriveTest is BaseTest {
             timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
             governance: governance,
             fees: fees,
-            oracleSize: 2,
-            updateGap: 0
+            oracleSize: ORACLE_SIZE,
+            updateGap: UPDATE_GAP
         });
         address dataProvider = address(new MockHyperdriveDataProvider(config));
         hyperdrive = IHyperdrive(

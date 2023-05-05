@@ -45,7 +45,7 @@ contract TWAPTest is HyperdriveTest {
         assertEq(lastTimestamp, currentTimestamp);
 
         // Advance time
-        advanceTime(1000, int256(apr));
+        advanceTime(UPDATE_GAP, int256(apr));
 
         // Should record a new timestamp
         currentTimestamp = block.timestamp;
@@ -63,7 +63,7 @@ contract TWAPTest is HyperdriveTest {
         assertEq(lastTimestamp, currentTimestamp);
 
         // Should advance oracle on close timestamp after time
-        advanceTime(1000, int256(apr));
+        advanceTime(UPDATE_GAP, int256(apr));
         currentTimestamp = block.timestamp;
         closeLong(bob, maturityTimeSecond, bondAmountSecond);
         (head, lastTimestamp) = MockHyperdrive(address(hyperdrive))
@@ -104,7 +104,7 @@ contract TWAPTest is HyperdriveTest {
         assertEq(lastTimestamp, currentTimestamp);
 
         // Advance time
-        advanceTime(1000, int256(apr));
+        advanceTime(UPDATE_GAP, int256(apr));
 
         // Should record a new timestamp
         currentTimestamp = block.timestamp;
@@ -122,7 +122,7 @@ contract TWAPTest is HyperdriveTest {
         assertEq(lastTimestamp, currentTimestamp);
 
         // Should advance oracle on close timestamp after time
-        advanceTime(1000, int256(apr));
+        advanceTime(UPDATE_GAP, int256(apr));
         currentTimestamp = block.timestamp;
         closeShort(bob, maturityTimeSecond, bondAmountSecond);
         (head, lastTimestamp) = MockHyperdrive(address(hyperdrive))
@@ -133,42 +133,44 @@ contract TWAPTest is HyperdriveTest {
 
     function recordTwelveDataPoints() internal {
         uint256 apr = 0.05e18;
-        for (uint256 i = 0; i < 12; i++) {
-            MockHyperdrive(address(hyperdrive)).recordOracle((i + 1) * 1e18);
-            advanceTime(1000, int256(apr));
+        for (uint256 i = 1; i <= 12; i++) {
+            MockHyperdrive(address(hyperdrive)).recordOracle(i * 1e18);
+            advanceTime(UPDATE_GAP, int256(apr));
         }
     }
 
     function test_oracle_data_recordings() external {
         // We check that the function properly functions as a buffer
         recordTwelveDataPoints();
-        uint256 originalTimestamp = block.timestamp - 1000;
+        uint256 originalTimestamp = block.timestamp - UPDATE_GAP;
         (uint256 head, uint256 lastTimestamp) = MockHyperdrive(
             address(hyperdrive)
         ).getOracleState();
-        assertEq(head, 2);
+        assertEq(head, 12 % ORACLE_SIZE);
         assertEq(lastTimestamp, originalTimestamp);
 
+        // Ensure that the time of each update was properly recorded.
         uint256 check = originalTimestamp;
         for (uint256 i = 2; i != 3; i = i == 0 ? 4 : i - 1) {
             (, uint256 time) = MockHyperdrive(address(hyperdrive)).loadOracle(
                 i
             );
             assertEq(time, check);
-            check -= 1000;
+            check -= UPDATE_GAP;
         }
 
-        uint256 period = 999;
+        // Ensure that the query function properly averages the data.
+        uint256 period = UPDATE_GAP - 1;
         uint256 finalData = 12;
         uint256 currentData = 12;
-        for (uint256 i = 2; i != 3; i = i == 0 ? 4 : i - 1) {
+        for (uint256 i = 0; i < ORACLE_SIZE - 1; i++) {
             uint256 avg = HyperdriveDataProvider(address(hyperdrive)).query(
                 period
             );
             assertEq(avg, (finalData * 1e18 + currentData * 1e18) / 2);
 
             currentData -= 1;
-            period += 1000;
+            period += UPDATE_GAP;
         }
     }
 }
