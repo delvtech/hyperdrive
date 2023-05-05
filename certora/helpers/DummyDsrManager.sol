@@ -36,12 +36,14 @@ contract DummyDsrManager is DsrManager {
         _supplyPieTotal = 0;
     }
 
+    address dai;
     function dai() external view returns (address) {
-        return address(0);
+        return dai;
     }
 
+    address pot;
     function pot() external view returns (address) {
-        return address(0);
+        return pot;
     }
 
     function pieOf(address usr) external view returns (uint256) {
