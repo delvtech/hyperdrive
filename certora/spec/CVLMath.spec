@@ -1,4 +1,6 @@
-
+/******************************************
+----------- CVL Math Library --------------
+*******************************************/
 // A restriction on the value of w = x * y / z
 // The ratio between x (or y) and z is a rational number a/b or b/a.
 // Important : do not set a = 0 or b = 0.
@@ -25,6 +27,12 @@ definition constQuotient(uint256 x, uint256 y, uint256 z,
 
 definition ONE18() returns uint256 = 1000000000000000000;
 
+definition _monotonicallyIncreasing(uint256 x, uint256 y, uint256 fx, uint256 fy) returns bool = 
+    (x > y => fx >= fy);
+
+definition _monotonicallyDecreasing(uint256 x, uint256 y, uint256 fx, uint256 fy) returns bool = 
+    (x > y => fx <= fy);
+        
 ghost uint256 res;
 ghost mathint rem;
 
@@ -121,4 +129,3 @@ function CVLPow(uint256 x, uint256 y) returns uint256 {
     if (x == 0) {return 0;}
     return _ghostPow(x, y);
 }
-        
