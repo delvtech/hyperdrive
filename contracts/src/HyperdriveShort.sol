@@ -49,7 +49,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
 
         // Calculate the pool and user deltas using the trading function. We
         // backdate the bonds sold to the beginning of the checkpoint.
-        uint256 maturityTime = _latestCheckpoint() + positionDuration;
+        uint256 maturityTime = _latestCheckpoint() + _positionDuration;
         uint256 timeRemaining = _calculateTimeRemaining(maturityTime);
         uint256 shareReservesDelta;
         uint256 bondReservesDelta;
@@ -64,7 +64,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             ) = _calculateOpenShort(_bondAmount, sharePrice, timeRemaining);
 
             // Attribute the governance fees.
-            governanceFeesAccrued += totalGovernanceFee;
+            _governanceFeesAccrued += totalGovernanceFee;
         }
 
         // Take custody of the trader's deposit and ensure that the trader
@@ -146,7 +146,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         ) = _calculateCloseShort(_bondAmount, sharePrice, _maturityTime);
 
         // Attribute the governance fees.
-        governanceFeesAccrued += totalGovernanceFee;
+        _governanceFeesAccrued += totalGovernanceFee;
 
         // If the position hasn't matured, apply the accounting updates that
         // result from closing the short to the reserves and pay out the
@@ -165,10 +165,10 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // Withdraw the profit to the trader. This includes the proceeds from
         // the short sale as well as the variable interest that was collected
         // on the face value of the bonds:
-        uint256 openSharePrice = checkpoints[_maturityTime - positionDuration]
+        uint256 openSharePrice = _checkpoints[_maturityTime - _positionDuration]
             .sharePrice;
         uint256 closeSharePrice = _maturityTime <= block.timestamp
-            ? checkpoints[_maturityTime].sharePrice
+            ? _checkpoints[_maturityTime].sharePrice
             : sharePrice;
         uint256 shortProceeds = HyperdriveMath.calculateShortProceeds(
             _bondAmount,
@@ -209,11 +209,11 @@ abstract contract HyperdriveShort is HyperdriveLP {
         uint256 _maturityTime
     ) internal {
         // Update the average maturity time of long positions.
-        marketState.shortAverageMaturityTime = uint256(
-            marketState.shortAverageMaturityTime
+        _marketState.shortAverageMaturityTime = uint256(
+            _marketState.shortAverageMaturityTime
         )
             .updateWeightedAverage(
-                marketState.shortsOutstanding,
+                _marketState.shortsOutstanding,
                 _maturityTime * 1e18, // scale up to fixed point scale
                 _bondAmount,
                 true
@@ -228,17 +228,17 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 _timeRemaining
             )
             .toUint128();
-        marketState.shortBaseVolume += baseVolume;
+        _marketState.shortBaseVolume += baseVolume;
         // TODO: We shouldn't need to call _latestCheckpoint() again.
-        checkpoints[_latestCheckpoint()].shortBaseVolume += baseVolume;
+        _checkpoints[_latestCheckpoint()].shortBaseVolume += baseVolume;
 
         // Apply the trading deltas to the reserves and increase the bond buffer
         // by the amount of bonds that were shorted. We don't need to add the
         // margin or pre-paid interest to the reserves because of the way that
         // the close short accounting works.
-        marketState.shareReserves -= _shareReservesDelta.toUint128();
-        marketState.bondReserves += _bondReservesDelta.toUint128();
-        marketState.shortsOutstanding += _bondAmount.toUint128();
+        _marketState.shareReserves -= _shareReservesDelta.toUint128();
+        _marketState.bondReserves += _bondReservesDelta.toUint128();
+        _marketState.shortsOutstanding += _bondAmount.toUint128();
 
         // Remove the flat component of the trade from the pool's liquidity.
         _updateLiquidity(-int256(_shareProceeds - _shareReservesDelta));
@@ -246,8 +246,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // Since the share reserves are reduced, we need to verify that the base
         // reserves are greater than or equal to the amount of longs outstanding.
         if (
-            _sharePrice.mulDown(marketState.shareReserves) <
-            marketState.longsOutstanding
+            _sharePrice.mulDown(_marketState.shareReserves) <
+            _marketState.longsOutstanding
         ) {
             revert Errors.BaseBufferExceedsShareReserves();
         }
@@ -270,11 +270,11 @@ abstract contract HyperdriveShort is HyperdriveLP {
         uint256 _sharePrice
     ) internal {
         // Update the short average maturity time.
-        marketState.shortAverageMaturityTime = uint256(
-            marketState.shortAverageMaturityTime
+        _marketState.shortAverageMaturityTime = uint256(
+            _marketState.shortAverageMaturityTime
         )
             .updateWeightedAverage(
-                marketState.shortsOutstanding,
+                _marketState.shortsOutstanding,
                 _maturityTime * 1e18, // scale up to fixed point scale
                 _bondAmount,
                 false
@@ -290,7 +290,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             // being closed. If the shorts are closed before maturity, we add the
             // amount of shorts being closed since the total supply is decreased
             // when burning the short tokens.
-            uint256 checkpointAmount = totalSupply[
+            uint256 checkpointAmount = _totalSupply[
                 AssetId.encodeAssetId(
                     AssetId.AssetIdPrefix.Short,
                     _maturityTime
@@ -302,21 +302,21 @@ abstract contract HyperdriveShort is HyperdriveLP {
 
             // Remove a proportional amount of the checkpoints base volume from
             // the aggregates.
-            uint256 checkpointTime = _maturityTime - positionDuration;
+            uint256 checkpointTime = _maturityTime - _positionDuration;
             uint128 proportionalBaseVolume = uint256(
-                checkpoints[checkpointTime].shortBaseVolume
+                _checkpoints[checkpointTime].shortBaseVolume
             ).mulDown(_bondAmount.divDown(checkpointAmount)).toUint128();
-            marketState.shortBaseVolume -= proportionalBaseVolume;
-            checkpoints[checkpointTime]
+            _marketState.shortBaseVolume -= proportionalBaseVolume;
+            _checkpoints[checkpointTime]
                 .shortBaseVolume -= proportionalBaseVolume;
         }
 
         // Decrease the amount of shorts outstanding.
-        marketState.shortsOutstanding -= _bondAmount.toUint128();
+        _marketState.shortsOutstanding -= _bondAmount.toUint128();
 
         // Apply the updates from the curve trade to the reserves.
-        marketState.shareReserves += _shareReservesDelta.toUint128();
-        marketState.bondReserves -= _bondReservesDelta.toUint128();
+        _marketState.shareReserves += _shareReservesDelta.toUint128();
+        _marketState.bondReserves -= _bondReservesDelta.toUint128();
 
         // Add the flat part of the trade to the pool's liquidity. We add to
         // the pool's liquidity because the LPs have a long position and thus
@@ -328,9 +328,9 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // amount of withdrawal shares. The proceeds owed to LPs when a long is
         // closed is equivalent to short proceeds as LPs take the other side of
         // every trade.
-        uint256 withdrawalSharesOutstanding = totalSupply[
+        uint256 withdrawalSharesOutstanding = _totalSupply[
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
-        ] - withdrawPool.readyToWithdraw;
+        ] - _withdrawPool.readyToWithdraw;
         if (withdrawalSharesOutstanding > 0) {
             _applyWithdrawalProceeds(
                 _sharePayment,
@@ -355,7 +355,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
         uint256 _timeRemaining
     )
         internal
-        view
         returns (
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
@@ -368,13 +367,13 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // selling the shorted bonds at the market price.
         (shareReservesDelta, bondReservesDelta, shareProceeds) = HyperdriveMath
             .calculateOpenShort(
-                marketState.shareReserves,
-                marketState.bondReserves,
+                _marketState.shareReserves,
+                _marketState.bondReserves,
                 _bondAmount,
                 _timeRemaining,
-                timeStretch,
+                _timeStretch,
                 _sharePrice,
-                initialSharePrice
+                _initialSharePrice
             );
 
         // If the base proceeds of selling the bonds is greater than the bond
@@ -388,12 +387,15 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // subtract the fee from the share deltas so that the trader receives
         // less shares.
         uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
-            marketState.shareReserves,
-            marketState.bondReserves,
-            initialSharePrice,
+            _marketState.shareReserves,
+            _marketState.bondReserves,
+            _initialSharePrice,
             _timeRemaining,
-            timeStretch
+            _timeStretch
         );
+        // Add the spot price to the oracle if an oracle update is required
+        recordPrice(spotPrice);
+
         uint256 totalCurveFee;
         uint256 totalFlatFee;
         (
@@ -432,7 +434,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
         uint256 _maturityTime
     )
         internal
-        view
         returns (
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
@@ -446,13 +447,13 @@ abstract contract HyperdriveShort is HyperdriveLP {
         uint256 timeRemaining = _calculateTimeRemaining(_maturityTime);
         (shareReservesDelta, bondReservesDelta, sharePayment) = HyperdriveMath
             .calculateCloseShort(
-                marketState.shareReserves,
-                marketState.bondReserves,
+                _marketState.shareReserves,
+                _marketState.bondReserves,
                 _bondAmount,
                 timeRemaining,
-                timeStretch,
+                _timeStretch,
                 _sharePrice,
-                initialSharePrice
+                _initialSharePrice
             );
 
         // Calculate the fees charged on the curve and flat parts of the trade.
@@ -463,15 +464,19 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // isn't calculated when the curve fee is 0. The bond reserves are only
         // 0 in the scenario that the LPs have fully withdrawn and the last
         // trader redeems.
-        uint256 spotPrice = marketState.bondReserves > 0
+        uint256 spotPrice = _marketState.bondReserves > 0
             ? HyperdriveMath.calculateSpotPrice(
-                marketState.shareReserves,
-                marketState.bondReserves,
-                initialSharePrice,
+                _marketState.shareReserves,
+                _marketState.bondReserves,
+                _initialSharePrice,
                 timeRemaining,
-                timeStretch
+                _timeStretch
             )
             : FixedPointMath.ONE_18;
+
+        // Record an oracle update
+        recordPrice(spotPrice);
+
         (
             uint256 totalCurveFee,
             uint256 totalFlatFee,

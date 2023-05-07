@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { Errors } from "contracts/src/libraries/Errors.sol";
+import { IPool } from "@aave/interfaces/IPool.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { AaveHyperdriveDeployer, IPool } from "contracts/src/factory/AaveHyperdriveDeployer.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
-import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
-import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
+import { AaveHyperdriveDataProvider } from "contracts/src/instances/AaveHyperdriveDataProvider.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
+import { AssetId } from "contracts/src/libraries/AssetId.sol";
+import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
-import { IPool } from "@aave/interfaces/IPool.sol";
+import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
 
 contract HyperdriveDSRTest is HyperdriveTest {
     using FixedPointMath for *;
@@ -46,25 +47,37 @@ contract HyperdriveDSRTest is HyperdriveTest {
         setUp();
         // We've just copied the values used by the original tests to ensure this runs
 
-        vm.prank(alice);
+        vm.startPrank(alice);
         bytes32[] memory aToken = new bytes32[](1);
-        // we do a little force convert
-        bytes32 aTokenEncode;
-        assembly ("memory-safe") {
-            aTokenEncode := sload(aDai.slot)
-        }
-        aToken[0] = aTokenEncode;
+        aToken[0] = bytes32(uint256(uint160(address(aDai))));
         dai.approve(address(factory), type(uint256).max);
-        vm.prank(alice);
-        hyperdrive = factory.deployAndImplement(
+        IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
+            baseToken: dai,
+            initialSharePrice: FixedPointMath.ONE_18,
+            positionDuration: 365 days,
+            checkpointDuration: 1 days,
+            timeStretch: FixedPointMath.ONE_18.divDown(
+                22.186877016851916266e18
+            ),
+            governance: address(0),
+            fees: IHyperdrive.Fees(0, 0, 0),
+            oracleSize: 2,
+            updateGap: 0
+        });
+        address dataProvider = address(
+            new AaveHyperdriveDataProvider(
+                config,
+                bytes32(0),
+                address(0),
+                aDai,
+                pool
+            )
+        );
+        hyperdrive = factory.deployAndInitialize(
+            config,
+            dataProvider,
             bytes32(0),
             address(0),
-            dai,
-            0,
-            365,
-            1 days,
-            FixedPointMath.ONE_18.divDown(22.186877016851916266e18),
-            IHyperdrive.Fees(0, 0, 0),
             aToken,
             2500e18,
             //1% apr
