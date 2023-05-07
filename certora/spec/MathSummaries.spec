@@ -51,8 +51,7 @@ methods {
         => ghostCalculateInitialBondReserves(shares, price, initPrice, APR, dur, timeSt) expect uint256;
     
     /// @dev Calculates the present value LPs capital in the pool.
-    function _.calculatePresentValue(HyperdriveMath.PresentValueParams memory) internal library 
-        => NONDET;//ghostCalculatePresentValue(params);
+    function _.calculatePresentValue(HyperdriveMath.PresentValueParams memory) internal library => NONDET; 
     
     /// @dev Calculates the interest in shares earned by a short position
     function _.calculateShortInterest(uint256 bond, uint256 openPrice, uint256 closePrice, uint256 price) internal library 
@@ -82,6 +81,5 @@ ghost ghostCalculateBaseVolume(uint256,uint256,uint256) returns uint256 {
 ghost ghostCalculateSpotPrice(uint256,uint256,uint256,uint256,uint256) returns uint256;
 ghost ghostCalculateAPRFromReserves(uint256,uint256,uint256,uint256,uint256) returns uint256;
 ghost ghostCalculateInitialBondReserves(uint256,uint256,uint256,uint256,uint256,uint256) returns uint256;
-//ghost ghostCalculatePresentValue(HyperdriveMath.PresentValueParams) returns uint256;
 ghost ghostCalculateShortInterest(uint256,uint256,uint256,uint256) returns uint256;
 ghost ghostCalculateShortProceeds(uint256,uint256,uint256,uint256,uint256) returns uint256;
