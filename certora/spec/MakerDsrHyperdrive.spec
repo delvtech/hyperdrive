@@ -1,27 +1,28 @@
-import "erc20.spec";
-import "Sanity.spec";
+import "./erc20.spec";
+import "./MathSummaries.spec";
+import "./Sanity.spec";
+using HyperdriveMath as HDMath;
+
 use rule sanity;
 
 methods {
-    function _.mulDivDown(uint256 x, uint256 y, uint256 d) internal library => mulDivDownCVL(x, y, d) expect uint256;
-    function _.mulDivUp(uint256 x, uint256 y, uint256 d) internal library => mulDivUpCVL(x, y, d) expect uint256;
+    function HDMath.calculateSpotPrice(uint256,uint256,uint256,uint256,uint256) internal returns(uint256) library => NONDET;
+    function HDMath.calculateAPRFromReserves(uint256,uint256,uint256,uint256,uint256) internal returns(uint256) => NONDET;
+    function HDMath.calculateInitialBondReserves(uint256,uint256,uint256,uint256,uint256,uint256) internal returns(uint256) library => NONDET;
+    function HDMath.calculatePresentValue(HyperdriveMath.PresentValueParams memory) internal returns(uint256) library => NONDET;
+    function HDMath.calculateShortInterest(uint256,uint256,uint256,uint256) internal returns(uint256) library => NONDET;
+    function HDMath.calculateShortProceeds(uint256,uint256,uint256,uint256,uint256) internal returns(uint256) library => NONDET;
 
-    function _.pieOf(address) external => NONDET;
-    function _.chi() external => NONDET;
-    function _.rho() external => NONDET;
-    function _.dsr() external => NONDET;
-}
-
-function mulDivDownCVL(uint256 x, uint256 y, uint256 z) returns uint256 {
-    require z!=0;
-    return require_uint256( x * y / z);
-}
-
-function mulDivUpCVL(uint256 x, uint256 y, uint256 z) returns uint256 {
-    require z!=0;
-    uint256 w =  require_uint256( x * y / z);
-    if(w*z == x*y) {
-        return w;
-    }
-    return require_uint256(w+1);
+    // DsrManager
+    function _.join(address, uint256) external => DISPATCHER(true);
+    function _.exit(address, uint256) external => DISPATCHER(true);
+    function _.pieOf(address) external => DISPATCHER(true);
+    function _.daiBalance(address) external => DISPATCHER(true);
+    // PotLikeImpl
+    // function _.vat() external => DISPATCHER(true);
+    function _.chi() external => DISPATCHER(true);
+    // function _.rho() external => DISPATCHER(true);
+    // function _.drip() external => DISPATCHER(true);
+    // function _.join(uint256) external => DISPATCHER(true);
+    // function _.exit(uint256) external => DISPATCHER(true);
 }
