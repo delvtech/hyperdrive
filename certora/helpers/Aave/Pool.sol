@@ -44,7 +44,7 @@ contract Pool is IPool {
     // underlying asset -> pool liquidity index of that asset
     // This index is used to convert the underlying token to its matching
     // AToken inside the pool, and vice versa.
-    mapping(address => uint256) public liquidityIndex;
+    mapping(address => mapping(uint256 => uint256)) public liquidityIndex;
 
     /**
     * @dev Deposits underlying token in the Atoken's contract on behalf of the user,
@@ -69,7 +69,7 @@ contract Pool is IPool {
             msg.sender,
             onBehalfOf,
             amount,
-            liquidityIndex[asset]
+            liquidityIndex[asset][block.timestamp]
         );
     }
 
@@ -89,7 +89,7 @@ contract Pool is IPool {
             msg.sender,
             to,
             amount,
-            liquidityIndex[asset]
+            liquidityIndex[asset][block.timestamp]
         );
         return amount;
     }
@@ -104,11 +104,11 @@ contract Pool is IPool {
         view
         returns (uint256)
     {
-        return liquidityIndex[asset];
+        return liquidityIndex[asset][block.timestamp];
     }
 
     // Returns the pool liquidity index of an underlying asset.
     function liquidityIndexByAsset(address asset) external view returns(uint256) {
-        return liquidityIndex[asset];
+        return liquidityIndex[asset][block.timestamp];
     }
 }

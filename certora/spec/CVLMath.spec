@@ -124,6 +124,10 @@ ghost _ghostPow(uint256, uint256) returns uint256 {
     /// x1 > x2 && y > 0 => x1^y > x2^y
     axiom forall uint256 x1. forall uint256 x2. forall uint256 y.
         x1 > x2 => _ghostPow(x1, y) >= _ghostPow(x2, y);
+    /// x^y * x^(1-y) == x
+    axiom forall uint256 x. forall uint256 y. forall uint256 z. 
+        (0 <= y && y <= ONE18() &&  z + y == to_mathint(ONE18())) => (
+        _ghostPow(x, y) * _ghostPow(x, z) == x * ONE18());
 }
 
 function CVLPow(uint256 x, uint256 y) returns uint256 {
@@ -132,7 +136,7 @@ function CVLPow(uint256 x, uint256 y) returns uint256 {
     return _ghostPow(x, y);
 }
 
-function mySqrt(uint256 x) returns uint256 {
+function CVLSqrt(uint256 x) returns uint256 {
     havoc SQRT;
     require SQRT*SQRT <= to_mathint(x) && (SQRT + 1)*(SQRT + 1) > to_mathint(x);
     return require_uint256(SQRT);

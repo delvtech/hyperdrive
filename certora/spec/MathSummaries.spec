@@ -15,23 +15,23 @@ methods {
     /// YieldSpace (YS) Math
     /// @dev Calculates the amount of bonds a user must provide the pool to receive
     /// a specified amount of shares
-    function _.calculateBondsInGivenSharesOut(uint256 z,uint256 y, uint256 dz,uint256 t,uint256 c, uint256 mu)
-        internal library => ghostBondsInGivenSharesOut(z,y,dz,t,c,mu) expect uint256;
+    function _.calculateBondsInGivenSharesOut(uint256 z, uint256 y, uint256 dz, uint256 t, uint256 c, uint256 mu)
+        internal library => CVLBondsInGivenSharesOut(z,y,dz,t,c,mu) expect uint256;
     
     /// @dev Calculates the amount of bonds a user will receive from the pool by
     /// providing a specified amount of shares
-    function _.calculateBondsOutGivenSharesIn(uint256 z,uint256 y, uint256 dz,uint256 t,uint256 c, uint256 mu)
-        internal library => ghostBondsOutGivenSharesIn(z,y,dz,t,c,mu) expect uint256;
+    function _.calculateBondsOutGivenSharesIn(uint256 z, uint256 y, uint256 dz, uint256 t, uint256 c, uint256 mu)
+        internal library => CVLBondsOutGivenSharesIn(z,y,dz,t,c,mu) expect uint256;
     
     /// @dev Calculates the amount of shares a user must provide the pool to receive
     /// a specified amount of bonds
-    function _.calculateSharesInGivenBondsOut(uint256 z,uint256 y, uint256 dz,uint256 t,uint256 c, uint256 mu)
-        internal library => ghostSharesInGivenBondsOut(z,y,dz,t,c,mu) expect uint256; 
+    function _.calculateSharesInGivenBondsOut(uint256 z, uint256 y, uint256 dy, uint256 t, uint256 c, uint256 mu)
+        internal library => CVLSharesInGivenBondsOut(z,y,dy,t,c,mu) expect uint256; 
     
     /// @dev Calculates the amount of shares a user will receive from the pool by
     /// providing a specified amount of bonds
-    function _.calculateSharesOutGivenBondsIn(uint256 z,uint256 y, uint256 dz,uint256 t,uint256 c, uint256 mu)
-        internal library => ghostSharesOutGivenBondsIn(z,y,dz,t,c,mu) expect uint256;
+    function _.calculateSharesOutGivenBondsIn(uint256 z, uint256 y, uint256 dy, uint256 t, uint256 c, uint256 mu)
+        internal library => CVLSharesOutGivenBondsIn(z,y,dy,t,c,mu) expect uint256;
 
     /// Hyperdrive (HD) Math
     /// @dev Calculates the base volume of an open trade given the base amount, the bond amount, and the time remaining.
@@ -83,3 +83,81 @@ ghost ghostCalculateAPRFromReserves(uint256,uint256,uint256,uint256,uint256) ret
 ghost ghostCalculateInitialBondReserves(uint256,uint256,uint256,uint256,uint256,uint256) returns uint256;
 ghost ghostCalculateShortInterest(uint256,uint256,uint256,uint256) returns uint256;
 ghost ghostCalculateShortProceeds(uint256,uint256,uint256,uint256,uint256) returns uint256;
+
+/* =========================================
+ ---------- YieldSpace Math summaries -----
+=========================================== */
+/// @idea Should we use assert_uint256 or require_uint256 ?
+
+/// @dev a CVL require equivalent to the YieldSpace invariant:
+/// For every two pairs of bonds-shares reserves state (z1,y1) and (z2,y2) the 
+/// equality below must hold, where:
+/*
+* z1 - share reserves 1
+* z2 - share reserves 2
+* y1 - bond reserves 1
+* y2 - bond reserves 2
+* mu - initial share rate
+* c - current share rate (redemption price)
+* t - (normalized) time until maturity (0 <= t < 1)
+*/
+function YSInvariant(
+    uint256 z1,
+    uint256 z2,
+    uint256 y1, 
+    uint256 y2, 
+    uint256 mu,
+    uint256 c, 
+    uint256 t) returns bool {
+    uint256 tp = require_uint256(ONE18() - t); /// t' = 1 - t;
+    return c * ONE18() * (CVLPow(z1, tp) - CVLPow(z2, tp)) ==
+        to_mathint(CVLPow(mu, t)) * (CVLPow(y2, tp) - CVLPow(y1, tp));
+}
+
+/*
+- bondsInGivenSharesOut
+    Δy = (k - (c / µ) * (µ * (z - dz))^(1 - t))^(1 / (1 - t))) - y
+*/
+function CVLBondsInGivenSharesOut(uint256 z, uint256 y, uint256 dz, uint256 t, uint256 c, uint256 mu) returns uint256 {
+    uint256 yp;
+    uint256 zp = require_uint256(z - dz);
+    uint256 tp = require_uint256(ONE18() - t);
+    require YSInvariant(z, zp, y, yp, mu, c, tp);
+    return require_uint256(yp + y);
+}
+
+/*
+- bondsOutGivenSharesIn
+    Δy = y - (k - (c / µ) * (µ * (z + dz))^(1 - t))^(1 / (1 - t)))
+*/
+function CVLBondsOutGivenSharesIn(uint256 z, uint256 y, uint256 dz, uint256 t, uint256 c, uint256 mu) returns uint256 {
+    uint256 yp;
+    uint256 zp = require_uint256(z + dz);
+    uint256 tp = require_uint256(ONE18() - t);
+    require YSInvariant(z, zp, y, yp, mu, c, tp);
+    return require_uint256(yp - y);
+}
+
+/*
+- sharesInGivenBondsOut
+    Δz = (((k - (y - dy)^(1 - t)) / (c / µ))^(1 / (1 - t)) / µ) - z
+*/
+function CVLSharesInGivenBondsOut(uint256 z, uint256 y, uint256 dy, uint256 t, uint256 c, uint256 mu) returns uint256 {
+    uint256 zp;
+    uint256 yp = require_uint256(y - dy);
+    uint256 tp = require_uint256(ONE18() - t);
+    require YSInvariant(z, zp, y, yp, mu, c, tp);
+    return require_uint256(zp - z);
+}
+
+/*
+- sharesOutGivenBondsIn
+    Δz = z - (((k - (y + Δy)^(1 - t)) / c/μ )^(1 / (1 - t)) / µ)
+*/
+function CVLSharesOutGivenBondsIn(uint256 z, uint256 y, uint256 dy, uint256 t, uint256 c, uint256 mu) returns uint256 {
+    uint256 zp;
+    uint256 yp = require_uint256(y + dy);
+    uint256 tp = require_uint256(ONE18() - t);
+    require YSInvariant(z, zp, y, yp, mu, c, tp);
+    return require_uint256(z - zp);
+}
