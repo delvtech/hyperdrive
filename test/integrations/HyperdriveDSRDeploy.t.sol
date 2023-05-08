@@ -31,7 +31,8 @@ contract HyperdriveDSRTest is HyperdriveTest {
             alice,
             simpleDeployer,
             bob,
-            IHyperdrive.Fees(0, 0, 0)
+            IHyperdrive.Fees(0, 0, 0),
+            address(manager)
         );
 
         address daiWhale = 0x075e72a5eDf65F0A5f44699c7654C1a76941Ddc8;

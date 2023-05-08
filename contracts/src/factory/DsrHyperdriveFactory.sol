@@ -16,6 +16,9 @@ import { DsrManager } from "../interfaces/IMaker.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract DsrHyperdriveFactory is HyperdriveFactory {
+
+    DsrManager internal immutable manager;
+
     /// @notice Deploys the contract
     /// @param _governance The address which can update this factory.
     /// @param _deployer The contract which holds the bytecode and deploys new versions.
@@ -25,8 +28,11 @@ contract DsrHyperdriveFactory is HyperdriveFactory {
         address _governance,
         IHyperdriveDeployer _deployer,
         address _hyperdriveGovernance,
-        IHyperdrive.Fees memory _fees
-    ) HyperdriveFactory(_governance, _deployer, _hyperdriveGovernance, _fees) {}
+        IHyperdrive.Fees memory _fees,
+        address dsrManager
+    ) HyperdriveFactory(_governance, _deployer, _hyperdriveGovernance, _fees) {
+        manager = DsrManager(dsrManager);
+    }
 
     /// @notice This deploys a data provider for the aave hyperdrive instance
     /// @param _config The configuration of the pool we are deploying
@@ -38,10 +44,6 @@ contract DsrHyperdriveFactory is HyperdriveFactory {
         bytes32 _linkerCodeHash,
         address _linkerFactory
     ) internal override returns (address) {
-        // Since we know this has to be the DSR pool deployer we abuse the interface to do this
-        DsrManager manager = IDsrDeployer(address(hyperdriveDeployer))
-            .dsrManager();
-
         return (
             address(
                 new MakerDsrHyperdriveDataProvider(
@@ -53,8 +55,4 @@ contract DsrHyperdriveFactory is HyperdriveFactory {
             )
         );
     }
-}
-
-interface IDsrDeployer {
-    function dsrManager() external returns (DsrManager);
 }
