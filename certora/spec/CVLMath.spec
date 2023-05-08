@@ -1,6 +1,7 @@
 /******************************************
 ----------- CVL Math Library --------------
 *******************************************/
+
 // A restriction on the value of w = x * y / z
 // The ratio between x (or y) and z is a rational number a/b or b/a.
 // Important : do not set a = 0 or b = 0.
@@ -35,6 +36,7 @@ definition _monotonicallyDecreasing(uint256 x, uint256 y, uint256 fx, uint256 fy
         
 ghost uint256 res;
 ghost mathint rem;
+ghost mathint SQRT;
 
 function mulDivDownAbstract(uint256 x, uint256 y, uint256 z) returns uint256 {
     require z !=0;
@@ -121,11 +123,17 @@ ghost _ghostPow(uint256, uint256) returns uint256 {
         x < ONE18() && y1 > y2 => _ghostPow(x, y1) <= _ghostPow(x, y2);
     /// x1 > x2 && y > 0 => x1^y > x2^y
     axiom forall uint256 x1. forall uint256 x2. forall uint256 y.
-        x1 > x2 => _ghostPow(x1, y) >= _ghostPow(x1, y);
+        x1 > x2 => _ghostPow(x1, y) >= _ghostPow(x2, y);
 }
 
 function CVLPow(uint256 x, uint256 y) returns uint256 {
     if (y == 0) {return ONE18();}
     if (x == 0) {return 0;}
     return _ghostPow(x, y);
+}
+
+function mySqrt(uint256 x) returns uint256 {
+    havoc SQRT;
+    require SQRT*SQRT <= to_mathint(x) && (SQRT + 1)*(SQRT + 1) > to_mathint(x);
+    return require_uint256(SQRT);
 }
