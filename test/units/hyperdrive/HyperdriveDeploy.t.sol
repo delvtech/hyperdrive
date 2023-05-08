@@ -4,7 +4,8 @@ pragma solidity ^0.8.18;
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { MakerDsrHyperdriveDeployer } from "contracts/src/factory/MakerDsrHyperdriveDeployer.sol";
-import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
+import { DsrHyperdriveFactory } from "contracts/src/factory/DsrHyperdriveFactory.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { DsrManager } from "contracts/test/MockMakerDsrHyperdrive.sol";
 import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
@@ -19,10 +20,11 @@ contract HyperdriveFactoryTest is HyperdriveTest {
                 manager
             );
 
-        HyperdriveFactory factory = new HyperdriveFactory(
+        DsrHyperdriveFactory factory = new DsrHyperdriveFactory(
             alice,
             simpleDeployer,
-            bob
+            bob,
+            IHyperdrive.Fees(0, 0, 0)
         );
         assertEq(factory.governance(), alice);
 
