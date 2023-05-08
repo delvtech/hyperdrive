@@ -16,7 +16,6 @@ import { DsrManager } from "../interfaces/IMaker.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract DsrHyperdriveFactory is HyperdriveFactory {
-
     DsrManager internal immutable manager;
 
     /// @notice Deploys the contract
