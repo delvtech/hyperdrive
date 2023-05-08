@@ -74,7 +74,7 @@ abstract contract HyperdriveDataProvider is
                     checkpointDuration: _checkpointDuration,
                     timeStretch: _timeStretch,
                     governance: _governance,
-                    fees: _fees,
+                    fees: IHyperdrive.Fees(_curveFee, _flatFee, _governanceFee),
                     updateGap: _updateGap,
                     oracleSize: _buffer.length
                 })
