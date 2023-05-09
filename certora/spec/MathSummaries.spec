@@ -123,7 +123,7 @@ function CVLBondsInGivenSharesOut(uint256 z, uint256 y, uint256 dz, uint256 t, u
     uint256 zp = require_uint256(z - dz);
     uint256 tp = require_uint256(ONE18() - t);
     require YSInvariant(z, zp, y, yp, mu, c, tp);
-    return require_uint256(yp + y);
+    return require_uint256(yp - y);
 }
 
 /*
@@ -135,7 +135,7 @@ function CVLBondsOutGivenSharesIn(uint256 z, uint256 y, uint256 dz, uint256 t, u
     uint256 zp = require_uint256(z + dz);
     uint256 tp = require_uint256(ONE18() - t);
     require YSInvariant(z, zp, y, yp, mu, c, tp);
-    return require_uint256(yp - y);
+    return require_uint256(y - yp);
 }
 
 /*
