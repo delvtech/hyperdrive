@@ -14,6 +14,7 @@ certoraRun contracts/src/instances/MakerDsrHyperdrive.sol \
     certora/helpers/DummyDsrManager.sol:DummyDsrManager \
     contracts/src/libraries/HyperdriveMath.sol \
     --verify MakerDsrHyperdrive:certora/spec/MakerDsrHyperdrive.spec \
+    --link MakerDsrHyperdrive:dsrManager=DummyDsrManager \
     --solc solc8.18 \
     --loop_iter 3 \
     --staging \
