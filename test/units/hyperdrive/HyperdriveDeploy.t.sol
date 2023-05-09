@@ -17,8 +17,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         );
 
         DsrHyperdriveDeployer simpleDeployer = new DsrHyperdriveDeployer(
-                manager
-            );
+            manager
+        );
 
         DsrHyperdriveFactory factory = new DsrHyperdriveFactory(
             alice,

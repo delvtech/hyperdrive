@@ -25,8 +25,8 @@ contract HyperdriveDSRTest is HyperdriveTest {
         vm.startPrank(deployer);
 
         DsrHyperdriveDeployer simpleDeployer = new DsrHyperdriveDeployer(
-                manager
-            );
+            manager
+        );
         factory = new DsrHyperdriveFactory(
             alice,
             simpleDeployer,
