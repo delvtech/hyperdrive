@@ -5,8 +5,8 @@ import { ICreditDelegationToken } from "@aave/interfaces/ICreditDelegationToken.
 import { DataTypes } from "@aave/protocol/libraries/types/DataTypes.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { AaveFixedBorrowAction, IHyperdrive, IPool } from "contracts/src/actions/AaveFixedBorrow.sol";
-import { MakerDsrHyperdrive } from "contracts/src/instances/MakerDsrHyperdrive.sol";
-import { MakerDsrHyperdriveDataProvider } from "contracts/src/instances/MakerDsrHyperdriveDataProvider.sol";
+import { DsrHyperdrive } from "contracts/src/instances/DsrHyperdrive.sol";
+import { DsrHyperdriveDataProvider } from "contracts/src/instances/DsrHyperdriveDataProvider.sol";
 import { IERC20Mint } from "contracts/src/interfaces/IERC20Mint.sol";
 import { IERC20Permit } from "contracts/src/interfaces/IERC20Permit.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
@@ -67,7 +67,7 @@ contract AaveFixedBorrowTest is BaseTest {
             oracleSize: 2
         });
         address dataProvider = address(
-            new MakerDsrHyperdriveDataProvider(
+            new DsrHyperdriveDataProvider(
                 config,
                 bytes32(0),
                 address(0),
@@ -76,7 +76,7 @@ contract AaveFixedBorrowTest is BaseTest {
         );
         hyperdrive = IHyperdrive(
             address(
-                new MakerDsrHyperdrive(
+                new DsrHyperdrive(
                     config,
                     dataProvider,
                     bytes32(0),

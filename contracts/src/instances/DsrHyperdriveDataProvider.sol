@@ -9,7 +9,7 @@ import { Errors } from "../libraries/Errors.sol";
 import { Pot, DsrManager } from "../interfaces/IMaker.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 
-contract MakerDsrHyperdriveDataProvider is
+contract DsrHyperdriveDataProvider is
     MultiTokenDataProvider,
     HyperdriveDataProvider
 {

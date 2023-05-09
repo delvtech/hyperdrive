@@ -2,15 +2,15 @@
 pragma solidity ^0.8.18;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { MakerDsrHyperdriveDeployer } from "contracts/src/factory/MakerDsrHyperdriveDeployer.sol";
+import { DsrHyperdriveDeployer } from "contracts/src/factory/DsrHyperdriveDeployer.sol";
 import { DsrHyperdriveFactory } from "contracts/src/factory/DsrHyperdriveFactory.sol";
-import { MakerDsrHyperdriveDataProvider } from "contracts/src/instances/MakerDsrHyperdriveDataProvider.sol";
+import { DsrHyperdriveDataProvider } from "contracts/src/instances/DsrHyperdriveDataProvider.sol";
 import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
-import { DsrManager } from "contracts/test/MockMakerDsrHyperdrive.sol";
+import { DsrManager } from "contracts/test/MockDsrHyperdrive.sol";
 import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
 
 contract HyperdriveDSRTest is HyperdriveTest {
@@ -24,7 +24,7 @@ contract HyperdriveDSRTest is HyperdriveTest {
     function setUp() public override __mainnet_fork(16_685_972) {
         vm.startPrank(deployer);
 
-        MakerDsrHyperdriveDeployer simpleDeployer = new MakerDsrHyperdriveDeployer(
+        DsrHyperdriveDeployer simpleDeployer = new DsrHyperdriveDeployer(
                 manager
             );
         factory = new DsrHyperdriveFactory(

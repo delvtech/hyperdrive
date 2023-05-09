@@ -8,7 +8,7 @@ import { Errors } from "../libraries/Errors.sol";
 import { Pot, DsrManager } from "../interfaces/IMaker.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 
-contract MakerDsrHyperdrive is Hyperdrive {
+contract DsrHyperdrive is Hyperdrive {
     using FixedPointMath for uint256;
 
     // @notice The shares created by this pool, starts at 1 to one with

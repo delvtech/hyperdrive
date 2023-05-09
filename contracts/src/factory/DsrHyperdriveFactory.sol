@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
-import { MakerDsrHyperdriveDataProvider } from "../instances/MakerDsrHyperdriveDataProvider.sol";
+import { DsrHyperdriveDataProvider } from "../instances/DsrHyperdriveDataProvider.sol";
 import { HyperdriveFactory } from "./HyperdriveFactory.sol";
 import { DsrManager } from "../interfaces/IMaker.sol";
 
@@ -45,7 +45,7 @@ contract DsrHyperdriveFactory is HyperdriveFactory {
     ) internal override returns (address) {
         return (
             address(
-                new MakerDsrHyperdriveDataProvider(
+                new DsrHyperdriveDataProvider(
                     _config,
                     _linkerCodeHash,
                     _linkerFactory,
