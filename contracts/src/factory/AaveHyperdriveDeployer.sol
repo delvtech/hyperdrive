@@ -22,7 +22,7 @@ interface IAToken {
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract AaveHyperdriveDeployer is IHyperdriveDeployer {
-    IPool internal immutable pool;
+    IPool public immutable pool;
 
     constructor(IPool _pool) {
         pool = _pool;

@@ -184,7 +184,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
             FixedPointMath.ONE_18
         );
         totalCurveFee = totalCurveFee
-            .mulDown(_fees.curve)
+            .mulDown(_curveFee)
             .mulDown(_sharePrice)
             .mulDown(_amountIn)
             .mulDown(_normalizedTimeRemaining);
@@ -192,14 +192,14 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
         governanceCurveFee = _amountIn
             .mulDivDown(totalCurveFee, _amountOut)
             .mulDown(_sharePrice)
-            .mulDown(_fees.governance);
+            .mulDown(_governanceFee);
         // flat fee = c * d_z * (1 - t) * phi_flat
         uint256 flat = _amountIn.mulDown(
             FixedPointMath.ONE_18.sub(_normalizedTimeRemaining)
         );
-        totalFlatFee = flat.mulDown(_sharePrice).mulDown(_fees.flat);
+        totalFlatFee = flat.mulDown(_sharePrice).mulDown(_flatFee);
         // calculate the flat portion of the governance fee
-        governanceFlatFee = totalFlatFee.mulDown(_fees.governance);
+        governanceFlatFee = totalFlatFee.mulDown(_governanceFee);
     }
 
     // TODO: Consider combining this with the trading functions.
@@ -230,18 +230,18 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
         // curve fee = ((1 - p) * phi_curve * d_y * t) / c
         uint256 _pricePart = (FixedPointMath.ONE_18.sub(_spotPrice));
         totalCurveFee = _pricePart
-            .mulDown(_fees.curve)
+            .mulDown(_curveFee)
             .mulDown(_amountIn)
             .mulDivDown(_normalizedTimeRemaining, _sharePrice);
         // calculate the curve portion of the governance fee
-        totalGovernanceFee = totalCurveFee.mulDown(_fees.governance);
+        totalGovernanceFee = totalCurveFee.mulDown(_governanceFee);
         // flat fee = (d_y * (1 - t) * phi_flat) / c
         uint256 flat = _amountIn.mulDivDown(
             FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
             _sharePrice
         );
-        totalFlatFee = (flat.mulDown(_fees.flat));
-        totalGovernanceFee += totalFlatFee.mulDown(_fees.governance);
+        totalFlatFee = (flat.mulDown(_flatFee));
+        totalGovernanceFee += totalFlatFee.mulDown(_governanceFee);
     }
 
     // TODO: Consider combining this with the trading functions.
@@ -274,18 +274,18 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
         // curve fee = ((1 - p) * d_y * t * phi_curve)/c
         totalCurveFee = FixedPointMath.ONE_18.sub(_spotPrice);
         totalCurveFee = totalCurveFee
-            .mulDown(_fees.curve)
+            .mulDown(_curveFee)
             .mulDown(_amountOut)
             .mulDivDown(_normalizedTimeRemaining, _sharePrice);
         // calculate the curve portion of the governance fee
-        governanceCurveFee = totalCurveFee.mulDown(_fees.governance);
+        governanceCurveFee = totalCurveFee.mulDown(_governanceFee);
         // flat fee = (d_y * (1 - t) * phi_flat)/c
         uint256 flat = _amountOut.mulDivDown(
             FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
             _sharePrice
         );
-        totalFlatFee = (flat.mulDown(_fees.flat));
+        totalFlatFee = (flat.mulDown(_flatFee));
         // calculate the flat portion of the governance fee
-        governanceFlatFee = totalFlatFee.mulDown(_fees.governance);
+        governanceFlatFee = totalFlatFee.mulDown(_governanceFee);
     }
 }

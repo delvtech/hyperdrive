@@ -2,21 +2,21 @@
 pragma solidity ^0.8.18;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { MakerDsrHyperdriveDeployer } from "contracts/src/factory/MakerDsrHyperdriveDeployer.sol";
-import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
-import { MakerDsrHyperdriveDataProvider } from "contracts/src/instances/MakerDsrHyperdriveDataProvider.sol";
+import { DsrHyperdriveDeployer } from "contracts/src/factory/DsrHyperdriveDeployer.sol";
+import { DsrHyperdriveFactory } from "contracts/src/factory/DsrHyperdriveFactory.sol";
+import { DsrHyperdriveDataProvider } from "contracts/src/instances/DsrHyperdriveDataProvider.sol";
 import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
-import { DsrManager } from "contracts/test/MockMakerDsrHyperdrive.sol";
+import { DsrManager } from "contracts/test/MockDsrHyperdrive.sol";
 import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
 
 contract HyperdriveDSRTest is HyperdriveTest {
     using FixedPointMath for *;
 
-    HyperdriveFactory factory;
+    DsrHyperdriveFactory factory;
     IERC20 dai = IERC20(address(0x6B175474E89094C44Da98b954EedeAC495271d0F));
     DsrManager manager =
         DsrManager(address(0x373238337Bfe1146fb49989fc222523f83081dDb));
@@ -24,10 +24,16 @@ contract HyperdriveDSRTest is HyperdriveTest {
     function setUp() public override __mainnet_fork(16_685_972) {
         vm.startPrank(deployer);
 
-        MakerDsrHyperdriveDeployer simpleDeployer = new MakerDsrHyperdriveDeployer(
-                manager
-            );
-        factory = new HyperdriveFactory(alice, simpleDeployer, bob);
+        DsrHyperdriveDeployer simpleDeployer = new DsrHyperdriveDeployer(
+            manager
+        );
+        factory = new DsrHyperdriveFactory(
+            alice,
+            simpleDeployer,
+            bob,
+            IHyperdrive.Fees(0, 0, 0),
+            address(manager)
+        );
 
         address daiWhale = 0x075e72a5eDf65F0A5f44699c7654C1a76941Ddc8;
 
@@ -63,17 +69,8 @@ contract HyperdriveDSRTest is HyperdriveTest {
             oracleSize: 2,
             updateGap: 0
         });
-        address dataProvider = address(
-            new MakerDsrHyperdriveDataProvider(
-                config,
-                bytes32(0),
-                address(0),
-                manager
-            )
-        );
         hyperdrive = factory.deployAndInitialize(
             config,
-            dataProvider,
             bytes32(0),
             address(0),
             empty,

@@ -41,10 +41,12 @@ abstract contract HyperdriveStorage is MultiTokenStorage {
     /// @notice The state corresponding to the withdraw pool.
     IHyperdrive.WithdrawPool internal _withdrawPool;
 
-    // TODO: Shouldn't these be immutable?
-    //
-    /// @notice The fee percentages to be applied to trades.
-    IHyperdrive.Fees internal _fees;
+    /// @dev The LP fee applied to the curve portion of a trade.
+    uint256 internal immutable _curveFee;
+    /// @dev The LP fee applied to the flat portion of a trade.
+    uint256 internal immutable _flatFee;
+    /// @dev The portion of the LP fee that goes to governance.
+    uint256 internal immutable _governanceFee;
 
     /// @notice Hyperdrive positions are bucketed into checkpoints, which
     ///         allows us to avoid poking in any period that has LP or trading
@@ -104,8 +106,11 @@ abstract contract HyperdriveStorage is MultiTokenStorage {
         _positionDuration = _config.positionDuration;
         _timeStretch = _config.timeStretch;
         _initialSharePrice = _config.initialSharePrice;
-        _fees = _config.fees;
         _governance = _config.governance;
+
+        _curveFee = _config.fees.curve;
+        _flatFee = _config.fees.flat;
+        _governanceFee = _config.fees.governance;
 
         // Initialize the oracle.
         _updateGap = _config.updateGap;

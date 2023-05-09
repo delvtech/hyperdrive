@@ -3,10 +3,11 @@ pragma solidity ^0.8.18;
 
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
-import { MakerDsrHyperdriveDeployer } from "contracts/src/factory/MakerDsrHyperdriveDeployer.sol";
-import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
+import { DsrHyperdriveDeployer } from "contracts/src/factory/DsrHyperdriveDeployer.sol";
+import { DsrHyperdriveFactory } from "contracts/src/factory/DsrHyperdriveFactory.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
-import { DsrManager } from "contracts/test/MockMakerDsrHyperdrive.sol";
+import { DsrManager } from "contracts/test/MockDsrHyperdrive.sol";
 import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
 
 contract HyperdriveFactoryTest is HyperdriveTest {
@@ -15,14 +16,16 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             address(0x373238337Bfe1146fb49989fc222523f83081dDb)
         );
 
-        MakerDsrHyperdriveDeployer simpleDeployer = new MakerDsrHyperdriveDeployer(
-                manager
-            );
+        DsrHyperdriveDeployer simpleDeployer = new DsrHyperdriveDeployer(
+            manager
+        );
 
-        HyperdriveFactory factory = new HyperdriveFactory(
+        DsrHyperdriveFactory factory = new DsrHyperdriveFactory(
             alice,
             simpleDeployer,
-            bob
+            bob,
+            IHyperdrive.Fees(0, 0, 0),
+            address(manager)
         );
         assertEq(factory.governance(), alice);
 
