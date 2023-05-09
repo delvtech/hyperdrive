@@ -43,6 +43,30 @@ function YSInvariant(
         to_mathint(CVLPow(mu, t)) * (CVLPow(y2, tp) - CVLPow(y1, tp));
 }
 
+/// Verify the invariant: (c / µ) * (µ * z)^(1 - t) + y^(1 - t) = k
+/// t = 0 : (c/mu) *(mu * z) + y = k => c*z + y = k => x + y = k
+rule YSInvariantIntegrity() {
+    uint256 z1; require z1 !=0;
+    uint256 z2; require z2 !=0;
+    uint256 y1; 
+    uint256 y2; 
+    uint256 mu; require mu !=0;
+    uint256 c; require c !=0;
+    uint256 t; require t <= ONE18() && require t > 0;
+
+    uint256 mu_z1 = require_uint256(mu * z1);
+    uint256 mu_z2 = require_uint256(mu * z2);
+    uint256 tp = require_uint256(ONE18() - t);
+    
+    /// Require invariant equivalent expressions on pairs (z1,y1) and (z2,y2).
+    require YSInvariant(z1, z2, y1, y2, mu, c, t);
+
+    mathint k1 = (c / mu) * CVLPow(mu_z1, tp) + CVLPow(y1, tp);
+    mathint k2 = (c / mu) * CVLPow(mu_z2, tp) + CVLPow(y2, tp);
+
+    assert k1 == k2;
+}
+
 rule monotonicity(uint256 base1, uint256 base2) {
     uint256 bondAmount;
     uint256 timeRemaining;

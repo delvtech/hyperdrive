@@ -128,6 +128,10 @@ ghost _ghostPow(uint256, uint256) returns uint256 {
     axiom forall uint256 x. forall uint256 y. forall uint256 z. 
         (0 <= y && y <= ONE18() &&  z + y == to_mathint(ONE18())) => (
         _ghostPow(x, y) * _ghostPow(x, z) == x * ONE18());
+    /// x^y * x^y == x^(2*y)
+    axiom forall uint256 x. forall uint256 y. forall uint256 z.
+         (to_mathint(z) == 2 * y) 
+            => _ghostPow(x, y) * _ghostPow(x, y) == ONE18() * _ghostPow(x, z);
 }
 
 function CVLPow(uint256 x, uint256 y) returns uint256 {
