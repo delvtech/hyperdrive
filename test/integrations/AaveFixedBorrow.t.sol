@@ -58,6 +58,7 @@ contract AaveFixedBorrowTest is BaseTest {
             checkpointDuration: 1 days, // 1 day checkpoints
             timeStretch: HyperdriveUtils.calculateTimeStretch(0.02e18), // 2% APR time stretch
             governance: address(0),
+            feeCollector: address(0),
             fees: IHyperdrive.Fees({
                 curve: 0.1e18, // 10% curve fee
                 flat: 0.05e18, // 5% flat fee

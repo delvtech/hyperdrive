@@ -45,6 +45,7 @@ contract HyperdriveTest is BaseTest {
             checkpointDuration: CHECKPOINT_DURATION,
             timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
             governance: governance,
+            feeCollector: governance,
             fees: fees,
             oracleSize: ORACLE_SIZE,
             updateGap: UPDATE_GAP
@@ -84,6 +85,7 @@ contract HyperdriveTest is BaseTest {
             checkpointDuration: CHECKPOINT_DURATION,
             timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
             governance: governance,
+            feeCollector: governance,
             fees: fees,
             oracleSize: ORACLE_SIZE,
             updateGap: UPDATE_GAP

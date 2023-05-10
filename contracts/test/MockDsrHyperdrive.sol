@@ -42,6 +42,7 @@ contract MockDsrHyperdrive is DsrHyperdrive {
                     22.186877016851916266e18
                 ),
                 governance: address(0),
+                feeCollector: address(0),
                 fees: IHyperdrive.Fees({ curve: 0, flat: 0, governance: 0 }),
                 oracleSize: 2,
                 updateGap: 0
@@ -89,6 +90,7 @@ contract MockDsrHyperdriveDataProvider is DsrHyperdriveDataProvider {
                     22.186877016851916266e18
                 ),
                 governance: address(0),
+                feeCollector: address(0),
                 fees: IHyperdrive.Fees({ curve: 0, flat: 0, governance: 0 }),
                 oracleSize: 2,
                 updateGap: 0

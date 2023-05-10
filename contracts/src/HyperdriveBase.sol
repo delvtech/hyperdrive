@@ -88,6 +88,13 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
         _pausers[who] = status;
     }
 
+    ///@notice Allows governance to change governance
+    ///@param who The new governance address
+    function setGovernance(address who) external {
+        if (msg.sender != _governance) revert Errors.Unauthorized();
+        _governance = who;
+    }
+
     ///@notice Allows an authorized address to pause this contract
     ///@param status True to pause all deposits and false to unpause them
     function pause(bool status) external {
@@ -122,7 +129,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
         uint256 governanceFeesAccrued = _governanceFeesAccrued;
         _governanceFeesAccrued = 0;
         // TODO: We should make an immutable asUnderlying parameter
-        (proceeds, ) = _withdraw(governanceFeesAccrued, _governance, true);
+        (proceeds, ) = _withdraw(governanceFeesAccrued, _feeCollector, true);
     }
 
     /// Helpers ///
