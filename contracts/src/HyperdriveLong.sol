@@ -299,7 +299,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // closed is equivalent to short proceeds as LPs take the other side of
         // every trade.
         uint256 withdrawalSharesOutstanding = _totalSupply[
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
+            AssetId._WITHDRAWAL_SHARE_ASSET_ID
         ] - _withdrawPool.readyToWithdraw;
         if (withdrawalSharesOutstanding > 0) {
             // TODO: Test this logic to ensure that opening and closing a long

@@ -13,6 +13,8 @@ import { FixedPointMath } from "./FixedPointMath.sol";
 ///                    particular legal or regulatory significance.
 library AssetId {
     uint256 internal constant _LP_ASSET_ID = 0;
+    uint256 internal constant _WITHDRAWAL_SHARE_ASSET_ID =
+        uint256(AssetIdPrefix.WithdrawalShare) << 248;
 
     // TODO: We'll ultimately want to use the upper range of `uint8` so
     // constants may be more appropriate. This would give the extraData more
