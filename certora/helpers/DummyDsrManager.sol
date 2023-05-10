@@ -1,38 +1,31 @@
+pragma solidity ^0.8.18;
+
 import {DsrManager} from "../../contracts/src/interfaces/IMaker.sol";
+import "./DummyDAI.sol";
+import "./DummyPot.sol";
 
 
 contract DummyDsrManager is DsrManager {
+    DummyPot public potInstance;
+    
     uint256 public _supplyPieTotal;
-    uint256 public _chi;
 
     mapping (address => uint256) public _pieOf;
+
+    // Used to simulate dai because we only need balanceOf() and transfer() functions. 
+    // We can simulate this behavior here for simplicity
+    // Also, no instances of dai is used in the contract.
     mapping (address => uint256) public _daiBalance;
 
     uint256 constant RAY = 10 ** 27;
-    function add(uint256 x, uint256 y) internal pure returns (uint256 z) {
-        require((z = x + y) >= x);
-    }
-    function sub(uint256 x, uint256 y) internal pure returns (uint256 z) {
-        require((z = x - y) <= x);
-    }
-    function mul(uint256 x, uint256 y) internal pure returns (uint256 z) {
-        require(y == 0 || (z = x * y) / y == x);
-    }
-    function rmul(uint256 x, uint256 y) internal pure returns (uint256 z) {
-        // always rounds down
-        z = mul(x, y) / RAY;
-    }
-    function rdiv(uint256 x, uint256 y) internal pure returns (uint256 z) {
-        // always rounds down
-        z = mul(x, RAY) / y;
-    }
+
+    // keep it to round up (Solidity only rounds down).
     function rdivup(uint256 x, uint256 y) internal pure returns (uint256 z) {
         // always rounds up
-        z = add(mul(x, RAY), sub(y, 1)) / y;
+        z = (x * RAY + y - 1) / y;
     }
 
     constructor() public {
-        _chi = 10;
         _supplyPieTotal = 0;
     }
 
@@ -41,9 +34,8 @@ contract DummyDsrManager is DsrManager {
         return daiAddr;
     }
 
-    address potAddr;
     function pot() external view returns (address) {
-        return potAddr;
+        return address(potInstance);
     }
 
     function pieOf(address usr) external view returns (uint256) {
@@ -57,33 +49,39 @@ contract DummyDsrManager is DsrManager {
     // dst ... owner getting new minted pie shares
     // wad ... amount payed for pie
     function join(address dst, uint256 wad) external {
-        uint256 pie = rdiv(wad, _chi);
-        _pieOf[dst] = add(_pieOf[dst], pie);
-        _supplyPieTotal = add(_supplyPieTotal, pie);
+        uint256 chi = (block.timestamp > potInstance.rho()) ? potInstance.drip() : potInstance.chi();
+            
+        uint256 pie = wad / chi;
+        _pieOf[dst] += pie;
+        _supplyPieTotal += pie;
 
-        _daiBalance[msg.sender] = sub(_daiBalance[msg.sender], wad);
-        _daiBalance[address(this)] = add(_daiBalance[address(this)], wad);
+        _daiBalance[msg.sender] -= wad;
+        _daiBalance[address(this)] += wad;
     }
 
     function exit(address dst, uint256 wad) external {
-        uint256 userPie = rdivup(wad, _chi);
+        uint256 chi = (block.timestamp > potInstance.rho()) ? potInstance.drip() : potInstance.chi();
+
+        uint256 userPie = rdivup(wad, chi);
 
         require(_pieOf[msg.sender] >= userPie, "insufficient-balance");
 
-        _pieOf[msg.sender] = sub(_pieOf[msg.sender], userPie);
-        _supplyPieTotal = sub(_supplyPieTotal, userPie);
+        _pieOf[msg.sender] -= userPie;
+        _supplyPieTotal -= userPie;
 
-        uint256 returnedAmt = rmul(_chi, userPie);
-        _daiBalance[dst] = add(_daiBalance[dst], returnedAmt);
+        uint256 returnedAmt = userPie * chi;
+        _daiBalance[dst] += returnedAmt;
     }
 
     function exitAll(address dst) external {
+        uint256 chi = (block.timestamp > potInstance.rho()) ? potInstance.drip() : potInstance.chi();
+
         uint256 allUserPie = _pieOf[msg.sender];
 
         _pieOf[msg.sender] = 0;
-        _supplyPieTotal = sub(_supplyPieTotal, allUserPie);
+        _supplyPieTotal -= allUserPie;
 
-        uint256 returnedAmt = rmul(_chi, allUserPie);
-        _daiBalance[dst] = add(_daiBalance[dst], returnedAmt);
+        uint256 returnedAmt = chi * allUserPie;
+        _daiBalance[dst] += returnedAmt;
     }
 }
