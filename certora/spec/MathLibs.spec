@@ -51,8 +51,8 @@ rule YSInvariantIntegrity() {
     uint256 y1; 
     uint256 y2; 
     uint256 mu; require mu !=0;
-    uint256 c; require c !=0;
-    uint256 t; require t <= ONE18() && require t > 0;
+    uint256 c; require c >= mu; // Docs assumption
+    uint256 t; require t <= ONE18() && t > 0;
 
     uint256 mu_z1 = require_uint256(mu * z1);
     uint256 mu_z2 = require_uint256(mu * z2);
