@@ -1,16 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
+import { IPool } from "@aave/interfaces/IPool.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { AaveHyperdrive } from "../instances/AaveHyperdrive.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
-import { IPool } from "@aave/interfaces/IPool.sol";
-
-interface IAToken {
-    // solhint-disable-next-line func-name-mixedcase
-    function UNDERLYING_ASSET_ADDRESS() external view returns (address);
-}
+import { Errors } from "../libraries/Errors.sol";
 
 /// @author DELV
 /// @title AaveHyperdriveDeployer
@@ -35,7 +31,6 @@ contract AaveHyperdriveDeployer is IHyperdriveDeployer {
     ///        constructor code.
     /// @param _linkerFactory The address of the factory which is used to deploy
     ///        the ERC20 linker contracts.
-    /// FIXME: We should ensure that the aToken address is a valid aToken.
     /// @param _extraData This extra data contains the address of the aToken.
     function deploy(
         IHyperdrive.PoolConfig memory _config,
@@ -44,9 +39,16 @@ contract AaveHyperdriveDeployer is IHyperdriveDeployer {
         address _linkerFactory,
         bytes32[] calldata _extraData
     ) external override returns (address) {
-        // We force convert
+        // Ensure that the provided aToken matches the config's base token.
         IERC20 aToken = IERC20(address(uint160(uint256(_extraData[0]))));
-        // Need a hard convert cause no direct bytes32 -> address
+        if (
+            address(aToken) == address(0) ||
+            address(aToken) !=
+            pool.getReserveData(address(_config.baseToken)).aTokenAddress
+        ) {
+            revert Errors.InvalidToken();
+        }
+        // Deploy the hyperdrive instance.
         return (
             address(
                 new AaveHyperdrive(
@@ -54,7 +56,7 @@ contract AaveHyperdriveDeployer is IHyperdriveDeployer {
                     _dataProvider,
                     _linkerCodeHash,
                     _linkerFactory,
-                    aToken,
+                    IERC20(aToken),
                     pool
                 )
             )
