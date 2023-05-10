@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import { MakerDsrHyperdrive, DsrManager } from "../src/instances/MakerDsrHyperdrive.sol";
-import { MakerDsrHyperdriveDataProvider } from "../src/instances/MakerDsrHyperdriveDataProvider.sol";
+import { DsrHyperdrive, DsrManager } from "../src/instances/DsrHyperdrive.sol";
+import { DsrHyperdriveDataProvider } from "../src/instances/DsrHyperdriveDataProvider.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { FixedPointMath } from "../src/libraries/FixedPointMath.sol";
 import { ForwarderFactory } from "../src/ForwarderFactory.sol";
 import { IHyperdrive } from "../src/interfaces/IHyperdrive.sol";
 
-interface IMockMakerDsrHyperdrive is IHyperdrive {
+interface IMockDsrHyperdrive is IHyperdrive {
     function totalShares() external view returns (uint256);
 
     function deposit(
@@ -25,14 +25,14 @@ interface IMockMakerDsrHyperdrive is IHyperdrive {
     function pricePerShare() external view returns (uint256);
 }
 
-contract MockMakerDsrHyperdrive is MakerDsrHyperdrive {
+contract MockDsrHyperdrive is DsrHyperdrive {
     using FixedPointMath for uint256;
 
     constructor(
         address _dataProvider,
         DsrManager _dsrManager
     )
-        MakerDsrHyperdrive(
+        DsrHyperdrive(
             IHyperdrive.PoolConfig({
                 baseToken: IERC20(address(_dsrManager.dai())),
                 initialSharePrice: FixedPointMath.ONE_18,
@@ -73,13 +73,13 @@ contract MockMakerDsrHyperdrive is MakerDsrHyperdrive {
     }
 }
 
-contract MockMakerDsrHyperdriveDataProvider is MakerDsrHyperdriveDataProvider {
+contract MockDsrHyperdriveDataProvider is DsrHyperdriveDataProvider {
     using FixedPointMath for uint256;
 
     constructor(
         DsrManager _dsrManager
     )
-        MakerDsrHyperdriveDataProvider(
+        DsrHyperdriveDataProvider(
             IHyperdrive.PoolConfig({
                 baseToken: IERC20(address(_dsrManager.dai())),
                 initialSharePrice: FixedPointMath.ONE_18,

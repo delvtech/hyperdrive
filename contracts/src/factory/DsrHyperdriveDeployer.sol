@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import { MakerDsrHyperdrive } from "../instances/MakerDsrHyperdrive.sol";
+import { DsrHyperdrive } from "../instances/DsrHyperdrive.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
 import { DsrManager } from "../interfaces/IMaker.sol";
 
 /// @author DELV
-/// @title MakerDsrHyperdriveFactory
+/// @title DsrHyperdriveFactory
 /// @notice This is a minimal factory which contains only the logic to deploy
 ///         hyperdrive and is called by a more complex factory which
 ///         initializes the Hyperdrive instances and acts as a registry.
@@ -15,7 +15,7 @@ import { DsrManager } from "../interfaces/IMaker.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract MakerDsrHyperdriveDeployer is IHyperdriveDeployer {
+contract DsrHyperdriveDeployer is IHyperdriveDeployer {
     DsrManager internal immutable dsrManager;
 
     constructor(DsrManager _dsrManager) {
@@ -38,7 +38,7 @@ contract MakerDsrHyperdriveDeployer is IHyperdriveDeployer {
     ) external override returns (address) {
         return (
             address(
-                new MakerDsrHyperdrive(
+                new DsrHyperdrive(
                     _config,
                     _dataProvider,
                     _linkerCodeHash,

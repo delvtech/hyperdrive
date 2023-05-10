@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import { IPool } from "@aave/interfaces/IPool.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { AaveHyperdriveDeployer, IPool } from "contracts/src/factory/AaveHyperdriveDeployer.sol";
-import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
+import { AaveHyperdriveFactory } from "contracts/src/factory/AaveHyperdriveFactory.sol";
 import { AaveHyperdriveDataProvider } from "contracts/src/instances/AaveHyperdriveDataProvider.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
@@ -16,7 +16,7 @@ import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
 contract HyperdriveDSRTest is HyperdriveTest {
     using FixedPointMath for *;
 
-    HyperdriveFactory factory;
+    AaveHyperdriveFactory factory;
     IERC20 dai = IERC20(address(0x6B175474E89094C44Da98b954EedeAC495271d0F));
     IPool pool = IPool(address(0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2));
     IERC20 aDai = IERC20(address(0xfC1E690f61EFd961294b3e1Ce3313fBD8aa4f85d));
@@ -27,7 +27,12 @@ contract HyperdriveDSRTest is HyperdriveTest {
         AaveHyperdriveDeployer simpleDeployer = new AaveHyperdriveDeployer(
             pool
         );
-        factory = new HyperdriveFactory(alice, simpleDeployer, bob);
+        factory = new AaveHyperdriveFactory(
+            alice,
+            simpleDeployer,
+            bob,
+            IHyperdrive.Fees(0, 0, 0)
+        );
 
         address daiWhale = 0x075e72a5eDf65F0A5f44699c7654C1a76941Ddc8;
 
@@ -64,18 +69,8 @@ contract HyperdriveDSRTest is HyperdriveTest {
             oracleSize: 2,
             updateGap: 0
         });
-        address dataProvider = address(
-            new AaveHyperdriveDataProvider(
-                config,
-                bytes32(0),
-                address(0),
-                aDai,
-                pool
-            )
-        );
         hyperdrive = factory.deployAndInitialize(
             config,
-            dataProvider,
             bytes32(0),
             address(0),
             aToken,
