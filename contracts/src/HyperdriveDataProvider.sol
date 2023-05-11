@@ -53,9 +53,6 @@ abstract contract HyperdriveDataProvider is
         _revert(abi.encode(_checkpoints[_checkpointId]));
     }
 
-    // TODO: The fee parameters aren't immutable right now, but arguably they
-    //       should be.
-    //
     /// @notice Gets the pool's configuration parameters.
     /// @dev These parameters are immutable, so this should only need to be
     ///      called once.

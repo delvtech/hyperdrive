@@ -407,12 +407,7 @@ contract AddLiquidityTest is HyperdriveTest {
         return
             HyperdriveUtils.presentValue(hyperdrive).divDown(
                 hyperdrive.totalSupply(AssetId._LP_ASSET_ID) +
-                    hyperdrive.totalSupply(
-                        AssetId.encodeAssetId(
-                            AssetId.AssetIdPrefix.WithdrawalShare,
-                            0
-                        )
-                    ) -
+                    hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID) -
                     hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw
             );
     }

@@ -323,9 +323,8 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         // Ensure that the ending base balance of Hyperdrive is zero.
         assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1);
         assertApproxEqAbs(
-            hyperdrive.totalSupply(
-                AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
-            ) - hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw,
+            hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID) -
+                hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw,
             0,
             1
         );

@@ -67,8 +67,6 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             .toUint128();
 
         // Mint LP shares to the initializer.
-        // TODO - Should we index the lp share and virtual reserve to shares or to underlying?
-        //        I think in the case where price per share < 1 there may be a problem.
         _mint(AssetId._LP_ASSET_ID, _destination, initialLpShares);
     }
 
@@ -116,11 +114,8 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // the pool and the withdrawal shares have all been paid out. We don't
         // need to check for this case because the share and bond reserves will
         // be zero, which will cause several function calls to fail.
-        //
-        // TODO: We should have a constant for the withdrawal shares asset ID if
-        // we're not going to tranche.
         uint256 withdrawalSharesOutstanding = _totalSupply[
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
+            AssetId._WITHDRAWAL_SHARE_ASSET_ID
         ] - _withdrawPool.readyToWithdraw;
         uint256 lpTotalSupply = _totalSupply[AssetId._LP_ASSET_ID] +
             withdrawalSharesOutstanding;
@@ -154,10 +149,6 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
                 params
             );
 
-            // TODO: If we start caching state changes in memory (which would
-            // be preferable), then we could bundle all of this into a single
-            // calculation in HyperdriveMath.
-            //
             // Add the liquidity to the pool's reserves and calculate the new
             // present value.
             _updateLiquidity(int256(shares));
@@ -177,10 +168,6 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             );
         }
 
-        // TODO: It's not exactly clear why the current value would ever be
-        // greater than the contribution. Getting a better understanding of
-        // this would be good to ensure that the system is still fair.
-        //
         // By maintaining the ratio of present value to total LP shares, we may
         // end up increasing the idle that is available to withdraw by other
         // LPs. In this case, we pay out the proportional amount to the
@@ -236,7 +223,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // Burn the LP shares.
         uint256 activeLpTotalSupply = _totalSupply[AssetId._LP_ASSET_ID];
         uint256 withdrawalSharesOutstanding = _totalSupply[
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
+            AssetId._WITHDRAWAL_SHARE_ASSET_ID
         ] - _withdrawPool.readyToWithdraw;
         uint256 lpTotalSupply = activeLpTotalSupply +
             withdrawalSharesOutstanding;
@@ -295,11 +282,6 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         );
         withdrawalShares -= int256(lpTotalSupply) - int256(_shares);
         if (withdrawalShares < 0) {
-            // FIXME: This is horribly inefficient.
-            //
-            // TODO: This is a hack to ensure that we have safety while
-            // sacrificing some fairness.
-            //
             // We backtrack by calculating the amount of the idle that should
             // be returned to the pool using the original present value ratio.
             uint256 overestimatedProceeds = uint256(-withdrawalShares)
@@ -315,7 +297,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
 
         // Mint the withdrawal shares to the LP.
         _mint(
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0),
+            AssetId._WITHDRAWAL_SHARE_ASSET_ID,
             _destination,
             uint256(withdrawalShares)
         );
@@ -363,11 +345,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         if (_shares == 0) return 0;
 
         // We burn the shares from the user
-        _burn(
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0),
-            msg.sender,
-            _shares
-        );
+        _burn(AssetId._WITHDRAWAL_SHARE_ASSET_ID, msg.sender, _shares);
 
         // The LP gets the pro-rata amount of the collected proceeds.
         uint256 proceeds = _shares.mulDivDown(
@@ -389,10 +367,6 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
     /// @dev Updates the pool's liquidity and holds the pool's APR constant.
     /// @param _shareReservesDelta The delta that should be applied to share reserves.
     function _updateLiquidity(int256 _shareReservesDelta) internal {
-        // TODO: We need to stress test the assumption that the pool's share
-        // reserves will only be equal to zero in the narrow case outlined
-        // below.
-        //
         // If the share reserves delta is equal to zero, there is no need to
         // update the reserves. If the share reserves are equal to zero, the
         // APR is undefined and the reserves cannot be updated. This only occurs
@@ -405,9 +379,6 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             int256 updatedShareReserves = int256(shareReserves) +
                 _shareReservesDelta;
             _marketState.shareReserves = uint256(
-                // TODO: This seems to be masking a numerical problem. This
-                // should be investigated more.
-                //
                 // NOTE: There is a 1 wei discrepancy in some of the
                 // calculations which results in this clamping being required.
                 updatedShareReserves >= 0 ? updatedShareReserves : int256(0)

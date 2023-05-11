@@ -403,11 +403,6 @@ library HyperdriveMath {
             );
         }
 
-        // TODO: We need to consider increasing the liquidity before the
-        // curve trade to create the worst case scenario. At present, this
-        // calculation is attempting to hit a "sweet spot" between the worst
-        // and best case scenarios.
-        //
         // Compute the net of the longs and shorts that will be traded flat
         // and apply this net to the reserves.
         int256 netFlatTrade = int256(

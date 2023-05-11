@@ -99,9 +99,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         // FIXME: Why isn't this zero? Shouldn't the present value be zero after
         // the long is closed?
         assertApproxEqAbs(
-            hyperdrive.totalSupply(
-                AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
-            ),
+            hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID),
             0,
             1e9 // TODO: Investigate this bound.
         );
@@ -175,12 +173,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         // Ensure approximately all of the base and withdrawal shares has been
         // removed from the Hyperdrive instance.
         assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1e10); // TODO: Investigate this bound.
-        assertEq(
-            hyperdrive.totalSupply(
-                AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
-            ),
-            0
-        );
+        assertEq(hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID), 0);
     }
 
     function test_lp_withdrawal_short_immediate_close(
@@ -295,12 +288,7 @@ contract LpWithdrawalTest is HyperdriveTest {
 
         // Ensure that the ending base balance of Hyperdrive is zero.
         assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1e9); // TODO: Investigate this bound.
-        assertEq(
-            hyperdrive.totalSupply(
-                AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
-            ),
-            0
-        );
+        assertEq(hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID), 0);
     }
 
     struct TestLpWithdrawalParams {
@@ -519,9 +507,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         // TODO: See if this bound can be lowered
         assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1e9);
         assertApproxEqAbs(
-            hyperdrive.totalSupply(
-                AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
-            ),
+            hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID),
             0,
             1
         );
@@ -611,7 +597,7 @@ contract LpWithdrawalTest is HyperdriveTest {
                 aliceWithdrawalShares
             );
             aliceWithdrawalShares = hyperdrive.balanceOf(
-                AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0),
+                AssetId._WITHDRAWAL_SHARE_ASSET_ID,
                 alice
             );
             assertApproxEqAbs(
@@ -721,9 +707,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         // Ensure that the ending base balance of Hyperdrive is zero.
         assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1e9); // TODO: This bound is too large
         assertApproxEqAbs(
-            hyperdrive.totalSupply(
-                AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
-            ),
+            hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID),
             0,
             1
         );
@@ -863,9 +847,8 @@ contract LpWithdrawalTest is HyperdriveTest {
         // Ensure that the ending base balance of Hyperdrive is zero.
         assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1);
         assertApproxEqAbs(
-            hyperdrive.totalSupply(
-                AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
-            ) - hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw,
+            hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID) -
+                hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw,
             0,
             1e9 // TODO: Why is this not equal to zero?
         );
@@ -875,12 +858,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         return
             HyperdriveUtils.presentValue(hyperdrive).divDown(
                 hyperdrive.totalSupply(AssetId._LP_ASSET_ID) +
-                    hyperdrive.totalSupply(
-                        AssetId.encodeAssetId(
-                            AssetId.AssetIdPrefix.WithdrawalShare,
-                            0
-                        )
-                    ) -
+                    hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID) -
                     hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw
             );
     }
