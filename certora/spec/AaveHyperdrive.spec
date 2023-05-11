@@ -5,11 +5,13 @@ import "./HyperdriveStorage.spec";
 
 using AaveHyperdrive as HDAave;
 
-use rule sanity filtered{f -> f.selector != sig:openShort(uint256,uint256,address,bool).selector
-        && f.selector != sig:openLong(uint256,uint256,address,bool).selector}
-
+use rule sanity;
+      
 methods {
     function _.mint(address,address,uint256,uint256) external => DISPATCHER(true);
     function _.burn(address,address,uint256,uint256) external => DISPATCHER(true);
-    function HDAave._pricePerShare() internal returns (uint256);
+    
+    function HDAave.MockCalculateFeesOutGivenSharesIn(uint256,uint256,uint256,uint256,uint256) internal returns(AaveHyperdrive.HDFee memory) => NONDET;
+    function HDAave.MockCalculateFeesOutGivenBondsIn(uint256,uint256,uint256,uint256) internal returns(AaveHyperdrive.HDFee memory) => NONDET;
+    function HDAave.MockCalculateFeesInGivenBondsOut(uint256,uint256,uint256,uint256) internal returns(AaveHyperdrive.HDFee memory) =>NONDET;
 }

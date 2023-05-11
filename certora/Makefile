@@ -5,6 +5,12 @@ CONTRACTS_DIR = ../contracts
 MUNGED_DIR    = ./munged
 AaveHD_origin = ../contracts/src/instances/AaveHyperdrive.sol
 AaveHD_munged = ./munged/AaveHyperdrive.sol
+HD_origin = ../contracts/src/Hyperdrive.sol
+HD_munged = ./munged/Hyperdrive.sol
+HDShort_origin = ../contracts/src/HyperdriveShort.sol
+HDShort_munged = ./munged/HyperdriveShort.sol
+HDLong_origin = ../contracts/src/HyperdriveLong.sol
+HDLong_munged = ./munged/HyperdriveLong.sol
 ForwarderFactory_origin = ../contracts/src/ForwarderFactory.sol
 ForwarderFactory_munged = ./munged/ForwarderFactory.sol
 
@@ -16,11 +22,17 @@ help:
 
 munge:
 	cp $(AaveHD_origin) $(MUNGED_DIR)
+	cp $(HD_origin) $(MUNGED_DIR)
+	cp $(HDShort_origin) $(MUNGED_DIR)
+	cp $(HDLong_origin) $(MUNGED_DIR)
 	cp $(ForwarderFactory_origin) $(MUNGED_DIR)
 	patch -d $(MUNGED_DIR) < $(PATCH)
 
 record:
 	diff -burN $(AaveHD_origin) $(AaveHD_munged) | sed 's+\$(AaveHD_origin)/++g' | sed 's+$(AaveHD_munged)++g' > $(PATCH)
+	diff -burN $(HD_origin) $(HD_munged) | sed 's+\$(HD_origin)/++g' | sed 's+$(HD_munged)++g' >> $(PATCH)
+	diff -burN $(HDShort_origin) $(HDShort_munged) | sed 's+\$(HDShort_origin)/++g' | sed 's+$(HDShort_munged)++g' >> $(PATCH)
+	diff -burN $(HDLong_origin) $(HDLong_munged) | sed 's+\$(HDLong_origin)/++g' | sed 's+$(HDLong_munged)++g' >> $(PATCH)
 	diff -burN $(ForwarderFactory_origin) $(ForwarderFactory_munged) | sed 's+\$(ForwarderFactory_origin)/++g' | sed 's+$(ForwarderFactory_munged)++g' >> $(PATCH)
 
 clean:

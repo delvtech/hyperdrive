@@ -1,27 +1,211 @@
 --- ../contracts/src/instances/AaveHyperdrive.sol	2023-05-07 18:33:18.469101129 +0300
-+++ 	2023-05-10 13:39:01.862652382 +0300
-@@ -2,13 +2,14 @@
++++ 	2023-05-11 10:44:09.374398362 +0300
+@@ -2,11 +2,11 @@
  pragma solidity ^0.8.18;
  
  import { IPool } from "@aave/interfaces/IPool.sol";
 -import { Hyperdrive } from "../Hyperdrive.sol";
 -import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 -import { Errors } from "../libraries/Errors.sol";
-+import { Hyperdrive } from "../../contracts/src/Hyperdrive.sol";
++import { Hyperdrive } from "./Hyperdrive.sol";
 +import { FixedPointMath } from "../../contracts/src/libraries/FixedPointMath.sol";
 +import { Errors } from "../../contracts/src/libraries/Errors.sol";
  import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 -import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 +import { IHyperdrive } from "../../contracts/src/interfaces/IHyperdrive.sol";
-+import { HyperdriveStorageGetters } from "../helpers/HyperdriveStorageGetters.sol";
  
--contract AaveHyperdrive is Hyperdrive {
-+contract AaveHyperdrive is Hyperdrive, HyperdriveStorageGetters {
+ contract AaveHyperdrive is Hyperdrive {
      using FixedPointMath for uint256;
+--- ../contracts/src/Hyperdrive.sol	2023-05-07 18:33:18.436601126 +0300
++++ 	2023-05-11 11:22:27.383506391 +0300
+@@ -3,14 +3,15 @@
  
-     // The aave deployment details, the a token for this asset and the aave pool
+ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+ import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+-import { HyperdriveBase } from "./HyperdriveBase.sol";
++import { HyperdriveBase } from "../../contracts/src/HyperdriveBase.sol";
+ import { HyperdriveLong } from "./HyperdriveLong.sol";
+ import { HyperdriveShort } from "./HyperdriveShort.sol";
+-import { AssetId } from "./libraries/AssetId.sol";
+-import { Errors } from "./libraries/Errors.sol";
+-import { FixedPointMath } from "./libraries/FixedPointMath.sol";
+-import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
+-import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
++import { AssetId } from "../../contracts/src/libraries/AssetId.sol";
++import { Errors } from "../../contracts/src/libraries/Errors.sol";
++import { FixedPointMath } from "../../contracts/src/libraries/FixedPointMath.sol";
++import { HyperdriveMath } from "../../contracts/src/libraries/HyperdriveMath.sol";
++import { IHyperdrive } from "../../contracts/src/interfaces/IHyperdrive.sol";
++import { HyperdriveStorageGetters} from "../helpers/HyperdriveStorageGetters.sol";
+ 
+ /// @author DELV
+ /// @title Hyperdrive
+@@ -21,7 +22,8 @@
+ abstract contract Hyperdrive is
+     HyperdriveBase,
+     HyperdriveLong,
+-    HyperdriveShort
++    HyperdriveShort,
++    HyperdriveStorageGetters
+ {
+     using FixedPointMath for uint256;
+     using SafeCast for uint256;
+--- ../contracts/src/HyperdriveShort.sol	2023-05-11 11:16:52.373635276 +0300
++++ 	2023-05-11 11:23:00.323496707 +0300
+@@ -2,12 +2,14 @@
+ pragma solidity ^0.8.18;
+ 
+ import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+-import { HyperdriveLP } from "./HyperdriveLP.sol";
+-import { AssetId } from "./libraries/AssetId.sol";
+-import { Errors } from "./libraries/Errors.sol";
+-import { FixedPointMath } from "./libraries/FixedPointMath.sol";
+-import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
+-import { YieldSpaceMath } from "./libraries/YieldSpaceMath.sol";
++import { HyperdriveLP } from "../../contracts/src/HyperdriveLP.sol";
++import { AssetId } from "../../contracts/src/libraries/AssetId.sol";
++import { Errors } from "../../contracts/src/libraries/Errors.sol";
++import { FixedPointMath } from "../../contracts/src/libraries/FixedPointMath.sol";
++import { HyperdriveMath } from "../../contracts/src/libraries/HyperdriveMath.sol";
++import { YieldSpaceMath } from "../../contracts/src/libraries/YieldSpaceMath.sol";
++import { HyperdriveFeeMath } from "../helpers/HyperdriveFeeMath.sol";
++
+ 
+ /// @author DELV
+ /// @title HyperdriveShort
+@@ -15,7 +17,7 @@
+ /// @custom:disclaimer The language used in this code is for coding convenience
+ ///                    only, and is not intended to, and does not, have any
+ ///                    particular legal or regulatory significance.
+-abstract contract HyperdriveShort is HyperdriveLP {
++abstract contract HyperdriveShort is HyperdriveLP, HyperdriveFeeMath {
+     using FixedPointMath for uint256;
+     using SafeCast for uint256;
+ 
+@@ -396,9 +398,12 @@
+         // Add the spot price to the oracle if an oracle update is required
+         recordPrice(spotPrice);
+ 
++        HDFee memory fee = MockCalculateFeesOutGivenBondsIn(_bondAmount, _timeRemaining, spotPrice, _sharePrice);
+         uint256 totalCurveFee;
+         uint256 totalFlatFee;
+-        (
++        (totalCurveFee, totalFlatFee, ,) = destructHDFee(fee);
++        totalGovernanceFee = totalCurveFee.add(totalFlatFee).mulDown(_governanceFee);
++        /*(
+             totalCurveFee,
+             totalFlatFee,
+             totalGovernanceFee
+@@ -407,7 +412,7 @@
+             _timeRemaining,
+             spotPrice,
+             _sharePrice
+-        );
++        );*/
+         shareReservesDelta -= totalCurveFee;
+         shareProceeds -= totalCurveFee + totalFlatFee;
+ 
+@@ -476,18 +481,20 @@
+ 
+         // Record an oracle update
+         recordPrice(spotPrice);
+-
++        /// @dev : Certora mock
++        HDFee memory fee = MockCalculateFeesInGivenBondsOut(_bondAmount, timeRemaining, spotPrice, _sharePrice);
+         (
+             uint256 totalCurveFee,
+             uint256 totalFlatFee,
+             uint256 governanceCurveFee,
+             uint256 governanceFlatFee
+-        ) = _calculateFeesInGivenBondsOut(
++        ) = destructHDFee(fee);/*_calculateFeesInGivenBondsOut(
+                 _bondAmount, // amountOut
+                 timeRemaining,
+                 spotPrice,
+                 _sharePrice
+-            );
++            );*/
++        
+         shareReservesDelta += totalCurveFee - governanceCurveFee;
+         sharePayment += totalCurveFee + totalFlatFee;
+ 
+--- ../contracts/src/HyperdriveLong.sol	2023-05-11 11:16:57.893632955 +0300
++++ 	2023-05-11 11:22:56.113498548 +0300
+@@ -2,11 +2,13 @@
+ pragma solidity ^0.8.18;
+ 
+ import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+-import { HyperdriveLP } from "./HyperdriveLP.sol";
+-import { AssetId } from "./libraries/AssetId.sol";
+-import { Errors } from "./libraries/Errors.sol";
+-import { FixedPointMath } from "./libraries/FixedPointMath.sol";
+-import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
++import { HyperdriveLP } from "../../contracts/src/HyperdriveLP.sol";
++import { AssetId } from "../../contracts/src/libraries/AssetId.sol";
++import { Errors } from "../../contracts/src/libraries/Errors.sol";
++import { FixedPointMath } from "../../contracts/src/libraries/FixedPointMath.sol";
++import { HyperdriveMath } from "../../contracts/src/libraries/HyperdriveMath.sol";
++import { HyperdriveFeeMath } from "../helpers/HyperdriveFeeMath.sol";
++
+ 
+ /// @author DELV
+ /// @title HyperdriveLong
+@@ -14,7 +16,7 @@
+ /// @custom:disclaimer The language used in this code is for coding convenience
+ ///                    only, and is not intended to, and does not, have any
+ ///                    particular legal or regulatory significance.
+-abstract contract HyperdriveLong is HyperdriveLP {
++abstract contract HyperdriveLong is HyperdriveLP, HyperdriveFeeMath {
+     using FixedPointMath for uint256;
+     using SafeCast for uint256;
+ 
+@@ -377,18 +379,19 @@
+         // Record an oracle update
+         recordPrice(spotPrice);
+ 
++        HDFee memory fee = MockCalculateFeesOutGivenSharesIn(_shareAmount, bondProceeds, _timeRemaining, spotPrice, _sharePrice);            
+         (
+             uint256 totalCurveFee,
+             uint256 totalFlatFee,
+             uint256 governanceCurveFee,
+             uint256 governanceFlatFee
+-        ) = _calculateFeesOutGivenSharesIn(
++        ) = destructHDFee(fee);/*_calculateFeesOutGivenSharesIn(
+                 _shareAmount, // amountIn
+                 bondProceeds, // amountOut
+                 _timeRemaining,
+                 spotPrice,
+                 _sharePrice
+-            );
++            );*/
+         bondReservesDelta -= totalCurveFee - governanceCurveFee;
+         bondProceeds -= totalCurveFee + totalFlatFee;
+ 
+@@ -469,9 +472,12 @@
+         // Record an oracle update
+         recordPrice(spotPrice);
+ 
++        HDFee memory fee = MockCalculateFeesOutGivenBondsIn(_bondAmount, timeRemaining, spotPrice, _sharePrice);
+         uint256 totalCurveFee;
+         uint256 totalFlatFee;
+-        (
++        (totalCurveFee, totalFlatFee, ,) = destructHDFee(fee);
++        totalGovernanceFee = totalCurveFee.add(totalFlatFee).mulDown(_governanceFee);
++        /*(
+             totalCurveFee,
+             totalFlatFee,
+             totalGovernanceFee
+@@ -480,7 +486,7 @@
+             timeRemaining,
+             spotPrice,
+             _sharePrice
+-        );
++        );*/
+         shareReservesDelta -= totalCurveFee;
+         shareProceeds -= totalCurveFee + totalFlatFee;
+ 
 --- ../contracts/src/ForwarderFactory.sol	2023-05-07 18:33:18.425767793 +0300
-+++ 	2023-05-07 18:34:14.477438459 +0300
++++ 	2023-05-10 16:38:05.258231605 +0300
 @@ -1,9 +1,9 @@
  // SPDX-License-Identifier: Apache-2.0
  pragma solidity ^0.8.18;
