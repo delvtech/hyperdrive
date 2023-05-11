@@ -22,14 +22,24 @@ contract DsrHyperdriveFactory is HyperdriveFactory {
     /// @param _governance The address which can update this factory.
     /// @param _deployer The contract which holds the bytecode and deploys new versions.
     /// @param _hyperdriveGovernance The address which is set as the governor of hyperdrive
+    /// @param _feeCollector The address which should be set as the fee collector in new deployments
     /// @param _fees The fees each deployed instance from this contract will have
     constructor(
         address _governance,
         IHyperdriveDeployer _deployer,
         address _hyperdriveGovernance,
+        address _feeCollector,
         IHyperdrive.Fees memory _fees,
         address dsrManager
-    ) HyperdriveFactory(_governance, _deployer, _hyperdriveGovernance, _fees) {
+    )
+        HyperdriveFactory(
+            _governance,
+            _deployer,
+            _hyperdriveGovernance,
+            _feeCollector,
+            _fees
+        )
+    {
         manager = DsrManager(dsrManager);
     }
 

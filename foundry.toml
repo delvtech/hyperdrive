@@ -23,7 +23,7 @@ gas_limit = "18446744073709551615"
 deny_warnings = true
 # optimizer settings
 optimizer = true
-optimizer_runs = 9000
+optimizer_runs = 8000
 # Enable via-ir
 via_ir = true
 # Enable gas-reporting for all contracts

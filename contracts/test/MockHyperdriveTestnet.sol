@@ -36,6 +36,7 @@ contract MockHyperdriveTestnet is Hyperdrive {
                 checkpointDuration: _checkpointDuration,
                 timeStretch: _timeStretch,
                 governance: _governance,
+                feeCollector: _feeCollector,
                 fees: _fees,
                 oracleSize: 2,
                 updateGap: 0
@@ -166,6 +167,7 @@ contract MockHyperdriveDataProviderTestnet is
                 checkpointDuration: _checkpointDuration,
                 timeStretch: _timeStretch,
                 governance: _governance,
+                feeCollector: _feeCollector,
                 fees: _fees,
                 oracleSize: 2,
                 updateGap: 0

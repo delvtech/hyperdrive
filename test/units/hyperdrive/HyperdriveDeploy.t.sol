@@ -24,6 +24,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             alice,
             simpleDeployer,
             bob,
+            bob,
             IHyperdrive.Fees(0, 0, 0),
             address(manager)
         );

@@ -31,6 +31,7 @@ contract HyperdriveDSRTest is HyperdriveTest {
             alice,
             simpleDeployer,
             bob,
+            bob,
             IHyperdrive.Fees(0, 0, 0),
             address(manager)
         );
@@ -65,6 +66,7 @@ contract HyperdriveDSRTest is HyperdriveTest {
                 22.186877016851916266e18
             ),
             governance: address(0),
+            feeCollector: address(0),
             fees: IHyperdrive.Fees(0, 0, 0),
             oracleSize: 2,
             updateGap: 0

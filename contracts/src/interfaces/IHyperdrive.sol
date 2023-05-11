@@ -80,6 +80,8 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
         uint256 timeStretch;
         /// @dev The address of the governance contract.
         address governance;
+        /// @dev The address which collects governance fees
+        address feeCollector;
         /// @dev The fees applied to trades.
         IHyperdrive.Fees fees;
         /// @dev The amount of TWAP entries to store.
