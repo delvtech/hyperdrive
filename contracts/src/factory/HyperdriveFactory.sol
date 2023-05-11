@@ -25,7 +25,7 @@ abstract contract HyperdriveFactory {
 
     // The address which should control hyperdrive instances
     address internal hyperdriveGovernance;
-    
+
     // The address which should receive hyperdriveFees
     address internal feeCollector;
 

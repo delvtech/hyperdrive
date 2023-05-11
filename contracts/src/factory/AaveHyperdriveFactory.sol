@@ -28,7 +28,15 @@ contract AaveHyperdriveFactory is HyperdriveFactory {
         address _hyperdriveGovernance,
         address _feeCollector,
         IHyperdrive.Fees memory _fees
-    ) HyperdriveFactory(_governance, _deployer, _hyperdriveGovernance, _feeCollector, _fees) {}
+    )
+        HyperdriveFactory(
+            _governance,
+            _deployer,
+            _hyperdriveGovernance,
+            _feeCollector,
+            _fees
+        )
+    {}
 
     /// @notice This deploys a data provider for the aave hyperdrive instance
     /// @param _config The configuration of the pool we are deploying

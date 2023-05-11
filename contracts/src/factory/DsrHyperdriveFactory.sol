@@ -31,7 +31,15 @@ contract DsrHyperdriveFactory is HyperdriveFactory {
         address _feeCollector,
         IHyperdrive.Fees memory _fees,
         address dsrManager
-    ) HyperdriveFactory(_governance, _deployer, _hyperdriveGovernance, _feeCollector, _fees) {
+    )
+        HyperdriveFactory(
+            _governance,
+            _deployer,
+            _hyperdriveGovernance,
+            _feeCollector,
+            _fees
+        )
+    {
         manager = DsrManager(dsrManager);
     }
 
