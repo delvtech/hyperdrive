@@ -117,8 +117,6 @@ abstract contract HyperdriveFactory {
     ) external returns (IHyperdrive) {
         // No invalid deployments
         if (_contribution == 0) revert Errors.InvalidContribution();
-        // TODO: We should also overwrite the governance fee field.
-        //
         // Overwrite the governance and fees field of the config.
         _config.governance = hyperdriveGovernance;
         _config.fees = fees;

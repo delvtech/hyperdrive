@@ -229,7 +229,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
             )
             .toUint128();
         _marketState.shortBaseVolume += baseVolume;
-        // TODO: We shouldn't need to call _latestCheckpoint() again.
         _checkpoints[_latestCheckpoint()].shortBaseVolume += baseVolume;
 
         // Apply the trading deltas to the reserves and increase the bond buffer
@@ -281,9 +280,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
             )
             .toUint128();
 
-        // TODO: Is it possible to abstract out the process of updating
-        // aggregates in a way that is nice?
-        //
         // Update the base volume aggregates.
         {
             // Get the total supply of shorts in the checkpoint of the shorts
@@ -459,11 +455,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // Calculate the fees charged on the curve and flat parts of the trade.
         // Since we calculate the amount of shares paid given bonds out, we add
         // the fee from the share deltas so that the trader pays less shares.
-        //
-        // TODO: There should be a way to refactor this so that the spot price
-        // isn't calculated when the curve fee is 0. The bond reserves are only
-        // 0 in the scenario that the LPs have fully withdrawn and the last
-        // trader redeems.
         uint256 spotPrice = _marketState.bondReserves > 0
             ? HyperdriveMath.calculateSpotPrice(
                 _marketState.shareReserves,

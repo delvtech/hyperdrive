@@ -67,8 +67,6 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             .toUint128();
 
         // Mint LP shares to the initializer.
-        // TODO - Should we index the lp share and virtual reserve to shares or to underlying?
-        //        I think in the case where price per share < 1 there may be a problem.
         _mint(AssetId._LP_ASSET_ID, _destination, initialLpShares);
     }
 
@@ -116,9 +114,6 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // the pool and the withdrawal shares have all been paid out. We don't
         // need to check for this case because the share and bond reserves will
         // be zero, which will cause several function calls to fail.
-        //
-        // TODO: We should have a constant for the withdrawal shares asset ID if
-        // we're not going to tranche.
         uint256 withdrawalSharesOutstanding = _totalSupply[
             AssetId._WITHDRAWAL_SHARE_ASSET_ID
         ] - _withdrawPool.readyToWithdraw;
@@ -154,10 +149,6 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
                 params
             );
 
-            // TODO: If we start caching state changes in memory (which would
-            // be preferable), then we could bundle all of this into a single
-            // calculation in HyperdriveMath.
-            //
             // Add the liquidity to the pool's reserves and calculate the new
             // present value.
             _updateLiquidity(int256(shares));
@@ -177,10 +168,6 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             );
         }
 
-        // TODO: It's not exactly clear why the current value would ever be
-        // greater than the contribution. Getting a better understanding of
-        // this would be good to ensure that the system is still fair.
-        //
         // By maintaining the ratio of present value to total LP shares, we may
         // end up increasing the idle that is available to withdraw by other
         // LPs. In this case, we pay out the proportional amount to the

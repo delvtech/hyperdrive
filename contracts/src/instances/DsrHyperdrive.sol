@@ -139,7 +139,6 @@ contract DsrHyperdrive is Hyperdrive {
         return (totalBase.divDown(totalShares));
     }
 
-    /// TODO Is this actually worthwhile versus using drip?
     /// @notice Gets the current up to date value of the rate accumulator
     /// @dev The Maker protocol uses a tick based accounting mechanic to
     ///      accumulate interest in a single variable called the rate
