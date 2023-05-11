@@ -53,8 +53,6 @@ contract HyperdriveDSRTest is HyperdriveTest {
         // We've just copied the values used by the original tests to ensure this runs
 
         vm.startPrank(alice);
-        bytes32[] memory aToken = new bytes32[](1);
-        aToken[0] = bytes32(uint256(uint160(address(aDai))));
         dai.approve(address(factory), type(uint256).max);
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: dai,
@@ -73,7 +71,7 @@ contract HyperdriveDSRTest is HyperdriveTest {
             config,
             bytes32(0),
             address(0),
-            aToken,
+            new bytes32[](0),
             2500e18,
             //1% apr
             1e16

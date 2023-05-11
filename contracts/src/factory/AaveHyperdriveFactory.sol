@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
+import { IPool } from "@aave/interfaces/IPool.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { HyperdriveFactory } from "./HyperdriveFactory.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
 import { AaveHyperdriveDataProvider } from "../instances/AaveHyperdriveDataProvider.sol";
-import { HyperdriveFactory } from "./HyperdriveFactory.sol";
-import { IPool } from "@aave/interfaces/IPool.sol";
+import { Errors } from "../libraries/Errors.sol";
 
 /// @author DELV
 /// @title AaveHyperdriveFactory
@@ -27,6 +28,48 @@ contract AaveHyperdriveFactory is HyperdriveFactory {
         address _hyperdriveGovernance,
         IHyperdrive.Fees memory _fees
     ) HyperdriveFactory(_governance, _deployer, _hyperdriveGovernance, _fees) {}
+
+    /// @notice Deploys a copy of hyperdrive with the given params
+    /// @param _config The configuration of the Hyperdrive pool.
+    /// @param _linkerCodeHash The hash of the ERC20 linker contract's
+    ///        constructor code.
+    /// @param _linkerFactory The address of the factory which is used to deploy
+    ///        the ERC20 linker contracts.
+    /// @param _contribution Base token to call init with
+    /// @param _apr The apr to call init with
+    /// @return The hyperdrive address deployed
+    function deployAndInitialize(
+        IHyperdrive.PoolConfig memory _config,
+        bytes32 _linkerCodeHash,
+        address _linkerFactory,
+        bytes32[] memory,
+        uint256 _contribution,
+        uint256 _apr
+    ) public override returns (IHyperdrive) {
+        // Encode the aToken address corresponding to the base token in the
+        // extra data passed to `deployAndInitialize`.
+        IPool pool = IAaveDeployer(address(hyperdriveDeployer)).pool();
+        address aToken = pool
+            .getReserveData(address(_config.baseToken))
+            .aTokenAddress;
+        if (address(_config.baseToken) == address(0) || aToken == address(0)) {
+            revert Errors.InvalidToken();
+        }
+
+        bytes32[] memory extraData = new bytes32[](1);
+        extraData[0] = bytes32(uint256(uint160(address(aToken))));
+
+        // Deploy and initialize the hyperdrive instance.
+        return
+            super.deployAndInitialize(
+                _config,
+                _linkerCodeHash,
+                _linkerFactory,
+                extraData,
+                _contribution,
+                _apr
+            );
+    }
 
     /// @notice This deploys a data provider for the aave hyperdrive instance
     /// @param _config The configuration of the pool we are deploying

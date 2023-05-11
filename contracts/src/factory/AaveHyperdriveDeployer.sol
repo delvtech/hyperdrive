@@ -39,16 +39,8 @@ contract AaveHyperdriveDeployer is IHyperdriveDeployer {
         address _linkerFactory,
         bytes32[] calldata _extraData
     ) external override returns (address) {
-        // Ensure that the provided aToken matches the config's base token.
-        IERC20 aToken = IERC20(address(uint160(uint256(_extraData[0]))));
-        if (
-            address(aToken) == address(0) ||
-            address(aToken) !=
-            pool.getReserveData(address(_config.baseToken)).aTokenAddress
-        ) {
-            revert Errors.InvalidToken();
-        }
         // Deploy the hyperdrive instance.
+        IERC20 aToken = IERC20(address(uint160(uint256(_extraData[0]))));
         return (
             address(
                 new AaveHyperdrive(
@@ -56,7 +48,7 @@ contract AaveHyperdriveDeployer is IHyperdriveDeployer {
                     _dataProvider,
                     _linkerCodeHash,
                     _linkerFactory,
-                    IERC20(aToken),
+                    aToken,
                     pool
                 )
             )

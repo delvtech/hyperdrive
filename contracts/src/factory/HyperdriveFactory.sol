@@ -47,8 +47,8 @@ abstract contract HyperdriveFactory {
         fees = _fees;
     }
 
-    /// @notice Allows governance to deploy new versions
-    /// @param newDeployer The new deployment contract
+    /// @notice Allows governance to update the deployer contract.
+    /// @param newDeployer The new deployment contract.
     function updateImplementation(IHyperdriveDeployer newDeployer) external {
         // Only governance can call this
         if (msg.sender != governance) revert Errors.Unauthorized();
@@ -84,19 +84,6 @@ abstract contract HyperdriveFactory {
         fees = newFees;
     }
 
-    /// @notice This should deploy a data provider which matches the type of the hyperdrives
-    ///         this contract will deploy
-    /// @param _config The configuration of the pool we are deploying
-    /// @param _extraData The extra data from the pool deployment
-    /// @param _linkerCodeHash The code hash from the multitoken deployer
-    /// @param _linkerFactory The factory of the multitoken deployer
-    function deployDataProvider(
-        IHyperdrive.PoolConfig memory _config,
-        bytes32[] memory _extraData,
-        bytes32 _linkerCodeHash,
-        address _linkerFactory
-    ) internal virtual returns (address);
-
     /// @notice Deploys a copy of hyperdrive with the given params
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _linkerCodeHash The hash of the ERC20 linker contract's
@@ -114,7 +101,7 @@ abstract contract HyperdriveFactory {
         bytes32[] memory _extraData,
         uint256 _contribution,
         uint256 _apr
-    ) external returns (IHyperdrive) {
+    ) public virtual returns (IHyperdrive) {
         // No invalid deployments
         if (_contribution == 0) revert Errors.InvalidContribution();
         // Overwrite the governance and fees field of the config.
@@ -153,4 +140,17 @@ abstract contract HyperdriveFactory {
 
         return (hyperdrive);
     }
+
+    /// @notice This should deploy a data provider which matches the type of the hyperdrives
+    ///         this contract will deploy
+    /// @param _config The configuration of the pool we are deploying
+    /// @param _extraData The extra data from the pool deployment
+    /// @param _linkerCodeHash The code hash from the multitoken deployer
+    /// @param _linkerFactory The factory of the multitoken deployer
+    function deployDataProvider(
+        IHyperdrive.PoolConfig memory _config,
+        bytes32[] memory _extraData,
+        bytes32 _linkerCodeHash,
+        address _linkerFactory
+    ) internal virtual returns (address);
 }
