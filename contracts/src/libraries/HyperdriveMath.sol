@@ -6,7 +6,7 @@ import { FixedPointMath } from "./FixedPointMath.sol";
 import { YieldSpaceMath } from "./YieldSpaceMath.sol";
 import "forge-std/console2.sol";
 
-/// @author Delve
+/// @author DELV
 /// @title Hyperdrive
 /// @notice Math for the Hyperdrive pricing model.
 /// @custom:disclaimer The language used in this code is for coding convenience
@@ -209,23 +209,6 @@ library HyperdriveMath {
             FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
             _sharePrice
         );
-        console2.log("\n_amountIn", _amountIn);
-        console2.log("shareProceeds", shareProceeds);
-        // TODO: We need better testing for this. This may be correct but the
-        // intuition that longs only take a loss on the flat component of their
-        // trade feels a bit handwavy because negative interest accrued on the
-        // entire trade amount.
-        //
-        // If there's net negative interest over the period, the flat portion of
-        // the trade is reduced in proportion to the negative interest. We
-        // always attribute negative interest to the long since it's difficult
-        // or impossible to attribute the negative interest to the short in
-        // practice.
-        if (_initialSharePrice > _closeSharePrice) {
-            shareProceeds = (shareProceeds.mulUp(_closeSharePrice)).divDown(
-                _initialSharePrice
-            );
-        }
 
         if (_normalizedTimeRemaining > 0) {
             // Calculate the curved part of the trade.
@@ -243,6 +226,18 @@ library HyperdriveMath {
             console2.log("shareReservesDelta", shareReservesDelta);
             shareProceeds += shareReservesDelta;
         }
+
+        // If there's net negative interest over the period, the result of close long
+        // is adjusted down by the rate of negative interest. We always attribute negative
+        // interest to the long since it's difficult or impossible to attribute
+        // the negative interest to the short in practice.
+        if (_initialSharePrice > _closeSharePrice) {
+            shareProceeds = shareProceeds.mulDivDown(
+                _closeSharePrice,
+                _initialSharePrice
+            );
+        }
+
         return (shareReservesDelta, bondReservesDelta, shareProceeds);
     }
 
@@ -351,6 +346,98 @@ library HyperdriveMath {
         return (shareReservesDelta, bondReservesDelta, sharePayment);
     }
 
+    struct PresentValueParams {
+        uint256 shareReserves;
+        uint256 bondReserves;
+        uint256 sharePrice;
+        uint256 initialSharePrice;
+        uint256 timeStretch;
+        uint256 longsOutstanding;
+        uint256 longAverageTimeRemaining;
+        uint256 shortsOutstanding;
+        uint256 shortAverageTimeRemaining;
+        uint256 shortBaseVolume;
+    }
+
+    /// @dev Calculates the present value LPs capital in the pool.
+    /// @param _params The parameters for the present value calculation.
+    /// @return The present value of the pool.
+    function calculatePresentValue(
+        PresentValueParams memory _params
+    ) internal pure returns (uint256) {
+        // Compute the net of the longs and shorts that will be traded on the
+        // curve and apply this net to the reserves.
+        int256 netCurveTrade = int256(
+            _params.longsOutstanding.mulDown(_params.longAverageTimeRemaining)
+        ) -
+            int256(
+                _params.shortsOutstanding.mulDown(
+                    _params.shortAverageTimeRemaining
+                )
+            );
+        if (netCurveTrade > 0) {
+            // Apply the curve trade directly to the reserves. Unlike shorts,
+            // the capital that backs longs is accounted for within the share
+            // reserves (the capital backing shorts is taken out of the
+            // reserves). This ensures that even if all the liquidity is
+            // removed, there is always liquidity available for longs to close.
+            _params.shareReserves -= YieldSpaceMath
+                .calculateSharesOutGivenBondsIn(
+                    _params.shareReserves,
+                    _params.bondReserves,
+                    uint256(netCurveTrade),
+                    FixedPointMath.ONE_18.sub(_params.timeStretch),
+                    _params.sharePrice,
+                    _params.initialSharePrice
+                );
+        } else if (netCurveTrade < 0) {
+            // It's possible that the exchange gets into a state where the
+            // net curve trade can't be applied to the reserves. In particular,
+            // this can happen if all of the liquidity is removed. We first
+            // attempt to trade as much as possible on the curve, and then we
+            // mark the remaining amount to the base volume.
+            uint256 maxCurveTrade = _params.bondReserves.divDown(
+                _params.initialSharePrice
+            ) - _params.shareReserves;
+            maxCurveTrade = uint256(-netCurveTrade) <= maxCurveTrade
+                ? uint256(-netCurveTrade)
+                : maxCurveTrade;
+            _params.shareReserves += YieldSpaceMath
+                .calculateSharesInGivenBondsOut(
+                    _params.shareReserves,
+                    _params.bondReserves,
+                    maxCurveTrade,
+                    FixedPointMath.ONE_18.sub(_params.timeStretch),
+                    _params.sharePrice,
+                    _params.initialSharePrice
+                );
+            _params.shareReserves += _params.shortBaseVolume.mulDivDown(
+                uint256(-netCurveTrade) - maxCurveTrade,
+                _params.shortsOutstanding.mulDown(_params.sharePrice)
+            );
+        }
+
+        // Compute the net of the longs and shorts that will be traded flat
+        // and apply this net to the reserves.
+        int256 netFlatTrade = int256(
+            _params.shortsOutstanding.mulDivDown(
+                FixedPointMath.ONE_18 - _params.shortAverageTimeRemaining,
+                _params.sharePrice
+            )
+        ) -
+            int256(
+                _params.longsOutstanding.mulDivDown(
+                    FixedPointMath.ONE_18 - _params.longAverageTimeRemaining,
+                    _params.sharePrice
+                )
+            );
+        _params.shareReserves = uint256(
+            int256(_params.shareReserves) + netFlatTrade
+        );
+
+        return _params.shareReserves;
+    }
+
     /// @dev Calculates the proceeds in shares of closing a short position. This
     ///      takes into account the trading profits, the interest that was
     ///      earned by the short, and the amount of margin that was released
@@ -455,51 +542,5 @@ library HyperdriveMath {
                 (FixedPointMath.ONE_18.sub(_timeRemaining)).mulDown(_bondAmount)
             )
         ).divDown(_timeRemaining);
-    }
-
-    /// @dev Computes the LP allocation adjustment for a position. This is used
-    ///      to accurately account for the duration risk that LPs take on when
-    ///      adding liquidity so that LP shares can be rewarded fairly.
-    /// @param _positionsOutstanding The position balance outstanding.
-    /// @param _baseVolume The base volume created by opening the positions.
-    /// @param _averageTimeRemaining The average time remaining of the positions.
-    /// @param _sharePrice The pool's share price.
-    /// @return adjustment The allocation adjustment.
-    function calculateLpAllocationAdjustment(
-        uint256 _positionsOutstanding,
-        uint256 _baseVolume,
-        uint256 _averageTimeRemaining,
-        uint256 _sharePrice
-    ) internal pure returns (uint256 adjustment) {
-        // baseAdjustment = t * _baseVolume + (1 - t) * _positionsOutstanding
-        adjustment = (_averageTimeRemaining.mulDown(_baseVolume)).add(
-            (FixedPointMath.ONE_18.sub(_averageTimeRemaining)).mulDown(
-                _positionsOutstanding
-            )
-        );
-        // adjustment = baseAdjustment / c
-        adjustment = adjustment.divDown(_sharePrice);
-    }
-
-    /// @dev Calculates the amount of base shares released from burning a
-    ///      a specified amount of LP shares from the pool.
-    /// @param _shares The amount of LP shares burned from the pool.
-    /// @param _shareReserves The pool's share reserves.
-    /// @param _lpTotalSupply The pool's total supply of LP shares.
-    /// @param _longsOutstanding The amount of longs that haven't been closed.
-    /// @param _sharePrice The pool's share price.
-    /// @return shares The amount of base shares released.
-    function calculateOutForLpSharesIn(
-        uint256 _shares,
-        uint256 _shareReserves,
-        uint256 _lpTotalSupply,
-        uint256 _longsOutstanding,
-        uint256 _sharePrice
-    ) internal pure returns (uint256 shares) {
-        // (z - o_l / c) * (dl / l)
-        shares = _shareReserves
-            .sub(_longsOutstanding.divDown(_sharePrice))
-            .mulDivDown(_shares, _lpTotalSupply);
-        return shares;
     }
 }

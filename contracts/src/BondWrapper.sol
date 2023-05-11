@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import "./interfaces/IHyperdrive.sol";
-import "./interfaces/IERC20.sol";
-import "./libraries/ERC20Permit.sol";
-import "./libraries/Errors.sol";
-import "./libraries/AssetId.sol";
+import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { ERC20Permit } from "./libraries/ERC20Permit.sol";
+import { AssetId } from "./libraries/AssetId.sol";
+import { Errors } from "./libraries/Errors.sol";
 
 contract BondWrapper is ERC20Permit {
     // The multitoken of the bond
@@ -13,7 +13,6 @@ contract BondWrapper is ERC20Permit {
     // The underlying token from the bond
     IERC20 public immutable token;
     // The basis points [ie out of 10000] which will be minted for a bond deposit
-    // TODO - Should we make this mutable and updatable?
     uint256 public immutable mintPercent;
 
     // Store the user deposits as a mapping from user address -> asset id -> amount

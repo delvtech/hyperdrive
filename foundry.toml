@@ -1,4 +1,5 @@
 [profile.default]
+solc_version = '0.8.18'
 # The source directory
 src = 'contracts'
 # The artifact directory
@@ -22,13 +23,9 @@ gas_limit = "18446744073709551615"
 deny_warnings = true
 # optimizer settings
 optimizer = true
-optimizer_runs = 7500
-# TODO: This led to a stack-too-deep error involving calculateShortProceeds 
-# (most likely in one of the apply functions). Re-evaluate this after more 
-# refactoring.
-#
+optimizer_runs = 8000
 # Enable via-ir
-# via_ir=true
+via_ir = true
 # Enable gas-reporting for all contracts
 gas_reports = ["*"]
 
@@ -36,4 +33,5 @@ gas_reports = ["*"]
 runs = 1000
 
 [rpc_endpoints]
+mainnet = "${MAINNET_RPC_URL}"
 goerli = "${GOERLI_RPC_URL}"

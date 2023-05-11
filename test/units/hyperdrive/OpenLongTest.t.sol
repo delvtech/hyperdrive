@@ -25,6 +25,33 @@ contract OpenLongTest is HyperdriveTest {
         hyperdrive.openLong(0, 0, bob, true);
     }
 
+    function test_open_long_failure_pause() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Attempt to add zero base as liquidity. This should fail.
+        vm.stopPrank();
+        pause(true);
+        vm.startPrank(bob);
+        vm.expectRevert(Errors.Paused.selector);
+        hyperdrive.openLong(0, 0, bob, true);
+        vm.stopPrank();
+        pause(false);
+    }
+
+    function test_pauser_authorization_fail() external {
+        vm.stopPrank();
+        vm.startPrank(alice);
+        vm.expectRevert(Errors.Unauthorized.selector);
+        hyperdrive.setPauser(alice, true);
+        vm.expectRevert(Errors.Unauthorized.selector);
+        hyperdrive.pause(true);
+        vm.stopPrank();
+    }
+
     function test_open_long_failure_extreme_amount() external {
         uint256 apr = 0.05e18;
 
@@ -135,7 +162,7 @@ contract OpenLongTest is HyperdriveTest {
         // p = 1 / (1 + r)
         // roughly ((1/.9523 - 1) * .1) * 10e18 * 1 = 5e16, or 10% of the 5% bond - base spread.
         uint256 p = (uint256(1 ether)).divDown(1 ether + 0.05 ether);
-        uint256 phi = hyperdrive.getPoolConfig().curveFee;
+        uint256 phi = hyperdrive.getPoolConfig().fees.curve;
         uint256 curveFeeAmount = (uint256(1 ether).divDown(p) - 1 ether)
             .mulDown(phi)
             .mulDown(baseAmount);
@@ -215,16 +242,14 @@ contract OpenLongTest is HyperdriveTest {
 
         // TODO: This problem gets much worse as the baseAmount to open a long gets smaller.
         // Figure out a solution to this.
-        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.checkpoints(
+        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
             checkpointTime
         );
         assertApproxEqAbs(
             poolInfoAfter.longAverageMaturityTime,
-            maturityTime,
-            100
+            maturityTime * 1e18,
+            1
         );
-        assertEq(poolInfoAfter.longBaseVolume, baseAmount);
-        assertEq(checkpoint.longBaseVolume, baseAmount);
         assertEq(
             poolInfoAfter.shortsOutstanding,
             poolInfoBefore.shortsOutstanding

@@ -1,65 +1,55 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Hyperdrive } from "../Hyperdrive.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { Errors } from "../libraries/Errors.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Pot, DsrManager } from "../interfaces/IMaker.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 
-contract MakerDsrHyperdrive is Hyperdrive {
+contract DsrHyperdrive is Hyperdrive {
     using FixedPointMath for uint256;
 
     // @notice The shares created by this pool, starts at 1 to one with
     //         deposits and increases
-    uint256 public totalShares;
+    uint256 internal totalShares;
+
     // @notice The pool management contract
-    DsrManager public immutable dsrManager;
+    DsrManager internal immutable dsrManager;
+
     // @notice The core Maker accounting module for the Dai Savings Rate
-    Pot public immutable pot;
+    Pot internal immutable pot;
+
     // @notice Maker constant
-    uint256 public constant RAY = 1e27;
+    uint256 internal constant RAY = 1e27;
 
     /// @notice Initializes a Hyperdrive pool.
+    /// @param _config The configuration of the Hyperdrive pool.
+    /// @param _dataProvider The address of the data provider.
     /// @param _linkerCodeHash The hash of the ERC20 linker contract's
     ///        constructor code.
     /// @param _linkerFactory The factory which is used to deploy the ERC20
     ///        linker contracts.
-    /// @param _checkpointsPerTerm The number of checkpoints that elapses before
-    ///        bonds can be redeemed one-to-one for base.
-    /// @param _checkpointDuration The time in seconds between share price
-    ///        checkpoints. Position duration must be a multiple of checkpoint
-    ///        duration.
-    /// @param _timeStretch The time stretch of the pool.
-    /// @param _fees The fees to apply to trades.
-    /// @param _governance The governance address.
     /// @param _dsrManager The "dai savings rate" manager contract
     constructor(
+        IHyperdrive.PoolConfig memory _config,
+        address _dataProvider,
         bytes32 _linkerCodeHash,
         address _linkerFactory,
-        uint256 _checkpointsPerTerm,
-        uint256 _checkpointDuration,
-        uint256 _timeStretch,
-        IHyperdrive.Fees memory _fees,
-        address _governance,
         DsrManager _dsrManager
-    )
-        Hyperdrive(
-            _linkerCodeHash,
-            _linkerFactory,
-            IERC20(address(_dsrManager.dai())), // baseToken will always be DAI
-            FixedPointMath.ONE_18,
-            _checkpointsPerTerm,
-            _checkpointDuration,
-            _timeStretch,
-            _fees,
-            _governance
-        )
-    {
+    ) Hyperdrive(_config, _dataProvider, _linkerCodeHash, _linkerFactory) {
+        // Ensure that the Hyperdrive pool was configured properly.
+        if (address(_config.baseToken) != address(_dsrManager.dai())) {
+            revert Errors.InvalidBaseToken();
+        }
+        if (_config.initialSharePrice != FixedPointMath.ONE_18) {
+            revert Errors.InvalidInitialSharePrice();
+        }
+
         dsrManager = _dsrManager;
         pot = Pot(dsrManager.pot());
-        baseToken.approve(address(dsrManager), type(uint256).max);
+        _baseToken.approve(address(dsrManager), type(uint256).max);
     }
 
     /// @notice Transfers base or shares from the user and commits it to the yield source.
@@ -77,7 +67,7 @@ contract MakerDsrHyperdrive is Hyperdrive {
         }
 
         // Transfer the base token from the user to this contract
-        bool success = baseToken.transferFrom(
+        bool success = _baseToken.transferFrom(
             msg.sender,
             address(this),
             amount
@@ -149,7 +139,6 @@ contract MakerDsrHyperdrive is Hyperdrive {
         return (totalBase.divDown(totalShares));
     }
 
-    /// TODO Is this actually worthwhile versus using drip?
     /// @notice Gets the current up to date value of the rate accumulator
     /// @dev The Maker protocol uses a tick based accounting mechanic to
     ///      accumulate interest in a single variable called the rate
@@ -160,7 +149,7 @@ contract MakerDsrHyperdrive is Hyperdrive {
     ///      get the real chi value without interacting with the core maker
     ///      system and expensively mutating state.
     /// return chi The rate accumulator
-    function chi() public view returns (uint256) {
+    function chi() internal view returns (uint256) {
         // timestamp when drip was last called
         uint256 rho = pot.rho();
         // Rate accumulator as of last drip
@@ -177,7 +166,7 @@ contract MakerDsrHyperdrive is Hyperdrive {
     /// @notice Taken from https://github.com/makerdao/dss/blob/master/src/pot.sol#L85
     /// @return z
     function _rpow(uint x, uint n, uint base) internal pure returns (uint z) {
-        assembly {
+        assembly ("memory-safe") {
             switch x
             case 0 {
                 switch n

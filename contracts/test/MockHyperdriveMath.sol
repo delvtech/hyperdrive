@@ -147,6 +147,12 @@ contract MockHyperdriveMath {
         return result;
     }
 
+    function calculatePresentValue(
+        HyperdriveMath.PresentValueParams memory _params
+    ) external pure returns (uint256) {
+        return HyperdriveMath.calculatePresentValue(_params);
+    }
+
     function calculateShortProceeds(
         uint256 _bondAmount,
         uint256 _shareAmount,
@@ -190,37 +196,5 @@ contract MockHyperdriveMath {
             _timeRemaining
         );
         return result;
-    }
-
-    function calculateLpAllocationAdjustment(
-        uint256 _positionsOutstanding,
-        uint256 _baseVolume,
-        uint256 _averageTimeRemaining,
-        uint256 _sharePrice
-    ) external pure returns (uint256) {
-        uint256 result = HyperdriveMath.calculateLpAllocationAdjustment(
-            _positionsOutstanding,
-            _baseVolume,
-            _averageTimeRemaining,
-            _sharePrice
-        );
-        return result;
-    }
-
-    function calculateOutForLpSharesIn(
-        uint256 _shares,
-        uint256 _shareReserves,
-        uint256 _lpTotalSupply,
-        uint256 _longsOutstanding,
-        uint256 _sharePrice
-    ) external pure returns (uint256) {
-        uint256 result1 = HyperdriveMath.calculateOutForLpSharesIn(
-            _shares,
-            _shareReserves,
-            _lpTotalSupply,
-            _longsOutstanding,
-            _sharePrice
-        );
-        return result1;
     }
 }

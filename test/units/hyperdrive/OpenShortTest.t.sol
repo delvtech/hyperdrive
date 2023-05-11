@@ -24,6 +24,23 @@ contract OpenShortTest is HyperdriveTest {
         hyperdrive.openShort(0, type(uint256).max, bob, true);
     }
 
+    function test_open_short_failure_pause() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Attempt to add zero base as liquidity. This should fail.
+        vm.stopPrank();
+        pause(true);
+        vm.startPrank(bob);
+        vm.expectRevert(Errors.Paused.selector);
+        hyperdrive.openShort(0, type(uint256).max, bob, true);
+        vm.stopPrank();
+        pause(false);
+    }
+
     function test_open_short_failure_extreme_amount() external {
         uint256 apr = 0.05e18;
 
@@ -134,7 +151,7 @@ contract OpenShortTest is HyperdriveTest {
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
 
         {
-            IHyperdrive.Checkpoint memory checkpoint = hyperdrive.checkpoints(
+            IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
                 checkpointTime
             );
             assertEq(
@@ -149,15 +166,13 @@ contract OpenShortTest is HyperdriveTest {
                 poolInfoBefore.longsOutstanding
             );
             assertEq(poolInfoAfter.longAverageMaturityTime, 0);
-            assertEq(poolInfoAfter.longBaseVolume, 0);
-            assertEq(checkpoint.longBaseVolume, 0);
             assertEq(
                 poolInfoAfter.shortsOutstanding,
                 poolInfoBefore.shortsOutstanding + bondAmount
             );
             assertApproxEqAbs(
                 poolInfoAfter.shortAverageMaturityTime,
-                maturityTime,
+                maturityTime * 1e18,
                 1
             );
             assertEq(poolInfoAfter.shortBaseVolume, baseProceeds);

@@ -9,7 +9,7 @@ import { MockMultiToken } from "contracts/test/MockMultiToken.sol";
 import { MockBondWrapper } from "contracts/test/MockBondWrapper.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
@@ -62,7 +62,6 @@ contract BondWrapper_close is CombinatorialTest {
 
     function setUp() public override {
         super.setUp();
-        vm.stopPrank();
         vm.startPrank(deployer);
 
         hyperdrive = new __MockHyperDrive__();

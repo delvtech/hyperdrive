@@ -114,6 +114,34 @@ contract CloseShortTest is HyperdriveTest {
         verifyCloseShort(poolInfoBefore, bondAmount, maturityTime, false);
     }
 
+    // This stress tests the aggregate accounting by making the bond amount of
+    // the second trade is off by 1 wei.
+    function test_close_short_dust_amount() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Open a short position.
+        uint256 shortAmount = 10_000_000e18;
+        (uint256 maturityTime, uint256 basePaid) = openShort(bob, shortAmount);
+
+        // Immediately close the bonds. We close the long in two transactions
+        // to ensure that the close long function can handle small input amounts.
+        uint256 baseProceeds = closeShort(bob, maturityTime, shortAmount / 2);
+        baseProceeds += closeShort(bob, maturityTime, shortAmount / 2 - 1);
+
+        // Verify that Bob doesn't end up with more base than he started with.
+        assertGe(basePaid, baseProceeds);
+
+        // Ensure that the average maturity time was updated correctly.
+        assertEq(
+            hyperdrive.getPoolInfo().shortAverageMaturityTime,
+            maturityTime * 1e18
+        );
+    }
+
     function test_close_short_redeem_at_maturity_zero_variable_interest()
         external
     {
@@ -285,7 +313,7 @@ contract CloseShortTest is HyperdriveTest {
         // Retrieve the pool info after the trade.
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
 
-        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.checkpoints(
+        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
             checkpointTime
         );
 
@@ -334,8 +362,6 @@ contract CloseShortTest is HyperdriveTest {
             poolInfoBefore.longsOutstanding
         );
         assertEq(poolInfoAfter.longAverageMaturityTime, 0);
-        assertEq(poolInfoAfter.longBaseVolume, 0);
-        assertEq(checkpoint.longBaseVolume, 0);
         assertEq(poolInfoAfter.shortAverageMaturityTime, 0);
         assertEq(poolInfoAfter.shortBaseVolume, 0);
         assertEq(checkpoint.shortBaseVolume, 0);

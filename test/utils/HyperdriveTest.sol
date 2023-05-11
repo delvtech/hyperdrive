@@ -9,7 +9,7 @@ import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { HyperdriveBase } from "contracts/src/HyperdriveBase.sol";
-import { MockHyperdrive } from "../mocks/MockHyperdrive.sol";
+import { MockHyperdrive, MockHyperdriveDataProvider } from "../mocks/MockHyperdrive.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { HyperdriveUtils } from "./HyperdriveUtils.sol";
 
@@ -21,9 +21,9 @@ contract HyperdriveTest is BaseTest {
 
     uint256 internal constant INITIAL_SHARE_PRICE = FixedPointMath.ONE_18;
     uint256 internal constant CHECKPOINT_DURATION = 1 days;
-    uint256 internal constant CHECKPOINTS_PER_TERM = 365;
-    uint256 internal constant POSITION_DURATION =
-        CHECKPOINT_DURATION * CHECKPOINTS_PER_TERM;
+    uint256 internal constant POSITION_DURATION = 365 days;
+    uint256 internal constant ORACLE_SIZE = 5;
+    uint256 internal constant UPDATE_GAP = 1000;
 
     function setUp() public virtual override {
         super.setUp();
@@ -38,19 +38,25 @@ contract HyperdriveTest is BaseTest {
         });
         // Instantiate Hyperdrive.
         uint256 apr = 0.05e18;
+        IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
+            baseToken: baseToken,
+            initialSharePrice: INITIAL_SHARE_PRICE,
+            positionDuration: POSITION_DURATION,
+            checkpointDuration: CHECKPOINT_DURATION,
+            timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
+            governance: governance,
+            feeCollector: governance,
+            fees: fees,
+            oracleSize: ORACLE_SIZE,
+            updateGap: UPDATE_GAP
+        });
+        address dataProvider = address(new MockHyperdriveDataProvider(config));
         hyperdrive = IHyperdrive(
-            address(
-                new MockHyperdrive(
-                    baseToken,
-                    INITIAL_SHARE_PRICE,
-                    CHECKPOINTS_PER_TERM,
-                    CHECKPOINT_DURATION,
-                    HyperdriveUtils.calculateTimeStretch(apr),
-                    fees,
-                    governance
-                )
-            )
+            address(new MockHyperdrive(config, dataProvider))
         );
+        vm.stopPrank();
+        vm.startPrank(governance);
+        hyperdrive.setPauser(pauser, true);
 
         // Advance time so that Hyperdrive can look back more than a position
         // duration.
@@ -72,19 +78,21 @@ contract HyperdriveTest is BaseTest {
             flat: flatFee,
             governance: governanceFee
         });
-
+        IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
+            baseToken: baseToken,
+            initialSharePrice: INITIAL_SHARE_PRICE,
+            positionDuration: POSITION_DURATION,
+            checkpointDuration: CHECKPOINT_DURATION,
+            timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
+            governance: governance,
+            feeCollector: governance,
+            fees: fees,
+            oracleSize: ORACLE_SIZE,
+            updateGap: UPDATE_GAP
+        });
+        address dataProvider = address(new MockHyperdriveDataProvider(config));
         hyperdrive = IHyperdrive(
-            address(
-                new MockHyperdrive(
-                    baseToken,
-                    INITIAL_SHARE_PRICE,
-                    CHECKPOINTS_PER_TERM,
-                    CHECKPOINT_DURATION,
-                    HyperdriveUtils.calculateTimeStretch(apr),
-                    fees,
-                    governance
-                )
-            )
+            address(new MockHyperdrive(config, dataProvider))
         );
     }
 
@@ -131,17 +139,15 @@ contract HyperdriveTest is BaseTest {
         // Remove liquidity from the pool.
         uint256 baseBalanceBefore = baseToken.balanceOf(lp);
         uint256 withdrawalShareBalanceBefore = hyperdrive.balanceOf(
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0),
+            AssetId._WITHDRAWAL_SHARE_ASSET_ID,
             lp
         );
         hyperdrive.removeLiquidity(shares, 0, lp, true);
 
         return (
             baseToken.balanceOf(lp) - baseBalanceBefore,
-            hyperdrive.balanceOf(
-                AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0),
-                lp
-            ) - withdrawalShareBalanceBefore
+            hyperdrive.balanceOf(AssetId._WITHDRAWAL_SHARE_ASSET_ID, lp) -
+                withdrawalShareBalanceBefore
         );
     }
 
@@ -241,5 +247,11 @@ contract HyperdriveTest is BaseTest {
     function advanceTime(uint256 time, int256 apr) internal {
         MockHyperdrive(address(hyperdrive)).accrue(time, apr);
         vm.warp(block.timestamp + time);
+    }
+
+    function pause(bool paused) internal {
+        vm.startPrank(pauser);
+        hyperdrive.pause(paused);
+        vm.stopPrank();
     }
 }

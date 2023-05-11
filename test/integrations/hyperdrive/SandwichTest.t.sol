@@ -57,6 +57,7 @@ contract SandwichTest is HyperdriveTest {
         assertGe(lpProceeds, contributionPlusInterest);
     }
 
+    // TODO: Use the normalize function to improve this test.
     function test_sandwich_lp(uint8 _apr) external {
         uint256 apr = uint256(_apr) * 0.01e18;
         vm.assume(apr >= 0.01e18 && apr <= 0.2e18);

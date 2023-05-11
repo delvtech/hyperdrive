@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import "./interfaces/IMultiToken.sol";
-import "./interfaces/IForwarderFactory.sol";
-import "./ERC20Forwarder.sol";
+import { IForwarderFactory } from "./interfaces/IForwarderFactory.sol";
+import { IMultiToken } from "./interfaces/IMultiToken.sol";
+import { ERC20Forwarder } from "./ERC20Forwarder.sol";
 
 contract ForwarderFactory is IForwarderFactory {
     // Our multi token contract stores many internal ERC20 like tokens, in order

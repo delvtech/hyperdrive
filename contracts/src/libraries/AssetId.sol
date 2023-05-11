@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import { Errors } from "./Errors.sol";
 import { FixedPointMath } from "./FixedPointMath.sol";
 
-/// @author Delve
+/// @author DELV
 /// @title Hyperdrive
 /// @notice A library that handles the encoding and decoding of asset IDs for
 ///         Hyperdrive.
@@ -13,10 +13,9 @@ import { FixedPointMath } from "./FixedPointMath.sol";
 ///                    particular legal or regulatory significance.
 library AssetId {
     uint256 internal constant _LP_ASSET_ID = 0;
+    uint256 internal constant _WITHDRAWAL_SHARE_ASSET_ID =
+        uint256(AssetIdPrefix.WithdrawalShare) << 248;
 
-    // TODO: We'll ultimately want to use the upper range of `uint8` so
-    // constants may be more appropriate. This would give the extraData more
-    // range.
     enum AssetIdPrefix {
         LP,
         Long,

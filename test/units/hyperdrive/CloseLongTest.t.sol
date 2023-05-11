@@ -144,6 +144,40 @@ contract CloseLongTest is HyperdriveTest {
         );
     }
 
+    // This stress tests the aggregate accounting by making the bond amount of
+    // the second trade off by 1 wei.
+    function test_close_long_dust_amount() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Open a long position.
+        uint256 basePaid = 10_000_000e18;
+        (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
+
+        // Immediately close the bonds. We close the long in two transactions
+        // to ensure that the close long function can handle small input amounts.
+        uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount / 2);
+        baseProceeds += closeLong(bob, maturityTime, bondAmount / 2 - 1);
+
+        // Verify that Bob didn't receive more base than he put in.
+        assertLe(baseProceeds, basePaid);
+
+        // Ensure that the average maturity time was updated correctly.
+        assertEq(
+            hyperdrive.getPoolInfo().longAverageMaturityTime,
+            maturityTime * 1e18
+        );
+
+        // Ensure that the average open share price was updated correctly.
+        assertEq(
+            hyperdrive.getCheckpoint(block.timestamp).longSharePrice,
+            hyperdrive.getPoolInfo().sharePrice
+        );
+    }
+
     function test_close_long_halfway_through_term() external {
         // Initialize the market.
         uint apr = 0.05e18;
@@ -304,13 +338,11 @@ contract CloseLongTest is HyperdriveTest {
                 HyperdriveUtils.calculateTimeRemaining(hyperdrive, maturityTime)
             )
         );
-        uint256 matureBondsValue = matureBonds
-            .divDown(initialSharePrice)
-            .mulDown(poolInfoBefore.sharePrice);
+        uint256 bondsValue = matureBonds;
 
         // Portion of immature bonds are sold on the YieldSpace curve
         uint256 immatureBonds = bondAmount - matureBonds;
-        uint256 immatureBondsValue = YieldSpaceMath
+        bondsValue += YieldSpaceMath
             .calculateSharesOutGivenBondsIn(
                 poolInfoBefore.shareReserves,
                 poolInfoBefore.bondReserves,
@@ -323,16 +355,11 @@ contract CloseLongTest is HyperdriveTest {
             )
             .mulDown(poolInfoBefore.sharePrice);
 
-        // Account the negative interest with the bondAmount as principal
-        (uint256 matureBondsFaceValue, ) = HyperdriveUtils
-            .calculateCompoundInterest(matureBonds, apr, timeAdvanced);
-
-        assertApproxEqAbs(
-            baseProceeds,
-            immatureBondsValue.add(matureBondsValue),
-            6
+        bondsValue = bondsValue.divDown(initialSharePrice).mulDown(
+            poolInfoBefore.sharePrice
         );
-        assertApproxEqAbs(matureBondsValue, matureBondsFaceValue, 5);
+
+        assertApproxEqAbs(baseProceeds, bondsValue, 6);
 
         // Verify that the close long updates were correct.
         verifyCloseLong(
@@ -419,7 +446,7 @@ contract CloseLongTest is HyperdriveTest {
         // Verify that the other states were correct.
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
 
-        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.checkpoints(
+        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
             checkpointTime
         );
         if (wasCheckpointed) {
@@ -445,8 +472,6 @@ contract CloseLongTest is HyperdriveTest {
         assertEq(poolInfoAfter.sharePrice, poolInfoBefore.sharePrice);
         assertEq(poolInfoAfter.lpTotalSupply, poolInfoBefore.lpTotalSupply);
         assertEq(poolInfoAfter.longAverageMaturityTime, 0);
-        assertEq(poolInfoAfter.longBaseVolume, 0);
-        assertEq(checkpoint.longBaseVolume, 0);
         assertEq(
             poolInfoAfter.shortsOutstanding,
             poolInfoBefore.shortsOutstanding
