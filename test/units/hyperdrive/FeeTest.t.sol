@@ -138,7 +138,7 @@ contract FeeTest is HyperdriveTest {
         assertGt(governanceFeesAfterCloseShort, governanceFeesAfterOpenShort);
 
         // collect governance fees
-        vm.expectRevert(Errors.Unauthorized());
+        vm.expectRevert(Errors.Unauthorized.selector);
         MockHyperdrive(address(hyperdrive)).collectGovernanceFee(true);
         vm.prank(bob);
         MockHyperdrive(address(hyperdrive)).collectGovernanceFee(true);
