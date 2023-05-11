@@ -25,6 +25,9 @@ abstract contract HyperdriveFactory {
 
     // The address which should control hyperdrive instances
     address internal hyperdriveGovernance;
+    
+    // The address which should receive hyperdriveFees
+    address internal feeCollector;
 
     // The fees each contract for this instance will be deployed with
     IHyperdrive.Fees public fees;
@@ -33,17 +36,20 @@ abstract contract HyperdriveFactory {
     /// @param _governance The address which can update this factory.
     /// @param _deployer The contract which holds the bytecode and deploys new versions.
     /// @param _hyperdriveGovernance The address which is set as the governor of hyperdrive
+    /// @param _feeCollector The address which should be set as the fee collector in new deployments
     /// @param _fees The fees each deployed instance from this contract will have
     constructor(
         address _governance,
         IHyperdriveDeployer _deployer,
         address _hyperdriveGovernance,
+        address _feeCollector,
         IHyperdrive.Fees memory _fees
     ) {
         governance = _governance;
         hyperdriveDeployer = _deployer;
         versionCounter = 1;
         hyperdriveGovernance = _hyperdriveGovernance;
+        feeCollector = _feeCollector;
         fees = _fees;
     }
 
@@ -73,6 +79,15 @@ abstract contract HyperdriveFactory {
         if (msg.sender != governance) revert Errors.Unauthorized();
         // Update version and increment the counter
         hyperdriveGovernance = newGovernance;
+    }
+
+    /// @notice Allows governance to change the fee collector address
+    /// @param newFeeCollector The new governor address
+    function updateFeeCollector(address newFeeCollector) external {
+        // Only governance can call this
+        if (msg.sender != governance) revert Errors.Unauthorized();
+        // Update version and increment the counter
+        feeCollector = newFeeCollector;
     }
 
     /// @notice Allows governance to change the fee schedule for the newly deployed factories
@@ -117,10 +132,9 @@ abstract contract HyperdriveFactory {
     ) external returns (IHyperdrive) {
         // No invalid deployments
         if (_contribution == 0) revert Errors.InvalidContribution();
-        // TODO: We should also overwrite the governance fee field.
-        //
         // Overwrite the governance and fees field of the config.
-        _config.governance = hyperdriveGovernance;
+        _config.feeCollector = feeCollector;
+        _config.governance = governance;
         _config.fees = fees;
         // We deploy a new data provider for this instance
         address dataProvider = deployDataProvider(

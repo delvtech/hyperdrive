@@ -124,12 +124,14 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     ) internal virtual returns (uint256 openSharePrice);
 
     /// @notice This function collects the governance fees accrued by the pool.
+    /// @param asUnderlying Indicates if the fees should be paid in underlying or yielding token
     /// @return proceeds The amount of base collected.
-    function collectGovernanceFee() external returns (uint256 proceeds) {
+    function collectGovernanceFee(bool asUnderlying) external returns (uint256 proceeds) {
+        // Must have been granted a role
+        if (!_pausers[msg.sender] && msg.sender != _feeCollector && msg.sender != _governance) revert Errors.Unauthorized();
         uint256 governanceFeesAccrued = _governanceFeesAccrued;
         _governanceFeesAccrued = 0;
-        // TODO: We should make an immutable asUnderlying parameter
-        (proceeds, ) = _withdraw(governanceFeesAccrued, _feeCollector, true);
+        (proceeds, ) = _withdraw(governanceFeesAccrued, _feeCollector, asUnderlying);
     }
 
     /// Helpers ///
