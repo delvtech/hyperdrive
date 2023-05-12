@@ -46,7 +46,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         vm.expectRevert(Errors.Unauthorized.selector);
         factory.updateFeeCollector(bob);
         vm.expectRevert(Errors.Unauthorized.selector);
-        factory.updateFees(IHyperdrive.Fees(1,2,4));
+        factory.updateFees(IHyperdrive.Fees(1, 2, 4));
         vm.expectRevert(Errors.Unauthorized.selector);
         factory.updateDefaultPausers(defaults);
         vm.stopPrank();
