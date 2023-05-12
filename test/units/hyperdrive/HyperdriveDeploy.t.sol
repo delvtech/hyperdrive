@@ -20,12 +20,16 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             manager
         );
 
+        address[] memory defaults = new address[](1);
+        defaults[0] = bob;
+
         DsrHyperdriveFactory factory = new DsrHyperdriveFactory(
             alice,
             simpleDeployer,
             bob,
             bob,
             IHyperdrive.Fees(0, 0, 0),
+            defaults,
             address(manager)
         );
         assertEq(factory.governance(), alice);

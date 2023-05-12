@@ -27,12 +27,16 @@ contract HyperdriveDSRTest is HyperdriveTest {
         DsrHyperdriveDeployer simpleDeployer = new DsrHyperdriveDeployer(
             manager
         );
+        address[] memory defaults = new address[](1);
+        defaults[0] = bob;
+
         factory = new DsrHyperdriveFactory(
             alice,
             simpleDeployer,
             bob,
             bob,
             IHyperdrive.Fees(0, 0, 0),
+            defaults,
             address(manager)
         );
 

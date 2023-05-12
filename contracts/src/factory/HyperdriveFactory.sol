@@ -32,18 +32,23 @@ abstract contract HyperdriveFactory {
     // The fees each contract for this instance will be deployed with
     IHyperdrive.Fees public fees;
 
+    // The default pausers for new the hyperdrive that are deployed
+    address[] public defaultPausers;
+
     /// @notice Deploys the contract
     /// @param _governance The address which can update this factory.
     /// @param _deployer The contract which holds the bytecode and deploys new versions.
     /// @param _hyperdriveGovernance The address which is set as the governor of hyperdrive
     /// @param _feeCollector The address which should be set as the fee collector in new deployments
     /// @param _fees The fees each deployed instance from this contract will have
+    /// @param _defaultPausers The default addresses which will be set to have the pauser role
     constructor(
         address _governance,
         IHyperdriveDeployer _deployer,
         address _hyperdriveGovernance,
         address _feeCollector,
-        IHyperdrive.Fees memory _fees
+        IHyperdrive.Fees memory _fees,
+        address[] memory _defaultPausers
     ) {
         governance = _governance;
         hyperdriveDeployer = _deployer;
@@ -51,6 +56,7 @@ abstract contract HyperdriveFactory {
         hyperdriveGovernance = _hyperdriveGovernance;
         feeCollector = _feeCollector;
         fees = _fees;
+        defaultPausers = _defaultPausers;
     }
 
     /// @notice Allows governance to update the deployer contract.
@@ -77,7 +83,7 @@ abstract contract HyperdriveFactory {
     function updateHyperdriveGovernance(address newGovernance) external {
         // Only governance can call this
         if (msg.sender != governance) revert Errors.Unauthorized();
-        // Update version and increment the counter
+        // Update hyperdrive governance
         hyperdriveGovernance = newGovernance;
     }
 
@@ -86,7 +92,7 @@ abstract contract HyperdriveFactory {
     function updateFeeCollector(address newFeeCollector) external {
         // Only governance can call this
         if (msg.sender != governance) revert Errors.Unauthorized();
-        // Update version and increment the counter
+        // Update fee collector
         feeCollector = newFeeCollector;
     }
 
@@ -95,8 +101,17 @@ abstract contract HyperdriveFactory {
     function updateFees(IHyperdrive.Fees calldata newFees) external {
         // Only governance can call this
         if (msg.sender != governance) revert Errors.Unauthorized();
-        // Update version and increment the counter
+        // Update the fee struct
         fees = newFees;
+    }
+
+    /// @notice Allows governance to change the fee collector address
+    /// @param newDefaults The new governor address
+    function updateDefaultPausers(address[] calldata newDefaults) external {
+        // Only governance can call this
+        if (msg.sender != governance) revert Errors.Unauthorized();
+        // Update the default pausers
+        defaultPausers = newDefaults;
     }
 
     /// @notice Deploys a copy of hyperdrive with the given params
@@ -121,7 +136,7 @@ abstract contract HyperdriveFactory {
         if (_contribution == 0) revert Errors.InvalidContribution();
         // Overwrite the governance and fees field of the config.
         _config.feeCollector = feeCollector;
-        _config.governance = governance;
+        _config.governance = address(this);
         _config.fees = fees;
         // We deploy a new data provider for this instance
         address dataProvider = deployDataProvider(
@@ -150,6 +165,13 @@ abstract contract HyperdriveFactory {
         );
         _config.baseToken.approve(address(hyperdrive), type(uint256).max);
         hyperdrive.initialize(_contribution, _apr, msg.sender, true);
+
+        // Setup the pausers roles from the default array
+        for (uint256 i = 0; i < defaultPausers.length; i++) {
+            hyperdrive.setPauser(defaultPausers[i], true);
+        }
+        // Reset governance to be the default one
+        hyperdrive.setGovernance(hyperdriveGovernance);
 
         // Mark as a version
         isOfficial[address(hyperdrive)] = versionCounter;
