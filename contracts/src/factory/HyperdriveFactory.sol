@@ -24,10 +24,10 @@ abstract contract HyperdriveFactory {
     uint256 public versionCounter;
 
     // The address which should control hyperdrive instances
-    address internal hyperdriveGovernance;
+    address public hyperdriveGovernance;
 
     // The address which should receive hyperdriveFees
-    address internal feeCollector;
+    address public feeCollector;
 
     // The fees each contract for this instance will be deployed with
     IHyperdrive.Fees public fees;
