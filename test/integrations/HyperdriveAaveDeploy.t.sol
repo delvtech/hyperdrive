@@ -27,12 +27,16 @@ contract HyperdriveDSRTest is HyperdriveTest {
         AaveHyperdriveDeployer simpleDeployer = new AaveHyperdriveDeployer(
             pool
         );
+        address[] memory defaults = new address[](1);
+        defaults[0] = bob;
+
         factory = new AaveHyperdriveFactory(
             alice,
             simpleDeployer,
             bob,
             bob,
-            IHyperdrive.Fees(0, 0, 0)
+            IHyperdrive.Fees(0, 0, 0),
+            defaults
         );
 
         address daiWhale = 0x075e72a5eDf65F0A5f44699c7654C1a76941Ddc8;

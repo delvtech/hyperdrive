@@ -24,12 +24,15 @@ contract DsrHyperdriveFactory is HyperdriveFactory {
     /// @param _hyperdriveGovernance The address which is set as the governor of hyperdrive
     /// @param _feeCollector The address which should be set as the fee collector in new deployments
     /// @param _fees The fees each deployed instance from this contract will have
+    /// @param _defaultPausers The default addresses which will be set to have the pauser role
+    /// @param dsrManager The Maker DSR manger contract address
     constructor(
         address _governance,
         IHyperdriveDeployer _deployer,
         address _hyperdriveGovernance,
         address _feeCollector,
         IHyperdrive.Fees memory _fees,
+        address[] memory _defaultPausers,
         address dsrManager
     )
         HyperdriveFactory(
@@ -37,7 +40,8 @@ contract DsrHyperdriveFactory is HyperdriveFactory {
             _deployer,
             _hyperdriveGovernance,
             _feeCollector,
-            _fees
+            _fees,
+            _defaultPausers
         )
     {
         manager = DsrManager(dsrManager);
