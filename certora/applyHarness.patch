@@ -1,5 +1,5 @@
 --- ../contracts/src/instances/AaveHyperdrive.sol	2023-05-07 18:33:18.469101129 +0300
-+++ 	2023-05-11 10:44:09.374398362 +0300
++++ 	2023-05-12 09:22:18.140775087 +0300
 @@ -2,11 +2,11 @@
  pragma solidity ^0.8.18;
  
@@ -16,6 +16,15 @@
  
  contract AaveHyperdrive is Hyperdrive {
      using FixedPointMath for uint256;
+@@ -16,7 +16,7 @@
+     IPool internal immutable pool;
+ 
+     // The shares created by this pool, starts at one to one with deposits and increases
+-    uint256 internal totalShares;
++    uint256 public totalShares;
+ 
+     /// @notice Initializes a Hyperdrive pool.
+     /// @param _config The configuration of the Hyperdrive pool.
 --- ../contracts/src/Hyperdrive.sol	2023-05-07 18:33:18.436601126 +0300
 +++ 	2023-05-11 11:22:27.383506391 +0300
 @@ -3,14 +3,15 @@
