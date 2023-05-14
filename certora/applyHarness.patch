@@ -1,5 +1,5 @@
---- ../contracts/src/instances/AaveHyperdrive.sol	2023-05-07 18:33:18.469101129 +0300
-+++ 	2023-05-12 09:22:18.140775087 +0300
+--- ../contracts/src/instances/AaveHyperdrive.sol	2023-05-14 11:34:49.197106287 +0300
++++ 	2023-05-14 11:39:15.877024691 +0300
 @@ -2,11 +2,11 @@
  pragma solidity ^0.8.18;
  
@@ -26,8 +26,8 @@
      /// @notice Initializes a Hyperdrive pool.
      /// @param _config The configuration of the Hyperdrive pool.
 --- ../contracts/src/Hyperdrive.sol	2023-05-07 18:33:18.436601126 +0300
-+++ 	2023-05-11 11:22:27.383506391 +0300
-@@ -3,14 +3,15 @@
++++ 	2023-05-14 17:20:47.313105469 +0300
+@@ -3,14 +3,16 @@
  
  import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
@@ -46,16 +46,18 @@
 +import { HyperdriveMath } from "../../contracts/src/libraries/HyperdriveMath.sol";
 +import { IHyperdrive } from "../../contracts/src/interfaces/IHyperdrive.sol";
 +import { HyperdriveStorageGetters} from "../helpers/HyperdriveStorageGetters.sol";
++import { IHyperdriveTypes } from "../helpers/IHyperdriveTypes.sol";
  
  /// @author DELV
  /// @title Hyperdrive
-@@ -21,7 +22,8 @@
+@@ -21,7 +23,9 @@
  abstract contract Hyperdrive is
      HyperdriveBase,
      HyperdriveLong,
 -    HyperdriveShort
 +    HyperdriveShort,
-+    HyperdriveStorageGetters
++    HyperdriveStorageGetters,
++    IHyperdriveTypes
  {
      using FixedPointMath for uint256;
      using SafeCast for uint256;

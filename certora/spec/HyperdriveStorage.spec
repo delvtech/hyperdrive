@@ -21,7 +21,8 @@ methods {
     function curveFee() external returns (uint256) envfree;
     function flatFee() external returns (uint256) envfree;
     function governanceFee() external returns (uint256) envfree;
-    function checkPoints(uint256) external returns (AaveHyperdrive.Checkpoint memory) envfree; 
+    function checkPoints(uint256) external returns (AaveHyperdrive.Checkpoint memory) envfree;
+    function checkPointSharePrice(uint256) external returns (uint128) envfree;
     function pausers(address) external returns (bool) envfree;
     function governanceFeesAccrued() external returns (uint256) envfree;
     function governance() external returns (address) envfree;

@@ -18,6 +18,11 @@ methods {
     function HDAave.MockCalculateFeesOutGivenSharesIn(uint256 x,uint256,uint256,uint256,uint256) internal returns(AaveHyperdrive.HDFee memory) => Foo(x);
     function HDAave.MockCalculateFeesOutGivenBondsIn(uint256 x,uint256,uint256,uint256) internal returns(AaveHyperdrive.HDFee memory) => Bar(x);
     function HDAave.MockCalculateFeesInGivenBondsOut(uint256 x,uint256,uint256,uint256) internal returns(AaveHyperdrive.HDFee memory) => Baz(x);
+    /// Hyperdrive Math
+    //function _.calculateOpenShort(uint256,uint256,uint256,uint256,uint256,uint256,uint256) internal library => NONDET;
+    //function _.calculateCloseShort(uint256,uint256,uint256,uint256,uint256,uint256,uint256) internal library => NONDET;
+    //function _.calculateOpenLong(uint256,uint256,uint256,uint256,uint256,uint256,uint256) internal library => NONDET;
+    //function _.calculateCloseLong(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256) internal library => NONDET;
 }
 
 function Foo(uint256 x) returns AaveHyperdrive.HDFee {
@@ -52,6 +57,7 @@ function LongPositionRoundTripHelper(
     uint256 maturityTime /// maturity time (close)
 ) returns uint256[2] { /// returns[0:1] = [bondsReceived,undelyingRecieved]
     require eOp.msg.sender == eCl.msg.sender;
+    require eOp.msg.sender != currentContract;
 
     uint256 bondsReceived = 
         openLong(eOp, baseAmount, minOutput_open, destination_open, asUnderlying_open);
@@ -79,12 +85,12 @@ filtered{f -> !f.isView} {
         f(e, args);
     uint256 shares2 = HDAave.totalShares();
     uint256 aTokenBalance2 = aToken.balanceOf(e, currentContract);
-    //assert shares1 == shares2;
+    assert shares1 == shares2;
     assert aTokenBalance1 != aTokenBalance2 <=> shares1 != shares2;
 }
 
 /// (In : aToken, Out : aToken)
-rule longPositionRoundTrip1(method f) {
+rule longPositionRoundTrip1() {
     env eOp;
     env eCl;
     uint256 baseAmount; uint256 bondAmount;
@@ -92,19 +98,35 @@ rule longPositionRoundTrip1(method f) {
     address destination_open; address destination_close; 
     uint256 maturityTime;
 
+    /// Probe balances before transaction
+    uint256 aTokenBalanceSender_before = 
+        aToken.balanceOf(eOp, eOp.msg.sender);
+    uint256 aTokenBalanceDestOpen_before = 
+        aToken.balanceOf(eOp, destination_open);
+    uint256 aTokenBalanceDestClose_before = 
+        aToken.balanceOf(eOp, destination_close);
+
+    /// Perform round trip (open aToken -> close aToken)
     uint256[2] result = LongPositionRoundTripHelper(eOp, eCl, 
         baseAmount, bondAmount, minOutput_open, minOutput_close,
         destination_open, destination_close, false, false, maturityTime);
-
     uint256 bondsReceived = result[0];
     uint256 assetsReceived = result[1];
+
+    /// Probe balances after transaction
+    uint256 aTokenBalanceSender_after = 
+        aToken.balanceOf(eCl, eOp.msg.sender);
+    uint256 aTokenBalanceDestOpen_after = 
+        aToken.balanceOf(eCl, destination_open);
+    uint256 aTokenBalanceDestClose_after = 
+        aToken.balanceOf(eCl, destination_close);
 
     assert minOutput_open <= bondsReceived;
     assert minOutput_close <= assetsReceived; 
 }
 
 /// (In : aToken, Out : base token)
-rule longPositionRoundTrip2(method f) {
+rule longPositionRoundTrip2() {
     env eOp;
     env eCl;
     uint256 baseAmount; uint256 bondAmount;
@@ -122,3 +144,38 @@ rule longPositionRoundTrip2(method f) {
     assert minOutput_open <= bondsReceived;
     assert minOutput_close <= assetsReceived; 
 }
+
+rule sharePriceChangesForOnlyOneCheckPoint(method f) {
+    env e;
+    calldataarg args;
+    uint256 _checkpointA;
+    uint256 _checkpointB;
+
+    AaveHyperdrive.Checkpoint a;
+
+    uint128 sharePriceA1 = checkPointSharePrice(_checkpointA);
+    uint128 sharePriceB1 = checkPointSharePrice(_checkpointB);
+        f(e, args);
+    uint128 sharePriceA2 = checkPointSharePrice(_checkpointA);
+    uint128 sharePriceB2 = checkPointSharePrice(_checkpointB);
+
+    assert (sharePriceA1 != sharePriceA2 && sharePriceB1 != sharePriceB2)
+        => _checkpointA == _checkpointB;
+}
+
+rule cannotChangeCheckPointSharePriceTwice(uint256 _checkpoint, method f) {
+    env e;
+    calldataarg args;
+
+    //uint128 sharePrice1 = checkPointSharePrice(_checkpoint);
+    AaveHyperdrive.Checkpoint CP1 = checkPoints(_checkpoint);
+        f(e,args);
+    //uint128 sharePrice2 = checkPointSharePrice(_checkpoint);
+    AaveHyperdrive.Checkpoint CP2 = checkPoints(_checkpoint);
+
+    //assert sharePrice1 !=0 => sharePrice1 == sharePrice2;
+    assert CP1.sharePrice !=0 => CP1.sharePrice == CP2.sharePrice;
+}
+
+/// marketState.longsOutstanding = sum of open longs.
+/// marketState.shortsOutstanding = sum of open shorts.

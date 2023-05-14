@@ -26,6 +26,16 @@ definition constQuotient(uint256 x, uint256 y, uint256 z,
         ( to_mathint(y) == q * z && to_mathint(w) == q * x ) || 
         ( q * y == to_mathint(z) && to_mathint(w) == x / q );
 
+/// Equivalent to the one above, but with implication
+definition constQuotientImply(uint256 x, uint256 y, uint256 z,
+ uint256 q, uint256 w) 
+
+    returns bool = 
+        ( to_mathint(x) == q * z => to_mathint(w) == q * y ) && 
+        ( q * x == to_mathint(z) => to_mathint(w) == y / q ) &&
+        ( to_mathint(y) == q * z => to_mathint(w) == q * x ) && 
+        ( q * y == to_mathint(z) => to_mathint(w) == x / q );
+
 definition ONE18() returns uint256 = 1000000000000000000;
 
 definition _monotonicallyIncreasing(uint256 x, uint256 y, uint256 fx, uint256 fy) returns bool = 
@@ -49,6 +59,9 @@ function mulDivDownAbstract(uint256 x, uint256 y, uint256 z) returns uint256 {
 }
 
 function mulDivDownAbstractPlus(uint256 x, uint256 y, uint256 z) returns uint256 {
+    if(x == 0 || y == 0) return 0;
+    if(x == z) return y;
+    if(y == z) return x;
     havoc res;
     require z != 0;
     uint256 xy = require_uint256(x*y);
@@ -59,6 +72,9 @@ function mulDivDownAbstractPlus(uint256 x, uint256 y, uint256 z) returns uint256
 }
 
 function mulDivUpAbstractPlus(uint256 x, uint256 y, uint256 z) returns uint256 {
+    if(x == 0 || y == 0) return 0;
+    if(x == z) return y;
+    if(y == z) return x; 
     havoc res;
     require z != 0;
     uint256 xy = require_uint256(x * y);

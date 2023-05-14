@@ -5,6 +5,7 @@ import { HyperdriveStorage, MultiTokenStorage, IERC20 } from "../../contracts/sr
 import { IHyperdrive } from "../../contracts/src/interfaces/IHyperdrive.sol";
 
 abstract contract HyperdriveStorageGetters is HyperdriveStorage {
+
     function factory() public view returns (address) {
         return _factory;
     }
@@ -71,6 +72,10 @@ abstract contract HyperdriveStorageGetters is HyperdriveStorage {
 
     function checkPoints(uint256 checkpointTime) public view returns (IHyperdrive.Checkpoint memory checkpoint) {
         checkpoint = _checkpoints[checkpointTime];
+    }
+
+    function checkPointSharePrice(uint256 checkpointTime) public view returns (uint128) {
+        return _checkpoints[checkpointTime].sharePrice;
     }
 
     function pausers(address who) public view returns (bool) {

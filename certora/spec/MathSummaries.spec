@@ -63,7 +63,48 @@ methods {
 }
 
 /// Ghost implementations of FixedPoint Math
-ghost ghostUpdateWeightedAverage(uint256,uint256,uint256,uint256,bool) returns uint256;
+function CVLUpdateWeightedAverage(uint256 avg, uint256 totW, uint256 del, uint256 delW, bool isAdd) returns uint256 {
+    if(isAdd) {return CVLUpdateWeightedAverage_add(avg, totW, del, delW);}
+    else {return CVLUpdateWeightedAverage_sub(avg, totW, del, delW);}
+}
+
+function CVLUpdateWeightedAverage_add(uint256 avg, uint256 totW, uint256 del, uint256 delW) returns uint256 {
+    if(delW == 0) {return require_uint256(avg * ONE18());}
+    return require_uint256(to_mathint(avg) + ghostWeightedAverage(del-avg,delW,totW));
+}
+
+function CVLUpdateWeightedAverage_sub(uint256 avg, uint256 totW, uint256 del, uint256 delW) returns uint256 {
+    if(totW == delW) {return 0;}
+    else {
+        require(totW > delW);
+        if(delW == 0) {return require_uint256(avg * ONE18());}
+        return require_uint256(to_mathint(avg) + ghostWeightedAverage(del-avg,0-delW,totW));
+    }
+}
+/// @TODO : fix axioms for all 4 cases.
+
+/// a + mulDivUp ( (del - a) , delW, W + delW )
+/// a + mulDivUp ( (del - a) , -delW, W - delW )  
+ghost ghostWeightedAverage(mathint, mathint, mathint) returns mathint {
+    axiom forall mathint x. forall mathint y. forall mathint z.
+        ((x > 0 && y > 0) => 
+            ghostWeightedAverage(x,y,z) > 0 && 
+            ghostWeightedAverage(x,y,z) <= x)
+        &&
+        ((x < 0 && y > 0) => 
+            ghostWeightedAverage(x,y,z) < 0 && 
+            ghostWeightedAverage(x,y,z) >= x)
+        &&
+        ((x > 0 && y < 0) => 
+            ghostWeightedAverage(x,y,z) < 0 && 
+            ghostWeightedAverage(x,y,z) - x <= 0)
+        &&
+        ((x < 0 && y < 0) => 
+            ghostWeightedAverage(x,y,z) > 0 && 
+            ghostWeightedAverage(x,y,z) + x <= 0)
+        &&
+        ((x == 0 || y == 0) => ghostWeightedAverage(x,y,z) == 0);
+}
 
 /// Ghost implementations of YieldSpace Math
 ghost ghostBondsInGivenSharesOut(uint256,uint256,uint256,uint256,uint256,uint256) returns uint256;
