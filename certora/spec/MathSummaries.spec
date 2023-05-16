@@ -5,8 +5,8 @@ methods {
     /// @dev Updates a weighted average by adding or removing a weighted delta.
     function _.updateWeightedAverage(uint256,uint256,uint256,uint256,bool) internal library => NONDET;
     /// @dev Once CERT-2050 is fixed, we could switch to custom summary
-        //function _.updateWeightedAverage(uint256 avg, uint256 totW, uint256 del, uint256 delW ,bool isAdd) 
-        //    internal library => CVLUpdateWeightedAverage(avg, totW, del, delW, isAdd) expect uint256;
+    //      function _.updateWeightedAverage(uint256 avg, uint256 totW, uint256 del, uint256 delW ,bool isAdd) 
+    //        internal library => CVLUpdateWeightedAverage(avg, totW, del, delW, isAdd) expect uint256;
     function _.pow(uint256 x, uint256 y) internal library => CVLPow(x, y) expect uint256;
     function _.exp(int256) internal library => NONDET;
     function _.ln(int256) internal library => NONDET;
@@ -52,7 +52,11 @@ methods {
         => ghostCalculateInitialBondReserves(shares, price, initPrice, APR, dur, timeSt) expect uint256;
     
     /// @dev Calculates the present value LPs capital in the pool.
-    //function _.calculatePresentValue(HyperdriveMath.PresentValueParams memory) internal library => NONDET; 
+    /// @notice Replacement of original HyperdriveMath function with Mock. 
+    function _._calculatePresentValue(
+        uint256 z, uint256 y, uint256 c, uint256 mu, uint256 ts,
+        uint256 ol, uint256 tavg_L, uint256 os, uint256 tavg_S, uint256 vol) internal library => 
+        CVLCalculatePresentValue(z,y,c,mu,ts,ol,tavg_L,os,tavg_S,vol) expect uint256;
     
     /// @dev Calculates the interest in shares earned by a short position
     function _.calculateShortInterest(uint256 bond, uint256 openPrice, uint256 closePrice, uint256 price) internal library 
@@ -102,8 +106,56 @@ ghost ghostCalculateShortInterest(uint256,uint256,uint256,uint256) returns uint2
 ghost ghostCalculateShortProceeds(uint256,uint256,uint256,uint256,uint256) returns uint256;
 
 /* =========================================
- ---------- YieldSpace Math summaries -----
-=========================================== */
+ ---------- Hyperdrive Math summaries ------
+============================================ */
+ghost mathint shareReservesDelta;
+
+function CVLCalculatePresentValue(
+        uint256 shareReserves,
+        uint256 bondReserves,
+        uint256 sharePrice,
+        uint256 initialSharePrice,
+        uint256 timeStretch,
+        uint256 longsOutstanding,
+        uint256 longAverageTimeRemaining,
+        uint256 shortsOutstanding,
+        uint256 shortAverageTimeRemaining,
+        uint256 shortBaseVolume
+    ) returns uint256 
+{
+    mathint z = to_mathint(shareReserves);
+    mathint y = to_mathint(bondReserves);
+    mathint c = to_mathint(sharePrice);
+    mathint mu = to_mathint(initialSharePrice);
+    mathint ts = to_mathint(timeStretch);
+    mathint longOut = to_mathint(longsOutstanding);
+    mathint timeAvg_L = to_mathint(longAverageTimeRemaining);
+    mathint shortOut = to_mathint(shortsOutstanding);
+    mathint timeAvg_S = to_mathint(shortAverageTimeRemaining);
+    mathint baseV = to_mathint(shortBaseVolume);
+
+    require c !=0;
+
+    mathint netCurveTrade = (longOut*timeAvg_L)/ONE18() - (shortOut*timeAvg_S)/ONE18();
+    mathint netFlatTrade = (shortOut*(ONE18() - ts))/c - (longOut*(ONE18() - ts))/c; 
+    havoc shareReservesDelta;
+
+    if(netCurveTrade > 0) {
+        shareReservesDelta = PositiveNetCurveBranch(z,y,netCurveTrade,ts,c,mu);
+    }
+    else {
+        shareReservesDelta = NegativeNetCurveBranch(z,y,netCurveTrade,ts,c,mu);
+    }
+
+    return require_uint256(z + netFlatTrade + shareReservesDelta);
+}
+
+ghost PositiveNetCurveBranch(mathint,mathint,mathint,mathint,mathint,mathint) returns mathint;
+ghost NegativeNetCurveBranch(mathint,mathint,mathint,mathint,mathint,mathint) returns mathint;
+
+/* =========================================
+ ---------- YieldSpace Math summaries ------
+============================================ */
 /// @idea Should we use assert_uint256 or require_uint256 ?
 
 /// @dev a CVL require equivalent to the YieldSpace invariant:
@@ -126,9 +178,9 @@ function YSInvariant(
     uint256 mu,
     uint256 c, 
     uint256 t) returns bool {
-    uint256 tp = require_uint256(ONE18() - t); /// t' = 1 - t;
-    return c * ONE18() * (CVLPow(z1, tp) - CVLPow(z2, tp)) ==
-        to_mathint(CVLPow(mu, t)) * (CVLPow(y2, tp) - CVLPow(y1, tp));
+    uint256 tpp = require_uint256(ONE18() - t); /// t' = 1 - t;
+    return c * ONE18() * (CVLPow(z1, tpp) - CVLPow(z2, tpp)) ==
+        to_mathint(CVLPow(mu, t)) * (CVLPow(y2, tpp) - CVLPow(y1, tpp));
 }
 
 ghost uint256 yp;

@@ -18,11 +18,6 @@ methods {
     function HDAave.MockCalculateFeesOutGivenSharesIn(uint256,uint256,uint256,uint256,uint256) internal returns(AaveHyperdrive.HDFee memory) => NONDET;
     function HDAave.MockCalculateFeesOutGivenBondsIn(uint256,uint256,uint256,uint256) internal returns(AaveHyperdrive.HDFee memory) => NONDET;
     function HDAave.MockCalculateFeesInGivenBondsOut(uint256,uint256,uint256,uint256) internal returns(AaveHyperdrive.HDFee memory) => NONDET;
-    /// Hyperdrive Math
-    //function _.calculateOpenShort(uint256,uint256,uint256,uint256,uint256,uint256,uint256) internal library => NONDET;
-    //function _.calculateCloseShort(uint256,uint256,uint256,uint256,uint256,uint256,uint256) internal library => NONDET;
-    //function _.calculateOpenLong(uint256,uint256,uint256,uint256,uint256,uint256,uint256) internal library => NONDET;
-    //function _.calculateCloseLong(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256) internal library => NONDET;
 }
 
 definition RAY() returns uint256 = 10^27;
@@ -99,7 +94,7 @@ rule depositOutputChecker(uint256 baseAmount, bool asUnderlying) {
             assert assetsBefore + baseAmount == to_mathint(assetsAfter);
         }
         else {
-            assert assetsBefore <= assetsAfter;
+            assert assetsBefore + baseAmount >= to_mathint(assetsAfter);
         }
         uint256 sharesMinted = mulDivDownAbstractPlus(totalSharesBefore, baseAmount, assetsBefore);
         //uint256 sharePrice = mulDivDownAbstractPlus(baseAmount, ONE18(), sharesMinted);
