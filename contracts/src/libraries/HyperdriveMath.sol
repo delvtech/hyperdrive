@@ -138,13 +138,17 @@ library HyperdriveMath {
             uint256 bondProceeds
         )
     {
+        console2.log("open long:");
+        console2.log("amount in", _shareAmount);
+        console2.log("time remaining", _normalizedTimeRemaining);
+        console2.log("share price", _sharePrice);
         // Calculate the flat part of the trade.
         bondProceeds = _shareAmount
             .mulDown(FixedPointMath.ONE_18.sub(_normalizedTimeRemaining))
             .mulDown(_sharePrice);
-        console2.log("_shareAmount", _shareAmount);
-        console2.log("bondProceeds", bondProceeds);
+        console2.log("bonds coming out of flat:", bondProceeds);
         shareReservesDelta = _shareAmount.mulDown(_normalizedTimeRemaining);
+        console2.log("shares trading into the curve", shareReservesDelta);
         // (time remaining)/(term length) is always 1 so we just use _timeStretch
         bondReservesDelta = YieldSpaceMath.calculateBondsOutGivenSharesIn(
             _shareReserves,
@@ -154,16 +158,9 @@ library HyperdriveMath {
             _sharePrice,
             _initialSharePrice
         );
-        console2.log("shareReservesDelta", shareReservesDelta);
-        console2.log("bondReservesDelta", bondReservesDelta);
-        uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
-            _shareReserves+shareReservesDelta,
-            _bondReserves-bondReservesDelta,
-            _initialSharePrice,
-            _normalizedTimeRemaining,
-            _timeStretch
-        );
-        bondProceeds = bondProceeds.mulDown(spotPrice) + bondReservesDelta;
+        console2.log("bonds coming out of the curve", bondReservesDelta);
+        bondProceeds += bondReservesDelta;
+        console2.log("total bonds coming out", bondProceeds);
         return (shareReservesDelta, bondReservesDelta, bondProceeds);
     }
 
@@ -205,26 +202,34 @@ library HyperdriveMath {
         // (our result is given in shares, so we divide the one-to-one
         // redemption by the share price) and the newly minted bonds are
         // traded on a YieldSpace curve configured to timeRemaining = 1.
+        console2.log("close long:");
+        console2.log("amount in", _amountIn);
+        console2.log("time remaining", _normalizedTimeRemaining);
+        console2.log("share price", _sharePrice);
         shareProceeds = _amountIn.mulDivDown(
             FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
             _sharePrice
         );
-
+        console2.log("shares coming out of flat:", shareProceeds);
         if (_normalizedTimeRemaining > 0) {
             // Calculate the curved part of the trade.
             bondReservesDelta = _amountIn.mulDown(_normalizedTimeRemaining);
+            console2.log("bonds trading into the curve", bondReservesDelta);
+            //_shareReserves/_bondReserves = (_shareReserves - shareProceeds)/(_bondReserves-dy)
+            //bondReserves - dy = (_shareReserves - shareProceeds)*(_bondReserves/_shareReserves)
+            uint256 dy = _bondReserves - (_shareReserves - shareProceeds).mulDown(_bondReserves.divDown(_shareReserves));
             // (time remaining)/(term length) is always 1 so we just use _timeStretch
             shareReservesDelta = YieldSpaceMath.calculateSharesOutGivenBondsIn(
-                _shareReserves,
-                _bondReserves,
+                _shareReserves-shareProceeds,
+                _bondReserves-dy,
                 bondReservesDelta,
                 FixedPointMath.ONE_18.sub(_timeStretch),
                 _sharePrice,
                 _initialSharePrice
             );
-            console2.log("bondReservesDelta", bondReservesDelta);
-            console2.log("shareReservesDelta", shareReservesDelta);
+            console2.log("shares coming out of the curve", shareReservesDelta);
             shareProceeds += shareReservesDelta;
+            console2.log("total shares coming out", shareProceeds);
         }
 
         // If there's net negative interest over the period, the result of close long
@@ -238,7 +243,7 @@ library HyperdriveMath {
             );
         }
 
-        return (shareReservesDelta, bondReservesDelta, shareProceeds);
+        return (shareProceeds, bondReservesDelta, shareProceeds);
     }
 
     /// @dev Calculates the amount of shares that will be received given a

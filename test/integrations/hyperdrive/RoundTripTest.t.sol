@@ -10,17 +10,15 @@ import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
 import "forge-std/console2.sol";
 
-contract TradeSymmetryTest is HyperdriveTest {
+contract RoundTripTest is HyperdriveTest {
     using FixedPointMath for uint256;
 
-    function test_long_symmetry_immediately_at_checkpoint() external {
+    function test_long_round_trip_immediately_at_checkpoint() external {
         uint256 apr = 0.05e18;
 
         // Initialize the pool with capital.
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
-
-        IHyperdrive.PoolConfig memory config = hyperdrive.getPoolConfig();
 
         // Get the poolinfo before opening the long.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
@@ -30,7 +28,7 @@ contract TradeSymmetryTest is HyperdriveTest {
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
 
         // Immediately close the long.
-        uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
+        closeLong(bob, maturityTime, bondAmount);
 
         // Get the poolinfo after closing the long.
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
@@ -46,14 +44,12 @@ contract TradeSymmetryTest is HyperdriveTest {
 
     }
 
-    function test_long_symmetry_immediately_halfway_thru_checkpoint() external {
+    function test_long_round_trip_immediately_halfway_thru_checkpoint() external {
         uint256 apr = 0.05e18;
 
         // Initialize the pool with capital.
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
-
-        IHyperdrive.PoolConfig memory config = hyperdrive.getPoolConfig();
 
         // Get the poolinfo before opening the long.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
@@ -65,8 +61,16 @@ contract TradeSymmetryTest is HyperdriveTest {
         uint256 basePaid = 10e18;
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
 
+        // // Get the poolinfo during the long.
+        // IHyperdrive.PoolInfo memory poolInfoDuring = hyperdrive.getPoolInfo();
+
+        // console2.log("poolInfoBefore.shareReserves", poolInfoBefore.shareReserves);
+        // console2.log("poolInfoBefore.bondReserves", poolInfoBefore.bondReserves);
+        // console2.log("poolInfoDuring.shareReserves", poolInfoDuring.shareReserves);
+        // console2.log("poolInfoDuring.bondReserves", poolInfoDuring.bondReserves);
+
         // Immediately close the long.
-        uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
+        closeLong(bob, maturityTime, bondAmount);
 
         // Get the poolinfo after closing the long.
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
