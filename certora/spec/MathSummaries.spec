@@ -52,7 +52,7 @@ methods {
         => ghostCalculateInitialBondReserves(shares, price, initPrice, APR, dur, timeSt) expect uint256;
     
     /// @dev Calculates the present value LPs capital in the pool.
-    function _.calculatePresentValue(HyperdriveMath.PresentValueParams memory) internal library => NONDET; 
+    //function _.calculatePresentValue(HyperdriveMath.PresentValueParams memory) internal library => NONDET; 
     
     /// @dev Calculates the interest in shares earned by a short position
     function _.calculateShortInterest(uint256 bond, uint256 openPrice, uint256 closePrice, uint256 price) internal library 
@@ -153,8 +153,8 @@ function CVLBondsInGivenSharesOut(uint256 z, uint256 y, uint256 dz, uint256 t, u
 */
 function CVLBondsOutGivenSharesIn(uint256 z, uint256 y, uint256 dz, uint256 t, uint256 c, uint256 mu) returns uint256 {
     havoc yp; havoc zp; havoc tp;
-    require zp = require_uint256(z + dz);
-    require tp = require_uint256(ONE18() - t);
+    require zp == require_uint256(z + dz);
+    require tp == require_uint256(ONE18() - t);
     require YSInvariant(z, zp, y, yp, mu, c, tp);
     return require_uint256(y - yp);
 }
@@ -165,8 +165,8 @@ function CVLBondsOutGivenSharesIn(uint256 z, uint256 y, uint256 dz, uint256 t, u
 */
 function CVLSharesInGivenBondsOut(uint256 z, uint256 y, uint256 dy, uint256 t, uint256 c, uint256 mu) returns uint256 {
     havoc yp; havoc zp; havoc tp;
-    require yp = require_uint256(y - dy);
-    require tp = require_uint256(ONE18() - t);
+    require yp == require_uint256(y - dy);
+    require tp == require_uint256(ONE18() - t);
     require YSInvariant(z, zp, y, yp, mu, c, tp);
     return require_uint256(zp - z);
 }
@@ -177,8 +177,8 @@ function CVLSharesInGivenBondsOut(uint256 z, uint256 y, uint256 dy, uint256 t, u
 */
 function CVLSharesOutGivenBondsIn(uint256 z, uint256 y, uint256 dy, uint256 t, uint256 c, uint256 mu) returns uint256 {
     havoc yp; havoc zp; havoc tp;
-    require yp = require_uint256(y + dy);
-    require tp = require_uint256(ONE18() - t);
+    require yp == require_uint256(y + dy);
+    require tp == require_uint256(ONE18() - t);
     require YSInvariant(z, zp, y, yp, mu, c, tp);
     return require_uint256(z - zp);
 }
