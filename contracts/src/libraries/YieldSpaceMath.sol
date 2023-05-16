@@ -262,27 +262,6 @@ import { FixedPointMath } from "./FixedPointMath.sol";
 ///
 ///        https://www.desmos.com/calculator/vfrzlsopsb
 ///
-///      There is one important consideration to note in these formulas
-///
-///      TODO Note how the bondReserveAdjustment works
-///
-///      _______________________________________________________________________
-///      # The Modified YieldSpace trades #
-///
-///      The code as expressed in this library defines 4 trading actions:
-///
-///      - bondsInGivenSharesOut
-///          Δy = (k - (c / µ) * (µ * (z - dz))^(1 - t))^(1 / (1 - t))) - y
-///      - bondsOutGivenSharesIn
-///          Δy = y - (k - (c / µ) * (µ * (z + dz))^(1 - t))^(1 / (1 - t)))
-///      - sharesInGivenBondsOut
-///          Δz = (((k - (y - dy)^(1 - t)) / (c / µ))^(1 / (1 - t)) / µ) - z
-///      - sharesOutGivenBondsIn
-///          Δz = z - (((k - (y + Δy)^(1 - t)) / c/μ )^(1 / (1 - t)) / µ)
-///
-///        where, k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
-///
-///
 library YieldSpaceMath {
     using FixedPointMath for uint256;
 

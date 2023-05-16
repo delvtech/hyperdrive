@@ -68,4 +68,6 @@ interface IHyperdriveWrite is IMultiTokenWrite {
         address _destination,
         bool _asUnderlying
     ) external returns (uint256);
+
+    function setGovernance(address who) external;
 }

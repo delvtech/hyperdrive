@@ -61,10 +61,11 @@ abstract contract HyperdriveStorage is MultiTokenStorage {
     // Governance fees that haven't been collected yet denominated in shares.
     uint256 internal _governanceFeesAccrued;
 
-    // TODO: Should this be immutable?
-    //
-    // The address that receives governance fees.
+    // The address that can pause the contract
     address internal _governance;
+
+    /// The address which collects governance fees
+    address internal immutable _feeCollector;
 
     /// TWAP ///
 
@@ -107,6 +108,7 @@ abstract contract HyperdriveStorage is MultiTokenStorage {
         _timeStretch = _config.timeStretch;
         _initialSharePrice = _config.initialSharePrice;
         _governance = _config.governance;
+        _feeCollector = _config.feeCollector;
 
         _curveFee = _config.fees.curve;
         _flatFee = _config.fees.flat;

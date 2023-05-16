@@ -13,10 +13,6 @@ import { Errors } from "./libraries/Errors.sol";
 //        risk of external calls to untrusted code.
 
 contract MultiToken is DataProvider, MultiTokenStorage, IMultiTokenWrite {
-    // TODO - Choose to change names to perfect match the 1155 ie adding 'safe',
-    //        choose whether to support the batch methods, and to support token uris
-    //        or names
-
     // EIP712
     // DOMAIN_SEPARATOR changes based on token name
     bytes32 public immutable DOMAIN_SEPARATOR; // solhint-disable-line var-name-mixedcase

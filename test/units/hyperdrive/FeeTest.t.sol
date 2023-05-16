@@ -34,7 +34,9 @@ contract FeeTest is HyperdriveTest {
         advanceTime(POSITION_DURATION.mulDown(0.5e18), int256(apr));
 
         // Collect fees and test that the fees received in the governance address have earned interest.
-        MockHyperdrive(address(hyperdrive)).collectGovernanceFee();
+        vm.stopPrank();
+        vm.prank(governance);
+        MockHyperdrive(address(hyperdrive)).collectGovernanceFee(true);
         uint256 governanceBalanceAfter = baseToken.balanceOf(governance);
         assertGt(governanceBalanceAfter, governanceFeesAfterOpenLong);
     }
@@ -81,7 +83,9 @@ contract FeeTest is HyperdriveTest {
         assertGt(governanceFeesAfterCloseLong, governanceFeesAfterOpenLong);
 
         // Collect fees to governance address
-        MockHyperdrive(address(hyperdrive)).collectGovernanceFee();
+        vm.stopPrank();
+        vm.prank(governance);
+        MockHyperdrive(address(hyperdrive)).collectGovernanceFee(true);
 
         // Ensure that governance fees after collection are zero.
         uint256 governanceFeesAfterCollection = IMockHyperdrive(
@@ -136,7 +140,11 @@ contract FeeTest is HyperdriveTest {
         assertGt(governanceFeesAfterCloseShort, governanceFeesAfterOpenShort);
 
         // collect governance fees
-        MockHyperdrive(address(hyperdrive)).collectGovernanceFee();
+        vm.expectRevert(Errors.Unauthorized.selector);
+        MockHyperdrive(address(hyperdrive)).collectGovernanceFee(true);
+        vm.stopPrank();
+        vm.prank(governance);
+        MockHyperdrive(address(hyperdrive)).collectGovernanceFee(true);
 
         // Ensure that governance fees after collection are zero.
         uint256 governanceFeesAfterCollection = IMockHyperdrive(

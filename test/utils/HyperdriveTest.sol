@@ -45,6 +45,7 @@ contract HyperdriveTest is BaseTest {
             checkpointDuration: CHECKPOINT_DURATION,
             timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
             governance: governance,
+            feeCollector: governance,
             fees: fees,
             oracleSize: ORACLE_SIZE,
             updateGap: UPDATE_GAP
@@ -84,6 +85,7 @@ contract HyperdriveTest is BaseTest {
             checkpointDuration: CHECKPOINT_DURATION,
             timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
             governance: governance,
+            feeCollector: governance,
             fees: fees,
             oracleSize: ORACLE_SIZE,
             updateGap: UPDATE_GAP
@@ -137,17 +139,15 @@ contract HyperdriveTest is BaseTest {
         // Remove liquidity from the pool.
         uint256 baseBalanceBefore = baseToken.balanceOf(lp);
         uint256 withdrawalShareBalanceBefore = hyperdrive.balanceOf(
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0),
+            AssetId._WITHDRAWAL_SHARE_ASSET_ID,
             lp
         );
         hyperdrive.removeLiquidity(shares, 0, lp, true);
 
         return (
             baseToken.balanceOf(lp) - baseBalanceBefore,
-            hyperdrive.balanceOf(
-                AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0),
-                lp
-            ) - withdrawalShareBalanceBefore
+            hyperdrive.balanceOf(AssetId._WITHDRAWAL_SHARE_ASSET_ID, lp) -
+                withdrawalShareBalanceBefore
         );
     }
 

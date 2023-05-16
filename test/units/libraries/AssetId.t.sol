@@ -7,6 +7,23 @@ import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { MockAssetId } from "../../mocks/MockAssetId.sol";
 
 contract AssetIdTest is HyperdriveTest {
+    function test__constants() external {
+        // NOTE: Coverage only works if I initialize the fixture in the test function
+        MockAssetId assetId = new MockAssetId();
+
+        // Verify that the LP Asset ID constant is correct.
+        assertEq(
+            AssetId._LP_ASSET_ID,
+            assetId.encodeAssetId(AssetId.AssetIdPrefix.LP, 0)
+        );
+
+        // Verify that the WithdrawalShare Asset ID constant is correct.
+        assertEq(
+            AssetId._WITHDRAWAL_SHARE_ASSET_ID,
+            assetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
+        );
+    }
+
     function test__encodeAssetIdInvalidTimestamp() public {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockAssetId assetId = new MockAssetId();
@@ -16,7 +33,7 @@ contract AssetIdTest is HyperdriveTest {
         assetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime);
     }
 
-    function test__encodeAssetIdLong() public {
+    function test__encodeAssetIdLong() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockAssetId assetId = new MockAssetId();
 
@@ -47,7 +64,7 @@ contract AssetIdTest is HyperdriveTest {
         assertEq(id, expected);
     }
 
-    function test__decodeAssetId() public {
+    function test__decodeAssetId() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockAssetId assetId = new MockAssetId();
 

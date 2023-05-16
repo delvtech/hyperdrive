@@ -229,10 +229,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
             int256(_baseAmount.divDown(_sharePrice) - _shareReservesDelta)
         );
 
-        // TODO: We should fuzz test this and other trading functions to ensure
-        // that the APR never goes below zero. If it does, we may need to
-        // enforce additional invariants.
-        //
         // Since the base buffer may have increased relative to the base
         // reserves and the bond reserves decreased, we must ensure that the
         // base reserves are greater than the longsOutstanding.
@@ -299,13 +295,9 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // closed is equivalent to short proceeds as LPs take the other side of
         // every trade.
         uint256 withdrawalSharesOutstanding = _totalSupply[
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
+            AssetId._WITHDRAWAL_SHARE_ASSET_ID
         ] - _withdrawPool.readyToWithdraw;
         if (withdrawalSharesOutstanding > 0) {
-            // TODO: Test this logic to ensure that opening and closing a long
-            // doesn't unfairly treat the withdrawal pool. There are concerns
-            // that this allows interest to be dripped out of the long
-            // positions.
             uint256 openSharePrice = _checkpoints[
                 _maturityTime - _positionDuration
             ].longSharePrice;
@@ -313,9 +305,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 _bondAmount,
                 _shareProceeds,
                 openSharePrice,
-                // TODO: This allows the withdrawal pool to take all of the
-                // interest as long as the checkpoint isn't minted. This is
-                // probably fine, but it's worth more thought.
                 _sharePrice,
                 _sharePrice
             );
@@ -451,11 +440,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // Since we calculate the amount of shares received given bonds in, we
         // subtract the fee from the share deltas so that the trader receives
         // less shares.
-        //
-        // TODO: There should be a way to refactor this so that the spot price
-        // isn't calculated when the curve fee is 0. The bond reserves are only
-        // 0 in the scenario that the LPs have fully withdrawn and the last
-        // trader redeems.
         uint256 spotPrice = _marketState.bondReserves > 0
             ? HyperdriveMath.calculateSpotPrice(
                 _marketState.shareReserves,

@@ -44,6 +44,7 @@ library Errors {
     /// ###############
     error Unauthorized();
     error InvalidContribution();
+    error InvalidToken();
 
     /// ######################
     /// ### ERC20Forwarder ###

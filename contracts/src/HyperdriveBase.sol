@@ -88,6 +88,13 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
         _pausers[who] = status;
     }
 
+    ///@notice Allows governance to change governance
+    ///@param who The new governance address
+    function setGovernance(address who) external {
+        if (msg.sender != _governance) revert Errors.Unauthorized();
+        _governance = who;
+    }
+
     ///@notice Allows an authorized address to pause this contract
     ///@param status True to pause all deposits and false to unpause them
     function pause(bool status) external {
@@ -117,12 +124,24 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     ) internal virtual returns (uint256 openSharePrice);
 
     /// @notice This function collects the governance fees accrued by the pool.
+    /// @param asUnderlying Indicates if the fees should be paid in underlying or yielding token
     /// @return proceeds The amount of base collected.
-    function collectGovernanceFee() external returns (uint256 proceeds) {
+    function collectGovernanceFee(
+        bool asUnderlying
+    ) external returns (uint256 proceeds) {
+        // Must have been granted a role
+        if (
+            !_pausers[msg.sender] &&
+            msg.sender != _feeCollector &&
+            msg.sender != _governance
+        ) revert Errors.Unauthorized();
         uint256 governanceFeesAccrued = _governanceFeesAccrued;
         _governanceFeesAccrued = 0;
-        // TODO: We should make an immutable asUnderlying parameter
-        (proceeds, ) = _withdraw(governanceFeesAccrued, _governance, true);
+        (proceeds, ) = _withdraw(
+            governanceFeesAccrued,
+            _feeCollector,
+            asUnderlying
+        );
     }
 
     /// Helpers ///
@@ -151,8 +170,6 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
             (block.timestamp % _checkpointDuration);
     }
 
-    // TODO: Consider combining this with the trading functions.
-    //
     /// @dev Calculates the fees for the flat and curve portion of hyperdrive calcOutGivenIn
     /// @param _amountIn The given amount in, either in terms of shares or bonds.
     /// @param _amountOut The amount of the asset that is received before fees.
@@ -202,8 +219,6 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
         governanceFlatFee = totalFlatFee.mulDown(_governanceFee);
     }
 
-    // TODO: Consider combining this with the trading functions.
-    //
     /// @dev Calculates the fees for the flat and curve portion of hyperdrive calcOutGivenIn
     /// @param _amountIn The given amount in, either in terms of shares or bonds.
     /// @param _normalizedTimeRemaining The normalized amount of time until maturity.
@@ -244,8 +259,6 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
         totalGovernanceFee += totalFlatFee.mulDown(_governanceFee);
     }
 
-    // TODO: Consider combining this with the trading functions.
-    //
     /// @dev Calculates the fees for the curve portion of hyperdrive calcInGivenOut
     /// @param _amountOut The given amount out.
     /// @param _normalizedTimeRemaining The normalized amount of time until maturity.

@@ -24,31 +24,43 @@ abstract contract HyperdriveFactory {
     uint256 public versionCounter;
 
     // The address which should control hyperdrive instances
-    address internal hyperdriveGovernance;
+    address public hyperdriveGovernance;
+
+    // The address which should receive hyperdriveFees
+    address public feeCollector;
 
     // The fees each contract for this instance will be deployed with
     IHyperdrive.Fees public fees;
+
+    // The default pausers for new the hyperdrive that are deployed
+    address[] public defaultPausers;
 
     /// @notice Deploys the contract
     /// @param _governance The address which can update this factory.
     /// @param _deployer The contract which holds the bytecode and deploys new versions.
     /// @param _hyperdriveGovernance The address which is set as the governor of hyperdrive
+    /// @param _feeCollector The address which should be set as the fee collector in new deployments
     /// @param _fees The fees each deployed instance from this contract will have
+    /// @param _defaultPausers The default addresses which will be set to have the pauser role
     constructor(
         address _governance,
         IHyperdriveDeployer _deployer,
         address _hyperdriveGovernance,
-        IHyperdrive.Fees memory _fees
+        address _feeCollector,
+        IHyperdrive.Fees memory _fees,
+        address[] memory _defaultPausers
     ) {
         governance = _governance;
         hyperdriveDeployer = _deployer;
         versionCounter = 1;
         hyperdriveGovernance = _hyperdriveGovernance;
+        feeCollector = _feeCollector;
         fees = _fees;
+        defaultPausers = _defaultPausers;
     }
 
-    /// @notice Allows governance to deploy new versions
-    /// @param newDeployer The new deployment contract
+    /// @notice Allows governance to update the deployer contract.
+    /// @param newDeployer The new deployment contract.
     function updateImplementation(IHyperdriveDeployer newDeployer) external {
         // Only governance can call this
         if (msg.sender != governance) revert Errors.Unauthorized();
@@ -71,8 +83,17 @@ abstract contract HyperdriveFactory {
     function updateHyperdriveGovernance(address newGovernance) external {
         // Only governance can call this
         if (msg.sender != governance) revert Errors.Unauthorized();
-        // Update version and increment the counter
+        // Update hyperdrive governance
         hyperdriveGovernance = newGovernance;
+    }
+
+    /// @notice Allows governance to change the fee collector address
+    /// @param newFeeCollector The new governor address
+    function updateFeeCollector(address newFeeCollector) external {
+        // Only governance can call this
+        if (msg.sender != governance) revert Errors.Unauthorized();
+        // Update fee collector
+        feeCollector = newFeeCollector;
     }
 
     /// @notice Allows governance to change the fee schedule for the newly deployed factories
@@ -80,22 +101,18 @@ abstract contract HyperdriveFactory {
     function updateFees(IHyperdrive.Fees calldata newFees) external {
         // Only governance can call this
         if (msg.sender != governance) revert Errors.Unauthorized();
-        // Update version and increment the counter
+        // Update the fee struct
         fees = newFees;
     }
 
-    /// @notice This should deploy a data provider which matches the type of the hyperdrives
-    ///         this contract will deploy
-    /// @param _config The configuration of the pool we are deploying
-    /// @param _extraData The extra data from the pool deployment
-    /// @param _linkerCodeHash The code hash from the multitoken deployer
-    /// @param _linkerFactory The factory of the multitoken deployer
-    function deployDataProvider(
-        IHyperdrive.PoolConfig memory _config,
-        bytes32[] memory _extraData,
-        bytes32 _linkerCodeHash,
-        address _linkerFactory
-    ) internal virtual returns (address);
+    /// @notice Allows governance to change the fee collector address
+    /// @param newDefaults The new governor address
+    function updateDefaultPausers(address[] calldata newDefaults) external {
+        // Only governance can call this
+        if (msg.sender != governance) revert Errors.Unauthorized();
+        // Update the default pausers
+        defaultPausers = newDefaults;
+    }
 
     /// @notice Deploys a copy of hyperdrive with the given params
     /// @param _config The configuration of the Hyperdrive pool.
@@ -114,13 +131,12 @@ abstract contract HyperdriveFactory {
         bytes32[] memory _extraData,
         uint256 _contribution,
         uint256 _apr
-    ) external returns (IHyperdrive) {
+    ) public virtual returns (IHyperdrive) {
         // No invalid deployments
         if (_contribution == 0) revert Errors.InvalidContribution();
-        // TODO: We should also overwrite the governance fee field.
-        //
         // Overwrite the governance and fees field of the config.
-        _config.governance = hyperdriveGovernance;
+        _config.feeCollector = feeCollector;
+        _config.governance = address(this);
         _config.fees = fees;
         // We deploy a new data provider for this instance
         address dataProvider = deployDataProvider(
@@ -150,9 +166,29 @@ abstract contract HyperdriveFactory {
         _config.baseToken.approve(address(hyperdrive), type(uint256).max);
         hyperdrive.initialize(_contribution, _apr, msg.sender, true);
 
+        // Setup the pausers roles from the default array
+        for (uint256 i = 0; i < defaultPausers.length; i++) {
+            hyperdrive.setPauser(defaultPausers[i], true);
+        }
+        // Reset governance to be the default one
+        hyperdrive.setGovernance(hyperdriveGovernance);
+
         // Mark as a version
         isOfficial[address(hyperdrive)] = versionCounter;
 
         return (hyperdrive);
     }
+
+    /// @notice This should deploy a data provider which matches the type of the hyperdrives
+    ///         this contract will deploy
+    /// @param _config The configuration of the pool we are deploying
+    /// @param _extraData The extra data from the pool deployment
+    /// @param _linkerCodeHash The code hash from the multitoken deployer
+    /// @param _linkerFactory The factory of the multitoken deployer
+    function deployDataProvider(
+        IHyperdrive.PoolConfig memory _config,
+        bytes32[] memory _extraData,
+        bytes32 _linkerCodeHash,
+        address _linkerFactory
+    ) internal virtual returns (address);
 }

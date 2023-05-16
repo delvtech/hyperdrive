@@ -74,10 +74,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
 
         // Ensure that Alice receives the right amount of withdrawal shares.
         assertEq(
-            hyperdrive.balanceOf(
-                AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0),
-                alice
-            ),
+            hyperdrive.balanceOf(AssetId._WITHDRAWAL_SHARE_ASSET_ID, alice),
             0
         );
     }
@@ -148,10 +145,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
 
         // Ensure that Alice receives the right amount of withdrawal shares.
         assertApproxEqAbs(
-            hyperdrive.balanceOf(
-                AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0),
-                alice
-            ),
+            hyperdrive.balanceOf(AssetId._WITHDRAWAL_SHARE_ASSET_ID, alice),
             expectedWithdrawalShares,
             1
         );
@@ -219,10 +213,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
 
         // Ensure that Alice receives the right amount of withdrawal shares.
         assertEq(
-            hyperdrive.balanceOf(
-                AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0),
-                alice
-            ),
+            hyperdrive.balanceOf(AssetId._WITHDRAWAL_SHARE_ASSET_ID, alice),
             expectedWithdrawalShares
         );
     }
@@ -230,9 +221,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
     function lpTotalSupply() internal view returns (uint256) {
         return
             hyperdrive.totalSupply(AssetId._LP_ASSET_ID) +
-            hyperdrive.totalSupply(
-                AssetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
-            ) -
+            hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID) -
             hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw;
     }
 

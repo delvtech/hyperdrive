@@ -82,11 +82,6 @@ abstract contract Hyperdrive is
         }
     }
 
-    // TODO: If we find that this checkpointing flow is too heavy (which is
-    // quite possible), we can store the share price and update some key metrics
-    // about matured positions and add a poking system that performs the rest of
-    // the computation.
-    //
     /// @dev Creates a new checkpoint if necessary.
     /// @param _checkpointTime The time of the checkpoint to create.
     /// @param _sharePrice The current share price.
