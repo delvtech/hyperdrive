@@ -43,6 +43,18 @@ definition _monotonicallyIncreasing(uint256 x, uint256 y, uint256 fx, uint256 fy
 
 definition _monotonicallyDecreasing(uint256 x, uint256 y, uint256 fx, uint256 fy) returns bool = 
     (x > y => fx <= fy);
+
+/// Axiom for a weighted average of the form WA = (x * y / (y + z))
+definition weightedAverage(mathint x, mathint y, mathint z, mathint WA) returns bool =
+    (x > 0 && y > 0) => (WA >= 0 && WA <= x)
+    &&
+    (x < 0 && y > 0) => (WA <= 0 && WA >= x)
+    &&
+    (x > 0 && y < 0) => (WA <= 0 && WA - x <= 0)
+    &&
+    (x < 0 && y < 0) => (WA >= 0 && WA + x <= 0)
+    &&
+    (x == 0 || y == 0) => (WA == 0);
         
 ghost uint256 res;
 ghost mathint rem;
@@ -66,8 +78,8 @@ function mulDivDownAbstractPlus(uint256 x, uint256 y, uint256 z) returns uint256
     require z != 0;
     uint256 xy = require_uint256(x*y);
 
-    require res * z <= x * y;
-    require res * z + to_mathint(z) > x * y;
+    require res * z <= to_mathint(xy);
+    require res * z + to_mathint(z) > to_mathint(xy);
     return res; 
 }
 

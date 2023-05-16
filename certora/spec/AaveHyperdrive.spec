@@ -15,9 +15,9 @@ methods {
     function aToken.balanceOf(address) external returns (uint256);
 
     function HDAave.totalShares() external returns (uint256) envfree;
-    function HDAave.MockCalculateFeesOutGivenSharesIn(uint256 x,uint256,uint256,uint256,uint256) internal returns(AaveHyperdrive.HDFee memory) => Foo(x);
-    function HDAave.MockCalculateFeesOutGivenBondsIn(uint256 x,uint256,uint256,uint256) internal returns(AaveHyperdrive.HDFee memory) => Bar(x);
-    function HDAave.MockCalculateFeesInGivenBondsOut(uint256 x,uint256,uint256,uint256) internal returns(AaveHyperdrive.HDFee memory) => Baz(x);
+    function HDAave.MockCalculateFeesOutGivenSharesIn(uint256,uint256,uint256,uint256,uint256) internal returns(AaveHyperdrive.HDFee memory) => NONDET;
+    function HDAave.MockCalculateFeesOutGivenBondsIn(uint256,uint256,uint256,uint256) internal returns(AaveHyperdrive.HDFee memory) => NONDET;
+    function HDAave.MockCalculateFeesInGivenBondsOut(uint256,uint256,uint256,uint256) internal returns(AaveHyperdrive.HDFee memory) => NONDET;
     /// Hyperdrive Math
     //function _.calculateOpenShort(uint256,uint256,uint256,uint256,uint256,uint256,uint256) internal library => NONDET;
     //function _.calculateCloseShort(uint256,uint256,uint256,uint256,uint256,uint256,uint256) internal library => NONDET;
@@ -25,22 +25,86 @@ methods {
     //function _.calculateCloseLong(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256) internal library => NONDET;
 }
 
-function Foo(uint256 x) returns AaveHyperdrive.HDFee {
-    AaveHyperdrive.HDFee f;
-    require f.totalCurveFee == require_uint256(x/1000);
-    return f;
+definition RAY() returns uint256 = 10^27;
+
+/// @dev Under-approximation of the pool parameters (based on developers' test)
+/// @notice Use only to find violations!
+function setHyperdrivePoolParams() {
+    require initialSharePrice() == ONE18();
+    require timeStretch() == 45071688063194104; /// 5% APR
+    require checkpointDuration() == 86400;
+    require positionDuration() == 31536000;
+    require updateGap() == 1000;
+    /// Alternative
+    //require curveFee() == require_uint256(ONE18() / 10);
+    //require flatFee() == require_uint256(ONE18() / 10);
+    //require governanceFee() == require_uint256(ONE18() / 2);
+    ///
+    require curveFee() <= require_uint256(ONE18() / 10);
+    require flatFee() <= require_uint256(ONE18() / 10);
+    require governanceFee() <= require_uint256(ONE18() / 2);
 }
 
-function Bar(uint256 x) returns AaveHyperdrive.HDFee {
-    AaveHyperdrive.HDFee f;
-    require f.totalCurveFee == require_uint256(x/1000);
-    return f;
+hook Sload uint256 index Pool.liquidityIndex[KEY address token][KEY uint256 timestamp] STORAGE {
+    require index >= RAY();
 }
 
-function Baz(uint256 x) returns AaveHyperdrive.HDFee {
-    AaveHyperdrive.HDFee f;
-    require f.totalCurveFee == require_uint256(x/1000);
-    return f;
+/// @notice Simulates the output of the `_deposit()` function
+/// @param totalSharesBefore - totalShares before deposit function
+/// @param assetsBefore - assets of contract before deposit function.
+/// @param baseAmount - The amount of token to transfer
+/// @param asUnderlying - underlying tokens (true) or yield source tokens (false)
+/// @return output[0] = sharesMinted
+/// @return output[1] = sharePrice
+function depositOutput(env e, uint256 totalSharesBefore, uint256 assetsBefore, uint256 baseAmount, bool asUnderlying) returns uint256[2] {
+    uint256[2] output;
+    uint256 totalSharesAfter = HDAave.totalShares();
+    uint256 assetsAfter = aToken.balanceOf(e, HDAave);
+    
+    if(totalSharesBefore == 0) {
+        require baseAmount == output[0];
+        require ONE18() == output[1];
+    }
+    else {
+        if(asUnderlying) {
+            require baseAmount > 0 => assetsBefore < assetsAfter;
+        }
+        else {
+            require assetsBefore + baseAmount == to_mathint(assetsAfter);
+        }
+        require mulDivDownAbstractPlus(totalSharesBefore, baseAmount, assetsBefore) == output[0];
+        require mulDivDownAbstractPlus(baseAmount, ONE18(), output[0]) == output[1];
+        require totalSharesBefore + output[0] == to_mathint(totalSharesAfter);
+    }
+    return output;
+}
+
+rule depositOutputChecker(uint256 baseAmount, bool asUnderlying) {
+    env e;
+    require e.msg.sender != currentContract;
+    uint256 minOutput;
+    address destination;
+
+    uint256 totalSharesBefore = HDAave.totalShares();
+    uint256 assetsBefore = aToken.balanceOf(e, HDAave);
+        openLong(e, baseAmount, minOutput, destination, asUnderlying);
+    uint256 totalSharesAfter = HDAave.totalShares();
+    uint256 assetsAfter = aToken.balanceOf(e, HDAave);
+
+    if(totalSharesBefore == 0) {
+        assert totalSharesAfter == baseAmount;
+    }
+    else {
+        if(asUnderlying) {
+            assert assetsBefore + baseAmount == to_mathint(assetsAfter);
+        }
+        else {
+            assert assetsBefore <= assetsAfter;
+        }
+        uint256 sharesMinted = mulDivDownAbstractPlus(totalSharesBefore, baseAmount, assetsBefore);
+        //uint256 sharePrice = mulDivDownAbstractPlus(baseAmount, ONE18(), sharesMinted);
+        assert totalSharesBefore + sharesMinted == to_mathint(totalSharesAfter);
+    }
 }
 
 function LongPositionRoundTripHelper(
@@ -151,8 +215,6 @@ rule sharePriceChangesForOnlyOneCheckPoint(method f) {
     uint256 _checkpointA;
     uint256 _checkpointB;
 
-    AaveHyperdrive.Checkpoint a;
-
     uint128 sharePriceA1 = checkPointSharePrice(_checkpointA);
     uint128 sharePriceB1 = checkPointSharePrice(_checkpointB);
         f(e, args);
@@ -167,15 +229,55 @@ rule cannotChangeCheckPointSharePriceTwice(uint256 _checkpoint, method f) {
     env e;
     calldataarg args;
 
-    //uint128 sharePrice1 = checkPointSharePrice(_checkpoint);
     AaveHyperdrive.Checkpoint CP1 = checkPoints(_checkpoint);
         f(e,args);
-    //uint128 sharePrice2 = checkPointSharePrice(_checkpoint);
     AaveHyperdrive.Checkpoint CP2 = checkPoints(_checkpoint);
 
-    //assert sharePrice1 !=0 => sharePrice1 == sharePrice2;
     assert CP1.sharePrice !=0 => CP1.sharePrice == CP2.sharePrice;
 }
+
+rule openLongIntegrity(uint256 baseAmount) {
+    env e;
+    uint256 minOutput;
+    address destination;
+    bool asUnderlying;
+
+    AaveHyperdrive.MarketState Mstate = marketState();
+    uint128 bondReserves = Mstate.bondReserves;
+
+    uint256 bondsReceived = 
+        openLong(e, baseAmount, minOutput, destination, asUnderlying);
+
+    assert to_mathint(bondsReceived) <= to_mathint(bondReserves),
+        "A position cannot be opened with more bonds than bonds reserves";
+}
+
+/// @notice: should be turned into an invariant
+rule bondsPositionsDontExceedReserves(method f) 
+filtered{f -> !f.isView} {
+    env e;
+    calldataarg args;
+    AaveHyperdrive.MarketState Mstate1 = marketState();
+        f(e, args);
+    AaveHyperdrive.MarketState Mstate2 = marketState();
+
+    require Mstate1.longsOutstanding + Mstate1.shortsOutstanding <= 
+        to_mathint(Mstate1.bondReserves);
+
+    assert Mstate2.longsOutstanding + Mstate2.shortsOutstanding <= 
+        to_mathint(Mstate2.bondReserves);
+}
+
+invariant SharesNonZeroAssetsNonZero(env e)
+    HDAave.totalShares() !=0 => aToken.balanceOf(e, HDAave) != 0
+    {
+        preserved with (env eP) {
+            setHyperdrivePoolParams();
+            require eP.block.timestamp == e.block.timestamp;
+            require HDAave.totalShares() >= ONE18();
+            require aToken.balanceOf(eP, HDAave) >= ONE18();
+        }
+    }
 
 /// marketState.longsOutstanding = sum of open longs.
 /// marketState.shortsOutstanding = sum of open shorts.

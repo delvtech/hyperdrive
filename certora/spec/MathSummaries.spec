@@ -4,8 +4,9 @@ methods {
     /// FixedPoint Math
     /// @dev Updates a weighted average by adding or removing a weighted delta.
     function _.updateWeightedAverage(uint256,uint256,uint256,uint256,bool) internal library => NONDET;
-    //function _.updateWeightedAverage(uint256 avg, uint256 totW, uint256 del, uint256 delW ,bool isAdd) 
-    //    internal library => ghostUpdateWeightedAverage(avg, totW, del, delW, isAdd) expect uint256;
+    /// @dev Once CERT-2050 is fixed, we could switch to custom summary
+        //function _.updateWeightedAverage(uint256 avg, uint256 totW, uint256 del, uint256 delW ,bool isAdd) 
+        //    internal library => CVLUpdateWeightedAverage(avg, totW, del, delW, isAdd) expect uint256;
     function _.pow(uint256 x, uint256 y) internal library => CVLPow(x, y) expect uint256;
     function _.exp(int256) internal library => NONDET;
     function _.ln(int256) internal library => NONDET;
@@ -81,36 +82,11 @@ function CVLUpdateWeightedAverage_sub(uint256 avg, uint256 totW, uint256 del, ui
         return require_uint256(to_mathint(avg) + ghostWeightedAverage(del-avg,0-delW,totW));
     }
 }
-/// @TODO : fix axioms for all 4 cases.
 
-/// a + mulDivUp ( (del - a) , delW, W + delW )
-/// a + mulDivUp ( (del - a) , -delW, W - delW )  
 ghost ghostWeightedAverage(mathint, mathint, mathint) returns mathint {
     axiom forall mathint x. forall mathint y. forall mathint z.
-        ((x > 0 && y > 0) => 
-            ghostWeightedAverage(x,y,z) > 0 && 
-            ghostWeightedAverage(x,y,z) <= x)
-        &&
-        ((x < 0 && y > 0) => 
-            ghostWeightedAverage(x,y,z) < 0 && 
-            ghostWeightedAverage(x,y,z) >= x)
-        &&
-        ((x > 0 && y < 0) => 
-            ghostWeightedAverage(x,y,z) < 0 && 
-            ghostWeightedAverage(x,y,z) - x <= 0)
-        &&
-        ((x < 0 && y < 0) => 
-            ghostWeightedAverage(x,y,z) > 0 && 
-            ghostWeightedAverage(x,y,z) + x <= 0)
-        &&
-        ((x == 0 || y == 0) => ghostWeightedAverage(x,y,z) == 0);
+        weightedAverage(x,y,z, ghostWeightedAverage(x,y,z));
 }
-
-/// Ghost implementations of YieldSpace Math
-ghost ghostBondsInGivenSharesOut(uint256,uint256,uint256,uint256,uint256,uint256) returns uint256;
-ghost ghostBondsOutGivenSharesIn(uint256,uint256,uint256,uint256,uint256,uint256) returns uint256;
-ghost ghostSharesInGivenBondsOut(uint256,uint256,uint256,uint256,uint256,uint256) returns uint256;
-ghost ghostSharesOutGivenBondsIn(uint256,uint256,uint256,uint256,uint256,uint256) returns uint256;
 
 /// Ghost implementations of Hyperdrive Math
 ghost ghostCalculateBaseVolume(uint256,uint256,uint256) returns uint256 {
@@ -155,14 +131,18 @@ function YSInvariant(
         to_mathint(CVLPow(mu, t)) * (CVLPow(y2, tp) - CVLPow(y1, tp));
 }
 
+ghost uint256 yp;
+ghost uint256 zp;
+ghost uint256 tp;
+
 /*
 - bondsInGivenSharesOut
     Δy = (k - (c / µ) * (µ * (z - dz))^(1 - t))^(1 / (1 - t))) - y
 */
 function CVLBondsInGivenSharesOut(uint256 z, uint256 y, uint256 dz, uint256 t, uint256 c, uint256 mu) returns uint256 {
-    uint256 yp;
-    uint256 zp = require_uint256(z - dz);
-    uint256 tp = require_uint256(ONE18() - t);
+    havoc yp; havoc zp; havoc tp;
+    require zp == require_uint256(z - dz);
+    require tp == require_uint256(ONE18() - t);
     require YSInvariant(z, zp, y, yp, mu, c, tp);
     return require_uint256(yp - y);
 }
@@ -172,9 +152,9 @@ function CVLBondsInGivenSharesOut(uint256 z, uint256 y, uint256 dz, uint256 t, u
     Δy = y - (k - (c / µ) * (µ * (z + dz))^(1 - t))^(1 / (1 - t)))
 */
 function CVLBondsOutGivenSharesIn(uint256 z, uint256 y, uint256 dz, uint256 t, uint256 c, uint256 mu) returns uint256 {
-    uint256 yp;
-    uint256 zp = require_uint256(z + dz);
-    uint256 tp = require_uint256(ONE18() - t);
+    havoc yp; havoc zp; havoc tp;
+    require zp = require_uint256(z + dz);
+    require tp = require_uint256(ONE18() - t);
     require YSInvariant(z, zp, y, yp, mu, c, tp);
     return require_uint256(y - yp);
 }
@@ -184,9 +164,9 @@ function CVLBondsOutGivenSharesIn(uint256 z, uint256 y, uint256 dz, uint256 t, u
     Δz = (((k - (y - dy)^(1 - t)) / (c / µ))^(1 / (1 - t)) / µ) - z
 */
 function CVLSharesInGivenBondsOut(uint256 z, uint256 y, uint256 dy, uint256 t, uint256 c, uint256 mu) returns uint256 {
-    uint256 zp;
-    uint256 yp = require_uint256(y - dy);
-    uint256 tp = require_uint256(ONE18() - t);
+    havoc yp; havoc zp; havoc tp;
+    require yp = require_uint256(y - dy);
+    require tp = require_uint256(ONE18() - t);
     require YSInvariant(z, zp, y, yp, mu, c, tp);
     return require_uint256(zp - z);
 }
@@ -196,9 +176,9 @@ function CVLSharesInGivenBondsOut(uint256 z, uint256 y, uint256 dy, uint256 t, u
     Δz = z - (((k - (y + Δy)^(1 - t)) / c/μ )^(1 / (1 - t)) / µ)
 */
 function CVLSharesOutGivenBondsIn(uint256 z, uint256 y, uint256 dy, uint256 t, uint256 c, uint256 mu) returns uint256 {
-    uint256 zp;
-    uint256 yp = require_uint256(y + dy);
-    uint256 tp = require_uint256(ONE18() - t);
+    havoc yp; havoc zp; havoc tp;
+    require yp = require_uint256(y + dy);
+    require tp = require_uint256(ONE18() - t);
     require YSInvariant(z, zp, y, yp, mu, c, tp);
     return require_uint256(z - zp);
 }

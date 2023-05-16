@@ -12,9 +12,11 @@ methods {
     function FPMath.mulUp(uint256, uint256) external returns (uint256) envfree;
     function FPMath.divUp(uint256, uint256) external returns (uint256) envfree;
     function FPMath.pow(uint256, uint256) external returns (uint256) envfree;
-    function FPMath.exp(int256 x) external returns (int256) envfree;
-    function FPMath.ln(int256 x) external returns (int256) envfree;
+    function FPMath.exp(int256) external returns (int256) envfree;
+    function FPMath.ln(int256) external returns (int256) envfree;
     function FPMath.updateWeightedAverage(uint256,uint256,uint256,uint256,bool) external returns (uint256) envfree;
+
+    function _.pow(uint256 x, uint256 y) internal library => CVLPow(x, y) expect uint256;
     
     function HDMath.calculateBaseVolume(uint256,uint256,uint256) external returns uint256 envfree;
     function HDMath.calculateSpotPrice(uint256,uint256,uint256,uint256,uint256) external returns uint256 envfree;
@@ -23,6 +25,11 @@ methods {
     function HDMath.calculatePresentValue(MockHyperdriveMath.PresentValueParams) external returns uint256 envfree;
     function HDMath.calculateShortInterest(uint256,uint256,uint256,uint256) external returns uint256 envfree;
     function HDMath.calculateShortProceeds(uint256,uint256,uint256,uint256,uint256) external returns uint256 envfree;
+    
+    function HDMath.calculateOpenLong(uint256,uint256,uint256,uint256,uint256,uint256,uint256) external returns (uint256, uint256, uint256) envfree;
+    function HDMath.calculateCloseLong(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256) external returns (uint256, uint256, uint256) envfree;
+    function HDMath.calculateOpenShort(uint256,uint256,uint256,uint256,uint256,uint256,uint256) external returns (uint256, uint256, uint256) envfree;
+    function HDMath.calculateCloseShort(uint256,uint256,uint256,uint256,uint256,uint256,uint256) external returns (uint256, uint256, uint256) envfree;
 
     function YSMath.calculateBondsInGivenSharesOut(uint256,uint256,uint256,uint256,uint256,uint256) external returns uint256 envfree;
     function YSMath.calculateBondsOutGivenSharesIn(uint256,uint256,uint256,uint256,uint256,uint256) external returns uint256 envfree;
@@ -83,4 +90,34 @@ rule YSInvariantTest1(uint256 z, uint256 y, uint256 dz, uint256 t, uint256 c, ui
     uint256 zp = require_uint256(z - dz);
     uint256 tp = require_uint256(ONE18() - t);
     assert YSInvariant(z, zp, y, yp, mu, c, tp);
+}
+
+// ======================================
+//        Hyperdrive Math rules
+//=======================================
+rule calculateOpenLong_correctBounds(
+    uint256 shareReserves,
+    uint256 bondReserves,
+    uint256 shareAmount,
+    uint256 normalizedTimeRemaining,
+    uint256 timeStretch,
+    uint256 sharePrice,
+    uint256 initialSharePrice) {
+        
+    uint256 shareReservesDelta;
+    uint256 bondReservesDelta;
+    uint256 bondProceeds;
+    /// More realistic reserves conditions
+    require bondReserves >= ONE18();
+    require shareReserves >= ONE18();
+
+    shareReservesDelta, bondReservesDelta, bondProceeds = 
+    HDMath.calculateOpenLong(
+        shareReserves,bondReserves,shareAmount,normalizedTimeRemaining,
+        timeStretch,sharePrice,initialSharePrice);
+
+    assert bondReserves >= bondReservesDelta,
+        "The bond reserve delta cannot exceed the bond reserves";
+    assert bondReserves >= bondProceeds,
+        "The bond proceeds cannot exceed the bond reserves";
 }
