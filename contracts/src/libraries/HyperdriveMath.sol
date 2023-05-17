@@ -137,6 +137,9 @@ library HyperdriveMath {
             uint256 bondProceeds
         )
     {
+        // 1. curve
+        // 2. flat -> add liquidity
+
         // Calculate the flat part of the trade.
         bondProceeds = _shareAmount
             .mulDown(FixedPointMath.ONE_18.sub(_normalizedTimeRemaining))

@@ -14,9 +14,7 @@ contract MockHyperdriveScript is Script {
     function setUp() public {}
 
     function run() public {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(deployerPrivateKey);
-        address deployer = vm.addr(deployerPrivateKey);
+        vm.startBroadcast();
 
         // Mock ERC20
         ERC20Mintable baseToken = new ERC20Mintable();
@@ -54,7 +52,7 @@ contract MockHyperdriveScript is Script {
         );
 
         baseToken.approve(address(hyperdrive), 10_000_000e18);
-        hyperdrive.initialize(100_000e18, 0.05e18, deployer, true);
+        hyperdrive.initialize(100_000e18, 0.05e18, msg.sender, true);
 
         vm.stopBroadcast();
     }
