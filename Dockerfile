@@ -27,14 +27,13 @@ COPY ./lib/ ./lib/
 COPY ./script/ ./script/
 COPY ./test/ ./test/
 COPY ./foundry.toml ./foundry.toml
-COPY ./remappings.txt ./remappings.txt
 
 # TODO: Building in the image leads to out of memory errors.
 # TODO: Use the production profile.
 # RUN FOUNDRY_PROFILE="script" forge build
 
 # Copy the script used to run the migrations and set its permissions.
-COPY ./docker/run_migrations.sh ./run_migrations.sh
+COPY ./run_migrations.sh ./run_migrations.sh
 RUN chmod a+x ./run_migrations.sh
 
 # Create the artifacts directory. 

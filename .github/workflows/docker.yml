@@ -6,7 +6,8 @@ name: Publish the migrations image
 
 on:
   push:
-    branches: ["main"]
+    # FIXME: This should be main
+    branches: ["jalextowle/infra/private-testnet"]
 
 env:
   REGISTRY: ghcr.io
