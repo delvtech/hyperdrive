@@ -6,7 +6,7 @@ name: Publish the migrations image
 
 on:
   push:
-    branches: ['main']
+    branches: ["main"]
 
 env:
   REGISTRY: ghcr.io
