@@ -14,7 +14,7 @@
         "prettier": "npx prettier --write .",
         "test": "forge test -vvv",
         "solhint": "npx solhint -f table contracts/src/*.sol contracts/src/**/*.sol",
-        "code-size-check": "FOUNDRY_PROFILE=production forge build && python scripts/contract_size.py out",
+        "code-size-check": "FOUNDRY_PROFILE=production forge build && python python/contract_size.py out",
         "spell-check": "npx cspell ./**/**/**.sol --gitignore",
         "style-check": "npx prettier --check .",
         "warnings-check": "FOUNDRY_PROFILE=production forge build --deny-warnings --force",
