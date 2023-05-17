@@ -30,7 +30,7 @@ via_ir = true
 gas_reports = ["*"]
 
 [profile.script]
-fs_permissions = [{ access = "write", path = "./addresses/script_addresses.json" }]
+fs_permissions = [{ access = "write", path = "./artifacts/script_addresses.json" }]
 
 [fuzz]
 runs = 1000

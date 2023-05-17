@@ -8,7 +8,6 @@ import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { MockHyperdriveTestnet, MockHyperdriveDataProviderTestnet } from "contracts/test/MockHyperdriveTestnet.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 
-// FIXME: We need to use a private key that has eth on this chain.
 contract MockHyperdriveScript is Script {
     using stdJson for string;
 
@@ -64,6 +63,6 @@ contract MockHyperdriveScript is Script {
         string memory result = "result";
         vm.serializeAddress(result, "baseToken", address(baseToken));
         result = vm.serializeAddress(result, "hyperdrive", address(hyperdrive));
-        result.write("./addresses/script_addresses.json");
+        result.write("./artifacts/script_addresses.json");
     }
 }
