@@ -29,6 +29,9 @@ via_ir = true
 # Enable gas-reporting for all contracts
 gas_reports = ["*"]
 
+[profile.script]
+fs_permissions = [{ access = "write", path = "./addresses/script_addresses.json" }]
+
 [fuzz]
 runs = 1000
 

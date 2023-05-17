@@ -12,3 +12,15 @@ services:
       - ETH_FROM=0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
       - PRIVATE_KEY=ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
       - RPC_URL=http://ethereum:8545
+    volumes:
+      - addresses:/src/addresses/
+  addresses:
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx
+    ports:
+      - 80:80
+    volumes:
+      - addresses:/var/www/addresses/
+volumes:
+  addresses:

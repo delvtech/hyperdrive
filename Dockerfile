@@ -3,12 +3,8 @@
 #        for openzeppelin.
 FROM ghcr.io/foundry-rs/foundry:master
 
-# Add curl so that we can poll Ethereum on startup.
-RUN apk add curl curl-dev
-
 # FIXME: This dockerfile could be improved. We shouldn't have to use
-#        the yarn dependencies from the host machine. Furthermore,r
-#        we shouldn't need to use forge clean.
+#        the yarn dependencies from the host machine.
 WORKDIR /src
 
 COPY ./contracts/ ./contracts/
@@ -19,18 +15,20 @@ COPY ./node_modules/ ./node_modules/
 COPY ./foundry.toml ./foundry.toml
 COPY ./remappings.txt ./remappings.txt
 
+# FIXME: Building in the image leads to out of memory errors.
 # FIXME: Use the production profile.
-# FIXME: forge script intermittently fails when it doesn't build the contracts.
-# RUN forge build
+# RUN FOUNDRY_PROFILE="script" forge build
+RUN mkdir -p ./addresses
 
 ENV ETH_FROM=${ETH_FROM}
 ENV PRIVATE_KEY=${PRIVATE_KEY}
 ENV RPC_URL=${RPC_URL}
 
-ENTRYPOINT sleep 2 && \ 
-           forge script script/MockHyperdrive.s.sol \
+# FIXME: This should be put into it's own bash script.
+ENTRYPOINT sleep 5 && \ 
+           FOUNDRY_PROFILE="script" forge script script/MockHyperdrive.s.sol \
            --sender "${ETH_FROM}" \
            --private-key "${PRIVATE_KEY}" \
            --rpc-url "${RPC_URL}" \
-           --slow \
-           --broadcast -vvv
+           --broadcast && \
+           mv ./addresses/script_addresses.json ./addresses/addresses.json
