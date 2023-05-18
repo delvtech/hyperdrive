@@ -100,6 +100,22 @@ function mulDivUpAbstractPlus(uint256 x, uint256 y, uint256 z) returns uint256 {
     return require_uint256(res + 1);
 }
 
+function mulDownWad(uint256 x, uint256 y) returns uint256 {
+    return mulDivDownAbstractPlus(x, y, ONE18());
+}
+
+function mulUpWad(uint256 x, uint256 y) returns uint256 {
+    return mulDivUpAbstractPlus(x, y, ONE18());
+}
+
+function divDownWad(uint256 x, uint256 y) returns uint256 {
+    return mulDivDownAbstractPlus(x, ONE18(), y);
+}
+
+function divUpWad(uint256 x, uint256 y) returns uint256 {
+    return mulDivUpAbstractPlus(x, ONE18(), y);
+}
+
 function discreteQuotientMulDiv(uint256 x, uint256 y, uint256 z) returns uint256 
 {
     havoc res;

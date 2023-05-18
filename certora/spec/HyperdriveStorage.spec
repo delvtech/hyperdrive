@@ -16,7 +16,9 @@ methods {
     function positionDuration() external returns (uint256) envfree;
     function timeStretch() external returns (uint256) envfree; 
     function initialSharePrice() external returns (uint256) envfree; 
-    function marketState() external returns (AaveHyperdrive.MarketState memory) envfree; 
+    function marketState() external returns (AaveHyperdrive.MarketState memory) envfree;
+    function stateShareReserves() external returns (uint128) envfree; 
+    function stateBondReserves() external returns (uint128) envfree; 
     function withdrawPool() external returns (AaveHyperdrive.WithdrawPool memory) envfree;
     function curveFee() external returns (uint256) envfree;
     function flatFee() external returns (uint256) envfree;

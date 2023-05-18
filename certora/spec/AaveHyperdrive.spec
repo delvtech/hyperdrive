@@ -2,6 +2,7 @@ import "./erc20.spec";
 import "./MathSummaries.spec";
 import "./Sanity.spec";
 import "./HyperdriveStorage.spec";
+// import "./Fees.spec";
 
 using AaveHyperdrive as HDAave;
 using DummyATokenA as aToken;
@@ -15,9 +16,19 @@ methods {
     function aToken.balanceOf(address) external returns (uint256);
 
     function HDAave.totalShares() external returns (uint256) envfree;
+    
+    /// Fee calculations summaries
     function HDAave.MockCalculateFeesOutGivenSharesIn(uint256,uint256,uint256,uint256,uint256) internal returns(AaveHyperdrive.HDFee memory) => NONDET;
     function HDAave.MockCalculateFeesOutGivenBondsIn(uint256,uint256,uint256,uint256) internal returns(AaveHyperdrive.HDFee memory) => NONDET;
     function HDAave.MockCalculateFeesInGivenBondsOut(uint256,uint256,uint256,uint256) internal returns(AaveHyperdrive.HDFee memory) => NONDET;
+    /*
+    function HDAave.MockCalculateFeesOutGivenSharesIn(uint256 a,uint256 b ,uint256 c ,uint256 d,uint256 e) internal returns(AaveHyperdrive.HDFee memory) => 
+        CVLFeesOutGivenSharesIn(a,b,c,d,e);
+    function HDAave.MockCalculateFeesOutGivenBondsIn(uint256 a, uint256 b,uint256 c, uint256 d) internal returns(AaveHyperdrive.HDFee memory) => 
+        CVLFeesOutGivenAmountsIn(a,b,c,d);
+    function HDAave.MockCalculateFeesInGivenBondsOut(uint256 a, uint256 b, uint256 c, uint256 d) internal returns(AaveHyperdrive.HDFee memory) => 
+        CVLFeesOutGivenAmountsIn(a,b,c,d);
+    */
 }
 
 definition RAY() returns uint256 = 10^27;
@@ -31,13 +42,13 @@ function setHyperdrivePoolParams() {
     require positionDuration() == 31536000;
     require updateGap() == 1000;
     /// Alternative
-    //require curveFee() == require_uint256(ONE18() / 10);
-    //require flatFee() == require_uint256(ONE18() / 10);
-    //require governanceFee() == require_uint256(ONE18() / 2);
+    require curveFee() == require_uint256(ONE18() / 10);
+    require flatFee() == require_uint256(ONE18() / 10);
+    require governanceFee() == require_uint256(ONE18() / 2);
     ///
-    require curveFee() <= require_uint256(ONE18() / 10);
-    require flatFee() <= require_uint256(ONE18() / 10);
-    require governanceFee() <= require_uint256(ONE18() / 2);
+    //require curveFee() <= require_uint256(ONE18() / 10);
+    //require flatFee() <= require_uint256(ONE18() / 10);
+    //require governanceFee() <= require_uint256(ONE18() / 2);
 }
 
 hook Sload uint256 index Pool.liquidityIndex[KEY address token][KEY uint256 timestamp] STORAGE {
@@ -74,6 +85,7 @@ function depositOutput(env e, uint256 totalSharesBefore, uint256 assetsBefore, u
     return output;
 }
 
+/// @doc Checks the post state of the _deposit() function. 
 rule depositOutputChecker(uint256 baseAmount, bool asUnderlying) {
     env e;
     require e.msg.sender != currentContract;
@@ -102,6 +114,7 @@ rule depositOutputChecker(uint256 baseAmount, bool asUnderlying) {
     }
 }
 
+/// A helper function to simulate a round trip of open and close a long position.
 function LongPositionRoundTripHelper(
     env eOp,  /// openLong() env variable.
     env eCl,  /// closeLong() env variable.
@@ -148,6 +161,7 @@ filtered{f -> !f.isView} {
     assert aTokenBalance1 != aTokenBalance2 <=> shares1 != shares2;
 }
 
+/// @notice : in progress
 /// (In : aToken, Out : aToken)
 rule longPositionRoundTrip1() {
     env eOp;
@@ -184,6 +198,7 @@ rule longPositionRoundTrip1() {
     assert minOutput_close <= assetsReceived; 
 }
 
+/// @notice : in progress
 /// (In : aToken, Out : base token)
 rule longPositionRoundTrip2() {
     env eOp;
@@ -204,6 +219,8 @@ rule longPositionRoundTrip2() {
     assert minOutput_close <= assetsReceived; 
 }
 
+/// @doc No action can change the share price for two different checkpoints.
+/// @notice [VERIFIED]
 rule sharePriceChangesForOnlyOneCheckPoint(method f) {
     env e;
     calldataarg args;
@@ -220,6 +237,8 @@ rule sharePriceChangesForOnlyOneCheckPoint(method f) {
         => _checkpointA == _checkpointB;
 }
 
+/// @doc For every checkpoint, if the share price has been set, it cannot be set again.
+/// @notice [VERIFIED]
 rule cannotChangeCheckPointSharePriceTwice(uint256 _checkpoint, method f) {
     env e;
     calldataarg args;
@@ -231,6 +250,8 @@ rule cannotChangeCheckPointSharePriceTwice(uint256 _checkpoint, method f) {
     assert CP1.sharePrice !=0 => CP1.sharePrice == CP2.sharePrice;
 }
 
+/// @doc integrity rule for 'openLong'
+/// - cannot receive more bonds than registered reserves.
 rule openLongIntegrity(uint256 baseAmount) {
     env e;
     uint256 minOutput;
@@ -247,6 +268,7 @@ rule openLongIntegrity(uint256 baseAmount) {
         "A position cannot be opened with more bonds than bonds reserves";
 }
 
+/// @doc The sum of longs and shorts should not surpass the total amount of bond reserves
 /// @notice: should be turned into an invariant
 rule bondsPositionsDontExceedReserves(method f) 
 filtered{f -> !f.isView} {
@@ -263,6 +285,7 @@ filtered{f -> !f.isView} {
         to_mathint(Mstate2.bondReserves);
 }
 
+/// @doc If there are shares in the pool, there must be underlying assets.
 invariant SharesNonZeroAssetsNonZero(env e)
     HDAave.totalShares() !=0 => aToken.balanceOf(e, HDAave) != 0
     {
@@ -271,6 +294,45 @@ invariant SharesNonZeroAssetsNonZero(env e)
             require eP.block.timestamp == e.block.timestamp;
             require HDAave.totalShares() >= ONE18();
             require aToken.balanceOf(eP, HDAave) >= ONE18();
+        }
+    }
+
+/// @doc bond reserves / share reserves >= initial share price
+rule maxCurveTradeIntegrity(method f) filtered{f -> !f.isView} {
+    env e;
+    calldataarg args;
+
+    require (stateBondReserves() * ONE18()) / initialSharePrice() >= to_mathint(stateShareReserves()); 
+        f(e,args);
+    assert (stateBondReserves() * ONE18()) / initialSharePrice()  >= to_mathint(stateShareReserves());
+}
+
+/// @doc It's impossible to get to a state where both shares and bonds are empty
+/// @dev maybe it's possible if all liquidity has been withdrawan?
+/// https://vaas-stg.certora.com/output/41958/ae9b37fd55944155b4f513bb6fda1101/?anonymousKey=fc7e4187dde6bfeed7adbcb6d830747a6360cc3e
+rule CannotCompletelyDepletePool(method f) filtered{f -> !f.isView} {
+    env e;
+    calldataarg args;
+    setHyperdrivePoolParams();
+    require require_uint256(stateBondReserves()) >= ONE18() && require_uint256(stateShareReserves()) >= ONE18();
+        f(e,args);
+    assert !(stateBondReserves() == 0 && stateShareReserves() == 0);
+}
+
+/// https://vaas-stg.certora.com/output/41958/72b2e377545f4c71aefdb613bb6ccf05/?anonymousKey=41c772576393e67ba8e07cc739c3e302b74aa353
+invariant SharePriceCannotDecrease(uint256 checkpointTime) 
+    checkPointSharePrice(checkpointTime) == 0 || to_mathint(checkPointSharePrice(checkpointTime)) >= to_mathint(initialSharePrice())
+    {
+        preserved{setHyperdrivePoolParams();}
+    }
+
+/// @doc There should always be more aTokens (assets) than number of shares
+/// otherwise, the share price will decrease (or less than 1). 
+invariant aTokenBalanceGEToShares(env e)
+    HDAave.totalShares() <= aToken.balanceOf(e, currentContract)
+    {
+        preserved with (env eP) {
+            require eP.block.timestamp == e.block.timestamp;
         }
     }
 

@@ -57,7 +57,7 @@ rule YSInvariantIntegrity() {
     uint256 z2; require z2 !=0;
     uint256 y1; 
     uint256 y2; 
-    uint256 mu; require mu !=0;
+    uint256 mu; require mu >= ONE18();
     uint256 c; require c >= mu; // Docs assumption
     uint256 t; require t <= ONE18() && t > 0;
 
@@ -90,6 +90,29 @@ rule YSInvariantTest1(uint256 z, uint256 y, uint256 dz, uint256 t, uint256 c, ui
     uint256 zp = require_uint256(z - dz);
     uint256 tp = require_uint256(ONE18() - t);
     assert YSInvariant(z, zp, y, yp, mu, c, tp);
+}
+
+rule cannotGetFreeBonds(uint256 z, uint256 y, uint256 dy, uint256 t, uint256 c, uint256 mu) {
+    
+    require mu >= ONE18();
+    require c >= mu;
+    require y == 0 => z >= ONE18();
+    require z == 0 => y >= ONE18();
+    require t >= 0 && t <= ONE18();
+    uint256 dz = YSMath.calculateSharesInGivenBondsOut(z,y,dy,t,c,mu);
+
+    assert dy !=0 => dz !=0;
+}
+
+rule cannotGetFreeShares(uint256 z, uint256 y, uint256 dz, uint256 t, uint256 c, uint256 mu) {
+    require mu >= ONE18();
+    require c >= mu;
+    require y == 0 => z >= ONE18();
+    require z == 0 => y >= ONE18();
+    require t >= 0 && t <= ONE18();
+    uint256 dy = YSMath.calculateBondsInGivenSharesOut(z,y,dz,t,c,mu);
+
+    assert dz !=0 => dy !=0;
 }
 
 // ======================================
