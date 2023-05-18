@@ -30,7 +30,7 @@ COPY ./foundry.toml ./foundry.toml
 
 # TODO: Building in the image leads to out of memory errors.
 # TODO: Use the production profile.
-# RUN FOUNDRY_PROFILE="script" forge build
+RUN FOUNDRY_PROFILE="script" forge build
 
 # Copy the script used to run the migrations and set its permissions.
 COPY ./run_migrations.sh ./run_migrations.sh
