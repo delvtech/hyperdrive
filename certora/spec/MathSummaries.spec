@@ -181,9 +181,9 @@ function YSInvariant(
     uint256 c, 
     uint256 t
 ) returns bool {
-    uint256 tp = require_uint256(ONE18() - t); /// t' = 1 - t;
-    return c * ONE18() * (CVLPow(z1, tp) - CVLPow(z2, tp)) ==
-        to_mathint(CVLPow(mu, t)) * (CVLPow(y2, tp) - CVLPow(y1, tp));
+    uint256 tpp = require_uint256(ONE18() - t); /// t' = 1 - t;
+    return c * ONE18() * (CVLPow(z1, tpp) - CVLPow(z2, tpp)) ==
+        to_mathint(CVLPow(mu, t)) * (CVLPow(y2, tpp) - CVLPow(y1, tpp));
 }
 
 ghost uint256 yp;

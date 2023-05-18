@@ -301,7 +301,7 @@ invariant SharesNonZeroAssetsNonZero(env e)
 rule maxCurveTradeIntegrity(method f) filtered{f -> !f.isView} {
     env e;
     calldataarg args;
-
+    setHyperdrivePoolParams();
     require (stateBondReserves() * ONE18()) / initialSharePrice() >= to_mathint(stateShareReserves()); 
         f(e,args);
     assert (stateBondReserves() * ONE18()) / initialSharePrice()  >= to_mathint(stateShareReserves());
