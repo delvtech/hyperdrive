@@ -122,7 +122,7 @@ contract AaveHyperdrive is Hyperdrive {
         }
 
         // Return the amount and implied share price
-        sharePrice = withdrawValue != 0 ? shares.divDown(withdrawValue) : 0;
+        sharePrice = shares != 0 ? withdrawValue.divDown(shares) : 0;
         return (withdrawValue, sharePrice);
     }
 
