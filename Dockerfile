@@ -22,6 +22,7 @@ ENV RPC_URL=${RPC_URL}
 
 # Copy the contract dependencies required to run the migration script.
 COPY --from=yarn-builder /src/node_modules/@openzeppelin/ ./node_modules/@openzeppelin/
+COPY ./.git/ ./.git/
 COPY ./contracts/ ./contracts/
 COPY ./lib/ ./lib/
 COPY ./script/ ./script/
