@@ -7,6 +7,7 @@ import "./DummyPot.sol";
 
 contract DummyDsrManager is DsrManager {
     DummyPot public potInstance;
+    DummyDAI public daiInstance;
     
     uint256 public _supplyPieTotal;
 
@@ -15,7 +16,7 @@ contract DummyDsrManager is DsrManager {
     // Used to simulate dai because we only need balanceOf() and transfer() functions. 
     // We can simulate this behavior here for simplicity
     // Also, no instances of dai is used in the contract.
-    mapping (address => uint256) public _daiBalance;
+    // mapping (address => uint256) public _daiBalance;
 
     uint256 constant RAY = 10 ** 27;
 
@@ -29,21 +30,20 @@ contract DummyDsrManager is DsrManager {
         _supplyPieTotal = 0;
     }
 
-    address daiAddr;
     function dai() external view returns (address) {
-        return daiAddr;
+        return address(daiInstance);
     }
 
     function pot() external view returns (address) {
         return address(potInstance);
     }
 
-    function pieOf(address usr) external view returns (uint256) {
-        return _pieOf[usr];
+    function pieOf(address user) external view returns (uint256) {
+        return _pieOf[user];
     }
 
-    function daiBalance(address usr) external returns (uint256) {
-        return _daiBalance[usr];
+    function daiBalance(address user) external returns (uint256) {
+        return daiInstance.balanceOf(user);
     }
 
     // dst ... owner getting new minted pie shares
@@ -55,8 +55,7 @@ contract DummyDsrManager is DsrManager {
         _pieOf[dst] += pie;
         _supplyPieTotal += pie;
 
-        _daiBalance[msg.sender] -= wad;
-        _daiBalance[address(this)] += wad;
+        daiInstance.transferFrom(msg.sender, address(this), wad);
     }
 
     function exit(address dst, uint256 wad) external {
@@ -70,7 +69,7 @@ contract DummyDsrManager is DsrManager {
         _supplyPieTotal -= userPie;
 
         uint256 returnedAmt = userPie * chi;
-        _daiBalance[dst] += returnedAmt;
+        daiInstance.transferFrom(address(this), dst, returnedAmt);
     }
 
     function exitAll(address dst) external {
@@ -82,6 +81,6 @@ contract DummyDsrManager is DsrManager {
         _supplyPieTotal -= allUserPie;
 
         uint256 returnedAmt = chi * allUserPie;
-        _daiBalance[dst] += returnedAmt;
+        daiInstance.transferFrom(address(this), dst, returnedAmt);
     }
 }

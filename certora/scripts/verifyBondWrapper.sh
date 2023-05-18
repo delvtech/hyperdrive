@@ -9,18 +9,21 @@ then
 fi
 
 certoraRun contracts/src/BondWrapper.sol \
-    contracts/src/instances/MakerDsrHyperdrive.sol \
+    contracts/src/instances/DsrHyperdrive.sol \
     \
     contracts/src/libraries/HyperdriveMath.sol \
     \
     certora/helpers/DummyERC20A.sol \
     certora/helpers/DummyERC20B.sol \
     certora/helpers/DummyDsrManager.sol:DummyDsrManager \
+    certora/helpers/DummyPot.sol \
     \
     --verify BondWrapper:certora/spec/BondWrapper.spec \
-    --link BondWrapper:hyperdrive=MakerDsrHyperdrive \
+    --link BondWrapper:hyperdrive=DsrHyperdrive \
             BondWrapper:token=DummyERC20B \
-            MakerDsrHyperdrive:dsrManager=DummyDsrManager \
+            DsrHyperdrive:dsrManager=DummyDsrManager \
+            DsrHyperdrive:pot=DummyPot \
+            DummyDsrManager:potInstance=DummyPot \
     --solc solc8.18 \
     --loop_iter 3 \
     --staging \

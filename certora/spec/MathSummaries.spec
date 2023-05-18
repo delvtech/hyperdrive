@@ -41,7 +41,7 @@ methods {
     
     /// @dev Calculates the spot price without slippage of bonds in terms of shares.
     function _.calculateSpotPrice(uint256 shares, uint256 bonds, uint256 initPrice, uint256 normTime, uint256 timeSt) internal library 
-        => ghostCalculateSpotPrice(shares, bonds, initPrice, normTime, timeSt) expect uint256;
+        => CVLCalculateSpotPrice(shares, bonds, initPrice, normTime, timeSt) expect uint256;
     
     /// @dev Calculates the APR from the pool's reserves.
     function _.calculateAPRFromReserves(uint256 shares, uint256 bonds, uint256 initPrice, uint256 dur, uint256 timeSt) internal library
@@ -177,10 +177,11 @@ function YSInvariant(
     uint256 y2, 
     uint256 mu,
     uint256 c, 
-    uint256 t) returns bool {
-    uint256 tpp = require_uint256(ONE18() - t); /// t' = 1 - t;
-    return c * ONE18() * (CVLPow(z1, tpp) - CVLPow(z2, tpp)) ==
-        to_mathint(CVLPow(mu, t)) * (CVLPow(y2, tpp) - CVLPow(y1, tpp));
+    uint256 t
+) returns bool {
+    uint256 tp = require_uint256(ONE18() - t); /// t' = 1 - t;
+    return c * ONE18() * (CVLPow(z1, tp) - CVLPow(z2, tp)) ==
+        to_mathint(CVLPow(mu, t)) * (CVLPow(y2, tp) - CVLPow(y1, tp));
 }
 
 ghost uint256 yp;
@@ -233,4 +234,10 @@ function CVLSharesOutGivenBondsIn(uint256 z, uint256 y, uint256 dy, uint256 t, u
     require tp == require_uint256(ONE18() - t);
     require YSInvariant(z, zp, y, yp, mu, c, tp);
     return require_uint256(z - zp);
+}
+
+function CVLCalculateSpotPrice(uint256 shares, uint256 bonds, uint256 initPrice, uint256 normTime, uint256 timeSt) returns uint256 {
+    uint256 tau = mulDivDownAbstractPlus(normTime, timeSt, ONE18());
+    uint256 base = mulDivDownAbstractPlus(initPrice, shares, bonds);
+    return CVLPow(base, tau);
 }

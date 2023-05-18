@@ -34,7 +34,19 @@ library HyperdriveMath {
 
         spotPrice = _initialSharePrice
             .mulDivDown(_shareReserves, _bondReserves)
-            .pow(tau);
+            .pow(tau);  // wrapper for tau and rest for cvl pow
+        // mu == _initialSharePrice
+        // z == _shareReserves
+        // y == _bondReserves
+        // tau == _normalizedTimeRemaining * _timeStretch
+
+        // 0 < tau <= _timeStretch
+
+        // tau == 0 => spotPrice == 1
+        // 
+
+        // mu * z >= y => spotPrice >= 1
+
     }
 
     /// @dev Calculates the APR from the pool's reserves.
