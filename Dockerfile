@@ -28,7 +28,6 @@ COPY ./script/ ./script/
 COPY ./test/ ./test/
 COPY ./foundry.toml ./foundry.toml
 
-# TODO: Building in the image leads to out of memory errors.
 # TODO: Use the production profile.
 RUN FOUNDRY_PROFILE="script" forge build
 

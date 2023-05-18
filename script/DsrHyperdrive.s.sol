@@ -17,9 +17,6 @@ contract MakerDsrHyperdriveScript is Script {
 
     function setUp() public {}
 
-    // FIXME: There should be a base script that abstracts away the preamble.
-    //        Similarly, there should be some logic to write an address to a
-    //        JSON file that contains all of the deployed contract addresses.
     function run() public {
         vm.startBroadcast();
 
@@ -35,11 +32,9 @@ contract MakerDsrHyperdriveScript is Script {
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: IERC20(dsrManager.dai()),
             initialSharePrice: 1e18,
-            // FIXME: This should be configured using a config file.
             positionDuration: 365 days,
             checkpointDuration: 1 days,
             timeStretch: HyperdriveUtils.calculateTimeStretch(0.02e18),
-            // FIXME: Set a real address so that we can deploy governance.
             governance: address(0),
             feeCollector: address(0),
             fees: fees,
