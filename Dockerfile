@@ -28,8 +28,8 @@ COPY ./script/ ./script/
 COPY ./test/ ./test/
 COPY ./foundry.toml ./foundry.toml
 
-# TODO: Use the production profile.
-RUN FOUNDRY_PROFILE="script" forge build
+# Build the contracts using the "production" profile.
+RUN FOUNDRY_PROFILE="production" forge build
 
 # Copy the script used to run the migrations and set its permissions.
 COPY ./run_migrations.sh ./run_migrations.sh

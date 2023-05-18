@@ -12,7 +12,7 @@ import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 
-contract MakerDsrHyperdriveScript is Script {
+contract DsrHyperdriveScript is Script {
     using FixedPointMath for uint256;
 
     function setUp() public {}
@@ -20,7 +20,7 @@ contract MakerDsrHyperdriveScript is Script {
     function run() public {
         vm.startBroadcast();
 
-        // Deploy an instance of MakerDsrHyperdrive.
+        // Deploy an instance of DsrHyperdrive.
         DsrManager dsrManager = DsrManager(
             address(0xF7F0de3744C82825D77EdA8ce78f07A916fB6bE7)
         );

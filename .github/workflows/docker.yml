@@ -1,4 +1,4 @@
-name: Publish
+name: Publish the artifacts image
 
 on:
   workflow_dispatch:

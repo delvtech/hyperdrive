@@ -6,7 +6,7 @@ set -ex
 sleep 2
 
 # Run the migrations script.
-FOUNDRY_PROFILE="script" forge script script/MockHyperdrive.s.sol \
+FOUNDRY_PROFILE="production" forge script script/MockHyperdrive.s.sol \
    --sender "${ETH_FROM}" \
    --private-key "${PRIVATE_KEY}" \
    --rpc-url "${RPC_URL}" \

@@ -16,6 +16,8 @@ cache_path  = 'forge-cache'
 remappings = ['forge-std=lib/forge-std/src', '@openzeppelin/=node_modules/@openzeppelin', '@aave/=lib/aave-v3-core/contracts']
 # gas limit - max u64
 gas_limit = "18446744073709551615"
+# Allows the scripts to write the addresses to a file.
+fs_permissions = [{ access = "write", path = "./artifacts/script_addresses.json" }]
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
 
 [profile.production]
@@ -28,9 +30,6 @@ optimizer_runs = 8000
 via_ir = true
 # Enable gas-reporting for all contracts
 gas_reports = ["*"]
-
-[profile.script]
-fs_permissions = [{ access = "write", path = "./artifacts/script_addresses.json" }]
 
 [fuzz]
 runs = 1000
