@@ -268,6 +268,32 @@ rule openLongIntegrity(uint256 baseAmount) {
         "A position cannot be opened with more bonds than bonds reserves";
 }
 
+rule profitIsMonotonic(method f) {
+    env eOp;
+    env eCl;
+    uint256 baseAmount; uint256 bondAmount;
+    uint256 minOutput_open; uint256 minOutput_close;
+    address destination_open1; address destination_close1;
+    address destination_open2; address destination_close2;
+    uint256 maturityTime1;
+    uint256 maturityTime2;
+
+    uint256[2] result1 = LongPositionRoundTripHelper(eOp, eCl,
+        baseAmount, bondAmount, minOutput_open, minOutput_close,
+        destination_open1, destination_close1, false, true, maturityTime1);
+    uint256[2] result2 = LongPositionRoundTripHelper(eOp, eCl,
+        baseAmount, bondAmount, minOutput_open, minOutput_close,
+        destination_open2, destination_close2, false, true, maturityTime2);
+
+    uint256 bondsReceived1 = result1[0];
+    uint256 assetsReceived1 = result1[1];
+    uint256 bondsReceived2 = result2[0];
+    uint256 assetsReceived2 = result2[1];
+
+    assert maturityTime1 < maturityTime2 => bondsReceived1 <= bondsReceived2;
+    assert maturityTime1 < maturityTime2 => assetsReceived1 <= assetsReceived2;
+}
+
 /// @doc The sum of longs and shorts should not surpass the total amount of bond reserves
 /// @notice: should be turned into an invariant
 rule bondsPositionsDontExceedReserves(method f)
