@@ -1,3 +1,2 @@
-# TODO: We shouldn't need to pin this.
-eth-ape==0.6.8
+eth-ape
 pytest
