@@ -54,4 +54,4 @@ jobs:
           ape plugins install .
 
       - name: test python
-        run: python -m pytest .
+        run: ls && python -m pytest .
