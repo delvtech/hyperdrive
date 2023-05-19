@@ -8,25 +8,25 @@ using AaveHyperdrive as HDAave;
 using DummyATokenA as aToken;
 
 use rule sanity;
-      
+
 methods {
     function _.mint(address,address,uint256,uint256) external => DISPATCHER(true);
     function _.burn(address,address,uint256,uint256) external => DISPATCHER(true);
-    
+
     function aToken.balanceOf(address) external returns (uint256);
 
     function HDAave.totalShares() external returns (uint256) envfree;
-    
+
     /// Fee calculations summaries
     function HDAave.MockCalculateFeesOutGivenSharesIn(uint256,uint256,uint256,uint256,uint256) internal returns(AaveHyperdrive.HDFee memory) => NONDET;
     function HDAave.MockCalculateFeesOutGivenBondsIn(uint256,uint256,uint256,uint256) internal returns(AaveHyperdrive.HDFee memory) => NONDET;
     function HDAave.MockCalculateFeesInGivenBondsOut(uint256,uint256,uint256,uint256) internal returns(AaveHyperdrive.HDFee memory) => NONDET;
     /*
-    function HDAave.MockCalculateFeesOutGivenSharesIn(uint256 a,uint256 b ,uint256 c ,uint256 d,uint256 e) internal returns(AaveHyperdrive.HDFee memory) => 
+    function HDAave.MockCalculateFeesOutGivenSharesIn(uint256 a,uint256 b ,uint256 c ,uint256 d,uint256 e) internal returns(AaveHyperdrive.HDFee memory) =>
         CVLFeesOutGivenSharesIn(a,b,c,d,e);
-    function HDAave.MockCalculateFeesOutGivenBondsIn(uint256 a, uint256 b,uint256 c, uint256 d) internal returns(AaveHyperdrive.HDFee memory) => 
+    function HDAave.MockCalculateFeesOutGivenBondsIn(uint256 a, uint256 b,uint256 c, uint256 d) internal returns(AaveHyperdrive.HDFee memory) =>
         CVLFeesOutGivenAmountsIn(a,b,c,d);
-    function HDAave.MockCalculateFeesInGivenBondsOut(uint256 a, uint256 b, uint256 c, uint256 d) internal returns(AaveHyperdrive.HDFee memory) => 
+    function HDAave.MockCalculateFeesInGivenBondsOut(uint256 a, uint256 b, uint256 c, uint256 d) internal returns(AaveHyperdrive.HDFee memory) =>
         CVLFeesOutGivenAmountsIn(a,b,c,d);
     */
 }
@@ -66,7 +66,7 @@ function depositOutput(env e, uint256 totalSharesBefore, uint256 assetsBefore, u
     uint256[2] output;
     uint256 totalSharesAfter = HDAave.totalShares();
     uint256 assetsAfter = aToken.balanceOf(e, HDAave);
-    
+
     if(totalSharesBefore == 0) {
         require baseAmount == output[0];
         require ONE18() == output[1];
@@ -85,7 +85,7 @@ function depositOutput(env e, uint256 totalSharesBefore, uint256 assetsBefore, u
     return output;
 }
 
-/// @doc Checks the post state of the _deposit() function. 
+/// @doc Checks the post state of the _deposit() function.
 rule depositOutputChecker(uint256 baseAmount, bool asUnderlying) {
     env e;
     require e.msg.sender != currentContract;
@@ -131,10 +131,10 @@ function LongPositionRoundTripHelper(
     require eOp.msg.sender == eCl.msg.sender;
     require eOp.msg.sender != currentContract;
 
-    uint256 bondsReceived = 
+    uint256 bondsReceived =
         openLong(eOp, baseAmount, minOutput_open, destination_open, asUnderlying_open);
 
-    uint256 assetsRecieved = 
+    uint256 assetsRecieved =
         closeLong(eCl, maturityTime, bondAmount, minOutput_close, destination_close, asUnderlying_close);
 
     uint256[2] result;
@@ -168,34 +168,34 @@ rule longPositionRoundTrip1() {
     env eCl;
     uint256 baseAmount; uint256 bondAmount;
     uint256 minOutput_open; uint256 minOutput_close;
-    address destination_open; address destination_close; 
+    address destination_open; address destination_close;
     uint256 maturityTime;
 
     /// Probe balances before transaction
-    uint256 aTokenBalanceSender_before = 
+    uint256 aTokenBalanceSender_before =
         aToken.balanceOf(eOp, eOp.msg.sender);
-    uint256 aTokenBalanceDestOpen_before = 
+    uint256 aTokenBalanceDestOpen_before =
         aToken.balanceOf(eOp, destination_open);
-    uint256 aTokenBalanceDestClose_before = 
+    uint256 aTokenBalanceDestClose_before =
         aToken.balanceOf(eOp, destination_close);
 
     /// Perform round trip (open aToken -> close aToken)
-    uint256[2] result = LongPositionRoundTripHelper(eOp, eCl, 
+    uint256[2] result = LongPositionRoundTripHelper(eOp, eCl,
         baseAmount, bondAmount, minOutput_open, minOutput_close,
         destination_open, destination_close, false, false, maturityTime);
     uint256 bondsReceived = result[0];
     uint256 assetsReceived = result[1];
 
     /// Probe balances after transaction
-    uint256 aTokenBalanceSender_after = 
+    uint256 aTokenBalanceSender_after =
         aToken.balanceOf(eCl, eOp.msg.sender);
-    uint256 aTokenBalanceDestOpen_after = 
+    uint256 aTokenBalanceDestOpen_after =
         aToken.balanceOf(eCl, destination_open);
-    uint256 aTokenBalanceDestClose_after = 
+    uint256 aTokenBalanceDestClose_after =
         aToken.balanceOf(eCl, destination_close);
 
     assert minOutput_open <= bondsReceived;
-    assert minOutput_close <= assetsReceived; 
+    assert minOutput_close <= assetsReceived;
 }
 
 /// @notice : in progress
@@ -205,10 +205,10 @@ rule longPositionRoundTrip2() {
     env eCl;
     uint256 baseAmount; uint256 bondAmount;
     uint256 minOutput_open; uint256 minOutput_close;
-    address destination_open; address destination_close; 
+    address destination_open; address destination_close;
     uint256 maturityTime;
 
-    uint256[2] result = LongPositionRoundTripHelper(eOp, eCl, 
+    uint256[2] result = LongPositionRoundTripHelper(eOp, eCl,
         baseAmount, bondAmount, minOutput_open, minOutput_close,
         destination_open, destination_close, false, true, maturityTime);
 
@@ -216,7 +216,7 @@ rule longPositionRoundTrip2() {
     uint256 assetsReceived = result[1];
 
     assert minOutput_open <= bondsReceived;
-    assert minOutput_close <= assetsReceived; 
+    assert minOutput_close <= assetsReceived;
 }
 
 /// @doc No action can change the share price for two different checkpoints.
@@ -261,7 +261,7 @@ rule openLongIntegrity(uint256 baseAmount) {
     AaveHyperdrive.MarketState Mstate = marketState();
     uint128 bondReserves = Mstate.bondReserves;
 
-    uint256 bondsReceived = 
+    uint256 bondsReceived =
         openLong(e, baseAmount, minOutput, destination, asUnderlying);
 
     assert to_mathint(bondsReceived) <= to_mathint(bondReserves),
@@ -270,7 +270,7 @@ rule openLongIntegrity(uint256 baseAmount) {
 
 /// @doc The sum of longs and shorts should not surpass the total amount of bond reserves
 /// @notice: should be turned into an invariant
-rule bondsPositionsDontExceedReserves(method f) 
+rule bondsPositionsDontExceedReserves(method f)
 filtered{f -> !f.isView} {
     env e;
     calldataarg args;
@@ -278,10 +278,10 @@ filtered{f -> !f.isView} {
         f(e, args);
     AaveHyperdrive.MarketState Mstate2 = marketState();
 
-    require Mstate1.longsOutstanding + Mstate1.shortsOutstanding <= 
+    require Mstate1.longsOutstanding + Mstate1.shortsOutstanding <=
         to_mathint(Mstate1.bondReserves);
 
-    assert Mstate2.longsOutstanding + Mstate2.shortsOutstanding <= 
+    assert Mstate2.longsOutstanding + Mstate2.shortsOutstanding <=
         to_mathint(Mstate2.bondReserves);
 }
 
@@ -302,7 +302,7 @@ rule maxCurveTradeIntegrity(method f) filtered{f -> !f.isView} {
     env e;
     calldataarg args;
     setHyperdrivePoolParams();
-    require (stateBondReserves() * ONE18()) / initialSharePrice() >= to_mathint(stateShareReserves()); 
+    require (stateBondReserves() * ONE18()) / initialSharePrice() >= to_mathint(stateShareReserves());
         f(e,args);
     assert (stateBondReserves() * ONE18()) / initialSharePrice()  >= to_mathint(stateShareReserves());
 }
@@ -320,14 +320,14 @@ rule CannotCompletelyDepletePool(method f) filtered{f -> !f.isView} {
 }
 
 /// https://vaas-stg.certora.com/output/41958/72b2e377545f4c71aefdb613bb6ccf05/?anonymousKey=41c772576393e67ba8e07cc739c3e302b74aa353
-invariant SharePriceCannotDecrease(uint256 checkpointTime) 
+invariant SharePriceCannotDecrease(uint256 checkpointTime)
     checkPointSharePrice(checkpointTime) == 0 || to_mathint(checkPointSharePrice(checkpointTime)) >= to_mathint(initialSharePrice())
     {
         preserved{setHyperdrivePoolParams();}
     }
 
 /// @doc There should always be more aTokens (assets) than number of shares
-/// otherwise, the share price will decrease (or less than 1). 
+/// otherwise, the share price will decrease (or less than 1).
 invariant aTokenBalanceGEToShares(env e)
     HDAave.totalShares() <= aToken.balanceOf(e, currentContract)
     {
