@@ -277,9 +277,15 @@ rule openLongIntegrity(uint256 baseAmount) {
         "A position cannot be opened with more bonds than bonds reserves";
 }
 
-rule profitIsMonotonic(method f) {
-    env eOp;
-    env eCl;
+rule IsMonotonic(method f) {
+    env eOp1;
+    env eCl1;
+    env eOp2;
+    env eCl2;
+
+    require(eOp1.block.timestamp == eOp2.block.timestamp);
+    require(eCl1.block.timestamp == eCl2.block.timestamp);
+
     uint256 baseAmount; uint256 bondAmount;
     uint256 minOutput_open; uint256 minOutput_close;
     address destination_open1; address destination_close1;
@@ -287,10 +293,10 @@ rule profitIsMonotonic(method f) {
     uint256 maturityTime1;
     uint256 maturityTime2;
 
-    uint256[2] result1 = LongPositionRoundTripHelper(eOp, eCl,
+    uint256[2] result1 = LongPositionRoundTripHelper(eOp1, eCl1,
         baseAmount, bondAmount, minOutput_open, minOutput_close,
         destination_open1, destination_close1, false, true, maturityTime1);
-    uint256[2] result2 = LongPositionRoundTripHelper(eOp, eCl,
+    uint256[2] result2 = LongPositionRoundTripHelper(eOp2, eCl2,
         baseAmount, bondAmount, minOutput_open, minOutput_close,
         destination_open2, destination_close2, false, true, maturityTime2);
 
