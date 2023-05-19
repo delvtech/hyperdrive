@@ -35,9 +35,7 @@ jobs:
       - name: install foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          # TODO: We should update to the nightly version; however, the current
-          # nightly breaks the build.
-          version: nightly-a5d506ee26b756e476b9bac167890377dc0e6bff
+          version: nightly
 
       - name: lint
         uses: borales/actions-yarn@v4
