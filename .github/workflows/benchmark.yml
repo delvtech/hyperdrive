@@ -22,14 +22,21 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 18.x
+
       - name: install packages
         uses: borales/actions-yarn@v4
         with:
           cmd: install # will run `yarn install` command
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # if needed
+
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
+        with:
+          # TODO: We should update to the nightly version; however, the current
+          # nightly breaks the build.
+          version: nightly-a5d506ee26b756e476b9bac167890377dc0e6bff
+
       - uses: actions/setup-python@v4
         with:
           python-version: "3.10"
