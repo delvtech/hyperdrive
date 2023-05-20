@@ -24,4 +24,3 @@ ethereum:
 
 foundry:
   host: http://localhost:8555
-  port: 8549
