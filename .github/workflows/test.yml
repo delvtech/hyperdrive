@@ -54,4 +54,4 @@ jobs:
           ape plugins install .
 
       - name: test python
-        run: ls -a && python -m pytest . -r A --verbosity=2
+        run: ls -a && forge install && python -m pytest . -r A --verbosity=2
