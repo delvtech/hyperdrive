@@ -1,2 +1,2 @@
-eth-ape
+eth-ape==0.6.9
 pytest
