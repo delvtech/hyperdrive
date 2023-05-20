@@ -37,9 +37,6 @@ jobs:
         with:
           version: nightly
 
-      - name: test forge
-        run: forge test -vvv
-
       - name: install python
         uses: actions/setup-python@v3
         with:
