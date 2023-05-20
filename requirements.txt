@@ -1,3 +1,2 @@
 eth-ape
 pytest
-git+https://github.com/wakamex/ape-solidity
