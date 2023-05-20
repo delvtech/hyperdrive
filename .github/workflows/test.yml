@@ -49,6 +49,8 @@ jobs:
           python -m pip install -r requirements.txt
           python -m pip install eth-ape pytest
           ape plugins install .
+          python -m pip uninstall ape-solidity -y
+          python -m pip install git+https://github.com/wakamex/ape-solidity
 
       - name: test python
         run: python -m pytest .
