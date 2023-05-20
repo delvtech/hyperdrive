@@ -51,6 +51,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
           ape plugins install .
+          ape compile --force
 
       - name: test python
         run: ls -a && forge install && python -m pytest . -r A --verbosity=2
