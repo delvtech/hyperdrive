@@ -22,4 +22,4 @@ ethereum:
     default_provider: foundry
 
 foundry:
-  port: 8555
+  host: http://localhost:8555
