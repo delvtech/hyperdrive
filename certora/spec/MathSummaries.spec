@@ -3,10 +3,8 @@ import "./CVLMath.spec";
 methods {
     /// FixedPoint Math
     /// @dev Updates a weighted average by adding or removing a weighted delta.
-    function _.updateWeightedAverage(uint256,uint256,uint256,uint256,bool) internal library => NONDET;
-    /// @dev Once CERT-2050 is fixed, we could switch to custom summary
-    //      function _.updateWeightedAverage(uint256 avg, uint256 totW, uint256 del, uint256 delW ,bool isAdd) 
-    //        internal library => CVLUpdateWeightedAverage(avg, totW, del, delW, isAdd) expect uint256;
+    function _.updateWeightedAverage(uint256 avg, uint256 totW, uint256 del, uint256 delW ,bool isAdd) internal library 
+        => CVLUpdateWeightedAverage(avg, totW, del, delW, isAdd) expect uint256;
     function _.pow(uint256 x, uint256 y) internal library => CVLPow(x, y) expect uint256;
     function _.exp(int256) internal library => NONDET;
     function _.ln(int256) internal library => NONDET;

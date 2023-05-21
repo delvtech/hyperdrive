@@ -50,6 +50,14 @@ function YSInvariant(
         to_mathint(CVLPow(mu, t)) * (CVLPow(y2, tp) - CVLPow(y1, tp));
 }
 
+rule mulDivDownEquivalence(uint256 x, uint256 y, uint256 z) {
+    assert FPMath.mulDivDown(x,y,z) == mulDivDownAbstractPlus(x,y,z);
+}
+
+rule mulDivUpEquivalence(uint256 x, uint256 y, uint256 z) {
+    assert FPMath.mulDivUp(x,y,z) == mulDivUpAbstractPlus(x,y,z);
+}
+
 /// Verify the invariant: (c / µ) * (µ * z)^(1 - t) + y^(1 - t) = k
 /// t = 0 : (c/mu) *(mu * z) + y = k => c*z + y = k => x + y = k
 rule YSInvariantIntegrity() {

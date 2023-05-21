@@ -21,7 +21,7 @@ abstract contract HyperdriveFeeMath {
         uint256 _spotPrice,
         uint256 _sharePrice
     ) internal pure returns (HDFee memory) {
-        return HDFee(_amountIn,0,0,0);
+        return HDFee(0 *_amountIn,0,0,0);
     }
 
     function MockCalculateFeesOutGivenBondsIn(
@@ -30,7 +30,7 @@ abstract contract HyperdriveFeeMath {
         uint256 _spotPrice,
         uint256 _sharePrice
     ) internal pure returns (HDFee memory) {
-        return HDFee(_amountIn,0,0,0);
+        return HDFee(0 *_amountIn,0,0,0);
     }
 
     function MockCalculateFeesInGivenBondsOut(
@@ -39,6 +39,6 @@ abstract contract HyperdriveFeeMath {
         uint256 _spotPrice,
         uint256 _sharePrice
     ) internal pure returns (HDFee memory) {
-        return HDFee(_amountOut,0,0,0);
+        return HDFee(0 *_amountOut,0,0,0);
     }
 }

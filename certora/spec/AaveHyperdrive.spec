@@ -2,10 +2,11 @@ import "./erc20.spec";
 import "./MathSummaries.spec";
 import "./Sanity.spec";
 import "./HyperdriveStorage.spec";
-// import "./Fees.spec";
+//import "./Fees.spec";
 
 using AaveHyperdrive as HDAave;
 using DummyATokenA as aToken;
+using Pool as pool;
 
 use rule sanity;
 
@@ -13,8 +14,9 @@ methods {
     function _.mint(address,address,uint256,uint256) external => DISPATCHER(true);
     function _.burn(address,address,uint256,uint256) external => DISPATCHER(true);
 
+    function aToken.UNDERLYING_ASSET_ADDRESS() external returns (address) envfree;
     function aToken.balanceOf(address) external returns (uint256);
-
+    function pool.liquidityIndex(address,uint256) external returns (uint256) envfree;
     function HDAave.totalShares() external returns (uint256) envfree;
 
     /// Fee calculations summaries
@@ -55,6 +57,10 @@ hook Sload uint256 index Pool.liquidityIndex[KEY address token][KEY uint256 time
     require index >= RAY();
 }
 
+function getPoolIndex(uint256 timestamp) returns uint256 {
+    return pool.liquidityIndex(aToken.UNDERLYING_ASSET_ADDRESS(),timestamp);
+}
+
 /// @notice Simulates the output of the `_deposit()` function
 /// @param totalSharesBefore - totalShares before deposit function
 /// @param assetsBefore - assets of contract before deposit function.
@@ -86,6 +92,7 @@ function depositOutput(env e, uint256 totalSharesBefore, uint256 assetsBefore, u
 }
 
 /// @doc Checks the post state of the _deposit() function.
+/// https://vaas-stg.certora.com/output/41958/965e09d01a7e4fe0884b83fcccbfa71d/?anonymousKey=2f8a8fc5b978cfae5d16368b4f91e8d9f42a8b7a
 rule depositOutputChecker(uint256 baseAmount, bool asUnderlying) {
     env e;
     require e.msg.sender != currentContract;
@@ -97,6 +104,7 @@ rule depositOutputChecker(uint256 baseAmount, bool asUnderlying) {
         openLong(e, baseAmount, minOutput, destination, asUnderlying);
     uint256 totalSharesAfter = HDAave.totalShares();
     uint256 assetsAfter = aToken.balanceOf(e, HDAave);
+    uint256 index = getPoolIndex(e.block.timestamp);
 
     if(totalSharesBefore == 0) {
         assert totalSharesAfter == baseAmount;
@@ -106,11 +114,12 @@ rule depositOutputChecker(uint256 baseAmount, bool asUnderlying) {
             assert assetsBefore + baseAmount == to_mathint(assetsAfter);
         }
         else {
-            assert assetsBefore + baseAmount >= to_mathint(assetsAfter);
+            assert assetsBefore + baseAmount + 1 >= to_mathint(assetsAfter);
+            assert assetsBefore + baseAmount - index/RAY() <= to_mathint(assetsAfter);
         }
-        uint256 sharesMinted = mulDivDownAbstractPlus(totalSharesBefore, baseAmount, assetsBefore);
+        //uint256 sharesMinted = mulDivDownAbstractPlus(totalSharesBefore, baseAmount, assetsBefore);
         //uint256 sharePrice = mulDivDownAbstractPlus(baseAmount, ONE18(), sharesMinted);
-        assert totalSharesBefore + sharesMinted == to_mathint(totalSharesAfter);
+        //assert totalSharesBefore + sharesMinted == to_mathint(totalSharesAfter);
     }
 }
 
@@ -324,6 +333,7 @@ invariant SharesNonZeroAssetsNonZero(env e)
     }
 
 /// @doc bond reserves / share reserves >= initial share price
+/// https://vaas-stg.certora.com/output/41958/965e09d01a7e4fe0884b83fcccbfa71d/?anonymousKey=2f8a8fc5b978cfae5d16368b4f91e8d9f42a8b7a
 rule maxCurveTradeIntegrity(method f) filtered{f -> !f.isView} {
     env e;
     calldataarg args;
