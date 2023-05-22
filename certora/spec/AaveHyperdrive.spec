@@ -277,39 +277,43 @@ rule openLongIntegrity(uint256 baseAmount) {
         "A position cannot be opened with more bonds than bonds reserves";
 }
 
-rule profitIsMonotonic(method f) {
-    env eOp1;
-    env eCl1;
-    env eOp2;
-    env eCl2;
-
-    require(eOp1.block.timestamp == eOp2.block.timestamp);
-    require(eCl1.block.timestamp == eCl2.block.timestamp);
-
+rule openLongReturnsSameBonds(env eOp) {
     uint256 baseAmount; uint256 bondAmount;
     uint256 minOutput_open; uint256 minOutput_close;
     address destination_open1; address destination_close1;
     address destination_open2; address destination_close2;
-    uint256 maturityTime1;
-    uint256 maturityTime2;
+    uint256 maturityTime1; uint256 maturityTime2;
+    bool asUnderlying_open1; bool asUnderlying_open2;
 
-    uint256[2] result1 = LongPositionRoundTripHelper(eOp1, eCl1,
-        baseAmount, bondAmount, minOutput_open, minOutput_close,
-        destination_open1, destination_close1, false, true, maturityTime1);
-    uint256[2] result2 = LongPositionRoundTripHelper(eOp2, eCl2,
-        baseAmount, bondAmount, minOutput_open, minOutput_close,
-        destination_open2, destination_close2, false, true, maturityTime2);
+    storage initState = lastStorage;
+    uint256 bondsReceived1 = openLong(
+        eOp, baseAmount, minOutput_open, destination_open1, asUnderlying_open1
+    );
+    uint256 bondsReceived2 = openLong(
+        eOp, baseAmount, minOutput_open, destination_open2, asUnderlying_open2
+    ) at initState;
 
-    uint256 bondsReceived1 = result1[0];
-    uint256 assetsReceived1 = result1[1];
-    uint256 bondsReceived2 = result2[0];
-    uint256 assetsReceived2 = result2[1];
-
-    assert maturityTime1 < maturityTime2 => bondsReceived1 <= bondsReceived2;
-    assert maturityTime1 < maturityTime2 => assetsReceived1 <= assetsReceived2;
+    assert bondsReceived1 == bondsReceived2, "Received bonds should not depend on destination or asUnderlying";
 }
 
-rule addAndRemoveSameSharesNoChangeOnShares(env e)
+rule profitIsMonotonicForCloseLong(env eCl) {
+    uint256 bondAmount;
+    uint256 minOutput;
+    address destination1; address destination2;
+    uint256 maturityTime1; uint256 maturityTime2;
+    bool asUnderlying1; bool asUnderlying2;
+
+    storage initState = lastStorage;
+    uint256 assetsRecieved1 =
+        closeLong(eCl, maturityTime1, bondAmount, minOutput, destination1, asUnderlying1);
+
+    uint256 assetsRecieved2 =
+        closeLong(eCl, maturityTime2, bondAmount, minOutput, destination2, asUnderlying2) at initState;
+
+    assert maturityTime1 >= maturityTime2 => assetsRecieved1 <= assetsRecieved2, "Received assets should increase for long position.";
+}
+
+rule addAndRemoveSameSharesMeansNoChange(env e)
 {
     uint256 _contribution;
     uint256 _minApr;
@@ -329,7 +333,6 @@ rule addAndRemoveSameSharesNoChangeOnShares(env e)
     baseProceeds, withdrawalShares = removeLiquidity(e, _shares, _minOutput, _destination, _asUnderlying);
     AaveHyperdrive.MarketState Mstate3 = marketState();
 
-    // assert to_mathint(Mstate1.bondReserves) == to_mathint(Mstate3.bondReserves);
     assert lpShares == withdrawalShares => to_mathint(Mstate1.shareReserves) == to_mathint(Mstate3.shareReserves);
 }
 
