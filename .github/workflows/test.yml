@@ -39,7 +39,6 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: nightly
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: test forge
         run: forge test -vvv
@@ -59,4 +58,6 @@ jobs:
           ape compile --force
 
       - name: test python
-        run: ls -a && forge install && python -m pytest . -r A --verbosity=2
+        run: |
+          echo "[pytest]\nlog_cli: true\nlog_level: DEBUG" > pytest.ini
+          python -m pytest . -r A --verbosity=2
