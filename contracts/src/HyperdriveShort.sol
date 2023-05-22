@@ -103,6 +103,10 @@ abstract contract HyperdriveShort is HyperdriveLP {
             _bondAmount
         );
 
+        // Emit an OpenShort event.
+        uint256 bondAmount = _bondAmount; // Avoid stack too deep error.
+        emit OpenShort(_destination, maturityTime, traderDeposit, bondAmount);
+
         return (traderDeposit);
     }
 
@@ -185,7 +189,13 @@ abstract contract HyperdriveShort is HyperdriveLP {
 
         // Enforce min user outputs
         if (baseProceeds < _minOutput) revert Errors.OutputLimit();
-        return (baseProceeds);
+
+        // Emit a CloseLong event.
+        uint256 maturityTime = _maturityTime; // Avoid stack too deep error.
+        uint256 bondAmount = _bondAmount; // Avoid stack too deep error.
+        emit CloseLong(_destination, maturityTime, bondAmount, baseProceeds);
+
+        return baseProceeds;
     }
 
     /// @dev Applies an open short to the state. This includes updating the

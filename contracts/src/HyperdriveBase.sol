@@ -21,6 +21,60 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     using FixedPointMath for uint256;
     using SafeCast for uint256;
 
+    event Initialize(
+        address indexed provider,
+        uint256 lpAmount,
+        uint256 baseAmount,
+        uint256 apr
+    );
+
+    event AddLiquidity(
+        address indexed provider,
+        uint256 lpAmount,
+        uint256 baseAmount
+    );
+
+    event RemoveLiquidity(
+        address indexed provider,
+        uint256 lpAmount,
+        uint256 baseAmount,
+        uint256 withdrawalShareAmount
+    );
+
+    event RedeemWithdrawalShares(
+        address indexed provider,
+        uint256 withdrawalShareAmount,
+        uint256 baseAmount
+    );
+
+    event OpenLong(
+        address indexed trader,
+        uint256 maturityTime,
+        uint256 baseAmount,
+        uint256 bondAmount
+    );
+
+    event OpenShort(
+        address indexed trader,
+        uint256 maturityTime,
+        uint256 baseAmount,
+        uint256 bondAmount
+    );
+
+    event CloseLong(
+        address indexed trader,
+        uint256 maturityTime,
+        uint256 baseAmount,
+        uint256 bondAmount
+    );
+
+    event CloseShort(
+        address indexed trader,
+        uint256 maturityTime,
+        uint256 baseAmount,
+        uint256 bondAmount
+    );
+
     /// @notice Initializes a Hyperdrive pool.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _dataProvider The address of the data provider.
