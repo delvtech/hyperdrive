@@ -50,6 +50,12 @@ function YSInvariant(
         to_mathint(CVLPow(mu, t)) * (CVLPow(y2, tp) - CVLPow(y1, tp));
 }
 
+rule mulDownChain(uint256 x, uint256 y, uint256 z) {
+    uint256 w = mulDownWad(x, y);
+    assert ONE18() * w <= x * y;
+    assert ONE18() * ONE18() * mulDownWad(w, z) <= (x * y * z);
+}
+
 rule mulDivDownEquivalence(uint256 x, uint256 y, uint256 z) {
     assert FPMath.mulDivDown(x,y,z) == mulDivDownAbstractPlus(x,y,z);
 }

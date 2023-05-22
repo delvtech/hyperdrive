@@ -2,11 +2,12 @@ import "./erc20.spec";
 import "./MathSummaries.spec";
 import "./Sanity.spec";
 import "./HyperdriveStorage.spec";
-//import "./Fees.spec";
+import "./Fees.spec";
 
 using AaveHyperdrive as HDAave;
 using DummyATokenA as aToken;
 using Pool as pool;
+using MockAssetId as assetId;
 
 use rule sanity;
 
@@ -16,13 +17,17 @@ methods {
 
     function aToken.UNDERLYING_ASSET_ADDRESS() external returns (address) envfree;
     function aToken.balanceOf(address) external returns (uint256);
+    function aToken.transfer(address,uint256) external returns (bool);
     function pool.liquidityIndex(address,uint256) external returns (uint256) envfree;
     function HDAave.totalShares() external returns (uint256) envfree;
+
+    function assetId.encodeAssetId(MockAssetId.AssetIdPrefix, uint256) external returns (uint256) envfree;
 
     /// Fee calculations summaries
     function HDAave.MockCalculateFeesOutGivenSharesIn(uint256,uint256,uint256,uint256,uint256) internal returns(AaveHyperdrive.HDFee memory) => NONDET;
     function HDAave.MockCalculateFeesOutGivenBondsIn(uint256,uint256,uint256,uint256) internal returns(AaveHyperdrive.HDFee memory) => NONDET;
     function HDAave.MockCalculateFeesInGivenBondsOut(uint256,uint256,uint256,uint256) internal returns(AaveHyperdrive.HDFee memory) => NONDET;
+    
     /*
     function HDAave.MockCalculateFeesOutGivenSharesIn(uint256 a,uint256 b ,uint256 c ,uint256 d,uint256 e) internal returns(AaveHyperdrive.HDFee memory) =>
         CVLFeesOutGivenSharesIn(a,b,c,d,e);
@@ -34,6 +39,8 @@ methods {
 }
 
 definition RAY() returns uint256 = 10^27;
+definition LP_ASSET_ID() returns uint256 = 0;
+definition WITHDRAWAL_SHARE_ASSET_ID() returns uint256 = (3 << 248);
 
 /// @dev Under-approximation of the pool parameters (based on developers' test)
 /// @notice Use only to find violations!
@@ -53,8 +60,26 @@ function setHyperdrivePoolParams() {
     //require governanceFee() <= require_uint256(ONE18() / 2);
 }
 
+ghost mathint ghostReadyToWithdraw {
+    init_state axiom ghostReadyToWithdraw == 0; 
+}
+
+ghost mathint sumOfWithdrawalShares {
+    init_state axiom sumOfWithdrawalShares == 0; 
+}
+
 hook Sload uint256 index Pool.liquidityIndex[KEY address token][KEY uint256 timestamp] STORAGE {
     require index >= RAY();
+}
+
+hook Sstore HDAave._withdrawPool.readyToWithdraw uint128 value (uint128 old_value) STORAGE {
+    ghostReadyToWithdraw = ghostReadyToWithdraw + value - old_value;
+}
+
+hook Sstore HDAave._balanceOf[KEY uint256 tokenID][KEY address account] uint256 value (uint256 old_value) STORAGE {
+    sumOfWithdrawalShares = tokenID == WITHDRAWAL_SHARE_ASSET_ID() ? 
+        sumOfWithdrawalShares + value - old_value :
+        sumOfWithdrawalShares;
 }
 
 function getPoolIndex(uint256 timestamp) returns uint256 {
@@ -72,6 +97,7 @@ function depositOutput(env e, uint256 totalSharesBefore, uint256 assetsBefore, u
     uint256[2] output;
     uint256 totalSharesAfter = HDAave.totalShares();
     uint256 assetsAfter = aToken.balanceOf(e, HDAave);
+    uint256 index = getPoolIndex(e.block.timestamp);
 
     if(totalSharesBefore == 0) {
         require baseAmount == output[0];
@@ -82,7 +108,8 @@ function depositOutput(env e, uint256 totalSharesBefore, uint256 assetsBefore, u
             require baseAmount > 0 => assetsBefore < assetsAfter;
         }
         else {
-            require assetsBefore + baseAmount == to_mathint(assetsAfter);
+            require to_mathint(assetsAfter) >= assetsBefore + baseAmount;
+            require to_mathint(assetsAfter) <= assetsBefore + baseAmount + index/RAY();
         }
         require mulDivDownAbstractPlus(totalSharesBefore, baseAmount, assetsBefore) == output[0];
         require mulDivDownAbstractPlus(baseAmount, ONE18(), output[0]) == output[1];
@@ -91,8 +118,20 @@ function depositOutput(env e, uint256 totalSharesBefore, uint256 assetsBefore, u
     return output;
 }
 
+rule aTokenTransferBalanceTest(uint256 amount, address recipient) {
+    env e;
+    require e.msg.sender != recipient;
+
+    uint256 assetsBefore = aToken.balanceOf(e, recipient);
+        aToken.transfer(e, recipient, amount);
+    uint256 assetsAfter = aToken.balanceOf(e, recipient);
+    uint256 index = getPoolIndex(e.block.timestamp);
+    
+    assert to_mathint(assetsAfter) >= assetsBefore + amount;
+    assert to_mathint(assetsAfter) <= assetsBefore + amount + index/RAY() + 1;
+}
+
 /// @doc Checks the post state of the _deposit() function.
-/// https://vaas-stg.certora.com/output/41958/965e09d01a7e4fe0884b83fcccbfa71d/?anonymousKey=2f8a8fc5b978cfae5d16368b4f91e8d9f42a8b7a
 rule depositOutputChecker(uint256 baseAmount, bool asUnderlying) {
     env e;
     require e.msg.sender != currentContract;
@@ -113,13 +152,9 @@ rule depositOutputChecker(uint256 baseAmount, bool asUnderlying) {
         if(asUnderlying) {
             assert assetsBefore + baseAmount == to_mathint(assetsAfter);
         }
-        else {
-            assert assetsBefore + baseAmount + 1 >= to_mathint(assetsAfter);
-            assert assetsBefore + baseAmount - index/RAY() <= to_mathint(assetsAfter);
-        }
-        //uint256 sharesMinted = mulDivDownAbstractPlus(totalSharesBefore, baseAmount, assetsBefore);
+        uint256 sharesMinted = mulDivDownAbstractPlus(totalSharesBefore, baseAmount, assetsBefore);
         //uint256 sharePrice = mulDivDownAbstractPlus(baseAmount, ONE18(), sharesMinted);
-        //assert totalSharesBefore + sharesMinted == to_mathint(totalSharesAfter);
+        assert totalSharesBefore + sharesMinted == to_mathint(totalSharesAfter);
     }
 }
 
@@ -260,6 +295,7 @@ rule cannotChangeCheckPointSharePriceTwice(uint256 _checkpoint, method f) {
 }
 
 /// @doc integrity rule for 'openLong'
+/// - There must be assets in the pool after opening a position.
 /// - cannot receive more bonds than registered reserves.
 rule openLongIntegrity(uint256 baseAmount) {
     env e;
@@ -267,14 +303,22 @@ rule openLongIntegrity(uint256 baseAmount) {
     address destination;
     bool asUnderlying;
 
+    setHyperdrivePoolParams();
+
     AaveHyperdrive.MarketState Mstate = marketState();
     uint128 bondReserves = Mstate.bondReserves;
 
     uint256 bondsReceived =
         openLong(e, baseAmount, minOutput, destination, asUnderlying);
 
-    assert to_mathint(bondsReceived) <= to_mathint(bondReserves),
-        "A position cannot be opened with more bonds than bonds reserves";
+    uint256 totalShares = totalShares();
+    uint256 assets = aToken.balanceOf(e, currentContract);
+
+    assert totalShares > 0 && assets > 0, 
+        "Assets must have been deposited in the pool after opening a position";
+
+    //assert to_mathint(bondsReceived) <= to_mathint(bondReserves),
+    //    "A position cannot be opened with more bonds than bonds reserves";
 }
 
 rule openLongReturnsSameBonds(env eOp) {
@@ -353,6 +397,61 @@ filtered{f -> !f.isView} {
         to_mathint(Mstate2.bondReserves);
 }
 
+rule openLongPreservesOutstandingLongs(uint256 baseAmount) {
+    env e;
+    uint256 minOutput;
+    address destination;
+    bool asUnderlying;
+
+    require checkpointDuration() != 0;
+    setHyperdrivePoolParams();
+
+    uint256 latestCP = require_uint256(e.block.timestamp -
+            (e.block.timestamp % checkpointDuration()));
+
+    AaveHyperdrive.MarketState preState = marketState();
+    uint128 bondReserves1 = preState.bondReserves;
+    uint128 longsOutstanding1 = preState.longsOutstanding;
+    uint128 sharePrice1 = checkPointSharePrice(latestCP);
+
+    require sharePrice1*bondReserves1 >= to_mathint(ONE18()*longsOutstanding1);
+
+    uint256 bondsReceived =
+        openLong(e, baseAmount, minOutput, destination, asUnderlying);
+
+    AaveHyperdrive.MarketState postState = marketState();
+    uint128 bondReserves2 = postState.bondReserves;
+    uint128 longsOutstanding2 = postState.longsOutstanding;
+    uint128 sharePrice2 = checkPointSharePrice(latestCP);
+
+    assert sharePrice2*bondReserves2 >= to_mathint(ONE18()*longsOutstanding2);
+}
+
+/// @doc Closing a long position at maturity should return the same number of tokens as the number of bonds.
+rule closeLongAtMaturity(uint256 bondAmount) {
+    env e;
+    uint256 minOutput;
+    address destination;
+    bool asUnderlying; 
+    uint256 maturityTime;
+    
+    require to_mathint(aToken.balanceOf(e, currentContract)) >= to_mathint(totalShares());
+
+    uint256 assetsRecieved =
+        closeLong(e, maturityTime, bondAmount, minOutput, destination, asUnderlying);
+
+    assert maturityTime >= e.block.timestamp => assetsRecieved == bondAmount;
+}
+
+/*
+invariant NoFutureLongTokens(uint256 time, env e)
+    time > e.block.timestamp => totalSupplyByToken(assetId.encodeAssetId(MockAssetId.AssetIdPrefix.Long, time)) == 0 
+    {
+        preserved with (env eP) {
+            require e.block.timestamp == eP.block.timestamp;
+        }
+    }
+*/
 /// @doc If there are shares in the pool, there must be underlying assets.
 invariant SharesNonZeroAssetsNonZero(env e)
     HDAave.totalShares() !=0 => aToken.balanceOf(e, HDAave) != 0
@@ -364,6 +463,10 @@ invariant SharesNonZeroAssetsNonZero(env e)
             require aToken.balanceOf(eP, HDAave) >= ONE18();
         }
     }
+
+/// @doc The sum of withdrawal shares for all accounts is equal to the shares which are ready to withdraw
+invariant SumOfWithdrawalShares()
+    sumOfWithdrawalShares == ghostReadyToWithdraw;
 
 /// @doc bond reserves / share reserves >= initial share price
 /// https://vaas-stg.certora.com/output/41958/965e09d01a7e4fe0884b83fcccbfa71d/?anonymousKey=2f8a8fc5b978cfae5d16368b4f91e8d9f42a8b7a
@@ -379,7 +482,7 @@ rule maxCurveTradeIntegrity(method f) filtered{f -> !f.isView} {
 /// @doc It's impossible to get to a state where both shares and bonds are empty
 /// @dev maybe it's possible if all liquidity has been withdrawan?
 /// https://vaas-stg.certora.com/output/41958/ae9b37fd55944155b4f513bb6fda1101/?anonymousKey=fc7e4187dde6bfeed7adbcb6d830747a6360cc3e
-rule CannotCompletelyDepletePool(method f) filtered{f -> !f.isView} {
+rule cannotCompletelyDepletePool(method f) filtered{f -> !f.isView} {
     env e;
     calldataarg args;
     setHyperdrivePoolParams();

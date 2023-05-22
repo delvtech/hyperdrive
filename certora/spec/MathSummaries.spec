@@ -42,12 +42,12 @@ methods {
         => CVLCalculateSpotPrice(shares, bonds, initPrice, normTime, timeSt) expect uint256;
     
     /// @dev Calculates the APR from the pool's reserves.
-    //function _.calculateAPRFromReserves(uint256 shares, uint256 bonds, uint256 initPrice, uint256 dur, uint256 timeSt) internal library
-    //    => ghostCalculateAPRFromReserves(shares, bonds, initPrice, dur, timeSt) expect uint256;
+    function _.calculateAPRFromReserves(uint256 shares, uint256 bonds, uint256 initPrice, uint256 dur, uint256 timeSt) internal library
+        => ghostCalculateAPRFromReserves(shares, bonds, initPrice, dur, timeSt) expect uint256;
     
     /// @dev Calculates the initial bond reserves assuming that the initial LP
-    //function _.calculateInitialBondReserves(uint256 shares, uint256 price, uint256 initPrice, uint256 APR, uint256 dur, uint256 timeSt) internal library 
-    //    => ghostCalculateInitialBondReserves(shares, price, initPrice, APR, dur, timeSt) expect uint256;
+    function _.calculateInitialBondReserves(uint256 shares, uint256 price, uint256 initPrice, uint256 APR, uint256 dur, uint256 timeSt) internal library 
+        => ghostCalculateInitialBondReserves(shares, price, initPrice, APR, dur, timeSt) expect uint256;
     
     /// @dev Calculates the present value LPs capital in the pool.
     /// @notice Replacement of original HyperdriveMath function with Mock. 
@@ -57,12 +57,12 @@ methods {
         CVLCalculatePresentValue(z,y,c,mu,ts,ol,tavg_L,os,tavg_S,vol) expect uint256;
     
     /// @dev Calculates the interest in shares earned by a short position
-    //function _.calculateShortInterest(uint256 bond, uint256 openPrice, uint256 closePrice, uint256 price) internal library 
-    //    => ghostCalculateShortInterest(bond, openPrice, closePrice, price) expect uint256;
+    function _.calculateShortInterest(uint256 bond, uint256 openPrice, uint256 closePrice, uint256 price) internal library 
+        => ghostCalculateShortInterest(bond, openPrice, closePrice, price) expect uint256;
     
     /// @dev Calculates the proceeds in shares of closing a short position.
-    //function _.calculateShortProceeds(uint256 bond, uint256 share, uint256 openPrice, uint256 closePrice, uint256 price) internal library 
-    //    => ghostCalculateShortProceeds(bond, share, openPrice, closePrice, price) expect uint256;
+    function _.calculateShortProceeds(uint256 bond, uint256 share, uint256 openPrice, uint256 closePrice, uint256 price) internal library 
+        => ghostCalculateShortProceeds(bond, share, openPrice, closePrice, price) expect uint256;
 }
 
 /// Ghost implementations of FixedPoint Math

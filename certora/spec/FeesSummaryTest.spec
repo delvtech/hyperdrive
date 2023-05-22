@@ -76,7 +76,7 @@ rule FeesOutGivenBondsInSummaryTest(
         to_mathint(sharePrice) * (totalFlatFee + totalCurveFee) <=
         to_mathint(amountIn) * (CVLFlatFee + CVLCurFee);
 
-    assert to_mathint(totalGovernanceFee) == ((totalCurveFee + totalFlatFee) * CVLGovFee) / ONE18();
+    assert to_mathint(totalGovernanceFee) == mulDownWad(totalCurveFee,CVLGovFee) + mulDownWad(totalFlatFee,CVLGovFee);
 }
 
 rule FeesInGivenBondsOutSummaryTest(
