@@ -1,7 +1,6 @@
 plugins:
   - name: etherscan
   - name: solidity
-    version: 0.6.3
   - name: foundry
 
 dependencies:
