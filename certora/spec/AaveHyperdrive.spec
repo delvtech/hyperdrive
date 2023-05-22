@@ -277,7 +277,7 @@ rule openLongIntegrity(uint256 baseAmount) {
         "A position cannot be opened with more bonds than bonds reserves";
 }
 
-rule IsMonotonic(method f) {
+rule profitIsMonotonic(method f) {
     env eOp1;
     env eCl1;
     env eOp2;
@@ -307,6 +307,30 @@ rule IsMonotonic(method f) {
 
     assert maturityTime1 < maturityTime2 => bondsReceived1 <= bondsReceived2;
     assert maturityTime1 < maturityTime2 => assetsReceived1 <= assetsReceived2;
+}
+
+rule addAndRemoveSameSharesNoChangeOnShares(env e)
+{
+    uint256 _contribution;
+    uint256 _minApr;
+    uint256 _maxApr;
+    address _destination;
+    bool _asUnderlying;
+
+    uint256 _shares;
+    uint256 _minOutput;
+
+    uint256 baseProceeds;
+    uint256 withdrawalShares;
+
+    AaveHyperdrive.MarketState Mstate1 = marketState();
+    uint256 lpShares = addLiquidity(e, _contribution, _minApr, _maxApr, _destination, _asUnderlying);
+
+    baseProceeds, withdrawalShares = removeLiquidity(e, _shares, _minOutput, _destination, _asUnderlying);
+    AaveHyperdrive.MarketState Mstate3 = marketState();
+
+    // assert to_mathint(Mstate1.bondReserves) == to_mathint(Mstate3.bondReserves);
+    assert lpShares == withdrawalShares => to_mathint(Mstate1.shareReserves) == to_mathint(Mstate3.shareReserves);
 }
 
 /// @doc The sum of longs and shorts should not surpass the total amount of bond reserves
