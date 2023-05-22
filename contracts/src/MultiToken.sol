@@ -19,7 +19,7 @@ contract MultiToken is DataProvider, MultiTokenStorage, IMultiTokenWrite {
     // PERMIT_TYPEHASH changes based on function inputs
     bytes32 public constant PERMIT_TYPEHASH =
         keccak256(
-            "PermitForAll(address owner,address spender,bool _approved,uint256 nonce,uint256 deadline"
+            "PermitForAll(address owner,address spender,bool _approved,uint256 nonce,uint256 deadline)"
         );
 
     /// @notice Runs the initial deployment code
