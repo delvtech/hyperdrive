@@ -31,6 +31,19 @@ library HyperdriveUtils {
         return timeRemaining;
     }
 
+    function calculateCheckpointTimeRemaining(
+        IHyperdrive _hyperdrive,
+        uint256 _maturityTime
+    ) internal view returns (uint256 timeRemaining) {
+        timeRemaining = _maturityTime > latestCheckpoint(_hyperdrive)
+            ? _maturityTime - latestCheckpoint(_hyperdrive)
+            : 0;
+        timeRemaining = (timeRemaining).divDown(
+            _hyperdrive.getPoolConfig().positionDuration
+        );
+        return timeRemaining;
+    }
+
     function maturityTimeFromLatestCheckpoint(
         IHyperdrive _hyperdrive
     ) internal view returns (uint256) {
