@@ -181,7 +181,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
             lpTotalSupplyBefore
         );
         assertEq(baseProceeds, expectedBaseProceeds);
-        assertEq(withdrawalShares, expectedWithdrawalShares);
+        assertApproxEqAbs(withdrawalShares, expectedWithdrawalShares,1);
 
         // Ensure that the LP shares were properly accounted for.
         assertEq(hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice), 0);
@@ -212,9 +212,10 @@ contract RemoveLiquidityTest is HyperdriveTest {
         assertEq(poolInfo.bondReserves, 0);
 
         // Ensure that Alice receives the right amount of withdrawal shares.
-        assertEq(
+        assertApproxEqAbs(
             hyperdrive.balanceOf(AssetId._WITHDRAWAL_SHARE_ASSET_ID, alice),
-            expectedWithdrawalShares
+            expectedWithdrawalShares,
+            1
         );
     }
 

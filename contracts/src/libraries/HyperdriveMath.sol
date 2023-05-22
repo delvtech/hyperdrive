@@ -277,19 +277,25 @@ library HyperdriveMath {
         uint256 _initialSharePrice
     )
         internal
-        pure
+        view
         returns (
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
             uint256 shareProceeds
         )
     {
+        console2.log("open short:");
+        console2.log("amount in", _amountIn);
+        console2.log("time remaining", _normalizedTimeRemaining);
+        console2.log("share price", _sharePrice);
         // Calculate the flat part of the trade.
         shareProceeds = _amountIn
             .mulDown(FixedPointMath.ONE_18.sub(_normalizedTimeRemaining))
             .divDown(_sharePrice);
+        console2.log("shares coming out of flat:", shareProceeds);
         // Calculate the curved part of the trade.
         bondReservesDelta = _amountIn.mulDown(_normalizedTimeRemaining);
+        console2.log("bonds trading into the curve", bondReservesDelta);
         // (time remaining)/(term length) is always 1 so we just use _timeStretch
         shareReservesDelta = YieldSpaceMath.calculateSharesOutGivenBondsIn(
             _shareReserves,
@@ -299,7 +305,13 @@ library HyperdriveMath {
             _sharePrice,
             _initialSharePrice
         );
+        console2.log("shares coming out of the curve", shareReservesDelta);
+        console2.log("bond delta / share delta: ", bondReservesDelta.divDown(shareReservesDelta));
+        console2.log("trade share reserves:", _shareReserves);
+        console2.log("trade bond reserves:", _bondReserves);
+        console2.log("bonds/base: ", _bondReserves.divDown(_shareReserves));
         shareProceeds += shareReservesDelta;
+        console2.log("total shares coming out", shareProceeds);
         return (shareReservesDelta, bondReservesDelta, shareProceeds);
     }
 
@@ -324,13 +336,17 @@ library HyperdriveMath {
         uint256 _initialSharePrice
     )
         internal
-        pure
+        view
         returns (
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
             uint256 sharePayment
         )
     {
+        console2.log("close short:");
+        console2.log("amount out", _amountOut);
+        console2.log("time remaining", _normalizedTimeRemaining);
+        console2.log("share price", _sharePrice);
         // Since we are buying bonds, it's possible that timeRemaining < 1.
         // We consider (1-timeRemaining)*amountOut of the bonds being
         // purchased to be fully matured and timeRemaining*amountOut of the
@@ -343,9 +359,10 @@ library HyperdriveMath {
             FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
             _sharePrice
         );
-
+        console2.log("shares coming out of flat:", sharePayment);
         if (_normalizedTimeRemaining > 0) {
             bondReservesDelta = _amountOut.mulDown(_normalizedTimeRemaining);
+            console2.log("bonds trading into the curve", bondReservesDelta);
             shareReservesDelta = YieldSpaceMath.calculateSharesInGivenBondsOut(
                 _shareReserves,
                 _bondReserves,
@@ -354,7 +371,13 @@ library HyperdriveMath {
                 _sharePrice,
                 _initialSharePrice
             );
+            console2.log("shares coming out of the curve", shareReservesDelta);
+            console2.log("bond delta / share delta: ", bondReservesDelta.divDown(shareReservesDelta));
+            console2.log("trade share reserves:", _shareReserves);
+            console2.log("trade bond reserves:", _bondReserves);
+            console2.log("bonds/base: ", _bondReserves.divDown(_shareReserves));
             sharePayment += shareReservesDelta;
+            console2.log("total shares coming out", sharePayment);
         }
 
         return (shareReservesDelta, bondReservesDelta, sharePayment);

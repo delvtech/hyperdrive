@@ -6,6 +6,8 @@ import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
+import "forge-std/console2.sol";
+
 
 // TODO: We need to test several cases for long negative interest.
 //
@@ -87,6 +89,9 @@ contract NegativeInterestTest is HyperdriveTest {
         uint256 estimatedProceeds = estimateShortProceeds(
             shortAmount,
             variableRate,
+            FixedPointMath.ONE_18.sub(
+                HyperdriveUtils.calculateCheckpointTimeRemaining(hyperdrive, maturityTime)
+            ),
             timeDelta
         );
         uint256 baseProceeds = closeShort(bob, maturityTime, shortAmount);
@@ -97,6 +102,7 @@ contract NegativeInterestTest is HyperdriveTest {
     function estimateShortProceeds(
         uint256 shortAmount,
         int256 variableRate,
+        uint256 normalizedTimeRemaining,
         uint256 timeElapsed
     ) internal view returns (uint256) {
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
@@ -106,7 +112,7 @@ contract NegativeInterestTest is HyperdriveTest {
             poolInfo.shareReserves,
             poolInfo.bondReserves,
             shortAmount,
-            timeElapsed.divDown(POSITION_DURATION),
+            normalizedTimeRemaining,
             poolConfig.timeStretch,
             poolInfo.sharePrice,
             poolConfig.initialSharePrice
