@@ -61,3 +61,4 @@ jobs:
         run: |
           echo "[pytest]\nlog_cli: true\nlog_level: DEBUG" > pytest.ini
           python -m pytest . -r A --verbosity=2
+          rm pytest.ini
