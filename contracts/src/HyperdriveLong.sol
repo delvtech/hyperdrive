@@ -84,6 +84,11 @@ abstract contract HyperdriveLong is HyperdriveLP {
             _destination,
             bondProceeds
         );
+
+        // Emit an OpenLong event.
+        uint256 baseAmount = _baseAmount; // Avoid stack too deep error.
+        emit OpenLong(_destination, maturityTime, baseAmount, bondProceeds);
+
         return (bondProceeds);
     }
 
@@ -154,6 +159,9 @@ abstract contract HyperdriveLong is HyperdriveLP {
 
         // Enforce min user outputs
         if (_minOutput > baseProceeds) revert Errors.OutputLimit();
+
+        // Emit a CloseLong event.
+        emit CloseLong(_destination, _maturityTime, baseProceeds, _bondAmount);
 
         return (baseProceeds);
     }

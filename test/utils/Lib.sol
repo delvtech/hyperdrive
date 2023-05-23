@@ -5,6 +5,31 @@ import "forge-std/console2.sol";
 import "forge-std/Vm.sol";
 
 library Lib {
+    /// @dev Filters an array of longs for events that match the provided
+    ///      selector.
+    /// @param logs The array of logs to filter.
+    /// @param selector The selector to filter for.
+    /// @return filteredLogs The filtered array of logs.
+    function filterLogs(
+        VmSafe.Log[] memory logs,
+        bytes32 selector
+    ) internal pure returns (VmSafe.Log[] memory filteredLogs) {
+        // Filter the logs.
+        uint256 current = 0;
+        filteredLogs = new VmSafe.Log[](logs.length);
+        for (uint256 i = 0; i < logs.length; i++) {
+            if (logs[i].topics[0] == selector) {
+                filteredLogs[current++] = logs[i];
+            }
+        }
+
+        // Trim the filtered logs array.
+        assembly {
+            mstore(filteredLogs, current)
+        }
+        return filteredLogs;
+    }
+
     /// @dev Converts a signed integer to a string with a specified amount of
     ///      decimals. In the event that the integer doesn't have any digits to
     ///      the left of the decimal place, zeros will be filled in.
