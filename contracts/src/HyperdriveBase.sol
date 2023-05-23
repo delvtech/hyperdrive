@@ -240,17 +240,13 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     /// @dev Calculates the fees for the flat and curve portion of hyperdrive calcOutGivenIn
     /// @param _amountIn The given amount in, either in terms of shares or bonds.
     /// @param _amountOut The amount of the asset that is received before fees.
-    /// @param _normalizedTimeRemaining The normalized amount of time until maturity.
     /// @param _spotPrice The price without slippage of bonds in terms of shares.
     /// @param _sharePrice The current price of shares in terms of base.
     /// @return totalCurveFee The total curve fee. The fee is in terms of bonds.
-    /// @return totalFlatFee The total flat fee. The fee is in terms of bonds.
     /// @return governanceCurveFee The curve fee that goes to governance. The fee is in terms of bonds.
-    /// @return governanceFlatFee The flat fee that goes to governance. The fee is in terms of bonds.
     function _calculateFeesOutGivenSharesIn(
         uint256 _amountIn,
         uint256 _amountOut,
-        uint256 _normalizedTimeRemaining,
         uint256 _spotPrice,
         uint256 _sharePrice
     )
@@ -258,32 +254,22 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
         view
         returns (
             uint256 totalCurveFee,
-            uint256 totalFlatFee,
-            uint256 governanceCurveFee,
-            uint256 governanceFlatFee
+            uint256 governanceCurveFee
         )
     {
-        // curve fee = ((1 / p) - 1) * phi_curve * c * d_z * t
+        // curve fee = ((1 / p) - 1) * phi_curve * c * d_z
         totalCurveFee = (FixedPointMath.ONE_18.divDown(_spotPrice)).sub(
             FixedPointMath.ONE_18
         );
         totalCurveFee = totalCurveFee
             .mulDown(_curveFee)
             .mulDown(_sharePrice)
-            .mulDown(_amountIn)
-            .mulDown(_normalizedTimeRemaining);
+            .mulDown(_amountIn);
         // governanceCurveFee = d_z * (curve_fee / d_y) * c * phi_gov
         governanceCurveFee = _amountIn
             .mulDivDown(totalCurveFee, _amountOut)
             .mulDown(_sharePrice)
             .mulDown(_governanceFee);
-        // flat fee = c * d_z * (1 - t) * phi_flat
-        uint256 flat = _amountIn.mulDown(
-            FixedPointMath.ONE_18.sub(_normalizedTimeRemaining)
-        );
-        totalFlatFee = flat.mulDown(_sharePrice).mulDown(_flatFee);
-        // calculate the flat portion of the governance fee
-        governanceFlatFee = totalFlatFee.mulDown(_governanceFee);
     }
 
     /// @dev Calculates the fees for the flat and curve portion of hyperdrive calcOutGivenIn

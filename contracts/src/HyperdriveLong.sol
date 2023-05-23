@@ -375,24 +375,21 @@ abstract contract HyperdriveLong is HyperdriveLP {
 
         (
             uint256 totalCurveFee,
-            uint256 totalFlatFee,
-            uint256 governanceCurveFee,
-            uint256 governanceFlatFee
+            uint256 governanceCurveFee
         ) = _calculateFeesOutGivenSharesIn(
                 _shareAmount, // amountIn
                 bondReservesDelta, // amountOut
-                _timeRemaining,
                 spotPrice,
                 _sharePrice
             );
-        bondProceeds = bondReservesDelta - totalCurveFee + totalFlatFee;
+        bondProceeds = bondReservesDelta - totalCurveFee;
         bondReservesDelta -= totalCurveFee - governanceCurveFee;
 
         // Calculate the fees owed to governance in shares.
         shareReservesDelta =
             _shareAmount -
             governanceCurveFee.divDown(_sharePrice);
-        totalGovernanceFee = (governanceCurveFee + governanceFlatFee).divDown(
+        totalGovernanceFee = governanceCurveFee.divDown(
             _sharePrice
         );
 
