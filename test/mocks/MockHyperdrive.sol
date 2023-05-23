@@ -137,24 +137,15 @@ contract MockHyperdrive is Hyperdrive {
     )
         external
         view
-        returns (
-            uint256 totalCurveFee,
-            uint256 governanceCurveFee
-        )
+        returns (uint256 totalCurveFee, uint256 governanceCurveFee)
     {
-        (
-            totalCurveFee,
-            governanceCurveFee
-        ) = _calculateFeesOutGivenSharesIn(
+        (totalCurveFee, governanceCurveFee) = _calculateFeesOutGivenSharesIn(
             _amountIn,
             _amountOut,
             _spotPrice,
             sharePrice
         );
-        return (
-            totalCurveFee,
-            governanceCurveFee
-        );
+        return (totalCurveFee, governanceCurveFee);
     }
 
     function calculateFeesOutGivenBondsIn(

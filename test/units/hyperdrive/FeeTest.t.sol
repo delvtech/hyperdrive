@@ -165,10 +165,9 @@ contract FeeTest is HyperdriveTest {
         deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18, governance);
         initialize(alice, apr, contribution);
 
-        (
-            uint256 curveFee,
-            uint256 governanceCurveFee
-        ) = MockHyperdrive(address(hyperdrive)).calculateFeesOutGivenSharesIn(
+        (uint256 curveFee, uint256 governanceCurveFee) = MockHyperdrive(
+            address(hyperdrive)
+        ).calculateFeesOutGivenSharesIn(
                 1 ether, // amountIn
                 1 ether, //amountOut
                 0.5 ether, // spotPrice

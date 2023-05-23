@@ -54,10 +54,11 @@ abstract contract HyperdriveShort is HyperdriveLP {
         uint256 shareReservesDelta;
         {
             uint256 totalGovernanceFee;
-            (
-                shareReservesDelta,
-                totalGovernanceFee
-            ) = _calculateOpenShort(_bondAmount, sharePrice, timeRemaining);
+            (shareReservesDelta, totalGovernanceFee) = _calculateOpenShort(
+                _bondAmount,
+                sharePrice,
+                timeRemaining
+            );
 
             // Attribute the governance fees.
             _governanceFeesAccrued += totalGovernanceFee;
@@ -346,10 +347,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         uint256 _timeRemaining
     )
         internal
-        returns (
-            uint256 shareReservesDelta,
-            uint256 totalGovernanceFee
-        )
+        returns (uint256 shareReservesDelta, uint256 totalGovernanceFee)
     {
         // Calculate the effect that opening the short should have on the pool's
         // reserves as well as the amount of shares the trader receives from
@@ -385,8 +383,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
 
         uint256 totalCurveFee;
         (
-            totalCurveFee,
-            , // there is no flat fee on opening shorts
+            totalCurveFee, // there is no flat fee on opening shorts
+            ,
             totalGovernanceFee
         ) = _calculateFeesOutGivenBondsIn(
             _bondAmount, // amountIn
