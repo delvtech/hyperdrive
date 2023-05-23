@@ -19,6 +19,7 @@ library Errors {
     error InvalidInitialSharePrice();
     error InvalidMaturityTime();
     error InvalidPositionDuration();
+    error InvalidFeeAmounts();
     error NegativeInterest();
     error OutputLimit();
     error Paused();
