@@ -116,9 +116,7 @@ library HyperdriveMath {
     /// @param _timeStretch The time stretch parameter.
     /// @param _sharePrice The share price.
     /// @param _initialSharePrice The initial share price.
-    /// @return shareReservesDelta The shares paid to the reserves in the trade.
     /// @return bondReservesDelta The bonds paid by the reserves in the trade.
-    /// @return bondProceeds The bonds that the user will receive.
     function calculateOpenLong(
         uint256 _shareReserves,
         uint256 _bondReserves,
@@ -126,15 +124,7 @@ library HyperdriveMath {
         uint256 _timeStretch,
         uint256 _sharePrice,
         uint256 _initialSharePrice
-    )
-        internal
-        pure
-        returns (
-            uint256 shareReservesDelta,
-            uint256 bondReservesDelta,
-            uint256 bondProceeds
-        )
-    {
+    ) internal pure returns (uint256 bondReservesDelta) {
         // (time remaining)/(term length) is always 1 so we just use _timeStretch
         bondReservesDelta = YieldSpaceMath.calculateBondsOutGivenSharesIn(
             _shareReserves,
@@ -144,9 +134,7 @@ library HyperdriveMath {
             _sharePrice,
             _initialSharePrice
         );
-
-        // you can get the flat amount by subtracting shareReservesDelta from _shareAmount
-        return (_shareAmount, bondReservesDelta, bondReservesDelta);
+        return bondReservesDelta;
     }
 
     /// @dev Calculates the amount of shares a user will receive when closing a
@@ -237,13 +225,7 @@ library HyperdriveMath {
         uint256 _timeStretch,
         uint256 _sharePrice,
         uint256 _initialSharePrice
-    )
-        internal
-        pure
-        returns (
-            uint256 shareReservesDelta
-        )
-    {
+    ) internal pure returns (uint256 shareReservesDelta) {
         // (time remaining)/(term length) is always 1 so we just use _timeStretch
         shareReservesDelta = YieldSpaceMath.calculateSharesOutGivenBondsIn(
             _shareReserves,

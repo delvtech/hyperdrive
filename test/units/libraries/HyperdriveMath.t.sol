@@ -234,22 +234,17 @@ contract HyperdriveMathTest is Test {
             110.93438508425959e18
         );
         uint256 expectedAPR = 0.882004326279808182 ether;
-        (
-            uint256 shareReservesDelta,
-            uint256 bondReservesDelta,
-            uint256 bondProceeds
-        ) = hyperdriveMath.calculateOpenLong(
-                shareReserves,
-                bondReserves,
-                50_000_000 ether, // amountIn
-                timeStretch,
-                1 ether, // sharePrice
-                initialSharePrice
-            );
-        // verify that the flat part is zero
-        assertEq(bondReservesDelta, bondProceeds);
+        uint256 amountIn = 50_000_000 ether;
+        uint256 bondReservesDelta = hyperdriveMath.calculateOpenLong(
+            shareReserves,
+            bondReserves,
+            amountIn,
+            timeStretch,
+            1 ether, // sharePrice
+            initialSharePrice
+        );
         bondReserves -= bondReservesDelta;
-        shareReserves += shareReservesDelta;
+        shareReserves += amountIn;
         uint256 result = hyperdriveMath.calculateAPRFromReserves(
             shareReserves,
             bondReserves,
@@ -426,15 +421,14 @@ contract HyperdriveMathTest is Test {
         {
             uint256 amountIn = 50_000_000 ether;
 
-            uint256 shareReservesDelta
-             = hyperdriveMath.calculateOpenShort(
-                    shareReserves,
-                    bondReserves,
-                    amountIn,
-                    timeStretch,
-                    1 ether,
-                    1 ether
-                );
+            uint256 shareReservesDelta = hyperdriveMath.calculateOpenShort(
+                shareReserves,
+                bondReserves,
+                amountIn,
+                timeStretch,
+                1 ether,
+                1 ether
+            );
             bondReserves += amountIn;
             shareReserves -= shareReservesDelta;
         }

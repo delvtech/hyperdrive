@@ -364,15 +364,14 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // Calculate the effect that opening the short should have on the pool's
         // reserves as well as the amount of shares the trader receives from
         // selling the shorted bonds at the market price.
-        shareReservesDelta = HyperdriveMath
-            .calculateOpenShort(
-                _marketState.shareReserves,
-                _marketState.bondReserves,
-                _bondAmount,
-                _timeStretch,
-                _sharePrice,
-                _initialSharePrice
-            );
+        shareReservesDelta = HyperdriveMath.calculateOpenShort(
+            _marketState.shareReserves,
+            _marketState.bondReserves,
+            _bondAmount,
+            _timeStretch,
+            _sharePrice,
+            _initialSharePrice
+        );
 
         // If the base proceeds of selling the bonds is greater than the bond
         // amount, then the trade occurred in the negative interest domain. We
@@ -409,11 +408,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         shareReservesDelta -= totalCurveFee;
         shareProceeds = shareReservesDelta - totalFlatFee;
 
-        return (
-            shareReservesDelta,
-            shareProceeds,
-            totalGovernanceFee
-        );
+        return (shareReservesDelta, shareProceeds, totalGovernanceFee);
     }
 
     /// @dev Calculate the pool reserve and trader deltas that result from
