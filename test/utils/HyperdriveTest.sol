@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import { BaseTest } from "./BaseTest.sol";
 import { ForwarderFactory } from "contracts/src/ForwarderFactory.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { HyperdriveBase } from "contracts/src/HyperdriveBase.sol";
+import { BaseTest } from "./BaseTest.sol";
 import { MockHyperdrive, MockHyperdriveDataProvider } from "../mocks/MockHyperdrive.sol";
-import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { HyperdriveUtils } from "./HyperdriveUtils.sol";
 
 contract HyperdriveTest is BaseTest {
@@ -244,6 +244,7 @@ contract HyperdriveTest is BaseTest {
     }
 
     /// Utils ///
+
     function advanceTime(uint256 time, int256 apr) internal {
         MockHyperdrive(address(hyperdrive)).accrue(time, apr);
         vm.warp(block.timestamp + time);
@@ -254,4 +255,60 @@ contract HyperdriveTest is BaseTest {
         hyperdrive.pause(paused);
         vm.stopPrank();
     }
+
+    /// Event Utils ///
+
+    event Initialize(
+        address indexed provider,
+        uint256 lpAmount,
+        uint256 baseAmount,
+        uint256 apr
+    );
+
+    event AddLiquidity(
+        address indexed provider,
+        uint256 lpAmount,
+        uint256 baseAmount
+    );
+
+    event RemoveLiquidity(
+        address indexed provider,
+        uint256 lpAmount,
+        uint256 baseAmount,
+        uint256 withdrawalShareAmount
+    );
+
+    event RedeemWithdrawalShares(
+        address indexed provider,
+        uint256 withdrawalShareAmount,
+        uint256 baseAmount
+    );
+
+    event OpenLong(
+        address indexed trader,
+        uint256 maturityTime,
+        uint256 baseAmount,
+        uint256 bondAmount
+    );
+
+    event OpenShort(
+        address indexed trader,
+        uint256 maturityTime,
+        uint256 baseAmount,
+        uint256 bondAmount
+    );
+
+    event CloseLong(
+        address indexed trader,
+        uint256 maturityTime,
+        uint256 baseAmount,
+        uint256 bondAmount
+    );
+
+    event CloseShort(
+        address indexed trader,
+        uint256 maturityTime,
+        uint256 baseAmount,
+        uint256 bondAmount
+    );
 }

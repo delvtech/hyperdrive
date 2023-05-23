@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "description": "Hyperdrive Smart Contracts",
     "engines": {
-        "node": "^16"
+        "node": "^18"
     },
     "scripts": {
         "build:prod": "FOUNDRY_PROFILE=production forge build",
@@ -14,7 +14,7 @@
         "prettier": "npx prettier --write .",
         "test": "forge test -vvv",
         "solhint": "npx solhint -f table contracts/src/*.sol contracts/src/**/*.sol",
-        "code-size-check": "FOUNDRY_PROFILE=production forge build && python scripts/contract_size.py out",
+        "code-size-check": "FOUNDRY_PROFILE=production forge build && python python/contract_size.py out",
         "spell-check": "npx cspell ./**/**/**.sol --gitignore",
         "style-check": "npx prettier --check .",
         "warnings-check": "FOUNDRY_PROFILE=production forge build --deny-warnings --force",
@@ -49,7 +49,7 @@
         "solhint-plugin-prettier": "0.0.5"
     },
     "dependencies": {
-        "@openzeppelin/contracts": "^4.8.1",
+        "@openzeppelin/contracts": "^4.8.3",
         "yarn": "^1.22.19"
     }
 }

@@ -2,14 +2,24 @@
 pragma solidity ^0.8.18;
 
 import { stdError } from "forge-std/StdError.sol";
+import { VmSafe } from "forge-std/Vm.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
+import { Lib } from "../../utils/Lib.sol";
 
 contract OpenLongTest is HyperdriveTest {
     using FixedPointMath for uint256;
+    using Lib for *;
+
+    function setUp() public override {
+        super.setUp();
+
+        // Start recording event logs.
+        vm.recordLogs();
+    }
 
     function test_open_long_failure_zero_amount() external {
         uint256 apr = 0.05e18;
@@ -127,6 +137,25 @@ contract OpenLongTest is HyperdriveTest {
         uint256 maturityTime,
         uint256 apr
     ) internal {
+        // Ensure that one `OpenLong` event was emitted with the correct
+        // arguments.
+        {
+            VmSafe.Log[] memory logs = vm.getRecordedLogs().filterLogs(
+                OpenLong.selector
+            );
+            assertEq(logs.length, 1);
+            VmSafe.Log memory log = logs[0];
+            assertEq(address(uint160(uint256(log.topics[1]))), bob);
+            (
+                uint256 eventMaturityTime,
+                uint256 eventBaseAmount,
+                uint256 eventBondAmount
+            ) = abi.decode(log.data, (uint256, uint256, uint256));
+            assertEq(eventMaturityTime, maturityTime);
+            assertEq(eventBaseAmount, baseAmount);
+            assertEq(eventBondAmount, bondAmount);
+        }
+
         // Verify that the open long updated the state correctly.
         _verifyOpenLong(
             bob,

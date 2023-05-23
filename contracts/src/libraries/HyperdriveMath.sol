@@ -318,8 +318,8 @@ library HyperdriveMath {
             FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
             _sharePrice
         );
-        if (_normalizedTimeRemaining > 0) {
-            bondReservesDelta = _amountOut.mulDown(_normalizedTimeRemaining);
+        bondReservesDelta = _amountOut.mulDown(_normalizedTimeRemaining);
+        if (bondReservesDelta > 0) {
             shareReservesDelta = YieldSpaceMath.calculateSharesInGivenBondsOut(
                 _shareReserves,
                 _bondReserves,

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
+import { VmSafe } from "forge-std/Vm.sol";
 import { stdError } from "forge-std/StdError.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
@@ -8,9 +9,18 @@ import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
+import { Lib } from "../../utils/Lib.sol";
 
 contract CloseShortTest is HyperdriveTest {
     using FixedPointMath for uint256;
+    using Lib for *;
+
+    function setUp() public override {
+        super.setUp();
+
+        // Start recording event logs.
+        vm.recordLogs();
+    }
 
     function test_close_short_failure_zero_amount() external {
         uint256 apr = 0.05e18;
@@ -86,8 +96,14 @@ contract CloseShortTest is HyperdriveTest {
         // Verify that Bob doesn't end up with more base than he started with.
         assertGe(basePaid, baseProceeds);
 
-        // Verify that the close long updates were correct.
-        verifyCloseShort(poolInfoBefore, bondAmount, maturityTime, false);
+        // Verify that the close short updates were correct.
+        verifyCloseShort(
+            poolInfoBefore,
+            baseProceeds,
+            bondAmount,
+            maturityTime,
+            false
+        );
     }
 
     function test_close_short_immediately_with_small_amount() external {
@@ -110,8 +126,14 @@ contract CloseShortTest is HyperdriveTest {
         // Verify that Bob doesn't end up with more base than he started with.
         assertGe(basePaid, baseProceeds);
 
-        // Verify that the close long updates were correct.
-        verifyCloseShort(poolInfoBefore, bondAmount, maturityTime, false);
+        // Verify that the close short updates were correct.
+        verifyCloseShort(
+            poolInfoBefore,
+            baseProceeds,
+            bondAmount,
+            maturityTime,
+            false
+        );
     }
 
     // This stress tests the aggregate accounting by making the bond amount of
@@ -168,7 +190,13 @@ contract CloseShortTest is HyperdriveTest {
         assertEq(baseProceeds, 0);
 
         // Verify that the close short updates were correct.
-        verifyCloseShort(poolInfoBefore, bondAmount, maturityTime, false);
+        verifyCloseShort(
+            poolInfoBefore,
+            baseProceeds,
+            bondAmount,
+            maturityTime,
+            false
+        );
     }
 
     function test_close_short_redeem_negative_interest() external {
@@ -195,7 +223,13 @@ contract CloseShortTest is HyperdriveTest {
         assertEq(baseProceeds, 0);
 
         // Verify that the close short updates were correct.
-        verifyCloseShort(poolInfoBefore, bondAmount, maturityTime, false);
+        verifyCloseShort(
+            poolInfoBefore,
+            baseProceeds,
+            bondAmount,
+            maturityTime,
+            false
+        );
     }
 
     function test_close_short_redeem_negative_interest_half_term() external {
@@ -222,7 +256,13 @@ contract CloseShortTest is HyperdriveTest {
         assertEq(baseProceeds, 0);
 
         // Verify that the close short updates were correct.
-        verifyCloseShort(poolInfoBefore, bondAmount, maturityTime, false);
+        verifyCloseShort(
+            poolInfoBefore,
+            baseProceeds,
+            bondAmount,
+            maturityTime,
+            false
+        );
     }
 
     function test_close_short_negative_interest_at_close() external {
@@ -255,7 +295,13 @@ contract CloseShortTest is HyperdriveTest {
         assertEq(baseProceeds, 0);
 
         // Verify that the close long updates were correct.
-        verifyCloseShort(poolInfoBefore, bondAmount, maturityTime, true);
+        verifyCloseShort(
+            poolInfoBefore,
+            baseProceeds,
+            bondAmount,
+            maturityTime,
+            true
+        );
     }
 
     function test_close_short_max_loss() external {
@@ -287,16 +333,42 @@ contract CloseShortTest is HyperdriveTest {
         );
 
         // Verify that the close short updates were correct.
-        verifyCloseShort(poolInfoBefore, bondAmount, maturityTime, false);
+        verifyCloseShort(
+            poolInfoBefore,
+            baseProceeds,
+            bondAmount,
+            maturityTime,
+            false
+        );
     }
 
     function verifyCloseShort(
         IHyperdrive.PoolInfo memory poolInfoBefore,
+        uint256 baseProceeds,
         uint256 bondAmount,
         uint256 maturityTime,
         bool wasCheckpointed
     ) internal {
         uint256 checkpointTime = maturityTime - POSITION_DURATION;
+
+        // Ensure that one `CloseShort` event was emitted with the correct
+        // arguments.
+        {
+            VmSafe.Log[] memory logs = vm.getRecordedLogs().filterLogs(
+                CloseShort.selector
+            );
+            assertEq(logs.length, 1);
+            VmSafe.Log memory log = logs[0];
+            assertEq(address(uint160(uint256(log.topics[1]))), bob);
+            (
+                uint256 eventMaturityTime,
+                uint256 eventBaseAmount,
+                uint256 eventBondAmount
+            ) = abi.decode(log.data, (uint256, uint256, uint256));
+            assertEq(eventMaturityTime, maturityTime);
+            assertEq(eventBaseAmount, baseProceeds);
+            assertEq(eventBondAmount, bondAmount);
+        }
 
         // Verify that all of Bob's shorts were burned.
         assertEq(
