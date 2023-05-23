@@ -167,7 +167,7 @@ contract CloseShortTest is HyperdriveTest {
         // Verify that Bob doesn't receive any base from closing the short.
         assertEq(baseProceeds, 0);
 
-        // Verify that the close long updates were correct.
+        // Verify that the close short updates were correct.
         verifyCloseShort(poolInfoBefore, bondAmount, maturityTime, false);
     }
 
@@ -194,7 +194,7 @@ contract CloseShortTest is HyperdriveTest {
         // Verify that Bob doesn't receive any base from closing the short.
         assertEq(baseProceeds, 0);
 
-        // Verify that the close long updates were correct.
+        // Verify that the close short updates were correct.
         verifyCloseShort(poolInfoBefore, bondAmount, maturityTime, false);
     }
 
@@ -221,7 +221,7 @@ contract CloseShortTest is HyperdriveTest {
         // Verify that Bob doesn't receive any base from closing the short.
         assertEq(baseProceeds, 0);
 
-        // Verify that the close long updates were correct.
+        // Verify that the close short updates were correct.
         verifyCloseShort(poolInfoBefore, bondAmount, maturityTime, false);
     }
 

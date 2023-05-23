@@ -48,7 +48,7 @@ contract MockHyperdriveMath {
         uint256 _timeStretch,
         uint256 _sharePrice,
         uint256 _initialSharePrice
-    ) external view returns (uint256, uint256, uint256) {
+    ) external pure returns (uint256, uint256, uint256) {
         (uint256 result1, uint256 result2, uint256 result3) = HyperdriveMath
             .calculateOpenLong(
                 _shareReserves,
@@ -71,7 +71,7 @@ contract MockHyperdriveMath {
         uint256 _closeSharePrice,
         uint256 _sharePrice,
         uint256 _initialSharePrice
-    ) external view returns (uint256, uint256, uint256) {
+    ) external pure returns (uint256, uint256, uint256) {
         (uint256 result1, uint256 result2, uint256 result3) = HyperdriveMath
             .calculateCloseLong(
                 _shareReserves,
@@ -94,7 +94,7 @@ contract MockHyperdriveMath {
         uint256 _timeStretch,
         uint256 _sharePrice,
         uint256 _initialSharePrice
-    ) external view returns (uint256, uint256, uint256) {
+    ) external pure returns (uint256, uint256, uint256) {
         (uint256 result1, uint256 result2, uint256 result3) = HyperdriveMath
             .calculateOpenShort(
                 _shareReserves,
@@ -116,7 +116,7 @@ contract MockHyperdriveMath {
         uint256 _timeStretch,
         uint256 _sharePrice,
         uint256 _initialSharePrice
-    ) external view returns (uint256, uint256, uint256) {
+    ) external pure returns (uint256, uint256, uint256) {
         (uint256 result1, uint256 result2, uint256 result3) = HyperdriveMath
             .calculateCloseShort(
                 _shareReserves,
