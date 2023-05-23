@@ -50,7 +50,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // Calculate the pool and user deltas using the trading function. We
         // backdate the bonds sold to the beginning of the checkpoint.
         uint256 maturityTime = _latestCheckpoint() + _positionDuration;
-        uint256 timeRemaining = _calculateCheckpointTimeRemaining(maturityTime);
+        uint256 timeRemaining = _calculateTimeRemaining(maturityTime);
         uint256 shareReservesDelta;
         {
             uint256 totalGovernanceFee;
@@ -421,7 +421,9 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // Calculate the effect that closing the short should have on the pool's
         // reserves as well as the amount of shares the trader needs to pay to
         // purchase the shorted bonds at the market price.
-        uint256 timeRemaining = _calculateCheckpointTimeRemaining(
+        // NOTE: We calculate the time remaining from the latest checkpoint to ensure that
+        // opening/closing a position doesn't result in immediate profit.
+        uint256 timeRemaining = _calculateTimeRemainingFromLatestCheckpoint(
             _maturityTime
         );
         (shareReservesDelta, bondReservesDelta, sharePayment) = HyperdriveMath

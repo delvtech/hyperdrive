@@ -88,7 +88,7 @@ contract NegativeInterestTest is HyperdriveTest {
         uint256 estimatedProceeds = estimateShortProceeds(
             shortAmount,
             variableRate,
-            HyperdriveUtils.calculateCheckpointTimeRemaining(
+            HyperdriveUtils.calculateTimeRemainingFromLatestCheckpoint(
                 hyperdrive,
                 maturityTime
             ),

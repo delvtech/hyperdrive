@@ -7,7 +7,6 @@ import { AssetId } from "./libraries/AssetId.sol";
 import { Errors } from "./libraries/Errors.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
-import "forge-std/console2.sol";
 
 /// @author DELV
 /// @title HyperdriveLong
@@ -50,7 +49,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // Calculate the pool and user deltas using the trading function. We
         // backdate the bonds purchased to the beginning of the checkpoint.
         uint256 maturityTime = latestCheckpoint + _positionDuration;
-        uint256 timeRemaining = _calculateCheckpointTimeRemaining(maturityTime);
+        uint256 timeRemaining = _calculateTimeRemaining(maturityTime);
         (
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
@@ -424,7 +423,9 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // Calculate the effect that closing the long should have on the pool's
         // reserves as well as the amount of shares the trader receives for
         // selling the bonds at the market price.
-        uint256 timeRemaining = _calculateCheckpointTimeRemaining(
+        // NOTE: We calculate the time remaining from the latest checkpoint to ensure that
+        // opening/closing a position doesn't result in immediate profit.
+        uint256 timeRemaining = _calculateTimeRemainingFromLatestCheckpoint(
             _maturityTime
         );
         uint256 closeSharePrice = block.timestamp < _maturityTime

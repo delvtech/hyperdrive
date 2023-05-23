@@ -31,7 +31,7 @@ library HyperdriveUtils {
         return timeRemaining;
     }
 
-    function calculateCheckpointTimeRemaining(
+    function calculateTimeRemainingFromLatestCheckpoint(
         IHyperdrive _hyperdrive,
         uint256 _maturityTime
     ) internal view returns (uint256 timeRemaining) {
