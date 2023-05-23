@@ -161,7 +161,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         if (_minOutput > baseProceeds) revert Errors.OutputLimit();
 
         // Emit a CloseLong event.
-        emit CloseLong(_destination, _maturityTime, _bondAmount, baseProceeds);
+        emit CloseLong(_destination, _maturityTime, baseProceeds, _bondAmount);
 
         return (baseProceeds);
     }

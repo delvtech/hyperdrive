@@ -190,10 +190,10 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // Enforce min user outputs
         if (baseProceeds < _minOutput) revert Errors.OutputLimit();
 
-        // Emit a CloseLong event.
+        // Emit a CloseShort event.
         uint256 maturityTime = _maturityTime; // Avoid stack too deep error.
         uint256 bondAmount = _bondAmount; // Avoid stack too deep error.
-        emit CloseLong(_destination, maturityTime, bondAmount, baseProceeds);
+        emit CloseShort(_destination, maturityTime, baseProceeds, bondAmount);
 
         return baseProceeds;
     }
