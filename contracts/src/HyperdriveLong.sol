@@ -429,7 +429,9 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // Calculate the effect that closing the long should have on the pool's
         // reserves as well as the amount of shares the trader receives for
         // selling the bonds at the market price.
-        uint256 timeRemaining = _calculateCheckpointTimeRemaining(_maturityTime);
+        uint256 timeRemaining = _calculateCheckpointTimeRemaining(
+            _maturityTime
+        );
         uint256 closeSharePrice = block.timestamp < _maturityTime
             ? _sharePrice
             : _checkpoints[_maturityTime].sharePrice;

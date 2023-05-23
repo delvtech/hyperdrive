@@ -198,7 +198,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
             lpTotalSupplyBefore
         );
         assertEq(baseProceeds, expectedBaseProceeds);
-        assertApproxEqAbs(withdrawalShares, expectedWithdrawalShares,1);
+        assertApproxEqAbs(withdrawalShares, expectedWithdrawalShares, 1);
 
         // Ensure that the correct event was emitted.
         verifyRemoveLiquidityEvent(lpShares, baseProceeds, withdrawalShares);

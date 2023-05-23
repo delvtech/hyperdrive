@@ -143,7 +143,7 @@ library HyperdriveMath {
             .mulDown(FixedPointMath.ONE_18.sub(_normalizedTimeRemaining))
             .mulDown(_sharePrice);
         shareReservesDelta = _shareAmount.mulDown(_normalizedTimeRemaining);
-    
+
         // (time remaining)/(term length) is always 1 so we just use _timeStretch
         bondReservesDelta = YieldSpaceMath.calculateBondsOutGivenSharesIn(
             _shareReserves,

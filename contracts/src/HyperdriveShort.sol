@@ -450,7 +450,9 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // Calculate the effect that closing the short should have on the pool's
         // reserves as well as the amount of shares the trader needs to pay to
         // purchase the shorted bonds at the market price.
-        uint256 timeRemaining = _calculateCheckpointTimeRemaining(_maturityTime);
+        uint256 timeRemaining = _calculateCheckpointTimeRemaining(
+            _maturityTime
+        );
         (shareReservesDelta, bondReservesDelta, sharePayment) = HyperdriveMath
             .calculateCloseShort(
                 _marketState.shareReserves,

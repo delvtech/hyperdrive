@@ -33,9 +33,18 @@ contract RoundTripTest is HyperdriveTest {
         // Get the poolinfo after closing the long.
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
 
-        console2.log("poolInfoBefore.shareReserves", poolInfoBefore.shareReserves);
-        console2.log("poolInfoBefore.bondReserves", poolInfoBefore.bondReserves);
-        console2.log("poolInfoAfter.shareReserves", poolInfoAfter.shareReserves);
+        console2.log(
+            "poolInfoBefore.shareReserves",
+            poolInfoBefore.shareReserves
+        );
+        console2.log(
+            "poolInfoBefore.bondReserves",
+            poolInfoBefore.bondReserves
+        );
+        console2.log(
+            "poolInfoAfter.shareReserves",
+            poolInfoAfter.shareReserves
+        );
         console2.log("poolInfoAfter.bondReserves", poolInfoAfter.bondReserves);
         // if they aren't the same, then the pool should be the one that wins
         assertGe(poolInfoAfter.shareReserves, poolInfoBefore.shareReserves);
@@ -43,7 +52,9 @@ contract RoundTripTest is HyperdriveTest {
         assertEq(poolInfoAfter.bondReserves, poolInfoBefore.bondReserves);
     }
 
-    function test_long_round_trip_immediately_halfway_thru_checkpoint() external {
+    function test_long_round_trip_immediately_halfway_thru_checkpoint()
+        external
+    {
         uint256 apr = 0.05e18;
 
         // Initialize the pool with capital.
@@ -52,13 +63,22 @@ contract RoundTripTest is HyperdriveTest {
 
         // Get the poolinfo before opening the long.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
-        console2.log("poolInfoBefore.shareReserves", poolInfoBefore.shareReserves);
-        console2.log("poolInfoBefore.bondReserves", poolInfoBefore.bondReserves);
-        console2.log("bonds/base before: ", poolInfoBefore.bondReserves.divDown(poolInfoBefore.shareReserves));
+        console2.log(
+            "poolInfoBefore.shareReserves",
+            poolInfoBefore.shareReserves
+        );
+        console2.log(
+            "poolInfoBefore.bondReserves",
+            poolInfoBefore.bondReserves
+        );
+        console2.log(
+            "bonds/base before: ",
+            poolInfoBefore.bondReserves.divDown(poolInfoBefore.shareReserves)
+        );
 
         // fast forward time to halfway through checkpoint
-        advanceTime(CHECKPOINT_DURATION/2, 0);
-        
+        advanceTime(CHECKPOINT_DURATION / 2, 0);
+
         // Open a long position.
         uint256 basePaid = 10e18;
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
@@ -66,10 +86,18 @@ contract RoundTripTest is HyperdriveTest {
         // Get the poolinfo during the long.
         IHyperdrive.PoolInfo memory poolInfoDuring = hyperdrive.getPoolInfo();
 
-
-        console2.log("poolInfoDuringLong.shareReserves", poolInfoDuring.shareReserves);
-        console2.log("poolInfoDuringLong.bondReserves", poolInfoDuring.bondReserves);
-        console2.log("bonds/base during: ", poolInfoDuring.bondReserves.divDown(poolInfoDuring.shareReserves));
+        console2.log(
+            "poolInfoDuringLong.shareReserves",
+            poolInfoDuring.shareReserves
+        );
+        console2.log(
+            "poolInfoDuringLong.bondReserves",
+            poolInfoDuring.bondReserves
+        );
+        console2.log(
+            "bonds/base during: ",
+            poolInfoDuring.bondReserves.divDown(poolInfoDuring.shareReserves)
+        );
 
         // Immediately close the long.
         closeLong(bob, maturityTime, bondAmount);
@@ -79,9 +107,15 @@ contract RoundTripTest is HyperdriveTest {
 
         // console2.log("poolInfoBefore.shareReserves", poolInfoBefore.shareReserves);
         // console2.log("poolInfoBefore.bondReserves", poolInfoBefore.bondReserves);
-        console2.log("poolInfoAfter.shareReserves", poolInfoAfter.shareReserves);
+        console2.log(
+            "poolInfoAfter.shareReserves",
+            poolInfoAfter.shareReserves
+        );
         console2.log("poolInfoAfter.bondReserves", poolInfoAfter.bondReserves);
-        console2.log("bonds/base after: ", poolInfoAfter.bondReserves.divDown(poolInfoAfter.shareReserves));
+        console2.log(
+            "bonds/base after: ",
+            poolInfoAfter.bondReserves.divDown(poolInfoAfter.shareReserves)
+        );
         // if they aren't the same, then the pool should be the one that wins
         assertGe(poolInfoAfter.shareReserves, poolInfoBefore.shareReserves);
         // should be exact if out = in
@@ -100,7 +134,7 @@ contract RoundTripTest is HyperdriveTest {
 
         // Open a short position.
         uint256 bondAmount = 10e18;
-        (uint256 maturityTime,) = openShort(bob, bondAmount);
+        (uint256 maturityTime, ) = openShort(bob, bondAmount);
 
         // Immediately close the short
         closeShort(bob, maturityTime, bondAmount);
@@ -108,9 +142,18 @@ contract RoundTripTest is HyperdriveTest {
         // Get the poolinfo after closing the short.
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
 
-        console2.log("poolInfoBefore.shareReserves", poolInfoBefore.shareReserves);
-        console2.log("poolInfoBefore.bondReserves", poolInfoBefore.bondReserves);
-        console2.log("poolInfoAfter.shareReserves", poolInfoAfter.shareReserves);
+        console2.log(
+            "poolInfoBefore.shareReserves",
+            poolInfoBefore.shareReserves
+        );
+        console2.log(
+            "poolInfoBefore.bondReserves",
+            poolInfoBefore.bondReserves
+        );
+        console2.log(
+            "poolInfoAfter.shareReserves",
+            poolInfoAfter.shareReserves
+        );
         console2.log("poolInfoAfter.bondReserves", poolInfoAfter.bondReserves);
         // if they aren't the same, then the pool should be the one that wins
         assertGe(poolInfoAfter.shareReserves, poolInfoBefore.shareReserves);
@@ -118,7 +161,9 @@ contract RoundTripTest is HyperdriveTest {
         assertEq(poolInfoAfter.bondReserves, poolInfoBefore.bondReserves);
     }
 
-    function test_short_round_trip_immediately_halfway_thru_checkpoint() external {
+    function test_short_round_trip_immediately_halfway_thru_checkpoint()
+        external
+    {
         uint256 apr = 0.05e18;
 
         // Initialize the pool with capital.
@@ -127,13 +172,22 @@ contract RoundTripTest is HyperdriveTest {
 
         // Get the poolinfo before opening the short.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
-        console2.log("poolInfoBefore.shareReserves", poolInfoBefore.shareReserves);
-        console2.log("poolInfoBefore.bondReserves", poolInfoBefore.bondReserves);
-        console2.log("bonds/base before: ", poolInfoBefore.bondReserves.divDown(poolInfoBefore.shareReserves));
+        console2.log(
+            "poolInfoBefore.shareReserves",
+            poolInfoBefore.shareReserves
+        );
+        console2.log(
+            "poolInfoBefore.bondReserves",
+            poolInfoBefore.bondReserves
+        );
+        console2.log(
+            "bonds/base before: ",
+            poolInfoBefore.bondReserves.divDown(poolInfoBefore.shareReserves)
+        );
 
         // fast forward time to halfway through checkpoint
-        advanceTime(CHECKPOINT_DURATION/2, 0);
-        
+        advanceTime(CHECKPOINT_DURATION / 2, 0);
+
         // Open a short position.
         uint256 bondAmount = 10e18;
         (uint256 maturityTime, ) = openShort(bob, bondAmount);
@@ -141,10 +195,18 @@ contract RoundTripTest is HyperdriveTest {
         // Get the poolinfo during the short.
         IHyperdrive.PoolInfo memory poolInfoDuring = hyperdrive.getPoolInfo();
 
-
-        console2.log("poolInfoDuringLong.shareReserves", poolInfoDuring.shareReserves);
-        console2.log("poolInfoDuringLong.bondReserves", poolInfoDuring.bondReserves);
-        console2.log("bonds/base during: ", poolInfoDuring.bondReserves.divDown(poolInfoDuring.shareReserves));
+        console2.log(
+            "poolInfoDuringLong.shareReserves",
+            poolInfoDuring.shareReserves
+        );
+        console2.log(
+            "poolInfoDuringLong.bondReserves",
+            poolInfoDuring.bondReserves
+        );
+        console2.log(
+            "bonds/base during: ",
+            poolInfoDuring.bondReserves.divDown(poolInfoDuring.shareReserves)
+        );
 
         // Immediately close the short.
         closeShort(bob, maturityTime, bondAmount);
@@ -154,13 +216,18 @@ contract RoundTripTest is HyperdriveTest {
 
         // console2.log("poolInfoBefore.shareReserves", poolInfoBefore.shareReserves);
         // console2.log("poolInfoBefore.bondReserves", poolInfoBefore.bondReserves);
-        console2.log("poolInfoAfter.shareReserves", poolInfoAfter.shareReserves);
+        console2.log(
+            "poolInfoAfter.shareReserves",
+            poolInfoAfter.shareReserves
+        );
         console2.log("poolInfoAfter.bondReserves", poolInfoAfter.bondReserves);
-        console2.log("bonds/base after: ", poolInfoAfter.bondReserves.divDown(poolInfoAfter.shareReserves));
+        console2.log(
+            "bonds/base after: ",
+            poolInfoAfter.bondReserves.divDown(poolInfoAfter.shareReserves)
+        );
         // if they aren't the same, then the pool should be the one that wins
         assertGe(poolInfoAfter.shareReserves, poolInfoBefore.shareReserves);
         // should be exact if out = in
         assertEq(poolInfoAfter.bondReserves, poolInfoBefore.bondReserves);
-
     }
 }

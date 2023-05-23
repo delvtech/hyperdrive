@@ -8,7 +8,6 @@ import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import "forge-std/console2.sol";
 
-
 // TODO: We need to test several cases for long negative interest.
 //
 // - [ ] Negative interest leading to haircut.
@@ -90,7 +89,10 @@ contract NegativeInterestTest is HyperdriveTest {
         uint256 estimatedProceeds = estimateShortProceeds(
             shortAmount,
             variableRate,
-            HyperdriveUtils.calculateCheckpointTimeRemaining(hyperdrive, maturityTime),
+            HyperdriveUtils.calculateCheckpointTimeRemaining(
+                hyperdrive,
+                maturityTime
+            ),
             timeDelta
         );
         uint256 baseProceeds = closeShort(bob, maturityTime, shortAmount);
