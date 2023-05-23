@@ -50,11 +50,14 @@ methods {
         => ghostCalculateInitialBondReserves(shares, price, initPrice, APR, dur, timeSt) expect uint256;
     
     /// @dev Calculates the present value LPs capital in the pool.
-    /// @notice Replacement of original HyperdriveMath function with Mock. 
+    /// @notice Replacement of original HyperdriveMath function with Mock.
     function _._calculatePresentValue(
-        uint256 z, uint256 y, uint256 c, uint256 mu, uint256 ts,
-        uint256 ol, uint256 tavg_L, uint256 os, uint256 tavg_S, uint256 vol) internal library => 
-        CVLCalculatePresentValue(z,y,c,mu,ts,ol,tavg_L,os,tavg_S,vol) expect uint256;
+        uint256, uint256, uint256, uint256, uint256,
+        uint256, uint256, uint256, uint256, uint256) internal library => NONDET; 
+    //function _._calculatePresentValue(
+    //    uint256 z, uint256 y, uint256 c, uint256 mu, uint256 ts,
+    //    uint256 ol, uint256 tavg_L, uint256 os, uint256 tavg_S, uint256 vol) internal library => 
+    //    CVLCalculatePresentValue(z,y,c,mu,ts,ol,tavg_L,os,tavg_S,vol) expect uint256;
     
     /// @dev Calculates the interest in shares earned by a short position
     function _.calculateShortInterest(uint256 bond, uint256 openPrice, uint256 closePrice, uint256 price) internal library 

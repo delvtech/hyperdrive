@@ -18,9 +18,9 @@ methods {
         external returns(uint256,uint256,uint256,uint256) envfree; 
 }
 
-ghost uint256 CVLFlatFee;
-ghost uint256 CVLGovFee;
-ghost uint256 CVLCurFee;
+ghost uint256 CVLFlatFee {axiom CVLFlatFee <= ONE18();}
+ghost uint256 CVLGovFee {axiom CVLGovFee <= ONE18();}
+ghost uint256 CVLCurFee {axiom CVLCurFee <= ONE18();}
 
 function setGhostFeesFromStorage() {
     CVLFlatFee = flatFee();

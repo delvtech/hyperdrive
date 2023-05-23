@@ -88,7 +88,7 @@ rule YSInvariantIntegrity() {
     assert k1 == k2;
 }
 
-rule monotonicity(uint256 base1, uint256 base2) {
+rule monotonicityBaseVolume(uint256 base1, uint256 base2) {
     uint256 bondAmount;
     uint256 timeRemaining;
     uint256 vol1 = HDMath.calculateBaseVolume(base1, bondAmount, timeRemaining);

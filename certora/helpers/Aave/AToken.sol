@@ -235,7 +235,7 @@ abstract contract AToken is IAToken {
         return currentSupplyScaled.rayMul(POOL.getReserveNormalizedIncome(underlyingAsset));
     }
 
-    function RESERVE_TREASURY_ADDRESS() external view  returns (address) {
+    function RESERVE_TREASURY_ADDRESS() external view returns (address) {
         return treasury;
     }
 

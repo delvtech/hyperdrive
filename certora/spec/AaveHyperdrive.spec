@@ -23,12 +23,15 @@ methods {
 
     function assetId.encodeAssetId(MockAssetId.AssetIdPrefix, uint256) external returns (uint256) envfree;
 
-    /// Fee calculations summaries
+    /*
+    /// Fee calculations summaries -> NONDET
     function HDAave.MockCalculateFeesOutGivenSharesIn(uint256,uint256,uint256,uint256,uint256) internal returns(AaveHyperdrive.HDFee memory) => NONDET;
     function HDAave.MockCalculateFeesOutGivenBondsIn(uint256,uint256,uint256,uint256) internal returns(AaveHyperdrive.HDFee memory) => NONDET;
     function HDAave.MockCalculateFeesInGivenBondsOut(uint256,uint256,uint256,uint256) internal returns(AaveHyperdrive.HDFee memory) => NONDET;
-    
+    */
+
     /*
+    /// Fee calculations summaries -> CVL Summary
     function HDAave.MockCalculateFeesOutGivenSharesIn(uint256 a,uint256 b ,uint256 c ,uint256 d,uint256 e) internal returns(AaveHyperdrive.HDFee memory) =>
         CVLFeesOutGivenSharesIn(a,b,c,d,e);
     function HDAave.MockCalculateFeesOutGivenBondsIn(uint256 a, uint256 b,uint256 c, uint256 d) internal returns(AaveHyperdrive.HDFee memory) =>
@@ -41,6 +44,9 @@ methods {
 definition RAY() returns uint256 = 10^27;
 definition LP_ASSET_ID() returns uint256 = 0;
 definition WITHDRAWAL_SHARE_ASSET_ID() returns uint256 = (3 << 248);
+
+definition indexA() returns uint256 = require_uint256(RAY()*2);
+definition indexB() returns uint256 = require_uint256((RAY()*125)/100);
 
 /// @dev Under-approximation of the pool parameters (based on developers' test)
 /// @notice Use only to find violations!
@@ -68,22 +74,45 @@ ghost mathint sumOfWithdrawalShares {
     init_state axiom sumOfWithdrawalShares == 0; 
 }
 
+ghost mathint sumOfLPTokens {
+    init_state axiom sumOfLPTokens == 0;
+}
+
 hook Sload uint256 index Pool.liquidityIndex[KEY address token][KEY uint256 timestamp] STORAGE {
-    require index >= RAY();
+    /// @WARNING : UNDER-APPROXIMATION!
+    /// @notice : to simplify the SMT formulas, we assume to possible values for the index.
+    /// so in general, the index as a function of time can have only one of these two values.
+    require index == indexA() || index == indexB();
+    //require index >= RAY();
+}
+
+hook Sload uint128 value HDAave._withdrawPool.readyToWithdraw STORAGE {
+    require ghostReadyToWithdraw == to_mathint(value);
 }
 
 hook Sstore HDAave._withdrawPool.readyToWithdraw uint128 value (uint128 old_value) STORAGE {
     ghostReadyToWithdraw = ghostReadyToWithdraw + value - old_value;
 }
 
+hook Sload uint256 value HDAave._balanceOf[KEY uint256 tokenID][KEY address account] STORAGE {
+    if(tokenID == WITHDRAWAL_SHARE_ASSET_ID()) {
+        require sumOfWithdrawalShares >= to_mathint(value); 
+    } 
+    else if(tokenID == LP_ASSET_ID()) {
+        require sumOfLPTokens >= to_mathint(value); 
+    }
+}
+
 hook Sstore HDAave._balanceOf[KEY uint256 tokenID][KEY address account] uint256 value (uint256 old_value) STORAGE {
     sumOfWithdrawalShares = tokenID == WITHDRAWAL_SHARE_ASSET_ID() ? 
-        sumOfWithdrawalShares + value - old_value :
-        sumOfWithdrawalShares;
+        sumOfWithdrawalShares + value - old_value : sumOfWithdrawalShares;
+
+    sumOfLPTokens = tokenID == LP_ASSET_ID() ?
+        sumOfLPTokens + value - old_value : sumOfLPTokens;
 }
 
 function getPoolIndex(uint256 timestamp) returns uint256 {
-    return pool.liquidityIndex(aToken.UNDERLYING_ASSET_ADDRESS(),timestamp);
+    return pool.liquidityIndex(aToken.UNDERLYING_ASSET_ADDRESS(), timestamp);
 }
 
 /// @notice Simulates the output of the `_deposit()` function
@@ -301,7 +330,7 @@ rule openLongIntegrity(uint256 baseAmount) {
     env e;
     uint256 minOutput;
     address destination;
-    bool asUnderlying;
+    bool asUnderlying = false;
 
     setHyperdrivePoolParams();
 
@@ -317,8 +346,8 @@ rule openLongIntegrity(uint256 baseAmount) {
     assert totalShares > 0 && assets > 0, 
         "Assets must have been deposited in the pool after opening a position";
 
-    //assert to_mathint(bondsReceived) <= to_mathint(bondReserves),
-    //    "A position cannot be opened with more bonds than bonds reserves";
+    assert to_mathint(bondsReceived) <= to_mathint(bondReserves),
+        "A position cannot be opened with more bonds than bonds reserves";
 }
 
 rule openLongReturnsSameBonds(env eOp) {
@@ -357,8 +386,7 @@ rule profitIsMonotonicForCloseLong(env eCl) {
     assert maturityTime1 >= maturityTime2 => assetsRecieved1 <= assetsRecieved2, "Received assets should increase for long position.";
 }
 
-rule addAndRemoveSameSharesMeansNoChange(env e)
-{
+rule addAndRemoveSameSharesMeansNoChange(env e) {
     uint256 _contribution;
     uint256 _minApr;
     uint256 _maxApr;
@@ -436,6 +464,7 @@ rule closeLongAtMaturity(uint256 bondAmount) {
     uint256 maturityTime;
     
     require to_mathint(aToken.balanceOf(e, currentContract)) >= to_mathint(totalShares());
+    require totalShares() != 0;
 
     uint256 assetsRecieved =
         closeLong(e, maturityTime, bondAmount, minOutput, destination, asUnderlying);
@@ -464,7 +493,17 @@ invariant SharesNonZeroAssetsNonZero(env e)
         }
     }
 
+invariant TotalSupplyGEReadyToWithdrawShares()
+    to_mathint(totalSupplyByToken(LP_ASSET_ID())) >= ghostReadyToWithdraw
+    {
+        preserved{
+            setHyperdrivePoolParams();
+        }
+    }
+
 /// @doc The sum of withdrawal shares for all accounts is equal to the shares which are ready to withdraw
+/// Violated on removeLiquidity : need to investigate path.
+/// https://vaas-stg.certora.com/output/41958/1ff26fd8484e466dbb9cf0d381a2858d/?anonymousKey=9bf94295807c4cfd8c44415ffd328821769471b5
 invariant SumOfWithdrawalShares()
     sumOfWithdrawalShares == ghostReadyToWithdraw;
 

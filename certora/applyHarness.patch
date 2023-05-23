@@ -1,5 +1,5 @@
---- ../contracts/src/instances/AaveHyperdrive.sol	2023-05-14 11:34:49.197106287 +0300
-+++ 	2023-05-16 13:43:22.646679289 +0300
+--- ../contracts/src/instances/AaveHyperdrive.sol	2023-05-18 15:40:39.353490028 +0300
++++ 	2023-05-22 15:49:18.368788545 +0300
 @@ -2,11 +2,11 @@
  pragma solidity ^0.8.18;
  
@@ -25,8 +25,18 @@
  
      /// @notice Initializes a Hyperdrive pool.
      /// @param _config The configuration of the Hyperdrive pool.
---- ../contracts/src/Hyperdrive.sol	2023-05-16 13:42:21.145872675 +0300
-+++ 	2023-05-16 13:43:22.646679289 +0300
+@@ -42,7 +42,8 @@
+ 
+         aToken = _aToken;
+         pool = _pool;
+-        _config.baseToken.approve(address(pool), type(uint256).max);
++        IERC20 base = _config.baseToken;
++        base.approve(address(pool), type(uint256).max);
+     }
+ 
+     ///@notice Transfers amount of 'token' from the user and commits it to the yield source.
+--- ../contracts/src/Hyperdrive.sol	2023-05-23 12:54:47.203907940 +0300
++++ 	2023-05-18 15:53:00.840722438 +0300
 @@ -3,14 +3,16 @@
  
  import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -62,7 +72,7 @@
      using FixedPointMath for uint256;
      using SafeCast for uint256;
 --- ../contracts/src/HyperdriveLP.sol	2023-05-16 17:01:28.195350749 +0300
-+++ 	2023-05-16 17:18:33.255790428 +0300
++++ 	2023-05-18 15:53:00.840722438 +0300
 @@ -2,12 +2,13 @@
  pragma solidity ^0.8.18;
  
@@ -129,7 +139,7 @@
                  shareReserves: _marketState.shareReserves,
                  bondReserves: _marketState.bondReserves,
 --- ../contracts/src/HyperdriveShort.sol	2023-05-16 13:42:21.243372668 +0300
-+++ 	2023-05-16 17:17:05.408317136 +0300
++++ 	2023-05-18 15:53:00.840722438 +0300
 @@ -3,11 +3,12 @@
  
  import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
@@ -205,7 +215,7 @@
          sharePayment += totalCurveFee + totalFlatFee;
  
 --- ../contracts/src/HyperdriveLong.sol	2023-05-16 13:42:21.210872671 +0300
-+++ 	2023-05-16 17:17:10.239982303 +0300
++++ 	2023-05-18 15:53:00.840722438 +0300
 @@ -3,10 +3,11 @@
  
  import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
@@ -277,7 +287,7 @@
          shareProceeds -= totalCurveFee + totalFlatFee;
  
 --- ../contracts/src/ForwarderFactory.sol	2023-05-07 18:33:18.425767793 +0300
-+++ 	2023-05-16 13:43:22.646679289 +0300
++++ 	2023-05-18 15:53:00.840722438 +0300
 @@ -1,9 +1,9 @@
  // SPDX-License-Identifier: Apache-2.0
  pragma solidity ^0.8.18;
