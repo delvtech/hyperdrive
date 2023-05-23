@@ -354,7 +354,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 _marketState.shareReserves,
                 _marketState.bondReserves,
                 _shareAmount, // amountIn
-                _timeRemaining,
                 _timeStretch,
                 _sharePrice,
                 _initialSharePrice

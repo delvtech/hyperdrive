@@ -251,11 +251,10 @@ library HyperdriveUtils {
         }
 
         // Calculate the openShort trade
-        (, , uint256 shareProceeds) = HyperdriveMath.calculateOpenShort(
+        uint256 shareProceeds = HyperdriveMath.calculateOpenShort(
             poolInfo.shareReserves,
             poolInfo.bondReserves,
             _bondAmount,
-            timeRemaining,
             poolConfig.timeStretch,
             poolInfo.sharePrice,
             poolConfig.initialSharePrice

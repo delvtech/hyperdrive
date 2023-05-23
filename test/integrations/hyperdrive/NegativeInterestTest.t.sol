@@ -6,7 +6,6 @@ import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
-import "forge-std/console2.sol";
 
 // TODO: We need to test several cases for long negative interest.
 //
