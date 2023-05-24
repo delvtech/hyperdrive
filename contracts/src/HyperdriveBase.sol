@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 
 import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import { SafeCast } from "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
+import { SafeCast } from "./libraries/SafeCast.sol";
 import { HyperdriveStorage } from "./HyperdriveStorage.sol";
 import { MultiToken } from "./MultiToken.sol";
 import { AssetId } from "./libraries/AssetId.sol";
