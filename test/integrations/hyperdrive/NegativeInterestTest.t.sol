@@ -67,13 +67,14 @@ contract NegativeInterestTest is HyperdriveTest {
         vm.assume(
             preTradingVariableRate >= -0.5e18 && preTradingVariableRate <= 1e18
         );
+
         advanceTime(POSITION_DURATION, preTradingVariableRate);
 
         // Bob opens a short.
         uint256 shortAmount = 10_000e18;
         (uint256 maturityTime, uint256 basePaid) = openShort(bob, shortAmount);
 
-        // Charlie opens a large short.
+        // Celine opens a large short.
         uint256 longAmount = 300_000_000e18;
         openShort(celine, longAmount);
 
@@ -87,6 +88,7 @@ contract NegativeInterestTest is HyperdriveTest {
         uint256 estimatedProceeds = estimateShortProceeds(
             shortAmount,
             variableRate,
+            HyperdriveUtils.calculateTimeRemaining(hyperdrive, maturityTime),
             timeDelta
         );
         uint256 baseProceeds = closeShort(bob, maturityTime, shortAmount);
@@ -97,6 +99,7 @@ contract NegativeInterestTest is HyperdriveTest {
     function estimateShortProceeds(
         uint256 shortAmount,
         int256 variableRate,
+        uint256 normalizedTimeRemaining,
         uint256 timeElapsed
     ) internal view returns (uint256) {
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
@@ -106,7 +109,7 @@ contract NegativeInterestTest is HyperdriveTest {
             poolInfo.shareReserves,
             poolInfo.bondReserves,
             shortAmount,
-            timeElapsed.divDown(POSITION_DURATION),
+            normalizedTimeRemaining,
             poolConfig.timeStretch,
             poolInfo.sharePrice,
             poolConfig.initialSharePrice

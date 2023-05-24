@@ -208,12 +208,18 @@ contract CloseLongTest is HyperdriveTest {
         // Bob closes his long close to maturity.
         uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
 
+        // calculate the amount of time that passed since the last checkpoint
+        uint256 checkpointDistance = block.timestamp -
+            HyperdriveUtils.latestCheckpoint(hyperdrive);
+
         // Ensure that the realized APR is approximately equal to the pool APR.
         assertApproxEqAbs(
             HyperdriveUtils.calculateAPRFromRealizedPrice(
                 basePaid,
                 baseProceeds,
-                FixedPointMath.ONE_18 - timeDelta
+                FixedPointMath.ONE_18 -
+                    timeDelta -
+                    checkpointDistance.divDown(POSITION_DURATION)
             ),
             apr,
             1e10
@@ -369,7 +375,7 @@ contract CloseLongTest is HyperdriveTest {
             poolInfoBefore.sharePrice
         );
 
-        assertApproxEqAbs(baseProceeds, bondsValue, 6);
+        assertEq(baseProceeds, bondsValue);
 
         // Verify that the close long updates were correct.
         verifyCloseLong(

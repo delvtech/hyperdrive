@@ -113,46 +113,28 @@ library HyperdriveMath {
     /// @param _shareReserves The pool's share reserves.
     /// @param _bondReserves The pool's bond reserves.
     /// @param _shareAmount The amount of shares the user is depositing.
-    /// @param _normalizedTimeRemaining The amount of time remaining until maturity in seconds.
     /// @param _timeStretch The time stretch parameter.
     /// @param _sharePrice The share price.
     /// @param _initialSharePrice The initial share price.
-    /// @return shareReservesDelta The shares paid to the reserves in the trade.
     /// @return bondReservesDelta The bonds paid by the reserves in the trade.
-    /// @return bondProceeds The bonds that the user will receive.
     function calculateOpenLong(
         uint256 _shareReserves,
         uint256 _bondReserves,
         uint256 _shareAmount,
-        uint256 _normalizedTimeRemaining,
         uint256 _timeStretch,
         uint256 _sharePrice,
         uint256 _initialSharePrice
-    )
-        internal
-        pure
-        returns (
-            uint256 shareReservesDelta,
-            uint256 bondReservesDelta,
-            uint256 bondProceeds
-        )
-    {
-        // Calculate the flat part of the trade.
-        bondProceeds = _shareAmount
-            .mulDown(FixedPointMath.ONE_18.sub(_normalizedTimeRemaining))
-            .mulDown(_sharePrice);
-        shareReservesDelta = _shareAmount.mulDown(_normalizedTimeRemaining);
+    ) internal pure returns (uint256) {
         // (time remaining)/(term length) is always 1 so we just use _timeStretch
-        bondReservesDelta = YieldSpaceMath.calculateBondsOutGivenSharesIn(
-            _shareReserves,
-            _bondReserves,
-            shareReservesDelta,
-            FixedPointMath.ONE_18.sub(_timeStretch),
-            _sharePrice,
-            _initialSharePrice
-        );
-        bondProceeds += bondReservesDelta;
-        return (shareReservesDelta, bondReservesDelta, bondProceeds);
+        return
+            YieldSpaceMath.calculateBondsOutGivenSharesIn(
+                _shareReserves,
+                _bondReserves,
+                _shareAmount,
+                FixedPointMath.ONE_18.sub(_timeStretch),
+                _sharePrice,
+                _initialSharePrice
+            );
     }
 
     /// @dev Calculates the amount of shares a user will receive when closing a
@@ -197,10 +179,10 @@ library HyperdriveMath {
             FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
             _sharePrice
         );
-
         if (_normalizedTimeRemaining > 0) {
             // Calculate the curved part of the trade.
             bondReservesDelta = _amountIn.mulDown(_normalizedTimeRemaining);
+
             // (time remaining)/(term length) is always 1 so we just use _timeStretch
             shareReservesDelta = YieldSpaceMath.calculateSharesOutGivenBondsIn(
                 _shareReserves,
@@ -223,8 +205,6 @@ library HyperdriveMath {
                 _initialSharePrice
             );
         }
-
-        return (shareReservesDelta, bondReservesDelta, shareProceeds);
     }
 
     /// @dev Calculates the amount of shares that will be received given a
@@ -232,47 +212,28 @@ library HyperdriveMath {
     /// @param _shareReserves The pool's share reserves
     /// @param _bondReserves The pool's bonds reserves.
     /// @param _amountIn The amount of bonds the user is providing.
-    /// @param _normalizedTimeRemaining The amount of time remaining until maturity in seconds.
     /// @param _timeStretch The time stretch parameter.
     /// @param _sharePrice The share price.
     /// @param _initialSharePrice The initial share price.
     /// @return shareReservesDelta The shares paid by the reserves in the trade.
-    /// @return bondReservesDelta The bonds paid to the reserves in the trade.
-    /// @return shareProceeds The shares that the user will receive.
     function calculateOpenShort(
         uint256 _shareReserves,
         uint256 _bondReserves,
         uint256 _amountIn,
-        uint256 _normalizedTimeRemaining,
         uint256 _timeStretch,
         uint256 _sharePrice,
         uint256 _initialSharePrice
-    )
-        internal
-        pure
-        returns (
-            uint256 shareReservesDelta,
-            uint256 bondReservesDelta,
-            uint256 shareProceeds
-        )
-    {
-        // Calculate the flat part of the trade.
-        shareProceeds = _amountIn
-            .mulDown(FixedPointMath.ONE_18.sub(_normalizedTimeRemaining))
-            .divDown(_sharePrice);
-        // Calculate the curved part of the trade.
-        bondReservesDelta = _amountIn.mulDown(_normalizedTimeRemaining);
+    ) internal pure returns (uint256) {
         // (time remaining)/(term length) is always 1 so we just use _timeStretch
-        shareReservesDelta = YieldSpaceMath.calculateSharesOutGivenBondsIn(
-            _shareReserves,
-            _bondReserves,
-            bondReservesDelta,
-            FixedPointMath.ONE_18.sub(_timeStretch),
-            _sharePrice,
-            _initialSharePrice
-        );
-        shareProceeds += shareReservesDelta;
-        return (shareReservesDelta, bondReservesDelta, shareProceeds);
+        return
+            YieldSpaceMath.calculateSharesOutGivenBondsIn(
+                _shareReserves,
+                _bondReserves,
+                _amountIn,
+                FixedPointMath.ONE_18.sub(_timeStretch),
+                _sharePrice,
+                _initialSharePrice
+            );
     }
 
     /// @dev Calculates the amount of base that a user will receive when closing a short position
@@ -315,7 +276,6 @@ library HyperdriveMath {
             FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
             _sharePrice
         );
-
         bondReservesDelta = _amountOut.mulDown(_normalizedTimeRemaining);
         if (bondReservesDelta > 0) {
             shareReservesDelta = YieldSpaceMath.calculateSharesInGivenBondsOut(
@@ -328,8 +288,6 @@ library HyperdriveMath {
             );
             sharePayment += shareReservesDelta;
         }
-
-        return (shareReservesDelta, bondReservesDelta, sharePayment);
     }
 
     struct PresentValueParams {
@@ -497,7 +455,6 @@ library HyperdriveMath {
                 _openSharePrice.mulUp(_sharePrice)
             );
         }
-        return shareInterest;
     }
 
     /// @dev Calculates the base volume of an open trade given the base amount,

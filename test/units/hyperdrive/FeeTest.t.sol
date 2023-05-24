@@ -165,15 +165,11 @@ contract FeeTest is HyperdriveTest {
         deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18, governance);
         initialize(alice, apr, contribution);
 
-        (
-            uint256 curveFee,
-            uint256 flatFee,
-            uint256 governanceCurveFee,
-            uint256 governanceFlatFee
-        ) = MockHyperdrive(address(hyperdrive)).calculateFeesOutGivenSharesIn(
+        (uint256 curveFee, uint256 governanceCurveFee) = MockHyperdrive(
+            address(hyperdrive)
+        ).calculateFeesOutGivenSharesIn(
                 1 ether, // amountIn
                 1 ether, //amountOut
-                1 ether, // timeRemaining
                 0.5 ether, // spotPrice
                 1 ether // sharePrice
             );
@@ -181,27 +177,6 @@ contract FeeTest is HyperdriveTest {
         // ((1/.5)-1) * .1*1*1*1 = .1
         assertEq(curveFee, .1 ether);
         assertEq(governanceCurveFee, .05 ether);
-
-        assertEq(flatFee, 0 ether);
-        assertEq(governanceFlatFee, 0 ether);
-
-        (
-            curveFee,
-            flatFee,
-            governanceCurveFee,
-            governanceFlatFee
-        ) = MockHyperdrive(address(hyperdrive)).calculateFeesOutGivenSharesIn(
-            1 ether, // amountIn
-            1 ether, // amountOut
-            0, // timeRemaining
-            0.5 ether, // spotPrice
-            1 ether // sharePrice
-        );
-        assertEq(curveFee, 0 ether);
-
-        assertEq(governanceCurveFee, 0 ether);
-        assertEq(flatFee, 0.1 ether);
-        assertEq(governanceFlatFee, 0.05 ether);
     }
 
     function test_calcFeesOutGivenBondsIn() public {

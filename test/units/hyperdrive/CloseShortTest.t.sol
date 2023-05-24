@@ -96,7 +96,7 @@ contract CloseShortTest is HyperdriveTest {
         // Verify that Bob doesn't end up with more base than he started with.
         assertGe(basePaid, baseProceeds);
 
-        // Verify that the close long updates were correct.
+        // Verify that the close short updates were correct.
         verifyCloseShort(
             poolInfoBefore,
             baseProceeds,
@@ -126,7 +126,7 @@ contract CloseShortTest is HyperdriveTest {
         // Verify that Bob doesn't end up with more base than he started with.
         assertGe(basePaid, baseProceeds);
 
-        // Verify that the close long updates were correct.
+        // Verify that the close short updates were correct.
         verifyCloseShort(
             poolInfoBefore,
             baseProceeds,
@@ -189,7 +189,7 @@ contract CloseShortTest is HyperdriveTest {
         // Verify that Bob doesn't receive any base from closing the short.
         assertEq(baseProceeds, 0);
 
-        // Verify that the close long updates were correct.
+        // Verify that the close short updates were correct.
         verifyCloseShort(
             poolInfoBefore,
             baseProceeds,
@@ -222,7 +222,7 @@ contract CloseShortTest is HyperdriveTest {
         // Verify that Bob doesn't receive any base from closing the short.
         assertEq(baseProceeds, 0);
 
-        // Verify that the close long updates were correct.
+        // Verify that the close short updates were correct.
         verifyCloseShort(
             poolInfoBefore,
             baseProceeds,
@@ -255,7 +255,7 @@ contract CloseShortTest is HyperdriveTest {
         // Verify that Bob doesn't receive any base from closing the short.
         assertEq(baseProceeds, 0);
 
-        // Verify that the close long updates were correct.
+        // Verify that the close short updates were correct.
         verifyCloseShort(
             poolInfoBefore,
             baseProceeds,
@@ -394,6 +394,7 @@ contract CloseShortTest is HyperdriveTest {
             hyperdrive,
             maturityTime
         );
+
         if (wasCheckpointed) {
             assertEq(poolInfoAfter.shareReserves, poolInfoBefore.shareReserves);
             assertEq(
