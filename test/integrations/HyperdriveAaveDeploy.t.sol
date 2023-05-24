@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 
 import { IPool } from "@aave/interfaces/IPool.sol";
-import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import { IERC20 } from "../../lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import { AaveHyperdriveDeployer, IPool } from "contracts/src/factory/AaveHyperdriveDeployer.sol";
 import { AaveHyperdriveFactory } from "contracts/src/factory/AaveHyperdriveFactory.sol";
 import { AaveHyperdriveDataProvider } from "contracts/src/instances/AaveHyperdriveDataProvider.sol";

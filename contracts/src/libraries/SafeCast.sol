@@ -3,7 +3,7 @@ pragma solidity >=0.8.0;
 
 /// @notice Safe unsigned integer casting library that reverts on overflow.
 /// @author Modified from Solmate (https://github.com/transmissions11/solmate/blob/main/src/utils/SafeCastLib.sol)
-/// @author Modified from OpenZeppelin (https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/math/SafeCast.sol)
+/// @author Modified from OpenZeppelin (https://github.com/OpenZeppelin/../../lib/openzeppelin-contracts/blob/master/contracts/utils/math/SafeCast.sol)
 library SafeCast {
     function toUint128(uint256 x) internal pure returns (uint128 y) {
         require(x < 1 << 128);
