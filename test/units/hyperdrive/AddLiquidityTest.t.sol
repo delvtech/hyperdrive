@@ -1,14 +1,24 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
+import { VmSafe } from "forge-std/Vm.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol";
+import { Lib } from "../../utils/Lib.sol";
 
 contract AddLiquidityTest is HyperdriveTest {
     using FixedPointMath for uint256;
+    using Lib for *;
+
+    function setUp() public override {
+        super.setUp();
+
+        // Start recording event logs.
+        vm.recordLogs();
+    }
 
     function test_add_liquidity_failure_zero_amount() external {
         uint256 apr = 0.05e18;
@@ -97,6 +107,7 @@ contract AddLiquidityTest is HyperdriveTest {
 
         // Add liquidity with the same amount as the original contribution.
         uint256 lpShares = addLiquidity(bob, contribution);
+        verifyAddLiquidityEvent(bob, lpShares, contribution);
 
         // Ensure that the contribution was transferred to Hyperdrive.
         assertEq(baseToken.balanceOf(bob), 0);
@@ -148,6 +159,7 @@ contract AddLiquidityTest is HyperdriveTest {
         uint256 baseBalanceBefore = baseToken.balanceOf(address(hyperdrive));
         uint256 presentValueRatioBefore = presentValueRatio();
         uint256 bobLpShares = addLiquidity(bob, contribution);
+        verifyAddLiquidityEvent(bob, bobLpShares, contribution);
 
         // Ensure that adding liquidity didn't change Alice's LP share balance.
         assertEq(
@@ -222,6 +234,7 @@ contract AddLiquidityTest is HyperdriveTest {
         uint256 baseBalanceBefore = baseToken.balanceOf(address(hyperdrive));
         uint256 presentValueRatioBefore = presentValueRatio();
         uint256 bobLpShares = addLiquidity(bob, contribution);
+        verifyAddLiquidityEvent(bob, bobLpShares, contribution);
 
         // Ensure that adding liquidity didn't change Alice's LP share balance.
         assertEq(
@@ -296,6 +309,7 @@ contract AddLiquidityTest is HyperdriveTest {
         uint256 baseBalanceBefore = baseToken.balanceOf(address(hyperdrive));
         uint256 presentValueRatioBefore = presentValueRatio();
         uint256 bobLpShares = addLiquidity(bob, contribution);
+        verifyAddLiquidityEvent(bob, bobLpShares, contribution);
 
         // Ensure that adding liquidity didn't change Alice's LP share balance.
         assertEq(
@@ -366,6 +380,7 @@ contract AddLiquidityTest is HyperdriveTest {
         uint256 baseBalanceBefore = baseToken.balanceOf(address(hyperdrive));
         uint256 presentValueRatioBefore = presentValueRatio();
         uint256 bobLpShares = addLiquidity(bob, contribution);
+        verifyAddLiquidityEvent(bob, bobLpShares, contribution);
 
         // Ensure the pool APR hasn't increased after adding liquidity.
         uint256 aprAfter = HyperdriveUtils.calculateAPRFromReserves(hyperdrive);
@@ -401,6 +416,25 @@ contract AddLiquidityTest is HyperdriveTest {
 
         // Ensure that all of the capital has been removed from the system.
         assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1);
+    }
+
+    function verifyAddLiquidityEvent(
+        address provider,
+        uint256 expectedLpShares,
+        uint256 expectedBaseAmount
+    ) internal {
+        VmSafe.Log[] memory logs = vm.getRecordedLogs().filterLogs(
+            AddLiquidity.selector
+        );
+        assertEq(logs.length, 1);
+        VmSafe.Log memory log = logs[0];
+        assertEq(address(uint160(uint256(log.topics[1]))), provider);
+        (uint256 lpShares, uint256 baseAmount) = abi.decode(
+            log.data,
+            (uint256, uint256)
+        );
+        assertEq(lpShares, expectedLpShares);
+        assertEq(baseAmount, expectedBaseAmount);
     }
 
     function presentValueRatio() internal view returns (uint256) {

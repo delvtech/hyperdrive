@@ -2,14 +2,24 @@
 pragma solidity ^0.8.18;
 
 import { stdError } from "forge-std/StdError.sol";
+import { VmSafe } from "forge-std/Vm.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
+import { Lib } from "../../utils/Lib.sol";
 
 contract RemoveLiquidityTest is HyperdriveTest {
     using FixedPointMath for uint256;
+    using Lib for *;
+
+    function setUp() public override {
+        super.setUp();
+
+        // Start recording event logs.
+        vm.recordLogs();
+    }
 
     function test_remove_liquidity_fail_zero_amount() external {
         uint256 apr = 0.05e18;
@@ -51,7 +61,11 @@ contract RemoveLiquidityTest is HyperdriveTest {
         advanceTime(timeAdvanced, int256(apr));
 
         // Alice removes all of her liquidity.
-        (uint256 baseProceeds, ) = removeLiquidity(alice, lpShares);
+        (uint256 baseProceeds, uint256 withdrawalShares) = removeLiquidity(
+            alice,
+            lpShares
+        );
+        verifyRemoveLiquidityEvent(lpShares, baseProceeds, withdrawalShares);
 
         // Ensure that the LP shares were properly accounted for.
         assertEq(hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice), 0);
@@ -111,6 +125,9 @@ contract RemoveLiquidityTest is HyperdriveTest {
         );
         assertEq(baseProceeds, expectedBaseProceeds);
         assertApproxEqAbs(withdrawalShares, expectedWithdrawalShares, 1);
+
+        // Ensure that the correct event was emitted.
+        verifyRemoveLiquidityEvent(lpShares, baseProceeds, withdrawalShares);
 
         // Ensure that the LP shares were properly accounted for.
         assertEq(hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice), 0);
@@ -183,6 +200,9 @@ contract RemoveLiquidityTest is HyperdriveTest {
         assertEq(baseProceeds, expectedBaseProceeds);
         assertEq(withdrawalShares, expectedWithdrawalShares);
 
+        // Ensure that the correct event was emitted.
+        verifyRemoveLiquidityEvent(lpShares, baseProceeds, withdrawalShares);
+
         // Ensure that the LP shares were properly accounted for.
         assertEq(hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice), 0);
         assertEq(hyperdrive.totalSupply(AssetId._LP_ASSET_ID), 0);
@@ -216,6 +236,24 @@ contract RemoveLiquidityTest is HyperdriveTest {
             hyperdrive.balanceOf(AssetId._WITHDRAWAL_SHARE_ASSET_ID, alice),
             expectedWithdrawalShares
         );
+    }
+
+    function verifyRemoveLiquidityEvent(
+        uint256 expectedLpShares,
+        uint256 expectedBaseAmount,
+        uint256 expectedWithdrawalShares
+    ) internal {
+        VmSafe.Log[] memory logs = vm.getRecordedLogs().filterLogs(
+            RemoveLiquidity.selector
+        );
+        assertEq(logs.length, 1);
+        VmSafe.Log memory log = logs[0];
+        assertEq(address(uint160(uint256(log.topics[1]))), alice);
+        (uint256 lpShares, uint256 baseAmount, uint256 withdrawalShares) = abi
+            .decode(log.data, (uint256, uint256, uint256));
+        assertEq(lpShares, expectedLpShares);
+        assertEq(baseAmount, expectedBaseAmount);
+        assertEq(withdrawalShares, expectedWithdrawalShares);
     }
 
     function lpTotalSupply() internal view returns (uint256) {
