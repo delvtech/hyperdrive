@@ -5,12 +5,18 @@ import { IForwarderFactory } from "./interfaces/IForwarderFactory.sol";
 import { IMultiToken } from "./interfaces/IMultiToken.sol";
 import { ERC20Forwarder } from "./ERC20Forwarder.sol";
 
+/// @author DELV
+/// @title ForwarderFactory
+/// @notice Our MultiToken contract consists of fungible sub-tokens that
+///         are similar to ERC20 tokens. In order to support ERC20 compatibility
+///         we can deploy interfaces which are ERC20s.
+/// @dev This factory deploys them using create2 so that the multi token can do
+///      cheap verification of the interfaces before they access sensitive
+///      functions.
+/// @custom:disclaimer The language used in this code is for coding convenience
+///                    only, and is not intended to, and does not, have any
+///                    particular legal or regulatory significance.
 contract ForwarderFactory is IForwarderFactory {
-    // Our multi token contract stores many internal ERC20 like tokens, in order
-    // to maintain ERC20 compatibility we can deploy interfaces which are ERC20s.
-    // This factory deploys them using create2 so that the multi token can do cheap
-    // verification of the interfaces before they access sensitive functions.
-
     // The transient state variables used in deployment
     // Note - It saves us a bit of gas to not fully zero them at any point
     IMultiToken private _token = IMultiToken(address(1));
