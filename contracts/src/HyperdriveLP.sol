@@ -281,7 +281,8 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
     ///         maximum amount of the specified withdrawal shares given the
     ///         amount of withdrawal shares ready to withdraw.
     /// @param _shares The withdrawal shares to redeem.
-    /// @param _minOutput The minimum amount of base the LP expects to receive.
+    /// @param _minOutputPerShare The minimum amount of base the LP expects to
+    ///        receive for each withdrawal share that is burned.
     /// @param _destination The address which receive the withdraw proceeds
     /// @param _asUnderlying If true the user is paid in underlying if false
     ///                      the contract transfers in yield source directly.
@@ -289,7 +290,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
     /// @return _proceeds The amount of base the LP received.
     function redeemWithdrawalShares(
         uint256 _shares,
-        uint256 _minOutput,
+        uint256 _minOutputPerShare,
         address _destination,
         bool _asUnderlying
     ) external returns (uint256 _proceeds) {
@@ -321,8 +322,10 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // Withdraw for the user
         (_proceeds, ) = _withdraw(proceeds, _destination, _asUnderlying);
 
-        // Enforce min user outputs
-        if (_minOutput > _proceeds) revert Errors.OutputLimit();
+        // Enforce the minimum user output for share:
+        //    _minOutputPerShare <= _proceeds / _shares => _minOutputPerShare * _shares <= _proceeds
+        if (_minOutputPerShare.mulDown(_shares) > _proceeds)
+            revert Errors.OutputLimit();
 
         // Emit a RedeemWithdrawalShares event.
         emit RedeemWithdrawalShares(_destination, _shares, _proceeds);
