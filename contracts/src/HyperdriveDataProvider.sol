@@ -110,13 +110,17 @@ abstract contract HyperdriveDataProvider is
         bytes32[] memory loaded = new bytes32[](_slots.length);
 
         // Iterate on requested loads and then do them
-        for (uint256 i = 0; i < _slots.length; i++) {
+        for (uint256 i = 0; i < _slots.length; ) {
             uint256 slot = _slots[i];
             bytes32 data;
             assembly ("memory-safe") {
                 data := sload(slot)
             }
             loaded[i] = data;
+
+            unchecked {
+                ++i;
+            }
         }
 
         _revert(abi.encode(loaded));

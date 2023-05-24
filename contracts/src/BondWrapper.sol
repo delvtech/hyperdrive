@@ -166,8 +166,13 @@ contract BondWrapper is ERC20Permit {
         uint256 amount
     ) external {
         // Cycle through each maturity and sweep
-        for (uint256 i = 0; i < maturityTimes.length; i++) {
+        for (uint256 i = 0; i < maturityTimes.length; ) {
             sweep(maturityTimes[i]);
+
+            unchecked {
+                // Overflowing this with a calldata array of uint256s is impossible in 1 block
+                ++i;
+            }
         }
         redeem(amount);
     }

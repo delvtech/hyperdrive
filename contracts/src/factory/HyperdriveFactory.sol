@@ -167,8 +167,12 @@ abstract contract HyperdriveFactory {
         hyperdrive.initialize(_contribution, _apr, msg.sender, true);
 
         // Setup the pausers roles from the default array
-        for (uint256 i = 0; i < defaultPausers.length; i++) {
+        for (uint256 i = 0; i < defaultPausers.length; ) {
             hyperdrive.setPauser(defaultPausers[i], true);
+
+            unchecked {
+                ++i;
+            }
         }
         // Reset governance to be the default one
         hyperdrive.setGovernance(hyperdriveGovernance);
