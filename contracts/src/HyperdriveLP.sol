@@ -342,11 +342,11 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         if (_shareReservesDelta != 0 && shareReserves > 0) {
             int256 updatedShareReserves = int256(shareReserves) +
                 _shareReservesDelta;
-            _marketState.shareReserves = uint256(
-                // NOTE: There is a 1 wei discrepancy in some of the
-                // calculations which results in this clamping being required.
-                updatedShareReserves >= 0 ? updatedShareReserves : int256(0)
-            ).toUint128();
+            uint128 tmp = 0;
+            if (updatedShareReserves >= 0) {
+                tmp = uint256(updatedShareReserves).toUint128();
+            }
+            _marketState.shareReserves = tmp;
             _marketState.bondReserves = uint256(_marketState.bondReserves)
                 .mulDivDown(_marketState.shareReserves, shareReserves)
                 .toUint128();

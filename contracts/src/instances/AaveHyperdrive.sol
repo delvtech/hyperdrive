@@ -105,9 +105,10 @@ contract AaveHyperdrive is Hyperdrive {
         // avoid reverts.
         shares = shares > totalShares ? totalShares : shares;
         uint256 assets = aToken.balanceOf(address(this));
-        uint256 withdrawValue = assets != 0
-            ? shares.mulDown(assets.divDown(totalShares))
-            : 0;
+        uint256 withdrawValue;
+        if (assets != 0) {
+            assets = shares.mulDown(assets.divDown(totalShares));
+        }
 
         // Remove the shares from the total share supply
         totalShares -= shares;
@@ -122,7 +123,9 @@ contract AaveHyperdrive is Hyperdrive {
         }
 
         // Return the amount and implied share price
-        sharePrice = shares != 0 ? withdrawValue.divDown(shares) : 0;
+        if (shares != 0) {
+            withdrawValue.divDown(shares);
+        }
         return (withdrawValue, sharePrice);
     }
 
@@ -135,7 +138,8 @@ contract AaveHyperdrive is Hyperdrive {
         returns (uint256 sharePrice)
     {
         uint256 assets = aToken.balanceOf(address(this));
-        sharePrice = totalShares != 0 ? assets.divDown(totalShares) : 0;
-        return sharePrice;
+        if (totalShares != 0 ) {
+            sharePrice = assets.divDown(totalShares);
+        }
     }
 }

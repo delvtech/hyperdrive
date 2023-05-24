@@ -315,7 +315,9 @@ contract MultiToken is DataProvider, MultiTokenStorage, IMultiTokenWrite {
         if (signer != owner) revert Errors.InvalidSignature();
 
         // Increment the signature nonce
-        _nonces[owner]++;
+        unchecked {
+            ++_nonces[owner];
+        }
         // set the state
         _isApprovedForAll[owner][spender] = _approved;
         // Emit an event to track approval

@@ -140,7 +140,16 @@ abstract contract HyperdriveDataProvider is
 
         // We search for the greatest timestamp before the last, note this is not
         // an efficient search as we expect the buffer to be small.
-        uint256 currentIndex = head == 0 ? _buffer.length - 1 : head - 1;
+        uint256 currentIndex;
+        if (head == 0) {
+            currentIndex = uint256(_buffer.length) - 1;
+        } else {
+            unchecked {
+                // We've explicitly checked head != 0
+                currentIndex = head - 1;
+            }
+        }
+
         OracleData memory oldData = OracleData(0, 0);
         while (currentIndex != head) {
             // If the timestamp of the current index has older data than the target
@@ -149,9 +158,15 @@ abstract contract HyperdriveDataProvider is
                 oldData = _buffer[currentIndex];
                 break;
             }
-            currentIndex = currentIndex == 0
-                ? _buffer.length - 1
-                : currentIndex - 1;
+
+            if (currentIndex == 0) {
+                currentIndex = uint256(_buffer.length) - 1;
+            } else {
+                unchecked {
+                    // We've explicitly checked currentIndex != 0
+                    --currentIndex;
+                }
+            }
         }
 
         if (oldData.timestamp == 0) revert Errors.QueryOutOfRange();
