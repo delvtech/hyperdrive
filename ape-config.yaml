@@ -7,13 +7,9 @@ dependencies:
   - name: Aave
     github: aave/aave-v3-core
     version: 1.17.2
-  - name: OpenZeppelin
-    github: OpenZeppelin/openzeppelin-contracts
-    version: 4.8.3
 
 solidity:
   import_remapping:
-    - "openzeppelin-contracts=lib/openzeppelin-contracts/"
     - "@aave=Aave/1.17.2"
 
 ethereum:
