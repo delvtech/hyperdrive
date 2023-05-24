@@ -390,11 +390,10 @@ contract CloseShortTest is HyperdriveTest {
         );
 
         // Verify that the other state was updated correctly.
-        uint256 timeRemaining = HyperdriveUtils
-            .calculateTimeRemainingFromLatestCheckpoint(
-                hyperdrive,
-                maturityTime
-            );
+        uint256 timeRemaining = HyperdriveUtils.calculateTimeRemaining(
+            hyperdrive,
+            maturityTime
+        );
 
         if (wasCheckpointed) {
             assertEq(poolInfoAfter.shareReserves, poolInfoBefore.shareReserves);

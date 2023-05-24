@@ -425,9 +425,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // selling the bonds at the market price.
         // NOTE: We calculate the time remaining from the latest checkpoint to ensure that
         // opening/closing a position doesn't result in immediate profit.
-        uint256 timeRemaining = _calculateTimeRemainingFromLatestCheckpoint(
-            _maturityTime
-        );
+        uint256 timeRemaining = _calculateTimeRemaining(_maturityTime);
         uint256 closeSharePrice = block.timestamp < _maturityTime
             ? _sharePrice
             : _checkpoints[_maturityTime].sharePrice;

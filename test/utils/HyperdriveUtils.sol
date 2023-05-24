@@ -22,19 +22,6 @@ library HyperdriveUtils {
         IHyperdrive _hyperdrive,
         uint256 _maturityTime
     ) internal view returns (uint256 timeRemaining) {
-        timeRemaining = _maturityTime > block.timestamp
-            ? _maturityTime - block.timestamp
-            : 0;
-        timeRemaining = (timeRemaining).divDown(
-            _hyperdrive.getPoolConfig().positionDuration
-        );
-        return timeRemaining;
-    }
-
-    function calculateTimeRemainingFromLatestCheckpoint(
-        IHyperdrive _hyperdrive,
-        uint256 _maturityTime
-    ) internal view returns (uint256 timeRemaining) {
         timeRemaining = _maturityTime > latestCheckpoint(_hyperdrive)
             ? _maturityTime - latestCheckpoint(_hyperdrive)
             : 0;

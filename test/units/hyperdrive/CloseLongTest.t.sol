@@ -351,10 +351,7 @@ contract CloseLongTest is HyperdriveTest {
         // held throughout the duration, losing capital
         uint256 matureBonds = bondAmount.mulDown(
             FixedPointMath.ONE_18.sub(
-                HyperdriveUtils.calculateTimeRemainingFromLatestCheckpoint(
-                    hyperdrive,
-                    maturityTime
-                )
+                HyperdriveUtils.calculateTimeRemaining(hyperdrive, maturityTime)
             )
         );
         uint256 bondsValue = matureBonds;
