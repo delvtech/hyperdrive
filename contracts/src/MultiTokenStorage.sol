@@ -26,8 +26,7 @@ contract MultiTokenStorage {
 
     // Additional optional per token approvals
     // Note - non standard for erc1150 but we want to replicate erc20 interface
-    mapping(uint256 => mapping(address => mapping(address => uint256)))
-        internal _perTokenApprovals;
+    mapping(uint256 => mapping(address => mapping(address => uint256))) internal _perTokenApprovals;
 
     // Sub Token Name and Symbol, created by inheriting contracts
     mapping(uint256 => string) internal _name;

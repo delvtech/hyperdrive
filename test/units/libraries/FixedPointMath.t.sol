@@ -8,7 +8,7 @@ import "test/3rdPartyLibs/BalancerErrors.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 
 contract FixedPointMathTest is Test {
-    function setUp() public {}
+    function setUp() public { }
 
     function test_add() public {
         // NOTE: Coverage only works if I initialize the fixture in the test function
@@ -235,36 +235,9 @@ contract FixedPointMathTest is Test {
     function test_updateWeightedAverage() public {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
-        assertEq(
-            mockFixedPointMath.updateWeightedAverage(
-                1e18,
-                1e18,
-                1e18,
-                1e18,
-                true
-            ),
-            1e18
-        );
-        assertEq(
-            mockFixedPointMath.updateWeightedAverage(
-                1e18,
-                1e18,
-                1e18,
-                1e18,
-                false
-            ),
-            0
-        );
-        assertEq(
-            mockFixedPointMath.updateWeightedAverage(
-                1e18,
-                2e18,
-                1e18,
-                1e18,
-                false
-            ),
-            1e18
-        );
+        assertEq(mockFixedPointMath.updateWeightedAverage(1e18, 1e18, 1e18, 1e18, true), 1e18);
+        assertEq(mockFixedPointMath.updateWeightedAverage(1e18, 1e18, 1e18, 1e18, false), 0);
+        assertEq(mockFixedPointMath.updateWeightedAverage(1e18, 2e18, 1e18, 1e18, false), 1e18);
     }
 
     function test_differential_fuzz_pow(uint256 x, uint256 y) public {

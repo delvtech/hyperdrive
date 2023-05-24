@@ -13,9 +13,7 @@ contract MultiTokenTest is BaseTest {
         super.setUp();
         vm.startPrank(deployer);
         forwarderFactory = new ForwarderFactory();
-        address dataProvider = address(
-            new MultiTokenDataProvider(bytes32(0), address(forwarderFactory))
-        );
+        address dataProvider = address(new MultiTokenDataProvider(bytes32(0), address(forwarderFactory)));
         multiToken = IMockMultiToken(
             address(
                 new MockMultiToken(

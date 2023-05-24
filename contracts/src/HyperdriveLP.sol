@@ -26,22 +26,14 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
     /// @param _asUnderlying If true the user is charged in underlying if false
     ///                      the contract transfers in yield source directly.
     ///                      Note - for some paths one choice may be disabled or blocked.
-    function initialize(
-        uint256 _contribution,
-        uint256 _apr,
-        address _destination,
-        bool _asUnderlying
-    ) external {
+    function initialize(uint256 _contribution, uint256 _apr, address _destination, bool _asUnderlying) external {
         // Ensure that the pool hasn't been initialized yet.
         if (_marketState.isInitialized) {
             revert Errors.PoolAlreadyInitialized();
         }
 
         // Deposit for the user, this transfers from them.
-        (uint256 shares, uint256 sharePrice) = _deposit(
-            _contribution,
-            _asUnderlying
-        );
+        (uint256 shares, uint256 sharePrice) = _deposit(_contribution, _asUnderlying);
 
         // Create an initial checkpoint.
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
@@ -52,19 +44,11 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // Update the reserves. The bond reserves are calculated so that the
         // pool is initialized with the target APR.
         _marketState.shareReserves = shares.toUint128();
-        uint256 unadjustedBondReserves = HyperdriveMath
-            .calculateInitialBondReserves(
-                shares,
-                sharePrice,
-                _initialSharePrice,
-                _apr,
-                _positionDuration,
-                _timeStretch
-            );
-        uint256 initialLpShares = unadjustedBondReserves +
-            sharePrice.mulDown(shares);
-        _marketState.bondReserves = (unadjustedBondReserves + initialLpShares)
-            .toUint128();
+        uint256 unadjustedBondReserves = HyperdriveMath.calculateInitialBondReserves(
+            shares, sharePrice, _initialSharePrice, _apr, _positionDuration, _timeStretch
+        );
+        uint256 initialLpShares = unadjustedBondReserves + sharePrice.mulDown(shares);
+        _marketState.bondReserves = (unadjustedBondReserves + initialLpShares).toUint128();
 
         // Mint LP shares to the initializer.
         _mint(AssetId._LP_ASSET_ID, _destination, initialLpShares);
@@ -95,19 +79,12 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
 
         // Enforce the slippage guard.
         uint256 apr = HyperdriveMath.calculateAPRFromReserves(
-            _marketState.shareReserves,
-            _marketState.bondReserves,
-            _initialSharePrice,
-            _positionDuration,
-            _timeStretch
+            _marketState.shareReserves, _marketState.bondReserves, _initialSharePrice, _positionDuration, _timeStretch
         );
         if (apr < _minApr || apr > _maxApr) revert Errors.InvalidApr();
 
         // Deposit for the user, this call also transfers from them
-        (uint256 shares, uint256 sharePrice) = _deposit(
-            _contribution,
-            _asUnderlying
-        );
+        (uint256 shares, uint256 sharePrice) = _deposit(_contribution, _asUnderlying);
 
         // Perform a checkpoint.
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
@@ -117,40 +94,31 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // the pool and the withdrawal shares have all been paid out. We don't
         // need to check for this case because the share and bond reserves will
         // be zero, which will cause several function calls to fail.
-        uint256 withdrawalSharesOutstanding = _totalSupply[
-            AssetId._WITHDRAWAL_SHARE_ASSET_ID
-        ] - _withdrawPool.readyToWithdraw;
-        uint256 lpTotalSupply = _totalSupply[AssetId._LP_ASSET_ID] +
-            withdrawalSharesOutstanding;
+        uint256 withdrawalSharesOutstanding =
+            _totalSupply[AssetId._WITHDRAWAL_SHARE_ASSET_ID] - _withdrawPool.readyToWithdraw;
+        uint256 lpTotalSupply = _totalSupply[AssetId._LP_ASSET_ID] + withdrawalSharesOutstanding;
 
         // Calculate the number of LP shares to mint.
         uint256 endingPresentValue;
         {
             // Calculate the present value before updating the reserves.
-            HyperdriveMath.PresentValueParams memory params = HyperdriveMath
-                .PresentValueParams({
-                    shareReserves: _marketState.shareReserves,
-                    bondReserves: _marketState.bondReserves,
-                    sharePrice: sharePrice,
-                    initialSharePrice: _initialSharePrice,
-                    timeStretch: _timeStretch,
-                    longsOutstanding: _marketState.longsOutstanding,
-                    longAverageTimeRemaining: _calculateTimeRemaining(
-                        uint256(_marketState.longAverageMaturityTime).divUp(
-                            1e36
-                        ) // scale to seconds
-                    ),
-                    shortsOutstanding: _marketState.shortsOutstanding,
-                    shortAverageTimeRemaining: _calculateTimeRemaining(
-                        uint256(_marketState.shortAverageMaturityTime).divUp(
-                            1e36
-                        ) // scale to seconds
-                    ),
-                    shortBaseVolume: _marketState.shortBaseVolume
-                });
-            uint256 startingPresentValue = HyperdriveMath.calculatePresentValue(
-                params
-            );
+            HyperdriveMath.PresentValueParams memory params = HyperdriveMath.PresentValueParams({
+                shareReserves: _marketState.shareReserves,
+                bondReserves: _marketState.bondReserves,
+                sharePrice: sharePrice,
+                initialSharePrice: _initialSharePrice,
+                timeStretch: _timeStretch,
+                longsOutstanding: _marketState.longsOutstanding,
+                longAverageTimeRemaining: _calculateTimeRemaining(
+                    uint256(_marketState.longAverageMaturityTime).divUp(1e36) // scale to seconds
+                ),
+                shortsOutstanding: _marketState.shortsOutstanding,
+                shortAverageTimeRemaining: _calculateTimeRemaining(
+                    uint256(_marketState.shortAverageMaturityTime).divUp(1e36) // scale to seconds
+                ),
+                shortBaseVolume: _marketState.shortBaseVolume
+            });
+            uint256 startingPresentValue = HyperdriveMath.calculatePresentValue(params);
 
             // Add the liquidity to the pool's reserves and calculate the new
             // present value.
@@ -165,10 +133,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             // adding liquidity.This is given by:
             //
             // PV0 / l0 = PV1 / (l0 + dl) => dl = ((PV1 - PV0) * l0) / PV0
-            lpShares = (endingPresentValue - startingPresentValue).mulDivDown(
-                lpTotalSupply,
-                startingPresentValue
-            );
+            lpShares = (endingPresentValue - startingPresentValue).mulDivDown(lpTotalSupply, startingPresentValue);
         }
 
         // By maintaining the ratio of present value to total LP shares, we may
@@ -176,20 +141,12 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // LPs. In this case, we pay out the proportional amount to the
         // withdrawal pool so that the withdrawal shares receive a corresponding
         // bump in their "idle" capital.
-        uint256 currentValue = lpShares.mulDivDown(
-            endingPresentValue,
-            lpTotalSupply + lpShares
-        );
+        uint256 currentValue = lpShares.mulDivDown(endingPresentValue, lpTotalSupply + lpShares);
         if (withdrawalSharesOutstanding > 0 && shares > currentValue) {
-            uint256 withdrawalPoolProceeds = (shares - currentValue).mulDivDown(
-                withdrawalSharesOutstanding,
-                lpTotalSupply
-            );
+            uint256 withdrawalPoolProceeds =
+                (shares - currentValue).mulDivDown(withdrawalSharesOutstanding, lpTotalSupply);
             _compensateWithdrawalPool(
-                withdrawalPoolProceeds,
-                endingPresentValue,
-                lpTotalSupply + lpShares,
-                withdrawalSharesOutstanding
+                withdrawalPoolProceeds, endingPresentValue, lpTotalSupply + lpShares, withdrawalSharesOutstanding
             );
         }
 
@@ -212,12 +169,10 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
     ///                      Note - for some paths one choice may be disabled or blocked.
     /// @return Returns the base out, the lond withdraw shares out and the short withdraw
     ///         shares out.
-    function removeLiquidity(
-        uint256 _shares,
-        uint256 _minOutput,
-        address _destination,
-        bool _asUnderlying
-    ) external returns (uint256, uint256) {
+    function removeLiquidity(uint256 _shares, uint256 _minOutput, address _destination, bool _asUnderlying)
+        external
+        returns (uint256, uint256)
+    {
         if (_shares == 0) {
             revert Errors.ZeroAmount();
         }
@@ -228,50 +183,27 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
 
         // Burn the LP shares.
         uint256 totalActiveLpSupply = _totalSupply[AssetId._LP_ASSET_ID];
-        uint256 withdrawalSharesOutstanding = _totalSupply[
-            AssetId._WITHDRAWAL_SHARE_ASSET_ID
-        ] - _withdrawPool.readyToWithdraw;
-        uint256 totalLpSupply = totalActiveLpSupply +
-            withdrawalSharesOutstanding;
+        uint256 withdrawalSharesOutstanding =
+            _totalSupply[AssetId._WITHDRAWAL_SHARE_ASSET_ID] - _withdrawPool.readyToWithdraw;
+        uint256 totalLpSupply = totalActiveLpSupply + withdrawalSharesOutstanding;
         _burn(AssetId._LP_ASSET_ID, msg.sender, _shares);
 
         // Remove the liquidity from the pool.
-        (
-            uint256 shareProceeds,
-            uint256 withdrawalShares
-        ) = _applyRemoveLiquidity(
-                _shares,
-                sharePrice,
-                totalLpSupply,
-                totalActiveLpSupply,
-                withdrawalSharesOutstanding
-            );
+        (uint256 shareProceeds, uint256 withdrawalShares) =
+            _applyRemoveLiquidity(_shares, sharePrice, totalLpSupply, totalActiveLpSupply, withdrawalSharesOutstanding);
 
         // Mint the withdrawal shares to the LP.
-        _mint(
-            AssetId._WITHDRAWAL_SHARE_ASSET_ID,
-            _destination,
-            withdrawalShares
-        );
+        _mint(AssetId._WITHDRAWAL_SHARE_ASSET_ID, _destination, withdrawalShares);
 
         // Withdraw the shares from the yield source.
-        (uint256 baseProceeds, ) = _withdraw(
-            shareProceeds,
-            _destination,
-            _asUnderlying
-        );
+        (uint256 baseProceeds,) = _withdraw(shareProceeds, _destination, _asUnderlying);
 
         // Enforce min user outputs
         if (_minOutput > baseProceeds) revert Errors.OutputLimit();
 
         // Emit a RemoveLiquidity event.
         uint256 shares = _shares;
-        emit RemoveLiquidity(
-            _destination,
-            shares,
-            baseProceeds,
-            uint256(withdrawalShares)
-        );
+        emit RemoveLiquidity(_destination, shares, baseProceeds, uint256(withdrawalShares));
 
         return (baseProceeds, uint256(withdrawalShares));
     }
@@ -287,12 +219,10 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
     ///                      the contract transfers in yield source directly.
     ///                      Note - for some paths one choice may be disabled or blocked.
     /// @return _proceeds The amount of base the LP received.
-    function redeemWithdrawalShares(
-        uint256 _shares,
-        uint256 _minOutput,
-        address _destination,
-        bool _asUnderlying
-    ) external returns (uint256 _proceeds) {
+    function redeemWithdrawalShares(uint256 _shares, uint256 _minOutput, address _destination, bool _asUnderlying)
+        external
+        returns (uint256 _proceeds)
+    {
         // Perform a checkpoint.
         uint256 sharePrice = _pricePerShare();
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
@@ -300,26 +230,21 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // Clamp the shares to the total amount of shares ready for withdrawal
         // to avoid unnecessary reverts. We exit early if the user has no shares
         // available to redeem.
-        _shares = _shares <= _withdrawPool.readyToWithdraw
-            ? _shares
-            : _withdrawPool.readyToWithdraw;
+        _shares = _shares <= _withdrawPool.readyToWithdraw ? _shares : _withdrawPool.readyToWithdraw;
         if (_shares == 0) return 0;
 
         // We burn the shares from the user
         _burn(AssetId._WITHDRAWAL_SHARE_ASSET_ID, msg.sender, _shares);
 
         // The LP gets the pro-rata amount of the collected proceeds.
-        uint256 proceeds = _shares.mulDivDown(
-            uint128(_withdrawPool.proceeds),
-            uint128(_withdrawPool.readyToWithdraw)
-        );
+        uint256 proceeds = _shares.mulDivDown(uint128(_withdrawPool.proceeds), uint128(_withdrawPool.readyToWithdraw));
 
         // Apply the update to the withdrawal pool.
         _withdrawPool.readyToWithdraw -= uint128(_shares);
         _withdrawPool.proceeds -= uint128(proceeds);
 
         // Withdraw for the user
-        (_proceeds, ) = _withdraw(proceeds, _destination, _asUnderlying);
+        (_proceeds,) = _withdraw(proceeds, _destination, _asUnderlying);
 
         // Enforce min user outputs
         if (_minOutput > _proceeds) revert Errors.OutputLimit();
@@ -340,16 +265,13 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // share reserves to bond reserves.
         uint256 shareReserves = _marketState.shareReserves;
         if (_shareReservesDelta != 0 && shareReserves > 0) {
-            int256 updatedShareReserves = int256(shareReserves) +
-                _shareReservesDelta;
-            _marketState.shareReserves = uint256(
+            int256 updatedShareReserves = int256(shareReserves) + _shareReservesDelta;
+            _marketState.shareReserves = uint256(updatedShareReserves >= 0 ? updatedShareReserves : int256(0))
                 // NOTE: There is a 1 wei discrepancy in some of the
                 // calculations which results in this clamping being required.
-                updatedShareReserves >= 0 ? updatedShareReserves : int256(0)
-            ).toUint128();
-            _marketState.bondReserves = uint256(_marketState.bondReserves)
-                .mulDivDown(_marketState.shareReserves, shareReserves)
                 .toUint128();
+            _marketState.bondReserves =
+                uint256(_marketState.bondReserves).mulDivDown(_marketState.shareReserves, shareReserves).toUint128();
         }
     }
 
@@ -371,26 +293,23 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         uint256 _withdrawalSharesOutstanding
     ) internal returns (uint256 shareProceeds, uint256) {
         // Calculate the starting present value of the pool.
-        HyperdriveMath.PresentValueParams memory params = HyperdriveMath
-            .PresentValueParams({
-                shareReserves: _marketState.shareReserves,
-                bondReserves: _marketState.bondReserves,
-                sharePrice: _sharePrice,
-                initialSharePrice: _initialSharePrice,
-                timeStretch: _timeStretch,
-                longsOutstanding: _marketState.longsOutstanding,
-                longAverageTimeRemaining: _calculateTimeRemaining(
-                    uint256(_marketState.longAverageMaturityTime).divUp(1e36) // scale to seconds
-                ),
-                shortsOutstanding: _marketState.shortsOutstanding,
-                shortAverageTimeRemaining: _calculateTimeRemaining(
-                    uint256(_marketState.shortAverageMaturityTime).divUp(1e36) // scale to seconds
-                ),
-                shortBaseVolume: _marketState.shortBaseVolume
-            });
-        uint256 startingPresentValue = HyperdriveMath.calculatePresentValue(
-            params
-        );
+        HyperdriveMath.PresentValueParams memory params = HyperdriveMath.PresentValueParams({
+            shareReserves: _marketState.shareReserves,
+            bondReserves: _marketState.bondReserves,
+            sharePrice: _sharePrice,
+            initialSharePrice: _initialSharePrice,
+            timeStretch: _timeStretch,
+            longsOutstanding: _marketState.longsOutstanding,
+            longAverageTimeRemaining: _calculateTimeRemaining(
+                uint256(_marketState.longAverageMaturityTime).divUp(1e36) // scale to seconds
+            ),
+            shortsOutstanding: _marketState.shortsOutstanding,
+            shortAverageTimeRemaining: _calculateTimeRemaining(
+                uint256(_marketState.shortAverageMaturityTime).divUp(1e36) // scale to seconds
+            ),
+            shortBaseVolume: _marketState.shortBaseVolume
+        });
+        uint256 startingPresentValue = HyperdriveMath.calculatePresentValue(params);
 
         // The LP is given their share of the idle capital in the pool. This
         // is removed from the pool's reserves and paid out immediately. We use
@@ -401,38 +320,27 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // idle = (z - (o_l / c_0)) * (dl / l_a)
         shareProceeds = _marketState.shareReserves;
         if (_marketState.longsOutstanding > 0) {
-            shareProceeds -= uint256(_marketState.longsOutstanding).divDown(
-                _marketState.longOpenSharePrice
-            );
+            shareProceeds -= uint256(_marketState.longsOutstanding).divDown(_marketState.longOpenSharePrice);
         }
         shareProceeds = shareProceeds.mulDivDown(_shares, _totalActiveLpSupply);
         _updateLiquidity(-int256(shareProceeds));
         params.shareReserves = _marketState.shareReserves;
         params.bondReserves = _marketState.bondReserves;
-        uint256 endingPresentValue = HyperdriveMath.calculatePresentValue(
-            params
-        );
+        uint256 endingPresentValue = HyperdriveMath.calculatePresentValue(params);
 
         // Calculate the amount of withdrawal shares that should be minted. We
         // solve for this value by solving the present value equation as
         // follows:
         //
         // PV0 / l0 = PV1 / (l0 - dl + dw) => dw = (PV1 / PV0) * l0 - (l0 - dl)
-        int256 withdrawalShares = int256(
-            _totalLpSupply.mulDivDown(endingPresentValue, startingPresentValue)
-        );
+        int256 withdrawalShares = int256(_totalLpSupply.mulDivDown(endingPresentValue, startingPresentValue));
         withdrawalShares -= int256(_totalLpSupply) - int256(_shares);
         if (withdrawalShares < 0) {
             // We backtrack by calculating the amount of the idle that should
             // be returned to the pool using the original present value ratio.
-            uint256 overestimatedProceeds = uint256(-withdrawalShares)
-                .mulDivDown(startingPresentValue, _totalLpSupply);
+            uint256 overestimatedProceeds = uint256(-withdrawalShares).mulDivDown(startingPresentValue, _totalLpSupply);
             _updateLiquidity(int256(overestimatedProceeds));
-            _applyWithdrawalProceeds(
-                overestimatedProceeds,
-                _withdrawalSharesOutstanding,
-                _sharePrice
-            );
+            _applyWithdrawalProceeds(overestimatedProceeds, _withdrawalSharesOutstanding, _sharePrice);
             withdrawalShares = 0;
         }
 
@@ -468,14 +376,8 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
                 shortBaseVolume: _marketState.shortBaseVolume
             })
         );
-        uint256 lpTotalSupply = _totalSupply[AssetId._LP_ASSET_ID] +
-            _withdrawalSharesOutstanding;
-        _compensateWithdrawalPool(
-            _withdrawalProceeds,
-            presentValue,
-            lpTotalSupply,
-            _withdrawalSharesOutstanding
-        );
+        uint256 lpTotalSupply = _totalSupply[AssetId._LP_ASSET_ID] + _withdrawalSharesOutstanding;
+        _compensateWithdrawalPool(_withdrawalProceeds, presentValue, lpTotalSupply, _withdrawalSharesOutstanding);
     }
 
     /// @dev Pays out a specified amount of withdrawal proceeds to the
@@ -501,9 +403,8 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // In the event that all of the LPs have removed their liquidity and the
         // remaining positions hit maturity, all of the withdrawal shares are
         // marked as ready to withdraw.
-        uint256 maxSharesReleased = _presentValue > 0
-            ? _withdrawalProceeds.mulDivDown(_lpTotalSupply, _presentValue)
-            : _lpTotalSupply;
+        uint256 maxSharesReleased =
+            _presentValue > 0 ? _withdrawalProceeds.mulDivDown(_lpTotalSupply, _presentValue) : _lpTotalSupply;
         if (maxSharesReleased == 0) return;
 
         // Calculate the amount of withdrawal shares that will be released and
@@ -513,10 +414,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         uint256 withdrawalPoolProceeds = _withdrawalProceeds;
         if (maxSharesReleased > _withdrawalSharesOutstanding) {
             sharesReleased = _withdrawalSharesOutstanding;
-            withdrawalPoolProceeds = _withdrawalProceeds.mulDivDown(
-                sharesReleased,
-                maxSharesReleased
-            );
+            withdrawalPoolProceeds = _withdrawalProceeds.mulDivDown(sharesReleased, maxSharesReleased);
         }
         _withdrawPool.readyToWithdraw += uint128(sharesReleased);
         _withdrawPool.proceeds += uint128(withdrawalPoolProceeds);

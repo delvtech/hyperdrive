@@ -94,14 +94,7 @@ contract OpenLongTest is HyperdriveTest {
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, baseAmount);
 
         // Verify that the open long updated the state correctly.
-        verifyOpenLong(
-            poolInfoBefore,
-            contribution,
-            baseAmount,
-            bondAmount,
-            maturityTime,
-            apr
-        );
+        verifyOpenLong(poolInfoBefore, contribution, baseAmount, bondAmount, maturityTime, apr);
     }
 
     function test_open_long_with_small_amount() external {
@@ -115,18 +108,11 @@ contract OpenLongTest is HyperdriveTest {
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
 
         // Purchase a small amount of bonds.
-        uint256 baseAmount = .01e18;
+        uint256 baseAmount = 0.01e18;
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, baseAmount);
 
         // Verify that the open long updated the state correctly.
-        verifyOpenLong(
-            poolInfoBefore,
-            contribution,
-            baseAmount,
-            bondAmount,
-            maturityTime,
-            apr
-        );
+        verifyOpenLong(poolInfoBefore, contribution, baseAmount, bondAmount, maturityTime, apr);
     }
 
     function verifyOpenLong(
@@ -140,51 +126,29 @@ contract OpenLongTest is HyperdriveTest {
         // Ensure that one `OpenLong` event was emitted with the correct
         // arguments.
         {
-            VmSafe.Log[] memory logs = vm.getRecordedLogs().filterLogs(
-                OpenLong.selector
-            );
+            VmSafe.Log[] memory logs = vm.getRecordedLogs().filterLogs(OpenLong.selector);
             assertEq(logs.length, 1);
             VmSafe.Log memory log = logs[0];
             assertEq(address(uint160(uint256(log.topics[1]))), bob);
-            (
-                uint256 eventMaturityTime,
-                uint256 eventBaseAmount,
-                uint256 eventBondAmount
-            ) = abi.decode(log.data, (uint256, uint256, uint256));
+            (uint256 eventMaturityTime, uint256 eventBaseAmount, uint256 eventBondAmount) =
+                abi.decode(log.data, (uint256, uint256, uint256));
             assertEq(eventMaturityTime, maturityTime);
             assertEq(eventBaseAmount, baseAmount);
             assertEq(eventBondAmount, bondAmount);
         }
 
         // Verify that the open long updated the state correctly.
-        _verifyOpenLong(
-            bob,
-            poolInfoBefore,
-            contribution,
-            baseAmount,
-            bondAmount,
-            maturityTime,
-            apr
-        );
+        _verifyOpenLong(bob, poolInfoBefore, contribution, baseAmount, bondAmount, maturityTime, apr);
 
         // Deploy and initialize a new pool with fees.
         deploy(alice, apr, 0.1e18, 0.1e18, 0, governance);
         initialize(alice, apr, contribution);
 
         // Open a long with fees.
-        IHyperdrive.PoolInfo memory poolInfoBeforeWithFees = hyperdrive
-            .getPoolInfo();
+        IHyperdrive.PoolInfo memory poolInfoBeforeWithFees = hyperdrive.getPoolInfo();
         (, uint256 bondAmountWithFees) = openLong(celine, baseAmount);
 
-        _verifyOpenLong(
-            celine,
-            poolInfoBeforeWithFees,
-            contribution,
-            baseAmount,
-            bondAmountWithFees,
-            maturityTime,
-            apr
-        );
+        _verifyOpenLong(celine, poolInfoBeforeWithFees, contribution, baseAmount, bondAmountWithFees, maturityTime, apr);
 
         // let's manually check that the fees are collected appropriately
         // curve fee = ((1 / p) - 1) * phi * c * d_z * t
@@ -192,19 +156,14 @@ contract OpenLongTest is HyperdriveTest {
         // roughly ((1/.9523 - 1) * .1) * 10e18 * 1 = 5e16, or 10% of the 5% bond - base spread.
         uint256 p = (uint256(1 ether)).divDown(1 ether + 0.05 ether);
         uint256 phi = hyperdrive.getPoolConfig().fees.curve;
-        uint256 curveFeeAmount = (uint256(1 ether).divDown(p) - 1 ether)
-            .mulDown(phi)
-            .mulDown(baseAmount);
+        uint256 curveFeeAmount = (uint256(1 ether).divDown(p) - 1 ether).mulDown(phi).mulDown(baseAmount);
 
-        IHyperdrive.PoolInfo memory poolInfoAfterWithFees = hyperdrive
-            .getPoolInfo();
+        IHyperdrive.PoolInfo memory poolInfoAfterWithFees = hyperdrive.getPoolInfo();
 
         // bondAmount is from the hyperdrive without the curve fee
         assertApproxEqAbs(
             poolInfoAfterWithFees.longsOutstanding,
-            poolInfoBeforeWithFees.longsOutstanding +
-                bondAmount -
-                curveFeeAmount,
+            poolInfoBeforeWithFees.longsOutstanding + bondAmount - curveFeeAmount,
             10
         );
     }
@@ -222,17 +181,11 @@ contract OpenLongTest is HyperdriveTest {
 
         // Verify the base transfers.
         assertEq(baseToken.balanceOf(user), 0);
-        assertEq(
-            baseToken.balanceOf(address(hyperdrive)),
-            contribution + baseAmount
-        );
+        assertEq(baseToken.balanceOf(address(hyperdrive)), contribution + baseAmount);
 
         // Verify that opening a long doesn't make the APR go up.
-        uint256 realizedApr = HyperdriveUtils.calculateAPRFromRealizedPrice(
-            baseAmount,
-            bondAmount,
-            FixedPointMath.ONE_18
-        );
+        uint256 realizedApr =
+            HyperdriveUtils.calculateAPRFromRealizedPrice(baseAmount, bondAmount, FixedPointMath.ONE_18);
         assertGt(apr, realizedApr);
 
         // Ensure that the state changes to the share reserves were applied
@@ -240,17 +193,11 @@ contract OpenLongTest is HyperdriveTest {
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
 
         assertEq(
-            poolInfoAfter.shareReserves,
-            poolInfoBefore.shareReserves +
-                baseAmount.divDown(poolInfoBefore.sharePrice)
+            poolInfoAfter.shareReserves, poolInfoBefore.shareReserves + baseAmount.divDown(poolInfoBefore.sharePrice)
         );
         assertEq(poolInfoAfter.lpTotalSupply, poolInfoBefore.lpTotalSupply);
         assertEq(poolInfoAfter.sharePrice, poolInfoBefore.sharePrice);
-        assertApproxEqAbs(
-            poolInfoAfter.longsOutstanding,
-            poolInfoBefore.longsOutstanding + bondAmount,
-            10
-        );
+        assertApproxEqAbs(poolInfoAfter.longsOutstanding, poolInfoBefore.longsOutstanding + bondAmount, 10);
 
         // Ensure that the bond reserves were updated to have the correct APR.
         // Due to the way that the flat part of the trade is applied, the bond
@@ -271,18 +218,9 @@ contract OpenLongTest is HyperdriveTest {
 
         // TODO: This problem gets much worse as the baseAmount to open a long gets smaller.
         // Figure out a solution to this.
-        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
-            checkpointTime
-        );
-        assertApproxEqAbs(
-            poolInfoAfter.longAverageMaturityTime,
-            maturityTime * 1e18,
-            1
-        );
-        assertEq(
-            poolInfoAfter.shortsOutstanding,
-            poolInfoBefore.shortsOutstanding
-        );
+        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(checkpointTime);
+        assertApproxEqAbs(poolInfoAfter.longAverageMaturityTime, maturityTime * 1e18, 1);
+        assertEq(poolInfoAfter.shortsOutstanding, poolInfoBefore.shortsOutstanding);
         assertEq(poolInfoAfter.shortAverageMaturityTime, 0);
         assertEq(poolInfoAfter.shortBaseVolume, 0);
         assertEq(checkpoint.shortBaseVolume, 0);

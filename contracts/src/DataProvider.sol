@@ -26,9 +26,7 @@ contract DataProvider {
         // Delegatecall into the data provider. We use a force-revert
         // delegatecall pattern to ensure that no state changes were made
         // during the call to the data provider.
-        (bool success, bytes memory returndata) = dataProvider.delegatecall(
-            _data
-        );
+        (bool success, bytes memory returndata) = dataProvider.delegatecall(_data);
         if (success) {
             revert Errors.UnexpectedSuccess();
         }

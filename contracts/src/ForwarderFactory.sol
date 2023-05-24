@@ -17,10 +17,9 @@ contract ForwarderFactory is IForwarderFactory {
     uint256 private _tokenId = 1;
 
     // For reference
-    bytes32 public constant ERC20LINK_HASH =
-        keccak256(type(ERC20Forwarder).creationCode);
+    bytes32 public constant ERC20LINK_HASH = keccak256(type(ERC20Forwarder).creationCode);
 
-    constructor() {} // solhint-disable-line no-empty-blocks
+    constructor() { } // solhint-disable-line no-empty-blocks
 
     /// @notice Uses create2 to deploy a forwarder at a predictable address as part of
     ///         our ERC20 multitoken implementation.
@@ -28,10 +27,7 @@ contract ForwarderFactory is IForwarderFactory {
     /// @param tokenId The id of the sub token from the multitoken which we are creating
     ///                 an interface for.
     /// @return returns the address of the deployed forwarder
-    function create(
-        IMultiToken token,
-        uint256 tokenId
-    ) external returns (ERC20Forwarder) {
+    function create(IMultiToken token, uint256 tokenId) external returns (ERC20Forwarder) {
         // Set the transient state variables before deploy
         _tokenId = tokenId;
         _token = token;
@@ -58,15 +54,10 @@ contract ForwarderFactory is IForwarderFactory {
     /// @param token The multitoken which the forwarder should link to
     /// @param tokenId The id of the sub token from the multitoken
     /// @return The expected address of the forwarder
-    function getForwarder(
-        IMultiToken token,
-        uint256 tokenId
-    ) public view returns (address) {
+    function getForwarder(IMultiToken token, uint256 tokenId) public view returns (address) {
         // Get the salt and hash to predict the address
         bytes32 salt = keccak256(abi.encode(token, tokenId));
-        bytes32 addressBytes = keccak256(
-            abi.encodePacked(bytes1(0xff), address(this), salt, ERC20LINK_HASH)
-        );
+        bytes32 addressBytes = keccak256(abi.encodePacked(bytes1(0xff), address(this), salt, ERC20LINK_HASH));
         // Beautiful type safety from the solidity language
         return address(uint160(uint256(addressBytes)));
     }

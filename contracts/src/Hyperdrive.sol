@@ -18,11 +18,7 @@ import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract Hyperdrive is
-    HyperdriveBase,
-    HyperdriveLong,
-    HyperdriveShort
-{
+abstract contract Hyperdrive is HyperdriveBase, HyperdriveLong, HyperdriveShort {
     using FixedPointMath for uint256;
     using SafeCast for uint256;
 
@@ -38,7 +34,7 @@ abstract contract Hyperdrive is
         address _dataProvider,
         bytes32 _linkerCodeHash,
         address _linkerFactory
-    ) HyperdriveBase(_config, _dataProvider, _linkerCodeHash, _linkerFactory) {} // solhint-disable-line no-empty-blocks
+    ) HyperdriveBase(_config, _dataProvider, _linkerCodeHash, _linkerFactory) { } // solhint-disable-line no-empty-blocks
 
     /// @notice Allows anyone to mint a new checkpoint.
     /// @param _checkpointTime The time of the checkpoint to create.
@@ -52,10 +48,7 @@ abstract contract Hyperdrive is
         // or is in the future, it's an invalid checkpoint and we should
         // revert.
         uint256 latestCheckpoint = _latestCheckpoint();
-        if (
-            _checkpointTime % _checkpointDuration != 0 ||
-            latestCheckpoint < _checkpointTime
-        ) {
+        if (_checkpointTime % _checkpointDuration != 0 || latestCheckpoint < _checkpointTime) {
             revert Errors.InvalidCheckpointTime();
         }
 
@@ -65,11 +58,7 @@ abstract contract Hyperdrive is
         if (_checkpointTime == latestCheckpoint) {
             _applyCheckpoint(latestCheckpoint, _pricePerShare());
         } else {
-            for (
-                uint256 time = _checkpointTime;
-                ;
-                time += _checkpointDuration
-            ) {
+            for (uint256 time = _checkpointTime;; time += _checkpointDuration) {
                 uint256 closestSharePrice = _checkpoints[time].sharePrice;
                 if (time == latestCheckpoint) {
                     closestSharePrice = _pricePerShare();
@@ -86,15 +75,13 @@ abstract contract Hyperdrive is
     /// @param _checkpointTime The time of the checkpoint to create.
     /// @param _sharePrice The current share price.
     /// @return openSharePrice The open share price of the latest checkpoint.
-    function _applyCheckpoint(
-        uint256 _checkpointTime,
-        uint256 _sharePrice
-    ) internal override returns (uint256 openSharePrice) {
+    function _applyCheckpoint(uint256 _checkpointTime, uint256 _sharePrice)
+        internal
+        override
+        returns (uint256 openSharePrice)
+    {
         // Return early if the checkpoint has already been updated.
-        if (
-            _checkpoints[_checkpointTime].sharePrice != 0 ||
-            _checkpointTime > block.timestamp
-        ) {
+        if (_checkpoints[_checkpointTime].sharePrice != 0 || _checkpointTime > block.timestamp) {
             return _checkpoints[_checkpointTime].sharePrice;
         }
 
@@ -102,32 +89,18 @@ abstract contract Hyperdrive is
         _checkpoints[_checkpointTime].sharePrice = _sharePrice.toUint128();
 
         // Pay out the long withdrawal pool for longs that have matured.
-        uint256 maturedLongsAmount = _totalSupply[
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _checkpointTime)
-        ];
+        uint256 maturedLongsAmount = _totalSupply[AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _checkpointTime)];
         if (maturedLongsAmount > 0) {
             _applyCloseLong(
-                maturedLongsAmount,
-                0,
-                maturedLongsAmount.divDown(_sharePrice),
-                0,
-                _checkpointTime,
-                _sharePrice
+                maturedLongsAmount, 0, maturedLongsAmount.divDown(_sharePrice), 0, _checkpointTime, _sharePrice
             );
         }
 
         // Pay out the short withdrawal pool for shorts that have matured.
-        uint256 maturedShortsAmount = _totalSupply[
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _checkpointTime)
-        ];
+        uint256 maturedShortsAmount = _totalSupply[AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _checkpointTime)];
         if (maturedShortsAmount > 0) {
             _applyCloseShort(
-                maturedShortsAmount,
-                0,
-                maturedShortsAmount.divDown(_sharePrice),
-                0,
-                _checkpointTime,
-                _sharePrice
+                maturedShortsAmount, 0, maturedShortsAmount.divDown(_sharePrice), 0, _checkpointTime, _sharePrice
             );
         }
 

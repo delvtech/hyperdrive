@@ -18,8 +18,7 @@ contract HyperdriveDSRTest is HyperdriveTest {
 
     DsrHyperdriveFactory factory;
     IERC20 dai = IERC20(address(0x6B175474E89094C44Da98b954EedeAC495271d0F));
-    DsrManager manager =
-        DsrManager(address(0x373238337Bfe1146fb49989fc222523f83081dDb));
+    DsrManager manager = DsrManager(address(0x373238337Bfe1146fb49989fc222523f83081dDb));
 
     function setUp() public override __mainnet_fork(16_685_972) {
         vm.startPrank(deployer);
@@ -66,9 +65,7 @@ contract HyperdriveDSRTest is HyperdriveTest {
             initialSharePrice: FixedPointMath.ONE_18,
             positionDuration: 365 days,
             checkpointDuration: 1 days,
-            timeStretch: FixedPointMath.ONE_18.divDown(
-                22.186877016851916266e18
-            ),
+            timeStretch: FixedPointMath.ONE_18.divDown(22.186877016851916266e18),
             governance: address(0),
             feeCollector: address(0),
             fees: IHyperdrive.Fees(0, 0, 0),
@@ -87,10 +84,7 @@ contract HyperdriveDSRTest is HyperdriveTest {
 
         // The initial price per share is one so we should have that the
         // shares in the alice account are 1
-        uint256 createdShares = hyperdrive.balanceOf(
-            AssetId._LP_ASSET_ID,
-            alice
-        );
+        uint256 createdShares = hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice);
         assertEq(createdShares, 2808790684246250377500);
     }
 }

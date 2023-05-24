@@ -17,7 +17,7 @@ import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 contract __MockHyperDrive__ {
     uint256 __closeLongReturnValue__;
 
-    constructor() {}
+    constructor() { }
 
     event __CloseLong__(
         uint256 indexed _maturityTime,
@@ -34,13 +34,7 @@ contract __MockHyperDrive__ {
         address _destination,
         bool _asUnderlying
     ) external returns (uint256) {
-        emit __CloseLong__(
-            _maturityTime,
-            _bondAmount,
-            _minOutput,
-            _destination,
-            _asUnderlying
-        );
+        emit __CloseLong__(_maturityTime, _bondAmount, _minOutput, _destination, _asUnderlying);
         return __closeLongReturnValue__;
     }
 
@@ -132,19 +126,10 @@ contract BondWrapper_close is CombinatorialTest {
             address user = alice;
 
             // Encoding the assetId as it's easier to reference
-            uint256 assetId = AssetId.encodeAssetId(
-                AssetId.AssetIdPrefix.Long,
-                maturityTime
-            );
-            uint256 mintedFromBonds = amount.mulDivDown(
-                rawTestCases[i][5],
-                10000
-            );
-            uint256 userFunds = andBurn
-                ? receivedAmount
-                : receivedAmount < mintedFromBonds
-                ? 0
-                : (receivedAmount - mintedFromBonds);
+            uint256 assetId = AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime);
+            uint256 mintedFromBonds = amount.mulDivDown(rawTestCases[i][5], 10000);
+            uint256 userFunds =
+                andBurn ? receivedAmount : receivedAmount < mintedFromBonds ? 0 : (receivedAmount - mintedFromBonds);
 
             TestCase memory testCase = TestCase({
                 index: i,
@@ -167,10 +152,7 @@ contract BondWrapper_close is CombinatorialTest {
             __fail(testCase);
             __success(testCase);
         }
-        console2.log(
-            "###- %s test cases passed for BondWrapper.close() -###",
-            rawTestCases.length
-        );
+        console2.log("###- %s test cases passed for BondWrapper.close() -###", rawTestCases.length);
     }
 
     function __setup(TestCase memory testCase) internal __combinatorial_setup {
@@ -187,17 +169,10 @@ contract BondWrapper_close is CombinatorialTest {
         vm.startPrank(testCase.user);
 
         bondWrapper.setBalanceOf(testCase.user, testCase.userMintAmount);
-        bondWrapper.setDeposits(
-            testCase.user,
-            testCase.assetId,
-            testCase.userDeposit
-        );
+        bondWrapper.setDeposits(testCase.user, testCase.assetId, testCase.userDeposit);
 
         // Mint bondWrapper underlying user is to receive
-        baseToken.burn(
-            address(bondWrapper),
-            baseToken.balanceOf(address(bondWrapper))
-        );
+        baseToken.burn(address(bondWrapper), baseToken.balanceOf(address(bondWrapper)));
         baseToken.mint(address(bondWrapper), testCase.bondWrapperBase);
 
         hyperdrive.__setCloseLongReturnValue__(testCase.receivedAmount);
@@ -209,46 +184,29 @@ contract BondWrapper_close is CombinatorialTest {
     function __fail(TestCase memory testCase) internal __combinatorial_fail {
         // Received amount of underlying must be at least some bps increase than
         // the amount specified
-        bool unbackedPosition = testCase.receivedAmount <
-            testCase.mintedFromBonds;
+        bool unbackedPosition = testCase.receivedAmount < testCase.mintedFromBonds;
         // If amount of user's bond deposits is less than the amount specified
         // the transaction will underflow
         bool userDepositUnderflow = testCase.userDeposit < testCase.amount;
         // Will underflow if balance of wrapped bonds user has is less than the
         // amount burned
-        bool userWrappedBondUnderflow = testCase.andBurn &&
-            testCase.userMintAmount < testCase.mintedFromBonds;
+        bool userWrappedBondUnderflow = testCase.andBurn && testCase.userMintAmount < testCase.mintedFromBonds;
         // Should fail to transfer if amount of base on contract does not exist
         // for the user to redeem
-        bool baseTokenTransferWillFail = !unbackedPosition &&
-            testCase.bondWrapperBase < testCase.userFunds;
+        bool baseTokenTransferWillFail = !unbackedPosition && testCase.bondWrapperBase < testCase.userFunds;
 
         if (userDepositUnderflow) {
             __fail_error = stdError.arithmeticError;
         } else if (unbackedPosition) {
-            __fail_error = abi.encodeWithSelector(
-                Errors.InsufficientPrice.selector
-            );
+            __fail_error = abi.encodeWithSelector(Errors.InsufficientPrice.selector);
         } else if (userWrappedBondUnderflow) {
             __fail_error = stdError.arithmeticError;
         } else if (baseTokenTransferWillFail) {
             __fail_error = bytes("ERC20: transfer amount exceeds balance");
         }
 
-        if (
-            unbackedPosition ||
-            userDepositUnderflow ||
-            userWrappedBondUnderflow ||
-            baseTokenTransferWillFail
-        ) {
-            try
-                bondWrapper.close(
-                    testCase.maturityTime,
-                    testCase.amount,
-                    testCase.andBurn,
-                    testCase.destination
-                )
-            {
+        if (unbackedPosition || userDepositUnderflow || userWrappedBondUnderflow || baseTokenTransferWillFail) {
+            try bondWrapper.close(testCase.maturityTime, testCase.amount, testCase.andBurn, testCase.destination) {
                 __log(unicode"❎", testCase);
                 revert ExpectedFail();
             } catch Error(string memory reason) {
@@ -271,30 +229,16 @@ contract BondWrapper_close is CombinatorialTest {
 
     event Transfer(address indexed from, address indexed to, uint256 value);
 
-    function __success(
-        TestCase memory testCase
-    ) internal __combinatorial_success {
+    function __success(TestCase memory testCase) internal __combinatorial_success {
         // There are two code paths which calls hyperdrive.closeLong(),
         // dependent on whether the long is matured. In the case it has all
         // longs (of that assetId) are closed. In the case it hasn't matured
         // just the users longs are expected to be closed.
         vm.expectEmit(true, true, true, true);
         if (testCase.maturityTime > testCase.blockTimestamp) {
-            emit __CloseLong__(
-                testCase.maturityTime,
-                testCase.amount,
-                0,
-                address(bondWrapper),
-                true
-            );
+            emit __CloseLong__(testCase.maturityTime, testCase.amount, 0, address(bondWrapper), true);
         } else {
-            emit __CloseLong__(
-                testCase.maturityTime,
-                1,
-                1,
-                address(bondWrapper),
-                true
-            );
+            emit __CloseLong__(testCase.maturityTime, 1, 1, address(bondWrapper), true);
         }
 
         // A users wrapped long tokens should be burned if they specify to do so
@@ -305,33 +249,16 @@ contract BondWrapper_close is CombinatorialTest {
 
         // Some amount of baseToken should be sent to the user
         vm.expectEmit(true, true, true, true);
-        emit Transfer(
-            address(bondWrapper),
-            testCase.destination,
-            testCase.userFunds
-        );
+        emit Transfer(address(bondWrapper), testCase.destination, testCase.userFunds);
 
         // Caching balances prior to executing transaction for differentials
-        uint256 userDeposit = bondWrapper.deposits(
-            testCase.user,
-            testCase.assetId
-        );
+        uint256 userDeposit = bondWrapper.deposits(testCase.user, testCase.assetId);
         uint256 userWrappedBondBalance = bondWrapper.balanceOf(testCase.user);
-        uint256 bondWrapperBaseBalance = baseToken.balanceOf(
-            address(bondWrapper)
-        );
-        uint256 destinationBaseBalance = baseToken.balanceOf(
-            address(testCase.destination)
-        );
+        uint256 bondWrapperBaseBalance = baseToken.balanceOf(address(bondWrapper));
+        uint256 destinationBaseBalance = baseToken.balanceOf(address(testCase.destination));
 
-        try
-            bondWrapper.close(
-                testCase.maturityTime,
-                testCase.amount,
-                testCase.andBurn,
-                testCase.destination
-            )
-        {} catch {
+        try bondWrapper.close(testCase.maturityTime, testCase.amount, testCase.andBurn, testCase.destination) { }
+        catch {
             __log(unicode"❎", testCase);
             revert ExpectedSuccess();
         }
@@ -339,24 +266,16 @@ contract BondWrapper_close is CombinatorialTest {
         // The bondWrapper contract records deposits of bonds per user. It is
         // expected for this to decrease by the amount of bonds passed to the
         // function
-        uint256 userDepositDiff = userDeposit -
-            bondWrapper.deposits(testCase.user, testCase.assetId);
+        uint256 userDepositDiff = userDeposit - bondWrapper.deposits(testCase.user, testCase.assetId);
         if (userDepositDiff != testCase.amount) {
             __log(unicode"❎", testCase);
-            assertEq(
-                userDepositDiff,
-                testCase.amount,
-                "expect user bond deposits to have decreased by amount"
-            );
+            assertEq(userDepositDiff, testCase.amount, "expect user bond deposits to have decreased by amount");
         }
 
         // The users wrapped bonds balance should decrease by the wrapped bonds
         // value of amount provided they have specified to burn those tokens
-        uint256 userWrappedBondDiff = userWrappedBondBalance -
-            bondWrapper.balanceOf(testCase.user);
-        if (
-            testCase.andBurn && userWrappedBondDiff != testCase.mintedFromBonds
-        ) {
+        uint256 userWrappedBondDiff = userWrappedBondBalance - bondWrapper.balanceOf(testCase.user);
+        if (testCase.andBurn && userWrappedBondDiff != testCase.mintedFromBonds) {
             __log(unicode"❎", testCase);
             assertEq(
                 userWrappedBondDiff,
@@ -367,36 +286,24 @@ contract BondWrapper_close is CombinatorialTest {
 
         // Should expect an amount of base to be transferred from the bond
         // wrapper contract
-        uint256 bondWrapperBaseDiff = bondWrapperBaseBalance -
-            baseToken.balanceOf(address(bondWrapper));
+        uint256 bondWrapperBaseDiff = bondWrapperBaseBalance - baseToken.balanceOf(address(bondWrapper));
         if (bondWrapperBaseDiff != testCase.userFunds) {
             __log(unicode"❎", testCase);
             assertEq(
-                bondWrapperBaseDiff,
-                testCase.userFunds,
-                "expect bond wrapper balance of base tokens to have decreased"
+                bondWrapperBaseDiff, testCase.userFunds, "expect bond wrapper balance of base tokens to have decreased"
             );
         }
 
         // Should expect an amount of base to be transferred to the destination
         // specified by the user
-        uint256 destinationBaseDiff = baseToken.balanceOf(
-            address(testCase.destination)
-        ) - destinationBaseBalance;
+        uint256 destinationBaseDiff = baseToken.balanceOf(address(testCase.destination)) - destinationBaseBalance;
         if (destinationBaseDiff != testCase.userFunds) {
             __log(unicode"❎", testCase);
-            assertEq(
-                destinationBaseDiff,
-                testCase.userFunds,
-                "expect destination to have received base tokens"
-            );
+            assertEq(destinationBaseDiff, testCase.userFunds, "expect destination to have received base tokens");
         }
     }
 
-    function __log(
-        string memory prelude,
-        TestCase memory testCase
-    ) internal view {
+    function __log(string memory prelude, TestCase memory testCase) internal view {
         console2.log("");
         console2.log("%s Fail :: { TestCase #%s }\n", prelude, testCase.index);
         console2.log("\tmaturityTime           = ", testCase.maturityTime);

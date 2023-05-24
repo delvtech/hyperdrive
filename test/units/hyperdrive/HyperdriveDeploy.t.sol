@@ -12,9 +12,7 @@ import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeploye
 
 contract HyperdriveFactoryTest is HyperdriveTest {
     function test_hyperdrive_factory_admin_functions() external {
-        DsrManager manager = DsrManager(
-            address(0x373238337Bfe1146fb49989fc222523f83081dDb)
-        );
+        DsrManager manager = DsrManager(address(0x373238337Bfe1146fb49989fc222523f83081dDb));
 
         DsrHyperdriveDeployer simpleDeployer = new DsrHyperdriveDeployer(
             manager

@@ -22,9 +22,7 @@ contract BondWrapper_mint is CombinatorialTest {
     function setUp() public override {
         super.setUp();
         vm.startPrank(deployer);
-        address dataProvider = address(
-            new MultiTokenDataProvider(bytes32(0), address(forwarderFactory))
-        );
+        address dataProvider = address(new MultiTokenDataProvider(bytes32(0), address(forwarderFactory)));
         multiToken = IMockMultiToken(
             address(
                 new MockMultiToken(
@@ -75,25 +73,14 @@ contract BondWrapper_mint is CombinatorialTest {
 
         // Iterate through every test case combination and check if they __fail/__success
         for (uint256 i = 0; i < rawTestCases.length; i++) {
-            address destination = rawTestCases[i][2] == 0
-                ? alice
-                : rawTestCases[i][2] == 1
-                ? bob
-                : celine;
-            address user = rawTestCases[i][6] == 0
-                ? alice
-                : rawTestCases[i][6] == 1
-                ? dan
-                : eve;
+            address destination = rawTestCases[i][2] == 0 ? alice : rawTestCases[i][2] == 1 ? bob : celine;
+            address user = rawTestCases[i][6] == 0 ? alice : rawTestCases[i][6] == 1 ? dan : eve;
             // We use offsets for time context
             uint256 maturityTime = __init__ + rawTestCases[i][0];
             uint256 blockTimestamp = __init__ + rawTestCases[i][3];
 
             // Encoding the assetId as it's easier to reference
-            uint256 assetId = AssetId.encodeAssetId(
-                AssetId.AssetIdPrefix.Long,
-                maturityTime
-            );
+            uint256 assetId = AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime);
 
             TestCase memory testCase = TestCase({
                 index: i,
@@ -111,10 +98,7 @@ contract BondWrapper_mint is CombinatorialTest {
             __success(testCase);
         }
 
-        console2.log(
-            "###- %s test cases passed for BondWrapper.mint() -###",
-            rawTestCases.length
-        );
+        console2.log("###- %s test cases passed for BondWrapper.mint() -###", rawTestCases.length);
     }
 
     function __setup(TestCase memory testCase) internal __combinatorial_setup {
@@ -131,11 +115,7 @@ contract BondWrapper_mint is CombinatorialTest {
         vm.warp(testCase.blockTimestamp);
 
         // Set balance of unwrapped bonds
-        multiToken.__setBalanceOf(
-            testCase.assetId,
-            testCase.user,
-            testCase.unwrappedBonds
-        );
+        multiToken.__setBalanceOf(testCase.assetId, testCase.user, testCase.unwrappedBonds);
 
         // Ensure that the bondWrapper contract has been approved by the user
         vm.stopPrank();
@@ -151,9 +131,8 @@ contract BondWrapper_mint is CombinatorialTest {
         bool notEnoughBonds = testCase.unwrappedBonds < testCase.amount;
 
         // Ludicrous overflow case when amount * mintPercent > 2^256
-        bool mintAmountOverflow = testCase.mintPercent == 0
-            ? false
-            : type(uint256).max / testCase.mintPercent < testCase.amount;
+        bool mintAmountOverflow =
+            testCase.mintPercent == 0 ? false : type(uint256).max / testCase.mintPercent < testCase.amount;
 
         if (bondHasMatured) {
             __fail_error = abi.encodeWithSelector(Errors.BondMatured.selector);
@@ -162,13 +141,7 @@ contract BondWrapper_mint is CombinatorialTest {
         }
 
         if (bondHasMatured || notEnoughBonds || mintAmountOverflow) {
-            try
-                bondWrapper.mint(
-                    testCase.maturityTime,
-                    testCase.amount,
-                    testCase.destination
-                )
-            {
+            try bondWrapper.mint(testCase.maturityTime, testCase.amount, testCase.destination) {
                 __log(unicode"❎", testCase);
                 revert ExpectedFail();
             } catch (bytes memory e) {
@@ -179,53 +152,29 @@ contract BondWrapper_mint is CombinatorialTest {
         }
     }
 
-    function __success(
-        TestCase memory testCase
-    ) internal __combinatorial_success {
-        uint256 userUnwrappedBondBalance = multiToken.balanceOf(
-            testCase.assetId,
-            testCase.user
-        );
-        uint256 bondWrapperUnwrappedBondBalance = multiToken.balanceOf(
-            testCase.assetId,
-            address(bondWrapper)
-        );
+    function __success(TestCase memory testCase) internal __combinatorial_success {
+        uint256 userUnwrappedBondBalance = multiToken.balanceOf(testCase.assetId, testCase.user);
+        uint256 bondWrapperUnwrappedBondBalance = multiToken.balanceOf(testCase.assetId, address(bondWrapper));
 
-        uint256 destinationBondBalance = bondWrapper.balanceOf(
-            testCase.destination
-        );
+        uint256 destinationBondBalance = bondWrapper.balanceOf(testCase.destination);
 
-        uint256 destinationDeposits = bondWrapper.deposits(
-            testCase.destination,
-            testCase.assetId
-        );
+        uint256 destinationDeposits = bondWrapper.deposits(testCase.destination, testCase.assetId);
 
-        try
-            bondWrapper.mint(
-                testCase.maturityTime,
-                testCase.amount,
-                testCase.destination
-            )
-        {} catch {
+        try bondWrapper.mint(testCase.maturityTime, testCase.amount, testCase.destination) { }
+        catch {
             __log(unicode"❎", testCase);
             revert ExpectedSuccess();
         }
 
-        uint256 userUnwrappedBondBalanceDiff = userUnwrappedBondBalance -
-            multiToken.balanceOf(testCase.assetId, testCase.user);
+        uint256 userUnwrappedBondBalanceDiff =
+            userUnwrappedBondBalance - multiToken.balanceOf(testCase.assetId, testCase.user);
         if (userUnwrappedBondBalanceDiff != testCase.amount) {
             __log(unicode"❎", testCase);
-            assertEq(
-                userUnwrappedBondBalanceDiff,
-                testCase.amount,
-                "expect user to have less multitoken bonds"
-            );
+            assertEq(userUnwrappedBondBalanceDiff, testCase.amount, "expect user to have less multitoken bonds");
         }
 
-        uint256 bondWrapperUnwrappedBondBalanceDiff = multiToken.balanceOf(
-            testCase.assetId,
-            address(bondWrapper)
-        ) - bondWrapperUnwrappedBondBalance;
+        uint256 bondWrapperUnwrappedBondBalanceDiff =
+            multiToken.balanceOf(testCase.assetId, address(bondWrapper)) - bondWrapperUnwrappedBondBalance;
         if (bondWrapperUnwrappedBondBalanceDiff != testCase.amount) {
             __log(unicode"❎", testCase);
             assertEq(
@@ -235,13 +184,8 @@ contract BondWrapper_mint is CombinatorialTest {
             );
         }
 
-        uint256 destinationBondBalanceDiff = bondWrapper.balanceOf(
-            testCase.destination
-        ) - destinationBondBalance;
-        if (
-            destinationBondBalanceDiff !=
-            ((testCase.amount * testCase.mintPercent) / 10000)
-        ) {
+        uint256 destinationBondBalanceDiff = bondWrapper.balanceOf(testCase.destination) - destinationBondBalance;
+        if (destinationBondBalanceDiff != ((testCase.amount * testCase.mintPercent) / 10000)) {
             __log(unicode"❎", testCase);
             assertEq(
                 destinationBondBalanceDiff,
@@ -250,25 +194,16 @@ contract BondWrapper_mint is CombinatorialTest {
             );
         }
 
-        uint256 destinationDepositDiff = bondWrapper.deposits(
-            testCase.destination,
-            testCase.assetId
-        ) - destinationDeposits;
+        uint256 destinationDepositDiff =
+            bondWrapper.deposits(testCase.destination, testCase.assetId) - destinationDeposits;
 
         if (destinationDepositDiff != testCase.amount) {
             __log(unicode"❎", testCase);
-            assertEq(
-                destinationDepositDiff,
-                testCase.amount,
-                "expect user deposits to have been tracked"
-            );
+            assertEq(destinationDepositDiff, testCase.amount, "expect user deposits to have been tracked");
         }
     }
 
-    function __log(
-        string memory prelude,
-        TestCase memory testCase
-    ) internal view {
+    function __log(string memory prelude, TestCase memory testCase) internal view {
         console2.log("");
         console2.log("%s Fail :: { TestCase #%s }\n", prelude, testCase.index);
         console2.log("\tmaturityTime           = ", testCase.maturityTime);

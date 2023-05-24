@@ -51,20 +51,17 @@ contract AaveHyperdrive is Hyperdrive {
     ///                     if false it will transfer the yielding asset directly
     ///@return sharesMinted The shares this deposit creates
     ///@return sharePrice The share price at time of deposit
-    function _deposit(
-        uint256 amount,
-        bool asUnderlying
-    ) internal override returns (uint256 sharesMinted, uint256 sharePrice) {
+    function _deposit(uint256 amount, bool asUnderlying)
+        internal
+        override
+        returns (uint256 sharesMinted, uint256 sharePrice)
+    {
         // Load the balance of this pool
         uint256 assets = aToken.balanceOf(address(this));
 
         if (asUnderlying) {
             // Transfer from user
-            bool success = _baseToken.transferFrom(
-                msg.sender,
-                address(this),
-                amount
-            );
+            bool success = _baseToken.transferFrom(msg.sender, address(this), amount);
             if (!success) {
                 revert Errors.TransferFailed();
             }
@@ -93,11 +90,11 @@ contract AaveHyperdrive is Hyperdrive {
     ///@param destination The address which is where to send the resulting tokens
     ///@return amountWithdrawn the amount of 'token' produced by this withdraw
     ///@return sharePrice The share price on withdraw.
-    function _withdraw(
-        uint256 shares,
-        address destination,
-        bool asUnderlying
-    ) internal override returns (uint256 amountWithdrawn, uint256 sharePrice) {
+    function _withdraw(uint256 shares, address destination, bool asUnderlying)
+        internal
+        override
+        returns (uint256 amountWithdrawn, uint256 sharePrice)
+    {
         // The withdrawer receives a proportional amount of the assets held by
         // the contract to the amount of shares that they are redeeming. Small
         // numerical errors can result in the shares value being slightly larger
@@ -105,9 +102,7 @@ contract AaveHyperdrive is Hyperdrive {
         // avoid reverts.
         shares = shares > totalShares ? totalShares : shares;
         uint256 assets = aToken.balanceOf(address(this));
-        uint256 withdrawValue = assets != 0
-            ? shares.mulDown(assets.divDown(totalShares))
-            : 0;
+        uint256 withdrawValue = assets != 0 ? shares.mulDown(assets.divDown(totalShares)) : 0;
 
         // Remove the shares from the total share supply
         totalShares -= shares;
@@ -128,12 +123,7 @@ contract AaveHyperdrive is Hyperdrive {
 
     ///@notice Loads the share price from the yield source.
     ///@return sharePrice The current share price.
-    function _pricePerShare()
-        internal
-        view
-        override
-        returns (uint256 sharePrice)
-    {
+    function _pricePerShare() internal view override returns (uint256 sharePrice) {
         uint256 assets = aToken.balanceOf(address(this));
         sharePrice = totalShares != 0 ? assets.divDown(totalShares) : 0;
         return sharePrice;

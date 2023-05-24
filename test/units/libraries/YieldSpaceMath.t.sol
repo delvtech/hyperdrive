@@ -11,9 +11,7 @@ contract YieldSpaceMathTest is Test {
     function test__calculateOutGivenIn() public {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockYieldSpaceMath yieldSpaceMath = new MockYieldSpaceMath();
-        uint256 timeStretch = FixedPointMath.ONE_18.divDown(
-            22.186877016851916266e18
-        );
+        uint256 timeStretch = FixedPointMath.ONE_18.divDown(22.186877016851916266e18);
         // test small amount of shares in
         uint256 result1 = yieldSpaceMath.calculateBondsOutGivenSharesIn(
             100000e18, // shareReserves
@@ -66,9 +64,7 @@ contract YieldSpaceMathTest is Test {
     // calculateInGivenOut false
     function test__calculateSharesInGivenBondsOut() public {
         MockYieldSpaceMath yieldSpaceMath = new MockYieldSpaceMath();
-        uint256 timeStretch = FixedPointMath.ONE_18.divDown(
-            22.186877016851916266e18
-        );
+        uint256 timeStretch = FixedPointMath.ONE_18.divDown(22.186877016851916266e18);
         // test small amount of shares in
         uint256 result1 = yieldSpaceMath.calculateBondsInGivenSharesOut(
             100000e18, // shareReserves

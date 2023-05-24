@@ -9,10 +9,7 @@ import { Errors } from "../libraries/Errors.sol";
 import { Pot, DsrManager } from "../interfaces/IMaker.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 
-contract DsrHyperdriveDataProvider is
-    MultiTokenDataProvider,
-    HyperdriveDataProvider
-{
+contract DsrHyperdriveDataProvider is MultiTokenDataProvider, HyperdriveDataProvider {
     using FixedPointMath for uint256;
 
     // @notice The shares created by this pool, starts at 1 to one with
@@ -38,10 +35,7 @@ contract DsrHyperdriveDataProvider is
         bytes32 _linkerCodeHash_,
         address _factory_,
         DsrManager _dsrManager_
-    )
-        HyperdriveDataProvider(_config)
-        MultiTokenDataProvider(_linkerCodeHash_, _factory_)
-    {
+    ) HyperdriveDataProvider(_config) MultiTokenDataProvider(_linkerCodeHash_, _factory_) {
         _dsrManager = _dsrManager_;
         _pot = Pot(_dsrManager_.pot());
     }
@@ -70,12 +64,7 @@ contract DsrHyperdriveDataProvider is
 
     /// @notice Loads the share price from the yield source.
     /// @return sharePrice The current share price.
-    function _pricePerShare()
-        internal
-        view
-        override
-        returns (uint256 sharePrice)
-    {
+    function _pricePerShare() internal view override returns (uint256 sharePrice) {
         // The normalized DAI amount owned by this contract
         uint256 pie = _dsrManager.pieOf(address(this));
         // Load the balance of this contract
@@ -103,58 +92,35 @@ contract DsrHyperdriveDataProvider is
         // Annualized interest rate
         uint256 dsr = _pot.dsr();
         // Calibrates the rate accumulator to current time
-        return
-            (block.timestamp > rho)
-                ? _rpow(dsr, block.timestamp - rho, RAY).mulDivDown(_chi, RAY)
-                : _chi;
+        return (block.timestamp > rho) ? _rpow(dsr, block.timestamp - rho, RAY).mulDivDown(_chi, RAY) : _chi;
     }
 
     /// @notice Taken from https://github.com/makerdao/dss/blob/master/src/pot.sol#L85
     /// @return z
-    function _rpow(uint x, uint n, uint base) internal pure returns (uint z) {
+    function _rpow(uint256 x, uint256 n, uint256 base) internal pure returns (uint256 z) {
         assembly ("memory-safe") {
             switch x
             case 0 {
                 switch n
-                case 0 {
-                    z := base
-                }
-                default {
-                    z := 0
-                }
+                case 0 { z := base }
+                default { z := 0 }
             }
             default {
                 switch mod(n, 2)
-                case 0 {
-                    z := base
-                }
-                default {
-                    z := x
-                }
+                case 0 { z := base }
+                default { z := x }
                 let half := div(base, 2) // for rounding.
-                for {
-                    n := div(n, 2)
-                } n {
-                    n := div(n, 2)
-                } {
+                for { n := div(n, 2) } n { n := div(n, 2) } {
                     let xx := mul(x, x)
-                    if iszero(eq(div(xx, x), x)) {
-                        revert(0, 0)
-                    }
+                    if iszero(eq(div(xx, x), x)) { revert(0, 0) }
                     let xxRound := add(xx, half)
-                    if lt(xxRound, xx) {
-                        revert(0, 0)
-                    }
+                    if lt(xxRound, xx) { revert(0, 0) }
                     x := div(xxRound, base)
                     if mod(n, 2) {
                         let zx := mul(z, x)
-                        if and(iszero(iszero(x)), iszero(eq(div(zx, x), z))) {
-                            revert(0, 0)
-                        }
+                        if and(iszero(iszero(x)), iszero(eq(div(zx, x), z))) { revert(0, 0) }
                         let zxRound := add(zx, half)
-                        if lt(zxRound, zx) {
-                            revert(0, 0)
-                        }
+                        if lt(zxRound, zx) { revert(0, 0) }
                         z := div(zxRound, base)
                     }
                 }

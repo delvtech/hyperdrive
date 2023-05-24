@@ -37,36 +37,24 @@ contract PresentValueTest is HyperdriveTest {
     function test_present_value_example() internal {
         uint256 lpShares = initialize(alice, 0.02e18, 500_000_000e18);
 
-        console.log(
-            "    presentValue: %s",
-            HyperdriveUtils.presentValue(hyperdrive).toString(18)
-        );
+        console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
 
         // Time advances and value accrues.
         advanceTime(POSITION_DURATION, 0.2e18);
 
-        console.log(
-            "    presentValue: %s",
-            HyperdriveUtils.presentValue(hyperdrive).toString(18)
-        );
+        console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
 
         // Open and close a short
         console.log("open and close a short - dt = 0");
         {
             // Open a short position.
             uint256 shortAmount = 10_000_000e18;
-            (uint256 maturityTime, ) = openShort(alice, shortAmount);
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            (uint256 maturityTime,) = openShort(alice, shortAmount);
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
 
             // Close the short position.
             closeShort(alice, maturityTime, shortAmount);
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
         }
 
         // Open and close a long
@@ -74,21 +62,12 @@ contract PresentValueTest is HyperdriveTest {
         {
             // Open a long position.
             uint256 longPaid = 10_000_000e18;
-            (uint256 maturityTime, uint256 longAmount) = openLong(
-                alice,
-                longPaid
-            );
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            (uint256 maturityTime, uint256 longAmount) = openLong(alice, longPaid);
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
 
             // Close the long position.
             closeLong(alice, maturityTime, longAmount);
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
         }
 
         // Open a long and a short
@@ -96,36 +75,21 @@ contract PresentValueTest is HyperdriveTest {
         {
             // Open a long position.
             uint256 longPaid = 10_000_000e18;
-            (uint256 longMaturityTime, uint256 longAmount) = openLong(
-                alice,
-                longPaid
-            );
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            (uint256 longMaturityTime, uint256 longAmount) = openLong(alice, longPaid);
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
 
             // Open a short position.
             uint256 shortAmount = 10_000_000e18;
-            (uint256 shortMaturityTime, ) = openShort(alice, shortAmount);
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            (uint256 shortMaturityTime,) = openShort(alice, shortAmount);
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
 
             // Close the long position.
             closeLong(alice, longMaturityTime, longAmount);
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
 
             // Close the short position.
             closeShort(alice, shortMaturityTime, shortAmount);
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
         }
 
         // Open a long and close after some time
@@ -133,28 +97,16 @@ contract PresentValueTest is HyperdriveTest {
         {
             // Open a long position.
             uint256 longPaid = 10_000_000e18;
-            (uint256 maturityTime, uint256 longAmount) = openLong(
-                alice,
-                longPaid
-            );
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            (uint256 maturityTime, uint256 longAmount) = openLong(alice, longPaid);
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
 
             // Advance time.
             advanceTime(POSITION_DURATION / 2, 0.2e18);
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
 
             // Close the long position.
             closeLong(alice, maturityTime, longAmount);
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
         }
 
         // Open a long and close after some time
@@ -162,25 +114,16 @@ contract PresentValueTest is HyperdriveTest {
         {
             // Open a short position.
             uint256 shortAmount = 10_000_000e18;
-            (uint256 maturityTime, ) = openShort(alice, shortAmount);
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            (uint256 maturityTime,) = openShort(alice, shortAmount);
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
 
             // Advance time.
             advanceTime(POSITION_DURATION / 2, 0.2e18);
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
 
             // Close the short position.
             closeShort(alice, maturityTime, shortAmount);
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
         }
 
         // Open a long and a short and close after some time
@@ -188,43 +131,25 @@ contract PresentValueTest is HyperdriveTest {
         {
             // Open a long position.
             uint256 longPaid = 10_000_000e18;
-            (uint256 longMaturityTime, uint256 longAmount) = openLong(
-                alice,
-                longPaid
-            );
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            (uint256 longMaturityTime, uint256 longAmount) = openLong(alice, longPaid);
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
 
             // Open a short position.
             uint256 shortAmount = 10_000_000e18;
-            (uint256 maturityTime, ) = openShort(alice, shortAmount);
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            (uint256 maturityTime,) = openShort(alice, shortAmount);
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
 
             // Advance time.
             advanceTime(POSITION_DURATION / 2, 0.2e18);
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
 
             // Close the short position.
             closeShort(alice, maturityTime, shortAmount);
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
 
             // Close the long position.
             closeLong(alice, longMaturityTime, longAmount);
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
         }
 
         // Open a long and a short and close after some time
@@ -232,50 +157,29 @@ contract PresentValueTest is HyperdriveTest {
         {
             // Open a long position.
             uint256 longPaid = 10_000_000e18;
-            (uint256 longMaturityTime, uint256 longAmount) = openLong(
-                alice,
-                longPaid
-            );
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            (uint256 longMaturityTime, uint256 longAmount) = openLong(alice, longPaid);
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
 
             // Advance time.
             advanceTime(POSITION_DURATION / 4, 0.2e18);
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
 
             // Open a short position.
             uint256 shortAmount = 10_000_000e18;
-            (uint256 maturityTime, ) = openShort(alice, shortAmount);
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            (uint256 maturityTime,) = openShort(alice, shortAmount);
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
 
             // Advance time.
             advanceTime(POSITION_DURATION / 2, 0.2e18);
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
 
             // Close the short position.
             closeShort(alice, maturityTime, shortAmount);
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
 
             // Close the long position.
             closeLong(alice, longMaturityTime, longAmount);
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
         }
 
         // Open a long and a short and close after some time. The close will be
@@ -284,64 +188,37 @@ contract PresentValueTest is HyperdriveTest {
         {
             // Open a long position.
             uint256 longPaid = 10_000_000e18;
-            (uint256 longMaturityTime, uint256 longAmount) = openLong(
-                alice,
-                longPaid
-            );
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            (uint256 longMaturityTime, uint256 longAmount) = openLong(alice, longPaid);
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
 
             // Advance time.
             advanceTime(POSITION_DURATION / 4, 0.2e18);
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
 
             // Open a short position.
             uint256 shortAmount = 10_000_000e18;
-            (uint256 maturityTime, ) = openShort(alice, shortAmount);
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            (uint256 maturityTime,) = openShort(alice, shortAmount);
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
 
             // Advance time.
             advanceTime(POSITION_DURATION / 2, 0.2e18);
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
 
             // Close the short position.
             closeShort(alice, maturityTime, shortAmount / 2);
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
 
             // Close the long position.
             closeLong(alice, longMaturityTime, longAmount / 2);
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
 
             // Close the short position.
             closeShort(alice, maturityTime, shortAmount / 2);
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
 
             // Close the long position.
             closeLong(alice, longMaturityTime, longAmount / 2 - 1e18);
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
             closeLong(alice, longMaturityTime, 1e18);
         }
 
@@ -349,43 +226,25 @@ contract PresentValueTest is HyperdriveTest {
         {
             // Open a long position.
             uint256 longPaid = 150_000_000e18;
-            (uint256 longMaturityTime, uint256 longAmount) = openLong(
-                alice,
-                longPaid
-            );
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            (uint256 longMaturityTime, uint256 longAmount) = openLong(alice, longPaid);
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
 
             // Open a short position.
             uint256 shortAmount = 150_000_000e18;
-            (uint256 maturityTime, ) = openShort(alice, shortAmount);
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            (uint256 maturityTime,) = openShort(alice, shortAmount);
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
 
             // Advance time.
             advanceTime(POSITION_DURATION / 2, 0.2e18);
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
 
             // Close the long position.
             closeLong(alice, longMaturityTime, longAmount);
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
 
             // Close the short position.
             closeShort(alice, maturityTime, shortAmount);
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
         }
 
         uint256 snapshotId = vm.snapshot();
@@ -393,32 +252,20 @@ contract PresentValueTest is HyperdriveTest {
         {
             // Open a short position.
             uint256 shortAmount = 150_000_000e18;
-            (uint256 maturityTime, ) = openShort(alice, shortAmount);
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            (uint256 maturityTime,) = openShort(alice, shortAmount);
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
 
             // The LP removes liquidity.
             removeLiquidity(alice, lpShares);
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
 
             // Time passes and interest accrues.
             advanceTime(POSITION_DURATION, 0.2e18);
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
 
             // Close the short position.
             closeShort(alice, maturityTime, shortAmount);
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
         }
         vm.revertTo(snapshotId);
 
@@ -427,53 +274,32 @@ contract PresentValueTest is HyperdriveTest {
         {
             // Open a short position.
             uint256 shortAmount = 150_000_000e18;
-            (uint256 shortMaturityTime, ) = openShort(alice, shortAmount);
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            (uint256 shortMaturityTime,) = openShort(alice, shortAmount);
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
 
             // Open a long position.
             uint256 longPaid = 10_000_000e18;
-            (uint256 longMaturityTime, uint256 longAmount) = openLong(
-                alice,
-                longPaid
-            );
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            (uint256 longMaturityTime, uint256 longAmount) = openLong(alice, longPaid);
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
 
             // The LP removes liquidity.
             removeLiquidity(alice, lpShares);
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
 
             // TODO: This is one of the worst cases of the present value
             // decreasing.
             //
             // Close the long.
             closeLong(alice, longMaturityTime, longAmount).toString(18);
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
 
             // Time passes and interest accrues.
             advanceTime(POSITION_DURATION, 0.2e18);
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
 
             // Close the short position.
             closeShort(alice, shortMaturityTime, shortAmount);
-            console.log(
-                "    presentValue: %s",
-                HyperdriveUtils.presentValue(hyperdrive).toString(18)
-            );
+            console.log("    presentValue: %s", HyperdriveUtils.presentValue(hyperdrive).toString(18));
         }
     }
 
@@ -503,18 +329,9 @@ contract PresentValueTest is HyperdriveTest {
         uint256 maturityTime = trades[trades.length - 1].maturityTime;
         trades = randomCloseTrades(
             maturityTime,
-            hyperdrive.balanceOf(
-                AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
-                alice
-            ),
+            hyperdrive.balanceOf(AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime), alice),
             maturityTime,
-            hyperdrive.balanceOf(
-                AssetId.encodeAssetId(
-                    AssetId.AssetIdPrefix.Short,
-                    maturityTime
-                ),
-                alice
-            )
+            hyperdrive.balanceOf(AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, maturityTime), alice)
         );
         for (uint256 i = 0; i < trades.length; i++) {
             executeTrade(trades[i]);

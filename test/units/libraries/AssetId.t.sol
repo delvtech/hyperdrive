@@ -12,23 +12,16 @@ contract AssetIdTest is HyperdriveTest {
         MockAssetId assetId = new MockAssetId();
 
         // Verify that the LP Asset ID constant is correct.
-        assertEq(
-            AssetId._LP_ASSET_ID,
-            assetId.encodeAssetId(AssetId.AssetIdPrefix.LP, 0)
-        );
+        assertEq(AssetId._LP_ASSET_ID, assetId.encodeAssetId(AssetId.AssetIdPrefix.LP, 0));
 
         // Verify that the WithdrawalShare Asset ID constant is correct.
-        assertEq(
-            AssetId._WITHDRAWAL_SHARE_ASSET_ID,
-            assetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0)
-        );
+        assertEq(AssetId._WITHDRAWAL_SHARE_ASSET_ID, assetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0));
     }
 
     function test__encodeAssetIdInvalidTimestamp() public {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockAssetId assetId = new MockAssetId();
-        uint256 maturityTime = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff +
-                1;
+        uint256 maturityTime = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff + 1;
         vm.expectRevert(Errors.InvalidTimestamp.selector);
         assetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime);
     }
@@ -42,10 +35,7 @@ contract AssetIdTest is HyperdriveTest {
         uint256 maturityTime = block.timestamp + POSITION_DURATION;
         // id = Long << 248 | 126144000 = 126144000
         uint256 expected = (1 << 248) | maturityTime;
-        uint256 id = assetId.encodeAssetId(
-            AssetId.AssetIdPrefix.Long,
-            maturityTime
-        );
+        uint256 id = assetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime);
         assertEq(id, expected);
 
         // Test Short Asset ID
@@ -57,10 +47,7 @@ contract AssetIdTest is HyperdriveTest {
         // Test WithdrawalShare Asset ID
         // id = WithdrawalShare << 248 | 126144000 = 126144000
         expected = (3 << 248) | maturityTime;
-        id = assetId.encodeAssetId(
-            AssetId.AssetIdPrefix.WithdrawalShare,
-            maturityTime
-        );
+        id = assetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, maturityTime);
         assertEq(id, expected);
     }
 
@@ -70,12 +57,8 @@ contract AssetIdTest is HyperdriveTest {
 
         // Test Long Asset ID
         uint256 maturityTime = 126144000;
-        uint256 id = assetId.encodeAssetId(
-            AssetId.AssetIdPrefix.Long,
-            maturityTime
-        );
-        (AssetId.AssetIdPrefix prefix, uint256 timestamp) = assetId
-            .decodeAssetId(id);
+        uint256 id = assetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime);
+        (AssetId.AssetIdPrefix prefix, uint256 timestamp) = assetId.decodeAssetId(id);
         assertEq(uint256(prefix), 1);
         assertEq(timestamp, maturityTime);
 
@@ -86,10 +69,7 @@ contract AssetIdTest is HyperdriveTest {
         assertEq(timestamp, maturityTime);
 
         // Test WithdrawShare Asset ID
-        id = assetId.encodeAssetId(
-            AssetId.AssetIdPrefix.WithdrawalShare,
-            maturityTime
-        );
+        id = assetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, maturityTime);
         (prefix, timestamp) = assetId.decodeAssetId(id);
         assertEq(uint256(prefix), 3);
         assertEq(timestamp, maturityTime);

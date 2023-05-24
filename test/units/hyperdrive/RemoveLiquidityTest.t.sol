@@ -61,10 +61,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
         advanceTime(timeAdvanced, int256(apr));
 
         // Alice removes all of her liquidity.
-        (uint256 baseProceeds, uint256 withdrawalShares) = removeLiquidity(
-            alice,
-            lpShares
-        );
+        (uint256 baseProceeds, uint256 withdrawalShares) = removeLiquidity(alice, lpShares);
         verifyRemoveLiquidityEvent(lpShares, baseProceeds, withdrawalShares);
 
         // Ensure that the LP shares were properly accounted for.
@@ -72,8 +69,8 @@ contract RemoveLiquidityTest is HyperdriveTest {
         assertEq(hyperdrive.totalSupply(AssetId._LP_ASSET_ID), 0);
 
         // Calculate how much interest has accrued on the initial contribution
-        (uint256 contributionPlusInterest, ) = HyperdriveUtils
-            .calculateCompoundInterest(contribution, int256(apr), timeAdvanced);
+        (uint256 contributionPlusInterest,) =
+            HyperdriveUtils.calculateCompoundInterest(contribution, int256(apr), timeAdvanced);
 
         // Ensure that Alice received the correct amount of base.
         assertEq(baseProceeds, contributionPlusInterest);
@@ -87,10 +84,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
         assertEq(baseToken.balanceOf(alice), baseProceeds);
 
         // Ensure that Alice receives the right amount of withdrawal shares.
-        assertEq(
-            hyperdrive.balanceOf(AssetId._WITHDRAWAL_SHARE_ASSET_ID, alice),
-            0
-        );
+        assertEq(hyperdrive.balanceOf(AssetId._WITHDRAWAL_SHARE_ASSET_ID, alice), 0);
     }
 
     function test_remove_liquidity_long_trade() external {
@@ -113,15 +107,9 @@ contract RemoveLiquidityTest is HyperdriveTest {
         uint256 lpTotalSupplyBefore = lpTotalSupply();
         uint256 startingPresentValue = HyperdriveUtils.presentValue(hyperdrive);
         uint256 expectedBaseProceeds = calculateBaseProceeds(lpShares);
-        (uint256 baseProceeds, uint256 withdrawalShares) = removeLiquidity(
-            alice,
-            lpShares
-        );
+        (uint256 baseProceeds, uint256 withdrawalShares) = removeLiquidity(alice, lpShares);
         uint256 expectedWithdrawalShares = calculateWithdrawalShares(
-            lpShares,
-            startingPresentValue,
-            HyperdriveUtils.presentValue(hyperdrive),
-            lpTotalSupplyBefore
+            lpShares, startingPresentValue, HyperdriveUtils.presentValue(hyperdrive), lpTotalSupplyBefore
         );
         assertEq(baseProceeds, expectedBaseProceeds);
         assertApproxEqAbs(withdrawalShares, expectedWithdrawalShares, 1);
@@ -134,38 +122,19 @@ contract RemoveLiquidityTest is HyperdriveTest {
         assertEq(hyperdrive.totalSupply(AssetId._LP_ASSET_ID), 0);
 
         // Ensure that Alice received the correct amount of base.
-        (uint256 contributionPlusInterest, ) = HyperdriveUtils
-            .calculateCompoundInterest(contribution, int256(apr), timeAdvanced);
-        assertApproxEqAbs(
-            expectedBaseProceeds,
-            contributionPlusInterest - (bondAmount - baseAmount),
-            1
-        );
-        assertApproxEqAbs(
-            baseToken.balanceOf(address(hyperdrive)),
-            bondAmount,
-            1
-        );
+        (uint256 contributionPlusInterest,) =
+            HyperdriveUtils.calculateCompoundInterest(contribution, int256(apr), timeAdvanced);
+        assertApproxEqAbs(expectedBaseProceeds, contributionPlusInterest - (bondAmount - baseAmount), 1);
+        assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), bondAmount, 1);
         assertApproxEqAbs(baseToken.balanceOf(alice), baseProceeds, 1);
 
         // Ensure that the reserves were updated correctly.
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
-        assertEq(
-            poolInfo.shareReserves,
-            bondAmount.divDown(hyperdrive.getPoolInfo().sharePrice)
-        );
-        assertApproxEqAbs(
-            HyperdriveUtils.calculateAPRFromReserves(hyperdrive),
-            poolApr,
-            1
-        );
+        assertEq(poolInfo.shareReserves, bondAmount.divDown(hyperdrive.getPoolInfo().sharePrice));
+        assertApproxEqAbs(HyperdriveUtils.calculateAPRFromReserves(hyperdrive), poolApr, 1);
 
         // Ensure that Alice receives the right amount of withdrawal shares.
-        assertApproxEqAbs(
-            hyperdrive.balanceOf(AssetId._WITHDRAWAL_SHARE_ASSET_ID, alice),
-            expectedWithdrawalShares,
-            1
-        );
+        assertApproxEqAbs(hyperdrive.balanceOf(AssetId._WITHDRAWAL_SHARE_ASSET_ID, alice), expectedWithdrawalShares, 1);
     }
 
     function test_remove_liquidity_short_trade() external {
@@ -187,15 +156,9 @@ contract RemoveLiquidityTest is HyperdriveTest {
         uint256 lpTotalSupplyBefore = lpTotalSupply();
         uint256 startingPresentValue = HyperdriveUtils.presentValue(hyperdrive);
         uint256 expectedBaseProceeds = calculateBaseProceeds(lpShares);
-        (uint256 baseProceeds, uint256 withdrawalShares) = removeLiquidity(
-            alice,
-            lpShares
-        );
+        (uint256 baseProceeds, uint256 withdrawalShares) = removeLiquidity(alice, lpShares);
         uint256 expectedWithdrawalShares = calculateWithdrawalShares(
-            lpShares,
-            startingPresentValue,
-            HyperdriveUtils.presentValue(hyperdrive),
-            lpTotalSupplyBefore
+            lpShares, startingPresentValue, HyperdriveUtils.presentValue(hyperdrive), lpTotalSupplyBefore
         );
         assertEq(baseProceeds, expectedBaseProceeds);
         assertEq(withdrawalShares, expectedWithdrawalShares);
@@ -208,22 +171,14 @@ contract RemoveLiquidityTest is HyperdriveTest {
         assertEq(hyperdrive.totalSupply(AssetId._LP_ASSET_ID), 0);
 
         // Ensure that Alice received the correct amount of base.
-        (uint256 contributionPlusInterest, ) = HyperdriveUtils
-            .calculateCompoundInterest(contribution, int256(apr), timeAdvanced);
+        (uint256 contributionPlusInterest,) =
+            HyperdriveUtils.calculateCompoundInterest(contribution, int256(apr), timeAdvanced);
         // TODO: Improve this bound.
-        assertApproxEqAbs(
-            expectedBaseProceeds,
-            contributionPlusInterest - (bondAmount - basePaid),
-            3e7
-        );
+        assertApproxEqAbs(expectedBaseProceeds, contributionPlusInterest - (bondAmount - basePaid), 3e7);
         // TODO: Improve this bound.
         assertApproxEqAbs(baseProceeds, expectedBaseProceeds, 3e7);
         // TODO: Improve this bound.
-        assertApproxEqAbs(
-            baseToken.balanceOf(address(hyperdrive)),
-            bondAmount,
-            3e7
-        );
+        assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), bondAmount, 3e7);
         assertEq(baseToken.balanceOf(alice), baseProceeds);
 
         // Ensure that the reserves were updated correctly.
@@ -232,10 +187,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
         assertEq(poolInfo.bondReserves, 0);
 
         // Ensure that Alice receives the right amount of withdrawal shares.
-        assertEq(
-            hyperdrive.balanceOf(AssetId._WITHDRAWAL_SHARE_ASSET_ID, alice),
-            expectedWithdrawalShares
-        );
+        assertEq(hyperdrive.balanceOf(AssetId._WITHDRAWAL_SHARE_ASSET_ID, alice), expectedWithdrawalShares);
     }
 
     function verifyRemoveLiquidityEvent(
@@ -243,35 +195,26 @@ contract RemoveLiquidityTest is HyperdriveTest {
         uint256 expectedBaseAmount,
         uint256 expectedWithdrawalShares
     ) internal {
-        VmSafe.Log[] memory logs = vm.getRecordedLogs().filterLogs(
-            RemoveLiquidity.selector
-        );
+        VmSafe.Log[] memory logs = vm.getRecordedLogs().filterLogs(RemoveLiquidity.selector);
         assertEq(logs.length, 1);
         VmSafe.Log memory log = logs[0];
         assertEq(address(uint160(uint256(log.topics[1]))), alice);
-        (uint256 lpShares, uint256 baseAmount, uint256 withdrawalShares) = abi
-            .decode(log.data, (uint256, uint256, uint256));
+        (uint256 lpShares, uint256 baseAmount, uint256 withdrawalShares) =
+            abi.decode(log.data, (uint256, uint256, uint256));
         assertEq(lpShares, expectedLpShares);
         assertEq(baseAmount, expectedBaseAmount);
         assertEq(withdrawalShares, expectedWithdrawalShares);
     }
 
     function lpTotalSupply() internal view returns (uint256) {
-        return
-            hyperdrive.totalSupply(AssetId._LP_ASSET_ID) +
-            hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID) -
-            hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw;
+        return hyperdrive.totalSupply(AssetId._LP_ASSET_ID) + hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID)
+            - hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw;
     }
 
-    function calculateBaseProceeds(
-        uint256 _shares
-    ) internal view returns (uint256) {
+    function calculateBaseProceeds(uint256 _shares) internal view returns (uint256) {
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
-        uint256 shareProceeds = (poolInfo.shareReserves -
-            poolInfo.longsOutstanding.divDown(poolInfo.sharePrice)).mulDivDown(
-                _shares,
-                hyperdrive.totalSupply(AssetId._LP_ASSET_ID)
-            );
+        uint256 shareProceeds = (poolInfo.shareReserves - poolInfo.longsOutstanding.divDown(poolInfo.sharePrice))
+            .mulDivDown(_shares, hyperdrive.totalSupply(AssetId._LP_ASSET_ID));
         return shareProceeds.mulDown(poolInfo.sharePrice);
     }
 
@@ -281,9 +224,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
         uint256 _endingPresentValue,
         uint256 _lpTotalSupplyBefore
     ) internal pure returns (uint256) {
-        uint256 withdrawalShares = _endingPresentValue.mulDown(
-            _lpTotalSupplyBefore
-        );
+        uint256 withdrawalShares = _endingPresentValue.mulDown(_lpTotalSupplyBefore);
         withdrawalShares += _startingPresentValue.mulDown(_shares);
         withdrawalShares -= _startingPresentValue.mulDown(_lpTotalSupplyBefore);
         withdrawalShares = withdrawalShares.divDown(_startingPresentValue);

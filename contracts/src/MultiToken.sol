@@ -18,27 +18,22 @@ contract MultiToken is DataProvider, MultiTokenStorage, IMultiTokenWrite {
     bytes32 public immutable DOMAIN_SEPARATOR; // solhint-disable-line var-name-mixedcase
     // PERMIT_TYPEHASH changes based on function inputs
     bytes32 public constant PERMIT_TYPEHASH =
-        keccak256(
-            "PermitForAll(address owner,address spender,bool _approved,uint256 nonce,uint256 deadline)"
-        );
+        keccak256("PermitForAll(address owner,address spender,bool _approved,uint256 nonce,uint256 deadline)");
 
     /// @notice Runs the initial deployment code
     /// @param _dataProvider The address of the data provider
     /// @param _linkerCodeHash The hash of the erc20 linker contract deploy code
     /// @param _factory The factory which is used to deploy the linking contracts
-    constructor(
-        address _dataProvider,
-        bytes32 _linkerCodeHash,
-        address _factory
-    ) DataProvider(_dataProvider) MultiTokenStorage(_linkerCodeHash, _factory) {
+    constructor(address _dataProvider, bytes32 _linkerCodeHash, address _factory)
+        DataProvider(_dataProvider)
+        MultiTokenStorage(_linkerCodeHash, _factory)
+    {
         // Computes the EIP 712 domain separator which prevents user signed messages for
         // this contract to be replayed in other contracts.
         // https://eips.ethereum.org/EIPS/eip-712
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
-                keccak256(
-                    "EIP712Domain(string version,uint256 chainId,address verifyingContract)"
-                ),
+                keccak256("EIP712Domain(string version,uint256 chainId,address verifyingContract)"),
                 keccak256(bytes("1")),
                 block.chainid,
                 address(this)
@@ -67,15 +62,11 @@ contract MultiToken is DataProvider, MultiTokenStorage, IMultiTokenWrite {
     /// @notice Derive the ERC20 forwarder address for a provided `tokenId`.
     /// @param tokenId Token Id of the token whose forwarder contract address need to derived.
     /// @return Address of the ERC20 forwarder contract.
-    function _deriveForwarderAddress(
-        uint256 tokenId
-    ) internal view returns (address) {
+    function _deriveForwarderAddress(uint256 tokenId) internal view returns (address) {
         // Get the salt which is used by the deploying contract
         bytes32 salt = keccak256(abi.encode(address(this), tokenId));
         // Preform the hash which determines the address of a create2 deployment
-        bytes32 addressBytes = keccak256(
-            abi.encodePacked(bytes1(0xff), _factory, salt, _linkerCodeHash)
-        );
+        bytes32 addressBytes = keccak256(abi.encodePacked(bytes1(0xff), _factory, salt, _linkerCodeHash));
         return address(uint160(uint256(addressBytes)));
     }
 
@@ -84,12 +75,7 @@ contract MultiToken is DataProvider, MultiTokenStorage, IMultiTokenWrite {
     /// @param from The address who's balance will be reduced
     /// @param to The address who's balance will be increased
     /// @param amount The amount of token to move
-    function transferFrom(
-        uint256 tokenID,
-        address from,
-        address to,
-        uint256 amount
-    ) external override {
+    function transferFrom(uint256 tokenID, address from, address to, uint256 amount) external override {
         // Forward to our internal version
         _transferFrom(tokenID, from, to, amount, msg.sender);
     }
@@ -101,13 +87,11 @@ contract MultiToken is DataProvider, MultiTokenStorage, IMultiTokenWrite {
     /// @param to The address who's balance will be increased
     /// @param amount The amount of token to move
     /// @param caller The msg.sender from the bridge
-    function transferFromBridge(
-        uint256 tokenID,
-        address from,
-        address to,
-        uint256 amount,
-        address caller
-    ) external override onlyLinker(tokenID) {
+    function transferFromBridge(uint256 tokenID, address from, address to, uint256 amount, address caller)
+        external
+        override
+        onlyLinker(tokenID)
+    {
         // Route to our internal transfer
         _transferFrom(tokenID, from, to, amount, caller);
     }
@@ -118,13 +102,7 @@ contract MultiToken is DataProvider, MultiTokenStorage, IMultiTokenWrite {
     /// @param to The address who's balance will be increased
     /// @param amount The amount of token to move
     /// @param caller The msg.sender either here or in the compatibility link contract
-    function _transferFrom(
-        uint256 tokenID,
-        address from,
-        address to,
-        uint256 amount,
-        address caller
-    ) internal {
+    function _transferFrom(uint256 tokenID, address from, address to, uint256 amount, address caller) internal {
         // If ethereum transaction sender is calling no need for further validation
         if (caller != from) {
             // Or if the transaction sender can access all user assets, no need for
@@ -153,10 +131,7 @@ contract MultiToken is DataProvider, MultiTokenStorage, IMultiTokenWrite {
     /// @notice Allows a user to approve an operator to use all of their assets
     /// @param operator The eth address which can access the caller's assets
     /// @param approved True to approve, false to remove approval
-    function setApprovalForAll(
-        address operator,
-        bool approved
-    ) external override {
+    function setApprovalForAll(address operator, bool approved) external override {
         // set the appropriate state
         _isApprovedForAll[msg.sender][operator] = approved;
         // Emit an event to track approval
@@ -168,11 +143,7 @@ contract MultiToken is DataProvider, MultiTokenStorage, IMultiTokenWrite {
     /// @param operator The address who will be able to use the tokens
     /// @param amount The max tokens the approved person can use, setting to uint256.max
     ///               will cause the value to never decrement [saving gas on transfer]
-    function setApproval(
-        uint256 tokenID,
-        address operator,
-        uint256 amount
-    ) external override {
+    function setApproval(uint256 tokenID, address operator, uint256 amount) external override {
         _setApproval(tokenID, operator, amount, msg.sender);
     }
 
@@ -182,12 +153,11 @@ contract MultiToken is DataProvider, MultiTokenStorage, IMultiTokenWrite {
     /// @param amount The max tokens the approved person can use, setting to uint256.max
     ///               will cause the value to never decrement [saving gas on transfer]
     /// @param caller The eth address which called the linking contract
-    function setApprovalBridge(
-        uint256 tokenID,
-        address operator,
-        uint256 amount,
-        address caller
-    ) external override onlyLinker(tokenID) {
+    function setApprovalBridge(uint256 tokenID, address operator, uint256 amount, address caller)
+        external
+        override
+        onlyLinker(tokenID)
+    {
         _setApproval(tokenID, operator, amount, caller);
     }
 
@@ -197,12 +167,7 @@ contract MultiToken is DataProvider, MultiTokenStorage, IMultiTokenWrite {
     /// @param amount The max tokens the approved person can use, setting to uint256.max
     ///               will cause the value to never decrement [saving gas on transfer]
     /// @param caller The eth address which initiated the approval call
-    function _setApproval(
-        uint256 tokenID,
-        address operator,
-        uint256 amount,
-        address caller
-    ) internal {
+    function _setApproval(uint256 tokenID, address operator, uint256 amount, address caller) internal {
         _perTokenApprovals[tokenID][caller][operator] = amount;
         // Emit an event to track approval
         emit Approval(caller, operator, amount);
@@ -213,11 +178,7 @@ contract MultiToken is DataProvider, MultiTokenStorage, IMultiTokenWrite {
     /// @param to The address who's balance to increase
     /// @param amount The number of tokens to create
     /// @dev Must be used from inheriting contracts
-    function _mint(
-        uint256 tokenID,
-        address to,
-        uint256 amount
-    ) internal virtual {
+    function _mint(uint256 tokenID, address to, uint256 amount) internal virtual {
         _balanceOf[tokenID][to] += amount;
         _totalSupply[tokenID] += amount;
         // Emit an event to track minting
@@ -242,19 +203,16 @@ contract MultiToken is DataProvider, MultiTokenStorage, IMultiTokenWrite {
     /// @param to the destination account
     /// @param ids The array of token ids of the asset to transfer
     /// @param values The amount of each token to transfer
-    function batchTransferFrom(
-        address from,
-        address to,
-        uint256[] calldata ids,
-        uint256[] calldata values
-    ) external {
+    function batchTransferFrom(address from, address to, uint256[] calldata ids, uint256[] calldata values) external {
         // Checks for inconsistent addresses
-        if (from == address(0) || to == address(0))
+        if (from == address(0) || to == address(0)) {
             revert Errors.RestrictedZeroAddress();
+        }
 
         // Check for inconsistent length
-        if (ids.length != values.length)
+        if (ids.length != values.length) {
             revert Errors.BatchInputLengthMismatch();
+        }
 
         // Call internal transfer for each asset
         for (uint256 i = 0; i < ids.length; i++) {
@@ -293,16 +251,7 @@ contract MultiToken is DataProvider, MultiTokenStorage, IMultiTokenWrite {
             abi.encodePacked(
                 "\x19\x01",
                 DOMAIN_SEPARATOR,
-                keccak256(
-                    abi.encode(
-                        PERMIT_TYPEHASH,
-                        owner,
-                        spender,
-                        _approved,
-                        _nonces[owner],
-                        deadline
-                    )
-                )
+                keccak256(abi.encode(PERMIT_TYPEHASH, owner, spender, _approved, _nonces[owner], deadline))
             )
         );
 

@@ -32,9 +32,7 @@ library HyperdriveMath {
         // ((mu * z) / y) ** tau
         uint256 tau = _normalizedTimeRemaining.mulDown(_timeStretch);
 
-        spotPrice = _initialSharePrice
-            .mulDivDown(_shareReserves, _bondReserves)
-            .pow(tau);
+        spotPrice = _initialSharePrice.mulDivDown(_shareReserves, _bondReserves).pow(tau);
     }
 
     /// @dev Calculates the APR from the pool's reserves.
@@ -66,10 +64,7 @@ library HyperdriveMath {
         );
 
         // r = (1 - p) / (p * t)
-        return
-            FixedPointMath.ONE_18.sub(spotPrice).divDown(
-                spotPrice.mulDown(annualizedTime)
-            );
+        return FixedPointMath.ONE_18.sub(spotPrice).divDown(spotPrice.mulDown(annualizedTime));
     }
 
     /// @dev Calculates the initial bond reserves assuming that the initial LP
@@ -98,13 +93,9 @@ library HyperdriveMath {
         uint256 t = _positionDuration.divDown(365 days);
         uint256 tau = FixedPointMath.ONE_18.mulDown(_timeStretch);
         // mu * (1 + apr * t) ** (1 / tau) - c
-        uint256 rhs = _initialSharePrice
-            .mulDown(
-                FixedPointMath.ONE_18.add(_apr.mulDown(t)).pow(
-                    FixedPointMath.ONE_18.divUp(tau)
-                )
-            )
-            .sub(_sharePrice);
+        uint256 rhs = _initialSharePrice.mulDown(
+            FixedPointMath.ONE_18.add(_apr.mulDown(t)).pow(FixedPointMath.ONE_18.divUp(tau))
+        ).sub(_sharePrice);
         // (z / 2) * (mu * (1 + apr * t) ** (1 / tau) - c)
         return _shareReserves.divDown(2 * FixedPointMath.ONE_18).mulDown(rhs);
     }
@@ -128,19 +119,9 @@ library HyperdriveMath {
         uint256 _timeStretch,
         uint256 _sharePrice,
         uint256 _initialSharePrice
-    )
-        internal
-        pure
-        returns (
-            uint256 shareReservesDelta,
-            uint256 bondReservesDelta,
-            uint256 bondProceeds
-        )
-    {
+    ) internal pure returns (uint256 shareReservesDelta, uint256 bondReservesDelta, uint256 bondProceeds) {
         // Calculate the flat part of the trade.
-        bondProceeds = _shareAmount
-            .mulDown(FixedPointMath.ONE_18.sub(_normalizedTimeRemaining))
-            .mulDown(_sharePrice);
+        bondProceeds = _shareAmount.mulDown(FixedPointMath.ONE_18.sub(_normalizedTimeRemaining)).mulDown(_sharePrice);
         shareReservesDelta = _shareAmount.mulDown(_normalizedTimeRemaining);
         // (time remaining)/(term length) is always 1 so we just use _timeStretch
         bondReservesDelta = YieldSpaceMath.calculateBondsOutGivenSharesIn(
@@ -178,25 +159,14 @@ library HyperdriveMath {
         uint256 _closeSharePrice,
         uint256 _sharePrice,
         uint256 _initialSharePrice
-    )
-        internal
-        pure
-        returns (
-            uint256 shareReservesDelta,
-            uint256 bondReservesDelta,
-            uint256 shareProceeds
-        )
-    {
+    ) internal pure returns (uint256 shareReservesDelta, uint256 bondReservesDelta, uint256 shareProceeds) {
         // We consider (1 - timeRemaining) * amountIn of the bonds to be fully
         // matured and timeRemaining * amountIn of the bonds to be newly
         // minted. The fully matured bonds are redeemed one-to-one to base
         // (our result is given in shares, so we divide the one-to-one
         // redemption by the share price) and the newly minted bonds are
         // traded on a YieldSpace curve configured to timeRemaining = 1.
-        shareProceeds = _amountIn.mulDivDown(
-            FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
-            _sharePrice
-        );
+        shareProceeds = _amountIn.mulDivDown(FixedPointMath.ONE_18.sub(_normalizedTimeRemaining), _sharePrice);
 
         if (_normalizedTimeRemaining > 0) {
             // Calculate the curved part of the trade.
@@ -218,10 +188,7 @@ library HyperdriveMath {
         // interest to the long since it's difficult or impossible to attribute
         // the negative interest to the short in practice.
         if (_initialSharePrice > _closeSharePrice) {
-            shareProceeds = shareProceeds.mulDivDown(
-                _closeSharePrice,
-                _initialSharePrice
-            );
+            shareProceeds = shareProceeds.mulDivDown(_closeSharePrice, _initialSharePrice);
         }
 
         return (shareReservesDelta, bondReservesDelta, shareProceeds);
@@ -247,19 +214,9 @@ library HyperdriveMath {
         uint256 _timeStretch,
         uint256 _sharePrice,
         uint256 _initialSharePrice
-    )
-        internal
-        pure
-        returns (
-            uint256 shareReservesDelta,
-            uint256 bondReservesDelta,
-            uint256 shareProceeds
-        )
-    {
+    ) internal pure returns (uint256 shareReservesDelta, uint256 bondReservesDelta, uint256 shareProceeds) {
         // Calculate the flat part of the trade.
-        shareProceeds = _amountIn
-            .mulDown(FixedPointMath.ONE_18.sub(_normalizedTimeRemaining))
-            .divDown(_sharePrice);
+        shareProceeds = _amountIn.mulDown(FixedPointMath.ONE_18.sub(_normalizedTimeRemaining)).divDown(_sharePrice);
         // Calculate the curved part of the trade.
         bondReservesDelta = _amountIn.mulDown(_normalizedTimeRemaining);
         // (time remaining)/(term length) is always 1 so we just use _timeStretch
@@ -294,15 +251,7 @@ library HyperdriveMath {
         uint256 _timeStretch,
         uint256 _sharePrice,
         uint256 _initialSharePrice
-    )
-        internal
-        pure
-        returns (
-            uint256 shareReservesDelta,
-            uint256 bondReservesDelta,
-            uint256 sharePayment
-        )
-    {
+    ) internal pure returns (uint256 shareReservesDelta, uint256 bondReservesDelta, uint256 sharePayment) {
         // Since we are buying bonds, it's possible that timeRemaining < 1.
         // We consider (1-timeRemaining)*amountOut of the bonds being
         // purchased to be fully matured and timeRemaining*amountOut of the
@@ -311,10 +260,7 @@ library HyperdriveMath {
         // the one-to-one redemption by the share price) and the newly
         // minted bonds are traded on a YieldSpace curve configured to
         // timeRemaining = 1.
-        sharePayment = _amountOut.mulDivDown(
-            FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
-            _sharePrice
-        );
+        sharePayment = _amountOut.mulDivDown(FixedPointMath.ONE_18.sub(_normalizedTimeRemaining), _sharePrice);
 
         bondReservesDelta = _amountOut.mulDown(_normalizedTimeRemaining);
         if (bondReservesDelta > 0) {
@@ -348,58 +294,43 @@ library HyperdriveMath {
     /// @dev Calculates the present value LPs capital in the pool.
     /// @param _params The parameters for the present value calculation.
     /// @return The present value of the pool.
-    function calculatePresentValue(
-        PresentValueParams memory _params
-    ) internal pure returns (uint256) {
+    function calculatePresentValue(PresentValueParams memory _params) internal pure returns (uint256) {
         // Compute the net of the longs and shorts that will be traded on the
         // curve and apply this net to the reserves.
-        int256 netCurveTrade = int256(
-            _params.longsOutstanding.mulDown(_params.longAverageTimeRemaining)
-        ) -
-            int256(
-                _params.shortsOutstanding.mulDown(
-                    _params.shortAverageTimeRemaining
-                )
-            );
+        int256 netCurveTrade = int256(_params.longsOutstanding.mulDown(_params.longAverageTimeRemaining))
+            - int256(_params.shortsOutstanding.mulDown(_params.shortAverageTimeRemaining));
         if (netCurveTrade > 0) {
             // Apply the curve trade directly to the reserves. Unlike shorts,
             // the capital that backs longs is accounted for within the share
             // reserves (the capital backing shorts is taken out of the
             // reserves). This ensures that even if all the liquidity is
             // removed, there is always liquidity available for longs to close.
-            _params.shareReserves -= YieldSpaceMath
-                .calculateSharesOutGivenBondsIn(
-                    _params.shareReserves,
-                    _params.bondReserves,
-                    uint256(netCurveTrade),
-                    FixedPointMath.ONE_18.sub(_params.timeStretch),
-                    _params.sharePrice,
-                    _params.initialSharePrice
-                );
+            _params.shareReserves -= YieldSpaceMath.calculateSharesOutGivenBondsIn(
+                _params.shareReserves,
+                _params.bondReserves,
+                uint256(netCurveTrade),
+                FixedPointMath.ONE_18.sub(_params.timeStretch),
+                _params.sharePrice,
+                _params.initialSharePrice
+            );
         } else if (netCurveTrade < 0) {
             // It's possible that the exchange gets into a state where the
             // net curve trade can't be applied to the reserves. In particular,
             // this can happen if all of the liquidity is removed. We first
             // attempt to trade as much as possible on the curve, and then we
             // mark the remaining amount to the base volume.
-            uint256 maxCurveTrade = _params.bondReserves.divDown(
+            uint256 maxCurveTrade = _params.bondReserves.divDown(_params.initialSharePrice) - _params.shareReserves;
+            maxCurveTrade = uint256(-netCurveTrade) <= maxCurveTrade ? uint256(-netCurveTrade) : maxCurveTrade;
+            _params.shareReserves += YieldSpaceMath.calculateSharesInGivenBondsOut(
+                _params.shareReserves,
+                _params.bondReserves,
+                maxCurveTrade,
+                FixedPointMath.ONE_18.sub(_params.timeStretch),
+                _params.sharePrice,
                 _params.initialSharePrice
-            ) - _params.shareReserves;
-            maxCurveTrade = uint256(-netCurveTrade) <= maxCurveTrade
-                ? uint256(-netCurveTrade)
-                : maxCurveTrade;
-            _params.shareReserves += YieldSpaceMath
-                .calculateSharesInGivenBondsOut(
-                    _params.shareReserves,
-                    _params.bondReserves,
-                    maxCurveTrade,
-                    FixedPointMath.ONE_18.sub(_params.timeStretch),
-                    _params.sharePrice,
-                    _params.initialSharePrice
-                );
+            );
             _params.shareReserves += _params.shortBaseVolume.mulDivDown(
-                uint256(-netCurveTrade) - maxCurveTrade,
-                _params.shortsOutstanding.mulDown(_params.sharePrice)
+                uint256(-netCurveTrade) - maxCurveTrade, _params.shortsOutstanding.mulDown(_params.sharePrice)
             );
         }
 
@@ -407,19 +338,15 @@ library HyperdriveMath {
         // and apply this net to the reserves.
         int256 netFlatTrade = int256(
             _params.shortsOutstanding.mulDivDown(
-                FixedPointMath.ONE_18 - _params.shortAverageTimeRemaining,
-                _params.sharePrice
+                FixedPointMath.ONE_18 - _params.shortAverageTimeRemaining, _params.sharePrice
             )
-        ) -
-            int256(
+        )
+            - int256(
                 _params.longsOutstanding.mulDivDown(
-                    FixedPointMath.ONE_18 - _params.longAverageTimeRemaining,
-                    _params.sharePrice
+                    FixedPointMath.ONE_18 - _params.longAverageTimeRemaining, _params.sharePrice
                 )
             );
-        _params.shareReserves = uint256(
-            int256(_params.shareReserves) + netFlatTrade
-        );
+        _params.shareReserves = uint256(int256(_params.shareReserves) + netFlatTrade);
 
         return _params.shareReserves;
     }
@@ -514,19 +441,16 @@ library HyperdriveMath {
     /// @param _bondAmount The bonds exchanged in the open trade.
     /// @param _timeRemaining The time remaining in the position.
     /// @return baseVolume The calculated base volume.
-    function calculateBaseVolume(
-        uint256 _baseAmount,
-        uint256 _bondAmount,
-        uint256 _timeRemaining
-    ) internal pure returns (uint256 baseVolume) {
+    function calculateBaseVolume(uint256 _baseAmount, uint256 _bondAmount, uint256 _timeRemaining)
+        internal
+        pure
+        returns (uint256 baseVolume)
+    {
         // If the time remaining is 0, the position has already matured and
         // doesn't have an impact on LP's ability to withdraw. This is a
         // pathological case that should never arise.
         if (_timeRemaining == 0) return 0;
-        baseVolume = (
-            _baseAmount.sub(
-                (FixedPointMath.ONE_18.sub(_timeRemaining)).mulDown(_bondAmount)
-            )
-        ).divDown(_timeRemaining);
+        baseVolume =
+            (_baseAmount.sub((FixedPointMath.ONE_18.sub(_timeRemaining)).mulDown(_bondAmount))).divDown(_timeRemaining);
     }
 }

@@ -15,20 +15,18 @@ import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 contract DsrHyperdriveScript is Script {
     using FixedPointMath for uint256;
 
-    function setUp() public {}
+    function setUp() public { }
 
     function run() public {
         vm.startBroadcast();
 
         // Deploy an instance of DsrHyperdrive.
-        DsrManager dsrManager = DsrManager(
-            address(0xF7F0de3744C82825D77EdA8ce78f07A916fB6bE7)
-        );
+        DsrManager dsrManager = DsrManager(address(0xF7F0de3744C82825D77EdA8ce78f07A916fB6bE7));
         IHyperdrive.Fees memory fees = IHyperdrive.Fees({
             curve: 0.1e18, // 10% curve fee
             flat: 0.05e18, // 5% flat fee
             governance: 0.1e18 // 10% governance fee
-        });
+         });
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: IERC20(dsrManager.dai()),
             initialSharePrice: 1e18,

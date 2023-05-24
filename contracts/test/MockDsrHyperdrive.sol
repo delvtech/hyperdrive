@@ -11,16 +11,9 @@ import { IHyperdrive } from "../src/interfaces/IHyperdrive.sol";
 interface IMockDsrHyperdrive is IHyperdrive {
     function totalShares() external view returns (uint256);
 
-    function deposit(
-        uint256 amount,
-        bool asUnderlying
-    ) external returns (uint256, uint256);
+    function deposit(uint256 amount, bool asUnderlying) external returns (uint256, uint256);
 
-    function withdraw(
-        uint256 shares,
-        address destination,
-        bool asUnderlying
-    ) external returns (uint256, uint256);
+    function withdraw(uint256 shares, address destination, bool asUnderlying) external returns (uint256, uint256);
 
     function pricePerShare() external view returns (uint256);
 }
@@ -28,19 +21,14 @@ interface IMockDsrHyperdrive is IHyperdrive {
 contract MockDsrHyperdrive is DsrHyperdrive {
     using FixedPointMath for uint256;
 
-    constructor(
-        address _dataProvider,
-        DsrManager _dsrManager
-    )
+    constructor(address _dataProvider, DsrManager _dsrManager)
         DsrHyperdrive(
             IHyperdrive.PoolConfig({
                 baseToken: IERC20(address(_dsrManager.dai())),
                 initialSharePrice: FixedPointMath.ONE_18,
                 positionDuration: 365 days,
                 checkpointDuration: 1 days,
-                timeStretch: FixedPointMath.ONE_18.divDown(
-                    22.186877016851916266e18
-                ),
+                timeStretch: FixedPointMath.ONE_18.divDown(22.186877016851916266e18),
                 governance: address(0),
                 feeCollector: address(0),
                 fees: IHyperdrive.Fees({ curve: 0, flat: 0, governance: 0 }),
@@ -52,20 +40,13 @@ contract MockDsrHyperdrive is DsrHyperdrive {
             address(0),
             _dsrManager
         )
-    {}
+    { }
 
-    function deposit(
-        uint256 amount,
-        bool asUnderlying
-    ) external returns (uint256, uint256) {
+    function deposit(uint256 amount, bool asUnderlying) external returns (uint256, uint256) {
         return _deposit(amount, asUnderlying);
     }
 
-    function withdraw(
-        uint256 shares,
-        address destination,
-        bool asUnderlying
-    ) external returns (uint256, uint256) {
+    function withdraw(uint256 shares, address destination, bool asUnderlying) external returns (uint256, uint256) {
         return _withdraw(shares, destination, asUnderlying);
     }
 
@@ -77,18 +58,14 @@ contract MockDsrHyperdrive is DsrHyperdrive {
 contract MockDsrHyperdriveDataProvider is DsrHyperdriveDataProvider {
     using FixedPointMath for uint256;
 
-    constructor(
-        DsrManager _dsrManager
-    )
+    constructor(DsrManager _dsrManager)
         DsrHyperdriveDataProvider(
             IHyperdrive.PoolConfig({
                 baseToken: IERC20(address(_dsrManager.dai())),
                 initialSharePrice: FixedPointMath.ONE_18,
                 positionDuration: 365 days,
                 checkpointDuration: 1 days,
-                timeStretch: FixedPointMath.ONE_18.divDown(
-                    22.186877016851916266e18
-                ),
+                timeStretch: FixedPointMath.ONE_18.divDown(22.186877016851916266e18),
                 governance: address(0),
                 feeCollector: address(0),
                 fees: IHyperdrive.Fees({ curve: 0, flat: 0, governance: 0 }),
@@ -99,5 +76,5 @@ contract MockDsrHyperdriveDataProvider is DsrHyperdriveDataProvider {
             address(0),
             _dsrManager
         )
-    {}
+    { }
 }

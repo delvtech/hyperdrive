@@ -64,9 +64,7 @@ contract HyperdriveDSRTest is HyperdriveTest {
             initialSharePrice: FixedPointMath.ONE_18,
             positionDuration: 365 days,
             checkpointDuration: 1 days,
-            timeStretch: FixedPointMath.ONE_18.divDown(
-                22.186877016851916266e18
-            ),
+            timeStretch: FixedPointMath.ONE_18.divDown(22.186877016851916266e18),
             governance: address(0),
             feeCollector: address(0),
             fees: IHyperdrive.Fees(0, 0, 0),
@@ -85,10 +83,7 @@ contract HyperdriveDSRTest is HyperdriveTest {
 
         // The initial price per share is one so we should have that the
         // shares in the alice account are 1
-        uint256 createdShares = hyperdrive.balanceOf(
-            AssetId._LP_ASSET_ID,
-            alice
-        );
+        uint256 createdShares = hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice);
         assertEq(createdShares, 2808790684246250377500);
     }
 }

@@ -54,21 +54,18 @@ contract MockHyperdriveTestnet is Hyperdrive {
 
     error UnsupportedOption();
 
-    function _deposit(
-        uint256 _amount,
-        bool _asUnderlying
-    ) internal override returns (uint256 sharesMinted, uint256 sharePrice) {
+    function _deposit(uint256 _amount, bool _asUnderlying)
+        internal
+        override
+        returns (uint256 sharesMinted, uint256 sharePrice)
+    {
         if (!_asUnderlying) revert UnsupportedOption();
 
         // Accrue interest.
         accrueInterest();
 
         // Take custody of the base.
-        bool success = _baseToken.transferFrom(
-            msg.sender,
-            address(this),
-            _amount
-        );
+        bool success = _baseToken.transferFrom(msg.sender, address(this), _amount);
         if (!success) {
             revert Errors.TransferFailed();
         }
@@ -85,11 +82,11 @@ contract MockHyperdriveTestnet is Hyperdrive {
         }
     }
 
-    function _withdraw(
-        uint256 _shares,
-        address _destination,
-        bool _asUnderlying
-    ) internal override returns (uint256 amountWithdrawn, uint256 sharePrice) {
+    function _withdraw(uint256 _shares, address _destination, bool _asUnderlying)
+        internal
+        override
+        returns (uint256 amountWithdrawn, uint256 sharePrice)
+    {
         if (!_asUnderlying) revert UnsupportedOption();
 
         // Accrue interest.
@@ -107,8 +104,7 @@ contract MockHyperdriveTestnet is Hyperdrive {
     }
 
     function _pricePerShare() internal view override returns (uint256) {
-        uint256 underlying = _baseToken.balanceOf(address(this)) +
-            getAccruedInterest();
+        uint256 underlying = _baseToken.balanceOf(address(this)) + getAccruedInterest();
         return underlying.divDown(totalShares);
     }
 
@@ -127,10 +123,7 @@ contract MockHyperdriveTestnet is Hyperdrive {
     function getAccruedInterest() internal view returns (uint256) {
         // base_balance = base_balance * (1 + r * t)
         uint256 timeElapsed = (block.timestamp - lastUpdated).divDown(365 days);
-        return
-            _baseToken.balanceOf(address(this)).mulDown(
-                rate.mulDown(timeElapsed)
-            );
+        return _baseToken.balanceOf(address(this)).mulDown(rate.mulDown(timeElapsed));
     }
 
     function accrueInterest() internal {
@@ -139,10 +132,7 @@ contract MockHyperdriveTestnet is Hyperdrive {
     }
 }
 
-contract MockHyperdriveDataProviderTestnet is
-    MultiTokenDataProvider,
-    HyperdriveDataProvider
-{
+contract MockHyperdriveDataProviderTestnet is MultiTokenDataProvider, HyperdriveDataProvider {
     using FixedPointMath for uint256;
 
     uint256 internal rate;
@@ -174,13 +164,12 @@ contract MockHyperdriveDataProviderTestnet is
             })
         )
         MultiTokenDataProvider(_linkerCodeHash, _factory)
-    {}
+    { }
 
     /// Overrides ///
 
     function _pricePerShare() internal view override returns (uint256) {
-        uint256 underlying = _baseToken.balanceOf(address(this)) +
-            getAccruedInterest();
+        uint256 underlying = _baseToken.balanceOf(address(this)) + getAccruedInterest();
         return underlying.divDown(totalShares);
     }
 
@@ -189,9 +178,6 @@ contract MockHyperdriveDataProviderTestnet is
     function getAccruedInterest() internal view returns (uint256) {
         // base_balance = base_balance * (1 + r * t)
         uint256 timeElapsed = (block.timestamp - lastUpdated).divDown(365 days);
-        return
-            _baseToken.balanceOf(address(this)).mulDown(
-                rate.mulDown(timeElapsed)
-            );
+        return _baseToken.balanceOf(address(this)).mulDown(rate.mulDown(timeElapsed));
     }
 }

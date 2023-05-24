@@ -13,7 +13,7 @@ contract MockHyperdriveScript is Script {
 
     using FixedPointMath for uint256;
 
-    function setUp() public {}
+    function setUp() public { }
 
     function run() public {
         vm.startBroadcast();

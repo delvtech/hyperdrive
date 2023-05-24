@@ -31,11 +31,7 @@ contract HyperdriveTest is BaseTest {
 
         // Instantiate the base token.
         baseToken = new ERC20Mintable();
-        IHyperdrive.Fees memory fees = IHyperdrive.Fees({
-            curve: 0,
-            flat: 0,
-            governance: 0
-        });
+        IHyperdrive.Fees memory fees = IHyperdrive.Fees({ curve: 0, flat: 0, governance: 0 });
         // Instantiate Hyperdrive.
         uint256 apr = 0.05e18;
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
@@ -51,9 +47,7 @@ contract HyperdriveTest is BaseTest {
             updateGap: UPDATE_GAP
         });
         address dataProvider = address(new MockHyperdriveDataProvider(config));
-        hyperdrive = IHyperdrive(
-            address(new MockHyperdrive(config, dataProvider))
-        );
+        hyperdrive = IHyperdrive(address(new MockHyperdrive(config, dataProvider)));
         vm.stopPrank();
         vm.startPrank(governance);
         hyperdrive.setPauser(pauser, true);
@@ -73,11 +67,7 @@ contract HyperdriveTest is BaseTest {
     ) internal {
         vm.stopPrank();
         vm.startPrank(deployer);
-        IHyperdrive.Fees memory fees = IHyperdrive.Fees({
-            curve: curveFee,
-            flat: flatFee,
-            governance: governanceFee
-        });
+        IHyperdrive.Fees memory fees = IHyperdrive.Fees({ curve: curveFee, flat: flatFee, governance: governanceFee });
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: baseToken,
             initialSharePrice: INITIAL_SHARE_PRICE,
@@ -91,18 +81,12 @@ contract HyperdriveTest is BaseTest {
             updateGap: UPDATE_GAP
         });
         address dataProvider = address(new MockHyperdriveDataProvider(config));
-        hyperdrive = IHyperdrive(
-            address(new MockHyperdrive(config, dataProvider))
-        );
+        hyperdrive = IHyperdrive(address(new MockHyperdrive(config, dataProvider)));
     }
 
     /// Actions ///
 
-    function initialize(
-        address lp,
-        uint256 apr,
-        uint256 contribution
-    ) internal returns (uint256 lpShares) {
+    function initialize(address lp, uint256 apr, uint256 contribution) internal returns (uint256 lpShares) {
         vm.stopPrank();
         vm.startPrank(lp);
 
@@ -114,10 +98,7 @@ contract HyperdriveTest is BaseTest {
         return hyperdrive.balanceOf(AssetId._LP_ASSET_ID, lp);
     }
 
-    function addLiquidity(
-        address lp,
-        uint256 contribution
-    ) internal returns (uint256 lpShares) {
+    function addLiquidity(address lp, uint256 contribution) internal returns (uint256 lpShares) {
         vm.stopPrank();
         vm.startPrank(lp);
 
@@ -129,32 +110,25 @@ contract HyperdriveTest is BaseTest {
         return hyperdrive.balanceOf(AssetId._LP_ASSET_ID, lp);
     }
 
-    function removeLiquidity(
-        address lp,
-        uint256 shares
-    ) internal returns (uint256 baseProceeds, uint256 withdrawalShares) {
+    function removeLiquidity(address lp, uint256 shares)
+        internal
+        returns (uint256 baseProceeds, uint256 withdrawalShares)
+    {
         vm.stopPrank();
         vm.startPrank(lp);
 
         // Remove liquidity from the pool.
         uint256 baseBalanceBefore = baseToken.balanceOf(lp);
-        uint256 withdrawalShareBalanceBefore = hyperdrive.balanceOf(
-            AssetId._WITHDRAWAL_SHARE_ASSET_ID,
-            lp
-        );
+        uint256 withdrawalShareBalanceBefore = hyperdrive.balanceOf(AssetId._WITHDRAWAL_SHARE_ASSET_ID, lp);
         hyperdrive.removeLiquidity(shares, 0, lp, true);
 
         return (
             baseToken.balanceOf(lp) - baseBalanceBefore,
-            hyperdrive.balanceOf(AssetId._WITHDRAWAL_SHARE_ASSET_ID, lp) -
-                withdrawalShareBalanceBefore
+            hyperdrive.balanceOf(AssetId._WITHDRAWAL_SHARE_ASSET_ID, lp) - withdrawalShareBalanceBefore
         );
     }
 
-    function redeemWithdrawalShares(
-        address lp,
-        uint256 shares
-    ) internal returns (uint256 baseProceeds) {
+    function redeemWithdrawalShares(address lp, uint256 shares) internal returns (uint256 baseProceeds) {
         vm.stopPrank();
         vm.startPrank(lp);
 
@@ -165,37 +139,27 @@ contract HyperdriveTest is BaseTest {
         return baseToken.balanceOf(lp) - baseBalanceBefore;
     }
 
-    function openLong(
-        address trader,
-        uint256 baseAmount
-    ) internal returns (uint256 maturityTime, uint256 bondAmount) {
+    function openLong(address trader, uint256 baseAmount) internal returns (uint256 maturityTime, uint256 bondAmount) {
         vm.stopPrank();
         vm.startPrank(trader);
 
         // Open the long.
-        maturityTime = HyperdriveUtils.maturityTimeFromLatestCheckpoint(
-            hyperdrive
-        );
-        uint256 bondBalanceBefore = hyperdrive.balanceOf(
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
-            trader
-        );
+        maturityTime = HyperdriveUtils.maturityTimeFromLatestCheckpoint(hyperdrive);
+        uint256 bondBalanceBefore =
+            hyperdrive.balanceOf(AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime), trader);
         baseToken.mint(baseAmount);
         baseToken.approve(address(hyperdrive), baseAmount);
         hyperdrive.openLong(baseAmount, 0, trader, true);
 
-        uint256 bondBalanceAfter = hyperdrive.balanceOf(
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
-            trader
-        );
+        uint256 bondBalanceAfter =
+            hyperdrive.balanceOf(AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime), trader);
         return (maturityTime, bondBalanceAfter.sub(bondBalanceBefore));
     }
 
-    function closeLong(
-        address trader,
-        uint256 maturityTime,
-        uint256 bondAmount
-    ) internal returns (uint256 baseAmount) {
+    function closeLong(address trader, uint256 maturityTime, uint256 bondAmount)
+        internal
+        returns (uint256 baseAmount)
+    {
         vm.stopPrank();
         vm.startPrank(trader);
 
@@ -207,17 +171,15 @@ contract HyperdriveTest is BaseTest {
         return baseBalanceAfter.sub(baseBalanceBefore);
     }
 
-    function openShort(
-        address trader,
-        uint256 bondAmount
-    ) internal returns (uint256 maturityTime, uint256 baseAmount) {
+    function openShort(address trader, uint256 bondAmount)
+        internal
+        returns (uint256 maturityTime, uint256 baseAmount)
+    {
         vm.stopPrank();
         vm.startPrank(trader);
 
         // Open the short
-        maturityTime = HyperdriveUtils.maturityTimeFromLatestCheckpoint(
-            hyperdrive
-        );
+        maturityTime = HyperdriveUtils.maturityTimeFromLatestCheckpoint(hyperdrive);
         baseToken.mint(bondAmount);
         baseToken.approve(address(hyperdrive), bondAmount);
         uint256 baseBalanceBefore = baseToken.balanceOf(trader);
@@ -228,11 +190,10 @@ contract HyperdriveTest is BaseTest {
         return (maturityTime, baseAmount);
     }
 
-    function closeShort(
-        address trader,
-        uint256 maturityTime,
-        uint256 bondAmount
-    ) internal returns (uint256 baseAmount) {
+    function closeShort(address trader, uint256 maturityTime, uint256 bondAmount)
+        internal
+        returns (uint256 baseAmount)
+    {
         vm.stopPrank();
         vm.startPrank(trader);
 
@@ -258,57 +219,21 @@ contract HyperdriveTest is BaseTest {
 
     /// Event Utils ///
 
-    event Initialize(
-        address indexed provider,
-        uint256 lpAmount,
-        uint256 baseAmount,
-        uint256 apr
-    );
+    event Initialize(address indexed provider, uint256 lpAmount, uint256 baseAmount, uint256 apr);
 
-    event AddLiquidity(
-        address indexed provider,
-        uint256 lpAmount,
-        uint256 baseAmount
-    );
+    event AddLiquidity(address indexed provider, uint256 lpAmount, uint256 baseAmount);
 
     event RemoveLiquidity(
-        address indexed provider,
-        uint256 lpAmount,
-        uint256 baseAmount,
-        uint256 withdrawalShareAmount
+        address indexed provider, uint256 lpAmount, uint256 baseAmount, uint256 withdrawalShareAmount
     );
 
-    event RedeemWithdrawalShares(
-        address indexed provider,
-        uint256 withdrawalShareAmount,
-        uint256 baseAmount
-    );
+    event RedeemWithdrawalShares(address indexed provider, uint256 withdrawalShareAmount, uint256 baseAmount);
 
-    event OpenLong(
-        address indexed trader,
-        uint256 maturityTime,
-        uint256 baseAmount,
-        uint256 bondAmount
-    );
+    event OpenLong(address indexed trader, uint256 maturityTime, uint256 baseAmount, uint256 bondAmount);
 
-    event OpenShort(
-        address indexed trader,
-        uint256 maturityTime,
-        uint256 baseAmount,
-        uint256 bondAmount
-    );
+    event OpenShort(address indexed trader, uint256 maturityTime, uint256 baseAmount, uint256 bondAmount);
 
-    event CloseLong(
-        address indexed trader,
-        uint256 maturityTime,
-        uint256 baseAmount,
-        uint256 bondAmount
-    );
+    event CloseLong(address indexed trader, uint256 maturityTime, uint256 baseAmount, uint256 bondAmount);
 
-    event CloseShort(
-        address indexed trader,
-        uint256 maturityTime,
-        uint256 baseAmount,
-        uint256 bondAmount
-    );
+    event CloseShort(address indexed trader, uint256 maturityTime, uint256 baseAmount, uint256 bondAmount);
 }

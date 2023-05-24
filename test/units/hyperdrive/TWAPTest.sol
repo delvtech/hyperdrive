@@ -22,25 +22,16 @@ contract TWAPTest is HyperdriveTest {
         // Open long
         uint256 baseAmount = 10e18;
         uint256 currentTimestamp = block.timestamp;
-        (uint256 maturityTimeFirst, uint256 bondAmountFirst) = openLong(
-            bob,
-            baseAmount
-        );
+        (uint256 maturityTimeFirst, uint256 bondAmountFirst) = openLong(bob, baseAmount);
         // Should have reset the head and the last timestamp
-        (uint256 head, uint256 lastTimestamp) = MockHyperdrive(
-            address(hyperdrive)
-        ).getOracleState();
+        (uint256 head, uint256 lastTimestamp) = MockHyperdrive(address(hyperdrive)).getOracleState();
         assertEq(head, 1);
         assertEq(lastTimestamp, currentTimestamp);
 
         // Should not reset the head and last timestamp without time advance
-        (uint256 maturityTimeSecond, uint256 bondAmountSecond) = openLong(
-            bob,
-            baseAmount
-        );
+        (uint256 maturityTimeSecond, uint256 bondAmountSecond) = openLong(bob, baseAmount);
 
-        (head, lastTimestamp) = MockHyperdrive(address(hyperdrive))
-            .getOracleState();
+        (head, lastTimestamp) = MockHyperdrive(address(hyperdrive)).getOracleState();
         assertEq(head, 1);
         assertEq(lastTimestamp, currentTimestamp);
 
@@ -50,15 +41,13 @@ contract TWAPTest is HyperdriveTest {
         // Should record a new timestamp
         currentTimestamp = block.timestamp;
         openLong(bob, baseAmount);
-        (head, lastTimestamp) = MockHyperdrive(address(hyperdrive))
-            .getOracleState();
+        (head, lastTimestamp) = MockHyperdrive(address(hyperdrive)).getOracleState();
         assertEq(head, 2);
         assertEq(lastTimestamp, currentTimestamp);
 
         // Should not record a timestamp on close without advancing time
         closeLong(bob, maturityTimeFirst, bondAmountFirst);
-        (head, lastTimestamp) = MockHyperdrive(address(hyperdrive))
-            .getOracleState();
+        (head, lastTimestamp) = MockHyperdrive(address(hyperdrive)).getOracleState();
         assertEq(head, 2);
         assertEq(lastTimestamp, currentTimestamp);
 
@@ -66,8 +55,7 @@ contract TWAPTest is HyperdriveTest {
         advanceTime(UPDATE_GAP, int256(apr));
         currentTimestamp = block.timestamp;
         closeLong(bob, maturityTimeSecond, bondAmountSecond);
-        (head, lastTimestamp) = MockHyperdrive(address(hyperdrive))
-            .getOracleState();
+        (head, lastTimestamp) = MockHyperdrive(address(hyperdrive)).getOracleState();
         assertEq(head, 3);
         assertEq(lastTimestamp, currentTimestamp);
     }
@@ -81,25 +69,16 @@ contract TWAPTest is HyperdriveTest {
         // Open long
         uint256 baseAmount = 10e18;
         uint256 currentTimestamp = block.timestamp;
-        (uint256 maturityTimeFirst, uint256 bondAmountFirst) = openShort(
-            bob,
-            baseAmount
-        );
+        (uint256 maturityTimeFirst, uint256 bondAmountFirst) = openShort(bob, baseAmount);
         // Should have reset the head and the last timestamp
-        (uint256 head, uint256 lastTimestamp) = MockHyperdrive(
-            address(hyperdrive)
-        ).getOracleState();
+        (uint256 head, uint256 lastTimestamp) = MockHyperdrive(address(hyperdrive)).getOracleState();
         assertEq(head, 1);
         assertEq(lastTimestamp, currentTimestamp);
 
         // Should not reset the head and last timestamp without time advance
-        (uint256 maturityTimeSecond, uint256 bondAmountSecond) = openShort(
-            bob,
-            baseAmount
-        );
+        (uint256 maturityTimeSecond, uint256 bondAmountSecond) = openShort(bob, baseAmount);
 
-        (head, lastTimestamp) = MockHyperdrive(address(hyperdrive))
-            .getOracleState();
+        (head, lastTimestamp) = MockHyperdrive(address(hyperdrive)).getOracleState();
         assertEq(head, 1);
         assertEq(lastTimestamp, currentTimestamp);
 
@@ -109,15 +88,13 @@ contract TWAPTest is HyperdriveTest {
         // Should record a new timestamp
         currentTimestamp = block.timestamp;
         openShort(bob, baseAmount);
-        (head, lastTimestamp) = MockHyperdrive(address(hyperdrive))
-            .getOracleState();
+        (head, lastTimestamp) = MockHyperdrive(address(hyperdrive)).getOracleState();
         assertEq(head, 2);
         assertEq(lastTimestamp, currentTimestamp);
 
         // Should not record a timestamp on close without advancing time
         closeShort(bob, maturityTimeFirst, bondAmountFirst);
-        (head, lastTimestamp) = MockHyperdrive(address(hyperdrive))
-            .getOracleState();
+        (head, lastTimestamp) = MockHyperdrive(address(hyperdrive)).getOracleState();
         assertEq(head, 2);
         assertEq(lastTimestamp, currentTimestamp);
 
@@ -125,8 +102,7 @@ contract TWAPTest is HyperdriveTest {
         advanceTime(UPDATE_GAP, int256(apr));
         currentTimestamp = block.timestamp;
         closeShort(bob, maturityTimeSecond, bondAmountSecond);
-        (head, lastTimestamp) = MockHyperdrive(address(hyperdrive))
-            .getOracleState();
+        (head, lastTimestamp) = MockHyperdrive(address(hyperdrive)).getOracleState();
         assertEq(head, 3);
         assertEq(lastTimestamp, currentTimestamp);
     }
@@ -143,18 +119,14 @@ contract TWAPTest is HyperdriveTest {
         // We check that the function properly functions as a buffer
         recordTwelveDataPoints();
         uint256 originalTimestamp = block.timestamp - UPDATE_GAP;
-        (uint256 head, uint256 lastTimestamp) = MockHyperdrive(
-            address(hyperdrive)
-        ).getOracleState();
+        (uint256 head, uint256 lastTimestamp) = MockHyperdrive(address(hyperdrive)).getOracleState();
         assertEq(head, 12 % ORACLE_SIZE);
         assertEq(lastTimestamp, originalTimestamp);
 
         // Ensure that the time of each update was properly recorded.
         uint256 check = originalTimestamp;
         for (uint256 i = 2; i != 3; i = i == 0 ? 4 : i - 1) {
-            (, uint256 time) = MockHyperdrive(address(hyperdrive)).loadOracle(
-                i
-            );
+            (, uint256 time) = MockHyperdrive(address(hyperdrive)).loadOracle(i);
             assertEq(time, check);
             check -= UPDATE_GAP;
         }
@@ -164,9 +136,7 @@ contract TWAPTest is HyperdriveTest {
         uint256 finalData = 12;
         uint256 currentData = 12;
         for (uint256 i = 0; i < ORACLE_SIZE - 1; i++) {
-            uint256 avg = HyperdriveDataProvider(address(hyperdrive)).query(
-                period
-            );
+            uint256 avg = HyperdriveDataProvider(address(hyperdrive)).query(period);
             assertEq(avg, (finalData * 1e18 + currentData * 1e18) / 2);
 
             currentData -= 1;

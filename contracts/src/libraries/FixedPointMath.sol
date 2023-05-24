@@ -44,19 +44,11 @@ library FixedPointMath {
     /// @param y Fixed point number in 1e18 format.
     /// @param denominator Fixed point number in 1e18 format.
     /// @return z The result of x * y / denominator rounded down.
-    function mulDivDown(
-        uint256 x,
-        uint256 y,
-        uint256 denominator
-    ) internal pure returns (uint256 z) {
+    function mulDivDown(uint256 x, uint256 y, uint256 denominator) internal pure returns (uint256 z) {
         /// @solidity memory-safe-assembly
         assembly {
             // Equivalent to require(denominator != 0 && (y == 0 || x <= type(uint256).max / y))
-            if iszero(
-                mul(denominator, iszero(mul(y, gt(x, div(MAX_UINT256, y)))))
-            ) {
-                revert(0, 0)
-            }
+            if iszero(mul(denominator, iszero(mul(y, gt(x, div(MAX_UINT256, y)))))) { revert(0, 0) }
 
             // Divide x * y by the denominator.
             z := div(mul(x, y), denominator)
@@ -84,26 +76,15 @@ library FixedPointMath {
     /// @param y Fixed point number in 1e18 format.
     /// @param denominator Fixed point number in 1e18 format.
     /// @return z The result of x * y / denominator rounded up.
-    function mulDivUp(
-        uint256 x,
-        uint256 y,
-        uint256 denominator
-    ) internal pure returns (uint256 z) {
+    function mulDivUp(uint256 x, uint256 y, uint256 denominator) internal pure returns (uint256 z) {
         /// @solidity memory-safe-assembly
         assembly {
             // Equivalent to require(denominator != 0 && (y == 0 || x <= type(uint256).max / y))
-            if iszero(
-                mul(denominator, iszero(mul(y, gt(x, div(MAX_UINT256, y)))))
-            ) {
-                revert(0, 0)
-            }
+            if iszero(mul(denominator, iszero(mul(y, gt(x, div(MAX_UINT256, y)))))) { revert(0, 0) }
 
             // If x * y modulo the denominator is strictly greater than 0,
             // 1 is added to round up the division of x * y by the denominator.
-            z := add(
-                gt(mod(mul(x, y), denominator), 0),
-                div(mul(x, y), denominator)
-            )
+            z := add(gt(mod(mul(x, y), denominator), 0), div(mul(x, y), denominator))
         }
     }
 
@@ -169,8 +150,9 @@ library FixedPointMath {
 
             // When the result is > (2**255 - 1) / 1e18 we can not represent it as an
             // int. This happens when x >= floor(log((2**255 - 1) / 1e18) * 1e18) ~ 135.
-            if (x >= 135305999368893231589)
+            if (x >= 135305999368893231589) {
                 revert Errors.FixedPointMath_InvalidExponent();
+            }
 
             // x is now in the range (-42, 136) * 1e18. Convert to (-42, 136) * 2**96
             // for more intermediate precision and a binary basis. This base conversion
@@ -180,8 +162,7 @@ library FixedPointMath {
             // Reduce range of x to (-½ ln 2, ½ ln 2) * 2**96 by factoring out powers
             // of two such that exp(x) = exp(x') * 2**k, where k is an integer.
             // Solving this gives k = round(x / log(2)) and x' = x - k * log(2).
-            int256 k = ((x << 96) / 54916777467707473351141471128 + 2 ** 95) >>
-                96;
+            int256 k = ((x << 96) / 54916777467707473351141471128 + 2 ** 95) >> 96;
             x = x - k * 54916777467707473351141471128;
 
             // k is in the range [-61, 195].
@@ -218,11 +199,7 @@ library FixedPointMath {
             // * the 1e18 / 2**96 factor for base conversion.
             // We do this all at once, with an intermediate result in 2**213
             // basis, so the final right shift is always by a positive amount.
-            r = int256(
-                (uint256(r) *
-                    3822833074963236453042738258902158003155416615667) >>
-                    uint256(195 - k)
-            );
+            r = int256((uint256(r) * 3822833074963236453042738258902158003155416615667) >> uint256(195 - k));
         }
     }
 
@@ -304,9 +281,7 @@ library FixedPointMath {
             // mul s * 5e18 * 2**96, base is now 5**18 * 2**192
             r *= 1677202110996718588342820967067443963516166;
             // add ln(2) * k * 5e18 * 2**192
-            r +=
-                16597577552685614221487285958193947469193820559219878177908093499208371 *
-                k;
+            r += 16597577552685614221487285958193947469193820559219878177908093499208371 * k;
             // add ln(2**96 / 10**18) * 5e18 * 2**192
             r += 600920179829731861736702779321621459595472258049074101567377883020018308;
             // base conversion: mul 2**18 / 2**192
@@ -329,15 +304,11 @@ library FixedPointMath {
     ) internal pure returns (uint256 average) {
         if (_isAdding) {
             return
-                (_totalWeight.mulDown(_average))
-                    .add(_deltaWeight.mulDown(_delta))
-                    .divUp(_totalWeight.add(_deltaWeight));
+                (_totalWeight.mulDown(_average)).add(_deltaWeight.mulDown(_delta)).divUp(_totalWeight.add(_deltaWeight));
         } else {
             if (_totalWeight == _deltaWeight) return 0;
             return
-                (_totalWeight.mulDown(_average))
-                    .sub(_deltaWeight.mulDown(_delta))
-                    .divUp(_totalWeight.sub(_deltaWeight));
+                (_totalWeight.mulDown(_average)).sub(_deltaWeight.mulDown(_delta)).divUp(_totalWeight.sub(_deltaWeight));
         }
     }
 }

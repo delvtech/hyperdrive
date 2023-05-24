@@ -81,20 +81,11 @@ contract BaseTest is Test {
         vm.deal(_user, 10000 ether);
     }
 
-    function whaleTransfer(
-        address whale,
-        IERC20 token,
-        address to
-    ) public returns (uint256) {
+    function whaleTransfer(address whale, IERC20 token, address to) public returns (uint256) {
         return whaleTransfer(whale, token, token.balanceOf(whale), to);
     }
 
-    function whaleTransfer(
-        address whale,
-        IERC20 token,
-        uint256 amount,
-        address to
-    ) public returns (uint256) {
+    function whaleTransfer(address whale, IERC20 token, uint256 amount, address to) public returns (uint256) {
         uint256 whaleBalance = token.balanceOf(whale);
         if (amount > whaleBalance) revert WhaleBalanceExceeded();
         if (Address.isContract(whale)) revert WhaleIsContract();
@@ -105,29 +96,17 @@ contract BaseTest is Test {
         return amount;
     }
 
-    function assertWithDelta(
-        uint256 _value,
-        int256 _delta,
-        uint256 _targetValue
-    ) public {
+    function assertWithDelta(uint256 _value, int256 _delta, uint256 _targetValue) public {
         bool positiveDelta = _delta >= 0;
 
         if (positiveDelta) {
-            assertTrue(
-                _targetValue >= _value,
-                "_targetValue should be greater than or equal to _value"
-            );
+            assertTrue(_targetValue >= _value, "_targetValue should be greater than or equal to _value");
         } else {
-            assertTrue(
-                _value > _targetValue,
-                "_targetValue should be less than _value"
-            );
+            assertTrue(_value > _targetValue, "_targetValue should be less than _value");
         }
 
         uint256 upperBound = positiveDelta ? _value + uint256(_delta) : _value;
-        uint256 lowerBound = !positiveDelta
-            ? _value - uint256(-_delta)
-            : _value;
+        uint256 lowerBound = !positiveDelta ? _value - uint256(-_delta) : _value;
 
         // targetValue must be within the range
         if (_targetValue < lowerBound || _targetValue > upperBound) {
@@ -140,34 +119,20 @@ contract BaseTest is Test {
         if (positiveDelta) {
             uint256 valueToTarget = _targetValue - _value;
             if (valueToTarget < uint256(_delta)) {
-                console2.log(
-                    "Precision increased by: %s",
-                    uint256(_delta) - valueToTarget
-                );
+                console2.log("Precision increased by: %s", uint256(_delta) - valueToTarget);
                 console2.log("Old Delta: %s", _delta);
                 console2.log("New Delta: %s", valueToTarget);
             } else {
-                assertEq(
-                    upperBound,
-                    _targetValue,
-                    "expected upperBound to match _targetValue"
-                );
+                assertEq(upperBound, _targetValue, "expected upperBound to match _targetValue");
             }
         } else {
             uint256 valueToTarget = _value - _targetValue;
             if (valueToTarget < uint256(-_delta)) {
-                console2.log(
-                    "Precision increased by: %s",
-                    uint256(-_delta) - valueToTarget
-                );
+                console2.log("Precision increased by: %s", uint256(-_delta) - valueToTarget);
                 console2.log("Old Delta: %s", _delta);
                 console2.log("New Delta: -%s", valueToTarget);
             } else {
-                assertEq(
-                    lowerBound,
-                    _targetValue,
-                    "expected lowerBound to match _targetValue"
-                );
+                assertEq(lowerBound, _targetValue, "expected lowerBound to match _targetValue");
             }
         }
     }
