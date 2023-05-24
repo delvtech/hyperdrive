@@ -26,13 +26,16 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
 
         // Bob opens a large short.
         uint256 shortAmount = HyperdriveUtils.calculateMaxShort(hyperdrive);
-        (uint256 maturityTime, uint256 basePaid) = openShort(bob, shortAmount);
+        (uint256 maturityTime, ) = openShort(bob, shortAmount);
 
         // Alice removes her liquidity.
         (, uint256 withdrawalShares) = removeLiquidity(alice, lpShares);
 
         // The term passes and no interest accrues.
         advanceTime(POSITION_DURATION, 0);
+
+        // Bob closes his short.
+        closeShort(bob, maturityTime, shortAmount);
 
         // Alice tries to redeem her withdrawal shares with a large output limit.
         vm.stopPrank();
@@ -45,5 +48,193 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
             alice,
             true
         );
+    }
+
+    function test_redeem_withdrawal_shares_no_clamping() external {
+        // Initialize the pool.
+        uint256 lpShares = initialize(alice, 0.02e18, 500_000_000e18);
+
+        // Bob opens a large short.
+        uint256 shortAmount = HyperdriveUtils.calculateMaxShort(hyperdrive);
+        (uint256 maturityTime, ) = openShort(bob, shortAmount);
+
+        // Alice removes her liquidity.
+        (, uint256 withdrawalShares) = removeLiquidity(alice, lpShares);
+
+        // The term passes and no interest accrues.
+        advanceTime(POSITION_DURATION, 0);
+
+        // Bob closes his short.
+        closeShort(bob, maturityTime, shortAmount);
+
+        // Alice redeems her withdrawal shares.
+        uint256 aliceBaseBalanceBefore = baseToken.balanceOf(alice);
+        uint256 hyperdriveBaseBalanceBefore = baseToken.balanceOf(
+            address(hyperdrive)
+        );
+        (uint256 baseProceeds, uint256 sharesRedeemed) = redeemWithdrawalShares(
+            alice,
+            withdrawalShares
+        );
+        assertEq(baseProceeds, shortAmount);
+        assertEq(sharesRedeemed, withdrawalShares);
+
+        // Ensure that a `RedeemWithdrawalShares` event was emitted.
+        verifyRedeemWithdrawalSharesEvent(alice, sharesRedeemed, baseProceeds);
+
+        // Ensure that all of the withdrawal shares were burned.
+        assertEq(hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID), 0);
+        assertEq(hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw, 0);
+        assertEq(hyperdrive.getPoolInfo().withdrawalSharesProceeds, 0);
+
+        // Ensure that the base proceeds were transferred.
+        assertEq(
+            baseToken.balanceOf(alice),
+            aliceBaseBalanceBefore + baseProceeds
+        );
+        assertEq(
+            baseToken.balanceOf(address(hyperdrive)),
+            hyperdriveBaseBalanceBefore - baseProceeds
+        );
+    }
+
+    function test_redeem_withdrawal_shares_clamping() external {
+        // Initialize the pool.
+        uint256 lpShares = initialize(alice, 0.02e18, 500_000_000e18);
+
+        // Bob opens a large short.
+        uint256 shortAmount = HyperdriveUtils.calculateMaxShort(hyperdrive);
+        (uint256 maturityTime, ) = openShort(bob, shortAmount);
+
+        // Alice removes her liquidity.
+        (, uint256 withdrawalShares) = removeLiquidity(alice, lpShares);
+
+        // The term passes and no interest accrues.
+        advanceTime(POSITION_DURATION, 0);
+
+        // Bob closes his short.
+        closeShort(bob, maturityTime, shortAmount);
+
+        // Alice redeems half of her withdrawal shares.
+        uint256 aliceBaseBalanceBefore = baseToken.balanceOf(alice);
+        uint256 hyperdriveBaseBalanceBefore = baseToken.balanceOf(
+            address(hyperdrive)
+        );
+        (uint256 baseProceeds, uint256 sharesRedeemed) = redeemWithdrawalShares(
+            alice,
+            withdrawalShares / 2
+        );
+        assertApproxEqAbs(baseProceeds, shortAmount / 2, 1);
+        assertApproxEqAbs(sharesRedeemed, withdrawalShares / 2, 1);
+
+        // Ensure that a `RedeemWithdrawalShares` event was emitted.
+        verifyRedeemWithdrawalSharesEvent(alice, sharesRedeemed, baseProceeds);
+
+        // Ensure that the base proceeds were transferred.
+        assertEq(
+            baseToken.balanceOf(alice),
+            aliceBaseBalanceBefore + baseProceeds
+        );
+        assertEq(
+            baseToken.balanceOf(address(hyperdrive)),
+            hyperdriveBaseBalanceBefore - baseProceeds
+        );
+
+        // Alice redeems the next half of her withdrawal shares.
+        aliceBaseBalanceBefore = baseToken.balanceOf(alice);
+        hyperdriveBaseBalanceBefore = baseToken.balanceOf(address(hyperdrive));
+        (baseProceeds, sharesRedeemed) = redeemWithdrawalShares(
+            alice,
+            withdrawalShares
+        );
+        assertApproxEqAbs(baseProceeds, shortAmount / 2, 1);
+        assertApproxEqAbs(sharesRedeemed, withdrawalShares / 2, 1);
+
+        // Ensure that a `RedeemWithdrawalShares` event was emitted.
+        verifyRedeemWithdrawalSharesEvent(alice, sharesRedeemed, baseProceeds);
+
+        // Ensure that all of the withdrawal shares were burned.
+        assertEq(hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID), 0);
+        assertEq(hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw, 0);
+        assertEq(hyperdrive.getPoolInfo().withdrawalSharesProceeds, 0);
+
+        // Ensure that the base proceeds were transferred.
+        assertEq(
+            baseToken.balanceOf(alice),
+            aliceBaseBalanceBefore + baseProceeds
+        );
+        assertEq(
+            baseToken.balanceOf(address(hyperdrive)),
+            hyperdriveBaseBalanceBefore - baseProceeds
+        );
+    }
+
+    function test_redeem_withdrawal_shares_min_output() external {
+        // Initialize the pool.
+        uint256 lpShares = initialize(alice, 0.02e18, 500_000_000e18);
+
+        // Bob opens a large short.
+        uint256 shortAmount = HyperdriveUtils.calculateMaxShort(hyperdrive);
+        (uint256 maturityTime, ) = openShort(bob, shortAmount);
+
+        // Alice removes her liquidity.
+        (, uint256 withdrawalShares) = removeLiquidity(alice, lpShares);
+
+        // The term passes and no interest accrues.
+        advanceTime(POSITION_DURATION, 0);
+
+        // Bob closes his short.
+        closeShort(bob, maturityTime, shortAmount);
+
+        // Alice redeems her withdrawal shares.
+        uint256 aliceBaseBalanceBefore = baseToken.balanceOf(alice);
+        uint256 hyperdriveBaseBalanceBefore = baseToken.balanceOf(
+            address(hyperdrive)
+        );
+        uint256 expectedSharePrice = shortAmount.divDown(withdrawalShares);
+        (uint256 baseProceeds, uint256 sharesRedeemed) = redeemWithdrawalShares(
+            alice,
+            withdrawalShares,
+            expectedSharePrice
+        );
+        assertEq(baseProceeds, shortAmount);
+        assertEq(sharesRedeemed, withdrawalShares);
+
+        // Ensure that a `RedeemWithdrawalShares` event was emitted.
+        verifyRedeemWithdrawalSharesEvent(alice, sharesRedeemed, baseProceeds);
+
+        // Ensure that all of the withdrawal shares were burned.
+        assertEq(hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID), 0);
+        assertEq(hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw, 0);
+        assertEq(hyperdrive.getPoolInfo().withdrawalSharesProceeds, 0);
+
+        // Ensure that the base proceeds were transferred.
+        assertEq(
+            baseToken.balanceOf(alice),
+            aliceBaseBalanceBefore + baseProceeds
+        );
+        assertEq(
+            baseToken.balanceOf(address(hyperdrive)),
+            hyperdriveBaseBalanceBefore - baseProceeds
+        );
+    }
+
+    function verifyRedeemWithdrawalSharesEvent(
+        address provider,
+        uint256 expectedSharesRedeemed,
+        uint256 expectedBaseProceeds
+    ) internal {
+        VmSafe.Log[] memory logs = vm.getRecordedLogs().filterLogs(
+            RedeemWithdrawalShares.selector
+        );
+        assertEq(logs.length, 1);
+        VmSafe.Log memory log = logs[0];
+        assertEq(address(uint160(uint256(log.topics[1]))), provider);
+        (uint256 sharesRedeemed, uint256 baseProceeds) = abi.decode(
+            log.data,
+            (uint256, uint256)
+        );
+        assertEq(sharesRedeemed, expectedSharesRedeemed);
+        assertEq(baseProceeds, expectedBaseProceeds);
     }
 }

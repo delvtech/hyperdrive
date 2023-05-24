@@ -287,13 +287,14 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
     /// @param _asUnderlying If true the user is paid in underlying if false
     ///                      the contract transfers in yield source directly.
     ///                      Note - for some paths one choice may be disabled or blocked.
-    /// @return _proceeds The amount of base the LP received.
+    /// @return proceeds The amount of base the LP received.
+    /// @return sharesRedeemed The amount of withdrawal shares that were redeemed.
     function redeemWithdrawalShares(
         uint256 _shares,
         uint256 _minOutputPerShare,
         address _destination,
         bool _asUnderlying
-    ) external returns (uint256 _proceeds) {
+    ) external returns (uint256 proceeds, uint256 sharesRedeemed) {
         // Perform a checkpoint.
         uint256 sharePrice = _pricePerShare();
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
@@ -301,34 +302,36 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // Clamp the shares to the total amount of shares ready for withdrawal
         // to avoid unnecessary reverts. We exit early if the user has no shares
         // available to redeem.
-        _shares = _shares <= _withdrawPool.readyToWithdraw
-            ? _shares
-            : _withdrawPool.readyToWithdraw;
-        if (_shares == 0) return 0;
+        sharesRedeemed = _withdrawPool.readyToWithdraw;
+        if (_shares <= _withdrawPool.readyToWithdraw) {
+            sharesRedeemed = _shares;
+        }
+        if (sharesRedeemed == 0) return (0, 0);
 
         // We burn the shares from the user
-        _burn(AssetId._WITHDRAWAL_SHARE_ASSET_ID, msg.sender, _shares);
+        _burn(AssetId._WITHDRAWAL_SHARE_ASSET_ID, msg.sender, sharesRedeemed);
 
         // The LP gets the pro-rata amount of the collected proceeds.
-        uint256 proceeds = _shares.mulDivDown(
+        uint256 shareProceeds = sharesRedeemed.mulDivDown(
             uint128(_withdrawPool.proceeds),
             uint128(_withdrawPool.readyToWithdraw)
         );
 
         // Apply the update to the withdrawal pool.
-        _withdrawPool.readyToWithdraw -= uint128(_shares);
-        _withdrawPool.proceeds -= uint128(proceeds);
+        _withdrawPool.readyToWithdraw -= uint128(sharesRedeemed);
+        _withdrawPool.proceeds -= uint128(shareProceeds);
 
         // Withdraw for the user
-        (_proceeds, ) = _withdraw(proceeds, _destination, _asUnderlying);
+        (proceeds, ) = _withdraw(shareProceeds, _destination, _asUnderlying);
 
-        // Enforce the minimum user output for share:
-        //    _minOutputPerShare <= _proceeds / _shares => _minOutputPerShare * _shares <= _proceeds
-        if (_minOutputPerShare.mulDown(_shares) > _proceeds)
+        // Enforce the minimum user output per share.
+        if (_minOutputPerShare.mulDown(sharesRedeemed) > proceeds)
             revert Errors.OutputLimit();
 
         // Emit a RedeemWithdrawalShares event.
-        emit RedeemWithdrawalShares(_destination, _shares, _proceeds);
+        emit RedeemWithdrawalShares(_destination, sharesRedeemed, proceeds);
+
+        return (proceeds, sharesRedeemed);
     }
 
     /// @dev Updates the pool's liquidity and holds the pool's APR constant.

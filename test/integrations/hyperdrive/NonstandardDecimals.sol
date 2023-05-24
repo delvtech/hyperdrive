@@ -310,7 +310,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
 
         // Redeem Alice's withdrawal shares. Alice at least the margin released
         // from Bob's long.
-        uint256 aliceRedeemProceeds = redeemWithdrawalShares(
+        (uint256 aliceRedeemProceeds, ) = redeemWithdrawalShares(
             alice,
             aliceWithdrawalShares
         );
