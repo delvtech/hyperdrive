@@ -21,7 +21,6 @@ ENV PRIVATE_KEY=${PRIVATE_KEY}
 ENV RPC_URL=${RPC_URL}
 
 # Copy the contract dependencies required to run the migration script.
-COPY --from=yarn-builder /src/node_modules/@openzeppelin/ ./node_modules/@openzeppelin/
 COPY ./.git/ ./.git/
 COPY ./contracts/ ./contracts/
 COPY ./lib/ ./lib/
@@ -30,6 +29,7 @@ COPY ./test/ ./test/
 COPY ./foundry.toml ./foundry.toml
 
 # Build the contracts using the "production" profile.
+RUN FOUNDRY_PROFILE="production" forge install
 RUN FOUNDRY_PROFILE="production" forge build
 
 # Copy the script used to run the migrations and set its permissions.
