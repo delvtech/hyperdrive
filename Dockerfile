@@ -1,14 +1,3 @@
-### Yarn Image ###
-
-FROM node:lts AS yarn-builder
-
-WORKDIR /src
-
-COPY ./package.json ./package.json
-COPY ./yarn.lock ./yarn.lock
-
-RUN yarn install
-
 ### Foundry Image ###
 
 FROM ghcr.io/foundry-rs/foundry:master
