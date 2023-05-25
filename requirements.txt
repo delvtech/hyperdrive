@@ -1,2 +1,0 @@
-eth-ape
-pytest
