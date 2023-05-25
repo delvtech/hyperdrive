@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 
 import { BondWrapper } from "../src/BondWrapper.sol";
 import { IHyperdrive } from "../src/interfaces/IHyperdrive.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import { ERC20Permit } from "../src/libraries/ERC20Permit.sol";
 
 contract MockBondWrapper is BondWrapper {
