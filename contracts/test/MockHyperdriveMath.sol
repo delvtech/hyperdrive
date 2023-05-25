@@ -44,22 +44,19 @@ contract MockHyperdriveMath {
         uint256 _shareReserves,
         uint256 _bondReserves,
         uint256 _amountIn,
-        uint256 _normalizedTimeRemaining,
         uint256 _timeStretch,
         uint256 _sharePrice,
         uint256 _initialSharePrice
-    ) external pure returns (uint256, uint256, uint256) {
-        (uint256 result1, uint256 result2, uint256 result3) = HyperdriveMath
-            .calculateOpenLong(
-                _shareReserves,
-                _bondReserves,
-                _amountIn,
-                _normalizedTimeRemaining,
-                _timeStretch,
-                _sharePrice,
-                _initialSharePrice
-            );
-        return (result1, result2, result3);
+    ) external pure returns (uint256) {
+        uint256 result = HyperdriveMath.calculateOpenLong(
+            _shareReserves,
+            _bondReserves,
+            _amountIn,
+            _timeStretch,
+            _sharePrice,
+            _initialSharePrice
+        );
+        return result;
     }
 
     function calculateCloseLong(
@@ -90,22 +87,19 @@ contract MockHyperdriveMath {
         uint256 _shareReserves,
         uint256 _bondReserves,
         uint256 _amountIn,
-        uint256 _normalizedTimeRemaining,
         uint256 _timeStretch,
         uint256 _sharePrice,
         uint256 _initialSharePrice
-    ) external pure returns (uint256, uint256, uint256) {
-        (uint256 result1, uint256 result2, uint256 result3) = HyperdriveMath
-            .calculateOpenShort(
-                _shareReserves,
-                _bondReserves,
-                _amountIn,
-                _normalizedTimeRemaining,
-                _timeStretch,
-                _sharePrice,
-                _initialSharePrice
-            );
-        return (result1, result2, result3);
+    ) external pure returns (uint256) {
+        uint256 result = HyperdriveMath.calculateOpenShort(
+            _shareReserves,
+            _bondReserves,
+            _amountIn,
+            _timeStretch,
+            _sharePrice,
+            _initialSharePrice
+        );
+        return result;
     }
 
     function calculateCloseShort(

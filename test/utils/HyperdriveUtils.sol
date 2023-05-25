@@ -22,8 +22,8 @@ library HyperdriveUtils {
         IHyperdrive _hyperdrive,
         uint256 _maturityTime
     ) internal view returns (uint256 timeRemaining) {
-        timeRemaining = _maturityTime > block.timestamp
-            ? _maturityTime - block.timestamp
+        timeRemaining = _maturityTime > latestCheckpoint(_hyperdrive)
+            ? _maturityTime - latestCheckpoint(_hyperdrive)
             : 0;
         timeRemaining = (timeRemaining).divDown(
             _hyperdrive.getPoolConfig().positionDuration
@@ -238,11 +238,10 @@ library HyperdriveUtils {
         }
 
         // Calculate the openShort trade
-        (, , uint256 shareProceeds) = HyperdriveMath.calculateOpenShort(
+        uint256 shareProceeds = HyperdriveMath.calculateOpenShort(
             poolInfo.shareReserves,
             poolInfo.bondReserves,
             _bondAmount,
-            timeRemaining,
             poolConfig.timeStretch,
             poolInfo.sharePrice,
             poolConfig.initialSharePrice
