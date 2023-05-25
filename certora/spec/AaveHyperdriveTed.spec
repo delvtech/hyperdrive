@@ -189,8 +189,7 @@ rule openLongReallyOpensLong(env e) {
     AaveHyperdrive.MarketState postState = marketState();
     uint128 longsOutstanding2 = postState.longsOutstanding;
 
-    assert longsOutstanding1 == longsOutstanding2 || assert_uint128(longsOutstanding1 + 1) == longsOutstanding2;
-    assert assert_uint128(longsOutstanding1 + 1) == longsOutstanding2;
+    assert longsOutstanding1 == longsOutstanding2 || assert_uint128(longsOutstanding1 + bondsReceived) == longsOutstanding2;
 }
 
 /// @doc Closing a long position at maturity should return the same number of tokens as the number of bonds.
