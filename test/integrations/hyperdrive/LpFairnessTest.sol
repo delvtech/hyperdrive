@@ -576,43 +576,50 @@ contract LPFairnessTest is HyperdriveTest {
         // variable interest rate earned by the pool
         int256 variableRate = int256(variableRateParam);
 
-        // fixed interest rate the pool pays the longs
-        uint256 fixedRate = 0.10e18;
-
+        uint256 aliceLpShares = 0;
+        uint256 baseSpent = 0;
+        uint256 poolValue = 0;
+        uint256 bondsPurchased = 0;
+{
         // Initialize the pool with capital.
         uint256 initialLiquidity = 5_000_000e18;
-        initialize(alice, fixedRate, initialLiquidity);
+        aliceLpShares = initialize(alice, 0.10e18, initialLiquidity);
 
         // Celine opens a long.
-        uint256 baseSpent = 5_000_000e18 - tradeSizeParam;
-        (, uint256 bondsPurchased) = openLong(celine, baseSpent);
+        baseSpent = 5_000_000e18 - tradeSizeParam;
+        (, bondsPurchased) = openLong(celine, baseSpent);
 
         // 1/2 the term passes.
         advanceTime(POSITION_DURATION / 2, variableRate);
-        (uint256 poolValue, ) = HyperdriveUtils.calculateCompoundInterest(
+        ( poolValue, ) = HyperdriveUtils.calculateCompoundInterest(
             initialLiquidity + baseSpent,
             variableRate,
             POSITION_DURATION / 2
         );
+}
 
         // Celine opens a short.
         uint256 bondsShorted = tradeSizeParam;
         (, uint256 baseSpent2) = openShort(celine, bondsShorted);
 
+        uint256 bobLpShares = 0;
+        uint256 poolValue2 = 0;
+
+{
         // Bob adds liquidity.
         uint256 contribution = 5_000_000e18;
-        uint256 lpShares = addLiquidity(bob, contribution);
+        bobLpShares = addLiquidity(bob, contribution);
 
         // 1/2 the term passes.
         advanceTime(POSITION_DURATION / 2, variableRate);
 
         // Calculate the value of the pool after interest is accrued.
-        (uint256 poolValue2, ) = HyperdriveUtils.calculateCompoundInterest(
+        (poolValue2, ) = HyperdriveUtils.calculateCompoundInterest(
             poolValue + contribution + baseSpent2,
             variableRate,
             POSITION_DURATION / 2
         );
-
+}
         // Calculate the total short interest.
         (, int256 shortInterest) = HyperdriveUtils.calculateCompoundInterest(
             bondsShorted,
@@ -620,43 +627,80 @@ contract LPFairnessTest is HyperdriveTest {
             POSITION_DURATION / 2
         );
 
+        uint256 expectedWithdrawalProceeds = 0;
+{
         // calculate the portion of the pool's value (after interest) that bob contributed.
         uint256 contributionWithInterest = (poolValue2 - baseSpent2 - baseSpent)
-            .mulDivDown(lpShares, hyperdrive.totalSupply(AssetId._LP_ASSET_ID));
+            .mulDivDown(bobLpShares, hyperdrive.totalSupply(AssetId._LP_ASSET_ID));
 
         // calculate the portion of the fixed interest that bob earned
         uint256 fixedInterestEarned = baseSpent2.mulDivDown(
-            lpShares,
+            bobLpShares,
             hyperdrive.totalSupply(AssetId._LP_ASSET_ID)
         );
 
         // calculate the portion of the variable interest that bob owes
         uint256 variableInterestOwed = uint256(shortInterest).mulDivDown(
-            lpShares,
+            bobLpShares,
             hyperdrive.totalSupply(AssetId._LP_ASSET_ID)
         );
 
         // calculate the portion of the fixed interest that bob owes
         uint256 fixedInterestOwed = (bondsPurchased - baseSpent).mulDivDown(
-            lpShares,
+            bobLpShares,
             hyperdrive.totalSupply(AssetId._LP_ASSET_ID)
         );
 
         // calculate the expected withdrawal shares so they can be removed from the expected proceeds
         uint256 withdrawalShares = bondsShorted.mulDivDown(
-            lpShares,
+            bobLpShares,
             hyperdrive.totalSupply(AssetId._LP_ASSET_ID)
         );
 
         // calculate the expected withdrawal proceeds
-        uint256 expectedWithdrawalProceeds = contributionWithInterest +
+        expectedWithdrawalProceeds = contributionWithInterest +
             fixedInterestEarned -
             variableInterestOwed -
             fixedInterestOwed -
             withdrawalShares;
+}
+
+        // calculate alice's proportion of LP shares
+        uint256 aliceLpProportion = aliceLpShares.divDown(
+            hyperdrive.totalSupply(AssetId._LP_ASSET_ID)
+        );
+{
+        // Bob removes liquidity
+        (uint256 bobWithdrawalProceeds, ) = removeLiquidity(bob, bobLpShares);
+        assertApproxEqAbs(bobWithdrawalProceeds, expectedWithdrawalProceeds, 2e7);
+}
+
+{
+        // calculate the portion of the pool's value (after interest) that alice contributed.
+        uint256 contributionWithInterest = (poolValue2 - baseSpent2 - baseSpent).mulDown(aliceLpProportion);
+
+        // calculate the portion of the fixed interest that alice earned
+        uint256 fixedInterestEarned = baseSpent2.mulDown(aliceLpProportion);
+
+        // calculate the portion of the variable interest that alice owes
+        uint256 variableInterestOwed = uint256(shortInterest).mulDown(aliceLpProportion);
+
+        // calculate the portion of the fixed interest that alice owes
+        uint256 fixedInterestOwed = (bondsPurchased - baseSpent).mulDown(aliceLpProportion);
+
+        // calculate the expected withdrawal shares so they can be removed from the expected proceeds
+        uint256 withdrawalShares = bondsShorted.mulDown(aliceLpProportion);
+
+        // calculate the expected withdrawal proceeds
+        expectedWithdrawalProceeds = contributionWithInterest +
+            fixedInterestEarned -
+            variableInterestOwed -
+            fixedInterestOwed -
+            withdrawalShares;
+}
 
         // Ensure that if the new LP withdraws, they get their money back.
-        (uint256 withdrawalProceeds, ) = removeLiquidity(bob, lpShares);
-        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 2e7);
+        (uint256 aliceWithdrawalProceeds, ) = removeLiquidity(alice, aliceLpShares);
+        assertApproxEqAbs(aliceWithdrawalProceeds, expectedWithdrawalProceeds, 3e7);
     }
 }
