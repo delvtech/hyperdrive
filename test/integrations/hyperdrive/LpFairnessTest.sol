@@ -333,18 +333,18 @@ contract LPFairnessTest is HyperdriveTest {
     }
 
     function test_lp_fairness_long_long_lp(
-        uint256 fixedRateParam,
+        uint256 variableRateParam,
         uint256 tradeSizeParam
     ) external {
         // limit to variableRate's less than 100%
-        vm.assume(fixedRateParam < 1e18);
+        vm.assume(variableRateParam < 1e18);
 
         // ensure a feasible trade size
         vm.assume(tradeSizeParam < 5_000_000e18);
         vm.assume(tradeSizeParam > 0.00001e18);
 
         // variable interest rate earned by the pool
-        int256 variableRate = int256(fixedRateParam);
+        int256 variableRate = int256(variableRateParam);
 
         // fixed interest rate the pool pays the longs
         uint256 fixedRate = 0.10e18;
@@ -509,18 +509,18 @@ contract LPFairnessTest is HyperdriveTest {
     }
 
     function test_lp_fairness_long_short_lp(
-        uint256 fixedRateParam,
+        uint256 variableRateParam,
         uint256 tradeSizeParam
     ) external {
         // limit to variableRate's less than 100%
-        vm.assume(fixedRateParam < 1e18);
+        vm.assume(variableRateParam < 1e18);
 
         // ensure a feasible trade size
         vm.assume(tradeSizeParam < 5_000_000e18);
         vm.assume(tradeSizeParam > 0.00001e18);
 
         // variable interest rate earned by the pool
-        int256 variableRate = int256(fixedRateParam);
+        int256 variableRate = int256(variableRateParam);
 
         // fixed interest rate the pool pays the longs
         uint256 fixedRate = 0.10e18;
