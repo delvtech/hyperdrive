@@ -37,7 +37,7 @@ interface IHyperdriveWrite is IMultiTokenWrite {
         uint256 _minOutput,
         address _destination,
         bool _asUnderlying
-    ) external returns (uint256 _proceeds);
+    ) external returns (uint256 proceeds, uint256 sharesRedeemed);
 
     function openLong(
         uint256 _baseAmount,
