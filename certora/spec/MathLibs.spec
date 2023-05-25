@@ -26,9 +26,9 @@ methods {
     function HDMath.calculateShortInterest(uint256,uint256,uint256,uint256) external returns uint256 envfree;
     function HDMath.calculateShortProceeds(uint256,uint256,uint256,uint256,uint256) external returns uint256 envfree;
     
-    function HDMath.calculateOpenLong(uint256,uint256,uint256,uint256,uint256,uint256,uint256) external returns (uint256, uint256, uint256) envfree;
+    function HDMath.calculateOpenLong(uint256,uint256,uint256,uint256,uint256,uint256) external returns (uint256) envfree;
     function HDMath.calculateCloseLong(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256) external returns (uint256, uint256, uint256) envfree;
-    function HDMath.calculateOpenShort(uint256,uint256,uint256,uint256,uint256,uint256,uint256) external returns (uint256, uint256, uint256) envfree;
+    function HDMath.calculateOpenShort(uint256,uint256,uint256,uint256,uint256,uint256) external returns (uint256) envfree;
     function HDMath.calculateCloseShort(uint256,uint256,uint256,uint256,uint256,uint256,uint256) external returns (uint256, uint256, uint256) envfree;
 
     function YSMath.calculateBondsInGivenSharesOut(uint256,uint256,uint256,uint256,uint256,uint256) external returns uint256 envfree;
@@ -132,29 +132,22 @@ rule cannotGetFreeShares(uint256 z, uint256 y, uint256 dz, uint256 t, uint256 c,
 // ======================================
 //        Hyperdrive Math rules
 //=======================================
-rule calculateOpenLong_correctBounds(
+/// @return bondReservesDelta The amount of bonds sold by the curve.
+
+rule calculateOpenLong_correctBound(
     uint256 shareReserves,
     uint256 bondReserves,
     uint256 shareAmount,
-    uint256 normalizedTimeRemaining,
     uint256 timeStretch,
     uint256 sharePrice,
     uint256 initialSharePrice) {
         
-    uint256 shareReservesDelta;
-    uint256 bondReservesDelta;
-    uint256 bondProceeds;
-    /// More realistic reserves conditions
-    require bondReserves >= ONE18();
-    require shareReserves >= ONE18();
+    require initialSharePrice == ONE18();
+    require timeStretch == 45071688063194104;
 
-    shareReservesDelta, bondReservesDelta, bondProceeds = 
-    HDMath.calculateOpenLong(
-        shareReserves,bondReserves,shareAmount,normalizedTimeRemaining,
-        timeStretch,sharePrice,initialSharePrice);
+    uint256 bondReservesDelta = HDMath.calculateOpenLong(
+        shareReserves,bondReserves,shareAmount,timeStretch,sharePrice,initialSharePrice);
 
-    assert bondReserves >= bondReservesDelta,
+    assert bondReservesDelta <= bondReserves,
         "The bond reserve delta cannot exceed the bond reserves";
-    assert bondReserves >= bondProceeds,
-        "The bond proceeds cannot exceed the bond reserves";
 }

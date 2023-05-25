@@ -37,12 +37,25 @@ definition constQuotientImply(uint256 x, uint256 y, uint256 z,
         ( q * y == to_mathint(z) => to_mathint(w) == x / q );
 
 definition ONE18() returns uint256 = 1000000000000000000;
+definition RAY() returns uint256 = 10^27;
 
 definition _monotonicallyIncreasing(uint256 x, uint256 y, uint256 fx, uint256 fy) returns bool = 
     (x > y => fx >= fy);
 
 definition _monotonicallyDecreasing(uint256 x, uint256 y, uint256 fx, uint256 fy) returns bool = 
     (x > y => fx <= fy);
+
+definition abs(mathint x) returns mathint = 
+    x >= 0 ? x : 0 - x;
+
+/// Returns whether y is equal to x up to error bound of 'err' (18 decs).
+/// 10% => err = 1e17
+definition relativeErrorBound(mathint x, mathint y, mathint err) returns bool = 
+    (x != 0 
+    ? (x > y 
+        ? (x - y) * ONE18() + abs(x) * err >= 0 && (x - y) * ONE18() <= abs(x) * err
+        : (y - x) * ONE18() + abs(x) * err >= 0 && (y - x) * ONE18() <= abs(x) * err)
+    : abs(y) <= err);
 
 /// Axiom for a weighted average of the form WA = (x * y / (y + z))
 definition weightedAverage(mathint x, mathint y, mathint z, mathint WA) returns bool =

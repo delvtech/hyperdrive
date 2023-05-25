@@ -51,9 +51,7 @@ methods {
     
     /// @dev Calculates the present value LPs capital in the pool.
     /// @notice Replacement of original HyperdriveMath function with Mock.
-    function _._calculatePresentValue(
-        uint256, uint256, uint256, uint256, uint256,
-        uint256, uint256, uint256, uint256, uint256) internal library => NONDET; 
+    function _._calculatePresentValue(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256) internal library => NONDET; 
     //function _._calculatePresentValue(
     //    uint256 z, uint256 y, uint256 c, uint256 mu, uint256 ts,
     //    uint256 ol, uint256 tavg_L, uint256 os, uint256 tavg_S, uint256 vol) internal library => 
@@ -64,8 +62,8 @@ methods {
         => ghostCalculateShortInterest(bond, openPrice, closePrice, price) expect uint256;
     
     /// @dev Calculates the proceeds in shares of closing a short position.
-    function _.calculateShortProceeds(uint256 bond, uint256 share, uint256 openPrice, uint256 closePrice, uint256 price) internal library 
-        => ghostCalculateShortProceeds(bond, share, openPrice, closePrice, price) expect uint256;
+    //function _.calculateShortProceeds(uint256 bond, uint256 share, uint256 openPrice, uint256 closePrice, uint256 price) internal library 
+    //    => ghostCalculateShortProceeds(bond, share, openPrice, closePrice, price) expect uint256;
 }
 
 /// Ghost implementations of FixedPoint Math
@@ -112,6 +110,8 @@ ghost ghostCalculateShortProceeds(uint256,uint256,uint256,uint256,uint256) retur
  ---------- Hyperdrive Math summaries ------
 ============================================ */
 ghost mathint shareReservesDelta;
+ghost mathint netCurveTrade;
+ghost mathint netFlatTrade;
 
 function CVLCalculatePresentValue(
         uint256 shareReserves,
@@ -135,13 +135,18 @@ function CVLCalculatePresentValue(
     mathint timeAvg_L = to_mathint(longAverageTimeRemaining);
     mathint shortOut = to_mathint(shortsOutstanding);
     mathint timeAvg_S = to_mathint(shortAverageTimeRemaining);
-    mathint baseV = to_mathint(shortBaseVolume);
+    mathint vs = to_mathint(shortBaseVolume);
 
     require c !=0;
 
-    mathint netCurveTrade = (longOut*timeAvg_L)/ONE18() - (shortOut*timeAvg_S)/ONE18();
-    mathint netFlatTrade = (shortOut*(ONE18() - ts))/c - (longOut*(ONE18() - ts))/c; 
+    //mathint netCurveTrade = (longOut*timeAvg_L)/ONE18() - (shortOut*timeAvg_S)/ONE18();
+    //mathint netFlatTrade = (shortOut*(ONE18() - ts))/c - (longOut*(ONE18() - ts))/c; 
     havoc shareReservesDelta;
+    havoc netCurveTrade;
+    havoc netFlatTrade;
+
+    require 0 <= netCurveTrade + shortOut && netCurveTrade <= longOut;
+    require 0 <= longOut + netFlatTrade * c && netFlatTrade * c <= shortOut;
 
     if(netCurveTrade > 0) {
         shareReservesDelta = PositiveNetCurveBranch(z,y,netCurveTrade,ts,c,mu);

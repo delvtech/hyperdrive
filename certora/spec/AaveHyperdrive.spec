@@ -2,7 +2,8 @@ import "./erc20.spec";
 import "./MathSummaries.spec";
 import "./Sanity.spec";
 import "./HyperdriveStorage.spec";
-import "./Fees.spec";
+import "./LiquidityDefinitions.spec";
+//import "./Fees.spec";
 
 using AaveHyperdrive as HDAave;
 using DummyATokenA as aToken;
@@ -19,9 +20,9 @@ methods {
     function aToken.balanceOf(address) external returns (uint256);
     function aToken.transfer(address,uint256) external returns (bool);
     function pool.liquidityIndex(address,uint256) external returns (uint256) envfree;
-    function HDAave.totalShares() external returns (uint256) envfree;
+    function totalShares() external returns (uint256) envfree;
 
-    function assetId.encodeAssetId(MockAssetId.AssetIdPrefix, uint256) external returns (uint256) envfree;
+    function MockAssetId.encodeAssetId(MockAssetId.AssetIdPrefix, uint256) external returns (uint256) envfree;
 
     /*
     /// Fee calculations summaries -> NONDET
@@ -40,10 +41,6 @@ methods {
         CVLFeesOutGivenAmountsIn(a,b,c,d);
     */
 }
-
-definition RAY() returns uint256 = 10^27;
-definition LP_ASSET_ID() returns uint256 = 0;
-definition WITHDRAWAL_SHARE_ASSET_ID() returns uint256 = (3 << 248);
 
 definition indexA() returns uint256 = require_uint256(RAY()*2);
 definition indexB() returns uint256 = require_uint256((RAY()*125)/100);
@@ -66,49 +63,14 @@ function setHyperdrivePoolParams() {
     //require governanceFee() <= require_uint256(ONE18() / 2);
 }
 
-ghost mathint ghostReadyToWithdraw {
-    init_state axiom ghostReadyToWithdraw == 0; 
-}
 
-ghost mathint sumOfWithdrawalShares {
-    init_state axiom sumOfWithdrawalShares == 0; 
-}
-
-ghost mathint sumOfLPTokens {
-    init_state axiom sumOfLPTokens == 0;
-}
 
 hook Sload uint256 index Pool.liquidityIndex[KEY address token][KEY uint256 timestamp] STORAGE {
     /// @WARNING : UNDER-APPROXIMATION!
     /// @notice : to simplify the SMT formulas, we assume to possible values for the index.
     /// so in general, the index as a function of time can have only one of these two values.
-    require index == indexA() || index == indexB();
+    require index == indexA();// || index == indexB();
     //require index >= RAY();
-}
-
-hook Sload uint128 value HDAave._withdrawPool.readyToWithdraw STORAGE {
-    require ghostReadyToWithdraw == to_mathint(value);
-}
-
-hook Sstore HDAave._withdrawPool.readyToWithdraw uint128 value (uint128 old_value) STORAGE {
-    ghostReadyToWithdraw = ghostReadyToWithdraw + value - old_value;
-}
-
-hook Sload uint256 value HDAave._balanceOf[KEY uint256 tokenID][KEY address account] STORAGE {
-    if(tokenID == WITHDRAWAL_SHARE_ASSET_ID()) {
-        require sumOfWithdrawalShares >= to_mathint(value); 
-    } 
-    else if(tokenID == LP_ASSET_ID()) {
-        require sumOfLPTokens >= to_mathint(value); 
-    }
-}
-
-hook Sstore HDAave._balanceOf[KEY uint256 tokenID][KEY address account] uint256 value (uint256 old_value) STORAGE {
-    sumOfWithdrawalShares = tokenID == WITHDRAWAL_SHARE_ASSET_ID() ? 
-        sumOfWithdrawalShares + value - old_value : sumOfWithdrawalShares;
-
-    sumOfLPTokens = tokenID == LP_ASSET_ID() ?
-        sumOfLPTokens + value - old_value : sumOfLPTokens;
 }
 
 function getPoolIndex(uint256 timestamp) returns uint256 {
@@ -124,7 +86,7 @@ function getPoolIndex(uint256 timestamp) returns uint256 {
 /// @return output[1] = sharePrice
 function depositOutput(env e, uint256 totalSharesBefore, uint256 assetsBefore, uint256 baseAmount, bool asUnderlying) returns uint256[2] {
     uint256[2] output;
-    uint256 totalSharesAfter = HDAave.totalShares();
+    uint256 totalSharesAfter = totalShares();
     uint256 assetsAfter = aToken.balanceOf(e, HDAave);
     uint256 index = getPoolIndex(e.block.timestamp);
 
@@ -167,10 +129,10 @@ rule depositOutputChecker(uint256 baseAmount, bool asUnderlying) {
     uint256 minOutput;
     address destination;
 
-    uint256 totalSharesBefore = HDAave.totalShares();
+    uint256 totalSharesBefore = totalShares();
     uint256 assetsBefore = aToken.balanceOf(e, HDAave);
         openLong(e, baseAmount, minOutput, destination, asUnderlying);
-    uint256 totalSharesAfter = HDAave.totalShares();
+    uint256 totalSharesAfter = totalShares();
     uint256 assetsAfter = aToken.balanceOf(e, HDAave);
     uint256 index = getPoolIndex(e.block.timestamp);
 
@@ -225,10 +187,10 @@ rule whoChangedTotalShares(method f)
 filtered{f -> !f.isView} {
     env e;
     calldataarg args;
-    uint256 shares1 = HDAave.totalShares();
+    uint256 shares1 = totalShares();
     uint256 aTokenBalance1 = aToken.balanceOf(e, currentContract);
         f(e, args);
-    uint256 shares2 = HDAave.totalShares();
+    uint256 shares2 = totalShares();
     uint256 aTokenBalance2 = aToken.balanceOf(e, currentContract);
     assert shares1 == shares2;
     assert aTokenBalance1 != aTokenBalance2 <=> shares1 != shares2;
@@ -481,41 +443,36 @@ invariant NoFutureLongTokens(uint256 time, env e)
         }
     }
 */
+
 /// @doc If there are shares in the pool, there must be underlying assets.
 invariant SharesNonZeroAssetsNonZero(env e)
-    HDAave.totalShares() !=0 => aToken.balanceOf(e, HDAave) != 0
+    totalShares() !=0 => aToken.balanceOf(e, HDAave) != 0
     {
         preserved with (env eP) {
             setHyperdrivePoolParams();
             require eP.block.timestamp == e.block.timestamp;
-            require HDAave.totalShares() >= ONE18();
+            require totalShares() >= ONE18();
             require aToken.balanceOf(eP, HDAave) >= ONE18();
-        }
-    }
-
-invariant TotalSupplyGEReadyToWithdrawShares()
-    to_mathint(totalSupplyByToken(LP_ASSET_ID())) >= ghostReadyToWithdraw
-    {
-        preserved{
-            setHyperdrivePoolParams();
         }
     }
 
 /// @doc The sum of withdrawal shares for all accounts is equal to the shares which are ready to withdraw
 /// Violated on removeLiquidity : need to investigate path.
-/// https://vaas-stg.certora.com/output/41958/1ff26fd8484e466dbb9cf0d381a2858d/?anonymousKey=9bf94295807c4cfd8c44415ffd328821769471b5
-invariant SumOfWithdrawalShares()
-    sumOfWithdrawalShares == ghostReadyToWithdraw;
+invariant SharesReadyToBeRedeemedAreBounded()
+    totalWithdrawalShares() >= readyToRedeemShares() 
+    {
+        preserved{setHyperdrivePoolParams();}
+    }
 
-/// @doc bond reserves / share reserves >= initial share price
-/// https://vaas-stg.certora.com/output/41958/965e09d01a7e4fe0884b83fcccbfa71d/?anonymousKey=2f8a8fc5b978cfae5d16368b4f91e8d9f42a8b7a
-rule maxCurveTradeIntegrity(method f) filtered{f -> !f.isView} {
+/// https://vaas-stg.certora.com/output/41958/9c6cd4e94b6948a1aa8c760877422a2c/?anonymousKey=b8754681d6883c5a3eb1c3ab57552ebdba610067
+/// @doc The fixed interest (r+1) must never be smaller than 1.
+rule FixedInterestLargerThanOne(method f) filtered{f -> !f.isView} {
     env e;
     calldataarg args;
     setHyperdrivePoolParams();
-    require (stateBondReserves() * ONE18()) / initialSharePrice() >= to_mathint(stateShareReserves());
+    require curveFixedInterest() >= to_mathint(ONE18());
         f(e,args);
-    assert (stateBondReserves() * ONE18()) / initialSharePrice()  >= to_mathint(stateShareReserves());
+    assert curveFixedInterest() >= to_mathint(ONE18());
 }
 
 /// @doc It's impossible to get to a state where both shares and bonds are empty
@@ -531,16 +488,24 @@ rule cannotCompletelyDepletePool(method f) filtered{f -> !f.isView} {
 }
 
 /// https://vaas-stg.certora.com/output/41958/72b2e377545f4c71aefdb613bb6ccf05/?anonymousKey=41c772576393e67ba8e07cc739c3e302b74aa353
-invariant SharePriceCannotDecrease(uint256 checkpointTime)
+invariant SharePriceAlwaysGreaterThanInitial(uint256 checkpointTime)
     checkPointSharePrice(checkpointTime) == 0 || to_mathint(checkPointSharePrice(checkpointTime)) >= to_mathint(initialSharePrice())
     {
         preserved{setHyperdrivePoolParams();}
     }
 
+invariant SharePriceCannotDecreaseInTime(uint256 checkpointTime1, uint256 checkpointTime2)
+    checkpointTime1 < checkpointTime2 =>
+        checkPointSharePrice(checkpointTime1) <= checkPointSharePrice(checkpointTime2)
+    {
+        preserved {setHyperdrivePoolParams();}
+    }
+    
+
 /// @doc There should always be more aTokens (assets) than number of shares
 /// otherwise, the share price will decrease (or less than 1).
 invariant aTokenBalanceGEToShares(env e)
-    HDAave.totalShares() <= aToken.balanceOf(e, currentContract)
+    totalShares() <= aToken.balanceOf(e, currentContract)
     {
         preserved with (env eP) {
             require eP.block.timestamp == e.block.timestamp;

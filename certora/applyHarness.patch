@@ -1,5 +1,5 @@
 --- ../contracts/src/instances/AaveHyperdrive.sol	2023-05-18 15:40:39.353490028 +0300
-+++ 	2023-05-22 15:49:18.368788545 +0300
++++ 	2023-05-25 10:33:35.378655549 +0300
 @@ -2,11 +2,11 @@
  pragma solidity ^0.8.18;
  
@@ -36,7 +36,7 @@
  
      ///@notice Transfers amount of 'token' from the user and commits it to the yield source.
 --- ../contracts/src/Hyperdrive.sol	2023-05-23 12:54:47.203907940 +0300
-+++ 	2023-05-18 15:53:00.840722438 +0300
++++ 	2023-05-25 10:33:35.378655549 +0300
 @@ -3,14 +3,16 @@
  
  import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -71,8 +71,8 @@
  {
      using FixedPointMath for uint256;
      using SafeCast for uint256;
---- ../contracts/src/HyperdriveLP.sol	2023-05-16 17:01:28.195350749 +0300
-+++ 	2023-05-18 15:53:00.840722438 +0300
+--- ../contracts/src/HyperdriveLP.sol	2023-05-25 10:32:01.878722396 +0300
++++ 	2023-05-25 10:33:35.378655549 +0300
 @@ -2,12 +2,13 @@
  pragma solidity ^0.8.18;
  
@@ -93,7 +93,7 @@
  
  /// @author DELV
  /// @title HyperdriveLP
-@@ -145,7 +146,7 @@
+@@ -148,7 +149,7 @@
                      ),
                      shortBaseVolume: _marketState.shortBaseVolume
                  });
@@ -102,7 +102,7 @@
                  params
              );
  
-@@ -154,7 +155,7 @@
+@@ -157,7 +158,7 @@
              _updateLiquidity(int256(shares));
              params.shareReserves = _marketState.shareReserves;
              params.bondReserves = _marketState.bondReserves;
@@ -111,7 +111,7 @@
  
              // The LP shares minted to the LP is derived by solving for the
              // change in LP shares that preserves the ratio of present value to
-@@ -247,7 +248,7 @@
+@@ -397,7 +398,7 @@
                  ),
                  shortBaseVolume: _marketState.shortBaseVolume
              });
@@ -120,7 +120,7 @@
              params
          );
  
-@@ -268,7 +269,7 @@
+@@ -418,7 +419,7 @@
          _updateLiquidity(-int256(shareProceeds));
          params.shareReserves = _marketState.shareReserves;
          params.bondReserves = _marketState.bondReserves;
@@ -129,7 +129,7 @@
              params
          );
  
-@@ -400,7 +401,7 @@
+@@ -459,7 +460,7 @@
          uint256 _withdrawalSharesOutstanding,
          uint256 _sharePrice
      ) internal {
@@ -138,8 +138,8 @@
              HyperdriveMath.PresentValueParams({
                  shareReserves: _marketState.shareReserves,
                  bondReserves: _marketState.bondReserves,
---- ../contracts/src/HyperdriveShort.sol	2023-05-16 13:42:21.243372668 +0300
-+++ 	2023-05-18 15:53:00.840722438 +0300
+--- ../contracts/src/HyperdriveShort.sol	2023-05-25 10:32:01.888722402 +0300
++++ 	2023-05-25 11:06:09.097895605 +0300
 @@ -3,11 +3,12 @@
  
  import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
@@ -167,55 +167,56 @@
      using FixedPointMath for uint256;
      using SafeCast for uint256;
  
-@@ -392,9 +393,12 @@
+@@ -381,6 +382,15 @@
          // Add the spot price to the oracle if an oracle update is required
          recordPrice(spotPrice);
  
 +        HDFee memory fee = MockCalculateFeesOutGivenBondsIn(_bondAmount, _timeRemaining, spotPrice, _sharePrice);
++        (
++            uint256 totalCurveFee,
++            ,
++            uint256 governanceCurveFee,
++            uint256 governanceFlatFee
++        ) = destructHDFee(fee);
++        totalGovernanceFee = governanceCurveFee + governanceFlatFee;
++        /*
          uint256 totalCurveFee;
-         uint256 totalFlatFee;
--        (
-+        (totalCurveFee, totalFlatFee, ,) = destructHDFee(fee);
-+        totalGovernanceFee = totalCurveFee.add(totalFlatFee).mulDown(_governanceFee);
-+        /*(
-             totalCurveFee,
-             totalFlatFee,
-             totalGovernanceFee
-@@ -403,7 +407,7 @@
-             _timeRemaining,
+         (
+             totalCurveFee, // there is no flat fee on opening shorts
+@@ -392,6 +402,7 @@
              spotPrice,
              _sharePrice
--        );
-+        );*/
+         );
++        */
          shareReservesDelta -= totalCurveFee;
-         shareProceeds -= totalCurveFee + totalFlatFee;
- 
-@@ -467,18 +471,20 @@
+         return (shareReservesDelta, totalGovernanceFee);
+     }
+@@ -450,7 +461,14 @@
  
          // Record an oracle update
          recordPrice(spotPrice);
 -
-+        /// @dev : Certora mock
 +        HDFee memory fee = MockCalculateFeesInGivenBondsOut(_bondAmount, timeRemaining, spotPrice, _sharePrice);
++        (
++            uint256 totalCurveFee,
++            uint256 totalFlatFee,
++            uint256 governanceCurveFee,
++            uint256 governanceFlatFee
++        ) = destructHDFee(fee);
++        /*
          (
              uint256 totalCurveFee,
              uint256 totalFlatFee,
-             uint256 governanceCurveFee,
-             uint256 governanceFlatFee
--        ) = _calculateFeesInGivenBondsOut(
-+        ) = destructHDFee(fee);/*_calculateFeesInGivenBondsOut(
-                 _bondAmount, // amountOut
-                 timeRemaining,
+@@ -462,6 +480,7 @@
                  spotPrice,
                  _sharePrice
--            );
-+            );*/
-+        
+             );
++        */
          shareReservesDelta += totalCurveFee - governanceCurveFee;
          sharePayment += totalCurveFee + totalFlatFee;
  
---- ../contracts/src/HyperdriveLong.sol	2023-05-16 13:42:21.210872671 +0300
-+++ 	2023-05-18 15:53:00.840722438 +0300
+--- ../contracts/src/HyperdriveLong.sol	2023-05-25 10:32:01.878722396 +0300
++++ 	2023-05-25 10:55:06.738151070 +0300
 @@ -3,10 +3,11 @@
  
  import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
@@ -241,29 +242,30 @@
      using FixedPointMath for uint256;
      using SafeCast for uint256;
  
-@@ -366,18 +367,19 @@
+@@ -371,7 +372,14 @@
+ 
          // Record an oracle update
          recordPrice(spotPrice);
++        HDFee memory fee = MockCalculateFeesOutGivenSharesIn(_shareAmount, bondProceeds, spotPrice, _sharePrice);
++        (
++             uint256 totalCurveFee,
++            ,
++             uint256 governanceCurveFee,
  
-+        HDFee memory fee = MockCalculateFeesOutGivenSharesIn(_shareAmount, bondProceeds, _timeRemaining, spotPrice, _sharePrice);            
++        ) = destructHDFee(fee);
++        /*
          (
              uint256 totalCurveFee,
-             uint256 totalFlatFee,
-             uint256 governanceCurveFee,
-             uint256 governanceFlatFee
--        ) = _calculateFeesOutGivenSharesIn(
-+        ) = destructHDFee(fee);/*_calculateFeesOutGivenSharesIn(
-                 _shareAmount, // amountIn
-                 bondProceeds, // amountOut
-                 _timeRemaining,
+             uint256 governanceCurveFee
+@@ -381,6 +389,7 @@
                  spotPrice,
                  _sharePrice
--            );
-+            );*/
+             );
++        */
+         bondProceeds = bondReservesDelta - totalCurveFee;
          bondReservesDelta -= totalCurveFee - governanceCurveFee;
-         bondProceeds -= totalCurveFee + totalFlatFee;
  
-@@ -453,9 +455,12 @@
+@@ -458,9 +467,12 @@
          // Record an oracle update
          recordPrice(spotPrice);
  
@@ -277,7 +279,7 @@
              totalCurveFee,
              totalFlatFee,
              totalGovernanceFee
-@@ -464,7 +469,7 @@
+@@ -469,7 +481,7 @@
              timeRemaining,
              spotPrice,
              _sharePrice
@@ -287,7 +289,7 @@
          shareProceeds -= totalCurveFee + totalFlatFee;
  
 --- ../contracts/src/ForwarderFactory.sol	2023-05-07 18:33:18.425767793 +0300
-+++ 	2023-05-18 15:53:00.840722438 +0300
++++ 	2023-05-25 10:33:35.378655549 +0300
 @@ -1,9 +1,9 @@
  // SPDX-License-Identifier: Apache-2.0
  pragma solidity ^0.8.18;

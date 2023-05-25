@@ -17,7 +17,6 @@ abstract contract HyperdriveFeeMath {
     function MockCalculateFeesOutGivenSharesIn(
         uint256 _amountIn,
         uint256 _amountOut,
-        uint256 _normalizedTimeRemaining,
         uint256 _spotPrice,
         uint256 _sharePrice
     ) internal pure returns (HDFee memory) {
