@@ -154,15 +154,26 @@ contract HyperdriveTest is BaseTest {
     function redeemWithdrawalShares(
         address lp,
         uint256 shares
-    ) internal returns (uint256 baseProceeds) {
+    ) internal returns (uint256 baseProceeds, uint256 sharesRedeemed) {
+        return redeemWithdrawalShares(lp, shares, 0);
+    }
+
+    function redeemWithdrawalShares(
+        address lp,
+        uint256 shares,
+        uint256 minOutputPerShare
+    ) internal returns (uint256 baseProceeds, uint256 sharesRedeemed) {
         vm.stopPrank();
         vm.startPrank(lp);
 
         // Redeem the withdrawal shares.
-        uint256 baseBalanceBefore = baseToken.balanceOf(lp);
-        hyperdrive.redeemWithdrawalShares(shares, 0, lp, true);
-
-        return baseToken.balanceOf(lp) - baseBalanceBefore;
+        return
+            hyperdrive.redeemWithdrawalShares(
+                shares,
+                minOutputPerShare,
+                lp,
+                true
+            );
     }
 
     function openLong(

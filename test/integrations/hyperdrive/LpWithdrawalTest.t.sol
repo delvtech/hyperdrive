@@ -83,7 +83,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         // Alice redeems her withdrawal shares. She gets back the capital that
         // underlied Bob's long position plus the profits that Bob paid in
         // slippage.
-        uint256 withdrawalProceeds = redeemWithdrawalShares(
+        (uint256 withdrawalProceeds, ) = redeemWithdrawalShares(
             alice,
             withdrawalShares
         );
@@ -164,7 +164,7 @@ contract LpWithdrawalTest is HyperdriveTest {
                 variableRate,
                 POSITION_DURATION
             );
-        uint256 withdrawalProceeds = redeemWithdrawalShares(
+        (uint256 withdrawalProceeds, ) = redeemWithdrawalShares(
             alice,
             withdrawalShares
         );
@@ -279,7 +279,7 @@ contract LpWithdrawalTest is HyperdriveTest {
 
         // Alice redeems her withdrawal shares. She receives the margin that she
         // put up as well as the fixed interest paid by the short.
-        uint256 withdrawalProceeds = redeemWithdrawalShares(
+        (uint256 withdrawalProceeds, ) = redeemWithdrawalShares(
             alice,
             withdrawalShares
         );
@@ -468,11 +468,11 @@ contract LpWithdrawalTest is HyperdriveTest {
 
         // Redeem the withdrawal shares. Alice and Celine should split the
         // withdrawal pool proportionally to their withdrawal shares.
-        uint256 aliceRedeemProceeds = redeemWithdrawalShares(
+        (uint256 aliceRedeemProceeds, ) = redeemWithdrawalShares(
             alice,
             aliceWithdrawalShares
         );
-        uint256 celineRedeemProceeds = redeemWithdrawalShares(
+        (uint256 celineRedeemProceeds, ) = redeemWithdrawalShares(
             celine,
             celineWithdrawalShares
         );
@@ -592,7 +592,7 @@ contract LpWithdrawalTest is HyperdriveTest {
             // released from Bob's long as well as a payment for the additional
             // slippage incurred by Celine adding liquidity. She should be left with
             // no withdrawal shares.
-            aliceRedeemProceeds = redeemWithdrawalShares(
+            (aliceRedeemProceeds, ) = redeemWithdrawalShares(
                 alice,
                 aliceWithdrawalShares
             );
@@ -663,11 +663,11 @@ contract LpWithdrawalTest is HyperdriveTest {
 
         // Redeem the withdrawal shares. Alice and Celine will split the face
         // value of the short in the proportion of their withdrawal shares.
-        uint256 aliceRemainingRedeemProceeds = redeemWithdrawalShares(
+        (uint256 aliceRemainingRedeemProceeds, ) = redeemWithdrawalShares(
             alice,
             aliceWithdrawalShares
         );
-        uint256 celineRedeemProceeds = redeemWithdrawalShares(
+        (uint256 celineRedeemProceeds, ) = redeemWithdrawalShares(
             celine,
             celineWithdrawalShares
         );
@@ -822,7 +822,7 @@ contract LpWithdrawalTest is HyperdriveTest {
 
         // Redeem Alice's withdrawal shares. Alice at least the margin released
         // from Bob's long.
-        uint256 aliceRedeemProceeds = redeemWithdrawalShares(
+        (uint256 aliceRedeemProceeds, ) = redeemWithdrawalShares(
             alice,
             aliceWithdrawalShares
         );
