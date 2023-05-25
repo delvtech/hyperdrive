@@ -139,11 +139,20 @@ abstract contract HyperdriveFactory {
         _config.governance = address(this);
         _config.fees = fees;
         // We deploy a new data provider for this instance
-        address dataProvider = deployDataProvider(_config, _extraData, _linkerCodeHash, _linkerFactory);
+        address dataProvider = deployDataProvider(
+            _config, _extraData, _linkerCodeHash, _linkerFactory
+        );
 
         // Then we call the simplified factory
-        IHyperdrive hyperdrive =
-            IHyperdrive(hyperdriveDeployer.deploy(_config, dataProvider, _linkerCodeHash, _linkerFactory, _extraData));
+        IHyperdrive hyperdrive = IHyperdrive(
+            hyperdriveDeployer.deploy(
+                _config,
+                dataProvider,
+                _linkerCodeHash,
+                _linkerFactory,
+                _extraData
+            )
+        );
 
         // Initialize the Hyperdrive instance.
         _config.baseToken.transferFrom(msg.sender, address(this), _contribution);

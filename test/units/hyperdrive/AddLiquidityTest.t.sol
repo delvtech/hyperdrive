@@ -111,12 +111,17 @@ contract AddLiquidityTest is HyperdriveTest {
 
         // Ensure that the contribution was transferred to Hyperdrive.
         assertEq(baseToken.balanceOf(bob), 0);
-        assertEq(baseToken.balanceOf(address(hyperdrive)), baseBalance.add(contribution));
+        assertEq(
+            baseToken.balanceOf(address(hyperdrive)),
+            baseBalance.add(contribution)
+        );
 
         // Ensure that the new LP receives the same amount of LP shares as
         // the initializer.
         assertEq(lpShares, lpSupplyBefore);
-        assertEq(hyperdrive.totalSupply(AssetId._LP_ASSET_ID), lpSupplyBefore * 2);
+        assertEq(
+            hyperdrive.totalSupply(AssetId._LP_ASSET_ID), lpSupplyBefore * 2
+        );
 
         // Ensure the pool APR is still approximately equal to the target APR.
         uint256 poolApr = HyperdriveUtils.calculateAPRFromReserves(hyperdrive);
@@ -154,14 +159,19 @@ contract AddLiquidityTest is HyperdriveTest {
         verifyAddLiquidityEvent(bob, bobLpShares, contribution);
 
         // Ensure that adding liquidity didn't change Alice's LP share balance.
-        assertEq(hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice), aliceLpShares);
+        assertEq(
+            hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice), aliceLpShares
+        );
 
         // Ensure that the present value ratio was preserved.
         assertEq(presentValueRatio(), presentValueRatioBefore);
 
         // Ensure that the contribution was transferred to Hyperdrive.
         assertEq(baseToken.balanceOf(bob), 0);
-        assertEq(baseToken.balanceOf(address(hyperdrive)), baseBalanceBefore + contribution);
+        assertEq(
+            baseToken.balanceOf(address(hyperdrive)),
+            baseBalanceBefore + contribution
+        );
 
         // Ensure the pool APR is still approximately equal to the target APR.
         uint256 aprAfter = HyperdriveUtils.calculateAPRFromReserves(hyperdrive);
@@ -177,7 +187,9 @@ contract AddLiquidityTest is HyperdriveTest {
 
         // Ensure that Bob received his contribution minus Celine's profits.
         (withdrawalProceeds,) = removeLiquidity(bob, bobLpShares);
-        assertApproxEqAbs(withdrawalProceeds, contribution - (longProceeds - basePaid), 1e10);
+        assertApproxEqAbs(
+            withdrawalProceeds, contribution - (longProceeds - basePaid), 1e10
+        );
 
         // Ensure that all of the capital has been removed from the system.
         assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1);
@@ -192,7 +204,8 @@ contract AddLiquidityTest is HyperdriveTest {
 
         // Celine opens a short.
         uint256 shortAmount = 50_000_000e18;
-        (uint256 maturityTime, uint256 basePaid) = openShort(celine, shortAmount);
+        (uint256 maturityTime, uint256 basePaid) =
+            openShort(celine, shortAmount);
 
         // Get Alice's withdrawal proceeds if the short is closed immediately.
         uint256 aliceWithdrawalProceeds;
@@ -214,14 +227,19 @@ contract AddLiquidityTest is HyperdriveTest {
         verifyAddLiquidityEvent(bob, bobLpShares, contribution);
 
         // Ensure that adding liquidity didn't change Alice's LP share balance.
-        assertEq(hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice), aliceLpShares);
+        assertEq(
+            hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice), aliceLpShares
+        );
 
         // Ensure that the present value ratio was preserved.
         assertEq(presentValueRatio(), presentValueRatioBefore);
 
         // Ensure that the contribution was transferred to Hyperdrive.
         assertEq(baseToken.balanceOf(bob), 0);
-        assertEq(baseToken.balanceOf(address(hyperdrive)), baseBalanceBefore.add(contribution));
+        assertEq(
+            baseToken.balanceOf(address(hyperdrive)),
+            baseBalanceBefore.add(contribution)
+        );
 
         // Ensure the pool APR is still approximately equal to the target APR.
         uint256 aprAfter = HyperdriveUtils.calculateAPRFromReserves(hyperdrive);
@@ -237,7 +255,9 @@ contract AddLiquidityTest is HyperdriveTest {
 
         // Ensure that Bob received his contribution minus Celine's profits.
         (withdrawalProceeds,) = removeLiquidity(bob, bobLpShares);
-        assertApproxEqAbs(withdrawalProceeds, contribution - (shortProceeds - basePaid), 1e10);
+        assertApproxEqAbs(
+            withdrawalProceeds, contribution - (shortProceeds - basePaid), 1e10
+        );
 
         // Ensure that all of the capital has been removed from the system.
         assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1);
@@ -277,14 +297,19 @@ contract AddLiquidityTest is HyperdriveTest {
         verifyAddLiquidityEvent(bob, bobLpShares, contribution);
 
         // Ensure that adding liquidity didn't change Alice's LP share balance.
-        assertEq(hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice), aliceLpShares);
+        assertEq(
+            hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice), aliceLpShares
+        );
 
         // Ensure that the present value ratio was preserved.
         assertEq(presentValueRatio(), presentValueRatioBefore);
 
         // Ensure that the contribution was transferred to Hyperdrive.
         assertEq(baseToken.balanceOf(bob), 0);
-        assertEq(baseToken.balanceOf(address(hyperdrive)), baseBalanceBefore.add(contribution));
+        assertEq(
+            baseToken.balanceOf(address(hyperdrive)),
+            baseBalanceBefore.add(contribution)
+        );
 
         // Ensure the pool APR hasn't decreased after adding liquidity.
         uint256 aprAfter = HyperdriveUtils.calculateAPRFromReserves(hyperdrive);
@@ -344,14 +369,19 @@ contract AddLiquidityTest is HyperdriveTest {
         assertEq(aprAfter, aprBefore);
 
         // Ensure that adding liquidity didn't change Alice's LP share balance.
-        assertEq(hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice), aliceLpShares);
+        assertEq(
+            hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice), aliceLpShares
+        );
 
         // Ensure that the present value ratio was preserved.
         assertEq(presentValueRatio(), presentValueRatioBefore);
 
         // Ensure that the contribution was transferred to Hyperdrive.
         assertEq(baseToken.balanceOf(bob), 0);
-        assertEq(baseToken.balanceOf(address(hyperdrive)), baseBalanceBefore.add(contribution));
+        assertEq(
+            baseToken.balanceOf(address(hyperdrive)),
+            baseBalanceBefore.add(contribution)
+        );
 
         // Close Celine's short.
         closeShort(celine, maturityTime, shortAmount);
@@ -369,19 +399,26 @@ contract AddLiquidityTest is HyperdriveTest {
         assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1);
     }
 
-    function verifyAddLiquidityEvent(address provider, uint256 expectedLpShares, uint256 expectedBaseAmount) internal {
-        VmSafe.Log[] memory logs = vm.getRecordedLogs().filterLogs(AddLiquidity.selector);
+    function verifyAddLiquidityEvent(
+        address provider,
+        uint256 expectedLpShares,
+        uint256 expectedBaseAmount
+    ) internal {
+        VmSafe.Log[] memory logs =
+            vm.getRecordedLogs().filterLogs(AddLiquidity.selector);
         assertEq(logs.length, 1);
         VmSafe.Log memory log = logs[0];
         assertEq(address(uint160(uint256(log.topics[1]))), provider);
-        (uint256 lpShares, uint256 baseAmount) = abi.decode(log.data, (uint256, uint256));
+        (uint256 lpShares, uint256 baseAmount) =
+            abi.decode(log.data, (uint256, uint256));
         assertEq(lpShares, expectedLpShares);
         assertEq(baseAmount, expectedBaseAmount);
     }
 
     function presentValueRatio() internal view returns (uint256) {
         return HyperdriveUtils.presentValue(hyperdrive).divDown(
-            hyperdrive.totalSupply(AssetId._LP_ASSET_ID) + hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID)
+            hyperdrive.totalSupply(AssetId._LP_ASSET_ID)
+                + hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID)
                 - hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw
         );
     }

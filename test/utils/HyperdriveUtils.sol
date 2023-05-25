@@ -10,25 +10,42 @@ import { AssetId } from "contracts/src/libraries/AssetId.sol";
 library HyperdriveUtils {
     using FixedPointMath for uint256;
 
-    function latestCheckpoint(IHyperdrive hyperdrive) internal view returns (uint256) {
-        return block.timestamp - (block.timestamp % hyperdrive.getPoolConfig().checkpointDuration);
-    }
-
-    function calculateTimeRemaining(IHyperdrive _hyperdrive, uint256 _maturityTime)
+    function latestCheckpoint(IHyperdrive hyperdrive)
         internal
         view
-        returns (uint256 timeRemaining)
+        returns (uint256)
     {
-        timeRemaining = _maturityTime > block.timestamp ? _maturityTime - block.timestamp : 0;
-        timeRemaining = (timeRemaining).divDown(_hyperdrive.getPoolConfig().positionDuration);
+        return block.timestamp
+            - (block.timestamp % hyperdrive.getPoolConfig().checkpointDuration);
+    }
+
+    function calculateTimeRemaining(
+        IHyperdrive _hyperdrive,
+        uint256 _maturityTime
+    ) internal view returns (uint256 timeRemaining) {
+        timeRemaining = _maturityTime > block.timestamp
+            ? _maturityTime - block.timestamp
+            : 0;
+        timeRemaining = (timeRemaining).divDown(
+            _hyperdrive.getPoolConfig().positionDuration
+        );
         return timeRemaining;
     }
 
-    function maturityTimeFromLatestCheckpoint(IHyperdrive _hyperdrive) internal view returns (uint256) {
-        return latestCheckpoint(_hyperdrive) + _hyperdrive.getPoolConfig().positionDuration;
+    function maturityTimeFromLatestCheckpoint(IHyperdrive _hyperdrive)
+        internal
+        view
+        returns (uint256)
+    {
+        return latestCheckpoint(_hyperdrive)
+            + _hyperdrive.getPoolConfig().positionDuration;
     }
 
-    function calculateAPRFromReserves(IHyperdrive _hyperdrive) internal view returns (uint256) {
+    function calculateAPRFromReserves(IHyperdrive _hyperdrive)
+        internal
+        view
+        returns (uint256)
+    {
         IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
         IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
         return HyperdriveMath.calculateAPRFromReserves(
@@ -40,20 +57,26 @@ library HyperdriveUtils {
         );
     }
 
-    function calculateAPRFromRealizedPrice(uint256 baseAmount, uint256 bondAmount, uint256 timeRemaining)
-        internal
-        pure
-        returns (uint256)
-    {
+    function calculateAPRFromRealizedPrice(
+        uint256 baseAmount,
+        uint256 bondAmount,
+        uint256 timeRemaining
+    ) internal pure returns (uint256) {
         // price = dx / dy
         //       =>
         // rate = (1 - p) / (p * t) = (1 - dx / dy) * (dx / dy * t)
         //       =>
         // apr = (dy - dx) / (dx * t)
-        return (bondAmount.sub(baseAmount)).divDown(baseAmount.mulDown(timeRemaining));
+        return (bondAmount.sub(baseAmount)).divDown(
+            baseAmount.mulDown(timeRemaining)
+        );
     }
 
-    function calculateMaxLong(IHyperdrive _hyperdrive) internal view returns (uint256 baseAmount) {
+    function calculateMaxLong(IHyperdrive _hyperdrive)
+        internal
+        view
+        returns (uint256 baseAmount)
+    {
         IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
         IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
 
@@ -61,11 +84,13 @@ library HyperdriveUtils {
         // As any long in the middle of a checkpoint duration is backdated,
         // we must use that backdate as the reference for the maturity time
         uint256 maturityTime = maturityTimeFromLatestCheckpoint(_hyperdrive);
-        uint256 timeRemaining = calculateTimeRemaining(_hyperdrive, maturityTime);
+        uint256 timeRemaining =
+            calculateTimeRemaining(_hyperdrive, maturityTime);
         // 1 - t * s
         // t = normalized seconds until maturity
         // s = time stretch of the pool
-        uint256 normalizedTimeRemaining = FixedPointMath.ONE_18.sub(timeRemaining.mulDown(tStretch));
+        uint256 normalizedTimeRemaining =
+            FixedPointMath.ONE_18.sub(timeRemaining.mulDown(tStretch));
 
         // TODO: This isn't as accurate as it could be. We should be using flat
         // plus curve to handle backdating. Address this when adding tests for
@@ -77,30 +102,40 @@ library HyperdriveUtils {
         return YieldSpaceMath.calculateSharesInGivenBondsOut(
             poolInfo.shareReserves,
             poolInfo.bondReserves,
-            (poolInfo.bondReserves - _hyperdrive.totalSupply(AssetId._LP_ASSET_ID)),
+            (
+                poolInfo.bondReserves
+                    - _hyperdrive.totalSupply(AssetId._LP_ASSET_ID)
+            ),
             normalizedTimeRemaining,
             poolInfo.sharePrice,
             poolConfig.initialSharePrice
         ).divDown(poolInfo.sharePrice);
     }
 
-    function calculateMaxShort(IHyperdrive _hyperdrive) internal view returns (uint256) {
+    function calculateMaxShort(IHyperdrive _hyperdrive)
+        internal
+        view
+        returns (uint256)
+    {
         IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
 
         // As any long in the middle of a checkpoint duration is backdated,
         // we must use that backdate as the reference for the maturity time
         uint256 maturityTime = maturityTimeFromLatestCheckpoint(_hyperdrive);
-        uint256 timeRemaining = calculateTimeRemaining(_hyperdrive, maturityTime);
+        uint256 timeRemaining =
+            calculateTimeRemaining(_hyperdrive, maturityTime);
         // 1 - t * s
         // t = normalized seconds until maturity
         // s = time stretch of the pool
-        uint256 normalizedTimeRemaining =
-            FixedPointMath.ONE_18.sub(timeRemaining.mulDown(_hyperdrive.getPoolConfig().timeStretch));
+        uint256 normalizedTimeRemaining = FixedPointMath.ONE_18.sub(
+            timeRemaining.mulDown(_hyperdrive.getPoolConfig().timeStretch)
+        );
 
         // The calculate bonds in given shares out function slightly
         // overestimates the amount of bondsOut, so we decrease the input
         // slightly to avoid subtraction underflows.
-        uint256 sharesOut = poolInfo.shareReserves - poolInfo.longsOutstanding.divUp(poolInfo.sharePrice);
+        uint256 sharesOut = poolInfo.shareReserves
+            - poolInfo.longsOutstanding.divUp(poolInfo.sharePrice);
         sharesOut = sharesOut > 1e10 ? sharesOut - 1e10 : 0;
 
         // TODO: This isn't as accurate as it could be. We should be using flat
@@ -146,36 +181,46 @@ library HyperdriveUtils {
     /// @param _time Number of seconds compounding will occur for
     /// @return totalAmount The total amount of capital after interest accrues.
     /// @return interest The interest that accrued.
-    function calculateCompoundInterest(uint256 _principal, int256 _apr, uint256 _time)
-        internal
-        pure
-        returns (uint256 totalAmount, int256 interest)
-    {
+    function calculateCompoundInterest(
+        uint256 _principal,
+        int256 _apr,
+        uint256 _time
+    ) internal pure returns (uint256 totalAmount, int256 interest) {
         // Adjust time to a fraction of a year
         uint256 normalizedTime = _time.divDown(365 days);
         uint256 rt = uint256(_apr < 0 ? -_apr : _apr).mulDown(normalizedTime);
 
         if (_apr > 0) {
-            totalAmount = _principal.mulDown(uint256(FixedPointMath.exp(int256(rt))));
+            totalAmount =
+                _principal.mulDown(uint256(FixedPointMath.exp(int256(rt))));
             interest = int256(totalAmount - _principal);
             return (totalAmount, interest);
         } else if (_apr < 0) {
             // NOTE: Might not be the correct calculation for negatively
             // continuously compounded interest
-            totalAmount = _principal.divDown(uint256(FixedPointMath.exp(int256(rt))));
+            totalAmount =
+                _principal.divDown(uint256(FixedPointMath.exp(int256(rt))));
             interest = int256(totalAmount) - int256(_principal);
             return (totalAmount, interest);
         }
         return (_principal, 0);
     }
 
-    function calculateTimeStretch(uint256 apr) internal pure returns (uint256) {
-        uint256 timeStretch = uint256(3.09396e18).divDown(uint256(0.02789e18).mulDown(apr * 100));
+    function calculateTimeStretch(uint256 apr)
+        internal
+        pure
+        returns (uint256)
+    {
+        uint256 timeStretch =
+            uint256(3.09396e18).divDown(uint256(0.02789e18).mulDown(apr * 100));
         return FixedPointMath.ONE_18.divDown(timeStretch);
     }
 
     // FIXME: This should be removed.
-    function calculateOpenShortDeposit(IHyperdrive _hyperdrive, uint256 _bondAmount) internal view returns (uint256) {
+    function calculateOpenShortDeposit(
+        IHyperdrive _hyperdrive,
+        uint256 _bondAmount
+    ) internal view returns (uint256) {
         // Retrieve hyperdrive pool state
         IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
         IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
@@ -209,19 +254,31 @@ library HyperdriveUtils {
         );
 
         // Calculate and attribute fees
-        uint256 curveFee = FixedPointMath.ONE_18.sub(spotPrice).mulDown(poolConfig.fees.curve).mulDown(_bondAmount)
-            .mulDivDown(timeRemaining, poolInfo.sharePrice);
-        uint256 flatFee = (_bondAmount.mulDivDown(FixedPointMath.ONE_18.sub(timeRemaining), poolInfo.sharePrice))
-            .mulDown(poolConfig.fees.flat);
+        uint256 curveFee = FixedPointMath.ONE_18.sub(spotPrice).mulDown(
+            poolConfig.fees.curve
+        ).mulDown(_bondAmount).mulDivDown(timeRemaining, poolInfo.sharePrice);
+        uint256 flatFee = (
+            _bondAmount.mulDivDown(
+                FixedPointMath.ONE_18.sub(timeRemaining), poolInfo.sharePrice
+            )
+        ).mulDown(poolConfig.fees.flat);
         shareProceeds -= curveFee + flatFee;
 
         // Return the proceeds of the short
         return HyperdriveMath.calculateShortProceeds(
-            _bondAmount, shareProceeds, openSharePrice, poolInfo.sharePrice, poolInfo.sharePrice
+            _bondAmount,
+            shareProceeds,
+            openSharePrice,
+            poolInfo.sharePrice,
+            poolInfo.sharePrice
         ).mulDown(poolInfo.sharePrice);
     }
 
-    function presentValue(IHyperdrive hyperdrive) internal view returns (uint256) {
+    function presentValue(IHyperdrive hyperdrive)
+        internal
+        view
+        returns (uint256)
+    {
         IHyperdrive.PoolConfig memory poolConfig = hyperdrive.getPoolConfig();
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
         return HyperdriveMath.calculatePresentValue(
@@ -233,11 +290,13 @@ library HyperdriveUtils {
                 timeStretch: poolConfig.timeStretch,
                 longsOutstanding: poolInfo.longsOutstanding,
                 longAverageTimeRemaining: calculateTimeRemaining(
-                    hyperdrive, uint256(poolInfo.longAverageMaturityTime).divUp(1e36)
+                    hyperdrive,
+                    uint256(poolInfo.longAverageMaturityTime).divUp(1e36)
                     ),
                 shortsOutstanding: poolInfo.shortsOutstanding,
                 shortAverageTimeRemaining: calculateTimeRemaining(
-                    hyperdrive, uint256(poolInfo.shortAverageMaturityTime).divUp(1e36)
+                    hyperdrive,
+                    uint256(poolInfo.shortAverageMaturityTime).divUp(1e36)
                     ),
                 shortBaseVolume: poolInfo.shortBaseVolume
             })

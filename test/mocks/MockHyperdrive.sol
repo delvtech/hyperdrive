@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import { ERC20PresetMinterPauser } from "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
+import { ERC20PresetMinterPauser } from
+    "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
 import { Hyperdrive } from "contracts/src/Hyperdrive.sol";
-import { HyperdriveDataProvider } from "contracts/src/HyperdriveDataProvider.sol";
-import { MultiTokenDataProvider } from "contracts/src/MultiTokenDataProvider.sol";
+import { HyperdriveDataProvider } from
+    "contracts/src/HyperdriveDataProvider.sol";
+import { MultiTokenDataProvider } from
+    "contracts/src/MultiTokenDataProvider.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
@@ -23,14 +26,26 @@ interface IMockHyperdrive {
     )
         external
         view
-        returns (uint256 totalCurveFee, uint256 totalFlatFee, uint256 governanceCurveFee, uint256 governanceFlatFee);
+        returns (
+            uint256 totalCurveFee,
+            uint256 totalFlatFee,
+            uint256 governanceCurveFee,
+            uint256 governanceFlatFee
+        );
 
     function calculateFeesOutGivenBondsIn(
         uint256 _amountIn,
         uint256 _normalizedTimeRemaining,
         uint256 _spotPrice,
         uint256 sharePrice
-    ) external view returns (uint256 totalCurveFee, uint256 totalFlatFee, uint256 totalGovernanceFee);
+    )
+        external
+        view
+        returns (
+            uint256 totalCurveFee,
+            uint256 totalFlatFee,
+            uint256 totalGovernanceFee
+        );
 
     function calculateFeesInGivenBondsOut(
         uint256 _amountOut,
@@ -40,9 +55,18 @@ interface IMockHyperdrive {
     )
         external
         view
-        returns (uint256 totalCurveFee, uint256 totalFlatFee, uint256 governanceCurveFee, uint256 governanceFlatFee);
+        returns (
+            uint256 totalCurveFee,
+            uint256 totalFlatFee,
+            uint256 governanceCurveFee,
+            uint256 governanceFlatFee
+        );
 
-    function calculateOpenLong(uint256 _shareAmount, uint256 _sharePrice, uint256 _timeRemaining)
+    function calculateOpenLong(
+        uint256 _shareAmount,
+        uint256 _sharePrice,
+        uint256 _timeRemaining
+    )
         external
         view
         returns (
@@ -52,7 +76,8 @@ interface IMockHyperdrive {
             uint256 totalGovernanceFee
         );
 
-    function setReserves(uint256 shareReserves, uint256 bondReserves) external;
+    function setReserves(uint256 shareReserves, uint256 bondReserves)
+        external;
 
     function getGovernanceFeesAccrued() external view returns (uint256);
 }
@@ -71,12 +96,18 @@ contract MockHyperdrive is Hyperdrive {
     // Accrues compounded interest for a given number of seconds and readjusts
     // share price to reflect such compounding
     function accrue(uint256 time, int256 apr) external {
-        (, int256 interest) = HyperdriveUtils.calculateCompoundInterest(_baseToken.balanceOf(address(this)), apr, time);
+        (, int256 interest) = HyperdriveUtils.calculateCompoundInterest(
+            _baseToken.balanceOf(address(this)), apr, time
+        );
 
         if (interest > 0) {
-            ERC20Mintable(address(_baseToken)).mint(address(this), uint256(interest));
+            ERC20Mintable(address(_baseToken)).mint(
+                address(this), uint256(interest)
+            );
         } else if (interest < 0) {
-            ERC20Mintable(address(_baseToken)).burn(address(this), uint256(-interest));
+            ERC20Mintable(address(_baseToken)).burn(
+                address(this), uint256(-interest)
+            );
         }
     }
 
@@ -84,7 +115,11 @@ contract MockHyperdrive is Hyperdrive {
         return (uint256(_oracle.head), uint256(_oracle.lastTimestamp));
     }
 
-    function loadOracle(uint256 index) external view returns (uint256, uint256) {
+    function loadOracle(uint256 index)
+        external
+        view
+        returns (uint256, uint256)
+    {
         return (uint256(_buffer[index].data), uint256(_buffer[index].timestamp));
     }
 
@@ -101,11 +136,23 @@ contract MockHyperdrive is Hyperdrive {
     )
         external
         view
-        returns (uint256 totalCurveFee, uint256 totalFlatFee, uint256 governanceCurveFee, uint256 governanceFlatFee)
+        returns (
+            uint256 totalCurveFee,
+            uint256 totalFlatFee,
+            uint256 governanceCurveFee,
+            uint256 governanceFlatFee
+        )
     {
         (totalCurveFee, totalFlatFee, governanceCurveFee, governanceFlatFee) =
-            _calculateFeesOutGivenSharesIn(_amountIn, _amountOut, _normalizedTimeRemaining, _spotPrice, sharePrice);
-        return (totalCurveFee, totalFlatFee, governanceCurveFee, governanceFlatFee);
+        _calculateFeesOutGivenSharesIn(
+            _amountIn,
+            _amountOut,
+            _normalizedTimeRemaining,
+            _spotPrice,
+            sharePrice
+        );
+        return
+            (totalCurveFee, totalFlatFee, governanceCurveFee, governanceFlatFee);
     }
 
     function calculateFeesOutGivenBondsIn(
@@ -113,9 +160,19 @@ contract MockHyperdrive is Hyperdrive {
         uint256 _normalizedTimeRemaining,
         uint256 _spotPrice,
         uint256 sharePrice
-    ) external view returns (uint256 totalCurveFee, uint256 totalFlatFee, uint256 totalGovernanceFee) {
+    )
+        external
+        view
+        returns (
+            uint256 totalCurveFee,
+            uint256 totalFlatFee,
+            uint256 totalGovernanceFee
+        )
+    {
         (totalCurveFee, totalFlatFee, totalGovernanceFee) =
-            _calculateFeesOutGivenBondsIn(_amountIn, _normalizedTimeRemaining, _spotPrice, sharePrice);
+        _calculateFeesOutGivenBondsIn(
+            _amountIn, _normalizedTimeRemaining, _spotPrice, sharePrice
+        );
         return (totalCurveFee, totalFlatFee, totalGovernanceFee);
     }
 
@@ -127,15 +184,27 @@ contract MockHyperdrive is Hyperdrive {
     )
         external
         view
-        returns (uint256 totalCurveFee, uint256 totalFlatFee, uint256 governanceCurveFee, uint256 governanceFlatFee)
+        returns (
+            uint256 totalCurveFee,
+            uint256 totalFlatFee,
+            uint256 governanceCurveFee,
+            uint256 governanceFlatFee
+        )
     {
         (totalCurveFee, totalFlatFee, governanceCurveFee, governanceFlatFee) =
-            _calculateFeesInGivenBondsOut(_amountOut, _normalizedTimeRemaining, _spotPrice, sharePrice);
-        return (totalCurveFee, totalFlatFee, governanceCurveFee, governanceFlatFee);
+        _calculateFeesInGivenBondsOut(
+            _amountOut, _normalizedTimeRemaining, _spotPrice, sharePrice
+        );
+        return
+            (totalCurveFee, totalFlatFee, governanceCurveFee, governanceFlatFee);
     }
 
     // Calls Hyperdrive._calculateOpenLong
-    function calculateOpenLong(uint256 _shareAmount, uint256 _sharePrice, uint256 _timeRemaining)
+    function calculateOpenLong(
+        uint256 _shareAmount,
+        uint256 _sharePrice,
+        uint256 _timeRemaining
+    )
         external
         returns (
             uint256 shareReservesDelta,
@@ -147,16 +216,23 @@ contract MockHyperdrive is Hyperdrive {
         return _calculateOpenLong(_shareAmount, _sharePrice, _timeRemaining);
     }
 
-    function setReserves(uint256 shareReserves, uint256 bondReserves) external {
+    function setReserves(uint256 shareReserves, uint256 bondReserves)
+        external
+    {
         _marketState.shareReserves = uint128(shareReserves);
         _marketState.bondReserves = uint128(bondReserves);
     }
 
     /// Overrides ///
 
-    function _deposit(uint256 amount, bool) internal override returns (uint256, uint256) {
+    function _deposit(uint256 amount, bool)
+        internal
+        override
+        returns (uint256, uint256)
+    {
         uint256 assets = _baseToken.balanceOf(address(this));
-        bool success = _baseToken.transferFrom(msg.sender, address(this), amount);
+        bool success =
+            _baseToken.transferFrom(msg.sender, address(this), amount);
         if (!success) {
             revert Errors.TransferFailed();
         }
@@ -177,7 +253,8 @@ contract MockHyperdrive is Hyperdrive {
     {
         uint256 assets = _baseToken.balanceOf(address(this));
         shares = shares > totalShares ? totalShares : shares;
-        withdrawValue = totalShares != 0 ? shares.mulDown(assets.divDown(totalShares)) : 0;
+        withdrawValue =
+            totalShares != 0 ? shares.mulDown(assets.divDown(totalShares)) : 0;
         bool success = _baseToken.transfer(destination, withdrawValue);
         if (!success) {
             revert Errors.TransferFailed();
@@ -187,14 +264,22 @@ contract MockHyperdrive is Hyperdrive {
         return (withdrawValue, sharePrice);
     }
 
-    function _pricePerShare() internal view override returns (uint256 sharePrice) {
+    function _pricePerShare()
+        internal
+        view
+        override
+        returns (uint256 sharePrice)
+    {
         uint256 assets = _baseToken.balanceOf(address(this));
         sharePrice = totalShares != 0 ? assets.divDown(totalShares) : 0;
         return sharePrice;
     }
 }
 
-contract MockHyperdriveDataProvider is MultiTokenDataProvider, HyperdriveDataProvider {
+contract MockHyperdriveDataProvider is
+    MultiTokenDataProvider,
+    HyperdriveDataProvider
+{
     using FixedPointMath for uint256;
 
     uint256 internal totalShares;
@@ -212,7 +297,12 @@ contract MockHyperdriveDataProvider is MultiTokenDataProvider, HyperdriveDataPro
 
     /// Overrides ///
 
-    function _pricePerShare() internal view override returns (uint256 sharePrice) {
+    function _pricePerShare()
+        internal
+        view
+        override
+        returns (uint256 sharePrice)
+    {
         uint256 assets = _baseToken.balanceOf(address(this));
         sharePrice = totalShares != 0 ? assets.divDown(totalShares) : 0;
         return sharePrice;

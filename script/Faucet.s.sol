@@ -17,7 +17,8 @@ contract FaucetScript is Script {
 
         // Mint dai token to deployer address
         address dai = address(0x11fE4B6AE13d2a6055C8D9cF65c55bac32B5d844);
-        Faucet faucet = Faucet(address(0xe2bE5BfdDbA49A86e27f3Dd95710B528D43272C2));
+        Faucet faucet =
+            Faucet(address(0xe2bE5BfdDbA49A86e27f3Dd95710B528D43272C2));
         faucet.mint(dai, deployerAddress, 50_000e18);
 
         vm.stopBroadcast();

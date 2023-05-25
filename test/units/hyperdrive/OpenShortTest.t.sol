@@ -6,7 +6,11 @@ import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
+import {
+    HyperdriveTest,
+    HyperdriveUtils,
+    IHyperdrive
+} from "../../utils/HyperdriveTest.sol";
 import { Lib } from "../../utils/Lib.sol";
 
 contract OpenShortTest is HyperdriveTest {
@@ -83,7 +87,14 @@ contract OpenShortTest is HyperdriveTest {
         (uint256 maturityTime, uint256 baseAmount) = openShort(bob, bondAmount);
 
         // Verify the open short updates occurred correctly.
-        verifyOpenShort(poolInfoBefore, contribution, baseAmount, bondAmount, maturityTime, apr);
+        verifyOpenShort(
+            poolInfoBefore,
+            contribution,
+            baseAmount,
+            bondAmount,
+            maturityTime,
+            apr
+        );
     }
 
     function test_open_short_with_small_amount() external {
@@ -101,7 +112,14 @@ contract OpenShortTest is HyperdriveTest {
         (uint256 maturityTime, uint256 baseAmount) = openShort(bob, bondAmount);
 
         // Verify the open short updates occurred correctly.
-        verifyOpenShort(poolInfoBefore, contribution, baseAmount, bondAmount, maturityTime, apr);
+        verifyOpenShort(
+            poolInfoBefore,
+            contribution,
+            baseAmount,
+            bondAmount,
+            maturityTime,
+            apr
+        );
     }
 
     function verifyOpenShort(
@@ -117,12 +135,16 @@ contract OpenShortTest is HyperdriveTest {
         // Ensure that one `OpenShort` event was emitted with the correct
         // arguments.
         {
-            VmSafe.Log[] memory logs = vm.getRecordedLogs().filterLogs(OpenShort.selector);
+            VmSafe.Log[] memory logs =
+                vm.getRecordedLogs().filterLogs(OpenShort.selector);
             assertEq(logs.length, 1);
             VmSafe.Log memory log = logs[0];
             assertEq(address(uint160(uint256(log.topics[1]))), bob);
-            (uint256 eventMaturityTime, uint256 eventBaseAmount, uint256 eventBondAmount) =
-                abi.decode(log.data, (uint256, uint256, uint256));
+            (
+                uint256 eventMaturityTime,
+                uint256 eventBaseAmount,
+                uint256 eventBondAmount
+            ) = abi.decode(log.data, (uint256, uint256, uint256));
             assertEq(eventMaturityTime, maturityTime);
             assertEq(eventBaseAmount, baseAmount);
             assertEq(eventBondAmount, bondAmount);
@@ -130,17 +152,24 @@ contract OpenShortTest is HyperdriveTest {
 
         // Verify that Hyperdrive received the max loss and that Bob received
         // the short tokens.
-        assertEq(baseToken.balanceOf(address(hyperdrive)), contribution + baseAmount);
         assertEq(
-            hyperdrive.balanceOf(AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, maturityTime), bob), bondAmount
+            baseToken.balanceOf(address(hyperdrive)), contribution + baseAmount
+        );
+        assertEq(
+            hyperdrive.balanceOf(
+                AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, maturityTime),
+                bob
+            ),
+            bondAmount
         );
 
         // Verify that the short didn't receive an APR higher than the pool's
         // APR.
         uint256 baseProceeds = bondAmount - baseAmount;
         {
-            uint256 realizedApr =
-                HyperdriveUtils.calculateAPRFromRealizedPrice(baseProceeds, bondAmount, FixedPointMath.ONE_18);
+            uint256 realizedApr = HyperdriveUtils.calculateAPRFromRealizedPrice(
+                baseProceeds, bondAmount, FixedPointMath.ONE_18
+            );
             assertLt(apr, realizedApr);
         }
 
@@ -148,17 +177,26 @@ contract OpenShortTest is HyperdriveTest {
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
 
         {
-            IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(checkpointTime);
+            IHyperdrive.Checkpoint memory checkpoint =
+                hyperdrive.getCheckpoint(checkpointTime);
             assertEq(
                 poolInfoAfter.shareReserves,
-                poolInfoBefore.shareReserves - baseProceeds.divDown(poolInfoBefore.sharePrice)
+                poolInfoBefore.shareReserves
+                    - baseProceeds.divDown(poolInfoBefore.sharePrice)
             );
             assertEq(poolInfoAfter.lpTotalSupply, poolInfoBefore.lpTotalSupply);
             assertEq(poolInfoAfter.sharePrice, poolInfoBefore.sharePrice);
-            assertEq(poolInfoAfter.longsOutstanding, poolInfoBefore.longsOutstanding);
+            assertEq(
+                poolInfoAfter.longsOutstanding, poolInfoBefore.longsOutstanding
+            );
             assertEq(poolInfoAfter.longAverageMaturityTime, 0);
-            assertEq(poolInfoAfter.shortsOutstanding, poolInfoBefore.shortsOutstanding + bondAmount);
-            assertApproxEqAbs(poolInfoAfter.shortAverageMaturityTime, maturityTime * 1e18, 1);
+            assertEq(
+                poolInfoAfter.shortsOutstanding,
+                poolInfoBefore.shortsOutstanding + bondAmount
+            );
+            assertApproxEqAbs(
+                poolInfoAfter.shortAverageMaturityTime, maturityTime * 1e18, 1
+            );
             assertEq(poolInfoAfter.shortBaseVolume, baseProceeds);
             assertEq(checkpoint.shortBaseVolume, baseProceeds);
         }

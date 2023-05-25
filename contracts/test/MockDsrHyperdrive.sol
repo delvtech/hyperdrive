@@ -2,7 +2,8 @@
 pragma solidity ^0.8.18;
 
 import { DsrHyperdrive, DsrManager } from "../src/instances/DsrHyperdrive.sol";
-import { DsrHyperdriveDataProvider } from "../src/instances/DsrHyperdriveDataProvider.sol";
+import { DsrHyperdriveDataProvider } from
+    "../src/instances/DsrHyperdriveDataProvider.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { FixedPointMath } from "../src/libraries/FixedPointMath.sol";
 import { ForwarderFactory } from "../src/ForwarderFactory.sol";
@@ -11,9 +12,13 @@ import { IHyperdrive } from "../src/interfaces/IHyperdrive.sol";
 interface IMockDsrHyperdrive is IHyperdrive {
     function totalShares() external view returns (uint256);
 
-    function deposit(uint256 amount, bool asUnderlying) external returns (uint256, uint256);
+    function deposit(uint256 amount, bool asUnderlying)
+        external
+        returns (uint256, uint256);
 
-    function withdraw(uint256 shares, address destination, bool asUnderlying) external returns (uint256, uint256);
+    function withdraw(uint256 shares, address destination, bool asUnderlying)
+        external
+        returns (uint256, uint256);
 
     function pricePerShare() external view returns (uint256);
 }
@@ -42,11 +47,17 @@ contract MockDsrHyperdrive is DsrHyperdrive {
         )
     { }
 
-    function deposit(uint256 amount, bool asUnderlying) external returns (uint256, uint256) {
+    function deposit(uint256 amount, bool asUnderlying)
+        external
+        returns (uint256, uint256)
+    {
         return _deposit(amount, asUnderlying);
     }
 
-    function withdraw(uint256 shares, address destination, bool asUnderlying) external returns (uint256, uint256) {
+    function withdraw(uint256 shares, address destination, bool asUnderlying)
+        external
+        returns (uint256, uint256)
+    {
         return _withdraw(shares, destination, asUnderlying);
     }
 

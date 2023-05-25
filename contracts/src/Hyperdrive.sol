@@ -18,7 +18,11 @@ import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract Hyperdrive is HyperdriveBase, HyperdriveLong, HyperdriveShort {
+abstract contract Hyperdrive is
+    HyperdriveBase,
+    HyperdriveLong,
+    HyperdriveShort
+{
     using FixedPointMath for uint256;
     using SafeCast for uint256;
 
@@ -48,7 +52,10 @@ abstract contract Hyperdrive is HyperdriveBase, HyperdriveLong, HyperdriveShort 
         // or is in the future, it's an invalid checkpoint and we should
         // revert.
         uint256 latestCheckpoint = _latestCheckpoint();
-        if (_checkpointTime % _checkpointDuration != 0 || latestCheckpoint < _checkpointTime) {
+        if (
+            _checkpointTime % _checkpointDuration != 0
+                || latestCheckpoint < _checkpointTime
+        ) {
             revert Errors.InvalidCheckpointTime();
         }
 
@@ -81,7 +88,10 @@ abstract contract Hyperdrive is HyperdriveBase, HyperdriveLong, HyperdriveShort 
         returns (uint256 openSharePrice)
     {
         // Return early if the checkpoint has already been updated.
-        if (_checkpoints[_checkpointTime].sharePrice != 0 || _checkpointTime > block.timestamp) {
+        if (
+            _checkpoints[_checkpointTime].sharePrice != 0
+                || _checkpointTime > block.timestamp
+        ) {
             return _checkpoints[_checkpointTime].sharePrice;
         }
 
@@ -89,18 +99,32 @@ abstract contract Hyperdrive is HyperdriveBase, HyperdriveLong, HyperdriveShort 
         _checkpoints[_checkpointTime].sharePrice = _sharePrice.toUint128();
 
         // Pay out the long withdrawal pool for longs that have matured.
-        uint256 maturedLongsAmount = _totalSupply[AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _checkpointTime)];
+        uint256 maturedLongsAmount = _totalSupply[AssetId.encodeAssetId(
+            AssetId.AssetIdPrefix.Long, _checkpointTime
+        )];
         if (maturedLongsAmount > 0) {
             _applyCloseLong(
-                maturedLongsAmount, 0, maturedLongsAmount.divDown(_sharePrice), 0, _checkpointTime, _sharePrice
+                maturedLongsAmount,
+                0,
+                maturedLongsAmount.divDown(_sharePrice),
+                0,
+                _checkpointTime,
+                _sharePrice
             );
         }
 
         // Pay out the short withdrawal pool for shorts that have matured.
-        uint256 maturedShortsAmount = _totalSupply[AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _checkpointTime)];
+        uint256 maturedShortsAmount = _totalSupply[AssetId.encodeAssetId(
+            AssetId.AssetIdPrefix.Short, _checkpointTime
+        )];
         if (maturedShortsAmount > 0) {
             _applyCloseShort(
-                maturedShortsAmount, 0, maturedShortsAmount.divDown(_sharePrice), 0, _checkpointTime, _sharePrice
+                maturedShortsAmount,
+                0,
+                maturedShortsAmount.divDown(_sharePrice),
+                0,
+                _checkpointTime,
+                _sharePrice
             );
         }
 

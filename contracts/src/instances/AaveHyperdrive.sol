@@ -61,7 +61,8 @@ contract AaveHyperdrive is Hyperdrive {
 
         if (asUnderlying) {
             // Transfer from user
-            bool success = _baseToken.transferFrom(msg.sender, address(this), amount);
+            bool success =
+                _baseToken.transferFrom(msg.sender, address(this), amount);
             if (!success) {
                 revert Errors.TransferFailed();
             }
@@ -102,7 +103,8 @@ contract AaveHyperdrive is Hyperdrive {
         // avoid reverts.
         shares = shares > totalShares ? totalShares : shares;
         uint256 assets = aToken.balanceOf(address(this));
-        uint256 withdrawValue = assets != 0 ? shares.mulDown(assets.divDown(totalShares)) : 0;
+        uint256 withdrawValue =
+            assets != 0 ? shares.mulDown(assets.divDown(totalShares)) : 0;
 
         // Remove the shares from the total share supply
         totalShares -= shares;
@@ -123,7 +125,12 @@ contract AaveHyperdrive is Hyperdrive {
 
     ///@notice Loads the share price from the yield source.
     ///@return sharePrice The current share price.
-    function _pricePerShare() internal view override returns (uint256 sharePrice) {
+    function _pricePerShare()
+        internal
+        view
+        override
+        returns (uint256 sharePrice)
+    {
         uint256 assets = aToken.balanceOf(address(this));
         sharePrice = totalShares != 0 ? assets.divDown(totalShares) : 0;
         return sharePrice;

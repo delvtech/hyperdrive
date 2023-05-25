@@ -12,7 +12,11 @@ contract MockHyperdriveMath {
         uint256 _timeStretch
     ) external pure returns (uint256) {
         uint256 result = HyperdriveMath.calculateAPRFromReserves(
-            _shareReserves, _bondReserves, _initialSharePrice, _positionDuration, _timeStretch
+            _shareReserves,
+            _bondReserves,
+            _initialSharePrice,
+            _positionDuration,
+            _timeStretch
         );
         return result;
     }
@@ -26,7 +30,12 @@ contract MockHyperdriveMath {
         uint256 _timeStretch
     ) external pure returns (uint256) {
         uint256 result = HyperdriveMath.calculateInitialBondReserves(
-            _shareReserves, _sharePrice, _initialSharePrice, _apr, _positionDuration, _timeStretch
+            _shareReserves,
+            _sharePrice,
+            _initialSharePrice,
+            _apr,
+            _positionDuration,
+            _timeStretch
         );
         return result;
     }
@@ -40,7 +49,8 @@ contract MockHyperdriveMath {
         uint256 _sharePrice,
         uint256 _initialSharePrice
     ) external pure returns (uint256, uint256, uint256) {
-        (uint256 result1, uint256 result2, uint256 result3) = HyperdriveMath.calculateOpenLong(
+        (uint256 result1, uint256 result2, uint256 result3) = HyperdriveMath
+            .calculateOpenLong(
             _shareReserves,
             _bondReserves,
             _amountIn,
@@ -62,7 +72,8 @@ contract MockHyperdriveMath {
         uint256 _sharePrice,
         uint256 _initialSharePrice
     ) external pure returns (uint256, uint256, uint256) {
-        (uint256 result1, uint256 result2, uint256 result3) = HyperdriveMath.calculateCloseLong(
+        (uint256 result1, uint256 result2, uint256 result3) = HyperdriveMath
+            .calculateCloseLong(
             _shareReserves,
             _bondReserves,
             _amountIn,
@@ -84,7 +95,8 @@ contract MockHyperdriveMath {
         uint256 _sharePrice,
         uint256 _initialSharePrice
     ) external pure returns (uint256, uint256, uint256) {
-        (uint256 result1, uint256 result2, uint256 result3) = HyperdriveMath.calculateOpenShort(
+        (uint256 result1, uint256 result2, uint256 result3) = HyperdriveMath
+            .calculateOpenShort(
             _shareReserves,
             _bondReserves,
             _amountIn,
@@ -105,7 +117,8 @@ contract MockHyperdriveMath {
         uint256 _sharePrice,
         uint256 _initialSharePrice
     ) external pure returns (uint256, uint256, uint256) {
-        (uint256 result1, uint256 result2, uint256 result3) = HyperdriveMath.calculateCloseShort(
+        (uint256 result1, uint256 result2, uint256 result3) = HyperdriveMath
+            .calculateCloseShort(
             _shareReserves,
             _bondReserves,
             _amountOut,
@@ -125,12 +138,18 @@ contract MockHyperdriveMath {
         uint256 _timeStretch
     ) external pure returns (uint256) {
         uint256 result = HyperdriveMath.calculateSpotPrice(
-            _shareReserves, _bondReserves, _initialSharePrice, _normalizedTimeRemaining, _timeStretch
+            _shareReserves,
+            _bondReserves,
+            _initialSharePrice,
+            _normalizedTimeRemaining,
+            _timeStretch
         );
         return result;
     }
 
-    function calculatePresentValue(HyperdriveMath.PresentValueParams memory _params) external pure returns (uint256) {
+    function calculatePresentValue(
+        HyperdriveMath.PresentValueParams memory _params
+    ) external pure returns (uint256) {
         return HyperdriveMath.calculatePresentValue(_params);
     }
 
@@ -142,7 +161,11 @@ contract MockHyperdriveMath {
         uint256 _sharePrice
     ) external pure returns (uint256) {
         uint256 result = HyperdriveMath.calculateShortProceeds(
-            _bondAmount, _shareAmount, _openSharePrice, _closeSharePrice, _sharePrice
+            _bondAmount,
+            _shareAmount,
+            _openSharePrice,
+            _closeSharePrice,
+            _sharePrice
         );
         return result;
     }
@@ -153,17 +176,20 @@ contract MockHyperdriveMath {
         uint256 _closeSharePrice,
         uint256 _sharePrice
     ) external pure returns (uint256) {
-        uint256 result =
-            HyperdriveMath.calculateShortInterest(_bondAmount, _openSharePrice, _closeSharePrice, _sharePrice);
+        uint256 result = HyperdriveMath.calculateShortInterest(
+            _bondAmount, _openSharePrice, _closeSharePrice, _sharePrice
+        );
         return result;
     }
 
-    function calculateBaseVolume(uint256 _baseAmount, uint256 _bondAmount, uint256 _timeRemaining)
-        external
-        pure
-        returns (uint256)
-    {
-        uint256 result = HyperdriveMath.calculateBaseVolume(_baseAmount, _bondAmount, _timeRemaining);
+    function calculateBaseVolume(
+        uint256 _baseAmount,
+        uint256 _bondAmount,
+        uint256 _timeRemaining
+    ) external pure returns (uint256) {
+        uint256 result = HyperdriveMath.calculateBaseVolume(
+            _baseAmount, _bondAmount, _timeRemaining
+        );
         return result;
     }
 }

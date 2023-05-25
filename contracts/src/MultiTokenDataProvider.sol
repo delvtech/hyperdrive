@@ -14,7 +14,9 @@ contract MultiTokenDataProvider is MultiTokenStorage, IMultiTokenRead {
     /// @notice Initializes the MultiToken's data provider.
     /// @param _linkerCodeHash_ The hash of the erc20 linker contract deploy code
     /// @param _factory_ The factory which is used to deploy the linking contracts
-    constructor(bytes32 _linkerCodeHash_, address _factory_) MultiTokenStorage(_linkerCodeHash_, _factory_) { }
+    constructor(bytes32 _linkerCodeHash_, address _factory_)
+        MultiTokenStorage(_linkerCodeHash_, _factory_)
+    { }
 
     /// @notice Gets the code hash of the erc20 linker contract.
     /// @return The code hash.
@@ -32,14 +34,24 @@ contract MultiTokenDataProvider is MultiTokenStorage, IMultiTokenRead {
     /// @param tokenId The sub-token id.
     /// @param account The account.
     /// @return The balance.
-    function balanceOf(uint256 tokenId, address account) external view override returns (uint256) {
+    function balanceOf(uint256 tokenId, address account)
+        external
+        view
+        override
+        returns (uint256)
+    {
         _revert(abi.encode(_balanceOf[tokenId][account]));
     }
 
     /// @notice Gets the total supply of a sub-token.
     /// @param tokenId The sub-token id.
     /// @return The total supply.
-    function totalSupply(uint256 tokenId) external view override returns (uint256) {
+    function totalSupply(uint256 tokenId)
+        external
+        view
+        override
+        returns (uint256)
+    {
         _revert(abi.encode(_totalSupply[tokenId]));
     }
 
@@ -47,7 +59,12 @@ contract MultiTokenDataProvider is MultiTokenStorage, IMultiTokenRead {
     /// @param account The account.
     /// @param operator The operator.
     /// @return The approval status.
-    function isApprovedForAll(address account, address operator) external view override returns (bool) {
+    function isApprovedForAll(address account, address operator)
+        external
+        view
+        override
+        returns (bool)
+    {
         _revert(abi.encode(_isApprovedForAll[account][operator]));
     }
 
@@ -56,26 +73,35 @@ contract MultiTokenDataProvider is MultiTokenStorage, IMultiTokenRead {
     /// @param account The account.
     /// @param spender The spender.
     /// @return The approval status.
-    function perTokenApprovals(uint256 tokenId, address account, address spender)
-        external
-        view
-        override
-        returns (uint256)
-    {
+    function perTokenApprovals(
+        uint256 tokenId,
+        address account,
+        address spender
+    ) external view override returns (uint256) {
         _revert(abi.encode(_perTokenApprovals[tokenId][account][spender]));
     }
 
     /// @notice Gets the name of a sub-token.
     /// @param tokenId The sub-token id.
     /// @return The name.
-    function name(uint256 tokenId) external view override returns (string memory) {
+    function name(uint256 tokenId)
+        external
+        view
+        override
+        returns (string memory)
+    {
         _revert(abi.encode(_name[tokenId]));
     }
 
     /// @notice Gets the symbol of a sub-token.
     /// @param tokenId The sub-token id.
     /// @return The symbol.
-    function symbol(uint256 tokenId) external view override returns (string memory) {
+    function symbol(uint256 tokenId)
+        external
+        view
+        override
+        returns (string memory)
+    {
         _revert(abi.encode(_symbol[tokenId]));
     }
 

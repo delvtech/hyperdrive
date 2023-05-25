@@ -23,7 +23,9 @@ contract MockBondWrapper is BondWrapper {
         _burn(destination, amount);
     }
 
-    function setDeposits(address user, uint256 assetId, uint256 amount) external {
+    function setDeposits(address user, uint256 assetId, uint256 amount)
+        external
+    {
         deposits[user][assetId] = amount;
     }
 

@@ -68,7 +68,8 @@ contract DsrHyperdrive is Hyperdrive {
         }
 
         // Transfer the base token from the user to this contract
-        bool success = _baseToken.transferFrom(msg.sender, address(this), amount);
+        bool success =
+            _baseToken.transferFrom(msg.sender, address(this), amount);
         if (!success) {
             revert Errors.TransferFailed();
         }
@@ -122,7 +123,12 @@ contract DsrHyperdrive is Hyperdrive {
 
     /// @notice Loads the share price from the yield source.
     /// @return sharePrice The current share price.
-    function _pricePerShare() internal view override returns (uint256 sharePrice) {
+    function _pricePerShare()
+        internal
+        view
+        override
+        returns (uint256 sharePrice)
+    {
         // The normalized DAI amount owned by this contract
         uint256 pie = dsrManager.pieOf(address(this));
         // Load the balance of this contract
@@ -149,12 +155,18 @@ contract DsrHyperdrive is Hyperdrive {
         // Annualized interest rate
         uint256 dsr = pot.dsr();
         // Calibrates the rate accumulator to current time
-        return (block.timestamp > rho) ? _rpow(dsr, block.timestamp - rho, RAY).mulDivDown(_chi, RAY) : _chi;
+        return (block.timestamp > rho)
+            ? _rpow(dsr, block.timestamp - rho, RAY).mulDivDown(_chi, RAY)
+            : _chi;
     }
 
     /// @notice Taken from https://github.com/makerdao/dss/blob/master/src/pot.sol#L85
     /// @return z
-    function _rpow(uint256 x, uint256 n, uint256 base) internal pure returns (uint256 z) {
+    function _rpow(uint256 x, uint256 n, uint256 base)
+        internal
+        pure
+        returns (uint256 z)
+    {
         assembly ("memory-safe") {
             switch x
             case 0 {
@@ -175,7 +187,9 @@ contract DsrHyperdrive is Hyperdrive {
                     x := div(xxRound, base)
                     if mod(n, 2) {
                         let zx := mul(z, x)
-                        if and(iszero(iszero(x)), iszero(eq(div(zx, x), z))) { revert(0, 0) }
+                        if and(iszero(iszero(x)), iszero(eq(div(zx, x), z))) {
+                            revert(0, 0)
+                        }
                         let zxRound := add(zx, half)
                         if lt(zxRound, zx) { revert(0, 0) }
                         z := div(zxRound, base)

@@ -78,7 +78,14 @@ function _revert(uint256 errorCode, bytes3 prefix) pure {
         // array).
         let formattedPrefix := shl(24, add(0x23, shl(8, prefixUint)))
 
-        let revertReason := shl(200, add(formattedPrefix, add(add(units, shl(8, tenths)), shl(16, hundreds))))
+        let revertReason :=
+            shl(
+                200,
+                add(
+                    formattedPrefix,
+                    add(add(units, shl(8, tenths)), shl(16, hundreds))
+                )
+            )
 
         // We can now encode the reason in memory, which can be safely overwritten as we're about to revert. The encoded
         // message will have the following layout:
@@ -86,9 +93,15 @@ function _revert(uint256 errorCode, bytes3 prefix) pure {
 
         // The Solidity revert reason identifier is 0x08c739a0, the function selector of the Error(string) function. We
         // also write zeroes to the next 28 bytes of memory, but those are about to be overwritten.
-        mstore(0x0, 0x08c379a000000000000000000000000000000000000000000000000000000000)
+        mstore(
+            0x0,
+            0x08c379a000000000000000000000000000000000000000000000000000000000
+        )
         // Next is the offset to the location of the string, which will be placed immediately after (20 bytes away).
-        mstore(0x04, 0x0000000000000000000000000000000000000000000000000000000000000020)
+        mstore(
+            0x04,
+            0x0000000000000000000000000000000000000000000000000000000000000020
+        )
         // The string length is fixed: 7 characters.
         mstore(0x24, 7)
         // Finally, the string itself is stored.

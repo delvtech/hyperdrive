@@ -24,8 +24,11 @@ contract FeeTest is HyperdriveTest {
         // Open a long, record the accrued fees x share price
         uint256 baseAmount = 10e18;
         openLong(bob, baseAmount);
-        uint256 governanceFeesAfterOpenLong =
-            IMockHyperdrive(address(hyperdrive)).getGovernanceFeesAccrued().mulDown(hyperdrive.getPoolInfo().sharePrice);
+        uint256 governanceFeesAfterOpenLong = IMockHyperdrive(
+            address(hyperdrive)
+        ).getGovernanceFeesAccrued().mulDown(
+            hyperdrive.getPoolInfo().sharePrice
+        );
 
         // Time passes and the pool accrues interest at the current apr.
         advanceTime(POSITION_DURATION.mulDown(0.5e18), int256(apr));
@@ -52,7 +55,8 @@ contract FeeTest is HyperdriveTest {
         assertEq(governanceBalanceBefore, 0);
 
         // Ensure that fees are initially zero.
-        uint256 governanceFeesBeforeOpenLong = IMockHyperdrive(address(hyperdrive)).getGovernanceFeesAccrued();
+        uint256 governanceFeesBeforeOpenLong =
+            IMockHyperdrive(address(hyperdrive)).getGovernanceFeesAccrued();
         assertEq(governanceFeesBeforeOpenLong, 0);
 
         // Open a long.
@@ -60,7 +64,8 @@ contract FeeTest is HyperdriveTest {
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, baseAmount);
 
         // Ensure that governance fees have been accrued.
-        uint256 governanceFeesAfterOpenLong = IMockHyperdrive(address(hyperdrive)).getGovernanceFeesAccrued();
+        uint256 governanceFeesAfterOpenLong =
+            IMockHyperdrive(address(hyperdrive)).getGovernanceFeesAccrued();
         assertGt(governanceFeesAfterOpenLong, governanceFeesBeforeOpenLong);
 
         // Most of the term passes. The pool accrues interest at the current apr.
@@ -70,7 +75,8 @@ contract FeeTest is HyperdriveTest {
         closeLong(bob, maturityTime, bondAmount);
 
         // Ensure that governance fees after close are greater than before close.
-        uint256 governanceFeesAfterCloseLong = IMockHyperdrive(address(hyperdrive)).getGovernanceFeesAccrued();
+        uint256 governanceFeesAfterCloseLong =
+            IMockHyperdrive(address(hyperdrive)).getGovernanceFeesAccrued();
         assertGt(governanceFeesAfterCloseLong, governanceFeesAfterOpenLong);
 
         // Collect fees to governance address
@@ -79,7 +85,8 @@ contract FeeTest is HyperdriveTest {
         MockHyperdrive(address(hyperdrive)).collectGovernanceFee(true);
 
         // Ensure that governance fees after collection are zero.
-        uint256 governanceFeesAfterCollection = IMockHyperdrive(address(hyperdrive)).getGovernanceFeesAccrued();
+        uint256 governanceFeesAfterCollection =
+            IMockHyperdrive(address(hyperdrive)).getGovernanceFeesAccrued();
         assertEq(governanceFeesAfterCollection, 0);
 
         // Ensure that the governance address has received the fees.
@@ -101,7 +108,8 @@ contract FeeTest is HyperdriveTest {
         assertEq(governanceBalanceBefore, 0);
 
         // Ensure that fees are initially zero.
-        uint256 governanceFeesBeforeOpenShort = IMockHyperdrive(address(hyperdrive)).getGovernanceFeesAccrued();
+        uint256 governanceFeesBeforeOpenShort =
+            IMockHyperdrive(address(hyperdrive)).getGovernanceFeesAccrued();
         assertEq(governanceFeesBeforeOpenShort, 0);
 
         // Short some bonds.
@@ -109,7 +117,8 @@ contract FeeTest is HyperdriveTest {
         (uint256 maturityTime,) = openShort(bob, bondAmount);
 
         // Ensure that governance fees have been accrued.
-        uint256 governanceFeesAfterOpenShort = IMockHyperdrive(address(hyperdrive)).getGovernanceFeesAccrued();
+        uint256 governanceFeesAfterOpenShort =
+            IMockHyperdrive(address(hyperdrive)).getGovernanceFeesAccrued();
         assertGt(governanceFeesAfterOpenShort, governanceFeesBeforeOpenShort);
 
         // Most of the term passes. The pool accrues interest at the current apr.
@@ -119,7 +128,8 @@ contract FeeTest is HyperdriveTest {
         closeShort(bob, maturityTime, bondAmount);
 
         // Ensure that governance fees after close are greater than before close.
-        uint256 governanceFeesAfterCloseShort = IMockHyperdrive(address(hyperdrive)).getGovernanceFeesAccrued();
+        uint256 governanceFeesAfterCloseShort =
+            IMockHyperdrive(address(hyperdrive)).getGovernanceFeesAccrued();
         assertGt(governanceFeesAfterCloseShort, governanceFeesAfterOpenShort);
 
         // collect governance fees
@@ -130,7 +140,8 @@ contract FeeTest is HyperdriveTest {
         MockHyperdrive(address(hyperdrive)).collectGovernanceFee(true);
 
         // Ensure that governance fees after collection are zero.
-        uint256 governanceFeesAfterCollection = IMockHyperdrive(address(hyperdrive)).getGovernanceFeesAccrued();
+        uint256 governanceFeesAfterCollection =
+            IMockHyperdrive(address(hyperdrive)).getGovernanceFeesAccrued();
         assertEq(governanceFeesAfterCollection, 0);
 
         // Ensure that the governance address has received the fees.
@@ -146,9 +157,12 @@ contract FeeTest is HyperdriveTest {
         deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18, governance);
         initialize(alice, apr, contribution);
 
-        (uint256 curveFee, uint256 flatFee, uint256 governanceCurveFee, uint256 governanceFlatFee) = MockHyperdrive(
-            address(hyperdrive)
-        ).calculateFeesOutGivenSharesIn(
+        (
+            uint256 curveFee,
+            uint256 flatFee,
+            uint256 governanceCurveFee,
+            uint256 governanceFlatFee
+        ) = MockHyperdrive(address(hyperdrive)).calculateFeesOutGivenSharesIn(
             1 ether, // amountIn
             1 ether, //amountOut
             1 ether, // timeRemaining
@@ -163,8 +177,8 @@ contract FeeTest is HyperdriveTest {
         assertEq(flatFee, 0 ether);
         assertEq(governanceFlatFee, 0 ether);
 
-        (curveFee, flatFee, governanceCurveFee, governanceFlatFee) = MockHyperdrive(address(hyperdrive))
-            .calculateFeesOutGivenSharesIn(
+        (curveFee, flatFee, governanceCurveFee, governanceFlatFee) =
+        MockHyperdrive(address(hyperdrive)).calculateFeesOutGivenSharesIn(
             1 ether, // amountIn
             1 ether, // amountOut
             0, // timeRemaining
@@ -185,8 +199,11 @@ contract FeeTest is HyperdriveTest {
         // Deploy and initialize a new pool with fees.
         deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18, governance);
         initialize(alice, apr, contribution);
-        (uint256 totalCurveFee, uint256 totalFlatFee, uint256 totalGovernanceFee) = MockHyperdrive(address(hyperdrive))
-            .calculateFeesOutGivenBondsIn(
+        (
+            uint256 totalCurveFee,
+            uint256 totalFlatFee,
+            uint256 totalGovernanceFee
+        ) = MockHyperdrive(address(hyperdrive)).calculateFeesOutGivenBondsIn(
             1 ether, // amountIn
             1 ether, // timeRemaining
             0.9 ether, // spotPrice
@@ -198,8 +215,9 @@ contract FeeTest is HyperdriveTest {
 
         assertEq(totalGovernanceFee, 0.005 ether);
 
-        (totalCurveFee, totalFlatFee, totalGovernanceFee) = MockHyperdrive(address(hyperdrive))
-            .calculateFeesOutGivenBondsIn(
+        (totalCurveFee, totalFlatFee, totalGovernanceFee) = MockHyperdrive(
+            address(hyperdrive)
+        ).calculateFeesOutGivenBondsIn(
             1 ether, // amountIn
             0, // timeRemaining
             0.9 ether, // spotPrice
@@ -216,9 +234,12 @@ contract FeeTest is HyperdriveTest {
         // Deploy and initialize a new pool with fees.
         deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18, governance);
         initialize(alice, apr, contribution);
-        (uint256 curveFee, uint256 flatFee, uint256 governanceCurveFee, uint256 governanceFlatFee) = MockHyperdrive(
-            address(hyperdrive)
-        ).calculateFeesInGivenBondsOut(
+        (
+            uint256 curveFee,
+            uint256 flatFee,
+            uint256 governanceCurveFee,
+            uint256 governanceFlatFee
+        ) = MockHyperdrive(address(hyperdrive)).calculateFeesInGivenBondsOut(
             1 ether, // amountOut
             1 ether, // timeRemaining
             0.9 ether, // spotPrice
@@ -229,8 +250,8 @@ contract FeeTest is HyperdriveTest {
         assertEq(governanceCurveFee, 0.005 ether);
         assertEq(governanceFlatFee, 0 ether);
 
-        (curveFee, flatFee, governanceCurveFee, governanceFlatFee) = MockHyperdrive(address(hyperdrive))
-            .calculateFeesInGivenBondsOut(
+        (curveFee, flatFee, governanceCurveFee, governanceFlatFee) =
+        MockHyperdrive(address(hyperdrive)).calculateFeesInGivenBondsOut(
             1 ether, // amountOut
             0, // timeRemaining
             0.9 ether, // spotPrice

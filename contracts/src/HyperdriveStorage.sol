@@ -110,7 +110,10 @@ abstract contract HyperdriveStorage is MultiTokenStorage {
         _governance = _config.governance;
         _feeCollector = _config.feeCollector;
 
-        if (_config.fees.curve > 1e18 || _config.fees.flat > 1e18 || _config.fees.governance > 1e18) {
+        if (
+            _config.fees.curve > 1e18 || _config.fees.flat > 1e18
+                || _config.fees.governance > 1e18
+        ) {
             revert Errors.InvalidFeeAmounts();
         }
         _curveFee = _config.fees.curve;

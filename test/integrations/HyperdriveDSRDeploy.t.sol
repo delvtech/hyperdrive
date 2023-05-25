@@ -2,10 +2,14 @@
 pragma solidity ^0.8.18;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { DsrHyperdriveDeployer } from "contracts/src/factory/DsrHyperdriveDeployer.sol";
-import { DsrHyperdriveFactory } from "contracts/src/factory/DsrHyperdriveFactory.sol";
-import { DsrHyperdriveDataProvider } from "contracts/src/instances/DsrHyperdriveDataProvider.sol";
-import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
+import { DsrHyperdriveDeployer } from
+    "contracts/src/factory/DsrHyperdriveDeployer.sol";
+import { DsrHyperdriveFactory } from
+    "contracts/src/factory/DsrHyperdriveFactory.sol";
+import { DsrHyperdriveDataProvider } from
+    "contracts/src/instances/DsrHyperdriveDataProvider.sol";
+import { IHyperdriveDeployer } from
+    "contracts/src/interfaces/IHyperdriveDeployer.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
@@ -18,7 +22,8 @@ contract HyperdriveDSRTest is HyperdriveTest {
 
     DsrHyperdriveFactory factory;
     IERC20 dai = IERC20(address(0x6B175474E89094C44Da98b954EedeAC495271d0F));
-    DsrManager manager = DsrManager(address(0x373238337Bfe1146fb49989fc222523f83081dDb));
+    DsrManager manager =
+        DsrManager(address(0x373238337Bfe1146fb49989fc222523f83081dDb));
 
     function setUp() public override __mainnet_fork(16_685_972) {
         vm.startPrank(deployer);
@@ -84,7 +89,8 @@ contract HyperdriveDSRTest is HyperdriveTest {
 
         // The initial price per share is one so we should have that the
         // shares in the alice account are 1
-        uint256 createdShares = hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice);
+        uint256 createdShares =
+            hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice);
         assertEq(createdShares, 2808790684246250377500);
     }
 }

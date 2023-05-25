@@ -6,7 +6,8 @@ import "forge-std/console.sol";
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { DsrHyperdrive } from "contracts/src/instances/DsrHyperdrive.sol";
-import { DsrHyperdriveDataProvider } from "contracts/src/instances/DsrHyperdriveDataProvider.sol";
+import { DsrHyperdriveDataProvider } from
+    "contracts/src/instances/DsrHyperdriveDataProvider.sol";
 import { DsrManager } from "contracts/src/interfaces/IMaker.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
@@ -21,7 +22,8 @@ contract DsrHyperdriveScript is Script {
         vm.startBroadcast();
 
         // Deploy an instance of DsrHyperdrive.
-        DsrManager dsrManager = DsrManager(address(0xF7F0de3744C82825D77EdA8ce78f07A916fB6bE7));
+        DsrManager dsrManager =
+            DsrManager(address(0xF7F0de3744C82825D77EdA8ce78f07A916fB6bE7));
         IHyperdrive.Fees memory fees = IHyperdrive.Fees({
             curve: 0.1e18, // 10% curve fee
             flat: 0.05e18, // 5% flat fee

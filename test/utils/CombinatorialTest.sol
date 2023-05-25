@@ -8,7 +8,8 @@ import { BaseTest } from "./BaseTest.sol";
 import { Lib as lib } from "./Lib.sol";
 import { Hyperdrive } from "contracts/src/Hyperdrive.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { ERC20PresetFixedSupply } from "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
+import { ERC20PresetFixedSupply } from
+    "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import { ForwarderFactory } from "contracts/src/ForwarderFactory.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { Address } from "@openzeppelin/contracts/utils/Address.sol";
@@ -20,7 +21,8 @@ contract CombinatorialTest is BaseTest {
         Success
     }
 
-    CombinatorialTestKind internal __combinatorialTestKind = CombinatorialTestKind.Success;
+    CombinatorialTestKind internal __combinatorialTestKind =
+        CombinatorialTestKind.Success;
 
     error ExpectedSuccess();
     error ExpectedFail();
@@ -51,10 +53,14 @@ contract CombinatorialTest is BaseTest {
     modifier __combinatorial_fail() {
         _;
         // Detect if the __fail call was caught
-        if (lib.neq(__error, abi.encodeWithSelector(UnassignedCatch.selector))) {
+        if (lib.neq(__error, abi.encodeWithSelector(UnassignedCatch.selector)))
+        {
             // If a __fail call was caught then a __fail_error must be assigned
             assertTrue(
-                !checkEq0(__fail_error, abi.encodeWithSelector(UnassignedFail.selector)),
+                !checkEq0(
+                    __fail_error,
+                    abi.encodeWithSelector(UnassignedFail.selector)
+                ),
                 "__fail_error should be assigned"
             );
             // If the caught error and the expected error do not match then
@@ -67,9 +73,15 @@ contract CombinatorialTest is BaseTest {
             __combinatorialTestKind = CombinatorialTestKind.Fail;
         } else {
             assertEq(
-                __fail_error, abi.encodeWithSelector(UnassignedFail.selector), "__fail_error should not be assigned"
+                __fail_error,
+                abi.encodeWithSelector(UnassignedFail.selector),
+                "__fail_error should not be assigned"
             );
-            assertEq(__error, abi.encodeWithSelector(UnassignedCatch.selector), "__error should not be assigned");
+            assertEq(
+                __error,
+                abi.encodeWithSelector(UnassignedCatch.selector),
+                "__error should not be assigned"
+            );
         }
     }
 
@@ -90,7 +102,11 @@ contract CombinatorialTest is BaseTest {
     //        inputs to a small number of meaningful values. We use uint256 for
     //        generality, since uint256 can be converted to small width types.
     // @return The full testing matrix.
-    function __matrix(uint256[][] memory inputs) internal pure returns (uint256[][] memory result) {
+    function __matrix(uint256[][] memory inputs)
+        internal
+        pure
+        returns (uint256[][] memory result)
+    {
         // Compute the divisors that will be used to compute the intervals for
         // every input row.
         uint256 base = 1;
@@ -117,26 +133,40 @@ contract CombinatorialTest is BaseTest {
                 // The proof that each row of this procedure is unique is easy
                 // using induction. Proving that every row is unique also shows
                 // that the full test matrix has been covered.
-                result[i][j] = inputs[j][(i / (result.length / intervalDivisors[j])) % inputs[j].length];
+                result[i][j] = inputs[j][(
+                    i / (result.length / intervalDivisors[j])
+                ) % inputs[j].length];
             }
         }
         return result;
     }
 
-    function _arr(uint256 a, uint256 b) internal pure returns (uint256[] memory array) {
+    function _arr(uint256 a, uint256 b)
+        internal
+        pure
+        returns (uint256[] memory array)
+    {
         array = new uint256[](2);
         array[0] = a;
         array[1] = b;
     }
 
-    function _arr(uint256 a, uint256 b, uint256 c) internal pure returns (uint256[] memory array) {
+    function _arr(uint256 a, uint256 b, uint256 c)
+        internal
+        pure
+        returns (uint256[] memory array)
+    {
         array = new uint256[](3);
         array[0] = a;
         array[1] = b;
         array[2] = c;
     }
 
-    function _arr(uint256 a, uint256 b, uint256 c, uint256 d) internal pure returns (uint256[] memory array) {
+    function _arr(uint256 a, uint256 b, uint256 c, uint256 d)
+        internal
+        pure
+        returns (uint256[] memory array)
+    {
         array = new uint256[](4);
         array[0] = a;
         array[1] = b;
@@ -157,11 +187,14 @@ contract CombinatorialTest is BaseTest {
         array[4] = e;
     }
 
-    function _arr(uint256 a, uint256 b, uint256 c, uint256 d, uint256 e, uint256 f)
-        internal
-        pure
-        returns (uint256[] memory array)
-    {
+    function _arr(
+        uint256 a,
+        uint256 b,
+        uint256 c,
+        uint256 d,
+        uint256 e,
+        uint256 f
+    ) internal pure returns (uint256[] memory array) {
         array = new uint256[](6);
         array[0] = a;
         array[1] = b;
@@ -171,11 +204,15 @@ contract CombinatorialTest is BaseTest {
         array[5] = f;
     }
 
-    function _arr(uint256 a, uint256 b, uint256 c, uint256 d, uint256 e, uint256 f, uint256 g)
-        internal
-        pure
-        returns (uint256[] memory array)
-    {
+    function _arr(
+        uint256 a,
+        uint256 b,
+        uint256 c,
+        uint256 d,
+        uint256 e,
+        uint256 f,
+        uint256 g
+    ) internal pure returns (uint256[] memory array) {
         array = new uint256[](7);
         array[0] = a;
         array[1] = b;
@@ -186,11 +223,16 @@ contract CombinatorialTest is BaseTest {
         array[6] = g;
     }
 
-    function _arr(uint256 a, uint256 b, uint256 c, uint256 d, uint256 e, uint256 f, uint256 g, uint256 h)
-        internal
-        pure
-        returns (uint256[] memory array)
-    {
+    function _arr(
+        uint256 a,
+        uint256 b,
+        uint256 c,
+        uint256 d,
+        uint256 e,
+        uint256 f,
+        uint256 g,
+        uint256 h
+    ) internal pure returns (uint256[] memory array) {
         array = new uint256[](8);
         array[0] = a;
         array[1] = b;
@@ -202,11 +244,17 @@ contract CombinatorialTest is BaseTest {
         array[7] = h;
     }
 
-    function _arr(uint256 a, uint256 b, uint256 c, uint256 d, uint256 e, uint256 f, uint256 g, uint256 h, uint256 i)
-        internal
-        pure
-        returns (uint256[] memory array)
-    {
+    function _arr(
+        uint256 a,
+        uint256 b,
+        uint256 c,
+        uint256 d,
+        uint256 e,
+        uint256 f,
+        uint256 g,
+        uint256 h,
+        uint256 i
+    ) internal pure returns (uint256[] memory array) {
         array = new uint256[](9);
         array[0] = a;
         array[1] = b;
@@ -244,7 +292,11 @@ contract CombinatorialTest is BaseTest {
         array[9] = j;
     }
 
-    function _arr(uint256[] memory a, uint256[] memory b) internal pure returns (uint256[][] memory array) {
+    function _arr(uint256[] memory a, uint256[] memory b)
+        internal
+        pure
+        returns (uint256[][] memory array)
+    {
         array = new uint256[][](2);
         array[0] = a;
         array[1] = b;
@@ -261,11 +313,12 @@ contract CombinatorialTest is BaseTest {
         array[2] = c;
     }
 
-    function _arr(uint256[] memory a, uint256[] memory b, uint256[] memory c, uint256[] memory d)
-        internal
-        pure
-        returns (uint256[][] memory array)
-    {
+    function _arr(
+        uint256[] memory a,
+        uint256[] memory b,
+        uint256[] memory c,
+        uint256[] memory d
+    ) internal pure returns (uint256[][] memory array) {
         array = new uint256[][](4);
         array[0] = a;
         array[1] = b;
@@ -273,11 +326,13 @@ contract CombinatorialTest is BaseTest {
         array[3] = d;
     }
 
-    function _arr(uint256[] memory a, uint256[] memory b, uint256[] memory c, uint256[] memory d, uint256[] memory e)
-        internal
-        pure
-        returns (uint256[][] memory array)
-    {
+    function _arr(
+        uint256[] memory a,
+        uint256[] memory b,
+        uint256[] memory c,
+        uint256[] memory d,
+        uint256[] memory e
+    ) internal pure returns (uint256[][] memory array) {
         array = new uint256[][](5);
         array[0] = a;
         array[1] = b;

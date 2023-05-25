@@ -38,7 +38,11 @@ library Lib {
     /// @param decimals The number of decimal places to add. If zero, the the
     ///        decimal point is excluded.
     /// @return result The stringified integer.
-    function toString(int256 num, uint256 decimals) internal pure returns (string memory result) {
+    function toString(int256 num, uint256 decimals)
+        internal
+        pure
+        returns (string memory result)
+    {
         // We overallocate memory for the string. The maximum number of decimals
         // that a int256 can hold is log_10(2 ^ 255) which is approximately
         // 76.76. Thus, the string has a maximum length of 77 without the
@@ -62,7 +66,8 @@ library Lib {
             if (decimals > 0 && digits == decimals) {
                 rawResult[maxStringLength - digits - 1] = ".";
             } else {
-                rawResult[maxStringLength - digits - 1] = bytes1(uint8(uint256((num % 10) + 48)));
+                rawResult[maxStringLength - digits - 1] =
+                    bytes1(uint8(uint256((num % 10) + 48)));
                 num /= 10;
             }
             digits++;
@@ -91,7 +96,11 @@ library Lib {
     /// @param decimals The number of decimal places to add. If zero, the the
     ///        decimal point is excluded.
     /// @return result The stringified integer.
-    function toString(uint256 num, uint256 decimals) internal pure returns (string memory result) {
+    function toString(uint256 num, uint256 decimals)
+        internal
+        pure
+        returns (string memory result)
+    {
         // We overallocate memory for the string. The maximum number of decimals
         // that a uint256 can hold is log_10(2 ^ 256) which is approximately
         // 77.06. Thus, the string has a maximum length of 78.
@@ -107,7 +116,8 @@ library Lib {
             if (decimals > 0 && digits == decimals) {
                 rawResult[maxStringLength - digits - 1] = ".";
             } else {
-                rawResult[maxStringLength - digits - 1] = bytes1(uint8((num % 10) + 48));
+                rawResult[maxStringLength - digits - 1] =
+                    bytes1(uint8((num % 10) + 48));
                 num /= 10;
             }
             digits++;
@@ -122,7 +132,10 @@ library Lib {
         return result;
     }
 
-    function logArray(string memory prelude, uint256[] memory array) internal view {
+    function logArray(string memory prelude, uint256[] memory array)
+        internal
+        view
+    {
         console2.log(prelude, "[");
         for (uint256 i = 0; i < array.length; i++) {
             if (i < array.length - 1) {
@@ -135,7 +148,11 @@ library Lib {
         console2.log("");
     }
 
-    function normalizeToRange(uint256 value, uint256 min, uint256 max) internal pure returns (uint256) {
+    function normalizeToRange(uint256 value, uint256 min, uint256 max)
+        internal
+        pure
+        returns (uint256)
+    {
         require(min <= max, "Lib: min > max");
 
         uint256 rangeSize = max - min + 1;
@@ -144,7 +161,11 @@ library Lib {
         return modValue + min;
     }
 
-    function normalizeToRange(int256 value, int256 min, int256 max) internal pure returns (int256) {
+    function normalizeToRange(int256 value, int256 min, int256 max)
+        internal
+        pure
+        returns (int256)
+    {
         require(min <= max, "Lib: min > max");
 
         int256 rangeSize = max - min + 1;
@@ -158,10 +179,12 @@ library Lib {
     }
 
     function eq(bytes memory b1, bytes memory b2) public pure returns (bool) {
-        return keccak256(abi.encodePacked(b1)) == keccak256(abi.encodePacked(b2));
+        return
+            keccak256(abi.encodePacked(b1)) == keccak256(abi.encodePacked(b2));
     }
 
     function neq(bytes memory b1, bytes memory b2) public pure returns (bool) {
-        return keccak256(abi.encodePacked(b1)) != keccak256(abi.encodePacked(b2));
+        return
+            keccak256(abi.encodePacked(b1)) != keccak256(abi.encodePacked(b2));
     }
 }

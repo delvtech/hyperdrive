@@ -14,18 +14,27 @@ import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract HyperdriveDataProvider is HyperdriveStorage, MultiTokenDataProvider {
+abstract contract HyperdriveDataProvider is
+    HyperdriveStorage,
+    MultiTokenDataProvider
+{
     using FixedPointMath for uint256;
 
     /// @notice Initializes Hyperdrive's data provider.
     /// @param _config The configuration of the Hyperdrive pool.
-    constructor(IHyperdrive.PoolConfig memory _config) HyperdriveStorage(_config) { }
+    constructor(IHyperdrive.PoolConfig memory _config)
+        HyperdriveStorage(_config)
+    { }
 
     /// Yield Source ///
 
     ///@notice Loads the share price from the yield source
     ///@return sharePrice The current share price.
-    function _pricePerShare() internal view virtual returns (uint256 sharePrice);
+    function _pricePerShare()
+        internal
+        view
+        virtual
+        returns (uint256 sharePrice);
 
     /// Getters ///
 
@@ -38,7 +47,11 @@ abstract contract HyperdriveDataProvider is HyperdriveStorage, MultiTokenDataPro
     /// @notice Gets a specified checkpoint.
     /// @param _checkpointId The checkpoint ID.
     /// @return The checkpoint.
-    function getCheckpoint(uint256 _checkpointId) external view returns (IHyperdrive.Checkpoint memory) {
+    function getCheckpoint(uint256 _checkpointId)
+        external
+        view
+        returns (IHyperdrive.Checkpoint memory)
+    {
         _revert(abi.encode(_checkpoints[_checkpointId]));
     }
 
@@ -46,7 +59,11 @@ abstract contract HyperdriveDataProvider is HyperdriveStorage, MultiTokenDataPro
     /// @dev These parameters are immutable, so this should only need to be
     ///      called once.
     /// @return The PoolConfig struct.
-    function getPoolConfig() external view returns (IHyperdrive.PoolConfig memory) {
+    function getPoolConfig()
+        external
+        view
+        returns (IHyperdrive.PoolConfig memory)
+    {
         _revert(
             abi.encode(
                 IHyperdrive.PoolConfig({
@@ -68,7 +85,11 @@ abstract contract HyperdriveDataProvider is HyperdriveStorage, MultiTokenDataPro
     /// @notice Gets info about the pool's reserves and other state that is
     ///         important to evaluate potential trades.
     /// @return The PoolInfo struct.
-    function getPoolInfo() external view returns (IHyperdrive.PoolInfo memory) {
+    function getPoolInfo()
+        external
+        view
+        returns (IHyperdrive.PoolInfo memory)
+    {
         IHyperdrive.PoolInfo memory poolInfo = IHyperdrive.PoolInfo({
             shareReserves: _marketState.shareReserves,
             bondReserves: _marketState.bondReserves,
@@ -89,7 +110,11 @@ abstract contract HyperdriveDataProvider is HyperdriveStorage, MultiTokenDataPro
     ///         logic instead of the main.
     /// @param _slots The storage slots the caller wants the data from
     /// @return A raw array of loaded data
-    function load(uint256[] calldata _slots) external view returns (bytes32[] memory) {
+    function load(uint256[] calldata _slots)
+        external
+        view
+        returns (bytes32[] memory)
+    {
         bytes32[] memory loaded = new bytes32[](_slots.length);
 
         // Iterate on requested loads and then do them
@@ -128,7 +153,8 @@ abstract contract HyperdriveDataProvider is HyperdriveStorage, MultiTokenDataPro
                 oldData = _buffer[currentIndex];
                 break;
             }
-            currentIndex = currentIndex == 0 ? _buffer.length - 1 : currentIndex - 1;
+            currentIndex =
+                currentIndex == 0 ? _buffer.length - 1 : currentIndex - 1;
         }
 
         if (oldData.timestamp == 0) revert Errors.QueryOutOfRange();
@@ -136,7 +162,8 @@ abstract contract HyperdriveDataProvider is HyperdriveStorage, MultiTokenDataPro
         // To get twap in period we take the increase in the sum then divide by
         // the amount of time passed
         uint256 deltaSum = uint256(currentData.data) - uint256(oldData.data);
-        uint256 deltaTime = uint256(currentData.timestamp) - uint256(oldData.timestamp);
+        uint256 deltaTime =
+            uint256(currentData.timestamp) - uint256(oldData.timestamp);
         _revert(abi.encode(deltaSum.divDown(deltaTime * 1e18)));
     }
 }

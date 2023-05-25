@@ -25,11 +25,15 @@ contract DsrHyperdrive is BaseTest {
         super.setUp();
 
         dai = IERC20(address(0x6B175474E89094C44Da98b954EedeAC495271d0F));
-        dsrManager = DsrManager(address(0x373238337Bfe1146fb49989fc222523f83081dDb));
+        dsrManager =
+            DsrManager(address(0x373238337Bfe1146fb49989fc222523f83081dDb));
 
         vm.startPrank(deployer);
-        address dataProvider = address(new MockDsrHyperdriveDataProvider(dsrManager));
-        hyperdrive = IMockDsrHyperdrive(address(new MockDsrHyperdrive(dataProvider, dsrManager)));
+        address dataProvider =
+            address(new MockDsrHyperdriveDataProvider(dsrManager));
+        hyperdrive = IMockDsrHyperdrive(
+            address(new MockDsrHyperdrive(dataProvider, dsrManager))
+        );
 
         address daiWhale = 0x075e72a5eDf65F0A5f44699c7654C1a76941Ddc8;
 
@@ -53,8 +57,13 @@ contract DsrHyperdrive is BaseTest {
     }
 
     function test__dai_token_is_approved() public {
-        uint256 allowance = dai.allowance(address(hyperdrive), address(dsrManager));
-        assertEq(allowance, type(uint256).max, "dsrManager should be an approved DAI spender of hyperdrive");
+        uint256 allowance =
+            dai.allowance(address(hyperdrive), address(dsrManager));
+        assertEq(
+            allowance,
+            type(uint256).max,
+            "dsrManager should be an approved DAI spender of hyperdrive"
+        );
     }
 
     function test__initial_base_token_deposit() public {
@@ -67,14 +76,21 @@ contract DsrHyperdrive is BaseTest {
 
         // Deposit amount of base
         uint256 depositAmount = 2500e18;
-        (uint256 shares, uint256 sharePrice) = hyperdrive.deposit(depositAmount, true);
+        (uint256 shares, uint256 sharePrice) =
+            hyperdrive.deposit(depositAmount, true);
 
         // Validate that initial deposits are 1:1
-        assertEq(shares, depositAmount, "initial shares should be 1:1 with base");
+        assertEq(
+            shares, depositAmount, "initial shares should be 1:1 with base"
+        );
         assertEq(sharePrice, 1e18, "initial share price should be 1");
 
         // Validate that tokens have been transferred
-        assertEq(preBaseBalance - dai.balanceOf(alice), depositAmount, "hyperdrive should have transferred tokens");
+        assertEq(
+            preBaseBalance - dai.balanceOf(alice),
+            depositAmount,
+            "hyperdrive should have transferred tokens"
+        );
     }
 
     function test__multiple_deposits() public {
@@ -105,7 +121,12 @@ contract DsrHyperdrive is BaseTest {
         uint256 underlyingForBob = sharesBob.mulDown(pricePerShare);
         uint256 underlyingForAlice = sharesAlice.mulDown(pricePerShare);
 
-        assertApproxEqAbs(underlyingForBob, 1010e18, 10000, "Bob should have accrued approximately 1% interest");
+        assertApproxEqAbs(
+            underlyingForBob,
+            1010e18,
+            10000,
+            "Bob should have accrued approximately 1% interest"
+        );
         assertApproxEqAbs(
             underlyingForAlice,
             underlyingInvested - underlyingForBob,
@@ -140,13 +161,18 @@ contract DsrHyperdrive is BaseTest {
         uint256 underlyingInvested = dsrManager.daiBalance(address(hyperdrive));
 
         // Bob should have accrued 1%
-        (uint256 amountWithdrawnBob,) = hyperdrive.withdraw(sharesBob, bob, true);
+        (uint256 amountWithdrawnBob,) =
+            hyperdrive.withdraw(sharesBob, bob, true);
         assertApproxEqAbs(
-            amountWithdrawnBob - 1000e18, 10e18, 10000, "Bob should have accrued approximately 1% interest"
+            amountWithdrawnBob - 1000e18,
+            10e18,
+            10000,
+            "Bob should have accrued approximately 1% interest"
         );
 
         // Alice shares should make up the rest of the pool
-        (uint256 amountWithdrawnAlice,) = hyperdrive.withdraw(sharesAlice, alice, true);
+        (uint256 amountWithdrawnAlice,) =
+            hyperdrive.withdraw(sharesAlice, alice, true);
         assertApproxEqAbs(
             amountWithdrawnAlice,
             underlyingInvested - amountWithdrawnBob,
@@ -170,14 +196,22 @@ contract DsrHyperdrive is BaseTest {
 
             uint256 pricePerShare = hyperdrive.pricePerShare();
 
-            (, uint256 sharePriceOnDeposit) = hyperdrive.deposit(100e18 * i, true);
-            (, uint256 sharePriceOnWithdraw) = hyperdrive.withdraw(50e18 * i, alice, true);
+            (, uint256 sharePriceOnDeposit) =
+                hyperdrive.deposit(100e18 * i, true);
+            (, uint256 sharePriceOnWithdraw) =
+                hyperdrive.withdraw(50e18 * i, alice, true);
 
             assertApproxEqAbs(
-                pricePerShare, sharePriceOnWithdraw, 5000, "emulated share price should match pool ratio after withdraw"
+                pricePerShare,
+                sharePriceOnWithdraw,
+                5000,
+                "emulated share price should match pool ratio after withdraw"
             );
             assertApproxEqAbs(
-                pricePerShare, sharePriceOnDeposit, 5000, "emulated share price should match pool ratio after deposit"
+                pricePerShare,
+                sharePriceOnDeposit,
+                5000,
+                "emulated share price should match pool ratio after deposit"
             );
         }
     }

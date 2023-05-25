@@ -273,11 +273,14 @@ library YieldSpaceMath {
     /// @param t Amount of time elapsed since term start
     /// @param c Conversion rate between base and shares
     /// @param mu Interest normalization factor for shares
-    function calculateBondsInGivenSharesOut(uint256 z, uint256 y, uint256 dz, uint256 t, uint256 c, uint256 mu)
-        internal
-        pure
-        returns (uint256)
-    {
+    function calculateBondsInGivenSharesOut(
+        uint256 z,
+        uint256 y,
+        uint256 dz,
+        uint256 t,
+        uint256 c,
+        uint256 mu
+    ) internal pure returns (uint256) {
         // c/µ
         uint256 cDivMu = c.divDown(mu);
         // (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
@@ -300,11 +303,14 @@ library YieldSpaceMath {
     /// @param t Amount of time elapsed since term start
     /// @param c Conversion rate between base and shares
     /// @param mu Interest normalization factor for shares
-    function calculateBondsOutGivenSharesIn(uint256 z, uint256 y, uint256 dz, uint256 t, uint256 c, uint256 mu)
-        internal
-        pure
-        returns (uint256)
-    {
+    function calculateBondsOutGivenSharesIn(
+        uint256 z,
+        uint256 y,
+        uint256 dz,
+        uint256 t,
+        uint256 c,
+        uint256 mu
+    ) internal pure returns (uint256) {
         // c/µ
         uint256 cDivMu = c.divDown(mu);
         // (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
@@ -327,11 +333,14 @@ library YieldSpaceMath {
     /// @param t Amount of time elapsed since term start
     /// @param c Conversion rate between base and shares
     /// @param mu Interest normalization factor for shares
-    function calculateSharesInGivenBondsOut(uint256 z, uint256 y, uint256 dy, uint256 t, uint256 c, uint256 mu)
-        internal
-        pure
-        returns (uint256)
-    {
+    function calculateSharesInGivenBondsOut(
+        uint256 z,
+        uint256 y,
+        uint256 dy,
+        uint256 t,
+        uint256 c,
+        uint256 mu
+    ) internal pure returns (uint256) {
         // c/µ
         uint256 cDivMu = c.divDown(mu);
         // (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
@@ -339,7 +348,8 @@ library YieldSpaceMath {
         // (y - dy)^(1 - t)
         y = y.sub(dy).pow(t);
         // (((µ * z)^(1 - t) + y^(1 - t) - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))
-        uint256 _z = k.sub(y).divDown(cDivMu).pow(FixedPointMath.ONE_18.divUp(t));
+        uint256 _z =
+            k.sub(y).divDown(cDivMu).pow(FixedPointMath.ONE_18.divUp(t));
         // (((µ * z)^(1 - t) + y^(1 - t) - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
         _z = _z.divDown(mu);
         // Δz = ((((c / µ) * (µ * z)^(1 - t) + y^(1 - t) - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ) - z
@@ -354,11 +364,14 @@ library YieldSpaceMath {
     /// @param t Amount of time elapsed since term start
     /// @param c Conversion rate between base and shares
     /// @param mu Interest normalization factor for shares
-    function calculateSharesOutGivenBondsIn(uint256 z, uint256 y, uint256 dy, uint256 t, uint256 c, uint256 mu)
-        internal
-        pure
-        returns (uint256)
-    {
+    function calculateSharesOutGivenBondsIn(
+        uint256 z,
+        uint256 y,
+        uint256 dy,
+        uint256 t,
+        uint256 c,
+        uint256 mu
+    ) internal pure returns (uint256) {
         // c/µ
         uint256 cDivMu = c.divDown(mu);
         // (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
@@ -366,7 +379,8 @@ library YieldSpaceMath {
         // (y + dy)^(1 - t)
         y = y.add(dy).pow(t);
         // (((µ * z)^(1 - t) + y^(1 - t) - (y + dy)^(1 - t)) / (c / µ))^(1 / (1 - t)))
-        uint256 _z = k.sub(y).divDown(cDivMu).pow(FixedPointMath.ONE_18.divUp(t));
+        uint256 _z =
+            k.sub(y).divDown(cDivMu).pow(FixedPointMath.ONE_18.divUp(t));
         // (((µ * z)^(1 - t) + y^(1 - t) - (y + dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
         _z = _z.divDown(mu);
         // Δz = z - (((c / µ) * (µ * z)^(1 - t) + y^(1 - t) - (y + dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
@@ -380,11 +394,13 @@ library YieldSpaceMath {
     /// @param z Amount of share reserves in the pool
     /// @param t Amount of time elapsed since term start
     /// @param y Amount of bond reserves in the pool
-    function _modifiedYieldSpaceConstant(uint256 cDivMu, uint256 mu, uint256 z, uint256 t, uint256 y)
-        private
-        pure
-        returns (uint256)
-    {
+    function _modifiedYieldSpaceConstant(
+        uint256 cDivMu,
+        uint256 mu,
+        uint256 z,
+        uint256 t,
+        uint256 y
+    ) private pure returns (uint256) {
         /// k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
         return cDivMu.mulDown(mu.mulDown(z).pow(t)).add(y.pow(t));
     }

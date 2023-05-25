@@ -4,7 +4,11 @@ pragma solidity ^0.8.18;
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
-import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
+import {
+    HyperdriveTest,
+    HyperdriveUtils,
+    IHyperdrive
+} from "../../utils/HyperdriveTest.sol";
 
 contract ExtremeInputs is HyperdriveTest {
     using FixedPointMath for uint256;
@@ -68,7 +72,12 @@ contract ExtremeInputs is HyperdriveTest {
         // Ensure the share reserves are approximately empty and that the apr
         // increased.
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
-        assertApproxEqAbs(poolInfoAfter.shareReserves, 0, 1e10, "shareReserves should be approximately empty");
+        assertApproxEqAbs(
+            poolInfoAfter.shareReserves,
+            0,
+            1e10,
+            "shareReserves should be approximately empty"
+        );
         assertGt(aprAfter, aprBefore);
 
         // Ensure that the bond reserves were updated to have the correct APR.

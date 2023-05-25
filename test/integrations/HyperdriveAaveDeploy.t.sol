@@ -3,11 +3,17 @@ pragma solidity ^0.8.18;
 
 import { IPool } from "@aave/interfaces/IPool.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { AaveHyperdriveDeployer, IPool } from "contracts/src/factory/AaveHyperdriveDeployer.sol";
-import { AaveHyperdriveFactory } from "contracts/src/factory/AaveHyperdriveFactory.sol";
-import { AaveHyperdriveDataProvider } from "contracts/src/instances/AaveHyperdriveDataProvider.sol";
+import {
+    AaveHyperdriveDeployer,
+    IPool
+} from "contracts/src/factory/AaveHyperdriveDeployer.sol";
+import { AaveHyperdriveFactory } from
+    "contracts/src/factory/AaveHyperdriveFactory.sol";
+import { AaveHyperdriveDataProvider } from
+    "contracts/src/instances/AaveHyperdriveDataProvider.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
+import { IHyperdriveDeployer } from
+    "contracts/src/interfaces/IHyperdriveDeployer.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
@@ -83,7 +89,8 @@ contract HyperdriveDSRTest is HyperdriveTest {
 
         // The initial price per share is one so we should have that the
         // shares in the alice account are 1
-        uint256 createdShares = hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice);
+        uint256 createdShares =
+            hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice);
         assertEq(createdShares, 2808790684246250377500);
     }
 }

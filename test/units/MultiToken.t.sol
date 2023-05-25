@@ -2,8 +2,11 @@
 pragma solidity ^0.8.18;
 
 import { ForwarderFactory } from "contracts/src/ForwarderFactory.sol";
-import { MultiTokenDataProvider } from "contracts/src/MultiTokenDataProvider.sol";
-import { MockMultiToken, IMockMultiToken } from "contracts/test/MockMultiToken.sol";
+import { MultiTokenDataProvider } from
+    "contracts/src/MultiTokenDataProvider.sol";
+import {
+    MockMultiToken, IMockMultiToken
+} from "contracts/test/MockMultiToken.sol";
 import { BaseTest } from "test/utils/BaseTest.sol";
 
 contract MultiTokenTest is BaseTest {
@@ -13,7 +16,9 @@ contract MultiTokenTest is BaseTest {
         super.setUp();
         vm.startPrank(deployer);
         forwarderFactory = new ForwarderFactory();
-        address dataProvider = address(new MultiTokenDataProvider(bytes32(0), address(forwarderFactory)));
+        address dataProvider = address(
+            new MultiTokenDataProvider(bytes32(0), address(forwarderFactory))
+        );
         multiToken = IMockMultiToken(
             address(
                 new MockMultiToken(

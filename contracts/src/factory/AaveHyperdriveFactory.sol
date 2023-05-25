@@ -6,7 +6,8 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { HyperdriveFactory } from "./HyperdriveFactory.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
-import { AaveHyperdriveDataProvider } from "../instances/AaveHyperdriveDataProvider.sol";
+import { AaveHyperdriveDataProvider } from
+    "../instances/AaveHyperdriveDataProvider.sol";
 import { Errors } from "../libraries/Errors.sol";
 
 /// @author DELV
@@ -31,7 +32,16 @@ contract AaveHyperdriveFactory is HyperdriveFactory {
         address _feeCollector,
         IHyperdrive.Fees memory _fees,
         address[] memory _defaultPausers
-    ) HyperdriveFactory(_governance, _deployer, _hyperdriveGovernance, _feeCollector, _fees, _defaultPausers) { }
+    )
+        HyperdriveFactory(
+            _governance,
+            _deployer,
+            _hyperdriveGovernance,
+            _feeCollector,
+            _fees,
+            _defaultPausers
+        )
+    { }
 
     /// @notice Deploys a copy of hyperdrive with the given params
     /// @param _config The configuration of the Hyperdrive pool.
@@ -53,7 +63,8 @@ contract AaveHyperdriveFactory is HyperdriveFactory {
         // Encode the aToken address corresponding to the base token in the
         // extra data passed to `deployAndInitialize`.
         IPool pool = IAaveDeployer(address(hyperdriveDeployer)).pool();
-        address aToken = pool.getReserveData(address(_config.baseToken)).aTokenAddress;
+        address aToken =
+            pool.getReserveData(address(_config.baseToken)).aTokenAddress;
         if (address(_config.baseToken) == address(0) || aToken == address(0)) {
             revert Errors.InvalidToken();
         }
@@ -62,7 +73,14 @@ contract AaveHyperdriveFactory is HyperdriveFactory {
         extraData[0] = bytes32(uint256(uint160(address(aToken))));
 
         // Deploy and initialize the hyperdrive instance.
-        return super.deployAndInitialize(_config, _linkerCodeHash, _linkerFactory, extraData, _contribution, _apr);
+        return super.deployAndInitialize(
+            _config,
+            _linkerCodeHash,
+            _linkerFactory,
+            extraData,
+            _contribution,
+            _apr
+        );
     }
 
     /// @notice This deploys a data provider for the aave hyperdrive instance

@@ -79,11 +79,13 @@ contract InitializeTest is HyperdriveTest {
         uint256 expectedBaseAmount,
         uint256 expectedApr
     ) internal {
-        VmSafe.Log[] memory logs = vm.getRecordedLogs().filterLogs(Initialize.selector);
+        VmSafe.Log[] memory logs =
+            vm.getRecordedLogs().filterLogs(Initialize.selector);
         assertEq(logs.length, 1);
         VmSafe.Log memory log = logs[0];
         assertEq(address(uint160(uint256(log.topics[1]))), provider);
-        (uint256 lpShares, uint256 baseAmount, uint256 apr) = abi.decode(log.data, (uint256, uint256, uint256));
+        (uint256 lpShares, uint256 baseAmount, uint256 apr) =
+            abi.decode(log.data, (uint256, uint256, uint256));
         assertEq(lpShares, expectedLpShares);
         assertEq(baseAmount, expectedBaseAmount);
         assertEq(apr, expectedApr);

@@ -5,7 +5,10 @@ import { stdJson } from "forge-std/StdJson.sol";
 import { Script } from "forge-std/Script.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { MockHyperdriveTestnet, MockHyperdriveDataProviderTestnet } from "contracts/test/MockHyperdriveTestnet.sol";
+import {
+    MockHyperdriveTestnet,
+    MockHyperdriveDataProviderTestnet
+} from "contracts/test/MockHyperdriveTestnet.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 
 contract MockHyperdriveScript is Script {
@@ -23,7 +26,8 @@ contract MockHyperdriveScript is Script {
         baseToken.mint(1_000_000e18);
 
         // Mock Hyperdrive, 1 year term
-        MockHyperdriveDataProviderTestnet dataProvider = new MockHyperdriveDataProviderTestnet(
+        MockHyperdriveDataProviderTestnet dataProvider =
+        new MockHyperdriveDataProviderTestnet(
                 baseToken,
                 5e18,
                 FixedPointMath.ONE_18,

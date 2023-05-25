@@ -21,8 +21,9 @@ contract ERC20Forwarder is IERC20 {
     mapping(address => uint256) public nonces;
     // EIP712
     bytes32 public immutable DOMAIN_SEPARATOR; // solhint-disable-line var-name-mixedcase
-    bytes32 public constant PERMIT_TYPEHASH =
-        keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
+    bytes32 public constant PERMIT_TYPEHASH = keccak256(
+        "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
+    );
 
     /// @notice Constructs this contract by initializing the immutables
     /// @dev To give the contract a constant deploy code hash we call back
@@ -38,7 +39,9 @@ contract ERC20Forwarder is IERC20 {
         // https://eips.ethereum.org/EIPS/eip-712
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
-                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
+                keccak256(
+                    "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+                ),
                 keccak256(bytes(token.name(tokenId))),
                 keccak256(bytes("1")),
                 block.chainid,
@@ -82,7 +85,12 @@ contract ERC20Forwarder is IERC20 {
     /// @param owner The account who's tokens would be spent
     /// @param spender The account who might be able to spend tokens
     /// @return The amount of the owner's tokens the spender can spend
-    function allowance(address owner, address spender) external view override returns (uint256) {
+    function allowance(address owner, address spender)
+        external
+        view
+        override
+        returns (uint256)
+    {
         // If the owner is approved for all they can spend an unlimited amount
         if (token.isApprovedForAll(owner, spender)) {
             return type(uint256).max;
@@ -112,8 +120,14 @@ contract ERC20Forwarder is IERC20 {
     /// @param amount The amount of token to transfer
     /// @return True if transfer successful, false if not. The contract also reverts
     ///         on failed transfer so only true is possible.
-    function transfer(address recipient, uint256 amount) external override returns (bool) {
-        token.transferFromBridge(tokenId, msg.sender, recipient, amount, msg.sender);
+    function transfer(address recipient, uint256 amount)
+        external
+        override
+        returns (bool)
+    {
+        token.transferFromBridge(
+            tokenId, msg.sender, recipient, amount, msg.sender
+        );
         // Emits an ERC20 compliant transfer event
         emit Transfer(msg.sender, recipient, amount);
         return true;
@@ -125,7 +139,10 @@ contract ERC20Forwarder is IERC20 {
     /// @param amount The amount of tokens to be transferred
     /// @return Returns true for success false for failure, also reverts on fail, so will
     ///         always return true.
-    function transferFrom(address source, address recipient, uint256 amount) external returns (bool) {
+    function transferFrom(address source, address recipient, uint256 amount)
+        external
+        returns (bool)
+    {
         // The token handles the approval logic checking and transfer
         token.transferFromBridge(tokenId, source, recipient, amount, msg.sender);
         // Emits an ERC20 compliant transfer event
@@ -145,9 +162,15 @@ contract ERC20Forwarder is IERC20 {
     ///      eth_signTypedData JSON RPC call instead of the eth_sign JSON RPC call. If using out of date
     ///      parity signing libraries the v component may need to be adjusted. Also it is very rare but possible
     ///      for v to be other values, those values are not supported.
-    function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
-        external
-    {
+    function permit(
+        address owner,
+        address spender,
+        uint256 value,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external {
         // Require that the signature is not expired
         if (block.timestamp > deadline) revert Errors.ExpiredDeadline();
         // Require that the owner is not zero
@@ -157,7 +180,16 @@ contract ERC20Forwarder is IERC20 {
             abi.encodePacked(
                 "\x19\x01",
                 DOMAIN_SEPARATOR,
-                keccak256(abi.encode(PERMIT_TYPEHASH, owner, spender, value, nonces[owner], deadline))
+                keccak256(
+                    abi.encode(
+                        PERMIT_TYPEHASH,
+                        owner,
+                        spender,
+                        value,
+                        nonces[owner],
+                        deadline
+                    )
+                )
             )
         );
 

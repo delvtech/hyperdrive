@@ -2,7 +2,12 @@
 pragma solidity ^0.8.18;
 
 import { Errors } from "contracts/src/libraries/Errors.sol";
-import { HyperdriveTest, HyperdriveUtils, MockHyperdrive, IHyperdrive } from "../../utils/HyperdriveTest.sol";
+import {
+    HyperdriveTest,
+    HyperdriveUtils,
+    MockHyperdrive,
+    IHyperdrive
+} from "../../utils/HyperdriveTest.sol";
 
 contract CheckpointTest is HyperdriveTest {
     function test_checkpoint_failure_future_checkpoint() external {
@@ -35,12 +40,15 @@ contract CheckpointTest is HyperdriveTest {
         hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
 
         // Ensure that the pool's APR wasn't changed by the checkpoint.
-        assertEq(HyperdriveUtils.calculateAPRFromReserves(hyperdrive), aprBefore);
+        assertEq(
+            HyperdriveUtils.calculateAPRFromReserves(hyperdrive), aprBefore
+        );
 
         // Ensure that the checkpoint contains the share price prior to the
         // share price update.
-        IHyperdrive.Checkpoint memory checkpoint =
-            hyperdrive.getCheckpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
+            HyperdriveUtils.latestCheckpoint(hyperdrive)
+        );
         assertEq(checkpoint.sharePrice, sharePrice);
 
         // Ensure that the long and short balance wasn't effected by the
@@ -66,11 +74,14 @@ contract CheckpointTest is HyperdriveTest {
         hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
 
         // Ensure that the pool's APR wasn't changed by the checkpoint.
-        assertEq(HyperdriveUtils.calculateAPRFromReserves(hyperdrive), aprBefore);
+        assertEq(
+            HyperdriveUtils.calculateAPRFromReserves(hyperdrive), aprBefore
+        );
 
         // Ensure that the checkpoint contains the latest share price.
-        IHyperdrive.Checkpoint memory checkpoint =
-            hyperdrive.getCheckpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
+            HyperdriveUtils.latestCheckpoint(hyperdrive)
+        );
         assertEq(checkpoint.sharePrice, sharePrice);
     }
 
@@ -98,8 +109,9 @@ contract CheckpointTest is HyperdriveTest {
 
         // Ensure that the checkpoint contains the share price prior to the
         // share price update.
-        IHyperdrive.Checkpoint memory checkpoint =
-            hyperdrive.getCheckpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
+            HyperdriveUtils.latestCheckpoint(hyperdrive)
+        );
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
         assertEq(checkpoint.sharePrice, poolInfo.sharePrice);
 
@@ -124,8 +136,9 @@ contract CheckpointTest is HyperdriveTest {
         // Create a checkpoint.
         hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
 
-        uint256 previousCheckpoint =
-            HyperdriveUtils.latestCheckpoint(hyperdrive) - hyperdrive.getPoolConfig().checkpointDuration;
+        uint256 previousCheckpoint = HyperdriveUtils.latestCheckpoint(
+            hyperdrive
+        ) - hyperdrive.getPoolConfig().checkpointDuration;
         hyperdrive.checkpoint(previousCheckpoint);
 
         // TODO: This should be either removed or uncommented when we decide
@@ -137,8 +150,9 @@ contract CheckpointTest is HyperdriveTest {
 
         // Ensure that the checkpoint contains the share price prior to the
         // share price update.
-        IHyperdrive.Checkpoint memory checkpoint =
-            hyperdrive.getCheckpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
+            HyperdriveUtils.latestCheckpoint(hyperdrive)
+        );
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
         assertEq(checkpoint.sharePrice, poolInfo.sharePrice);
 

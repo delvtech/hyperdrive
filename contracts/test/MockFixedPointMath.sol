@@ -16,7 +16,11 @@ contract MockFixedPointMath {
         return result;
     }
 
-    function mulDivDown(uint256 x, uint256 y, uint256 d) external pure returns (uint256 z) {
+    function mulDivDown(uint256 x, uint256 y, uint256 d)
+        external
+        pure
+        returns (uint256 z)
+    {
         uint256 result = FixedPointMath.mulDivDown(x, y, d);
         return result;
     }
@@ -31,7 +35,11 @@ contract MockFixedPointMath {
         return result;
     }
 
-    function mulDivUp(uint256 x, uint256 y, uint256 d) external pure returns (uint256 z) {
+    function mulDivUp(uint256 x, uint256 y, uint256 d)
+        external
+        pure
+        returns (uint256 z)
+    {
         uint256 result = FixedPointMath.mulDivUp(x, y, d);
         return result;
     }
@@ -68,7 +76,9 @@ contract MockFixedPointMath {
         uint256 _deltaWeight,
         bool _isAdding
     ) external pure returns (uint256 average) {
-        uint256 result = FixedPointMath.updateWeightedAverage(_average, _totalWeight, _delta, _deltaWeight, _isAdding);
+        uint256 result = FixedPointMath.updateWeightedAverage(
+            _average, _totalWeight, _delta, _deltaWeight, _isAdding
+        );
         return result;
     }
 }

@@ -4,7 +4,8 @@ pragma solidity ^0.8.18;
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
-import { DsrHyperdriveDataProvider } from "../instances/DsrHyperdriveDataProvider.sol";
+import { DsrHyperdriveDataProvider } from
+    "../instances/DsrHyperdriveDataProvider.sol";
 import { HyperdriveFactory } from "./HyperdriveFactory.sol";
 import { DsrManager } from "../interfaces/IMaker.sol";
 
@@ -34,7 +35,16 @@ contract DsrHyperdriveFactory is HyperdriveFactory {
         IHyperdrive.Fees memory _fees,
         address[] memory _defaultPausers,
         address dsrManager
-    ) HyperdriveFactory(_governance, _deployer, _hyperdriveGovernance, _feeCollector, _fees, _defaultPausers) {
+    )
+        HyperdriveFactory(
+            _governance,
+            _deployer,
+            _hyperdriveGovernance,
+            _feeCollector,
+            _fees,
+            _defaultPausers
+        )
+    {
         manager = DsrManager(dsrManager);
     }
 

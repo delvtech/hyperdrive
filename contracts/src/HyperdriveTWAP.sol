@@ -46,6 +46,7 @@ abstract contract HyperdriveTWAP is HyperdriveBase {
         uint256 toUpdate = (uint256(head) + 1) % _buffer.length;
         // Now we update the slot with this data
         _buffer[toUpdate] = OracleData(uint32(block.timestamp), uint224(sum));
-        _oracle = IHyperdrive.OracleState(uint128(toUpdate), uint128(block.timestamp));
+        _oracle =
+            IHyperdrive.OracleState(uint128(toUpdate), uint128(block.timestamp));
     }
 }

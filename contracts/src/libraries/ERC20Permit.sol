@@ -30,7 +30,8 @@ abstract contract ERC20Permit is IERC20Permit {
     // solhint-disable-next-line var-name-mixedcase
     bytes32 public override DOMAIN_SEPARATOR;
     // bytes32 public constant PERMIT_TYPEHASH = keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
-    bytes32 public constant PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
+    bytes32 public constant PERMIT_TYPEHASH =
+        0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
 
     /// @notice Initializes the erc20 contract
     /// @param name_ the value 'name' will be set to
@@ -60,7 +61,9 @@ abstract contract ERC20Permit is IERC20Permit {
         // https://eips.ethereum.org/EIPS/eip-712
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
-                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
+                keccak256(
+                    "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+                ),
                 keccak256(bytes(name)),
                 keccak256(bytes("1")),
                 block.chainid,
@@ -78,7 +81,12 @@ abstract contract ERC20Permit is IERC20Permit {
     /// @param amount The amount user token to send
     /// @return returns true on success, reverts on failure so cannot return false.
     /// @dev transfers to this contract address or 0 will fail
-    function transfer(address recipient, uint256 amount) public virtual override returns (bool) {
+    function transfer(address recipient, uint256 amount)
+        public
+        virtual
+        override
+        returns (bool)
+    {
         // We forward this call to 'transferFrom'
         return transferFrom(msg.sender, recipient, amount);
     }
@@ -89,7 +97,12 @@ abstract contract ERC20Permit is IERC20Permit {
     /// @param amount the number of tokens to send
     /// @return returns true on success and reverts on failure
     /// @dev will fail transfers which send funds to this contract or 0
-    function transferFrom(address spender, address recipient, uint256 amount) public virtual override returns (bool) {
+    function transferFrom(address spender, address recipient, uint256 amount)
+        public
+        virtual
+        override
+        returns (bool)
+    {
         // Load balance and allowance
         uint256 balance = balanceOf[spender];
         require(balance >= amount, "ERC20: insufficient-balance");
@@ -151,7 +164,12 @@ abstract contract ERC20Permit is IERC20Permit {
     /// @param account The account which will be approve to transfer tokens
     /// @param amount The approval amount, if set to uint256.max the allowance does not go down on transfers.
     /// @return returns true for compatibility with the ERC20 standard
-    function approve(address account, uint256 amount) public virtual override returns (bool) {
+    function approve(address account, uint256 amount)
+        public
+        virtual
+        override
+        returns (bool)
+    {
         // Set the senders allowance for account to amount
         allowance[msg.sender][account] = amount;
         // Emit an event to track approvals
@@ -171,16 +189,30 @@ abstract contract ERC20Permit is IERC20Permit {
     ///      eth_signTypedData JSON RPC call instead of the eth_sign JSON RPC call. If using out of date
     ///      parity signing libraries the v component may need to be adjusted. Also it is very rare but possible
     ///      for v to be other values, those values are not supported.
-    function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
-        external
-        override
-    {
+    function permit(
+        address owner,
+        address spender,
+        uint256 value,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external override {
         // The EIP 712 digest for this function
         bytes32 digest = keccak256(
             abi.encodePacked(
                 "\x19\x01",
                 DOMAIN_SEPARATOR,
-                keccak256(abi.encode(PERMIT_TYPEHASH, owner, spender, value, nonces[owner], deadline))
+                keccak256(
+                    abi.encode(
+                        PERMIT_TYPEHASH,
+                        owner,
+                        spender,
+                        value,
+                        nonces[owner],
+                        deadline
+                    )
+                )
             )
         );
         // Require that the owner is not zero
@@ -188,10 +220,15 @@ abstract contract ERC20Permit is IERC20Permit {
         // Require that we have a valid signature from the owner
         require(owner == ecrecover(digest, v, r, s), "ERC20: invalid-permit");
         // Require that the signature is not expired
-        require(deadline == 0 || block.timestamp <= deadline, "ERC20: permit-expired");
+        require(
+            deadline == 0 || block.timestamp <= deadline,
+            "ERC20: permit-expired"
+        );
         // Format the signature to the default format
         require(
-            uint256(s) <= 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0,
+            uint256(s)
+                <=
+                0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0,
             "ERC20: invalid signature 's' value"
         );
         // Increment the signature nonce to prevent replay

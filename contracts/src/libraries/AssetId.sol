@@ -13,7 +13,8 @@ import { FixedPointMath } from "./FixedPointMath.sol";
 ///                    particular legal or regulatory significance.
 library AssetId {
     uint256 internal constant _LP_ASSET_ID = 0;
-    uint256 internal constant _WITHDRAWAL_SHARE_ASSET_ID = uint256(AssetIdPrefix.WithdrawalShare) << 248;
+    uint256 internal constant _WITHDRAWAL_SHARE_ASSET_ID =
+        uint256(AssetIdPrefix.WithdrawalShare) << 248;
 
     enum AssetIdPrefix {
         LP,
@@ -29,9 +30,16 @@ library AssetId {
     /// @param _prefix A one byte prefix that specifies the asset type.
     /// @param _timestamp A timestamp associated with the asset.
     /// @return id The asset ID.
-    function encodeAssetId(AssetIdPrefix _prefix, uint256 _timestamp) internal pure returns (uint256 id) {
+    function encodeAssetId(AssetIdPrefix _prefix, uint256 _timestamp)
+        internal
+        pure
+        returns (uint256 id)
+    {
         // [identifier: 8 bits][timestamp: 248 bits]
-        if (_timestamp > 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) {
+        if (
+            _timestamp
+                > 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+        ) {
             revert Errors.InvalidTimestamp();
         }
         assembly ("memory-safe") {
@@ -44,11 +52,19 @@ library AssetId {
     /// @param _id The asset ID.
     /// @return _prefix A one byte prefix that specifies the asset type.
     /// @return _timestamp A timestamp associated with the asset.
-    function decodeAssetId(uint256 _id) internal pure returns (AssetIdPrefix _prefix, uint256 _timestamp) {
+    function decodeAssetId(uint256 _id)
+        internal
+        pure
+        returns (AssetIdPrefix _prefix, uint256 _timestamp)
+    {
         // [identifier: 8 bits][timestamp: 248 bits]
         assembly ("memory-safe") {
             _prefix := shr(0xf8, _id) // shr 248 bits
-            _timestamp := and(0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff, _id) // 248 bit-mask
+            _timestamp :=
+                and(
+                    0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff,
+                    _id
+                ) // 248 bit-mask
         }
     }
 }
