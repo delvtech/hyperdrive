@@ -38,6 +38,4 @@ jobs:
           version: nightly
 
       - name: lint
-        uses: borales/actions-yarn@v4
-        with:
-          cmd: lint
+        run: forge fmt --check
