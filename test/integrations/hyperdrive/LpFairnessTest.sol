@@ -123,9 +123,6 @@ contract LPFairnessTest is HyperdriveTest {
         // variable interest rate earned by the pool
         int256 variableRate = int256(variableRateParam);
 
-        // fixed interest rate the pool pays the longs
-        //uint256 fixedRate = 0.10e18;
-
         // Initialize the pool with capital.
         uint256 initialLiquidity = 5_000_000e18;
         uint256 aliceLpShares = initialize(alice, 0.10e18, initialLiquidity);
@@ -351,7 +348,7 @@ contract LPFairnessTest is HyperdriveTest {
 
         // Initialize the pool with capital.
         uint256 initialLiquidity = 5_000_000e18;
-        initialize(alice, fixedRate, initialLiquidity);
+        uint256 aliceLpShares = initialize(alice, fixedRate, initialLiquidity);
 
         // Celine opens a long.
         uint256 baseSpent = 5_000_000e18 - tradeSizeParam;
@@ -369,35 +366,40 @@ contract LPFairnessTest is HyperdriveTest {
         uint256 baseSpent2 = tradeSizeParam;
         (, uint256 bondsPurchased2) = openLong(celine, baseSpent2);
 
+        uint256 bobLpShares = 0;
+        uint256 poolValue2 = 0;
+{
         // Bob adds liquidity.
         uint256 contribution = 5_000_000e18;
-        uint256 lpShares = addLiquidity(bob, contribution);
+        bobLpShares = addLiquidity(bob, contribution);
 
         // 1/2 the term passes.
         advanceTime(POSITION_DURATION / 2, variableRate);
 
         // Calculate the value of the pool after interest is accrued.
-        (uint256 poolValue2, ) = HyperdriveUtils.calculateCompoundInterest(
+        (poolValue2, ) = HyperdriveUtils.calculateCompoundInterest(
             poolValue + contribution + baseSpent2,
             variableRate,
             POSITION_DURATION / 2
         );
-
-        // calculate the portion of the pool's base reserves owned by bob.
-        uint256 baseReserves = (poolValue2 - bondsPurchased).mulDivDown(
-            lpShares,
-            hyperdrive.totalSupply(AssetId._LP_ASSET_ID)
-        );
-
+}
         // calculate the value of the outstanding bonds (with interest)
-        (uint256 bondValueWithInterest, ) = HyperdriveUtils
+        (uint256 totalBondValueWithInterest, ) = HyperdriveUtils
             .calculateCompoundInterest(
                 bondsPurchased2,
                 variableRate,
                 POSITION_DURATION / 2
             );
-        bondValueWithInterest = bondValueWithInterest.mulDivDown(
-            lpShares,
+
+        // calculate the portion of the pool's base reserves owned by bob.
+        uint256 baseReserves = (poolValue2 - bondsPurchased).mulDivDown(
+            bobLpShares,
+            hyperdrive.totalSupply(AssetId._LP_ASSET_ID)
+        );
+
+        // calculate bob's share of bonds
+        uint256 bondValueWithInterest = totalBondValueWithInterest.mulDivDown(
+            bobLpShares,
             hyperdrive.totalSupply(AssetId._LP_ASSET_ID)
         );
 
@@ -405,9 +407,28 @@ contract LPFairnessTest is HyperdriveTest {
         uint256 expectedWithdrawalProceeds = baseReserves -
             bondValueWithInterest;
 
-        // Ensure that if the new LP withdraws, they get their money back.
-        (uint256 withdrawalProceeds, ) = removeLiquidity(bob, lpShares);
+        // calculate alice's proportion of LP shares
+        uint256 aliceLpProportion = aliceLpShares.divDown(
+            hyperdrive.totalSupply(AssetId._LP_ASSET_ID)
+        );
+
+        // Bob removes liquidity
+        (uint256 withdrawalProceeds, ) = removeLiquidity(bob, bobLpShares);
         assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e7);
+
+        // calculate the portion of the pool's base reserves owned by alice.
+        baseReserves = (poolValue2 - bondsPurchased).mulDown(aliceLpProportion);
+
+        // calculate alice's share of bonds
+        bondValueWithInterest = totalBondValueWithInterest.mulDown(aliceLpProportion);
+
+        // calculate alice's expected withdrawal proceeds
+        expectedWithdrawalProceeds = baseReserves -
+            bondValueWithInterest;
+
+        // Alice removes liquidity
+        (withdrawalProceeds, ) = removeLiquidity(alice, aliceLpShares);
+        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 3e7);
     }
 
     function test_lp_fairness_short_long_lp(
