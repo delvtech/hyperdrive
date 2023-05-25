@@ -2,11 +2,17 @@
 pragma solidity ^0.8.18;
 
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import { ERC20Permit } from "./libraries/ERC20Permit.sol";
 import { AssetId } from "./libraries/AssetId.sol";
 import { Errors } from "./libraries/Errors.sol";
 
+/// @author DELV
+/// @title BondWrapper
+/// @notice A token that wraps Hyperdrive long positions.
+/// @custom:disclaimer The language used in this code is for coding convenience
+///                    only, and is not intended to, and does not, have any
+///                    particular legal or regulatory significance.
 contract BondWrapper is ERC20Permit {
     // The multitoken of the bond
     IHyperdrive public immutable hyperdrive;
@@ -52,7 +58,7 @@ contract BondWrapper is ERC20Permit {
             maturityTime
         );
 
-        // Must not be  matured
+        // Must not be matured
         if (maturityTime <= block.timestamp) revert Errors.BondMatured();
         // Transfer from the user
         hyperdrive.transferFrom(assetId, msg.sender, address(this), amount);
