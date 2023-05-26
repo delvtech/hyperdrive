@@ -54,8 +54,8 @@ contract DsrHyperdrive is Hyperdrive {
 
     /// @notice Transfers base or shares from the user and commits it to the yield source.
     /// @param amount The amount of base tokens to deposit.
-    /// @param asUnderlying If true the yield source will transfer underlying tokens
-    ///                     if false it will transfer the yielding asset directly
+    /// @param asUnderlying The DSR yield source only supports depositing the
+    ///        underlying token. If this is false, the transaction will revert.
     /// @return sharesMinted The shares this deposit creates.
     /// @return sharePrice The share price at time of deposit.
     function _deposit(
