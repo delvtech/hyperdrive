@@ -47,7 +47,7 @@ contract DsrHyperdriveFactory is HyperdriveFactory {
         manager = DsrManager(dsrManager);
     }
 
-    /// @notice This deploys a data provider for the aave hyperdrive instance
+    /// @notice This deploys a data provider for the DSR hyperdrive instance
     /// @param _config The configuration of the pool we are deploying
     /// @param _linkerCodeHash The code hash from the multitoken deployer
     /// @param _linkerFactory The factory of the multitoken deployer

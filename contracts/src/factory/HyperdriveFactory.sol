@@ -74,7 +74,7 @@ abstract contract HyperdriveFactory {
     function updateGovernance(address newGovernance) external {
         // Only governance can call this
         if (msg.sender != governance) revert Errors.Unauthorized();
-        // Update version and increment the counter
+        // Update governance
         governance = newGovernance;
     }
 
