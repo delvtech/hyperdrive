@@ -25,7 +25,7 @@ contract LPFairnessTest is HyperdriveTest {
         int256 variableRate = int256(variableRateParam);
 
         // fixed interest rate the pool pays the longs
-        uint256 fixedRate = 0e18;
+        uint256 fixedRate = 0.10e18;
 
         // Initialize the pool with capital.
         uint256 initialLiquidity = 5_000_000e18;
