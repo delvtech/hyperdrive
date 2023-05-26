@@ -83,12 +83,13 @@ contract DsrHyperdrive is Hyperdrive {
         dsrManager.join(address(this), amount);
 
         // Do share calculations
-        if (totalShares == 0) {
+        uint256 totalShares_ = totalShares;
+        if (totalShares_ == 0) {
             totalShares = amount;
             // Initial deposits are always 1:1
             return (amount, FixedPointMath.ONE_18);
         } else {
-            uint256 newShares = totalShares.mulDivDown(amount, totalBase);
+            uint256 newShares = totalShares_.mulDivDown(amount, totalBase);
             totalShares += newShares;
             return (newShares, amount.divDown(newShares));
         }
@@ -144,8 +145,10 @@ contract DsrHyperdrive is Hyperdrive {
     {
         uint256 pie = dsrManager.pieOf(address(this));
         uint256 totalBase = pie.mulDivDown(chi(), RAY);
-        if (totalShares != 0) {
-            return totalBase.divDown(totalShares);
+        // The share price is assets divided by shares
+        uint256 totalShares_ = totalShares;
+        if (totalShares_ == 0) {
+            return (totalBase.divDown(totalShares_));
         }
         return 0;
     }
