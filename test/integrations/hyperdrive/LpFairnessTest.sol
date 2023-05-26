@@ -222,8 +222,8 @@ contract LPFairnessTest is HyperdriveTest {
             hyperdrive.totalSupply(AssetId._LP_ASSET_ID)
         );
 
-        // calculate the expected withdrawal shares so they can be removed from the expected proceeds
-        uint256 withdrawalShares = bondsShorted2.mulDivDown(
+        // calculate the expected withdrawal shares base value so they can be removed from the expected proceeds
+        uint256 withdrawalShareBaseValue = bondsShorted2.mulDivDown(
             bobLpShares,
             hyperdrive.totalSupply(AssetId._LP_ASSET_ID)
         );
@@ -232,7 +232,7 @@ contract LPFairnessTest is HyperdriveTest {
         uint256 expectedWithdrawalProceeds = contributionWithInterest +
             fixedInterestEarned -
             variableInterestOwed -
-            withdrawalShares;
+            withdrawalShareBaseValue;
 
         // Bob removes liquidity
         (uint256 withdrawalProceeds, ) = removeLiquidity(bob, bobLpShares);
@@ -251,15 +251,15 @@ contract LPFairnessTest is HyperdriveTest {
         // calculate the portion of the variable interest that alice owes
         variableInterestOwed = totalShortInterest.mulDown(aliceLpProportion);
 
-        // calculate the expected withdrawal shares so they can be removed from the expected proceeds
-        withdrawalShares = bondsShorted2.mulDown(aliceLpProportion);
+        // calculate the expected withdrawal shares base value so they can be removed from the expected proceeds
+        withdrawalShareBaseValue = bondsShorted2.mulDown(aliceLpProportion);
 
         // calculate the expected withdrawal proceeds
         expectedWithdrawalProceeds =
             contributionWithInterest +
             fixedInterestEarned -
             variableInterestOwed -
-            withdrawalShares;
+            withdrawalShareBaseValue;
 
         // Alice removes liquidity
         (withdrawalProceeds, ) = removeLiquidity(alice, aliceLpShares);
@@ -691,8 +691,8 @@ contract LPFairnessTest is HyperdriveTest {
                 hyperdrive.totalSupply(AssetId._LP_ASSET_ID)
             );
 
-            // calculate the expected withdrawal shares so they can be removed from the expected proceeds
-            uint256 withdrawalShares = bondsShorted.mulDivDown(
+            // calculate the expected withdrawal shares base value so they can be removed from the expected proceeds
+            uint256 withdrawalShareBaseValue = bondsShorted.mulDivDown(
                 bobLpShares,
                 hyperdrive.totalSupply(AssetId._LP_ASSET_ID)
             );
@@ -703,7 +703,7 @@ contract LPFairnessTest is HyperdriveTest {
                 fixedInterestEarned -
                 variableInterestOwed -
                 fixedInterestOwed -
-                withdrawalShares;
+                withdrawalShareBaseValue;
         }
 
         // calculate alice's proportion of LP shares
@@ -742,8 +742,8 @@ contract LPFairnessTest is HyperdriveTest {
                 aliceLpProportion
             );
 
-            // calculate the expected withdrawal shares so they can be removed from the expected proceeds
-            uint256 withdrawalShares = bondsShorted.mulDown(aliceLpProportion);
+            // calculate the expected withdrawal shares base value so they can be removed from the expected proceeds
+            uint256 withdrawalShareBaseValue = bondsShorted.mulDown(aliceLpProportion);
 
             // calculate the expected withdrawal proceeds
             expectedWithdrawalProceeds =
@@ -751,7 +751,7 @@ contract LPFairnessTest is HyperdriveTest {
                 fixedInterestEarned -
                 variableInterestOwed -
                 fixedInterestOwed -
-                withdrawalShares;
+                withdrawalShareBaseValue;
         }
 
         // Ensure that if the new LP withdraws, they get their money back.
