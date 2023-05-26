@@ -71,6 +71,13 @@ contract ERC20Forwarder is IERC20 {
         return (token.name(tokenId));
     }
 
+    /// @notice Returns the totalSupply of the sub token by calling into the
+    ///         main token to load it.
+    /// @return Returns the totalSupply of this token
+    function totalSupply() external view override returns (uint256) {
+        return (token.totalSupply(tokenId));
+    }
+
     /// @notice Returns the symbol of this sub token by calling into the
     ///         main token to load it.
     /// @return Returns the symbol of this token
