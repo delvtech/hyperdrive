@@ -26,17 +26,9 @@ interface IMockMultiToken is IMultiToken {
         address caller
     ) external;
 
-    function mint(
-        uint256 tokenID,
-        address to,
-        uint256 amount
-    ) external;
+    function mint(uint256 tokenID, address to, uint256 amount) external;
 
-    function burn(
-        uint256 tokenID,
-        address from,
-        uint256 amount
-    ) external;
+    function burn(uint256 tokenID, address from, uint256 amount) external;
 }
 
 contract MockMultiToken is MultiToken {
@@ -73,19 +65,11 @@ contract MockMultiToken is MultiToken {
         _transferFrom(tokenID, from, to, amount, caller);
     }
 
-    function mint(
-        uint256 tokenID,
-        address to,
-        uint256 amount
-    ) external {
+    function mint(uint256 tokenID, address to, uint256 amount) external {
         _mint(tokenID, to, amount);
     }
 
-    function burn(
-        uint256 tokenID,
-        address from,
-        uint256 amount
-    ) external {
+    function burn(uint256 tokenID, address from, uint256 amount) external {
         _burn(tokenID, from, amount);
     }
 }
