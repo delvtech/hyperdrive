@@ -98,8 +98,8 @@ contract DsrHyperdrive is Hyperdrive {
     /// @notice Withdraws shares from the yield source and sends the resulting tokens to the destination
     /// @param shares The shares to withdraw from the yield source
     /// @param destination The address which is where to send the resulting tokens
-    /// @param asUnderlying The DSR yield source only supports withdrawing the underlying token
-    ///        If this is false, the transaction will revert.
+    /// @param asUnderlying The DSR yield source only supports depositing the
+    ///        underlying token. If this is false, the transaction will revert.
     /// @return amountWithdrawn the amount of 'token' produced by this withdraw
     function _withdraw(
         uint256 shares,
@@ -147,7 +147,7 @@ contract DsrHyperdrive is Hyperdrive {
         uint256 totalBase = pie.mulDivDown(chi(), RAY);
         // The share price is assets divided by shares
         uint256 totalShares_ = totalShares;
-        if (totalShares_ == 0) {
+        if (totalShares_ != 0) {
             return (totalBase.divDown(totalShares_));
         }
         return 0;
