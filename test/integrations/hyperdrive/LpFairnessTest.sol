@@ -743,7 +743,9 @@ contract LPFairnessTest is HyperdriveTest {
             );
 
             // calculate the expected withdrawal shares base value so they can be removed from the expected proceeds
-            uint256 withdrawalShareBaseValue = bondsShorted.mulDown(aliceLpProportion);
+            uint256 withdrawalShareBaseValue = bondsShorted.mulDown(
+                aliceLpProportion
+            );
 
             // calculate the expected withdrawal proceeds
             expectedWithdrawalProceeds =
