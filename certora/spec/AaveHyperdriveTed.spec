@@ -190,10 +190,16 @@ rule openLongReallyOpensLong(env e) {
 
     require(assert_uint256(bondsReceived + bondsReceived) >= bondsReceived);
 
+    // Need to make sure, that _applyCheckpoint end quickly, so that _checkpoints[_latestCheckpoint()].sharePrice != 0
+    //require(_checkpoints[latestCP].sharePrice != 0);
+    // First I nondet the function as I cannot access _checkpoints from HyperdriveStorage
+
     AaveHyperdrive.MarketState postState = marketState();
     mathint longsOutstanding2 = postState.longsOutstanding;
 
     assert longsOutstanding2 >= longsOutstanding1;
+    // longsOutstanding suddenly went from 9 to 2 in applyCheckpoint. We need to make sure
+    // that we don't have any matured longs. (See Hyperdrive::_applyCheckpoint)
     assert longsOutstanding1 + bondsReceived == longsOutstanding2;
 }
 
