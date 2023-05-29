@@ -9,6 +9,10 @@ import "./Fees.spec";
 use rule sanity;
 
 
+methods {
+    function _applyCheckpoint(uint256 _checkpointTime, uint256 _sharePrice) internal returns (uint256) => NONDET;
+}
+
 
 /// @notice : in progress
 /// (In : aToken, Out : aToken)

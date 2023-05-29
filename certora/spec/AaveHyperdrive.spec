@@ -118,7 +118,7 @@ rule aTokenTransferBalanceTest(uint256 amount, address recipient) {
         aToken.transfer(e, recipient, amount);
     uint256 assetsAfter = aToken.balanceOf(e, recipient);
     uint256 index = getPoolIndex(e.block.timestamp);
-    
+
     assert to_mathint(assetsAfter) >= assetsBefore + amount;
     assert to_mathint(assetsAfter) <= assetsBefore + amount + index/RAY() + 1;
 }
@@ -318,7 +318,7 @@ rule openLongIntegrity(uint256 baseAmount) {
     uint256 totalShares = totalShares();
     uint256 assets = aToken.balanceOf(e, currentContract);
 
-    assert totalShares > 0 && assets > 0, 
+    assert totalShares > 0 && assets > 0,
         "Assets must have been deposited in the pool after opening a position";
 
     assert to_mathint(bondsReceived) <= to_mathint(bondReserves),
@@ -435,9 +435,9 @@ rule closeLongAtMaturity(uint256 bondAmount) {
     env e;
     uint256 minOutput;
     address destination;
-    bool asUnderlying; 
+    bool asUnderlying;
     uint256 maturityTime;
-    
+
     setHyperdrivePoolParams();
     require sharePrice(e) > initialSharePrice();
     //require totalShares() != 0;
@@ -478,8 +478,8 @@ rule checkPointCannotChangePoolPresentValue(uint256 time, uint256 _sharePrice) {
 }
 
 invariant NoFutureTokens(uint256 AssetId, env e)
-    to_mathint(timeByID(AssetId)) > e.block.timestamp + positionDuration() 
-        => totalSupplyByToken(AssetId) == 0 
+    to_mathint(timeByID(AssetId)) > e.block.timestamp + positionDuration()
+        => totalSupplyByToken(AssetId) == 0
     {
         preserved with (env eP) {
             require e.block.timestamp == eP.block.timestamp;
