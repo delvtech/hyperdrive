@@ -19,6 +19,8 @@ methods {
     function marketState() external returns (AaveHyperdrive.MarketState memory) envfree;
     function stateShareReserves() external returns (uint128) envfree; 
     function stateBondReserves() external returns (uint128) envfree; 
+    function stateLongs() external returns (uint128) envfree; 
+    function stateShorts() external returns (uint128) envfree; 
     function withdrawPool() external returns (AaveHyperdrive.WithdrawPool memory) envfree;
     function curveFee() external returns (uint256) envfree;
     function flatFee() external returns (uint256) envfree;

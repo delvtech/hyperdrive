@@ -62,6 +62,14 @@ abstract contract HyperdriveStorageGetters is HyperdriveStorage {
         return _marketState.bondReserves;
     }
 
+    function stateLongs() public view returns (uint128) {
+        return _marketState.longsOutstanding;
+    }
+
+    function stateShorts() public view returns (uint128) {
+        return _marketState.shortsOutstanding;
+    }
+
     function withdrawPool() public view returns (IHyperdrive.WithdrawPool memory withdrawPool) {
         withdrawPool = _withdrawPool;
     }

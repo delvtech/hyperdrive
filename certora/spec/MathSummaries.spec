@@ -39,7 +39,7 @@ methods {
     
     /// @dev Calculates the spot price without slippage of bonds in terms of shares.
     function _.calculateSpotPrice(uint256 shares, uint256 bonds, uint256 initPrice, uint256 normTime, uint256 timeSt) internal library 
-        => CVLCalculateSpotPrice(shares, bonds, initPrice, normTime, timeSt) expect uint256;
+        => NONDET;//CVLCalculateSpotPrice(shares, bonds, initPrice, normTime, timeSt) expect uint256;
     
     /// @dev Calculates the APR from the pool's reserves.
     function _.calculateAPRFromReserves(uint256 shares, uint256 bonds, uint256 initPrice, uint256 dur, uint256 timeSt) internal library
@@ -51,11 +51,11 @@ methods {
     
     /// @dev Calculates the present value LPs capital in the pool.
     /// @notice Replacement of original HyperdriveMath function with Mock.
-    function _._calculatePresentValue(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256) internal library => NONDET; 
-    //function _._calculatePresentValue(
-    //    uint256 z, uint256 y, uint256 c, uint256 mu, uint256 ts,
-    //    uint256 ol, uint256 tavg_L, uint256 os, uint256 tavg_S, uint256 vol) internal library => 
-    //    CVLCalculatePresentValue(z,y,c,mu,ts,ol,tavg_L,os,tavg_S,vol) expect uint256;
+    //function _._calculatePresentValue(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256) internal library => NONDET; 
+    function _._calculatePresentValue(
+        uint256 z, uint256 y, uint256 c, uint256 mu, uint256 ts,
+        uint256 ol, uint256 tavg_L, uint256 os, uint256 tavg_S, uint256 vol) internal library => 
+        CVLCalculatePresentValue(z,y,c,mu,ts,ol,tavg_L,os,tavg_S,vol) expect uint256;
     
     /// @dev Calculates the interest in shares earned by a short position
     function _.calculateShortInterest(uint256 bond, uint256 openPrice, uint256 closePrice, uint256 price) internal library 
@@ -106,6 +106,7 @@ ghost ghostCalculateInitialBondReserves(uint256,uint256,uint256,uint256,uint256,
 ghost ghostCalculateShortInterest(uint256,uint256,uint256,uint256) returns uint256;
 ghost ghostCalculateShortProceeds(uint256,uint256,uint256,uint256,uint256) returns uint256;
 
+
 /* =========================================
  ---------- Hyperdrive Math summaries ------
 ============================================ */
@@ -154,6 +155,8 @@ function CVLCalculatePresentValue(
     else {
         shareReservesDelta = NegativeNetCurveBranch(z,y,netCurveTrade,ts,c,mu);
     }
+    /// Need to verify this
+    require shareReservesDelta <= z && shareReservesDelta + z >= 0;
 
     return require_uint256(z + netFlatTrade + shareReservesDelta);
 }

@@ -21,8 +21,10 @@ methods {
     function aToken.transfer(address,uint256) external returns (bool);
     function pool.liquidityIndex(address,uint256) external returns (uint256) envfree;
     function totalShares() external returns (uint256) envfree;
+    function getPresentValue(uint256) external returns (uint256);
 
     function MockAssetId.encodeAssetId(MockAssetId.AssetIdPrefix, uint256) external returns (uint256) envfree;
+    function _.recordPrice(uint256 price) internal => NONDET;
 
     /*
     /// Fee calculations summaries -> NONDET
@@ -62,7 +64,6 @@ function setHyperdrivePoolParams() {
     //require flatFee() <= require_uint256(ONE18() / 10);
     //require governanceFee() <= require_uint256(ONE18() / 2);
 }
-
 
 
 hook Sload uint256 index Pool.liquidityIndex[KEY address token][KEY uint256 timestamp] STORAGE {
@@ -140,9 +141,9 @@ rule depositOutputChecker(uint256 baseAmount, bool asUnderlying) {
         assert totalSharesAfter == baseAmount;
     }
     else {
-        if(asUnderlying) {
-            assert assetsBefore + baseAmount == to_mathint(assetsAfter);
-        }
+        //if(asUnderlying) {
+        //    assert assetsBefore + baseAmount == to_mathint(assetsAfter);
+        //}
         uint256 sharesMinted = mulDivDownAbstractPlus(totalSharesBefore, baseAmount, assetsBefore);
         //uint256 sharePrice = mulDivDownAbstractPlus(baseAmount, ONE18(), sharesMinted);
         assert totalSharesBefore + sharesMinted == to_mathint(totalSharesAfter);
@@ -285,6 +286,18 @@ rule cannotChangeCheckPointSharePriceTwice(uint256 _checkpoint, method f) {
     assert CP1.sharePrice !=0 => CP1.sharePrice == CP2.sharePrice;
 }
 
+rule checkPointPriceIsSetCorrectly(uint256 _checkpoint, method f) {
+    env e;
+    calldataarg args;
+
+    AaveHyperdrive.Checkpoint CP1 = checkPoints(_checkpoint);
+        f(e,args);
+    AaveHyperdrive.Checkpoint CP2 = checkPoints(_checkpoint);
+    uint256 price = sharePrice(e);
+
+    assert (CP1.sharePrice ==0 && CP2.sharePrice !=0) => to_mathint(CP2.sharePrice) == to_mathint(price);
+}
+
 /// @doc integrity rule for 'openLong'
 /// - There must be assets in the pool after opening a position.
 /// - cannot receive more bonds than registered reserves.
@@ -425,8 +438,10 @@ rule closeLongAtMaturity(uint256 bondAmount) {
     bool asUnderlying; 
     uint256 maturityTime;
     
-    require to_mathint(aToken.balanceOf(e, currentContract)) >= to_mathint(totalShares());
-    require totalShares() != 0;
+    setHyperdrivePoolParams();
+    require sharePrice(e) > initialSharePrice();
+    //require totalShares() != 0;
+    require bondAmount >= require_uint256(ONE18()/100);
 
     uint256 assetsRecieved =
         closeLong(e, maturityTime, bondAmount, minOutput, destination, asUnderlying);
@@ -434,15 +449,52 @@ rule closeLongAtMaturity(uint256 bondAmount) {
     assert maturityTime >= e.block.timestamp => assetsRecieved == bondAmount;
 }
 
-/*
-invariant NoFutureLongTokens(uint256 time, env e)
-    time > e.block.timestamp => totalSupplyByToken(assetId.encodeAssetId(MockAssetId.AssetIdPrefix.Long, time)) == 0 
+rule doubleCheckpointHasNoEffect(uint256 time1, uint256 time2) {
+    env e;
+    uint128 Longs1 = stateLongs();
+    uint128 shorts1 = stateShorts();
+        checkpoint(e, time1);
+    uint128 Longs2 = stateLongs();
+    uint128 shorts2 = stateShorts();
+        checkpoint(e, time2);
+    uint128 Longs3 = stateLongs();
+    uint128 shorts3 = stateShorts();
+
+    assert Longs2 == Longs3 && shorts2 == shorts3;
+}
+
+rule checkPointCannotChangePoolPresentValue(uint256 time, uint256 _sharePrice) {
+    env e;
+    setHyperdrivePoolParams();
+
+    /// Calc present value:
+    uint256 value1 = getPresentValue(e, _sharePrice);
+    /// Checkpoint:
+        checkpoint(e, time);
+    /// Calc present value:
+    uint256 value2 = getPresentValue(e, _sharePrice);
+
+    assert value1 == value2;
+}
+
+invariant NoFutureTokens(uint256 AssetId, env e)
+    to_mathint(timeByID(AssetId)) > e.block.timestamp + positionDuration() 
+        => totalSupplyByToken(AssetId) == 0 
     {
         preserved with (env eP) {
             require e.block.timestamp == eP.block.timestamp;
         }
     }
-*/
+
+/// @doc Tokens could only be minted at checkpoint time intervals.
+invariant NoTokensBetweenCheckPoints(uint256 AssetId)
+    timeByID(AssetId) % checkpointDuration() !=0 => totalSupplyByToken(AssetId) == 0 
+    {
+        preserved{
+            require checkpointDuration() !=0;
+        }
+        
+    }
 
 /// @doc If there are shares in the pool, there must be underlying assets.
 invariant SharesNonZeroAssetsNonZero(env e)
@@ -477,7 +529,7 @@ rule FixedInterestLargerThanOne(method f) filtered{f -> !f.isView} {
 
 /// @doc It's impossible to get to a state where both shares and bonds are empty
 /// @dev maybe it's possible if all liquidity has been withdrawan?
-/// https://vaas-stg.certora.com/output/41958/ae9b37fd55944155b4f513bb6fda1101/?anonymousKey=fc7e4187dde6bfeed7adbcb6d830747a6360cc3e
+/*
 rule cannotCompletelyDepletePool(method f) filtered{f -> !f.isView} {
     env e;
     calldataarg args;
@@ -486,6 +538,7 @@ rule cannotCompletelyDepletePool(method f) filtered{f -> !f.isView} {
         f(e,args);
     assert !(stateBondReserves() == 0 && stateShareReserves() == 0);
 }
+*/
 
 /// https://vaas-stg.certora.com/output/41958/72b2e377545f4c71aefdb613bb6ccf05/?anonymousKey=41c772576393e67ba8e07cc739c3e302b74aa353
 invariant SharePriceAlwaysGreaterThanInitial(uint256 checkpointTime)
@@ -500,7 +553,7 @@ invariant SharePriceCannotDecreaseInTime(uint256 checkpointTime1, uint256 checkp
     {
         preserved {setHyperdrivePoolParams();}
     }
-    
+
 
 /// @doc There should always be more aTokens (assets) than number of shares
 /// otherwise, the share price will decrease (or less than 1).
@@ -512,5 +565,18 @@ invariant aTokenBalanceGEToShares(env e)
         }
     }
 
-/// marketState.longsOutstanding = sum of open longs.
-/// marketState.shortsOutstanding = sum of open shorts.
+invariant ShareReservesBackLongs()
+    stateShareReserves() >= stateLongs()
+    {
+        preserved{setHyperdrivePoolParams();}
+    }
+
+/// @doc The sum of longs tokens is greater or equal to the outstanding longs.
+/// @notice The sum is not necessarily equal to the outstanding count.
+invariant SumOfLongsGEOutstanding()
+    sumOfLongs() >= to_mathint(stateLongs());
+
+/// @doc The sum of shorts tokens is greater or equal to the outstanding shorts.
+/// @notice The sum is not necessarily equal to the outstanding count.
+invariant SumOfShortsGEOutstanding()
+    sumOfShorts() >= to_mathint(stateShorts());

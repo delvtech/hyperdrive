@@ -1,5 +1,5 @@
 --- ../contracts/src/instances/AaveHyperdrive.sol	2023-05-18 15:40:39.353490028 +0300
-+++ 	2023-05-25 10:33:35.378655549 +0300
++++ 	2023-05-25 12:58:26.845267517 +0300
 @@ -2,11 +2,11 @@
  pragma solidity ^0.8.18;
  
@@ -35,9 +35,18 @@
      }
  
      ///@notice Transfers amount of 'token' from the user and commits it to the yield source.
+@@ -138,4 +139,8 @@
+         sharePrice = totalShares != 0 ? assets.divDown(totalShares) : 0;
+         return sharePrice;
+     }
++
++    function sharePrice() external view returns (uint256) {
++        return _pricePerShare();
++    }
+ }
 --- ../contracts/src/Hyperdrive.sol	2023-05-23 12:54:47.203907940 +0300
-+++ 	2023-05-25 10:33:35.378655549 +0300
-@@ -3,14 +3,16 @@
++++ 	2023-05-29 10:09:11.086202288 +0300
+@@ -3,14 +3,17 @@
  
  import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
@@ -57,17 +66,19 @@
 +import { IHyperdrive } from "../../contracts/src/interfaces/IHyperdrive.sol";
 +import { HyperdriveStorageGetters} from "../helpers/HyperdriveStorageGetters.sol";
 +import { IHyperdriveTypes } from "../helpers/IHyperdriveTypes.sol";
++import { HyperdrivePresentValue } from "../helpers/HyperdrivePresentValue.sol";
  
  /// @author DELV
  /// @title Hyperdrive
-@@ -21,7 +23,9 @@
+@@ -21,7 +24,10 @@
  abstract contract Hyperdrive is
      HyperdriveBase,
      HyperdriveLong,
 -    HyperdriveShort
 +    HyperdriveShort,
 +    HyperdriveStorageGetters,
-+    IHyperdriveTypes
++    IHyperdriveTypes,
++    HyperdrivePresentValue
  {
      using FixedPointMath for uint256;
      using SafeCast for uint256;

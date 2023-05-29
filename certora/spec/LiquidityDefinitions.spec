@@ -16,6 +16,9 @@ definition updateGap0() returns uint256 = 1000;
 definition curveFee0() returns mathint = 10^18 / 10;
 definition flatFee0() returns mathint = 10^18 / 10;
 definition governanceFee0() returns mathint = 10^18 / 10;
+/// Based on AssetId library
+definition timeByID(uint256 ID) returns mathint = ((1 << 248) - 1) & ID;
+definition prefixByID(uint256 ID) returns mathint = (ID >> 248);
 
 /// ======================================
 ///             GHOSTS
@@ -33,6 +36,14 @@ ghost mathint _sumOfLPTokens {
     init_state axiom _sumOfLPTokens == 0;
 }
 
+ghost mathint _sumOfLongs{
+    init_state axiom _sumOfLongs == 0;
+}
+
+ghost mathint _sumOfShorts{
+    init_state axiom _sumOfShorts == 0;
+}
+
 /// ======================================
 ///             HOOKS
 /// ======================================
@@ -43,6 +54,17 @@ hook Sstore currentContract._balanceOf[KEY uint256 tokenID][KEY address account]
 
     _sumOfLPTokens = tokenID == LP_ASSET_ID() ?
         _sumOfLPTokens + value - old_value : _sumOfLPTokens;
+}
+
+hook Sstore currentContract._totalSupply[KEY uint256 tokenID] uint256 value (uint256 old_value) STORAGE {
+    mathint prefix = prefixByID(tokenID);
+    //mathint time = timeByID(tokenID);
+
+    _sumOfLongs = (prefix == 1) ?
+        _sumOfLongs + value - old_value : _sumOfLongs;
+
+    _sumOfShorts = (prefix == 2) ?
+        _sumOfShorts + value - old_value : _sumOfShorts;
 }
 
 hook Sload uint128 value currentContract._withdrawPool.readyToWithdraw STORAGE {
@@ -83,6 +105,16 @@ function totalWithdrawalShares() returns mathint {
 /// Sum of withdrawal shares for all accounts
 function sumOfWithdrawalShares() returns mathint {
     return _sumOfWithdrawalShares;
+}
+
+/// ol : Outstanding longs
+function sumOfLongs() returns mathint {
+    return _sumOfLongs;
+}
+
+/// os : Outstanding shorts
+function sumOfShorts() returns mathint {
+    return _sumOfShorts;
 }
 
 /// lr : Withdrawal shares that are ready to redeem.

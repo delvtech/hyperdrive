@@ -151,3 +151,50 @@ rule calculateOpenLong_correctBound(
     assert bondReservesDelta <= bondReserves,
         "The bond reserve delta cannot exceed the bond reserves";
 }
+
+rule calculateOpenLong_ShareMonotonic(
+    uint256 shareReserves,
+    uint256 bondReserves,
+    uint256 shareAmount1,
+    uint256 shareAmount2,
+    uint256 timeStretch,
+    uint256 sharePrice,
+    uint256 initialSharePrice) {
+        
+    require initialSharePrice == ONE18();
+    require timeStretch == 45071688063194104;
+    require shareAmount1 < shareAmount2;
+
+    uint256 bondReservesDelta1 = HDMath.calculateOpenLong(
+        shareReserves,bondReserves,shareAmount1,timeStretch,sharePrice,initialSharePrice);
+
+    uint256 bondReservesDelta2 = HDMath.calculateOpenLong(
+        shareReserves,bondReserves,shareAmount2,timeStretch,sharePrice,initialSharePrice);
+
+    assert bondReservesDelta1 <= bondReservesDelta2,
+        "The bond reserves delta should increase with the amount of shares";
+}
+
+rule calculateOpenLong_BondsMonotonic(
+    uint256 shareReserves,
+    uint256 bondReserves1,
+    uint256 bondReserves2,
+    uint256 shareAmount,
+    uint256 timeStretch,
+    uint256 sharePrice,
+    uint256 initialSharePrice) {
+        
+    require initialSharePrice == ONE18();
+    require timeStretch == 45071688063194104;
+    require bondReserves1 < bondReserves2;
+    require sharePrice >= initialSharePrice;
+
+    uint256 bondReservesDelta1 = HDMath.calculateOpenLong(
+        shareReserves,bondReserves1,shareAmount,timeStretch,sharePrice,initialSharePrice);
+
+    uint256 bondReservesDelta2 = HDMath.calculateOpenLong(
+        shareReserves,bondReserves2,shareAmount,timeStretch,sharePrice,initialSharePrice);
+
+    assert bondReservesDelta1 <= bondReservesDelta2,
+        "The bond reserves delta should increase with increasing bonds reserves";
+}
