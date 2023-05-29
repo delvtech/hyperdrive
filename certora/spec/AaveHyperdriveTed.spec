@@ -186,9 +186,14 @@ rule openLongReallyOpensLong(env e) {
     uint256 bondsReceived =
         openLong(e, baseAmount, minOutput, destination, asUnderlying);
 
+    require(assert_uint256(bondsReceived + bondsReceived) >= bondsReceived);
+
     AaveHyperdrive.MarketState postState = marketState();
     uint128 longsOutstanding2 = postState.longsOutstanding;
 
+    require(assert_uint128(longsOutstanding1 + longsOutstanding1) >= longsOutstanding1);
+
+    assert longsOutstanding2 >= longsOutstanding1;
     assert longsOutstanding1 == longsOutstanding2 || assert_uint128(longsOutstanding1 + bondsReceived) == longsOutstanding2;
 }
 

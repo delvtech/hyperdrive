@@ -25,7 +25,7 @@ methods {
     function HDMath.calculatePresentValue(MockHyperdriveMath.PresentValueParams) external returns uint256 envfree;
     function HDMath.calculateShortInterest(uint256,uint256,uint256,uint256) external returns uint256 envfree;
     function HDMath.calculateShortProceeds(uint256,uint256,uint256,uint256,uint256) external returns uint256 envfree;
-    
+
     function HDMath.calculateOpenLong(uint256,uint256,uint256,uint256,uint256,uint256) external returns (uint256) envfree;
     function HDMath.calculateCloseLong(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256) external returns (uint256, uint256, uint256) envfree;
     function HDMath.calculateOpenShort(uint256,uint256,uint256,uint256,uint256,uint256) external returns (uint256) envfree;
@@ -40,10 +40,10 @@ methods {
 function YSInvariant(
     uint256 z1,
     uint256 z2,
-    uint256 y1, 
-    uint256 y2, 
+    uint256 y1,
+    uint256 y2,
     uint256 mu,
-    uint256 c, 
+    uint256 c,
     uint256 t) returns bool {
     uint256 tp = require_uint256(ONE18() - t); /// t' = 1 - t;
     return c * ONE18() * (CVLPow(z1, tp) - CVLPow(z2, tp)) ==
@@ -69,8 +69,8 @@ rule mulDivUpEquivalence(uint256 x, uint256 y, uint256 z) {
 rule YSInvariantIntegrity() {
     uint256 z1; require z1 !=0;
     uint256 z2; require z2 !=0;
-    uint256 y1; 
-    uint256 y2; 
+    uint256 y1;
+    uint256 y2;
     uint256 mu; require mu >= ONE18();
     uint256 c; require c >= mu; // Docs assumption
     uint256 t; require t <= ONE18() && t > 0;
@@ -78,7 +78,7 @@ rule YSInvariantIntegrity() {
     uint256 mu_z1 = require_uint256(mu * z1);
     uint256 mu_z2 = require_uint256(mu * z2);
     uint256 tp = require_uint256(ONE18() - t);
-    
+
     /// Require invariant equivalent expressions on pairs (z1,y1) and (z2,y2).
     require YSInvariant(z1, z2, y1, y2, mu, c, t);
 
@@ -93,7 +93,7 @@ rule monotonicityBaseVolume(uint256 base1, uint256 base2) {
     uint256 timeRemaining;
     uint256 vol1 = HDMath.calculateBaseVolume(base1, bondAmount, timeRemaining);
     uint256 vol2 = HDMath.calculateBaseVolume(base2, bondAmount, timeRemaining);
-    
+
     assert _monotonicallyIncreasing(base1, base2, vol1, vol2);
 }
 
@@ -107,7 +107,7 @@ rule YSInvariantTest1(uint256 z, uint256 y, uint256 dz, uint256 t, uint256 c, ui
 }
 
 rule cannotGetFreeBonds(uint256 z, uint256 y, uint256 dy, uint256 t, uint256 c, uint256 mu) {
-    
+
     require mu >= ONE18();
     require c >= mu;
     require y == 0 => z >= ONE18();
@@ -141,7 +141,7 @@ rule calculateOpenLong_correctBound(
     uint256 timeStretch,
     uint256 sharePrice,
     uint256 initialSharePrice) {
-        
+
     require initialSharePrice == ONE18();
     require timeStretch == 45071688063194104;
 
