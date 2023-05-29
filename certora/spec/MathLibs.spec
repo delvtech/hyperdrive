@@ -17,7 +17,7 @@ methods {
     function FPMath.updateWeightedAverage(uint256,uint256,uint256,uint256,bool) external returns (uint256) envfree;
 
     function _.pow(uint256 x, uint256 y) internal library => CVLPow(x, y) expect uint256;
-    
+
     function HDMath.calculateBaseVolume(uint256,uint256,uint256) external returns uint256 envfree;
     function HDMath.calculateSpotPrice(uint256,uint256,uint256,uint256,uint256) external returns uint256 envfree;
     function HDMath.calculateAPRFromReserves(uint256,uint256,uint256,uint256,uint256) external returns uint256 envfree;

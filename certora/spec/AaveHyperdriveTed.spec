@@ -179,9 +179,7 @@ rule openLongReallyOpensLong(env e) {
             (e.block.timestamp % checkpointDuration()));
 
     AaveHyperdrive.MarketState preState = marketState();
-    uint128 longsOutstanding1 = preState.longsOutstanding;
-
-    // require sharePrice1*bondReserves1 >= to_mathint(ONE18()*longsOutstanding1);
+    mathint longsOutstanding1 = preState.longsOutstanding;
 
     uint256 bondsReceived =
         openLong(e, baseAmount, minOutput, destination, asUnderlying);
@@ -189,12 +187,10 @@ rule openLongReallyOpensLong(env e) {
     require(assert_uint256(bondsReceived + bondsReceived) >= bondsReceived);
 
     AaveHyperdrive.MarketState postState = marketState();
-    uint128 longsOutstanding2 = postState.longsOutstanding;
-
-    require(assert_uint128(longsOutstanding1 + longsOutstanding1) >= longsOutstanding1);
+    mathint longsOutstanding2 = postState.longsOutstanding;
 
     assert longsOutstanding2 >= longsOutstanding1;
-    assert longsOutstanding1 == longsOutstanding2 || assert_uint128(longsOutstanding1 + bondsReceived) == longsOutstanding2;
+    assert longsOutstanding1 + bondsReceived == longsOutstanding2;
 }
 
 /// @doc Closing a long position at maturity should return the same number of tokens as the number of bonds.

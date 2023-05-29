@@ -39,7 +39,7 @@ methods {
     
     /// @dev Calculates the spot price without slippage of bonds in terms of shares.
     function _.calculateSpotPrice(uint256 shares, uint256 bonds, uint256 initPrice, uint256 normTime, uint256 timeSt) internal library 
-        => NONDET;//CVLCalculateSpotPrice(shares, bonds, initPrice, normTime, timeSt) expect uint256;
+        => CVLCalculateSpotPrice(shares, bonds, initPrice, normTime, timeSt) expect uint256;
     
     /// @dev Calculates the APR from the pool's reserves.
     function _.calculateAPRFromReserves(uint256 shares, uint256 bonds, uint256 initPrice, uint256 dur, uint256 timeSt) internal library
@@ -106,7 +106,6 @@ ghost ghostCalculateInitialBondReserves(uint256,uint256,uint256,uint256,uint256,
 ghost ghostCalculateShortInterest(uint256,uint256,uint256,uint256) returns uint256;
 ghost ghostCalculateShortProceeds(uint256,uint256,uint256,uint256,uint256) returns uint256;
 
-
 /* =========================================
  ---------- Hyperdrive Math summaries ------
 ============================================ */
@@ -155,8 +154,6 @@ function CVLCalculatePresentValue(
     else {
         shareReservesDelta = NegativeNetCurveBranch(z,y,netCurveTrade,ts,c,mu);
     }
-    /// Need to verify this
-    require shareReservesDelta <= z && shareReservesDelta + z >= 0;
 
     return require_uint256(z + netFlatTrade + shareReservesDelta);
 }
