@@ -16,6 +16,7 @@ contract MultiTokenTest is BaseTest {
         address dataProvider = address(
             new MultiTokenDataProvider(bytes32(0), address(forwarderFactory))
         );
+        
         multiToken = IMockMultiToken(
             address(
                 new MockMultiToken(
@@ -35,4 +36,6 @@ contract MultiTokenTest is BaseTest {
         assertEq(multiToken.name(5), "Token");
         assertEq(multiToken.symbol(5), "TKN");
     }
+
+
 }
