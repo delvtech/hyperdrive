@@ -215,10 +215,7 @@ contract ERC20Permit is IERC20Permit {
         // Require that we have a valid signature from the owner
         require(owner == ecrecover(digest, v, r, s), "ERC20: invalid-permit");
         // Require that the signature is not expired
-        require(
-            block.timestamp <= deadline,
-            "ERC20: permit-expired"
-        );
+        require(block.timestamp <= deadline, "ERC20: permit-expired");
         // Format the signature to the default format
         require(
             uint256(s) <=

@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import {Test} from "forge-std/Test.sol";
-import {MockERC20Permit} from "contracts/test/MockERC20Permit.sol";
+import { Test } from "forge-std/Test.sol";
+import { MockERC20Permit } from "contracts/test/MockERC20Permit.sol";
 
 contract TestERC20Permit is Test {
     MockERC20Permit token;
 
     bytes32 constant PERMIT_TYPEHASH =
-        keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
-
+        keccak256(
+            "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
+        );
 
     function setUp() public {
         token = new MockERC20Permit("Token", "TKN");
@@ -91,7 +92,16 @@ contract TestERC20Permit is Test {
                 abi.encodePacked(
                     "\x19\x01",
                     token.DOMAIN_SEPARATOR(),
-                    keccak256(abi.encode(PERMIT_TYPEHASH, owner, address(0xCAFE), 1e18, 0, block.timestamp))
+                    keccak256(
+                        abi.encode(
+                            PERMIT_TYPEHASH,
+                            owner,
+                            address(0xCAFE),
+                            1e18,
+                            0,
+                            block.timestamp
+                        )
+                    )
                 )
             )
         );
@@ -139,7 +149,16 @@ contract TestERC20Permit is Test {
                 abi.encodePacked(
                     "\x19\x01",
                     token.DOMAIN_SEPARATOR(),
-                    keccak256(abi.encode(PERMIT_TYPEHASH, owner, address(0xCAFE), 1e18, 1, block.timestamp))
+                    keccak256(
+                        abi.encode(
+                            PERMIT_TYPEHASH,
+                            owner,
+                            address(0xCAFE),
+                            1e18,
+                            1,
+                            block.timestamp
+                        )
+                    )
                 )
             )
         );
@@ -157,12 +176,29 @@ contract TestERC20Permit is Test {
                 abi.encodePacked(
                     "\x19\x01",
                     token.DOMAIN_SEPARATOR(),
-                    keccak256(abi.encode(PERMIT_TYPEHASH, owner, address(0xCAFE), 1e18, 0, block.timestamp))
+                    keccak256(
+                        abi.encode(
+                            PERMIT_TYPEHASH,
+                            owner,
+                            address(0xCAFE),
+                            1e18,
+                            0,
+                            block.timestamp
+                        )
+                    )
                 )
             )
         );
 
-        token.permit(owner, address(0xCAFE), 1e18, block.timestamp + 1, v, r, s);
+        token.permit(
+            owner,
+            address(0xCAFE),
+            1e18,
+            block.timestamp + 1,
+            v,
+            r,
+            s
+        );
     }
 
     function testFailPermitPastDeadline() public {
@@ -176,7 +212,16 @@ contract TestERC20Permit is Test {
                 abi.encodePacked(
                     "\x19\x01",
                     token.DOMAIN_SEPARATOR(),
-                    keccak256(abi.encode(PERMIT_TYPEHASH, owner, address(0xCAFE), 1e18, 0, oldTimestamp))
+                    keccak256(
+                        abi.encode(
+                            PERMIT_TYPEHASH,
+                            owner,
+                            address(0xCAFE),
+                            1e18,
+                            0,
+                            oldTimestamp
+                        )
+                    )
                 )
             )
         );
@@ -195,7 +240,16 @@ contract TestERC20Permit is Test {
                 abi.encodePacked(
                     "\x19\x01",
                     token.DOMAIN_SEPARATOR(),
-                    keccak256(abi.encode(PERMIT_TYPEHASH, owner, address(0xCAFE), 1e18, 0, block.timestamp))
+                    keccak256(
+                        abi.encode(
+                            PERMIT_TYPEHASH,
+                            owner,
+                            address(0xCAFE),
+                            1e18,
+                            0,
+                            block.timestamp
+                        )
+                    )
                 )
             )
         );
@@ -204,10 +258,7 @@ contract TestERC20Permit is Test {
         token.permit(owner, address(0xCAFE), 1e18, block.timestamp, v, r, s);
     }
 
-    function testMetadata(
-        string calldata name,
-        string calldata symbol
-    ) public {
+    function testMetadata(string calldata name, string calldata symbol) public {
         MockERC20Permit tkn = new MockERC20Permit(name, symbol);
         assertEq(tkn.name(), name);
         assertEq(tkn.symbol(), symbol);
@@ -270,7 +321,9 @@ contract TestERC20Permit is Test {
 
         assertTrue(token.transferFrom(from, to, amount));
 
-        uint256 app = from == address(this) || approval == type(uint256).max ? approval : approval - amount;
+        uint256 app = from == address(this) || approval == type(uint256).max
+            ? approval
+            : approval - amount;
         assertEq(token.allowance(from, address(this)), app);
 
         if (from == to) {
@@ -299,7 +352,16 @@ contract TestERC20Permit is Test {
                 abi.encodePacked(
                     "\x19\x01",
                     token.DOMAIN_SEPARATOR(),
-                    keccak256(abi.encode(PERMIT_TYPEHASH, owner, to, amount, 0, deadline))
+                    keccak256(
+                        abi.encode(
+                            PERMIT_TYPEHASH,
+                            owner,
+                            to,
+                            amount,
+                            0,
+                            deadline
+                        )
+                    )
                 )
             )
         );
@@ -385,7 +447,16 @@ contract TestERC20Permit is Test {
                 abi.encodePacked(
                     "\x19\x01",
                     token.DOMAIN_SEPARATOR(),
-                    keccak256(abi.encode(PERMIT_TYPEHASH, owner, to, amount, nonce, deadline))
+                    keccak256(
+                        abi.encode(
+                            PERMIT_TYPEHASH,
+                            owner,
+                            to,
+                            amount,
+                            nonce,
+                            deadline
+                        )
+                    )
                 )
             )
         );
@@ -410,7 +481,16 @@ contract TestERC20Permit is Test {
                 abi.encodePacked(
                     "\x19\x01",
                     token.DOMAIN_SEPARATOR(),
-                    keccak256(abi.encode(PERMIT_TYPEHASH, owner, to, amount, 0, deadline))
+                    keccak256(
+                        abi.encode(
+                            PERMIT_TYPEHASH,
+                            owner,
+                            to,
+                            amount,
+                            0,
+                            deadline
+                        )
+                    )
                 )
             )
         );
@@ -436,7 +516,16 @@ contract TestERC20Permit is Test {
                 abi.encodePacked(
                     "\x19\x01",
                     token.DOMAIN_SEPARATOR(),
-                    keccak256(abi.encode(PERMIT_TYPEHASH, owner, to, amount, 0, deadline))
+                    keccak256(
+                        abi.encode(
+                            PERMIT_TYPEHASH,
+                            owner,
+                            to,
+                            amount,
+                            0,
+                            deadline
+                        )
+                    )
                 )
             )
         );
@@ -461,7 +550,16 @@ contract TestERC20Permit is Test {
                 abi.encodePacked(
                     "\x19\x01",
                     token.DOMAIN_SEPARATOR(),
-                    keccak256(abi.encode(PERMIT_TYPEHASH, owner, to, amount, 0, deadline))
+                    keccak256(
+                        abi.encode(
+                            PERMIT_TYPEHASH,
+                            owner,
+                            to,
+                            amount,
+                            0,
+                            deadline
+                        )
+                    )
                 )
             )
         );
