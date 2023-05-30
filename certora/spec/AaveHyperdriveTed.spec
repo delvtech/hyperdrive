@@ -191,6 +191,7 @@ rule openLongReallyOpensLong(env e) {
     // Need to make sure, that _applyCheckpoint end quickly, so that _checkpoints[_latestCheckpoint()].sharePrice != 0
     //require(_checkpoints[latestCP].sharePrice != 0);
     // First I nondet the function as I cannot access _checkpoints from HyperdriveStorage
+    require(bondsReceived < 1329227995784915872903807060280344576); // 2^120
 
     AaveHyperdrive.MarketState postState = marketState();
     mathint longsOutstanding2 = postState.longsOutstanding;
