@@ -76,10 +76,10 @@ contract ERC20ForwarderFactoryTest is BaseTest {
 
     function testForwarderERC20() public {
         uint256 AMOUNT = 10000 ether;
-        uint256 TOKENID = 8;
-        forwarder = forwarderFactory.create(multiToken, TOKENID);
+        uint256 TOKEN_ID = 8;
+        forwarder = forwarderFactory.create(multiToken, TOKEN_ID);
 
-        multiToken.mint(TOKENID, alice, AMOUNT);
+        multiToken.mint(TOKEN_ID, alice, AMOUNT);
 
         assertEq(forwarder.balanceOf(address(alice)), AMOUNT);
         assertEq(forwarder.totalSupply(), AMOUNT);
@@ -168,7 +168,7 @@ contract ERC20ForwarderFactoryTest is BaseTest {
         );
     }
 
-    function testFailPermitPastDeadline() public {
+    function testNegativePermitPastDeadline() public {
         uint256 oldTimestamp = block.timestamp;
         uint256 privateKey = 0xBEEF;
         address owner = vm.addr(privateKey);
@@ -194,6 +194,8 @@ contract ERC20ForwarderFactoryTest is BaseTest {
         );
 
         vm.warp(block.timestamp + 1);
+
+        vm.expectRevert();
         forwarder.permit(owner, address(0xCAFE), 1e18, oldTimestamp, v, r, s);
     }
 
@@ -230,6 +232,7 @@ contract ERC20ForwarderFactoryTest is BaseTest {
             r,
             s
         );
+
         forwarder.permit(
             owner,
             address(0xCAFE),
