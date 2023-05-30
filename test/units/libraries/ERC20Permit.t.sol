@@ -292,6 +292,7 @@ contract TestERC20Permit is Test {
     }
 
     function testTransfer(address from, uint256 amount) public {
+        vm.assume(from != address(0) && from != address(token));
         token.mint(address(this), amount);
 
         assertTrue(token.transfer(from, amount));
