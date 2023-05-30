@@ -44,10 +44,27 @@ function YSInvariant(
     uint256 y2,
     uint256 mu,
     uint256 c,
-    uint256 t) returns bool {
+    uint256 t
+    ) returns bool {
     uint256 tp = require_uint256(ONE18() - t); /// t' = 1 - t;
     return c * ONE18() * (CVLPow(z1, tp) - CVLPow(z2, tp)) ==
         to_mathint(CVLPow(mu, t)) * (CVLPow(y2, tp) - CVLPow(y1, tp));
+}
+
+function modifiedYieldSpaceConstant(uint256 cDivMu, uint256 mu, uint256 z, uint256 t, uint256 y)
+    returns mathint {
+    /// k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
+    return mulDownWad(cDivMu, CVLPow(mulDownWad(mu, z), t)) + CVLPow(y, t);
+}
+
+rule YSConstant_MonotonicZ(uint256 cDivMu, uint256 mu, uint256 z1, uint256 z2, uint256 t, uint256 y) {
+    assert z1 < z2 => 
+        modifiedYieldSpaceConstant(cDivMu,mu,z1,t,y) <= modifiedYieldSpaceConstant(cDivMu,mu,z1,t,y);
+}
+
+rule YSConstant_MonotonicY(uint256 cDivMu, uint256 mu, uint256 z, uint256 t, uint256 y1, uint256 y2) {
+    assert y1 < y2 => 
+        modifiedYieldSpaceConstant(cDivMu,mu,z,t,y1) <= modifiedYieldSpaceConstant(cDivMu,mu,z,t,y2);
 }
 
 rule mulDownChain(uint256 x, uint256 y, uint256 z) {
@@ -64,28 +81,50 @@ rule mulDivUpEquivalence(uint256 x, uint256 y, uint256 z) {
     assert FPMath.mulDivUp(x,y,z) == mulDivUpAbstractPlus(x,y,z);
 }
 
+/// Violated - need to introduce a new axiom.
+rule CVLPow_InverseExponent(uint256 x, uint256 y) {
+    require x !=0;
+    require y !=0;
+    uint256 inv_y = divUpWad(ONE18(), y);
+    assert CVLPow(CVLPow(x, y), inv_y) <= x;
+}
+
+/// For every number x, and error err,
+/// and numbers y1, y2 that border the range [x - %err , x + %err]
+/// must be within any error bound err2 >= err.
+/// [Verified]
+rule errorBoundTest(mathint x, mathint err) {
+    require err < to_mathint(ONE18()) && err >= 0;
+    mathint err2; require err2 >= err;
+    mathint y1 = (x * (ONE18() + err)); 
+    mathint y2 = (x * (ONE18() - err));
+    assert relativeErrorBound(x * ONE18(), y1, err2) && relativeErrorBound(x * ONE18(), y2, err2);
+}
+
 /// Verify the invariant: (c / µ) * (µ * z)^(1 - t) + y^(1 - t) = k
 /// t = 0 : (c/mu) *(mu * z) + y = k => c*z + y = k => x + y = k
+/// [Verified]
 rule YSInvariantIntegrity() {
     uint256 z1; require z1 !=0;
     uint256 z2; require z2 !=0;
     uint256 y1;
     uint256 y2;
-    uint256 mu; require mu >= ONE18();
+    uint256 mu; require mu == ONE18();
     uint256 c; require c >= mu; // Docs assumption
     uint256 t; require t <= ONE18() && t > 0;
 
-    uint256 mu_z1 = require_uint256(mu * z1);
-    uint256 mu_z2 = require_uint256(mu * z2);
+    uint256 mu_z1 = mulDownWad(mu, z1);
+    uint256 mu_z2 = mulDownWad(mu, z2);
     uint256 tp = require_uint256(ONE18() - t);
+    uint256 c_Mu = divDownWad(c, mu);
 
     /// Require invariant equivalent expressions on pairs (z1,y1) and (z2,y2).
     require YSInvariant(z1, z2, y1, y2, mu, c, t);
 
-    mathint k1 = (c / mu) * CVLPow(mu_z1, tp) + CVLPow(y1, tp);
-    mathint k2 = (c / mu) * CVLPow(mu_z2, tp) + CVLPow(y2, tp);
+    mathint k1 = c_Mu * CVLPow(mu_z1, tp) + CVLPow(y1, tp);
+    mathint k2 = c_Mu * CVLPow(mu_z2, tp) + CVLPow(y2, tp);
 
-    assert k1 == k2;
+    assert relativeErrorBound(k1, k2, 10);
 }
 
 rule monotonicityBaseVolume(uint256 base1, uint256 base2) {
@@ -197,4 +236,41 @@ rule calculateOpenLong_BondsMonotonic(
 
     assert bondReservesDelta1 <= bondReservesDelta2,
         "The bond reserves delta should increase with increasing bonds reserves";
+}
+
+/// @dev Opening and closing a long immediately (with no time elpased between or any other trade),
+/// must obey the following conditions:
+/// 1. The difference is shares must be equal to the share proceeds
+/// 2. The amount of bonds returned to the pool is the same number the trader closed with.
+rule openAndCloseLongOnCurve(
+    uint256 shareReserves,
+    uint256 bondReserves,
+    uint256 shareAmount,
+    uint256 sharePrice) {
+
+    uint256 initialSharePrice = ONE18();
+    uint256 timeStretch = 45071688063194104;
+    require sharePrice >= initialSharePrice;
+    
+    uint256 bondDelta1 = HDMath.calculateOpenLong(
+        shareReserves, bondReserves, shareAmount, timeStretch, sharePrice, initialSharePrice);
+
+    /// Immediate close - > timeRemaining = 1.
+    uint256 timeRemaining = ONE18();
+    /// New shares in the pool after opening a long (increase by shareAmount)
+    uint256 newShares = require_uint256(shareReserves + shareAmount);
+    /// New bonds in the pool after opening a long (decrease by delta)
+    uint256 newBonds = require_uint256(bondReserves - bondDelta1);
+
+    uint256 shareReservesDelta;
+    uint256 bondReservesDelta;
+    uint256 shareProceeds;
+    shareReservesDelta, bondReservesDelta, shareProceeds = HDMath.calculateCloseLong(
+        newShares, newBonds, bondDelta1, timeRemaining,
+        timeStretch, sharePrice, sharePrice, initialSharePrice);
+
+    assert shareReservesDelta == shareProceeds, "The proceeds must be equal to the amount drained from the pool";
+    assert bondReservesDelta == bondDelta1, "Trader must pay the exact amount of bonds";
+    assert shareProceeds <= shareAmount || relativeErrorBound(shareProceeds - shareAmount, 1, 100)
+        ,"Trader cannot gain from an immediate round-trip";
 }

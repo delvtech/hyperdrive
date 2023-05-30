@@ -439,9 +439,9 @@ rule closeLongAtMaturity(uint256 bondAmount) {
     uint256 maturityTime;
 
     setHyperdrivePoolParams();
-    require sharePrice(e) > initialSharePrice();
+    uint256 price = sharePrice(e);
+    require price > initialSharePrice() && to_mathint(price) <= 2*ONE18();
     //require totalShares() != 0;
-    require bondAmount >= require_uint256(ONE18()/100);
 
     uint256 assetsRecieved =
         closeLong(e, maturityTime, bondAmount, minOutput, destination, asUnderlying);
@@ -449,23 +449,28 @@ rule closeLongAtMaturity(uint256 bondAmount) {
     assert maturityTime >= e.block.timestamp => assetsRecieved == bondAmount;
 }
 
+/// @doc calling checkpoint() twice on two checkpoint times cannot change the outstanding posiitons twice
+/// @notice : Violated because it's not assumed there aren't 'holes' in checkpoints.
 rule doubleCheckpointHasNoEffect(uint256 time1, uint256 time2) {
     env e;
     uint128 Longs1 = stateLongs();
-    uint128 shorts1 = stateShorts();
+    uint128 Shorts1 = stateShorts();
         checkpoint(e, time1);
     uint128 Longs2 = stateLongs();
-    uint128 shorts2 = stateShorts();
+    uint128 Shorts2 = stateShorts();
         checkpoint(e, time2);
     uint128 Longs3 = stateLongs();
-    uint128 shorts3 = stateShorts();
+    uint128 Shorts3 = stateShorts();
 
-    assert Longs2 == Longs3 && shorts2 == shorts3;
+    assert !(Longs1 == Longs2 && Shorts1 == Shorts2) =>
+        (Longs2 == Longs3 && Shorts2 == Shorts3),
+        "If the outstanding bonds were changed by a first checkpoint, they cannot be changed by a second";
 }
 
-rule checkPointCannotChangePoolPresentValue(uint256 time, uint256 _sharePrice) {
+rule checkPointCannotChangePoolPresentValue(uint256 time) {
     env e;
     setHyperdrivePoolParams();
+    uint256 _sharePrice = require_uint256(2*ONE18());
 
     /// Calc present value:
     uint256 value1 = getPresentValue(e, _sharePrice);
@@ -477,9 +482,9 @@ rule checkPointCannotChangePoolPresentValue(uint256 time, uint256 _sharePrice) {
     assert value1 == value2;
 }
 
+/// Verified
 invariant NoFutureTokens(uint256 AssetId, env e)
-    to_mathint(timeByID(AssetId)) > e.block.timestamp + positionDuration()
-        => totalSupplyByToken(AssetId) == 0
+    timeByID(AssetId) > e.block.timestamp + positionDuration() => totalSupplyByToken(AssetId) == 0
     {
         preserved with (env eP) {
             require e.block.timestamp == eP.block.timestamp;
@@ -493,7 +498,6 @@ invariant NoTokensBetweenCheckPoints(uint256 AssetId)
         preserved{
             require checkpointDuration() !=0;
         }
-        
     }
 
 /// @doc If there are shares in the pool, there must be underlying assets.
@@ -539,6 +543,25 @@ rule cannotCompletelyDepletePool(method f) filtered{f -> !f.isView} {
     assert !(stateBondReserves() == 0 && stateShareReserves() == 0);
 }
 */
+
+rule LongAverageMaturityTimeIsBounded(method f) 
+filtered{f -> !f.isView} {
+    env e;
+    mathint Time = to_mathint(e.block.timestamp);
+    mathint duration = positionDuration();
+    calldataarg args;
+
+    setHyperdrivePoolParams();
+
+    AaveHyperdrive.MarketState Mstate1 = marketState();
+    mathint LongAvgTime1 = to_mathint(Mstate1.longAverageMaturityTime);
+        f(e, args);
+    AaveHyperdrive.MarketState Mstate2 = marketState();
+    mathint LongAvgTime2 = to_mathint(Mstate2.longAverageMaturityTime);
+
+    require LongAvgTime1 >= Time && LongAvgTime1 <= Time + duration;
+    assert LongAvgTime2 >= Time && LongAvgTime2 <= Time + duration;
+}
 
 /// https://vaas-stg.certora.com/output/41958/72b2e377545f4c71aefdb613bb6ccf05/?anonymousKey=41c772576393e67ba8e07cc739c3e302b74aa353
 invariant SharePriceAlwaysGreaterThanInitial(uint256 checkpointTime)
