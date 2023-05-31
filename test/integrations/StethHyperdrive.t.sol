@@ -10,15 +10,15 @@ import { IWETH } from "contracts/src/interfaces/IWETH.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { BaseTest } from "test/utils/BaseTest.sol";
+import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 
-contract StethHyperdriveTest is BaseTest {
+contract StethHyperdriveTest is HyperdriveTest {
     using FixedPointMath for uint256;
 
     // FIXME:
     //
-    // - [x] Write a `setUp` function that initiates a mainnet fork.
-    // - [x] Create wrappers for the Lido contract and WETH9.
+    // - [x] Write a `setUp` function that initiates a mainnet fork. - [x] Create wrappers for the Lido contract and WETH9.
     // - [x] Deploy a Hyperdrive instance that interacts with Lido.
     // - [ ] Set up balances so that transfers of WETH and stETH can be tested.
     // - [ ] Test the `deposit` flow.
@@ -31,9 +31,10 @@ contract StethHyperdriveTest is BaseTest {
     IWETH internal constant WETH =
         IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
 
-    StethHyperdrive internal hyperdrive;
+    address internal STETH_WHALE = 0x1982b2F5814301d4e9a8b0201555376e62F82428;
+    address internal WETH_WHALE = 0xF04a5cC80B1E94C69B48f5ee68a08CD2F09A7c3E;
 
-    function setUp() public override __mainnet_fork(16_685_972) {
+    function setUp() public override __mainnet_fork(17_376_154) {
         super.setUp();
 
         // Deploy the Hyperdrive data provider and instance.
@@ -57,12 +58,87 @@ contract StethHyperdriveTest is BaseTest {
                 address(0),
                 LIDO
             );
-        hyperdrive = new StethHyperdrive(
-            config,
-            address(dataProvider),
-            bytes32(0),
-            address(0),
-            LIDO
+        hyperdrive = IHyperdrive(
+            address(
+                new StethHyperdrive(
+                    config,
+                    address(dataProvider),
+                    bytes32(0),
+                    address(0),
+                    LIDO
+                )
+            )
         );
+
+        // FIXME: DRY this up.
+        //
+        // Send stETH and wETH to the test accounts.
+        uint256 stethBalance = IERC20(LIDO).balanceOf(STETH_WHALE);
+        whaleTransfer(STETH_WHALE, IERC20(LIDO), stethBalance / 3, alice);
+        whaleTransfer(STETH_WHALE, IERC20(LIDO), stethBalance / 3, bob);
+        whaleTransfer(STETH_WHALE, IERC20(LIDO), stethBalance / 3, celine);
+        uint256 wethBalance = IERC20(LIDO).balanceOf(STETH_WHALE);
+        whaleTransfer(STETH_WHALE, IERC20(LIDO), wethBalance / 3, alice);
+        whaleTransfer(STETH_WHALE, IERC20(LIDO), wethBalance / 3, bob);
+        whaleTransfer(STETH_WHALE, IERC20(LIDO), wethBalance / 3, celine);
+
+        // FIXME: DRY this up.
+        //
+        // Approve the Hyperdrive to spend stETH and wETH.
+        vm.startPrank(alice);
+        IERC20(LIDO).approve(address(hyperdrive), type(uint256).max);
+        IERC20(WETH).approve(address(hyperdrive), type(uint256).max);
+        vm.stopPrank();
+        vm.startPrank(bob);
+        IERC20(LIDO).approve(address(hyperdrive), type(uint256).max);
+        IERC20(WETH).approve(address(hyperdrive), type(uint256).max);
+        vm.stopPrank();
+        vm.startPrank(celine);
+        IERC20(LIDO).approve(address(hyperdrive), type(uint256).max);
+        IERC20(WETH).approve(address(hyperdrive), type(uint256).max);
+        vm.stopPrank();
+
+        // Alice initializes the pool.
+        vm.startPrank(alice);
+        initialize(alice, 0.05e18, 10_000e18);
+        vm.stopPrank();
     }
+
+    function test__deposit() external {
+        vm.startPrank(bob);
+
+        // FIXME: Comment this.
+        uint256 totalPooledEtherBefore = LIDO.getTotalPooledEther();
+        uint256 totalSharesBefore = LIDO.getTotalShares();
+        uint256 hyperdriveSharesBefore = LIDO.sharesOf(address(hyperdrive));
+
+        // Bob opens a long.
+        uint256 basePaid = 100e18;
+        openLong(bob, basePaid);
+
+        // We ensure that the amount of stETH shares increases and that the
+        // total amount of pooled ETH increases.
+
+        // FIXME: Verify that the share balance of the contract equals the
+        // share reserves of the contract.
+        uint256 expectedShares = basePaid.mulDivDown(
+            totalSharesBefore,
+            totalPooledEtherBefore
+        );
+        assertEq(
+            LIDO.sharesOf(address(hyperdrive)),
+            hyperdriveSharesBefore + expectedShares
+        );
+        assertEq(LIDO.getTotalShares(), totalSharesBefore + expectedShares);
+
+        // FIXME: Update the comments.
+        assertEq(LIDO.getTotalPooledEther(), totalPooledEtherBefore + 100e18);
+    }
+
+    function test__withdraw() external {}
+
+    function test__pricePerShare() external {}
+
+    // FIXME: We should add another test that verifies that the correct amount
+    // of interest is accrued as stETH updates it's internal state.
 }

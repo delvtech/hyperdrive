@@ -97,7 +97,6 @@ contract BaseTest is Test {
     ) public returns (uint256) {
         uint256 whaleBalance = token.balanceOf(whale);
         if (amount > whaleBalance) revert WhaleBalanceExceeded();
-        if (Address.isContract(whale)) revert WhaleIsContract();
         vm.stopPrank();
         vm.startPrank(whale);
         vm.deal(whale, 1 ether);
