@@ -38,9 +38,6 @@ import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 contract StethHyperdrive is Hyperdrive {
     using FixedPointMath for uint256;
 
-    // FIXME: I don't think there is a need to separate `lido` and `stETH`
-    //        since they live at the same address.
-    //
     /// @dev The Lido contract.
     ILido internal immutable lido;
 

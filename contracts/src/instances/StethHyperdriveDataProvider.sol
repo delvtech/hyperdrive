@@ -3,9 +3,11 @@ pragma solidity ^0.8.18;
 
 import { HyperdriveDataProvider } from "../HyperdriveDataProvider.sol";
 import { MultiTokenDataProvider } from "../MultiTokenDataProvider.sol";
+import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { ILido } from "../interfaces/ILido.sol";
+import { IWETH } from "../interfaces/IWETH.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { Errors } from "../libraries/Errors.sol";
-import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 
 /// @author DELV
 /// @title StethHyperdriveDataProvider
@@ -29,8 +31,8 @@ contract StethHyperdriveDataProvider is
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _linkerCodeHash_ The hash of the erc20 linker contract deploy code.
     /// @param _factory_ The factory which is used to deploy the linking contracts.
-    /// @param _lido The Lido contract. This is the stETH token.
-    /// @param _weth The WETH token.
+    /// @param _lido_ The Lido contract. This is the stETH token.
+    /// @param _weth_ The WETH token.
     constructor(
         IHyperdrive.PoolConfig memory _config,
         bytes32 _linkerCodeHash_,
@@ -50,20 +52,20 @@ contract StethHyperdriveDataProvider is
     /// @dev Returns the current share price. We simply use Lido's share price.
     /// @return price The current share price.
     function _pricePerShare() internal view override returns (uint256 price) {
-        return lido.getTotalPooledEther().divDown(lido.getTotalShares());
+        return _lido.getTotalPooledEther().divDown(_lido.getTotalShares());
     }
 
     /// Getters ///
 
     /// @notice Gets the Lido contract.
     /// @return The Lido contract.
-    function lido() external view returns (IERC20) {
+    function lido() external view returns (ILido) {
         _revert(abi.encode(_weth));
     }
 
     /// @notice Gets the WETH token.
     /// @return The WETH token.
-    function weth() external view returns (IPool) {
+    function weth() external view returns (IWETH) {
         _revert(abi.encode(_weth));
     }
 }
