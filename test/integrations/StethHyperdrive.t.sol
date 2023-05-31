@@ -38,10 +38,7 @@ contract StethHyperdriveTest is BaseTest {
 
         // Deploy the Hyperdrive data provider and instance.
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
-            // FIXME: If we're just using WETH as the base token, there is no
-            // reason to add it to the instance contract.
             baseToken: IERC20(WETH),
-            // FIXME: We need to be careful with the initial share price.
             initialSharePrice: LIDO.getTotalPooledEther().divDown(
                 LIDO.getTotalShares()
             ),

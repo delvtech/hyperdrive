@@ -40,6 +40,12 @@ contract StethHyperdrive is Hyperdrive {
         address _linkerFactory,
         ILido _lido
     ) Hyperdrive(_config, _dataProvider, _linkerCodeHash, _linkerFactory) {
+        if (
+            _initialSharePrice !=
+            _lido.getTotalPooledEther().divDown(_lido.getTotalShares())
+        ) {
+            revert Errors.InvalidInitialSharePrice();
+        }
         lido = _lido;
     }
 
