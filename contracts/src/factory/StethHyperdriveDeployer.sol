@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
+import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import { StethHyperdrive } from "../instances/StethHyperdrive.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
 import { ILido } from "../interfaces/ILido.sol";
 import { IWETH } from "../interfaces/IWETH.sol";
+import { Errors } from "../libraries/Errors.sol";
 
 /// @author DELV
 /// @title StethHyperdriveDeployer
@@ -45,6 +47,11 @@ contract StethHyperdriveDeployer is IHyperdriveDeployer {
         address _linkerFactory,
         bytes32[] calldata
     ) external override returns (address) {
+        // Ensure that the base token is configured properly.
+        if (address(_config.baseToken) != address(weth)) {
+            revert Errors.InvalidBaseToken();
+        }
+
         return (
             address(
                 new StethHyperdrive(
@@ -52,8 +59,7 @@ contract StethHyperdriveDeployer is IHyperdriveDeployer {
                     _dataProvider,
                     _linkerCodeHash,
                     _linkerFactory,
-                    lido,
-                    weth
+                    lido
                 )
             )
         );

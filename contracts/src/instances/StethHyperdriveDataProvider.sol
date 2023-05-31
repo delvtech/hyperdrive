@@ -5,7 +5,6 @@ import { HyperdriveDataProvider } from "../HyperdriveDataProvider.sol";
 import { MultiTokenDataProvider } from "../MultiTokenDataProvider.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { ILido } from "../interfaces/ILido.sol";
-import { IWETH } from "../interfaces/IWETH.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { Errors } from "../libraries/Errors.sol";
 
@@ -24,27 +23,21 @@ contract StethHyperdriveDataProvider is
     /// @dev The Lido contract.
     ILido internal immutable _lido;
 
-    /// @dev The WETH token.
-    IWETH internal immutable _weth;
-
     /// @notice Initializes the data provider.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _linkerCodeHash_ The hash of the erc20 linker contract deploy code.
     /// @param _factory_ The factory which is used to deploy the linking contracts.
     /// @param _lido_ The Lido contract. This is the stETH token.
-    /// @param _weth_ The WETH token.
     constructor(
         IHyperdrive.PoolConfig memory _config,
         bytes32 _linkerCodeHash_,
         address _factory_,
-        ILido _lido_,
-        IWETH _weth_
+        ILido _lido_
     )
         HyperdriveDataProvider(_config)
         MultiTokenDataProvider(_linkerCodeHash_, _factory_)
     {
         _lido = _lido_;
-        _weth = _weth_;
     }
 
     /// Yield Source ///
@@ -60,12 +53,6 @@ contract StethHyperdriveDataProvider is
     /// @notice Gets the Lido contract.
     /// @return The Lido contract.
     function lido() external view returns (ILido) {
-        _revert(abi.encode(_weth));
-    }
-
-    /// @notice Gets the WETH token.
-    /// @return The WETH token.
-    function weth() external view returns (IWETH) {
-        _revert(abi.encode(_weth));
+        _revert(abi.encode(_lido));
     }
 }

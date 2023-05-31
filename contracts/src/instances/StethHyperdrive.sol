@@ -8,22 +8,6 @@ import { IWETH } from "../interfaces/IWETH.sol";
 import { Errors } from "../libraries/Errors.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 
-// FIXME:
-//
-// - [x] Add NatSpec comments.
-// - [x] Add a `_deposit` function. This should use Lido's `submit` function.
-//       We will use WETH as the base token for the initial version. In the PR
-//       write-up, I should discuss the pros and cons of this decision.
-// - [x] Add a `_withdraw` function. This shouldn't have the option of
-//       withdrawing WETH and should just return stETH.
-// - [x] Add a `_pricePerShare` function. Lido has this functionality natively,
-//       so we'll just need to make use of their machinery.
-// - [x] This integration won't support the referral address. We should make a
-//       note of this and double check during reviews that we don't want to
-//       support this.
-// - [ ] Should our users call deposit and/or buffered deposit? This would be
-//       go from stETH's perspective.
-//
 /// @author DELV
 /// @title StethHyperdrive
 /// @notice An instance of Hyperdrive that utilizes Lido's staked ether (stETH)
@@ -41,9 +25,6 @@ contract StethHyperdrive is Hyperdrive {
     /// @dev The Lido contract.
     ILido internal immutable lido;
 
-    /// @dev The WETH token.
-    IWETH internal immutable weth;
-
     /// @notice Initializes a Hyperdrive pool.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _dataProvider The address of the data provider.
@@ -52,17 +33,14 @@ contract StethHyperdrive is Hyperdrive {
     /// @param _linkerFactory The factory which is used to deploy the ERC20
     ///        linker contracts.
     /// @param _lido The Lido contract. This is the stETH token.
-    /// @param _weth The WETH token.
     constructor(
         IHyperdrive.PoolConfig memory _config,
         address _dataProvider,
         bytes32 _linkerCodeHash,
         address _linkerFactory,
-        ILido _lido,
-        IWETH _weth
+        ILido _lido
     ) Hyperdrive(_config, _dataProvider, _linkerCodeHash, _linkerFactory) {
         lido = _lido;
-        weth = _weth;
     }
 
     /// @dev Accepts a transfer from the user in base or the yield source token.
@@ -91,6 +69,7 @@ contract StethHyperdrive is Hyperdrive {
             shares = _amount.divDown(sharePrice);
         } else {
             // Transfer WETH into the contract and unwrap it.
+            IWETH weth = IWETH(address(_baseToken));
             bool success = weth.transferFrom(
                 msg.sender,
                 address(this),

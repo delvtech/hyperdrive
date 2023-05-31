@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import { IPool } from "@aave/interfaces/IPool.sol";
 import { HyperdriveFactory } from "./HyperdriveFactory.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
@@ -21,9 +20,6 @@ contract StethHyperdriveFactory is HyperdriveFactory {
     /// @dev The Lido contract.
     ILido internal immutable lido;
 
-    /// @dev The WETH token.
-    IWETH internal immutable weth;
-
     /// @notice Deploys the contract
     /// @param _governance The address which can update this factory.
     /// @param _deployer The contract which holds the bytecode and deploys new versions.
@@ -32,7 +28,6 @@ contract StethHyperdriveFactory is HyperdriveFactory {
     /// @param _fees The fees each deployed instance from this contract will have
     /// @param _defaultPausers The default addresses which will be set to have the pauser role
     /// @param _lido The Lido contract.
-    /// @param _weth The WETH token.
     constructor(
         address _governance,
         IHyperdriveDeployer _deployer,
@@ -40,8 +35,7 @@ contract StethHyperdriveFactory is HyperdriveFactory {
         address _feeCollector,
         IHyperdrive.Fees memory _fees,
         address[] memory _defaultPausers,
-        ILido _lido,
-        IWETH _weth
+        ILido _lido
     )
         HyperdriveFactory(
             _governance,
@@ -53,7 +47,6 @@ contract StethHyperdriveFactory is HyperdriveFactory {
         )
     {
         lido = _lido;
-        weth = _weth;
     }
 
     /// @notice This deploys a data provider for the aave hyperdrive instance
@@ -72,8 +65,7 @@ contract StethHyperdriveFactory is HyperdriveFactory {
                     _config,
                     _linkerCodeHash,
                     _linkerFactory,
-                    lido,
-                    weth
+                    lido
                 )
             )
         );
