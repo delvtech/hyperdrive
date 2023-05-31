@@ -107,12 +107,21 @@ contract DsrHyperdrive is Hyperdrive {
         if (!asUnderlying) {
             revert Errors.UnsupportedToken();
         }
+
+        // Small numerical errors can result in the shares value being slightly
+        // larger than the total shares, so we clamp the shares to the total
+        // shares to avoid reverts.
+        uint256 totalShares_ = totalShares;
+        if (shares > totalShares_) {
+            shares = totalShares_;
+        }
+
         // Load the balance of this contract - this calls drip internally so
         // this is real deposits + interest accrued at point in time
         uint256 totalBase = dsrManager.daiBalance(address(this));
 
         // The withdraw is the percent of shares the user has times the total assets
-        amountWithdrawn = totalBase.mulDivDown(shares, totalShares);
+        amountWithdrawn = totalBase.mulDivDown(shares, totalShares_);
 
         // Remove shares from the total supply
         totalShares -= shares;
