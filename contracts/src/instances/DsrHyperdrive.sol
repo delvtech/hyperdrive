@@ -131,12 +131,12 @@ contract DsrHyperdrive is Hyperdrive {
         override
         returns (uint256 sharePrice)
     {
-        // The normalized DAI amount owned by this contract
         uint256 pie = dsrManager.pieOf(address(this));
-        // Load the balance of this contract
         uint256 totalBase = pie.mulDivDown(chi(), RAY);
-        // The share price is assets divided by shares
-        return (totalBase.divDown(totalShares));
+        if (totalShares != 0) {
+            return totalBase.divDown(totalShares);
+        }
+        return 0;
     }
 
     /// @notice Gets the current up to date value of the rate accumulator
