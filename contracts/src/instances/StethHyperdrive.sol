@@ -1,32 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import { Hyperdrive } from "../Hyperdrive.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { ILido } from "../interfaces/ILido.sol";
+import { IWETH } from "../interfaces/IWETH.sol";
 import { Errors } from "../libraries/Errors.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
-
-// FIXME: Add to interfaces.
-interface IWETH is IERC20 {
-    function deposit() external payable;
-
-    function withdraw(uint256 _amount) external;
-}
-
-// FIXME: Add to interfaces.
-interface ILido {
-    function submit(address _referral) external payable returns (uint256);
-
-    function transferShares(
-        address _recipient,
-        uint256 _sharesAmount
-    ) external returns (uint256);
-
-    function getTotalPooledEther() external view returns (uint256);
-
-    function getTotalShares() external view returns (uint256);
-}
 
 // FIXME:
 //
@@ -38,27 +18,31 @@ interface ILido {
 //       withdrawing WETH and should just return stETH.
 // - [x] Add a `_pricePerShare` function. Lido has this functionality natively,
 //       so we'll just need to make use of their machinery.
-// - [ ] Should our users call deposit and/or buffered deposit? This would be
-//       go from stETH's perspective.
-// - [ ] This integration won't support the referral address. We should make a
+// - [x] This integration won't support the referral address. We should make a
 //       note of this and double check during reviews that we don't want to
 //       support this.
+// - [ ] Should our users call deposit and/or buffered deposit? This would be
+//       go from stETH's perspective.
 //
 /// @author DELV
 /// @title StethHyperdrive
 /// @notice An instance of Hyperdrive that utilizes Lido's staked ether (stETH)
 ///         as a yield source.
+/// @dev Lido has it's own notion of shares to account for the accrual of
+///      interest on the ether pooled in the Lido protocol. Instead of
+///      maintaining a balance of shares, this integration can simply use Lido
+///      shares directly.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract StethHyperdrive is Hyperdrive {
     using FixedPointMath for uint256;
 
+    // FIXME: I don't think there is a need to separate `lido` and `stETH`
+    //        since they live at the same address.
+    //
     /// @dev The Lido contract.
     ILido internal immutable lido;
-
-    /// @dev The stETH token.
-    IERC20 internal immutable stETH;
 
     /// @dev The WETH token.
     IWETH internal immutable weth;
@@ -70,8 +54,7 @@ contract StethHyperdrive is Hyperdrive {
     ///        constructor code.
     /// @param _linkerFactory The factory which is used to deploy the ERC20
     ///        linker contracts.
-    /// @param _lido The Lido contract.
-    /// @param _stETH The stETH token.
+    /// @param _lido The Lido contract. This is the stETH token.
     /// @param _weth The WETH token.
     constructor(
         IHyperdrive.PoolConfig memory _config,
@@ -79,11 +62,9 @@ contract StethHyperdrive is Hyperdrive {
         bytes32 _linkerCodeHash,
         address _linkerFactory,
         ILido _lido,
-        IERC20 _stETH,
         IWETH _weth
     ) Hyperdrive(_config, _dataProvider, _linkerCodeHash, _linkerFactory) {
         lido = _lido;
-        stETH = _stETH;
         weth = _weth;
     }
 
@@ -99,7 +80,7 @@ contract StethHyperdrive is Hyperdrive {
     ) internal override returns (uint256 shares, uint256 sharePrice) {
         if (_asUnderlying) {
             // Transfer stETH into the contract.
-            bool success = stETH.transferFrom(
+            bool success = lido.transferFrom(
                 msg.sender,
                 address(this),
                 _amount
@@ -123,8 +104,11 @@ contract StethHyperdrive is Hyperdrive {
             }
             weth.withdraw(_amount);
 
-            // Submit the provided ether to Lido to be deposited.
-            shares = lido.submit{ value: _amount }(address(0));
+            // Submit the provided ether to Lido to be deposited. The governance
+            // address is passed as the referral address; however, users can
+            // specify whatever referrer they'd like by depositing stETH instead
+            // of WETH.
+            shares = lido.submit{ value: _amount }(_governance);
 
             // Calculate the share price.
             sharePrice = shares.divDown(_amount);
@@ -159,9 +143,9 @@ contract StethHyperdrive is Hyperdrive {
         return (amountWithdrawn, sharePrice);
     }
 
-    // FIXME: NatSpec.
+    /// @dev Returns the current share price. We simply use Lido's share price.
+    /// @return price The current share price.
     function _pricePerShare() internal view override returns (uint256 price) {
-        // FIXME: It may be good to explain this.
         return lido.getTotalPooledEther().divDown(lido.getTotalShares());
     }
 }
