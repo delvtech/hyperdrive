@@ -49,6 +49,15 @@ contract StethHyperdrive is Hyperdrive {
         lido = _lido;
     }
 
+    /// @notice Accepts ether deposits from the WETH contract.
+    /// @dev This function verifies that the sender is the WETH contract to
+    ///      prevent users from forwarding stuck tokens to the contract.
+    receive() external payable {
+        if (msg.sender != address(_baseToken)) {
+            revert Errors.UnexpectedSender();
+        }
+    }
+
     /// @dev Accepts a transfer from the user in base or the yield source token.
     /// @param _amount The amount to deposit.
     /// @param _asUnderlying A flag indicating that the deposit is paid in stETH
@@ -60,6 +69,32 @@ contract StethHyperdrive is Hyperdrive {
         bool _asUnderlying
     ) internal override returns (uint256 shares, uint256 sharePrice) {
         if (_asUnderlying) {
+            // FIXME: Should we unwrap all of the weth in the contract?
+            //
+            // Transfer WETH into the contract and unwrap it.
+            IWETH weth = IWETH(address(_baseToken));
+            bool success = weth.transferFrom(
+                msg.sender,
+                address(this),
+                _amount
+            );
+            if (!success) {
+                revert Errors.TransferFailed();
+            }
+            weth.withdraw(_amount);
+
+            // FIXME: We should probably forward the entire contract's balance
+            //        like we do for other tokens.
+            //
+            // Submit the provided ether to Lido to be deposited. The governance
+            // address is passed as the referral address; however, users can
+            // specify whatever referrer they'd like by depositing stETH instead
+            // of WETH.
+            shares = lido.submit{ value: _amount }(_governance);
+
+            // Calculate the share price.
+            sharePrice = _amount.divDown(shares);
+        } else {
             // Transfer stETH into the contract.
             bool success = lido.transferFrom(
                 msg.sender,
@@ -73,27 +108,6 @@ contract StethHyperdrive is Hyperdrive {
             // Calculate the share price and the amount of shares deposited.
             sharePrice = _pricePerShare();
             shares = _amount.divDown(sharePrice);
-        } else {
-            // Transfer WETH into the contract and unwrap it.
-            IWETH weth = IWETH(address(_baseToken));
-            bool success = weth.transferFrom(
-                msg.sender,
-                address(this),
-                _amount
-            );
-            if (!success) {
-                revert Errors.TransferFailed();
-            }
-            weth.withdraw(_amount);
-
-            // Submit the provided ether to Lido to be deposited. The governance
-            // address is passed as the referral address; however, users can
-            // specify whatever referrer they'd like by depositing stETH instead
-            // of WETH.
-            shares = lido.submit{ value: _amount }(_governance);
-
-            // Calculate the share price.
-            sharePrice = shares.divDown(_amount);
         }
 
         return (shares, sharePrice);

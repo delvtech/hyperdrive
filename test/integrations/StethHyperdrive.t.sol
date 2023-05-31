@@ -20,8 +20,8 @@ contract StethHyperdriveTest is HyperdriveTest {
     //
     // - [x] Write a `setUp` function that initiates a mainnet fork. - [x] Create wrappers for the Lido contract and WETH9.
     // - [x] Deploy a Hyperdrive instance that interacts with Lido.
-    // - [ ] Set up balances so that transfers of WETH and stETH can be tested.
-    // - [ ] Test the `deposit` flow.
+    // - [x] Set up balances so that transfers of WETH and stETH can be tested.
+    // - [x] Test the `deposit` flow.
     // - [ ] Test the `withdraw` flow.
     // - [ ] Ensure that interest accrues correctly. Is there a way to warp
     //       between mainnet blocks?
@@ -38,6 +38,7 @@ contract StethHyperdriveTest is HyperdriveTest {
         super.setUp();
 
         // Deploy the Hyperdrive data provider and instance.
+        vm.startPrank(deployer);
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: IERC20(WETH),
             initialSharePrice: LIDO.getTotalPooledEther().divDown(
@@ -70,33 +71,13 @@ contract StethHyperdriveTest is HyperdriveTest {
             )
         );
 
-        // FIXME: DRY this up.
-        //
-        // Send stETH and wETH to the test accounts.
-        uint256 stethBalance = IERC20(LIDO).balanceOf(STETH_WHALE);
-        whaleTransfer(STETH_WHALE, IERC20(LIDO), stethBalance / 3, alice);
-        whaleTransfer(STETH_WHALE, IERC20(LIDO), stethBalance / 3, bob);
-        whaleTransfer(STETH_WHALE, IERC20(LIDO), stethBalance / 3, celine);
-        uint256 wethBalance = IERC20(LIDO).balanceOf(STETH_WHALE);
-        whaleTransfer(STETH_WHALE, IERC20(LIDO), wethBalance / 3, alice);
-        whaleTransfer(STETH_WHALE, IERC20(LIDO), wethBalance / 3, bob);
-        whaleTransfer(STETH_WHALE, IERC20(LIDO), wethBalance / 3, celine);
-
-        // FIXME: DRY this up.
-        //
-        // Approve the Hyperdrive to spend stETH and wETH.
-        vm.startPrank(alice);
-        IERC20(LIDO).approve(address(hyperdrive), type(uint256).max);
-        IERC20(WETH).approve(address(hyperdrive), type(uint256).max);
-        vm.stopPrank();
-        vm.startPrank(bob);
-        IERC20(LIDO).approve(address(hyperdrive), type(uint256).max);
-        IERC20(WETH).approve(address(hyperdrive), type(uint256).max);
-        vm.stopPrank();
-        vm.startPrank(celine);
-        IERC20(LIDO).approve(address(hyperdrive), type(uint256).max);
-        IERC20(WETH).approve(address(hyperdrive), type(uint256).max);
-        vm.stopPrank();
+        // Fund the test accounts with stETH and WETH.
+        address[] memory accounts = new address[](3);
+        accounts[0] = alice;
+        accounts[1] = bob;
+        accounts[2] = celine;
+        fundAccounts(IERC20(LIDO), STETH_WHALE, accounts);
+        fundAccounts(IERC20(WETH), WETH_WHALE, accounts);
 
         // Alice initializes the pool.
         vm.startPrank(alice);
@@ -107,7 +88,7 @@ contract StethHyperdriveTest is HyperdriveTest {
     function test__deposit() external {
         vm.startPrank(bob);
 
-        // FIXME: Comment this.
+        // Get some information about Lido before we make the deposit.
         uint256 totalPooledEtherBefore = LIDO.getTotalPooledEther();
         uint256 totalSharesBefore = LIDO.getTotalShares();
         uint256 hyperdriveSharesBefore = LIDO.sharesOf(address(hyperdrive));
@@ -116,23 +97,25 @@ contract StethHyperdriveTest is HyperdriveTest {
         uint256 basePaid = 100e18;
         openLong(bob, basePaid);
 
-        // We ensure that the amount of stETH shares increases and that the
-        // total amount of pooled ETH increases.
-
-        // FIXME: Verify that the share balance of the contract equals the
-        // share reserves of the contract.
-        uint256 expectedShares = basePaid.mulDivDown(
-            totalSharesBefore,
-            totalPooledEtherBefore
-        );
-        assertEq(
-            LIDO.sharesOf(address(hyperdrive)),
-            hyperdriveSharesBefore + expectedShares
-        );
-        assertEq(LIDO.getTotalShares(), totalSharesBefore + expectedShares);
-
-        // FIXME: Update the comments.
+        // Ensure that the amount of pooled ether increased by the base paid.
         assertEq(LIDO.getTotalPooledEther(), totalPooledEtherBefore + 100e18);
+
+        // FIXME: It would be nice to make this exact.
+        //
+        // Ensure that the stETH shares increased by an expected amount.
+        uint256 expectedShares = basePaid.mulDown(
+            totalSharesBefore.divDown(totalPooledEtherBefore)
+        );
+        assertApproxEqAbs(
+            LIDO.sharesOf(address(hyperdrive)),
+            hyperdriveSharesBefore + expectedShares,
+            1e3
+        );
+        assertApproxEqAbs(
+            LIDO.getTotalShares(),
+            totalSharesBefore + expectedShares,
+            1e3
+        );
     }
 
     function test__withdraw() external {}
@@ -141,4 +124,34 @@ contract StethHyperdriveTest is HyperdriveTest {
 
     // FIXME: We should add another test that verifies that the correct amount
     // of interest is accrued as stETH updates it's internal state.
+    //
+    // We can probably do this by overwriting the state that holds the pooled
+    // ether and the total shares so that we can simulate interest accruing.
+    // We should also test negative interest cases.
+
+    // FIXME: Test the flow with stuck tokens.
+
+    // FIXME: Test the receive function to ensure that non-WETH senders can't
+    //        send ETH to the contract.
+
+    function fundAccounts(
+        IERC20 token,
+        address source,
+        address[] memory accounts
+    ) internal {
+        uint256 sourceBalance = token.balanceOf(source);
+        for (uint256 i = 0; i < accounts.length; i++) {
+            // Transfer the tokens to the account.
+            whaleTransfer(
+                source,
+                token,
+                sourceBalance / accounts.length,
+                accounts[i]
+            );
+
+            // Approve Hyperdrive on behalf of the account.
+            vm.startPrank(accounts[i]);
+            token.approve(address(hyperdrive), type(uint256).max);
+        }
+    }
 }

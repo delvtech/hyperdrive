@@ -26,6 +26,7 @@ library Errors {
     error PoolAlreadyInitialized();
     error TransferFailed();
     error UnexpectedAssetId();
+    error UnexpectedSender();
     error UnsupportedToken();
     error ZeroAmount();
     error ZeroLpTotalSupply();
