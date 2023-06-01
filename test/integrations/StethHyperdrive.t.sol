@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-// FIXME
-import "forge-std/console.sol";
-
 import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import { StethHyperdrive } from "contracts/src/instances/StethHyperdrive.sol";
 import { StethHyperdriveDataProvider } from "contracts/src/instances/StethHyperdriveDataProvider.sol";
@@ -14,9 +11,11 @@ import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
+import { Lib } from "test/utils/Lib.sol";
 
 contract StethHyperdriveTest is HyperdriveTest {
     using FixedPointMath for uint256;
+    using Lib for *;
 
     // FIXME:
     //
@@ -86,8 +85,7 @@ contract StethHyperdriveTest is HyperdriveTest {
         initialize(alice, 0.05e18, 10_000e18);
     }
 
-    // FIXME: Try making this a fuzz test.
-    function test__depositWeth() external {
+    function test__depositWeth(uint256 basePaid) external {
         // Get some balance information before the deposit.
         uint256 totalPooledEtherBefore = LIDO.getTotalPooledEther();
         uint256 totalSharesBefore = LIDO.getTotalShares();
@@ -97,7 +95,10 @@ contract StethHyperdriveTest is HyperdriveTest {
         );
 
         // Bob opens a long by depositing WETH.
-        uint256 basePaid = 100e18;
+        basePaid = basePaid.normalizeToRange(
+            0.00001e18,
+            HyperdriveUtils.calculateMaxLong(hyperdrive)
+        );
         openLong(bob, basePaid);
 
         // Ensure that the amount of pooled ether increased by the base paid.
@@ -111,9 +112,10 @@ contract StethHyperdriveTest is HyperdriveTest {
         assertEq(WETH.balanceOf(bob), bobBalancesBefore.wethBalance - basePaid);
 
         // Ensure that the stETH balances were updated correctly.
-        assertEq(
+        assertApproxEqAbs(
             LIDO.balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.stethBalance + basePaid
+            hyperdriveBalancesBefore.stethBalance + basePaid,
+            1
         );
         assertEq(LIDO.balanceOf(bob), bobBalancesBefore.stethBalance);
 
@@ -130,8 +132,7 @@ contract StethHyperdriveTest is HyperdriveTest {
         assertEq(LIDO.sharesOf(bob), bobBalancesBefore.stethShares);
     }
 
-    // FIXME: Try making this a fuzz test.
-    function test__depositSteth() external {
+    function test__depositSteth(uint256 basePaid) external {
         // Get some balance information before the deposit.
         uint256 totalPooledEtherBefore = LIDO.getTotalPooledEther();
         uint256 totalSharesBefore = LIDO.getTotalShares();
@@ -141,7 +142,10 @@ contract StethHyperdriveTest is HyperdriveTest {
         );
 
         // Bob opens a long by depositing stETH.
-        uint256 basePaid = 100e18;
+        basePaid = basePaid.normalizeToRange(
+            0.00001e18,
+            HyperdriveUtils.calculateMaxLong(hyperdrive)
+        );
         openLong(bob, basePaid, false);
 
         // Ensure that the amount of pooled ether stays the same.
@@ -155,13 +159,15 @@ contract StethHyperdriveTest is HyperdriveTest {
         assertEq(WETH.balanceOf(bob), bobBalancesBefore.wethBalance);
 
         // Ensure that the stETH balances were updated correctly.
-        assertEq(
+        assertApproxEqAbs(
             LIDO.balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.stethBalance + basePaid
+            hyperdriveBalancesBefore.stethBalance + basePaid,
+            1
         );
-        assertEq(
+        assertApproxEqAbs(
             LIDO.balanceOf(bob),
-            bobBalancesBefore.stethBalance - basePaid
+            bobBalancesBefore.stethBalance - basePaid,
+            1
         );
 
         // Ensure that the stETH shares were updated correctly.
@@ -180,10 +186,12 @@ contract StethHyperdriveTest is HyperdriveTest {
         );
     }
 
-    // FIXME: Try making this a fuzz test.
-    function test__withdrawWeth() external {
+    function test__withdrawWeth(uint256 basePaid) external {
         // Bob opens a long.
-        uint256 basePaid = 100e18;
+        basePaid = basePaid.normalizeToRange(
+            0.00001e18,
+            HyperdriveUtils.calculateMaxLong(hyperdrive)
+        );
         (uint256 maturityTime, uint256 longAmount) = openLong(bob, basePaid);
 
         // Bob attempts to close his long with WETH as the target asset. This
@@ -194,10 +202,12 @@ contract StethHyperdriveTest is HyperdriveTest {
         hyperdrive.closeLong(maturityTime, longAmount, 0, bob, true);
     }
 
-    // FIXME: Try making this a fuzz test.
-    function test__withdrawSteth() external {
+    function test__withdrawSteth(uint256 basePaid) external {
         // Bob opens a long.
-        uint256 basePaid = 100e18;
+        basePaid = basePaid.normalizeToRange(
+            0.00001e18,
+            HyperdriveUtils.calculateMaxLong(hyperdrive)
+        );
         (uint256 maturityTime, uint256 longAmount) = openLong(bob, basePaid);
 
         // Get some balance information before the withdrawal.
@@ -251,11 +261,28 @@ contract StethHyperdriveTest is HyperdriveTest {
         );
     }
 
-    function test__pricePerShare() external {
-        // FIXME: We should do the obligatory check against the yield source's
-        //        state, but it would also be good to verify that the price per
-        //        share matches the amount of shares that will be minted when
-        //        a deposit is made.
+    function test__pricePerShare(uint256 basePaid) external {
+        // Ensure that the share price is the expected value.
+        uint256 totalPooledEther = LIDO.getTotalPooledEther();
+        uint256 totalShares = LIDO.getTotalShares();
+        uint256 sharePrice = hyperdrive.getPoolInfo().sharePrice;
+        assertEq(sharePrice, totalPooledEther.divDown(totalShares));
+
+        // Ensure that the share price accurately predicts the amount of shares
+        // that will be minted for depositing a given amount of WETH. This will
+        // be an approximation since Lido uses `mulDivDown` whereas this test
+        // pre-computes the share price.
+        basePaid = basePaid.normalizeToRange(
+            0.00001e18,
+            HyperdriveUtils.calculateMaxLong(hyperdrive)
+        );
+        uint256 hyperdriveSharesBefore = LIDO.sharesOf(address(hyperdrive));
+        openLong(bob, basePaid);
+        assertApproxEqAbs(
+            LIDO.sharesOf(address(hyperdrive)),
+            hyperdriveSharesBefore + basePaid.divDown(sharePrice),
+            1e4
+        );
     }
 
     // FIXME: We should add another test that verifies that the correct amount
