@@ -11,8 +11,6 @@ fi
 certoraRun contracts/src/BondWrapper.sol \
     contracts/src/instances/DsrHyperdrive.sol \
     \
-    contracts/src/libraries/HyperdriveMath.sol \
-    \
     certora/helpers/DummyERC20A.sol \
     certora/helpers/DummyERC20B.sol \
     certora/helpers/DummyDsrManager.sol:DummyDsrManager \
