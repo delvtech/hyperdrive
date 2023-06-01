@@ -35,7 +35,7 @@ contract MultiTokenTest is BaseTest {
         vm.stopPrank();
     }
 
-    function test__name_symbol() public {
+    function test__metadata() public {
         vm.startPrank(alice);
         multiToken.__setNameAndSymbol(5, "Token", "TKN");
         vm.stopPrank();
@@ -246,5 +246,82 @@ contract MultiTokenTest is BaseTest {
             new uint256[](1),
             new uint256[](0)
         );
+    }
+
+    function testBatchTransferFrom() public {
+        uint256 privateKey = 0xBEEF;
+        address owner = vm.addr(privateKey);
+
+        uint256 deadline = block.timestamp + 1000;
+
+        uint256 nonce = multiToken.nonces(owner);
+
+        bytes32 structHash = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                multiToken.DOMAIN_SEPARATOR(),
+                keccak256(
+                    abi.encode(
+                        PERMIT_TYPEHASH,
+                        owner,
+                        address(0xCAFE),
+                        true,
+                        nonce,
+                        deadline
+                    )
+                )
+            )
+        );
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, structHash);
+
+        multiToken.permitForAll(
+            owner,
+            address(0xCAFE),
+            true,
+            deadline,
+            v,
+            r,
+            s
+        );
+
+        multiToken.mint(1, owner, 100 ether);
+        multiToken.mint(2, owner, 50 ether);
+        multiToken.mint(3, owner, 10 ether);
+
+        uint256[] memory ids = new uint256[](3);
+        ids[0] = 1;
+        ids[1] = 2;
+        ids[2] = 3;
+
+        uint256[] memory amounts = new uint256[](3);
+        amounts[0] = 100 ether;
+        amounts[1] = 50 ether;
+        amounts[2] = 10 ether;
+
+        vm.prank(address(0xCAFE));
+        multiToken.batchTransferFrom(owner, bob, ids, amounts);
+    }
+
+    function testBatchTransferFromFailsWithoutApproval() public {
+        uint256 privateKey = 0xBEEF;
+        address owner = vm.addr(privateKey);
+
+        multiToken.mint(1, owner, 100 ether);
+        multiToken.mint(2, owner, 50 ether);
+        multiToken.mint(3, owner, 10 ether);
+
+        uint256[] memory ids = new uint256[](3);
+        ids[0] = 1;
+        ids[1] = 2;
+        ids[2] = 3;
+
+        uint256[] memory amounts = new uint256[](3);
+        amounts[0] = 100 ether;
+        amounts[1] = 50 ether;
+        amounts[2] = 10 ether;
+
+        vm.expectRevert();
+        multiToken.batchTransferFrom(owner, bob, ids, amounts);
     }
 }
