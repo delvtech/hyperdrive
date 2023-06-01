@@ -91,4 +91,39 @@ contract HyperdriveDSRTest is HyperdriveTest {
         );
         assertEq(createdShares, 2808790684246250377500);
     }
+
+    function testEnsureNonZeroInit() public {
+        setUp();
+        // We've just copied the values used by the original tests to ensure this runs
+
+        vm.startPrank(alice);
+        dai.approve(address(factory), type(uint256).max);
+        IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
+            baseToken: IERC20(address(0)),
+            initialSharePrice: FixedPointMath.ONE_18,
+            positionDuration: 365 days,
+            checkpointDuration: 1 days,
+            timeStretch: FixedPointMath.ONE_18.divDown(
+                22.186877016851916266e18
+            ),
+            governance: address(0),
+            feeCollector: address(0),
+            fees: IHyperdrive.Fees(0, 0, 0),
+            oracleSize: 2,
+            updateGap: 0
+        });
+
+        vm.expectRevert();
+        hyperdrive = factory.deployAndInitialize(
+            config,
+            bytes32(0),
+            address(0),
+            new bytes32[](0),
+            2500e18,
+            //1% apr
+            1e16
+        );
+
+
+    }
 }
