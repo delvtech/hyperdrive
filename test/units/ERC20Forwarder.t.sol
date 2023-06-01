@@ -98,7 +98,7 @@ contract ERC20ForwarderFactoryTest is BaseTest {
         assertEq(forwarder.totalSupply(), AMOUNT);
     }
 
-    function testFailPermitBadNonce() public {
+    function testNegativePermitBadNonce() public {
         uint256 privateKey = 0xBEEF;
         address owner = vm.addr(privateKey);
 
@@ -122,6 +122,7 @@ contract ERC20ForwarderFactoryTest is BaseTest {
             )
         );
 
+        vm.expectRevert();
         forwarder.permit(
             owner,
             address(0xCAFE),
@@ -133,7 +134,7 @@ contract ERC20ForwarderFactoryTest is BaseTest {
         );
     }
 
-    function testFailPermitBadDeadline() public {
+    function testNegativePermitBadDeadline() public {
         uint256 privateKey = 0xBEEF;
         address owner = vm.addr(privateKey);
 
@@ -157,6 +158,7 @@ contract ERC20ForwarderFactoryTest is BaseTest {
             )
         );
 
+        vm.expectRevert();
         forwarder.permit(
             owner,
             address(0xCAFE),
@@ -241,6 +243,180 @@ contract ERC20ForwarderFactoryTest is BaseTest {
             v,
             r,
             s
+        );
+    }
+
+    function testCanPermit() public {
+        uint256 privateKey = 0xBEEF;
+        address owner = vm.addr(privateKey);
+
+        uint256 nonce = forwarder.nonces(owner);
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            privateKey,
+            keccak256(
+                abi.encodePacked(
+                    "\x19\x01",
+                    forwarder.DOMAIN_SEPARATOR(),
+                    keccak256(
+                        abi.encode(
+                            PERMIT_TYPEHASH,
+                            owner,
+                            address(0xCAFE),
+                            1e18,
+                            nonce,
+                            block.timestamp + 1000
+                        )
+                    )
+                )
+            )
+        );
+
+        forwarder.permit(
+            owner,
+            address(0xCAFE),
+            1e18,
+            block.timestamp + 1000,
+            v,
+            r,
+            s
+        );
+
+        assertEq(forwarder.allowance(owner, address(0xCAFE)), 1e18);
+        assertEq(forwarder.nonces(owner), nonce + 1);
+    }
+
+    function testCannotPermitTheZeroAddress() public {
+        uint256 privateKey = 0xBEEF;
+        address owner = vm.addr(privateKey);
+
+        uint256 nonce = forwarder.nonces(owner);
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            privateKey,
+            keccak256(
+                abi.encodePacked(
+                    "\x19\x01",
+                    forwarder.DOMAIN_SEPARATOR(),
+                    keccak256(
+                        abi.encode(
+                            PERMIT_TYPEHASH,
+                            address(0),
+                            address(0xCAFE),
+                            1e18,
+                            nonce,
+                            block.timestamp + 1000
+                        )
+                    )
+                )
+            )
+        );
+
+        vm.expectRevert();
+        forwarder.permit(
+            address(0),
+            address(0xCAFE),
+            1e18,
+            block.timestamp + 1000,
+            v,
+            r,
+            s
+        );
+
+        assertEq(forwarder.allowance(address(0), address(0xCAFE)), 0);
+        assertEq(forwarder.nonces(address(0)), nonce);
+    }
+
+    function testCannotSubmitAnInvalidSignature() public {
+        uint256 privateKey = 0xBEEF;
+        address owner = vm.addr(privateKey);
+
+        uint256 nonce = forwarder.nonces(owner);
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            privateKey,
+            keccak256(
+                abi.encodePacked(
+                    "\x19\x01",
+                    forwarder.DOMAIN_SEPARATOR(),
+                    keccak256(
+                        abi.encode(
+                            PERMIT_TYPEHASH,
+                            owner,
+                            address(0xCAFE),
+                            1e18,
+                            nonce,
+                            block.timestamp
+                        )
+                    )
+                )
+            )
+        );
+
+        vm.expectRevert();
+        forwarder.permit(
+            owner,
+            address(0xCAFE),
+            1e18,
+            block.timestamp + 1000,
+            v,
+            r,
+            s
+        );
+
+        assertEq(forwarder.allowance(owner, address(0xCAFE)), 0);
+        assertEq(forwarder.nonces(owner), nonce);
+    }
+
+    function testAllowanceOfForwarder() public {
+        bytes32 MULTITOKEN_PERMIT_TYPEHASH = keccak256(
+            "PermitForAll(address owner,address spender,bool _approved,uint256 nonce,uint256 deadline)"
+        );
+
+        uint256 privateKey = 0xBEEF;
+        address owner = vm.addr(privateKey);
+
+        vm.prank(owner);
+        forwarder.approve(address(0xCAFE), 100 ether);
+
+        assertEq(forwarder.allowance(owner, address(0xCAFE)), 100 ether);
+
+        uint256 deadline = block.timestamp + 1000;
+
+        uint256 nonce = multiToken.nonces(owner);
+
+        bytes32 structHash = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                multiToken.DOMAIN_SEPARATOR(),
+                keccak256(
+                    abi.encode(
+                        MULTITOKEN_PERMIT_TYPEHASH,
+                        owner,
+                        address(0xCAFE),
+                        true,
+                        nonce,
+                        deadline
+                    )
+                )
+            )
+        );
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, structHash);
+
+        multiToken.permitForAll(
+            owner,
+            address(0xCAFE),
+            true,
+            deadline,
+            v,
+            r,
+            s
+        );
+
+        assertEq(
+            forwarder.allowance(owner, address(0xCAFE)),
+            type(uint256).max
         );
     }
 }
