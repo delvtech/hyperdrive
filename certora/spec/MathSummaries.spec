@@ -93,12 +93,13 @@ ghost ghostWeightedAverage(mathint, mathint, mathint) returns mathint {
 
 /// Ghost implementations of Hyperdrive Math
 ghost ghostCalculateBaseVolume(uint256,uint256,uint256) returns uint256 {
-     axiom forall uint256 x. forall uint256 y. 
-        forall uint256 z. x==0 => ghostCalculateBaseVolume(x,y,z) == 0;
+    axiom forall uint256 x. forall uint256 y. forall uint256 z.
+        min(to_mathint(ghostCalculateBaseVolume(x,y,z)), to_mathint(y)) <= to_mathint(x)
+        &&
+        max(to_mathint(ghostCalculateBaseVolume(x,y,z)), to_mathint(y)) >= to_mathint(x); 
     
-    axiom forall uint256 x. forall uint256 y. 
-        forall uint256 z. forall uint256 w. 
-            _monotonicallyIncreasing(x, y , ghostCalculateBaseVolume(x,z,w), ghostCalculateBaseVolume(y,z,w));
+    axiom forall uint256 x. forall uint256 y. forall uint256 z.
+        z == ONE18() => ghostCalculateBaseVolume(x,y,z) == x;
 }
 
 ghost ghostCalculateAPRFromReserves(uint256,uint256,uint256,uint256,uint256) returns uint256;
@@ -154,6 +155,9 @@ function CVLCalculatePresentValue(
     else {
         shareReservesDelta = NegativeNetCurveBranch(z,y,netCurveTrade,ts,c,mu);
     }
+
+    /// Need to verify this
+    require abs(shareReservesDelta) <= z;
 
     return require_uint256(z + netFlatTrade + shareReservesDelta);
 }

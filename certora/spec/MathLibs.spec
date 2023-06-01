@@ -294,3 +294,14 @@ rule BondsOutSharesInAndBack(
 
     assert relativeErrorBound(shareAmount, sharesOut, 100), "Trader cannot gain from an immediate round-trip";
 }
+
+rule calculateBaseVolumeCheck(uint256 base, uint256 bonds, uint256 time) {
+    require time <= ONE18() && time != 0;
+    uint256 volume = HDMath.calculateBaseVolume(base, bonds, time);
+    
+    assert time == ONE18() => volume == base;
+
+    assert 
+        to_mathint(base) <= max(to_mathint(volume), to_mathint(bonds)) &&
+        to_mathint(base) >= min(to_mathint(volume), to_mathint(bonds));
+}

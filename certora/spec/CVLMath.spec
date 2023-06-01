@@ -48,6 +48,12 @@ definition _monotonicallyDecreasing(uint256 x, uint256 y, uint256 fx, uint256 fy
 definition abs(mathint x) returns mathint = 
     x >= 0 ? x : 0 - x;
 
+definition min(mathint x, mathint y) returns mathint = 
+    x > y ? y : x;
+
+definition max(mathint x, mathint y) returns mathint = 
+    x > y ? x : y;
+
 /// Returns whether y is equal to x up to error bound of 'err' (18 decs).
 /// e.g. 10% relative error => err = 1e17
 definition relativeErrorBound(mathint x, mathint y, mathint err) returns bool = 

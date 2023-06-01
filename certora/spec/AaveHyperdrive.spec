@@ -406,7 +406,6 @@ rule openLongPreservesOutstandingLongs(uint256 baseAmount) {
     address destination;
     bool asUnderlying;
 
-    require checkpointDuration() != 0;
     setHyperdrivePoolParams();
 
     uint256 latestCP = require_uint256(e.block.timestamp -
