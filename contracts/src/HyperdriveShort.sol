@@ -92,15 +92,21 @@ abstract contract HyperdriveShort is HyperdriveLP {
 
         // Mint the short tokens to the trader. The ID is a concatenation of the
         // current share price and the maturity time of the shorts.
-        _mint(
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, maturityTime),
-            _destination,
-            _bondAmount
+        uint256 assetId = AssetId.encodeAssetId(
+            AssetId.AssetIdPrefix.Short,
+            maturityTime
         );
+        _mint(assetId, _destination, _bondAmount);
 
         // Emit an OpenShort event.
         uint256 bondAmount = _bondAmount; // Avoid stack too deep error.
-        emit OpenShort(_destination, maturityTime, traderDeposit, bondAmount);
+        emit OpenShort(
+            _destination,
+            assetId,
+            maturityTime,
+            traderDeposit,
+            bondAmount
+        );
 
         return (traderDeposit);
     }
@@ -188,7 +194,13 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // Emit a CloseShort event.
         uint256 maturityTime = _maturityTime; // Avoid stack too deep error.
         uint256 bondAmount = _bondAmount; // Avoid stack too deep error.
-        emit CloseShort(_destination, maturityTime, baseProceeds, bondAmount);
+        emit CloseShort(
+            _destination,
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, maturityTime),
+            maturityTime,
+            baseProceeds,
+            bondAmount
+        );
 
         return baseProceeds;
     }
