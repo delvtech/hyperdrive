@@ -9,9 +9,9 @@ import "./Fees.spec";
 use rule sanity;
 
 
-methods {
-    function _applyCheckpoint(uint256 _checkpointTime, uint256 _sharePrice) internal returns (uint256) => NONDET;
-}
+// methods {
+//     function _applyCheckpoint(uint256 _checkpointTime, uint256 _sharePrice) internal returns (uint256) => NONDET;
+// }
 
 
 /// @notice : in progress
@@ -140,8 +140,8 @@ rule addAndRemoveSameSharesMeansNoChange(env e) {
     assert lpShares == withdrawalShares => to_mathint(Mstate1.shareReserves) == to_mathint(Mstate3.shareReserves);
 }
 
-rule openLongPreservesOutstandingLongs(uint256 baseAmount) {
-    env e;
+rule openLongPreservesOutstandingLongs(env e) {
+    uint256 baseAmount;
     uint256 minOutput;
     address destination;
     bool asUnderlying;
@@ -190,6 +190,7 @@ rule openLongReallyOpensLong(env e) {
 
     // Need to make sure, that _applyCheckpoint end quickly, so that _checkpoints[_latestCheckpoint()].sharePrice != 0
     //require(_checkpoints[latestCP].sharePrice != 0);
+    require(checkPointSharePrice(latestCP) != 0);
     // First I nondet the function as I cannot access _checkpoints from HyperdriveStorage
     require(bondsReceived < 1329227995784915872903807060280344576); // 2^120
 
