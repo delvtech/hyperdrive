@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
+// FIXME
+import "forge-std/console.sol";
+
 import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import { StethHyperdrive } from "contracts/src/instances/StethHyperdrive.sol";
 import { StethHyperdriveDataProvider } from "contracts/src/instances/StethHyperdriveDataProvider.sol";
@@ -21,7 +24,7 @@ contract StethHyperdriveTest is HyperdriveTest {
     // - [x] Deploy a Hyperdrive instance that interacts with Lido.
     // - [x] Set up balances so that transfers of WETH and stETH can be tested.
     // - [x] Test the `deposit` flow.
-    // - [ ] Test the `withdraw` flow.
+    // - [x] Test the `withdraw` flow.
     // - [ ] Ensure that interest accrues correctly. Is there a way to warp
     //       between mainnet blocks?
 
@@ -83,6 +86,7 @@ contract StethHyperdriveTest is HyperdriveTest {
         initialize(alice, 0.05e18, 10_000e18);
     }
 
+    // FIXME: Try making this a fuzz test.
     function test__depositWeth() external {
         // Get some balance information before the deposit.
         uint256 totalPooledEtherBefore = LIDO.getTotalPooledEther();
@@ -126,6 +130,7 @@ contract StethHyperdriveTest is HyperdriveTest {
         assertEq(LIDO.sharesOf(bob), bobBalancesBefore.stethShares);
     }
 
+    // FIXME: Try making this a fuzz test.
     function test__depositSteth() external {
         // Get some balance information before the deposit.
         uint256 totalPooledEtherBefore = LIDO.getTotalPooledEther();
@@ -175,6 +180,7 @@ contract StethHyperdriveTest is HyperdriveTest {
         );
     }
 
+    // FIXME: Try making this a fuzz test.
     function test__withdrawWeth() external {
         // Bob opens a long.
         uint256 basePaid = 100e18;
@@ -188,10 +194,8 @@ contract StethHyperdriveTest is HyperdriveTest {
         hyperdrive.closeLong(maturityTime, longAmount, 0, bob, true);
     }
 
-    // FIXME: This test is currently broken because the `closeLong` wrapper
-    //        computes the return value instead of passing the value returned
-    //        by `closeLong` directly.
-    function test__withdrawSteth() internal {
+    // FIXME: Try making this a fuzz test.
+    function test__withdrawSteth() external {
         // Bob opens a long.
         uint256 basePaid = 100e18;
         (uint256 maturityTime, uint256 longAmount) = openLong(bob, basePaid);
@@ -218,13 +222,15 @@ contract StethHyperdriveTest is HyperdriveTest {
         assertEq(WETH.balanceOf(bob), bobBalancesBefore.wethBalance);
 
         // Ensure that the stETH balances were updated correctly.
-        assertEq(
+        assertApproxEqAbs(
             LIDO.balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.stethBalance - baseProceeds
+            hyperdriveBalancesBefore.stethBalance - baseProceeds,
+            1
         );
-        assertEq(
+        assertApproxEqAbs(
             LIDO.balanceOf(bob),
-            bobBalancesBefore.stethBalance + baseProceeds
+            bobBalancesBefore.stethBalance + baseProceeds,
+            1
         );
 
         // Ensure that the stETH shares were updated correctly.
@@ -232,14 +238,16 @@ contract StethHyperdriveTest is HyperdriveTest {
             totalSharesBefore,
             totalPooledEtherBefore
         );
-        assertEq(LIDO.getTotalShares(), totalSharesBefore);
-        assertEq(
+        assertApproxEqAbs(LIDO.getTotalShares(), totalSharesBefore, 1);
+        assertApproxEqAbs(
             LIDO.sharesOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.stethShares - expectedShares
+            hyperdriveBalancesBefore.stethShares - expectedShares,
+            1
         );
-        assertEq(
+        assertApproxEqAbs(
             LIDO.sharesOf(bob),
-            bobBalancesBefore.stethShares + expectedShares
+            bobBalancesBefore.stethShares + expectedShares,
+            1
         );
     }
 
