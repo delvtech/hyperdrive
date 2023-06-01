@@ -286,7 +286,35 @@ rule cannotChangeCheckPointSharePriceTwice(uint256 _checkpoint, method f) {
     assert CP1.sharePrice !=0 => CP1.sharePrice == CP2.sharePrice;
 }
 
-rule checkPointPriceIsSetCorrectly(uint256 _checkpoint, method f) {
+/// @doc No function can change the total supply of two different tokens at the same time.
+/// @notice the only exception to this rule is 
+/// the function removeLiqudity() that can change both LP tokens types only!
+rule onlyOneTokenTotalSupplyChangesAtATime(method f, uint256 assetID1, uint256 assetID2) 
+filtered{ f -> !f.isView } {
+    env e;
+    calldataarg args;
+
+    uint256 supply1_before = totalSupplyByToken(assetID1);
+    uint256 supply2_before = totalSupplyByToken(assetID2);
+        f(e, args);
+    uint256 supply1_after = totalSupplyByToken(assetID1);
+    uint256 supply2_after = totalSupplyByToken(assetID2);
+
+    bool bothSuppliesChanged = supply1_before != supply1_after && supply2_before != supply2_after;
+
+    if (isRemoveLiq(f)) {
+        assert bothSuppliesChanged => (
+            (assetID1 == assetID2) || 
+            (assetID1 == LP_ASSET_ID() && assetID2 == WITHDRAWAL_SHARE_ASSET_ID()) ||
+            (assetID2 == LP_ASSET_ID() && assetID1 == WITHDRAWAL_SHARE_ASSET_ID()));
+    }
+    else {
+        assert bothSuppliesChanged => assetID1 == assetID2;
+    }
+}
+
+rule checkPointPriceIsSetCorrectly(uint256 _checkpoint, method f) 
+filtered{f -> !f.isView} {
     env e;
     calldataarg args;
 
@@ -407,6 +435,8 @@ rule openLongPreservesOutstandingLongs(uint256 baseAmount) {
     bool asUnderlying;
 
     setHyperdrivePoolParams();
+    /// Not proven yet, used for filtering counter-examples
+    requireInvariant aTokenBalanceGEToShares(e);
 
     uint256 latestCP = require_uint256(e.block.timestamp -
             (e.block.timestamp % checkpointDuration()));
@@ -416,7 +446,7 @@ rule openLongPreservesOutstandingLongs(uint256 baseAmount) {
     uint128 longsOutstanding1 = preState.longsOutstanding;
     uint128 sharePrice1 = checkPointSharePrice(latestCP);
 
-    require sharePrice1*bondReserves1 >= to_mathint(ONE18()*longsOutstanding1);
+    require mulUpWad(sharePrice1, bondReserves1) >= assert_uint256(longsOutstanding1);
 
     uint256 bondsReceived =
         openLong(e, baseAmount, minOutput, destination, asUnderlying);
@@ -426,7 +456,7 @@ rule openLongPreservesOutstandingLongs(uint256 baseAmount) {
     uint128 longsOutstanding2 = postState.longsOutstanding;
     uint128 sharePrice2 = checkPointSharePrice(latestCP);
 
-    assert sharePrice2*bondReserves2 >= to_mathint(ONE18()*longsOutstanding2);
+    assert mulUpWad(sharePrice2, bondReserves2) >= assert_uint256(longsOutstanding2);
 }
 
 /// @doc Closing a long position at maturity should return the same number of tokens as the number of bonds.
@@ -490,12 +520,17 @@ invariant NoFutureTokens(uint256 AssetId, env e)
         }
     }
 
-/// @doc Tokens could only be minted at checkpoint time intervals.
+/// @doc Long and shorts tokens could only be minted at checkpoint time intervals.
 invariant NoTokensBetweenCheckPoints(uint256 AssetId)
-    (timeByID(AssetId) - positionDuration()) % checkpointDuration() !=0 => totalSupplyByToken(AssetId) == 0 
+    (
+        AssetId != WITHDRAWAL_SHARE_ASSET_ID() && 
+        AssetId != LP_ASSET_ID() && 
+        (timeByID(AssetId) - positionDuration()) % checkpointDuration() !=0
+    )
+        => totalSupplyByToken(AssetId) == 0 
     {
         preserved{
-            //setHyperdrivePoolParams(); 
+            setHyperdrivePoolParams(); 
             require checkpointDuration() !=0;
         }
     }
@@ -544,6 +579,28 @@ rule cannotCompletelyDepletePool(method f) filtered{f -> !f.isView} {
 }
 */
 
+rule closeLongYieldIsBoundedByTime(uint256 openTimeStamp) {
+    env e;
+    require e.block.timestamp >= 10000000;
+    setHyperdrivePoolParams();
+    
+    uint256 minOutput;
+    address destination;
+    uint256 bondAmount;
+    uint256 latestCP = require_uint256(openTimeStamp - (openTimeStamp % checkpointDuration()));
+
+    /// This the outcome of opening a long at `openTimeStamp`;
+    uint256 maturityTime = require_uint256(latestCP + positionDuration());
+    require openTimeStamp >= latestCP && to_mathint(openTimeStamp) < latestCP + checkpointDuration();
+    uint256 timeElapsed = require_uint256(max(to_mathint(positionDuration()), e.block.timestamp - openTimeStamp));
+
+    /// Calling closeLong 
+    uint256 assetsRecieved =
+        closeLong(e, maturityTime, bondAmount, minOutput, destination, false);
+
+    assert assetsRecieved <= mulDivDownAbstractPlus(timeElapsed, bondAmount, positionDuration());
+}
+
 rule LongAverageMaturityTimeIsBounded(method f) 
 filtered{f -> !f.isView} {
     env e;
@@ -563,20 +620,24 @@ filtered{f -> !f.isView} {
     assert LongAvgTime2 >= Time && LongAvgTime2 <= Time + duration;
 }
 
-/// https://vaas-stg.certora.com/output/41958/72b2e377545f4c71aefdb613bb6ccf05/?anonymousKey=41c772576393e67ba8e07cc739c3e302b74aa353
-invariant SharePriceAlwaysGreaterThanInitial(uint256 checkpointTime)
-    checkPointSharePrice(checkpointTime) == 0 || to_mathint(checkPointSharePrice(checkpointTime)) >= to_mathint(initialSharePrice())
+invariant SharePriceAlwaysGreaterThanInitial(env e)
+    sharePrice(e) >= initialSharePrice()
     {
-        preserved{setHyperdrivePoolParams();}
+        preserved with (env eP) {
+            require eP.block.timestamp == e.block.timestamp;
+            setHyperdrivePoolParams();
+        }
     }
 
-invariant SharePriceCannotDecreaseInTime(uint256 checkpointTime1, uint256 checkpointTime2)
-    checkpointTime1 < checkpointTime2 =>
-        checkPointSharePrice(checkpointTime1) <= checkPointSharePrice(checkpointTime2)
-    {
-        preserved {setHyperdrivePoolParams();}
-    }
+rule SharePriceCannotDecreaseInTime(method f) {
+    env e;
+    calldataarg args;
+    uint256 sharePriceBefore = sharePrice(e);
+        f(e, args);
+    uint256 sharePriceAfter = sharePrice(e);
 
+    assert sharePriceAfter >= sharePriceBefore;
+}
 
 /// @doc There should always be more aTokens (assets) than number of shares
 /// otherwise, the share price will decrease (or less than 1).
@@ -596,10 +657,12 @@ invariant ShareReservesBackLongs()
 
 /// @doc The sum of longs tokens is greater or equal to the outstanding longs.
 /// @notice The sum is not necessarily equal to the outstanding count.
+/// @notice [VERIFIED]
 invariant SumOfLongsGEOutstanding()
     sumOfLongs() >= to_mathint(stateLongs());
 
 /// @doc The sum of shorts tokens is greater or equal to the outstanding shorts.
 /// @notice The sum is not necessarily equal to the outstanding count.
+/// @notice [VERIFIED]
 invariant SumOfShortsGEOutstanding()
     sumOfShorts() >= to_mathint(stateShorts());

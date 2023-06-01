@@ -173,6 +173,9 @@ function noOverFlowMul(uint256 x, uint256 y) returns bool
     return x * y <= max_uint;
 }
 
+/// @doc Ghost power function that incorporates mathematical pure x^y axioms.
+/// @warning Some of these axioms might be false, depending on the Solidity implementation
+/// The user must bear in mind that equality-like axioms can be violated because of rounding errors.
 ghost _ghostPow(uint256, uint256) returns uint256 {
     /// x^0 = 1
     axiom forall uint256 x. _ghostPow(x, 0) == ONE18();
@@ -185,8 +188,8 @@ ghost _ghostPow(uint256, uint256) returns uint256 {
     /// x^2 = x * x
     //axiom forall uint256 x. forall uint256 z.
     //    to_mathint(z) == 2*ONE18() => _ghostPow(x, z)*ONE18() == x * x;
-    /// I. x > 1 && y1 > y2 => x^y1 < x^y2
-    /// II. x < 1 && y1 > y2 => x^y1 > x^y2
+    /// I. x > 1 && y1 > y2 => x^y1 > x^y2
+    /// II. x < 1 && y1 > y2 => x^y1 < x^y2
     axiom forall uint256 x. forall uint256 y1. forall uint256 y2.
         x >= ONE18() && y1 > y2 => _ghostPow(x, y1) >= _ghostPow(x, y2);
     axiom forall uint256 x. forall uint256 y1. forall uint256 y2.

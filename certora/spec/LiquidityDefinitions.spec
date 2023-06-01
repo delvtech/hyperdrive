@@ -7,6 +7,12 @@ methods {
 definition LP_ASSET_ID() returns uint256 = 0;
 definition WITHDRAWAL_SHARE_ASSET_ID() returns uint256 = (3 << 248);
 
+definition isAddLiq(method f) returns bool = 
+    f.selector == sig:addLiquidity(uint256,uint256,uint256,address,bool).selector;
+
+definition isRemoveLiq(method f) returns bool = 
+    f.selector == sig:removeLiquidity(uint256,uint256,address,bool).selector;
+
 /// Constants to be used in the verification
 definition initialSharePrice0() returns uint256 = 10^18;
 definition timeStretch0() returns uint256 = 45071688063194104;

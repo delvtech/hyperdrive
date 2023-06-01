@@ -38,8 +38,8 @@ methods {
         => ghostCalculateBaseVolume(base, bond, time) expect uint256;
     
     /// @dev Calculates the spot price without slippage of bonds in terms of shares.
-    function _.calculateSpotPrice(uint256 shares, uint256 bonds, uint256 initPrice, uint256 normTime, uint256 timeSt) internal 
-        => CVLCalculateSpotPrice(shares, bonds, initPrice, normTime, timeSt) expect uint256;
+    function _.calculateSpotPrice(uint256 shares, uint256 bonds, uint256 initPrice, uint256 normTime, uint256 timeSt) internal => NONDET;
+        //=> CVLCalculateSpotPrice(shares, bonds, initPrice, normTime, timeSt) expect uint256;
     
     /// @dev Calculates the APR from the pool's reserves.
     function _.calculateAPRFromReserves(uint256 shares, uint256 bonds, uint256 initPrice, uint256 dur, uint256 timeSt) internal
@@ -101,6 +101,14 @@ ghost ghostCalculateBaseVolume(uint256,uint256,uint256) returns uint256 {
     axiom forall uint256 x. forall uint256 y. forall uint256 z.
         z == ONE18() => ghostCalculateBaseVolume(x,y,z) == x;
 }
+
+/// @notice One can define a liquidity constant by the following formula:
+/// K = z ^ tp + (y / mu) ^ tp, where:
+/// z - share reserves
+/// y - bond reserves
+/// mu - initial share price
+/// tp - (1 - normalized time remaining)
+//ghost modifiedLiquidityConstant(uint256, uint256, uint256, uint256) returns mathint {}
 
 ghost ghostCalculateAPRFromReserves(uint256,uint256,uint256,uint256,uint256) returns uint256;
 ghost ghostCalculateInitialBondReserves(uint256,uint256,uint256,uint256,uint256,uint256) returns uint256;

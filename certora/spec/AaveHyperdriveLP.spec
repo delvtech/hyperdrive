@@ -1,0 +1,47 @@
+import "./AaveHyperdrive.spec";
+
+rule addLiquidityPreservesAPR() {
+    env e;
+    calldataarg args;
+
+    setHyperdrivePoolParams();
+    
+    uint256 z1 = stateShareReserves(); require z1 !=0;
+    uint256 y1 = stateBondReserves(); require y1 !=0;
+    uint256 R1 = mulDivDownAbstractPlus(z1, mu, y1);
+        addLiquidity(e, args);
+    uint256 z2 = stateShareReserves();
+    uint256 y2 = stateBondReserves();
+    uint256 R2 = mulDivDownAbstractPlus(z2, mu, y2);
+
+    assert z2 !=0 && y2 !=0, "Sanity check";
+    assert abs(R1-R2) < 2, "APR was changed beyond allowed error bound";
+}
+
+rule removeLiquidityPreservesAPR() {
+    env e;
+    calldataarg args;
+    setHyperdrivePoolParams();
+
+    uint256 mu = initialSharePrice();
+    uint256 z1 = stateShareReserves(); require z1 !=0;
+    uint256 y1 = stateBondReserves(); require y1 !=0;
+    uint256 R1 = mulDivDownAbstractPlus(z1, mu, y1);
+        removeLiquidity(e, args);
+    uint256 z2 = stateShareReserves();
+    uint256 y2 = stateBondReserves();
+    uint256 R2 = mulDivDownAbstractPlus(z2, mu, y2);
+
+    // Assuming the pool isn't depleted
+    require (z2 !=0 && y2 !=0);
+    assert abs(R1-R2) < 2, "APR was changed beyond allowed error bound";
+}
+
+rule removeLiquidityEmptyBothReserves() {
+    env e;
+    calldataarg args;
+    setHyperdrivePoolParams();
+        removeLiquidity(e, args);
+    assert stateShareReserves() ==0 <=> stateBondReserves() == 0;
+}
+
