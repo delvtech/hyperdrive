@@ -40,6 +40,19 @@ contract ERC20ForwarderFactoryTest is BaseTest {
         vm.stopPrank();
     }
 
+    function testTransfer(uint256 AMOUNT) public {
+        uint8 TOKEN_ID = 9;
+        multiToken.mint(TOKEN_ID, alice, AMOUNT);
+
+        assertEq(forwarder.balanceOf(alice), AMOUNT);
+
+        vm.prank(alice);
+        forwarder.transfer(bob, AMOUNT);
+
+        assertEq(forwarder.balanceOf(alice), 0);
+        assertEq(forwarder.balanceOf(bob), AMOUNT);
+    }
+
     function testForwarderFactory() public {
         (IMultiToken token, uint256 tokenID) = forwarderFactory
             .getDeployDetails();
