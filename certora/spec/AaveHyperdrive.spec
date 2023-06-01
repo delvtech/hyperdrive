@@ -582,6 +582,7 @@ rule cannotCompletelyDepletePool(method f) filtered{f -> !f.isView} {
 rule closeLongYieldIsBoundedByTime(uint256 openTimeStamp) {
     env e;
     require e.block.timestamp >= 10000000;
+    require openTimeStamp <= e.block.timestamp;
     setHyperdrivePoolParams();
     
     uint256 minOutput;
@@ -589,16 +590,17 @@ rule closeLongYieldIsBoundedByTime(uint256 openTimeStamp) {
     uint256 bondAmount;
     uint256 latestCP = require_uint256(openTimeStamp - (openTimeStamp % checkpointDuration()));
 
-    /// This the outcome of opening a long at `openTimeStamp`;
+    /// This is the outcome of opening a long at `openTimeStamp`:
     uint256 maturityTime = require_uint256(latestCP + positionDuration());
     require openTimeStamp >= latestCP && to_mathint(openTimeStamp) < latestCP + checkpointDuration();
-    uint256 timeElapsed = require_uint256(max(to_mathint(positionDuration()), e.block.timestamp - openTimeStamp));
+    uint256 timeElapsed = require_uint256(min(to_mathint(positionDuration()), e.block.timestamp - openTimeStamp));
 
     /// Calling closeLong 
     uint256 assetsRecieved =
         closeLong(e, maturityTime, bondAmount, minOutput, destination, false);
 
-    assert assetsRecieved <= mulDivDownAbstractPlus(timeElapsed, bondAmount, positionDuration());
+    /// The amount of assets received should be (time elapsed / positionDuration) * bonds
+    assert assetsRecieved <= mulDivUpAbstractPlus(timeElapsed, bondAmount, positionDuration());
 }
 
 rule LongAverageMaturityTimeIsBounded(method f) 
