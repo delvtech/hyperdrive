@@ -5,7 +5,7 @@ import { IPool } from "@aave/interfaces/IPool.sol";
 import { Hyperdrive } from "../Hyperdrive.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { Errors } from "../libraries/Errors.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 
 contract AaveHyperdrive is Hyperdrive {
@@ -76,11 +76,12 @@ contract AaveHyperdrive is Hyperdrive {
         }
 
         // Do share calculations
-        if (totalShares == 0) {
+        uint256 totalShares_ = totalShares;
+        if (totalShares_ == 0) {
             totalShares = amount;
             return (amount, FixedPointMath.ONE_18);
         } else {
-            uint256 newShares = totalShares.mulDivDown(amount, assets);
+            uint256 newShares = totalShares_.mulDivDown(amount, assets);
             totalShares += newShares;
             return (newShares, amount.divDown(newShares));
         }
@@ -103,10 +104,13 @@ contract AaveHyperdrive is Hyperdrive {
         // numerical errors can result in the shares value being slightly larger
         // than the total shares, so we clamp the shares to the total shares to
         // avoid reverts.
-        shares = shares > totalShares ? totalShares : shares;
+        uint256 totalShares_ = totalShares;
+        if (shares > totalShares_) {
+            shares = totalShares_;
+        }
         uint256 assets = aToken.balanceOf(address(this));
         uint256 withdrawValue = assets != 0
-            ? shares.mulDown(assets.divDown(totalShares))
+            ? shares.mulDown(assets.divDown(totalShares_))
             : 0;
 
         // Remove the shares from the total share supply
@@ -127,15 +131,13 @@ contract AaveHyperdrive is Hyperdrive {
     }
 
     ///@notice Loads the share price from the yield source.
-    ///@return sharePrice The current share price.
-    function _pricePerShare()
-        internal
-        view
-        override
-        returns (uint256 sharePrice)
-    {
+    ///@return The current share price.
+    function _pricePerShare() internal view override returns (uint256) {
         uint256 assets = aToken.balanceOf(address(this));
-        sharePrice = totalShares != 0 ? assets.divDown(totalShares) : 0;
-        return sharePrice;
+        uint256 totalShares_ = totalShares;
+        if (totalShares_ != 0) {
+            return assets.divDown(totalShares_);
+        }
+        return 0;
     }
 }

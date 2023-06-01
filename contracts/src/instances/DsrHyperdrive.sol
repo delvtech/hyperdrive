@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import { Hyperdrive } from "../Hyperdrive.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { Errors } from "../libraries/Errors.sol";
@@ -54,8 +54,8 @@ contract DsrHyperdrive is Hyperdrive {
 
     /// @notice Transfers base or shares from the user and commits it to the yield source.
     /// @param amount The amount of base tokens to deposit.
-    /// @param asUnderlying If true the yield source will transfer underlying tokens
-    ///                     if false it will transfer the yielding asset directly
+    /// @param asUnderlying The DSR yield source only supports depositing the
+    ///        underlying token. If this is false, the transaction will revert.
     /// @return sharesMinted The shares this deposit creates.
     /// @return sharePrice The share price at time of deposit.
     function _deposit(
@@ -107,12 +107,21 @@ contract DsrHyperdrive is Hyperdrive {
         if (!asUnderlying) {
             revert Errors.UnsupportedToken();
         }
+
+        // Small numerical errors can result in the shares value being slightly
+        // larger than the total shares, so we clamp the shares to the total
+        // shares to avoid reverts.
+        uint256 totalShares_ = totalShares;
+        if (shares > totalShares_) {
+            shares = totalShares_;
+        }
+
         // Load the balance of this contract - this calls drip internally so
         // this is real deposits + interest accrued at point in time
         uint256 totalBase = dsrManager.daiBalance(address(this));
 
         // The withdraw is the percent of shares the user has times the total assets
-        amountWithdrawn = totalBase.mulDivDown(shares, totalShares);
+        amountWithdrawn = totalBase.mulDivDown(shares, totalShares_);
 
         // Remove shares from the total supply
         totalShares -= shares;
