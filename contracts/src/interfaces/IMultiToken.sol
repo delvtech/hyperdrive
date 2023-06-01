@@ -3,5 +3,10 @@ pragma solidity ^0.8.18;
 
 import { IMultiTokenRead } from "./IMultiTokenRead.sol";
 import { IMultiTokenWrite } from "./IMultiTokenWrite.sol";
+import { IMultiTokenMetadata } from "./IMultiTokenMetadata.sol";
 
-interface IMultiToken is IMultiTokenRead, IMultiTokenWrite {}
+interface IMultiToken is
+    IMultiTokenRead,
+    IMultiTokenWrite,
+    IMultiTokenMetadata
+{}
