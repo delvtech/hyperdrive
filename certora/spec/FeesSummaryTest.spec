@@ -5,8 +5,8 @@ methods {
     function flatFee() external returns (uint256) envfree;
     function governanceFee() external returns (uint256) envfree;
 
-    function _.mulDivDown(uint256 x, uint256 y, uint256 d) internal library => mulDivDownAbstractPlus(x, y, d) expect uint256;
-    function _.mulDivUp(uint256 x, uint256 y, uint256 d) internal library => mulDivUpAbstractPlus(x, y, d) expect uint256;
+    function _.mulDivDown(uint256 x, uint256 y, uint256 d) internal => mulDivDownAbstractPlus(x, y, d) expect uint256;
+    function _.mulDivUp(uint256 x, uint256 y, uint256 d) internal => mulDivUpAbstractPlus(x, y, d) expect uint256;
     
     function calculateFeesOutGivenSharesIn(uint256,uint256,uint256,uint256) external returns(uint256,uint256) envfree;
 

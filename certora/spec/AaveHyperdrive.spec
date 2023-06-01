@@ -68,8 +68,8 @@ function setHyperdrivePoolParams() {
 
 hook Sload uint256 index Pool.liquidityIndex[KEY address token][KEY uint256 timestamp] STORAGE {
     /// @WARNING : UNDER-APPROXIMATION!
-    /// @notice : to simplify the SMT formulas, we assume to possible values for the index.
-    /// so in general, the index as a function of time can have only one of these two values.
+    /// @notice : to simplify the SMT formulas, we assume a specific value for the index.
+    /// so in general, the index as a function of time is actually a constant.
     require index == indexA();// || index == indexB();
     //require index >= RAY();
 }
@@ -493,9 +493,10 @@ invariant NoFutureTokens(uint256 AssetId, env e)
 
 /// @doc Tokens could only be minted at checkpoint time intervals.
 invariant NoTokensBetweenCheckPoints(uint256 AssetId)
-    timeByID(AssetId) % checkpointDuration() !=0 => totalSupplyByToken(AssetId) == 0 
+    (timeByID(AssetId) - positionDuration()) % checkpointDuration() !=0 => totalSupplyByToken(AssetId) == 0 
     {
         preserved{
+            //setHyperdrivePoolParams(); 
             require checkpointDuration() !=0;
         }
     }

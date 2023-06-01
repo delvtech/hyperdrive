@@ -16,7 +16,7 @@ methods {
     function FPMath.ln(int256) external returns (int256) envfree;
     function FPMath.updateWeightedAverage(uint256,uint256,uint256,uint256,bool) external returns (uint256) envfree;
 
-    function _.pow(uint256 x, uint256 y) internal library => CVLPow(x, y) expect uint256;
+    function _.pow(uint256 x, uint256 y) internal => CVLPow(x, y) expect uint256;
 
     function HDMath.calculateBaseVolume(uint256,uint256,uint256) external returns uint256 envfree;
     function HDMath.calculateSpotPrice(uint256,uint256,uint256,uint256,uint256) external returns uint256 envfree;
@@ -240,7 +240,7 @@ rule calculateOpenLong_BondsMonotonic(
 
 /// @dev Opening and closing a long immediately (with no time elpased between or any other trade),
 /// must obey the following conditions:
-/// 1. The difference is shares must be equal to the share proceeds
+/// 1. The difference in shares must be equal to the share proceeds
 /// 2. The amount of bonds returned to the pool is the same number the trader closed with.
 rule openAndCloseLongOnCurve(
     uint256 shareReserves,
@@ -271,6 +271,26 @@ rule openAndCloseLongOnCurve(
 
     assert shareReservesDelta == shareProceeds, "The proceeds must be equal to the amount drained from the pool";
     assert bondReservesDelta == bondDelta1, "Trader must pay the exact amount of bonds";
-    assert shareProceeds <= shareAmount || relativeErrorBound(shareProceeds - shareAmount, 1, 100)
-        ,"Trader cannot gain from an immediate round-trip";
+    assert relativeErrorBound(shareAmount, shareProceeds, 100) ,"Trader cannot gain from an immediate round-trip";
+}
+
+/// Same as openAndCloseLongOnCurve, but only with YS Math.
+rule BondsOutSharesInAndBack(
+    uint256 shareReserves,
+    uint256 bondReserves,
+    uint256 shareAmount,
+    uint256 sharePrice) {
+
+    uint256 initialSharePrice = ONE18();
+    uint256 timeStretch = 45071688063194104;
+    uint256 tp = require_uint256(ONE18() - timeStretch);
+    require sharePrice >= initialSharePrice;
+    require shareAmount >= 10^12 ;
+
+    uint256 bondsDelta = YSMath.calculateBondsOutGivenSharesIn(shareReserves, bondReserves, shareAmount, tp, sharePrice, initialSharePrice);
+    uint256 newShares = require_uint256(shareReserves + shareAmount);
+    uint256 newBonds = require_uint256(bondReserves - bondsDelta);
+    uint256 sharesOut = YSMath.calculateSharesOutGivenBondsIn(newShares, newBonds, bondsDelta, tp, sharePrice, initialSharePrice);
+
+    assert relativeErrorBound(shareAmount, sharesOut, 100), "Trader cannot gain from an immediate round-trip";
 }

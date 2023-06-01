@@ -3,66 +3,66 @@ import "./CVLMath.spec";
 methods {
     /// FixedPoint Math
     /// @dev Updates a weighted average by adding or removing a weighted delta.
-    function _.updateWeightedAverage(uint256 avg, uint256 totW, uint256 del, uint256 delW ,bool isAdd) internal library 
+    function _.updateWeightedAverage(uint256 avg, uint256 totW, uint256 del, uint256 delW ,bool isAdd) internal 
         => CVLUpdateWeightedAverage(avg, totW, del, delW, isAdd) expect uint256;
-    function _.pow(uint256 x, uint256 y) internal library => CVLPow(x, y) expect uint256;
-    function _.exp(int256) internal library => NONDET;
-    function _.ln(int256) internal library => NONDET;
-    function _.mulDivDown(uint256 x, uint256 y, uint256 d) internal library => mulDivDownAbstractPlus(x, y, d) expect uint256;
-    function _.mulDivUp(uint256 x, uint256 y, uint256 d) internal library => mulDivUpAbstractPlus(x, y, d) expect uint256;
+    function _.pow(uint256 x, uint256 y) internal => CVLPow(x, y) expect uint256;
+    function _.exp(int256) internal => NONDET;
+    function _.ln(int256) internal => NONDET;
+    function _.mulDivDown(uint256 x, uint256 y, uint256 d) internal => mulDivDownAbstractPlus(x, y, d) expect uint256;
+    function _.mulDivUp(uint256 x, uint256 y, uint256 d) internal => mulDivUpAbstractPlus(x, y, d) expect uint256;
 
     /// YieldSpace (YS) Math
     /// @dev Calculates the amount of bonds a user must provide the pool to receive
     /// a specified amount of shares
     function _.calculateBondsInGivenSharesOut(uint256 z, uint256 y, uint256 dz, uint256 t, uint256 c, uint256 mu)
-        internal library => CVLBondsInGivenSharesOut(z,y,dz,t,c,mu) expect uint256;
+        internal => CVLBondsInGivenSharesOut(z,y,dz,t,c,mu) expect uint256;
     
     /// @dev Calculates the amount of bonds a user will receive from the pool by
     /// providing a specified amount of shares
     function _.calculateBondsOutGivenSharesIn(uint256 z, uint256 y, uint256 dz, uint256 t, uint256 c, uint256 mu)
-        internal library => CVLBondsOutGivenSharesIn(z,y,dz,t,c,mu) expect uint256;
+        internal => CVLBondsOutGivenSharesIn(z,y,dz,t,c,mu) expect uint256;
     
     /// @dev Calculates the amount of shares a user must provide the pool to receive
     /// a specified amount of bonds
     function _.calculateSharesInGivenBondsOut(uint256 z, uint256 y, uint256 dy, uint256 t, uint256 c, uint256 mu)
-        internal library => CVLSharesInGivenBondsOut(z,y,dy,t,c,mu) expect uint256; 
+        internal => CVLSharesInGivenBondsOut(z,y,dy,t,c,mu) expect uint256; 
     
     /// @dev Calculates the amount of shares a user will receive from the pool by
     /// providing a specified amount of bonds
     function _.calculateSharesOutGivenBondsIn(uint256 z, uint256 y, uint256 dy, uint256 t, uint256 c, uint256 mu)
-        internal library => CVLSharesOutGivenBondsIn(z,y,dy,t,c,mu) expect uint256;
+        internal => CVLSharesOutGivenBondsIn(z,y,dy,t,c,mu) expect uint256;
 
     /// Hyperdrive (HD) Math
     /// @dev Calculates the base volume of an open trade given the base amount, the bond amount, and the time remaining.
-    function _.calculateBaseVolume(uint256 base, uint256 bond ,uint256 time) internal library 
+    function _.calculateBaseVolume(uint256 base, uint256 bond ,uint256 time) internal 
         => ghostCalculateBaseVolume(base, bond, time) expect uint256;
     
     /// @dev Calculates the spot price without slippage of bonds in terms of shares.
-    function _.calculateSpotPrice(uint256 shares, uint256 bonds, uint256 initPrice, uint256 normTime, uint256 timeSt) internal library 
+    function _.calculateSpotPrice(uint256 shares, uint256 bonds, uint256 initPrice, uint256 normTime, uint256 timeSt) internal 
         => CVLCalculateSpotPrice(shares, bonds, initPrice, normTime, timeSt) expect uint256;
     
     /// @dev Calculates the APR from the pool's reserves.
-    function _.calculateAPRFromReserves(uint256 shares, uint256 bonds, uint256 initPrice, uint256 dur, uint256 timeSt) internal library
+    function _.calculateAPRFromReserves(uint256 shares, uint256 bonds, uint256 initPrice, uint256 dur, uint256 timeSt) internal
         => ghostCalculateAPRFromReserves(shares, bonds, initPrice, dur, timeSt) expect uint256;
     
     /// @dev Calculates the initial bond reserves assuming that the initial LP
-    function _.calculateInitialBondReserves(uint256 shares, uint256 price, uint256 initPrice, uint256 APR, uint256 dur, uint256 timeSt) internal library 
+    function _.calculateInitialBondReserves(uint256 shares, uint256 price, uint256 initPrice, uint256 APR, uint256 dur, uint256 timeSt) internal 
         => ghostCalculateInitialBondReserves(shares, price, initPrice, APR, dur, timeSt) expect uint256;
     
     /// @dev Calculates the present value LPs capital in the pool.
     /// @notice Replacement of original HyperdriveMath function with Mock.
-    //function _._calculatePresentValue(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256) internal library => NONDET; 
+    //function _._calculatePresentValue(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256) internal => NONDET; 
     function _._calculatePresentValue(
         uint256 z, uint256 y, uint256 c, uint256 mu, uint256 ts,
-        uint256 ol, uint256 tavg_L, uint256 os, uint256 tavg_S, uint256 vol) internal library => 
+        uint256 ol, uint256 tavg_L, uint256 os, uint256 tavg_S, uint256 vol) internal => 
         CVLCalculatePresentValue(z,y,c,mu,ts,ol,tavg_L,os,tavg_S,vol) expect uint256;
     
     /// @dev Calculates the interest in shares earned by a short position
-    function _.calculateShortInterest(uint256 bond, uint256 openPrice, uint256 closePrice, uint256 price) internal library 
+    function _.calculateShortInterest(uint256 bond, uint256 openPrice, uint256 closePrice, uint256 price) internal 
         => ghostCalculateShortInterest(bond, openPrice, closePrice, price) expect uint256;
     
     /// @dev Calculates the proceeds in shares of closing a short position.
-    //function _.calculateShortProceeds(uint256 bond, uint256 share, uint256 openPrice, uint256 closePrice, uint256 price) internal library 
+    //function _.calculateShortProceeds(uint256 bond, uint256 share, uint256 openPrice, uint256 closePrice, uint256 price) internal 
     //    => ghostCalculateShortProceeds(bond, share, openPrice, closePrice, price) expect uint256;
 }
 

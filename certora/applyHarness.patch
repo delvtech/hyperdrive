@@ -1,5 +1,5 @@
---- ../contracts/src/instances/AaveHyperdrive.sol	2023-05-18 15:40:39.353490028 +0300
-+++ 	2023-05-25 12:58:26.845267517 +0300
+--- ../contracts/src/instances/AaveHyperdrive.sol	2023-06-01 07:52:32.043955717 +0300
++++ 	2023-06-01 07:56:35.663856324 +0300
 @@ -2,11 +2,11 @@
  pragma solidity ^0.8.18;
  
@@ -10,7 +10,7 @@
 +import { Hyperdrive } from "./Hyperdrive.sol";
 +import { FixedPointMath } from "../../contracts/src/libraries/FixedPointMath.sol";
 +import { Errors } from "../../contracts/src/libraries/Errors.sol";
- import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+ import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 -import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 +import { IHyperdrive } from "../../contracts/src/interfaces/IHyperdrive.sol";
  
@@ -35,22 +35,24 @@
      }
  
      ///@notice Transfers amount of 'token' from the user and commits it to the yield source.
-@@ -138,4 +139,8 @@
-         sharePrice = totalShares != 0 ? assets.divDown(totalShares) : 0;
-         return sharePrice;
+@@ -140,4 +141,8 @@
+         }
+         return 0;
      }
 +
 +    function sharePrice() external view returns (uint256) {
 +        return _pricePerShare();
 +    }
  }
---- ../contracts/src/Hyperdrive.sol	2023-05-23 12:54:47.203907940 +0300
-+++ 	2023-05-29 10:09:11.086202288 +0300
-@@ -3,14 +3,17 @@
+--- ../contracts/src/Hyperdrive.sol	2023-06-01 07:46:36.404089057 +0300
++++ 	2023-06-01 08:07:55.033596992 +0300
+@@ -2,15 +2,18 @@
+ pragma solidity ^0.8.18;
  
- import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
- import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+ import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+-import { SafeCast } from "./libraries/SafeCast.sol";
 -import { HyperdriveBase } from "./HyperdriveBase.sol";
++import { SafeCast } from "../../contracts/src/libraries/SafeCast.sol";
 +import { HyperdriveBase } from "../../contracts/src/HyperdriveBase.sol";
  import { HyperdriveLong } from "./HyperdriveLong.sol";
  import { HyperdriveShort } from "./HyperdriveShort.sol";
@@ -82,18 +84,20 @@
  {
      using FixedPointMath for uint256;
      using SafeCast for uint256;
---- ../contracts/src/HyperdriveLP.sol	2023-05-25 10:32:01.878722396 +0300
-+++ 	2023-05-25 10:33:35.378655549 +0300
-@@ -2,12 +2,13 @@
+--- ../contracts/src/HyperdriveLP.sol	2023-06-01 07:46:36.414089054 +0300
++++ 	2023-06-01 07:55:00.653918252 +0300
+@@ -1,13 +1,14 @@
+ // SPDX-License-Identifier: Apache-2.0
  pragma solidity ^0.8.18;
  
- import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+-import { SafeCast } from "./libraries/SafeCast.sol";
 -import { HyperdriveBase } from "./HyperdriveBase.sol";
 -import { AssetId } from "./libraries/AssetId.sol";
 -import { Errors } from "./libraries/Errors.sol";
 -import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 -import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 -import { HyperdriveTWAP } from "./HyperdriveTWAP.sol";
++import { SafeCast } from "../../contracts/src/libraries/SafeCast.sol";
 +import { HyperdriveBase } from "../../contracts/src/HyperdriveBase.sol";
 +import { AssetId } from "../../contracts/src/libraries/AssetId.sol";
 +import { Errors } from "../../contracts/src/libraries/Errors.sol";
@@ -149,11 +153,11 @@
              HyperdriveMath.PresentValueParams({
                  shareReserves: _marketState.shareReserves,
                  bondReserves: _marketState.bondReserves,
---- ../contracts/src/HyperdriveShort.sol	2023-05-25 10:32:01.888722402 +0300
-+++ 	2023-05-25 11:06:09.097895605 +0300
+--- ../contracts/src/HyperdriveShort.sol	2023-06-01 07:46:36.414089054 +0300
++++ 	2023-06-01 07:49:29.964030956 +0300
 @@ -3,11 +3,12 @@
  
- import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+ import { SafeCast } from "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
  import { HyperdriveLP } from "./HyperdriveLP.sol";
 -import { AssetId } from "./libraries/AssetId.sol";
 -import { Errors } from "./libraries/Errors.sol";
@@ -226,11 +230,14 @@
          shareReservesDelta += totalCurveFee - governanceCurveFee;
          sharePayment += totalCurveFee + totalFlatFee;
  
---- ../contracts/src/HyperdriveLong.sol	2023-05-25 10:32:01.878722396 +0300
-+++ 	2023-05-25 10:55:06.738151070 +0300
-@@ -3,10 +3,11 @@
+--- ../contracts/src/HyperdriveLong.sol	2023-06-01 07:46:36.414089054 +0300
++++ 	2023-06-01 08:11:05.053520811 +0300
+@@ -1,12 +1,13 @@
+ // SPDX-License-Identifier: Apache-2.0
+ pragma solidity ^0.8.18;
  
- import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+-import { SafeCast } from "./libraries/SafeCast.sol";
++import { SafeCast } from "../../contracts/src/libraries/SafeCast.sol";
  import { HyperdriveLP } from "./HyperdriveLP.sol";
 -import { AssetId } from "./libraries/AssetId.sol";
 -import { Errors } from "./libraries/Errors.sol";
@@ -299,8 +306,8 @@
          shareReservesDelta -= totalCurveFee;
          shareProceeds -= totalCurveFee + totalFlatFee;
  
---- ../contracts/src/ForwarderFactory.sol	2023-05-07 18:33:18.425767793 +0300
-+++ 	2023-05-25 10:33:35.378655549 +0300
+--- ../contracts/src/ForwarderFactory.sol	2023-06-01 07:46:36.404089057 +0300
++++ 	2023-06-01 07:49:29.964030956 +0300
 @@ -1,9 +1,9 @@
  // SPDX-License-Identifier: Apache-2.0
  pragma solidity ^0.8.18;
@@ -312,9 +319,9 @@
 +import { IMultiToken } from "../../contracts/src/interfaces/IMultiToken.sol";
 +import { ERC20Forwarder } from "../../contracts/src/ERC20Forwarder.sol";
  
- contract ForwarderFactory is IForwarderFactory {
-     // Our multi token contract stores many internal ERC20 like tokens, in order
-@@ -17,10 +17,11 @@
+ /// @author DELV
+ /// @title ForwarderFactory
+@@ -23,10 +23,11 @@
      uint256 private _tokenId = 1;
  
      // For reference
@@ -329,7 +336,7 @@
  
      /// @notice Uses create2 to deploy a forwarder at a predictable address as part of
      ///         our ERC20 multitoken implementation.
-@@ -38,16 +39,18 @@
+@@ -44,16 +45,18 @@
          // The salt is the _tokenId hashed with the multi token
          bytes32 salt = keccak256(abi.encode(token, tokenId));
          // Deploy using create2 with that salt
