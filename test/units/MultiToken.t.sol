@@ -35,6 +35,15 @@ contract MultiTokenTest is BaseTest {
         vm.stopPrank();
     }
 
+    function testFactory() public {
+        assertEq(multiToken.factory(), address(forwarderFactory));
+    }
+
+    // TODO - really needs a better test
+    function testLinkerCodeHash() public {
+        assertEq(multiToken.linkerCodeHash(), bytes32(0));
+    }
+
     function test__metadata() public {
         vm.startPrank(alice);
         multiToken.__setNameAndSymbol(5, "Token", "TKN");
