@@ -9,12 +9,17 @@ then
 fi
 
 certoraRun certora/munged/AaveHyperdrive.sol \
-    contracts/src/libraries/HyperdriveMath.sol \
+    \
     certora/helpers/DummyERC20A.sol \
     certora/helpers/DummyERC20B.sol \
     certora/helpers/DummyATokenA.sol \
     certora/helpers/Aave/Pool.sol \
+    \
     ./test/mocks/MockAssetId.sol \
+    \
+    contracts/test/MockHyperdriveMath.sol \
+    contracts/test/MockYieldSpaceMath.sol \
+    contracts/src/libraries/HyperdriveMath.sol \
     --verify AaveHyperdrive:certora/spec/AaveHyperdriveSasha.spec \
     --link DummyATokenA:underlyingAsset=DummyERC20A \
             DummyATokenA:POOL=Pool \
@@ -28,6 +33,6 @@ certoraRun certora/munged/AaveHyperdrive.sol \
     --rule_sanity \
     --send_only \
     --settings -t=500,-dontStopAtFirstSplitTimeout=true,-depth=15 \
-    --packages @aave=lib/aave-v3-core/contracts @openzeppelin=node_modules/@openzeppelin \
+    --packages @aave=lib/aave-v3-core/contracts openzeppelin-contracts=lib/openzeppelin-contracts \
     $RULE \
     --msg "AaveHyperdrive: $RULE $MSG" 
