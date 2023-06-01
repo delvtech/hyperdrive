@@ -211,4 +211,40 @@ contract MultiTokenTest is BaseTest {
             false
         );
     }
+
+    function testCannotTransferZeroAddrBatchTransferFrom() public {
+        vm.expectRevert();
+        multiToken.batchTransferFrom(
+            alice,
+            address(0),
+            new uint256[](0),
+            new uint256[](0)
+        );
+
+        vm.expectRevert();
+        multiToken.batchTransferFrom(
+            address(0),
+            alice,
+            new uint256[](0),
+            new uint256[](0)
+        );
+    }
+
+    function testCannotSendInconsistentLengths() public {
+        vm.expectRevert();
+        multiToken.batchTransferFrom(
+            alice,
+            bob,
+            new uint256[](0),
+            new uint256[](1)
+        );
+
+        vm.expectRevert();
+        multiToken.batchTransferFrom(
+            alice,
+            bob,
+            new uint256[](1),
+            new uint256[](0)
+        );
+    }
 }

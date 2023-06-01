@@ -52,6 +52,13 @@ interface IMultiTokenWrite {
 
     function setApprovalForAll(address operator, bool approved) external;
 
+    function batchTransferFrom(
+        address from,
+        address to,
+        uint256[] calldata ids,
+        uint256[] calldata values
+    ) external;
+
     function permitForAll(
         address owner,
         address spender,

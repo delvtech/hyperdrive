@@ -123,7 +123,5 @@ contract HyperdriveDSRTest is HyperdriveTest {
             //1% apr
             1e16
         );
-
-
     }
 }
