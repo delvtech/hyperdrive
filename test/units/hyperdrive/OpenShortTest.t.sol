@@ -10,7 +10,6 @@ import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/Hyperd
 import { Lib } from "../../utils/Lib.sol";
 import { console } from "forge-std/console.sol";
 
-
 contract OpenShortTest is HyperdriveTest {
     using FixedPointMath for uint256;
     using Lib for *;

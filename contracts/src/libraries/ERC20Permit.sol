@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import { IERC20Permit } from "../interfaces/IERC20Permit.sol";
+import { console } from "forge-std/console.sol";
 
 // This default erc20 library is designed for max efficiency and security.
 // WARNING: By default it does not include totalSupply which breaks the ERC20 standard
@@ -13,7 +14,7 @@ contract ERC20Permit is IERC20Permit {
     // The symbol of the erc20 token
     string public symbol;
     // The decimals of the erc20 token, should default to 18 for new tokens
-    uint8 public decimals;  
+    uint8 public decimals;
     // The total supply of the erc20 token
     uint256 public totalSupply;
 
