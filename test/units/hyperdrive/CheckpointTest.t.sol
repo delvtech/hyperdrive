@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { HyperdriveTest, HyperdriveUtils, MockHyperdrive, IHyperdrive } from "../../utils/HyperdriveTest.sol";
