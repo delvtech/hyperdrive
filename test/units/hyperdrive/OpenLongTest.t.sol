@@ -9,10 +9,12 @@ import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
 import { Lib } from "../../utils/Lib.sol";
+import { console } from "forge-std/console.sol";
 
 contract OpenLongTest is HyperdriveTest {
     using FixedPointMath for uint256;
     using Lib for *;
+    using HyperdriveUtils for IHyperdrive;
 
     function setUp() public override {
         super.setUp();
@@ -127,6 +129,34 @@ contract OpenLongTest is HyperdriveTest {
             maturityTime,
             apr
         );
+    }
+
+    function test_AvoidsDrainingBufferReserves() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Open up a large short to drain the buffer reserves.
+        uint256 bondAmount = hyperdrive.calculateMaxShort();
+        (uint256 maturityTime, uint256 basePaid) = openShort(bob, bondAmount);
+
+
+        // Initialize a large long to eath through the buffer of capital
+        baseAmount = hyperdrive.calculateMaxLong();
+        (maturityTime, bondAmount) = openLong(bob, baseAmount);
+
+        // Verify that the open long updated the state correctly.
+        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
+        
+        uint256 longsOutstanding = poolInfo.longsOutstanding;
+        uint256 sharePrice = poolInfo.sharePrice;
+
+        uint256 shareBufferNeeded = longsOutstanding.divDown(sharePrice);
+
+        vm.expectRevert(Errors.BaseBufferExceedsShareReserves.selector);
+        (maturityTime, bondAmount) = openLong(bob, 11_275_000e18);
     }
 
     function verifyOpenLong(
