@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
 import { BondWrapper } from "../src/BondWrapper.sol";
 import { IHyperdrive } from "../src/interfaces/IHyperdrive.sol";
