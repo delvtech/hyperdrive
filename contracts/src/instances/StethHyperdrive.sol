@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
+// FIXME
+import "forge-std/console.sol";
+import "test/utils/Lib.sol";
+
 import { Hyperdrive } from "../Hyperdrive.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { ILido } from "../interfaces/ILido.sol";
@@ -20,6 +24,9 @@ import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract StethHyperdrive is Hyperdrive {
+    // FIXME
+    using Lib for *;
+
     using FixedPointMath for uint256;
 
     /// @dev The Lido contract.
@@ -90,6 +97,7 @@ contract StethHyperdrive is Hyperdrive {
             // address is passed as the referral address; however, users can
             // specify whatever referrer they'd like by depositing stETH instead
             // of WETH.
+            console.log("submitting _amount: %s", _amount);
             shares = lido.submit{ value: _amount }(_governance);
 
             // Calculate the share price.

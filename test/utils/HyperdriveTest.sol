@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import "forge-std/console.sol";
+import "test/utils/Lib.sol";
+
 import { ForwarderFactory } from "contracts/src/ForwarderFactory.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
@@ -240,7 +244,8 @@ contract HyperdriveTest is BaseTest {
 
     function openShort(
         address trader,
-        uint256 bondAmount
+        uint256 bondAmount,
+        bool asUnderlying
     ) internal returns (uint256 maturityTime, uint256 baseAmount) {
         vm.stopPrank();
         vm.startPrank(trader);
@@ -251,12 +256,43 @@ contract HyperdriveTest is BaseTest {
         );
         baseToken.mint(bondAmount);
         baseToken.approve(address(hyperdrive), bondAmount);
-        uint256 baseBalanceBefore = baseToken.balanceOf(trader);
-        hyperdrive.openShort(bondAmount, bondAmount, trader, true);
-
-        baseAmount = baseBalanceBefore - baseToken.balanceOf(trader);
+        (maturityTime, baseAmount) = hyperdrive.openShort(
+            bondAmount,
+            bondAmount,
+            trader,
+            asUnderlying
+        );
         baseToken.burn(bondAmount - baseAmount);
         return (maturityTime, baseAmount);
+    }
+
+    function openShort(
+        address trader,
+        uint256 bondAmount
+    ) internal returns (uint256 maturityTime, uint256 baseAmount) {
+        return openShort(trader, bondAmount, true);
+    }
+
+    function closeShort(
+        address trader,
+        uint256 maturityTime,
+        uint256 bondAmount,
+        bool asUnderlying
+    ) internal returns (uint256 baseAmount) {
+        vm.stopPrank();
+        vm.startPrank(trader);
+
+        // Close the short
+        uint256 baseBalanceBefore = baseToken.balanceOf(trader);
+        hyperdrive.closeShort(
+            maturityTime,
+            bondAmount,
+            0,
+            trader,
+            asUnderlying
+        );
+
+        return baseToken.balanceOf(trader) - baseBalanceBefore;
     }
 
     function closeShort(
@@ -264,19 +300,12 @@ contract HyperdriveTest is BaseTest {
         uint256 maturityTime,
         uint256 bondAmount
     ) internal returns (uint256 baseAmount) {
-        vm.stopPrank();
-        vm.startPrank(trader);
-
-        // Close the short
-        uint256 baseBalanceBefore = baseToken.balanceOf(trader);
-        hyperdrive.closeShort(maturityTime, bondAmount, 0, trader, true);
-
-        return baseToken.balanceOf(trader) - baseBalanceBefore;
+        return closeShort(trader, maturityTime, bondAmount, true);
     }
 
     /// Utils ///
 
-    function advanceTime(uint256 time, int256 apr) internal {
+    function advanceTime(uint256 time, int256 apr) internal virtual {
         MockHyperdrive(address(hyperdrive)).accrue(time, apr);
         vm.warp(block.timestamp + time);
     }

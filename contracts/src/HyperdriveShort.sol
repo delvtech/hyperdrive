@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import "forge-std/console.sol";
+import "test/utils/Lib.sol";
+
 import { SafeCast } from "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 import { HyperdriveLP } from "./HyperdriveLP.sol";
 import { AssetId } from "./libraries/AssetId.sol";
@@ -16,6 +20,9 @@ import { YieldSpaceMath } from "./libraries/YieldSpaceMath.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveShort is HyperdriveLP {
+    // FIXME
+    using Lib for *;
+
     using FixedPointMath for uint256;
     using SafeCast for uint256;
 
@@ -26,13 +33,18 @@ abstract contract HyperdriveShort is HyperdriveLP {
     /// @param _asUnderlying If true the user is charged in underlying if false
     ///                      the contract transfers in yield source directly.
     ///                      Note - for some paths one choice may be disabled or blocked.
-    /// @return The amount the user deposited for this trade
+    /// @return maturityTime The maturity time of the short.
+    /// @return traderDeposit The amount the user deposited for this trade.
     function openShort(
         uint256 _bondAmount,
         uint256 _maxDeposit,
         address _destination,
         bool _asUnderlying
-    ) external isNotPaused returns (uint256) {
+    )
+        external
+        isNotPaused
+        returns (uint256 maturityTime, uint256 traderDeposit)
+    {
         if (_bondAmount == 0) {
             revert Errors.ZeroAmount();
         }
@@ -49,7 +61,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
 
         // Calculate the pool and user deltas using the trading function. We
         // backdate the bonds sold to the beginning of the checkpoint.
-        uint256 maturityTime = _latestCheckpoint() + _positionDuration;
+        maturityTime = _latestCheckpoint() + _positionDuration;
         uint256 timeRemaining = _calculateTimeRemaining(maturityTime);
         uint256 shareReservesDelta;
         {
@@ -68,7 +80,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // doesn't pay more than their max deposit. The trader's deposit is
         // equal to the proceeds that they would receive if they closed
         // immediately (without fees).
-        uint256 traderDeposit = HyperdriveMath
+        traderDeposit = HyperdriveMath
             .calculateShortProceeds(
                 _bondAmount,
                 shareReservesDelta,
@@ -108,7 +120,9 @@ abstract contract HyperdriveShort is HyperdriveLP {
             bondAmount
         );
 
-        return (traderDeposit);
+        console.log("traderDeposit", traderDeposit.toString(18));
+
+        return (maturityTime, traderDeposit);
     }
 
     /// @notice Closes a short position with a specified maturity time.
