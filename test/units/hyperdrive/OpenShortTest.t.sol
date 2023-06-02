@@ -128,12 +128,12 @@ contract OpenShortTest is HyperdriveTest {
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
 
-        // Open up a large short to drain the buffer reserves.
+        // Open up a large long to init buffer reserves
         uint256 bondAmount = hyperdrive.calculateMaxLong();
         openLong(bob, bondAmount);
 
         // Initialize a large long to eath through the buffer of capital
-        uint256 overlyLargeShort = 500608590308195651844553347;
+        uint256 overlyLargeShort = 500608690308195651844553347;
 
         // Open the long.
         vm.stopPrank();
@@ -141,11 +141,29 @@ contract OpenShortTest is HyperdriveTest {
         baseToken.mint(overlyLargeShort);
         baseToken.approve(address(hyperdrive), overlyLargeShort);
 
-        console.log(overlyLargeShort);
-
-        //vm.expectRevert(Errors.BaseBufferExceedsShareReserves.selector);
-        hyperdrive.openShort(overlyLargeShort, 0, bob, true);
+        vm.expectRevert(Errors.BaseBufferExceedsShareReserves.selector);
+        hyperdrive.openShort(overlyLargeShort, type(uint256).max, bob, true);
     }
+
+    /* function test_RevertsWithNegativeInterestRate() public {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Attempt to purchase more bonds than exist. This should fail.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        uint256 baseAmount = 10000 ether;
+
+        console.log(baseAmount);
+
+        baseToken.mint(baseAmount);
+        baseToken.approve(address(hyperdrive), baseAmount);
+        vm.expectRevert(Errors.NegativeInterest.selector);
+        hyperdrive.openShort(baseAmount, type(uint256).max, bob, true);
+    } */
 
     function verifyOpenShort(
         IHyperdrive.PoolInfo memory poolInfoBefore,

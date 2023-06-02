@@ -13,7 +13,9 @@ contract ERC20Permit is IERC20Permit {
     // The symbol of the erc20 token
     string public symbol;
     // The decimals of the erc20 token, should default to 18 for new tokens
-    uint8 public decimals;
+    uint8 public decimals;  
+    // The total supply of the erc20 token
+    uint256 public totalSupply;
 
     // A mapping which tracks user token balances
     mapping(address => uint256) public override balanceOf;
@@ -21,10 +23,6 @@ contract ERC20Permit is IERC20Permit {
     mapping(address => mapping(address => uint256)) public override allowance;
     // A mapping which tracks the permit signature nonces for users
     mapping(address => uint256) public override nonces;
-
-    function totalSupply() public pure returns (uint256) {
-        return (0);
-    }
 
     // --- EIP712 niceties ---
     // solhint-disable-next-line var-name-mixedcase
@@ -38,11 +36,11 @@ contract ERC20Permit is IERC20Permit {
     /// @param symbol_ the value 'symbol' will be set to
     /// @dev decimals default to 18 and must be reset by an inheriting contract for
     ///      non standard decimal values
-    constructor(string memory name_, string memory symbol_) {
+    constructor(string memory name_, string memory symbol_, uint8 decimals_) {
         // Set the state variables
         name = name_;
         symbol = symbol_;
-        decimals = 18;
+        decimals = decimals_;
 
         // By setting these addresses to the max uint256, attempting to execute
         // a transfer to either of them will revert. This is a gas efficient way
@@ -136,6 +134,8 @@ contract ERC20Permit is IERC20Permit {
     ///      are reviewing this contract for security you should ensure to
     ///      check for overrides
     function _mint(address account, uint256 amount) internal virtual {
+        // Update totalSupply
+        totalSupply += amount;
         // Add tokens to the account
         balanceOf[account] = balanceOf[account] + amount;
         // Emit an event to track the minting
@@ -150,6 +150,8 @@ contract ERC20Permit is IERC20Permit {
     ///      are reviewing this contract for security you should ensure to
     ///      check for overrides
     function _burn(address account, uint256 amount) internal virtual {
+        // Reduce the totalSupply
+        totalSupply -= amount;
         // Reduce the balance of the account
         balanceOf[account] = balanceOf[account] - amount;
         // Emit an event tracking transfers
@@ -228,12 +230,5 @@ contract ERC20Permit is IERC20Permit {
         allowance[owner][spender] = value;
         // Emit an approval event to be able to track this happening
         emit Approval(owner, spender, value);
-    }
-
-    /// @notice Internal function which allows inheriting contract to set custom decimals
-    /// @param decimals_ the new decimal value
-    function _setupDecimals(uint8 decimals_) internal {
-        // Set the decimals
-        decimals = decimals_;
     }
 }
