@@ -140,23 +140,19 @@ contract OpenLongTest is HyperdriveTest {
 
         // Open up a large short to drain the buffer reserves.
         uint256 bondAmount = hyperdrive.calculateMaxShort();
-        (uint256 maturityTime, uint256 basePaid) = openShort(bob, bondAmount);
-
+        openShort(bob, bondAmount);
 
         // Initialize a large long to eath through the buffer of capital
-        baseAmount = hyperdrive.calculateMaxLong();
-        (maturityTime, bondAmount) = openLong(bob, baseAmount);
+        uint256 overlyLargeLonge = 976625406180945208462181452;
 
-        // Verify that the open long updated the state correctly.
-        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
-        
-        uint256 longsOutstanding = poolInfo.longsOutstanding;
-        uint256 sharePrice = poolInfo.sharePrice;
-
-        uint256 shareBufferNeeded = longsOutstanding.divDown(sharePrice);
+        // Open the long.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        baseToken.mint(overlyLargeLonge);
+        baseToken.approve(address(hyperdrive), overlyLargeLonge);
 
         vm.expectRevert(Errors.BaseBufferExceedsShareReserves.selector);
-        (maturityTime, bondAmount) = openLong(bob, 11_275_000e18);
+        hyperdrive.openLong(overlyLargeLonge, 0, bob, true);
     }
 
     function verifyOpenLong(
