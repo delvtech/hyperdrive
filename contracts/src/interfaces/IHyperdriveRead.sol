@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
 import { IHyperdrive } from "./IHyperdrive.sol";
 import { IMultiTokenRead } from "./IMultiTokenRead.sol";

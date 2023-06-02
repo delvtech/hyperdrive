@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
 import { DsrHyperdrive, DsrManager } from "../src/instances/DsrHyperdrive.sol";
 import { DsrHyperdriveDataProvider } from "../src/instances/DsrHyperdriveDataProvider.sol";
