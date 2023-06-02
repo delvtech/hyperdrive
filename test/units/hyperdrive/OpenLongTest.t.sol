@@ -9,7 +9,6 @@ import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
 import { Lib } from "../../utils/Lib.sol";
-import { console } from "forge-std/console.sol";
 
 contract OpenLongTest is HyperdriveTest {
     using FixedPointMath for uint256;
@@ -131,7 +130,7 @@ contract OpenLongTest is HyperdriveTest {
         );
     }
 
-    function test_AvoidsDrainingBufferReserves() external {
+    function test_LongAvoidsDrainingBufferReserves() external {
         uint256 apr = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
