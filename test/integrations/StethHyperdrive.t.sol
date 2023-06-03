@@ -82,6 +82,19 @@ contract StethHyperdriveTest is HyperdriveTest {
         initialize(alice, FIXED_RATE, 10_000e18);
     }
 
+    /// Stuck Tokens ///
+
+    function test__receive() external {
+        vm.startPrank(alice);
+        vm.expectRevert(Errors.UnexpectedSender.selector);
+        (bool success, ) = address(hyperdrive).call{ value: 1e18 }("");
+
+        // HACK(jalextowle): The call succeeds if `vm.expectRevert` is used
+        // before the call. If the `vm.expectRevert` is removed, `success` is
+        // false as expected.
+        assert(success);
+    }
+
     /// Price Per Share ///
 
     function test__pricePerShare(uint256 basePaid) external {
@@ -316,7 +329,6 @@ contract StethHyperdriveTest is HyperdriveTest {
         hyperdrive.closeShort(maturityTime, shortAmount, 0, bob, true);
     }
 
-    // FIXME: It would be good to verify that no eth ended up in the contract.
     function test_close_short_with_steth(
         uint256 shortAmount,
         int256 variableRate
@@ -366,11 +378,6 @@ contract StethHyperdriveTest is HyperdriveTest {
             hyperdriveBalancesBefore
         );
     }
-
-    // FIXME: Test the flow with stuck tokens.
-
-    // FIXME: Test the receive function to ensure that non-WETH senders can't
-    //        send ETH to the contract.
 
     /// Assertions ///
 

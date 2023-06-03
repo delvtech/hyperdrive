@@ -69,8 +69,6 @@ contract StethHyperdrive is Hyperdrive {
         bool _asUnderlying
     ) internal override returns (uint256 shares, uint256 sharePrice) {
         if (_asUnderlying) {
-            // FIXME: Should we unwrap all of the weth in the contract?
-            //
             // Transfer WETH into the contract and unwrap it.
             IWETH weth = IWETH(address(_baseToken));
             bool success = weth.transferFrom(
@@ -83,9 +81,6 @@ contract StethHyperdrive is Hyperdrive {
             }
             weth.withdraw(_amount);
 
-            // FIXME: We should probably forward the entire contract's balance
-            //        like we do for other tokens.
-            //
             // Submit the provided ether to Lido to be deposited. The governance
             // address is passed as the referral address; however, users can
             // specify whatever referrer they'd like by depositing stETH instead
