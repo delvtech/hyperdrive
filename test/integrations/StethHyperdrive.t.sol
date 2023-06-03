@@ -82,6 +82,32 @@ contract StethHyperdriveTest is HyperdriveTest {
         initialize(alice, FIXED_RATE, 10_000e18);
     }
 
+    /// Price Per Share ///
+
+    function test__pricePerShare(uint256 basePaid) external {
+        // Ensure that the share price is the expected value.
+        uint256 totalPooledEther = LIDO.getTotalPooledEther();
+        uint256 totalShares = LIDO.getTotalShares();
+        uint256 sharePrice = hyperdrive.getPoolInfo().sharePrice;
+        assertEq(sharePrice, totalPooledEther.divDown(totalShares));
+
+        // Ensure that the share price accurately predicts the amount of shares
+        // that will be minted for depositing a given amount of WETH. This will
+        // be an approximation since Lido uses `mulDivDown` whereas this test
+        // pre-computes the share price.
+        basePaid = basePaid.normalizeToRange(
+            0.00001e18,
+            HyperdriveUtils.calculateMaxLong(hyperdrive)
+        );
+        uint256 hyperdriveSharesBefore = LIDO.sharesOf(address(hyperdrive));
+        openLong(bob, basePaid);
+        assertApproxEqAbs(
+            LIDO.sharesOf(address(hyperdrive)),
+            hyperdriveSharesBefore + basePaid.divDown(sharePrice),
+            1e4
+        );
+    }
+
     /// Long ///
 
     function test_open_long_with_weth(uint256 basePaid) external {
@@ -100,35 +126,17 @@ contract StethHyperdriveTest is HyperdriveTest {
         );
         openLong(bob, basePaid);
 
-        // Ensure that the amount of pooled ether increased by the base paid.
-        assertEq(LIDO.getTotalPooledEther(), totalPooledEtherBefore + basePaid);
-
-        // Ensure that the WETH balances were updated correctly.
-        assertEq(
-            WETH.balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.wethBalance
-        );
-        assertEq(WETH.balanceOf(bob), bobBalancesBefore.wethBalance - basePaid);
-
-        // Ensure that the stETH balances were updated correctly.
-        assertApproxEqAbs(
-            LIDO.balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.stethBalance + basePaid,
-            1
-        );
-        assertEq(LIDO.balanceOf(bob), bobBalancesBefore.stethBalance);
-
-        // Ensure that the stETH shares were updated correctly.
-        uint256 expectedShares = basePaid.mulDivDown(
+        // Ensure that Lido's aggregates and the token balances were updated
+        // correctly during the trade.
+        verifyDeposit(
+            bob,
+            basePaid,
+            true,
+            totalPooledEtherBefore,
             totalSharesBefore,
-            totalPooledEtherBefore
+            bobBalancesBefore,
+            hyperdriveBalancesBefore
         );
-        assertEq(LIDO.getTotalShares(), totalSharesBefore + expectedShares);
-        assertEq(
-            LIDO.sharesOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.stethShares + expectedShares
-        );
-        assertEq(LIDO.sharesOf(bob), bobBalancesBefore.stethShares);
     }
 
     function test_open_long_with_steth(uint256 basePaid) external {
@@ -147,41 +155,16 @@ contract StethHyperdriveTest is HyperdriveTest {
         );
         openLong(bob, basePaid, false);
 
-        // Ensure that the amount of pooled ether stays the same.
-        assertEq(LIDO.getTotalPooledEther(), totalPooledEtherBefore);
-
-        // Ensure that the WETH balances were updated correctly.
-        assertEq(
-            WETH.balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.wethBalance
-        );
-        assertEq(WETH.balanceOf(bob), bobBalancesBefore.wethBalance);
-
-        // Ensure that the stETH balances were updated correctly.
-        assertApproxEqAbs(
-            LIDO.balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.stethBalance + basePaid,
-            1
-        );
-        assertApproxEqAbs(
-            LIDO.balanceOf(bob),
-            bobBalancesBefore.stethBalance - basePaid,
-            1
-        );
-
-        // Ensure that the stETH shares were updated correctly.
-        uint256 expectedShares = basePaid.mulDivDown(
+        // Ensure that Lido's aggregates and the token balances were updated
+        // correctly during the trade.
+        verifyDeposit(
+            bob,
+            basePaid,
+            false,
+            totalPooledEtherBefore,
             totalSharesBefore,
-            totalPooledEtherBefore
-        );
-        assertEq(LIDO.getTotalShares(), totalSharesBefore);
-        assertEq(
-            LIDO.sharesOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.stethShares + expectedShares
-        );
-        assertEq(
-            LIDO.sharesOf(bob),
-            bobBalancesBefore.stethShares - expectedShares
+            bobBalancesBefore,
+            hyperdriveBalancesBefore
         );
     }
 
@@ -220,43 +203,15 @@ contract StethHyperdriveTest is HyperdriveTest {
         // Bob closes his long with stETH as the target asset.
         uint256 baseProceeds = closeLong(bob, maturityTime, longAmount, false);
 
-        // Ensure that the amount of pooled ether stays the same.
-        assertEq(LIDO.getTotalPooledEther(), totalPooledEtherBefore);
-
-        // Ensure that the WETH balances were updated correctly.
-        assertEq(
-            WETH.balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.wethBalance
-        );
-        assertEq(WETH.balanceOf(bob), bobBalancesBefore.wethBalance);
-
-        // Ensure that the stETH balances were updated correctly.
-        assertApproxEqAbs(
-            LIDO.balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.stethBalance - baseProceeds,
-            1
-        );
-        assertApproxEqAbs(
-            LIDO.balanceOf(bob),
-            bobBalancesBefore.stethBalance + baseProceeds,
-            1
-        );
-
-        // Ensure that the stETH shares were updated correctly.
-        uint256 expectedShares = baseProceeds.mulDivDown(
+        // Ensure that Lido's aggregates and the token balances were updated
+        // correctly during the trade.
+        verifyStethWithdrawal(
+            bob,
+            baseProceeds,
+            totalPooledEtherBefore,
             totalSharesBefore,
-            totalPooledEtherBefore
-        );
-        assertApproxEqAbs(LIDO.getTotalShares(), totalSharesBefore, 1);
-        assertApproxEqAbs(
-            LIDO.sharesOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.stethShares - expectedShares,
-            1
-        );
-        assertApproxEqAbs(
-            LIDO.sharesOf(bob),
-            bobBalancesBefore.stethShares + expectedShares,
-            1
+            bobBalancesBefore,
+            hyperdriveBalancesBefore
         );
     }
 
@@ -287,35 +242,17 @@ contract StethHyperdriveTest is HyperdriveTest {
         assertGt(basePaid, 0);
         assertGe(realizedRate, FIXED_RATE);
 
-        // Ensure that the amount of pooled ether increased by the base paid.
-        assertEq(LIDO.getTotalPooledEther(), totalPooledEtherBefore + basePaid);
-
-        // Ensure that the WETH balances were updated correctly.
-        assertEq(
-            WETH.balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.wethBalance
-        );
-        assertEq(WETH.balanceOf(bob), bobBalancesBefore.wethBalance - basePaid);
-
-        // Ensure that the stETH balances were updated correctly.
-        assertApproxEqAbs(
-            LIDO.balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.stethBalance + basePaid,
-            1
-        );
-        assertEq(LIDO.balanceOf(bob), bobBalancesBefore.stethBalance);
-
-        // Ensure that the stETH shares were updated correctly.
-        uint256 expectedShares = basePaid.mulDivDown(
+        // Ensure that Lido's aggregates and the token balances were updated
+        // correctly during the trade.
+        verifyDeposit(
+            bob,
+            basePaid,
+            true,
+            totalPooledEtherBefore,
             totalSharesBefore,
-            totalPooledEtherBefore
+            bobBalancesBefore,
+            hyperdriveBalancesBefore
         );
-        assertEq(LIDO.getTotalShares(), totalSharesBefore + expectedShares);
-        assertEq(
-            LIDO.sharesOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.stethShares + expectedShares
-        );
-        assertEq(LIDO.sharesOf(bob), bobBalancesBefore.stethShares);
     }
 
     function test_open_short_with_steth(uint256 shortAmount) external {
@@ -343,41 +280,16 @@ contract StethHyperdriveTest is HyperdriveTest {
         assertGt(basePaid, 0);
         assertGe(realizedRate, FIXED_RATE);
 
-        // Ensure that the amount of pooled ether stays the same.
-        assertEq(LIDO.getTotalPooledEther(), totalPooledEtherBefore);
-
-        // Ensure that the WETH balances were updated correctly.
-        assertEq(
-            WETH.balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.wethBalance
-        );
-        assertEq(WETH.balanceOf(bob), bobBalancesBefore.wethBalance);
-
-        // Ensure that the stETH balances were updated correctly.
-        assertApproxEqAbs(
-            LIDO.balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.stethBalance + basePaid,
-            1
-        );
-        assertApproxEqAbs(
-            LIDO.balanceOf(bob),
-            bobBalancesBefore.stethBalance - basePaid,
-            1
-        );
-
-        // Ensure that the stETH shares were updated correctly.
-        uint256 expectedShares = basePaid.mulDivDown(
+        // Ensure that Lido's aggregates and the token balances were updated
+        // correctly during the trade.
+        verifyDeposit(
+            bob,
+            basePaid,
+            false,
+            totalPooledEtherBefore,
             totalSharesBefore,
-            totalPooledEtherBefore
-        );
-        assertEq(LIDO.getTotalShares(), totalSharesBefore);
-        assertEq(
-            LIDO.sharesOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.stethShares + expectedShares
-        );
-        assertEq(
-            LIDO.sharesOf(bob),
-            bobBalancesBefore.stethShares - expectedShares
+            bobBalancesBefore,
+            hyperdriveBalancesBefore
         );
     }
 
@@ -404,9 +316,6 @@ contract StethHyperdriveTest is HyperdriveTest {
         hyperdrive.closeShort(maturityTime, shortAmount, 0, bob, true);
     }
 
-    // FIXME: A lot of this logic can be DRY'd up. Specifically all of the
-    // verification for the token transfers.
-    //
     // FIXME: It would be good to verify that no eth ended up in the contract.
     function test_close_short_with_steth(
         uint256 shortAmount,
@@ -446,15 +355,128 @@ contract StethHyperdriveTest is HyperdriveTest {
         );
         assertApproxEqAbs(baseProceeds, uint256(expectedBaseProceeds), 1e9);
 
-        // Ensure that the amount of pooled ether stays the same.
+        // Ensure that Lido's aggregates and the token balances were updated
+        // correctly during the trade.
+        verifyStethWithdrawal(
+            bob,
+            baseProceeds,
+            totalPooledEtherBefore,
+            totalSharesBefore,
+            bobBalancesBefore,
+            hyperdriveBalancesBefore
+        );
+    }
+
+    // FIXME: Test the flow with stuck tokens.
+
+    // FIXME: Test the receive function to ensure that non-WETH senders can't
+    //        send ETH to the contract.
+
+    /// Assertions ///
+
+    function verifyDeposit(
+        address trader,
+        uint256 basePaid,
+        bool asUnderlying,
+        uint256 totalPooledEtherBefore,
+        uint256 totalSharesBefore,
+        AccountBalances memory traderBalancesBefore,
+        AccountBalances memory hyperdriveBalancesBefore
+    ) internal {
+        if (asUnderlying) {
+            // Ensure that the amount of pooled ether increased by the base paid.
+            assertEq(
+                LIDO.getTotalPooledEther(),
+                totalPooledEtherBefore + basePaid
+            );
+
+            // Ensure that the WETH balances were updated correctly.
+            assertEq(
+                WETH.balanceOf(address(hyperdrive)),
+                hyperdriveBalancesBefore.wethBalance
+            );
+            assertEq(
+                WETH.balanceOf(bob),
+                traderBalancesBefore.wethBalance - basePaid
+            );
+
+            // Ensure that the stETH balances were updated correctly.
+            assertApproxEqAbs(
+                LIDO.balanceOf(address(hyperdrive)),
+                hyperdriveBalancesBefore.stethBalance + basePaid,
+                1
+            );
+            assertEq(LIDO.balanceOf(trader), traderBalancesBefore.stethBalance);
+
+            // Ensure that the stETH shares were updated correctly.
+            uint256 expectedShares = basePaid.mulDivDown(
+                totalSharesBefore,
+                totalPooledEtherBefore
+            );
+            assertEq(LIDO.getTotalShares(), totalSharesBefore + expectedShares);
+            assertEq(
+                LIDO.sharesOf(address(hyperdrive)),
+                hyperdriveBalancesBefore.stethShares + expectedShares
+            );
+            assertEq(LIDO.sharesOf(bob), traderBalancesBefore.stethShares);
+        } else {
+            // Ensure that the amount of pooled ether stays the same.
+            assertEq(LIDO.getTotalPooledEther(), totalPooledEtherBefore);
+
+            // Ensure that the WETH balances were updated correctly.
+            assertEq(
+                WETH.balanceOf(address(hyperdrive)),
+                hyperdriveBalancesBefore.wethBalance
+            );
+            assertEq(WETH.balanceOf(trader), traderBalancesBefore.wethBalance);
+
+            // Ensure that the stETH balances were updated correctly.
+            assertApproxEqAbs(
+                LIDO.balanceOf(address(hyperdrive)),
+                hyperdriveBalancesBefore.stethBalance + basePaid,
+                1
+            );
+            assertApproxEqAbs(
+                LIDO.balanceOf(trader),
+                traderBalancesBefore.stethBalance - basePaid,
+                1
+            );
+
+            // Ensure that the stETH shares were updated correctly.
+            uint256 expectedShares = basePaid.mulDivDown(
+                totalSharesBefore,
+                totalPooledEtherBefore
+            );
+            assertEq(LIDO.getTotalShares(), totalSharesBefore);
+            assertEq(
+                LIDO.sharesOf(address(hyperdrive)),
+                hyperdriveBalancesBefore.stethShares + expectedShares
+            );
+            assertEq(
+                LIDO.sharesOf(trader),
+                traderBalancesBefore.stethShares - expectedShares
+            );
+        }
+    }
+
+    function verifyStethWithdrawal(
+        address trader,
+        uint256 baseProceeds,
+        uint256 totalPooledEtherBefore,
+        uint256 totalSharesBefore,
+        AccountBalances memory traderBalancesBefore,
+        AccountBalances memory hyperdriveBalancesBefore
+    ) internal {
+        // Ensure that the total pooled ether and shares stays the same.
         assertEq(LIDO.getTotalPooledEther(), totalPooledEtherBefore);
+        assertApproxEqAbs(LIDO.getTotalShares(), totalSharesBefore, 1);
 
         // Ensure that the WETH balances were updated correctly.
         assertEq(
             WETH.balanceOf(address(hyperdrive)),
             hyperdriveBalancesBefore.wethBalance
         );
-        assertEq(WETH.balanceOf(bob), bobBalancesBefore.wethBalance);
+        assertEq(WETH.balanceOf(trader), traderBalancesBefore.wethBalance);
 
         // Ensure that the stETH balances were updated correctly.
         assertApproxEqAbs(
@@ -463,8 +485,8 @@ contract StethHyperdriveTest is HyperdriveTest {
             1
         );
         assertApproxEqAbs(
-            LIDO.balanceOf(bob),
-            bobBalancesBefore.stethBalance + baseProceeds,
+            LIDO.balanceOf(trader),
+            traderBalancesBefore.stethBalance + baseProceeds,
             1
         );
 
@@ -473,47 +495,19 @@ contract StethHyperdriveTest is HyperdriveTest {
             totalSharesBefore,
             totalPooledEtherBefore
         );
-        assertApproxEqAbs(LIDO.getTotalShares(), totalSharesBefore, 1);
         assertApproxEqAbs(
             LIDO.sharesOf(address(hyperdrive)),
             hyperdriveBalancesBefore.stethShares - expectedShares,
             1
         );
         assertApproxEqAbs(
-            LIDO.sharesOf(bob),
-            bobBalancesBefore.stethShares + expectedShares,
+            LIDO.sharesOf(trader),
+            traderBalancesBefore.stethShares + expectedShares,
             1
         );
     }
 
-    function test__pricePerShare(uint256 basePaid) external {
-        // Ensure that the share price is the expected value.
-        uint256 totalPooledEther = LIDO.getTotalPooledEther();
-        uint256 totalShares = LIDO.getTotalShares();
-        uint256 sharePrice = hyperdrive.getPoolInfo().sharePrice;
-        assertEq(sharePrice, totalPooledEther.divDown(totalShares));
-
-        // Ensure that the share price accurately predicts the amount of shares
-        // that will be minted for depositing a given amount of WETH. This will
-        // be an approximation since Lido uses `mulDivDown` whereas this test
-        // pre-computes the share price.
-        basePaid = basePaid.normalizeToRange(
-            0.00001e18,
-            HyperdriveUtils.calculateMaxLong(hyperdrive)
-        );
-        uint256 hyperdriveSharesBefore = LIDO.sharesOf(address(hyperdrive));
-        openLong(bob, basePaid);
-        assertApproxEqAbs(
-            LIDO.sharesOf(address(hyperdrive)),
-            hyperdriveSharesBefore + basePaid.divDown(sharePrice),
-            1e4
-        );
-    }
-
-    // FIXME: Test the flow with stuck tokens.
-
-    // FIXME: Test the receive function to ensure that non-WETH senders can't
-    //        send ETH to the contract.
+    /// Helpers ///
 
     function advanceTime(
         uint256 timeDelta,
