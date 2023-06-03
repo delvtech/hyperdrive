@@ -282,17 +282,15 @@ contract HyperdriveTest is BaseTest {
         vm.stopPrank();
         vm.startPrank(trader);
 
-        // Close the short
-        uint256 baseBalanceBefore = baseToken.balanceOf(trader);
-        hyperdrive.closeShort(
-            maturityTime,
-            bondAmount,
-            0,
-            trader,
-            asUnderlying
-        );
-
-        return baseToken.balanceOf(trader) - baseBalanceBefore;
+        // Close the short.
+        return
+            hyperdrive.closeShort(
+                maturityTime,
+                bondAmount,
+                0,
+                trader,
+                asUnderlying
+            );
     }
 
     function closeShort(

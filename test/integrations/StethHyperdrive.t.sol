@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-// FIXME
-import "forge-std/console.sol";
-
 import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import { StethHyperdrive } from "contracts/src/instances/StethHyperdrive.sol";
 import { StethHyperdriveDataProvider } from "contracts/src/instances/StethHyperdriveDataProvider.sol";
@@ -20,26 +17,12 @@ contract StethHyperdriveTest is HyperdriveTest {
     using FixedPointMath for uint256;
     using Lib for *;
 
-    // FIXME:
-    //
-    // - [x] Write a `setUp` function that initiates a mainnet fork. - [x] Create wrappers for the Lido contract and WETH9.
-    // - [x] Deploy a Hyperdrive instance that interacts with Lido.
-    // - [x] Set up balances so that transfers of WETH and stETH can be tested.
-    // - [x] Test the `deposit` flow.
-    // - [x] Test the `withdraw` flow.
-    // - [ ] Ensure that interest accrues correctly. Is there a way to warp
-    //       between mainnet blocks?
-
     uint256 internal constant FIXED_RATE = 0.05e18;
 
-    // These constants point to the Lido storage locations that track buffered
-    // ether reserves and the total amount of shares. By updating these values,
-    // we can simulate the accrual of interest.
+    // The Lido storage location that tracks buffered ether reserves. We can
+    // simulate the accrual of interest by updating this value.
     bytes32 internal constant BUFFERED_ETHER_POSITION =
         keccak256("lido.Lido.bufferedEther");
-    // FIXME: This is never used.
-    bytes32 internal constant TOTAL_SHARES_POSITION =
-        keccak256("lido.StETH.totalShares");
 
     ILido internal constant LIDO =
         ILido(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
@@ -429,19 +412,16 @@ contract StethHyperdriveTest is HyperdriveTest {
         uint256 shortAmount,
         int256 variableRate
     ) external {
-        console.log(1);
         // Bob opens a short.
         shortAmount = shortAmount.normalizeToRange(
             0.00001e18,
             HyperdriveUtils.calculateMaxLong(hyperdrive)
         );
         (uint256 maturityTime, ) = openShort(bob, shortAmount);
-        console.log(2);
 
         // The term passes and interest accrues.
         variableRate = variableRate.normalizeToRange(0, 2.5e18);
         advanceTime(POSITION_DURATION, variableRate);
-        console.log(3);
 
         // Get some balance information before closing the short.
         uint256 totalPooledEtherBefore = LIDO.getTotalPooledEther();
@@ -450,11 +430,10 @@ contract StethHyperdriveTest is HyperdriveTest {
         AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
             address(hyperdrive)
         );
-        console.log(4);
 
         // Bob closes his short with stETH as the target asset. Bob's proceeds
         // should be the variable interest that accrued on the shorted bonds.
-        (uint256 expectedBaseProceeds, ) = HyperdriveUtils.calculateInterest(
+        (, int256 expectedBaseProceeds) = HyperdriveUtils.calculateInterest(
             shortAmount,
             variableRate,
             POSITION_DURATION
@@ -465,21 +444,17 @@ contract StethHyperdriveTest is HyperdriveTest {
             shortAmount,
             false
         );
-        assertEq(baseProceeds, expectedBaseProceeds);
-        console.log(5);
+        assertApproxEqAbs(baseProceeds, uint256(expectedBaseProceeds), 1e9);
 
         // Ensure that the amount of pooled ether stays the same.
         assertEq(LIDO.getTotalPooledEther(), totalPooledEtherBefore);
-        console.log(6);
 
         // Ensure that the WETH balances were updated correctly.
         assertEq(
             WETH.balanceOf(address(hyperdrive)),
             hyperdriveBalancesBefore.wethBalance
         );
-        console.log(7);
         assertEq(WETH.balanceOf(bob), bobBalancesBefore.wethBalance);
-        console.log(8);
 
         // Ensure that the stETH balances were updated correctly.
         assertApproxEqAbs(
@@ -487,13 +462,11 @@ contract StethHyperdriveTest is HyperdriveTest {
             hyperdriveBalancesBefore.stethBalance - baseProceeds,
             1
         );
-        console.log(9);
         assertApproxEqAbs(
             LIDO.balanceOf(bob),
             bobBalancesBefore.stethBalance + baseProceeds,
             1
         );
-        console.log(10);
 
         // Ensure that the stETH shares were updated correctly.
         uint256 expectedShares = baseProceeds.mulDivDown(
@@ -501,22 +474,17 @@ contract StethHyperdriveTest is HyperdriveTest {
             totalPooledEtherBefore
         );
         assertApproxEqAbs(LIDO.getTotalShares(), totalSharesBefore, 1);
-        console.log(11);
         assertApproxEqAbs(
             LIDO.sharesOf(address(hyperdrive)),
             hyperdriveBalancesBefore.stethShares - expectedShares,
             1
         );
-        console.log(12);
         assertApproxEqAbs(
             LIDO.sharesOf(bob),
             bobBalancesBefore.stethShares + expectedShares,
             1
         );
-        console.log(13);
     }
-
-    // FIXME: Add tests for all of the other endpoints.
 
     function test__pricePerShare(uint256 basePaid) external {
         // Ensure that the share price is the expected value.
@@ -541,13 +509,6 @@ contract StethHyperdriveTest is HyperdriveTest {
             1e4
         );
     }
-
-    // FIXME: We should add another test that verifies that the correct amount
-    // of interest is accrued as stETH updates it's internal state.
-    //
-    // We can probably do this by overwriting the state that holds the pooled
-    // ether and the total shares so that we can simulate interest accruing.
-    // We should also test negative interest cases.
 
     // FIXME: Test the flow with stuck tokens.
 

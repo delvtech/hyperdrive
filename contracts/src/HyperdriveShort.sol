@@ -1,10 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-// FIXME
-import "forge-std/console.sol";
-import "test/utils/Lib.sol";
-
 import { SafeCast } from "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 import { HyperdriveLP } from "./HyperdriveLP.sol";
 import { AssetId } from "./libraries/AssetId.sol";
@@ -20,9 +16,6 @@ import { YieldSpaceMath } from "./libraries/YieldSpaceMath.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveShort is HyperdriveLP {
-    // FIXME
-    using Lib for *;
-
     using FixedPointMath for uint256;
     using SafeCast for uint256;
 
@@ -119,8 +112,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
             traderDeposit,
             bondAmount
         );
-
-        console.log("traderDeposit", traderDeposit.toString(18));
 
         return (maturityTime, traderDeposit);
     }
