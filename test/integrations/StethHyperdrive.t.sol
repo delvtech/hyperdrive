@@ -2,13 +2,17 @@
 pragma solidity ^0.8.18;
 
 import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import { StethHyperdriveDeployer } from "contracts/src/factory/StethHyperdriveDeployer.sol";
+import { StethHyperdriveFactory } from "contracts/src/factory/StethHyperdriveFactory.sol";
 import { StethHyperdrive } from "contracts/src/instances/StethHyperdrive.sol";
 import { StethHyperdriveDataProvider } from "contracts/src/instances/StethHyperdriveDataProvider.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { ILido } from "contracts/src/interfaces/ILido.sol";
 import { IWETH } from "contracts/src/interfaces/IWETH.sol";
+import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
@@ -35,8 +39,29 @@ contract StethHyperdriveTest is HyperdriveTest {
     function setUp() public override __mainnet_fork(17_376_154) {
         super.setUp();
 
-        // Deploy the Hyperdrive data provider and instance.
+        // Deploy the StethHyperdrive deployer and factory.
         vm.startPrank(deployer);
+        StethHyperdriveDeployer simpleDeployer = new StethHyperdriveDeployer(
+            LIDO,
+            WETH
+        );
+        address[] memory defaults = new address[](1);
+        defaults[0] = bob;
+        StethHyperdriveFactory factory = new StethHyperdriveFactory(
+            alice,
+            simpleDeployer,
+            bob,
+            bob,
+            IHyperdrive.Fees(0, 0, 0),
+            defaults,
+            LIDO
+        );
+
+        // Alice deploys the hyperdrive instance.
+        whaleTransfer(WETH_WHALE, WETH, 10_000e18, alice);
+        vm.stopPrank();
+        vm.startPrank(alice);
+        WETH.approve(address(factory), 10_000e18);
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: IERC20(WETH),
             initialSharePrice: LIDO.getTotalPooledEther().divDown(
@@ -51,22 +76,28 @@ contract StethHyperdriveTest is HyperdriveTest {
             oracleSize: ORACLE_SIZE,
             updateGap: UPDATE_GAP
         });
-        StethHyperdriveDataProvider dataProvider = new StethHyperdriveDataProvider(
-                config,
-                bytes32(0),
-                address(0),
-                LIDO
-            );
-        hyperdrive = IHyperdrive(
-            address(
-                new StethHyperdrive(
-                    config,
-                    address(dataProvider),
-                    bytes32(0),
-                    address(0),
-                    LIDO
-                )
-            )
+        uint256 contribution = 10_000e18;
+        hyperdrive = factory.deployAndInitialize(
+            config,
+            bytes32(0),
+            address(0),
+            new bytes32[](0),
+            contribution,
+            FIXED_RATE
+        );
+
+        // Ensure that Alice has the correct amount of LP shares.
+        assertApproxEqAbs(
+            hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
+            HyperdriveMath.calculateInitialBondReserves(
+                contribution.divDown(config.initialSharePrice),
+                config.initialSharePrice,
+                config.initialSharePrice,
+                FIXED_RATE,
+                config.positionDuration,
+                config.timeStretch
+            ) + contribution,
+            1e5
         );
 
         // Fund the test accounts with stETH and WETH.
@@ -74,12 +105,8 @@ contract StethHyperdriveTest is HyperdriveTest {
         accounts[0] = alice;
         accounts[1] = bob;
         accounts[2] = celine;
-        fundAccounts(IERC20(LIDO), STETH_WHALE, accounts);
-        fundAccounts(IERC20(WETH), WETH_WHALE, accounts);
-
-        // Alice initializes the pool.
-        vm.startPrank(alice);
-        initialize(alice, FIXED_RATE, 10_000e18);
+        fundAccounts(address(hyperdrive), IERC20(LIDO), STETH_WHALE, accounts);
+        fundAccounts(address(hyperdrive), IERC20(WETH), WETH_WHALE, accounts);
     }
 
     /// Stuck Tokens ///
@@ -537,27 +564,6 @@ contract StethHyperdriveTest is HyperdriveTest {
             BUFFERED_ETHER_POSITION,
             bytes32(bufferedEther)
         );
-    }
-
-    function fundAccounts(
-        IERC20 token,
-        address source,
-        address[] memory accounts
-    ) internal {
-        uint256 sourceBalance = token.balanceOf(source);
-        for (uint256 i = 0; i < accounts.length; i++) {
-            // Transfer the tokens to the account.
-            whaleTransfer(
-                source,
-                token,
-                sourceBalance / accounts.length,
-                accounts[i]
-            );
-
-            // Approve Hyperdrive on behalf of the account.
-            vm.startPrank(accounts[i]);
-            token.approve(address(hyperdrive), type(uint256).max);
-        }
     }
 
     struct AccountBalances {

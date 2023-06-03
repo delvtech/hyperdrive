@@ -104,6 +104,28 @@ contract BaseTest is Test {
         return amount;
     }
 
+    function fundAccounts(
+        address hyperdrive,
+        IERC20 token,
+        address source,
+        address[] memory accounts
+    ) internal {
+        uint256 sourceBalance = token.balanceOf(source);
+        for (uint256 i = 0; i < accounts.length; i++) {
+            // Transfer the tokens to the account.
+            whaleTransfer(
+                source,
+                token,
+                sourceBalance / accounts.length,
+                accounts[i]
+            );
+
+            // Approve Hyperdrive on behalf of the account.
+            vm.startPrank(accounts[i]);
+            token.approve(hyperdrive, type(uint256).max);
+        }
+    }
+
     function assertWithDelta(
         uint256 _value,
         int256 _delta,
