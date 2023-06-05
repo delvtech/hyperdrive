@@ -114,7 +114,7 @@ contract StethHyperdriveTest is HyperdriveTest {
     function test__receive() external {
         vm.startPrank(alice);
         vm.expectRevert(Errors.UnexpectedSender.selector);
-        (bool success, ) = address(hyperdrive).call{ value: 1e18 }("");
+        (bool success, ) = address(hyperdrive).call{ value: 1 ether }("");
 
         // HACK(jalextowle): The call succeeds if `vm.expectRevert` is used
         // before the call. If the `vm.expectRevert` is removed, `success` is
