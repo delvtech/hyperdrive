@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
 import { stdError } from "forge-std/StdError.sol";
 import { VmSafe } from "forge-std/Vm.sol";
@@ -460,10 +460,15 @@ contract CloseLongTest is HyperdriveTest {
             VmSafe.Log memory log = logs[0];
             assertEq(address(uint160(uint256(log.topics[1]))), bob);
             (
+                uint256 eventAssetId,
                 uint256 eventMaturityTime,
                 uint256 eventBaseAmount,
                 uint256 eventBondAmount
-            ) = abi.decode(log.data, (uint256, uint256, uint256));
+            ) = abi.decode(log.data, (uint256, uint256, uint256, uint256));
+            assertEq(
+                eventAssetId,
+                AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime)
+            );
             assertEq(eventMaturityTime, maturityTime);
             assertEq(eventBaseAmount, baseProceeds);
             assertEq(eventBondAmount, bondAmount);

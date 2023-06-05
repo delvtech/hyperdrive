@@ -1,5 +1,5 @@
 [profile.default]
-solc_version = '0.8.18'
+solc_version = '0.8.19'
 # The source directory
 src = 'contracts'
 # The artifact directory
@@ -30,6 +30,7 @@ optimizer_runs = 4500
 via_ir = true
 # Enable gas-reporting for all contracts
 gas_reports = ["*"]
+evm_version = "paris"
 
 [fuzz]
 runs = 1000
