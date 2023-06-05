@@ -1,10 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-// FIXME
-import "forge-std/console.sol";
-import "test/utils/Lib.sol";
-
 import { ForwarderFactory } from "contracts/src/ForwarderFactory.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
@@ -49,7 +45,7 @@ contract HyperdriveTest is BaseTest {
             checkpointDuration: CHECKPOINT_DURATION,
             timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
             governance: governance,
-            feeCollector: governance,
+            feeCollector: feeCollector,
             fees: fees,
             oracleSize: ORACLE_SIZE,
             updateGap: UPDATE_GAP
@@ -72,8 +68,7 @@ contract HyperdriveTest is BaseTest {
         uint256 apr,
         uint256 curveFee,
         uint256 flatFee,
-        uint256 governanceFee,
-        address governance
+        uint256 governanceFee
     ) internal {
         vm.stopPrank();
         vm.startPrank(deployer);
@@ -89,7 +84,7 @@ contract HyperdriveTest is BaseTest {
             checkpointDuration: CHECKPOINT_DURATION,
             timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
             governance: governance,
-            feeCollector: governance,
+            feeCollector: feeCollector,
             fees: fees,
             oracleSize: ORACLE_SIZE,
             updateGap: UPDATE_GAP

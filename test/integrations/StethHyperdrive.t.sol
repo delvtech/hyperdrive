@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
 import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import { StethHyperdriveDeployer } from "contracts/src/factory/StethHyperdriveDeployer.sol";
@@ -70,8 +70,8 @@ contract StethHyperdriveTest is HyperdriveTest {
             positionDuration: POSITION_DURATION,
             checkpointDuration: CHECKPOINT_DURATION,
             timeStretch: HyperdriveUtils.calculateTimeStretch(0.05e18),
-            governance: address(0),
-            feeCollector: address(0),
+            governance: governance,
+            feeCollector: feeCollector,
             fees: IHyperdrive.Fees({ curve: 0, flat: 0, governance: 0 }),
             oracleSize: ORACLE_SIZE,
             updateGap: UPDATE_GAP

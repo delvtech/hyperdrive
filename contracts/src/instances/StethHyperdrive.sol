@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
 import { Hyperdrive } from "../Hyperdrive.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
@@ -51,7 +51,10 @@ contract StethHyperdrive is Hyperdrive {
 
     /// @notice Accepts ether deposits from the WETH contract.
     /// @dev This function verifies that the sender is the WETH contract to
-    ///      prevent users from forwarding stuck tokens to the contract.
+    ///      prevent users from forwarding stuck tokens to the contract. Since
+    ///      this function is the intended target of the WETH contract, it's
+    ///      important that this contract does not consume more than the 2300
+    ///      gas stipend provided by WETH's `transfer` call.
     receive() external payable {
         if (msg.sender != address(_baseToken)) {
             revert Errors.UnexpectedSender();
@@ -81,11 +84,11 @@ contract StethHyperdrive is Hyperdrive {
             }
             weth.withdraw(_amount);
 
-            // Submit the provided ether to Lido to be deposited. The governance
-            // address is passed as the referral address; however, users can
-            // specify whatever referrer they'd like by depositing stETH instead
-            // of WETH.
-            shares = lido.submit{ value: _amount }(_governance);
+            // Submit the provided ether to Lido to be deposited. The fee
+            // collector address is passed as the referral address; however,
+            // users can specify whatever referrer they'd like by depositing
+            // stETH instead of WETH.
+            shares = lido.submit{ value: _amount }(_feeCollector);
 
             // Calculate the share price.
             sharePrice = _amount.divDown(shares);
