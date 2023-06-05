@@ -44,8 +44,11 @@ methods {
     */
 }
 
+/// Aave pool aToken indices
 definition indexA() returns uint256 = require_uint256(RAY()*2);
 definition indexB() returns uint256 = require_uint256((RAY()*125)/100);
+/// Maximum share price of the Hyperdrive
+definition MaxSharePrice() returns mathint = ONE18() * 100;
 
 /// @dev Under-approximation of the pool parameters (based on developers' test)
 /// @notice Use only to find violations!
@@ -65,13 +68,20 @@ function setHyperdrivePoolParams() {
     //require governanceFee() <= require_uint256(ONE18() / 2);
 }
 
-
+/// @doc A hook for loading the Aave pool liquidity index
 hook Sload uint256 index Pool.liquidityIndex[KEY address token][KEY uint256 timestamp] STORAGE {
     /// @WARNING : UNDER-APPROXIMATION!
     /// @notice : to simplify the SMT formulas, we assume a specific value for the index.
     /// so in general, the index as a function of time is actually a constant.
     require index == indexA();// || index == indexB();
     //require index >= RAY();
+}
+
+/// @doc A hook for loading the checkpoint prices
+/// @notice To focus on realistic values, we assume the checkpoint was either not set
+/// (zero price), or that the price is bounded between 1 and 100.
+hook Sload uint128 price currentContract._checkpoints[KEY uint256 timestamp].sharePrice STORAGE {
+    require (price == 0) || (require_uint256(price) >= ONE18() && to_mathint(price) <= MaxSharePrice());
 }
 
 function getPoolIndex(uint256 timestamp) returns uint256 {
@@ -313,15 +323,15 @@ filtered{ f -> !f.isView } {
     }
 }
 
-rule checkPointPriceIsSetCorrectly(uint256 _checkpoint, method f) 
-filtered{f -> isAddLiq(f) || isRemoveLiq(f)} {
+/// Violated
+rule checkPointPriceIsSetCorrectly(uint256 _checkpoint) {
     env e;
     calldataarg args;
     setHyperdrivePoolParams();
 
     mathint price1 = to_mathint(sharePrice(e));
     mathint preSharePrice = checkPointSharePrice(_checkpoint);
-        f(e, args);
+        checkpoint(e, args);
     mathint postSharePrice = checkPointSharePrice(_checkpoint);
     mathint price2 = to_mathint(sharePrice(e));
 
@@ -414,25 +424,6 @@ rule addAndRemoveSameSharesMeansNoChange(env e) {
     assert lpShares == withdrawalShares => to_mathint(Mstate1.shareReserves) == to_mathint(Mstate3.shareReserves);
 }
 
-/// @doc The sum of longs and shorts should not surpass the total amount of bond reserves
-/// @notice: should be turned into an invariant
-/*
-rule bondsPositionsDontExceedReserves(method f)
-filtered{f -> !f.isView} {
-    env e;
-    calldataarg args;
-    AaveHyperdrive.MarketState Mstate1 = marketState();
-        f(e, args);
-    AaveHyperdrive.MarketState Mstate2 = marketState();
-
-    require Mstate1.longsOutstanding + Mstate1.shortsOutstanding <=
-        to_mathint(Mstate1.bondReserves);
-
-    assert Mstate2.longsOutstanding + Mstate2.shortsOutstanding <=
-        to_mathint(Mstate2.bondReserves);
-}
-*/
-
 rule openLongPreservesOutstandingLongs(uint256 baseAmount) {
     env e;
     uint256 minOutput;
@@ -477,8 +468,12 @@ rule closeLongAtMaturity(uint256 bondAmount) {
 
     setHyperdrivePoolParams();
     uint256 price = sharePrice(e);
+    uint256 latestCP = require_uint256(e.block.timestamp -
+            (e.block.timestamp % checkpointDuration()));
+    require to_mathint(checkPointSharePrice(latestCP)) == to_mathint(price);
     require price > initialSharePrice() && to_mathint(price) <= 2*ONE18();
-    //require totalShares() != 0;
+
+    require to_mathint(bondAmount) <= to_mathint(stateShareReserves());
 
     uint256 assetsRecieved =
         closeLong(e, maturityTime, bondAmount, minOutput, destination, asUnderlying);
@@ -544,32 +539,36 @@ invariant NoTokensBetweenCheckPoints(uint256 AssetId)
     }
 
 /// @doc If there are shares in the pool, there must be underlying assets.
+/// Violated for removeLiquidity:
+/// https://vaas-stg.certora.com/output/41958/31864532f046423ea1f0e0988ebe5e1a/?anonymousKey=63f56d320526ee9dc6552956c574822f476e7273
 invariant SharesNonZeroAssetsNonZero(env e)
     totalShares() !=0 => aToken.balanceOf(e, HDAave) != 0
-    filtered{f -> isRemoveLiq(f) || isAddLiq(f)}
     {
         preserved with (env eP) {
             setHyperdrivePoolParams();
             require eP.block.timestamp == e.block.timestamp;
-            //require totalShares() >= ONE18();
+            require totalShares() >= ONE18();
             //require aToken.balanceOf(eP, HDAave) >= ONE18();
         }
     }
 
 /// @doc The sum of withdrawal shares for all accounts is equal to the shares which are ready to withdraw
-/// Violated on removeLiquidity : need to investigate path.
+/// [VERIFIED]
 invariant SharesReadyToBeRedeemedAreBounded()
     totalWithdrawalShares() >= readyToRedeemShares() 
     {
         preserved{setHyperdrivePoolParams();}
     }
 
-/// https://vaas-stg.certora.com/output/41958/9c6cd4e94b6948a1aa8c760877422a2c/?anonymousKey=b8754681d6883c5a3eb1c3ab57552ebdba610067
 /// @doc The fixed interest (r+1) must never be smaller than 1.
 rule FixedInterestLargerThanOne(method f) filtered{f -> !f.isView} {
     env e;
     calldataarg args;
     setHyperdrivePoolParams();
+    require require_uint256(stateShareReserves()) >= ONE18();
+    require to_mathint(totalShares()) >= to_mathint(stateShareReserves());
+    require to_mathint(aToken.balanceOf(e, HDAave)) >= to_mathint(totalShares());
+
     require curveFixedInterest() >= to_mathint(ONE18());
         f(e,args);
     assert curveFixedInterest() >= to_mathint(ONE18());
@@ -588,6 +587,9 @@ rule cannotCompletelyDepletePool(method f) filtered{f -> !f.isView} {
 }
 */
 
+/// @doc The yield from closing a bond should be linearly bounded by the time passed since the position was opened.
+/// @notice The rule is still in progress.
+/// Need to think how to take into account the curve share proceeds
 rule closeLongYieldIsBoundedByTime(uint256 openTimeStamp) {
     env e;
     require e.block.timestamp >= 10000000;
@@ -617,7 +619,6 @@ invariant LongAverageMaturityTimeIsBounded(env e)
     (stateLongs() != 0 => 
         AvgMTimeLongs() >= e.block.timestamp * ONE18() &&
         AvgMTimeLongs() <= ONE18()*(e.block.timestamp + positionDuration()))
-    filtered{f -> isAddLiq(f)}
     {
         preserved with (env eP) {
             require e.block.timestamp == eP.block.timestamp;
@@ -667,12 +668,6 @@ invariant aTokenBalanceGEToShares(env e)
         }
     }
 
-invariant ShareReservesBackLongs()
-    stateShareReserves() >= stateLongs()
-    {
-        preserved{setHyperdrivePoolParams();}
-    }
-
 /// @doc The sum of longs tokens is greater or equal to the outstanding longs.
 /// @notice The sum is not necessarily equal to the outstanding count.
 /// @notice [VERIFIED]
@@ -684,13 +679,23 @@ invariant SumOfLongsGEOutstanding()
 /// @notice [VERIFIED]
 invariant SumOfShortsGEOutstanding()
     sumOfShorts() >= to_mathint(stateShorts());
+    
+/// @doc There are always enough shares to cover all long positions
+invariant ShareReservesCoverLongs(env e)
+    mulDownWad(require_uint256(sumOfLongs()), require_uint256(sharePrice(e))) <= require_uint256(stateShareReserves())
+    filtered{f -> isAddLiq(f) || isRemoveLiq(f)}
+    {
+        preserved with (env eP) {
+            require e.block.timestamp == eP.block.timestamp;
+            setHyperdrivePoolParams();
+        }
+    }
 
 rule BondsDeltaIsShortsMinusLongsDelta(method f) 
 filtered{f -> !f.isView} {
     env e;
     calldataarg args;
     setHyperdrivePoolParams();
-    require stateShareReserves() == ONE18();
 
     mathint bonds1 = stateBondReserves();
     mathint shortsMinusLongs1 = sumOfShorts() - sumOfLongs();

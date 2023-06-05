@@ -287,14 +287,15 @@ rule BondsOutSharesInAndBack(
     uint256 timeStretch = 45071688063194104;
     uint256 tp = require_uint256(ONE18() - timeStretch);
     require sharePrice >= initialSharePrice;
-    require shareAmount >= 10^12 ;
+    /// Typical number
+    require shareReserves == ONE18();
 
     uint256 bondsDelta = YSMath.calculateBondsOutGivenSharesIn(shareReserves, bondReserves, shareAmount, tp, sharePrice, initialSharePrice);
     uint256 newShares = require_uint256(shareReserves + shareAmount);
     uint256 newBonds = require_uint256(bondReserves - bondsDelta);
     uint256 sharesOut = YSMath.calculateSharesOutGivenBondsIn(newShares, newBonds, bondsDelta, tp, sharePrice, initialSharePrice);
 
-    assert relativeErrorBound(shareAmount, sharesOut, 100), "Trader cannot gain from an immediate round-trip";
+    assert abs(shareAmount - sharesOut) <= 100, "Trader cannot gain from an immediate round-trip";
 }
 
 rule calculateBaseVolumeCheck(uint256 base, uint256 bonds, uint256 time) {

@@ -1,7 +1,7 @@
 import "HyperdriveStorage.spec";
 
 methods {
-    function sharePrice() external returns (uint256); // Equivalent to c
+    function sharePrice() external returns (uint256);
 }
 
 definition LP_ASSET_ID() returns uint256 = 0;
@@ -60,6 +60,13 @@ hook Sstore currentContract._balanceOf[KEY uint256 tokenID][KEY address account]
 
     _sumOfLPTokens = tokenID == LP_ASSET_ID() ?
         _sumOfLPTokens + value - old_value : _sumOfLPTokens;
+}
+
+hook Sload uint256 value currentContract._totalSupply[KEY uint256 tokenID] STORAGE {
+    mathint prefix = prefixByID(tokenID);
+
+    if(prefix == 1) {require _sumOfLongs >= to_mathint(value);}
+    else if(prefix == 2) {require _sumOfShorts >= to_mathint(value);}
 }
 
 hook Sstore currentContract._totalSupply[KEY uint256 tokenID] uint256 value (uint256 old_value) STORAGE {

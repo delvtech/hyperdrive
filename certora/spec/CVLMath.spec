@@ -63,7 +63,8 @@ definition relativeErrorBound(mathint x, mathint y, mathint err) returns bool =
         : (y - x) * ONE18() + abs(x) * err >= 0 && (y - x) * ONE18() <= abs(x) * err)
     : abs(y) <= err);
 
-/// Axiom for a weighted average of the form WA = (x * y / (y + z))
+/// Axiom for a weighted average of the form WA = (x * y) / (y + z)
+/// This is valid as long as z + y > 0 => make certain of that condition in the use of this definition.
 definition weightedAverage(mathint x, mathint y, mathint z, mathint WA) returns bool =
     ((x > 0 && y > 0) => (WA >= 0 && WA <= x))
     &&
