@@ -170,17 +170,22 @@ rule openLongPreservesOutstandingLongs(env e) {
     assert sharePrice2*bondReserves2 >= to_mathint(ONE18()*longsOutstanding2);
 }
 
+// Verified with NONDET _applyCheckpoint.
 rule openLongReallyOpensLong(env e) {
     uint256 baseAmount;
     uint256 minOutput;
     address destination;
     bool asUnderlying;
 
-    require checkpointDuration() != 0;
     setHyperdrivePoolParams();
 
     uint256 latestCP = require_uint256(e.block.timestamp -
             (e.block.timestamp % checkpointDuration()));
+
+    uint256 anyCheckpoint;
+    bool myRequire = checkPointSharePrice(anyCheckpoint) != 0;
+    //bool myRequire = _checkpoints[latestCP].sharePrice != 0;
+    require(myRequire);
 
     AaveHyperdrive.MarketState preState = marketState();
     mathint longsOutstanding1 = preState.longsOutstanding;
@@ -188,18 +193,12 @@ rule openLongReallyOpensLong(env e) {
     uint256 bondsReceived =
         openLong(e, baseAmount, minOutput, destination, asUnderlying);
 
-    // Need to make sure, that _applyCheckpoint end quickly, so that _checkpoints[_latestCheckpoint()].sharePrice != 0
-    //require(_checkpoints[latestCP].sharePrice != 0);
-    require(checkPointSharePrice(latestCP) != 0);
-    // First I nondet the function as I cannot access _checkpoints from HyperdriveStorage
     require(bondsReceived < 1329227995784915872903807060280344576); // 2^120
 
     AaveHyperdrive.MarketState postState = marketState();
     mathint longsOutstanding2 = postState.longsOutstanding;
 
     assert longsOutstanding2 >= longsOutstanding1;
-    // longsOutstanding suddenly went from 9 to 2 in applyCheckpoint. We need to make sure
-    // that we don't have any matured longs. (See Hyperdrive::_applyCheckpoint)
     assert longsOutstanding1 + bondsReceived == longsOutstanding2;
 }
 
