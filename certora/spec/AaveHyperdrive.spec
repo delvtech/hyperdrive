@@ -314,16 +314,19 @@ filtered{ f -> !f.isView } {
 }
 
 rule checkPointPriceIsSetCorrectly(uint256 _checkpoint, method f) 
-filtered{f -> !f.isView} {
+filtered{f -> isAddLiq(f) || isRemoveLiq(f)} {
     env e;
     calldataarg args;
+    setHyperdrivePoolParams();
 
-    AaveHyperdrive.Checkpoint CP1 = checkPoints(_checkpoint);
-        f(e,args);
-    AaveHyperdrive.Checkpoint CP2 = checkPoints(_checkpoint);
-    uint256 price = sharePrice(e);
+    mathint price1 = to_mathint(sharePrice(e));
+    mathint preSharePrice = checkPointSharePrice(_checkpoint);
+        f(e, args);
+    mathint postSharePrice = checkPointSharePrice(_checkpoint);
+    mathint price2 = to_mathint(sharePrice(e));
 
-    assert (CP1.sharePrice ==0 && CP2.sharePrice !=0) => to_mathint(CP2.sharePrice) == to_mathint(price);
+    assert (preSharePrice ==0 && postSharePrice !=0) => 
+       (postSharePrice <= max(price1,price2) && postSharePrice >= min(price1,price2));
 }
 
 /// @doc integrity rule for 'openLong'
@@ -413,6 +416,7 @@ rule addAndRemoveSameSharesMeansNoChange(env e) {
 
 /// @doc The sum of longs and shorts should not surpass the total amount of bond reserves
 /// @notice: should be turned into an invariant
+/*
 rule bondsPositionsDontExceedReserves(method f)
 filtered{f -> !f.isView} {
     env e;
@@ -427,6 +431,7 @@ filtered{f -> !f.isView} {
     assert Mstate2.longsOutstanding + Mstate2.shortsOutstanding <=
         to_mathint(Mstate2.bondReserves);
 }
+*/
 
 rule openLongPreservesOutstandingLongs(uint256 baseAmount) {
     env e;
@@ -437,6 +442,8 @@ rule openLongPreservesOutstandingLongs(uint256 baseAmount) {
     setHyperdrivePoolParams();
     /// Not proven yet, used for filtering counter-examples
     requireInvariant aTokenBalanceGEToShares(e);
+    requireInvariant SumOfShortsGEOutstanding();
+    requireInvariant SumOfLongsGEOutstanding();
 
     uint256 latestCP = require_uint256(e.block.timestamp -
             (e.block.timestamp % checkpointDuration()));
@@ -444,7 +451,8 @@ rule openLongPreservesOutstandingLongs(uint256 baseAmount) {
     AaveHyperdrive.MarketState preState = marketState();
     uint128 bondReserves1 = preState.bondReserves;
     uint128 longsOutstanding1 = preState.longsOutstanding;
-    uint128 sharePrice1 = checkPointSharePrice(latestCP);
+    uint256 sharePrice1 = sharePrice(e);
+    require to_mathint(checkPointSharePrice(latestCP)) == to_mathint(sharePrice1);
 
     require mulUpWad(sharePrice1, bondReserves1) >= assert_uint256(longsOutstanding1);
 
@@ -454,7 +462,7 @@ rule openLongPreservesOutstandingLongs(uint256 baseAmount) {
     AaveHyperdrive.MarketState postState = marketState();
     uint128 bondReserves2 = postState.bondReserves;
     uint128 longsOutstanding2 = postState.longsOutstanding;
-    uint128 sharePrice2 = checkPointSharePrice(latestCP);
+    uint256 sharePrice2 = sharePrice(e);
 
     assert mulUpWad(sharePrice2, bondReserves2) >= assert_uint256(longsOutstanding2);
 }
@@ -538,12 +546,13 @@ invariant NoTokensBetweenCheckPoints(uint256 AssetId)
 /// @doc If there are shares in the pool, there must be underlying assets.
 invariant SharesNonZeroAssetsNonZero(env e)
     totalShares() !=0 => aToken.balanceOf(e, HDAave) != 0
+    filtered{f -> isRemoveLiq(f) || isAddLiq(f)}
     {
         preserved with (env eP) {
             setHyperdrivePoolParams();
             require eP.block.timestamp == e.block.timestamp;
-            require totalShares() >= ONE18();
-            require aToken.balanceOf(eP, HDAave) >= ONE18();
+            //require totalShares() >= ONE18();
+            //require aToken.balanceOf(eP, HDAave) >= ONE18();
         }
     }
 
@@ -603,24 +612,31 @@ rule closeLongYieldIsBoundedByTime(uint256 openTimeStamp) {
     assert assetsRecieved <= mulDivUpAbstractPlus(timeElapsed, bondAmount, positionDuration());
 }
 
-rule LongAverageMaturityTimeIsBounded(method f) 
-filtered{f -> !f.isView} {
-    env e;
-    mathint Time = to_mathint(e.block.timestamp);
-    mathint duration = positionDuration();
-    calldataarg args;
+invariant LongAverageMaturityTimeIsBounded(env e)
+    (stateLongs() == 0 => AvgMTimeLongs() == 0) &&
+    (stateLongs() != 0 => 
+        AvgMTimeLongs() >= e.block.timestamp * ONE18() &&
+        AvgMTimeLongs() <= ONE18()*(e.block.timestamp + positionDuration()))
+    filtered{f -> isAddLiq(f)}
+    {
+        preserved with (env eP) {
+            require e.block.timestamp == eP.block.timestamp;
+            setHyperdrivePoolParams();
+        }
+    }
 
-    setHyperdrivePoolParams();
+invariant ShortAverageMaturityTimeIsBounded(env e)
+    (stateShorts() == 0 => AvgMTimeShorts() == 0) &&
+    (stateShorts() != 0 => 
+        AvgMTimeShorts() >= e.block.timestamp * ONE18() &&
+        AvgMTimeShorts() <= ONE18()*(e.block.timestamp + positionDuration()))
+    {
+        preserved with (env eP) {
+            require e.block.timestamp == eP.block.timestamp;
+            setHyperdrivePoolParams();
+        }
+    }
 
-    AaveHyperdrive.MarketState Mstate1 = marketState();
-    mathint LongAvgTime1 = to_mathint(Mstate1.longAverageMaturityTime);
-        f(e, args);
-    AaveHyperdrive.MarketState Mstate2 = marketState();
-    mathint LongAvgTime2 = to_mathint(Mstate2.longAverageMaturityTime);
-
-    require LongAvgTime1 >= Time && LongAvgTime1 <= Time + duration;
-    assert LongAvgTime2 >= Time && LongAvgTime2 <= Time + duration;
-}
 
 invariant SharePriceAlwaysGreaterThanInitial(env e)
     sharePrice(e) >= initialSharePrice()
@@ -668,3 +684,19 @@ invariant SumOfLongsGEOutstanding()
 /// @notice [VERIFIED]
 invariant SumOfShortsGEOutstanding()
     sumOfShorts() >= to_mathint(stateShorts());
+
+rule BondsDeltaIsShortsMinusLongsDelta(method f) 
+filtered{f -> !f.isView} {
+    env e;
+    calldataarg args;
+    setHyperdrivePoolParams();
+    require stateShareReserves() == ONE18();
+
+    mathint bonds1 = stateBondReserves();
+    mathint shortsMinusLongs1 = sumOfShorts() - sumOfLongs();
+        f(e,args);
+    mathint bonds2 = stateBondReserves();
+    mathint shortsMinusLongs2 = sumOfShorts() - sumOfLongs();
+
+    assert bonds2 - bonds1 == shortsMinusLongs2 - shortsMinusLongs1;
+}

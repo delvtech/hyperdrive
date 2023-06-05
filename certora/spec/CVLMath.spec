@@ -65,15 +65,15 @@ definition relativeErrorBound(mathint x, mathint y, mathint err) returns bool =
 
 /// Axiom for a weighted average of the form WA = (x * y / (y + z))
 definition weightedAverage(mathint x, mathint y, mathint z, mathint WA) returns bool =
-    (x > 0 && y > 0) => (WA >= 0 && WA <= x)
+    ((x > 0 && y > 0) => (WA >= 0 && WA <= x))
     &&
-    (x < 0 && y > 0) => (WA <= 0 && WA >= x)
+    ((x < 0 && y > 0) => (WA <= 0 && WA >= x))
     &&
-    (x > 0 && y < 0) => (WA <= 0 && WA - x <= 0)
+    ((x > 0 && y < 0) => (WA <= 0 && WA - x <= 0))
     &&
-    (x < 0 && y < 0) => (WA >= 0 && WA + x <= 0)
+    ((x < 0 && y < 0) => (WA >= 0 && WA + x <= 0))
     &&
-    (x == 0 || y == 0) => (WA == 0);
+    ((x == 0 || y == 0) => (WA == 0));
         
 ghost uint256 res;
 ghost mathint rem;

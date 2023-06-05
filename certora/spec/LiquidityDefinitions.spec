@@ -136,5 +136,17 @@ function LP_Liquidity() returns mathint {
 /// Fixed interest per curve (+1)
 /// r + 1 = y/(z*mu)
 function curveFixedInterest() returns mathint {
-    return stateShareReserves() == 0 ? 0 : (stateBondReserves() * ONE18()) / (stateShareReserves() * initialSharePrice());
+    return stateShareReserves() == 0 ? 0 : to_mathint(divUpWad(stateBondReserves(), mulUpWad(stateShareReserves(), initialSharePrice())));
+}
+
+/// Average maturity time for longs
+function AvgMTimeLongs() returns mathint {
+    AaveHyperdrive.MarketState Mstate = marketState();
+    return to_mathint(Mstate.longAverageMaturityTime);
+}
+
+/// Average maturity time for shorts
+function AvgMTimeShorts() returns mathint {
+    AaveHyperdrive.MarketState Mstate = marketState();
+    return to_mathint(Mstate.shortAverageMaturityTime);
 }

@@ -17,6 +17,8 @@ methods {
     function FPMath.updateWeightedAverage(uint256,uint256,uint256,uint256,bool) external returns (uint256) envfree;
 
     function _.pow(uint256 x, uint256 y) internal => CVLPow(x, y) expect uint256;
+    function _.mulDivDown(uint256 x, uint256 y, uint256 d) internal => mulDivDownAbstractPlus(x, y, d) expect uint256;
+    function _.mulDivUp(uint256 x, uint256 y, uint256 d) internal => mulDivUpAbstractPlus(x, y, d) expect uint256;
 
     function HDMath.calculateBaseVolume(uint256,uint256,uint256) external returns uint256 envfree;
     function HDMath.calculateSpotPrice(uint256,uint256,uint256,uint256,uint256) external returns uint256 envfree;
@@ -304,4 +306,23 @@ rule calculateBaseVolumeCheck(uint256 base, uint256 bonds, uint256 time) {
     assert 
         to_mathint(base) <= max(to_mathint(volume), to_mathint(bonds)) &&
         to_mathint(base) >= min(to_mathint(volume), to_mathint(bonds));
+}
+
+rule updateWeightedAverageCheck(uint256 avg, uint256 totW, uint256 del, uint256 delW) {
+    bool isAdd;
+    uint256 avg_new = FPMath.updateWeightedAverage(avg,totW,del,delW,isAdd);
+    mathint DeltAvg = avg_new - avg;
+    if(isAdd) {
+        assert weightedAverage(del-avg,delW,totW,DeltAvg);
+    }
+    else {
+        assert weightedAverage(del-avg,0-delW,totW,DeltAvg);
+    }
+    /*
+    if(delW == totW && !isAdd) {assert DeltAvg == 0;}
+    else {
+        assert 
+        (abs(delW) < abs(totW) => abs(DeltAvg) <= abs(del-avg)/2 ) &&
+        (abs(delW) >= abs(totW) => abs(DeltAvg) >= abs(del-avg)/2);
+    }*/
 }

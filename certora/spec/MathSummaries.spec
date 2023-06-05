@@ -73,7 +73,7 @@ function CVLUpdateWeightedAverage(uint256 avg, uint256 totW, uint256 del, uint25
 }
 
 function CVLUpdateWeightedAverage_add(uint256 avg, uint256 totW, uint256 del, uint256 delW) returns uint256 {
-    if(delW == 0) {return require_uint256(avg * ONE18());}
+    if(delW == 0) {return require_uint256(avg);}
     return require_uint256(to_mathint(avg) + ghostWeightedAverage(del-avg,delW,totW));
 }
 
@@ -81,14 +81,21 @@ function CVLUpdateWeightedAverage_sub(uint256 avg, uint256 totW, uint256 del, ui
     if(totW == delW) {return 0;}
     else {
         require(totW > delW);
-        if(delW == 0) {return require_uint256(avg * ONE18());}
+        if(delW == 0) {return require_uint256(avg);}
         return require_uint256(to_mathint(avg) + ghostWeightedAverage(del-avg,0-delW,totW));
     }
 }
 
+/// @doc Summary for the updateWeightedAverage.
+/// @notice Note that due to rounding errors, the summary is not 100% correct, so deviations of the order of 1
+/// are possible in the real function.
 ghost ghostWeightedAverage(mathint, mathint, mathint) returns mathint {
     axiom forall mathint x. forall mathint y. forall mathint z.
         weightedAverage(x,y,z, ghostWeightedAverage(x,y,z));
+
+    //axiom forall mathint x. forall mathint y. forall mathint z.
+    //    (abs(y) < abs(z) => abs(ghostWeightedAverage(x,y,z)) <= abs(x)/2) &&
+    //    (abs(y) >= abs(z) => abs(ghostWeightedAverage(x,y,z)) >= abs(x)/2);
 }
 
 /// Ghost implementations of Hyperdrive Math
