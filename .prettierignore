@@ -3,3 +3,4 @@
 *.md
 *.yaml
 lib/
+contracts/src/DataProvider.sol
