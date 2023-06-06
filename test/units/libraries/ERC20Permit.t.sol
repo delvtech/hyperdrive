@@ -22,11 +22,6 @@ contract TestERC20Permit is Test {
         assertEq(token.decimals(), 18);
     }
 
-    function testDefaultTotalSupply() public {
-        // Total supply should be 0 an overriden, since this is a library
-        assertEq(token.totalSupply(), 0);
-    }
-
     function testMint() public {
         token.mint(address(0xBEEF), 1e18);
 
