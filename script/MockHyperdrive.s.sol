@@ -57,6 +57,9 @@ contract MockHyperdriveScript is Script {
         baseToken.approve(address(hyperdrive), 10_000_000e18);
         hyperdrive.initialize(100_000e18, 0.05e18, msg.sender, true);
 
+        // Deploy the MockHyperdriveMath contract.
+        MockHyperdriveMath mockHyperdriveMath = new MockHyperdriveMath();
+
         vm.stopBroadcast();
 
         // Writes the addresses to a file.
@@ -66,6 +69,11 @@ contract MockHyperdriveScript is Script {
             result,
             "mockHyperdrive",
             address(hyperdrive)
+        );
+        result = vm.serializeAddress(
+            result,
+            "mockHyperdriveMath",
+            address(mockHyperdriveMath)
         );
         result.write("./artifacts/script_addresses.json");
     }
