@@ -25,7 +25,6 @@ contract HyperdriveTest is BaseTest {
     uint256 internal constant ORACLE_SIZE = 5;
     uint256 internal constant UPDATE_GAP = 1000;
 
-    address constant GOVERNANCE = address(0x9090906);
 
     function setUp() public virtual override {
         super.setUp();
