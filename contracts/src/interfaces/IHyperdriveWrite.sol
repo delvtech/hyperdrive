@@ -59,7 +59,7 @@ interface IHyperdriveWrite is IMultiTokenWrite {
         uint256 _maxDeposit,
         address _destination,
         bool _asUnderlying
-    ) external returns (uint256);
+    ) external returns (uint256 maturityTime, uint256 traderDeposit);
 
     function closeShort(
         uint256 _maturityTime,
