@@ -12,7 +12,7 @@ import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { MockHyperdrive, MockHyperdriveDataProvider } from "../../mocks/MockHyperdrive.sol";
 import { Lib } from "../../utils/Lib.sol";
 
-contract HyperDriveDataProviderTest is HyperdriveTest {
+contract HyperdriveDataProviderTest is HyperdriveTest {
     address constant GOVERNANCE = address(0x9090906);
 
     function setUp() public virtual override {
