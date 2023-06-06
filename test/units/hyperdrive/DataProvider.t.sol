@@ -14,19 +14,13 @@ import { Lib } from "../../utils/Lib.sol";
 
 contract HyperdriveDataProviderTest is HyperdriveTest {
     function testLoadSlots() public {
-        uint256[] memory slots = new uint256[](2);
+        uint256[] memory slots = new uint256[](1);
 
         slots[0] = 16;
-        slots[1] = 20;
 
         bytes32[] memory values = hyperdrive.load(slots);
 
         // Dumb address conversion to bytes, but this is the governance address we've fed in as bytes
-        assertEq(
-            values[0],
-            bytes32(
-                0x0000000000000000000000000000000000000000000000000000000009090906
-            )
-        );
+        assertEq(address(uint160(uint256(values[0]))), governance);
     }
 }

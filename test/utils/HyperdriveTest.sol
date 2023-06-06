@@ -46,7 +46,7 @@ contract HyperdriveTest is BaseTest {
             positionDuration: POSITION_DURATION,
             checkpointDuration: CHECKPOINT_DURATION,
             timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
-            governance: GOVERNANCE,
+            governance: governance,
             feeCollector: feeCollector,
             fees: fees,
             oracleSize: ORACLE_SIZE,
@@ -57,7 +57,7 @@ contract HyperdriveTest is BaseTest {
             address(new MockHyperdrive(config, dataProvider))
         );
         vm.stopPrank();
-        vm.startPrank(GOVERNANCE);
+        vm.startPrank(governance);
         hyperdrive.setPauser(pauser, true);
 
         // Advance time so that Hyperdrive can look back more than a position
