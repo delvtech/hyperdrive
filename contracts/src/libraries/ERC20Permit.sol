@@ -2,7 +2,6 @@
 pragma solidity 0.8.19;
 
 import { IERC20Permit } from "../interfaces/IERC20Permit.sol";
-import { console } from "forge-std/console.sol";
 
 // This default erc20 library is designed for max efficiency and security.
 // WARNING: By default it does not include totalSupply which breaks the ERC20 standard

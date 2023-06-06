@@ -144,25 +144,28 @@ contract OpenShortTest is HyperdriveTest {
         hyperdrive.openShort(overlyLargeShort, type(uint256).max, bob, true);
     }
 
-    /* function test_RevertsWithNegativeInterestRate() public {
+    function test_RevertsWithNegativeInterestRate() public {
         uint256 apr = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
 
-        // Attempt to purchase more bonds than exist. This should fail.
         vm.stopPrank();
         vm.startPrank(bob);
-        uint256 baseAmount = 10000 ether;
 
-        console.log(baseAmount);
+        uint256 bondAmount = (hyperdrive.calculateMaxShort() * 90) / 100;
+        openShort(bob, bondAmount);
 
-        baseToken.mint(baseAmount);
-        baseToken.approve(address(hyperdrive), baseAmount);
-        vm.expectRevert(Errors.NegativeInterest.selector);
-        hyperdrive.openShort(baseAmount, type(uint256).max, bob, true);
-    } */
+        uint256 longAmount = (hyperdrive.calculateMaxLong() * 50) / 100;
+        openLong(bob, longAmount);
+
+        //vm.expectRevert(Errors.NegativeInterest.selector);
+
+        uint256 baseAmount = (hyperdrive.calculateMaxShort() * 100) / 100;
+        openShort(bob, baseAmount);
+        //I think we could trigger this with big short, open long, and short?
+    }
 
     function verifyOpenShort(
         IHyperdrive.PoolInfo memory poolInfoBefore,
