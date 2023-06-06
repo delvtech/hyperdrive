@@ -11,7 +11,6 @@ import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 
 contract MockHyperdriveScript is Script {
     using stdJson for string;
-
     using FixedPointMath for uint256;
 
     function setUp() public {}
@@ -58,8 +57,6 @@ contract MockHyperdriveScript is Script {
         baseToken.approve(address(hyperdrive), 10_000_000e18);
         hyperdrive.initialize(100_000e18, 0.05e18, msg.sender, true);
 
-        MockHyperdriveMath mockHyperdriveMath = new MockHyperdriveMath();
-
         vm.stopBroadcast();
 
         // Writes the addresses to a file.
@@ -67,13 +64,8 @@ contract MockHyperdriveScript is Script {
         vm.serializeAddress(result, "baseToken", address(baseToken));
         result = vm.serializeAddress(
             result,
-            "dsrHyperdrive",
+            "mockHyperdrive",
             address(hyperdrive)
-        );
-        result = vm.serializeAddress(
-            result,
-            "mockHyperdriveMath",
-            address(mockHyperdriveMath)
         );
         result.write("./artifacts/script_addresses.json");
     }
