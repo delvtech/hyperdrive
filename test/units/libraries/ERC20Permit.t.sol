@@ -22,8 +22,14 @@ contract TestERC20Permit is Test {
         assertEq(token.decimals(), 18);
     }
 
+    function testDefaultTotalSupply() public {
+        // Total supply should be 0 at the start without minting or burning.
+        assertEq(token.totalSupply(), 0);
+    }
+
     function testMint() public {
         token.mint(address(0xBEEF), 1e18);
+        assertEq(token.totalSupply(), 1e18);
 
         assertEq(token.balanceOf(address(0xBEEF)), 1e18);
     }
@@ -31,6 +37,7 @@ contract TestERC20Permit is Test {
     function testBurn() public {
         token.mint(address(0xBEEF), 1e18);
         token.burn(address(0xBEEF), 0.9e18);
+        assertEq(token.totalSupply(), 0.1e18);
 
         assertEq(token.balanceOf(address(0xBEEF)), 0.1e18);
     }

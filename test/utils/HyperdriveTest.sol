@@ -25,6 +25,8 @@ contract HyperdriveTest is BaseTest {
     uint256 internal constant ORACLE_SIZE = 5;
     uint256 internal constant UPDATE_GAP = 1000;
 
+    address constant GOVERNANCE = address(0x9090906);
+
     function setUp() public virtual override {
         super.setUp();
         vm.startPrank(alice);
@@ -44,7 +46,7 @@ contract HyperdriveTest is BaseTest {
             positionDuration: POSITION_DURATION,
             checkpointDuration: CHECKPOINT_DURATION,
             timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
-            governance: governance,
+            governance: GOVERNANCE,
             feeCollector: feeCollector,
             fees: fees,
             oracleSize: ORACLE_SIZE,
@@ -55,7 +57,7 @@ contract HyperdriveTest is BaseTest {
             address(new MockHyperdrive(config, dataProvider))
         );
         vm.stopPrank();
-        vm.startPrank(governance);
+        vm.startPrank(GOVERNANCE);
         hyperdrive.setPauser(pauser, true);
 
         // Advance time so that Hyperdrive can look back more than a position
