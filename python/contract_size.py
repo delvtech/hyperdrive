@@ -57,8 +57,8 @@ for artifact_path in get_artifact_paths(ARTIFACTS_PATH):
                 len(artifact["bytecode"]["object"][2:]) / 2
             )
 
-print("|         Contract           | Bytecode Size |     Margin    |")
-print("| -------------------------- | ------------- | ------------- |")
+print("|             Contract              | Bytecode Size |     Margin    |")
+print("| --------------------------------- | ------------- | ------------- |")
 
 failure = False
 for contract in sorted(info):
@@ -77,7 +77,7 @@ for contract in sorted(info):
         color = bcolors.FAIL
 
     print(
-        f"| {contract:<26} | {bytecode_size:>13} | {color}{margin:>13}{bcolors.ENDC} |"
+        f"| {contract:<33} | {bytecode_size:>13} | {color}{margin:>13}{bcolors.ENDC} |"
     )
 
 if failure:

@@ -13,7 +13,7 @@ import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
 
-contract HyperdriveDSRTest is HyperdriveTest {
+contract HyperdriveAaveTest is HyperdriveTest {
     using FixedPointMath for *;
 
     AaveHyperdriveFactory factory;
