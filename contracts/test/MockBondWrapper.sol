@@ -32,6 +32,10 @@ contract MockBondWrapper is BondWrapper {
     }
 
     function setBalanceOf(address user, uint256 amount) external {
-        balanceOf[user] = amount;
+        if (balanceOf[user] < amount) {
+            _mint(user, amount - balanceOf[user]);
+        } else if (balanceOf[user] > amount) {
+            _burn(user, balanceOf[user] - amount);
+        }
     }
 }

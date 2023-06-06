@@ -12,6 +12,7 @@ import { Lib } from "../../utils/Lib.sol";
 contract OpenShortTest is HyperdriveTest {
     using FixedPointMath for uint256;
     using Lib for *;
+    using HyperdriveUtils for IHyperdrive;
 
     function setUp() public override {
         super.setUp();
@@ -116,6 +117,52 @@ contract OpenShortTest is HyperdriveTest {
             maturityTime,
             apr
         );
+    }
+
+    function test_ShortAvoidsDrainingBufferReserves() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Open up a large long to init buffer reserves
+        uint256 bondAmount = hyperdrive.calculateMaxLong();
+        openLong(bob, bondAmount);
+
+        // Initialize a large long to eat through the buffer of capital
+        uint256 overlyLargeShort = 500608690308195651844553347;
+
+        // Open the Short.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        baseToken.mint(overlyLargeShort);
+        baseToken.approve(address(hyperdrive), overlyLargeShort);
+        vm.expectRevert(Errors.BaseBufferExceedsShareReserves.selector);
+        hyperdrive.openShort(overlyLargeShort, type(uint256).max, bob, true);
+    }
+
+    function test_RevertsWithNegativeInterestRate() public {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        vm.stopPrank();
+        vm.startPrank(bob);
+
+        uint256 bondAmount = (hyperdrive.calculateMaxShort() * 90) / 100;
+        openShort(bob, bondAmount);
+
+        uint256 longAmount = (hyperdrive.calculateMaxLong() * 50) / 100;
+        openLong(bob, longAmount);
+
+        //vm.expectRevert(Errors.NegativeInterest.selector);
+
+        uint256 baseAmount = (hyperdrive.calculateMaxShort() * 100) / 100;
+        openShort(bob, baseAmount);
+        //I think we could trigger this with big short, open long, and short?
     }
 
     function verifyOpenShort(

@@ -11,6 +11,7 @@ import { IMultiTokenRead } from "./interfaces/IMultiTokenRead.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract MultiTokenDataProvider is MultiTokenStorage, IMultiTokenRead {
+    // solhint-disable no-empty-blocks
     /// @notice Initializes the MultiToken's data provider.
     /// @param _linkerCodeHash_ The hash of the erc20 linker contract deploy code
     /// @param _factory_ The factory which is used to deploy the linking contracts

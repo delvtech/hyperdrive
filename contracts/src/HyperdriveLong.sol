@@ -59,7 +59,9 @@ abstract contract HyperdriveLong is HyperdriveLP {
 
         // If the user gets less bonds than they paid, we are in the negative
         // interest region of the trading function.
-        if (bondProceeds < _baseAmount) revert Errors.NegativeInterest();
+        if (bondProceeds < _baseAmount) {
+            revert Errors.NegativeInterest();
+        }
 
         // Enforce min user outputs
         if (_minOutput > bondProceeds) revert Errors.OutputLimit();

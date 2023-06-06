@@ -17,6 +17,7 @@ import { Errors } from "../libraries/Errors.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract AaveHyperdriveFactory is HyperdriveFactory {
+    // solhint-disable no-empty-blocks
     /// @notice Deploys the contract
     /// @param _governance The address which can update this factory.
     /// @param _deployer The contract which holds the bytecode and deploys new versions.

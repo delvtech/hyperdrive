@@ -20,6 +20,7 @@ abstract contract HyperdriveDataProvider is
 {
     using FixedPointMath for uint256;
 
+    // solhint-disable no-empty-blocks
     /// @notice Initializes Hyperdrive's data provider.
     /// @param _config The configuration of the Hyperdrive pool.
     constructor(

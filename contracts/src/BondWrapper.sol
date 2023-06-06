@@ -36,7 +36,7 @@ contract BondWrapper is ERC20Permit {
         uint256 _mintPercent,
         string memory name_,
         string memory symbol_
-    ) ERC20Permit(name_, symbol_) {
+    ) ERC20Permit(name_, symbol_, 18) {
         // Set the immutables
         hyperdrive = _hyperdrive;
         token = _token;
