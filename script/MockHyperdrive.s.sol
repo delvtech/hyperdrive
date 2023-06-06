@@ -65,11 +65,7 @@ contract MockHyperdriveScript is Script {
         // Writes the addresses to a file.
         string memory result = "result";
         vm.serializeAddress(result, "baseToken", address(baseToken));
-        result = vm.serializeAddress(
-            result,
-            "mockHyperdrive",
-            address(hyperdrive)
-        );
+        vm.serializeAddress(result, "mockHyperdrive", address(hyperdrive));
         result = vm.serializeAddress(
             result,
             "mockHyperdriveMath",
