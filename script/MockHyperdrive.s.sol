@@ -4,13 +4,13 @@ pragma solidity ^0.8.13;
 import { stdJson } from "forge-std/StdJson.sol";
 import { Script } from "forge-std/Script.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { MockHyperdriveMath } from "contracts/test/MockHyperdriveMath.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { MockHyperdriveTestnet, MockHyperdriveDataProviderTestnet } from "contracts/test/MockHyperdriveTestnet.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 
 contract MockHyperdriveScript is Script {
     using stdJson for string;
-
     using FixedPointMath for uint256;
 
     function setUp() public {}
@@ -62,7 +62,11 @@ contract MockHyperdriveScript is Script {
         // Writes the addresses to a file.
         string memory result = "result";
         vm.serializeAddress(result, "baseToken", address(baseToken));
-        result = vm.serializeAddress(result, "hyperdrive", address(hyperdrive));
+        result = vm.serializeAddress(
+            result,
+            "mockHyperdrive",
+            address(hyperdrive)
+        );
         result.write("./artifacts/script_addresses.json");
     }
 }
