@@ -186,26 +186,34 @@ ghost _ghostPow(uint256, uint256) returns uint256 {
     axiom forall uint256 x. _ghostPow(x, ONE18()) == x;
     /// 1^y = 1
     axiom forall uint256 y. _ghostPow(ONE18(), y) == ONE18();
-    /// x^2 = x * x
-    //axiom forall uint256 x. forall uint256 z.
-    //    to_mathint(z) == 2*ONE18() => _ghostPow(x, z)*ONE18() == x * x;
+
     /// I. x > 1 && y1 > y2 => x^y1 > x^y2
     /// II. x < 1 && y1 > y2 => x^y1 < x^y2
     axiom forall uint256 x. forall uint256 y1. forall uint256 y2.
         x >= ONE18() && y1 > y2 => _ghostPow(x, y1) >= _ghostPow(x, y2);
     axiom forall uint256 x. forall uint256 y1. forall uint256 y2.
         x < ONE18() && y1 > y2 => (_ghostPow(x, y1) <= _ghostPow(x, y2) && _ghostPow(x,y2) <= ONE18());
+    axiom forall uint256 x. forall uint256 y.
+        x < ONE18() && y > ONE18() => (_ghostPow(x, y) <= x);
+    axiom forall uint256 x. forall uint256 y.
+        x < ONE18() && y <= ONE18() => (_ghostPow(x, y) >= x);
+    axiom forall uint256 x. forall uint256 y.
+        x >= ONE18() && y > ONE18() => (_ghostPow(x, y) >= x);
+    axiom forall uint256 x. forall uint256 y.
+        x >= ONE18() && y <= ONE18() => (_ghostPow(x, y) <= x);
     /// x1 > x2 && y > 0 => x1^y > x2^y
     axiom forall uint256 x1. forall uint256 x2. forall uint256 y.
         x1 > x2 => _ghostPow(x1, y) >= _ghostPow(x2, y);
-    /// x^y * x^(1-y) == x
+    
+    /// x^y * x^(1-y) == x -> 0.01% relative error
     axiom forall uint256 x. forall uint256 y. forall uint256 z. 
-        (0 <= y && y <= ONE18() &&  z + y == to_mathint(ONE18())) => (
-        _ghostPow(x, y) * _ghostPow(x, z) == x * ONE18());
-    /// x^y * x^y == x^(2*y)
-    axiom forall uint256 x. forall uint256 y. forall uint256 z.
-         (to_mathint(z) == 2 * y) 
-            => _ghostPow(x, y) * _ghostPow(x, y) == ONE18() * _ghostPow(x, z);
+        (0 <= y && y <= ONE18() &&  z + y == to_mathint(ONE18())) =>
+        relativeErrorBound(_ghostPow(x, y) * _ghostPow(x, z), x * ONE18(), ONE18() / 10000);
+    
+    /// (x^y)^(1/y) == x -> 1% relative error
+    axiom forall uint256 x. forall uint256 y. forall uint256 z. 
+        (0 <= y && y <= ONE18() &&  z * y == ONE18()*ONE18() ) =>
+        relativeErrorBound(_ghostPow(_ghostPow(x, y), z), x, ONE18() / 100);
 }
 
 function CVLPow(uint256 x, uint256 y) returns uint256 {
