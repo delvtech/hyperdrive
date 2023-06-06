@@ -133,12 +133,11 @@ contract OpenShortTest is HyperdriveTest {
         // Initialize a large long to eat through the buffer of capital
         uint256 overlyLargeShort = 500608690308195651844553347;
 
-        // Open the long.
+        // Open the Short.
         vm.stopPrank();
         vm.startPrank(bob);
         baseToken.mint(overlyLargeShort);
         baseToken.approve(address(hyperdrive), overlyLargeShort);
-
         vm.expectRevert(Errors.BaseBufferExceedsShareReserves.selector);
         hyperdrive.openShort(overlyLargeShort, type(uint256).max, bob, true);
     }
