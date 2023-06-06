@@ -5,7 +5,6 @@ import { ForwarderFactory } from "contracts/src/ForwarderFactory.sol";
 import { MultiTokenDataProvider } from "contracts/src/MultiTokenDataProvider.sol";
 import { MockMultiToken, IMockMultiToken } from "contracts/test/MockMultiToken.sol";
 import { BaseTest } from "test/utils/BaseTest.sol";
-import { console } from "forge-std/console.sol";
 
 contract MultiTokenTest is BaseTest {
     IMockMultiToken multiToken;
