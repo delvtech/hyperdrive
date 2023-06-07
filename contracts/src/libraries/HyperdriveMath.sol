@@ -215,7 +215,7 @@ library HyperdriveMath {
     /// @param _timeStretch The time stretch parameter.
     /// @param _sharePrice The share price.
     /// @param _initialSharePrice The initial share price.
-    /// @return shareReservesDelta The shares paid by the reserves in the trade.
+    /// @return The shares paid by the reserves in the trade.
     function calculateOpenShort(
         uint256 _shareReserves,
         uint256 _bondReserves,
@@ -526,15 +526,17 @@ library HyperdriveMath {
             maxCurveTrade = uint256(-netCurveTrade) <= maxCurveTrade
                 ? uint256(-netCurveTrade)
                 : maxCurveTrade;
-            _params.shareReserves += YieldSpaceMath
-                .calculateSharesInGivenBondsOut(
-                    _params.shareReserves,
-                    _params.bondReserves,
-                    maxCurveTrade,
-                    FixedPointMath.ONE_18.sub(_params.timeStretch),
-                    _params.sharePrice,
-                    _params.initialSharePrice
-                );
+            if (maxCurveTrade > 0) {
+                _params.shareReserves += YieldSpaceMath
+                    .calculateSharesInGivenBondsOut(
+                        _params.shareReserves,
+                        _params.bondReserves,
+                        maxCurveTrade,
+                        FixedPointMath.ONE_18.sub(_params.timeStretch),
+                        _params.sharePrice,
+                        _params.initialSharePrice
+                    );
+            }
             _params.shareReserves += _params.shortBaseVolume.mulDivDown(
                 uint256(-netCurveTrade) - maxCurveTrade,
                 _params.shortsOutstanding.mulDown(_params.sharePrice)

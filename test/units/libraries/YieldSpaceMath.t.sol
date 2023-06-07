@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import { Test } from "forge-std/Test.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { MockYieldSpaceMath } from "contracts/test/MockYieldSpaceMath.sol";
+import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
 
 contract YieldSpaceMathTest is Test {
@@ -118,5 +119,35 @@ contract YieldSpaceMathTest is Test {
         );
         uint256 pythonResult4 = 78866.87433323538e18;
         assertApproxEqAbs(result4, pythonResult4, 1e9);
+    }
+
+    // This test verifies that sane values won't result in the YieldSpace math
+    // functions returning zero.
+    function test__calculateSharesInGivenBondsOut__extremeValues(
+        uint256 sharePrice,
+        uint256 initialSharePrice
+    ) external {
+        MockYieldSpaceMath yieldSpaceMath = new MockYieldSpaceMath();
+
+        initialSharePrice = initialSharePrice.normalizeToRange(0.8e18, 5e18);
+        sharePrice = sharePrice.normalizeToRange(initialSharePrice, 5e18);
+
+        for (uint256 i = 6; i <= 18; i += 1) {
+            for (uint256 j = i - (i / 2 + 1); j < i + 4; j++) {
+                uint256 timeStretch = FixedPointMath.ONE_18.divDown(
+                    22.186877016851916266e18
+                );
+                uint256 amountIn = 10 ** j;
+                uint256 result = yieldSpaceMath.calculateSharesInGivenBondsOut(
+                    100000 * 10 ** i, // shareReserves
+                    100000 * 10 ** i + 200000 * 10 ** i, // bondReserves + s
+                    amountIn, // amountIn
+                    1e18 - FixedPointMath.ONE_18.mulDown(timeStretch), // stretchedTimeElapsed
+                    sharePrice, // c
+                    initialSharePrice // mu
+                );
+                assertGt(result, 0);
+            }
+        }
     }
 }
