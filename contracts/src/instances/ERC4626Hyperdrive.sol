@@ -71,23 +71,23 @@ contract ERC4626Hyperdrive is Hyperdrive {
             }
             // Supply for the user
             sharesMinted = pool.deposit(amount, address(this));
-            sharePrice = sharesMinted.divDown(amount);
+            sharePrice = amount.divDown(sharesMinted);
         } else {
-            // Transfer erc4626 shares from the user
-            bool success = IERC20(address(pool)).transferFrom(
-                msg.sender,
-                address(this),
-                amount
-            );
-            if (!success) {
-                revert Errors.TransferFailed();
-            }
             // Calculate the current exchange rate for these
             // WARN - IF an ERC4626 has significant differences between a
             //        price perShare in aggregate vs one for individual users
             //        then this can create bugs.
-            uint256 converted = pool.convertToAssets(amount);
-            sharesMinted = amount;
+            uint256 converted = pool.convertToShares(amount);
+            // Transfer erc4626 shares from the user
+            bool success = IERC20(address(pool)).transferFrom(
+                msg.sender,
+                address(this),
+                converted
+            );
+            if (!success) {
+                revert Errors.TransferFailed();
+            }
+            sharesMinted = converted;
             sharePrice = amount.divDown(converted);
         }
     }
@@ -106,7 +106,7 @@ contract ERC4626Hyperdrive is Hyperdrive {
     ) internal override returns (uint256 amountWithdrawn, uint256 sharePrice) {
         if (asUnderlying) {
             // In this case we simply withdraw
-            amountWithdrawn = pool.withdraw(shares, destination, address(this));
+            amountWithdrawn = pool.redeem(shares, destination, address(this));
             sharePrice = amountWithdrawn.divDown(shares);
         } else {
             // Transfer erc4626 shares to the user
@@ -116,7 +116,8 @@ contract ERC4626Hyperdrive is Hyperdrive {
             }
             // Now we calculate the price per share
             uint256 estimated = pool.convertToAssets(shares);
-            sharePrice = shares.divDown(estimated);
+            sharePrice = estimated.divDown(shares);
+            amountWithdrawn = estimated;
         }
     }
 
@@ -124,6 +125,6 @@ contract ERC4626Hyperdrive is Hyperdrive {
     ///@return The current share price.
     function _pricePerShare() internal view override returns (uint256) {
         uint256 shareEstimate = pool.convertToShares(FixedPointMath.ONE_18);
-        return (shareEstimate.divDown(FixedPointMath.ONE_18));
+        return (FixedPointMath.ONE_18.divDown(shareEstimate));
     }
 }
