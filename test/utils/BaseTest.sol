@@ -26,6 +26,7 @@ contract BaseTest is Test {
 
     address minter;
     address deployer;
+    address feeCollector;
     address governance;
     address pauser;
 
@@ -54,6 +55,7 @@ contract BaseTest is Test {
 
         deployer = createUser("deployer");
         minter = createUser("minter");
+        feeCollector = createUser("feeCollector");
         governance = createUser("governance");
         pauser = createUser("pauser");
 
@@ -97,12 +99,33 @@ contract BaseTest is Test {
     ) public returns (uint256) {
         uint256 whaleBalance = token.balanceOf(whale);
         if (amount > whaleBalance) revert WhaleBalanceExceeded();
-        if (Address.isContract(whale)) revert WhaleIsContract();
         vm.stopPrank();
         vm.startPrank(whale);
         vm.deal(whale, 1 ether);
         token.transfer(to, amount);
         return amount;
+    }
+
+    function fundAccounts(
+        address hyperdrive,
+        IERC20 token,
+        address source,
+        address[] memory accounts
+    ) internal {
+        uint256 sourceBalance = token.balanceOf(source);
+        for (uint256 i = 0; i < accounts.length; i++) {
+            // Transfer the tokens to the account.
+            whaleTransfer(
+                source,
+                token,
+                sourceBalance / accounts.length,
+                accounts[i]
+            );
+
+            // Approve Hyperdrive on behalf of the account.
+            vm.startPrank(accounts[i]);
+            token.approve(hyperdrive, type(uint256).max);
+        }
     }
 
     function assertWithDelta(
