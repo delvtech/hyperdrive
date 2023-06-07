@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
 import { SafeCast } from "./libraries/SafeCast.sol";
 import { HyperdriveLP } from "./HyperdriveLP.sol";
@@ -79,15 +79,21 @@ abstract contract HyperdriveLong is HyperdriveLP {
         );
 
         // Mint the bonds to the trader with an ID of the maturity time.
-        _mint(
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
-            _destination,
-            bondProceeds
+        uint256 assetId = AssetId.encodeAssetId(
+            AssetId.AssetIdPrefix.Long,
+            maturityTime
         );
+        _mint(assetId, _destination, bondProceeds);
 
         // Emit an OpenLong event.
         uint256 baseAmount = _baseAmount; // Avoid stack too deep error.
-        emit OpenLong(_destination, maturityTime, baseAmount, bondProceeds);
+        emit OpenLong(
+            _destination,
+            assetId,
+            maturityTime,
+            baseAmount,
+            bondProceeds
+        );
 
         return (bondProceeds);
     }
@@ -161,7 +167,13 @@ abstract contract HyperdriveLong is HyperdriveLP {
         if (_minOutput > baseProceeds) revert Errors.OutputLimit();
 
         // Emit a CloseLong event.
-        emit CloseLong(_destination, _maturityTime, baseProceeds, _bondAmount);
+        emit CloseLong(
+            _destination,
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _maturityTime),
+            _maturityTime,
+            baseProceeds,
+            _bondAmount
+        );
 
         return (baseProceeds);
     }

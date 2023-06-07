@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
@@ -14,12 +14,14 @@ contract LPFairnessTest is HyperdriveTest {
         uint256 variableRateParam,
         uint256 tradeSizeParam
     ) external {
-        // limit the fuzz testing to variableRate's less than 100%
-        vm.assume(variableRateParam < 1e18);
+        // limit the fuzz testing to variableRate's less than or equal to 250%
+        variableRateParam = variableRateParam.normalizeToRange(0, 2.5e18);
 
         // ensure a feasible trade size
-        vm.assume(tradeSizeParam < 5_000_000e18);
-        vm.assume(tradeSizeParam > 0.00001e18);
+        tradeSizeParam = tradeSizeParam.normalizeToRange(
+            0.00001e18,
+            5_000_000e18 - 0.000001e18
+        );
 
         // variable interest rate earned by the pool
         int256 variableRate = int256(variableRateParam);
@@ -90,7 +92,7 @@ contract LPFairnessTest is HyperdriveTest {
 
         // Bob removes liquidity
         (uint256 withdrawalProceeds, ) = removeLiquidity(bob, bobLpShares);
-        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 2e7);
+        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e9);
 
         // Celine closes her short.
         closeShort(celine, maturityTime, bondsShorted);
@@ -116,19 +118,21 @@ contract LPFairnessTest is HyperdriveTest {
 
         // Alice removes liquidity
         (withdrawalProceeds, ) = removeLiquidity(alice, aliceLpShares);
-        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 3e7);
+        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e9);
     }
 
     function test_lp_fairness_short_short_lp(
         uint256 variableRateParam,
         uint256 tradeSizeParam
     ) external {
-        // limit the fuzz testing to variableRate's less than 100%
-        vm.assume(variableRateParam < 1e18);
+        // limit the fuzz testing to variableRate's less than or equal to 250%
+        variableRateParam = variableRateParam.normalizeToRange(0, 2.5e18);
 
         // ensure a feasible trade size
-        vm.assume(tradeSizeParam < 5_000_000e18);
-        vm.assume(tradeSizeParam > 0.00001e18);
+        tradeSizeParam = tradeSizeParam.normalizeToRange(
+            0.00001e18,
+            5_000_000e18 - 0.000001e18
+        );
 
         // variable interest rate earned by the pool
         int256 variableRate = int256(variableRateParam);
@@ -236,7 +240,7 @@ contract LPFairnessTest is HyperdriveTest {
 
         // Bob removes liquidity
         (uint256 withdrawalProceeds, ) = removeLiquidity(bob, bobLpShares);
-        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 2e7);
+        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e9);
 
         // calculate the portion of the pool's value (after interest) that alice contributed.
         contributionWithInterest = (poolValueMinusTotalBaseSpent).mulDown(
@@ -263,19 +267,21 @@ contract LPFairnessTest is HyperdriveTest {
 
         // Alice removes liquidity
         (withdrawalProceeds, ) = removeLiquidity(alice, aliceLpShares);
-        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 2e7);
+        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e9);
     }
 
     function test_lp_fairness_long_lp(
         uint256 variableRateParam,
         uint256 tradeSizeParam
     ) external {
-        // limit the fuzz testing to variableRate's less than 100%
-        vm.assume(variableRateParam < 1e18);
+        // limit the fuzz testing to variableRate's less than or equal to 250%
+        variableRateParam = variableRateParam.normalizeToRange(0, 2.5e18);
 
         // ensure a feasible trade size
-        vm.assume(tradeSizeParam < 5_000_000e18);
-        vm.assume(tradeSizeParam > 0.00001e18);
+        tradeSizeParam = tradeSizeParam.normalizeToRange(
+            0.00001e18,
+            5_000_000e18 - 0.000001e18
+        );
 
         // variable interest rate earned by the pool
         int256 variableRate = int256(variableRateParam);
@@ -331,7 +337,7 @@ contract LPFairnessTest is HyperdriveTest {
 
         // Ensure that if the new LP withdraws, they get their money back.
         (uint256 withdrawalProceeds, ) = removeLiquidity(bob, bobLpShares);
-        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 2e7);
+        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e9);
 
         // Celine closes her long.
         closeLong(celine, maturityTime, bondsPurchased);
@@ -353,19 +359,21 @@ contract LPFairnessTest is HyperdriveTest {
 
         // Alice removes liquidity
         (withdrawalProceeds, ) = removeLiquidity(alice, aliceLpShares);
-        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 3e7);
+        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e9);
     }
 
     function test_lp_fairness_long_long_lp(
         uint256 variableRateParam,
         uint256 tradeSizeParam
     ) external {
-        // limit to variableRate's less than 100%
-        vm.assume(variableRateParam < 1e18);
+        // limit the fuzz testing to variableRate's less than or equal to 250%
+        variableRateParam = variableRateParam.normalizeToRange(0, 2.5e18);
 
         // ensure a feasible trade size
-        vm.assume(tradeSizeParam < 5_000_000e18);
-        vm.assume(tradeSizeParam > 0.00001e18);
+        tradeSizeParam = tradeSizeParam.normalizeToRange(
+            0.00001e18,
+            5_000_000e18 - 0.000001e18
+        );
 
         // variable interest rate earned by the pool
         int256 variableRate = int256(variableRateParam);
@@ -441,7 +449,7 @@ contract LPFairnessTest is HyperdriveTest {
 
         // Bob removes liquidity
         (uint256 withdrawalProceeds, ) = removeLiquidity(bob, bobLpShares);
-        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e7);
+        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e9);
 
         // calculate the portion of the pool's base reserves owned by alice.
         baseReserves = (poolValue2 - bondsPurchased).mulDown(aliceLpProportion);
@@ -456,21 +464,22 @@ contract LPFairnessTest is HyperdriveTest {
 
         // Alice removes liquidity
         (withdrawalProceeds, ) = removeLiquidity(alice, aliceLpShares);
-        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 3e7);
+        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e9);
     }
 
     function test_lp_fairness_short_long_lp(
-        int256 variableRate,
-        uint256 baseSpent2
+        int256 variableRateParam,
+        uint256 tradeSizeParam
     ) external {
-        // limit the fuzz testing to variableRate's less than or equal to 100%
-        variableRate = variableRate.normalizeToRange(0, 1e18);
+        // limit the fuzz testing to variableRate's less than or equal to 250%
+        variableRateParam = variableRateParam.normalizeToRange(0, 2.5e18);
 
         // ensure a feasible trade size
-        baseSpent2 = baseSpent2.normalizeToRange(
+        tradeSizeParam = tradeSizeParam.normalizeToRange(
             0.00001e18,
             5_000_000e18 - 0.000001e18
         );
+
         uint256 poolValue = 0;
         uint256 bondsShorted = 0;
         uint256 baseSpent = 0;
@@ -481,21 +490,21 @@ contract LPFairnessTest is HyperdriveTest {
             aliceLpShares = initialize(alice, 0.1e18, initialLiquidity);
 
             // Celine opens a short.
-            bondsShorted = 5_000_000e18 - baseSpent2;
+            bondsShorted = 5_000_000e18 - tradeSizeParam;
             (, baseSpent) = openShort(celine, bondsShorted);
 
             // 1/2 term passes.
-            advanceTime(POSITION_DURATION / 2, variableRate);
+            advanceTime(POSITION_DURATION / 2, variableRateParam);
 
             // Calculate the value of the pool after interest is accrued.
             (poolValue, ) = HyperdriveUtils.calculateCompoundInterest(
                 initialLiquidity + baseSpent,
-                variableRate,
+                variableRateParam,
                 POSITION_DURATION / 2
             );
         }
         // Celine opens another long.
-        (, uint256 bondsPurchased) = openLong(celine, baseSpent2);
+        (, uint256 bondsPurchased) = openLong(celine, tradeSizeParam);
 
         // Bob adds liquidity.
         uint256 bobLpShares;
@@ -506,19 +515,19 @@ contract LPFairnessTest is HyperdriveTest {
 
             // Calculate the value of the pool after interest is accrued.
             (poolValue2, ) = HyperdriveUtils.calculateCompoundInterest(
-                poolValue + contribution + baseSpent2,
-                variableRate,
+                poolValue + contribution + tradeSizeParam,
+                variableRateParam,
                 POSITION_DURATION / 2
             );
         }
 
         // 1/2 term passes.
-        advanceTime(POSITION_DURATION / 2, variableRate);
+        advanceTime(POSITION_DURATION / 2, variableRateParam);
 
         // Calculate the total short interest.
         (, int256 shortInterest) = HyperdriveUtils.calculateCompoundInterest(
             bondsShorted,
-            variableRate,
+            variableRateParam,
             POSITION_DURATION
         );
 
@@ -526,7 +535,7 @@ contract LPFairnessTest is HyperdriveTest {
         (uint256 totalFixedInterestOwed, ) = HyperdriveUtils
             .calculateCompoundInterest(
                 bondsPurchased,
-                variableRate,
+                variableRateParam,
                 POSITION_DURATION / 2
             );
 
@@ -568,7 +577,7 @@ contract LPFairnessTest is HyperdriveTest {
 
         // Bob removes liquidity
         (uint256 withdrawalProceeds, ) = removeLiquidity(bob, bobLpShares);
-        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 2e7);
+        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e9);
 
         // calculate the portion of the pool's value (after interest) that alice contributed.
         contributionWithInterest = uint256(poolValue2 - baseSpent).mulDown(
@@ -595,19 +604,21 @@ contract LPFairnessTest is HyperdriveTest {
 
         // Alice removes liquidity
         (withdrawalProceeds, ) = removeLiquidity(alice, aliceLpShares);
-        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 3e7);
+        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e9);
     }
 
     function test_lp_fairness_long_short_lp(
         uint256 variableRateParam,
         uint256 tradeSizeParam
     ) external {
-        // limit to variableRate's less than 100%
-        vm.assume(variableRateParam < 1e18);
+        // limit the fuzz testing to variableRate's less than or equal to 250%
+        variableRateParam = variableRateParam.normalizeToRange(0, 2.5e18);
 
         // ensure a feasible trade size
-        vm.assume(tradeSizeParam < 5_000_000e18);
-        vm.assume(tradeSizeParam > 0.00001e18);
+        tradeSizeParam = tradeSizeParam.normalizeToRange(
+            0.00001e18,
+            5_000_000e18 - 0.000001e18
+        );
 
         // variable interest rate earned by the pool
         int256 variableRate = int256(variableRateParam);
@@ -719,7 +730,7 @@ contract LPFairnessTest is HyperdriveTest {
             assertApproxEqAbs(
                 bobWithdrawalProceeds,
                 expectedWithdrawalProceeds,
-                2e7
+                1e9
             );
         }
 
@@ -764,7 +775,7 @@ contract LPFairnessTest is HyperdriveTest {
         assertApproxEqAbs(
             aliceWithdrawalProceeds,
             expectedWithdrawalProceeds,
-            3e7
+            1e9
         );
     }
 }

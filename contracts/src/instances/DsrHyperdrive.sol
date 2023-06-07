@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
 import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import { Hyperdrive } from "../Hyperdrive.sol";
@@ -107,12 +107,21 @@ contract DsrHyperdrive is Hyperdrive {
         if (!asUnderlying) {
             revert Errors.UnsupportedToken();
         }
+
+        // Small numerical errors can result in the shares value being slightly
+        // larger than the total shares, so we clamp the shares to the total
+        // shares to avoid reverts.
+        uint256 totalShares_ = totalShares;
+        if (shares > totalShares_) {
+            shares = totalShares_;
+        }
+
         // Load the balance of this contract - this calls drip internally so
         // this is real deposits + interest accrued at point in time
         uint256 totalBase = dsrManager.daiBalance(address(this));
 
         // The withdraw is the percent of shares the user has times the total assets
-        amountWithdrawn = totalBase.mulDivDown(shares, totalShares);
+        amountWithdrawn = totalBase.mulDivDown(shares, totalShares_);
 
         // Remove shares from the total supply
         totalShares -= shares;
@@ -131,12 +140,12 @@ contract DsrHyperdrive is Hyperdrive {
         override
         returns (uint256 sharePrice)
     {
-        // The normalized DAI amount owned by this contract
         uint256 pie = dsrManager.pieOf(address(this));
-        // Load the balance of this contract
         uint256 totalBase = pie.mulDivDown(chi(), RAY);
-        // The share price is assets divided by shares
-        return (totalBase.divDown(totalShares));
+        if (totalShares != 0) {
+            return totalBase.divDown(totalShares);
+        }
+        return 0;
     }
 
     /// @notice Gets the current up to date value of the rate accumulator
