@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // @author is Fei Protocol - https://github.com/fei-protocol/ERC4626/blob/main/src/interfaces/IERC4626.sol
-pragma solidity 0.8.18;
+pragma solidity 0.8.19;
 
 import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
