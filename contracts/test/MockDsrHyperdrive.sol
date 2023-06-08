@@ -20,7 +20,7 @@ interface IMockDsrHyperdrive is IHyperdrive {
         uint256 shares,
         address destination,
         bool asUnderlying
-    ) external returns (uint256, uint256);
+    ) external returns (uint256);
 
     function pricePerShare() external view returns (uint256);
 }
