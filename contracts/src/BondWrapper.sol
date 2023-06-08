@@ -105,7 +105,6 @@ contract BondWrapper is ERC20 {
             maturityTime
         );
 
-
         uint256 receivedAmount;
         if (maturityTime > block.timestamp) {
             // Close the bond [selling if earlier than the expiration]
