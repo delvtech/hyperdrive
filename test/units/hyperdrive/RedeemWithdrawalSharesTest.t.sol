@@ -8,7 +8,6 @@ import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol";
 import { Lib } from "../../utils/Lib.sol";
-import "forge-std/console2.sol";
 
 contract RedeemWithdrawalSharesTest is HyperdriveTest {
     using FixedPointMath for uint256;
@@ -184,7 +183,6 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
 
         // Alice removes her liquidity.
         (, uint256 withdrawalShares) = removeLiquidity(alice, lpShares);
-        console2.log("withdrawalShares", withdrawalShares);
 
         // The term passes and no interest accrues.
         advanceTime(POSITION_DURATION / 2, 0);
