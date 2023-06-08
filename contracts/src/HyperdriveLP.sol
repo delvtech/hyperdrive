@@ -60,7 +60,8 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
                 _apr,
                 _positionDuration,
                 _timeStretch
-            ).toUint128();
+            )
+            .toUint128();
 
         // Mint LP shares to the initializer.
         _mint(AssetId._LP_ASSET_ID, _destination, shares);

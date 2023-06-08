@@ -98,9 +98,8 @@ library HyperdriveMath {
         uint256 t = _positionDuration.divDown(365 days);
         uint256 tau = FixedPointMath.ONE_18.mulDown(_timeStretch);
         // mu * z * (1 + apr * t) ** (1 / tau)
-        return _initialSharePrice
-            .mulDown(_shareReserves)
-            .mulDown(
+        return
+            _initialSharePrice.mulDown(_shareReserves).mulDown(
                 FixedPointMath.ONE_18.add(_apr.mulDown(t)).pow(
                     FixedPointMath.ONE_18.divUp(tau)
                 )

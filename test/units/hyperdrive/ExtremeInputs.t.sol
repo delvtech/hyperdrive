@@ -17,7 +17,7 @@ contract ExtremeInputs is HyperdriveTest {
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
 
         // Max base amount
-        uint256 baseAmount = 490_000_000e18;//HyperdriveUtils.calculateMaxLong(hyperdrive);
+        uint256 baseAmount = 490_000_000e18; //HyperdriveUtils.calculateMaxLong(hyperdrive);
 
         // Open long with max base amount
         (, uint256 bondAmount) = openLong(bob, baseAmount);

@@ -84,15 +84,14 @@ contract HyperdriveMathTest is Test {
         uint256 timeStretch = FixedPointMath.ONE_18.divDown(
             1109.3438508425959e18
         );
-        uint256 bondReserves = 
-            hyperdriveMath.calculateInitialBondReserves(
-                shareReserves,
-                sharePrice,
-                initialSharePrice,
-                apr,
-                positionDuration,
-                timeStretch
-            );
+        uint256 bondReserves = hyperdriveMath.calculateInitialBondReserves(
+            shareReserves,
+            sharePrice,
+            initialSharePrice,
+            apr,
+            positionDuration,
+            timeStretch
+        );
         uint256 result = hyperdriveMath.calculateAPRFromReserves(
             shareReserves,
             bondReserves,
@@ -106,13 +105,13 @@ contract HyperdriveMathTest is Test {
         apr = 0.01 ether;
         timeStretch = FixedPointMath.ONE_18.divDown(110.93438508425959e18);
         bondReserves = hyperdriveMath.calculateInitialBondReserves(
-                shareReserves,
-                sharePrice,
-                initialSharePrice,
-                apr,
-                positionDuration,
-                timeStretch
-            );
+            shareReserves,
+            sharePrice,
+            initialSharePrice,
+            apr,
+            positionDuration,
+            timeStretch
+        );
         result = hyperdriveMath.calculateAPRFromReserves(
             shareReserves,
             bondReserves,
@@ -126,13 +125,13 @@ contract HyperdriveMathTest is Test {
         apr = 0.05 ether;
         timeStretch = FixedPointMath.ONE_18.divDown(22.186877016851916266e18);
         bondReserves = hyperdriveMath.calculateInitialBondReserves(
-                shareReserves,
-                sharePrice,
-                initialSharePrice,
-                apr,
-                positionDuration,
-                timeStretch
-            );
+            shareReserves,
+            sharePrice,
+            initialSharePrice,
+            apr,
+            positionDuration,
+            timeStretch
+        );
         result = hyperdriveMath.calculateAPRFromReserves(
             shareReserves,
             bondReserves,
@@ -146,13 +145,13 @@ contract HyperdriveMathTest is Test {
         apr = 0.25 ether;
         timeStretch = FixedPointMath.ONE_18.divDown(4.437375403370384e18);
         bondReserves = hyperdriveMath.calculateInitialBondReserves(
-                shareReserves,
-                sharePrice,
-                initialSharePrice,
-                apr,
-                positionDuration,
-                timeStretch
-            );
+            shareReserves,
+            sharePrice,
+            initialSharePrice,
+            apr,
+            positionDuration,
+            timeStretch
+        );
         result = hyperdriveMath.calculateAPRFromReserves(
             shareReserves,
             bondReserves,
@@ -166,13 +165,13 @@ contract HyperdriveMathTest is Test {
         apr = 0.50 ether;
         timeStretch = FixedPointMath.ONE_18.divDown(2.218687701685192e18);
         bondReserves = hyperdriveMath.calculateInitialBondReserves(
-                shareReserves,
-                sharePrice,
-                initialSharePrice,
-                apr,
-                positionDuration,
-                timeStretch
-            );
+            shareReserves,
+            sharePrice,
+            initialSharePrice,
+            apr,
+            positionDuration,
+            timeStretch
+        );
         result = hyperdriveMath.calculateAPRFromReserves(
             shareReserves,
             bondReserves,
@@ -186,13 +185,13 @@ contract HyperdriveMathTest is Test {
         apr = 1 ether;
         timeStretch = FixedPointMath.ONE_18.divDown(1.109343850842596e18);
         bondReserves = hyperdriveMath.calculateInitialBondReserves(
-                shareReserves,
-                sharePrice,
-                initialSharePrice,
-                apr,
-                positionDuration,
-                timeStretch
-            );
+            shareReserves,
+            sharePrice,
+            initialSharePrice,
+            apr,
+            positionDuration,
+            timeStretch
+        );
         result = hyperdriveMath.calculateAPRFromReserves(
             shareReserves,
             bondReserves,
