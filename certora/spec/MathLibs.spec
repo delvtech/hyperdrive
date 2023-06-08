@@ -103,6 +103,64 @@ rule errorBoundTest(mathint x, mathint err) {
     assert relativeErrorBound(x * ONE18(), y1, err2) && relativeErrorBound(x * ONE18(), y2, err2);
 }
 
+rule calculateSpotPriceMonotonicOnShares() {
+    uint256 shareReserves1;
+    uint256 bondReserves1;
+    uint256 _initialSharePrice1;
+    uint256 _timeRemaining1;
+    uint256 _timeStretch1;
+
+    uint256 shareReserves2;
+
+    uint256 spotPrice1 = HDMath.calculateSpotPrice(shareReserves1,bondReserves1,_initialSharePrice1,_timeRemaining1,_timeStretch1);
+    uint256 spotPrice2 = HDMath.calculateSpotPrice(shareReserves2,bondReserves1,_initialSharePrice1,_timeRemaining1,_timeStretch1);
+    assert shareReserves1 <= shareReserves2 => spotPrice1 <= spotPrice2;
+}
+
+rule calculateSpotPriceMonotonicOnBonds() {
+    uint256 shareReserves1;
+    uint256 bondReserves1;
+    uint256 _initialSharePrice1;
+    uint256 _timeRemaining1;
+    uint256 _timeStretch1;
+
+    uint256 bondReserves2;
+
+    uint256 spotPrice1 = HDMath.calculateSpotPrice(shareReserves1,bondReserves1,_initialSharePrice1,_timeRemaining1,_timeStretch1);
+    uint256 spotPrice2 = HDMath.calculateSpotPrice(shareReserves1,bondReserves2,_initialSharePrice1,_timeRemaining1,_timeStretch1);
+    assert bondReserves1 <= bondReserves2 => spotPrice1 >= spotPrice2;
+}
+
+/// @notice : in progress
+rule calculateCloseLongMonotonicOnBondReserves(env e) {
+    uint256 _shareReserves;
+    uint256 _bondReserves1;
+    uint256 _amountIn;
+    uint256 _normalizedTimeRemaining;
+    uint256 _timeStretch;
+    uint256 _closeSharePrice;
+    uint256 _sharePrice;
+    uint256 _initialSharePrice;
+    uint256 _bondReserves2;
+
+    uint256 shareReservesDelta1;
+    uint256 shareReservesDelta2;
+    uint256 bondReservesDelta1;
+    uint256 bondReservesDelta2;
+    uint256 shareProceeds1;
+    uint256 shareProceeds2;
+
+    storage initState = lastStorage;
+    shareReservesDelta1, bondReservesDelta1, shareProceeds1 = HDMath.calculateCloseLong(
+        _shareReserves, _bondReserves1, _amountIn, _normalizedTimeRemaining, _timeStretch, _closeSharePrice, _sharePrice, _initialSharePrice
+    );
+    shareReservesDelta2, bondReservesDelta2, shareProceeds2 = HDMath.calculateCloseLong(
+        _shareReserves, _bondReserves2, _amountIn, _normalizedTimeRemaining, _timeStretch, _closeSharePrice, _sharePrice, _initialSharePrice
+    ) at initState;
+
+    assert _bondReserves1 >= _bondReserves2 => shareProceeds1 >= shareProceeds2;
+}
+
 /// Verify the invariant: (c / µ) * (µ * z)^(1 - t) + y^(1 - t) = k
 /// t = 0 : (c/mu) *(mu * z) + y = k => c*z + y = k => x + y = k
 /// [Verified]
@@ -174,7 +232,6 @@ rule cannotGetFreeShares(uint256 z, uint256 y, uint256 dz, uint256 t, uint256 c,
 //        Hyperdrive Math rules
 //=======================================
 /// @return bondReservesDelta The amount of bonds sold by the curve.
-
 rule calculateOpenLong_correctBound(
     uint256 shareReserves,
     uint256 bondReserves,
@@ -296,6 +353,23 @@ rule BondsOutSharesInAndBack(
     uint256 sharesOut = YSMath.calculateSharesOutGivenBondsIn(newShares, newBonds, bondsDelta, tp, sharePrice, initialSharePrice);
 
     assert abs(shareAmount - sharesOut) <= 100, "Trader cannot gain from an immediate round-trip";
+}
+
+rule moreBondsMorePaymentsForOpenLong(env e) {
+    uint256 _bondAmount1;
+    uint256 _shareAmount1; // depends on the bond price (need to prove monotonicity of _calculateOpenShort())
+    uint256 _openSharePrice; // is determined by the latest checkpoint. can assume it's the same.
+    uint256 _closeSharePrice;  // is determined by the latest checkpoint. can assume it's the same.
+    uint256 _sharePrice;   // is determined by the latest checkpoint. can assume it's the same.
+
+    uint256 _bondAmount2;
+    uint256 _shareAmount2;
+
+    uint256 traderDeposit1 = HDMath.calculateShortProceeds(_bondAmount1, _shareAmount1, _openSharePrice, _closeSharePrice, _sharePrice);
+
+    uint256 traderDeposit2 = HDMath.calculateShortProceeds(_bondAmount2, _shareAmount2, _openSharePrice, _closeSharePrice, _sharePrice);
+
+    assert _bondAmount1 > _bondAmount2 => traderDeposit1 >= traderDeposit2;
 }
 
 rule calculateBaseVolumeCheck(uint256 base, uint256 bonds, uint256 time) {

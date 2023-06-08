@@ -9,9 +9,37 @@ import "./Fees.spec";
 use rule sanity;
 
 
-// methods {
-//     function _applyCheckpoint(uint256 _checkpointTime, uint256 _sharePrice) internal returns (uint256) => NONDET;
-// }
+methods {
+    // function _applyCheckpoint(uint256 _checkpointTime, uint256 _sharePrice) internal returns (uint256) => NONDET;
+    function calculateCloseLong(uint256, uint256, uint256) external returns (uint256, uint256, uint256, uint256);
+}
+
+
+/// @notice : in progress
+rule calculateCloseLongMonotonic(env e) {
+    uint256 _bondAmount1;
+    uint256 _sharePrice;
+    uint256 _maturityTime;
+    uint256 _bondAmount2;
+
+    uint256 shareReservesDelta1;
+    uint256 shareReservesDelta2;
+    uint256 bondReservesDelta1;
+    uint256 bondReservesDelta2;
+    uint256 shareProceeds1;
+    uint256 shareProceeds2;
+    uint256 totalGovernanceFee1;
+    uint256 totalGovernanceFee2;
+
+    storage initState = lastStorage;
+    shareReservesDelta1, bondReservesDelta1, shareProceeds1, totalGovernanceFee1
+        = calculateCloseLong(e, _bondAmount1, _sharePrice, _maturityTime);
+
+    shareReservesDelta2, bondReservesDelta2, shareProceeds2, totalGovernanceFee2
+        = calculateCloseLong(e, _bondAmount2, _sharePrice, _maturityTime) at initState;
+
+    assert _bondAmount1 >= _bondAmount2 => shareProceeds1 >= shareProceeds2;
+}
 
 
 /// @notice : in progress
@@ -75,6 +103,7 @@ rule longPositionRoundTrip2() {
 /// @doc integrity rule for 'openLong'
 /// - There must be assets in the pool after opening a position.
 /// - cannot receive more bonds than registered reserves.
+// verified when NONDET _applyCheckpoint here: https://vaas-stg.certora.com/output/40577/9da7ab069dec4974b252ae247a859648/?anonymousKey=37631daa16d7fa8e3d3a747e828d32e0128bb4b4
 rule openLongIntegrity(uint256 baseAmount) {
     env e;
     uint256 minOutput;
@@ -201,6 +230,16 @@ rule openLongReallyOpensLong(env e) {
     assert longsOutstanding2 >= longsOutstanding1;
     assert longsOutstanding1 + bondsReceived == longsOutstanding2;
 }
+
+// rule calculateTimeRemainingZero(env e) {
+//     uint256 _positionDuration;
+//     uint256 latestCP = require_uint256(e.block.timestamp -
+//             (e.block.timestamp % checkpointDuration()));
+//     uint256 maturityTime = require_uint256(latestCP + _positionDuration);
+//     uint256 timeRemaining = _calculateTimeRemaining(e, maturityTime);
+//     assert maturityTime <= latestCP => timeRemaining == 0;
+//     // assert maturityTime > latestCP => timeRemaining = (_maturityTime - latestCP).divDown(_positionDuration) ;
+// }
 
 /// @doc Closing a long position at maturity should return the same number of tokens as the number of bonds.
 rule closeLongAtMaturity(uint256 bondAmount) {
