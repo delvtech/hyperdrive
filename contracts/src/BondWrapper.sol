@@ -96,13 +96,16 @@ contract BondWrapper is ERC20Permit {
         );
 
         // Close the user position
+        // We require that this won't make the position unbacked
+        uint256 mintedFromBonds = (amount * mintPercent) / 10000;
+
         uint256 receivedAmount;
         if (maturityTime > block.timestamp) {
             // Close the bond [selling if earlier than the expiration]
             receivedAmount = hyperdrive.closeLong(
                 maturityTime,
                 amount,
-                0,
+                mintedFromBonds,
                 address(this),
                 true
             );
@@ -115,8 +118,6 @@ contract BondWrapper is ERC20Permit {
         // Update the user balances
         deposits[msg.sender][assetId] -= amount;
 
-        // We require that this won't make the position unbacked
-        uint256 mintedFromBonds = (amount * mintPercent) / 10000;
         if (receivedAmount < mintedFromBonds) revert Errors.InsufficientPrice();
 
         // The user gets at least the interest implied from
