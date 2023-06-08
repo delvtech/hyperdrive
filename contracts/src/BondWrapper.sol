@@ -105,9 +105,6 @@ contract BondWrapper is ERC20 {
             maturityTime
         );
 
-        // Close the user position
-        // We require that this won't make the position unbacked
-        uint256 mintedFromBonds = (amount * mintPercent) / 10000;
 
         uint256 receivedAmount;
         if (maturityTime > block.timestamp) {
@@ -127,6 +124,10 @@ contract BondWrapper is ERC20 {
         }
         // Update the user balances
         deposits[msg.sender][assetId] -= amount;
+
+        // Close the user position
+        // We require that this won't make the position unbacked
+        uint256 mintedFromBonds = (amount * mintPercent) / 10000;
 
         if (receivedAmount < mintedFromBonds) revert Errors.InsufficientPrice();
 
