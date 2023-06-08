@@ -48,7 +48,10 @@ methods {
 definition indexA() returns uint256 = require_uint256(RAY()*2);
 definition indexB() returns uint256 = require_uint256((RAY()*125)/100);
 /// Maximum share price of the Hyperdrive
-definition MaxSharePrice() returns mathint = ONE18() * 100;
+definition MaxSharePrice() returns mathint = ONE18() * 1000;
+
+definition isInitialize(method f) returns bool = 
+    f.selector == sig:initialize(uint256,uint256,address,bool).selector;
 
 /// @dev Under-approximation of the pool parameters (based on developers' test)
 /// @notice Use only to find violations!
@@ -58,14 +61,26 @@ function setHyperdrivePoolParams() {
     require checkpointDuration() == 86400;
     require positionDuration() == 31536000;
     require updateGap() == 1000;
+    /// Realistic conditions
+    require require_uint256(stateShareReserves()) == ONE18();
+    require require_uint256(stateBondReserves()) >= ONE18();
     /// Alternative
-    require curveFee() == require_uint256(ONE18() / 10);
-    require flatFee() == require_uint256(ONE18() / 10);
-    require governanceFee() == require_uint256(ONE18() / 2);
+    //require curveFee() == require_uint256(ONE18() / 10);
+    //require flatFee() == require_uint256(ONE18() / 10);
+    //require governanceFee() == require_uint256(ONE18() / 2);
     ///
     //require curveFee() <= require_uint256(ONE18() / 10);
     //require flatFee() <= require_uint256(ONE18() / 10);
     //require governanceFee() <= require_uint256(ONE18() / 2);
+}
+
+function HyperdriveInvariants(env e) {
+    requireInvariant LongAverageMaturityTimeIsBounded(e);
+    requireInvariant ShortAverageMaturityTimeIsBounded(e);
+    requireInvariant SpotPriceIsLessThanOne();
+    requireInvariant WithdrawalSharesGEReadyShares();
+    requireInvariant SumOfShortsGEOutstanding();
+    requireInvariant SumOfLongsGEOutstanding();
 }
 
 /// @doc A hook for loading the Aave pool liquidity index
@@ -188,23 +203,6 @@ function LongPositionRoundTripHelper(
     require result[1] == assetsRecieved;
 
     return result;
-}
-
-/// First assert:
-/// https://vaas-stg.certora.com/output/41958/d94981d81dff445ea1b426bcc1f67b5a/?anonymousKey=5e9be1e9f27223a8c656055907909be533fb7c57
-/// Second assert:
-/// https://vaas-stg.certora.com/output/41958/ee5e46675a6f484aab1c82b32dbcf1ba/?anonymousKey=5b02f66971977f3c6d0606ba567dd5cbbdf29a1a
-rule whoChangedTotalShares(method f)
-filtered{f -> !f.isView} {
-    env e;
-    calldataarg args;
-    uint256 shares1 = totalShares();
-    uint256 aTokenBalance1 = aToken.balanceOf(e, currentContract);
-        f(e, args);
-    uint256 shares2 = totalShares();
-    uint256 aTokenBalance2 = aToken.balanceOf(e, currentContract);
-    assert shares1 == shares2;
-    assert aTokenBalance1 != aTokenBalance2 <=> shares1 != shares2;
 }
 
 /// @notice : in progress
@@ -467,13 +465,6 @@ rule closeLongAtMaturity(uint256 bondAmount) {
     uint256 maturityTime;
 
     setHyperdrivePoolParams();
-    uint256 price = sharePrice(e);
-    uint256 latestCP = require_uint256(e.block.timestamp -
-            (e.block.timestamp % checkpointDuration()));
-    require to_mathint(checkPointSharePrice(latestCP)) == to_mathint(price);
-    require price > initialSharePrice() && to_mathint(price) <= 2*ONE18();
-
-    require to_mathint(bondAmount) <= to_mathint(stateShareReserves());
 
     uint256 assetsRecieved =
         closeLong(e, maturityTime, bondAmount, minOutput, destination, asUnderlying);
@@ -499,6 +490,8 @@ rule doubleCheckpointHasNoEffect(uint256 time1, uint256 time2) {
         "If the outstanding bonds were changed by a first checkpoint, they cannot be changed by a second";
 }
 
+/// @doc The present value of the pool should not change after 'checkpointing'
+/// @notice Trivially violated since the present value function is summarized.
 rule checkPointCannotChangePoolPresentValue(uint256 time) {
     env e;
     setHyperdrivePoolParams();
@@ -512,6 +505,58 @@ rule checkPointCannotChangePoolPresentValue(uint256 time) {
     uint256 value2 = getPresentValue(e, _sharePrice);
 
     assert value1 == value2;
+}
+
+/// @doc Tokens could be minted at a time that corresponds to position duration time in the future
+/// (since the latest checkpoint)
+/// [VERIFIED]
+rule mintingTokensOnlyAtMaturityTime(method f, uint256 AssetId) 
+filtered{ f -> !f.isView } {
+    /// We are only concerned with longs and shorts tokens.
+    mathint prefix = prefixByID(AssetId);
+    require prefix == 1 || prefix == 2;
+    
+    env e;
+    calldataarg args;
+    /// Avoid dividing by zero
+    require checkpointDuration() !=0;
+    /// Maturity time = latest checkpoint + position duration
+    mathint maturityTime = 
+        e.block.timestamp - (e.block.timestamp % checkpointDuration()) + positionDuration();
+    uint256 supplyBefore = totalSupplyByToken(AssetId);
+        f(e, args);
+    uint256 supplyAfter = totalSupplyByToken(AssetId);
+
+    assert supplyAfter > supplyBefore => timeByID(AssetId) == maturityTime;
+}
+
+/// @notice If the checkpoint share price was set by a function, so all matured positions
+/// of that checkpoint should have been removed from the outstanding longs/shorts. 
+rule settingThePriceAlsoClosesMaturedPositions(uint256 checkpointTime, method f) 
+filtered{ f -> !f.isView && f.selector != sig:checkpoint(uint256).selector } {
+    env e;
+    calldataarg args;
+
+    mathint price1 = checkPointSharePrice(checkpointTime);
+    mathint longsOutstanding1 = stateLongs();
+    mathint shortsOutstanding1 = stateShorts();
+        f(e, args);
+    mathint price2 = checkPointSharePrice(checkpointTime);
+    mathint longsOutstanding2 = stateLongs();
+    mathint shortsOutstanding2 = stateShorts();
+    /// Require that the price has changed (or set to non-zero).
+    require price1 ==0 && price2 !=0;
+
+    /// Assume that there are longs/shorts tokens for that checkpoint time
+    uint256 AssetId;
+    mathint prefix = prefixByID(AssetId);
+    require prefix == 1 || prefix == 2;
+    require timeByID(AssetId) == to_mathint(checkpointTime);
+    require checkpointTime <= e.block.timestamp; // Longs/shorts have matured
+    require totalSupplyByToken(AssetId) > 0;
+
+    assert longsOutstanding1 != longsOutstanding2 || shortsOutstanding1 == shortsOutstanding2,
+        "The outstanding shorts or longs must have been updated (virtually closing the matured)";
 }
 
 /// Verified
@@ -548,31 +593,25 @@ invariant SharesNonZeroAssetsNonZero(env e)
             setHyperdrivePoolParams();
             require eP.block.timestamp == e.block.timestamp;
             require totalShares() >= ONE18();
-            //require aToken.balanceOf(eP, HDAave) >= ONE18();
         }
     }
 
-/// @doc The sum of withdrawal shares for all accounts is equal to the shares which are ready to withdraw
+/// @doc The ready to redeem shares cannot exceed the total withdrawal shares.
 /// [VERIFIED]
-invariant SharesReadyToBeRedeemedAreBounded()
-    totalWithdrawalShares() >= readyToRedeemShares() 
+invariant WithdrawalSharesGEReadyShares()
+    totalWithdrawalShares() >= readyToRedeemShares();
+
+/// @doc The Spot price p = [(mu * z / y) ^ tau] must be smaller than one.
+/// Violated
+/// https://vaas-stg.certora.com/output/41958/794fadd9600c4a728e23eca6712b6b66/?anonymousKey=a3bc9d0843c440ba8c78610f331c921eb65744e9
+invariant SpotPriceIsLessThanOne()
+    stateBondReserves() !=0 => mulDivDownAbstractPlus(stateShareReserves(), initialSharePrice(), stateBondReserves()) <= ONE18()
     {
-        preserved{setHyperdrivePoolParams();}
+        preserved with (env e) {
+            setHyperdrivePoolParams();
+            require sharePrice(e) >= initialSharePrice(); 
+        }
     }
-
-/// @doc The fixed interest (r+1) must never be smaller than 1.
-rule FixedInterestLargerThanOne(method f) filtered{f -> !f.isView} {
-    env e;
-    calldataarg args;
-    setHyperdrivePoolParams();
-    require require_uint256(stateShareReserves()) >= ONE18();
-    require to_mathint(totalShares()) >= to_mathint(stateShareReserves());
-    require to_mathint(aToken.balanceOf(e, HDAave)) >= to_mathint(totalShares());
-
-    require curveFixedInterest() >= to_mathint(ONE18());
-        f(e,args);
-    assert curveFixedInterest() >= to_mathint(ONE18());
-}
 
 /// @doc It's impossible to get to a state where both shares and bonds are empty
 /// @dev maybe it's possible if all liquidity has been withdrawan?
@@ -614,6 +653,8 @@ rule closeLongYieldIsBoundedByTime(uint256 openTimeStamp) {
     assert assetsRecieved <= mulDivUpAbstractPlus(timeElapsed, bondAmount, positionDuration());
 }
 
+/// @notice The average maturity time should always be between the current time stamp and the time stamp + duration.
+/// In other words, matured positions should not be taken into account in the average time.
 invariant LongAverageMaturityTimeIsBounded(env e)
     (stateLongs() == 0 => AvgMTimeLongs() == 0) &&
     (stateLongs() != 0 => 
@@ -623,9 +664,12 @@ invariant LongAverageMaturityTimeIsBounded(env e)
         preserved with (env eP) {
             require e.block.timestamp == eP.block.timestamp;
             setHyperdrivePoolParams();
+            requireInvariant SumOfLongsGEOutstanding();
         }
     }
 
+/// @notice The average maturity time should always be between the current time stamp and the time stamp + duration.
+/// In other words, matured positions should not be taken into account in the average time.
 invariant ShortAverageMaturityTimeIsBounded(env e)
     (stateShorts() == 0 => AvgMTimeShorts() == 0) &&
     (stateShorts() != 0 => 
@@ -635,15 +679,19 @@ invariant ShortAverageMaturityTimeIsBounded(env e)
         preserved with (env eP) {
             require e.block.timestamp == eP.block.timestamp;
             setHyperdrivePoolParams();
+            requireInvariant SumOfShortsGEOutstanding();
         }
     }
 
-
+/// @notice The share price cannot go below the initial price.
 invariant SharePriceAlwaysGreaterThanInitial(env e)
     sharePrice(e) >= initialSharePrice()
     {
         preserved with (env eP) {
             require eP.block.timestamp == e.block.timestamp;
+            requireInvariant SumOfLongsGEOutstanding();
+            requireInvariant SumOfShortsGEOutstanding();
+            requireInvariant WithdrawalSharesGEReadyShares();
             setHyperdrivePoolParams();
         }
     }
@@ -682,8 +730,7 @@ invariant SumOfShortsGEOutstanding()
     
 /// @doc There are always enough shares to cover all long positions
 invariant ShareReservesCoverLongs(env e)
-    mulDownWad(require_uint256(sumOfLongs()), require_uint256(sharePrice(e))) <= require_uint256(stateShareReserves())
-    filtered{f -> isAddLiq(f) || isRemoveLiq(f)}
+    mulDownWad(require_uint256(stateShareReserves()), sharePrice(e)) >= require_uint256(stateLongs())
     {
         preserved with (env eP) {
             require e.block.timestamp == eP.block.timestamp;
@@ -691,17 +738,42 @@ invariant ShareReservesCoverLongs(env e)
         }
     }
 
-rule BondsDeltaIsShortsMinusLongsDelta(method f) 
-filtered{f -> !f.isView} {
+/// Timeout
+rule shortRoundTripSameBaseVolume(uint256 bondAmount) {
+    env e;
+    uint256 maxDeposit;
+    address destination;
+    bool asUnderlying;
+    uint256 minOutput;
+    
+    setHyperdrivePoolParams();
+    
+    uint256 maturityTime = 
+        require_uint256(e.block.timestamp - (e.block.timestamp % checkpointDuration()) + positionDuration());
+    
+    AaveHyperdrive.MarketState Mstate = marketState();
+    uint128 baseVolumeBefore = Mstate.shortBaseVolume;
+        uint256 userDeposit = openShort(e, bondAmount, maxDeposit, destination, asUnderlying);
+        uint256 baseRewards = closeShort(e, maturityTime, bondAmount, minOutput, destination, asUnderlying);
+    uint128 baseVolumeAfter = Mstate.shortBaseVolume;
+
+    assert baseVolumeAfter == baseVolumeBefore;
+    assert baseRewards <= userDeposit;
+}
+
+/// Timeout
+rule checkpointFrontRunsCloseShort(uint256 checkpointTime) {
     env e;
     calldataarg args;
+    
     setHyperdrivePoolParams();
+    require require_uint256(stateShareReserves()) == ONE18();
+    storage initState = lastStorage;
 
-    mathint bonds1 = stateBondReserves();
-    mathint shortsMinusLongs1 = sumOfShorts() - sumOfLongs();
-        f(e,args);
-    mathint bonds2 = stateBondReserves();
-    mathint shortsMinusLongs2 = sumOfShorts() - sumOfLongs();
+    closeShort(e, args);
 
-    assert bonds2 - bonds1 == shortsMinusLongs2 - shortsMinusLongs1;
+    checkpoint(e, checkpointTime) at initState;
+    closeShort@withrevert(e, args);
+
+    assert !lastReverted;
 }

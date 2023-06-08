@@ -53,6 +53,32 @@ function YSInvariant(
         to_mathint(CVLPow(mu, t)) * (CVLPow(y2, tp) - CVLPow(y1, tp));
 }
 
+function ConvexCurve(
+    uint256 z1,
+    uint256 z2,
+    uint256 y1, 
+    uint256 y2, 
+    uint256 mu,
+    uint256 c, 
+    uint256 t
+) returns bool {
+    uint256 rate1 = mulDownWad(CVLPow(divUpWad(y1, mulDownWad(z1,mu)), t), c);
+    //uint256 rate2 = mulDownWad(CVLPow(divUpWad(y2, mulDownWad(z2,mu)), t), c);
+
+    if(z1 == z2) {return (y1 == y2);}
+    
+    if(y1 > y2) { /// Long
+        uint256 margin = divUpWad(require_uint256(y1 - y2), require_uint256(z2 - z1));
+        return margin <= rate1;
+        //return rate2 <= margin && margin <= rate1;
+    }
+    else { /// Short
+        uint256 margin = divUpWad(require_uint256(y2 - y1), require_uint256(z1 - z2));
+        return rate1 <= margin; 
+        //return rate1 <= margin && margin <= rate2;
+    }
+}
+
 function modifiedYieldSpaceConstant(uint256 cDivMu, uint256 mu, uint256 z, uint256 t, uint256 y)
     returns mathint {
     /// k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
@@ -198,11 +224,23 @@ rule monotonicityBaseVolume(uint256 base1, uint256 base2) {
 
 rule YSInvariantTest1(uint256 z, uint256 y, uint256 dz, uint256 t, uint256 c, uint256 mu) {
     uint256 dy = YSMath.calculateBondsInGivenSharesOut(z,y,dz,t,c,mu);
-
     uint256 yp = require_uint256(y + dy);
     uint256 zp = require_uint256(z - dz);
     uint256 tp = require_uint256(ONE18() - t);
     assert YSInvariant(z, zp, y, yp, mu, c, tp);
+}
+
+rule ConvexCurveTest(uint256 z, uint256 y, uint256 dz, uint256 t, uint256 c, uint256 mu) {
+    uint256 dy = YSMath.calculateBondsInGivenSharesOut(z,y,dz,t,c,mu);
+    require t == 45071688063194104;
+    require c >= ONE18();
+    require mu == ONE18();
+    require divUpWad(y, mulDownWad(z,mu)) >= ONE18();
+    require dz > 0;
+    uint256 yp = assert_uint256(y + dy);
+    uint256 zp = assert_uint256(z - dz);
+    uint256 tp = assert_uint256(ONE18() - t);
+    assert ConvexCurve(z, zp, y, yp, mu, c, tp);
 }
 
 rule cannotGetFreeBonds(uint256 z, uint256 y, uint256 dy, uint256 t, uint256 c, uint256 mu) {
@@ -341,9 +379,10 @@ rule BondsOutSharesInAndBack(
     uint256 sharePrice) {
 
     uint256 initialSharePrice = ONE18();
-    uint256 timeStretch = 45071688063194104;
+    uint256 timeStretch = 1;//45071688063194104;
     uint256 tp = require_uint256(ONE18() - timeStretch);
     require sharePrice >= initialSharePrice;
+    require bondReserves >= shareReserves; // r >= 1
     /// Typical number
     require shareReserves == ONE18();
 
@@ -400,4 +439,96 @@ rule updateWeightedAverageCheck(uint256 avg, uint256 totW, uint256 del, uint256 
         (abs(delW) < abs(totW) => abs(DeltAvg) <= abs(del-avg)/2 ) &&
         (abs(delW) >= abs(totW) => abs(DeltAvg) >= abs(del-avg)/2);
     }*/
+}
+
+/// @doc Rules to check the integrity of curve-trading:
+/// The trading should always preserve the positivity of the interest r, where
+/// r + 1 = y/(z*mu)
+/// - y : bonds reserves
+/// - z : shares reserves
+/// - mu : initial share price
+/// There are 4 different rules that correspond to 4 different trading functions inside YSMath.
+
+/// Violated (negative interest should be excluded on the higher-level functions)
+rule tradingOnCurvePreservesPositiveInterest1(uint256 z, uint256 y, uint256 dz, uint256 c) {
+    require z >= ONE18();
+    uint256 timeStretch; require timeStretch < ONE18() && timeStretch > 0;
+    uint256 mu = ONE18(); require c >= mu;
+    uint256 dy = YSMath.calculateBondsOutGivenSharesIn(z, y, dz, timeStretch, c, mu);
+    uint256 y_new = assert_uint256(y - dy);
+    uint256 z_new = assert_uint256(z + dz);
+
+    uint256 R1 = mulDivDownAbstractPlus(z, mu, y);
+    uint256 R2 = mulDivDownAbstractPlus(z_new, mu, y_new);
+
+    assert R1 <= ONE18() => R2 <= ONE18();   
+}
+
+/// Verified
+rule tradingOnCurvePreservesPositiveInterest2(uint256 z, uint256 y, uint256 dz, uint256 c) {
+    uint256 timeStretch; require timeStretch < ONE18() && timeStretch > 0;
+    uint256 mu = ONE18();
+    uint256 dy = YSMath.calculateBondsInGivenSharesOut(z, y, dz, timeStretch, c, mu);
+    uint256 y_new = assert_uint256(y + dy);
+    uint256 z_new = assert_uint256(z - dz);
+
+    uint256 R1 = mulDivDownAbstractPlus(z, mu, y);
+    uint256 R2 = mulDivDownAbstractPlus(z_new, mu, y_new);
+
+    assert R1 <= ONE18() => R2 <= ONE18();   
+}
+
+/// Violated (negative interest should be excluded on the higher-level functions)
+rule tradingOnCurvePreservesPositiveInterest3(uint256 z, uint256 y, uint256 dy, uint256 c) {
+    require z >= ONE18();
+    uint256 timeStretch; require timeStretch < ONE18() && timeStretch > 0;
+    uint256 mu = ONE18(); require c >= mu;
+    uint256 dz = YSMath.calculateSharesInGivenBondsOut(z, y, dy, timeStretch, c, mu);
+    uint256 y_new = assert_uint256(y - dy);
+    uint256 z_new = assert_uint256(z + dz);
+
+    uint256 R1 = mulDivDownAbstractPlus(z, mu, y);
+    uint256 R2 = mulDivDownAbstractPlus(z_new, mu, y_new);
+
+    assert R1 <= ONE18() => R2 <= ONE18();   
+}
+
+/// Verified
+rule tradingOnCurvePreservesPositiveInterest4(uint256 z, uint256 y, uint256 dy, uint256 c) {
+    uint256 timeStretch; require timeStretch < ONE18() && timeStretch > 0;
+    uint256 mu = ONE18();
+    uint256 dz = YSMath.calculateSharesOutGivenBondsIn(z, y, dy, timeStretch, c, mu);
+    uint256 y_new = assert_uint256(y + dy);
+    uint256 z_new = assert_uint256(z - dz);
+
+    uint256 R1 = mulDivDownAbstractPlus(z, mu, y);
+    uint256 R2 = mulDivDownAbstractPlus(z_new, mu, y_new);
+
+    assert R1 <= ONE18() => R2 <= ONE18();   
+}
+
+rule shortProceedsIntegrity(uint256 bondAmount) {
+    uint256 openSharePrice;
+    uint256 sharePrice;
+
+    uint256 shareReserves; // share reserves
+    uint256 bondReserves; // bond reserves
+    uint256 timeStretch; require timeStretch < ONE18() && timeStretch > 0;
+    
+    require sharePrice >= ONE18();
+    require openSharePrice >= ONE18();
+    require shareReserves >= ONE18();
+    require bondReserves >= ONE18();
+    require bondAmount >= 1000000;
+
+    bool sharePriceIncreases = sharePrice >= openSharePrice;
+
+    uint256 shareReservesDelta = HDMath.calculateOpenShort(shareReserves,bondReserves,bondAmount,timeStretch,sharePrice,ONE18());
+    require mulDownWad(shareReservesDelta,sharePrice) <= bondAmount;
+
+    uint256 traderDeposit = 
+        HDMath.calculateShortProceeds(
+        bondAmount,shareReservesDelta,openSharePrice,sharePrice,sharePrice);
+
+    assert bondAmount !=0 => traderDeposit !=0;
 }

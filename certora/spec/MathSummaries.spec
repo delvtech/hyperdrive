@@ -218,9 +218,8 @@ ghost SharesOutBondsIn(uint256,uint256,uint256,uint256,uint256,uint256) returns 
     Δy = (k - (c / µ) * (µ * (z - dz))^(1 - t))^(1 / (1 - t))) - y
 */
 function CVLBondsInGivenSharesOut(uint256 z, uint256 y, uint256 dz, uint256 t, uint256 c, uint256 mu) returns uint256 {
-    havoc yp; havoc zp; havoc tp;
-    require zp == require_uint256(z - dz);
-    require tp == require_uint256(ONE18() - t);
+    zp = require_uint256(z - dz);
+    tp = require_uint256(ONE18() - t);
     yp = BondsInSharesOut(z,y,dz,t,c,mu);
     require YSInvariant(z, zp, y, yp, mu, c, tp);
     return require_uint256(yp - y);
@@ -231,9 +230,8 @@ function CVLBondsInGivenSharesOut(uint256 z, uint256 y, uint256 dz, uint256 t, u
     Δy = y - (k - (c / µ) * (µ * (z + dz))^(1 - t))^(1 / (1 - t)))
 */
 function CVLBondsOutGivenSharesIn(uint256 z, uint256 y, uint256 dz, uint256 t, uint256 c, uint256 mu) returns uint256 {
-    havoc yp; havoc zp; havoc tp;
-    require zp == require_uint256(z + dz);
-    require tp == require_uint256(ONE18() - t);
+    zp = require_uint256(z + dz);
+    tp = require_uint256(ONE18() - t);
     yp = BondsOutSharesIn(z,y,dz,t,c,mu);
     require YSInvariant(z, zp, y, yp, mu, c, tp);
     return require_uint256(y - yp);
@@ -244,9 +242,8 @@ function CVLBondsOutGivenSharesIn(uint256 z, uint256 y, uint256 dz, uint256 t, u
     Δz = (((k - (y - dy)^(1 - t)) / (c / µ))^(1 / (1 - t)) / µ) - z
 */
 function CVLSharesInGivenBondsOut(uint256 z, uint256 y, uint256 dy, uint256 t, uint256 c, uint256 mu) returns uint256 {
-    havoc yp; havoc zp; havoc tp;
-    require yp == require_uint256(y - dy);
-    require tp == require_uint256(ONE18() - t);
+    yp = require_uint256(y - dy);
+    tp = require_uint256(ONE18() - t);
     zp = SharesInBondsOut(z,y,dy,t,c,mu);
     require YSInvariant(z, zp, y, yp, mu, c, tp);
     return require_uint256(zp - z);
@@ -257,9 +254,8 @@ function CVLSharesInGivenBondsOut(uint256 z, uint256 y, uint256 dy, uint256 t, u
     Δz = z - (((k - (y + Δy)^(1 - t)) / c/μ )^(1 / (1 - t)) / µ)
 */
 function CVLSharesOutGivenBondsIn(uint256 z, uint256 y, uint256 dy, uint256 t, uint256 c, uint256 mu) returns uint256 {
-    havoc yp; havoc zp; havoc tp;
-    require yp == require_uint256(y + dy);
-    require tp == require_uint256(ONE18() - t);
+    yp = require_uint256(y + dy);
+    tp = require_uint256(ONE18() - t);
     zp = SharesOutBondsIn(z,y,dy,t,c,mu);
     require YSInvariant(z, zp, y, yp, mu, c, tp);
     return require_uint256(z - zp);

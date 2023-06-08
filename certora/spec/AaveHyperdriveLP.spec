@@ -9,7 +9,7 @@ rule addLiquidityPreservesAPR() {
     setHyperdrivePoolParams();
     
     uint256 mu = initialSharePrice();
-    uint256 z1 = stateShareReserves(); require z1 !=0;
+    uint256 z1 = stateShareReserves(); require z1 >= ONE18();
     uint256 y1 = stateBondReserves(); require y1 !=0;
     uint256 R1 = mulDivDownAbstractPlus(z1, mu, y1);
     require R1 <= ONE18(); // The fixed interest should be > 1
@@ -29,7 +29,7 @@ rule removeLiquidityPreservesAPR() {
     setHyperdrivePoolParams();
 
     uint256 mu = initialSharePrice();
-    uint256 z1 = stateShareReserves(); require z1 !=0;
+    uint256 z1 = stateShareReserves(); require z1 >= ONE18();
     uint256 y1 = stateBondReserves(); require y1 !=0;
     uint256 R1 = mulDivDownAbstractPlus(z1, mu, y1);
     require R1 <= ONE18(); // The fixed interest should be > 1
@@ -50,3 +50,4 @@ rule removeLiquidityEmptyBothReserves() {
         removeLiquidity(e, args);
     assert stateShareReserves() ==0 <=> stateBondReserves() == 0;
 }
+

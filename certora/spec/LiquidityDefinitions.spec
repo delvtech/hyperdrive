@@ -13,6 +13,18 @@ definition isAddLiq(method f) returns bool =
 definition isRemoveLiq(method f) returns bool = 
     f.selector == sig:removeLiquidity(uint256,uint256,address,bool).selector;
 
+definition isOpenLong(method f) returns bool = 
+    f.selector == sig:openLong(uint256,uint256,address,bool).selector;
+
+definition isCloseLong(method f) returns bool = 
+    f.selector == sig:closeLong(uint256,uint256,uint256,address,bool).selector;
+
+definition isOpenShort(method f) returns bool = 
+    f.selector == sig:openShort(uint256,uint256,address,bool).selector;
+
+definition isCloseShort(method f) returns bool = 
+    f.selector == sig:closeShort(uint256,uint256,uint256,address,bool).selector;
+
 /// Constants to be used in the verification
 definition initialSharePrice0() returns uint256 = 10^18;
 definition timeStretch0() returns uint256 = 45071688063194104;
@@ -29,6 +41,9 @@ definition prefixByID(uint256 ID) returns mathint = (ID >> 248);
 /// ======================================
 ///             GHOSTS
 /// ======================================
+
+/// Mirror of totalSupply
+ghost mapping(uint256 => uint256) ghostTotalSupply;
 
 ghost mathint _ghostReadyToWithdraw {
     init_state axiom _ghostReadyToWithdraw == 0; 
@@ -65,6 +80,7 @@ hook Sstore currentContract._balanceOf[KEY uint256 tokenID][KEY address account]
 hook Sload uint256 value currentContract._totalSupply[KEY uint256 tokenID] STORAGE {
     mathint prefix = prefixByID(tokenID);
 
+    require(ghostTotalSupply[tokenID] == value);
     if(prefix == 1) {require _sumOfLongs >= to_mathint(value);}
     else if(prefix == 2) {require _sumOfShorts >= to_mathint(value);}
 }
@@ -72,6 +88,7 @@ hook Sload uint256 value currentContract._totalSupply[KEY uint256 tokenID] STORA
 hook Sstore currentContract._totalSupply[KEY uint256 tokenID] uint256 value (uint256 old_value) STORAGE {
     mathint prefix = prefixByID(tokenID);
     //mathint time = timeByID(tokenID);
+    ghostTotalSupply[tokenID] = value;
 
     _sumOfLongs = (prefix == 1) ?
         _sumOfLongs + value - old_value : _sumOfLongs;
