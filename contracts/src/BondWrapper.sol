@@ -40,6 +40,16 @@ contract BondWrapper is ERC20 {
         if (_mintPercent >= 10000e18) {
             revert Errors.MintPercentTooHigh();
         }
+
+        // By setting these addresses to the max uint256, attempting to execute
+        // a transfer to either of them will revert. This is a gas efficient way
+        // to prevent a common user mistake where they transfer to the token
+        // address. These values are not considered 'real' tokens and so are not
+        // included in 'total supply' which only contains minted tokens.
+        // WARN - Never allow allowances to be set for these addresses.
+        balanceOf[address(0)] = type(uint256).max;
+        balanceOf[address(this)] = type(uint256).max;
+
         // Set the immutables
         hyperdrive = _hyperdrive;
         token = _token;
@@ -105,7 +115,7 @@ contract BondWrapper is ERC20 {
             receivedAmount = hyperdrive.closeLong(
                 maturityTime,
                 amount,
-                mintedFromBonds,
+                0,
                 address(this),
                 true
             );
