@@ -30,6 +30,7 @@ library Errors {
     error UnsupportedToken();
     error ZeroAmount();
     error ZeroLpTotalSupply();
+    error NoAssetsToWithdraw();
 
     /// ############
     /// ### TWAP ###
