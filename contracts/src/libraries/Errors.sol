@@ -64,6 +64,7 @@ library Errors {
     error BondMatured();
     error BondNotMatured();
     error InsufficientPrice();
+    error MintPercentTooHigh();
 
     /// ###############
     /// ### AssetId ###

@@ -37,6 +37,9 @@ contract BondWrapper is ERC20Permit {
         string memory name_,
         string memory symbol_
     ) ERC20Permit(name_, symbol_, 18) {
+        if (_mintPercent >= 10000) {
+            revert Errors.MintPercentTooHigh();
+        }
         // Set the immutables
         hyperdrive = _hyperdrive;
         token = _token;
