@@ -103,8 +103,9 @@ library HyperdriveUtils {
                 .calculateSharesInGivenBondsOut(
                     poolInfo.shareReserves,
                     poolInfo.bondReserves,
-                    (poolInfo.bondReserves -
-                        _hyperdrive.totalSupply(AssetId._LP_ASSET_ID)),
+                    // (poolInfo.bondReserves -
+                    //     _hyperdrive.totalSupply(AssetId._LP_ASSET_ID)),
+                    1e18,
                     normalizedTimeRemaining,
                     poolInfo.sharePrice,
                     poolConfig.initialSharePrice
