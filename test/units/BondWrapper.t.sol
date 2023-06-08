@@ -98,9 +98,10 @@ contract BondWrapperTest is BaseTest {
         // Ensure that the bondWrapper contract has been approved by the user
         vm.startPrank(alice);
         hyperdrive.setApprovalForAll(address(bondWrapper), true);
+        vm.stopPrank();
     }
 
-    function testBondWrapperRedeem() public {
+    function test_BondWrapperRedeem() public {
         // Ensure that the bondWrapper contract has been approved by the user
         vm.startPrank(alice);
         multiToken.setApprovalForAll(address(bondWrapper), true);
@@ -121,7 +122,29 @@ contract BondWrapperTest is BaseTest {
         assert(balance == 0);
     }
 
-    function testSweepAndRedeem() public {
+    function test_bond_wrapper_closeLimit() public {
+        // Ensure that the bondWrapper contract has been approved by the user
+        vm.startPrank(alice);
+        multiToken.setApprovalForAll(address(bondWrapper), true);
+
+        uint256 balance = bondWrapper.balanceOf(alice);
+
+        assert(balance == 0);
+
+        bondWrapper.mint(365 days, 1e18, alice);
+
+        vm.warp(365 days);
+
+        balance = bondWrapper.balanceOf(bob);
+
+        vm.expectRevert(Errors.OutputLimit.selector);
+        bondWrapper.close(365 days, balance, true, bob, 1e18 + 1);
+
+        // Should pass when you get the right amount
+        bondWrapper.close(365 days, balance, true, bob, 1e18);
+    }
+
+    function test_SweepAndRedeem() public {
         vm.startPrank(alice);
         uint256 balance = bondWrapper.balanceOf(alice);
 

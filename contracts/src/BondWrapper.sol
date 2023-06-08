@@ -93,11 +93,13 @@ contract BondWrapper is ERC20 {
     /// @param amount The amount of bonds to redeem
     /// @param andBurn If true it will burn the number of erc20 minted by this deposited bond
     /// @param destination The address which gets credited with this withdraw
+    /// @param minOutput The min amount the user expects transferred to them.
     function close(
         uint256 maturityTime,
         uint256 amount,
         bool andBurn,
-        address destination
+        address destination,
+        uint256 minOutput
     ) external {
         // Encode the asset ID
         uint256 assetId = AssetId.encodeAssetId(
@@ -138,6 +140,9 @@ contract BondWrapper is ERC20 {
             _burn(msg.sender, mintedFromBonds);
             userFunds += mintedFromBonds;
         }
+
+        // The user has to get at least what they expect.
+        if (userFunds < minOutput) revert Errors.OutputLimit();
 
         // Transfer the released funds to the user
         bool success = token.transfer(destination, userFunds);
