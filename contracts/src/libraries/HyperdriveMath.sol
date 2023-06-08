@@ -97,16 +97,14 @@ library HyperdriveMath {
         // NOTE: Using divDown to convert to fixed point format.
         uint256 t = _positionDuration.divDown(365 days);
         uint256 tau = FixedPointMath.ONE_18.mulDown(_timeStretch);
-        // mu * (1 + apr * t) ** (1 / tau) - c
-        uint256 rhs = _initialSharePrice
+        // mu * z * (1 + apr * t) ** (1 / tau)
+        return _initialSharePrice
+            .mulDown(_shareReserves)
             .mulDown(
                 FixedPointMath.ONE_18.add(_apr.mulDown(t)).pow(
                     FixedPointMath.ONE_18.divUp(tau)
                 )
-            )
-            .sub(_sharePrice);
-        // (z / 2) * (mu * (1 + apr * t) ** (1 / tau) - c)
-        return _shareReserves.divDown(2 * FixedPointMath.ONE_18).mulDown(rhs);
+            );
     }
 
     /// @dev Calculates the number of bonds a user will receive when opening a long position.

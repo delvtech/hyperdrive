@@ -12,6 +12,7 @@ import { HyperdriveBase } from "contracts/src/HyperdriveBase.sol";
 import { BaseTest } from "./BaseTest.sol";
 import { MockHyperdrive, MockHyperdriveDataProvider } from "../mocks/MockHyperdrive.sol";
 import { HyperdriveUtils } from "./HyperdriveUtils.sol";
+import "forge-std/console2.sol";
 
 contract HyperdriveTest is BaseTest {
     using FixedPointMath for uint256;

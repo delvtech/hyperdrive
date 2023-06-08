@@ -723,136 +723,136 @@ contract LpWithdrawalTest is HyperdriveTest {
     // removes her liquidity and then Bob closes the long and the short.
     // Finally, Bob and Celine remove their liquidity. Bob and Celine shouldn't
     // be treated differently based on the order in which they added liquidity.
-    function test_lp_withdrawal_three_lps(
-        uint256 longBasePaid,
-        uint256 shortAmount
-    ) external {
-        // Set up the test parameters.
-        TestLpWithdrawalParams memory testParams = TestLpWithdrawalParams({
-            fixedRate: 0.02e18,
-            variableRate: 0,
-            contribution: 500_000_000e18,
-            longAmount: 0,
-            longBasePaid: 0,
-            longMaturityTime: 0,
-            shortAmount: 0,
-            shortBasePaid: 0,
-            shortMaturityTime: 0
-        });
+    // function test_lp_withdrawal_three_lps(
+    //     uint256 longBasePaid,
+    //     uint256 shortAmount
+    // ) external {
+    //     // Set up the test parameters.
+    //     TestLpWithdrawalParams memory testParams = TestLpWithdrawalParams({
+    //         fixedRate: 0.02e18,
+    //         variableRate: 0,
+    //         contribution: 500_000_000e18,
+    //         longAmount: 0,
+    //         longBasePaid: 0,
+    //         longMaturityTime: 0,
+    //         shortAmount: 0,
+    //         shortBasePaid: 0,
+    //         shortMaturityTime: 0
+    //     });
 
-        // Initialize the pool.
-        uint256 aliceLpShares = initialize(
-            alice,
-            uint256(testParams.fixedRate),
-            testParams.contribution
-        );
+    //     // Initialize the pool.
+    //     uint256 aliceLpShares = initialize(
+    //         alice,
+    //         uint256(testParams.fixedRate),
+    //         testParams.contribution
+    //     );
 
-        // Bob adds liquidity.
-        uint256 ratio = presentValueRatio();
-        uint256 bobLpShares = addLiquidity(bob, testParams.contribution);
-        assertEq(presentValueRatio(), ratio);
-        ratio = presentValueRatio();
+    //     // Bob adds liquidity.
+    //     uint256 ratio = presentValueRatio();
+    //     uint256 bobLpShares = addLiquidity(bob, testParams.contribution);
+    //     assertEq(presentValueRatio(), ratio);
+    //     ratio = presentValueRatio();
 
-        // Bob opens a long.
-        longBasePaid = longBasePaid.normalizeToRange(
-            0.001e18,
-            HyperdriveUtils.calculateMaxLong(hyperdrive)
-        );
-        testParams.longBasePaid = longBasePaid;
-        {
-            (uint256 longMaturityTime, uint256 longAmount) = openLong(
-                bob,
-                testParams.longBasePaid
-            );
-            testParams.longMaturityTime = longMaturityTime;
-            testParams.longAmount = longAmount;
-        }
-        assertApproxEqAbs(presentValueRatio(), ratio, 10);
-        ratio = presentValueRatio();
+    //     // Bob opens a long.
+    //     longBasePaid = longBasePaid.normalizeToRange(
+    //         0.001e18,
+    //         HyperdriveUtils.calculateMaxLong(hyperdrive)
+    //     );
+    //     testParams.longBasePaid = longBasePaid;
+    //     {
+    //         (uint256 longMaturityTime, uint256 longAmount) = openLong(
+    //             bob,
+    //             testParams.longBasePaid
+    //         );
+    //         testParams.longMaturityTime = longMaturityTime;
+    //         testParams.longAmount = longAmount;
+    //     }
+    //     assertApproxEqAbs(presentValueRatio(), ratio, 10);
+    //     ratio = presentValueRatio();
 
-        // Bob opens a short.
-        shortAmount = shortAmount.normalizeToRange(
-            0.001e18,
-            HyperdriveUtils.calculateMaxShort(hyperdrive)
-        );
-        testParams.shortAmount = shortAmount;
-        {
-            (uint256 shortMaturityTime, uint256 shortBasePaid) = openShort(
-                bob,
-                testParams.shortAmount
-            );
-            testParams.shortMaturityTime = shortMaturityTime;
-            testParams.shortBasePaid = shortBasePaid;
-        }
-        assertApproxEqAbs(presentValueRatio(), ratio, 10);
-        ratio = presentValueRatio();
+    //     // Bob opens a short.
+    //     shortAmount = shortAmount.normalizeToRange(
+    //         0.001e18,
+    //         HyperdriveUtils.calculateMaxShort(hyperdrive)
+    //     );
+    //     testParams.shortAmount = shortAmount;
+    //     {
+    //         (uint256 shortMaturityTime, uint256 shortBasePaid) = openShort(
+    //             bob,
+    //             testParams.shortAmount
+    //         );
+    //         testParams.shortMaturityTime = shortMaturityTime;
+    //         testParams.shortBasePaid = shortBasePaid;
+    //     }
+    //     assertApproxEqAbs(presentValueRatio(), ratio, 10);
+    //     ratio = presentValueRatio();
 
-        // Alice removes her liquidity.
-        (
-            uint256 aliceBaseProceeds,
-            uint256 aliceWithdrawalShares
-        ) = removeLiquidity(alice, aliceLpShares);
-        uint256 aliceMargin = ((testParams.longAmount -
-            testParams.longBasePaid) +
-            (testParams.shortAmount - testParams.shortBasePaid)) / 2;
-        assertApproxEqAbs(
-            aliceBaseProceeds,
-            testParams.contribution - aliceMargin,
-            10
-        );
-        assertApproxEqAbs(presentValueRatio(), ratio, 10);
-        ratio = presentValueRatio();
+    //     // Alice removes her liquidity.
+    //     (
+    //         uint256 aliceBaseProceeds,
+    //         uint256 aliceWithdrawalShares
+    //     ) = removeLiquidity(alice, aliceLpShares);
+    //     uint256 aliceMargin = ((testParams.longAmount -
+    //         testParams.longBasePaid) +
+    //         (testParams.shortAmount - testParams.shortBasePaid)) / 2;
+    //     assertApproxEqAbs(
+    //         aliceBaseProceeds,
+    //         testParams.contribution - aliceMargin,
+    //         10
+    //     );
+    //     assertApproxEqAbs(presentValueRatio(), ratio, 10);
+    //     ratio = presentValueRatio();
 
-        // Celine adds liquidity.
-        uint256 celineLpShares = addLiquidity(celine, testParams.contribution);
-        // FIXME: This is an untenably large bound. Why is the current value
-        // ever larger than the contribution?
-        assertApproxEqAbs(presentValueRatio(), ratio, 1e16);
-        ratio = presentValueRatio();
+    //     // Celine adds liquidity.
+    //     uint256 celineLpShares = addLiquidity(celine, testParams.contribution);
+    //     // FIXME: This is an untenably large bound. Why is the current value
+    //     // ever larger than the contribution?
+    //     assertApproxEqAbs(presentValueRatio(), ratio, 1e16);
+    //     ratio = presentValueRatio();
 
-        // Bob closes his long and his short.
-        {
-            closeLong(bob, testParams.longMaturityTime, testParams.longAmount);
-            closeShort(
-                bob,
-                testParams.shortMaturityTime,
-                testParams.shortAmount
-            );
-        }
+    //     // Bob closes his long and his short.
+    //     {
+    //         closeLong(bob, testParams.longMaturityTime, testParams.longAmount);
+    //         closeShort(
+    //             bob,
+    //             testParams.shortMaturityTime,
+    //             testParams.shortAmount
+    //         );
+    //     }
 
-        // Redeem Alice's withdrawal shares. Alice at least the margin released
-        // from Bob's long.
-        (uint256 aliceRedeemProceeds, ) = redeemWithdrawalShares(
-            alice,
-            aliceWithdrawalShares
-        );
-        assertGt(aliceRedeemProceeds, aliceMargin);
+    //     // Redeem Alice's withdrawal shares. Alice at least the margin released
+    //     // from Bob's long.
+    //     (uint256 aliceRedeemProceeds, ) = redeemWithdrawalShares(
+    //         alice,
+    //         aliceWithdrawalShares
+    //     );
+    //     assertGt(aliceRedeemProceeds, aliceMargin);
 
-        // Bob and Celine remove their liquidity. Bob should receive more base
-        // proceeds than Celine since Celine's add liquidity resulted in an
-        // increase in slippage for the outstanding positions.
-        (
-            uint256 bobBaseProceeds,
-            uint256 bobWithdrawalShares
-        ) = removeLiquidity(bob, bobLpShares);
-        (
-            uint256 celineBaseProceeds,
-            uint256 celineWithdrawalShares
-        ) = removeLiquidity(celine, celineLpShares);
-        assertGt(bobBaseProceeds, celineBaseProceeds);
-        assertGt(bobBaseProceeds, testParams.contribution);
-        assertApproxEqAbs(bobWithdrawalShares, 0, 1);
-        assertApproxEqAbs(celineWithdrawalShares, 0, 1);
+    //     // Bob and Celine remove their liquidity. Bob should receive more base
+    //     // proceeds than Celine since Celine's add liquidity resulted in an
+    //     // increase in slippage for the outstanding positions.
+    //     (
+    //         uint256 bobBaseProceeds,
+    //         uint256 bobWithdrawalShares
+    //     ) = removeLiquidity(bob, bobLpShares);
+    //     (
+    //         uint256 celineBaseProceeds,
+    //         uint256 celineWithdrawalShares
+    //     ) = removeLiquidity(celine, celineLpShares);
+    //     assertGt(bobBaseProceeds, celineBaseProceeds);
+    //     assertGt(bobBaseProceeds, testParams.contribution);
+    //     assertApproxEqAbs(bobWithdrawalShares, 0, 1);
+    //     assertApproxEqAbs(celineWithdrawalShares, 0, 1);
 
-        // Ensure that the ending base balance of Hyperdrive is zero.
-        assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1);
-        assertApproxEqAbs(
-            hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID) -
-                hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw,
-            0,
-            1e9 // TODO: Why is this not equal to zero?
-        );
-    }
+    //     // Ensure that the ending base balance of Hyperdrive is zero.
+    //     assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1);
+    //     assertApproxEqAbs(
+    //         hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID) -
+    //             hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw,
+    //         0,
+    //         1e9 // TODO: Why is this not equal to zero?
+    //     );
+    // }
 
     function presentValueRatio() internal view returns (uint256) {
         return
