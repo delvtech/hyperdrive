@@ -30,6 +30,7 @@ library Errors {
     error UnsupportedToken();
     error ZeroAmount();
     error ZeroLpTotalSupply();
+    error NoAssetsToWithdraw();
 
     /// ############
     /// ### TWAP ###
@@ -64,6 +65,7 @@ library Errors {
     error BondMatured();
     error BondNotMatured();
     error InsufficientPrice();
+    error MintPercentTooHigh();
 
     /// ###############
     /// ### AssetId ###

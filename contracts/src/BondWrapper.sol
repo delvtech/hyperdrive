@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import { ERC20Permit } from "./libraries/ERC20Permit.sol";
+import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { AssetId } from "./libraries/AssetId.sol";
 import { Errors } from "./libraries/Errors.sol";
 
@@ -13,7 +13,7 @@ import { Errors } from "./libraries/Errors.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract BondWrapper is ERC20Permit {
+contract BondWrapper is ERC20 {
     // The multitoken of the bond
     IHyperdrive public immutable hyperdrive;
     // The underlying token from the bond
@@ -36,7 +36,20 @@ contract BondWrapper is ERC20Permit {
         uint256 _mintPercent,
         string memory name_,
         string memory symbol_
-    ) ERC20Permit(name_, symbol_, 18) {
+    ) ERC20(name_, symbol_, 18) {
+        if (_mintPercent >= 10000e18) {
+            revert Errors.MintPercentTooHigh();
+        }
+
+        // By setting these addresses to the max uint256, attempting to execute
+        // a transfer to either of them will revert. This is a gas efficient way
+        // to prevent a common user mistake where they transfer to the token
+        // address. These values are not considered 'real' tokens and so are not
+        // included in 'total supply' which only contains minted tokens.
+        // WARN - Never allow allowances to be set for these addresses.
+        balanceOf[address(0)] = type(uint256).max;
+        balanceOf[address(this)] = type(uint256).max;
+
         // Set the immutables
         hyperdrive = _hyperdrive;
         token = _token;
@@ -52,14 +65,15 @@ contract BondWrapper is ERC20Permit {
         uint256 amount,
         address destination
     ) external {
+        // Must not be matured
+        if (maturityTime <= block.timestamp) revert Errors.BondMatured();
+
         // Encode the asset ID
         uint256 assetId = AssetId.encodeAssetId(
             AssetId.AssetIdPrefix.Long,
             maturityTime
         );
 
-        // Must not be matured
-        if (maturityTime <= block.timestamp) revert Errors.BondMatured();
         // Transfer from the user
         hyperdrive.transferFrom(assetId, msg.sender, address(this), amount);
 
@@ -91,7 +105,6 @@ contract BondWrapper is ERC20Permit {
             maturityTime
         );
 
-        // Close the user position
         uint256 receivedAmount;
         if (maturityTime > block.timestamp) {
             // Close the bond [selling if earlier than the expiration]
@@ -111,8 +124,10 @@ contract BondWrapper is ERC20Permit {
         // Update the user balances
         deposits[msg.sender][assetId] -= amount;
 
+        // Close the user position
         // We require that this won't make the position unbacked
         uint256 mintedFromBonds = (amount * mintPercent) / 10000;
+
         if (receivedAmount < mintedFromBonds) revert Errors.InsufficientPrice();
 
         // The user gets at least the interest implied from

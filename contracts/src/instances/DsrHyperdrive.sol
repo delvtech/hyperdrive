@@ -97,6 +97,8 @@ contract DsrHyperdrive is Hyperdrive {
     /// @notice Withdraws shares from the yield source and sends the resulting tokens to the destination
     /// @param shares The shares to withdraw from the yield source
     /// @param destination The address which is where to send the resulting tokens
+    /// @param asUnderlying The DSR yield source only supports withdrawing the underlying token
+    ///        If this is false, the transaction will revert.
     /// @return amountWithdrawn the amount of 'token' produced by this withdraw
     /// @return sharePrice The share price on withdraw.
     function _withdraw(
