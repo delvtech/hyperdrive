@@ -128,6 +128,23 @@ rule openLongIntegrity(uint256 baseAmount) {
         "A position cannot be opened with more bonds than bonds reserves";
 }
 
+rule profitIsMonotonicForCloseLong(env eCl) {
+    uint256 bondAmount;
+    uint256 minOutput;
+    address destination1; address destination2;
+    uint256 maturityTime1; uint256 maturityTime2;
+    bool asUnderlying1; bool asUnderlying2;
+
+    storage initState = lastStorage;
+    uint256 assetsRecieved1 =
+        closeLong(eCl, maturityTime1, bondAmount, minOutput, destination1, asUnderlying1);
+
+    uint256 assetsRecieved2 =
+        closeLong(eCl, maturityTime2, bondAmount, minOutput, destination2, asUnderlying2) at initState;
+
+    assert maturityTime1 >= maturityTime2 => assetsRecieved1 <= assetsRecieved2, "Received assets should increase for long position.";
+}
+
 rule openLongReturnsSameBonds(env eOp) {
     uint256 baseAmount; uint256 bondAmount;
     uint256 minOutput_open; uint256 minOutput_close;

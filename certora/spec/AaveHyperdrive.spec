@@ -668,6 +668,70 @@ invariant LongAverageMaturityTimeIsBounded(env e)
         }
     }
 
+/// Tadeas trying to verify LongAverageMaturityTimeIsBounded using split
+invariant LongAverageMaturityTimeIsBounded1(env e)
+    (stateLongs() == 0 => AvgMTimeLongs() == 0)
+    {
+        preserved with (env eP) {
+            require e.block.timestamp == eP.block.timestamp;
+            setHyperdrivePoolParams();
+        }
+    }
+
+/// Tadeas trying to verify LongAverageMaturityTimeIsBounded using split
+invariant LongAverageMaturityTimeIsBounded2(env e)
+    (stateLongs() != 0 =>
+        AvgMTimeLongs() >= e.block.timestamp * ONE18() &&
+        AvgMTimeLongs() <= ONE18()*(e.block.timestamp + positionDuration()))
+    {
+        preserved with (env eP) {
+            require e.block.timestamp == eP.block.timestamp;
+            setHyperdrivePoolParams();
+        }
+    }
+
+/// Tadeas trying to verify LongAverageMaturityTimeIsBounded using split and rule
+rule longAverageMaturityTimeIsBoundedAfterOpenLong1(env e)
+{
+    setHyperdrivePoolParams();
+
+    require stateLongs() != 0 &&
+        AvgMTimeLongs() >= e.block.timestamp * ONE18() &&
+        AvgMTimeLongs() <= ONE18()*(e.block.timestamp + positionDuration());
+
+    uint256 baseAmount;
+    uint256 minOutput;
+    address destination;
+    bool asUnderlying;
+
+    openLong(e, baseAmount, minOutput, destination, asUnderlying);
+
+    assert stateLongs() == 0 => AvgMTimeLongs() == 0;
+    assert stateLongs() != 0 =>
+        AvgMTimeLongs() >= e.block.timestamp * ONE18() &&
+        AvgMTimeLongs() <= ONE18()*(e.block.timestamp + positionDuration());
+}
+
+/// Tadeas trying to verify LongAverageMaturityTimeIsBounded using split and rule
+rule longAverageMaturityTimeIsBoundedAfterOpenLong2(env e)
+{
+    setHyperdrivePoolParams();
+
+    require stateLongs() == 0 && AvgMTimeLongs() == 0;
+
+    uint256 baseAmount;
+    uint256 minOutput;
+    address destination;
+    bool asUnderlying;
+
+    openLong(e, baseAmount, minOutput, destination, asUnderlying);
+
+    assert stateLongs() == 0 => AvgMTimeLongs() == 0;
+    assert stateLongs() != 0 =>
+        AvgMTimeLongs() >= e.block.timestamp * ONE18() &&
+        AvgMTimeLongs() <= ONE18()*(e.block.timestamp + positionDuration());
+}
+
 /// @notice The average maturity time should always be between the current time stamp and the time stamp + duration.
 /// In other words, matured positions should not be taken into account in the average time.
 invariant ShortAverageMaturityTimeIsBounded(env e)
