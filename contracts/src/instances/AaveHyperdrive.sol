@@ -93,12 +93,11 @@ contract AaveHyperdrive is Hyperdrive {
     ///                     if false it will transfer the yielding asset directly
     ///@param destination The address which is where to send the resulting tokens
     ///@return amountWithdrawn the amount of 'token' produced by this withdraw
-    ///@return sharePrice The share price on withdraw.
     function _withdraw(
         uint256 shares,
         address destination,
         bool asUnderlying
-    ) internal override returns (uint256 amountWithdrawn, uint256 sharePrice) {
+    ) internal override returns (uint256 amountWithdrawn) {
         // The withdrawer receives a proportional amount of the assets held by
         // the contract to the amount of shares that they are redeeming. Small
         // numerical errors can result in the shares value being slightly larger
@@ -129,9 +128,7 @@ contract AaveHyperdrive is Hyperdrive {
             aToken.transfer(destination, withdrawValue);
         }
 
-        // Return the amount and implied share price
-        sharePrice = shares != 0 ? withdrawValue.divDown(shares) : 0;
-        return (withdrawValue, sharePrice);
+        return withdrawValue;
     }
 
     ///@notice Loads the share price from the yield source.

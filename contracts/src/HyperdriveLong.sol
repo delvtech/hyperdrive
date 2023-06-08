@@ -159,7 +159,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         }
 
         // Withdraw the profit to the trader.
-        (uint256 baseProceeds, ) = _withdraw(
+        uint256 baseProceeds = _withdraw(
             shareProceeds,
             _destination,
             _asUnderlying

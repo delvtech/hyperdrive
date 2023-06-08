@@ -124,22 +124,15 @@ contract HyperdriveER4626Test is HyperdriveTest {
         pool.transfer(address(mockHyperdrive), 10e18);
         uint256 balanceBefore = dai.balanceOf(alice);
         // test an underlying withdraw
-        (uint256 amountWithdrawn, uint256 pricePerShare) = mockHyperdrive
-            .withdraw(2e18, alice, true);
+        uint256 amountWithdrawn = mockHyperdrive.withdraw(2e18, alice, true);
         uint256 balanceAfter = dai.balanceOf(alice);
         assertEq(balanceAfter, balanceBefore + 3e18);
         assertEq(amountWithdrawn, 3e18);
-        assertEq(pricePerShare, 1.5e18);
 
         // Test a share withdraw
-        (amountWithdrawn, pricePerShare) = mockHyperdrive.withdraw(
-            2e18,
-            alice,
-            false
-        );
+        amountWithdrawn = mockHyperdrive.withdraw(2e18, alice, false);
         assertEq(pool.balanceOf(alice), 2e18);
         assertEq(amountWithdrawn, 3e18);
-        assertEq(pricePerShare, 1.5e18);
     }
 
     function test_erc4626_pricePerShare() external {

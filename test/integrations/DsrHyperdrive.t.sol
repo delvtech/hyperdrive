@@ -164,11 +164,7 @@ contract DsrHyperdrive is BaseTest {
         uint256 underlyingInvested = dsrManager.daiBalance(address(hyperdrive));
 
         // Bob should have accrued 1%
-        (uint256 amountWithdrawnBob, ) = hyperdrive.withdraw(
-            sharesBob,
-            bob,
-            true
-        );
+        uint256 amountWithdrawnBob = hyperdrive.withdraw(sharesBob, bob, true);
         assertApproxEqAbs(
             amountWithdrawnBob - 1000e18,
             10e18,
@@ -177,7 +173,7 @@ contract DsrHyperdrive is BaseTest {
         );
 
         // Alice shares should make up the rest of the pool
-        (uint256 amountWithdrawnAlice, ) = hyperdrive.withdraw(
+        uint256 amountWithdrawnAlice = hyperdrive.withdraw(
             sharesAlice,
             alice,
             true
@@ -209,18 +205,7 @@ contract DsrHyperdrive is BaseTest {
                 100e18 * i,
                 true
             );
-            (, uint256 sharePriceOnWithdraw) = hyperdrive.withdraw(
-                50e18 * i,
-                alice,
-                true
-            );
 
-            assertApproxEqAbs(
-                pricePerShare,
-                sharePriceOnWithdraw,
-                5000,
-                "emulated share price should match pool ratio after withdraw"
-            );
             assertApproxEqAbs(
                 pricePerShare,
                 sharePriceOnDeposit,

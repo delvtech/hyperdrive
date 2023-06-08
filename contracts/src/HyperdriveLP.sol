@@ -255,7 +255,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         );
 
         // Withdraw the shares from the yield source.
-        (uint256 baseProceeds, ) = _withdraw(
+        uint256 baseProceeds = _withdraw(
             shareProceeds,
             _destination,
             _asUnderlying
@@ -321,7 +321,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         _withdrawPool.proceeds -= uint128(shareProceeds);
 
         // Withdraw for the user
-        (uint256 proceeds, ) = _withdraw(
+        uint256 proceeds = _withdraw(
             shareProceeds,
             _destination,
             _asUnderlying

@@ -102,16 +102,14 @@ contract ERC4626Hyperdrive is Hyperdrive {
     ///                     if false it will transfer the yielding asset directly
     /// @param destination The address which is where to send the resulting tokens
     /// @return amountWithdrawn the amount of 'token' produced by this withdraw
-    /// @return sharePrice The share price on withdraw.
     function _withdraw(
         uint256 shares,
         address destination,
         bool asUnderlying
-    ) internal override returns (uint256 amountWithdrawn, uint256 sharePrice) {
+    ) internal override returns (uint256 amountWithdrawn) {
         if (asUnderlying) {
             // In this case we simply withdraw
             amountWithdrawn = pool.redeem(shares, destination, address(this));
-            sharePrice = amountWithdrawn.divDown(shares);
         } else {
             // Transfer erc4626 shares to the user
             bool success = IERC20(address(pool)).transfer(destination, shares);
@@ -120,7 +118,6 @@ contract ERC4626Hyperdrive is Hyperdrive {
             }
             // Now we calculate the price per share
             uint256 estimated = pool.convertToAssets(shares);
-            sharePrice = estimated.divDown(shares);
             amountWithdrawn = estimated;
         }
     }

@@ -118,12 +118,11 @@ contract StethHyperdrive is Hyperdrive {
     ///        processed instantaneously. Users that want to withdraw can manage
     ///        their withdrawal separately.
     /// @return amountWithdrawn The amount of stETH withdrawn.
-    /// @return sharePrice The current share price.
     function _withdraw(
         uint256 _shares,
         address _destination,
         bool _asUnderlying
-    ) internal override returns (uint256 amountWithdrawn, uint256 sharePrice) {
+    ) internal override returns (uint256 amountWithdrawn) {
         if (_asUnderlying) {
             revert Errors.UnsupportedToken();
         }
@@ -131,12 +130,7 @@ contract StethHyperdrive is Hyperdrive {
         // Transfer stETH to the destination.
         amountWithdrawn = lido.transferShares(_destination, _shares);
 
-        // Calculate the share price.
-        if (_shares != 0) {
-            sharePrice = amountWithdrawn.divDown(_shares);
-        }
-
-        return (amountWithdrawn, sharePrice);
+        return amountWithdrawn;
     }
 
     /// @dev Returns the current share price. We simply use Lido's share price.
