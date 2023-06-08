@@ -129,9 +129,8 @@ filtered { f -> onlyShortMethods(f) } {
 
 
 // STATUS - in progress
-// more bonds are opened, more of everything will be paid/received:
-// - trader deposit
-// - ...
+// failing (need to prove _shareAmount): https://vaas-stg.certora.com/output/3106/c8cf384bc8e64aefaa0f3c81450155e2/?anonymousKey=723ce2ad4f397856acb6a0aedc04fdd7c40cc27a
+// more bonds are opened, more trader will deposit
 // calling two openShort()'s with lastStorage causes timeouts.
 // proving properties of math functions responsible calculations 
 rule moreBondsMorePayments(env e) {
@@ -151,6 +150,8 @@ rule moreBondsMorePayments(env e) {
     assert _bondAmount1 > _bondAmount2 => traderDeposit1 >= traderDeposit2;
 }
 
+
+// STATUS - in progress (failing with summarization: https://vaas-stg.certora.com/output/3106/05f08894193e458aaf2d9892386cf2b8/?anonymousKey=aec08a2cb376b73a55e7e0756ee79a24b2852414)
 // proving it for _shareAmount in the rule above
 rule calculateSharesOutGivenBondsInMonoton(env e) {
     uint256 _shareReserves;
@@ -187,3 +188,5 @@ function shortFunctionsCallHelper(method f, env e, uint256 maxDeposit) {
 
 
 // _marketState.shortBaseVolume should be greater or equal to traderDeposit ?
+// _marketState.shortBaseVolume >= _checkpoints[any].shortBaseVolume
+// 

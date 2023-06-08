@@ -9,24 +9,27 @@ then
 fi
 
 certoraRun contracts/src/BondWrapper.sol \
-    contracts/src/instances/DsrHyperdrive.sol \
+    certora/helpers/SymbolicHyperdrive/SymbolicHyperdrive.sol \
     \
     certora/helpers/DummyERC20A.sol \
     certora/helpers/DummyERC20B.sol \
-    certora/helpers/DummyDsrManager.sol:DummyDsrManager \
-    certora/helpers/DummyPot.sol \
     \
     --verify BondWrapper:certora/spec/BondWrapper.spec \
-    --link BondWrapper:hyperdrive=DsrHyperdrive \
-            BondWrapper:token=DummyERC20B \
-            DsrHyperdrive:dsrManager=DummyDsrManager \
-            DsrHyperdrive:pot=DummyPot \
-            DummyDsrManager:potInstance=DummyPot \
+    --link BondWrapper:hyperdrive=SymbolicHyperdrive \
+        BondWrapper:token=DummyERC20A \
     --solc solc8.18 \
     --loop_iter 3 \
     --staging \
     --optimistic_loop \
     --rule_sanity \
     --send_only \
+    --packages @aave=lib/aave-v3-core/contracts openzeppelin-contracts=lib/openzeppelin-contracts \
     $RULE \
     --msg "BondWrapper: $RULE $MSG" 
+
+
+    # certora/helpers/Aave/Pool.sol \
+    # certora/helpers/DummyATokenA.sol \
+    #         SymbolicHyperdrive:aToken=DummyATokenA \
+    #     SymbolicHyperdrive:pool=Pool \
+            # SymbolicHyperdrive:_baseToken=DummyERC20A \

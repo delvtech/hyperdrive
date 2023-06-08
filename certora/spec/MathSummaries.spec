@@ -38,8 +38,10 @@ methods {
         => ghostCalculateBaseVolume(base, bond, time) expect uint256;
     
     /// @dev Calculates the spot price without slippage of bonds in terms of shares.
-    function _.calculateSpotPrice(uint256 shares, uint256 bonds, uint256 initPrice, uint256 normTime, uint256 timeSt) internal => NONDET;
-        //=> CVLCalculateSpotPrice(shares, bonds, initPrice, normTime, timeSt) expect uint256;
+    function _.calculateSpotPrice(uint256 shares, uint256 bonds, uint256 initPrice, uint256 normTime, uint256 timeSt) internal library 
+        => CVLCalculateSpotPrice(shares, bonds, initPrice, normTime, timeSt) expect uint256;
+    // function _.calculateSpotPrice(uint256 shares, uint256 bonds, uint256 initPrice, uint256 normTime, uint256 timeSt) internal library 
+    //     => NONDET;
     
     /// @dev Calculates the APR from the pool's reserves.
     function _.calculateAPRFromReserves(uint256 shares, uint256 bonds, uint256 initPrice, uint256 dur, uint256 timeSt) internal
@@ -62,8 +64,8 @@ methods {
         => ghostCalculateShortInterest(bond, openPrice, closePrice, price) expect uint256;
     
     /// @dev Calculates the proceeds in shares of closing a short position.
-    //function _.calculateShortProceeds(uint256 bond, uint256 share, uint256 openPrice, uint256 closePrice, uint256 price) internal 
-    //    => ghostCalculateShortProceeds(bond, share, openPrice, closePrice, price) expect uint256;
+    function _.calculateShortProceeds(uint256 bond, uint256 share, uint256 openPrice, uint256 closePrice, uint256 price) internal 
+       => ghostCalculateShortProceeds(bond, share, openPrice, closePrice, price) expect uint256;
 }
 
 /// Ghost implementations of FixedPoint Math
