@@ -59,11 +59,15 @@ abstract contract HyperdriveFactory {
         defaultPausers = _defaultPausers;
     }
 
-    /// @notice Allows governance to update the deployer contract.
-    /// @param newDeployer The new deployment contract.
-    function updateImplementation(IHyperdriveDeployer newDeployer) external {
+    modifier onlyGovernance() {
         // Only governance can call this
         if (msg.sender != governance) revert Errors.Unauthorized();
+        _;
+    }
+
+    /// @notice Allows governance to update the deployer contract.
+    /// @param newDeployer The new deployment contract.
+    function updateImplementation(IHyperdriveDeployer newDeployer) onlyGovernance external {
         // Update version and increment the counter
         hyperdriveDeployer = newDeployer;
         versionCounter++;
@@ -71,45 +75,35 @@ abstract contract HyperdriveFactory {
 
     /// @notice Allows governance to change the governance address
     /// @param newGovernance The new governor address
-    function updateGovernance(address newGovernance) external {
-        // Only governance can call this
-        if (msg.sender != governance) revert Errors.Unauthorized();
+    function updateGovernance(address newGovernance) onlyGovernance external {
         // Update governance
         governance = newGovernance;
     }
 
     /// @notice Allows governance to change the hyperdrive governance address
     /// @param newGovernance The new governor address
-    function updateHyperdriveGovernance(address newGovernance) external {
-        // Only governance can call this
-        if (msg.sender != governance) revert Errors.Unauthorized();
+    function updateHyperdriveGovernance(address newGovernance) onlyGovernance external {
         // Update hyperdrive governance
         hyperdriveGovernance = newGovernance;
     }
 
     /// @notice Allows governance to change the fee collector address
     /// @param newFeeCollector The new governor address
-    function updateFeeCollector(address newFeeCollector) external {
-        // Only governance can call this
-        if (msg.sender != governance) revert Errors.Unauthorized();
+    function updateFeeCollector(address newFeeCollector) onlyGovernance external {
         // Update fee collector
         feeCollector = newFeeCollector;
     }
 
     /// @notice Allows governance to change the fee schedule for the newly deployed factories
     /// @param newFees The fees for all newly deployed contracts
-    function updateFees(IHyperdrive.Fees calldata newFees) external {
-        // Only governance can call this
-        if (msg.sender != governance) revert Errors.Unauthorized();
+    function updateFees(IHyperdrive.Fees calldata newFees) onlyGovernance external {
         // Update the fee struct
         fees = newFees;
     }
 
     /// @notice Allows governance to change the fee collector address
     /// @param newDefaults The new governor address
-    function updateDefaultPausers(address[] calldata newDefaults) external {
-        // Only governance can call this
-        if (msg.sender != governance) revert Errors.Unauthorized();
+    function updateDefaultPausers(address[] calldata newDefaults) onlyGovernance external {
         // Update the default pausers
         defaultPausers = newDefaults;
     }
