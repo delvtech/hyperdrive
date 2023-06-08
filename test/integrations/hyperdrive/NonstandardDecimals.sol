@@ -49,7 +49,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         // essentially all of his capital back.
         {
             // Deploy and initialize the pool.
-            deploy(alice, 0.02e18, 0, 0, 0, address(0));
+            deploy(alice, 0.02e18, 0, 0, 0);
             initialize(alice, 0.02e18, 500_000_000e6);
 
             // Bob opens a long.
@@ -67,7 +67,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         // duration. He should receive the base he paid plus fixed interest.
         {
             // Deploy and initialize the pool.
-            deploy(alice, 0.02e18, 0, 0, 0, address(0));
+            deploy(alice, 0.02e18, 0, 0, 0);
             initialize(alice, 0.02e18, 500_000_000e6);
 
             // Bob opens a long.
@@ -98,7 +98,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         // value of the bonds.
         {
             // Deploy and initialize the pool.
-            deploy(alice, 0.02e18, 0, 0, 0, address(0));
+            deploy(alice, 0.02e18, 0, 0, 0);
             initialize(alice, 0.02e18, 500_000_000e6);
 
             // Bob opens a long.
@@ -134,7 +134,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         // essentially all of his capital back.
         {
             // Deploy and initialize the pool.
-            deploy(alice, 0.02e18, 0, 0, 0, address(0));
+            deploy(alice, 0.02e18, 0, 0, 0);
             initialize(alice, 0.02e18, 500_000_000e6);
 
             // Bob opens a short.
@@ -154,7 +154,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         // snapshotId = vm.snapshot();
         {
             // Deploy and initialize the pool.
-            deploy(alice, 0.02e18, 0, 0, 0, address(0));
+            deploy(alice, 0.02e18, 0, 0, 0);
             initialize(alice, 0.02e18, 500_000_000e6);
 
             // Bob opens a short.
@@ -191,7 +191,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         // variable interest earned by the short.
         {
             // Deploy and initialize the pool.
-            deploy(alice, 0.02e18, 0, 0, 0, address(0));
+            deploy(alice, 0.02e18, 0, 0, 0);
             initialize(alice, 0.02e18, 500_000_000e6);
 
             // Bob opens a short.

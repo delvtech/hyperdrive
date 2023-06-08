@@ -46,7 +46,7 @@ contract HyperdriveTest is BaseTest {
             checkpointDuration: CHECKPOINT_DURATION,
             timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
             governance: governance,
-            feeCollector: governance,
+            feeCollector: feeCollector,
             fees: fees,
             oracleSize: ORACLE_SIZE,
             updateGap: UPDATE_GAP
@@ -69,8 +69,7 @@ contract HyperdriveTest is BaseTest {
         uint256 apr,
         uint256 curveFee,
         uint256 flatFee,
-        uint256 governanceFee,
-        address governance
+        uint256 governanceFee
     ) internal {
         vm.stopPrank();
         vm.startPrank(deployer);
@@ -86,7 +85,7 @@ contract HyperdriveTest is BaseTest {
             checkpointDuration: CHECKPOINT_DURATION,
             timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
             governance: governance,
-            feeCollector: governance,
+            feeCollector: feeCollector,
             fees: fees,
             oracleSize: ORACLE_SIZE,
             updateGap: UPDATE_GAP
@@ -179,7 +178,8 @@ contract HyperdriveTest is BaseTest {
 
     function openLong(
         address trader,
-        uint256 baseAmount
+        uint256 baseAmount,
+        bool asUnderlying
     ) internal returns (uint256 maturityTime, uint256 bondAmount) {
         vm.stopPrank();
         vm.startPrank(trader);
@@ -194,7 +194,7 @@ contract HyperdriveTest is BaseTest {
         );
         baseToken.mint(baseAmount);
         baseToken.approve(address(hyperdrive), baseAmount);
-        hyperdrive.openLong(baseAmount, 0, trader, true);
+        hyperdrive.openLong(baseAmount, 0, trader, asUnderlying);
 
         uint256 bondBalanceAfter = hyperdrive.balanceOf(
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
@@ -203,25 +203,45 @@ contract HyperdriveTest is BaseTest {
         return (maturityTime, bondBalanceAfter.sub(bondBalanceBefore));
     }
 
+    function openLong(
+        address trader,
+        uint256 baseAmount
+    ) internal returns (uint256 maturityTime, uint256 bondAmount) {
+        return openLong(trader, baseAmount, true);
+    }
+
     function closeLong(
         address trader,
         uint256 maturityTime,
-        uint256 bondAmount
+        uint256 bondAmount,
+        bool asUnderlying
     ) internal returns (uint256 baseAmount) {
         vm.stopPrank();
         vm.startPrank(trader);
 
         // Close the long.
-        uint256 baseBalanceBefore = baseToken.balanceOf(trader);
-        hyperdrive.closeLong(maturityTime, bondAmount, 0, trader, true);
+        return
+            hyperdrive.closeLong(
+                maturityTime,
+                bondAmount,
+                0,
+                trader,
+                asUnderlying
+            );
+    }
 
-        uint256 baseBalanceAfter = baseToken.balanceOf(trader);
-        return baseBalanceAfter.sub(baseBalanceBefore);
+    function closeLong(
+        address trader,
+        uint256 maturityTime,
+        uint256 bondAmount
+    ) internal returns (uint256 baseAmount) {
+        return closeLong(trader, maturityTime, bondAmount, true);
     }
 
     function openShort(
         address trader,
-        uint256 bondAmount
+        uint256 bondAmount,
+        bool asUnderlying
     ) internal returns (uint256 maturityTime, uint256 baseAmount) {
         vm.stopPrank();
         vm.startPrank(trader);
@@ -232,12 +252,41 @@ contract HyperdriveTest is BaseTest {
         );
         baseToken.mint(bondAmount);
         baseToken.approve(address(hyperdrive), bondAmount);
-        uint256 baseBalanceBefore = baseToken.balanceOf(trader);
-        hyperdrive.openShort(bondAmount, bondAmount, trader, true);
-
-        baseAmount = baseBalanceBefore - baseToken.balanceOf(trader);
+        (maturityTime, baseAmount) = hyperdrive.openShort(
+            bondAmount,
+            bondAmount,
+            trader,
+            asUnderlying
+        );
         baseToken.burn(bondAmount - baseAmount);
         return (maturityTime, baseAmount);
+    }
+
+    function openShort(
+        address trader,
+        uint256 bondAmount
+    ) internal returns (uint256 maturityTime, uint256 baseAmount) {
+        return openShort(trader, bondAmount, true);
+    }
+
+    function closeShort(
+        address trader,
+        uint256 maturityTime,
+        uint256 bondAmount,
+        bool asUnderlying
+    ) internal returns (uint256 baseAmount) {
+        vm.stopPrank();
+        vm.startPrank(trader);
+
+        // Close the short.
+        return
+            hyperdrive.closeShort(
+                maturityTime,
+                bondAmount,
+                0,
+                trader,
+                asUnderlying
+            );
     }
 
     function closeShort(
@@ -245,19 +294,12 @@ contract HyperdriveTest is BaseTest {
         uint256 maturityTime,
         uint256 bondAmount
     ) internal returns (uint256 baseAmount) {
-        vm.stopPrank();
-        vm.startPrank(trader);
-
-        // Close the short
-        uint256 baseBalanceBefore = baseToken.balanceOf(trader);
-        hyperdrive.closeShort(maturityTime, bondAmount, 0, trader, true);
-
-        return baseToken.balanceOf(trader) - baseBalanceBefore;
+        return closeShort(trader, maturityTime, bondAmount, true);
     }
 
     /// Utils ///
 
-    function advanceTime(uint256 time, int256 apr) internal {
+    function advanceTime(uint256 time, int256 apr) internal virtual {
         MockHyperdrive(address(hyperdrive)).accrue(time, apr);
         vm.warp(block.timestamp + time);
     }

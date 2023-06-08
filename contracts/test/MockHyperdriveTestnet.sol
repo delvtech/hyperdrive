@@ -89,21 +89,21 @@ contract MockHyperdriveTestnet is Hyperdrive {
         uint256 _shares,
         address _destination,
         bool _asUnderlying
-    ) internal override returns (uint256 amountWithdrawn, uint256 sharePrice) {
+    ) internal override returns (uint256 amountWithdrawn) {
         if (!_asUnderlying) revert UnsupportedOption();
 
         // Accrue interest.
         accrueInterest();
 
         // Transfer the base to the destination.
-        sharePrice = _pricePerShare();
+        uint256 sharePrice = _pricePerShare();
         amountWithdrawn = _shares.mulDown(sharePrice);
         bool success = _baseToken.transfer(_destination, amountWithdrawn);
         if (!success) {
             revert Errors.TransferFailed();
         }
 
-        return (amountWithdrawn, sharePrice);
+        return amountWithdrawn;
     }
 
     function _pricePerShare() internal view override returns (uint256) {

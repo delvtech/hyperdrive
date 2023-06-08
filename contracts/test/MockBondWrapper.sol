@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import { BondWrapper } from "../src/BondWrapper.sol";
 import { IHyperdrive } from "../src/interfaces/IHyperdrive.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import { ERC20Permit } from "../src/libraries/ERC20Permit.sol";
+import { ERC20 } from "lib/solmate/src/tokens/ERC20.sol";
 
 contract MockBondWrapper is BondWrapper {
     constructor(
@@ -32,6 +32,10 @@ contract MockBondWrapper is BondWrapper {
     }
 
     function setBalanceOf(address user, uint256 amount) external {
-        balanceOf[user] = amount;
+        if (balanceOf[user] < amount) {
+            _mint(user, amount - balanceOf[user]);
+        } else if (balanceOf[user] > amount) {
+            _burn(user, balanceOf[user] - amount);
+        }
     }
 }

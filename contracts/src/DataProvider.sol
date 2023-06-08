@@ -19,6 +19,8 @@ contract DataProvider {
         dataProvider = _dataProvider;
     }
 
+    // solhint-disable payable-fallback
+    // solhint-disable no-complex-fallback
     /// @notice Fallback function that delegates calls to the data provider.
     /// @param _data The data to be passed to the data provider.
     /// @return The return data from the data provider.
@@ -26,6 +28,7 @@ contract DataProvider {
         // Delegatecall into the data provider. We use a force-revert
         // delegatecall pattern to ensure that no state changes were made
         // during the call to the data provider.
+        // solhint-disable avoid-low-level-calls
         (bool success, bytes memory returndata) = dataProvider.delegatecall(
             _data
         );
