@@ -92,13 +92,13 @@ contract ERC4626Hyperdrive is Hyperdrive {
         }
     }
 
-    ///@notice Withdraws shares from the yield source and sends the resulting tokens to the destination
-    ///@param shares The shares to withdraw from the yield source
+    /// @notice Withdraws shares from the yield source and sends the resulting tokens to the destination
+    /// @param shares The shares to withdraw from the yield source
     /// @param asUnderlying If true the yield source will transfer underlying tokens
     ///                     if false it will transfer the yielding asset directly
-    ///@param destination The address which is where to send the resulting tokens
-    ///@return amountWithdrawn the amount of 'token' produced by this withdraw
-    ///@return sharePrice The share price on withdraw.
+    /// @param destination The address which is where to send the resulting tokens
+    /// @return amountWithdrawn the amount of 'token' produced by this withdraw
+    /// @return sharePrice The share price on withdraw.
     function _withdraw(
         uint256 shares,
         address destination,
