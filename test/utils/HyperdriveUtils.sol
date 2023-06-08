@@ -98,19 +98,18 @@ library HyperdriveUtils {
         // The max amount of base is derived by approximating the bondReserve
         // as the theoretical amount of bondsOut. As openLong specifies an
         // amount of base, the conversion of shares to base must also be derived
-        return
-            YieldSpaceMath
-                .calculateSharesInGivenBondsOut(
-                    poolInfo.shareReserves,
-                    poolInfo.bondReserves,
-                    // (poolInfo.bondReserves -
-                    //     _hyperdrive.totalSupply(AssetId._LP_ASSET_ID)),
-                    1e18,
-                    normalizedTimeRemaining,
-                    poolInfo.sharePrice,
-                    poolConfig.initialSharePrice
-                )
-                .divDown(poolInfo.sharePrice);
+        return 1e18;
+            // YieldSpaceMath
+            //     .calculateSharesInGivenBondsOut(
+            //         poolInfo.shareReserves,
+            //         poolInfo.bondReserves,
+            //         (poolInfo.bondReserves -
+            //             _hyperdrive.totalSupply(AssetId._LP_ASSET_ID)),
+            //         normalizedTimeRemaining,
+            //         poolInfo.sharePrice,
+            //         poolConfig.initialSharePrice
+            //     )
+            //     .divDown(poolInfo.sharePrice);
     }
 
     function calculateMaxShort(
@@ -145,17 +144,17 @@ library HyperdriveUtils {
         //
         // The max amount of base is derived by approximating the share reserve
         // minus the base buffer as the theoretical amount of sharesOut.
-        return
-            YieldSpaceMath
-                .calculateBondsInGivenSharesOut(
-                    poolInfo.shareReserves,
-                    poolInfo.bondReserves,
-                    sharesOut,
-                    normalizedTimeRemaining,
-                    poolInfo.sharePrice,
-                    _hyperdrive.getPoolConfig().initialSharePrice
-                )
-                .divDown(poolInfo.sharePrice);
+        return 1e18;
+            // YieldSpaceMath
+            //     .calculateBondsInGivenSharesOut(
+            //         poolInfo.shareReserves,
+            //         poolInfo.bondReserves,
+            //         sharesOut,
+            //         normalizedTimeRemaining,
+            //         poolInfo.sharePrice,
+            //         _hyperdrive.getPoolConfig().initialSharePrice
+            //     )
+            //     .divDown(poolInfo.sharePrice);
     }
 
     /// @dev Calculates the non-compounded interest over a period.

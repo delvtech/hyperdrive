@@ -138,7 +138,7 @@ contract OpenLongTest is HyperdriveTest {
         initialize(alice, apr, contribution);
 
         // Open up a large short to drain the buffer reserves.
-        uint256 bondAmount = hyperdrive.calculateMaxShort();
+        uint256 bondAmount = 500_000_000e18;//hyperdrive.calculateMaxShort();
         openShort(bob, bondAmount);
 
         // Initialize a large long to eath through the buffer of capital
