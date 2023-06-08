@@ -510,7 +510,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // remaining positions hit maturity, all of the withdrawal shares are
         // marked as ready to withdraw.
         uint256 maxSharesReleased = _presentValue > 0
-            ? _withdrawalProceeds.mulDivDown(_lpTotalSupply, _presentValue)
+            ? _lpTotalSupply.mulDivDown(_withdrawalProceeds, _presentValue)
             : _lpTotalSupply;
         if (maxSharesReleased == 0) return;
 
