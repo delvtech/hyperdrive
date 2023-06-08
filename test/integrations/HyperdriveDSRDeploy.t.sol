@@ -91,7 +91,7 @@ contract HyperdriveDSRTest is HyperdriveTest {
             alice
         );
 
-        // lp shares should equal number of base initialized with
+        // lp shares should equal number of shares reserves initialized with
         assertEq(createdShares, 2500e18);
     }
 }
