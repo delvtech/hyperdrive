@@ -35,11 +35,11 @@ contract ERC4626Hyperdrive is Hyperdrive {
         //        invariant. EG - because this line uses a very large query to load
         //        price for USDC if the price per share changes based on size of deposit
         //        then this line will read an incorrect and possibly dangerous price.
-        if (
-            _config.initialSharePrice !=
-            _pool.previewDeposit(FixedPointMath.ONE_18)
-        ) {
+        if (_config.initialSharePrice != _pricePerShare()) {
             revert Errors.InvalidInitialSharePrice();
+        }
+        if (address(_config.baseToken) != _pool.asset()) {
+            revert Errors.InvalidBaseToken();
         }
 
         // Set immutables and prepare for deposits by setting immutables
