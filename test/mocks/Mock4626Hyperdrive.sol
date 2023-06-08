@@ -38,8 +38,8 @@ contract MockERC4626Hyperdrive is ERC4626Hyperdrive {
         return _withdraw(shares, destination, asUnderlying);
     }
 
-    ///@notice Loads the share price from the yield source
-    ///@return sharePrice The current share price.
+    /// @notice Loads the share price from the yield source
+    /// @return sharePrice The current share price.
     function pricePerShare() public view returns (uint256 sharePrice) {
         return _pricePerShare();
     }
