@@ -109,14 +109,6 @@ ghost ghostCalculateBaseVolume(uint256,uint256,uint256) returns uint256 {
         z == ONE18() => ghostCalculateBaseVolume(x,y,z) == x;
 }
 
-/// @notice One can define a liquidity constant by the following formula:
-/// K = z ^ tp + (y / mu) ^ tp, where:
-/// z - share reserves
-/// y - bond reserves
-/// mu - initial share price
-/// tp - (1 - normalized time remaining)
-//ghost modifiedLiquidityConstant(uint256, uint256, uint256, uint256) returns mathint {}
-
 ghost ghostCalculateAPRFromReserves(uint256,uint256,uint256,uint256,uint256) returns uint256;
 ghost ghostCalculateInitialBondReserves(uint256,uint256,uint256,uint256,uint256,uint256) returns uint256;
 ghost ghostCalculateShortInterest(uint256,uint256,uint256,uint256) returns uint256;
@@ -215,6 +207,12 @@ ghost uint256 yp;
 ghost uint256 zp;
 ghost uint256 tp;
 
+/// YS Math ghosts
+ghost BondsInSharesOut(uint256,uint256,uint256,uint256,uint256,uint256) returns uint256;
+ghost BondsOutSharesIn(uint256,uint256,uint256,uint256,uint256,uint256) returns uint256;
+ghost SharesInBondsOut(uint256,uint256,uint256,uint256,uint256,uint256) returns uint256;
+ghost SharesOutBondsIn(uint256,uint256,uint256,uint256,uint256,uint256) returns uint256;
+
 /*
 - bondsInGivenSharesOut
     Δy = (k - (c / µ) * (µ * (z - dz))^(1 - t))^(1 / (1 - t))) - y
@@ -223,6 +221,7 @@ function CVLBondsInGivenSharesOut(uint256 z, uint256 y, uint256 dz, uint256 t, u
     havoc yp; havoc zp; havoc tp;
     require zp == require_uint256(z - dz);
     require tp == require_uint256(ONE18() - t);
+    yp = BondsInSharesOut(z,y,dz,t,c,mu);
     require YSInvariant(z, zp, y, yp, mu, c, tp);
     return require_uint256(yp - y);
 }
@@ -235,6 +234,7 @@ function CVLBondsOutGivenSharesIn(uint256 z, uint256 y, uint256 dz, uint256 t, u
     havoc yp; havoc zp; havoc tp;
     require zp == require_uint256(z + dz);
     require tp == require_uint256(ONE18() - t);
+    yp = BondsOutSharesIn(z,y,dz,t,c,mu);
     require YSInvariant(z, zp, y, yp, mu, c, tp);
     return require_uint256(y - yp);
 }
@@ -247,6 +247,7 @@ function CVLSharesInGivenBondsOut(uint256 z, uint256 y, uint256 dy, uint256 t, u
     havoc yp; havoc zp; havoc tp;
     require yp == require_uint256(y - dy);
     require tp == require_uint256(ONE18() - t);
+    zp = SharesInBondsOut(z,y,dy,t,c,mu);
     require YSInvariant(z, zp, y, yp, mu, c, tp);
     return require_uint256(zp - z);
 }
@@ -259,6 +260,7 @@ function CVLSharesOutGivenBondsIn(uint256 z, uint256 y, uint256 dy, uint256 t, u
     havoc yp; havoc zp; havoc tp;
     require yp == require_uint256(y + dy);
     require tp == require_uint256(ONE18() - t);
+    zp = SharesOutBondsIn(z,y,dy,t,c,mu);
     require YSInvariant(z, zp, y, yp, mu, c, tp);
     return require_uint256(z - zp);
 }
