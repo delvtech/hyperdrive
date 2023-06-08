@@ -67,7 +67,9 @@ abstract contract HyperdriveFactory {
 
     /// @notice Allows governance to update the deployer contract.
     /// @param newDeployer The new deployment contract.
-    function updateImplementation(IHyperdriveDeployer newDeployer) onlyGovernance external {
+    function updateImplementation(
+        IHyperdriveDeployer newDeployer
+    ) external onlyGovernance {
         // Update version and increment the counter
         hyperdriveDeployer = newDeployer;
         versionCounter++;
@@ -75,35 +77,43 @@ abstract contract HyperdriveFactory {
 
     /// @notice Allows governance to change the governance address
     /// @param newGovernance The new governor address
-    function updateGovernance(address newGovernance) onlyGovernance external {
+    function updateGovernance(address newGovernance) external onlyGovernance {
         // Update governance
         governance = newGovernance;
     }
 
     /// @notice Allows governance to change the hyperdrive governance address
     /// @param newGovernance The new governor address
-    function updateHyperdriveGovernance(address newGovernance) onlyGovernance external {
+    function updateHyperdriveGovernance(
+        address newGovernance
+    ) external onlyGovernance {
         // Update hyperdrive governance
         hyperdriveGovernance = newGovernance;
     }
 
     /// @notice Allows governance to change the fee collector address
     /// @param newFeeCollector The new governor address
-    function updateFeeCollector(address newFeeCollector) onlyGovernance external {
+    function updateFeeCollector(
+        address newFeeCollector
+    ) external onlyGovernance {
         // Update fee collector
         feeCollector = newFeeCollector;
     }
 
     /// @notice Allows governance to change the fee schedule for the newly deployed factories
     /// @param newFees The fees for all newly deployed contracts
-    function updateFees(IHyperdrive.Fees calldata newFees) onlyGovernance external {
+    function updateFees(
+        IHyperdrive.Fees calldata newFees
+    ) external onlyGovernance {
         // Update the fee struct
         fees = newFees;
     }
 
     /// @notice Allows governance to change the fee collector address
     /// @param newDefaults The new governor address
-    function updateDefaultPausers(address[] calldata newDefaults) onlyGovernance external {
+    function updateDefaultPausers(
+        address[] calldata newDefaults
+    ) external onlyGovernance {
         // Update the default pausers
         defaultPausers = newDefaults;
     }
