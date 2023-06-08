@@ -434,8 +434,10 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         if (withdrawalShares < 0) {
             // We backtrack by calculating the amount of the idle that should
             // be returned to the pool using the original present value ratio.
-            uint256 overestimatedProceeds = uint256(-withdrawalShares)
-                .mulDivDown(startingPresentValue, _totalLpSupply);
+            uint256 overestimatedProceeds = startingPresentValue.mulDivDown(
+                uint256(-withdrawalShares),
+                _totalLpSupply
+            );
             _updateLiquidity(int256(overestimatedProceeds));
             _applyWithdrawalProceeds(
                 overestimatedProceeds,
@@ -511,7 +513,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // remaining positions hit maturity, all of the withdrawal shares are
         // marked as ready to withdraw.
         uint256 maxSharesReleased = _presentValue > 0
-            ? _withdrawalProceeds.mulDivDown(_lpTotalSupply, _presentValue)
+            ? _lpTotalSupply.mulDivDown(_withdrawalProceeds, _presentValue)
             : _lpTotalSupply;
         if (maxSharesReleased == 0) return;
 

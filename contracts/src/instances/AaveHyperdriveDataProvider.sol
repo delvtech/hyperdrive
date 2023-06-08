@@ -26,7 +26,7 @@ contract AaveHyperdriveDataProvider is
     IPool internal immutable _pool;
 
     // The shares created by this pool, starts at one to one with deposits and increases
-    uint256 internal totalShares;
+    uint256 internal _totalShares;
 
     /// @notice Initializes the data provider.
     /// @param _linkerCodeHash_ The hash of the erc20 linker contract deploy code
@@ -58,7 +58,7 @@ contract AaveHyperdriveDataProvider is
         returns (uint256 sharePrice)
     {
         uint256 assets = _aToken.balanceOf(address(this));
-        sharePrice = totalShares != 0 ? assets.divDown(totalShares) : 0;
+        sharePrice = _totalShares != 0 ? assets.divDown(_totalShares) : 0;
         return sharePrice;
     }
 
@@ -74,5 +74,11 @@ contract AaveHyperdriveDataProvider is
     /// @return The aave pool.
     function pool() external view returns (IPool) {
         _revert(abi.encode(_pool));
+    }
+
+    /// @notice Gets the total shares.
+    /// @return The total shares.
+    function totalShares() external view returns (uint256) {
+        _revert(abi.encode(_totalShares));
     }
 }

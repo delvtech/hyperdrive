@@ -112,6 +112,10 @@ contract AaveHyperdrive is Hyperdrive {
             ? shares.mulDown(assets.divDown(totalShares_))
             : 0;
 
+        if (withdrawValue == 0) {
+            revert Errors.NoAssetsToWithdraw();
+        }
+
         // Remove the shares from the total share supply
         totalShares -= shares;
 
