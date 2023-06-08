@@ -14,7 +14,6 @@ import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
 import { Mock4626, ERC20 } from "../mocks/Mock4626.sol";
 import { MockERC4626Hyperdrive } from "../mocks/Mock4626Hyperdrive.sol";
 
-import "forge-std/console.sol";
 
 contract HyperdriveER4626Test is HyperdriveTest {
     using FixedPointMath for *;
