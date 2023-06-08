@@ -8,7 +8,9 @@ import { ERC20 } from "lib/solmate/src/tokens/ERC20.sol";
 // WARNING: By default it does not include totalSupply which breaks the ERC20 standard
 //          to use a fully standard compliant ERC20 use 'ERC20PermitWithSupply"
 contract ERC20Permit is ERC20 {
-    constructor(string memory name_, string memory symbol_, uint8 _decimals)
-        ERC20(name_, symbol_, _decimals)
-    {}
+    constructor(
+        string memory name_,
+        string memory symbol_,
+        uint8 _decimals
+    ) ERC20(name_, symbol_, _decimals) {}
 }
