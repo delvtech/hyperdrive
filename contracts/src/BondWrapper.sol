@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import { ERC20Permit } from "./libraries/ERC20Permit.sol";
+import { ERC20 } from "lib/solmate/src/tokens/ERC20.sol";
 import { AssetId } from "./libraries/AssetId.sol";
 import { Errors } from "./libraries/Errors.sol";
 
@@ -13,7 +13,7 @@ import { Errors } from "./libraries/Errors.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract BondWrapper is ERC20Permit {
+contract BondWrapper is ERC20 {
     // The multitoken of the bond
     IHyperdrive public immutable hyperdrive;
     // The underlying token from the bond
@@ -36,7 +36,7 @@ contract BondWrapper is ERC20Permit {
         uint256 _mintPercent,
         string memory name_,
         string memory symbol_
-    ) ERC20Permit(name_, symbol_, 18) {
+    ) ERC20(name_, symbol_, 18) {
         if (_mintPercent >= 10000) {
             revert Errors.MintPercentTooHigh();
         }

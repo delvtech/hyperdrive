@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import { ERC20Permit } from "../src/libraries/ERC20Permit.sol";
+import { ERC20 } from "lib/solmate/src/tokens/ERC20.sol";
 
-contract MockERC20Permit is ERC20Permit {
+contract MockERC20Permit is ERC20 {
     constructor(
         string memory name_,
         string memory symbol_
     )
         // 18 decimals hardcoded to match BondWrapper
-        ERC20Permit(name_, symbol_, 18)
+        ERC20(name_, symbol_, 18)
     {}
 
     function mint(address to, uint256 amount) external {
