@@ -55,14 +55,15 @@ contract BondWrapper is ERC20Permit {
         uint256 amount,
         address destination
     ) external {
+        // Must not be matured
+        if (maturityTime <= block.timestamp) revert Errors.BondMatured();
+
         // Encode the asset ID
         uint256 assetId = AssetId.encodeAssetId(
             AssetId.AssetIdPrefix.Long,
             maturityTime
         );
 
-        // Must not be matured
-        if (maturityTime <= block.timestamp) revert Errors.BondMatured();
         // Transfer from the user
         hyperdrive.transferFrom(assetId, msg.sender, address(this), amount);
 
