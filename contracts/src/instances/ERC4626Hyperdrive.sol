@@ -121,8 +121,8 @@ contract ERC4626Hyperdrive is Hyperdrive {
         }
     }
 
-    ///@notice Loads the share price from the yield source.
-    ///@return The current share price.
+    /// @notice Loads the share price from the yield source.
+    /// @return The current share price.
     function _pricePerShare() internal view override returns (uint256) {
         uint256 shareEstimate = pool.convertToShares(FixedPointMath.ONE_18);
         return (FixedPointMath.ONE_18.divDown(shareEstimate));
