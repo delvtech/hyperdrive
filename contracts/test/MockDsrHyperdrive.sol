@@ -65,7 +65,7 @@ contract MockDsrHyperdrive is DsrHyperdrive {
         uint256 shares,
         address destination,
         bool asUnderlying
-    ) external returns (uint256, uint256) {
+    ) external returns (uint256) {
         return _withdraw(shares, destination, asUnderlying);
     }
 

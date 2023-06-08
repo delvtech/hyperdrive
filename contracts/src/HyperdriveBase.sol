@@ -121,12 +121,11 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     /// @param asUnderlying If true the yield source will transfer underlying tokens
     ///                     if false it will transfer the yielding asset directly
     /// @return amountWithdrawn The amount of base released by the withdrawal.
-    /// @return sharePrice The share price on withdraw.
     function _withdraw(
         uint256 shares,
         address destination,
         bool asUnderlying
-    ) internal virtual returns (uint256 amountWithdrawn, uint256 sharePrice);
+    ) internal virtual returns (uint256 amountWithdrawn);
 
     ///@notice Loads the share price from the yield source
     ///@return sharePrice The current share price.
@@ -195,7 +194,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
         ) revert Errors.Unauthorized();
         uint256 governanceFeesAccrued = _governanceFeesAccrued;
         _governanceFeesAccrued = 0;
-        (proceeds, ) = _withdraw(
+        proceeds = _withdraw(
             governanceFeesAccrued,
             _feeCollector,
             asUnderlying

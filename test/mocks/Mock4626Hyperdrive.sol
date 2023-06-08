@@ -34,7 +34,7 @@ contract MockERC4626Hyperdrive is ERC4626Hyperdrive {
         uint256 shares,
         address destination,
         bool asUnderlying
-    ) public returns (uint256 amountWithdrawn, uint256 sharePrice) {
+    ) public returns (uint256 amountWithdrawn) {
         return _withdraw(shares, destination, asUnderlying);
     }
 

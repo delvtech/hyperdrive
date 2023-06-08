@@ -260,7 +260,7 @@ contract MockHyperdrive is Hyperdrive {
         uint256 shares,
         address destination,
         bool
-    ) internal override returns (uint256 withdrawValue, uint256 sharePrice) {
+    ) internal override returns (uint256 withdrawValue) {
         uint256 assets = _baseToken.balanceOf(address(this));
         shares = shares > totalShares ? totalShares : shares;
         withdrawValue = totalShares != 0
@@ -271,8 +271,7 @@ contract MockHyperdrive is Hyperdrive {
             revert Errors.TransferFailed();
         }
         totalShares -= shares;
-        sharePrice = withdrawValue != 0 ? shares.divDown(withdrawValue) : 0;
-        return (withdrawValue, sharePrice);
+        return withdrawValue;
     }
 
     function _pricePerShare()

@@ -98,12 +98,11 @@ contract DsrHyperdrive is Hyperdrive {
     /// @param shares The shares to withdraw from the yield source
     /// @param destination The address which is where to send the resulting tokens
     /// @return amountWithdrawn the amount of 'token' produced by this withdraw
-    /// @return sharePrice The share price on withdraw.
     function _withdraw(
         uint256 shares,
         address destination,
         bool asUnderlying
-    ) internal override returns (uint256 amountWithdrawn, uint256 sharePrice) {
+    ) internal override returns (uint256 amountWithdrawn) {
         if (!asUnderlying) {
             revert Errors.UnsupportedToken();
         }
@@ -129,7 +128,7 @@ contract DsrHyperdrive is Hyperdrive {
         // Withdraw pro-rata share of underlying to user
         dsrManager.exit(destination, amountWithdrawn);
 
-        return (amountWithdrawn, amountWithdrawn.divDown(shares));
+        return amountWithdrawn;
     }
 
     /// @notice Loads the share price from the yield source.
