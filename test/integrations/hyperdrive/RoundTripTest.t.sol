@@ -126,4 +126,42 @@ contract RoundTripTest is HyperdriveTest {
         // should be exact if out = in
         assertEq(poolInfoAfter.bondReserves, poolInfoBefore.bondReserves);
     }
+
+    function test_sandwiched_long_round_trip() external {
+        uint256 apr = 0.05e18;
+        // Deploy the pool with fees.
+        {
+            uint256 timeStretchApr = 0.05e18;
+            deploy(alice, timeStretchApr, 0, 0, 0);
+        }
+
+        // Initialize the market.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
+
+        // Calculate how much profit would be made from a long sandwiched by shorts
+
+        // Bob opens a short.
+        uint256 bondsShorted = 10_000_000e18;
+        (uint256 shortMaturitytime,) = openShort(bob, bondsShorted);
+        // Celine opens a long.
+        uint256 basePaid = 10_000_000e18;
+        (uint256 longMaturityTime, uint256 bondsReceived) = openLong(
+            celine,
+            basePaid
+        );
+        // Bob immediately closes short.
+        closeShort(bob, shortMaturitytime, bondsShorted);
+        // Celine closes long.
+        closeLong(celine, longMaturityTime, bondsReceived);
+
+        IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
+
+        // if they aren't the same, then the pool should be the one that wins
+        assertGe(poolInfoAfter.shareReserves, poolInfoBefore.shareReserves);
+        // should be exact if out = in
+        assertEq(poolInfoAfter.bondReserves, poolInfoBefore.bondReserves);
+    }
 }
