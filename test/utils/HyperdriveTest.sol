@@ -12,6 +12,7 @@ import { HyperdriveBase } from "contracts/src/HyperdriveBase.sol";
 import { BaseTest } from "./BaseTest.sol";
 import { MockHyperdrive, MockHyperdriveDataProvider } from "../mocks/MockHyperdrive.sol";
 import { HyperdriveUtils } from "./HyperdriveUtils.sol";
+import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 
 contract HyperdriveTest is BaseTest {
     using FixedPointMath for uint256;
@@ -39,7 +40,7 @@ contract HyperdriveTest is BaseTest {
         // Instantiate Hyperdrive.
         uint256 apr = 0.05e18;
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
-            baseToken: baseToken,
+            baseToken: IERC20(address(baseToken)),
             initialSharePrice: INITIAL_SHARE_PRICE,
             positionDuration: POSITION_DURATION,
             checkpointDuration: CHECKPOINT_DURATION,
@@ -78,7 +79,7 @@ contract HyperdriveTest is BaseTest {
             governance: governanceFee
         });
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
-            baseToken: baseToken,
+            baseToken: IERC20(address(baseToken)),
             initialSharePrice: INITIAL_SHARE_PRICE,
             positionDuration: POSITION_DURATION,
             checkpointDuration: CHECKPOINT_DURATION,
