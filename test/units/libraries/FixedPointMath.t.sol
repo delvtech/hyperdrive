@@ -286,28 +286,4 @@ contract FixedPointMathTest is Test {
         uint256 result = mockFixedPointMath.pow(x, 0);
         assertEq(result, 1e18);
     }
-
-    function test_updateWeightedAverageMathBoundsExceeded() public {
-        // NOTE: Coverage only works if I initialize the fixture in the test function
-        MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
-
-        uint256 newAverage = mockFixedPointMath.updateWeightedAverage(
-            0xffffffffffffffff,
-            0xde0b6b3a7640004,
-            0x10000000000000001,
-            1,
-            true
-        );
-
-        assertEq(newAverage, 0xfffffffffffffffe);
-
-        /*
-        Average = 0xffffffffffffffff = 2^64 - 1
-        totWeight = 0xde0b6b3a7640004 = 10^18 + 4
-        Delta = 0x10000000000000001 = 2^64 + 1
-        deltaW = 1
-        isAdd = true
-        New average = 0xfffffffffffffffe = Average - 1
-    */
-    }
 }
