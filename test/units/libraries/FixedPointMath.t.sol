@@ -301,7 +301,7 @@ contract FixedPointMathTest is Test {
 
         assertEq(newAverage, 0xfffffffffffffffe);
 
-    /*
+        /*
         Average = 0xffffffffffffffff = 2^64 - 1
         totWeight = 0xde0b6b3a7640004 = 10^18 + 4
         Delta = 0x10000000000000001 = 2^64 + 1

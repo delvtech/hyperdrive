@@ -136,11 +136,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
             revert Errors.ZeroAmount();
         }
 
-        if (_bondAmount < 1e4) {
-            // Enforce a minimum bondAmount to prevent dust accumulation
-            revert Errors.MinimumAmount();
-        }
-
         // Perform a checkpoint.
         uint256 sharePrice = _pricePerShare();
         _applyCheckpoint(_maturityTime, sharePrice);

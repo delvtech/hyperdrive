@@ -330,7 +330,11 @@ library FixedPointMath {
         }
     }
 
-    function clamp(uint256 _value, uint256 _min, uint256 _max) internal pure returns (uint256 clampedValue) {
+    function clamp(
+        uint256 _value,
+        uint256 _min,
+        uint256 _max
+    ) internal pure returns (uint256 clampedValue) {
         return min(max(_value, _min), _max);
     }
 
@@ -348,17 +352,15 @@ library FixedPointMath {
         bool _isAdding
     ) internal pure returns (uint256 average) {
         if (_isAdding) {
-            average =
-                (_totalWeight.mulDown(_average))
-                    .add(_deltaWeight.mulDown(_delta))
-                    .divUp(_totalWeight.add(_deltaWeight));
+            average = (_totalWeight.mulDown(_average))
+                .add(_deltaWeight.mulDown(_delta))
+                .divUp(_totalWeight.add(_deltaWeight));
             average = clamp(average, average, average + _delta);
         } else {
             if (_totalWeight == _deltaWeight) return 0;
-            average = 
-                (_totalWeight.mulDown(_average))
-                    .sub(_deltaWeight.mulDown(_delta))
-                    .divUp(_totalWeight.sub(_deltaWeight));
+            average = (_totalWeight.mulDown(_average))
+                .sub(_deltaWeight.mulDown(_delta))
+                .divUp(_totalWeight.sub(_deltaWeight));
             average = clamp(average, average, average - _delta);
         }
     }
