@@ -713,6 +713,8 @@ rule longAverageMaturityTimeIsBoundedAfterOpenLong1(env e)
 }
 
 /// Tadeas trying to verify LongAverageMaturityTimeIsBounded using split and rule
+// succesfuly violated here:
+// https://vaas-stg.certora.com/output/40577/42200a0dbfc64327b94bf77475fc94f8/?anonymousKey=f8c90f7eba1651774b848c4aa436e18058511e38
 rule longAverageMaturityTimeIsBoundedAfterOpenLong2(env e)
 {
     setHyperdrivePoolParams();
