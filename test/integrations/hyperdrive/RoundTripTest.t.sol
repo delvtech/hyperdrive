@@ -145,7 +145,7 @@ contract RoundTripTest is HyperdriveTest {
 
         // Bob opens a short.
         uint256 bondsShorted = 10_000_000e18;
-        (uint256 shortMaturitytime,) = openShort(bob, bondsShorted);
+        (uint256 shortMaturitytime, ) = openShort(bob, bondsShorted);
         // Celine opens a long.
         uint256 basePaid = 10_000_000e18;
         (uint256 longMaturityTime, uint256 bondsReceived) = openLong(

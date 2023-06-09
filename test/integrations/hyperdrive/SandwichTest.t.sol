@@ -60,98 +60,49 @@ contract SandwichTest is HyperdriveTest {
         assertGe(lpProceeds, contributionPlusInterest);
     }
 
-    function test_sandwich_long_trade(
-        uint256 apr,
-        uint256 tradeSize
-    ) external {
-
+    function test_sandwich_long_trade(uint256 apr, uint256 tradeSize) external {
         // limit the fuzz testing to variableRate's less than or equal to 50%
         apr = apr.normalizeToRange(.01e18, .5e18);
 
         // ensure a feasible trade size
-        tradeSize = tradeSize.normalizeToRange(
-            1_000e18,
-            50_000_000e18 - 1e18
-        );
-        console2.log("apr: ", apr.toString(18));
-        console2.log("tradeSize: ", tradeSize.toString(18));
-        // Deploy the pool with fees.
+        tradeSize = tradeSize.normalizeToRange(1_000e18, 50_000_000e18 - 1e18);
+
+        // Deploy the pool and initialize the market
         {
             uint256 timeStretchApr = 0.05e18;
             deploy(alice, timeStretchApr, 0, 0, 0);
         }
-
-        // Initialize the market.
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
-        uint256 bobLoss;
+
+        uint256 shortLoss;
         // Calculate how much profit would be made from a long sandwiched by shorts
         uint256 sandwichProfit;
         {
-            IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
-            console2.log("\nSANDWICH TRADE");
-            console2.log("\ninitial state");
-            console2.log("shareReserves: ", poolInfo.shareReserves.toString(18));
-            console2.log("bondReserves: ", poolInfo.bondReserves.toString(18));
-            console2.log("APR:", HyperdriveUtils.calculateAPRFromReserves(hyperdrive).toString(18));
-
-            // Bob opens a short.
-            uint256 bondsShorted = tradeSize;//10_000_000e18;
-            (uint256 shortMaturitytime, uint256 bobStartAmount) = openShort(bob, bondsShorted);
-
-            poolInfo = hyperdrive.getPoolInfo();
-            console2.log("\nafter open short");
-            console2.log("bonds shorted: ", bondsShorted.toString(18)," for: ", bobStartAmount.toString(18));
-            console2.log("shareReserves: ", poolInfo.shareReserves.toString(18));
-            console2.log("bondReserves: ", poolInfo.bondReserves.toString(18));
-            console2.log("APR:", HyperdriveUtils.calculateAPRFromReserves(hyperdrive).toString(18));
-
-            // Celine opens a long.
-            uint256 basePaid = tradeSize;//10_000_000e18;
-            (uint256 longMaturityTime, uint256 bondsReceived) = openLong(
-                celine,
-                basePaid
+            // open a short.
+            uint256 bondsShorted = tradeSize; //10_000_000e18;
+            (uint256 shortMaturitytime, uint256 shortBasePaid) = openShort(
+                bob,
+                bondsShorted
             );
-            poolInfo = hyperdrive.getPoolInfo();
-            console2.log("\nafter open long");
-            console2.log("bonds received: ", bondsReceived.toString(18));
-            console2.log("shareReserves: ", poolInfo.shareReserves.toString(18));
-            console2.log("bondReserves: ", poolInfo.bondReserves.toString(18));
-            console2.log("APR:", HyperdriveUtils.calculateAPRFromReserves(hyperdrive).toString(18));
 
-            // Bob immediately closes short.
-            uint256 bobEndAmount = closeShort(bob, shortMaturitytime, bondsShorted);
-            poolInfo = hyperdrive.getPoolInfo();
-            console2.log("\nafter close short");
-            console2.log("base returned: ", bobEndAmount.toString(18));
-            console2.log("shareReserves: ", poolInfo.shareReserves.toString(18));
-            console2.log("bondReserves: ", poolInfo.bondReserves.toString(18));
-            console2.log("APR:", HyperdriveUtils.calculateAPRFromReserves(hyperdrive).toString(18));
+            // open a long.
+            uint256 basePaid = tradeSize; //10_000_000e18;
+            (, uint256 bondsReceived) = openLong(bob, basePaid);
 
-            // console2.log("\nbob start amount: ", bobStartAmount.toString(18));
-            // console2.log("bob end amount: ", bobEndAmount.toString(18));
-            bobLoss = bobStartAmount.sub(bobEndAmount);
-            // console2.log("bob loss: ", bobLoss.toString(18));
+            // immediately close short.
+            uint256 shortBaseReturned = closeShort(
+                bob,
+                shortMaturitytime,
+                bondsShorted
+            );
+            shortLoss = shortBasePaid.sub(shortBaseReturned);
 
-            // Some of the term passes and interest accrues at the starting APR.
-            //advanceTime(POSITION_DURATION, int256(apr));
-
-            // Celine closes long.
-            closeLong(celine, longMaturityTime, bondsReceived);
-            poolInfo = hyperdrive.getPoolInfo();
-            console2.log("\nafter close long");
-            console2.log("base received: ", bondsReceived.toString(18));
-            console2.log("shareReserves: ", poolInfo.shareReserves.toString(18));
-            console2.log("bondReserves: ", poolInfo.bondReserves.toString(18));
-            console2.log("APR:", HyperdriveUtils.calculateAPRFromReserves(hyperdrive).toString(18));
-            // console2.log("celine start amount: ", basePaid.toString(18));
-            // console2.log("celine end amount: ", celineEndAmount.toString(18));
-            uint256 celineProfit = bondsReceived.sub(basePaid);
-            // console2.log("celine profit: ", celineProfit.toString(18));
-
-            sandwichProfit = celineProfit.sub(bobLoss);
+            // long profit is the bonds received minus the base paid
+            // bc we assume the bonds mature 1:1 to base
+            uint256 longProfit = bondsReceived.sub(basePaid);
+            sandwichProfit = longProfit.sub(shortLoss);
         }
-
 
         // Deploy the pool with fees.
         {
@@ -164,38 +115,18 @@ contract SandwichTest is HyperdriveTest {
         // Calculate how much proft would be made from a simple long
         uint256 baselineProfit;
         {
-            console2.log("\nNORMAL TRADE");
-            IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
-            console2.log("\ninitial state");
-            console2.log("shareReserves: ", poolInfo.shareReserves.toString(18));
-            console2.log("bondReserves: ", poolInfo.bondReserves.toString(18));
-            console2.log("APR:", HyperdriveUtils.calculateAPRFromReserves(hyperdrive).toString(18));
-            // Celine opens a long.
+            // open a long.
             uint256 basePaid = tradeSize;
-            basePaid = basePaid.add(bobLoss);
+            basePaid = basePaid.add(shortLoss);
             (uint256 longMaturityTime, uint256 bondsReceived) = openLong(
                 celine,
                 basePaid
             );
-            poolInfo = hyperdrive.getPoolInfo();
-            console2.log("\nafter open long");
-            console2.log("bonds received: ", bondsReceived.toString(18));
-            console2.log("shareReserves: ", poolInfo.shareReserves.toString(18));
-            console2.log("bondReserves: ", poolInfo.bondReserves.toString(18));
-            console2.log("APR:", HyperdriveUtils.calculateAPRFromReserves(hyperdrive).toString(18));
             closeLong(celine, longMaturityTime, bondsReceived);
+            // profit is the bonds received minus the base paid
+            // bc we assume the bonds mature 1:1 to base
             baselineProfit = bondsReceived.sub(basePaid);
-            console2.log("\nafter close long");
-            console2.log("shareReserves: ", poolInfo.shareReserves.toString(18));
-            console2.log("bondReserves: ", poolInfo.bondReserves.toString(18));
-            console2.log("APR:", HyperdriveUtils.calculateAPRFromReserves(hyperdrive).toString(18));
-
         }
-
-        console2.log("\nProfit");
-        console2.log("baseline profit: ", baselineProfit.toString(18));
-        console2.log("sandwich profit: ", sandwichProfit.toString(18));
-
         assertGe(baselineProfit, sandwichProfit - 10000 gwei);
     }
 
