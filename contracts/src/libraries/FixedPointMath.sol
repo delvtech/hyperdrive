@@ -314,6 +314,26 @@ library FixedPointMath {
         }
     }
 
+    /// @dev Returns the minimum of `x` and `y`.
+    function min(uint256 x, uint256 y) internal pure returns (uint256 z) {
+        /// @solidity memory-safe-assembly
+        assembly {
+            z := xor(x, mul(xor(x, y), lt(y, x)))
+        }
+    }
+
+    /// @dev Returns the maximum of `x` and `y`.
+    function max(uint256 x, uint256 y) internal pure returns (uint256 z) {
+        /// @solidity memory-safe-assembly
+        assembly {
+            z := xor(x, mul(xor(x, y), gt(y, x)))
+        }
+    }
+
+    function clamp(uint256 _value, uint256 _min, uint256 _max) internal pure returns (uint256 clampedValue) {
+        return min(max(_value, _min), _max);
+    }
+
     /// @dev Updates a weighted average by adding or removing a weighted delta.
     /// @param _totalWeight The total weight before the update.
     /// @param _deltaWeight The weight of the new value.
@@ -328,16 +348,18 @@ library FixedPointMath {
         bool _isAdding
     ) internal pure returns (uint256 average) {
         if (_isAdding) {
-            return
+            average =
                 (_totalWeight.mulDown(_average))
                     .add(_deltaWeight.mulDown(_delta))
                     .divUp(_totalWeight.add(_deltaWeight));
+            average = clamp(average, average, average + _delta);
         } else {
             if (_totalWeight == _deltaWeight) return 0;
-            return
+            average = 
                 (_totalWeight.mulDown(_average))
                     .sub(_deltaWeight.mulDown(_delta))
                     .divUp(_totalWeight.sub(_deltaWeight));
+            average = clamp(average, average, average - _delta);
         }
     }
 }

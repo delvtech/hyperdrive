@@ -91,7 +91,7 @@ contract StethHyperdrive is Hyperdrive {
             shares = lido.submit{ value: _amount }(_feeCollector);
 
             // Calculate the share price.
-            sharePrice = _amount.divDown(shares);
+            sharePrice = _pricePerShare();
         } else {
             // Transfer stETH into the contract.
             bool success = lido.transferFrom(

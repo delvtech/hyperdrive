@@ -75,7 +75,7 @@ contract ERC4626Hyperdrive is Hyperdrive {
             }
             // Supply for the user
             sharesMinted = pool.deposit(amount, address(this));
-            sharePrice = amount.divDown(sharesMinted);
+            sharePrice = _pricePerShare();
         } else {
             // Calculate the current exchange rate for these
             // WARN - IF an ERC4626 has significant differences between a
@@ -92,7 +92,7 @@ contract ERC4626Hyperdrive is Hyperdrive {
                 revert Errors.TransferFailed();
             }
             sharesMinted = converted;
-            sharePrice = amount.divDown(converted);
+            sharePrice = _pricePerShare();
         }
     }
 
