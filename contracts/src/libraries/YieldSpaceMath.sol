@@ -1,6 +1,9 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import "forge-std/console.sol";
+
 import { FixedPointMath } from "./FixedPointMath.sol";
 
 /// @author DELV
@@ -387,6 +390,73 @@ library YieldSpaceMath {
         _z = _z.divDown(mu);
         // Δz = z - (((c / µ) * (µ * z)^(1 - t) + y^(1 - t) - (y + dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
         return z.sub(_z);
+    }
+
+    /// @dev Calculates the maximum amount of shares a user can spend on buying
+    ///      bonds before the spot crosses above a price of 1.
+    /// @param z Amount of share reserves in the pool
+    /// @param y amount of bond reserves in the pool
+    /// @param t Amount of time elapsed since term start
+    /// @param c Conversion rate between base and shares
+    /// @param mu Interest normalization factor for shares
+    /// @return Maximum amount of shares user can spend on bonds.
+    function calculateMaxBuy(
+        uint256 z,
+        uint256 y,
+        uint256 t,
+        uint256 c,
+        uint256 mu
+    ) internal pure returns (uint256) {
+        // Bonds can't be purchase at a price greater than 1. We set the spot
+        // price equal to 1 which implies that mu * z = y. We can simplify the
+        // yieldspace invariant by making this substitution, which gives us
+        // k = (c / mu) * (mu * z) ** (1 - tau) + (mu * z) ** (1 - tau). Solving
+        // for z, we get that z = (1 / mu) * (k / (c / mu + 1)) ** (1 / (1 - tau)).
+        uint256 k = _modifiedYieldSpaceConstant(c.divDown(mu), mu, z, t, y);
+        // TODO: This value may exceed the long buffer. To solve for this, we'd
+        // need to use an iterative approach.
+        uint256 z_ = (k.divDown(c.divUp(mu) + FixedPointMath.ONE_18))
+            .pow(FixedPointMath.ONE_18.divDown(t))
+            .divDown(mu);
+
+        // The maximum amount of shares a user can spend on bonds is the
+        // difference between the share reserves after buying the maximum amount
+        // of bonds and the current share reserves.
+        return z_ - z;
+    }
+
+    /// @dev Calculates the maximum amount of bonds a user can sell.
+    /// @param z Amount of share reserves in the pool
+    /// @param y amount of bond reserves in the pool
+    /// @param longBuffer The amount of outstanding longs.
+    /// @param t Amount of time elapsed since term start
+    /// @param c Conversion rate between base and shares
+    /// @param mu Interest normalization factor for shares
+    /// @return Maximum amount of bonds a user can sell.
+    function calculateMaxSell(
+        uint256 z,
+        uint256 y,
+        uint256 longBuffer,
+        uint256 t,
+        uint256 c,
+        uint256 mu
+    ) internal pure returns (uint256) {
+        // Bonds can be sold until the share reserves are equal to the amount
+        // of base required for the outstanding longs to be solvent. Thus we
+        // can set z = longBuffer / c. We have that
+        // k = (c / mu) * (mu * (longBuffer / c)) ** (1 - tau) + y ** (1 - tau).
+        // Therefore the bonds reserves of the maximum sell are given by
+        // y = (k - (c / mu) * (mu * (longBuffer / c)) ** (1 - tau)) ** (1 / (1 - tau)).
+        uint256 cDivMu = c.divUp(mu);
+        uint256 k = _modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
+        uint256 y_ = (k -
+            c.divDown(mu).mulDown(mu.mulDivDown(longBuffer, c).pow(t))).pow(
+                FixedPointMath.ONE_18.divDown(t)
+            );
+
+        // The maximum amount of bonds a user can sell is the difference between
+        // the bond reserves after the max sell and the current bond reserves.
+        return y_ - y;
     }
 
     /// @dev Helper function to derive invariant constant C

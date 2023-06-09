@@ -124,6 +124,42 @@ contract MockHyperdriveMath {
         return (result1, result2, result3);
     }
 
+    function calculateMaxLong(
+        uint256 _shareReserves,
+        uint256 _bondReserves,
+        uint256 _timeStretch,
+        uint256 _sharePrice,
+        uint256 _initialSharePrice
+    ) external pure returns (uint256) {
+        return
+            HyperdriveMath.calculateMaxLong(
+                _shareReserves,
+                _bondReserves,
+                _timeStretch,
+                _sharePrice,
+                _initialSharePrice
+            );
+    }
+
+    function calculateMaxShort(
+        uint256 _shareReserves,
+        uint256 _bondReserves,
+        uint256 _longsOutstanding,
+        uint256 _timeStretch,
+        uint256 _sharePrice,
+        uint256 _initialSharePrice
+    ) external pure returns (uint256) {
+        return
+            HyperdriveMath.calculateMaxShort(
+                _shareReserves,
+                _bondReserves,
+                _longsOutstanding,
+                _timeStretch,
+                _sharePrice,
+                _initialSharePrice
+            );
+    }
+
     function calculateSpotPrice(
         uint256 _shareReserves,
         uint256 _bondReserves,

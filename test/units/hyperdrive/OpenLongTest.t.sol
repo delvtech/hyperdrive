@@ -1,12 +1,16 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import "forge-std/console.sol";
+
 import { stdError } from "forge-std/StdError.sol";
 import { VmSafe } from "forge-std/Vm.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
+import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
 import { Lib } from "../../utils/Lib.sol";
 
@@ -52,6 +56,48 @@ contract OpenLongTest is HyperdriveTest {
         vm.stopPrank();
         pause(false);
     }
+
+    // FIXME
+    //
+    // // FIXME: We'll need the calculateMaxLong machinery in order to test this
+    // // well.
+    // function test_open_long_failure_negative_interest() external {
+    //     // Initialize the pool with a large amount of capital.
+    //     uint256 apr = 0.05e18;
+    //     uint256 contribution = 500_000_000e18;
+    //     initialize(alice, apr, contribution);
+
+    //     uint256 maxLong = YieldSpaceMath.calculateMaxLong(
+    //         hyperdrive.getPoolInfo().shareReserves,
+    //         hyperdrive.getPoolInfo().bondReserves,
+    //         FixedPointMath.ONE_18.sub(hyperdrive.getPoolConfig().timeStretch),
+    //         hyperdrive.getPoolInfo().sharePrice,
+    //         hyperdrive.getPoolConfig().initialSharePrice
+    //     );
+    //     console.log("max long:", maxLong.toString(18));
+
+    //     // mu * z = y
+    //     // k = (c / mu) * (mu * z) ** (1 - tau) + y ** (1 - tau)
+    //     //
+    //     // k = (c / mu) * y ** (1 - tau) + y ** (1 - tau)
+    //     //
+    //     // k = (c / mu + 1) * y ** (1 - tau)
+    //     //
+    //     // y = k / (c / mu + 1) ** (1 / (1 - tau))
+    //     //
+    //     // dy = y0 - y
+    //     //
+    //     // FIXME: Calculate max long. How does this compare to the empirical
+    //     // value?
+    //     //
+    //     // FIXME: Use my formulation of calculate max long.
+    //     //
+    //     // FIXME: We should unit test the calculateMaxLong function.
+    //     console.log("max long:", HyperdriveUtils.calculateMaxLong(hyperdrive).toString(18));
+
+    //     (, uint256 longAmount) = openLong(bob, maxLong);
+    //     console.log("longAmount", longAmount.toString(18));
+    // }
 
     function test_pauser_authorization_fail() external {
         vm.stopPrank();

@@ -70,91 +70,41 @@ library HyperdriveUtils {
             );
     }
 
+    /// @dev Calculates the maximum amount of longs that can be opened.
+    /// @param _hyperdrive A Hyperdrive instance.
     function calculateMaxLong(
         IHyperdrive _hyperdrive
     ) internal view returns (uint256 baseAmount) {
         IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
         IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
-
-        uint256 tStretch = poolConfig.timeStretch;
-        // As any long in the middle of a checkpoint duration is backdated,
-        // we must use that backdate as the reference for the maturity time
-        uint256 maturityTime = maturityTimeFromLatestCheckpoint(_hyperdrive);
-        uint256 timeRemaining = calculateTimeRemaining(
-            _hyperdrive,
-            maturityTime
-        );
-        // 1 - t * s
-        // t = normalized seconds until maturity
-        // s = time stretch of the pool
-        uint256 normalizedTimeRemaining = FixedPointMath.ONE_18.sub(
-            timeRemaining.mulDown(tStretch)
-        );
-
-        // TODO: This isn't as accurate as it could be. We should be using flat
-        // plus curve to handle backdating. Address this when adding tests for
-        // the backdating logic.
-        //
-        // The max amount of base is derived by approximating the bondReserve
-        // as the theoretical amount of bondsOut. As openLong specifies an
-        // amount of base, the conversion of shares to base must also be derived
         return
-            YieldSpaceMath
-                .calculateSharesInGivenBondsOut(
+            HyperdriveMath
+                .calculateMaxLong(
                     poolInfo.shareReserves,
                     poolInfo.bondReserves,
-                    (poolInfo.bondReserves -
-                        _hyperdrive.totalSupply(AssetId._LP_ASSET_ID)),
-                    normalizedTimeRemaining,
+                    poolConfig.timeStretch,
                     poolInfo.sharePrice,
                     poolConfig.initialSharePrice
                 )
-                .divDown(poolInfo.sharePrice);
+                .mulDown(poolInfo.sharePrice);
     }
 
+    /// @dev Calculates the maximum amount of shorts that can be opened.
+    /// @param _hyperdrive A Hyperdrive instance.
     function calculateMaxShort(
         IHyperdrive _hyperdrive
     ) internal view returns (uint256) {
         IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
-
-        // As any long in the middle of a checkpoint duration is backdated,
-        // we must use that backdate as the reference for the maturity time
-        uint256 maturityTime = maturityTimeFromLatestCheckpoint(_hyperdrive);
-        uint256 timeRemaining = calculateTimeRemaining(
-            _hyperdrive,
-            maturityTime
-        );
-        // 1 - t * s
-        // t = normalized seconds until maturity
-        // s = time stretch of the pool
-        uint256 normalizedTimeRemaining = FixedPointMath.ONE_18.sub(
-            timeRemaining.mulDown(_hyperdrive.getPoolConfig().timeStretch)
-        );
-
-        // The calculate bonds in given shares out function slightly
-        // overestimates the amount of bondsOut, so we decrease the input
-        // slightly to avoid subtraction underflows.
-        uint256 sharesOut = poolInfo.shareReserves -
-            poolInfo.longsOutstanding.divUp(poolInfo.sharePrice);
-        sharesOut = sharesOut > 1e10 ? sharesOut - 1e10 : 0;
-
-        // TODO: This isn't as accurate as it could be. We should be using flat
-        // plus curve to handle backdating. Address this when adding tests for
-        // the backdating logic.
-        //
-        // The max amount of base is derived by approximating the share reserve
-        // minus the base buffer as the theoretical amount of sharesOut.
+        IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
         return
-            YieldSpaceMath
-                .calculateBondsInGivenSharesOut(
-                    poolInfo.shareReserves,
-                    poolInfo.bondReserves,
-                    sharesOut,
-                    normalizedTimeRemaining,
-                    poolInfo.sharePrice,
-                    _hyperdrive.getPoolConfig().initialSharePrice
-                )
-                .divDown(poolInfo.sharePrice);
+            HyperdriveMath.calculateMaxShort(
+                poolInfo.shareReserves,
+                poolInfo.bondReserves,
+                poolInfo.longsOutstanding,
+                poolConfig.timeStretch,
+                poolInfo.sharePrice,
+                poolConfig.initialSharePrice
+            );
     }
 
     /// @dev Calculates the non-compounded interest over a period.

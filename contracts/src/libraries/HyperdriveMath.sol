@@ -290,6 +290,63 @@ library HyperdriveMath {
         }
     }
 
+    // FIXME: Implement the right buffer logic.
+    //
+    /// @dev Calculates the maximum amount of shares that can be used to open
+    ///      longs.
+    /// @param _shareReserves The pool's share reserves.
+    /// @param _bondReserves The pool's bonds reserves.
+    /// @param _timeStretch The time stretch parameter.
+    /// @param _sharePrice The share price.
+    /// @param _initialSharePrice The initial share price.
+    /// @return The maximum amount of shares that can be used to open longs.
+    function calculateMaxLong(
+        uint256 _shareReserves,
+        uint256 _bondReserves,
+        uint256 _timeStretch,
+        uint256 _sharePrice,
+        uint256 _initialSharePrice
+    ) internal pure returns (uint256) {
+        return
+            YieldSpaceMath.calculateMaxBuy(
+                _shareReserves,
+                _bondReserves,
+                FixedPointMath.ONE_18.sub(_timeStretch),
+                _sharePrice,
+                _initialSharePrice
+            );
+    }
+
+    // FIXME: Implement the right buffer logic.
+    //
+    /// @dev Calculates the maximum amount of shares that can be used to open
+    ///      shorts.
+    /// @param _shareReserves The pool's share reserves.
+    /// @param _bondReserves The pool's bonds reserves.
+    /// @param _longsOutstanding The amount of longs outstanding.
+    /// @param _timeStretch The time stretch parameter.
+    /// @param _sharePrice The share price.
+    /// @param _initialSharePrice The initial share price.
+    /// @return The maximum amount of shares that can be used to open shorts.
+    function calculateMaxShort(
+        uint256 _shareReserves,
+        uint256 _bondReserves,
+        uint256 _longsOutstanding,
+        uint256 _timeStretch,
+        uint256 _sharePrice,
+        uint256 _initialSharePrice
+    ) internal pure returns (uint256) {
+        return
+            YieldSpaceMath.calculateMaxSell(
+                _shareReserves,
+                _bondReserves,
+                _longsOutstanding,
+                FixedPointMath.ONE_18.sub(_timeStretch),
+                _sharePrice,
+                _initialSharePrice
+            );
+    }
+
     struct PresentValueParams {
         uint256 shareReserves;
         uint256 bondReserves;

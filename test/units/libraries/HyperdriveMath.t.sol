@@ -1,19 +1,25 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import "forge-std/console.sol";
+
 import { ERC20PresetFixedSupply } from "openzeppelin-contracts/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
-import { Test } from "forge-std/Test.sol";
 import { ForwarderFactory } from "contracts/src/ForwarderFactory.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { MockHyperdriveMath } from "contracts/test/MockHyperdriveMath.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
+import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
+import { Lib } from "test/utils/Lib.sol";
 
-contract HyperdriveMathTest is Test {
+contract HyperdriveMathTest is HyperdriveTest {
     using FixedPointMath for uint256;
-
-    function setUp() external {}
+    using HyperdriveUtils for IHyperdrive;
+    using Lib for *;
 
     function test__calcSpotPrice() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
@@ -519,6 +525,90 @@ contract HyperdriveMathTest is Test {
         );
         // verify that the resulting APR is correct
         assertApproxEqAbs(result, expectedAPR.divDown(100e18), 3e12);
+    }
+
+    function test__calculateMaxLong(
+        uint256 fixedRate,
+        uint256 contribution,
+        uint256 longAmount
+    ) external {
+        // NOTE: Coverage only works if I initialize the fixture in the test function
+        MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
+
+        // Initialize the Hyperdrive pool.
+        initialize(alice, fixedRate, contribution);
+
+        // Open the maximum long on Hyperdrive.
+        IHyperdrive.PoolInfo memory info = hyperdrive.getPoolInfo();
+        IHyperdrive.PoolConfig memory config = hyperdrive.getPoolConfig();
+        console.log("share reserves:", info.shareReserves.toString(18));
+        console.log("bond reserves:", info.bondReserves.toString(18));
+        console.log("share price:", info.sharePrice.toString(18));
+        console.log(
+            "initial share price:",
+            config.initialSharePrice.toString(18)
+        );
+        uint256 maxLong = hyperdriveMath.calculateMaxLong(
+            info.shareReserves,
+            info.bondReserves,
+            config.timeStretch,
+            info.sharePrice,
+            config.initialSharePrice
+        );
+        console.log("max long:", maxLong.toString(18));
+        openLong(bob, maxLong);
+
+        // Ensure that opening another long fails.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        longAmount = longAmount.normalizeToRange(0.0001e18, 100_000_000e18);
+        baseToken.mint(bob, longAmount);
+        baseToken.approve(address(hyperdrive), longAmount);
+        vm.expectRevert();
+        hyperdrive.openLong(longAmount, 0, bob, true);
+    }
+
+    function test__calculateMaxShort(
+        uint256 fixedRate,
+        uint256 contribution,
+        uint256 shortAmount
+    ) external {
+        // NOTE: Coverage only works if I initialize the fixture in the test function
+        MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
+
+        // Initialize the Hyperdrive pool.
+        fixedRate = fixedRate.normalizeToRange(0.0001e18, 1e18);
+        contribution = contribution.normalizeToRange(1_000e18, 500_000_000e18);
+        initialize(alice, fixedRate, contribution);
+
+        // Open a long on Hyperdrive. This will test whether the max short
+        // respects solvency on Hyperdrive.
+        openLong(bob, 100_000_000e18);
+
+        // Open the maximum short on Hyperdrive.
+        IHyperdrive.PoolInfo memory info = hyperdrive.getPoolInfo();
+        IHyperdrive.PoolConfig memory config = hyperdrive.getPoolConfig();
+        uint256 maxShort = hyperdriveMath.calculateMaxShort(
+            info.shareReserves,
+            info.bondReserves,
+            info.longsOutstanding,
+            config.timeStretch,
+            info.sharePrice,
+            config.initialSharePrice
+        );
+        (uint256 maturityTime, ) = openShort(bob, maxShort);
+
+        // Ensure that opening another short fails.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        shortAmount = shortAmount.normalizeToRange(0, 100_000_000e18);
+        baseToken.mint(bob, shortAmount);
+        baseToken.approve(address(hyperdrive), shortAmount);
+        vm.expectRevert();
+        hyperdrive.openShort(shortAmount, 0, bob, true);
+
+        // Ensure that the short can be closed.
+        closeShort(bob, maturityTime, maxShort);
     }
 
     function test__calculatePresentValue() external {
