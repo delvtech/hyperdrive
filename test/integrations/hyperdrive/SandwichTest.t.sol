@@ -17,13 +17,11 @@ contract SandwichTest is HyperdriveTest {
         vm.assume(apr >= 0.01e18 && apr <= 0.2e18);
         vm.assume(timeDelta <= FixedPointMath.ONE_18 && timeDelta >= 0);
 
-        // Deploy the pool with fees.
+        // Deploy the pool and initialize the market
         {
             uint256 timeStretchApr = 0.02e18;
             deploy(alice, timeStretchApr, 0, 0, 0);
         }
-
-        // Initialize the market.
         uint256 contribution = 500_000_000e18;
         uint256 lpShares = initialize(alice, apr, contribution);
 
@@ -104,12 +102,11 @@ contract SandwichTest is HyperdriveTest {
             sandwichProfit = longProfit.sub(shortLoss);
         }
 
-        // Deploy the pool with fees.
+        // Deploy the pool and initialize the market
         {
             uint256 timeStretchApr = 0.05e18;
             deploy(alice, timeStretchApr, 0, 0, 0);
         }
-
         initialize(alice, apr, contribution);
 
         // Calculate how much proft would be made from a simple long
