@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import { DsrHyperdrive, DsrManager } from "../src/instances/DsrHyperdrive.sol";
 import { DsrHyperdriveDataProvider } from "../src/instances/DsrHyperdriveDataProvider.sol";
-import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import { IERC20 } from "../src/interfaces/IERC20.sol";
 import { FixedPointMath } from "../src/libraries/FixedPointMath.sol";
 import { ForwarderFactory } from "../src/ForwarderFactory.sol";
 import { IHyperdrive } from "../src/interfaces/IHyperdrive.sol";
