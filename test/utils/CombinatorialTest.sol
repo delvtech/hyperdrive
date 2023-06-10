@@ -12,7 +12,7 @@ import { ERC20PresetFixedSupply } from "openzeppelin-contracts/contracts/token/E
 import { ForwarderFactory } from "contracts/src/ForwarderFactory.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { Address } from "openzeppelin-contracts/contracts/utils/Address.sol";
-import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 
 contract CombinatorialTest is BaseTest {
     enum CombinatorialTestKind {
