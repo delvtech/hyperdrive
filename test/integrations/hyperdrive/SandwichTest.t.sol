@@ -5,7 +5,6 @@ import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
 import { Lib } from "../../utils/Lib.sol";
-import "forge-std/console2.sol";
 
 contract SandwichTest is HyperdriveTest {
     using FixedPointMath for uint256;
