@@ -9,6 +9,7 @@ import { FixedPointMath } from "../src/libraries/FixedPointMath.sol";
 import { Errors } from "../src/libraries/Errors.sol";
 import { ERC20Mintable } from "./ERC20Mintable.sol";
 import { IHyperdrive } from "../src/interfaces/IHyperdrive.sol";
+import { IERC20 } from "../src/interfaces/IERC20.sol";
 
 contract MockHyperdriveTestnet is Hyperdrive {
     using FixedPointMath for uint256;
@@ -30,7 +31,7 @@ contract MockHyperdriveTestnet is Hyperdrive {
     )
         Hyperdrive(
             IHyperdrive.PoolConfig({
-                baseToken: _baseToken,
+                baseToken: IERC20(address(_baseToken)),
                 initialSharePrice: _initialSharePrice,
                 positionDuration: _positionDuration,
                 checkpointDuration: _checkpointDuration,
@@ -161,7 +162,7 @@ contract MockHyperdriveDataProviderTestnet is
     )
         HyperdriveDataProvider(
             IHyperdrive.PoolConfig({
-                baseToken: _baseToken,
+                baseToken: IERC20(address(_baseToken)),
                 initialSharePrice: _initialSharePrice,
                 positionDuration: _positionDuration,
                 checkpointDuration: _checkpointDuration,

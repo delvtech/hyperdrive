@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import { IERC20 } from "./interfaces/IERC20.sol";
 import { MultiTokenStorage } from "./MultiTokenStorage.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { Errors } from "./libraries/Errors.sol";

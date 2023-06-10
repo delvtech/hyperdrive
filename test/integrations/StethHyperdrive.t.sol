@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { StethHyperdriveDeployer } from "contracts/src/factory/StethHyperdriveDeployer.sol";
 import { StethHyperdriveFactory } from "contracts/src/factory/StethHyperdriveFactory.sol";
 import { StethHyperdrive } from "contracts/src/instances/StethHyperdrive.sol";
