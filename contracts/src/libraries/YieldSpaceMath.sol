@@ -3,8 +3,10 @@ pragma solidity 0.8.19;
 
 // FIXME
 import "forge-std/console.sol";
+import "test/utils/Lib.sol";
 
 import { FixedPointMath } from "./FixedPointMath.sol";
+import { HyperdriveMath } from "./HyperdriveMath.sol";
 
 /// @author DELV
 /// @title YieldSpaceMath
@@ -266,6 +268,9 @@ import { FixedPointMath } from "./FixedPointMath.sol";
 ///        https://www.desmos.com/calculator/vfrzlsopsb
 ///
 library YieldSpaceMath {
+    // FIXME
+    using Lib for *;
+
     using FixedPointMath for uint256;
 
     /// Calculates the amount of bonds a user must provide the pool to receive
@@ -287,7 +292,7 @@ library YieldSpaceMath {
         // c/µ
         uint256 cDivMu = c.divDown(mu);
         // (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
-        uint256 k = _modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
+        uint256 k = modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
         // (µ * (z - dz))^(1 - t)
         z = mu.mulDown(z.sub(dz)).pow(t);
         // (c / µ) * (µ * (z - dz))^(1 - t)
@@ -317,7 +322,7 @@ library YieldSpaceMath {
         // c/µ
         uint256 cDivMu = c.divDown(mu);
         // (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
-        uint256 k = _modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
+        uint256 k = modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
         // (µ * (z + dz))^(1 - t)
         z = mu.mulDown(z.add(dz)).pow(t);
         // (c / µ) * (µ * (z + dz))^(1 - t)
@@ -347,7 +352,7 @@ library YieldSpaceMath {
         // c/µ
         uint256 cDivMu = c.divDown(mu);
         // (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
-        uint256 k = _modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
+        uint256 k = modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
         // (y - dy)^(1 - t)
         y = y.sub(dy).pow(t);
         // (((µ * z)^(1 - t) + y^(1 - t) - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))
@@ -379,7 +384,7 @@ library YieldSpaceMath {
         // c/µ
         uint256 cDivMu = c.divDown(mu);
         // (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
-        uint256 k = _modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
+        uint256 k = modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
         // (y + dy)^(1 - t)
         y = y.add(dy).pow(t);
         // (((µ * z)^(1 - t) + y^(1 - t) - (y + dy)^(1 - t)) / (c / µ))^(1 / (1 - t)))
@@ -392,10 +397,28 @@ library YieldSpaceMath {
         return z.sub(_z);
     }
 
+    // FIXME: We may want to move this into HyperdriveMath. This really
+    // straddles the line between the two libraries.
+    //
+    // FIXME: We'll also need to consider fees in this function to make sure that
+    // it is accurate.
+    //
+    // FIXME: We need to solve the optimization problem:
+    //
+    //    dy = f(dz) = y - (k - (c / mu) * (mu * (z + dz)) ** (1 - t)) ** (1 / (1 - t))
+    //
+    //    maximize dy = f(dz) subject to:
+    //      z + dz >= y_l + dy
+    //
+    //    We initially solve for the endpoint where p = 1. Then, if the
+    //    constraint fails, we can assume linearity of dz and dy and backtrack
+    //    to the optimal point.
+    //
     /// @dev Calculates the maximum amount of shares a user can spend on buying
     ///      bonds before the spot crosses above a price of 1.
     /// @param z Amount of share reserves in the pool
     /// @param y amount of bond reserves in the pool
+    /// @param y_l The amount of outstanding longs.
     /// @param t Amount of time elapsed since term start
     /// @param c Conversion rate between base and shares
     /// @param mu Interest normalization factor for shares
@@ -403,32 +426,79 @@ library YieldSpaceMath {
     function calculateMaxBuy(
         uint256 z,
         uint256 y,
+        uint256 y_l,
         uint256 t,
         uint256 c,
         uint256 mu
-    ) internal pure returns (uint256) {
+    ) internal view returns (uint256) {
+        uint256 k = modifiedYieldSpaceConstant(c.divDown(mu), mu, z, t, y);
+
+        console.log(1);
+
+        /// FIXME: All of this math could be explained more cleanly.
+
+        // So if we decrease dz, we also decrease dy. Our contention is that
+        // these decreases will be roughly linear. With this in mind, the
+        // breaking of our solvency will be difficult to remediate by using the
+        // errors.
+        //
+        // The reason why the share buffer check would be violated is because
+        // more bonds are
+
+        // FIXME: Update this comment.
+        // TODO: This value may exceed the long buffer. To solve for this, we'd
+        // need to use an iterative approach.
+        //
         // Bonds can't be purchase at a price greater than 1. We set the spot
         // price equal to 1 which implies that mu * z = y. We can simplify the
         // yieldspace invariant by making this substitution, which gives us
-        // k = (c / mu) * (mu * z) ** (1 - tau) + (mu * z) ** (1 - tau). Solving
-        // for z, we get that z = (1 / mu) * (k / (c / mu + 1)) ** (1 / (1 - tau)).
-        uint256 k = _modifiedYieldSpaceConstant(c.divDown(mu), mu, z, t, y);
-        // TODO: This value may exceed the long buffer. To solve for this, we'd
-        // need to use an iterative approach.
-        uint256 z_ = (k.divDown(c.divUp(mu) + FixedPointMath.ONE_18))
-            .pow(FixedPointMath.ONE_18.divDown(t))
-            .divDown(mu);
+        // k = (c / mu) * (mu * (z + dz)) ** (1 - tau) + (mu * (z + dz)) ** (1 - tau). Solving
+        // for z, we get that dz = (1 / mu) * (k / (c / mu + 1)) ** (1 / (1 - tau)) - z.
 
-        // The maximum amount of shares a user can spend on bonds is the
-        // difference between the share reserves after buying the maximum amount
-        // of bonds and the current share reserves.
-        return z_ - z;
+        // The bond reserves at p = 1 are given by:
+        // y_endpoint = (k / (c / mu + 1)) ** (1 / (1 - tau)). Since
+        // mu * z_endpoint = y_endpoint, z_endpoint = y_endpoint / mu.
+        uint256 y_endpoint = (k.divDown(c.divUp(mu) + FixedPointMath.ONE_18))
+            .pow(FixedPointMath.ONE_18.divDown(t));
+        uint256 dy = y - y_endpoint;
+        uint256 dz = y_endpoint.divDown(mu) - z;
+
+        for (uint256 i = 0; i < 10 && z + dz < (y_l + dy).divDown(c); i++) {
+            console.log(1);
+            logData(z, dz, y_l, dy, c);
+
+            // FIXME: We should do error / (1 - p)
+            uint256 error = (y_l + dy).divUp(c) - (z + dz);
+            dz = dz - error;
+            dy = calculateBondsOutGivenSharesIn(z, y, dz, t, c, mu);
+        }
+
+        return dz;
+    }
+
+    // FIXME
+    function logData(
+        uint256 z,
+        uint256 dz,
+        uint256 y_l,
+        uint256 dy,
+        uint256 c
+    ) internal view {
+        // FIXME
+        console.log("z:", z.toString(18));
+        console.log("dz:", dz.toString(18));
+        console.log("y_l:", y_l.toString(18));
+        console.log("dy:", dy.toString(18));
+        console.log(
+            "z + dz >= (y_l + dy) / c:",
+            z + dz >= (y_l + dy).divDown(c)
+        );
     }
 
     /// @dev Calculates the maximum amount of bonds a user can sell.
     /// @param z Amount of share reserves in the pool
     /// @param y amount of bond reserves in the pool
-    /// @param longBuffer The amount of outstanding longs.
+    /// @param y_l The amount of outstanding longs.
     /// @param t Amount of time elapsed since term start
     /// @param c Conversion rate between base and shares
     /// @param mu Interest normalization factor for shares
@@ -436,7 +506,7 @@ library YieldSpaceMath {
     function calculateMaxSell(
         uint256 z,
         uint256 y,
-        uint256 longBuffer,
+        uint256 y_l,
         uint256 t,
         uint256 c,
         uint256 mu
@@ -448,11 +518,9 @@ library YieldSpaceMath {
         // Therefore the bonds reserves of the maximum sell are given by
         // y = (k - (c / mu) * (mu * (longBuffer / c)) ** (1 - tau)) ** (1 / (1 - tau)).
         uint256 cDivMu = c.divUp(mu);
-        uint256 k = _modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
-        uint256 y_ = (k -
-            c.divDown(mu).mulDown(mu.mulDivDown(longBuffer, c).pow(t))).pow(
-                FixedPointMath.ONE_18.divDown(t)
-            );
+        uint256 k = modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
+        uint256 y_ = (k - c.divDown(mu).mulDown(mu.mulDivDown(y_l, c).pow(t)))
+            .pow(FixedPointMath.ONE_18.divDown(t));
 
         // The maximum amount of bonds a user can sell is the difference between
         // the bond reserves after the max sell and the current bond reserves.
@@ -466,13 +534,13 @@ library YieldSpaceMath {
     /// @param z Amount of share reserves in the pool
     /// @param t Amount of time elapsed since term start
     /// @param y Amount of bond reserves in the pool
-    function _modifiedYieldSpaceConstant(
+    function modifiedYieldSpaceConstant(
         uint256 cDivMu,
         uint256 mu,
         uint256 z,
         uint256 t,
         uint256 y
-    ) private pure returns (uint256) {
+    ) internal pure returns (uint256) {
         /// k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
         return cDivMu.mulDown(mu.mulDown(z).pow(t)).add(y.pow(t));
     }

@@ -82,6 +82,7 @@ library HyperdriveUtils {
                 .calculateMaxLong(
                     poolInfo.shareReserves,
                     poolInfo.bondReserves,
+                    poolInfo.longsOutstanding,
                     poolConfig.timeStretch,
                     poolInfo.sharePrice,
                     poolConfig.initialSharePrice

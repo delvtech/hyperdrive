@@ -1,6 +1,10 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import "forge-std/console.sol";
+import "test/utils/Lib.sol";
+
 import { Errors } from "./Errors.sol";
 import { FixedPointMath } from "./FixedPointMath.sol";
 import { YieldSpaceMath } from "./YieldSpaceMath.sol";
@@ -12,6 +16,9 @@ import { YieldSpaceMath } from "./YieldSpaceMath.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 library HyperdriveMath {
+    // FIXME
+    using Lib for *;
+
     using FixedPointMath for uint256;
 
     /// @dev Calculates the spot price without slippage of bonds in terms of shares.
@@ -296,25 +303,144 @@ library HyperdriveMath {
     ///      longs.
     /// @param _shareReserves The pool's share reserves.
     /// @param _bondReserves The pool's bonds reserves.
+    /// @param _longsOutstanding The amount of longs outstanding.
     /// @param _timeStretch The time stretch parameter.
     /// @param _sharePrice The share price.
     /// @param _initialSharePrice The initial share price.
-    /// @return The maximum amount of shares that can be used to open longs.
+    // /// @return The maximum amount of shares that can be used to open longs.
+    // function calculateMaxLong(
+    //     uint256 _shareReserves,
+    //     uint256 _bondReserves,
+    //     uint256 _longsOutstanding,
+    //     uint256 _timeStretch,
+    //     uint256 _sharePrice,
+    //     uint256 _initialSharePrice
+    //     // FIXME: pure
+    // ) internal view returns (uint256) {
+    //     return
+    //         YieldSpaceMath.calculateMaxBuy(
+    //             _shareReserves,
+    //             _bondReserves,
+    //             _longsOutstanding,
+    //             FixedPointMath.ONE_18.sub(_timeStretch),
+    //             _sharePrice,
+    //             _initialSharePrice
+    //         );
+    // }
+
+    // FIXME: We may want to move this into HyperdriveMath. This really
+    // straddles the line between the two libraries.
+    //
+    // FIXME: We'll also need to consider fees in this function to make sure that
+    // it is accurate.
+    //
+    // FIXME: We need to solve the optimization problem:
+    //
+    //    dy = f(dz) = y - (k - (c / mu) * (mu * (z + dz)) ** (1 - t)) ** (1 / (1 - t))
+    //
+    //    maximize dy = f(dz) subject to:
+    //      z + dz >= y_l + dy
+    //
+    //    We initially solve for the endpoint where p = 1. Then, if the
+    //    constraint fails, we can assume linearity of dz and dy and backtrack
+    //    to the optimal point.
+    //
+    // /// @dev Calculates the maximum amount of shares a user can spend on buying
+    // ///      bonds before the spot crosses above a price of 1.
+    // /// @param z Amount of share reserves in the pool
+    // /// @param y amount of bond reserves in the pool
+    // /// @param y_l The amount of outstanding longs.
+    // /// @param t Amount of time elapsed since term start
+    // /// @param c Conversion rate between base and shares
+    // /// @param mu Interest normalization factor for shares
+    // /// @return Maximum amount of shares user can spend on bonds.
     function calculateMaxLong(
         uint256 _shareReserves,
         uint256 _bondReserves,
+        uint256 _longsOutstanding,
         uint256 _timeStretch,
         uint256 _sharePrice,
         uint256 _initialSharePrice
-    ) internal pure returns (uint256) {
-        return
-            YieldSpaceMath.calculateMaxBuy(
+    ) internal view returns (uint256) {
+        // FIXME:
+        uint256 t = FixedPointMath.ONE_18 - _timeStretch;
+
+        /// FIXME: All of this math could be explained more cleanly.
+
+        // So if we decrease dz, we also decrease dy. Our contention is that
+        // these decreases will be roughly linear. With this in mind, the
+        // breaking of our solvency will be difficult to remediate by using the
+        // errors.
+        //
+        // The reason why the share buffer check would be violated is because
+        // more bonds are
+
+        // FIXME: Update this comment.
+        // TODO: This value may exceed the long buffer. To solve for this, we'd
+        // need to use an iterative approach.
+        //
+        // Bonds can't be purchase at a price greater than 1. We set the spot
+        // price equal to 1 which implies that mu * z = y. We can simplify the
+        // yieldspace invariant by making this substitution, which gives us
+        // k = (c / mu) * (mu * (z + dz)) ** (1 - tau) + (mu * (z + dz)) ** (1 - tau). Solving
+        // for z, we get that dz = (1 / mu) * (k / (c / mu + 1)) ** (1 / (1 - tau)) - z.
+
+        // The bond reserves at p = 1 are given by:
+        // y_endpoint = (k / (c / mu + 1)) ** (1 / (1 - tau)). Since
+        // mu * z_endpoint = y_endpoint, z_endpoint = y_endpoint / mu.
+        uint256 dy;
+        uint256 dz;
+        {
+            uint256 k = YieldSpaceMath.modifiedYieldSpaceConstant(
+                _sharePrice.divDown(_initialSharePrice),
+                _initialSharePrice,
+                _shareReserves,
+                t,
+                _bondReserves
+            );
+            uint256 y_endpoint = (
+                k.divDown(
+                    _sharePrice.divUp(_initialSharePrice) +
+                        FixedPointMath.ONE_18
+                )
+            ).pow(FixedPointMath.ONE_18.divDown(t));
+            dy = _bondReserves - y_endpoint;
+            dz = y_endpoint.divDown(_initialSharePrice) - _shareReserves;
+        }
+
+        // FIXME: We should use realized price instead of spot price. The
+        // equation for the update is:
+        //
+        //      dz - adj = (1 / (p ** -1 - 1)) * (z0 - y_l)
+        for (
+            uint256 i = 0;
+            i < 30 &&
+                _shareReserves + dz <
+                (_longsOutstanding + dy).divDown(_sharePrice);
+            i++
+        ) {
+            console.log(i);
+            // uint256 error = (_longsOutstanding + dy).divUp(_sharePrice) - (_shareReserves + dz);
+
+            // FIXME: Is this the realized price? (c * dz) / dy
+            uint256 p = _sharePrice.mulDivDown(dz, dy);
+            console.log("p", p.toString(18));
+            dz = (_shareReserves - _longsOutstanding).mulDivDown(
+                p,
+                FixedPointMath.ONE_18 - p
+            );
+            console.log("dz", dz.toString(18));
+            dy = YieldSpaceMath.calculateBondsOutGivenSharesIn(
                 _shareReserves,
                 _bondReserves,
-                FixedPointMath.ONE_18.sub(_timeStretch),
+                dz,
+                t,
                 _sharePrice,
                 _initialSharePrice
             );
+        }
+
+        return dz;
     }
 
     // FIXME: Implement the right buffer logic.
@@ -335,7 +461,14 @@ library HyperdriveMath {
         uint256 _timeStretch,
         uint256 _sharePrice,
         uint256 _initialSharePrice
-    ) internal pure returns (uint256) {
+    )
+        internal
+        view
+        returns (
+            // FIXME: pure
+            uint256
+        )
+    {
         return
             YieldSpaceMath.calculateMaxSell(
                 _shareReserves,

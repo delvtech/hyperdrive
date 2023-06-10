@@ -127,14 +127,23 @@ contract MockHyperdriveMath {
     function calculateMaxLong(
         uint256 _shareReserves,
         uint256 _bondReserves,
+        uint256 _longsOutstanding,
         uint256 _timeStretch,
         uint256 _sharePrice,
         uint256 _initialSharePrice
-    ) external pure returns (uint256) {
+    )
+        external
+        view
+        returns (
+            // FIXME: pure
+            uint256
+        )
+    {
         return
             HyperdriveMath.calculateMaxLong(
                 _shareReserves,
                 _bondReserves,
+                _longsOutstanding,
                 _timeStretch,
                 _sharePrice,
                 _initialSharePrice
@@ -148,7 +157,14 @@ contract MockHyperdriveMath {
         uint256 _timeStretch,
         uint256 _sharePrice,
         uint256 _initialSharePrice
-    ) external pure returns (uint256) {
+    )
+        external
+        view
+        returns (
+            // FIXME: pure
+            uint256
+        )
+    {
         return
             HyperdriveMath.calculateMaxShort(
                 _shareReserves,

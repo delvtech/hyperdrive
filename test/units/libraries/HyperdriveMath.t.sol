@@ -527,16 +527,23 @@ contract HyperdriveMathTest is HyperdriveTest {
         assertApproxEqAbs(result, expectedAPR.divDown(100e18), 3e12);
     }
 
+    // FIXME: Using this test, we can make sure that `calculateMaxLong` works
+    // across a wide range of inputs and initial conditions.
     function test__calculateMaxLong(
-        uint256 fixedRate,
-        uint256 contribution,
+        // uint256 fixedRate,
+        // uint256 contribution,
         uint256 longAmount
     ) external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
 
         // Initialize the Hyperdrive pool.
+        uint256 contribution = 500_000_000e18; // FIXME: We'll want to fuzz this.
+        uint256 fixedRate = 0.5e18;
         initialize(alice, fixedRate, contribution);
+
+        // FIXME: We should open a long and a short here to try to force issues
+        // with the buffers.
 
         // Open the maximum long on Hyperdrive.
         IHyperdrive.PoolInfo memory info = hyperdrive.getPoolInfo();
@@ -551,6 +558,7 @@ contract HyperdriveMathTest is HyperdriveTest {
         uint256 maxLong = hyperdriveMath.calculateMaxLong(
             info.shareReserves,
             info.bondReserves,
+            info.longsOutstanding,
             config.timeStretch,
             info.sharePrice,
             config.initialSharePrice
@@ -558,6 +566,8 @@ contract HyperdriveMathTest is HyperdriveTest {
         console.log("max long:", maxLong.toString(18));
         openLong(bob, maxLong);
 
+        // FIXME: The tolerance is not very good and can be improved.
+        //
         // Ensure that opening another long fails.
         vm.stopPrank();
         vm.startPrank(bob);

@@ -142,7 +142,7 @@ contract YieldSpaceMathTest is Test {
                 mu.mulDown(z_).mulDown(1.1e18),
                 mu.mulDown(z_).mulDown(10e18)
             ); // bond reserves
-            uint256 dz = yieldSpaceMath.calculateMaxBuy(z_, y_, t, c, mu);
+            uint256 dz = yieldSpaceMath.calculateMaxBuy(z_, y_, 0, t, c, mu);
             uint256 dy = yieldSpaceMath.calculateBondsOutGivenSharesIn(
                 z_,
                 y_,
@@ -167,7 +167,7 @@ contract YieldSpaceMathTest is Test {
                 mu.mulDown(z_).mulDown(1.1e18),
                 mu.mulDown(z_).mulDown(10e18)
             ); // bond reserves
-            uint256 dz = yieldSpaceMath.calculateMaxBuy(z_, y_, t, c, mu);
+            uint256 dz = yieldSpaceMath.calculateMaxBuy(z_, y_, 0, t, c, mu);
             uint256 dy = yieldSpaceMath.calculateBondsOutGivenSharesIn(
                 z_,
                 y_,
