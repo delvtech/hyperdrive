@@ -129,13 +129,11 @@ contract RoundTripTest is HyperdriveTest {
 
     function test_sandwiched_long_round_trip() external {
         uint256 apr = 0.05e18;
-        // Deploy the pool with fees.
+        // Deploy the pool and initialize the market
         {
             uint256 timeStretchApr = 0.05e18;
             deploy(alice, timeStretchApr, 0, 0, 0);
         }
-
-        // Initialize the market.
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
 
