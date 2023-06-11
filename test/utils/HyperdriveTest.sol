@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { ForwarderFactory } from "contracts/src/ForwarderFactory.sol";
+import { HyperdriveBase } from "contracts/src/HyperdriveBase.sol";
+import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
+import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { HyperdriveBase } from "contracts/src/HyperdriveBase.sol";
-import { BaseTest } from "./BaseTest.sol";
 import { MockHyperdrive, MockHyperdriveDataProvider } from "../mocks/MockHyperdrive.sol";
+import { BaseTest } from "./BaseTest.sol";
 import { HyperdriveUtils } from "./HyperdriveUtils.sol";
-import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 
 contract HyperdriveTest is BaseTest {
     using FixedPointMath for uint256;

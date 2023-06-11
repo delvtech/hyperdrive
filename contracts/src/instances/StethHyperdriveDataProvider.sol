@@ -2,11 +2,11 @@
 pragma solidity 0.8.19;
 
 import { HyperdriveDataProvider } from "../HyperdriveDataProvider.sol";
-import { MultiTokenDataProvider } from "../MultiTokenDataProvider.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { ILido } from "../interfaces/ILido.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { Errors } from "../libraries/Errors.sol";
+import { MultiTokenDataProvider } from "../token/MultiTokenDataProvider.sol";
 
 /// @author DELV
 /// @title StethHyperdriveDataProvider

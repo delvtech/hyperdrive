@@ -4,8 +4,8 @@ pragma solidity 0.8.19;
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
-import { ForwarderFactory } from "contracts/src/ForwarderFactory.sol";
-import { MultiTokenDataProvider } from "contracts/src/MultiTokenDataProvider.sol";
+import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
+import { MultiTokenDataProvider } from "contracts/src/token/MultiTokenDataProvider.sol";
 import { MockMultiToken, IMockMultiToken } from "contracts/test/MockMultiToken.sol";
 import { CombinatorialTest } from "test/utils/CombinatorialTest.sol";
 
