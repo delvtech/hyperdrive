@@ -527,12 +527,11 @@ contract HyperdriveMathTest is HyperdriveTest {
         assertApproxEqAbs(result, expectedAPR.divDown(100e18), 3e12);
     }
 
-    // TODO: If the cap on the fixed rate is increased, this test will start to
-    // fail with various errors.
     function test__calculateMaxLong(
         uint256 fixedRate,
         uint256 contribution,
         uint256 initialLongAmount,
+        uint256 initialShortAmount,
         uint256 finalLongAmount
     ) external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
@@ -544,13 +543,18 @@ contract HyperdriveMathTest is HyperdriveTest {
         console.log("fixedRate: %s", fixedRate.toString(18));
         initialize(alice, fixedRate, contribution);
 
-        // Open a long. This sets the long buffer to a non-trivial value which
-        // stress tests the max long function.
+        // Open a long and a short. This sets the long buffer to a non-trivial
+        // value which stress tests the max long function.
         initialLongAmount = initialLongAmount.normalizeToRange(
             0.0001e18,
             hyperdrive.calculateMaxLong() / 2
         );
         openLong(bob, initialLongAmount);
+        initialShortAmount = initialShortAmount.normalizeToRange(
+            0.0001e18,
+            hyperdrive.calculateMaxShort() / 2
+        );
+        openShort(bob, initialShortAmount);
 
         // Open the maximum long on Hyperdrive.
         IHyperdrive.PoolInfo memory info = hyperdrive.getPoolInfo();
@@ -592,19 +596,30 @@ contract HyperdriveMathTest is HyperdriveTest {
     function test__calculateMaxShort(
         uint256 fixedRate,
         uint256 contribution,
-        uint256 shortAmount
+        uint256 initialLongAmount,
+        uint256 initialShortAmount,
+        uint256 finalShortAmount
     ) external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
 
         // Initialize the Hyperdrive pool.
-        fixedRate = fixedRate.normalizeToRange(0.0001e18, 1e18);
         contribution = contribution.normalizeToRange(1_000e18, 500_000_000e18);
+        fixedRate = fixedRate.normalizeToRange(0.0001e18, 0.5e18);
         initialize(alice, fixedRate, contribution);
 
-        // Open a long on Hyperdrive. This will test whether the max short
-        // respects solvency on Hyperdrive.
-        openLong(bob, 100_000_000e18);
+        // Open a long. This sets the long buffer to a non-trivial value which
+        // stress tests the max long function.
+        initialLongAmount = initialLongAmount.normalizeToRange(
+            0.0001e18,
+            hyperdrive.calculateMaxLong() / 2
+        );
+        openLong(bob, initialLongAmount);
+        initialShortAmount = initialShortAmount.normalizeToRange(
+            0.0001e18,
+            hyperdrive.calculateMaxShort() / 2
+        );
+        openShort(bob, initialShortAmount);
 
         // Open the maximum short on Hyperdrive.
         IHyperdrive.PoolInfo memory info = hyperdrive.getPoolInfo();
@@ -622,11 +637,11 @@ contract HyperdriveMathTest is HyperdriveTest {
         // Ensure that opening another short fails.
         vm.stopPrank();
         vm.startPrank(bob);
-        shortAmount = shortAmount.normalizeToRange(0, 100_000_000e18);
-        baseToken.mint(bob, shortAmount);
-        baseToken.approve(address(hyperdrive), shortAmount);
+        finalShortAmount = finalShortAmount.normalizeToRange(0, 100_000_000e18);
+        baseToken.mint(bob, finalShortAmount);
+        baseToken.approve(address(hyperdrive), finalShortAmount);
         vm.expectRevert();
-        hyperdrive.openShort(shortAmount, 0, bob, true);
+        hyperdrive.openShort(finalShortAmount, 0, bob, true);
 
         // Ensure that the short can be closed.
         closeShort(bob, maturityTime, maxShort);
