@@ -308,15 +308,17 @@ library HyperdriveMath {
         uint256 _initialSharePrice,
         uint256 _maxIterations
     ) internal pure returns (uint256) {
-        // We first solve for the maximum possible long amount. This maximum is
-        // achieved when the pools spot price equals 1. We can solve for this
-        // value by noting that the spot price equals 1 when
-        // ((mu * z) / y) ** tau = 1, which implies that mu * z = y. This
-        // reduces the YieldSpace invariant to k = (c / mu) * y ** (1 - tau) + y ** (1 - tau).
-        // From this, the bond reserves at the maximum are equal to
-        // y = (k / (c / mu + 1)) ** (1 / (1 - tau)). If the share reserves that
-        // coincide with this max exceed the requirements for solvency, then
-        // we're done. If not, then we must solve for the maximum iteratively.
+        // We first solve for the maximum trade size using the constraint that
+        // the pool's spot price can never exceed 1. We do this by noting that
+        // a spot price of 1, (mu * z) / y ** tau = 1, implies that mu * z = y.
+        // This simplifies YieldSpace to k = ((c / mu) + 1) * y ** (1 - tau),
+        // and gives us the maximum bond reserves of y = (k / ((c / mu) + 1)) ** (1 / (1 - tau))
+        // and the maximum share reserves of z = y * mu. This gives us a trade
+        // size of dz = z - z0 and dy = y0 - y.
+        //
+        // If the solvency requirements are met at this trade size, then we're
+        // done. If not, then we need to solve for the maximum trade size
+        // iteratively.
         uint256 dy;
         uint256 dz;
         {
@@ -342,23 +344,26 @@ library HyperdriveMath {
                 optimalBondReserves.divDown(_initialSharePrice) -
                 _shareReserves;
         }
+
+        // To make an initial guess for the iterative approximation, we consider
+        // the solvency check to be the error that we want to reduce. The amount
+        // the long buffer exceeds the share reserves is given by
+        // (y_l + dy) / c - (z + dz). Since the error could be large, we'll use
+        // the realized price of the trade instead of the spot price to
+        // approximate the change in trade output. This gives us dy = c * 1/p * dz.
+        // Substituting this into error equation and setting the error equal to
+        // zero allows us to solve for the initial guess as:
+        //
+        // (y_l + c * 1/p * dz) / c - (z + dz) = 0
+        //              =>
+        // (1/p - 1) * dz = z - y_l/c
+        //              =>
+        // dz = (z - y_l/c) * (p / (p - 1))
         if (
             _shareReserves + dz >= (_longsOutstanding + dy).divDown(_sharePrice)
         ) {
             return dz;
         }
-
-        // We make an initial guess to improve the convergence rate of the
-        // iterative approximations. The amount the long buffer exceeds the
-        // share reserves is given by (y_l + dy) / c - (z + dz). If the realized
-        // price of the trade is p, then dy = c * 1/p * dz. From this,
-        // (y_l + c * 1/p * dz) / c > z + dz, which implies that
-        // (1/p - 1) * dz > z - y_l/c. We'll update the trade size to reduce
-        // this error. We approximate the trade size update by assuming the
-        // realized price with the updated trade size is the same as the
-        // realized price of the previous trade. We can solve this expression
-        // (1/p - 1) * dz' = z - y_l/c to give us a trade size of
-        // dz' = (z - y_l/c) * (p / (p - 1)).
         uint256 p = _sharePrice.mulDivDown(dz, dy);
         dz = (_shareReserves - _longsOutstanding.divDown(_sharePrice))
             .mulDivDown(p, FixedPointMath.ONE_18 - p);
@@ -371,16 +376,26 @@ library HyperdriveMath {
             _initialSharePrice
         );
 
-        // Iteratively approach the the maximum. If we assume that the trade had
-        // a realized price of p, then for every z shares that are purchased,
-        // (1/p - 1) * z bonds are added to the long buffer.
+        // Our maximum long will be the largest trade size that doesn't fail
+        // the solvency check.
         uint256 candidate = 0;
         for (uint256 i = 0; i < _maxIterations; i++) {
-            // At every step, we adjust the size of the long using the error of
-            // the calculation (the difference between the share reserves and
-            // the long buffer). We approximate this error using the spot price
-            // p as error = (1/p - 1) * dz', which allows us to approximate the
-            // change in the trade size as dz += error * (p / (1 - p)).
+            // Even though YieldSpace isn't linear, we can use a linear
+            // approximation to get closer to the optimal solution. Our guess
+            // should bring us close enough to the optimal point that we can
+            // linearly approximate the change in error using the current spot
+            // price.
+            //
+            // We can approximate the change in the trade output with respect to
+            // trade size as dy' = c * (1/p) * dz'. Substituting this into our
+            // error equation and setting the error equation equal to zero
+            // allows us to solve for the trade size update:
+            //
+            // (y_l + dy + c * (1/p) * dz') / c - (z + dz + dz') = 0
+            //                  =>
+            // (1/p - 1) * dz' = (z + dz) - (y_l + dy) / c
+            //                  =>
+            // dz' = ((z + dz) - (y_l + dy) / c) * (p / (p - 1)).
             p = calculateSpotPrice(
                 _shareReserves + dz,
                 _bondReserves - dy,
@@ -426,11 +441,12 @@ library HyperdriveMath {
         uint256 _sharePrice,
         uint256 _initialSharePrice
     ) internal pure returns (uint256) {
-        // Bonds can be sold until the share reserves are equal to the amount
-        // of base required for the outstanding longs to be solvent. Thus we
-        // can set z = longBuffer / c. We have that
-        // k = (c / mu) * (mu * (longBuffer / c)) ** (1 - tau) + y ** (1 - tau).
-        // Therefore the bonds reserves of the maximum sell are given by
+        // The only constraint on the maximum short is that the share reserves
+        // don't go negative and satisfy the solvency requirements. Thus, we can
+        // set z = y_l/c and solve for the maximum short directly as:
+        //
+        // k = (c / mu) * (mu * (longBuffer / c)) ** (1 - tau) + y ** (1 - tau)
+        //                         =>
         // y = (k - (c / mu) * (mu * (longBuffer / c)) ** (1 - tau)) ** (1 / (1 - tau)).
         uint256 t = FixedPointMath.ONE_18 - _timeStretch;
         uint256 priceFactor = _sharePrice.divDown(_initialSharePrice);
@@ -448,8 +464,7 @@ library HyperdriveMath {
                     .pow(t)
             )).pow(FixedPointMath.ONE_18.divDown(t));
 
-        // The maximum amount of bonds a user can sell is the difference between
-        // the bond reserves after the max sell and the current bond reserves.
+        // The optimal bond reserves imply a maximum short of dy = y - y0.
         return optimalBondReserves - _bondReserves;
     }
 
