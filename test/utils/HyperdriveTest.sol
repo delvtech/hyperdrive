@@ -340,7 +340,7 @@ contract HyperdriveTest is BaseTest {
 
     event OpenLong(
         address indexed trader,
-        uint256 assetId,
+        uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
         uint256 bondAmount
@@ -348,7 +348,7 @@ contract HyperdriveTest is BaseTest {
 
     event OpenShort(
         address indexed trader,
-        uint256 assetId,
+        uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
         uint256 bondAmount
@@ -356,7 +356,7 @@ contract HyperdriveTest is BaseTest {
 
     event CloseLong(
         address indexed trader,
-        uint256 assetId,
+        uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
         uint256 bondAmount
@@ -364,7 +364,7 @@ contract HyperdriveTest is BaseTest {
 
     event CloseShort(
         address indexed trader,
-        uint256 assetId,
+        uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
         uint256 bondAmount
