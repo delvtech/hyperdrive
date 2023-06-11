@@ -314,8 +314,16 @@ library HyperdriveMath {
         uint256 _sharePrice,
         uint256 _initialSharePrice,
         uint256 _maxIterations
-    ) internal view returns (uint256) {
-        // FIXME: Explain this step. This is the "endpoint" part of the calculation.
+    ) internal pure returns (uint256) {
+        // We first solve for the maximum possible long amount. This maximum is
+        // achieved when the pools spot price equals 1. We can solve for this
+        // value by noting that the spot price equals 1 when
+        // ((mu * z) / y) ** tau = 1, which implies that mu * z = y. This
+        // reduces the YieldSpace invariant to k = (c / mu) * y ** (1 - tau) + y ** (1 - tau).
+        // From this, the bond reserves at the maximum are equal to
+        // y = (k / (c / mu + 1)) ** (1 / (1 - tau)). If the share reserves that
+        // coincide with this max exceed the requirements for solvency, then
+        // we're done. If not, then we must solve for the maximum iteratively.
         uint256 dy;
         uint256 dz;
         {
@@ -339,19 +347,26 @@ library HyperdriveMath {
             dy = _bondReserves - y_endpoint;
             dz = y_endpoint.divDown(_initialSharePrice) - _shareReserves;
         }
-
         if (
             _shareReserves + dz >= (_longsOutstanding + dy).divDown(_sharePrice)
         ) {
             return dz;
         }
 
-        // FIXME: Comment this. This is the "Guess" part of the algorithm.
+        // We make an initial guess to improve the convergence rate of the
+        // iterative approximations. The amount the long buffer exceeds the
+        // share reserves is given by (y_l + dy) / c - (z + dz). If the realized
+        // price of the trade is p, then dy = c * 1/p * dz. From this,
+        // (y_l + c * 1/p * dz) / c > z + dz, which implies that
+        // (1/p - 1) * dz > z - y_l/c. We'll update the trade size to reduce
+        // this error. We approximate the trade size update by assuming the
+        // realized price with the updated trade size is the same as the
+        // realized price of the previous trade. We can solve this expression
+        // (1/p - 1) * dz' = z - y_l/c to give us a trade size of
+        // dz' = (z - y_l/c) * (p / (p - 1)).
         uint256 p = _sharePrice.mulDivDown(dz, dy);
-        dz = (_shareReserves - _longsOutstanding).mulDivDown(
-            p,
-            FixedPointMath.ONE_18 - p
-        );
+        dz = (_shareReserves - _longsOutstanding.divDown(_sharePrice))
+            .mulDivDown(p, FixedPointMath.ONE_18 - p);
         dy = YieldSpaceMath.calculateBondsOutGivenSharesIn(
             _shareReserves,
             _bondReserves,
@@ -361,9 +376,16 @@ library HyperdriveMath {
             _initialSharePrice
         );
 
-        // FIXME: Comment this. This is the "Newton's Method" part of the algorithm.
+        // Iteratively approach the the maximum. If we assume that the trade had
+        // a realized price of p, then for every z shares that are purchased,
+        // (1/p - 1) * z bonds are added to the long buffer.
         uint256 candidate = 0;
         for (uint256 i = 0; i < _maxIterations; i++) {
+            // At every step, we adjust the size of the long using the error of
+            // the calculation (the difference between the share reserves and
+            // the long buffer). We approximate this error using the spot price
+            // p as error = (1/p - 1) * dz', which allows us to approximate the
+            // change in the trade size as dz += error * (p / (1 - p)).
             p = calculateSpotPrice(
                 _shareReserves + dz,
                 _bondReserves - dy,
@@ -435,23 +457,6 @@ library HyperdriveMath {
         // the bond reserves after the max sell and the current bond reserves.
         return optimalBondReserves - _bondReserves;
     }
-
-    /// @dev Calculates the maximum amount of bonds a user can sell.
-    /// @param z Amount of share reserves in the pool
-    /// @param y amount of bond reserves in the pool
-    /// @param y_l The amount of outstanding longs.
-    /// @param t Amount of time elapsed since term start
-    /// @param c Conversion rate between base and shares
-    /// @param mu Interest normalization factor for shares
-    /// @return Maximum amount of bonds a user can sell.
-    function calculateMaxSell(
-        uint256 z,
-        uint256 y,
-        uint256 y_l,
-        uint256 t,
-        uint256 c,
-        uint256 mu
-    ) internal pure returns (uint256) {}
 
     struct PresentValueParams {
         uint256 shareReserves;
