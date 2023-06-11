@@ -408,7 +408,9 @@ library HyperdriveMath {
             if (error < 0) {
                 dz -= uint256(-error).mulDivDown(p, FixedPointMath.ONE_18 - p);
             } else {
-                candidate = dz;
+                if (dz > candidate) {
+                    candidate = dz;
+                }
                 dz += uint256(error).mulDivDown(p, FixedPointMath.ONE_18 - p);
             }
             dy = YieldSpaceMath.calculateBondsOutGivenSharesIn(
