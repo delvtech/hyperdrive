@@ -2,12 +2,12 @@
 pragma solidity 0.8.19;
 
 import { ERC20PresetFixedSupply } from "openzeppelin-contracts/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
-import { ForwarderFactory } from "contracts/src/ForwarderFactory.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/HyperdriveMath.sol";
+import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { MockHyperdriveMath } from "contracts/test/MockHyperdriveMath.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";

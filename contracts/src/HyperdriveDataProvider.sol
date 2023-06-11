@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { MultiTokenDataProvider } from "./MultiTokenDataProvider.sol";
 import { HyperdriveStorage } from "./HyperdriveStorage.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { AssetId } from "./libraries/AssetId.sol";
 import { Errors } from "./libraries/Errors.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
+import { MultiTokenDataProvider } from "./token/MultiTokenDataProvider.sol";
 
 /// @author DELV
 /// @title HyperdriveDataProvider

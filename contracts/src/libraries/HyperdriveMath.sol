@@ -327,7 +327,7 @@ library HyperdriveMath {
                 FixedPointMath.ONE_18 - _timeStretch,
                 _bondReserves
             );
-            uint256 y_endpoint = (
+            uint256 optimalBondReserves = (
                 k.divDown(
                     _sharePrice.divUp(_initialSharePrice) +
                         FixedPointMath.ONE_18
@@ -337,8 +337,10 @@ library HyperdriveMath {
                         FixedPointMath.ONE_18 - _timeStretch
                     )
                 );
-            dy = _bondReserves - y_endpoint;
-            dz = y_endpoint.divDown(_initialSharePrice) - _shareReserves;
+            dy = _bondReserves - optimalBondReserves;
+            dz =
+                optimalBondReserves.divDown(_initialSharePrice) -
+                _shareReserves;
         }
         if (
             _shareReserves + dz >= (_longsOutstanding + dy).divDown(_sharePrice)
