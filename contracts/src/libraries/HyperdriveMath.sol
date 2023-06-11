@@ -297,97 +297,25 @@ library HyperdriveMath {
         }
     }
 
-    // FIXME: Implement the right buffer logic.
-    //
-    /// @dev Calculates the maximum amount of shares that can be used to open
-    ///      longs.
+    /// @dev Calculates the maximum amount of shares a user can spend on buying
+    ///      bonds before the spot crosses above a price of 1.
     /// @param _shareReserves The pool's share reserves.
     /// @param _bondReserves The pool's bonds reserves.
     /// @param _longsOutstanding The amount of longs outstanding.
     /// @param _timeStretch The time stretch parameter.
     /// @param _sharePrice The share price.
     /// @param _initialSharePrice The initial share price.
-    // /// @return The maximum amount of shares that can be used to open longs.
-    // function calculateMaxLong(
-    //     uint256 _shareReserves,
-    //     uint256 _bondReserves,
-    //     uint256 _longsOutstanding,
-    //     uint256 _timeStretch,
-    //     uint256 _sharePrice,
-    //     uint256 _initialSharePrice
-    //     // FIXME: pure
-    // ) internal view returns (uint256) {
-    //     return
-    //         YieldSpaceMath.calculateMaxBuy(
-    //             _shareReserves,
-    //             _bondReserves,
-    //             _longsOutstanding,
-    //             FixedPointMath.ONE_18.sub(_timeStretch),
-    //             _sharePrice,
-    //             _initialSharePrice
-    //         );
-    // }
-
-    // FIXME: We may want to move this into HyperdriveMath. This really
-    // straddles the line between the two libraries.
-    //
-    // FIXME: We'll also need to consider fees in this function to make sure that
-    // it is accurate.
-    //
-    // FIXME: We need to solve the optimization problem:
-    //
-    //    dy = f(dz) = y - (k - (c / mu) * (mu * (z + dz)) ** (1 - t)) ** (1 / (1 - t))
-    //
-    //    maximize dy = f(dz) subject to:
-    //      z + dz >= y_l + dy
-    //
-    //    We initially solve for the endpoint where p = 1. Then, if the
-    //    constraint fails, we can assume linearity of dz and dy and backtrack
-    //    to the optimal point.
-    //
-    // /// @dev Calculates the maximum amount of shares a user can spend on buying
-    // ///      bonds before the spot crosses above a price of 1.
-    // /// @param z Amount of share reserves in the pool
-    // /// @param y amount of bond reserves in the pool
-    // /// @param y_l The amount of outstanding longs.
-    // /// @param t Amount of time elapsed since term start
-    // /// @param c Conversion rate between base and shares
-    // /// @param mu Interest normalization factor for shares
-    // /// @return Maximum amount of shares user can spend on bonds.
+    /// @return The maximum amount of shares that can be used to open longs.
     function calculateMaxLong(
         uint256 _shareReserves,
         uint256 _bondReserves,
         uint256 _longsOutstanding,
         uint256 _timeStretch,
         uint256 _sharePrice,
-        uint256 _initialSharePrice
+        uint256 _initialSharePrice,
+        uint256 _maxIterations
     ) internal view returns (uint256) {
-        // FIXME:
-        uint256 t = FixedPointMath.ONE_18 - _timeStretch;
-
-        /// FIXME: All of this math could be explained more cleanly.
-
-        // So if we decrease dz, we also decrease dy. Our contention is that
-        // these decreases will be roughly linear. With this in mind, the
-        // breaking of our solvency will be difficult to remediate by using the
-        // errors.
-        //
-        // The reason why the share buffer check would be violated is because
-        // more bonds are
-
-        // FIXME: Update this comment.
-        // TODO: This value may exceed the long buffer. To solve for this, we'd
-        // need to use an iterative approach.
-        //
-        // Bonds can't be purchase at a price greater than 1. We set the spot
-        // price equal to 1 which implies that mu * z = y. We can simplify the
-        // yieldspace invariant by making this substitution, which gives us
-        // k = (c / mu) * (mu * (z + dz)) ** (1 - tau) + (mu * (z + dz)) ** (1 - tau). Solving
-        // for z, we get that dz = (1 / mu) * (k / (c / mu + 1)) ** (1 / (1 - tau)) - z.
-
-        // The bond reserves at p = 1 are given by:
-        // y_endpoint = (k / (c / mu + 1)) ** (1 / (1 - tau)). Since
-        // mu * z_endpoint = y_endpoint, z_endpoint = y_endpoint / mu.
+        // FIXME: Explain this step. This is the "endpoint" part of the calculation.
         uint256 dy;
         uint256 dz;
         {
@@ -395,7 +323,7 @@ library HyperdriveMath {
                 _sharePrice.divDown(_initialSharePrice),
                 _initialSharePrice,
                 _shareReserves,
-                t,
+                FixedPointMath.ONE_18 - _timeStretch,
                 _bondReserves
             );
             uint256 y_endpoint = (
@@ -403,48 +331,67 @@ library HyperdriveMath {
                     _sharePrice.divUp(_initialSharePrice) +
                         FixedPointMath.ONE_18
                 )
-            ).pow(FixedPointMath.ONE_18.divDown(t));
+            ).pow(
+                    FixedPointMath.ONE_18.divDown(
+                        FixedPointMath.ONE_18 - _timeStretch
+                    )
+                );
             dy = _bondReserves - y_endpoint;
             dz = y_endpoint.divDown(_initialSharePrice) - _shareReserves;
         }
 
-        // FIXME: We should use realized price instead of spot price. The
-        // equation for the update is:
-        //
-        //      dz - adj = (1 / (p ** -1 - 1)) * (z0 - y_l)
-        for (
-            uint256 i = 0;
-            i < 30 &&
-                _shareReserves + dz <
-                (_longsOutstanding + dy).divDown(_sharePrice);
-            i++
+        if (
+            _shareReserves + dz >= (_longsOutstanding + dy).divDown(_sharePrice)
         ) {
-            console.log(i);
-            // uint256 error = (_longsOutstanding + dy).divUp(_sharePrice) - (_shareReserves + dz);
+            return dz;
+        }
 
-            // FIXME: Is this the realized price? (c * dz) / dy
-            uint256 p = _sharePrice.mulDivDown(dz, dy);
-            console.log("p", p.toString(18));
-            dz = (_shareReserves - _longsOutstanding).mulDivDown(
-                p,
-                FixedPointMath.ONE_18 - p
+        // FIXME: Comment this. This is the "Guess" part of the algorithm.
+        uint256 p = _sharePrice.mulDivDown(dz, dy);
+        dz = (_shareReserves - _longsOutstanding).mulDivDown(
+            p,
+            FixedPointMath.ONE_18 - p
+        );
+        dy = YieldSpaceMath.calculateBondsOutGivenSharesIn(
+            _shareReserves,
+            _bondReserves,
+            dz,
+            FixedPointMath.ONE_18 - _timeStretch,
+            _sharePrice,
+            _initialSharePrice
+        );
+
+        // FIXME: Comment this. This is the "Newton's Method" part of the algorithm.
+        uint256 candidate = 0;
+        for (uint256 i = 0; i < _maxIterations; i++) {
+            p = calculateSpotPrice(
+                _shareReserves + dz,
+                _bondReserves - dy,
+                _initialSharePrice,
+                FixedPointMath.ONE_18,
+                _timeStretch
             );
-            console.log("dz", dz.toString(18));
+            int256 error = int256((_shareReserves + dz)) -
+                int256((_longsOutstanding + dy).divDown(_sharePrice));
+            if (error < 0) {
+                dz -= uint256(-error).mulDivDown(p, FixedPointMath.ONE_18 - p);
+            } else {
+                candidate = dz;
+                dz += uint256(error).mulDivDown(p, FixedPointMath.ONE_18 - p);
+            }
             dy = YieldSpaceMath.calculateBondsOutGivenSharesIn(
                 _shareReserves,
                 _bondReserves,
                 dz,
-                t,
+                FixedPointMath.ONE_18 - _timeStretch,
                 _sharePrice,
                 _initialSharePrice
             );
         }
 
-        return dz;
+        return candidate;
     }
 
-    // FIXME: Implement the right buffer logic.
-    //
     /// @dev Calculates the maximum amount of shares that can be used to open
     ///      shorts.
     /// @param _shareReserves The pool's share reserves.
@@ -461,24 +408,50 @@ library HyperdriveMath {
         uint256 _timeStretch,
         uint256 _sharePrice,
         uint256 _initialSharePrice
-    )
-        internal
-        view
-        returns (
-            // FIXME: pure
-            uint256
-        )
-    {
-        return
-            YieldSpaceMath.calculateMaxSell(
-                _shareReserves,
-                _bondReserves,
-                _longsOutstanding,
-                FixedPointMath.ONE_18.sub(_timeStretch),
-                _sharePrice,
+    ) internal pure returns (uint256) {
+        // Bonds can be sold until the share reserves are equal to the amount
+        // of base required for the outstanding longs to be solvent. Thus we
+        // can set z = longBuffer / c. We have that
+        // k = (c / mu) * (mu * (longBuffer / c)) ** (1 - tau) + y ** (1 - tau).
+        // Therefore the bonds reserves of the maximum sell are given by
+        // y = (k - (c / mu) * (mu * (longBuffer / c)) ** (1 - tau)) ** (1 / (1 - tau)).
+        uint256 t = FixedPointMath.ONE_18 - _timeStretch;
+        uint256 priceFactor = _sharePrice.divDown(_initialSharePrice);
+        uint256 k = YieldSpaceMath.modifiedYieldSpaceConstant(
+            priceFactor,
+            _initialSharePrice,
+            _shareReserves,
+            t,
+            _bondReserves
+        );
+        uint256 optimalBondReserves = (k -
+            priceFactor.mulDown(
                 _initialSharePrice
-            );
+                    .mulDivDown(_longsOutstanding, _sharePrice)
+                    .pow(t)
+            )).pow(FixedPointMath.ONE_18.divDown(t));
+
+        // The maximum amount of bonds a user can sell is the difference between
+        // the bond reserves after the max sell and the current bond reserves.
+        return optimalBondReserves - _bondReserves;
     }
+
+    /// @dev Calculates the maximum amount of bonds a user can sell.
+    /// @param z Amount of share reserves in the pool
+    /// @param y amount of bond reserves in the pool
+    /// @param y_l The amount of outstanding longs.
+    /// @param t Amount of time elapsed since term start
+    /// @param c Conversion rate between base and shares
+    /// @param mu Interest normalization factor for shares
+    /// @return Maximum amount of bonds a user can sell.
+    function calculateMaxSell(
+        uint256 z,
+        uint256 y,
+        uint256 y_l,
+        uint256 t,
+        uint256 c,
+        uint256 mu
+    ) internal pure returns (uint256) {}
 
     struct PresentValueParams {
         uint256 shareReserves;

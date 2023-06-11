@@ -130,7 +130,8 @@ contract MockHyperdriveMath {
         uint256 _longsOutstanding,
         uint256 _timeStretch,
         uint256 _sharePrice,
-        uint256 _initialSharePrice
+        uint256 _initialSharePrice,
+        uint256 _maxIterations
     )
         external
         view
@@ -146,7 +147,8 @@ contract MockHyperdriveMath {
                 _longsOutstanding,
                 _timeStretch,
                 _sharePrice,
-                _initialSharePrice
+                _initialSharePrice,
+                _maxIterations
             );
     }
 

@@ -79,40 +79,4 @@ contract MockYieldSpaceMath {
         );
         return result;
     }
-
-    function calculateMaxBuy(
-        uint256 z,
-        uint256 y,
-        uint256 y_l,
-        uint256 t,
-        uint256 c,
-        uint256 mu
-    )
-        external
-        view
-        returns (
-            // FIXME: pure
-            uint256
-        )
-    {
-        return YieldSpaceMath.calculateMaxBuy(z, y, y_l, t, c, mu);
-    }
-
-    function calculateMaxSell(
-        uint256 z,
-        uint256 y,
-        uint256 y_l,
-        uint256 t,
-        uint256 c,
-        uint256 mu
-    )
-        external
-        view
-        returns (
-            // FIXME: pure
-            uint256
-        )
-    {
-        return YieldSpaceMath.calculateMaxSell(z, y, y_l, t, c, mu);
-    }
 }

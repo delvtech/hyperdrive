@@ -527,55 +527,66 @@ contract HyperdriveMathTest is HyperdriveTest {
         assertApproxEqAbs(result, expectedAPR.divDown(100e18), 3e12);
     }
 
-    // FIXME: Using this test, we can make sure that `calculateMaxLong` works
-    // across a wide range of inputs and initial conditions.
+    // TODO: If the cap on the fixed rate is increased, this test will start to
+    // fail with various errors.
     function test__calculateMaxLong(
-        // uint256 fixedRate,
-        // uint256 contribution,
-        uint256 longAmount
+        uint256 fixedRate,
+        uint256 contribution,
+        uint256 initialLongAmount,
+        uint256 finalLongAmount
     ) external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
 
         // Initialize the Hyperdrive pool.
-        uint256 contribution = 500_000_000e18; // FIXME: We'll want to fuzz this.
-        uint256 fixedRate = 0.5e18;
+        contribution = contribution.normalizeToRange(1_000e18, 500_000_000e18);
+        fixedRate = fixedRate.normalizeToRange(0.001e18, 0.5e18);
+        console.log("fixedRate: %s", fixedRate.toString(18));
         initialize(alice, fixedRate, contribution);
 
-        // FIXME: We should open a long and a short here to try to force issues
-        // with the buffers.
+        // Open a long. This sets the long buffer to a non-trivial value which
+        // stress tests the max long function.
+        initialLongAmount = initialLongAmount.normalizeToRange(
+            0.0001e18,
+            hyperdrive.calculateMaxLong() / 2
+        );
+        openLong(bob, initialLongAmount);
 
         // Open the maximum long on Hyperdrive.
         IHyperdrive.PoolInfo memory info = hyperdrive.getPoolInfo();
         IHyperdrive.PoolConfig memory config = hyperdrive.getPoolConfig();
-        console.log("share reserves:", info.shareReserves.toString(18));
-        console.log("bond reserves:", info.bondReserves.toString(18));
-        console.log("share price:", info.sharePrice.toString(18));
-        console.log(
-            "initial share price:",
-            config.initialSharePrice.toString(18)
-        );
+        uint256 maxIterations = 7;
+        if (fixedRate > 0.15e18) {
+            maxIterations += 5;
+        }
+        if (fixedRate > 0.35e18) {
+            maxIterations += 5;
+        }
         uint256 maxLong = hyperdriveMath.calculateMaxLong(
             info.shareReserves,
             info.bondReserves,
             info.longsOutstanding,
             config.timeStretch,
             info.sharePrice,
-            config.initialSharePrice
+            config.initialSharePrice,
+            maxIterations
         );
-        console.log("max long:", maxLong.toString(18));
-        openLong(bob, maxLong);
+        (uint256 maturityTime, uint256 longAmount) = openLong(bob, maxLong);
 
-        // FIXME: The tolerance is not very good and can be improved.
-        //
         // Ensure that opening another long fails.
         vm.stopPrank();
         vm.startPrank(bob);
-        longAmount = longAmount.normalizeToRange(0.0001e18, 100_000_000e18);
-        baseToken.mint(bob, longAmount);
-        baseToken.approve(address(hyperdrive), longAmount);
+        finalLongAmount = finalLongAmount.normalizeToRange(
+            0.01e18,
+            100_000_000e18
+        );
+        baseToken.mint(bob, finalLongAmount);
+        baseToken.approve(address(hyperdrive), finalLongAmount);
         vm.expectRevert();
-        hyperdrive.openLong(longAmount, 0, bob, true);
+        hyperdrive.openLong(finalLongAmount, 0, bob, true);
+
+        // Ensure that the long can be closed.
+        closeLong(bob, maturityTime, longAmount);
     }
 
     function test__calculateMaxShort(

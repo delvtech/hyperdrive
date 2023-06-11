@@ -85,7 +85,8 @@ library HyperdriveUtils {
                     poolInfo.longsOutstanding,
                     poolConfig.timeStretch,
                     poolInfo.sharePrice,
-                    poolConfig.initialSharePrice
+                    poolConfig.initialSharePrice,
+                    7
                 )
                 .mulDown(poolInfo.sharePrice);
     }
