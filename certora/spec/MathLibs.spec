@@ -269,7 +269,6 @@ rule cannotGetFreeShares(uint256 z, uint256 y, uint256 dz, uint256 t, uint256 c,
 // ======================================
 //        Hyperdrive Math rules
 //=======================================
-/// @return bondReservesDelta The amount of bonds sold by the curve.
 rule calculateOpenLong_correctBound(
     uint256 shareReserves,
     uint256 bondReserves,

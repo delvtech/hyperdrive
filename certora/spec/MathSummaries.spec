@@ -38,7 +38,7 @@ methods {
         => ghostCalculateBaseVolume(base, bond, time) expect uint256;
     
     /// @dev Calculates the spot price without slippage of bonds in terms of shares.
-    function _.calculateSpotPrice(uint256 shares, uint256 bonds, uint256 initPrice, uint256 normTime, uint256 timeSt) internal library 
+    function _.calculateSpotPrice(uint256 shares, uint256 bonds, uint256 initPrice, uint256 normTime, uint256 timeSt) internal
         => CVLCalculateSpotPrice(shares, bonds, initPrice, normTime, timeSt) expect uint256;
     // function _.calculateSpotPrice(uint256 shares, uint256 bonds, uint256 initPrice, uint256 normTime, uint256 timeSt) internal library 
     //     => NONDET;
@@ -65,7 +65,7 @@ methods {
     
     /// @dev Calculates the proceeds in shares of closing a short position.
     function _.calculateShortProceeds(uint256 bond, uint256 share, uint256 openPrice, uint256 closePrice, uint256 price) internal 
-       => ghostCalculateShortProceeds(bond, share, openPrice, closePrice, price) expect uint256;
+       => CVLCalculateShortProceeds(bond, share, openPrice) expect uint256;
 }
 
 /// Ghost implementations of FixedPoint Math
@@ -88,7 +88,7 @@ function CVLUpdateWeightedAverage_sub(uint256 avg, uint256 totW, uint256 del, ui
     }
 }
 
-/// @doc Summary for the updateWeightedAverage.
+/// Summary for the updateWeightedAverage.
 /// @notice Note that due to rounding errors, the summary is not 100% correct, so deviations of the order of 1
 /// are possible in the real function.
 ghost ghostWeightedAverage(mathint, mathint, mathint) returns mathint {
@@ -114,7 +114,20 @@ ghost ghostCalculateBaseVolume(uint256,uint256,uint256) returns uint256 {
 ghost ghostCalculateAPRFromReserves(uint256,uint256,uint256,uint256,uint256) returns uint256;
 ghost ghostCalculateInitialBondReserves(uint256,uint256,uint256,uint256,uint256,uint256) returns uint256;
 ghost ghostCalculateShortInterest(uint256,uint256,uint256,uint256) returns uint256;
-ghost ghostCalculateShortProceeds(uint256,uint256,uint256,uint256,uint256) returns uint256;
+
+/// Summary for calculateShortProceeds
+/// @notice : in the code implementation, the fourth and fifth argument (closeSharePrice and sharePrice)
+/// are infact equal, so the function is reduced to a simpler form.
+/// Make sure if future changes break this assumption.
+function CVLCalculateShortProceeds(uint256 amount, uint256 shareDelta, uint256 openPrice) returns uint256 {
+    uint256 bondFactor = divDownWad(amount, openPrice);
+    if (bondFactor > amount) {
+        return require_uint256(bondFactor - shareDelta);
+    }
+    else{
+        return 0;
+    }
+}
 
 /* =========================================
  ---------- Hyperdrive Math summaries ------
