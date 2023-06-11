@@ -268,7 +268,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
 
         // Bob opens a short.
         shortAmount = shortAmount.normalizeToRange(
-            0.1e6,
+            1e6,
             HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
         testParams.shortAmount = shortAmount;
@@ -323,6 +323,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
             uint256 bobBaseProceeds,
             uint256 bobWithdrawalShares
         ) = removeLiquidity(bob, bobLpShares);
+
         (
             uint256 celineBaseProceeds,
             uint256 celineWithdrawalShares
