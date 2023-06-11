@@ -158,11 +158,15 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // If the ending spot price is greater than or equal to 1, we are in the
         // negative interest region of the trading function. The spot price is
         // given by ((mu * z) / y) ** tau, so all that we need to check is that
-        // (mu * z) / y < 1 or, equivalently, that mu * z >= y.
+        // (mu * z) / y < 1 or, equivalently, that mu * z >= y. If the reserves
+        // are empty we skip the check because shorts will only be able to close
+        // at maturity if the LPs remove all of the liquidity.
         if (
+            (_marketState.shareReserves > 0 || _marketState.bondReserves > 0) &&
             _initialSharePrice.mulDown(
                 _marketState.shareReserves + shareReservesDelta
-            ) >= _marketState.bondReserves - bondReservesDelta
+            ) >=
+            _marketState.bondReserves - bondReservesDelta
         ) {
             revert Errors.NegativeInterest();
         }
