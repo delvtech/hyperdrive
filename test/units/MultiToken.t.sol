@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { ForwarderFactory } from "contracts/src/ForwarderFactory.sol";
-import { MultiTokenDataProvider } from "contracts/src/MultiTokenDataProvider.sol";
+import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
+import { MultiTokenDataProvider } from "contracts/src/token/MultiTokenDataProvider.sol";
 import { MockMultiToken, IMockMultiToken } from "contracts/test/MockMultiToken.sol";
 import { BaseTest } from "test/utils/BaseTest.sol";
 

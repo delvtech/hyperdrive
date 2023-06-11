@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { DataProvider } from "./DataProvider.sol";
+import { DataProvider } from "../DataProvider.sol";
+import { IMultiTokenWrite } from "../interfaces/IMultiTokenWrite.sol";
+import { Errors } from "../libraries/Errors.sol";
 import { MultiTokenStorage } from "./MultiTokenStorage.sol";
-import { IMultiTokenWrite } from "./interfaces/IMultiTokenWrite.sol";
-import { Errors } from "./libraries/Errors.sol";
 
 // A lite version of a semi fungible, which removes some methods and so
 // is not technically a 1155 compliant multi-token semi fungible, but almost
