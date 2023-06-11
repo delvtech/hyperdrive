@@ -57,23 +57,14 @@ abstract contract HyperdriveLong is HyperdriveLP {
             uint256 totalGovernanceFee
         ) = _calculateOpenLong(shares, sharePrice, timeRemaining);
 
-        // FIXME: Rigorously test this. Would it be better to do this check
-        // after `_applyOpenLong` so that we don't need to do so much math up
-        // front?
-        //
-        // FIXME: It would be good to DRY this up.
-        //
-        // If the user gets less bonds than they paid or if the ending spot
-        // price is greater than or equal to 1, we are in the negative interest
-        // region of the trading function. The spot price is given by
-        // ((mu * z) / y) ** tau, so all that we need to check is that
+        // If the ending spot price is greater than or equal to 1, we are in the
+        // negative interest region of the trading function. The spot price is
+        // given by ((mu * z) / y) ** tau, so all that we need to check is that
         // (mu * z) / y < 1 or, equivalently, that mu * z >= y.
         if (
-            bondProceeds < _baseAmount ||
             _initialSharePrice.mulDown(
                 _marketState.shareReserves + shareReservesDelta
-            ) >=
-            _marketState.bondReserves - bondReservesDelta
+            ) >= _marketState.bondReserves - bondReservesDelta
         ) {
             revert Errors.NegativeInterest();
         }

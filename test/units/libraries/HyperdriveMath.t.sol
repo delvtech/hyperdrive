@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-// FIXME
-import "forge-std/console.sol";
-
 import { ERC20PresetFixedSupply } from "openzeppelin-contracts/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import { ForwarderFactory } from "contracts/src/ForwarderFactory.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
@@ -540,7 +537,6 @@ contract HyperdriveMathTest is HyperdriveTest {
         // Initialize the Hyperdrive pool.
         contribution = contribution.normalizeToRange(1_000e18, 500_000_000e18);
         fixedRate = fixedRate.normalizeToRange(0.001e18, 0.5e18);
-        console.log("fixedRate: %s", fixedRate.toString(18));
         initialize(alice, fixedRate, contribution);
 
         // Open a long and a short. This sets the long buffer to a non-trivial

@@ -8,6 +8,7 @@ import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 
 library HyperdriveUtils {
+    using HyperdriveUtils for *;
     using FixedPointMath for uint256;
 
     function latestCheckpoint(
@@ -37,6 +38,28 @@ library HyperdriveUtils {
         return
             latestCheckpoint(_hyperdrive) +
             _hyperdrive.getPoolConfig().positionDuration;
+    }
+
+    function calculateSpotPrice(
+        IHyperdrive _hyperdrive,
+        uint256 _normalizedTimeRemaining
+    ) internal view returns (uint256) {
+        IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
+        IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
+        return
+            HyperdriveMath.calculateSpotPrice(
+                poolInfo.shareReserves,
+                poolInfo.bondReserves,
+                poolConfig.initialSharePrice,
+                _normalizedTimeRemaining,
+                poolConfig.timeStretch
+            );
+    }
+
+    function calculateSpotPrice(
+        IHyperdrive _hyperdrive
+    ) internal view returns (uint256) {
+        return _hyperdrive.calculateSpotPrice(FixedPointMath.ONE_18);
     }
 
     function calculateAPRFromReserves(

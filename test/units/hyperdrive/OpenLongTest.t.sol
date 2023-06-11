@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-// FIXME
-import "forge-std/console.sol";
-
 import { stdError } from "forge-std/StdError.sol";
 import { VmSafe } from "forge-std/Vm.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
@@ -57,47 +54,33 @@ contract OpenLongTest is HyperdriveTest {
         pause(false);
     }
 
-    // FIXME
-    //
-    // // FIXME: We'll need the calculateMaxLong machinery in order to test this
-    // // well.
-    // function test_open_long_failure_negative_interest() external {
-    //     // Initialize the pool with a large amount of capital.
-    //     uint256 apr = 0.05e18;
-    //     uint256 contribution = 500_000_000e18;
-    //     initialize(alice, apr, contribution);
+    function test_open_long_failure_negative_interest(
+        uint256 fixedRate,
+        uint256 contribution
+    ) external {
+        // Initialize the pool. We use a relatively small fixed rate to ensure
+        // that the maximum long is constrained by the price cap of 1 rather
+        // than because of exceeding the long buffer.
+        fixedRate = fixedRate.normalizeToRange(0.0001e18, 0.1e18);
+        contribution = contribution.normalizeToRange(1_000e18, 500_000_000e18);
+        initialize(alice, fixedRate, contribution);
 
-    //     uint256 maxLong = YieldSpaceMath.calculateMaxLong(
-    //         hyperdrive.getPoolInfo().shareReserves,
-    //         hyperdrive.getPoolInfo().bondReserves,
-    //         FixedPointMath.ONE_18.sub(hyperdrive.getPoolConfig().timeStretch),
-    //         hyperdrive.getPoolInfo().sharePrice,
-    //         hyperdrive.getPoolConfig().initialSharePrice
-    //     );
-    //     console.log("max long:", maxLong.toString(18));
+        // Ensure that a long that is slightly larger than the max long will
+        // fail the negative interest check.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        uint256 basePaid = hyperdrive.calculateMaxLong() + 0.0001e18;
+        baseToken.mint(bob, basePaid);
+        baseToken.approve(address(hyperdrive), basePaid);
+        vm.expectRevert(Errors.NegativeInterest.selector);
+        hyperdrive.openLong(basePaid, 0, bob, true);
 
-    //     // mu * z = y
-    //     // k = (c / mu) * (mu * z) ** (1 - tau) + y ** (1 - tau)
-    //     //
-    //     // k = (c / mu) * y ** (1 - tau) + y ** (1 - tau)
-    //     //
-    //     // k = (c / mu + 1) * y ** (1 - tau)
-    //     //
-    //     // y = k / (c / mu + 1) ** (1 / (1 - tau))
-    //     //
-    //     // dy = y0 - y
-    //     //
-    //     // FIXME: Calculate max long. How does this compare to the empirical
-    //     // value?
-    //     //
-    //     // FIXME: Use my formulation of calculate max long.
-    //     //
-    //     // FIXME: We should unit test the calculateMaxLong function.
-    //     console.log("max long:", HyperdriveUtils.calculateMaxLong(hyperdrive).toString(18));
-
-    //     (, uint256 longAmount) = openLong(bob, maxLong);
-    //     console.log("longAmount", longAmount.toString(18));
-    // }
+        // Ensure that the max long results in spot price very close to 1 to
+        // make sure that the negative interest failure was appropriate.
+        openLong(bob, hyperdrive.calculateMaxLong());
+        assertLe(hyperdrive.calculateSpotPrice(), 1e18);
+        assertApproxEqAbs(hyperdrive.calculateSpotPrice(), 1e18, 1e6);
+    }
 
     function test_pauser_authorization_fail() external {
         vm.stopPrank();
