@@ -38,10 +38,9 @@ methods {
         => ghostCalculateBaseVolume(base, bond, time) expect uint256;
     
     /// @dev Calculates the spot price without slippage of bonds in terms of shares.
-    function _.calculateSpotPrice(uint256 shares, uint256 bonds, uint256 initPrice, uint256 normTime, uint256 timeSt) internal
-        => CVLCalculateSpotPrice(shares, bonds, initPrice, normTime, timeSt) expect uint256;
-    // function _.calculateSpotPrice(uint256 shares, uint256 bonds, uint256 initPrice, uint256 normTime, uint256 timeSt) internal library 
-    //     => NONDET;
+    //function _.calculateSpotPrice(uint256 shares, uint256 bonds, uint256 initPrice, uint256 normTime, uint256 timeSt) internal
+    //    => CVLCalculateSpotPrice(shares, bonds, initPrice, normTime, timeSt) expect uint256;
+    function _.calculateSpotPrice(uint256 shares, uint256 bonds, uint256 initPrice, uint256 normTime, uint256 timeSt) internal => NONDET;
     
     /// @dev Calculates the APR from the pool's reserves.
     function _.calculateAPRFromReserves(uint256 shares, uint256 bonds, uint256 initPrice, uint256 dur, uint256 timeSt) internal
@@ -65,7 +64,7 @@ methods {
     
     /// @dev Calculates the proceeds in shares of closing a short position.
     function _.calculateShortProceeds(uint256 bond, uint256 share, uint256 openPrice, uint256 closePrice, uint256 price) internal 
-       => CVLCalculateShortProceeds(bond, share, openPrice) expect uint256;
+       => CVLCalculateShortProceeds(bond, share, openPrice, closePrice, price) expect uint256;
 }
 
 /// Ghost implementations of FixedPoint Math
@@ -118,16 +117,24 @@ ghost ghostCalculateInitialBondReserves(uint256,uint256,uint256,uint256,uint256,
 ghost ghostCalculateShortInterest(uint256,uint256,uint256,uint256) returns uint256;
 
 /// Summary for calculateShortProceeds
-/// @notice : in the code implementation, the fourth and fifth argument (closeSharePrice and sharePrice)
-/// are infact equal, so the function is reduced to a simpler form.
-/// Make sure if future changes break this assumption.
-function CVLCalculateShortProceeds(uint256 amount, uint256 shareDelta, uint256 openPrice) returns uint256 {
-    uint256 bondFactor = divDownWad(amount, openPrice);
-    if (bondFactor > amount) {
-        return require_uint256(bondFactor - shareDelta);
+function CVLCalculateShortProceeds(uint256 amount, uint256 shareDelta, uint256 openPrice, uint256 closePrice, uint256 price) returns uint256 {
+    if(closePrice == price) {
+        uint256 bondFactor = divDownWad(amount, openPrice);
+        if (bondFactor > shareDelta) {
+            return require_uint256(bondFactor - shareDelta);
+        }
+        else {
+            return 0;
+        }
     }
-    else{
-        return 0;
+    else {
+        uint256 bondFactor = mulDivDownAbstractPlus(amount, closePrice, mulUpWad(openPrice, price));
+        if (bondFactor > shareDelta) {
+            return require_uint256(bondFactor - shareDelta);
+        }
+        else {
+            return 0;
+        }
     }
 }
 
@@ -194,7 +201,7 @@ ghost NegativeNetCurveBranch(mathint,mathint,mathint,mathint,mathint,mathint) re
 ============================================ */
 /// @idea Should we use assert_uint256 or require_uint256 ?
 
-/// @dev a CVL require equivalent to the YieldSpace invariant:
+/// a CVL require equivalent to the YieldSpace invariant:
 /// For every two pairs of bonds-shares reserves state (z1,y1) and (z2,y2) the 
 /// equality below must hold, where:
 /*

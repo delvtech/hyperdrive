@@ -73,7 +73,7 @@ function setHyperdrivePoolParams() {
     //require flatFee() <= require_uint256(ONE18() / 10);
     //require governanceFee() <= require_uint256(ONE18() / 2);
 }
-
+/*
 function HyperdriveInvariants(env e) {
     requireInvariant LongAverageMaturityTimeIsBounded(e);
     requireInvariant ShortAverageMaturityTimeIsBounded(e);
@@ -82,6 +82,7 @@ function HyperdriveInvariants(env e) {
     requireInvariant SumOfShortsGEOutstanding();
     requireInvariant SumOfLongsGEOutstanding();
 }
+*/
 
 /// A hook for loading the Aave pool liquidity index
 hook Sload uint256 index Pool.liquidityIndex[KEY address token][KEY uint256 timestamp] STORAGE {
@@ -661,15 +662,11 @@ invariant LongAverageMaturityTimeIsBounded(env e)
     (stateLongs() != 0 => 
         AvgMTimeLongs() >= e.block.timestamp * ONE18() &&
         AvgMTimeLongs() <= ONE18()*(e.block.timestamp + positionDuration()))
-    filtered {
-        f->isOpenLong(f)
-    }
     {
         preserved with (env eP) {
             require e.block.timestamp == eP.block.timestamp;
             setHyperdrivePoolParams();
             requireInvariant SumOfLongsGEOutstanding();
-            // require stateLongs() == 0;
         }
     }
 
@@ -681,9 +678,6 @@ invariant ShortAverageMaturityTimeIsBounded(env e)
     (stateShorts() != 0 => 
         AvgMTimeShorts() >= e.block.timestamp * ONE18() &&
         AvgMTimeShorts() <= ONE18()*(e.block.timestamp + positionDuration()))
-    filtered {
-        f->isOpenLong(f)
-    }
     {
         preserved with (env eP) {
             require e.block.timestamp == eP.block.timestamp;
@@ -720,7 +714,6 @@ rule shortAverageMaturityTimeIsBoundedAfterOpenShort2(env e)
 /// @notice The share price cannot go below the initial price.
 invariant SharePriceAlwaysGreaterThanInitial(env e)
     sharePrice(e) >= initialSharePrice()
-    filtered{f -> isCloseShort(f)}
     {
         preserved with (env eP) {
             require eP.block.timestamp == e.block.timestamp;
@@ -732,7 +725,7 @@ invariant SharePriceAlwaysGreaterThanInitial(env e)
         }
     }
 
-rule SharePriceCannotDecreaseInTime(method f) {
+rule SharePriceCannotDecreaseAfterOperation(method f) {
     env e;
     calldataarg args;
     uint256 sharePriceBefore = sharePrice(e);
@@ -746,9 +739,15 @@ rule SharePriceCannotDecreaseInTime(method f) {
 /// otherwise, the share price will decrease (or less than 1).
 invariant aTokenBalanceGEToShares(env e)
     totalShares() <= aToken.balanceOf(e, currentContract)
+    filtered{f -> isCloseLong(f)}
     {
         preserved with (env eP) {
             require eP.block.timestamp == e.block.timestamp;
+            requireInvariant SumOfLongsGEOutstanding();
+            requireInvariant SumOfShortsGEOutstanding();
+            requireInvariant WithdrawalSharesGEReadyShares();
+            requireInvariant SpotPriceIsLessThanOne();
+            setHyperdrivePoolParams();
         }
     }
 
@@ -767,10 +766,23 @@ invariant SumOfShortsGEOutstanding()
 /// There are always enough shares to cover all long positions
 invariant ShareReservesCoverLongs(env e)
     mulDownWad(require_uint256(stateShareReserves()), sharePrice(e)) >= require_uint256(stateLongs())
+    filtered{f -> isOpenShort(f)}
     {
         preserved with (env eP) {
             require e.block.timestamp == eP.block.timestamp;
             setHyperdrivePoolParams();
+            requireInvariant SpotPriceIsLessThanOne();
+        }
+    }
+
+/// If there are not shares in the pool, then there are only shorts in the pool (no longs)
+invariant NoSharesNoShorts()
+    stateShareReserves() == 0 => sumOfLongs() == 0
+    filtered{f -> isCloseShort(f) || isOpenLong(f)}
+    {
+        preserved {
+            requireInvariant SumOfLongsGEOutstanding();
+            requireInvariant SumOfShortsGEOutstanding();
         }
     }
 
@@ -814,24 +826,22 @@ rule checkpointFrontRunsCloseShort(uint256 checkpointTime) {
     assert !lastReverted;
 }
 
-/// Cannot close a short that will leave the pool with a negative interest
-/// The condition for positivity is y > mu * z
-/// Thus the max trade is Δy = y - mu * z
-/*
-rule cannotCloseShortWithMoreThanMaxTrade(uint256 bondAmount) {
-    env e;
-    uint256 minOutput;
-    uint256 maturityTime;
-    bool asUnderlying = false;
+/// Violated
+/// https://prover.certora.com/output/41958/f61a641de2d446d7875f24f21fac5e07/?anonymousKey=b972ae7327581893456828151a2f743bb35299df
+rule openShortMustPay(uint256 bondAmount) {
+    env e1; require e1.msg.sender != currentContract;
+    
+    uint256 maxDeposit;
     address destination;
     setHyperdrivePoolParams();
-    mathint mu = initialSharePrice(); require mu == to_mathint(ONE18());
-    mathint z = stateShareReserves();
-    mathint y = stateBondReserves();
-    mathint maxTrade = y - ((z * mu) / ONE18()); 
-    require maxTrade > 0;
+    require bondAmount >= 10^6;
+    require sharePrice(e1) >= ONE18();
+    requireInvariant SpotPriceIsLessThanOne();    
+    require e1.block.timestamp == 10^6;
 
-        uint256 baseRewards = closeShort(e, maturityTime, bondAmount, minOutput, destination, asUnderlying);
-    assert to_mathint(bondAmount) <= maxTrade; 
+    uint256 balance1 = aToken.balanceOf(e1, e1.msg.sender);
+        uint256 traderDeposit = openShort(e1, bondAmount, maxDeposit, destination, false);
+    uint256 balance2 = aToken.balanceOf(e1, e1.msg.sender);
+
+    assert traderDeposit !=0;
 }
-*/

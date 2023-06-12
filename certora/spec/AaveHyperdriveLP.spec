@@ -1,5 +1,5 @@
 import "./AaveHyperdrive.spec";
-
+use invariant SpotPriceIsLessThanOne;
 
 /// Violated:
 /// https://vaas-stg.certora.com/output/41958/180ad13e3b71470dbb54453056e5b4f7/?anonymousKey=462752cde7c7ecca90733908249a351c0425f2f7
@@ -47,7 +47,7 @@ rule removeLiquidityEmptyBothReserves() {
     env e;
     calldataarg args;
     setHyperdrivePoolParams();
+    requireInvariant SpotPriceIsLessThanOne();
         removeLiquidity(e, args);
     assert stateShareReserves() ==0 <=> stateBondReserves() == 0;
 }
-

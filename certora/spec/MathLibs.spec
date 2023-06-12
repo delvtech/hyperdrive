@@ -503,7 +503,7 @@ rule tradingOnCurvePreservesPositiveInterest4(uint256 z, uint256 y, uint256 dy, 
     uint256 R1 = mulDivDownAbstractPlus(z, mu, y);
     uint256 R2 = mulDivDownAbstractPlus(z_new, mu, y_new);
 
-    assert R1 <= ONE18() => R2 <= ONE18();   
+    assert R1 <= ONE18() => R2 <= ONE18();
 }
 
 rule shortProceedsIntegrity(uint256 bondAmount) {
@@ -526,8 +526,7 @@ rule shortProceedsIntegrity(uint256 bondAmount) {
     require mulDownWad(shareReservesDelta,sharePrice) <= bondAmount;
 
     uint256 traderDeposit = 
-        HDMath.calculateShortProceeds(
-        bondAmount,shareReservesDelta,openSharePrice,sharePrice,sharePrice);
+        HDMath.calculateShortProceeds(bondAmount,shareReservesDelta,openSharePrice,sharePrice,sharePrice);
 
     assert bondAmount !=0 => traderDeposit !=0;
 }
