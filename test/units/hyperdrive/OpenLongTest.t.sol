@@ -159,7 +159,10 @@ contract OpenLongTest is HyperdriveTest {
         // Contribution between 100e6 to 500 million e6
         // openLong value should be 1/5 of contribution, nornmalize range subrange
         apr = apr.normalizeToRange(0.05e18, 0.25e18);
-        contribution = contribution.normalizeToRange(100_000_000e18, 500_000_000e18);
+        contribution = contribution.normalizeToRange(
+            100_000_000e18,
+            500_000_000e18
+        );
 
         // Initialize the pool with a large amount of capital.
         contribution = contribution.normalizeToRange(
