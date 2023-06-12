@@ -86,14 +86,7 @@ contract StethHyperdriveTest is HyperdriveTest {
         // Ensure that Alice has the correct amount of LP shares.
         assertApproxEqAbs(
             hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
-            HyperdriveMath.calculateInitialBondReserves(
-                contribution.divDown(config.initialSharePrice),
-                config.initialSharePrice,
-                config.initialSharePrice,
-                FIXED_RATE,
-                config.positionDuration,
-                config.timeStretch
-            ) + contribution,
+            contribution.divDown(config.initialSharePrice),
             1e5
         );
 

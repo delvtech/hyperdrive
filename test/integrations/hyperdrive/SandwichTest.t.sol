@@ -37,13 +37,13 @@ contract SandwichTest is HyperdriveTest {
 
         // Celine opens a short.
         uint256 shortAmount = 200_000_000e18;
-        (uint256 shortMaturitytime, ) = openShort(celine, shortAmount);
+        (uint256 shortMaturityTime, ) = openShort(celine, shortAmount);
 
         // Bob closes his long.
         closeLong(bob, longMaturityTime, longAmount);
 
         // Celine immediately closes her short.
-        closeShort(celine, shortMaturitytime, shortAmount);
+        closeShort(celine, shortMaturityTime, shortAmount);
 
         // Ensure the proceeds from the sandwich attack didn't negatively
         // impact the LP. With this in mind, they should have made at least as
@@ -78,7 +78,7 @@ contract SandwichTest is HyperdriveTest {
         {
             // open a short.
             uint256 bondsShorted = tradeSize; //10_000_000e18;
-            (uint256 shortMaturitytime, uint256 shortBasePaid) = openShort(
+            (uint256 shortMaturityTime, uint256 shortBasePaid) = openShort(
                 bob,
                 bondsShorted
             );
@@ -90,7 +90,7 @@ contract SandwichTest is HyperdriveTest {
             // immediately close short.
             uint256 shortBaseReturned = closeShort(
                 bob,
-                shortMaturitytime,
+                shortMaturityTime,
                 bondsShorted
             );
             shortLoss = shortBasePaid.sub(shortBaseReturned);
@@ -108,7 +108,7 @@ contract SandwichTest is HyperdriveTest {
         }
         initialize(alice, apr, contribution);
 
-        // Calculate how much proft would be made from a simple long
+        // Calculate how much profit would be made from a simple long
         uint256 baselineProfit;
         {
             // open a long.

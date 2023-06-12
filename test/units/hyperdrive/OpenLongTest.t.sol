@@ -7,6 +7,7 @@ import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
+import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
 import { Lib } from "../../utils/Lib.sol";
 
@@ -51,6 +52,34 @@ contract OpenLongTest is HyperdriveTest {
         hyperdrive.openLong(0, 0, bob, true);
         vm.stopPrank();
         pause(false);
+    }
+
+    function test_open_long_failure_negative_interest(
+        uint256 fixedRate,
+        uint256 contribution
+    ) external {
+        // Initialize the pool. We use a relatively small fixed rate to ensure
+        // that the maximum long is constrained by the price cap of 1 rather
+        // than because of exceeding the long buffer.
+        fixedRate = fixedRate.normalizeToRange(0.0001e18, 0.1e18);
+        contribution = contribution.normalizeToRange(1_000e18, 500_000_000e18);
+        initialize(alice, fixedRate, contribution);
+
+        // Ensure that a long that is slightly larger than the max long will
+        // fail the negative interest check.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        uint256 basePaid = hyperdrive.calculateMaxLong() + 0.0001e18;
+        baseToken.mint(bob, basePaid);
+        baseToken.approve(address(hyperdrive), basePaid);
+        vm.expectRevert(Errors.NegativeInterest.selector);
+        hyperdrive.openLong(basePaid, 0, bob, true);
+
+        // Ensure that the max long results in spot price very close to 1 to
+        // make sure that the negative interest failure was appropriate.
+        openLong(bob, hyperdrive.calculateMaxLong());
+        assertLe(hyperdrive.calculateSpotPrice(), 1e18);
+        assertApproxEqAbs(hyperdrive.calculateSpotPrice(), 1e18, 1e6);
     }
 
     function test_pauser_authorization_fail() external {
@@ -141,7 +170,7 @@ contract OpenLongTest is HyperdriveTest {
         uint256 bondAmount = hyperdrive.calculateMaxShort();
         openShort(bob, bondAmount);
 
-        // Initialize a large long to eath through the buffer of capital
+        // Initialize a large long to eat through the buffer of capital
         uint256 overlyLargeLonge = 976625406180945208462181452;
 
         // Open the long.

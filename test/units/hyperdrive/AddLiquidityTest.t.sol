@@ -178,11 +178,15 @@ contract AddLiquidityTest is HyperdriveTest {
         );
 
         // Ensure the pool APR is still approximately equal to the target APR.
-        uint256 aprAfter = HyperdriveUtils.calculateAPRFromReserves(hyperdrive);
-        assertApproxEqAbs(aprAfter, aprBefore, 1);
+        {
+            uint256 aprAfter = HyperdriveUtils.calculateAPRFromReserves(
+                hyperdrive
+            );
+            assertApproxEqAbs(aprAfter, aprBefore, 1);
+        }
 
         // Close Celine's long.
-        uint256 longProceeds = closeLong(celine, maturityTime, longAmount);
+        closeLong(celine, maturityTime, longAmount);
 
         // Ensure that Alice's withdrawal proceeds are equivalent to what they
         // would have been had Bob not added liquidity.
@@ -193,8 +197,8 @@ contract AddLiquidityTest is HyperdriveTest {
         (withdrawalProceeds, ) = removeLiquidity(bob, bobLpShares);
         assertApproxEqAbs(
             withdrawalProceeds,
-            contribution - (longProceeds - basePaid),
-            1e10
+            bobLpShares.mulDown(presentValueRatioBefore),
+            1e9
         );
 
         // Ensure that all of the capital has been removed from the system.
