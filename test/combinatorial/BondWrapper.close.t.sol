@@ -246,7 +246,8 @@ contract BondWrapper_close is CombinatorialTest {
                     testCase.maturityTime,
                     testCase.amount,
                     testCase.andBurn,
-                    testCase.destination
+                    testCase.destination,
+                    0
                 )
             {
                 __log(unicode"❎", testCase);
@@ -329,7 +330,8 @@ contract BondWrapper_close is CombinatorialTest {
                 testCase.maturityTime,
                 testCase.amount,
                 testCase.andBurn,
-                testCase.destination
+                testCase.destination,
+                0
             )
         {} catch {
             __log(unicode"❎", testCase);
