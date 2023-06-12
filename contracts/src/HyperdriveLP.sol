@@ -31,7 +31,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         uint256 _apr,
         address _destination,
         bool _asUnderlying
-    ) external {
+    ) external payable {
         // Ensure that the pool hasn't been initialized yet.
         if (_marketState.isInitialized) {
             revert Errors.PoolAlreadyInitialized();
@@ -88,7 +88,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         uint256 _maxApr,
         address _destination,
         bool _asUnderlying
-    ) external isNotPaused returns (uint256 lpShares) {
+    ) external payable isNotPaused returns (uint256 lpShares) {
         if (_contribution == 0) {
             revert Errors.ZeroAmount();
         }

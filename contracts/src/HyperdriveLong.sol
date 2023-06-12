@@ -31,7 +31,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         uint256 _minOutput,
         address _destination,
         bool _asUnderlying
-    ) external isNotPaused returns (uint256) {
+    ) external payable isNotPaused returns (uint256) {
         if (_baseAmount == 0) {
             revert Errors.ZeroAmount();
         }

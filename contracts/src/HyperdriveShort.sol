@@ -35,6 +35,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         bool _asUnderlying
     )
         external
+        payable
         isNotPaused
         returns (uint256 maturityTime, uint256 traderDeposit)
     {
