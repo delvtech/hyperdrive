@@ -144,7 +144,7 @@ abstract contract IERC4626 is IERC20 {
     ) external view virtual returns (uint256 maxShares);
 
     /// @notice Allows an on-chain or off-chain user to simulate
-    /// the effects of their redeemption at the current block,
+    /// the effects of their redemption at the current block,
     /// given current on-chain conditions.
     function previewRedeem(
         uint256 shares

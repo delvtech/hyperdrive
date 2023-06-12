@@ -139,6 +139,13 @@ contract TWAPTest is HyperdriveTest {
         }
     }
 
+    function test_oracle_query_reverts() external {
+        vm.expectRevert();
+        HyperdriveDataProvider(address(hyperdrive)).query(
+            block.timestamp + 365 days
+        );
+    }
+
     function test_oracle_data_recordings() external {
         // We check that the function properly functions as a buffer
         recordTwelveDataPoints();
