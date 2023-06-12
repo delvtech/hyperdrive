@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import { IMultiTokenRead } from "../interfaces/IMultiTokenRead.sol";
 import { MultiTokenStorage } from "./MultiTokenStorage.sol";
-import { IMultiTokenRead } from "./interfaces/IMultiTokenRead.sol";
 
 /// @author DELV
 /// @title MultiTokenDataProvider

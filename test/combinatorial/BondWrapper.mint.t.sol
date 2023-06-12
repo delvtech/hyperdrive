@@ -5,10 +5,10 @@ import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
-import { MultiTokenDataProvider } from "contracts/src/MultiTokenDataProvider.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
+import { MultiTokenDataProvider } from "contracts/src/token/MultiTokenDataProvider.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { MockBondWrapper } from "contracts/test/MockBondWrapper.sol";
 import { MockMultiToken, IMockMultiToken } from "contracts/test/MockMultiToken.sol";
@@ -67,7 +67,7 @@ contract BondWrapper_mint is CombinatorialTest {
                 // unwrappedBonds
                 _arr(0, 1e18, 1e27 + 12879187, type(uint256).max),
                 // mintPercent
-                _arr(0, 1, 0.05e18, 25e18),
+                _arr(0, 1, 500, 9999),
                 // user
                 _arr(0, 1, 2)
             )

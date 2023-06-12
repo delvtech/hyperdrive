@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import { ERC20 } from "lib/solmate/src/tokens/ERC20.sol";
+import { ERC20 } from "solmate/tokens/ERC20.sol";
 
 contract MockERC20Permit is ERC20 {
     constructor(

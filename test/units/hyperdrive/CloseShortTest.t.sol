@@ -402,16 +402,15 @@ contract CloseShortTest is HyperdriveTest {
             assertEq(logs.length, 1);
             VmSafe.Log memory log = logs[0];
             assertEq(address(uint160(uint256(log.topics[1]))), bob);
+            assertEq(
+                uint256(log.topics[2]),
+                AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, maturityTime)
+            );
             (
-                uint256 eventAssetId,
                 uint256 eventMaturityTime,
                 uint256 eventBaseAmount,
                 uint256 eventBondAmount
-            ) = abi.decode(log.data, (uint256, uint256, uint256, uint256));
-            assertEq(
-                eventAssetId,
-                AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, maturityTime)
-            );
+            ) = abi.decode(log.data, (uint256, uint256, uint256));
             assertEq(eventMaturityTime, maturityTime);
             assertEq(eventBaseAmount, baseProceeds);
             assertEq(eventBondAmount, bondAmount);
