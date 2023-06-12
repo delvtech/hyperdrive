@@ -42,6 +42,8 @@ contract DataProvider {
             }
         }
 
+        // Since the useful value is retuned in error ReturnData(bytes), the selector for ReturnData
+        // must be removed before returning the value
         assembly {
             mstore(add(returndata, 0x4), sub(mload(returndata), 4))
             returndata := add(returndata, 0x4)
