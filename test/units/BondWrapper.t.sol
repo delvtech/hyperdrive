@@ -83,10 +83,12 @@ contract BondWrapperTest is BaseTest {
         bondWrapper = new MockBondWrapper(
             IHyperdrive(address(hyperdrive)),
             IERC20(address(baseToken)),
-            1e18,
+            9000,
             "Bond",
             "BND"
         );
+
+        baseToken.mint(address(bondWrapper), 10e18);
 
         uint256 assetId = AssetId.encodeAssetId(
             AssetId.AssetIdPrefix.Long,
@@ -133,15 +135,21 @@ contract BondWrapperTest is BaseTest {
 
         bondWrapper.mint(365 days, 1e18, alice);
 
-        vm.warp(365 days);
+        vm.warp(365 days + 1);
 
-        balance = bondWrapper.balanceOf(bob);
+        // Encode the asset ID
+        uint256 assetId = AssetId.encodeAssetId(
+            AssetId.AssetIdPrefix.Long,
+            365 days
+        );
+
+        uint256 deposited = bondWrapper.deposits(alice, assetId);
 
         vm.expectRevert(Errors.OutputLimit.selector);
-        bondWrapper.close(365 days, balance, true, bob, 1e18 + 1);
+        bondWrapper.close(365 days, deposited, true, bob, deposited + 1);
 
         // Should pass when you get the right amount
-        bondWrapper.close(365 days, balance, true, bob, 1e18);
+        bondWrapper.close(365 days, deposited, true, bob, deposited);
     }
 
     function test_SweepAndRedeem() public {

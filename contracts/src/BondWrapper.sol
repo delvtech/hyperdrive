@@ -37,7 +37,7 @@ contract BondWrapper is ERC20 {
         string memory name_,
         string memory symbol_
     ) ERC20(name_, symbol_, 18) {
-        if (_mintPercent >= 10000e18) {
+        if (_mintPercent >= 10000) {
             revert Errors.MintPercentTooHigh();
         }
 
