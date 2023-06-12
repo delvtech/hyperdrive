@@ -155,6 +155,27 @@ abstract contract HyperdriveShort is HyperdriveLP {
             uint256 totalGovernanceFee
         ) = _calculateCloseShort(_bondAmount, sharePrice, _maturityTime);
 
+        // If the ending spot price is greater than or equal to 1, we are in the
+        // negative interest region of the trading function. The spot price is
+        // given by ((mu * z) / y) ** tau, so all that we need to check is that
+        // (mu * z) / y < 1 or, equivalently, that mu * z >= y. If the reserves
+        // are empty we skip the check because shorts will only be able to close
+        // at maturity if the LPs remove all of the liquidity.
+        {
+            uint256 adjustedShareReserves = _initialSharePrice.mulDown(
+                _marketState.shareReserves + shareReservesDelta
+            );
+            uint256 bondReserves = _marketState.bondReserves -
+                bondReservesDelta;
+            if (
+                (_marketState.shareReserves > 0 ||
+                    _marketState.bondReserves > 0) &&
+                adjustedShareReserves >= bondReserves
+            ) {
+                revert Errors.NegativeInterest();
+            }
+        }
+
         // Attribute the governance fees.
         _governanceFeesAccrued += totalGovernanceFee;
 
