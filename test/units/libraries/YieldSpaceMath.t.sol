@@ -162,15 +162,17 @@ contract YieldSpaceMathTest is Test {
                     sharePrice.mulDown(shareReserves);
                 tradeSize = tradeSize.normalizeToRange(
                     10 ** j,
-                    HyperdriveMath.calculateMaxLong(
-                        shareReserves,
-                        bondReserves,
-                        0,
-                        timeStretch,
-                        sharePrice,
-                        initialSharePrice,
-                        15
-                    )
+                    HyperdriveMath
+                        .calculateMaxLong(
+                            shareReserves,
+                            bondReserves,
+                            0,
+                            timeStretch,
+                            sharePrice,
+                            initialSharePrice,
+                            15
+                        )
+                        .baseAmount
                 );
                 uint256 result = yieldSpaceMath.calculateSharesInGivenBondsOut(
                     shareReserves,
