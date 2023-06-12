@@ -94,6 +94,8 @@ function CVLUpdateWeightedAverage_sub(uint256 avg, uint256 totW, uint256 del, ui
 ghost ghostWeightedAverage(mathint, mathint, mathint) returns mathint {
     axiom forall mathint x. forall mathint y. forall mathint z.
         weightedAverage(x,y,z, ghostWeightedAverage(x,y,z));
+    axiom forall mathint x. forall mathint y. forall mathint z.
+        y != 0 && x != 0 => ghostWeightedAverage(x,y,z) != 0;
 
     //axiom forall mathint x. forall mathint y. forall mathint z.
     //    (abs(y) < abs(z) => abs(ghostWeightedAverage(x,y,z)) <= abs(x)/2) &&

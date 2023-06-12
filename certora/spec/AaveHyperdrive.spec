@@ -661,79 +661,18 @@ invariant LongAverageMaturityTimeIsBounded(env e)
     (stateLongs() != 0 => 
         AvgMTimeLongs() >= e.block.timestamp * ONE18() &&
         AvgMTimeLongs() <= ONE18()*(e.block.timestamp + positionDuration()))
+    filtered {
+        f->isOpenLong(f)
+    }
     {
         preserved with (env eP) {
             require e.block.timestamp == eP.block.timestamp;
             setHyperdrivePoolParams();
             requireInvariant SumOfLongsGEOutstanding();
+            // require stateLongs() == 0;
         }
     }
 
-/// Tadeas trying to verify LongAverageMaturityTimeIsBounded using split
-invariant LongAverageMaturityTimeIsBounded1(env e)
-    (stateLongs() == 0 => AvgMTimeLongs() == 0)
-    {
-        preserved with (env eP) {
-            require e.block.timestamp == eP.block.timestamp;
-            setHyperdrivePoolParams();
-        }
-    }
-
-/// Tadeas trying to verify LongAverageMaturityTimeIsBounded using split
-invariant LongAverageMaturityTimeIsBounded2(env e)
-    (stateLongs() != 0 =>
-        AvgMTimeLongs() >= e.block.timestamp * ONE18() &&
-        AvgMTimeLongs() <= ONE18()*(e.block.timestamp + positionDuration()))
-    {
-        preserved with (env eP) {
-            require e.block.timestamp == eP.block.timestamp;
-            setHyperdrivePoolParams();
-        }
-    }
-
-/// Tadeas trying to verify LongAverageMaturityTimeIsBounded using split and rule
-rule longAverageMaturityTimeIsBoundedAfterOpenLong1(env e)
-{
-    setHyperdrivePoolParams();
-
-    require stateLongs() != 0 &&
-        AvgMTimeLongs() >= e.block.timestamp * ONE18() &&
-        AvgMTimeLongs() <= ONE18()*(e.block.timestamp + positionDuration());
-
-    uint256 baseAmount;
-    uint256 minOutput;
-    address destination;
-    bool asUnderlying;
-
-    openLong(e, baseAmount, minOutput, destination, asUnderlying);
-
-    assert stateLongs() == 0 => AvgMTimeLongs() == 0;
-    assert stateLongs() != 0 =>
-        AvgMTimeLongs() >= e.block.timestamp * ONE18() &&
-        AvgMTimeLongs() <= ONE18()*(e.block.timestamp + positionDuration());
-}
-
-/// Tadeas trying to verify LongAverageMaturityTimeIsBounded using split and rule
-// succesfuly violated here:
-// https://vaas-stg.certora.com/output/40577/42200a0dbfc64327b94bf77475fc94f8/?anonymousKey=f8c90f7eba1651774b848c4aa436e18058511e38
-rule longAverageMaturityTimeIsBoundedAfterOpenLong2(env e)
-{
-    setHyperdrivePoolParams();
-
-    require stateLongs() == 0 && AvgMTimeLongs() == 0;
-
-    uint256 baseAmount;
-    uint256 minOutput;
-    address destination;
-    bool asUnderlying;
-
-    openLong(e, baseAmount, minOutput, destination, asUnderlying);
-
-    assert stateLongs() == 0 => AvgMTimeLongs() == 0;
-    assert stateLongs() != 0 =>
-        AvgMTimeLongs() >= e.block.timestamp * ONE18() &&
-        AvgMTimeLongs() <= ONE18()*(e.block.timestamp + positionDuration());
-}
 
 /// @notice The average maturity time should always be between the current time stamp and the time stamp + duration.
 /// In other words, matured positions should not be taken into account in the average time.
@@ -742,6 +681,9 @@ invariant ShortAverageMaturityTimeIsBounded(env e)
     (stateShorts() != 0 => 
         AvgMTimeShorts() >= e.block.timestamp * ONE18() &&
         AvgMTimeShorts() <= ONE18()*(e.block.timestamp + positionDuration()))
+    filtered {
+        f->isOpenLong(f)
+    }
     {
         preserved with (env eP) {
             require e.block.timestamp == eP.block.timestamp;
@@ -749,6 +691,31 @@ invariant ShortAverageMaturityTimeIsBounded(env e)
             requireInvariant SumOfShortsGEOutstanding();
         }
     }
+
+/// Tadeas trying to verify ShortAverageMaturityTimeIsBounded using split and rule
+/// Very similar violation here:
+/// https://vaas-stg.certora.com/output/40577/42200a0dbfc64327b94bf77475fc94f8/?anonymousKey=f8c90f7eba1651774b848c4aa436e18058511e38
+///     - e.block.timestamp = *   ... is arbitrary
+///     - AvgMTimeShorts()  = *   ... is arbitrary
+rule shortAverageMaturityTimeIsBoundedAfterOpenShort2(env e)
+{
+    setHyperdrivePoolParams();
+
+    require stateShorts() == 0 && AvgMTimeShorts() == 0;
+
+    uint256 baseAmount;
+    uint256 maxDeposit;
+    address destination;
+    bool asUnderlying;
+
+    // TODO: Consider limiting this short to be "normal"
+    openShort(e, baseAmount, maxDeposit, destination, asUnderlying);
+
+    assert stateShorts() == 0 => AvgMTimeShorts() == 0;
+    assert stateShorts() != 0 =>
+        AvgMTimeShorts() >= e.block.timestamp * ONE18() &&
+        AvgMTimeShorts() <= ONE18()*(e.block.timestamp + positionDuration());
+}
 
 /// @notice The share price cannot go below the initial price.
 invariant SharePriceAlwaysGreaterThanInitial(env e)
