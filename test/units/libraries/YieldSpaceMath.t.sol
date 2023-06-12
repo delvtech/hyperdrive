@@ -2,13 +2,17 @@
 pragma solidity 0.8.19;
 
 import { Test } from "forge-std/Test.sol";
-import "contracts/test/MockYieldSpaceMath.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
+import { MockYieldSpaceMath } from "contracts/test/MockYieldSpaceMath.sol";
+import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
+import { Lib } from "test/utils/Lib.sol";
 
 contract YieldSpaceMathTest is Test {
     using FixedPointMath for uint256;
+    using Lib for *;
 
-    function test__calculateOutGivenIn() public {
+    function test__calculateOutGivenIn() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockYieldSpaceMath yieldSpaceMath = new MockYieldSpaceMath();
         uint256 timeStretch = FixedPointMath.ONE_18.divDown(
@@ -64,7 +68,7 @@ contract YieldSpaceMathTest is Test {
     }
 
     // calculateInGivenOut false
-    function test__calculateSharesInGivenBondsOut() public {
+    function test__calculateSharesInGivenBondsOut() external {
         MockYieldSpaceMath yieldSpaceMath = new MockYieldSpaceMath();
         uint256 timeStretch = FixedPointMath.ONE_18.divDown(
             22.186877016851916266e18
@@ -116,5 +120,70 @@ contract YieldSpaceMathTest is Test {
         );
         uint256 pythonResult4 = 78866.87433323538e18;
         assertApproxEqAbs(result4, pythonResult4, 1e9);
+    }
+
+    // This test verifies that sane values won't result in the YieldSpace math
+    // functions returning zero.
+    function test__calculateSharesInGivenBondsOut__extremeValues(
+        uint256 fixedRate,
+        uint256 shareReserves,
+        uint256 sharePrice,
+        uint256 initialSharePrice,
+        uint256 tradeSize
+    ) external {
+        MockYieldSpaceMath yieldSpaceMath = new MockYieldSpaceMath();
+
+        fixedRate = fixedRate.normalizeToRange(0.01e18, 1e18);
+        initialSharePrice = initialSharePrice.normalizeToRange(0.8e18, 5e18);
+        sharePrice = sharePrice.normalizeToRange(initialSharePrice, 5e18);
+
+        // Test a large span of orders of magnitudes of both the reserves and
+        // the size of the reserves. This test demonstrates that for the
+        // expected range of reserves reserves, the YieldSpaceMath will only
+        // return zero for tiny amounts of tokens.
+        for (uint256 i = 6; i <= 18; i += 1) {
+            shareReserves = shareReserves.normalizeToRange(
+                10 ** (i + 1),
+                10 ** (i + 9)
+            );
+            for (uint256 j = i - (i / 2 + 1); j < i; j++) {
+                uint256 timeStretch = HyperdriveUtils.calculateTimeStretch(
+                    fixedRate
+                );
+                uint256 bondReserves = 2 *
+                    HyperdriveMath.calculateInitialBondReserves(
+                        shareReserves,
+                        initialSharePrice,
+                        initialSharePrice,
+                        fixedRate,
+                        365 days,
+                        timeStretch
+                    ) +
+                    sharePrice.mulDown(shareReserves);
+                tradeSize = tradeSize.normalizeToRange(
+                    10 ** j,
+                    HyperdriveMath
+                        .calculateMaxLong(
+                            shareReserves,
+                            bondReserves,
+                            0,
+                            timeStretch,
+                            sharePrice,
+                            initialSharePrice,
+                            15
+                        )
+                        .baseAmount
+                );
+                uint256 result = yieldSpaceMath.calculateSharesInGivenBondsOut(
+                    shareReserves,
+                    bondReserves,
+                    tradeSize,
+                    1e18 - FixedPointMath.ONE_18.mulDown(timeStretch),
+                    sharePrice,
+                    initialSharePrice
+                );
+                assertGt(result, 0);
+            }
+        }
     }
 }
