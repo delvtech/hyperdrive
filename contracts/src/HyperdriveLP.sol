@@ -52,25 +52,21 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // Update the reserves. The bond reserves are calculated so that the
         // pool is initialized with the target APR.
         _marketState.shareReserves = shares.toUint128();
-        uint256 unadjustedBondReserves = HyperdriveMath
+        _marketState.bondReserves = HyperdriveMath
             .calculateInitialBondReserves(
                 shares,
-                sharePrice,
                 _initialSharePrice,
                 _apr,
                 _positionDuration,
                 _timeStretch
-            );
-        uint256 initialLpShares = unadjustedBondReserves +
-            sharePrice.mulDown(shares);
-        _marketState.bondReserves = (unadjustedBondReserves + initialLpShares)
+            )
             .toUint128();
 
         // Mint LP shares to the initializer.
-        _mint(AssetId._LP_ASSET_ID, _destination, initialLpShares);
+        _mint(AssetId._LP_ASSET_ID, _destination, shares);
 
         // Emit an Initialize event.
-        emit Initialize(_destination, initialLpShares, _contribution, _apr);
+        emit Initialize(_destination, shares, _contribution, _apr);
     }
 
     /// @notice Allows LPs to supply liquidity for LP shares.
