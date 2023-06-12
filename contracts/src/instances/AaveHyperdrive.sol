@@ -131,8 +131,9 @@ contract AaveHyperdrive is Hyperdrive {
         return withdrawValue;
     }
 
-    ///@notice Loads the share price from the yield source.
-    ///@return The current share price.
+    /// @notice Loads the share price from the yield source.
+    /// @dev This must remain consistent with the impl inside of the DataProvider
+    /// @return The current share price.
     function _pricePerShare() internal view override returns (uint256) {
         uint256 assets = aToken.balanceOf(address(this));
         uint256 totalShares_ = totalShares;

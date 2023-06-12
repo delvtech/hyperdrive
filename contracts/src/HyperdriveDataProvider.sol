@@ -125,6 +125,7 @@ abstract contract HyperdriveDataProvider is
 
     /// @notice Returns the average price between the last recorded timestamp looking a user determined
     ///         time into the past
+    /// @dev Any integrations should assert the returned value is not equal to the QueryOutOfRange() selector
     /// @param period The gap in our time sample.
     /// @return The average price in that time
     function query(uint256 period) external view returns (uint256) {

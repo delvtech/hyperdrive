@@ -130,7 +130,7 @@ contract OpenShortTest is HyperdriveTest {
         uint256 bondAmount = hyperdrive.calculateMaxLong();
         openLong(bob, bondAmount);
 
-        // Initialize a large long to eat through the buffer of capital
+        // Initialize a large short to eat through the buffer of capital
         uint256 overlyLargeShort = 500608690308195651844553347;
 
         // Open the Short.

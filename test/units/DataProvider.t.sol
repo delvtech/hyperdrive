@@ -4,6 +4,7 @@ pragma solidity ^0.8.18;
 import { DataProvider } from "contracts/src/DataProvider.sol";
 import { Test } from "forge-std/Test.sol";
 import { console } from "forge-std/console.sol";
+import { Errors } from "contracts/src/libraries/Errors.sol";
 
 contract MockProvider {
     function get() external pure returns (uint256) {
@@ -16,9 +17,7 @@ contract MockProvider {
     ///      with the force-revert delegatecall pattern.
     /// @param _bytes The bytes to revert with.
     function _revert(bytes memory _bytes) internal pure {
-        assembly {
-            revert(add(_bytes, 32), mload(_bytes))
-        }
+        revert Errors.ReturnData(_bytes);
     }
 }
 

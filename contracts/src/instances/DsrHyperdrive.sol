@@ -135,6 +135,7 @@ contract DsrHyperdrive is Hyperdrive {
 
     /// @notice Loads the share price from the yield source.
     /// @return sharePrice The current share price.
+    ///@dev must remain consistent with the impl inside of the DataProvider
     function _pricePerShare()
         internal
         view

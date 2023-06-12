@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 
 import { IMultiTokenRead } from "../interfaces/IMultiTokenRead.sol";
 import { MultiTokenStorage } from "./MultiTokenStorage.sol";
+import { Errors } from "../libraries/Errors.sol";
 
 /// @author DELV
 /// @title MultiTokenDataProvider
@@ -105,8 +106,6 @@ contract MultiTokenDataProvider is MultiTokenStorage, IMultiTokenRead {
     ///      with the force-revert delegatecall pattern.
     /// @param _bytes The bytes to revert with.
     function _revert(bytes memory _bytes) internal pure {
-        assembly {
-            revert(add(_bytes, 32), mload(_bytes))
-        }
+        revert Errors.ReturnData(_bytes);
     }
 }
