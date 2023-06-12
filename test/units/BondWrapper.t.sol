@@ -82,10 +82,12 @@ contract BondWrapperTest is BaseTest {
         bondWrapper = new MockBondWrapper(
             IHyperdrive(address(hyperdrive)),
             IERC20(address(baseToken)),
-            1e18,
+            9000,
             "Bond",
             "BND"
         );
+
+        baseToken.mint(address(bondWrapper), 10e18);
 
         uint256 assetId = AssetId.encodeAssetId(
             AssetId.AssetIdPrefix.Long,
@@ -97,9 +99,10 @@ contract BondWrapperTest is BaseTest {
         // Ensure that the bondWrapper contract has been approved by the user
         vm.startPrank(alice);
         hyperdrive.setApprovalForAll(address(bondWrapper), true);
+        vm.stopPrank();
     }
 
-    function testBondWrapperRedeem() public {
+    function test_BondWrapperRedeem() public {
         // Ensure that the bondWrapper contract has been approved by the user
         vm.startPrank(alice);
         multiToken.setApprovalForAll(address(bondWrapper), true);
@@ -120,7 +123,35 @@ contract BondWrapperTest is BaseTest {
         assert(balance == 0);
     }
 
-    function testSweepAndRedeem() public {
+    function test_bond_wrapper_closeLimit() public {
+        // Ensure that the bondWrapper contract has been approved by the user
+        vm.startPrank(alice);
+        multiToken.setApprovalForAll(address(bondWrapper), true);
+
+        uint256 balance = bondWrapper.balanceOf(alice);
+
+        assert(balance == 0);
+
+        bondWrapper.mint(365 days, 1e18, alice);
+
+        vm.warp(365 days + 1);
+
+        // Encode the asset ID
+        uint256 assetId = AssetId.encodeAssetId(
+            AssetId.AssetIdPrefix.Long,
+            365 days
+        );
+
+        uint256 deposited = bondWrapper.deposits(alice, assetId);
+
+        vm.expectRevert(Errors.OutputLimit.selector);
+        bondWrapper.close(365 days, deposited, true, bob, deposited + 1);
+
+        // Should pass when you get the right amount
+        bondWrapper.close(365 days, deposited, true, bob, deposited);
+    }
+
+    function test_SweepAndRedeem() public {
         vm.startPrank(alice);
         uint256 balance = bondWrapper.balanceOf(alice);
 
@@ -134,7 +165,7 @@ contract BondWrapperTest is BaseTest {
 
         uint256[] memory maturityTimes = new uint256[](1);
 
-        baseToken.mint(address(bondWrapper), type(uint256).max);
+        // baseToken.mint(address(bondWrapper), type(uint256).max);
 
         maturityTimes[0] = 365 days;
 

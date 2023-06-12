@@ -161,14 +161,19 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // (mu * z) / y < 1 or, equivalently, that mu * z >= y. If the reserves
         // are empty we skip the check because shorts will only be able to close
         // at maturity if the LPs remove all of the liquidity.
-        if (
-            (_marketState.shareReserves > 0 || _marketState.bondReserves > 0) &&
-            _initialSharePrice.mulDown(
+        {
+            uint256 adjustedShareReserves = _initialSharePrice.mulDown(
                 _marketState.shareReserves + shareReservesDelta
-            ) >=
-            _marketState.bondReserves - bondReservesDelta
-        ) {
-            revert Errors.NegativeInterest();
+            );
+            uint256 bondReserves = _marketState.bondReserves -
+                bondReservesDelta;
+            if (
+                (_marketState.shareReserves > 0 ||
+                    _marketState.bondReserves > 0) &&
+                adjustedShareReserves >= bondReserves
+            ) {
+                revert Errors.NegativeInterest();
+            }
         }
 
         // Attribute the governance fees.
