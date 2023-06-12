@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { BondWrapper } from "../src/BondWrapper.sol";
+import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { IHyperdrive } from "../src/interfaces/IHyperdrive.sol";
-import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import { ERC20 } from "lib/solmate/src/tokens/ERC20.sol";
+import { IERC20 } from "../src/interfaces/IERC20.sol";
+import { BondWrapper } from "../src/token/BondWrapper.sol";
 
 contract MockBondWrapper is BondWrapper {
     constructor(

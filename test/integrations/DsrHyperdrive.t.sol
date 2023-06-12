@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import { ForwarderFactory } from "contracts/src/ForwarderFactory.sol";
+import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
+import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { IMockDsrHyperdrive, MockDsrHyperdrive, MockDsrHyperdriveDataProvider, DsrManager } from "contracts/test/MockDsrHyperdrive.sol";
 import { BaseTest } from "test/utils/BaseTest.sol";
 

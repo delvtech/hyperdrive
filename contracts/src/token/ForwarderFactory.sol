@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { IForwarderFactory } from "./interfaces/IForwarderFactory.sol";
-import { IMultiToken } from "./interfaces/IMultiToken.sol";
+import { IForwarderFactory } from "../interfaces/IForwarderFactory.sol";
+import { IMultiToken } from "../interfaces/IMultiToken.sol";
 import { ERC20Forwarder } from "./ERC20Forwarder.sol";
 
 /// @author DELV

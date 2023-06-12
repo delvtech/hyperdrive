@@ -3,10 +3,12 @@ pragma solidity 0.8.19;
 
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
-import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol";
+import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
+import { Lib } from "../../utils/Lib.sol";
 
 contract SandwichTest is HyperdriveTest {
     using FixedPointMath for uint256;
+    using Lib for *;
 
     function test_sandwich_trades(uint8 _apr, uint64 _timeDelta) external {
         uint256 apr = uint256(_apr) * 0.01e18;
@@ -14,13 +16,11 @@ contract SandwichTest is HyperdriveTest {
         vm.assume(apr >= 0.01e18 && apr <= 0.2e18);
         vm.assume(timeDelta <= FixedPointMath.ONE_18 && timeDelta >= 0);
 
-        // Deploy the pool with fees.
+        // Deploy the pool and initialize the market
         {
             uint256 timeStretchApr = 0.02e18;
             deploy(alice, timeStretchApr, 0, 0, 0);
         }
-
-        // Initialize the market.
         uint256 contribution = 500_000_000e18;
         uint256 lpShares = initialize(alice, apr, contribution);
 
@@ -55,6 +55,75 @@ contract SandwichTest is HyperdriveTest {
         (uint256 contributionPlusInterest, ) = HyperdriveUtils
             .calculateCompoundInterest(contribution, int256(apr), timeAdvanced);
         assertGe(lpProceeds, contributionPlusInterest);
+    }
+
+    function test_sandwich_long_trade(uint256 apr, uint256 tradeSize) external {
+        // limit the fuzz testing to variableRate's less than or equal to 50%
+        apr = apr.normalizeToRange(.01e18, .5e18);
+
+        // ensure a feasible trade size
+        tradeSize = tradeSize.normalizeToRange(1_000e18, 50_000_000e18 - 1e18);
+
+        // Deploy the pool and initialize the market
+        {
+            uint256 timeStretchApr = 0.05e18;
+            deploy(alice, timeStretchApr, 0, 0, 0);
+        }
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        uint256 shortLoss;
+        // Calculate how much profit would be made from a long sandwiched by shorts
+        uint256 sandwichProfit;
+        {
+            // open a short.
+            uint256 bondsShorted = tradeSize; //10_000_000e18;
+            (uint256 shortMaturitytime, uint256 shortBasePaid) = openShort(
+                bob,
+                bondsShorted
+            );
+
+            // open a long.
+            uint256 basePaid = tradeSize; //10_000_000e18;
+            (, uint256 bondsReceived) = openLong(bob, basePaid);
+
+            // immediately close short.
+            uint256 shortBaseReturned = closeShort(
+                bob,
+                shortMaturitytime,
+                bondsShorted
+            );
+            shortLoss = shortBasePaid.sub(shortBaseReturned);
+
+            // long profit is the bonds received minus the base paid
+            // bc we assume the bonds mature 1:1 to base
+            uint256 longProfit = bondsReceived.sub(basePaid);
+            sandwichProfit = longProfit.sub(shortLoss);
+        }
+
+        // Deploy the pool and initialize the market
+        {
+            uint256 timeStretchApr = 0.05e18;
+            deploy(alice, timeStretchApr, 0, 0, 0);
+        }
+        initialize(alice, apr, contribution);
+
+        // Calculate how much proft would be made from a simple long
+        uint256 baselineProfit;
+        {
+            // open a long.
+            uint256 basePaid = tradeSize;
+            basePaid = basePaid.add(shortLoss);
+            (uint256 longMaturityTime, uint256 bondsReceived) = openLong(
+                celine,
+                basePaid
+            );
+            closeLong(celine, longMaturityTime, bondsReceived);
+            // profit is the bonds received minus the base paid
+            // bc we assume the bonds mature 1:1 to base
+            baselineProfit = bondsReceived.sub(basePaid);
+        }
+        assertGe(baselineProfit, sandwichProfit - 10000 gwei);
     }
 
     // TODO: Use the normalize function to improve this test.

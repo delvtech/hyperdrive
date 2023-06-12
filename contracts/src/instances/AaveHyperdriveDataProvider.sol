@@ -2,12 +2,12 @@
 pragma solidity 0.8.19;
 
 import { IPool } from "@aave/interfaces/IPool.sol";
-import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import { IERC20 } from "../interfaces/IERC20.sol";
 import { HyperdriveDataProvider } from "../HyperdriveDataProvider.sol";
-import { MultiTokenDataProvider } from "../MultiTokenDataProvider.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { Errors } from "../libraries/Errors.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { MultiTokenDataProvider } from "../token/MultiTokenDataProvider.sol";
 
 /// @author DELV
 /// @title AaveHyperdriveDataProvider

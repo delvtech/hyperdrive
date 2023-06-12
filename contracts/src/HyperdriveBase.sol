@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import { SafeCast } from "./libraries/SafeCast.sol";
 import { HyperdriveStorage } from "./HyperdriveStorage.sol";
-import { MultiToken } from "./MultiToken.sol";
+import { IERC20 } from "./interfaces/IERC20.sol";
+import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { AssetId } from "./libraries/AssetId.sol";
 import { Errors } from "./libraries/Errors.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
-import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
+import { SafeCast } from "./libraries/SafeCast.sol";
+import { MultiToken } from "./token/MultiToken.sol";
 
 /// @author DELV
 /// @title HyperdriveBase
@@ -49,7 +49,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
 
     event OpenLong(
         address indexed trader,
-        uint256 assetId,
+        uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
         uint256 bondAmount
@@ -57,7 +57,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
 
     event OpenShort(
         address indexed trader,
-        uint256 assetId,
+        uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
         uint256 bondAmount
@@ -65,7 +65,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
 
     event CloseLong(
         address indexed trader,
-        uint256 assetId,
+        uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
         uint256 bondAmount
@@ -73,7 +73,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
 
     event CloseShort(
         address indexed trader,
-        uint256 assetId,
+        uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
         uint256 bondAmount

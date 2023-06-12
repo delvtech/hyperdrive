@@ -4,11 +4,11 @@ pragma solidity 0.8.19;
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
-import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import { MultiTokenDataProvider } from "contracts/src/MultiTokenDataProvider.sol";
+import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
+import { MultiTokenDataProvider } from "contracts/src/token/MultiTokenDataProvider.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { MockBondWrapper } from "contracts/test/MockBondWrapper.sol";
 import { MockMultiToken, IMockMultiToken } from "contracts/test/MockMultiToken.sol";
