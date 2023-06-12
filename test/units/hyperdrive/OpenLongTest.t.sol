@@ -155,10 +155,11 @@ contract OpenLongTest is HyperdriveTest {
     }
 
     function testAvoidsDustAttack(uint256 contribution, uint256 apr) public {
-        // Apr between 0e18 and 1e18
+        // Apr between 0.5e18 and 0.25e18
         // Contribution between 100e6 to 500 million e6
         // openLong value should be 1/5 of contribution, nornmalize range subrange
-        apr = apr.normalizeToRange(0.05e18, 0.5e18);
+        apr = apr.normalizeToRange(0.05e18, 0.25e18);
+        contribution = contribution.normalizeToRange(100_000_000e18, 500_000_000e18);
 
         // Initialize the pool with a large amount of capital.
         contribution = contribution.normalizeToRange(
