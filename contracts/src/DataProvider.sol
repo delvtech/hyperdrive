@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import { Errors } from "./libraries/Errors.sol";
+import { console } from "forge-std/console.sol";
 
 /// @author DELV
 /// @title DataProvider
@@ -35,6 +36,17 @@ contract DataProvider {
         if (success) {
             revert Errors.UnexpectedSuccess();
         }
+        bytes4 selector = bytes4(returndata);
+        if (selector != Errors.ReturnData.selector) {
+            revert Errors.CallFailed(selector);
+        }
+
+        (, returndata) = abi.decode(returndata, (bytes4, bytes));
+
+        console.logBytes(returndata);
+
+
+        //console.logBytes(values);
         return returndata;
     }
 }
