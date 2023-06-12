@@ -2,7 +2,6 @@
 pragma solidity 0.8.19;
 
 import { Errors } from "./libraries/Errors.sol";
-import { console } from "forge-std/console.sol";
 
 /// @author DELV
 /// @title DataProvider
@@ -38,15 +37,18 @@ contract DataProvider {
         }
         bytes4 selector = bytes4(returndata);
         if (selector != Errors.ReturnData.selector) {
-            revert Errors.CallFailed(selector);
+            assembly {
+                revert(add(returndata, 32), mload(returndata))
+            }
         }
 
-        (, returndata) = abi.decode(returndata, (bytes4, bytes));
+        assembly {
+            mstore(add(returndata, 0x4), sub(mload(returndata), 4))
+            returndata := add(returndata, 0x4)
+        }
 
-        console.logBytes(returndata);
+        returndata = abi.decode(returndata, (bytes));
 
-
-        //console.logBytes(values);
         return returndata;
     }
 }
