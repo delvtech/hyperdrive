@@ -95,6 +95,7 @@ library HyperdriveUtils {
 
     /// @dev Calculates the maximum amount of longs that can be opened.
     /// @param _hyperdrive A Hyperdrive instance.
+    /// @return baseAmount The cost of buying the maximum amount of longs.
     function calculateMaxLong(
         IHyperdrive _hyperdrive
     ) internal view returns (uint256 baseAmount) {
@@ -111,11 +112,12 @@ library HyperdriveUtils {
                     poolConfig.initialSharePrice,
                     7
                 )
-                .mulDown(poolInfo.sharePrice);
+                .baseAmount;
     }
 
     /// @dev Calculates the maximum amount of shorts that can be opened.
     /// @param _hyperdrive A Hyperdrive instance.
+    /// @return The maximum amount of bonds that can be shorted.
     function calculateMaxShort(
         IHyperdrive _hyperdrive
     ) internal view returns (uint256) {

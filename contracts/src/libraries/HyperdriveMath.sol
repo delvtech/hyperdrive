@@ -290,6 +290,11 @@ library HyperdriveMath {
         }
     }
 
+    struct MaxLongResult {
+        uint256 baseAmount;
+        uint256 bondAmount;
+    }
+
     /// @dev Calculates the maximum amount of shares a user can spend on buying
     ///      bonds before the spot crosses above a price of 1.
     /// @param _shareReserves The pool's share reserves.
@@ -298,7 +303,8 @@ library HyperdriveMath {
     /// @param _timeStretch The time stretch parameter.
     /// @param _sharePrice The share price.
     /// @param _initialSharePrice The initial share price.
-    /// @return The maximum amount of shares that can be used to open longs.
+    /// @return result The maximum amount of bonds that can be purchased and the
+    ///         amount of base that must be spent to purchase them.
     function calculateMaxLong(
         uint256 _shareReserves,
         uint256 _bondReserves,
@@ -307,7 +313,7 @@ library HyperdriveMath {
         uint256 _sharePrice,
         uint256 _initialSharePrice,
         uint256 _maxIterations
-    ) internal pure returns (uint256) {
+    ) internal pure returns (MaxLongResult memory result) {
         // We first solve for the maximum trade size using the constraint that
         // the pool's spot price can never exceed 1. We do this by noting that
         // a spot price of 1, (mu * z) / y ** tau = 1, implies that mu * z = y.
@@ -319,8 +325,8 @@ library HyperdriveMath {
         // If the solvency requirements are met at this trade size, then we're
         // done. If not, then we need to solve for the maximum trade size
         // iteratively.
-        uint256 dy;
         uint256 dz;
+        uint256 dy;
         {
             uint256 k = YieldSpaceMath.modifiedYieldSpaceConstant(
                 _sharePrice.divDown(_initialSharePrice),
@@ -344,6 +350,13 @@ library HyperdriveMath {
                 optimalBondReserves.divDown(_initialSharePrice) -
                 _shareReserves;
         }
+        if (
+            _shareReserves + dz >= (_longsOutstanding + dy).divDown(_sharePrice)
+        ) {
+            result.baseAmount = dz.mulDown(_sharePrice);
+            result.bondAmount = dy;
+            return result;
+        }
 
         // To make an initial guess for the iterative approximation, we consider
         // the solvency check to be the error that we want to reduce. The amount
@@ -359,11 +372,6 @@ library HyperdriveMath {
         // (1/p - 1) * dz = z - y_l/c
         //              =>
         // dz = (z - y_l/c) * (p / (p - 1))
-        if (
-            _shareReserves + dz >= (_longsOutstanding + dy).divDown(_sharePrice)
-        ) {
-            return dz;
-        }
         uint256 p = _sharePrice.mulDivDown(dz, dy);
         dz = (_shareReserves - _longsOutstanding.divDown(_sharePrice))
             .mulDivDown(p, FixedPointMath.ONE_18 - p);
@@ -378,7 +386,6 @@ library HyperdriveMath {
 
         // Our maximum long will be the largest trade size that doesn't fail
         // the solvency check.
-        uint256 candidate = 0;
         for (uint256 i = 0; i < _maxIterations; i++) {
             // Even though YieldSpace isn't linear, we can use a linear
             // approximation to get closer to the optimal solution. Our guess
@@ -408,8 +415,9 @@ library HyperdriveMath {
             if (error < 0) {
                 dz -= uint256(-error).mulDivDown(p, FixedPointMath.ONE_18 - p);
             } else {
-                if (dz > candidate) {
-                    candidate = dz;
+                if (dz.mulDown(_sharePrice) > result.baseAmount) {
+                    result.baseAmount = dz.mulDown(_sharePrice);
+                    result.bondAmount = dy;
                 }
                 dz += uint256(error).mulDivDown(p, FixedPointMath.ONE_18 - p);
             }
@@ -423,7 +431,7 @@ library HyperdriveMath {
             );
         }
 
-        return candidate;
+        return result;
     }
 
     /// @dev Calculates the maximum amount of shares that can be used to open
@@ -519,7 +527,10 @@ library HyperdriveMath {
             // net curve trade can't be applied to the reserves. In particular,
             // this can happen if all of the liquidity is removed. We first
             // attempt to trade as much as possible on the curve, and then we
-            // mark the remaining amount to the base volume.
+            // mark the remaining amount to the base volume. Since we are
+            // simulating the closing of shorts on the curve, the constraint
+            // is that the trade size must be less than the maximum long that
+            // can be opened.
             uint256 maxCurveTrade = _params.bondReserves.divDown(
                 _params.initialSharePrice
             ) - _params.shareReserves;

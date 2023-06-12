@@ -562,15 +562,17 @@ contract HyperdriveMathTest is HyperdriveTest {
         if (fixedRate > 0.35e18) {
             maxIterations += 5;
         }
-        uint256 maxLong = hyperdriveMath.calculateMaxLong(
-            info.shareReserves,
-            info.bondReserves,
-            info.longsOutstanding,
-            config.timeStretch,
-            info.sharePrice,
-            config.initialSharePrice,
-            maxIterations
-        );
+        uint256 maxLong = hyperdriveMath
+            .calculateMaxLong(
+                info.shareReserves,
+                info.bondReserves,
+                info.longsOutstanding,
+                config.timeStretch,
+                info.sharePrice,
+                config.initialSharePrice,
+                maxIterations
+            )
+            .baseAmount;
         (uint256 maturityTime, uint256 longAmount) = openLong(bob, maxLong);
 
         // Ensure that opening another long fails.
@@ -1002,7 +1004,7 @@ contract HyperdriveMathTest is HyperdriveTest {
 
         // small amount of longs, large amount of shorts, no excess liquidity
         //
-        // This scenario simulates all of the LPs losing their liqudiity. What
+        // This scenario simulates all of the LPs losing their liquidity. What
         // is important is that the calculation won't fail in this scenario.
         {
             HyperdriveMath.PresentValueParams memory params = HyperdriveMath
