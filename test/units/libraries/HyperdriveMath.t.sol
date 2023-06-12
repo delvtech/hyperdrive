@@ -25,7 +25,7 @@ contract HyperdriveMathTest is HyperdriveTest {
             hyperdriveMath.calculateSpotPrice(
                 1 ether, // shareReserves
                 1 ether, // bondReserves
-                1 ether, // initalSharePrice
+                1 ether, // initialSharePrice
                 1 ether, // timeRemaining
                 1 ether // timeStretch
             ),
@@ -36,7 +36,7 @@ contract HyperdriveMathTest is HyperdriveTest {
             hyperdriveMath.calculateSpotPrice(
                 1.1 ether, // shareReserves
                 1 ether, // bondReserves
-                1 ether, // initalSharePrice
+                1 ether, // initialSharePrice
                 1 ether, // timeRemaining
                 1 ether // timeStretch
             ),
@@ -53,7 +53,7 @@ contract HyperdriveMathTest is HyperdriveTest {
             hyperdriveMath.calculateAPRFromReserves(
                 1 ether, // shareReserves
                 1 ether, // bondReserves
-                1 ether, // initalSharePrice
+                1 ether, // initialSharePrice
                 365 days, // positionDuration
                 1 ether // timeStretch
             ),
@@ -65,7 +65,7 @@ contract HyperdriveMathTest is HyperdriveTest {
             hyperdriveMath.calculateAPRFromReserves(
                 1 ether, // shareReserves
                 1.1 ether, // bondReserves
-                1 ether, // initalSharePrice
+                1 ether, // initialSharePrice
                 365 days, // positionDuration
                 1 ether // timeStretch
             ),

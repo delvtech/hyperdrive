@@ -81,7 +81,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         assertGt(basePaid - longProceeds, uint256(basePaid).mulDown(0.02e18));
 
         // Alice redeems her withdrawal shares. She gets back the capital that
-        // underlied Bob's long position plus the profits that Bob paid in
+        // was underlying to Bob's long position plus the profits that Bob paid in
         // slippage.
         (uint256 withdrawalProceeds, ) = redeemWithdrawalShares(
             alice,
@@ -381,7 +381,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         // value ratio.
         uint256 celineSlippagePayment = testParams.contribution -
             celineLpShares.mulDown(ratio);
-        // FIXME: This difference is untenably large (the value of the ratio
+        // FIXME: This difference is untenable large (the value of the ratio
         // isn't that large, so it's way too close for comfort). We'll need to
         // be smarter about the math in _applyWithdrawalProceeds to control for
         // this.
@@ -805,7 +805,7 @@ contract LpWithdrawalTest is HyperdriveTest {
 
         // Celine adds liquidity.
         uint256 celineLpShares = addLiquidity(celine, testParams.contribution);
-        // FIXME: This is an untenably large bound. Why is the current value
+        // FIXME: This is an untenable large bound. Why is the current value
         // ever larger than the contribution?
         assertApproxEqAbs(presentValueRatio(), ratio, 1e16);
         ratio = presentValueRatio();
