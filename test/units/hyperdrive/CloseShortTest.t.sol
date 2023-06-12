@@ -13,6 +13,7 @@ import { Lib } from "../../utils/Lib.sol";
 
 contract CloseShortTest is HyperdriveTest {
     using FixedPointMath for uint256;
+    using HyperdriveUtils for IHyperdrive;
     using Lib for *;
 
     function setUp() public override {
@@ -74,6 +75,47 @@ contract CloseShortTest is HyperdriveTest {
         vm.startPrank(bob);
         vm.expectRevert(Errors.InvalidTimestamp.selector);
         hyperdrive.closeShort(uint256(type(uint248).max) + 1, 1, 0, bob, true);
+    }
+
+    function test_close_short_failure_negative_interest(
+        uint256 fixedRate,
+        uint256 contribution,
+        uint256 initialShortAmount,
+        uint256 finalShortAmount
+    ) external {
+        // Initialize the pool. We use a relatively small fixed rate to ensure
+        // that the maximum close short is constrained by the price cap of 1
+        // rather than because of exceeding the long buffer.
+        fixedRate = fixedRate.normalizeToRange(0.0001e18, 0.1e18);
+        contribution = contribution.normalizeToRange(1_000e18, 500_000_000e18);
+        initialize(alice, fixedRate, contribution);
+
+        // Bob opens a short.
+        initialShortAmount = initialShortAmount.normalizeToRange(
+            0.00001e18,
+            hyperdrive.calculateMaxShort() / 2
+        );
+        (uint256 maturityTime, ) = openShort(bob, initialShortAmount);
+
+        // Celine opens a maximum long. This will prevent Bob from closing his
+        // short by bringing the spot price very close to 1.
+        openLong(celine, hyperdrive.calculateMaxLong());
+
+        // Ensure that the max long results in spot price very close to 1 to
+        // make sure that a negative interest failure is appropriate.
+        assertLe(hyperdrive.calculateSpotPrice(), 1e18);
+        assertApproxEqAbs(hyperdrive.calculateSpotPrice(), 1e18, 1e6);
+
+        // Bob tries to close a small portion of his short. This should fail
+        // the negative interest check.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        finalShortAmount = finalShortAmount.normalizeToRange(
+            0.00001e18,
+            initialShortAmount
+        );
+        vm.expectRevert(Errors.NegativeInterest.selector);
+        hyperdrive.closeShort(maturityTime, finalShortAmount, 0, bob, true);
     }
 
     function test_close_short_immediately_with_regular_amount() external {
