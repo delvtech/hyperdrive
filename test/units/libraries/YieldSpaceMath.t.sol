@@ -150,16 +150,14 @@ contract YieldSpaceMathTest is Test {
                 uint256 timeStretch = HyperdriveUtils.calculateTimeStretch(
                     fixedRate
                 );
-                uint256 bondReserves = 2 *
+                uint256 bondReserves = 
                     HyperdriveMath.calculateInitialBondReserves(
                         shareReserves,
-                        initialSharePrice,
                         initialSharePrice,
                         fixedRate,
                         365 days,
                         timeStretch
-                    ) +
-                    sharePrice.mulDown(shareReserves);
+                    );
                 tradeSize = tradeSize.normalizeToRange(
                     10 ** j,
                     HyperdriveMath

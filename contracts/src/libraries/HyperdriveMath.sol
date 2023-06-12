@@ -79,7 +79,6 @@ library HyperdriveMath {
     ///      this function are unadjusted which makes it easier to calculate the
     ///      initial LP shares.
     /// @param _shareReserves The pool's share reserves.
-    /// @param _sharePrice The pool's share price.
     /// @param _initialSharePrice The pool's initial share price.
     /// @param _apr The pool's APR.
     /// @param _positionDuration The amount of time until maturity in seconds.
@@ -88,7 +87,6 @@ library HyperdriveMath {
     ///         the pool have a specified APR.
     function calculateInitialBondReserves(
         uint256 _shareReserves,
-        uint256 _sharePrice,
         uint256 _initialSharePrice,
         uint256 _apr,
         uint256 _positionDuration,

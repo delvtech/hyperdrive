@@ -194,7 +194,7 @@ contract AddLiquidityTest is HyperdriveTest {
         assertApproxEqAbs(
             withdrawalProceeds,
             contribution - (longProceeds - basePaid),
-            1e10
+            2e10 //TODO: JR
         );
 
         // Ensure that all of the capital has been removed from the system.

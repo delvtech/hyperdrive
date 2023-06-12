@@ -55,7 +55,6 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         _marketState.bondReserves = HyperdriveMath
             .calculateInitialBondReserves(
                 shares,
-                sharePrice,
                 _initialSharePrice,
                 _apr,
                 _positionDuration,
