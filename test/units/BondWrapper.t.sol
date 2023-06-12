@@ -165,7 +165,7 @@ contract BondWrapperTest is BaseTest {
 
         uint256[] memory maturityTimes = new uint256[](1);
 
-        baseToken.mint(address(bondWrapper), type(uint256).max);
+        // baseToken.mint(address(bondWrapper), type(uint256).max);
 
         maturityTimes[0] = 365 days;
 

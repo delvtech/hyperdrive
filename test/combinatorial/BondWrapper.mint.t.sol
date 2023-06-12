@@ -67,7 +67,7 @@ contract BondWrapper_mint is CombinatorialTest {
                 // unwrappedBonds
                 _arr(0, 1e18, 1e27 + 12879187, type(uint256).max),
                 // mintPercent
-                _arr(0, 1, 0.05e18, 25e18),
+                _arr(0, 1, 500, 9999),
                 // user
                 _arr(0, 1, 2)
             )
