@@ -303,6 +303,8 @@ library HyperdriveMath {
     /// @param _timeStretch The time stretch parameter.
     /// @param _sharePrice The share price.
     /// @param _initialSharePrice The initial share price.
+    /// @param _maxIterations The maximum number of iterations to perform before
+    ///        returning the result.
     /// @return result The maximum amount of bonds that can be purchased and the
     ///         amount of base that must be spent to purchase them.
     function calculateMaxLong(
