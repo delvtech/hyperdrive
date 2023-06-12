@@ -4,9 +4,9 @@ pragma solidity 0.8.19;
 import { DsrHyperdrive, DsrManager } from "../src/instances/DsrHyperdrive.sol";
 import { DsrHyperdriveDataProvider } from "../src/instances/DsrHyperdriveDataProvider.sol";
 import { IERC20 } from "../src/interfaces/IERC20.sol";
-import { FixedPointMath } from "../src/libraries/FixedPointMath.sol";
-import { ForwarderFactory } from "../src/ForwarderFactory.sol";
 import { IHyperdrive } from "../src/interfaces/IHyperdrive.sol";
+import { FixedPointMath } from "../src/libraries/FixedPointMath.sol";
+import { ForwarderFactory } from "../src/token/ForwarderFactory.sol";
 
 interface IMockDsrHyperdrive is IHyperdrive {
     function totalShares() external view returns (uint256);

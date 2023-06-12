@@ -4,12 +4,12 @@ pragma solidity 0.8.19;
 import { ERC20PresetMinterPauser } from "openzeppelin-contracts/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
 import { Hyperdrive } from "../src/Hyperdrive.sol";
 import { HyperdriveDataProvider } from "../src/HyperdriveDataProvider.sol";
-import { MultiTokenDataProvider } from "../src/MultiTokenDataProvider.sol";
+import { IERC20 } from "../src/interfaces/IERC20.sol";
+import { IHyperdrive } from "../src/interfaces/IHyperdrive.sol";
 import { FixedPointMath } from "../src/libraries/FixedPointMath.sol";
 import { Errors } from "../src/libraries/Errors.sol";
+import { MultiTokenDataProvider } from "../src/token/MultiTokenDataProvider.sol";
 import { ERC20Mintable } from "./ERC20Mintable.sol";
-import { IHyperdrive } from "../src/interfaces/IHyperdrive.sol";
-import { IERC20 } from "../src/interfaces/IERC20.sol";
 
 contract MockHyperdriveTestnet is Hyperdrive {
     using FixedPointMath for uint256;

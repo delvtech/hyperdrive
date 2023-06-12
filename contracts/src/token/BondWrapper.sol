@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
-import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { ERC20 } from "solmate/tokens/ERC20.sol";
-import { AssetId } from "./libraries/AssetId.sol";
-import { Errors } from "./libraries/Errors.sol";
+import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
+import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { AssetId } from "../libraries/AssetId.sol";
+import { Errors } from "../libraries/Errors.sol";
 
 /// @author DELV
 /// @title BondWrapper
@@ -37,7 +37,7 @@ contract BondWrapper is ERC20 {
         string memory name_,
         string memory symbol_
     ) ERC20(name_, symbol_, 18) {
-        if (_mintPercent >= 10000e18) {
+        if (_mintPercent >= 10000) {
             revert Errors.MintPercentTooHigh();
         }
 
@@ -93,11 +93,13 @@ contract BondWrapper is ERC20 {
     /// @param amount The amount of bonds to redeem
     /// @param andBurn If true it will burn the number of erc20 minted by this deposited bond
     /// @param destination The address which gets credited with this withdraw
+    /// @param minOutput The min amount the user expects transferred to them.
     function close(
         uint256 maturityTime,
         uint256 amount,
         bool andBurn,
-        address destination
+        address destination,
+        uint256 minOutput
     ) external {
         // Encode the asset ID
         uint256 assetId = AssetId.encodeAssetId(
@@ -138,6 +140,9 @@ contract BondWrapper is ERC20 {
             _burn(msg.sender, mintedFromBonds);
             userFunds += mintedFromBonds;
         }
+
+        // The user has to get at least what they expect.
+        if (userFunds < minOutput) revert Errors.OutputLimit();
 
         // Transfer the released funds to the user
         bool success = token.transfer(destination, userFunds);

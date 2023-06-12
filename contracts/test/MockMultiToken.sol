@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { MultiToken } from "../src/MultiToken.sol";
 import { IMultiToken } from "../src/interfaces/IMultiToken.sol";
-import { ForwarderFactory } from "../src/ForwarderFactory.sol";
+import { ForwarderFactory } from "../src/token/ForwarderFactory.sol";
+import { MultiToken } from "../src/token/MultiToken.sol";
 
 interface IMockMultiToken is IMultiToken {
     function __setNameAndSymbol(
