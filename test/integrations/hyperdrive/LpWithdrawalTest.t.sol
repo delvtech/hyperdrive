@@ -767,7 +767,7 @@ contract LpWithdrawalTest is HyperdriveTest {
             testParams.longMaturityTime = longMaturityTime;
             testParams.longAmount = longAmount;
         }
-        assertApproxEqAbs(presentValueRatio(), ratio, 100); //TODO: JR
+        assertApproxEqAbs(presentValueRatio(), ratio, 100);
         ratio = presentValueRatio();
 
         // Bob opens a short.
