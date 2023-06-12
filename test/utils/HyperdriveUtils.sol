@@ -98,7 +98,7 @@ library HyperdriveUtils {
         // The max amount of base is derived by approximating the bondReserve
         // as the theoretical amount of bondsOut. As openLong specifies an
         // amount of base, the conversion of shares to base must also be derived
-        return 
+        return
             YieldSpaceMath
                 .calculateSharesInGivenBondsOut(
                     poolInfo.shareReserves,
@@ -144,7 +144,7 @@ library HyperdriveUtils {
         //
         // The max amount of base is derived by approximating the share reserve
         // minus the base buffer as the theoretical amount of sharesOut.
-        return 
+        return
             YieldSpaceMath
                 .calculateBondsInGivenSharesOut(
                     poolInfo.shareReserves,
