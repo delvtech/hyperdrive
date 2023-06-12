@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import { FixedPointMath } from "./FixedPointMath.sol";
+import { HyperdriveMath } from "./HyperdriveMath.sol";
 
 /// @author DELV
 /// @title YieldSpaceMath
@@ -284,7 +285,7 @@ library YieldSpaceMath {
         // c/µ
         uint256 cDivMu = c.divDown(mu);
         // (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
-        uint256 k = _modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
+        uint256 k = modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
         // (µ * (z - dz))^(1 - t)
         z = mu.mulDown(z.sub(dz)).pow(t);
         // (c / µ) * (µ * (z - dz))^(1 - t)
@@ -314,7 +315,7 @@ library YieldSpaceMath {
         // c/µ
         uint256 cDivMu = c.divDown(mu);
         // (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
-        uint256 k = _modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
+        uint256 k = modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
         // (µ * (z + dz))^(1 - t)
         z = mu.mulDown(z.add(dz)).pow(t);
         // (c / µ) * (µ * (z + dz))^(1 - t)
@@ -344,7 +345,7 @@ library YieldSpaceMath {
         // c/µ
         uint256 cDivMu = c.divDown(mu);
         // (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
-        uint256 k = _modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
+        uint256 k = modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
         // (y - dy)^(1 - t)
         y = y.sub(dy).pow(t);
         // (((µ * z)^(1 - t) + y^(1 - t) - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))
@@ -376,7 +377,7 @@ library YieldSpaceMath {
         // c/µ
         uint256 cDivMu = c.divDown(mu);
         // (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
-        uint256 k = _modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
+        uint256 k = modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
         // (y + dy)^(1 - t)
         y = y.add(dy).pow(t);
         // (((µ * z)^(1 - t) + y^(1 - t) - (y + dy)^(1 - t)) / (c / µ))^(1 / (1 - t)))
@@ -396,13 +397,13 @@ library YieldSpaceMath {
     /// @param z Amount of share reserves in the pool
     /// @param t Amount of time elapsed since term start
     /// @param y Amount of bond reserves in the pool
-    function _modifiedYieldSpaceConstant(
+    function modifiedYieldSpaceConstant(
         uint256 cDivMu,
         uint256 mu,
         uint256 z,
         uint256 t,
         uint256 y
-    ) private pure returns (uint256) {
+    ) internal pure returns (uint256) {
         /// k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
         return cDivMu.mulDown(mu.mulDown(z).pow(t)).add(y.pow(t));
     }
