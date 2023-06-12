@@ -35,6 +35,9 @@ abstract contract HyperdriveFactory {
     // The default pausers for new the hyperdrive that are deployed
     address[] public defaultPausers;
 
+    // A constant for the ETH value
+    address constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
     /// @notice Deploys the contract
     /// @param _governance The address which can update this factory.
     /// @param _deployer The contract which holds the bytecode and deploys new versions.
@@ -135,7 +138,7 @@ abstract contract HyperdriveFactory {
         bytes32[] memory _extraData,
         uint256 _contribution,
         uint256 _apr
-    ) public virtual returns (IHyperdrive) {
+    ) public payable virtual returns (IHyperdrive) {
         // No invalid deployments
         if (_contribution == 0) revert Errors.InvalidContribution();
         // Overwrite the governance and fees field of the config.
@@ -161,14 +164,28 @@ abstract contract HyperdriveFactory {
             )
         );
 
-        // Initialize the Hyperdrive instance.
-        _config.baseToken.transferFrom(
-            msg.sender,
-            address(this),
-            _contribution
-        );
-        _config.baseToken.approve(address(hyperdrive), type(uint256).max);
-        hyperdrive.initialize(_contribution, _apr, msg.sender, true);
+        // We only do ERC20 transfers when we deploy an ERC20 pool
+        if (address(_config.baseToken) != ETH) {
+            // Initialize the Hyperdrive instance.
+            _config.baseToken.transferFrom(
+                msg.sender,
+                address(this),
+                _contribution
+            );
+            _config.baseToken.approve(address(hyperdrive), type(uint256).max);
+            hyperdrive.initialize(_contribution, _apr, msg.sender, true);
+        } else {
+            // Require the caller sent value
+            if (msg.value != _contribution) {
+                revert Errors.TransferFailed();
+            }
+            hyperdrive.initialize{ value: _contribution }(
+                _contribution,
+                _apr,
+                msg.sender,
+                true
+            );
+        }
 
         // Setup the pausers roles from the default array
         for (uint256 i = 0; i < defaultPausers.length; i++) {

@@ -8,7 +8,6 @@ import { StethHyperdrive } from "contracts/src/instances/StethHyperdrive.sol";
 import { StethHyperdriveDataProvider } from "contracts/src/instances/StethHyperdriveDataProvider.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { ILido } from "contracts/src/interfaces/ILido.sol";
-import { IWETH } from "contracts/src/interfaces/IWETH.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
@@ -30,11 +29,11 @@ contract StethHyperdriveTest is HyperdriveTest {
 
     ILido internal constant LIDO =
         ILido(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
-    IWETH internal constant WETH =
-        IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
+    IERC20 internal constant ETH =
+        IERC20(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
 
     address internal STETH_WHALE = 0x1982b2F5814301d4e9a8b0201555376e62F82428;
-    address internal WETH_WHALE = 0xF04a5cC80B1E94C69B48f5ee68a08CD2F09A7c3E;
+    address internal ETH_WHALE = 0x00000000219ab540356cBB839Cbe05303d7705Fa;
 
     function setUp() public override __mainnet_fork(17_376_154) {
         super.setUp();
@@ -43,7 +42,7 @@ contract StethHyperdriveTest is HyperdriveTest {
         vm.startPrank(deployer);
         StethHyperdriveDeployer simpleDeployer = new StethHyperdriveDeployer(
             LIDO,
-            WETH
+            ETH
         );
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
@@ -58,12 +57,10 @@ contract StethHyperdriveTest is HyperdriveTest {
         );
 
         // Alice deploys the hyperdrive instance.
-        whaleTransfer(WETH_WHALE, WETH, 10_000e18, alice);
         vm.stopPrank();
         vm.startPrank(alice);
-        WETH.approve(address(factory), 10_000e18);
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
-            baseToken: IERC20(WETH),
+            baseToken: IERC20(ETH),
             initialSharePrice: LIDO.getTotalPooledEther().divDown(
                 LIDO.getTotalShares()
             ),
@@ -77,7 +74,7 @@ contract StethHyperdriveTest is HyperdriveTest {
             updateGap: UPDATE_GAP
         });
         uint256 contribution = 10_000e18;
-        hyperdrive = factory.deployAndInitialize(
+        hyperdrive = factory.deployAndInitialize{ value: contribution }(
             config,
             bytes32(0),
             address(0),
@@ -93,13 +90,12 @@ contract StethHyperdriveTest is HyperdriveTest {
             1e5
         );
 
-        // Fund the test accounts with stETH and WETH.
+        // Fund the test accounts with stETH and ETH.
         address[] memory accounts = new address[](3);
         accounts[0] = alice;
         accounts[1] = bob;
         accounts[2] = celine;
         fundAccounts(address(hyperdrive), IERC20(LIDO), STETH_WHALE, accounts);
-        fundAccounts(address(hyperdrive), IERC20(WETH), WETH_WHALE, accounts);
     }
 
     /// Stuck Tokens ///
@@ -125,7 +121,7 @@ contract StethHyperdriveTest is HyperdriveTest {
         assertEq(sharePrice, totalPooledEther.divDown(totalShares));
 
         // Ensure that the share price accurately predicts the amount of shares
-        // that will be minted for depositing a given amount of WETH. This will
+        // that will be minted for depositing a given amount of ETH. This will
         // be an approximation since Lido uses `mulDivDown` whereas this test
         // pre-computes the share price.
         basePaid = basePaid.normalizeToRange(
@@ -143,7 +139,7 @@ contract StethHyperdriveTest is HyperdriveTest {
 
     /// Long ///
 
-    function test_open_long_with_weth(uint256 basePaid) external {
+    function test_open_long_with_ETH(uint256 basePaid) external {
         // Get some balance information before the deposit.
         uint256 totalPooledEtherBefore = LIDO.getTotalPooledEther();
         uint256 totalSharesBefore = LIDO.getTotalShares();
@@ -152,7 +148,7 @@ contract StethHyperdriveTest is HyperdriveTest {
             address(hyperdrive)
         );
 
-        // Bob opens a long by depositing WETH.
+        // Bob opens a long by depositing ETH.
         basePaid = basePaid.normalizeToRange(
             0.00001e18,
             HyperdriveUtils.calculateMaxLong(hyperdrive)
@@ -201,7 +197,7 @@ contract StethHyperdriveTest is HyperdriveTest {
         );
     }
 
-    function test_close_long_with_weth(uint256 basePaid) external {
+    function test_close_long_with_ETH(uint256 basePaid) external {
         // Bob opens a long.
         basePaid = basePaid.normalizeToRange(
             0.00001e18,
@@ -209,8 +205,8 @@ contract StethHyperdriveTest is HyperdriveTest {
         );
         (uint256 maturityTime, uint256 longAmount) = openLong(bob, basePaid);
 
-        // Bob attempts to close his long with WETH as the target asset. This
-        // fails since WETH isn't supported as a withdrawal asset.
+        // Bob attempts to close his long with ETH as the target asset. This
+        // fails since ETH isn't supported as a withdrawal asset.
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(Errors.UnsupportedToken.selector);
@@ -250,7 +246,7 @@ contract StethHyperdriveTest is HyperdriveTest {
 
     /// Short ///
 
-    function test_open_short_with_weth(uint256 shortAmount) external {
+    function test_open_short_with_ETH(uint256 shortAmount) external {
         // Get some balance information before the deposit.
         uint256 totalPooledEtherBefore = LIDO.getTotalPooledEther();
         uint256 totalSharesBefore = LIDO.getTotalShares();
@@ -259,7 +255,7 @@ contract StethHyperdriveTest is HyperdriveTest {
             address(hyperdrive)
         );
 
-        // Bob opens a short by depositing WETH.
+        // Bob opens a short by depositing ETH.
         shortAmount = shortAmount.normalizeToRange(
             0.00001e18,
             HyperdriveUtils.calculateMaxLong(hyperdrive)
@@ -297,7 +293,7 @@ contract StethHyperdriveTest is HyperdriveTest {
             address(hyperdrive)
         );
 
-        // Bob opens a short by depositing WETH.
+        // Bob opens a short by depositing ETH.
         shortAmount = shortAmount.normalizeToRange(
             0.00001e18,
             HyperdriveUtils.calculateMaxLong(hyperdrive)
@@ -326,7 +322,7 @@ contract StethHyperdriveTest is HyperdriveTest {
         );
     }
 
-    function test_close_short_with_weth(
+    function test_close_short_with_ETH(
         uint256 shortAmount,
         int256 variableRate
     ) external {
@@ -341,8 +337,8 @@ contract StethHyperdriveTest is HyperdriveTest {
         variableRate = variableRate.normalizeToRange(0, 2.5e18);
         advanceTime(POSITION_DURATION, variableRate);
 
-        // Bob attempts to close his short with WETH as the target asset. This
-        // fails since WETH isn't supported as a withdrawal asset.
+        // Bob attempts to close his short with ETH as the target asset. This
+        // fails since ETH isn't supported as a withdrawal asset.
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(Errors.UnsupportedToken.selector);
@@ -417,14 +413,14 @@ contract StethHyperdriveTest is HyperdriveTest {
                 totalPooledEtherBefore + basePaid
             );
 
-            // Ensure that the WETH balances were updated correctly.
+            // Ensure that the ETH balances were updated correctly.
             assertEq(
-                WETH.balanceOf(address(hyperdrive)),
-                hyperdriveBalancesBefore.wethBalance
+                ETH.balanceOf(address(hyperdrive)),
+                hyperdriveBalancesBefore.ETHBalance
             );
             assertEq(
-                WETH.balanceOf(bob),
-                traderBalancesBefore.wethBalance - basePaid
+                ETH.balanceOf(bob),
+                traderBalancesBefore.ETHBalance - basePaid
             );
 
             // Ensure that the stETH balances were updated correctly.
@@ -450,12 +446,12 @@ contract StethHyperdriveTest is HyperdriveTest {
             // Ensure that the amount of pooled ether stays the same.
             assertEq(LIDO.getTotalPooledEther(), totalPooledEtherBefore);
 
-            // Ensure that the WETH balances were updated correctly.
+            // Ensure that the ETH balances were updated correctly.
             assertEq(
-                WETH.balanceOf(address(hyperdrive)),
-                hyperdriveBalancesBefore.wethBalance
+                ETH.balanceOf(address(hyperdrive)),
+                hyperdriveBalancesBefore.ETHBalance
             );
-            assertEq(WETH.balanceOf(trader), traderBalancesBefore.wethBalance);
+            assertEq(ETH.balanceOf(trader), traderBalancesBefore.ETHBalance);
 
             // Ensure that the stETH balances were updated correctly.
             assertApproxEqAbs(
@@ -498,12 +494,12 @@ contract StethHyperdriveTest is HyperdriveTest {
         assertEq(LIDO.getTotalPooledEther(), totalPooledEtherBefore);
         assertApproxEqAbs(LIDO.getTotalShares(), totalSharesBefore, 1);
 
-        // Ensure that the WETH balances were updated correctly.
+        // Ensure that the ETH balances were updated correctly.
         assertEq(
-            WETH.balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.wethBalance
+            ETH.balanceOf(address(hyperdrive)),
+            hyperdriveBalancesBefore.ETHBalance
         );
-        assertEq(WETH.balanceOf(trader), traderBalancesBefore.wethBalance);
+        assertEq(ETH.balanceOf(trader), traderBalancesBefore.ETHBalance);
 
         // Ensure that the stETH balances were updated correctly.
         assertApproxEqAbs(
@@ -562,7 +558,7 @@ contract StethHyperdriveTest is HyperdriveTest {
     struct AccountBalances {
         uint256 stethShares;
         uint256 stethBalance;
-        uint256 wethBalance;
+        uint256 ETHBalance;
     }
 
     function getAccountBalances(
@@ -572,7 +568,7 @@ contract StethHyperdriveTest is HyperdriveTest {
             AccountBalances({
                 stethShares: LIDO.sharesOf(account),
                 stethBalance: LIDO.balanceOf(account),
-                wethBalance: WETH.balanceOf(account)
+                ETHBalance: ETH.balanceOf(account)
             });
     }
 }
