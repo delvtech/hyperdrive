@@ -37,7 +37,6 @@ contract StethHyperdriveTest is HyperdriveTest {
     function setUp() public override __mainnet_fork(17_376_154) {
         super.setUp();
 
-        baseToken = ERC20Mintable(ETH);
         // Deploy the StethHyperdrive deployer and factory.
         vm.startPrank(deployer);
         StethHyperdriveDeployer simpleDeployer = new StethHyperdriveDeployer(
@@ -96,19 +95,6 @@ contract StethHyperdriveTest is HyperdriveTest {
         accounts[1] = bob;
         accounts[2] = celine;
         fundAccounts(address(hyperdrive), IERC20(LIDO), STETH_WHALE, accounts);
-    }
-
-    /// Stuck Tokens ///
-
-    function test__receive() external {
-        vm.startPrank(alice);
-        vm.expectRevert(Errors.UnexpectedSender.selector);
-        (bool success, ) = address(hyperdrive).call{ value: 1 ether }("");
-
-        // HACK(jalextowle): The call succeeds if `vm.expectRevert` is used
-        // before the call. If the `vm.expectRevert` is removed, `success` is
-        // false as expected.
-        assert(success);
     }
 
     /// Price Per Share ///
@@ -493,13 +479,10 @@ contract StethHyperdriveTest is HyperdriveTest {
 
         // Ensure that the ETH balances were updated correctly.
         assertEq(
-            IERC20(ETH).balanceOf(address(hyperdrive)),
+            address(hyperdrive).balance,
             hyperdriveBalancesBefore.ETHBalance
         );
-        assertEq(
-            IERC20(ETH).balanceOf(trader),
-            traderBalancesBefore.ETHBalance
-        );
+        assertEq(trader.balance, traderBalancesBefore.ETHBalance);
 
         // Ensure that the stETH balances were updated correctly.
         assertApproxEqAbs(
