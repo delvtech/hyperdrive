@@ -36,7 +36,7 @@ abstract contract HyperdriveFactory {
     address[] public defaultPausers;
 
     // A constant for the ETH value
-    address constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     /// @notice Deploys the contract
     /// @param _governance The address which can update this factory.

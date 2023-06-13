@@ -59,18 +59,7 @@ contract InitializeTest is HyperdriveTest {
         // received the correct amount of LP shares.
         assertEq(baseToken.balanceOf(alice), 0);
         assertEq(baseToken.balanceOf(address(hyperdrive)), contribution);
-        assertEq(
-            lpShares,
-            hyperdrive.getPoolInfo().bondReserves -
-                HyperdriveMath.calculateInitialBondReserves(
-                    contribution,
-                    FixedPointMath.ONE_18,
-                    FixedPointMath.ONE_18,
-                    apr,
-                    POSITION_DURATION,
-                    hyperdrive.getPoolConfig().timeStretch
-                )
-        );
+        assertEq(lpShares, hyperdrive.getPoolInfo().shareReserves);
     }
 
     function verifyInitializeEvent(

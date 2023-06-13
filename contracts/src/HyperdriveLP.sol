@@ -32,6 +32,12 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         address _destination,
         bool _asUnderlying
     ) external payable {
+        // Check that the message value and base amount are valid.
+        _checkMessageValue();
+        if (_contribution == 0) {
+            revert Errors.ZeroAmount();
+        }
+
         // Ensure that the pool hasn't been initialized yet.
         if (_marketState.isInitialized) {
             revert Errors.PoolAlreadyInitialized();
@@ -52,25 +58,21 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // Update the reserves. The bond reserves are calculated so that the
         // pool is initialized with the target APR.
         _marketState.shareReserves = shares.toUint128();
-        uint256 unadjustedBondReserves = HyperdriveMath
+        _marketState.bondReserves = HyperdriveMath
             .calculateInitialBondReserves(
                 shares,
-                sharePrice,
                 _initialSharePrice,
                 _apr,
                 _positionDuration,
                 _timeStretch
-            );
-        uint256 initialLpShares = unadjustedBondReserves +
-            sharePrice.mulDown(shares);
-        _marketState.bondReserves = (unadjustedBondReserves + initialLpShares)
+            )
             .toUint128();
 
         // Mint LP shares to the initializer.
-        _mint(AssetId._LP_ASSET_ID, _destination, initialLpShares);
+        _mint(AssetId._LP_ASSET_ID, _destination, shares);
 
         // Emit an Initialize event.
-        emit Initialize(_destination, initialLpShares, _contribution, _apr);
+        emit Initialize(_destination, shares, _contribution, _apr);
     }
 
     /// @notice Allows LPs to supply liquidity for LP shares.
@@ -89,6 +91,8 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         address _destination,
         bool _asUnderlying
     ) external payable isNotPaused returns (uint256 lpShares) {
+        // Check that the message value and base amount are valid.
+        _checkMessageValue();
         if (_contribution == 0) {
             revert Errors.ZeroAmount();
         }
@@ -135,16 +139,12 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
                     initialSharePrice: _initialSharePrice,
                     timeStretch: _timeStretch,
                     longsOutstanding: _marketState.longsOutstanding,
-                    longAverageTimeRemaining: _calculateTimeRemaining(
-                        uint256(_marketState.longAverageMaturityTime).divUp(
-                            1e36
-                        ) // scale to seconds
+                    longAverageTimeRemaining: _calculateTimeRemainingScaled(
+                        _marketState.longAverageMaturityTime
                     ),
                     shortsOutstanding: _marketState.shortsOutstanding,
-                    shortAverageTimeRemaining: _calculateTimeRemaining(
-                        uint256(_marketState.shortAverageMaturityTime).divUp(
-                            1e36
-                        ) // scale to seconds
+                    shortAverageTimeRemaining: _calculateTimeRemainingScaled(
+                        _marketState.shortAverageMaturityTime
                     ),
                     shortBaseVolume: _marketState.shortBaseVolume
                 });
@@ -388,12 +388,12 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
                 initialSharePrice: _initialSharePrice,
                 timeStretch: _timeStretch,
                 longsOutstanding: _marketState.longsOutstanding,
-                longAverageTimeRemaining: _calculateTimeRemaining(
-                    uint256(_marketState.longAverageMaturityTime).divUp(1e36) // scale to seconds
+                longAverageTimeRemaining: _calculateTimeRemainingScaled(
+                    _marketState.longAverageMaturityTime
                 ),
                 shortsOutstanding: _marketState.shortsOutstanding,
-                shortAverageTimeRemaining: _calculateTimeRemaining(
-                    uint256(_marketState.shortAverageMaturityTime).divUp(1e36) // scale to seconds
+                shortAverageTimeRemaining: _calculateTimeRemainingScaled(
+                    _marketState.shortAverageMaturityTime
                 ),
                 shortBaseVolume: _marketState.shortBaseVolume
             });
@@ -469,12 +469,12 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
                 initialSharePrice: _initialSharePrice,
                 timeStretch: _timeStretch,
                 longsOutstanding: _marketState.longsOutstanding,
-                longAverageTimeRemaining: _calculateTimeRemaining(
-                    uint256(_marketState.longAverageMaturityTime).divUp(1e36) // scale to seconds
+                longAverageTimeRemaining: _calculateTimeRemainingScaled(
+                    _marketState.longAverageMaturityTime
                 ),
                 shortsOutstanding: _marketState.shortsOutstanding,
-                shortAverageTimeRemaining: _calculateTimeRemaining(
-                    uint256(_marketState.shortAverageMaturityTime).divUp(1e36) // scale to seconds
+                shortAverageTimeRemaining: _calculateTimeRemainingScaled(
+                    _marketState.shortAverageMaturityTime
                 ),
                 shortBaseVolume: _marketState.shortBaseVolume
             })

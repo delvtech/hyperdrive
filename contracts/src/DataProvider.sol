@@ -35,6 +35,22 @@ contract DataProvider {
         if (success) {
             revert Errors.UnexpectedSuccess();
         }
+        bytes4 selector = bytes4(returndata);
+        if (selector != Errors.ReturnData.selector) {
+            assembly {
+                revert(add(returndata, 32), mload(returndata))
+            }
+        }
+
+        // Since the useful value is returned in error ReturnData(bytes), the selector for ReturnData
+        // must be removed before returning the value
+        assembly {
+            mstore(add(returndata, 0x4), sub(mload(returndata), 4))
+            returndata := add(returndata, 0x4)
+        }
+
+        returndata = abi.decode(returndata, (bytes));
+
         return returndata;
     }
 }

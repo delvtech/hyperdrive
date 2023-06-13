@@ -2,18 +2,22 @@
 pragma solidity 0.8.19;
 
 import { ERC20PresetFixedSupply } from "openzeppelin-contracts/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
-import { Test } from "forge-std/Test.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { MockHyperdriveMath } from "contracts/test/MockHyperdriveMath.sol";
+import { IMockHyperdrive } from "test/mocks/MockHyperdrive.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
+import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
+import { Lib } from "test/utils/Lib.sol";
 
-contract HyperdriveMathTest is Test {
+contract HyperdriveMathTest is HyperdriveTest {
     using FixedPointMath for uint256;
-
-    function setUp() external {}
+    using HyperdriveUtils for IHyperdrive;
+    using Lib for *;
 
     function test__calcSpotPrice() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
@@ -22,7 +26,7 @@ contract HyperdriveMathTest is Test {
             hyperdriveMath.calculateSpotPrice(
                 1 ether, // shareReserves
                 1 ether, // bondReserves
-                1 ether, // initalSharePrice
+                1 ether, // initialSharePrice
                 1 ether, // timeRemaining
                 1 ether // timeStretch
             ),
@@ -33,7 +37,7 @@ contract HyperdriveMathTest is Test {
             hyperdriveMath.calculateSpotPrice(
                 1.1 ether, // shareReserves
                 1 ether, // bondReserves
-                1 ether, // initalSharePrice
+                1 ether, // initialSharePrice
                 1 ether, // timeRemaining
                 1 ether // timeStretch
             ),
@@ -50,7 +54,7 @@ contract HyperdriveMathTest is Test {
             hyperdriveMath.calculateAPRFromReserves(
                 1 ether, // shareReserves
                 1 ether, // bondReserves
-                1 ether, // initalSharePrice
+                1 ether, // initialSharePrice
                 365 days, // positionDuration
                 1 ether // timeStretch
             ),
@@ -62,7 +66,7 @@ contract HyperdriveMathTest is Test {
             hyperdriveMath.calculateAPRFromReserves(
                 1 ether, // shareReserves
                 1.1 ether, // bondReserves
-                1 ether, // initalSharePrice
+                1 ether, // initialSharePrice
                 365 days, // positionDuration
                 1 ether // timeStretch
             ),
@@ -77,23 +81,19 @@ contract HyperdriveMathTest is Test {
 
         // Test .1% APR
         uint256 shareReserves = 500_000_000 ether;
-        uint256 sharePrice = 1 ether;
         uint256 initialSharePrice = 1 ether;
         uint256 apr = 0.001 ether;
         uint256 positionDuration = 365 days;
         uint256 timeStretch = FixedPointMath.ONE_18.divDown(
             1109.3438508425959e18
         );
-        uint256 bondReserves = 2 *
-            hyperdriveMath.calculateInitialBondReserves(
-                shareReserves,
-                sharePrice,
-                initialSharePrice,
-                apr,
-                positionDuration,
-                timeStretch
-            ) +
-            shareReserves;
+        uint256 bondReserves = hyperdriveMath.calculateInitialBondReserves(
+            shareReserves,
+            initialSharePrice,
+            apr,
+            positionDuration,
+            timeStretch
+        );
         uint256 result = hyperdriveMath.calculateAPRFromReserves(
             shareReserves,
             bondReserves,
@@ -106,17 +106,13 @@ contract HyperdriveMathTest is Test {
         // Test 1% APR
         apr = 0.01 ether;
         timeStretch = FixedPointMath.ONE_18.divDown(110.93438508425959e18);
-        bondReserves =
-            2 *
-            hyperdriveMath.calculateInitialBondReserves(
-                shareReserves,
-                sharePrice,
-                initialSharePrice,
-                apr,
-                positionDuration,
-                timeStretch
-            ) +
-            shareReserves;
+        bondReserves = hyperdriveMath.calculateInitialBondReserves(
+            shareReserves,
+            initialSharePrice,
+            apr,
+            positionDuration,
+            timeStretch
+        );
         result = hyperdriveMath.calculateAPRFromReserves(
             shareReserves,
             bondReserves,
@@ -129,17 +125,13 @@ contract HyperdriveMathTest is Test {
         // Test 5% APR
         apr = 0.05 ether;
         timeStretch = FixedPointMath.ONE_18.divDown(22.186877016851916266e18);
-        bondReserves =
-            2 *
-            hyperdriveMath.calculateInitialBondReserves(
-                shareReserves,
-                sharePrice,
-                initialSharePrice,
-                apr,
-                positionDuration,
-                timeStretch
-            ) +
-            shareReserves;
+        bondReserves = hyperdriveMath.calculateInitialBondReserves(
+            shareReserves,
+            initialSharePrice,
+            apr,
+            positionDuration,
+            timeStretch
+        );
         result = hyperdriveMath.calculateAPRFromReserves(
             shareReserves,
             bondReserves,
@@ -152,17 +144,13 @@ contract HyperdriveMathTest is Test {
         // Test 25% APR
         apr = 0.25 ether;
         timeStretch = FixedPointMath.ONE_18.divDown(4.437375403370384e18);
-        bondReserves =
-            2 *
-            hyperdriveMath.calculateInitialBondReserves(
-                shareReserves,
-                sharePrice,
-                initialSharePrice,
-                apr,
-                positionDuration,
-                timeStretch
-            ) +
-            shareReserves;
+        bondReserves = hyperdriveMath.calculateInitialBondReserves(
+            shareReserves,
+            initialSharePrice,
+            apr,
+            positionDuration,
+            timeStretch
+        );
         result = hyperdriveMath.calculateAPRFromReserves(
             shareReserves,
             bondReserves,
@@ -175,17 +163,13 @@ contract HyperdriveMathTest is Test {
         // Test 50% APR
         apr = 0.50 ether;
         timeStretch = FixedPointMath.ONE_18.divDown(2.218687701685192e18);
-        bondReserves =
-            2 *
-            hyperdriveMath.calculateInitialBondReserves(
-                shareReserves,
-                sharePrice,
-                initialSharePrice,
-                apr,
-                positionDuration,
-                timeStretch
-            ) +
-            shareReserves;
+        bondReserves = hyperdriveMath.calculateInitialBondReserves(
+            shareReserves,
+            initialSharePrice,
+            apr,
+            positionDuration,
+            timeStretch
+        );
         result = hyperdriveMath.calculateAPRFromReserves(
             shareReserves,
             bondReserves,
@@ -198,17 +182,13 @@ contract HyperdriveMathTest is Test {
         // Test 100% APR
         apr = 1 ether;
         timeStretch = FixedPointMath.ONE_18.divDown(1.109343850842596e18);
-        bondReserves =
-            2 *
-            hyperdriveMath.calculateInitialBondReserves(
-                shareReserves,
-                sharePrice,
-                initialSharePrice,
-                apr,
-                positionDuration,
-                timeStretch
-            ) +
-            shareReserves;
+        bondReserves = hyperdriveMath.calculateInitialBondReserves(
+            shareReserves,
+            initialSharePrice,
+            apr,
+            positionDuration,
+            timeStretch
+        );
         result = hyperdriveMath.calculateAPRFromReserves(
             shareReserves,
             bondReserves,
@@ -519,6 +499,127 @@ contract HyperdriveMathTest is Test {
         );
         // verify that the resulting APR is correct
         assertApproxEqAbs(result, expectedAPR.divDown(100e18), 3e12);
+    }
+
+    function test__calculateMaxLong(
+        uint256 fixedRate,
+        uint256 contribution,
+        uint256 initialLongAmount,
+        uint256 initialShortAmount,
+        uint256 finalLongAmount
+    ) external {
+        // NOTE: Coverage only works if I initialize the fixture in the test function
+        MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
+
+        // Initialize the Hyperdrive pool.
+        contribution = contribution.normalizeToRange(1_000e18, 500_000_000e18);
+        fixedRate = fixedRate.normalizeToRange(0.001e18, 0.5e18);
+        initialize(alice, fixedRate, contribution);
+
+        // Open a long and a short. This sets the long buffer to a non-trivial
+        // value which stress tests the max long function.
+        initialLongAmount = initialLongAmount.normalizeToRange(
+            0.0001e18,
+            hyperdrive.calculateMaxLong() / 2
+        );
+        openLong(bob, initialLongAmount);
+        initialShortAmount = initialShortAmount.normalizeToRange(
+            0.0001e18,
+            hyperdrive.calculateMaxShort() / 2
+        );
+        openShort(bob, initialShortAmount);
+
+        // Open the maximum long on Hyperdrive.
+        IHyperdrive.PoolInfo memory info = hyperdrive.getPoolInfo();
+        IHyperdrive.PoolConfig memory config = hyperdrive.getPoolConfig();
+        uint256 maxIterations = 7;
+        if (fixedRate > 0.15e18) {
+            maxIterations += 5;
+        }
+        if (fixedRate > 0.35e18) {
+            maxIterations += 5;
+        }
+        uint256 maxLong = hyperdriveMath
+            .calculateMaxLong(
+                info.shareReserves,
+                info.bondReserves,
+                info.longsOutstanding,
+                config.timeStretch,
+                info.sharePrice,
+                config.initialSharePrice,
+                maxIterations
+            )
+            .baseAmount;
+        (uint256 maturityTime, uint256 longAmount) = openLong(bob, maxLong);
+
+        // Ensure that opening another long fails.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        finalLongAmount = finalLongAmount.normalizeToRange(
+            0.01e18,
+            100_000_000e18
+        );
+        baseToken.mint(bob, finalLongAmount);
+        baseToken.approve(address(hyperdrive), finalLongAmount);
+        vm.expectRevert();
+        hyperdrive.openLong(finalLongAmount, 0, bob, true);
+
+        // Ensure that the long can be closed.
+        closeLong(bob, maturityTime, longAmount);
+    }
+
+    function test__calculateMaxShort(
+        uint256 fixedRate,
+        uint256 contribution,
+        uint256 initialLongAmount,
+        uint256 initialShortAmount,
+        uint256 finalShortAmount
+    ) external {
+        // NOTE: Coverage only works if I initialize the fixture in the test function
+        MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
+
+        // Initialize the Hyperdrive pool.
+        contribution = contribution.normalizeToRange(1_000e18, 500_000_000e18);
+        fixedRate = fixedRate.normalizeToRange(0.0001e18, 0.5e18);
+        initialize(alice, fixedRate, contribution);
+
+        // Open a long. This sets the long buffer to a non-trivial value which
+        // stress tests the max long function.
+        initialLongAmount = initialLongAmount.normalizeToRange(
+            0.0001e18,
+            hyperdrive.calculateMaxLong() / 2
+        );
+        openLong(bob, initialLongAmount);
+        initialShortAmount = initialShortAmount.normalizeToRange(
+            0.0001e18,
+            hyperdrive.calculateMaxShort() / 2
+        );
+        openShort(bob, initialShortAmount);
+
+        // Open the maximum short on Hyperdrive.
+        IHyperdrive.PoolInfo memory info = hyperdrive.getPoolInfo();
+        IHyperdrive.PoolConfig memory config = hyperdrive.getPoolConfig();
+        uint256 maxShort = hyperdriveMath.calculateMaxShort(
+            info.shareReserves,
+            info.bondReserves,
+            info.longsOutstanding,
+            config.timeStretch,
+            info.sharePrice,
+            config.initialSharePrice
+        );
+        (uint256 maturityTime, ) = openShort(bob, maxShort);
+
+        // Ensure that opening another short fails.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        finalShortAmount = finalShortAmount.normalizeToRange(0, 100_000_000e18);
+        baseToken.mint(bob, finalShortAmount);
+        baseToken.approve(address(hyperdrive), finalShortAmount);
+        vm.expectRevert();
+        hyperdrive.openShort(finalShortAmount, 0, bob, true);
+
+        // Ensure that the short can be closed.
+        closeShort(bob, maturityTime, maxShort);
     }
 
     function test__calculatePresentValue() external {
@@ -880,7 +981,7 @@ contract HyperdriveMathTest is Test {
 
         // small amount of longs, large amount of shorts, no excess liquidity
         //
-        // This scenario simulates all of the LPs losing their liqudiity. What
+        // This scenario simulates all of the LPs losing their liquidity. What
         // is important is that the calculation won't fail in this scenario.
         {
             HyperdriveMath.PresentValueParams memory params = HyperdriveMath
@@ -912,9 +1013,13 @@ contract HyperdriveMathTest is Test {
                 params.longsOutstanding.mulDown(
                     params.longAverageTimeRemaining
                 );
-            uint256 maxCurveTrade = params.bondReserves.divDown(
+            (, uint256 maxCurveTrade) = YieldSpaceMath.calculateMaxBuy(
+                params.shareReserves,
+                params.bondReserves,
+                FixedPointMath.ONE_18.sub(params.timeStretch),
+                params.sharePrice,
                 params.initialSharePrice
-            ) - params.shareReserves;
+            );
             params.shareReserves += YieldSpaceMath
                 .calculateSharesInGivenBondsOut(
                     params.shareReserves,
@@ -1155,6 +1260,30 @@ contract HyperdriveMathTest is Test {
             0 // timeRemaining
         );
         assertEq(baseVolume, 0);
+    }
+
+    function test__calculateTimeRemainingScaledAndUnscaled(
+        uint256 maturityTime
+    ) external {
+        maturityTime = maturityTime.normalizeToRange(
+            block.timestamp,
+            block.timestamp * 1e6
+        );
+
+        // Ensure that the calculate time remaining calculation is correct.
+        uint256 result = IMockHyperdrive(address(hyperdrive))
+            .calculateTimeRemaining(maturityTime);
+        assertEq(
+            result,
+            (maturityTime -
+                IMockHyperdrive(address(hyperdrive)).latestCheckpoint())
+                .divDown(hyperdrive.getPoolConfig().positionDuration)
+        );
+
+        // Ensure that the scaled and unscaled time remaining calculations agree.
+        uint256 scaledResult = IMockHyperdrive(address(hyperdrive))
+            .calculateTimeRemainingScaled(maturityTime * FixedPointMath.ONE_18);
+        assertEq(result, scaledResult);
     }
 
     function calculateBondReserves(

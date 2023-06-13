@@ -83,12 +83,13 @@ contract DsrHyperdrive is Hyperdrive {
         dsrManager.join(address(this), amount);
 
         // Do share calculations
-        if (totalShares == 0) {
+        uint256 totalShares_ = totalShares;
+        if (totalShares_ == 0) {
             totalShares = amount;
             // Initial deposits are always 1:1
             return (amount, FixedPointMath.ONE_18);
         } else {
-            uint256 newShares = totalShares.mulDivDown(amount, totalBase);
+            uint256 newShares = totalShares_.mulDivDown(amount, totalBase);
             totalShares += newShares;
             return (newShares, amount.divDown(newShares));
         }
@@ -97,8 +98,8 @@ contract DsrHyperdrive is Hyperdrive {
     /// @notice Withdraws shares from the yield source and sends the resulting tokens to the destination
     /// @param shares The shares to withdraw from the yield source
     /// @param destination The address which is where to send the resulting tokens
-    /// @param asUnderlying The DSR yield source only supports withdrawing the underlying token
-    ///        If this is false, the transaction will revert.
+    /// @param asUnderlying The DSR yield source only supports depositing the
+    ///        underlying token. If this is false, the transaction will revert.
     /// @return amountWithdrawn the amount of 'token' produced by this withdraw
     function _withdraw(
         uint256 shares,
@@ -135,6 +136,7 @@ contract DsrHyperdrive is Hyperdrive {
 
     /// @notice Loads the share price from the yield source.
     /// @return sharePrice The current share price.
+    ///@dev must remain consistent with the impl inside of the DataProvider
     function _pricePerShare()
         internal
         view
@@ -143,8 +145,10 @@ contract DsrHyperdrive is Hyperdrive {
     {
         uint256 pie = dsrManager.pieOf(address(this));
         uint256 totalBase = pie.mulDivDown(chi(), RAY);
-        if (totalShares != 0) {
-            return totalBase.divDown(totalShares);
+        // The share price is assets divided by shares
+        uint256 totalShares_ = totalShares;
+        if (totalShares_ != 0) {
+            return (totalBase.divDown(totalShares_));
         }
         return 0;
     }

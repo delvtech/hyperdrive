@@ -31,6 +31,7 @@ library Errors {
     error ZeroAmount();
     error ZeroLpTotalSupply();
     error NoAssetsToWithdraw();
+    error NotPayable();
 
     /// ############
     /// ### TWAP ###
@@ -40,6 +41,8 @@ library Errors {
     /// ####################
     /// ### DataProvider ###
     /// ####################
+    error ReturnData(bytes data);
+    error CallFailed(bytes4 underlyingError);
     error UnexpectedSuccess();
 
     /// ###############

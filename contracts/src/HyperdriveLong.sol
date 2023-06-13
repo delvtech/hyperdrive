@@ -32,6 +32,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
         address _destination,
         bool _asUnderlying
     ) external payable isNotPaused returns (uint256) {
+        // Check that the message value and base amount are valid.
+        _checkMessageValue();
         if (_baseAmount == 0) {
             revert Errors.ZeroAmount();
         }
@@ -57,9 +59,15 @@ abstract contract HyperdriveLong is HyperdriveLP {
             uint256 totalGovernanceFee
         ) = _calculateOpenLong(shares, sharePrice, timeRemaining);
 
-        // If the user gets less bonds than they paid, we are in the negative
-        // interest region of the trading function.
-        if (bondProceeds < _baseAmount) {
+        // If the ending spot price is greater than or equal to 1, we are in the
+        // negative interest region of the trading function. The spot price is
+        // given by ((mu * z) / y) ** tau, so all that we need to check is that
+        // (mu * z) / y < 1 or, equivalently, that mu * z >= y.
+        if (
+            _initialSharePrice.mulDown(
+                _marketState.shareReserves + shareReservesDelta
+            ) >= _marketState.bondReserves - bondReservesDelta
+        ) {
             revert Errors.NegativeInterest();
         }
 

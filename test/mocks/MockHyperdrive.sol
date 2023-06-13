@@ -73,6 +73,16 @@ interface IMockHyperdrive {
             uint256 totalGovernanceFee
         );
 
+    function calculateTimeRemaining(
+        uint256 _maturityTime
+    ) external view returns (uint256);
+
+    function calculateTimeRemainingScaled(
+        uint256 _maturityTime
+    ) external view returns (uint256);
+
+    function latestCheckpoint() external view returns (uint256);
+
     function setReserves(uint256 shareReserves, uint256 bondReserves) external;
 
     function getGovernanceFeesAccrued() external view returns (uint256);
@@ -224,6 +234,22 @@ contract MockHyperdrive is Hyperdrive {
         )
     {
         return _calculateOpenLong(_shareAmount, _sharePrice, _timeRemaining);
+    }
+
+    function calculateTimeRemaining(
+        uint256 _maturityTime
+    ) external view returns (uint256 timeRemaining) {
+        return _calculateTimeRemaining(_maturityTime);
+    }
+
+    function calculateTimeRemainingScaled(
+        uint256 _maturityTime
+    ) external view returns (uint256 timeRemaining) {
+        return _calculateTimeRemainingScaled(_maturityTime);
+    }
+
+    function latestCheckpoint() external view returns (uint256 checkpointTime) {
+        return _latestCheckpoint();
     }
 
     function setReserves(uint256 shareReserves, uint256 bondReserves) external {

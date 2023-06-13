@@ -481,7 +481,7 @@ contract PresentValueTest is HyperdriveTest {
         // Set the seed.
         _seed = __seed;
 
-        // Initialiaze the pool.
+        // Initialize the pool.
         initialize(alice, 0.02e18, 500_000_000e18);
 
         // Get an initial present value.

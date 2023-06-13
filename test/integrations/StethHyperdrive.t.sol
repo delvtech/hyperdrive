@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
+import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { StethHyperdriveDeployer } from "contracts/src/factory/StethHyperdriveDeployer.sol";
 import { StethHyperdriveFactory } from "contracts/src/factory/StethHyperdriveFactory.sol";
 import { StethHyperdrive } from "contracts/src/instances/StethHyperdrive.sol";
@@ -29,8 +30,6 @@ contract StethHyperdriveTest is HyperdriveTest {
 
     ILido internal constant LIDO =
         ILido(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
-    IERC20 internal constant ETH =
-        IERC20(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
 
     address internal STETH_WHALE = 0x1982b2F5814301d4e9a8b0201555376e62F82428;
     address internal ETH_WHALE = 0x00000000219ab540356cBB839Cbe05303d7705Fa;
@@ -41,8 +40,7 @@ contract StethHyperdriveTest is HyperdriveTest {
         // Deploy the StethHyperdrive deployer and factory.
         vm.startPrank(deployer);
         StethHyperdriveDeployer simpleDeployer = new StethHyperdriveDeployer(
-            LIDO,
-            ETH
+            LIDO
         );
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
@@ -86,14 +84,7 @@ contract StethHyperdriveTest is HyperdriveTest {
         // Ensure that Alice has the correct amount of LP shares.
         assertApproxEqAbs(
             hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
-            HyperdriveMath.calculateInitialBondReserves(
-                contribution.divDown(config.initialSharePrice),
-                config.initialSharePrice,
-                config.initialSharePrice,
-                FIXED_RATE,
-                config.positionDuration,
-                config.timeStretch
-            ) + contribution,
+            contribution.divDown(config.initialSharePrice),
             1e5
         );
 
@@ -103,19 +94,6 @@ contract StethHyperdriveTest is HyperdriveTest {
         accounts[1] = bob;
         accounts[2] = celine;
         fundAccounts(address(hyperdrive), IERC20(LIDO), STETH_WHALE, accounts);
-    }
-
-    /// Stuck Tokens ///
-
-    function test__receive() external {
-        vm.startPrank(alice);
-        vm.expectRevert(Errors.UnexpectedSender.selector);
-        (bool success, ) = address(hyperdrive).call{ value: 1 ether }("");
-
-        // HACK(jalextowle): The call succeeds if `vm.expectRevert` is used
-        // before the call. If the `vm.expectRevert` is removed, `success` is
-        // false as expected.
-        assert(success);
     }
 
     /// Price Per Share ///
@@ -422,13 +400,10 @@ contract StethHyperdriveTest is HyperdriveTest {
 
             // Ensure that the ETH balances were updated correctly.
             assertEq(
-                ETH.balanceOf(address(hyperdrive)),
+                address(hyperdrive).balance,
                 hyperdriveBalancesBefore.ETHBalance
             );
-            assertEq(
-                ETH.balanceOf(bob),
-                traderBalancesBefore.ETHBalance - basePaid
-            );
+            assertEq(bob.balance, traderBalancesBefore.ETHBalance - basePaid);
 
             // Ensure that the stETH balances were updated correctly.
             assertApproxEqAbs(
@@ -455,10 +430,10 @@ contract StethHyperdriveTest is HyperdriveTest {
 
             // Ensure that the ETH balances were updated correctly.
             assertEq(
-                ETH.balanceOf(address(hyperdrive)),
+                address(hyperdrive).balance,
                 hyperdriveBalancesBefore.ETHBalance
             );
-            assertEq(ETH.balanceOf(trader), traderBalancesBefore.ETHBalance);
+            assertEq(trader.balance, traderBalancesBefore.ETHBalance);
 
             // Ensure that the stETH balances were updated correctly.
             assertApproxEqAbs(
@@ -503,10 +478,10 @@ contract StethHyperdriveTest is HyperdriveTest {
 
         // Ensure that the ETH balances were updated correctly.
         assertEq(
-            ETH.balanceOf(address(hyperdrive)),
+            address(hyperdrive).balance,
             hyperdriveBalancesBefore.ETHBalance
         );
-        assertEq(ETH.balanceOf(trader), traderBalancesBefore.ETHBalance);
+        assertEq(trader.balance, traderBalancesBefore.ETHBalance);
 
         // Ensure that the stETH balances were updated correctly.
         assertApproxEqAbs(
@@ -575,7 +550,7 @@ contract StethHyperdriveTest is HyperdriveTest {
             AccountBalances({
                 stethShares: LIDO.sharesOf(account),
                 stethBalance: LIDO.balanceOf(account),
-                ETHBalance: ETH.balanceOf(account)
+                ETHBalance: account.balance
             });
     }
 }

@@ -103,6 +103,14 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
 
     /// Yield Source ///
 
+    /// @notice A YieldSource dependent check that prevents ether from being
+    ///         transferred to Hyperdrive instances that don't accept ether.
+    function _checkMessageValue() internal view virtual {
+        if (msg.value != 0) {
+            revert Errors.NotPayable();
+        }
+    }
+
     /// @notice Transfers base from the user and commits it to the yield source.
     /// @param amount The amount of base to deposit.
     /// @param asUnderlying If true the yield source will transfer underlying tokens
@@ -214,6 +222,21 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
             ? _maturityTime - latestCheckpoint
             : 0;
         timeRemaining = (timeRemaining).divDown(_positionDuration);
+    }
+
+    /// @dev Calculates the normalized time remaining of a position when the
+    ///      maturity time is scaled up 18 decimals.
+    /// @param _maturityTime The maturity time of the position.
+    function _calculateTimeRemainingScaled(
+        uint256 _maturityTime
+    ) internal view returns (uint256 timeRemaining) {
+        uint256 latestCheckpoint = _latestCheckpoint() * FixedPointMath.ONE_18;
+        timeRemaining = _maturityTime > latestCheckpoint
+            ? _maturityTime - latestCheckpoint
+            : 0;
+        timeRemaining = (timeRemaining).divDown(
+            _positionDuration * FixedPointMath.ONE_18
+        );
     }
 
     /// @dev Gets the most recent checkpoint time.
