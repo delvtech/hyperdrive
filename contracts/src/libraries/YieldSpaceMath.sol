@@ -397,7 +397,6 @@ library YieldSpaceMath {
     /// @dev Calculates the maximum amount of bonds that can be purchased with
     ///      the specified reserves.
     /// @param z Amount of share reserves in the pool
-    /// @param z Amount of share reserves in the pool
     /// @param y Amount of bond reserves in the pool
     /// @param t Amount of time elapsed since term start
     /// @param c Conversion rate between base and shares

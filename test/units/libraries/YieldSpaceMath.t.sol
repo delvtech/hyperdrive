@@ -205,15 +205,13 @@ contract YieldSpaceMathTest is Test {
 
         // Calculate the bond reserves that give the pool the expected spot rate.
         uint256 timeStretch = HyperdriveUtils.calculateTimeStretch(fixedRate);
-        uint256 bondReserves = 2 *
-            HyperdriveMath.calculateInitialBondReserves(
-                shareReserves,
-                initialSharePrice,
-                fixedRate,
-                365 days,
-                timeStretch
-            ) +
-            sharePrice.mulDown(shareReserves);
+        uint256 bondReserves = HyperdriveMath.calculateInitialBondReserves(
+            shareReserves,
+            initialSharePrice,
+            fixedRate,
+            365 days,
+            timeStretch
+        );
 
         // Calculate the difference in share and bond reserves caused by the max
         // purchase.
