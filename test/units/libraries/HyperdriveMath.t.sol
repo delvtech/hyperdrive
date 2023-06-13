@@ -612,7 +612,10 @@ contract HyperdriveMathTest is HyperdriveTest {
         // Ensure that opening another short fails.
         vm.stopPrank();
         vm.startPrank(bob);
-        finalShortAmount = finalShortAmount.normalizeToRange(0, 100_000_000e18);
+        finalShortAmount = finalShortAmount.normalizeToRange(
+            0.00001e18,
+            100_000_000e18
+        );
         baseToken.mint(bob, finalShortAmount);
         baseToken.approve(address(hyperdrive), finalShortAmount);
         vm.expectRevert();
