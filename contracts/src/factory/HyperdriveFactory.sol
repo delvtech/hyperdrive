@@ -233,6 +233,7 @@ abstract contract HyperdriveFactory {
         isOfficial[address(hyperdrive)] = versionCounter;
 
         // Emit a deployed event.
+        _config.governance = hyperdriveGovernance;
         emit Deployed(
             versionCounter,
             address(hyperdrive),
