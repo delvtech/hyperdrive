@@ -68,6 +68,8 @@ contract SymbolicHyperdrive is MultiToken {
 
         accrueInterest();
 
+        totalShares -= _shares;
+
         sharePrice = _pricePerShare();
         amountWithdrawn = _shares.mulDown(sharePrice);
         bool success = _baseToken.transfer(_destination, amountWithdrawn);
@@ -78,24 +80,25 @@ contract SymbolicHyperdrive is MultiToken {
         return (amountWithdrawn, sharePrice);
     }
 
-    function _pricePerShare() internal view returns (uint256) {
-        uint256 underlying = _baseToken.balanceOf(address(this)) +
-            getAccruedInterest();
+    function _pricePerShare() internal view returns (uint256) { // mapping block timestamp -> price // every cal can only >= than previous
+        uint256 underlying = _baseToken.balanceOf(address(this)) + // rand amount 
+            getAccruedInterest(block.timestamp);
         return underlying.divDown(totalShares);
     }
 
-
-    function getAccruedInterest() internal view returns (uint256) {
+    function getAccruedInterest(uint256 time) public view returns (uint256) { 
         // base_balance = base_balance * (1 + r * t)
-        uint256 timeElapsed = (block.timestamp - lastUpdated).divDown(365 days);
-        return
-            _baseToken.balanceOf(address(this)).mulDown(
-                rate.mulDown(timeElapsed)
-            );
+        // uint256 timeElapsed = (block.timestamp - lastUpdated).divDown(365 days);
+        // return
+        //     _baseToken.balanceOf(address(this)).mulDown(
+        //         rate.mulDown(timeElapsed)
+        //     );
+        uint256 something;
+        return 5;
     }
 
     function accrueInterest() internal {
-        ERC20Mintable(address(_baseToken)).mint(getAccruedInterest());
+        ERC20Mintable(address(_baseToken)).mint(getAccruedInterest(block.timestamp));
         lastUpdated = block.timestamp;
     }
 }

@@ -24,6 +24,8 @@ certoraRun contracts/src/BondWrapper.sol \
     --optimistic_loop \
     --rule_sanity \
     --send_only \
+    --smt_timeout 500 \
+    --prover_args "-dontStopAtFirstSplitTimeout true -depth 15" \
     --packages @aave=lib/aave-v3-core/contracts openzeppelin-contracts=lib/openzeppelin-contracts \
     $RULE \
     --msg "BondWrapper: $RULE $MSG" 

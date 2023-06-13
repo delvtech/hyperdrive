@@ -9,7 +9,21 @@ use rule sanity;
 methods {
     function _.mint(uint256 amount) external => DISPATCHER(true);
     function _.mint(address destination, uint256 amount) external => DISPATCHER(true);
+
+    function _.getAccruedInterest(uint256 time) external => 
+                getAccruedInterestCVL(time) expect uint256;
+    function _.getAccruedInterest(uint256 time) internal => 
+                getAccruedInterestCVL(time) expect uint256;
 }
+
+function getAccruedInterestCVL(uint256 time) returns uint256 {
+    return interestOverTime[time];
+}
+
+ghost mapping(uint256 => uint256) interestOverTime {
+    axiom forall uint256 x. forall uint256 y. x > y => interestOverTime[x] >= interestOverTime[y];
+}
+
 
 
 rule basicFRule(env e, env e2, method f, method g) filtered { f -> !f.isView, g -> !g.isView } {
@@ -45,6 +59,25 @@ rule frontRunCheck(env e, env e2, method f) filtered { f -> !f.isView } {
     assert baseBalanceAfterSingle - baseBalanceBefore 
             == baseBalanceAfterDouble - baseBalanceBefore;
 }
+
+
+
+/* properties:
+
+- BondWrapper.balanceOf(msg.sender) * mintPercent / 10000 >= sum of deposits[msg.sender][assetId]
+
+- 
+
+
+
+
+
+
+Questions:
+
+
+
+
 
 
 
