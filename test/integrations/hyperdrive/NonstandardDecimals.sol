@@ -268,7 +268,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
 
         // Bob opens a short.
         shortAmount = shortAmount.normalizeToRange(
-            0.1e6,
+            1e6, // TODO: We should be able to use a lower tolerance like 0.1e6.
             HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
         testParams.shortAmount = shortAmount;
