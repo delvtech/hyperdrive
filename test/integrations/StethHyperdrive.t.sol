@@ -17,8 +17,6 @@ import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
 
-import "forge-std/console2.sol";
-
 contract StethHyperdriveTest is HyperdriveTest {
     using FixedPointMath for uint256;
     using Lib for *;
@@ -32,7 +30,6 @@ contract StethHyperdriveTest is HyperdriveTest {
 
     ILido internal constant LIDO =
         ILido(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
-
 
     address internal STETH_WHALE = 0x1982b2F5814301d4e9a8b0201555376e62F82428;
     address internal ETH_WHALE = 0x00000000219ab540356cBB839Cbe05303d7705Fa;
@@ -411,10 +408,6 @@ contract StethHyperdriveTest is HyperdriveTest {
     ) internal {
         if (asUnderlying) {
             // Ensure that the amount of pooled ether increased by the base paid.
-            console2.log(
-                "totalPooledEtherBefore:",
-                totalPooledEtherBefore
-            );
             assertEq(
                 LIDO.getTotalPooledEther(),
                 totalPooledEtherBefore + basePaid
@@ -422,13 +415,10 @@ contract StethHyperdriveTest is HyperdriveTest {
 
             // Ensure that the ETH balances were updated correctly.
             assertEq(
-                IERC20(ETH).balanceOf(address(hyperdrive)),
+                address(hyperdrive).balance,
                 hyperdriveBalancesBefore.ETHBalance
             );
-            assertEq(
-                IERC20(ETH).balanceOf(bob),
-                traderBalancesBefore.ETHBalance - basePaid
-            );
+            assertEq(bob.balance, traderBalancesBefore.ETHBalance - basePaid);
 
             // Ensure that the stETH balances were updated correctly.
             assertApproxEqAbs(
@@ -455,10 +445,10 @@ contract StethHyperdriveTest is HyperdriveTest {
 
             // Ensure that the ETH balances were updated correctly.
             assertEq(
-                IERC20(ETH).balanceOf(address(hyperdrive)),
+                address(hyperdrive).balance,
                 hyperdriveBalancesBefore.ETHBalance
             );
-            assertEq(IERC20(ETH).balanceOf(trader), traderBalancesBefore.ETHBalance);
+            assertEq(trader.balance, traderBalancesBefore.ETHBalance);
 
             // Ensure that the stETH balances were updated correctly.
             assertApproxEqAbs(
@@ -506,7 +496,10 @@ contract StethHyperdriveTest is HyperdriveTest {
             IERC20(ETH).balanceOf(address(hyperdrive)),
             hyperdriveBalancesBefore.ETHBalance
         );
-        assertEq(IERC20(ETH).balanceOf(trader), traderBalancesBefore.ETHBalance);
+        assertEq(
+            IERC20(ETH).balanceOf(trader),
+            traderBalancesBefore.ETHBalance
+        );
 
         // Ensure that the stETH balances were updated correctly.
         assertApproxEqAbs(
@@ -575,7 +568,7 @@ contract StethHyperdriveTest is HyperdriveTest {
             AccountBalances({
                 stethShares: LIDO.sharesOf(account),
                 stethBalance: LIDO.balanceOf(account),
-                ETHBalance: IERC20(ETH).balanceOf(account)
+                ETHBalance: account.balance
             });
     }
 }
