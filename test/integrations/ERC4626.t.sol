@@ -108,7 +108,7 @@ contract HyperdriveER4626Test is HyperdriveTest {
         //Now we try to do a deposit from alice's shares
         pool.approve(address(mockHyperdrive), type(uint256).max);
         (sharesMinted, sharePrice) = mockHyperdrive.deposit(3e18, false);
-        assertEq(sharePrice, 1.5e18);
+        assertEq(sharePrice, 1.5e18 + 1);
         assertApproxEqAbs(sharesMinted, 2e18, 1);
         assertApproxEqAbs(
             pool.balanceOf(address(mockHyperdrive)),

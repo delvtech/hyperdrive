@@ -85,7 +85,7 @@ contract StethHyperdrive is Hyperdrive {
             shares = lido.submit{ value: _amount }(_feeCollector);
 
             // Calculate the share price.
-            sharePrice = _amount.divDown(shares);
+            sharePrice = _pricePerShare();
         } else {
             // Ensure that the user didn't send ether to the contract.
             if (msg.value > 0) {

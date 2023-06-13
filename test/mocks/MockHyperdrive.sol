@@ -278,7 +278,7 @@ contract MockHyperdrive is Hyperdrive {
         } else {
             uint256 newShares = totalShares.mulDivDown(amount, assets);
             totalShares += newShares;
-            return (newShares, amount.divDown(newShares));
+            return (newShares, _pricePerShare());
         }
     }
 

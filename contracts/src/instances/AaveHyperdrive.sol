@@ -83,7 +83,7 @@ contract AaveHyperdrive is Hyperdrive {
         } else {
             uint256 newShares = totalShares_.mulDivDown(amount, assets);
             totalShares += newShares;
-            return (newShares, amount.divDown(newShares));
+            return (newShares, _pricePerShare());
         }
     }
 

@@ -91,7 +91,7 @@ contract DsrHyperdrive is Hyperdrive {
         } else {
             uint256 newShares = totalShares_.mulDivDown(amount, totalBase);
             totalShares += newShares;
-            return (newShares, amount.divDown(newShares));
+            return (newShares, _pricePerShare());
         }
     }
 

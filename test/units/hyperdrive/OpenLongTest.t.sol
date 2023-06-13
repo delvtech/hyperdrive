@@ -183,6 +183,54 @@ contract OpenLongTest is HyperdriveTest {
         hyperdrive.openLong(overlyLargeLonge, 0, bob, true);
     }
 
+    function testAvoidsDustAttack(uint256 contribution, uint256 apr) public {
+        /* 
+            - Tests an edge case in updateWeightedAverage where The function output is not bounded by the average and the delta.
+            This test ensures that this never occurs by attempting to induce a wild variation in avgPrice, and ensures that they remain relatively consistent.
+        */
+        // Apr between 0.5e18 and 0.25e18
+        // Contribution between 100e6 to 500 million e6
+        // openLong value should be 1/5 of contribution, nornmalize range subrange
+        apr = apr.normalizeToRange(0.05e18, 0.25e18);
+        contribution = contribution.normalizeToRange(
+            100_000_000e18,
+            500_000_000e18
+        );
+
+        // Initialize the pool with a large amount of capital.
+        contribution = contribution.normalizeToRange(
+            100_000_000e6,
+            500_000_000e6
+        );
+
+        initialize(alice, apr, contribution);
+
+        advanceTime(POSITION_DURATION, int256(apr));
+
+        openLong(bob, 1 wei);
+
+        IHyperdrive.PoolInfo memory info = hyperdrive.getPoolInfo();
+        uint256 averageMaturityTimeBefore = info.longAverageMaturityTime;
+        uint256 sharePrice = info.sharePrice;
+
+        uint256 amt = contribution / 5;
+        openLong(bob, amt);
+
+        uint256 longSharePrice = hyperdrive
+            .getCheckpoint(hyperdrive.latestCheckpoint())
+            .longSharePrice;
+
+        info = hyperdrive.getPoolInfo();
+        uint256 averageMaturityTimeAfter = info.longAverageMaturityTime;
+
+        assertApproxEqAbs(sharePrice, longSharePrice, 1e7);
+        assertApproxEqAbs(
+            averageMaturityTimeBefore,
+            averageMaturityTimeAfter,
+            1e4
+        );
+    }
+
     function verifyOpenLong(
         IHyperdrive.PoolInfo memory poolInfoBefore,
         uint256 contribution,
