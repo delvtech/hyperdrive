@@ -26,6 +26,12 @@ abstract contract HyperdriveFactory {
     // The address which should control hyperdrive instances
     address public hyperdriveGovernance;
 
+    // The linker factory which is used to deploy the ERC20 linker contracts.
+    address public linkerFactory;
+
+    // The hash of the ERC20 linker contract's constructor code.
+    bytes32 public linkerCodeHash;
+
     // The address which should receive hyperdriveFees
     address public feeCollector;
 
@@ -38,6 +44,16 @@ abstract contract HyperdriveFactory {
     // A constant for the ETH value
     address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
+    // An event that is emitted when a new Hyperdrive instance is deployed.
+    event Deployed(
+        uint256 indexed version,
+        address hyperdrive,
+        IHyperdrive.PoolConfig config,
+        address linkerFactory,
+        bytes32 linkerCodeHash,
+        bytes32[] extraData
+    );
+
     /// @notice Deploys the contract
     /// @param _governance The address which can update this factory.
     /// @param _deployer The contract which holds the bytecode and deploys new versions.
@@ -45,13 +61,17 @@ abstract contract HyperdriveFactory {
     /// @param _feeCollector The address which should be set as the fee collector in new deployments
     /// @param _fees The fees each deployed instance from this contract will have
     /// @param _defaultPausers The default addresses which will be set to have the pauser role
+    /// @param _linkerFactory The address of the linker factory
+    /// @param _linkerCodeHash The hash of the linker contract's constructor code.
     constructor(
         address _governance,
         IHyperdriveDeployer _deployer,
         address _hyperdriveGovernance,
         address _feeCollector,
         IHyperdrive.Fees memory _fees,
-        address[] memory _defaultPausers
+        address[] memory _defaultPausers,
+        address _linkerFactory,
+        bytes32 _linkerCodeHash
     ) {
         governance = _governance;
         hyperdriveDeployer = _deployer;
@@ -60,6 +80,8 @@ abstract contract HyperdriveFactory {
         feeCollector = _feeCollector;
         fees = _fees;
         defaultPausers = _defaultPausers;
+        linkerFactory = _linkerFactory;
+        linkerCodeHash = _linkerCodeHash;
     }
 
     modifier onlyGovernance() {
@@ -94,6 +116,25 @@ abstract contract HyperdriveFactory {
         hyperdriveGovernance = newGovernance;
     }
 
+    /// @notice Allows governance to change the linker factory.
+    /// @param newLinkerFactory The new linker code hash.
+    function updateLinkerFactory(
+        bytes32 newLinkerFactory
+    ) external onlyGovernance {
+        // Update the linker factory
+        linkerCodeHash = newLinkerFactory;
+    }
+
+    /// @notice Allows governance to change the linker code hash. This allows
+    ///         governance to update the implementation of the ERC20Forwarder.
+    /// @param newLinkerCodeHash The new linker code hash.
+    function updateLinkerCodeHash(
+        bytes32 newLinkerCodeHash
+    ) external onlyGovernance {
+        // Update the linker code hash
+        linkerCodeHash = newLinkerCodeHash;
+    }
+
     /// @notice Allows governance to change the fee collector address
     /// @param newFeeCollector The new governor address
     function updateFeeCollector(
@@ -123,18 +164,12 @@ abstract contract HyperdriveFactory {
 
     /// @notice Deploys a copy of hyperdrive with the given params
     /// @param _config The configuration of the Hyperdrive pool.
-    /// @param _linkerCodeHash The hash of the ERC20 linker contract's
-    ///        constructor code.
-    /// @param _linkerFactory The address of the factory which is used to deploy
-    ///        the ERC20 linker contracts.
     /// @param _extraData The extra data is used by some factories
     /// @param _contribution Base token to call init with
     /// @param _apr The apr to call init with
     /// @return The hyperdrive address deployed
     function deployAndInitialize(
         IHyperdrive.PoolConfig memory _config,
-        bytes32 _linkerCodeHash,
-        address _linkerFactory,
         bytes32[] memory _extraData,
         uint256 _contribution,
         uint256 _apr
@@ -149,8 +184,8 @@ abstract contract HyperdriveFactory {
         address dataProvider = deployDataProvider(
             _config,
             _extraData,
-            _linkerCodeHash,
-            _linkerFactory
+            linkerCodeHash,
+            linkerFactory
         );
 
         // Then we call the simplified factory
@@ -158,8 +193,8 @@ abstract contract HyperdriveFactory {
             hyperdriveDeployer.deploy(
                 _config,
                 dataProvider,
-                _linkerCodeHash,
-                _linkerFactory,
+                linkerCodeHash,
+                linkerFactory,
                 _extraData
             )
         );
@@ -197,7 +232,17 @@ abstract contract HyperdriveFactory {
         // Mark as a version
         isOfficial[address(hyperdrive)] = versionCounter;
 
-        return (hyperdrive);
+        // Emit a deployed event.
+        emit Deployed(
+            versionCounter,
+            address(hyperdrive),
+            _config,
+            linkerFactory,
+            linkerCodeHash,
+            _extraData
+        );
+
+        return hyperdrive;
     }
 
     /// @notice This should deploy a data provider which matches the type of the hyperdrives

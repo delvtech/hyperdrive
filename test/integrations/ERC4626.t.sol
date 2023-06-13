@@ -38,6 +38,7 @@ contract HyperdriveER4626Test is HyperdriveTest {
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
 
+        // FIXME: Verify that this emits the correct event when deployAndInitialize is called.
         factory = new ERC4626HyperdriveFactory(
             alice,
             simpleDeployer,
@@ -45,6 +46,8 @@ contract HyperdriveER4626Test is HyperdriveTest {
             bob,
             IHyperdrive.Fees(0, 0, 0),
             defaults,
+            address(0), // FIXME
+            bytes32(0), // FIXME
             pool
         );
 
@@ -165,8 +168,6 @@ contract HyperdriveER4626Test is HyperdriveTest {
         dai.approve(address(factory), type(uint256).max);
         hyperdrive = factory.deployAndInitialize(
             config,
-            bytes32(0),
-            address(0),
             new bytes32[](0),
             2500e18,
             apr

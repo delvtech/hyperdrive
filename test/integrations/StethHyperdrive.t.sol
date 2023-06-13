@@ -44,6 +44,7 @@ contract StethHyperdriveTest is HyperdriveTest {
         );
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
+        // FIXME: Verify that the correct event is committed.
         StethHyperdriveFactory factory = new StethHyperdriveFactory(
             alice,
             simpleDeployer,
@@ -51,6 +52,8 @@ contract StethHyperdriveTest is HyperdriveTest {
             bob,
             IHyperdrive.Fees(0, 0, 0),
             defaults,
+            address(0), // FIXME
+            bytes32(0), // FIXME
             LIDO
         );
 
@@ -74,8 +77,6 @@ contract StethHyperdriveTest is HyperdriveTest {
         uint256 contribution = 10_000e18;
         hyperdrive = factory.deployAndInitialize{ value: contribution }(
             config,
-            bytes32(0),
-            address(0),
             new bytes32[](0),
             contribution,
             FIXED_RATE

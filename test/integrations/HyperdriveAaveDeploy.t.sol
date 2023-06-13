@@ -31,13 +31,16 @@ contract HyperdriveAaveTest is HyperdriveTest {
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
 
+        // FIXME: Verify that this emits the correct event when deployAndInitialize is called.
         factory = new AaveHyperdriveFactory(
             alice,
             simpleDeployer,
             bob,
             bob,
             IHyperdrive.Fees(0, 0, 0),
-            defaults
+            defaults,
+            address(0), // FIXME
+            bytes32(0) // FIXME
         );
 
         address daiWhale = 0x075e72a5eDf65F0A5f44699c7654C1a76941Ddc8;
@@ -75,8 +78,6 @@ contract HyperdriveAaveTest is HyperdriveTest {
         });
         hyperdrive = factory.deployAndInitialize(
             config,
-            bytes32(0),
-            address(0),
             new bytes32[](0),
             2500e18,
             apr
@@ -117,8 +118,6 @@ contract HyperdriveAaveTest is HyperdriveTest {
         vm.expectRevert();
         hyperdrive = factory.deployAndInitialize(
             config,
-            bytes32(0),
-            address(0),
             new bytes32[](0),
             2500e18,
             //1% apr

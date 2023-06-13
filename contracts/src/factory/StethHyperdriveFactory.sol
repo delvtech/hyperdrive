@@ -27,6 +27,8 @@ contract StethHyperdriveFactory is HyperdriveFactory {
     /// @param _feeCollector The address which should be set as the fee collector in new deployments
     /// @param _fees The fees each deployed instance from this contract will have
     /// @param _defaultPausers The default addresses which will be set to have the pauser role
+    /// @param _linkerFactory The address of the linker factory
+    /// @param _linkerCodeHash The hash of the linker contract's constructor code.
     /// @param _lido The Lido contract.
     constructor(
         address _governance,
@@ -35,6 +37,8 @@ contract StethHyperdriveFactory is HyperdriveFactory {
         address _feeCollector,
         IHyperdrive.Fees memory _fees,
         address[] memory _defaultPausers,
+        address _linkerFactory,
+        bytes32 _linkerCodeHash,
         ILido _lido
     )
         HyperdriveFactory(
@@ -43,7 +47,9 @@ contract StethHyperdriveFactory is HyperdriveFactory {
             _hyperdriveGovernance,
             _feeCollector,
             _fees,
-            _defaultPausers
+            _defaultPausers,
+            _linkerFactory,
+            _linkerCodeHash
         )
     {
         lido = _lido;

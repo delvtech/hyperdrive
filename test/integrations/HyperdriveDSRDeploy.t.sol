@@ -31,6 +31,7 @@ contract HyperdriveDSRTest is HyperdriveTest {
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
 
+        // FIXME: Verify that the correct event is emitted.
         factory = new DsrHyperdriveFactory(
             alice,
             simpleDeployer,
@@ -38,6 +39,8 @@ contract HyperdriveDSRTest is HyperdriveTest {
             bob,
             IHyperdrive.Fees(0, 0, 0),
             defaults,
+            address(0), // FIXME
+            bytes32(0), // FIXME
             address(manager)
         );
 
@@ -75,14 +78,7 @@ contract HyperdriveDSRTest is HyperdriveTest {
             oracleSize: 2,
             updateGap: 0
         });
-        hyperdrive = factory.deployAndInitialize(
-            config,
-            bytes32(0),
-            address(0),
-            empty,
-            2500e18,
-            apr
-        );
+        hyperdrive = factory.deployAndInitialize(config, empty, 2500e18, apr);
 
         // The initial price per share is one so we should have that the
         // shares in the alice account are 1

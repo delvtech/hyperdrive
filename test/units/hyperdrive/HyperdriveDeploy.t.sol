@@ -23,6 +23,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
 
+        // FIXME: Verify that the correct event is emitted.
         DsrHyperdriveFactory factory = new DsrHyperdriveFactory(
             alice,
             simpleDeployer,
@@ -30,6 +31,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             bob,
             IHyperdrive.Fees(0, 0, 0),
             defaults,
+            address(0), // FIXME
+            bytes32(0), // FIXME
             address(manager)
         );
         assertEq(factory.governance(), alice);
