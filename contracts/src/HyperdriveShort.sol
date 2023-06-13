@@ -39,6 +39,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
         isNotPaused
         returns (uint256 maturityTime, uint256 traderDeposit)
     {
+        // Check that the message value and base amount are valid.
+        _checkMessageValue();
         if (_bondAmount == 0) {
             revert Errors.ZeroAmount();
         }

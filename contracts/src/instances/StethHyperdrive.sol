@@ -49,6 +49,10 @@ contract StethHyperdrive is Hyperdrive {
         lido = _lido;
     }
 
+    /// @dev We override the message value check since this integration is
+    ///      payable.
+    function _checkMessageValue() internal pure override {}
+
     /// @dev Accepts a transfer from the user in base or the yield source token.
     /// @param _amount The amount to deposit.
     /// @param _asUnderlying A flag indicating that the deposit is paid in ETH
@@ -83,6 +87,11 @@ contract StethHyperdrive is Hyperdrive {
             // Calculate the share price.
             sharePrice = _amount.divDown(shares);
         } else {
+            // Ensure that the user didn't send ether to the contract.
+            if (msg.value > 0) {
+                revert Errors.NotPayable();
+            }
+
             // Transfer stETH into the contract.
             bool success = lido.transferFrom(
                 msg.sender,

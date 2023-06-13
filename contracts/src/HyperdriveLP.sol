@@ -32,6 +32,12 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         address _destination,
         bool _asUnderlying
     ) external payable {
+        // Check that the message value and base amount are valid.
+        _checkMessageValue();
+        if (_contribution == 0) {
+            revert Errors.ZeroAmount();
+        }
+
         // Ensure that the pool hasn't been initialized yet.
         if (_marketState.isInitialized) {
             revert Errors.PoolAlreadyInitialized();
@@ -85,6 +91,8 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         address _destination,
         bool _asUnderlying
     ) external payable isNotPaused returns (uint256 lpShares) {
+        // Check that the message value and base amount are valid.
+        _checkMessageValue();
         if (_contribution == 0) {
             revert Errors.ZeroAmount();
         }
