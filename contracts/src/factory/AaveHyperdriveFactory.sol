@@ -60,6 +60,12 @@ contract AaveHyperdriveFactory is HyperdriveFactory {
         uint256 _contribution,
         uint256 _apr
     ) public payable override returns (IHyperdrive) {
+        // Ensure that ether wasn't sent. This is only marked as payable to
+        // satisfy the interface.
+        if (msg.value > 0) {
+            revert Errors.NotPayable();
+        }
+
         // Encode the aToken address corresponding to the base token in the
         // extra data passed to `deployAndInitialize`.
         IPool pool = IAaveDeployer(address(hyperdriveDeployer)).pool();
