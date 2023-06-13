@@ -31,6 +31,7 @@ library Errors {
     error ZeroAmount();
     error ZeroLpTotalSupply();
     error NoAssetsToWithdraw();
+    error NotPayable();
 
     /// ############
     /// ### TWAP ###

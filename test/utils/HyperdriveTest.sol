@@ -26,6 +26,8 @@ contract HyperdriveTest is BaseTest {
     uint256 internal constant ORACLE_SIZE = 5;
     uint256 internal constant UPDATE_GAP = 1000;
 
+    address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
     function setUp() public virtual override {
         super.setUp();
         vm.startPrank(alice);
@@ -192,10 +194,21 @@ contract HyperdriveTest is BaseTest {
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
             trader
         );
-        baseToken.mint(baseAmount);
-        baseToken.approve(address(hyperdrive), baseAmount);
-        hyperdrive.openLong(baseAmount, 0, trader, asUnderlying);
-
+        if (
+            address(hyperdrive.getPoolConfig().baseToken) == address(ETH) &&
+            asUnderlying
+        ) {
+            hyperdrive.openLong{ value: baseAmount }(
+                baseAmount,
+                0,
+                trader,
+                asUnderlying
+            );
+        } else {
+            baseToken.mint(baseAmount);
+            baseToken.approve(address(hyperdrive), baseAmount);
+            hyperdrive.openLong(baseAmount, 0, trader, asUnderlying);
+        }
         uint256 bondBalanceAfter = hyperdrive.balanceOf(
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
             trader
@@ -250,15 +263,24 @@ contract HyperdriveTest is BaseTest {
         maturityTime = HyperdriveUtils.maturityTimeFromLatestCheckpoint(
             hyperdrive
         );
-        baseToken.mint(bondAmount);
-        baseToken.approve(address(hyperdrive), bondAmount);
-        (maturityTime, baseAmount) = hyperdrive.openShort(
-            bondAmount,
-            bondAmount,
-            trader,
+        if (
+            address(hyperdrive.getPoolConfig().baseToken) == address(ETH) &&
             asUnderlying
-        );
-        baseToken.burn(bondAmount - baseAmount);
+        ) {
+            (maturityTime, baseAmount) = hyperdrive.openShort{
+                value: bondAmount
+            }(bondAmount, type(uint256).max, trader, asUnderlying);
+        } else {
+            baseToken.mint(bondAmount);
+            baseToken.approve(address(hyperdrive), bondAmount);
+            (maturityTime, baseAmount) = hyperdrive.openShort(
+                bondAmount,
+                type(uint256).max,
+                trader,
+                asUnderlying
+            );
+            baseToken.burn(bondAmount - baseAmount);
+        }
         return (maturityTime, baseAmount);
     }
 

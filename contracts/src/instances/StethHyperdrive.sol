@@ -49,22 +49,14 @@ contract StethHyperdrive is Hyperdrive {
         lido = _lido;
     }
 
-    /// @notice Accepts ether deposits from the WETH contract.
-    /// @dev This function verifies that the sender is the WETH contract to
-    ///      prevent users from forwarding stuck tokens to the contract. Since
-    ///      this function is the intended target of the WETH contract, it's
-    ///      important that this contract does not consume more than the 2300
-    ///      gas stipend provided by WETH's `transfer` call.
-    receive() external payable {
-        if (msg.sender != address(_baseToken)) {
-            revert Errors.UnexpectedSender();
-        }
-    }
+    /// @dev We override the message value check since this integration is
+    ///      payable.
+    function _checkMessageValue() internal pure override {} // solhint-disable-line no-empty-blocks
 
     /// @dev Accepts a transfer from the user in base or the yield source token.
     /// @param _amount The amount to deposit.
-    /// @param _asUnderlying A flag indicating that the deposit is paid in stETH
-    ///        if true and in WETH if false.
+    /// @param _asUnderlying A flag indicating that the deposit is paid in ETH
+    ///        if true and in stETH if false. If ETH msg.value must equal amount
     /// @return shares The amount of shares that represents the amount deposited.
     /// @return sharePrice The current share price.
     function _deposit(
@@ -72,17 +64,19 @@ contract StethHyperdrive is Hyperdrive {
         bool _asUnderlying
     ) internal override returns (uint256 shares, uint256 sharePrice) {
         if (_asUnderlying) {
-            // Transfer WETH into the contract and unwrap it.
-            IWETH weth = IWETH(address(_baseToken));
-            bool success = weth.transferFrom(
-                msg.sender,
-                address(this),
-                _amount
-            );
-            if (!success) {
+            // Ensure that sufficient ether was provided and refund any excess.
+            if (msg.value < _amount) {
                 revert Errors.TransferFailed();
             }
-            weth.withdraw(_amount);
+            if (msg.value > _amount) {
+                // Return excess ether to the user.
+                (bool success, ) = payable(msg.sender).call{
+                    value: msg.value - _amount
+                }("");
+                if (!success) {
+                    revert Errors.TransferFailed();
+                }
+            }
 
             // Submit the provided ether to Lido to be deposited. The fee
             // collector address is passed as the referral address; however,
@@ -93,6 +87,11 @@ contract StethHyperdrive is Hyperdrive {
             // Calculate the share price.
             sharePrice = _pricePerShare();
         } else {
+            // Ensure that the user didn't send ether to the contract.
+            if (msg.value > 0) {
+                revert Errors.NotPayable();
+            }
+
             // Transfer stETH into the contract.
             bool success = lido.transferFrom(
                 msg.sender,
@@ -123,6 +122,7 @@ contract StethHyperdrive is Hyperdrive {
         address _destination,
         bool _asUnderlying
     ) internal override returns (uint256 amountWithdrawn) {
+        // At the time of writing there's no stETH -> eth withdraw path
         if (_asUnderlying) {
             revert Errors.UnsupportedToken();
         }
