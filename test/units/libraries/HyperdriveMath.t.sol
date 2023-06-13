@@ -1036,9 +1036,13 @@ contract HyperdriveMathTest is HyperdriveTest {
                 params.longsOutstanding.mulDown(
                     params.longAverageTimeRemaining
                 );
-            uint256 maxCurveTrade = params.bondReserves.divDown(
+            (, uint256 maxCurveTrade) = YieldSpaceMath.calculateMaxBuy(
+                params.shareReserves,
+                params.bondReserves,
+                FixedPointMath.ONE_18.sub(params.timeStretch),
+                params.sharePrice,
                 params.initialSharePrice
-            ) - params.shareReserves;
+            );
             params.shareReserves += YieldSpaceMath
                 .calculateSharesInGivenBondsOut(
                     params.shareReserves,

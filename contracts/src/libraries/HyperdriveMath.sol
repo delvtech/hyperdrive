@@ -488,9 +488,6 @@ library HyperdriveMath {
                 )
             );
         if (netCurveTrade > 0) {
-            // FIXME: We should use HyperdriveMath.calculateCloseLong with a
-            // time remaining of 1e18 instead of YieldSpace.calculateSharesOutGivenBondsIn
-            //
             // Apply the curve trade directly to the reserves. Unlike shorts,
             // the capital that backs longs is accounted for within the share
             // reserves (the capital backing shorts is taken out of the
@@ -506,23 +503,21 @@ library HyperdriveMath {
                     _params.initialSharePrice
                 );
         } else if (netCurveTrade < 0) {
-            // FIXME: We solve for the maximum short that can be closed (without
-            // regard for solvency checks). The reasoning for why we don't need
-            // to think about solvency checks is that all of the longs are
-            // considered to be closed when we're net short, and if all of the
-            // outstanding longs are closed then the long buffer is zero.
-            //
             // It's possible that the exchange gets into a state where the
             // net curve trade can't be applied to the reserves. In particular,
             // this can happen if all of the liquidity is removed. We first
             // attempt to trade as much as possible on the curve, and then we
-            // mark the remaining amount to the base volume. Since we are
-            // simulating the closing of shorts on the curve, the constraint
-            // is that the trade size must be less than the maximum long that
-            // can be opened.
-            uint256 maxCurveTrade = _params.bondReserves.divDown(
+            // mark the remaining amount to the base volume. We can assume that
+            // the outstanding long amount is zero when we apply the net curve
+            // trade, so the only constraint is that the spot price cannot
+            // exceed 1.
+            (, uint256 maxCurveTrade) = YieldSpaceMath.calculateMaxBuy(
+                _params.shareReserves,
+                _params.bondReserves,
+                FixedPointMath.ONE_18 - _params.timeStretch,
+                _params.sharePrice,
                 _params.initialSharePrice
-            ) - _params.shareReserves;
+            );
             maxCurveTrade = uint256(-netCurveTrade) <= maxCurveTrade
                 ? uint256(-netCurveTrade)
                 : maxCurveTrade;
