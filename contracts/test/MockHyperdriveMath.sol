@@ -23,7 +23,6 @@ contract MockHyperdriveMath {
 
     function calculateInitialBondReserves(
         uint256 _shareReserves,
-        uint256 _sharePrice,
         uint256 _initialSharePrice,
         uint256 _apr,
         uint256 _positionDuration,
@@ -31,7 +30,6 @@ contract MockHyperdriveMath {
     ) external pure returns (uint256) {
         uint256 result = HyperdriveMath.calculateInitialBondReserves(
             _shareReserves,
-            _sharePrice,
             _initialSharePrice,
             _apr,
             _positionDuration,

@@ -152,20 +152,14 @@ contract YieldSpaceMathTest is Test {
                 uint256 timeStretch = HyperdriveUtils.calculateTimeStretch(
                     fixedRate
                 );
-                uint256 bondReserves = 2 *
-                    HyperdriveMath.calculateInitialBondReserves(
+                uint256 bondReserves = HyperdriveMath
+                    .calculateInitialBondReserves(
                         shareReserves,
-                        initialSharePrice,
                         initialSharePrice,
                         fixedRate,
                         365 days,
                         timeStretch
-                    ) +
-                    sharePrice.mulDown(shareReserves);
-
-                // Select a trade size above the specified order of magnitude
-                // and ensure that trade size doesn't result in an output of
-                // zero.
+                    );
                 tradeSize = tradeSize.normalizeToRange(
                     10 ** j,
                     HyperdriveMath
@@ -214,7 +208,6 @@ contract YieldSpaceMathTest is Test {
         uint256 bondReserves = 2 *
             HyperdriveMath.calculateInitialBondReserves(
                 shareReserves,
-                initialSharePrice,
                 initialSharePrice,
                 fixedRate,
                 365 days,

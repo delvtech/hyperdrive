@@ -79,7 +79,6 @@ library HyperdriveMath {
     ///      this function are unadjusted which makes it easier to calculate the
     ///      initial LP shares.
     /// @param _shareReserves The pool's share reserves.
-    /// @param _sharePrice The pool's share price.
     /// @param _initialSharePrice The pool's initial share price.
     /// @param _apr The pool's APR.
     /// @param _positionDuration The amount of time until maturity in seconds.
@@ -88,7 +87,6 @@ library HyperdriveMath {
     ///         the pool have a specified APR.
     function calculateInitialBondReserves(
         uint256 _shareReserves,
-        uint256 _sharePrice,
         uint256 _initialSharePrice,
         uint256 _apr,
         uint256 _positionDuration,
@@ -97,16 +95,13 @@ library HyperdriveMath {
         // NOTE: Using divDown to convert to fixed point format.
         uint256 t = _positionDuration.divDown(365 days);
         uint256 tau = FixedPointMath.ONE_18.mulDown(_timeStretch);
-        // mu * (1 + apr * t) ** (1 / tau) - c
-        uint256 rhs = _initialSharePrice
-            .mulDown(
+        // mu * z * (1 + apr * t) ** (1 / tau)
+        return
+            _initialSharePrice.mulDown(_shareReserves).mulDown(
                 FixedPointMath.ONE_18.add(_apr.mulDown(t)).pow(
                     FixedPointMath.ONE_18.divUp(tau)
                 )
-            )
-            .sub(_sharePrice);
-        // (z / 2) * (mu * (1 + apr * t) ** (1 / tau) - c)
-        return _shareReserves.divDown(2 * FixedPointMath.ONE_18).mulDown(rhs);
+            );
     }
 
     /// @dev Calculates the number of bonds a user will receive when opening a long position.

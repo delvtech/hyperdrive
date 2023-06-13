@@ -99,15 +99,15 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
         uint256 lpTotalSupply;
         /// @dev The current share price.
         uint256 sharePrice;
-        /// @dev An amount of bonds representating outstanding unmatured longs.
+        /// @dev An amount of bonds representing outstanding unmatured longs.
         uint256 longsOutstanding;
         /// @dev The average maturity time of the outstanding longs.
         uint256 longAverageMaturityTime;
-        /// @dev An amount of bonds representating outstanding unmatured shorts.
+        /// @dev An amount of bonds representing outstanding unmatured shorts.
         uint256 shortsOutstanding;
         /// @dev The average maturity time of the outstanding shorts.
         uint256 shortAverageMaturityTime;
-        /// @dev The cumulative amount of base paid for oustanding shorts.
+        /// @dev The cumulative amount of base paid for outstanding shorts.
         uint256 shortBaseVolume;
         /// @dev The amount of withdrawal shares that are ready to be redeemed.
         uint256 withdrawalSharesReadyToWithdraw;
