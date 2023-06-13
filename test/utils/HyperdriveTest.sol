@@ -14,6 +14,8 @@ import { MockHyperdrive, MockHyperdriveDataProvider } from "../mocks/MockHyperdr
 import { BaseTest } from "./BaseTest.sol";
 import { HyperdriveUtils } from "./HyperdriveUtils.sol";
 
+import "forge-std/console2.sol";
+
 contract HyperdriveTest is BaseTest {
     using FixedPointMath for uint256;
 
@@ -25,6 +27,8 @@ contract HyperdriveTest is BaseTest {
     uint256 internal constant POSITION_DURATION = 365 days;
     uint256 internal constant ORACLE_SIZE = 5;
     uint256 internal constant UPDATE_GAP = 1000;
+
+    address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     function setUp() public virtual override {
         super.setUp();
@@ -192,10 +196,13 @@ contract HyperdriveTest is BaseTest {
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
             trader
         );
-        baseToken.mint(baseAmount);
-        baseToken.approve(address(hyperdrive), baseAmount);
-        hyperdrive.openLong(baseAmount, 0, trader, asUnderlying);
-
+        if (address(baseToken) != address(ETH)){
+            baseToken.mint(baseAmount);
+            baseToken.approve(address(hyperdrive), baseAmount);
+            hyperdrive.openLong(baseAmount, 0, trader, asUnderlying);
+        } else {
+            hyperdrive.openLong{value: baseAmount}(baseAmount, 0, trader, asUnderlying);
+        }
         uint256 bondBalanceAfter = hyperdrive.balanceOf(
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
             trader

@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
+import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { StethHyperdriveDeployer } from "contracts/src/factory/StethHyperdriveDeployer.sol";
 import { StethHyperdriveFactory } from "contracts/src/factory/StethHyperdriveFactory.sol";
 import { StethHyperdrive } from "contracts/src/instances/StethHyperdrive.sol";
@@ -16,6 +17,8 @@ import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
 
+import "forge-std/console2.sol";
+
 contract StethHyperdriveTest is HyperdriveTest {
     using FixedPointMath for uint256;
     using Lib for *;
@@ -29,8 +32,7 @@ contract StethHyperdriveTest is HyperdriveTest {
 
     ILido internal constant LIDO =
         ILido(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
-    IERC20 internal constant ETH =
-        IERC20(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
+
 
     address internal STETH_WHALE = 0x1982b2F5814301d4e9a8b0201555376e62F82428;
     address internal ETH_WHALE = 0x00000000219ab540356cBB839Cbe05303d7705Fa;
@@ -38,11 +40,12 @@ contract StethHyperdriveTest is HyperdriveTest {
     function setUp() public override __mainnet_fork(17_376_154) {
         super.setUp();
 
+        baseToken = ERC20Mintable(ETH);
         // Deploy the StethHyperdrive deployer and factory.
         vm.startPrank(deployer);
         StethHyperdriveDeployer simpleDeployer = new StethHyperdriveDeployer(
             LIDO,
-            ETH
+            IERC20(ETH)
         );
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
@@ -408,6 +411,10 @@ contract StethHyperdriveTest is HyperdriveTest {
     ) internal {
         if (asUnderlying) {
             // Ensure that the amount of pooled ether increased by the base paid.
+            console2.log(
+                "totalPooledEtherBefore:",
+                totalPooledEtherBefore
+            );
             assertEq(
                 LIDO.getTotalPooledEther(),
                 totalPooledEtherBefore + basePaid
@@ -415,11 +422,11 @@ contract StethHyperdriveTest is HyperdriveTest {
 
             // Ensure that the ETH balances were updated correctly.
             assertEq(
-                ETH.balanceOf(address(hyperdrive)),
+                IERC20(ETH).balanceOf(address(hyperdrive)),
                 hyperdriveBalancesBefore.ETHBalance
             );
             assertEq(
-                ETH.balanceOf(bob),
+                IERC20(ETH).balanceOf(bob),
                 traderBalancesBefore.ETHBalance - basePaid
             );
 
@@ -448,10 +455,10 @@ contract StethHyperdriveTest is HyperdriveTest {
 
             // Ensure that the ETH balances were updated correctly.
             assertEq(
-                ETH.balanceOf(address(hyperdrive)),
+                IERC20(ETH).balanceOf(address(hyperdrive)),
                 hyperdriveBalancesBefore.ETHBalance
             );
-            assertEq(ETH.balanceOf(trader), traderBalancesBefore.ETHBalance);
+            assertEq(IERC20(ETH).balanceOf(trader), traderBalancesBefore.ETHBalance);
 
             // Ensure that the stETH balances were updated correctly.
             assertApproxEqAbs(
@@ -496,10 +503,10 @@ contract StethHyperdriveTest is HyperdriveTest {
 
         // Ensure that the ETH balances were updated correctly.
         assertEq(
-            ETH.balanceOf(address(hyperdrive)),
+            IERC20(ETH).balanceOf(address(hyperdrive)),
             hyperdriveBalancesBefore.ETHBalance
         );
-        assertEq(ETH.balanceOf(trader), traderBalancesBefore.ETHBalance);
+        assertEq(IERC20(ETH).balanceOf(trader), traderBalancesBefore.ETHBalance);
 
         // Ensure that the stETH balances were updated correctly.
         assertApproxEqAbs(
@@ -568,7 +575,7 @@ contract StethHyperdriveTest is HyperdriveTest {
             AccountBalances({
                 stethShares: LIDO.sharesOf(account),
                 stethBalance: LIDO.balanceOf(account),
-                ETHBalance: ETH.balanceOf(account)
+                ETHBalance: IERC20(ETH).balanceOf(account)
             });
     }
 }
