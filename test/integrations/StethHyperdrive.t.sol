@@ -40,8 +40,7 @@ contract StethHyperdriveTest is HyperdriveTest {
         // Deploy the StethHyperdrive deployer and factory.
         vm.startPrank(deployer);
         StethHyperdriveDeployer simpleDeployer = new StethHyperdriveDeployer(
-            LIDO,
-            IERC20(ETH)
+            LIDO
         );
         address[] memory defaults = new address[](1);
         defaults[0] = bob;

@@ -104,7 +104,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     /// Yield Source ///
 
     /// @notice A YieldSource dependent check that prevents ether from being
-    ///         transferred to Hyeprdrive instances that don't accept ether.
+    ///         transferred to Hyperdrive instances that don't accept ether.
     function _checkMessageValue() internal view virtual {
         if (msg.value != 0) {
             revert Errors.NotPayable();

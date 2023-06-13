@@ -22,15 +22,13 @@ contract StethHyperdriveDeployer is IHyperdriveDeployer {
     /// @dev The Lido contract.
     ILido internal immutable lido;
 
-    /// @dev The ETH token.
-    IERC20 internal immutable eth;
+    /// @dev A constant for the ETH value
+    address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     /// @notice Initializes the factory.
     /// @param _lido The Lido contract.
-    /// @param _eth The ETH token.
-    constructor(ILido _lido, IERC20 _eth) {
+    constructor(ILido _lido) {
         lido = _lido;
-        eth = _eth;
     }
 
     /// @notice Deploys a copy of hyperdrive with the given params.
@@ -48,7 +46,7 @@ contract StethHyperdriveDeployer is IHyperdriveDeployer {
         bytes32[] calldata
     ) external override returns (address) {
         // Ensure that the base token is configured properly.
-        if (address(_config.baseToken) != address(eth)) {
+        if (address(_config.baseToken) != ETH) {
             revert Errors.InvalidBaseToken();
         }
 
