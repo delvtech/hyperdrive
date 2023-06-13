@@ -216,6 +216,21 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
         timeRemaining = (timeRemaining).divDown(_positionDuration);
     }
 
+    /// @dev Calculates the normalized time remaining of a position when the
+    ///      maturity time is scaled up 18 decimals.
+    /// @param _maturityTime The maturity time of the position.
+    function _calculateTimeRemainingScaled(
+        uint256 _maturityTime
+    ) internal view returns (uint256 timeRemaining) {
+        uint256 latestCheckpoint = _latestCheckpoint() * FixedPointMath.ONE_18;
+        timeRemaining = _maturityTime > latestCheckpoint
+            ? _maturityTime - latestCheckpoint
+            : 0;
+        timeRemaining = (timeRemaining).divDown(
+            _positionDuration * FixedPointMath.ONE_18
+        );
+    }
+
     /// @dev Gets the most recent checkpoint time.
     /// @return latestCheckpoint The latest checkpoint.
     function _latestCheckpoint()

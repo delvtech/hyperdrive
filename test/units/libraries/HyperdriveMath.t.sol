@@ -9,6 +9,7 @@ import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { MockHyperdriveMath } from "contracts/test/MockHyperdriveMath.sol";
+import { IMockHyperdrive } from "test/mocks/MockHyperdrive.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { Lib } from "test/utils/Lib.sol";
@@ -1012,9 +1013,13 @@ contract HyperdriveMathTest is HyperdriveTest {
                 params.longsOutstanding.mulDown(
                     params.longAverageTimeRemaining
                 );
-            uint256 maxCurveTrade = params.bondReserves.divDown(
+            (, uint256 maxCurveTrade) = YieldSpaceMath.calculateMaxBuy(
+                params.shareReserves,
+                params.bondReserves,
+                FixedPointMath.ONE_18.sub(params.timeStretch),
+                params.sharePrice,
                 params.initialSharePrice
-            ) - params.shareReserves;
+            );
             params.shareReserves += YieldSpaceMath
                 .calculateSharesInGivenBondsOut(
                     params.shareReserves,
@@ -1255,6 +1260,30 @@ contract HyperdriveMathTest is HyperdriveTest {
             0 // timeRemaining
         );
         assertEq(baseVolume, 0);
+    }
+
+    function test__calculateTimeRemainingScaledAndUnscaled(
+        uint256 maturityTime
+    ) external {
+        maturityTime = maturityTime.normalizeToRange(
+            block.timestamp,
+            block.timestamp * 1e6
+        );
+
+        // Ensure that the calculate time remaining calculation is correct.
+        uint256 result = IMockHyperdrive(address(hyperdrive))
+            .calculateTimeRemaining(maturityTime);
+        assertEq(
+            result,
+            (maturityTime -
+                IMockHyperdrive(address(hyperdrive)).latestCheckpoint())
+                .divDown(hyperdrive.getPoolConfig().positionDuration)
+        );
+
+        // Ensure that the scaled and unscaled time remaining calculations agree.
+        uint256 scaledResult = IMockHyperdrive(address(hyperdrive))
+            .calculateTimeRemainingScaled(maturityTime * FixedPointMath.ONE_18);
+        assertEq(result, scaledResult);
     }
 
     function calculateBondReserves(

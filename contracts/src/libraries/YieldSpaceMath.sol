@@ -274,6 +274,7 @@ library YieldSpaceMath {
     /// @param t Amount of time elapsed since term start
     /// @param c Conversion rate between base and shares
     /// @param mu Interest normalization factor for shares
+    /// @return The amount of bonds the user will pay
     function calculateBondsInGivenSharesOut(
         uint256 z,
         uint256 y,
@@ -304,6 +305,7 @@ library YieldSpaceMath {
     /// @param t Amount of time elapsed since term start
     /// @param c Conversion rate between base and shares
     /// @param mu Interest normalization factor for shares
+    /// @return The amount of bonds the user will receive
     function calculateBondsOutGivenSharesIn(
         uint256 z,
         uint256 y,
@@ -334,6 +336,7 @@ library YieldSpaceMath {
     /// @param t Amount of time elapsed since term start
     /// @param c Conversion rate between base and shares
     /// @param mu Interest normalization factor for shares
+    /// @return The amount of shares the user will pay
     function calculateSharesInGivenBondsOut(
         uint256 z,
         uint256 y,
@@ -366,6 +369,7 @@ library YieldSpaceMath {
     /// @param t Amount of time elapsed since term start
     /// @param c Conversion rate between base and shares
     /// @param mu Interest normalization factor for shares
+    /// @return The amount of shares the user will receive
     function calculateSharesOutGivenBondsIn(
         uint256 z,
         uint256 y,
@@ -388,6 +392,39 @@ library YieldSpaceMath {
         _z = _z.divDown(mu);
         // Δz = z - (((c / µ) * (µ * z)^(1 - t) + y^(1 - t) - (y + dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
         return z.sub(_z);
+    }
+
+    /// @dev Calculates the maximum amount of bonds that can be purchased with
+    ///      the specified reserves.
+    /// @param z Amount of share reserves in the pool
+    /// @param y Amount of bond reserves in the pool
+    /// @param t Amount of time elapsed since term start
+    /// @param c Conversion rate between base and shares
+    /// @param mu Interest normalization factor for shares
+    /// @return The cost in shares of the maximum bond purchase.
+    /// @return The maximum amount of bonds that can be purchased.
+    function calculateMaxBuy(
+        uint256 z,
+        uint256 y,
+        uint256 t,
+        uint256 c,
+        uint256 mu
+    ) internal pure returns (uint256, uint256) {
+        // We solve for the maximum buy using the constraint that the pool's
+        // spot price can never exceed 1. We do this by noting that a spot price
+        // of 1, (mu * z) / y ** tau = 1, implies that mu * z = y. This
+        // simplifies YieldSpace to k = ((c / mu) + 1) * y ** (1 - tau), and
+        // gives us the maximum bond reserves of y' = (k / ((c / mu) + 1)) ** (1 / (1 - tau))
+        // and the maximum share reserves of z' = y/mu.
+        uint256 cDivMu = c.divDown(mu);
+        uint256 k = modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
+        uint256 optimalY = (k.divDown(cDivMu + FixedPointMath.ONE_18)).pow(
+            FixedPointMath.ONE_18.divDown(t)
+        );
+        uint256 optimalZ = optimalY.divDown(mu);
+
+        // The optimal trade sizes are given by dz = z' - z and dy = y - y'.
+        return (optimalZ - z, y - optimalY);
     }
 
     /// @dev Helper function to derive invariant constant C

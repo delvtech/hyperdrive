@@ -210,7 +210,7 @@ library HyperdriveMath {
     /// @param _timeStretch The time stretch parameter.
     /// @param _sharePrice The share price.
     /// @param _initialSharePrice The initial share price.
-    /// @return shareReservesDelta The shares paid by the reserves in the trade.
+    /// @return The shares paid by the reserves in the trade.
     function calculateOpenShort(
         uint256 _shareReserves,
         uint256 _bondReserves,
@@ -311,42 +311,20 @@ library HyperdriveMath {
         uint256 _initialSharePrice,
         uint256 _maxIterations
     ) internal pure returns (MaxLongResult memory result) {
-        // We first solve for the maximum trade size using the constraint that
-        // the pool's spot price can never exceed 1. We do this by noting that
-        // a spot price of 1, (mu * z) / y ** tau = 1, implies that mu * z = y.
-        // This simplifies YieldSpace to k = ((c / mu) + 1) * y ** (1 - tau),
-        // and gives us the maximum bond reserves of y = (k / ((c / mu) + 1)) ** (1 / (1 - tau))
-        // and the maximum share reserves of z = y * mu. This gives us a trade
-        // size of dz = z - z0 and dy = y0 - y.
-        //
-        // If the solvency requirements are met at this trade size, then we're
-        // done. If not, then we need to solve for the maximum trade size
-        // iteratively.
-        uint256 dz;
-        uint256 dy;
-        {
-            uint256 k = YieldSpaceMath.modifiedYieldSpaceConstant(
-                _sharePrice.divDown(_initialSharePrice),
-                _initialSharePrice,
-                _shareReserves,
-                FixedPointMath.ONE_18 - _timeStretch,
-                _bondReserves
-            );
-            uint256 optimalBondReserves = (
-                k.divDown(
-                    _sharePrice.divUp(_initialSharePrice) +
-                        FixedPointMath.ONE_18
-                )
-            ).pow(
-                    FixedPointMath.ONE_18.divDown(
-                        FixedPointMath.ONE_18 - _timeStretch
-                    )
-                );
-            dy = _bondReserves - optimalBondReserves;
-            dz =
-                optimalBondReserves.divDown(_initialSharePrice) -
-                _shareReserves;
-        }
+        // We first solve for the maximum buy that is possible on the YieldSpace
+        // curve. This will give us an upper bound on our maximum buy by giving
+        // us the maximum buy that is possible without going into negative
+        // interest territory. Hyperdrive has solvency requirements since it
+        // mints longs on demand. If the maximum buy satisfies our solvency
+        // checks, then we're done. If not, then we need to solve for the
+        // maximum trade size iteratively.
+        (uint256 dz, uint256 dy) = YieldSpaceMath.calculateMaxBuy(
+            _shareReserves,
+            _bondReserves,
+            FixedPointMath.ONE_18 - _timeStretch,
+            _sharePrice,
+            _initialSharePrice
+        );
         if (
             _shareReserves + dz >= (_longsOutstanding + dy).divDown(_sharePrice)
         ) {
@@ -524,25 +502,31 @@ library HyperdriveMath {
             // net curve trade can't be applied to the reserves. In particular,
             // this can happen if all of the liquidity is removed. We first
             // attempt to trade as much as possible on the curve, and then we
-            // mark the remaining amount to the base volume. Since we are
-            // simulating the closing of shorts on the curve, the constraint
-            // is that the trade size must be less than the maximum long that
-            // can be opened.
-            uint256 maxCurveTrade = _params.bondReserves.divDown(
+            // mark the remaining amount to the base volume. We can assume that
+            // the outstanding long amount is zero when we apply the net curve
+            // trade, so the only constraint is that the spot price cannot
+            // exceed 1.
+            (, uint256 maxCurveTrade) = YieldSpaceMath.calculateMaxBuy(
+                _params.shareReserves,
+                _params.bondReserves,
+                FixedPointMath.ONE_18 - _params.timeStretch,
+                _params.sharePrice,
                 _params.initialSharePrice
-            ) - _params.shareReserves;
+            );
             maxCurveTrade = uint256(-netCurveTrade) <= maxCurveTrade
                 ? uint256(-netCurveTrade)
                 : maxCurveTrade;
-            _params.shareReserves += YieldSpaceMath
-                .calculateSharesInGivenBondsOut(
-                    _params.shareReserves,
-                    _params.bondReserves,
-                    maxCurveTrade,
-                    FixedPointMath.ONE_18.sub(_params.timeStretch),
-                    _params.sharePrice,
-                    _params.initialSharePrice
-                );
+            if (maxCurveTrade > 0) {
+                _params.shareReserves += YieldSpaceMath
+                    .calculateSharesInGivenBondsOut(
+                        _params.shareReserves,
+                        _params.bondReserves,
+                        maxCurveTrade,
+                        FixedPointMath.ONE_18.sub(_params.timeStretch),
+                        _params.sharePrice,
+                        _params.initialSharePrice
+                    );
+            }
             _params.shareReserves += _params.shortBaseVolume.mulDivDown(
                 uint256(-netCurveTrade) - maxCurveTrade,
                 _params.shortsOutstanding.mulDown(_params.sharePrice)

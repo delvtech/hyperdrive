@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import { Test } from "forge-std/Test.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
+import { YieldSpaceMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { MockYieldSpaceMath } from "contracts/test/MockYieldSpaceMath.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
@@ -147,6 +148,7 @@ contract YieldSpaceMathTest is Test {
                 10 ** (i + 9)
             );
             for (uint256 j = i - (i / 2 + 1); j < i; j++) {
+                // Calculate the bond reserves that give the pool the expected spot rate.
                 uint256 timeStretch = HyperdriveUtils.calculateTimeStretch(
                     fixedRate
                 );
@@ -183,5 +185,73 @@ contract YieldSpaceMathTest is Test {
                 assertGt(result, 0);
             }
         }
+    }
+
+    function test__calculateMaxBuy(
+        uint256 fixedRate,
+        uint256 shareReserves,
+        uint256 sharePrice,
+        uint256 initialSharePrice
+    ) external {
+        MockYieldSpaceMath yieldSpaceMath = new MockYieldSpaceMath();
+
+        fixedRate = fixedRate.normalizeToRange(0.01e18, 1e18);
+        shareReserves = shareReserves.normalizeToRange(
+            0.0001e18,
+            500_000_000e18
+        );
+        initialSharePrice = initialSharePrice.normalizeToRange(0.8e18, 5e18);
+        sharePrice = sharePrice.normalizeToRange(initialSharePrice, 5e18);
+
+        // Calculate the bond reserves that give the pool the expected spot rate.
+        uint256 timeStretch = HyperdriveUtils.calculateTimeStretch(fixedRate);
+        uint256 bondReserves = HyperdriveMath.calculateInitialBondReserves(
+            shareReserves,
+            initialSharePrice,
+            fixedRate,
+            365 days,
+            timeStretch
+        );
+
+        // Calculate the difference in share and bond reserves caused by the max
+        // purchase.
+        (uint256 maxDz, uint256 maxDy) = yieldSpaceMath.calculateMaxBuy(
+            shareReserves,
+            bondReserves,
+            1e18 - FixedPointMath.ONE_18.mulDown(timeStretch),
+            sharePrice,
+            initialSharePrice
+        );
+
+        // Ensure that the maximum buy is a valid trade on this invariant and
+        // that the ending spot price is close to 1.
+        assertApproxEqAbs(
+            yieldSpaceMath.modifiedYieldSpaceConstant(
+                sharePrice.divDown(initialSharePrice),
+                initialSharePrice,
+                shareReserves,
+                FixedPointMath.ONE_18 - timeStretch,
+                bondReserves
+            ),
+            yieldSpaceMath.modifiedYieldSpaceConstant(
+                sharePrice.divDown(initialSharePrice),
+                initialSharePrice,
+                shareReserves + maxDz,
+                FixedPointMath.ONE_18 - timeStretch,
+                bondReserves - maxDy
+            ),
+            1e12 // TODO: Investigate this bound.
+        );
+        assertApproxEqAbs(
+            HyperdriveMath.calculateSpotPrice(
+                shareReserves + maxDz,
+                bondReserves - maxDy,
+                initialSharePrice,
+                FixedPointMath.ONE_18,
+                timeStretch
+            ),
+            1e18,
+            1e7
+        );
     }
 }
