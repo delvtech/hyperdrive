@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
 import { IHyperdrive } from "./IHyperdrive.sol";
 import { IMultiTokenRead } from "./IMultiTokenRead.sol";
@@ -22,4 +22,8 @@ interface IHyperdriveRead is IMultiTokenRead {
         returns (IHyperdrive.PoolConfig memory);
 
     function getPoolInfo() external view returns (IHyperdrive.PoolInfo memory);
+
+    function load(
+        uint256[] calldata _slots
+    ) external view returns (bytes32[] memory);
 }

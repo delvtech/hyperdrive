@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
-import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import { SafeCast } from "./libraries/SafeCast.sol";
 import { HyperdriveStorage } from "./HyperdriveStorage.sol";
-import { MultiToken } from "./MultiToken.sol";
+import { IERC20 } from "./interfaces/IERC20.sol";
+import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { AssetId } from "./libraries/AssetId.sol";
 import { Errors } from "./libraries/Errors.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
-import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
+import { SafeCast } from "./libraries/SafeCast.sol";
+import { MultiToken } from "./token/MultiToken.sol";
 
 /// @author DELV
 /// @title HyperdriveBase
@@ -49,6 +49,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
 
     event OpenLong(
         address indexed trader,
+        uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
         uint256 bondAmount
@@ -56,6 +57,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
 
     event OpenShort(
         address indexed trader,
+        uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
         uint256 bondAmount
@@ -63,6 +65,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
 
     event CloseLong(
         address indexed trader,
+        uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
         uint256 bondAmount
@@ -70,6 +73,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
 
     event CloseShort(
         address indexed trader,
+        uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
         uint256 bondAmount
@@ -99,6 +103,14 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
 
     /// Yield Source ///
 
+    /// @notice A YieldSource dependent check that prevents ether from being
+    ///         transferred to Hyperdrive instances that don't accept ether.
+    function _checkMessageValue() internal view virtual {
+        if (msg.value != 0) {
+            revert Errors.NotPayable();
+        }
+    }
+
     /// @notice Transfers base from the user and commits it to the yield source.
     /// @param amount The amount of base to deposit.
     /// @param asUnderlying If true the yield source will transfer underlying tokens
@@ -117,12 +129,11 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     /// @param asUnderlying If true the yield source will transfer underlying tokens
     ///                     if false it will transfer the yielding asset directly
     /// @return amountWithdrawn The amount of base released by the withdrawal.
-    /// @return sharePrice The share price on withdraw.
     function _withdraw(
         uint256 shares,
         address destination,
         bool asUnderlying
-    ) internal virtual returns (uint256 amountWithdrawn, uint256 sharePrice);
+    ) internal virtual returns (uint256 amountWithdrawn);
 
     ///@notice Loads the share price from the yield source
     ///@return sharePrice The current share price.
@@ -191,7 +202,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
         ) revert Errors.Unauthorized();
         uint256 governanceFeesAccrued = _governanceFeesAccrued;
         _governanceFeesAccrued = 0;
-        (proceeds, ) = _withdraw(
+        proceeds = _withdraw(
             governanceFeesAccrued,
             _feeCollector,
             asUnderlying
@@ -211,6 +222,21 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
             ? _maturityTime - latestCheckpoint
             : 0;
         timeRemaining = (timeRemaining).divDown(_positionDuration);
+    }
+
+    /// @dev Calculates the normalized time remaining of a position when the
+    ///      maturity time is scaled up 18 decimals.
+    /// @param _maturityTime The maturity time of the position.
+    function _calculateTimeRemainingScaled(
+        uint256 _maturityTime
+    ) internal view returns (uint256 timeRemaining) {
+        uint256 latestCheckpoint = _latestCheckpoint() * FixedPointMath.ONE_18;
+        timeRemaining = _maturityTime > latestCheckpoint
+            ? _maturityTime - latestCheckpoint
+            : 0;
+        timeRemaining = (timeRemaining).divDown(
+            _positionDuration * FixedPointMath.ONE_18
+        );
     }
 
     /// @dev Gets the most recent checkpoint time.

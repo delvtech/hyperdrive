@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
-import { MultiTokenDataProvider } from "./MultiTokenDataProvider.sol";
 import { HyperdriveStorage } from "./HyperdriveStorage.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { AssetId } from "./libraries/AssetId.sol";
 import { Errors } from "./libraries/Errors.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
+import { MultiTokenDataProvider } from "./token/MultiTokenDataProvider.sol";
 
 /// @author DELV
 /// @title HyperdriveDataProvider
@@ -20,6 +20,7 @@ abstract contract HyperdriveDataProvider is
 {
     using FixedPointMath for uint256;
 
+    // solhint-disable no-empty-blocks
     /// @notice Initializes Hyperdrive's data provider.
     /// @param _config The configuration of the Hyperdrive pool.
     constructor(
@@ -124,6 +125,7 @@ abstract contract HyperdriveDataProvider is
 
     /// @notice Returns the average price between the last recorded timestamp looking a user determined
     ///         time into the past
+    /// @dev Any integrations should assert the returned value is not equal to the QueryOutOfRange() selector
     /// @param period The gap in our time sample.
     /// @return The average price in that time
     function query(uint256 period) external view returns (uint256) {

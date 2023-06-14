@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
-import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import { IERC20 } from "../interfaces/IERC20.sol";
 import { Hyperdrive } from "../Hyperdrive.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { Errors } from "../libraries/Errors.sol";
@@ -83,27 +83,29 @@ contract DsrHyperdrive is Hyperdrive {
         dsrManager.join(address(this), amount);
 
         // Do share calculations
-        if (totalShares == 0) {
+        uint256 totalShares_ = totalShares;
+        if (totalShares_ == 0) {
             totalShares = amount;
             // Initial deposits are always 1:1
             return (amount, FixedPointMath.ONE_18);
         } else {
-            uint256 newShares = totalShares.mulDivDown(amount, totalBase);
+            uint256 newShares = totalShares_.mulDivDown(amount, totalBase);
             totalShares += newShares;
-            return (newShares, amount.divDown(newShares));
+            return (newShares, _pricePerShare());
         }
     }
 
     /// @notice Withdraws shares from the yield source and sends the resulting tokens to the destination
     /// @param shares The shares to withdraw from the yield source
     /// @param destination The address which is where to send the resulting tokens
+    /// @param asUnderlying The DSR yield source only supports depositing the
+    ///        underlying token. If this is false, the transaction will revert.
     /// @return amountWithdrawn the amount of 'token' produced by this withdraw
-    /// @return sharePrice The share price on withdraw.
     function _withdraw(
         uint256 shares,
         address destination,
         bool asUnderlying
-    ) internal override returns (uint256 amountWithdrawn, uint256 sharePrice) {
+    ) internal override returns (uint256 amountWithdrawn) {
         if (!asUnderlying) {
             revert Errors.UnsupportedToken();
         }
@@ -129,23 +131,26 @@ contract DsrHyperdrive is Hyperdrive {
         // Withdraw pro-rata share of underlying to user
         dsrManager.exit(destination, amountWithdrawn);
 
-        return (amountWithdrawn, amountWithdrawn.divDown(shares));
+        return amountWithdrawn;
     }
 
     /// @notice Loads the share price from the yield source.
     /// @return sharePrice The current share price.
+    ///@dev must remain consistent with the impl inside of the DataProvider
     function _pricePerShare()
         internal
         view
         override
         returns (uint256 sharePrice)
     {
-        // The normalized DAI amount owned by this contract
         uint256 pie = dsrManager.pieOf(address(this));
-        // Load the balance of this contract
         uint256 totalBase = pie.mulDivDown(chi(), RAY);
         // The share price is assets divided by shares
-        return (totalBase.divDown(totalShares));
+        uint256 totalShares_ = totalShares;
+        if (totalShares_ != 0) {
+            return (totalBase.divDown(totalShares_));
+        }
+        return 0;
     }
 
     /// @notice Gets the current up to date value of the rate accumulator

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
-import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { DsrHyperdriveDeployer } from "contracts/src/factory/DsrHyperdriveDeployer.sol";
 import { DsrHyperdriveFactory } from "contracts/src/factory/DsrHyperdriveFactory.sol";
 import { DsrHyperdriveDataProvider } from "contracts/src/instances/DsrHyperdriveDataProvider.sol";
@@ -12,6 +12,7 @@ import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { DsrManager } from "contracts/test/MockDsrHyperdrive.sol";
 import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
+import { HyperdriveUtils } from "../utils/HyperdriveUtils.sol";
 
 contract HyperdriveDSRTest is HyperdriveTest {
     using FixedPointMath for *;
@@ -61,14 +62,13 @@ contract HyperdriveDSRTest is HyperdriveTest {
         vm.startPrank(alice);
         bytes32[] memory empty = new bytes32[](0);
         dai.approve(address(factory), type(uint256).max);
+        uint256 apr = 1e16; // 1% apr
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: dai,
             initialSharePrice: FixedPointMath.ONE_18,
             positionDuration: 365 days,
             checkpointDuration: 1 days,
-            timeStretch: FixedPointMath.ONE_18.divDown(
-                22.186877016851916266e18
-            ),
+            timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
             governance: address(0),
             feeCollector: address(0),
             fees: IHyperdrive.Fees(0, 0, 0),
@@ -81,8 +81,7 @@ contract HyperdriveDSRTest is HyperdriveTest {
             address(0),
             empty,
             2500e18,
-            //1% apr
-            1e16
+            apr
         );
 
         // The initial price per share is one so we should have that the
@@ -91,6 +90,8 @@ contract HyperdriveDSRTest is HyperdriveTest {
             AssetId._LP_ASSET_ID,
             alice
         );
-        assertEq(createdShares, 2808790684246250377500);
+
+        // lp shares should equal number of shares reserves initialized with
+        assertEq(createdShares, 2500e18);
     }
 }

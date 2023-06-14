@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
 import { IPool } from "@aave/interfaces/IPool.sol";
-import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import { IERC20 } from "../interfaces/IERC20.sol";
 import { HyperdriveFactory } from "./HyperdriveFactory.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
@@ -17,6 +17,7 @@ import { Errors } from "../libraries/Errors.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract AaveHyperdriveFactory is HyperdriveFactory {
+    // solhint-disable no-empty-blocks
     /// @notice Deploys the contract
     /// @param _governance The address which can update this factory.
     /// @param _deployer The contract which holds the bytecode and deploys new versions.
@@ -58,7 +59,13 @@ contract AaveHyperdriveFactory is HyperdriveFactory {
         bytes32[] memory,
         uint256 _contribution,
         uint256 _apr
-    ) public override returns (IHyperdrive) {
+    ) public payable override returns (IHyperdrive) {
+        // Ensure that ether wasn't sent. This is only marked as payable to
+        // satisfy the interface.
+        if (msg.value > 0) {
+            revert Errors.NotPayable();
+        }
+
         // Encode the aToken address corresponding to the base token in the
         // extra data passed to `deployAndInitialize`.
         IPool pool = IAaveDeployer(address(hyperdriveDeployer)).pool();

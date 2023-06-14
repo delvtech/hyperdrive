@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
 import { IPool } from "@aave/interfaces/IPool.sol";
 import { Hyperdrive } from "../Hyperdrive.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { Errors } from "../libraries/Errors.sol";
-import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import { IERC20 } from "../interfaces/IERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 
 contract AaveHyperdrive is Hyperdrive {
@@ -83,7 +83,7 @@ contract AaveHyperdrive is Hyperdrive {
         } else {
             uint256 newShares = totalShares_.mulDivDown(amount, assets);
             totalShares += newShares;
-            return (newShares, amount.divDown(newShares));
+            return (newShares, _pricePerShare());
         }
     }
 
@@ -93,12 +93,11 @@ contract AaveHyperdrive is Hyperdrive {
     ///                     if false it will transfer the yielding asset directly
     ///@param destination The address which is where to send the resulting tokens
     ///@return amountWithdrawn the amount of 'token' produced by this withdraw
-    ///@return sharePrice The share price on withdraw.
     function _withdraw(
         uint256 shares,
         address destination,
         bool asUnderlying
-    ) internal override returns (uint256 amountWithdrawn, uint256 sharePrice) {
+    ) internal override returns (uint256 amountWithdrawn) {
         // The withdrawer receives a proportional amount of the assets held by
         // the contract to the amount of shares that they are redeeming. Small
         // numerical errors can result in the shares value being slightly larger
@@ -113,6 +112,10 @@ contract AaveHyperdrive is Hyperdrive {
             ? shares.mulDown(assets.divDown(totalShares_))
             : 0;
 
+        if (withdrawValue == 0) {
+            revert Errors.NoAssetsToWithdraw();
+        }
+
         // Remove the shares from the total share supply
         totalShares -= shares;
 
@@ -125,13 +128,12 @@ contract AaveHyperdrive is Hyperdrive {
             aToken.transfer(destination, withdrawValue);
         }
 
-        // Return the amount and implied share price
-        sharePrice = shares != 0 ? withdrawValue.divDown(shares) : 0;
-        return (withdrawValue, sharePrice);
+        return withdrawValue;
     }
 
-    ///@notice Loads the share price from the yield source.
-    ///@return The current share price.
+    /// @notice Loads the share price from the yield source.
+    /// @dev This must remain consistent with the impl inside of the DataProvider
+    /// @return The current share price.
     function _pricePerShare() internal view override returns (uint256) {
         uint256 assets = aToken.balanceOf(address(this));
         uint256 totalShares_ = totalShares;

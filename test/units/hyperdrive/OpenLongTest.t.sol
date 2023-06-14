@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
 import { stdError } from "forge-std/StdError.sol";
 import { VmSafe } from "forge-std/Vm.sol";
@@ -7,12 +7,14 @@ import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
+import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
 import { Lib } from "../../utils/Lib.sol";
 
 contract OpenLongTest is HyperdriveTest {
     using FixedPointMath for uint256;
     using Lib for *;
+    using HyperdriveUtils for IHyperdrive;
 
     function setUp() public override {
         super.setUp();
@@ -50,6 +52,34 @@ contract OpenLongTest is HyperdriveTest {
         hyperdrive.openLong(0, 0, bob, true);
         vm.stopPrank();
         pause(false);
+    }
+
+    function test_open_long_failure_negative_interest(
+        uint256 fixedRate,
+        uint256 contribution
+    ) external {
+        // Initialize the pool. We use a relatively small fixed rate to ensure
+        // that the maximum long is constrained by the price cap of 1 rather
+        // than because of exceeding the long buffer.
+        fixedRate = fixedRate.normalizeToRange(0.0001e18, 0.1e18);
+        contribution = contribution.normalizeToRange(1_000e18, 500_000_000e18);
+        initialize(alice, fixedRate, contribution);
+
+        // Ensure that a long that is slightly larger than the max long will
+        // fail the negative interest check.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        uint256 basePaid = hyperdrive.calculateMaxLong() + 0.0001e18;
+        baseToken.mint(bob, basePaid);
+        baseToken.approve(address(hyperdrive), basePaid);
+        vm.expectRevert(Errors.NegativeInterest.selector);
+        hyperdrive.openLong(basePaid, 0, bob, true);
+
+        // Ensure that the max long results in spot price very close to 1 to
+        // make sure that the negative interest failure was appropriate.
+        openLong(bob, hyperdrive.calculateMaxLong());
+        assertLe(hyperdrive.calculateSpotPrice(), 1e18);
+        assertApproxEqAbs(hyperdrive.calculateSpotPrice(), 1e18, 1e6);
     }
 
     function test_pauser_authorization_fail() external {
@@ -129,6 +159,78 @@ contract OpenLongTest is HyperdriveTest {
         );
     }
 
+    function test_LongAvoidsDrainingBufferReserves() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Open up a large short to drain the buffer reserves.
+        uint256 bondAmount = hyperdrive.calculateMaxShort();
+        openShort(bob, bondAmount);
+
+        // Initialize a large long to eat through the buffer of capital
+        uint256 overlyLargeLonge = 976625406180945208462181452;
+
+        // Open the long.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        baseToken.mint(overlyLargeLonge);
+        baseToken.approve(address(hyperdrive), overlyLargeLonge);
+
+        vm.expectRevert(Errors.BaseBufferExceedsShareReserves.selector);
+        hyperdrive.openLong(overlyLargeLonge, 0, bob, true);
+    }
+
+    function testAvoidsDustAttack(uint256 contribution, uint256 apr) public {
+        /* 
+            - Tests an edge case in updateWeightedAverage where The function output is not bounded by the average and the delta.
+            This test ensures that this never occurs by attempting to induce a wild variation in avgPrice, and ensures that they remain relatively consistent.
+        */
+        // Apr between 0.5e18 and 0.25e18
+        // Contribution between 100e6 to 500 million e6
+        // openLong value should be 1/5 of contribution, nornmalize range subrange
+        apr = apr.normalizeToRange(0.05e18, 0.25e18);
+        contribution = contribution.normalizeToRange(
+            100_000_000e18,
+            500_000_000e18
+        );
+
+        // Initialize the pool with a large amount of capital.
+        contribution = contribution.normalizeToRange(
+            100_000_000e6,
+            500_000_000e6
+        );
+
+        initialize(alice, apr, contribution);
+
+        advanceTime(POSITION_DURATION, int256(apr));
+
+        openLong(bob, 1 wei);
+
+        IHyperdrive.PoolInfo memory info = hyperdrive.getPoolInfo();
+        uint256 averageMaturityTimeBefore = info.longAverageMaturityTime;
+        uint256 sharePrice = info.sharePrice;
+
+        uint256 amt = contribution / 5;
+        openLong(bob, amt);
+
+        uint256 longSharePrice = hyperdrive
+            .getCheckpoint(hyperdrive.latestCheckpoint())
+            .longSharePrice;
+
+        info = hyperdrive.getPoolInfo();
+        uint256 averageMaturityTimeAfter = info.longAverageMaturityTime;
+
+        assertApproxEqAbs(sharePrice, longSharePrice, 1e7);
+        assertApproxEqAbs(
+            averageMaturityTimeBefore,
+            averageMaturityTimeAfter,
+            1e4
+        );
+    }
+
     function verifyOpenLong(
         IHyperdrive.PoolInfo memory poolInfoBefore,
         uint256 contribution,
@@ -146,6 +248,10 @@ contract OpenLongTest is HyperdriveTest {
             assertEq(logs.length, 1);
             VmSafe.Log memory log = logs[0];
             assertEq(address(uint160(uint256(log.topics[1]))), bob);
+            assertEq(
+                uint256(log.topics[2]),
+                AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime)
+            );
             (
                 uint256 eventMaturityTime,
                 uint256 eventBaseAmount,
@@ -168,7 +274,7 @@ contract OpenLongTest is HyperdriveTest {
         );
 
         // Deploy and initialize a new pool with fees.
-        deploy(alice, apr, 0.1e18, 0.1e18, 0, governance);
+        deploy(alice, apr, 0.1e18, 0.1e18, 0);
         initialize(alice, apr, contribution);
 
         // Open a long with fees.

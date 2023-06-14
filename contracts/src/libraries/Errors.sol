@@ -1,5 +1,5 @@
 /// SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
 /// @author DELV
 /// @title Errors
@@ -26,9 +26,12 @@ library Errors {
     error PoolAlreadyInitialized();
     error TransferFailed();
     error UnexpectedAssetId();
+    error UnexpectedSender();
     error UnsupportedToken();
     error ZeroAmount();
     error ZeroLpTotalSupply();
+    error NoAssetsToWithdraw();
+    error NotPayable();
 
     /// ############
     /// ### TWAP ###
@@ -38,6 +41,8 @@ library Errors {
     /// ####################
     /// ### DataProvider ###
     /// ####################
+    error ReturnData(bytes data);
+    error CallFailed(bytes4 underlyingError);
     error UnexpectedSuccess();
 
     /// ###############
@@ -63,6 +68,7 @@ library Errors {
     error BondMatured();
     error BondNotMatured();
     error InsufficientPrice();
+    error MintPercentTooHigh();
 
     /// ###############
     /// ### AssetId ###

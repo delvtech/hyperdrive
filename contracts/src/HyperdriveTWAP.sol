@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
 import { HyperdriveBase } from "./HyperdriveBase.sol";
 import { Errors } from "./libraries/Errors.sol";
@@ -30,7 +30,7 @@ abstract contract HyperdriveTWAP is HyperdriveBase {
         }
 
         // Load the current data from storage
-        uint256 previousTime = uint256(_buffer[head].timestamp);
+        uint256 previousTime = uint256(_oracle.lastTimestamp);
         uint256 previousSum = uint256(_buffer[head].data);
 
         // Calculate sum

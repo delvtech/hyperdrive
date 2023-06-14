@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
@@ -9,7 +9,7 @@ import { MockMultiToken } from "contracts/test/MockMultiToken.sol";
 import { MockBondWrapper } from "contracts/test/MockBondWrapper.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
@@ -246,7 +246,8 @@ contract BondWrapper_close is CombinatorialTest {
                     testCase.maturityTime,
                     testCase.amount,
                     testCase.andBurn,
-                    testCase.destination
+                    testCase.destination,
+                    0
                 )
             {
                 __log(unicode"❎", testCase);
@@ -329,7 +330,8 @@ contract BondWrapper_close is CombinatorialTest {
                 testCase.maturityTime,
                 testCase.amount,
                 testCase.andBurn,
-                testCase.destination
+                testCase.destination,
+                0
             )
         {} catch {
             __log(unicode"❎", testCase);

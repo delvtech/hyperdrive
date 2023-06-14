@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
 import { ERC20PresetMinterPauser } from "openzeppelin-contracts/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
 import { Hyperdrive } from "../src/Hyperdrive.sol";
 import { HyperdriveDataProvider } from "../src/HyperdriveDataProvider.sol";
-import { MultiTokenDataProvider } from "../src/MultiTokenDataProvider.sol";
+import { IERC20 } from "../src/interfaces/IERC20.sol";
+import { IHyperdrive } from "../src/interfaces/IHyperdrive.sol";
 import { FixedPointMath } from "../src/libraries/FixedPointMath.sol";
 import { Errors } from "../src/libraries/Errors.sol";
+import { MultiTokenDataProvider } from "../src/token/MultiTokenDataProvider.sol";
 import { ERC20Mintable } from "./ERC20Mintable.sol";
-import { IHyperdrive } from "../src/interfaces/IHyperdrive.sol";
 
 contract MockHyperdriveTestnet is Hyperdrive {
     using FixedPointMath for uint256;
@@ -30,7 +31,7 @@ contract MockHyperdriveTestnet is Hyperdrive {
     )
         Hyperdrive(
             IHyperdrive.PoolConfig({
-                baseToken: _baseToken,
+                baseToken: IERC20(address(_baseToken)),
                 initialSharePrice: _initialSharePrice,
                 positionDuration: _positionDuration,
                 checkpointDuration: _checkpointDuration,
@@ -89,21 +90,21 @@ contract MockHyperdriveTestnet is Hyperdrive {
         uint256 _shares,
         address _destination,
         bool _asUnderlying
-    ) internal override returns (uint256 amountWithdrawn, uint256 sharePrice) {
+    ) internal override returns (uint256 amountWithdrawn) {
         if (!_asUnderlying) revert UnsupportedOption();
 
         // Accrue interest.
         accrueInterest();
 
         // Transfer the base to the destination.
-        sharePrice = _pricePerShare();
+        uint256 sharePrice = _pricePerShare();
         amountWithdrawn = _shares.mulDown(sharePrice);
         bool success = _baseToken.transfer(_destination, amountWithdrawn);
         if (!success) {
             revert Errors.TransferFailed();
         }
 
-        return (amountWithdrawn, sharePrice);
+        return amountWithdrawn;
     }
 
     function _pricePerShare() internal view override returns (uint256) {
@@ -161,7 +162,7 @@ contract MockHyperdriveDataProviderTestnet is
     )
         HyperdriveDataProvider(
             IHyperdrive.PoolConfig({
-                baseToken: _baseToken,
+                baseToken: IERC20(address(_baseToken)),
                 initialSharePrice: _initialSharePrice,
                 positionDuration: _positionDuration,
                 checkpointDuration: _checkpointDuration,

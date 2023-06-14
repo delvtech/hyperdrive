@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
-import { IERC20 } from "./interfaces/IERC20.sol";
-import { IForwarderFactory } from "./interfaces/IForwarderFactory.sol";
-import { IMultiToken } from "./interfaces/IMultiToken.sol";
-import { Errors } from "./libraries/Errors.sol";
+import { IERC20 } from "../interfaces/IERC20.sol";
+import { IForwarderFactory } from "../interfaces/IForwarderFactory.sol";
+import { IMultiToken } from "../interfaces/IMultiToken.sol";
+import { Errors } from "../libraries/Errors.sol";
 
 /// @author DELV
 /// @title ERC20Forwarder
@@ -69,6 +69,13 @@ contract ERC20Forwarder is IERC20 {
     /// @return Returns the name of this token
     function name() external view override returns (string memory) {
         return (token.name(tokenId));
+    }
+
+    /// @notice Returns the totalSupply of the sub token by calling into the
+    ///         main token to load it.
+    /// @return Returns the totalSupply of this token
+    function totalSupply() external view override returns (uint256) {
+        return (token.totalSupply(tokenId));
     }
 
     /// @notice Returns the symbol of this sub token by calling into the

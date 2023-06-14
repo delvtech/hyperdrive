@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
-import { SafeCast } from "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
+import { SafeCast } from "./libraries/SafeCast.sol";
 import { HyperdriveLP } from "./HyperdriveLP.sol";
 import { AssetId } from "./libraries/AssetId.sol";
 import { Errors } from "./libraries/Errors.sol";
@@ -26,13 +26,21 @@ abstract contract HyperdriveShort is HyperdriveLP {
     /// @param _asUnderlying If true the user is charged in underlying if false
     ///                      the contract transfers in yield source directly.
     ///                      Note - for some paths one choice may be disabled or blocked.
-    /// @return The amount the user deposited for this trade
+    /// @return maturityTime The maturity time of the short.
+    /// @return traderDeposit The amount the user deposited for this trade.
     function openShort(
         uint256 _bondAmount,
         uint256 _maxDeposit,
         address _destination,
         bool _asUnderlying
-    ) external isNotPaused returns (uint256) {
+    )
+        external
+        payable
+        isNotPaused
+        returns (uint256 maturityTime, uint256 traderDeposit)
+    {
+        // Check that the message value and base amount are valid.
+        _checkMessageValue();
         if (_bondAmount == 0) {
             revert Errors.ZeroAmount();
         }
@@ -49,7 +57,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
 
         // Calculate the pool and user deltas using the trading function. We
         // backdate the bonds sold to the beginning of the checkpoint.
-        uint256 maturityTime = _latestCheckpoint() + _positionDuration;
+        maturityTime = _latestCheckpoint() + _positionDuration;
         uint256 timeRemaining = _calculateTimeRemaining(maturityTime);
         uint256 shareReservesDelta;
         {
@@ -68,7 +76,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // doesn't pay more than their max deposit. The trader's deposit is
         // equal to the proceeds that they would receive if they closed
         // immediately (without fees).
-        uint256 traderDeposit = HyperdriveMath
+        traderDeposit = HyperdriveMath
             .calculateShortProceeds(
                 _bondAmount,
                 shareReservesDelta,
@@ -92,17 +100,23 @@ abstract contract HyperdriveShort is HyperdriveLP {
 
         // Mint the short tokens to the trader. The ID is a concatenation of the
         // current share price and the maturity time of the shorts.
-        _mint(
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, maturityTime),
-            _destination,
-            _bondAmount
+        uint256 assetId = AssetId.encodeAssetId(
+            AssetId.AssetIdPrefix.Short,
+            maturityTime
         );
+        _mint(assetId, _destination, _bondAmount);
 
         // Emit an OpenShort event.
         uint256 bondAmount = _bondAmount; // Avoid stack too deep error.
-        emit OpenShort(_destination, maturityTime, traderDeposit, bondAmount);
+        emit OpenShort(
+            _destination,
+            assetId,
+            maturityTime,
+            traderDeposit,
+            bondAmount
+        );
 
-        return (traderDeposit);
+        return (maturityTime, traderDeposit);
     }
 
     /// @notice Closes a short position with a specified maturity time.
@@ -144,6 +158,27 @@ abstract contract HyperdriveShort is HyperdriveLP {
             uint256 totalGovernanceFee
         ) = _calculateCloseShort(_bondAmount, sharePrice, _maturityTime);
 
+        // If the ending spot price is greater than or equal to 1, we are in the
+        // negative interest region of the trading function. The spot price is
+        // given by ((mu * z) / y) ** tau, so all that we need to check is that
+        // (mu * z) / y < 1 or, equivalently, that mu * z >= y. If the reserves
+        // are empty we skip the check because shorts will only be able to close
+        // at maturity if the LPs remove all of the liquidity.
+        {
+            uint256 adjustedShareReserves = _initialSharePrice.mulDown(
+                _marketState.shareReserves + shareReservesDelta
+            );
+            uint256 bondReserves = _marketState.bondReserves -
+                bondReservesDelta;
+            if (
+                (_marketState.shareReserves > 0 ||
+                    _marketState.bondReserves > 0) &&
+                adjustedShareReserves >= bondReserves
+            ) {
+                revert Errors.NegativeInterest();
+            }
+        }
+
         // Attribute the governance fees.
         _governanceFeesAccrued += totalGovernanceFee;
 
@@ -176,7 +211,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             closeSharePrice,
             sharePrice
         );
-        (uint256 baseProceeds, ) = _withdraw(
+        uint256 baseProceeds = _withdraw(
             shortProceeds,
             _destination,
             _asUnderlying
@@ -188,7 +223,13 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // Emit a CloseShort event.
         uint256 maturityTime = _maturityTime; // Avoid stack too deep error.
         uint256 bondAmount = _bondAmount; // Avoid stack too deep error.
-        emit CloseShort(_destination, maturityTime, baseProceeds, bondAmount);
+        emit CloseShort(
+            _destination,
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, maturityTime),
+            maturityTime,
+            baseProceeds,
+            bondAmount
+        );
 
         return baseProceeds;
     }

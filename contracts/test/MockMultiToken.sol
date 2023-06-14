@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
-import { MultiToken } from "../src/MultiToken.sol";
 import { IMultiToken } from "../src/interfaces/IMultiToken.sol";
-import { ForwarderFactory } from "../src/ForwarderFactory.sol";
+import { ForwarderFactory } from "../src/token/ForwarderFactory.sol";
+import { MultiToken } from "../src/token/MultiToken.sol";
 
 interface IMockMultiToken is IMultiToken {
     function __setNameAndSymbol(
@@ -25,6 +25,10 @@ interface IMockMultiToken is IMultiToken {
         uint256 amount,
         address caller
     ) external;
+
+    function mint(uint256 tokenID, address to, uint256 amount) external;
+
+    function burn(uint256 tokenID, address from, uint256 amount) external;
 }
 
 contract MockMultiToken is MultiToken {
@@ -59,5 +63,13 @@ contract MockMultiToken is MultiToken {
         address caller
     ) external {
         _transferFrom(tokenID, from, to, amount, caller);
+    }
+
+    function mint(uint256 tokenID, address to, uint256 amount) external {
+        _mint(tokenID, to, amount);
+    }
+
+    function burn(uint256 tokenID, address from, uint256 amount) external {
+        _burn(tokenID, from, amount);
     }
 }

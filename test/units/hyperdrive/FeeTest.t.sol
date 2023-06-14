@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
 import { stdError } from "forge-std/StdError.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
@@ -18,7 +18,7 @@ contract FeeTest is HyperdriveTest {
         uint256 contribution = 500_000_000e18;
 
         // Deploy and initialize a new pool with fees.
-        deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18, governance);
+        deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18);
         initialize(alice, apr, contribution);
 
         // Open a long, record the accrued fees x share price
@@ -35,9 +35,9 @@ contract FeeTest is HyperdriveTest {
 
         // Collect fees and test that the fees received in the governance address have earned interest.
         vm.stopPrank();
-        vm.prank(governance);
+        vm.prank(feeCollector);
         MockHyperdrive(address(hyperdrive)).collectGovernanceFee(true);
-        uint256 governanceBalanceAfter = baseToken.balanceOf(governance);
+        uint256 governanceBalanceAfter = baseToken.balanceOf(feeCollector);
         assertGt(governanceBalanceAfter, governanceFeesAfterOpenLong);
     }
 
@@ -47,11 +47,11 @@ contract FeeTest is HyperdriveTest {
         uint256 contribution = 500_000_000e18;
 
         // Deploy and initialize a new pool with fees.
-        deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18, governance);
+        deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18);
         initialize(alice, apr, contribution);
 
         // Ensure that the governance initially has zero balance
-        uint256 governanceBalanceBefore = baseToken.balanceOf(governance);
+        uint256 governanceBalanceBefore = baseToken.balanceOf(feeCollector);
         assertEq(governanceBalanceBefore, 0);
 
         // Ensure that fees are initially zero.
@@ -84,7 +84,7 @@ contract FeeTest is HyperdriveTest {
 
         // Collect fees to governance address
         vm.stopPrank();
-        vm.prank(governance);
+        vm.prank(feeCollector);
         MockHyperdrive(address(hyperdrive)).collectGovernanceFee(true);
 
         // Ensure that governance fees after collection are zero.
@@ -94,7 +94,7 @@ contract FeeTest is HyperdriveTest {
         assertEq(governanceFeesAfterCollection, 0);
 
         // Ensure that the governance address has received the fees.
-        uint256 governanceBalanceAfter = baseToken.balanceOf(governance);
+        uint256 governanceBalanceAfter = baseToken.balanceOf(feeCollector);
         assertGt(governanceBalanceAfter, governanceBalanceBefore);
     }
 
@@ -104,7 +104,7 @@ contract FeeTest is HyperdriveTest {
         uint256 contribution = 500_000_000e18;
 
         // Deploy and initialize a new pool with fees.
-        deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18, governance);
+        deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18);
         initialize(alice, apr, contribution);
 
         // Ensure that the governance initially has zero balance
@@ -153,7 +153,7 @@ contract FeeTest is HyperdriveTest {
         assertEq(governanceFeesAfterCollection, 0);
 
         // Ensure that the governance address has received the fees.
-        uint256 governanceBalanceAfter = baseToken.balanceOf(governance);
+        uint256 governanceBalanceAfter = baseToken.balanceOf(feeCollector);
         assertGt(governanceBalanceAfter, governanceBalanceBefore);
     }
 
@@ -162,7 +162,7 @@ contract FeeTest is HyperdriveTest {
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
         // Deploy and initialize a new pool with fees.
-        deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18, governance);
+        deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18);
         initialize(alice, apr, contribution);
 
         (uint256 curveFee, uint256 governanceCurveFee) = MockHyperdrive(
@@ -184,7 +184,7 @@ contract FeeTest is HyperdriveTest {
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
         // Deploy and initialize a new pool with fees.
-        deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18, governance);
+        deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18);
         initialize(alice, apr, contribution);
         (
             uint256 totalCurveFee,
@@ -219,7 +219,7 @@ contract FeeTest is HyperdriveTest {
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
         // Deploy and initialize a new pool with fees.
-        deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18, governance);
+        deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18);
         initialize(alice, apr, contribution);
         (
             uint256 curveFee,

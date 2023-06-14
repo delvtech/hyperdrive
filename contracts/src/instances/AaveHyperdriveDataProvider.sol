@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
 import { IPool } from "@aave/interfaces/IPool.sol";
-import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import { IERC20 } from "../interfaces/IERC20.sol";
 import { HyperdriveDataProvider } from "../HyperdriveDataProvider.sol";
-import { MultiTokenDataProvider } from "../MultiTokenDataProvider.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { Errors } from "../libraries/Errors.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { MultiTokenDataProvider } from "../token/MultiTokenDataProvider.sol";
 
 /// @author DELV
 /// @title AaveHyperdriveDataProvider
@@ -26,7 +26,7 @@ contract AaveHyperdriveDataProvider is
     IPool internal immutable _pool;
 
     // The shares created by this pool, starts at one to one with deposits and increases
-    uint256 internal totalShares;
+    uint256 internal _totalShares;
 
     /// @notice Initializes the data provider.
     /// @param _linkerCodeHash_ The hash of the erc20 linker contract deploy code
@@ -51,6 +51,7 @@ contract AaveHyperdriveDataProvider is
 
     ///@notice Loads the share price from the yield source.
     ///@return sharePrice The current share price.
+    ///@dev must remain consistent with the impl inside of the HyperdriveInstance
     function _pricePerShare()
         internal
         view
@@ -58,7 +59,7 @@ contract AaveHyperdriveDataProvider is
         returns (uint256 sharePrice)
     {
         uint256 assets = _aToken.balanceOf(address(this));
-        sharePrice = totalShares != 0 ? assets.divDown(totalShares) : 0;
+        sharePrice = _totalShares != 0 ? assets.divDown(_totalShares) : 0;
         return sharePrice;
     }
 
@@ -74,5 +75,11 @@ contract AaveHyperdriveDataProvider is
     /// @return The aave pool.
     function pool() external view returns (IPool) {
         _revert(abi.encode(_pool));
+    }
+
+    /// @notice Gets the total shares.
+    /// @return The total shares.
+    function totalShares() external view returns (uint256) {
+        _revert(abi.encode(_totalShares));
     }
 }

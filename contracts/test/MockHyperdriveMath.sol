@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
 import { HyperdriveMath } from "../src/libraries/HyperdriveMath.sol";
 
@@ -23,7 +23,6 @@ contract MockHyperdriveMath {
 
     function calculateInitialBondReserves(
         uint256 _shareReserves,
-        uint256 _sharePrice,
         uint256 _initialSharePrice,
         uint256 _apr,
         uint256 _positionDuration,
@@ -31,7 +30,6 @@ contract MockHyperdriveMath {
     ) external pure returns (uint256) {
         uint256 result = HyperdriveMath.calculateInitialBondReserves(
             _shareReserves,
-            _sharePrice,
             _initialSharePrice,
             _apr,
             _positionDuration,
@@ -122,6 +120,46 @@ contract MockHyperdriveMath {
                 _initialSharePrice
             );
         return (result1, result2, result3);
+    }
+
+    function calculateMaxLong(
+        uint256 _shareReserves,
+        uint256 _bondReserves,
+        uint256 _longsOutstanding,
+        uint256 _timeStretch,
+        uint256 _sharePrice,
+        uint256 _initialSharePrice,
+        uint256 _maxIterations
+    ) external pure returns (HyperdriveMath.MaxLongResult memory) {
+        return
+            HyperdriveMath.calculateMaxLong(
+                _shareReserves,
+                _bondReserves,
+                _longsOutstanding,
+                _timeStretch,
+                _sharePrice,
+                _initialSharePrice,
+                _maxIterations
+            );
+    }
+
+    function calculateMaxShort(
+        uint256 _shareReserves,
+        uint256 _bondReserves,
+        uint256 _longsOutstanding,
+        uint256 _timeStretch,
+        uint256 _sharePrice,
+        uint256 _initialSharePrice
+    ) external pure returns (uint256) {
+        return
+            HyperdriveMath.calculateMaxShort(
+                _shareReserves,
+                _bondReserves,
+                _longsOutstanding,
+                _timeStretch,
+                _sharePrice,
+                _initialSharePrice
+            );
     }
 
     function calculateSpotPrice(

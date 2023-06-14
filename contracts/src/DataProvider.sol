@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
 import { Errors } from "./libraries/Errors.sol";
 
@@ -19,6 +19,8 @@ contract DataProvider {
         dataProvider = _dataProvider;
     }
 
+    // solhint-disable payable-fallback
+    // solhint-disable no-complex-fallback
     /// @notice Fallback function that delegates calls to the data provider.
     /// @param _data The data to be passed to the data provider.
     /// @return The return data from the data provider.
@@ -26,12 +28,29 @@ contract DataProvider {
         // Delegatecall into the data provider. We use a force-revert
         // delegatecall pattern to ensure that no state changes were made
         // during the call to the data provider.
+        // solhint-disable avoid-low-level-calls
         (bool success, bytes memory returndata) = dataProvider.delegatecall(
             _data
         );
         if (success) {
             revert Errors.UnexpectedSuccess();
         }
+        bytes4 selector = bytes4(returndata);
+        if (selector != Errors.ReturnData.selector) {
+            assembly {
+                revert(add(returndata, 32), mload(returndata))
+            }
+        }
+
+        // Since the useful value is returned in error ReturnData(bytes), the selector for ReturnData
+        // must be removed before returning the value
+        assembly {
+            mstore(add(returndata, 0x4), sub(mload(returndata), 4))
+            returndata := add(returndata, 0x4)
+        }
+
+        returndata = abi.decode(returndata, (bytes));
+
         return returndata;
     }
 }

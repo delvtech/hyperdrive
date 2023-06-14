@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
 import { DsrHyperdrive, DsrManager } from "../src/instances/DsrHyperdrive.sol";
 import { DsrHyperdriveDataProvider } from "../src/instances/DsrHyperdriveDataProvider.sol";
-import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import { FixedPointMath } from "../src/libraries/FixedPointMath.sol";
-import { ForwarderFactory } from "../src/ForwarderFactory.sol";
+import { IERC20 } from "../src/interfaces/IERC20.sol";
 import { IHyperdrive } from "../src/interfaces/IHyperdrive.sol";
+import { FixedPointMath } from "../src/libraries/FixedPointMath.sol";
+import { ForwarderFactory } from "../src/token/ForwarderFactory.sol";
 
 interface IMockDsrHyperdrive is IHyperdrive {
     function totalShares() external view returns (uint256);
@@ -20,7 +20,7 @@ interface IMockDsrHyperdrive is IHyperdrive {
         uint256 shares,
         address destination,
         bool asUnderlying
-    ) external returns (uint256, uint256);
+    ) external returns (uint256);
 
     function pricePerShare() external view returns (uint256);
 }
@@ -65,7 +65,7 @@ contract MockDsrHyperdrive is DsrHyperdrive {
         uint256 shares,
         address destination,
         bool asUnderlying
-    ) external returns (uint256, uint256) {
+    ) external returns (uint256) {
         return _withdraw(shares, destination, asUnderlying);
     }
 

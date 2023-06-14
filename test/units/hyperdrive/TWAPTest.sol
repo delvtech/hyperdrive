@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
 import { stdError } from "forge-std/StdError.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
@@ -137,6 +137,13 @@ contract TWAPTest is HyperdriveTest {
             MockHyperdrive(address(hyperdrive)).recordOracle(i * 1e18);
             advanceTime(UPDATE_GAP, int256(apr));
         }
+    }
+
+    function test_oracle_query_reverts() external {
+        vm.expectRevert();
+        HyperdriveDataProvider(address(hyperdrive)).query(
+            block.timestamp + 365 days
+        );
     }
 
     function test_oracle_data_recordings() external {

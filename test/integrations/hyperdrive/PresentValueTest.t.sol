@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
 import "forge-std/console.sol";
 import { Lib } from "test/utils/Lib.sol";
@@ -481,7 +481,7 @@ contract PresentValueTest is HyperdriveTest {
         // Set the seed.
         _seed = __seed;
 
-        // Initialiaze the pool.
+        // Initialize the pool.
         initialize(alice, 0.02e18, 500_000_000e18);
 
         // Get an initial present value.

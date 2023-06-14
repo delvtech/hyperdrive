@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
 interface IMultiTokenWrite {
     event TransferSingle(
@@ -51,4 +51,21 @@ interface IMultiTokenWrite {
     ) external;
 
     function setApprovalForAll(address operator, bool approved) external;
+
+    function batchTransferFrom(
+        address from,
+        address to,
+        uint256[] calldata ids,
+        uint256[] calldata values
+    ) external;
+
+    function permitForAll(
+        address owner,
+        address spender,
+        bool _approved,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external;
 }

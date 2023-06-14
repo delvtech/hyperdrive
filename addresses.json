@@ -1,5 +1,7 @@
 {
     "5": {
-        "dsrHyperdrive": "0xB88DC1827De0baf3BD0e27A731fa5322aDdA710b"
+        "dsrHyperdrive": "0xB88DC1827De0baf3BD0e27A731fa5322aDdA710b",
+        "stethHyperdrive": "0xB188511271C39549E95142849fF82ca7b12E3D00",
+        "mockHyperdriveMath": "0x2D5CC1a6de5863A3E24EB48a758FE20d9253b3B2"
     }
 }

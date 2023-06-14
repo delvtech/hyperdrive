@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
 interface IMultiTokenRead {
     function name(uint256 id) external view returns (string memory);
@@ -7,6 +7,10 @@ interface IMultiTokenRead {
     function symbol(uint256 id) external view returns (string memory);
 
     function totalSupply(uint256 id) external view returns (uint256);
+
+    function factory() external view returns (address);
+
+    function linkerCodeHash() external view returns (bytes32);
 
     function isApprovedForAll(
         address owner,

@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
+import { IMultiTokenRead } from "../interfaces/IMultiTokenRead.sol";
 import { MultiTokenStorage } from "./MultiTokenStorage.sol";
-import { IMultiTokenRead } from "./interfaces/IMultiTokenRead.sol";
+import { Errors } from "../libraries/Errors.sol";
 
 /// @author DELV
 /// @title MultiTokenDataProvider
@@ -11,6 +12,7 @@ import { IMultiTokenRead } from "./interfaces/IMultiTokenRead.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract MultiTokenDataProvider is MultiTokenStorage, IMultiTokenRead {
+    // solhint-disable no-empty-blocks
     /// @notice Initializes the MultiToken's data provider.
     /// @param _linkerCodeHash_ The hash of the erc20 linker contract deploy code
     /// @param _factory_ The factory which is used to deploy the linking contracts
@@ -104,8 +106,6 @@ contract MultiTokenDataProvider is MultiTokenStorage, IMultiTokenRead {
     ///      with the force-revert delegatecall pattern.
     /// @param _bytes The bytes to revert with.
     function _revert(bytes memory _bytes) internal pure {
-        assembly {
-            revert(add(_bytes, 32), mload(_bytes))
-        }
+        revert Errors.ReturnData(_bytes);
     }
 }

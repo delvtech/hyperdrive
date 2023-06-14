@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
 import { VmSafe } from "forge-std/Vm.sol";
 import { stdError } from "forge-std/StdError.sol";
@@ -13,6 +13,7 @@ import { Lib } from "../../utils/Lib.sol";
 
 contract CloseShortTest is HyperdriveTest {
     using FixedPointMath for uint256;
+    using HyperdriveUtils for IHyperdrive;
     using Lib for *;
 
     function setUp() public override {
@@ -76,6 +77,47 @@ contract CloseShortTest is HyperdriveTest {
         hyperdrive.closeShort(uint256(type(uint248).max) + 1, 1, 0, bob, true);
     }
 
+    function test_close_short_failure_negative_interest(
+        uint256 fixedRate,
+        uint256 contribution,
+        uint256 initialShortAmount,
+        uint256 finalShortAmount
+    ) external {
+        // Initialize the pool. We use a relatively small fixed rate to ensure
+        // that the maximum close short is constrained by the price cap of 1
+        // rather than because of exceeding the long buffer.
+        fixedRate = fixedRate.normalizeToRange(0.0001e18, 0.1e18);
+        contribution = contribution.normalizeToRange(1_000e18, 500_000_000e18);
+        initialize(alice, fixedRate, contribution);
+
+        // Bob opens a short.
+        initialShortAmount = initialShortAmount.normalizeToRange(
+            0.00001e18,
+            hyperdrive.calculateMaxShort() / 2
+        );
+        (uint256 maturityTime, ) = openShort(bob, initialShortAmount);
+
+        // Celine opens a maximum long. This will prevent Bob from closing his
+        // short by bringing the spot price very close to 1.
+        openLong(celine, hyperdrive.calculateMaxLong());
+
+        // Ensure that the max long results in spot price very close to 1 to
+        // make sure that a negative interest failure is appropriate.
+        assertLe(hyperdrive.calculateSpotPrice(), 1e18);
+        assertApproxEqAbs(hyperdrive.calculateSpotPrice(), 1e18, 1e6);
+
+        // Bob tries to close a small portion of his short. This should fail
+        // the negative interest check.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        finalShortAmount = finalShortAmount.normalizeToRange(
+            0.00001e18,
+            initialShortAmount
+        );
+        vm.expectRevert(Errors.NegativeInterest.selector);
+        hyperdrive.closeShort(maturityTime, finalShortAmount, 0, bob, true);
+    }
+
     function test_close_short_immediately_with_regular_amount() external {
         uint256 apr = 0.05e18;
 
@@ -87,8 +129,12 @@ contract CloseShortTest is HyperdriveTest {
         uint256 bondAmount = 10e18;
         (uint256 maturityTime, uint256 basePaid) = openShort(bob, bondAmount);
 
-        // Get the reserves before closing the long.
+        // Get the reserves and account balances before closing the short.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
+        uint256 bobBaseBalanceBefore = baseToken.balanceOf(bob);
+        uint256 hyperdriveBaseBalanceBefore = baseToken.balanceOf(
+            address(hyperdrive)
+        );
 
         // Immediately close the bonds.
         uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
@@ -99,6 +145,8 @@ contract CloseShortTest is HyperdriveTest {
         // Verify that the close short updates were correct.
         verifyCloseShort(
             poolInfoBefore,
+            bobBaseBalanceBefore,
+            hyperdriveBaseBalanceBefore,
             baseProceeds,
             bondAmount,
             maturityTime,
@@ -117,8 +165,12 @@ contract CloseShortTest is HyperdriveTest {
         uint256 bondAmount = .1e18;
         (uint256 maturityTime, uint256 basePaid) = openShort(bob, bondAmount);
 
-        // Get the reserves before closing the long.
+        // Get the reserves and account balances before closing the short.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
+        uint256 bobBaseBalanceBefore = baseToken.balanceOf(bob);
+        uint256 hyperdriveBaseBalanceBefore = baseToken.balanceOf(
+            address(hyperdrive)
+        );
 
         // Immediately close the bonds.
         uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
@@ -129,6 +181,8 @@ contract CloseShortTest is HyperdriveTest {
         // Verify that the close short updates were correct.
         verifyCloseShort(
             poolInfoBefore,
+            bobBaseBalanceBefore,
+            hyperdriveBaseBalanceBefore,
             baseProceeds,
             bondAmount,
             maturityTime,
@@ -177,8 +231,12 @@ contract CloseShortTest is HyperdriveTest {
         uint256 bondAmount = 10e18;
         (uint256 maturityTime, ) = openShort(bob, bondAmount);
 
-        // Get the reserves before closing the long.
+        // Get the reserves and account balances before closing the short.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
+        uint256 bobBaseBalanceBefore = baseToken.balanceOf(bob);
+        uint256 hyperdriveBaseBalanceBefore = baseToken.balanceOf(
+            address(hyperdrive)
+        );
 
         // The term passes.
         vm.warp(block.timestamp + 365 days);
@@ -192,6 +250,8 @@ contract CloseShortTest is HyperdriveTest {
         // Verify that the close short updates were correct.
         verifyCloseShort(
             poolInfoBefore,
+            bobBaseBalanceBefore,
+            hyperdriveBaseBalanceBefore,
             baseProceeds,
             bondAmount,
             maturityTime,
@@ -213,8 +273,12 @@ contract CloseShortTest is HyperdriveTest {
         // The term passes.
         advanceTime(POSITION_DURATION, -0.2e18);
 
-        // Get the reserves before closing the long.
+        // Get the reserves and account balances before closing the short.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
+        uint256 bobBaseBalanceBefore = baseToken.balanceOf(bob);
+        uint256 hyperdriveBaseBalanceBefore = baseToken.balanceOf(
+            address(hyperdrive)
+        );
 
         // Redeem the bonds.
         uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
@@ -225,6 +289,8 @@ contract CloseShortTest is HyperdriveTest {
         // Verify that the close short updates were correct.
         verifyCloseShort(
             poolInfoBefore,
+            bobBaseBalanceBefore,
+            hyperdriveBaseBalanceBefore,
             baseProceeds,
             bondAmount,
             maturityTime,
@@ -246,8 +312,12 @@ contract CloseShortTest is HyperdriveTest {
         // The term passes and shares lose value
         advanceTime(POSITION_DURATION.mulDown(0.5e18), -0.2e18);
 
-        // Get the reserves before closing the short.
+        // Get the reserves and account balances before closing the short.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
+        uint256 bobBaseBalanceBefore = baseToken.balanceOf(bob);
+        uint256 hyperdriveBaseBalanceBefore = baseToken.balanceOf(
+            address(hyperdrive)
+        );
 
         // Redeem the bonds.
         uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
@@ -258,6 +328,8 @@ contract CloseShortTest is HyperdriveTest {
         // Verify that the close short updates were correct.
         verifyCloseShort(
             poolInfoBefore,
+            bobBaseBalanceBefore,
+            hyperdriveBaseBalanceBefore,
             baseProceeds,
             bondAmount,
             maturityTime,
@@ -285,8 +357,12 @@ contract CloseShortTest is HyperdriveTest {
         // Another term passes and positive interest accrues.
         advanceTime(POSITION_DURATION, 0.5e18);
 
-        // Get the reserves before closing the short.
+        // Get the reserves and account balances before closing the short.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
+        uint256 bobBaseBalanceBefore = baseToken.balanceOf(bob);
+        uint256 hyperdriveBaseBalanceBefore = baseToken.balanceOf(
+            address(hyperdrive)
+        );
 
         // Redeem the bonds.
         uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
@@ -297,6 +373,8 @@ contract CloseShortTest is HyperdriveTest {
         // Verify that the close long updates were correct.
         verifyCloseShort(
             poolInfoBefore,
+            bobBaseBalanceBefore,
+            hyperdriveBaseBalanceBefore,
             baseProceeds,
             bondAmount,
             maturityTime,
@@ -319,8 +397,12 @@ contract CloseShortTest is HyperdriveTest {
         advanceTime(POSITION_DURATION, 0);
         assertEq(block.timestamp, maturityTime);
 
-        // Get the reserves before closing the short.
+        // Get the reserves and account balances before closing the short.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
+        uint256 bobBaseBalanceBefore = baseToken.balanceOf(bob);
+        uint256 hyperdriveBaseBalanceBefore = baseToken.balanceOf(
+            address(hyperdrive)
+        );
 
         // Redeem the bonds.
         uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
@@ -335,6 +417,8 @@ contract CloseShortTest is HyperdriveTest {
         // Verify that the close short updates were correct.
         verifyCloseShort(
             poolInfoBefore,
+            bobBaseBalanceBefore,
+            hyperdriveBaseBalanceBefore,
             baseProceeds,
             bondAmount,
             maturityTime,
@@ -344,13 +428,13 @@ contract CloseShortTest is HyperdriveTest {
 
     function verifyCloseShort(
         IHyperdrive.PoolInfo memory poolInfoBefore,
+        uint256 bobBaseBalanceBefore,
+        uint256 hyperdriveBaseBalanceBefore,
         uint256 baseProceeds,
         uint256 bondAmount,
         uint256 maturityTime,
         bool wasCheckpointed
     ) internal {
-        uint256 checkpointTime = maturityTime - POSITION_DURATION;
-
         // Ensure that one `CloseShort` event was emitted with the correct
         // arguments.
         {
@@ -360,6 +444,10 @@ contract CloseShortTest is HyperdriveTest {
             assertEq(logs.length, 1);
             VmSafe.Log memory log = logs[0];
             assertEq(address(uint160(uint256(log.topics[1]))), bob);
+            assertEq(
+                uint256(log.topics[2]),
+                AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, maturityTime)
+            );
             (
                 uint256 eventMaturityTime,
                 uint256 eventBaseAmount,
@@ -369,6 +457,14 @@ contract CloseShortTest is HyperdriveTest {
             assertEq(eventBaseAmount, baseProceeds);
             assertEq(eventBondAmount, bondAmount);
         }
+
+        // Ensure that the correct amount of base was transferred from
+        // Hyperdrive to Bob.
+        assertEq(baseToken.balanceOf(bob), bobBaseBalanceBefore + baseProceeds);
+        assertEq(
+            baseToken.balanceOf(address(hyperdrive)),
+            hyperdriveBaseBalanceBefore - baseProceeds
+        );
 
         // Verify that all of Bob's shorts were burned.
         assertEq(
@@ -384,9 +480,8 @@ contract CloseShortTest is HyperdriveTest {
 
         // Retrieve the pool info after the trade.
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
-
         IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
-            checkpointTime
+            maturityTime - POSITION_DURATION
         );
 
         // Verify that the other state was updated correctly.

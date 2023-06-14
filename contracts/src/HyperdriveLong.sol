@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
 import { SafeCast } from "./libraries/SafeCast.sol";
 import { HyperdriveLP } from "./HyperdriveLP.sol";
@@ -31,7 +31,9 @@ abstract contract HyperdriveLong is HyperdriveLP {
         uint256 _minOutput,
         address _destination,
         bool _asUnderlying
-    ) external isNotPaused returns (uint256) {
+    ) external payable isNotPaused returns (uint256) {
+        // Check that the message value and base amount are valid.
+        _checkMessageValue();
         if (_baseAmount == 0) {
             revert Errors.ZeroAmount();
         }
@@ -57,9 +59,17 @@ abstract contract HyperdriveLong is HyperdriveLP {
             uint256 totalGovernanceFee
         ) = _calculateOpenLong(shares, sharePrice, timeRemaining);
 
-        // If the user gets less bonds than they paid, we are in the negative
-        // interest region of the trading function.
-        if (bondProceeds < _baseAmount) revert Errors.NegativeInterest();
+        // If the ending spot price is greater than or equal to 1, we are in the
+        // negative interest region of the trading function. The spot price is
+        // given by ((mu * z) / y) ** tau, so all that we need to check is that
+        // (mu * z) / y < 1 or, equivalently, that mu * z >= y.
+        if (
+            _initialSharePrice.mulDown(
+                _marketState.shareReserves + shareReservesDelta
+            ) >= _marketState.bondReserves - bondReservesDelta
+        ) {
+            revert Errors.NegativeInterest();
+        }
 
         // Enforce min user outputs
         if (_minOutput > bondProceeds) revert Errors.OutputLimit();
@@ -79,15 +89,21 @@ abstract contract HyperdriveLong is HyperdriveLP {
         );
 
         // Mint the bonds to the trader with an ID of the maturity time.
-        _mint(
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
-            _destination,
-            bondProceeds
+        uint256 assetId = AssetId.encodeAssetId(
+            AssetId.AssetIdPrefix.Long,
+            maturityTime
         );
+        _mint(assetId, _destination, bondProceeds);
 
         // Emit an OpenLong event.
         uint256 baseAmount = _baseAmount; // Avoid stack too deep error.
-        emit OpenLong(_destination, maturityTime, baseAmount, bondProceeds);
+        emit OpenLong(
+            _destination,
+            assetId,
+            maturityTime,
+            baseAmount,
+            bondProceeds
+        );
 
         return (bondProceeds);
     }
@@ -151,7 +167,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         }
 
         // Withdraw the profit to the trader.
-        (uint256 baseProceeds, ) = _withdraw(
+        uint256 baseProceeds = _withdraw(
             shareProceeds,
             _destination,
             _asUnderlying
@@ -161,7 +177,13 @@ abstract contract HyperdriveLong is HyperdriveLP {
         if (_minOutput > baseProceeds) revert Errors.OutputLimit();
 
         // Emit a CloseLong event.
-        emit CloseLong(_destination, _maturityTime, baseProceeds, _bondAmount);
+        emit CloseLong(
+            _destination,
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _maturityTime),
+            _maturityTime,
+            baseProceeds,
+            _bondAmount
+        );
 
         return (baseProceeds);
     }

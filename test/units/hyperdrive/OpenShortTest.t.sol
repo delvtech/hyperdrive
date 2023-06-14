@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
 import { VmSafe } from "forge-std/Vm.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
@@ -12,6 +12,7 @@ import { Lib } from "../../utils/Lib.sol";
 contract OpenShortTest is HyperdriveTest {
     using FixedPointMath for uint256;
     using Lib for *;
+    using HyperdriveUtils for IHyperdrive;
 
     function setUp() public override {
         super.setUp();
@@ -61,11 +62,11 @@ contract OpenShortTest is HyperdriveTest {
         // Attempt to short an extreme amount of bonds. This should fail.
         vm.stopPrank();
         vm.startPrank(bob);
-        uint256 baseAmount = hyperdrive.getPoolInfo().shareReserves;
-        baseToken.mint(baseAmount);
-        baseToken.approve(address(hyperdrive), baseAmount);
+        uint256 shortAmount = hyperdrive.getPoolInfo().shareReserves;
+        baseToken.mint(shortAmount);
+        baseToken.approve(address(hyperdrive), shortAmount);
         vm.expectRevert(Errors.FixedPointMath_SubOverflow.selector);
-        hyperdrive.openShort(baseAmount * 2, type(uint256).max, bob, true);
+        hyperdrive.openShort(shortAmount * 2, type(uint256).max, bob, true);
     }
 
     function test_open_short() external {
@@ -79,15 +80,15 @@ contract OpenShortTest is HyperdriveTest {
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
 
         // Short a small amount of bonds.
-        uint256 bondAmount = 10e18;
-        (uint256 maturityTime, uint256 baseAmount) = openShort(bob, bondAmount);
+        uint256 shortAmount = 10e18;
+        (uint256 maturityTime, uint256 basePaid) = openShort(bob, shortAmount);
 
         // Verify the open short updates occurred correctly.
         verifyOpenShort(
             poolInfoBefore,
             contribution,
-            baseAmount,
-            bondAmount,
+            basePaid,
+            shortAmount,
             maturityTime,
             apr
         );
@@ -104,25 +105,71 @@ contract OpenShortTest is HyperdriveTest {
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
 
         // Short a small amount of bonds.
-        uint256 bondAmount = .1e18;
-        (uint256 maturityTime, uint256 baseAmount) = openShort(bob, bondAmount);
+        uint256 shortAmount = .1e18;
+        (uint256 maturityTime, uint256 basePaid) = openShort(bob, shortAmount);
 
         // Verify the open short updates occurred correctly.
         verifyOpenShort(
             poolInfoBefore,
             contribution,
-            baseAmount,
-            bondAmount,
+            basePaid,
+            shortAmount,
             maturityTime,
             apr
         );
     }
 
+    function test_ShortAvoidsDrainingBufferReserves() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Open up a large long to init buffer reserves
+        uint256 bondAmount = hyperdrive.calculateMaxLong();
+        openLong(bob, bondAmount);
+
+        // Initialize a large short to eat through the buffer of capital
+        uint256 overlyLargeShort = 500608690308195651844553347;
+
+        // Open the Short.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        baseToken.mint(overlyLargeShort);
+        baseToken.approve(address(hyperdrive), overlyLargeShort);
+        vm.expectRevert(Errors.BaseBufferExceedsShareReserves.selector);
+        hyperdrive.openShort(overlyLargeShort, type(uint256).max, bob, true);
+    }
+
+    function test_RevertsWithNegativeInterestRate() public {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        vm.stopPrank();
+        vm.startPrank(bob);
+
+        uint256 bondAmount = (hyperdrive.calculateMaxShort() * 90) / 100;
+        openShort(bob, bondAmount);
+
+        uint256 longAmount = (hyperdrive.calculateMaxLong() * 50) / 100;
+        openLong(bob, longAmount);
+
+        //vm.expectRevert(Errors.NegativeInterest.selector);
+
+        uint256 baseAmount = (hyperdrive.calculateMaxShort() * 100) / 100;
+        openShort(bob, baseAmount);
+        //I think we could trigger this with big short, open long, and short?
+    }
+
     function verifyOpenShort(
         IHyperdrive.PoolInfo memory poolInfoBefore,
         uint256 contribution,
-        uint256 baseAmount,
-        uint256 bondAmount,
+        uint256 basePaid,
+        uint256 shortAmount,
         uint256 maturityTime,
         uint256 apr
     ) internal {
@@ -137,21 +184,25 @@ contract OpenShortTest is HyperdriveTest {
             assertEq(logs.length, 1);
             VmSafe.Log memory log = logs[0];
             assertEq(address(uint160(uint256(log.topics[1]))), bob);
+            assertEq(
+                uint256(log.topics[2]),
+                AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, maturityTime)
+            );
             (
                 uint256 eventMaturityTime,
                 uint256 eventBaseAmount,
                 uint256 eventBondAmount
             ) = abi.decode(log.data, (uint256, uint256, uint256));
             assertEq(eventMaturityTime, maturityTime);
-            assertEq(eventBaseAmount, baseAmount);
-            assertEq(eventBondAmount, bondAmount);
+            assertEq(eventBaseAmount, basePaid);
+            assertEq(eventBondAmount, shortAmount);
         }
 
         // Verify that Hyperdrive received the max loss and that Bob received
         // the short tokens.
         assertEq(
             baseToken.balanceOf(address(hyperdrive)),
-            contribution + baseAmount
+            contribution + basePaid
         );
         assertEq(
             hyperdrive.balanceOf(
@@ -161,16 +212,16 @@ contract OpenShortTest is HyperdriveTest {
                 ),
                 bob
             ),
-            bondAmount
+            shortAmount
         );
 
         // Verify that the short didn't receive an APR higher than the pool's
         // APR.
-        uint256 baseProceeds = bondAmount - baseAmount;
+        uint256 baseProceeds = shortAmount - basePaid;
         {
             uint256 realizedApr = HyperdriveUtils.calculateAPRFromRealizedPrice(
                 baseProceeds,
-                bondAmount,
+                shortAmount,
                 FixedPointMath.ONE_18
             );
             assertLt(apr, realizedApr);
@@ -197,7 +248,7 @@ contract OpenShortTest is HyperdriveTest {
             assertEq(poolInfoAfter.longAverageMaturityTime, 0);
             assertEq(
                 poolInfoAfter.shortsOutstanding,
-                poolInfoBefore.shortsOutstanding + bondAmount
+                poolInfoBefore.shortsOutstanding + shortAmount
             );
             assertApproxEqAbs(
                 poolInfoAfter.shortAverageMaturityTime,
@@ -217,7 +268,7 @@ contract OpenShortTest is HyperdriveTest {
             HyperdriveUtils.calculateAPRFromReserves(hyperdrive),
             HyperdriveMath.calculateAPRFromReserves(
                 poolInfoAfter.shareReserves,
-                poolInfoBefore.bondReserves + bondAmount,
+                poolInfoBefore.bondReserves + shortAmount,
                 INITIAL_SHARE_PRICE,
                 POSITION_DURATION,
                 hyperdrive.getPoolConfig().timeStretch

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
 import { stdError } from "forge-std/StdError.sol";
 import { VmSafe } from "forge-std/Vm.sol";
@@ -107,6 +107,10 @@ contract CloseLongTest is HyperdriveTest {
 
         // Get the reserves before closing the long.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
+        uint256 bobBaseBalanceBefore = baseToken.balanceOf(bob);
+        uint256 hyperdriveBaseBalanceBefore = baseToken.balanceOf(
+            address(hyperdrive)
+        );
 
         // Immediately close the bonds.
         uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
@@ -117,6 +121,8 @@ contract CloseLongTest is HyperdriveTest {
         // Verify that the close long updates were correct.
         verifyCloseLong(
             poolInfoBefore,
+            bobBaseBalanceBefore,
+            hyperdriveBaseBalanceBefore,
             baseProceeds,
             bondAmount,
             maturityTime,
@@ -137,6 +143,10 @@ contract CloseLongTest is HyperdriveTest {
 
         // Get the reserves before closing the long.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
+        uint256 bobBaseBalanceBefore = baseToken.balanceOf(bob);
+        uint256 hyperdriveBaseBalanceBefore = baseToken.balanceOf(
+            address(hyperdrive)
+        );
 
         // Immediately close the bonds.
         uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
@@ -147,6 +157,8 @@ contract CloseLongTest is HyperdriveTest {
         // Verify that the close long updates were correct.
         verifyCloseLong(
             poolInfoBefore,
+            bobBaseBalanceBefore,
+            hyperdriveBaseBalanceBefore,
             baseProceeds,
             bondAmount,
             maturityTime,
@@ -204,6 +216,10 @@ contract CloseLongTest is HyperdriveTest {
 
         // Get the reserves before closing the long.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
+        uint256 bobBaseBalanceBefore = baseToken.balanceOf(bob);
+        uint256 hyperdriveBaseBalanceBefore = baseToken.balanceOf(
+            address(hyperdrive)
+        );
 
         // Bob closes his long close to maturity.
         uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
@@ -228,6 +244,8 @@ contract CloseLongTest is HyperdriveTest {
         // Verify that the close long updates were correct.
         verifyCloseLong(
             poolInfoBefore,
+            bobBaseBalanceBefore,
+            hyperdriveBaseBalanceBefore,
             baseProceeds,
             bondAmount,
             maturityTime,
@@ -252,6 +270,10 @@ contract CloseLongTest is HyperdriveTest {
 
         // Get the reserves before closing the long.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
+        uint256 bobBaseBalanceBefore = baseToken.balanceOf(bob);
+        uint256 hyperdriveBaseBalanceBefore = baseToken.balanceOf(
+            address(hyperdrive)
+        );
 
         // Redeem the bonds
         uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
@@ -262,6 +284,8 @@ contract CloseLongTest is HyperdriveTest {
         // Verify that the close long updates were correct.
         verifyCloseLong(
             poolInfoBefore,
+            bobBaseBalanceBefore,
+            hyperdriveBaseBalanceBefore,
             baseProceeds,
             bondAmount,
             maturityTime,
@@ -287,6 +311,10 @@ contract CloseLongTest is HyperdriveTest {
 
         // Get the reserves before closing the long.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
+        uint256 bobBaseBalanceBefore = baseToken.balanceOf(bob);
+        uint256 hyperdriveBaseBalanceBefore = baseToken.balanceOf(
+            address(hyperdrive)
+        );
 
         // Redeem the bonds
         uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
@@ -313,6 +341,8 @@ contract CloseLongTest is HyperdriveTest {
         // Verify that the close long updates were correct.
         verifyCloseLong(
             poolInfoBefore,
+            bobBaseBalanceBefore,
+            hyperdriveBaseBalanceBefore,
             baseProceeds,
             bondAmount,
             maturityTime,
@@ -338,6 +368,10 @@ contract CloseLongTest is HyperdriveTest {
 
         // Get the reserves before closing the long.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
+        uint256 bobBaseBalanceBefore = baseToken.balanceOf(bob);
+        uint256 hyperdriveBaseBalanceBefore = baseToken.balanceOf(
+            address(hyperdrive)
+        );
 
         // Redeem the bonds
         uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
@@ -347,39 +381,47 @@ contract CloseLongTest is HyperdriveTest {
             .getPoolConfig()
             .initialSharePrice;
 
-        // All mature bonds are redeemed at the equivalent amount of shares
-        // held throughout the duration, losing capital
-        uint256 matureBonds = bondAmount.mulDown(
-            FixedPointMath.ONE_18.sub(
-                HyperdriveUtils.calculateTimeRemaining(hyperdrive, maturityTime)
-            )
-        );
-        uint256 bondsValue = matureBonds;
-
-        // Portion of immature bonds are sold on the YieldSpace curve
-        uint256 immatureBonds = bondAmount - matureBonds;
-        bondsValue += YieldSpaceMath
-            .calculateSharesOutGivenBondsIn(
-                poolInfoBefore.shareReserves,
-                poolInfoBefore.bondReserves,
-                immatureBonds,
+        // Ensure that the base proceeds are correct.
+        {
+            // All mature bonds are redeemed at the equivalent amount of shares
+            // held throughout the duration, losing capital
+            uint256 matureBonds = bondAmount.mulDown(
                 FixedPointMath.ONE_18.sub(
-                    hyperdrive.getPoolConfig().timeStretch
-                ),
-                poolInfoBefore.sharePrice,
-                initialSharePrice
-            )
-            .mulDown(poolInfoBefore.sharePrice);
+                    HyperdriveUtils.calculateTimeRemaining(
+                        hyperdrive,
+                        maturityTime
+                    )
+                )
+            );
+            uint256 bondsValue = matureBonds;
 
-        bondsValue = bondsValue.divDown(initialSharePrice).mulDown(
-            poolInfoBefore.sharePrice
-        );
+            // Portion of immature bonds are sold on the YieldSpace curve
+            uint256 immatureBonds = bondAmount - matureBonds;
+            bondsValue += YieldSpaceMath
+                .calculateSharesOutGivenBondsIn(
+                    poolInfoBefore.shareReserves,
+                    poolInfoBefore.bondReserves,
+                    immatureBonds,
+                    FixedPointMath.ONE_18.sub(
+                        hyperdrive.getPoolConfig().timeStretch
+                    ),
+                    poolInfoBefore.sharePrice,
+                    initialSharePrice
+                )
+                .mulDown(poolInfoBefore.sharePrice);
 
-        assertEq(baseProceeds, bondsValue);
+            bondsValue = bondsValue.divDown(initialSharePrice).mulDown(
+                poolInfoBefore.sharePrice
+            );
+
+            assertEq(baseProceeds, bondsValue);
+        }
 
         // Verify that the close long updates were correct.
         verifyCloseLong(
             poolInfoBefore,
+            bobBaseBalanceBefore,
+            hyperdriveBaseBalanceBefore,
             baseProceeds,
             bondAmount,
             maturityTime,
@@ -409,10 +451,15 @@ contract CloseLongTest is HyperdriveTest {
         // Another term passes and a large amount of positive interest accrues.
         advanceTime(POSITION_DURATION, 0.7e18);
 
-        // Get the reserves before closing the long.
+        // Get the reserves and base balances before closing the long.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
+        uint256 bobBaseBalanceBefore = baseToken.balanceOf(bob);
+        uint256 hyperdriveBaseBalanceBefore = baseToken.balanceOf(
+            address(hyperdrive)
+        );
 
-        // Redeem the bonds
+        // Bob redeems the bonds. Ensure that the return value matches the
+        // amount of base transferred to Bob.
         uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
 
         // Bond holders take a proportional haircut on any negative interest
@@ -434,6 +481,8 @@ contract CloseLongTest is HyperdriveTest {
         // Verify that the close long updates were correct.
         verifyCloseLong(
             poolInfoBefore,
+            bobBaseBalanceBefore,
+            hyperdriveBaseBalanceBefore,
             baseProceeds,
             bondAmount,
             maturityTime,
@@ -443,6 +492,8 @@ contract CloseLongTest is HyperdriveTest {
 
     function verifyCloseLong(
         IHyperdrive.PoolInfo memory poolInfoBefore,
+        uint256 traderBaseBalanceBefore,
+        uint256 hyperdriveBaseBalanceBefore,
         uint256 baseProceeds,
         uint256 bondAmount,
         uint256 maturityTime,
@@ -459,6 +510,10 @@ contract CloseLongTest is HyperdriveTest {
             assertEq(logs.length, 1);
             VmSafe.Log memory log = logs[0];
             assertEq(address(uint160(uint256(log.topics[1]))), bob);
+            assertEq(
+                uint256(log.topics[2]),
+                AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime)
+            );
             (
                 uint256 eventMaturityTime,
                 uint256 eventBaseAmount,
@@ -468,6 +523,18 @@ contract CloseLongTest is HyperdriveTest {
             assertEq(eventBaseAmount, baseProceeds);
             assertEq(eventBondAmount, bondAmount);
         }
+
+        // Ensure that the correct amount of base was transferred.
+        assertEq(
+            baseToken.balanceOf(bob),
+            traderBaseBalanceBefore + baseProceeds
+        );
+        assertEq(
+            baseToken.balanceOf(address(hyperdrive)),
+            hyperdriveBaseBalanceBefore - baseProceeds
+        );
+
+        // Ensure that the base transfers were correct.
 
         // Verify that all of Bob's bonds were burned.
         assertEq(

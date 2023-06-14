@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
-import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import { IERC20 } from "../interfaces/IERC20.sol";
 import { HyperdriveDataProvider } from "../HyperdriveDataProvider.sol";
-import { MultiTokenDataProvider } from "../MultiTokenDataProvider.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { Errors } from "../libraries/Errors.sol";
 import { Pot, DsrManager } from "../interfaces/IMaker.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { MultiTokenDataProvider } from "../token/MultiTokenDataProvider.sol";
 
 contract DsrHyperdriveDataProvider is
     MultiTokenDataProvider,
@@ -70,6 +70,7 @@ contract DsrHyperdriveDataProvider is
 
     /// @notice Loads the share price from the yield source.
     /// @return sharePrice The current share price.
+    ///@dev must remain consistent with the impl inside of the HyperdriveInstance
     function _pricePerShare()
         internal
         view

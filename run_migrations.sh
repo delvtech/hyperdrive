@@ -5,8 +5,8 @@ set -ex
 # Sleep for a few seconds to allow the Ethereum service to start up.
 sleep 2
 
-# Run the migrations script.
-FOUNDRY_PROFILE="production" forge script script/MockHyperdrive.s.sol \
+# Deploy the MockHyperdrive instance and the MockHyperdriveMath contract.
+FOUNDRY_PROFILE="production" forge script script/MockHyperdrive.s.sol:MockHyperdriveScript \
    --sender "${ETH_FROM}" \
    --private-key "${PRIVATE_KEY}" \
    --rpc-url "${RPC_URL}" \

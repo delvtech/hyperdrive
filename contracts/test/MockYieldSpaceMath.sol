@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
 import { YieldSpaceMath } from "../src/libraries/YieldSpaceMath.sol";
 
@@ -76,6 +76,40 @@ contract MockYieldSpaceMath {
             t,
             c,
             mu
+        );
+        return result;
+    }
+
+    function calculateMaxBuy(
+        uint256 z,
+        uint256 y,
+        uint256 t,
+        uint256 c,
+        uint256 mu
+    ) external pure returns (uint256, uint256) {
+        (uint256 result1, uint256 result2) = YieldSpaceMath.calculateMaxBuy(
+            z,
+            y,
+            t,
+            c,
+            mu
+        );
+        return (result1, result2);
+    }
+
+    function modifiedYieldSpaceConstant(
+        uint256 cDivMu,
+        uint256 mu,
+        uint256 z,
+        uint256 t,
+        uint256 y
+    ) external pure returns (uint256) {
+        uint256 result = YieldSpaceMath.modifiedYieldSpaceConstant(
+            cDivMu,
+            mu,
+            z,
+            t,
+            y
         );
         return result;
     }

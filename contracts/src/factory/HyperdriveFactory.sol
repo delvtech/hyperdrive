@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
@@ -35,6 +35,9 @@ abstract contract HyperdriveFactory {
     // The default pausers for new the hyperdrive that are deployed
     address[] public defaultPausers;
 
+    // A constant for the ETH value
+    address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
     /// @notice Deploys the contract
     /// @param _governance The address which can update this factory.
     /// @param _deployer The contract which holds the bytecode and deploys new versions.
@@ -59,11 +62,17 @@ abstract contract HyperdriveFactory {
         defaultPausers = _defaultPausers;
     }
 
-    /// @notice Allows governance to update the deployer contract.
-    /// @param newDeployer The new deployment contract.
-    function updateImplementation(IHyperdriveDeployer newDeployer) external {
+    modifier onlyGovernance() {
         // Only governance can call this
         if (msg.sender != governance) revert Errors.Unauthorized();
+        _;
+    }
+
+    /// @notice Allows governance to update the deployer contract.
+    /// @param newDeployer The new deployment contract.
+    function updateImplementation(
+        IHyperdriveDeployer newDeployer
+    ) external onlyGovernance {
         // Update version and increment the counter
         hyperdriveDeployer = newDeployer;
         versionCounter++;
@@ -71,45 +80,43 @@ abstract contract HyperdriveFactory {
 
     /// @notice Allows governance to change the governance address
     /// @param newGovernance The new governor address
-    function updateGovernance(address newGovernance) external {
-        // Only governance can call this
-        if (msg.sender != governance) revert Errors.Unauthorized();
+    function updateGovernance(address newGovernance) external onlyGovernance {
         // Update governance
         governance = newGovernance;
     }
 
     /// @notice Allows governance to change the hyperdrive governance address
     /// @param newGovernance The new governor address
-    function updateHyperdriveGovernance(address newGovernance) external {
-        // Only governance can call this
-        if (msg.sender != governance) revert Errors.Unauthorized();
+    function updateHyperdriveGovernance(
+        address newGovernance
+    ) external onlyGovernance {
         // Update hyperdrive governance
         hyperdriveGovernance = newGovernance;
     }
 
     /// @notice Allows governance to change the fee collector address
     /// @param newFeeCollector The new governor address
-    function updateFeeCollector(address newFeeCollector) external {
-        // Only governance can call this
-        if (msg.sender != governance) revert Errors.Unauthorized();
+    function updateFeeCollector(
+        address newFeeCollector
+    ) external onlyGovernance {
         // Update fee collector
         feeCollector = newFeeCollector;
     }
 
     /// @notice Allows governance to change the fee schedule for the newly deployed factories
     /// @param newFees The fees for all newly deployed contracts
-    function updateFees(IHyperdrive.Fees calldata newFees) external {
-        // Only governance can call this
-        if (msg.sender != governance) revert Errors.Unauthorized();
+    function updateFees(
+        IHyperdrive.Fees calldata newFees
+    ) external onlyGovernance {
         // Update the fee struct
         fees = newFees;
     }
 
     /// @notice Allows governance to change the fee collector address
     /// @param newDefaults The new governor address
-    function updateDefaultPausers(address[] calldata newDefaults) external {
-        // Only governance can call this
-        if (msg.sender != governance) revert Errors.Unauthorized();
+    function updateDefaultPausers(
+        address[] calldata newDefaults
+    ) external onlyGovernance {
         // Update the default pausers
         defaultPausers = newDefaults;
     }
@@ -131,7 +138,7 @@ abstract contract HyperdriveFactory {
         bytes32[] memory _extraData,
         uint256 _contribution,
         uint256 _apr
-    ) public virtual returns (IHyperdrive) {
+    ) public payable virtual returns (IHyperdrive) {
         // No invalid deployments
         if (_contribution == 0) revert Errors.InvalidContribution();
         // Overwrite the governance and fees field of the config.
@@ -157,14 +164,28 @@ abstract contract HyperdriveFactory {
             )
         );
 
-        // Initialize the Hyperdrive instance.
-        _config.baseToken.transferFrom(
-            msg.sender,
-            address(this),
-            _contribution
-        );
-        _config.baseToken.approve(address(hyperdrive), type(uint256).max);
-        hyperdrive.initialize(_contribution, _apr, msg.sender, true);
+        // We only do ERC20 transfers when we deploy an ERC20 pool
+        if (address(_config.baseToken) != ETH) {
+            // Initialize the Hyperdrive instance.
+            _config.baseToken.transferFrom(
+                msg.sender,
+                address(this),
+                _contribution
+            );
+            _config.baseToken.approve(address(hyperdrive), type(uint256).max);
+            hyperdrive.initialize(_contribution, _apr, msg.sender, true);
+        } else {
+            // Require the caller sent value
+            if (msg.value != _contribution) {
+                revert Errors.TransferFailed();
+            }
+            hyperdrive.initialize{ value: _contribution }(
+                _contribution,
+                _apr,
+                msg.sender,
+                true
+            );
+        }
 
         // Setup the pausers roles from the default array
         for (uint256 i = 0; i < defaultPausers.length; i++) {

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
 import { IPool } from "@aave/interfaces/IPool.sol";
-import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { AaveHyperdriveDeployer, IPool } from "contracts/src/factory/AaveHyperdriveDeployer.sol";
 import { AaveHyperdriveFactory } from "contracts/src/factory/AaveHyperdriveFactory.sol";
 import { AaveHyperdriveDataProvider } from "contracts/src/instances/AaveHyperdriveDataProvider.sol";
@@ -12,8 +12,9 @@ import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
+import { HyperdriveUtils } from "../utils/HyperdriveUtils.sol";
 
-contract HyperdriveDSRTest is HyperdriveTest {
+contract HyperdriveAaveTest is HyperdriveTest {
     using FixedPointMath for *;
 
     AaveHyperdriveFactory factory;
@@ -59,14 +60,13 @@ contract HyperdriveDSRTest is HyperdriveTest {
 
         vm.startPrank(alice);
         dai.approve(address(factory), type(uint256).max);
+        uint256 apr = 1e16; // 1% apr
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: dai,
             initialSharePrice: FixedPointMath.ONE_18,
             positionDuration: 365 days,
             checkpointDuration: 1 days,
-            timeStretch: FixedPointMath.ONE_18.divDown(
-                22.186877016851916266e18
-            ),
+            timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
             governance: address(0),
             feeCollector: address(0),
             fees: IHyperdrive.Fees(0, 0, 0),
@@ -79,8 +79,7 @@ contract HyperdriveDSRTest is HyperdriveTest {
             address(0),
             new bytes32[](0),
             2500e18,
-            //1% apr
-            1e16
+            apr
         );
 
         // The initial price per share is one so we should have that the
@@ -89,6 +88,41 @@ contract HyperdriveDSRTest is HyperdriveTest {
             AssetId._LP_ASSET_ID,
             alice
         );
-        assertEq(createdShares, 2808790684246250377500);
+
+        // lp shares should equal number of share reserves initialized with
+        assertEq(createdShares, 2500e18);
+    }
+
+    function testEnsureNonZeroInit() public {
+        setUp();
+        // We've just copied the values used by the original tests to ensure this runs
+
+        vm.startPrank(alice);
+        dai.approve(address(factory), type(uint256).max);
+        IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
+            baseToken: IERC20(address(0)),
+            initialSharePrice: FixedPointMath.ONE_18,
+            positionDuration: 365 days,
+            checkpointDuration: 1 days,
+            timeStretch: FixedPointMath.ONE_18.divDown(
+                22.186877016851916266e18
+            ),
+            governance: address(0),
+            feeCollector: address(0),
+            fees: IHyperdrive.Fees(0, 0, 0),
+            oracleSize: 2,
+            updateGap: 0
+        });
+
+        vm.expectRevert();
+        hyperdrive = factory.deployAndInitialize(
+            config,
+            bytes32(0),
+            address(0),
+            new bytes32[](0),
+            2500e18,
+            //1% apr
+            1e16
+        );
     }
 }

@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
 import { ERC20PresetMinterPauser } from "openzeppelin-contracts/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
 import { Hyperdrive } from "contracts/src/Hyperdrive.sol";
 import { HyperdriveDataProvider } from "contracts/src/HyperdriveDataProvider.sol";
-import { MultiTokenDataProvider } from "contracts/src/MultiTokenDataProvider.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
+import { MultiTokenDataProvider } from "contracts/src/token/MultiTokenDataProvider.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
@@ -72,6 +72,16 @@ interface IMockHyperdrive {
             uint256 bondProceeds,
             uint256 totalGovernanceFee
         );
+
+    function calculateTimeRemaining(
+        uint256 _maturityTime
+    ) external view returns (uint256);
+
+    function calculateTimeRemainingScaled(
+        uint256 _maturityTime
+    ) external view returns (uint256);
+
+    function latestCheckpoint() external view returns (uint256);
 
     function setReserves(uint256 shareReserves, uint256 bondReserves) external;
 
@@ -226,6 +236,22 @@ contract MockHyperdrive is Hyperdrive {
         return _calculateOpenLong(_shareAmount, _sharePrice, _timeRemaining);
     }
 
+    function calculateTimeRemaining(
+        uint256 _maturityTime
+    ) external view returns (uint256 timeRemaining) {
+        return _calculateTimeRemaining(_maturityTime);
+    }
+
+    function calculateTimeRemainingScaled(
+        uint256 _maturityTime
+    ) external view returns (uint256 timeRemaining) {
+        return _calculateTimeRemainingScaled(_maturityTime);
+    }
+
+    function latestCheckpoint() external view returns (uint256 checkpointTime) {
+        return _latestCheckpoint();
+    }
+
     function setReserves(uint256 shareReserves, uint256 bondReserves) external {
         _marketState.shareReserves = uint128(shareReserves);
         _marketState.bondReserves = uint128(bondReserves);
@@ -252,7 +278,7 @@ contract MockHyperdrive is Hyperdrive {
         } else {
             uint256 newShares = totalShares.mulDivDown(amount, assets);
             totalShares += newShares;
-            return (newShares, amount.divDown(newShares));
+            return (newShares, _pricePerShare());
         }
     }
 
@@ -260,7 +286,7 @@ contract MockHyperdrive is Hyperdrive {
         uint256 shares,
         address destination,
         bool
-    ) internal override returns (uint256 withdrawValue, uint256 sharePrice) {
+    ) internal override returns (uint256 withdrawValue) {
         uint256 assets = _baseToken.balanceOf(address(this));
         shares = shares > totalShares ? totalShares : shares;
         withdrawValue = totalShares != 0
@@ -271,8 +297,7 @@ contract MockHyperdrive is Hyperdrive {
             revert Errors.TransferFailed();
         }
         totalShares -= shares;
-        sharePrice = withdrawValue != 0 ? shares.divDown(withdrawValue) : 0;
-        return (withdrawValue, sharePrice);
+        return withdrawValue;
     }
 
     function _pricePerShare()

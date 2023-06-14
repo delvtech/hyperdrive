@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
 import "forge-std/console2.sol";
 import "forge-std/Vm.sol";
 
 import { Test } from "forge-std/Test.sol";
-import { Hyperdrive } from "contracts/src/Hyperdrive.sol";
-import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { ERC20PresetFixedSupply } from "openzeppelin-contracts/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
-import { ForwarderFactory } from "contracts/src/ForwarderFactory.sol";
-import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { Address } from "openzeppelin-contracts/contracts/utils/Address.sol";
-import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import { Hyperdrive } from "contracts/src/Hyperdrive.sol";
+import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
+import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
+import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 
 contract BaseTest is Test {
     using FixedPointMath for uint256;
@@ -26,6 +26,7 @@ contract BaseTest is Test {
 
     address minter;
     address deployer;
+    address feeCollector;
     address governance;
     address pauser;
 
@@ -54,6 +55,7 @@ contract BaseTest is Test {
 
         deployer = createUser("deployer");
         minter = createUser("minter");
+        feeCollector = createUser("feeCollector");
         governance = createUser("governance");
         pauser = createUser("pauser");
 
@@ -97,12 +99,33 @@ contract BaseTest is Test {
     ) public returns (uint256) {
         uint256 whaleBalance = token.balanceOf(whale);
         if (amount > whaleBalance) revert WhaleBalanceExceeded();
-        if (Address.isContract(whale)) revert WhaleIsContract();
         vm.stopPrank();
         vm.startPrank(whale);
         vm.deal(whale, 1 ether);
         token.transfer(to, amount);
         return amount;
+    }
+
+    function fundAccounts(
+        address hyperdrive,
+        IERC20 token,
+        address source,
+        address[] memory accounts
+    ) internal {
+        uint256 sourceBalance = token.balanceOf(source);
+        for (uint256 i = 0; i < accounts.length; i++) {
+            // Transfer the tokens to the account.
+            whaleTransfer(
+                source,
+                token,
+                sourceBalance / accounts.length,
+                accounts[i]
+            );
+
+            // Approve Hyperdrive on behalf of the account.
+            vm.startPrank(accounts[i]);
+            token.approve(hyperdrive, type(uint256).max);
+        }
     }
 
     function assertWithDelta(
