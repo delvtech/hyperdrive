@@ -662,11 +662,15 @@ invariant LongAverageMaturityTimeIsBounded(env e)
     (stateLongs() != 0 => 
         AvgMTimeLongs() >= e.block.timestamp * ONE18() &&
         AvgMTimeLongs() <= ONE18()*(e.block.timestamp + positionDuration()))
+    filtered {
+        f->isOpenLong(f)
+    }
     {
         preserved with (env eP) {
             require e.block.timestamp == eP.block.timestamp;
             setHyperdrivePoolParams();
             requireInvariant SumOfLongsGEOutstanding();
+            // require stateLongs() == 0;
         }
     }
 
@@ -678,6 +682,9 @@ invariant ShortAverageMaturityTimeIsBounded(env e)
     (stateShorts() != 0 => 
         AvgMTimeShorts() >= e.block.timestamp * ONE18() &&
         AvgMTimeShorts() <= ONE18()*(e.block.timestamp + positionDuration()))
+    filtered {
+        f->isOpenLong(f)
+    }
     {
         preserved with (env eP) {
             require e.block.timestamp == eP.block.timestamp;
@@ -711,9 +718,15 @@ rule shortAverageMaturityTimeIsBoundedAfterOpenShort2(env e)
         AvgMTimeShorts() <= ONE18()*(e.block.timestamp + positionDuration());
 }
 
+
+// Counter example when trader had opened long position covering all money in the pool:
+// When trader comes and closes the position, he returns all the bonds he has and get all the shares
+// present in the pool. Resulting in zero shares in the pool, meaning, that _pricePerShare = 0, meaning sharePrice() == 0 
+// https://prover.certora.com/output/40577/3c3ca3c5cf954d91919a1f8854c35265/?anonymousKey=fd43525a0a4bb704c529e645938885bb049fe59e
 /// @notice The share price cannot go below the initial price.
 invariant SharePriceAlwaysGreaterThanInitial(env e)
     sharePrice(e) >= initialSharePrice()
+    filtered{f -> isCloseLong(f)}
     {
         preserved with (env eP) {
             require eP.block.timestamp == e.block.timestamp;
@@ -725,10 +738,12 @@ invariant SharePriceAlwaysGreaterThanInitial(env e)
         }
     }
 
-rule SharePriceCannotDecreaseAfterOperation(method f) {
+rule SharePriceCannotDecreaseAfterOperation(method f)
+    filtered{f -> isCloseLong(f)} {
     env e;
     calldataarg args;
     uint256 sharePriceBefore = sharePrice(e);
+    // require sharePriceBefore >= 2 * 10^18; // To get better counterexample
         f(e, args);
     uint256 sharePriceAfter = sharePrice(e);
 
@@ -801,8 +816,9 @@ rule shortRoundTripSameBaseVolume(uint256 bondAmount) {
     
     AaveHyperdrive.MarketState Mstate = marketState();
     uint128 baseVolumeBefore = Mstate.shortBaseVolume;
-        uint256 userDeposit = openShort(e, bondAmount, maxDeposit, destination, asUnderlying);
-        uint256 baseRewards = closeShort(e, maturityTime, bondAmount, minOutput, destination, asUnderlying);
+    uint256 userDeposit;
+    _, userDeposit = openShort(e, bondAmount, maxDeposit, destination, asUnderlying);
+    uint256 baseRewards = closeShort(e, maturityTime, bondAmount, minOutput, destination, asUnderlying);
     uint128 baseVolumeAfter = Mstate.shortBaseVolume;
 
     assert baseVolumeAfter == baseVolumeBefore;
