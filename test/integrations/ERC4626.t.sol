@@ -10,6 +10,7 @@ import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeploye
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
 import { Mock4626, ERC20 } from "../mocks/Mock4626.sol";
 import { MockERC4626Hyperdrive } from "../mocks/Mock4626Hyperdrive.sol";
@@ -27,7 +28,7 @@ contract HyperdriveER4626Test is HyperdriveTest {
     function setUp() public override __mainnet_fork(16_685_972) {
         vm.startPrank(deployer);
 
-        // Deploy a new yield source
+        // Deploy the ERC4626Hyperdrive factory and deployer.
         pool = IERC4626(
             address(new Mock4626(ERC20(address(dai)), "yearn dai", "yDai"))
         );
@@ -37,7 +38,7 @@ contract HyperdriveER4626Test is HyperdriveTest {
             );
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
-
+        forwarderFactory = new ForwarderFactory();
         factory = new ERC4626HyperdriveFactory(
             alice,
             simpleDeployer,
@@ -45,11 +46,12 @@ contract HyperdriveER4626Test is HyperdriveTest {
             bob,
             IHyperdrive.Fees(0, 0, 0),
             defaults,
+            address(forwarderFactory),
+            forwarderFactory.ERC20LINK_HASH(),
             pool
         );
 
         address daiWhale = 0x075e72a5eDf65F0A5f44699c7654C1a76941Ddc8;
-
         whaleTransfer(daiWhale, dai, alice);
 
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
@@ -88,6 +90,9 @@ contract HyperdriveER4626Test is HyperdriveTest {
         dai.approve(address(hyperdrive), type(uint256).max);
         dai.approve(address(mockHyperdrive), type(uint256).max);
         vm.stopPrank();
+
+        // Start recording events.
+        vm.recordLogs();
     }
 
     function test_erc4626_deposit() external {
@@ -105,7 +110,7 @@ contract HyperdriveER4626Test is HyperdriveTest {
         assertEq(sharesMinted, 666666666666666666);
         assertEq(pool.balanceOf(address(mockHyperdrive)), 666666666666666666);
 
-        //Now we try to do a deposit from alice's shares
+        // Now we try to do a deposit from alice's shares
         pool.approve(address(mockHyperdrive), type(uint256).max);
         (sharesMinted, sharePrice) = mockHyperdrive.deposit(3e18, false);
         assertEq(sharePrice, 1.5e18 + 1);
@@ -149,7 +154,8 @@ contract HyperdriveER4626Test is HyperdriveTest {
     function test_erc4626_testDeploy() external {
         setUp();
         vm.startPrank(alice);
-        uint256 apr = 1e16; // 1% apr
+        uint256 apr = 0.01e18; // 1% apr
+        uint256 contribution = 2_500e18;
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: dai,
             initialSharePrice: FixedPointMath.ONE_18,
@@ -165,10 +171,8 @@ contract HyperdriveER4626Test is HyperdriveTest {
         dai.approve(address(factory), type(uint256).max);
         hyperdrive = factory.deployAndInitialize(
             config,
-            bytes32(0),
-            address(0),
             new bytes32[](0),
-            2500e18,
+            contribution,
             apr
         );
 
@@ -180,5 +184,14 @@ contract HyperdriveER4626Test is HyperdriveTest {
         );
         // lp shares should equal number of share reserves initialized with
         assertEq(createdShares, 2500e18);
+
+        // Verify that the correct events were emitted.
+        verifyFactoryEvents(
+            factory,
+            alice,
+            contribution,
+            apr,
+            new bytes32[](0)
+        );
     }
 }
