@@ -317,14 +317,7 @@ library HyperdriveMath {
         uint256 _sharePrice,
         uint256 _initialSharePrice,
         uint256 _maxIterations
-    )
-        internal
-        view
-        returns (
-            // FIXME: pure
-            MaxLongResult memory result
-        )
-    {
+    ) internal pure returns (MaxLongResult memory result) {
         // We first solve for the maximum buy that is possible on the YieldSpace
         // curve. This will give us an upper bound on our maximum buy by giving
         // us the maximum buy that is possible without going into negative
@@ -332,7 +325,6 @@ library HyperdriveMath {
         // mints longs on demand. If the maximum buy satisfies our solvency
         // checks, then we're done. If not, then we need to solve for the
         // maximum trade size iteratively.
-        console.log("calculateMaxLong: 1");
         (uint256 dz, uint256 dy) = YieldSpaceMath.calculateMaxBuy(
             _shareReserves,
             _bondReserves,
@@ -340,15 +332,11 @@ library HyperdriveMath {
             _sharePrice,
             _initialSharePrice
         );
-        console.log("calculateMaxLong: 2");
         if (
             _shareReserves + dz >= (_longsOutstanding + dy).divDown(_sharePrice)
         ) {
-            console.log("calculateMaxLong: 3");
             result.baseAmount = dz.mulDown(_sharePrice);
-            console.log("calculateMaxLong: 4");
             result.bondAmount = dy;
-            console.log("calculateMaxLong: 5");
             return result;
         }
 
@@ -366,15 +354,9 @@ library HyperdriveMath {
         // (1/p - 1) * dz = z - y_l/c
         //              =>
         // dz = (z - y_l/c) * (p / (p - 1))
-        console.log("dz", dz.toString(18));
-        console.log("dy", dy.toString(18));
-        console.log("calculateMaxLong: 6");
         uint256 p = _sharePrice.mulDivDown(dz, dy);
-        console.log("p", p.toString(18));
-        console.log("calculateMaxLong: 7");
         dz = (_shareReserves - _longsOutstanding.divDown(_sharePrice))
             .mulDivDown(p, FixedPointMath.ONE_18 - p);
-        console.log("calculateMaxLong: 8");
         dy = YieldSpaceMath.calculateBondsOutGivenSharesIn(
             _shareReserves,
             _bondReserves,
@@ -383,9 +365,6 @@ library HyperdriveMath {
             _sharePrice,
             _initialSharePrice
         );
-        console.log("calculateMaxLong: 9");
-        console.log("dz", dz.toString(18));
-        console.log("dy", dy.toString(18));
 
         // Our maximum long will be the largest trade size that doesn't fail
         // the solvency check.
@@ -431,7 +410,6 @@ library HyperdriveMath {
             } else {
                 dz += uint256(error).mulDivDown(p, FixedPointMath.ONE_18 - p);
             }
-            console.log("calculateMaxLong: 19");
             dy = YieldSpaceMath.calculateBondsOutGivenSharesIn(
                 _shareReserves,
                 _bondReserves,
@@ -440,9 +418,6 @@ library HyperdriveMath {
                 _sharePrice,
                 _initialSharePrice
             );
-            console.log("calculateMaxLong: 20");
-            console.log("dz", dz.toString(18));
-            console.log("dy", dy.toString(18));
         }
 
         return result;
