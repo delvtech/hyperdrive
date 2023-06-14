@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import "forge-std/console.sol";
+import "test/utils/Lib.sol";
+
 import { ERC20PresetFixedSupply } from "openzeppelin-contracts/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
@@ -508,13 +512,22 @@ contract HyperdriveMathTest is HyperdriveTest {
         uint256 initialShortAmount,
         uint256 finalLongAmount
     ) external {
+        // FIXME: 78006570044966433744465072258 [7.8e28], 0, 0, 115763819684266577237839082600338781403556286119250692248603493285535482011337 [1.157e77], 0
+        fixedRate = 78006570044966433744465072258;
+        contribution = 0;
+        initialLongAmount = 0;
+        initialShortAmount = 115763819684266577237839082600338781403556286119250692248603493285535482011337;
+        finalLongAmount = 0;
+
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
 
         // Initialize the Hyperdrive pool.
+        console.log(1);
         contribution = contribution.normalizeToRange(1_000e18, 500_000_000e18);
         fixedRate = fixedRate.normalizeToRange(0.001e18, 0.5e18);
         initialize(alice, fixedRate, contribution);
+        console.log(2);
 
         // Open a long and a short. This sets the long buffer to a non-trivial
         // value which stress tests the max long function.
@@ -528,6 +541,7 @@ contract HyperdriveMathTest is HyperdriveTest {
             hyperdrive.calculateMaxShort() / 2
         );
         openShort(bob, initialShortAmount);
+        console.log(3);
 
         // Open the maximum long on Hyperdrive.
         IHyperdrive.PoolInfo memory info = hyperdrive.getPoolInfo();
@@ -536,9 +550,11 @@ contract HyperdriveMathTest is HyperdriveTest {
         if (fixedRate > 0.15e18) {
             maxIterations += 5;
         }
+        console.log("3.1");
         if (fixedRate > 0.35e18) {
             maxIterations += 5;
         }
+        console.log("3.2");
         uint256 maxLong = hyperdriveMath
             .calculateMaxLong(
                 info.shareReserves,
@@ -550,7 +566,9 @@ contract HyperdriveMathTest is HyperdriveTest {
                 maxIterations
             )
             .baseAmount;
+        console.log("3.3");
         (uint256 maturityTime, uint256 longAmount) = openLong(bob, maxLong);
+        console.log(4);
 
         // Ensure that opening another long fails.
         vm.stopPrank();
@@ -563,9 +581,11 @@ contract HyperdriveMathTest is HyperdriveTest {
         baseToken.approve(address(hyperdrive), finalLongAmount);
         vm.expectRevert();
         hyperdrive.openLong(finalLongAmount, 0, bob, true);
+        console.log(5);
 
         // Ensure that the long can be closed.
         closeLong(bob, maturityTime, longAmount);
+        console.log(6);
     }
 
     function test__calculateMaxShort(

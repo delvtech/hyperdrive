@@ -130,7 +130,14 @@ contract MockHyperdriveMath {
         uint256 _sharePrice,
         uint256 _initialSharePrice,
         uint256 _maxIterations
-    ) external pure returns (HyperdriveMath.MaxLongResult memory) {
+    )
+        external
+        view
+        returns (
+            // FIXME: pure
+            HyperdriveMath.MaxLongResult memory
+        )
+    {
         return
             HyperdriveMath.calculateMaxLong(
                 _shareReserves,
