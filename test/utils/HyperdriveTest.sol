@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME: Here are some thoughts for improvements that we can make to testing:
+//
+// 1. [ ] Make PoolConfig a first-class citizen by adding some helpers that give
+//        it sane defaults.
+// 2. [ ] Lean on `deploy` more heavily so that we can use the most general
+//        starting parameters for each context. We can essentially use the
+//        default config and only override select variables.
+// 3. [ ] Start using `deploy` in tests. Are there other types of low-hanging
+//        fruit that we should improve?
+
 import { VmSafe } from "forge-std/Vm.sol";
 import { HyperdriveBase } from "contracts/src/HyperdriveBase.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
@@ -24,6 +34,10 @@ contract HyperdriveTest is BaseTest {
     ERC20Mintable baseToken;
     IHyperdrive hyperdrive;
 
+    // FIXME: We need to initialize pools with different initial share prices.
+    // One question is "how should we do this"? We could randomly set the
+    // initial share price in the setup, but that doesn't sound ideal. We could
+    // also use `deploy` to fuzz it in the tests.
     uint256 internal constant INITIAL_SHARE_PRICE = FixedPointMath.ONE_18;
     uint256 internal constant CHECKPOINT_DURATION = 1 days;
     uint256 internal constant POSITION_DURATION = 365 days;
@@ -72,34 +86,36 @@ contract HyperdriveTest is BaseTest {
 
     function deploy(
         address deployer,
-        uint256 apr,
-        uint256 curveFee,
-        uint256 flatFee,
-        uint256 governanceFee
+        IHyperdrive.PoolConfig memory config
     ) internal {
         vm.stopPrank();
         vm.startPrank(deployer);
-        IHyperdrive.Fees memory fees = IHyperdrive.Fees({
-            curve: curveFee,
-            flat: flatFee,
-            governance: governanceFee
-        });
-        IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
-            baseToken: IERC20(address(baseToken)),
-            initialSharePrice: INITIAL_SHARE_PRICE,
-            positionDuration: POSITION_DURATION,
-            checkpointDuration: CHECKPOINT_DURATION,
-            timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
-            governance: governance,
-            feeCollector: feeCollector,
-            fees: fees,
-            oracleSize: ORACLE_SIZE,
-            updateGap: UPDATE_GAP
-        });
         address dataProvider = address(new MockHyperdriveDataProvider(config));
         hyperdrive = IHyperdrive(
             address(new MockHyperdrive(config, dataProvider))
         );
+    }
+
+    // FIXME: Should the default be fee-less? I think we should test the fees
+    // more thoroughly.
+    function defaultConfig()
+        internal
+        view
+        returns (IHyperdrive.PoolConfig memory)
+    {
+        return
+            IHyperdrive.PoolConfig({
+                baseToken: IERC20(address(baseToken)),
+                initialSharePrice: FixedPointMath.ONE_18,
+                positionDuration: 365 days,
+                checkpointDuration: 1 days,
+                timeStretch: HyperdriveUtils.calculateTimeStretch(0.05e18),
+                governance: governance,
+                feeCollector: feeCollector,
+                fees: IHyperdrive.Fees({ curve: 0, flat: 0, governance: 0 }),
+                oracleSize: 10,
+                updateGap: 1 hours
+            });
     }
 
     /// Actions ///
