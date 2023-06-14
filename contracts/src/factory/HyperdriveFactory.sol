@@ -119,10 +119,10 @@ abstract contract HyperdriveFactory {
     /// @notice Allows governance to change the linker factory.
     /// @param newLinkerFactory The new linker code hash.
     function updateLinkerFactory(
-        bytes32 newLinkerFactory
+        address newLinkerFactory
     ) external onlyGovernance {
         // Update the linker factory
-        linkerCodeHash = newLinkerFactory;
+        linkerFactory = newLinkerFactory;
     }
 
     /// @notice Allows governance to change the linker code hash. This allows
