@@ -508,6 +508,35 @@ contract HyperdriveMathTest is HyperdriveTest {
         uint256 initialShortAmount,
         uint256 finalLongAmount
     ) external {
+        _test__calculateMaxLong(
+            fixedRate,
+            contribution,
+            initialLongAmount,
+            initialShortAmount,
+            finalLongAmount
+        );
+    }
+
+    function test__calculateMaxLong__edgeCases() external {
+        // This is an edge case where pool has a spot price of 1 at the optimal
+        // trade size but the optimal trade size is less than the value that we
+        // solve for when checking the endpoint.
+        _test__calculateMaxLong(
+            78006570044966433744465072258,
+            0,
+            0,
+            115763819684266577237839082600338781403556286119250692248603493285535482011337,
+            0
+        );
+    }
+
+    function _test__calculateMaxLong(
+        uint256 fixedRate,
+        uint256 contribution,
+        uint256 initialLongAmount,
+        uint256 initialShortAmount,
+        uint256 finalLongAmount
+    ) internal {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
 
