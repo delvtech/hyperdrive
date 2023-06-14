@@ -362,6 +362,14 @@ library HyperdriveMath {
         // Our maximum long will be the largest trade size that doesn't fail
         // the solvency check.
         for (uint256 i = 0; i < _maxIterations; i++) {
+            // If the trade size
+            int256 error = int256((_shareReserves + dz)) -
+                int256((_longsOutstanding + dy).divDown(_sharePrice));
+            if (error > 0 && dz.mulDown(_sharePrice) > result.baseAmount) {
+                result.baseAmount = dz.mulDown(_sharePrice);
+                result.bondAmount = dy;
+            }
+
             // Even though YieldSpace isn't linear, we can use a linear
             // approximation to get closer to the optimal solution. Our guess
             // should bring us close enough to the optimal point that we can
@@ -385,15 +393,14 @@ library HyperdriveMath {
                 FixedPointMath.ONE_18,
                 _timeStretch
             );
-            int256 error = int256((_shareReserves + dz)) -
-                int256((_longsOutstanding + dy).divDown(_sharePrice));
+            if (p >= FixedPointMath.ONE_18) {
+                // If the spot price is greater than one and the error is
+                // positive,
+                break;
+            }
             if (error < 0) {
                 dz -= uint256(-error).mulDivDown(p, FixedPointMath.ONE_18 - p);
             } else {
-                if (dz.mulDown(_sharePrice) > result.baseAmount) {
-                    result.baseAmount = dz.mulDown(_sharePrice);
-                    result.bondAmount = dy;
-                }
                 dz += uint256(error).mulDivDown(p, FixedPointMath.ONE_18 - p);
             }
             dy = YieldSpaceMath.calculateBondsOutGivenSharesIn(

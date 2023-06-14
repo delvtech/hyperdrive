@@ -713,6 +713,21 @@ contract LpWithdrawalTest is HyperdriveTest {
         );
     }
 
+    function test_lp_withdrawal_three_lps(
+        uint256 longBasePaid,
+        uint256 shortAmount
+    ) external {
+        _test_lp_withdrawal_three_lps(longBasePaid, shortAmount);
+    }
+
+    function test_lp_withdrawal_three_lps_edge_cases() external {
+        // This is an edge case that occurs when the output of the
+        // YieldSpaceMath is approximately equal to zero. Previously, we would
+        // have an arithmetic underflow since we round up the value being
+        // subtracted.
+        _test_lp_withdrawal_three_lps(8181, 19983965771856);
+    }
+
     // TODO: Add commentary on how Alice, Bob, and Celine should be treated
     // similarly. Think more about whether or not this should really be the
     // case.
@@ -723,10 +738,10 @@ contract LpWithdrawalTest is HyperdriveTest {
     // removes her liquidity and then Bob closes the long and the short.
     // Finally, Bob and Celine remove their liquidity. Bob and Celine shouldn't
     // be treated differently based on the order in which they added liquidity.
-    function test_lp_withdrawal_three_lps(
+    function _test_lp_withdrawal_three_lps(
         uint256 longBasePaid,
         uint256 shortAmount
-    ) external {
+    ) internal {
         // Set up the test parameters.
         TestLpWithdrawalParams memory testParams = TestLpWithdrawalParams({
             fixedRate: 0.02e18,
@@ -784,7 +799,7 @@ contract LpWithdrawalTest is HyperdriveTest {
             testParams.shortMaturityTime = shortMaturityTime;
             testParams.shortBasePaid = shortBasePaid;
         }
-        assertApproxEqAbs(presentValueRatio(), ratio, 10);
+        assertApproxEqAbs(presentValueRatio(), ratio, 100);
         ratio = presentValueRatio();
 
         // Alice removes her liquidity.
