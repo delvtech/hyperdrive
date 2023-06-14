@@ -69,6 +69,10 @@ contract StethHyperdrive is Hyperdrive {
                 revert Errors.TransferFailed();
             }
             if (msg.value > _amount) {
+                uint256 sendAmount;
+                unchecked {
+                    sendAmount = msg.value - _amount;
+                }
                 // Return excess ether to the user.
                 (bool success, ) = payable(msg.sender).call{
                     value: msg.value - _amount

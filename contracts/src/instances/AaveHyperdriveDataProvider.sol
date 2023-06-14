@@ -59,7 +59,8 @@ contract AaveHyperdriveDataProvider is
         returns (uint256 sharePrice)
     {
         uint256 assets = _aToken.balanceOf(address(this));
-        sharePrice = _totalShares != 0 ? assets.divDown(_totalShares) : 0;
+        uint256 totalShares_ = _totalShares;
+        sharePrice = totalShares_ != 0 ? assets.divDown(totalShares_) : 0;
         return sharePrice;
     }
 

@@ -131,22 +131,29 @@ contract MultiToken is DataProvider, MultiTokenStorage, IMultiTokenWrite {
             // more validation
             if (!_isApprovedForAll[from][caller]) {
                 // Finally we load the per asset approval
-                uint256 approved = _perTokenApprovals[tokenID][from][caller];
+                mapping(address => uint256)
+                    storage perAssetApproval = _perTokenApprovals[tokenID][
+                        from
+                    ];
+                uint256 approved = perAssetApproval[caller];
                 // If it is not an infinite approval
                 if (approved != type(uint256).max) {
                     // Then we subtract the amount the caller wants to use
                     // from how much they can use, reverting on underflow.
                     // NOTE - This reverts without message for unapproved callers when
                     //         debugging that's the likely source of any mystery reverts
-                    _perTokenApprovals[tokenID][from][caller] -= amount;
+                    perAssetApproval[caller] -= amount;
                 }
             }
         }
 
         // Reaching this point implies the transfer is authorized so we remove
         // from the source and add to the destination.
-        _balanceOf[tokenID][from] -= amount;
-        _balanceOf[tokenID][to] += amount;
+        mapping(address => uint256) storage assetBalanceOf = _balanceOf[
+            tokenID
+        ];
+        assetBalanceOf[from] -= amount;
+        assetBalanceOf[to] += amount;
         emit TransferSingle(caller, from, to, tokenID, amount);
     }
 

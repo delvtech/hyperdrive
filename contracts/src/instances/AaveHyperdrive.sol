@@ -82,7 +82,7 @@ contract AaveHyperdrive is Hyperdrive {
             return (amount, FixedPointMath.ONE_18);
         } else {
             uint256 newShares = totalShares_.mulDivDown(amount, assets);
-            totalShares += newShares;
+            totalShares = totalShares_ + newShares;
             return (newShares, _pricePerShare());
         }
     }
@@ -117,7 +117,9 @@ contract AaveHyperdrive is Hyperdrive {
         }
 
         // Remove the shares from the total share supply
-        totalShares -= shares;
+        unchecked {
+            totalShares = totalShares_ - shares;
+        }
 
         // If the user wants underlying we withdraw for them otherwise send the base
         if (asUnderlying) {

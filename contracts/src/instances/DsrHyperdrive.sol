@@ -90,7 +90,7 @@ contract DsrHyperdrive is Hyperdrive {
             return (amount, FixedPointMath.ONE_18);
         } else {
             uint256 newShares = totalShares_.mulDivDown(amount, totalBase);
-            totalShares += newShares;
+            totalShares = totalShares_ + newShares;
             return (newShares, _pricePerShare());
         }
     }
@@ -126,7 +126,9 @@ contract DsrHyperdrive is Hyperdrive {
         amountWithdrawn = totalBase.mulDivDown(shares, totalShares_);
 
         // Remove shares from the total supply
-        totalShares -= shares;
+        unchecked {
+            totalShares = totalShares_ - shares;
+        }
 
         // Withdraw pro-rata share of underlying to user
         dsrManager.exit(destination, amountWithdrawn);

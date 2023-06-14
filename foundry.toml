@@ -10,6 +10,8 @@ libs = ['node_modules', 'lib']
 test = 'test'
 # Whether to cache builds or not
 cache = true
+# Needed to avoid stack to deep
+via_ir = true
 # The cache directory if enabled
 cache_path  = 'forge-cache'
 # Enables or disables the optimizer

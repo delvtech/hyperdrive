@@ -5,6 +5,7 @@ import { SafeCast } from "./libraries/SafeCast.sol";
 import { HyperdriveLP } from "./HyperdriveLP.sol";
 import { AssetId } from "./libraries/AssetId.sol";
 import { Errors } from "./libraries/Errors.sol";
+import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "./libraries/YieldSpaceMath.sol";
@@ -277,15 +278,16 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // by the amount of bonds that were shorted. We don't need to add the
         // margin or pre-paid interest to the reserves because of the way that
         // the close short accounting works.
-        _marketState.shareReserves -= _shareReservesDelta.toUint128();
+        uint128 shareReserves_ = _marketState.shareReserves -
+            _shareReservesDelta.toUint128();
+        _marketState.shareReserves = shareReserves_;
         _marketState.bondReserves += _bondAmount.toUint128();
         _marketState.shortsOutstanding += _bondAmount.toUint128();
 
         // Since the share reserves are reduced, we need to verify that the base
         // reserves are greater than or equal to the amount of longs outstanding.
         if (
-            _sharePrice.mulDown(_marketState.shareReserves) <
-            _marketState.longsOutstanding
+            _sharePrice.mulDown(shareReserves_) < _marketState.longsOutstanding
         ) {
             revert Errors.BaseBufferExceedsShareReserves();
         }
@@ -307,12 +309,13 @@ abstract contract HyperdriveShort is HyperdriveLP {
         uint256 _maturityTime,
         uint256 _sharePrice
     ) internal {
+        uint128 shortsOutstanding_ = _marketState.shortsOutstanding;
         // Update the short average maturity time.
         _marketState.shortAverageMaturityTime = uint256(
             _marketState.shortAverageMaturityTime
         )
             .updateWeightedAverage(
-                _marketState.shortsOutstanding,
+                shortsOutstanding_,
                 _maturityTime * 1e18, // scale up to fixed point scale
                 _bondAmount,
                 false
@@ -338,16 +341,24 @@ abstract contract HyperdriveShort is HyperdriveLP {
             // Remove a proportional amount of the checkpoints base volume from
             // the aggregates.
             uint256 checkpointTime = _maturityTime - _positionDuration;
-            uint128 proportionalBaseVolume = uint256(
-                _checkpoints[checkpointTime].shortBaseVolume
-            ).mulDown(_bondAmount.divDown(checkpointAmount)).toUint128();
+            uint128 checkpointShortBaseVolume = _checkpoints[checkpointTime]
+                .shortBaseVolume;
+            IHyperdrive.Checkpoint storage checkpoint = _checkpoints[
+                checkpointTime
+            ];
+            uint128 proportionalBaseVolume = uint256(checkpointShortBaseVolume)
+                .mulDown(_bondAmount.divDown(checkpointAmount))
+                .toUint128();
             _marketState.shortBaseVolume -= proportionalBaseVolume;
-            _checkpoints[checkpointTime]
-                .shortBaseVolume -= proportionalBaseVolume;
+            checkpoint.shortBaseVolume =
+                checkpointShortBaseVolume -
+                proportionalBaseVolume;
         }
 
         // Decrease the amount of shorts outstanding.
-        _marketState.shortsOutstanding -= _bondAmount.toUint128();
+        _marketState.shortsOutstanding =
+            shortsOutstanding_ -
+            _bondAmount.toUint128();
 
         // Apply the updates from the curve trade to the reserves.
         _marketState.shareReserves += _shareReservesDelta.toUint128();
@@ -393,9 +404,11 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // Calculate the effect that opening the short should have on the pool's
         // reserves as well as the amount of shares the trader receives from
         // selling the shorted bonds at the market price.
+        uint128 shareReserves_ = _marketState.shareReserves;
+        uint128 bondReserves_ = _marketState.bondReserves;
         shareReservesDelta = HyperdriveMath.calculateOpenShort(
-            _marketState.shareReserves,
-            _marketState.bondReserves,
+            shareReserves_,
+            bondReserves_,
             _bondAmount,
             _timeStretch,
             _sharePrice,
@@ -413,8 +426,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // subtract the fee from the share deltas so that the trader receives
         // less shares.
         uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
-            _marketState.shareReserves,
-            _marketState.bondReserves,
+            shareReserves_,
+            bondReserves_,
             _initialSharePrice,
             _timeRemaining,
             _timeStretch
@@ -464,11 +477,13 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // purchase the shorted bonds at the market price.
         // NOTE: We calculate the time remaining from the latest checkpoint to ensure that
         // opening/closing a position doesn't result in immediate profit.
+        uint128 shareReserves_ = _marketState.shareReserves;
+        uint128 bondReserves_ = _marketState.bondReserves;
         uint256 timeRemaining = _calculateTimeRemaining(_maturityTime);
         (shareReservesDelta, bondReservesDelta, sharePayment) = HyperdriveMath
             .calculateCloseShort(
-                _marketState.shareReserves,
-                _marketState.bondReserves,
+                shareReserves_,
+                bondReserves_,
                 _bondAmount,
                 timeRemaining,
                 _timeStretch,
@@ -481,8 +496,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // the fee from the share deltas so that the trader pays less shares.
         uint256 spotPrice = _marketState.bondReserves > 0
             ? HyperdriveMath.calculateSpotPrice(
-                _marketState.shareReserves,
-                _marketState.bondReserves,
+                shareReserves_,
+                bondReserves_,
                 _initialSharePrice,
                 timeRemaining,
                 _timeStretch
