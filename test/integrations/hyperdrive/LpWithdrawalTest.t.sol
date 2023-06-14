@@ -713,8 +713,6 @@ contract LpWithdrawalTest is HyperdriveTest {
         );
     }
 
-    // FIXME: This currently fails intermittently. Here's an example: [6425, 19986105141250 [1.998e13]].
-    //
     // TODO: Add commentary on how Alice, Bob, and Celine should be treated
     // similarly. Think more about whether or not this should really be the
     // case.

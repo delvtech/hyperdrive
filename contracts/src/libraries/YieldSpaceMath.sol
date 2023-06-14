@@ -391,7 +391,10 @@ library YieldSpaceMath {
         // (((µ * z)^(1 - t) + y^(1 - t) - (y + dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
         _z = _z.divDown(mu);
         // Δz = z - (((c / µ) * (µ * z)^(1 - t) + y^(1 - t) - (y + dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
-        return z.sub(_z);
+        if (z > _z) {
+            return z - _z;
+        }
+        return 0;
     }
 
     /// @dev Calculates the maximum amount of bonds that can be purchased with
