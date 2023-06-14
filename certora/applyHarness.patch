@@ -1,22 +1,26 @@
---- ../contracts/src/instances/AaveHyperdrive.sol	2023-06-01 07:52:32.043955717 +0300
-+++ 	2023-06-01 07:56:35.663856324 +0300
-@@ -2,11 +2,11 @@
- pragma solidity ^0.8.18;
+--- ../contracts/src/instances/AaveHyperdrive.sol	2023-06-14 08:00:16.485475749 +0300
++++ 	2023-06-14 08:28:12.509849386 +0300
+@@ -1,12 +1,13 @@
+ // SPDX-License-Identifier: Apache-2.0
+-pragma solidity 0.8.19;
++pragma solidity ^0.8.18;
  
  import { IPool } from "@aave/interfaces/IPool.sol";
 -import { Hyperdrive } from "../Hyperdrive.sol";
 -import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 -import { Errors } from "../libraries/Errors.sol";
+-import { IERC20 } from "../interfaces/IERC20.sol";
+-import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 +import { Hyperdrive } from "./Hyperdrive.sol";
 +import { FixedPointMath } from "../../contracts/src/libraries/FixedPointMath.sol";
 +import { Errors } from "../../contracts/src/libraries/Errors.sol";
- import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
--import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
++import { IERC20 } from "../../contracts/src/interfaces/IERC20.sol";
 +import { IHyperdrive } from "../../contracts/src/interfaces/IHyperdrive.sol";
++import { HyperdriveMath } from "../../contracts/src/libraries/HyperdriveMath.sol";
  
  contract AaveHyperdrive is Hyperdrive {
      using FixedPointMath for uint256;
-@@ -16,7 +16,7 @@
+@@ -16,7 +17,7 @@
      IPool internal immutable pool;
  
      // The shares created by this pool, starts at one to one with deposits and increases
@@ -25,7 +29,7 @@
  
      /// @notice Initializes a Hyperdrive pool.
      /// @param _config The configuration of the Hyperdrive pool.
-@@ -42,7 +42,8 @@
+@@ -42,7 +43,8 @@
  
          aToken = _aToken;
          pool = _pool;
@@ -35,7 +39,7 @@
      }
  
      ///@notice Transfers amount of 'token' from the user and commits it to the yield source.
-@@ -140,4 +141,8 @@
+@@ -142,4 +144,8 @@
          }
          return 0;
      }
@@ -44,10 +48,10 @@
 +        return _pricePerShare();
 +    }
  }
---- ../contracts/src/Hyperdrive.sol	2023-06-01 07:46:36.404089057 +0300
-+++ 	2023-06-01 08:07:55.033596992 +0300
+--- ../contracts/src/Hyperdrive.sol	2023-06-14 08:00:16.409642436 +0300
++++ 	2023-06-14 08:15:22.834316460 +0300
 @@ -2,15 +2,18 @@
- pragma solidity ^0.8.18;
+ pragma solidity 0.8.19;
  
  import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 -import { SafeCast } from "./libraries/SafeCast.sol";
@@ -66,7 +70,7 @@
 +import { FixedPointMath } from "../../contracts/src/libraries/FixedPointMath.sol";
 +import { HyperdriveMath } from "../../contracts/src/libraries/HyperdriveMath.sol";
 +import { IHyperdrive } from "../../contracts/src/interfaces/IHyperdrive.sol";
-+import { HyperdriveStorageGetters} from "../helpers/HyperdriveStorageGetters.sol";
++import { HyperdriveStorageGetters } from "../helpers/HyperdriveStorageGetters.sol";
 +import { IHyperdriveTypes } from "../helpers/IHyperdriveTypes.sol";
 +import { HyperdrivePresentValue } from "../helpers/HyperdrivePresentValue.sol";
  
@@ -84,11 +88,11 @@
  {
      using FixedPointMath for uint256;
      using SafeCast for uint256;
---- ../contracts/src/HyperdriveLP.sol	2023-06-01 07:46:36.414089054 +0300
-+++ 	2023-06-01 07:55:00.653918252 +0300
+--- ../contracts/src/HyperdriveLP.sol	2023-06-14 08:00:16.431309096 +0300
++++ 	2023-06-14 08:20:24.661696213 +0300
 @@ -1,13 +1,14 @@
  // SPDX-License-Identifier: Apache-2.0
- pragma solidity ^0.8.18;
+ pragma solidity 0.8.19;
  
 -import { SafeCast } from "./libraries/SafeCast.sol";
 -import { HyperdriveBase } from "./HyperdriveBase.sol";
@@ -144,7 +148,7 @@
              params
          );
  
-@@ -459,7 +460,7 @@
+@@ -461,7 +462,7 @@
          uint256 _withdrawalSharesOutstanding,
          uint256 _sharePrice
      ) internal {
@@ -153,11 +157,14 @@
              HyperdriveMath.PresentValueParams({
                  shareReserves: _marketState.shareReserves,
                  bondReserves: _marketState.bondReserves,
---- ../contracts/src/HyperdriveShort.sol	2023-06-01 07:46:36.414089054 +0300
-+++ 	2023-06-01 07:49:29.964030956 +0300
-@@ -3,11 +3,12 @@
+--- ../contracts/src/HyperdriveShort.sol	2023-06-14 08:00:16.442142427 +0300
++++ 	2023-06-14 08:23:20.562461615 +0300
+@@ -1,13 +1,14 @@
+ // SPDX-License-Identifier: Apache-2.0
+ pragma solidity 0.8.19;
  
- import { SafeCast } from "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
+-import { SafeCast } from "./libraries/SafeCast.sol";
++import { SafeCast } from "../../contracts/src/libraries/SafeCast.sol";
  import { HyperdriveLP } from "./HyperdriveLP.sol";
 -import { AssetId } from "./libraries/AssetId.sol";
 -import { Errors } from "./libraries/Errors.sol";
@@ -182,10 +189,11 @@
      using FixedPointMath for uint256;
      using SafeCast for uint256;
  
-@@ -381,6 +382,15 @@
+@@ -421,7 +422,15 @@
+         );
          // Add the spot price to the oracle if an oracle update is required
          recordPrice(spotPrice);
- 
+-
 +        HDFee memory fee = MockCalculateFeesOutGivenBondsIn(_bondAmount, _timeRemaining, spotPrice, _sharePrice);
 +        (
 +            uint256 totalCurveFee,
@@ -198,19 +206,19 @@
          uint256 totalCurveFee;
          (
              totalCurveFee, // there is no flat fee on opening shorts
-@@ -392,6 +402,7 @@
+@@ -432,7 +441,7 @@
+             _timeRemaining,
              spotPrice,
              _sharePrice
-         );
-+        */
+-        );
++        );*/
          shareReservesDelta -= totalCurveFee;
          return (shareReservesDelta, totalGovernanceFee);
      }
-@@ -450,7 +461,14 @@
- 
+@@ -492,6 +501,14 @@
          // Record an oracle update
          recordPrice(spotPrice);
--
+ 
 +        HDFee memory fee = MockCalculateFeesInGivenBondsOut(_bondAmount, timeRemaining, spotPrice, _sharePrice);
 +        (
 +            uint256 totalCurveFee,
@@ -222,19 +230,20 @@
          (
              uint256 totalCurveFee,
              uint256 totalFlatFee,
-@@ -462,6 +480,7 @@
+@@ -502,7 +519,7 @@
+                 timeRemaining,
                  spotPrice,
                  _sharePrice
-             );
-+        */
+-            );
++            );*/
          shareReservesDelta += totalCurveFee - governanceCurveFee;
          sharePayment += totalCurveFee + totalFlatFee;
  
---- ../contracts/src/HyperdriveLong.sol	2023-06-01 07:46:36.414089054 +0300
-+++ 	2023-06-01 08:11:05.053520811 +0300
+--- ../contracts/src/HyperdriveLong.sol	2023-06-14 08:00:16.431309096 +0300
++++ 	2023-06-14 08:19:20.571721289 +0300
 @@ -1,12 +1,13 @@
  // SPDX-License-Identifier: Apache-2.0
- pragma solidity ^0.8.18;
+ pragma solidity 0.8.19;
  
 -import { SafeCast } from "./libraries/SafeCast.sol";
 +import { SafeCast } from "../../contracts/src/libraries/SafeCast.sol";
@@ -260,7 +269,7 @@
      using FixedPointMath for uint256;
      using SafeCast for uint256;
  
-@@ -371,7 +372,14 @@
+@@ -393,7 +394,14 @@
  
          // Record an oracle update
          recordPrice(spotPrice);
@@ -275,7 +284,7 @@
          (
              uint256 totalCurveFee,
              uint256 governanceCurveFee
-@@ -381,6 +389,7 @@
+@@ -403,6 +411,7 @@
                  spotPrice,
                  _sharePrice
              );
@@ -283,41 +292,39 @@
          bondProceeds = bondReservesDelta - totalCurveFee;
          bondReservesDelta -= totalCurveFee - governanceCurveFee;
  
-@@ -458,9 +467,12 @@
-         // Record an oracle update
-         recordPrice(spotPrice);
+@@ -482,7 +491,8 @@
  
-+        HDFee memory fee = MockCalculateFeesOutGivenBondsIn(_bondAmount, timeRemaining, spotPrice, _sharePrice);
          uint256 totalCurveFee;
          uint256 totalFlatFee;
 -        (
-+        (totalCurveFee, totalFlatFee, ,) = destructHDFee(fee);
-+        totalGovernanceFee = totalCurveFee.add(totalFlatFee).mulDown(_governanceFee);
++        HDFee memory fee = MockCalculateFeesOutGivenBondsIn(_bondAmount, timeRemaining, spotPrice, _sharePrice);
 +        /*(
              totalCurveFee,
              totalFlatFee,
              totalGovernanceFee
-@@ -469,7 +481,7 @@
+@@ -491,7 +501,9 @@
              timeRemaining,
              spotPrice,
              _sharePrice
 -        );
 +        );*/
++        (totalCurveFee, totalFlatFee, ,) = destructHDFee(fee);
++        totalGovernanceFee = totalCurveFee.add(totalFlatFee).mulDown(_governanceFee);
          shareReservesDelta -= totalCurveFee;
          shareProceeds -= totalCurveFee + totalFlatFee;
  
---- ../contracts/src/ForwarderFactory.sol	2023-06-01 07:46:36.404089057 +0300
-+++ 	2023-06-01 07:49:29.964030956 +0300
+--- ../contracts/src/token/ForwarderFactory.sol	2023-06-14 08:00:16.582975725 +0300
++++ 	2023-06-14 08:13:47.956020117 +0300
 @@ -1,9 +1,9 @@
  // SPDX-License-Identifier: Apache-2.0
- pragma solidity ^0.8.18;
+ pragma solidity 0.8.19;
  
--import { IForwarderFactory } from "./interfaces/IForwarderFactory.sol";
--import { IMultiToken } from "./interfaces/IMultiToken.sol";
+-import { IForwarderFactory } from "../interfaces/IForwarderFactory.sol";
+-import { IMultiToken } from "../interfaces/IMultiToken.sol";
 -import { ERC20Forwarder } from "./ERC20Forwarder.sol";
 +import { IForwarderFactory } from "../../contracts/src/interfaces/IForwarderFactory.sol";
 +import { IMultiToken } from "../../contracts/src/interfaces/IMultiToken.sol";
-+import { ERC20Forwarder } from "../../contracts/src/ERC20Forwarder.sol";
++import { ERC20Forwarder } from "../../contracts/src/token/ERC20Forwarder.sol";
  
  /// @author DELV
  /// @title ForwarderFactory
@@ -336,9 +343,12 @@
  
      /// @notice Uses create2 to deploy a forwarder at a predictable address as part of
      ///         our ERC20 multitoken implementation.
-@@ -44,16 +45,18 @@
+@@ -42,18 +43,20 @@
+         _tokenId = tokenId;
+         _token = token;
          // The salt is the _tokenId hashed with the multi token
-         bytes32 salt = keccak256(abi.encode(token, tokenId));
+-        bytes32 salt = keccak256(abi.encode(token, tokenId));
++        // bytes32 salt = keccak256(abi.encode(token, tokenId));
          // Deploy using create2 with that salt
 -        ERC20Forwarder deployed = new ERC20Forwarder{ salt: salt }();
 +        // ERC20Forwarder deployed = new ERC20Forwarder{ salt: salt }();

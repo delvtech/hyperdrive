@@ -13,7 +13,7 @@ HDShort_origin = ../contracts/src/HyperdriveShort.sol
 HDShort_munged = ./munged/HyperdriveShort.sol
 HDLong_origin = ../contracts/src/HyperdriveLong.sol
 HDLong_munged = ./munged/HyperdriveLong.sol
-ForwarderFactory_origin = ../contracts/src/ForwarderFactory.sol
+ForwarderFactory_origin = ../contracts/src/token/ForwarderFactory.sol
 ForwarderFactory_munged = ./munged/ForwarderFactory.sol
 
 help:
