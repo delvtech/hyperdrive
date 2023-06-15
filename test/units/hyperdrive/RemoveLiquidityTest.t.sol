@@ -205,7 +205,8 @@ contract RemoveLiquidityTest is HyperdriveTest {
 
         // Ensure that the LP shares were properly accounted for.
         assertEq(hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice), 0);
-        assertEq(hyperdrive.totalSupply(AssetId._LP_ASSET_ID), 0);
+        //
+        assertEq(hyperdrive.totalSupply(AssetId._LP_ASSET_ID), 10000);
 
         // Ensure that Alice received the correct amount of base.
         (uint256 contributionPlusInterest, ) = HyperdriveUtils
@@ -226,10 +227,10 @@ contract RemoveLiquidityTest is HyperdriveTest {
         );
         assertEq(baseToken.balanceOf(alice), baseProceeds);
 
-        // Ensure that the reserves were updated correctly.
+        // Ensure that the reserves were updated correctly. Minimum share and bond amount should remain
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
-        assertEq(poolInfo.shareReserves, 0);
-        assertEq(poolInfo.bondReserves, 0);
+        assert(poolInfo.shareReserves > 0);
+        assert(poolInfo.bondReserves > 0);
 
         // Ensure that Alice receives the right amount of withdrawal shares.
         assertApproxEqAbs(
