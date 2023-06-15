@@ -141,6 +141,8 @@ function CVLCalculateShortProceeds(uint256 amount, uint256 shareDelta, uint256 o
 /* =========================================
  ---------- Hyperdrive Math summaries ------
 ============================================ */
+
+/// Present value summary : CVL summary for calculatePresentValue() 
 ghost mathint shareReservesDelta;
 ghost mathint netCurveTrade;
 ghost mathint netFlatTrade;

@@ -45,10 +45,6 @@ definition prefixByID(uint256 ID) returns mathint = (ID >> 248);
 /// Mirror of totalSupply
 ghost mapping(uint256 => uint256) ghostTotalSupply;
 
-ghost mathint _ghostReadyToWithdraw {
-    init_state axiom _ghostReadyToWithdraw == 0; 
-}
-
 ghost mathint _sumOfWithdrawalShares {
     init_state axiom _sumOfWithdrawalShares == 0; 
 }
@@ -97,14 +93,6 @@ hook Sstore currentContract._totalSupply[KEY uint256 tokenID] uint256 value (uin
         _sumOfShorts + value - old_value : _sumOfShorts;
 }
 
-hook Sload uint128 value currentContract._withdrawPool.readyToWithdraw STORAGE {
-    require _ghostReadyToWithdraw == to_mathint(value);
-}
-
-hook Sstore currentContract._withdrawPool.readyToWithdraw uint128 value (uint128 old_value) STORAGE {
-    _ghostReadyToWithdraw = to_mathint(value);
-}
-
 /*
 I + Iv + Lx + Lf + Lu + Lv: _marketState.shareReserves * _pricePerShare()
 Lx + Lf + Lu: _marketState.longsOutstanding
@@ -149,7 +137,12 @@ function sumOfShorts() returns mathint {
 
 /// lr : Withdrawal shares that are ready to redeem.
 function readyToRedeemShares() returns mathint {
-    return _ghostReadyToWithdraw;
+    return to_mathint(withdrawPoolReadyShares());
+}
+
+/// z_withdrawals : Total withdrawal proceeds that are ready to be redeemed.
+function withdrawalProceeds() returns mathint {
+    return to_mathint(withdrawPoolProceeds());
 }
 
 /// The total LP shares liquidity (corresponds to present value of LP)

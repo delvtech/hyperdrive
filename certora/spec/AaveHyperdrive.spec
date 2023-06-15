@@ -3,7 +3,6 @@ import "./MathSummaries.spec";
 import "./Sanity.spec";
 import "./HyperdriveStorage.spec";
 import "./LiquidityDefinitions.spec";
-//import "./Fees.spec";
 
 using AaveHyperdrive as HDAave;
 using DummyATokenA as aToken;
@@ -17,11 +16,8 @@ methods {
     function _.burn(address,address,uint256,uint256) external => DISPATCHER(true);
 
     function aToken.UNDERLYING_ASSET_ADDRESS() external returns (address) envfree;
-    function aToken.balanceOf(address) external returns (uint256);
-    function aToken.transfer(address,uint256) external returns (bool);
     function pool.liquidityIndex(address,uint256) external returns (uint256) envfree;
     function totalShares() external returns (uint256) envfree;
-    function getPresentValue(uint256) external returns (uint256);
 
     function MockAssetId.encodeAssetId(MockAssetId.AssetIdPrefix, uint256) external returns (uint256) envfree;
     function _.recordPrice(uint256 price) internal => NONDET;
@@ -136,6 +132,9 @@ function depositOutput(env e, uint256 totalSharesBefore, uint256 assetsBefore, u
     return output;
 }
 
+/// Checks the balance difference after transfering aTokens.
+/// Due to rounding errors of index divison and multiplication, the difference
+/// is bounded by the index + 1/RAY
 rule aTokenTransferBalanceTest(uint256 amount, address recipient) {
     env e;
     require e.msg.sender != recipient;
@@ -167,9 +166,6 @@ rule depositOutputChecker(uint256 baseAmount, bool asUnderlying) {
         assert totalSharesAfter == baseAmount;
     }
     else {
-        //if(asUnderlying) {
-        //    assert assetsBefore + baseAmount == to_mathint(assetsAfter);
-        //}
         uint256 sharesMinted = mulDivDownAbstractPlus(totalSharesBefore, baseAmount, assetsBefore);
         //uint256 sharePrice = mulDivDownAbstractPlus(baseAmount, ONE18(), sharesMinted);
         assert totalSharesBefore + sharesMinted == to_mathint(totalSharesAfter);
@@ -408,19 +404,16 @@ rule addAndRemoveSameSharesMeansNoChange(env e) {
     address _destination;
     bool _asUnderlying;
 
-    uint256 _shares;
     uint256 _minOutput;
-
     uint256 baseProceeds;
     uint256 withdrawalShares;
 
-    AaveHyperdrive.MarketState Mstate1 = marketState();
-    uint256 lpShares = addLiquidity(e, _contribution, _minApr, _maxApr, _destination, _asUnderlying);
+    uint128 shareReservesBefore = stateShareReserves();
+        uint256 lpShares = addLiquidity(e, _contribution, _minApr, _maxApr, _destination, _asUnderlying);
+        baseProceeds, withdrawalShares = removeLiquidity(e, lpShares, _minOutput, _destination, _asUnderlying);
+    uint128 shareReservesAfter = stateShareReserves();
 
-    baseProceeds, withdrawalShares = removeLiquidity(e, _shares, _minOutput, _destination, _asUnderlying);
-    AaveHyperdrive.MarketState Mstate3 = marketState();
-
-    assert lpShares == withdrawalShares => to_mathint(Mstate1.shareReserves) == to_mathint(Mstate3.shareReserves);
+    assert shareReservesAfter == shareReservesBefore;
 }
 
 rule openLongPreservesOutstandingLongs(uint256 baseAmount) {
@@ -790,12 +783,17 @@ invariant ShareReservesCoverLongs(env e)
         }
     }
 
-/// If there are not shares in the pool, then there are only shorts in the pool (no longs)
-invariant NoSharesNoShorts()
-    stateShareReserves() == 0 => sumOfLongs() == 0
-    filtered{f -> isCloseShort(f) || isOpenLong(f)}
+invariant TotalSharesGreaterThanLiquidity()
+    to_mathint(stateShareReserves()) <= to_mathint(totalShares())
+    filtered{f -> isCloseShort(f)}
+
+/// If there are no shares in the pool, then there are only shorts in the pool (no longs)
+/// Timeout
+invariant NoSharesNoLongs()
+    stateShareReserves() == 0 => stateLongs() == 0
     {
         preserved {
+            setHyperdrivePoolParams();
             requireInvariant SumOfLongsGEOutstanding();
             requireInvariant SumOfShortsGEOutstanding();
         }
@@ -811,14 +809,13 @@ rule shortRoundTripSameBaseVolume(uint256 bondAmount) {
     
     setHyperdrivePoolParams();
     
-    uint256 maturityTime = 
-        require_uint256(e.block.timestamp - (e.block.timestamp % checkpointDuration()) + positionDuration());
-    
+    uint256 maturityTime;
+    uint256 userDeposit;
+
     AaveHyperdrive.MarketState Mstate = marketState();
     uint128 baseVolumeBefore = Mstate.shortBaseVolume;
-    uint256 userDeposit;
-    _, userDeposit = openShort(e, bondAmount, maxDeposit, destination, asUnderlying);
-    uint256 baseRewards = closeShort(e, maturityTime, bondAmount, minOutput, destination, asUnderlying);
+        maturityTime, userDeposit = openShort(e, bondAmount, maxDeposit, destination, asUnderlying);
+        uint256 baseRewards = closeShort(e, maturityTime, bondAmount, minOutput, destination, asUnderlying);
     uint128 baseVolumeAfter = Mstate.shortBaseVolume;
 
     assert baseVolumeAfter == baseVolumeBefore;
@@ -848,6 +845,7 @@ rule openShortMustPay(uint256 bondAmount) {
     env e1; require e1.msg.sender != currentContract;
     
     uint256 maxDeposit;
+    uint256 traderDeposit; uint256 maturityTime;
     address destination;
     setHyperdrivePoolParams();
     require bondAmount >= 10^6;
@@ -856,7 +854,7 @@ rule openShortMustPay(uint256 bondAmount) {
     require e1.block.timestamp == 10^6;
 
     uint256 balance1 = aToken.balanceOf(e1, e1.msg.sender);
-        uint256 traderDeposit = openShort(e1, bondAmount, maxDeposit, destination, false);
+        maturityTime, traderDeposit = openShort(e1, bondAmount, maxDeposit, destination, false);
     uint256 balance2 = aToken.balanceOf(e1, e1.msg.sender);
 
     assert traderDeposit !=0;

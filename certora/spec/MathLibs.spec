@@ -23,8 +23,8 @@ methods {
     function HDMath.calculateBaseVolume(uint256,uint256,uint256) external returns uint256 envfree;
     function HDMath.calculateSpotPrice(uint256,uint256,uint256,uint256,uint256) external returns uint256 envfree;
     function HDMath.calculateAPRFromReserves(uint256,uint256,uint256,uint256,uint256) external returns uint256 envfree;
-    function HDMath.calculateInitialBondReserves(uint256,uint256,uint256,uint256,uint256,uint256) external returns uint256 envfree;
-    function HDMath.calculatePresentValue(MockHyperdriveMath.PresentValueParams) external returns uint256 envfree;
+    //function HDMath.calculateInitialBondReserves(uint256,uint256,uint256,uint256,uint256,uint256) external returns uint256 envfree;
+    function HDMath.calculatePresentValue(MockHyperdriveMath.PresentValueParams) external returns (uint256) envfree;
     function HDMath.calculateShortInterest(uint256,uint256,uint256,uint256) external returns uint256 envfree;
     function HDMath.calculateShortProceeds(uint256,uint256,uint256,uint256,uint256) external returns uint256 envfree;
 
@@ -529,4 +529,27 @@ rule shortProceedsIntegrity(uint256 bondAmount) {
         HDMath.calculateShortProceeds(bondAmount,shareReservesDelta,openSharePrice,sharePrice,sharePrice);
 
     assert bondAmount !=0 => traderDeposit !=0;
+}
+
+/*
+uint256 shareReserves;
+uint256 bondReserves;
+uint256 sharePrice;
+uint256 initialSharePrice;
+uint256 timeStretch;
+uint256 longsOutstanding;
+uint256 longAverageTimeRemaining;
+uint256 shortsOutstanding;
+uint256 shortAverageTimeRemaining;
+uint256 shortBaseVolume;
+*/
+rule presentValueTimeContinuous() {
+    MockHyperdriveMath.PresentValueParams params;
+    uint256 z = params.shareReserves;
+    require params.shortsOutstanding == 0;
+    require params.longAverageTimeRemaining == 0;
+    require params.shortAverageTimeRemaining == 0;
+    uint256 PV1 = HDMath.calculatePresentValue(params);
+    //uint256 PV2 = HDMath.calculatePresentValue(params2);
+    assert PV1 >= z;
 }

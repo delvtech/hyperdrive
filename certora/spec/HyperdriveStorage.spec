@@ -1,4 +1,4 @@
-/// @dev Methods block of the HyperdriveStorageGetters methods.
+/// Methods block of the HyperdriveStorageGetters methods.
 /// Note that the Hyperdrive instance name (e.g. AaveHyperdrive) needs to be modified
 /// based on the contract being verified.
 /// This change applies to the prefix of the struct.
@@ -21,7 +21,8 @@ methods {
     function stateBondReserves() external returns (uint128) envfree; 
     function stateLongs() external returns (uint128) envfree; 
     function stateShorts() external returns (uint128) envfree; 
-    function withdrawPool() external returns (AaveHyperdrive.WithdrawPool memory) envfree;
+    function withdrawPoolProceeds() external returns (uint128) envfree;
+    function withdrawPoolReadyShares() external returns (uint128) envfree;
     function curveFee() external returns (uint256) envfree;
     function flatFee() external returns (uint256) envfree;
     function governanceFee() external returns (uint256) envfree;

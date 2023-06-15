@@ -1,5 +1,6 @@
 import "./AaveHyperdrive.spec";
 use invariant SpotPriceIsLessThanOne;
+use invariant TotalSharesGreaterThanLiquidity;
 
 /// Violated:
 /// https://vaas-stg.certora.com/output/41958/180ad13e3b71470dbb54453056e5b4f7/?anonymousKey=462752cde7c7ecca90733908249a351c0425f2f7
@@ -45,7 +46,7 @@ rule removeLiquidityPreservesAPR() {
 
 
 /// The change of the the share reserves should account for three sources:
-///     a. Deposit of withdrawal of pool shares from adding/removing liquidity
+///     a. Deposit or withdrawal of pool shares from adding/removing liquidity
 ///     b. Closing matured shorts and longs (by checkpointing)
 ///     c. Transfer of shares to the ready-to-redeem withdrawal pool
 rule changeOfShareReserves() {
@@ -53,21 +54,22 @@ rule changeOfShareReserves() {
     calldataarg args;
     uint256 price = sharePrice(e); require price !=0 ;
     setHyperdrivePoolParams();
+    requireInvariant TotalSharesGreaterThanLiquidity();
     
     uint256 totalShares1 = totalShares();
     uint128 shareReserves1 = stateShareReserves();
     mathint readyProceeds1 = withdrawalProceeds();
-    mathint sumOfLongs1 = sumOfLongs();
-    mathint sumOfShorts1 = sumOfShorts();
+    mathint Longs1 = stateLongs();
+    mathint Shorts1 = stateShorts();
         addLiquidity(e, args); // also remove
     uint256 totalShares2 = totalShares();
     uint128 shareReserves2 = stateShareReserves();
     mathint readyProceeds2 = withdrawalProceeds();
-    mathint sumOfLongs2 = sumOfLongs();
-    mathint sumOfShorts2 = sumOfShorts();
+    mathint Longs2 = stateLongs();
+    mathint Shorts2 = stateShorts();
     
-    mathint longProceeds = ((sumOfLongs2 - sumOfLongs1) * ONE18()) / price;
-    mathint shortProceeds = ((sumOfShorts2 - sumOfShorts1) * ONE18()) / price;
+    mathint longProceeds = ((Longs2 - Longs1) * ONE18()) / price;
+    mathint shortProceeds = ((Shorts2 - Shorts1) * ONE18()) / price;
 
     require shareReserves1 > 0;
     ///

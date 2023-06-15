@@ -70,8 +70,12 @@ abstract contract HyperdriveStorageGetters is HyperdriveStorage {
         return _marketState.shortsOutstanding;
     }
 
-    function withdrawPool() public view returns (IHyperdrive.WithdrawPool memory withdrawPool) {
-        withdrawPool = _withdrawPool;
+    function withdrawPoolReadyShares() public view returns (uint128) {
+        return _withdrawPool.readyToWithdraw;
+    }
+
+    function withdrawPoolProceeds() public view returns (uint128) {
+        return _withdrawPool.proceeds;
     }
 
     function curveFee() public view returns (uint256) {

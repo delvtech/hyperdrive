@@ -27,8 +27,6 @@ ghost mapping(uint256 => uint256) interestOverTime {
     axiom forall uint256 x. forall uint256 y. x > y => interestOverTime[x] >= interestOverTime[y];
 }
 
-
-
 rule basicFRule(env e, env e2, method f, method g) filtered { f -> !f.isView, g -> !g.isView } {
     calldataarg argsF;
     calldataarg argsG;
