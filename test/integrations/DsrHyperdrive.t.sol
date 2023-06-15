@@ -226,6 +226,7 @@ contract DsrHyperdrive is BaseTest {
         hyperdrive.withdraw(1, alice, false);
     }
 
+    // Ensures issue described in https://github.com/delvtech/hyperdrive/issues/357 is patched
     function test_avoids_donation_attack() public {
         vm.stopPrank();
         vm.startPrank(alice);
