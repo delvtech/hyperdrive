@@ -49,6 +49,14 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             _asUnderlying
         );
 
+        // Limit must be greater than amount given to address(0) otherwise its possible to mint 0 shares while initializing the pool
+        if (shares < 1e5) {
+            revert Errors.TooFewSharesMinted();
+        }
+
+        // Subtract shares for address(0) from the initial amount given
+        shares -= 1e4;
+
         // Create an initial checkpoint.
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
 
@@ -69,6 +77,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             .toUint128();
 
         // Mint LP shares to the initializer.
+        _mint(AssetId._LP_ASSET_ID, address(0), 1e4);
         _mint(AssetId._LP_ASSET_ID, _destination, shares);
 
         // Emit an Initialize event.

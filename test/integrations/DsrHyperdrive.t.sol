@@ -7,6 +7,7 @@ import { Errors } from "contracts/src/libraries/Errors.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { IMockDsrHyperdrive, MockDsrHyperdrive, MockDsrHyperdriveDataProvider, DsrManager } from "contracts/test/MockDsrHyperdrive.sol";
 import { BaseTest } from "test/utils/BaseTest.sol";
+import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 
 contract DsrHyperdrive is BaseTest {
     using FixedPointMath for uint256;
@@ -223,5 +224,68 @@ contract DsrHyperdrive is BaseTest {
     function test__unsupported_withdraw() public {
         vm.expectRevert(Errors.UnsupportedToken.selector);
         hyperdrive.withdraw(1, alice, false);
+    }
+
+    function test_avoids_donation_attack() public {
+        vm.stopPrank();
+        vm.startPrank(alice);
+        uint256 apr = 0.05e18;
+
+        uint256 contribution = 1e5;
+        // The pool gets initialized with a minimal contribution
+        hyperdrive.initialize(contribution, apr, bob, true);
+
+        // Now totalShares = 1e5
+        assertEq(hyperdrive.totalShares(), 1e5);
+
+        assertEq(dsrManager.daiBalance(address(hyperdrive)), 99999);
+
+        dai.transfer(bob, 2002e18);
+
+        vm.stopPrank();
+        vm.startPrank(bob);
+
+        // Bob frontruns Alice with a call to dsrManager.join() with 2000.01 DAI
+        dai.approve(address(dsrManager), 2002e18);
+        dsrManager.join(address(hyperdrive), 200001e16);
+
+        assertEq(
+            dsrManager.daiBalance(address(hyperdrive)),
+            2000010000000000099998
+        );
+
+        assertEq(hyperdrive.totalShares(), 1e5);
+
+        uint256 shareReserves = hyperdrive.getPoolInfo().shareReserves;
+        uint256 bondReserves = hyperdrive.getPoolInfo().bondReserves;
+        assert(shareReserves != 0);
+        assert(bondReserves != 0);
+        uint256 initialSharePrice = hyperdrive
+            .getPoolConfig()
+            .initialSharePrice;
+        uint256 positionDuration = hyperdrive.getPoolConfig().positionDuration;
+        uint256 timeStretch = hyperdrive.getPoolConfig().timeStretch;
+
+        apr = HyperdriveMath.calculateAPRFromReserves(
+            shareReserves,
+            bondReserves,
+            initialSharePrice,
+            positionDuration,
+            timeStretch
+        );
+
+        vm.stopPrank();
+        vm.startPrank(alice);
+
+        // Alice calls addLiquidity() with 1000 DAI
+        uint256 newShares = hyperdrive.addLiquidity(
+            1000e18,
+            apr,
+            apr,
+            alice,
+            true
+        );
+        // Shares are still minted, and Alice does not get 0 shares out
+        assertEq(newShares, 55554);
     }
 }
