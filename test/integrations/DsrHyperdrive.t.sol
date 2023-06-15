@@ -245,7 +245,7 @@ contract DsrHyperdrive is BaseTest {
         vm.stopPrank();
         vm.startPrank(bob);
 
-        // Bob frontruns Alice with a call to dsrManager.join() with 2000.01 DAI
+        // Bob front-runs Alice with a call to dsrManager.join() with 2000.01 DAI
         dai.approve(address(dsrManager), 2002e18);
         dsrManager.join(address(hyperdrive), 200001e16);
 
