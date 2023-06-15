@@ -8,7 +8,7 @@ then
     MSG="- $2"
 fi
 
-certoraRun contracts/src/BondWrapper.sol \
+certoraRun contracts/src/token/BondWrapper.sol \
     certora/helpers/SymbolicHyperdrive/SymbolicHyperdrive.sol \
     \
     certora/helpers/DummyERC20A.sol \
@@ -19,13 +19,13 @@ certoraRun contracts/src/BondWrapper.sol \
     --link BondWrapper:hyperdrive=SymbolicHyperdrive \
         BondWrapper:token=ERC20Mintable \
         SymbolicHyperdrive:_baseToken=ERC20Mintable \
-    --solc solc8.18 \
+    --solc solc8.19 \
     --loop_iter 3 \
     --optimistic_loop \
     --rule_sanity \
     --send_only \
     --smt_timeout 500 \
     --prover_args "-dontStopAtFirstSplitTimeout true -depth 15" \
-    --packages @aave=lib/aave-v3-core/contracts openzeppelin-contracts=lib/openzeppelin-contracts \
+    --packages @aave=lib/aave-v3-core/contracts openzeppelin-contracts=lib/openzeppelin-contracts solmate=lib/solmate/src \
     $RULE \
     --msg "BondWrapper: $RULE $MSG" 

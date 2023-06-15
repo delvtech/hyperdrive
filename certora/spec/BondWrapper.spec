@@ -47,23 +47,25 @@ rule frontRunCheck(env e, env e2, method f)
     uint256 amount;
     bool andBurn;
     address destination;
+    uint256 minOutput;
 
     uint256 maturityTimeFr;
     uint256 amountFr;
     bool andBurnFr;
     address destinationFr;
+    uint256 minOutputFr;
 
     storage initialStorage = lastStorage; 
 
     uint256 baseBalanceBefore = baseToken.balanceOf(e, destination);
 
-    close(e, maturityTime, amount, andBurn, destination);
+    close(e, maturityTime, amount, andBurn, destination, minOutput);
 
     uint256 baseBalanceAfterSingle = baseToken.balanceOf(e, destination);
 
-    callHelper(e2, f, maturityTimeFr, amountFr, andBurnFr, destinationFr, initialStorage);
+    callHelper(e2, f, maturityTimeFr, amountFr, andBurnFr, destinationFr, minOutputFr, initialStorage);
 
-    close(e, maturityTime, amount, andBurn, destination);
+    close(e, maturityTime, amount, andBurn, destination, minOutput);
 
     uint256 baseBalanceAfterDouble = baseToken.balanceOf(e, destination);
 
@@ -78,12 +80,13 @@ function callHelper(
     uint256 amount,
     bool andBurn,
     address destination, 
+    uint256 minOutput,
     storage initialStorage
 ) {
     if (f.selector == sig:mint(uint256, uint256, address).selector) {
         mint(e, maturityTime, amount, destination) at initialStorage;
-    } else if (f.selector == sig:close(uint256, uint256, bool, address).selector) {
-        close(e, maturityTime, amount, andBurn, destination) at initialStorage;
+    } else if (f.selector == sig:close(uint256, uint256, bool, address, uint256).selector) {
+        close(e, maturityTime, amount, andBurn, destination, minOutput) at initialStorage;
     } else if (f.selector == sig:sweep(uint256).selector) {
         sweep(e, maturityTime) at initialStorage;
     } else if (f.selector == sig:redeem(uint256).selector) {
