@@ -452,7 +452,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
         )
     {
         uint128 shareReserves_ = _marketState.shareReserves;
-        uint128 bondReserves_ = _marketState.bondReserves;
 
         // Calculate the effect that closing the long should have on the pool's
         // reserves as well as the amount of shares the trader receives for
@@ -466,7 +465,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         (shareReservesDelta, bondReservesDelta, shareProceeds) = HyperdriveMath
             .calculateCloseLong(
                 shareReserves_,
-                bondReserves_,
+                _marketState.bondReserves,
                 _bondAmount,
                 timeRemaining,
                 _timeStretch,
@@ -482,7 +481,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         uint256 spotPrice = _marketState.bondReserves > 0
             ? HyperdriveMath.calculateSpotPrice(
                 shareReserves_,
-                bondReserves_,
+                _marketState.bondReserves,
                 _initialSharePrice,
                 timeRemaining,
                 _timeStretch

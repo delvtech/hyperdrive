@@ -387,13 +387,12 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         uint256 _withdrawalSharesOutstanding
     ) internal returns (uint256 shareProceeds, uint256) {
         uint256 shareReserves_ = _marketState.shareReserves;
-        uint256 bondReserves_ = _marketState.bondReserves;
         uint256 longOutstanding_ = _marketState.longsOutstanding;
         // Calculate the starting present value of the pool.
         HyperdriveMath.PresentValueParams memory params = HyperdriveMath
             .PresentValueParams({
                 shareReserves: shareReserves_,
-                bondReserves: bondReserves_,
+                bondReserves: _marketState.bondReserves,
                 sharePrice: _sharePrice,
                 initialSharePrice: _initialSharePrice,
                 timeStretch: _timeStretch,
@@ -427,7 +426,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         shareProceeds = shareProceeds.mulDivDown(_shares, _totalActiveLpSupply);
         _updateLiquidity(-int256(shareProceeds));
         params.shareReserves = shareReserves_;
-        params.bondReserves = bondReserves_;
+        params.bondReserves = _marketState.bondReserves;
         uint256 endingPresentValue = HyperdriveMath.calculatePresentValue(
             params
         );

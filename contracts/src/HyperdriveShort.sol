@@ -477,13 +477,11 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // purchase the shorted bonds at the market price.
         // NOTE: We calculate the time remaining from the latest checkpoint to ensure that
         // opening/closing a position doesn't result in immediate profit.
-        uint128 shareReserves_ = _marketState.shareReserves;
-        uint128 bondReserves_ = _marketState.bondReserves;
         uint256 timeRemaining = _calculateTimeRemaining(_maturityTime);
         (shareReservesDelta, bondReservesDelta, sharePayment) = HyperdriveMath
             .calculateCloseShort(
-                shareReserves_,
-                bondReserves_,
+                _marketState.shareReserves,
+                _marketState.bondReserves,
                 _bondAmount,
                 timeRemaining,
                 _timeStretch,
@@ -496,8 +494,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // the fee from the share deltas so that the trader pays less shares.
         uint256 spotPrice = _marketState.bondReserves > 0
             ? HyperdriveMath.calculateSpotPrice(
-                shareReserves_,
-                bondReserves_,
+                _marketState.shareReserves,
+                _marketState.bondReserves,
                 _initialSharePrice,
                 timeRemaining,
                 _timeStretch

@@ -198,8 +198,6 @@ contract ERC20Forwarder is IERC20 {
         // Require that the owner is not zero
         if (owner == address(0)) revert Errors.RestrictedZeroAddress();
 
-        uint256 currentNonce = nonces[owner];
-
         bytes32 structHash = keccak256(
             abi.encodePacked(
                 "\x19\x01",
@@ -210,7 +208,7 @@ contract ERC20Forwarder is IERC20 {
                         owner,
                         spender,
                         value,
-                        currentNonce,
+                        nonces[owner]++, // Increment the signature nonce
                         deadline
                     )
                 )
@@ -221,8 +219,6 @@ contract ERC20Forwarder is IERC20 {
         address signer = ecrecover(structHash, v, r, s);
         if (signer != owner) revert Errors.InvalidSignature();
 
-        // Increment the signature nonce
-        nonces[owner] = currentNonce++;
         // Set the approval to the new value
         token.setApprovalBridge(tokenId, spender, value, owner);
         emit Approval(owner, spender, value);
