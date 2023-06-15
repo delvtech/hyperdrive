@@ -43,6 +43,40 @@ rule removeLiquidityPreservesAPR() {
     assert abs(R1-R2) < 2, "APR was changed beyond allowed error bound";
 }
 
+
+/// The change of the the share reserves should account for three sources:
+///     a. Deposit of withdrawal of pool shares from adding/removing liquidity
+///     b. Closing matured shorts and longs (by checkpointing)
+///     c. Transfer of shares to the ready-to-redeem withdrawal pool
+rule changeOfShareReserves() {
+    env e;
+    calldataarg args;
+    uint256 price = sharePrice(e); require price !=0 ;
+    setHyperdrivePoolParams();
+    
+    uint256 totalShares1 = totalShares();
+    uint128 shareReserves1 = stateShareReserves();
+    mathint readyProceeds1 = withdrawalProceeds();
+    mathint sumOfLongs1 = sumOfLongs();
+    mathint sumOfShorts1 = sumOfShorts();
+        addLiquidity(e, args); // also remove
+    uint256 totalShares2 = totalShares();
+    uint128 shareReserves2 = stateShareReserves();
+    mathint readyProceeds2 = withdrawalProceeds();
+    mathint sumOfLongs2 = sumOfLongs();
+    mathint sumOfShorts2 = sumOfShorts();
+    
+    mathint longProceeds = ((sumOfLongs2 - sumOfLongs1) * ONE18()) / price;
+    mathint shortProceeds = ((sumOfShorts2 - sumOfShorts1) * ONE18()) / price;
+
+    require shareReserves1 > 0;
+    ///
+    assert shareReserves2 - shareReserves1 == 
+        (shortProceeds - longProceeds) + 
+        (totalShares2 - totalShares1) -
+        (readyProceeds2 - readyProceeds1);
+}
+
 rule removeLiquidityEmptyBothReserves() {
     env e;
     calldataarg args;
