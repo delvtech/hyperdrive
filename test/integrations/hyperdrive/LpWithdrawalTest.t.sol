@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import "forge-std/console.sol";
+
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
@@ -21,6 +25,7 @@ import { Lib } from "../../utils/Lib.sol";
 //           favorable for LPs that join the pool.
 contract LpWithdrawalTest is HyperdriveTest {
     using FixedPointMath for uint256;
+    using HyperdriveUtils for IHyperdrive;
     using Lib for *;
 
     // This test is designed to ensure that a single LP receives all of the
@@ -713,6 +718,231 @@ contract LpWithdrawalTest is HyperdriveTest {
         );
     }
 
+    function test_example() external {
+        uint256 aliceLpShares = initialize(alice, 0.05e18, 100e18);
+        uint256 bobLpShares = addLiquidity(bob, 100e18);
+        console.log("Alice and Bob add liquidity");
+        _log();
+
+        uint256 basePaid = hyperdrive.calculateMaxLong();
+        (uint256 maturityTime, uint256 longAmount) = openLong(celine, basePaid);
+        console.log(
+            "Celine opens %s longs with %s base",
+            longAmount.toString(18),
+            basePaid.toString(18)
+        );
+        _log();
+
+        (
+            uint256 aliceBaseProceeds,
+            uint256 aliceWithdrawalShares
+        ) = removeLiquidity(alice, aliceLpShares);
+        console.log("Alice removes her liquidity");
+        _log();
+
+        advanceTime(hyperdrive.getPoolConfig().positionDuration, 0);
+        console.log("The term passes with no interest being accrued");
+        _log();
+
+        closeLong(celine, maturityTime, longAmount);
+        console.log("Celine closes her long");
+        _log();
+
+        (
+            uint256 bobBaseProceeds,
+            uint256 bobWithdrawalShares
+        ) = removeLiquidity(bob, bobLpShares);
+        console.log("Bob removes his liquidity");
+        _log();
+
+        // Alice and Bob redeem their withdrawal shares.
+        (uint256 aliceRedeemProceeds, ) = redeemWithdrawalShares(
+            alice,
+            aliceWithdrawalShares
+        );
+        (uint256 bobRedeemProceeds, ) = redeemWithdrawalShares(
+            bob,
+            bobWithdrawalShares
+        );
+        console.log("Alice and Bob redeem their withdrawal shares");
+        _log();
+    }
+
+    function _log() internal view {
+        string memory spacing = "   ";
+
+        uint256 presentValue = 0;
+        uint256 lpSharePrice = 0;
+        uint256 lpTotalSupply = hyperdrive.getPoolInfo().lpTotalSupply +
+            hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID) -
+            hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw;
+        if (lpTotalSupply > 0) {
+            presentValue = hyperdrive.presentValue();
+            lpSharePrice = presentValue.divDown(lpTotalSupply);
+        }
+
+        {
+            uint256 base = baseToken.balanceOf(address(hyperdrive));
+            uint256 idle = hyperdrive.getPoolInfo().sharePrice > 0
+                ? hyperdrive.getPoolInfo().shareReserves -
+                    hyperdrive.getPoolInfo().longsOutstanding.divDown(
+                        hyperdrive.getPoolInfo().sharePrice
+                    )
+                : 0;
+            console.log(spacing, "- hyperdrive");
+            console.log(spacing, "  - base:             ", base.toString(18));
+            console.log(spacing, "  - idle:             ", idle.toString(18));
+            console.log(
+                spacing,
+                "  - present value:    ",
+                presentValue.toString(18)
+            );
+            console.log(
+                spacing,
+                "  - total lp supply:  ",
+                lpTotalSupply.toString(18)
+            );
+            console.log(
+                spacing,
+                "  - pv/l:             ",
+                lpSharePrice.toString(18)
+            );
+        }
+
+        {
+            uint256 base = baseToken.balanceOf(alice);
+            uint256 lpShares = hyperdrive.balanceOf(
+                AssetId._LP_ASSET_ID,
+                alice
+            );
+            uint256 withdrawalShares = hyperdrive.balanceOf(
+                AssetId._WITHDRAWAL_SHARE_ASSET_ID,
+                alice
+            );
+            console.log(spacing, "- alice");
+            console.log(spacing, "  - base:             ", base.toString(18));
+            console.log(
+                spacing,
+                "  - lp shares:        ",
+                lpShares.toString(18)
+            );
+            console.log(
+                spacing,
+                "  - withdrawal shares:",
+                withdrawalShares.toString(18)
+            );
+            console.log(
+                spacing,
+                "  - net worth:        ",
+                (base + (lpShares + withdrawalShares).mulDown(lpSharePrice))
+                    .toString(18)
+            );
+        }
+
+        {
+            uint256 base = baseToken.balanceOf(bob);
+            uint256 lpShares = hyperdrive.balanceOf(AssetId._LP_ASSET_ID, bob);
+            uint256 withdrawalShares = hyperdrive.balanceOf(
+                AssetId._WITHDRAWAL_SHARE_ASSET_ID,
+                bob
+            );
+            console.log(spacing, "- bob");
+            console.log(spacing, "  - base:             ", base.toString(18));
+            console.log(
+                spacing,
+                "  - lp shares:        ",
+                lpShares.toString(18)
+            );
+            console.log(
+                spacing,
+                "  - withdrawal shares:",
+                withdrawalShares.toString(18)
+            );
+            console.log(
+                spacing,
+                "  - net worth:        ",
+                (base + (lpShares + withdrawalShares).mulDown(lpSharePrice))
+                    .toString(18)
+            );
+        }
+
+        {
+            uint256 base = baseToken.balanceOf(celine);
+            console.log(spacing, "- celine");
+            console.log(spacing, "  - base:             ", base.toString(18));
+        }
+    }
+
+    // // FIXME: Consider the case when a long is opened, one LP leaves, and the
+    // //        LPs lose a large amount of money on the long. What happens? Is
+    // //        the withdrawal pool fully paid out, or can the withdrawal pool
+    // //        continue to make a claim on future pool earnings?
+    // function test_example() external {
+    //     // Alice and Bob add liquidity.
+    //     // uint256 aliceLpShares = initialize(alice, 0.05e18, 500_000_000e18);
+    //     // uint256 bobLpShares = addLiquidity(bob, 100_000_000e18);
+    //     uint256 bobLpShares = initialize(bob, 0.05e18, 100_000_000e18);
+    //     uint256 aliceLpShares = addLiquidity(alice, 500_000_000e18);
+
+    //     // Celine opens a large long.
+    //     (uint256 maturityTime, uint256 longAmount) = openLong(
+    //         celine,
+    //         50_000_000e18
+    //     );
+    //     console.log("long spread", (longAmount - 50_000_000e18).toString(18));
+    //     console.log(
+    //         "bob contribution - spread",
+    //         (100_000_000e18 - (longAmount - 50_000_000e18)).toString(18)
+    //     );
+    //     console.log(
+    //         "bob contribution - spread / 6",
+    //         (100_000_000e18 - (longAmount - 50_000_000e18) / 6).toString(18)
+    //     );
+
+    //     // Alice removes liquidity.
+    //     removeLiquidity(alice, aliceLpShares);
+
+    //     // The term passes.
+    //     advanceTime(hyperdrive.getPoolConfig().positionDuration, 0);
+
+    //     // Celine closes her long.
+    //     closeLong(celine, maturityTime, longAmount);
+
+    //     console.log(
+    //         "withdrawal shares outstanding",
+    //         (hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID) -
+    //             hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw)
+    //             .toString(18)
+    //     );
+    //     console.log(
+    //         "withdrawal shares ready to withdraw",
+    //         (hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID) -
+    //             hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw)
+    //             .toString(18)
+    //     );
+
+    //     // Bob removes liquidity.
+    //     removeLiquidity(bob, bobLpShares);
+
+    //     // Alice and Bob redeem their withdrawal shares.
+    //     redeemWithdrawalShares(
+    //         alice,
+    //         hyperdrive.balanceOf(AssetId._WITHDRAWAL_SHARE_ASSET_ID, alice)
+    //     );
+    //     redeemWithdrawalShares(
+    //         bob,
+    //         hyperdrive.balanceOf(AssetId._WITHDRAWAL_SHARE_ASSET_ID, bob)
+    //     );
+
+    //     console.log("alice balance", baseToken.balanceOf(alice).toString(18));
+    //     console.log("bob balance", baseToken.balanceOf(bob).toString(18));
+    //     console.log(
+    //         "bob balance + alice excess",
+    //         (baseToken.balanceOf(bob) +
+    //             (baseToken.balanceOf(alice) - 500_000_000e18)).toString(18)
+    //     );
+    // }
+
     function test_lp_withdrawal_three_lps(
         uint256 longBasePaid,
         uint256 shortAmount
@@ -728,6 +958,20 @@ contract LpWithdrawalTest is HyperdriveTest {
         _test_lp_withdrawal_three_lps(8181, 19983965771856);
     }
 
+    // FIXME: Consider the case when a long is opened, one LP leaves, and the
+    //        LPs lose a large amount of money on the long. What happens? Is
+    //        the withdrawal pool fully paid out, or can the withdrawal pool
+    //        continue to make a claim on future pool earnings?
+    //
+    // FIXME: Something weird is happening in this test. Why is Alice even
+    //        eligible for withdrawal proceeds after all of the positions were
+    //        closed? If it's because of the add liquidity, why is Bob
+    //        negatively effected?
+    //
+    // FIXME: A property that I'd expect to be true but is clearly not is that
+    //        all of the withdrawal shares are paid out when all of the
+    //        positions have been closed.
+    //
     // TODO: Add commentary on how Alice, Bob, and Celine should be treated
     // similarly. Think more about whether or not this should really be the
     // case.
@@ -742,6 +986,10 @@ contract LpWithdrawalTest is HyperdriveTest {
         uint256 longBasePaid,
         uint256 shortAmount
     ) internal {
+        longBasePaid = 112170932646299875910875406166125657089448113380145817758488853472421676363950;
+        shortAmount = 0;
+
+        console.log(1);
         // Set up the test parameters.
         TestLpWithdrawalParams memory testParams = TestLpWithdrawalParams({
             fixedRate: 0.02e18,
@@ -754,6 +1002,7 @@ contract LpWithdrawalTest is HyperdriveTest {
             shortBasePaid: 0,
             shortMaturityTime: 0
         });
+        console.log(2);
 
         // Initialize the pool.
         uint256 aliceLpShares = initialize(
@@ -761,12 +1010,14 @@ contract LpWithdrawalTest is HyperdriveTest {
             uint256(testParams.fixedRate),
             testParams.contribution
         );
+        console.log(3);
 
         // Bob adds liquidity.
         uint256 ratio = presentValueRatio();
         uint256 bobLpShares = addLiquidity(bob, testParams.contribution);
         assertEq(presentValueRatio(), ratio);
         ratio = presentValueRatio();
+        console.log(4);
 
         // Bob opens a long.
         longBasePaid = longBasePaid.normalizeToRange(
@@ -784,6 +1035,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         }
         assertApproxEqAbs(presentValueRatio(), ratio, 100);
         ratio = presentValueRatio();
+        console.log(5);
 
         // Bob opens a short.
         shortAmount = shortAmount.normalizeToRange(
@@ -801,6 +1053,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         }
         assertApproxEqAbs(presentValueRatio(), ratio, 100);
         ratio = presentValueRatio();
+        console.log(6);
 
         // Alice removes her liquidity.
         (
@@ -817,13 +1070,15 @@ contract LpWithdrawalTest is HyperdriveTest {
         );
         assertApproxEqAbs(presentValueRatio(), ratio, 10);
         ratio = presentValueRatio();
+        console.log(7);
 
         // Celine adds liquidity.
         uint256 celineLpShares = addLiquidity(celine, testParams.contribution);
         // FIXME: This is an untenable large bound. Why is the current value
-        // ever larger than the contribution?
+        // even larger than the contribution?
         assertApproxEqAbs(presentValueRatio(), ratio, 1e16);
         ratio = presentValueRatio();
+        console.log(8);
 
         // Bob closes his long and his short.
         {
@@ -834,18 +1089,40 @@ contract LpWithdrawalTest is HyperdriveTest {
                 testParams.shortAmount
             );
         }
+        console.log(9);
 
-        // Redeem Alice's withdrawal shares. Alice at least the margin released
-        // from Bob's long.
+        // Redeem Alice's withdrawal shares. Alice should get at least the
+        // margin released from Bob's long.
         (uint256 aliceRedeemProceeds, ) = redeemWithdrawalShares(
             alice,
             aliceWithdrawalShares
         );
         assertGt(aliceRedeemProceeds, aliceMargin);
+        console.log(10);
 
         // Bob and Celine remove their liquidity. Bob should receive more base
         // proceeds than Celine since Celine's add liquidity resulted in an
         // increase in slippage for the outstanding positions.
+        console.log(
+            "longs outstanding",
+            hyperdrive.getPoolInfo().longsOutstanding.toString(18)
+        );
+        console.log(
+            "shorts outstanding",
+            hyperdrive.getPoolInfo().shortsOutstanding.toString(18)
+        );
+        console.log(
+            "withdrawal shares",
+            hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID).toString(
+                18
+            )
+        );
+        console.log(
+            "ready to withdraw",
+            hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw.toString(
+                18
+            )
+        );
         (
             uint256 bobBaseProceeds,
             uint256 bobWithdrawalShares
@@ -858,15 +1135,33 @@ contract LpWithdrawalTest is HyperdriveTest {
         assertGt(bobBaseProceeds, testParams.contribution);
         assertApproxEqAbs(bobWithdrawalShares, 0, 1);
         assertApproxEqAbs(celineWithdrawalShares, 0, 1);
+        console.log(
+            "withdrawal shares",
+            hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID).toString(
+                18
+            )
+        );
+        // Why should these withdrawal shares have been paid out? Aren't all of
+        // the positions closed already?
+        console.log(
+            "ready to withdraw",
+            hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw.toString(
+                18
+            )
+        );
+        console.log(11);
 
         // Ensure that the ending base balance of Hyperdrive is zero.
+        console.log("---");
         assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1);
+        console.log("---");
         assertApproxEqAbs(
             hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID) -
                 hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw,
             0,
             1e9 // TODO: Why is this not equal to zero?
         );
+        console.log(12);
     }
 
     function presentValueRatio() internal view returns (uint256) {
