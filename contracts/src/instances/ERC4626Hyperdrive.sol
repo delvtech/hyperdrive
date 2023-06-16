@@ -7,7 +7,6 @@ import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { Errors } from "../libraries/Errors.sol";
 import { IERC20 } from "../interfaces/IERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
-import "forge-std/console.sol";
 
 contract ERC4626Hyperdrive is Hyperdrive {
     using FixedPointMath for uint256;
@@ -30,7 +29,6 @@ contract ERC4626Hyperdrive is Hyperdrive {
         address _linkerFactory,
         IERC4626 _pool
     ) Hyperdrive(_config, _dataProvider, _linkerCodeHash, _linkerFactory) {
-        console.log(_config.feeCollector);
         // Ensure that the Hyperdrive pool was configured properly.
         // WARN - 4626 implementations should be checked that if they use an asset
         //        with decimals less than 18 that the preview deposit is scale
