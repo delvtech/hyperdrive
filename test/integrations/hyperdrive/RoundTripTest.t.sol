@@ -9,7 +9,6 @@ import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
 import { Lib } from "../../utils/Lib.sol";
-import "forge-std/console2.sol";
 
 contract RoundTripTest is HyperdriveTest {
     using FixedPointMath for uint256;
@@ -175,8 +174,6 @@ contract RoundTripTest is HyperdriveTest {
     {
         apr = apr.normalizeToRange(0.001e18,.4e18);
         timeStretchApr = timeStretchApr.normalizeToRange(0.05e18,0.4e18);
-        console2.log("apr", apr.toString(18));
-        console2.log("timeStretchApr", timeStretchApr.toString(18));
 
         // Deploy the pool and initialize the market
         uint256 curveFee = 0.05e18;  // 5% of APR
@@ -202,7 +199,6 @@ contract RoundTripTest is HyperdriveTest {
             1e14,
             HyperdriveUtils.calculateMaxLong(hyperdrive)
         );
-        console2.log("basePaid", basePaid.toString(18));
 
         // Get the poolInfo before opening the long.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
@@ -221,7 +217,6 @@ contract RoundTripTest is HyperdriveTest {
 
         // Get the poolInfo after closing the long.
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
-        console2.log("poolInfoAfter.shareReserves", poolInfoAfter.shareReserves.toString(18));
 
         // if they aren't the same, then the pool should be the one that wins
         assertGe(poolInfoAfter.shareReserves, poolInfoBefore.shareReserves);
