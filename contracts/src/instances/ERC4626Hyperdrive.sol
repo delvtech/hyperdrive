@@ -7,6 +7,7 @@ import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { Errors } from "../libraries/Errors.sol";
 import { IERC20 } from "../interfaces/IERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import "forge-std/console.sol";
 
 contract ERC4626Hyperdrive is Hyperdrive {
     using FixedPointMath for uint256;
@@ -29,6 +30,7 @@ contract ERC4626Hyperdrive is Hyperdrive {
         address _linkerFactory,
         IERC4626 _pool
     ) Hyperdrive(_config, _dataProvider, _linkerCodeHash, _linkerFactory) {
+        console.log(_config.feeCollector);
         // Ensure that the Hyperdrive pool was configured properly.
         // WARN - 4626 implementations should be checked that if they use an asset
         //        with decimals less than 18 that the preview deposit is scale
@@ -128,5 +130,25 @@ contract ERC4626Hyperdrive is Hyperdrive {
     function _pricePerShare() internal view override returns (uint256) {
         uint256 shareEstimate = pool.convertToShares(FixedPointMath.ONE_18);
         return (FixedPointMath.ONE_18.divDown(shareEstimate));
+    }
+
+    /// @notice Some yield sources [eg Morpho] pay rewards directly to this contract
+    ///         but we can't handle distributing them internally so we sweep to the
+    ///         fee collector address to then redistribute to users
+    /// @param token The ERC20 we want to call
+    /// @dev WARNING - This sweep only checks that the token is not equal to the base or yield source
+    ///                if another token is expected to have a balance on this contract it is unsafe.
+    ///                ANY TOKENS IN THIS CONTRACT BESIDES YIELD SOURCE SHARES OR BASE TOKEN CAN BE STOLEN.
+    /// @dev WARNING - It is unlikely but possible that there is a selector overlap with 'transferFrom'. Any
+    ///                integrating contracts should be checked for that, as it may result in an unexpected call
+    ///                from this address.
+    function sweep(IERC20 token) external {
+        // TODO - Should we add a governance lock?
+        if (
+            address(token) == address(pool) ||
+            address(token) == address(_baseToken)
+        ) revert Errors.UnsupportedToken();
+        uint256 balance = token.balanceOf(address(this));
+        token.transfer(_feeCollector, balance);
     }
 }
