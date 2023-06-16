@@ -166,35 +166,20 @@ contract RoundTripTest is HyperdriveTest {
     }
 
     function test_long_multiblock_round_trip_end_of_checkpoint(
-        uint256 apr, 
+        uint256 apr,
         uint256 timeStretchApr,
         uint256 basePaid
-    )
-        external
-    {
-        apr = apr.normalizeToRange(0.001e18,.4e18);
-        timeStretchApr = timeStretchApr.normalizeToRange(0.05e18,0.4e18);
+    ) external {
+        apr = apr.normalizeToRange(0.001e18, .4e18);
+        timeStretchApr = timeStretchApr.normalizeToRange(0.05e18, 0.4e18);
 
         // Deploy the pool and initialize the market
-        uint256 curveFee = 0.05e18;  // 5% of APR
+        uint256 curveFee = 0.05e18; // 5% of APR
         uint256 flatFee = 0.0005e18; // 5 bps
         deploy(alice, timeStretchApr, curveFee, flatFee, .015e18);
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
 
-        // NOTE: There is a relationship between min(basePaid), contribution, apr and timestretchAPR 
-        // that must be satisfied to preven subOverflow in calculateBondsOutGivenSharesIn().abi
-        // The relationship is:
-        // subOverflow happens with a low ratio of basePaid/contribution
-        // subOverflow happens with a low timeStretchAPR and a high APR
-        // e.g. (apr: 57% time stretch apr: 5% basePaid: 1e14 contribution: 500 million)
-
-        // NOTE: The following condition results in a small loss to the LP
-        // apr: 49.9% basePaid: 1e14 contribution: 500 million
-        // timeStretchAPR doesn't impact the loss 
-        // -> higher fees fix this
-        // -> changing min(basePaid) to 1e15 fixes this
-        // reserves go from 500_000_000e18 to 499_999_999.999999167490380404
         basePaid = basePaid.normalizeToRange(
             1e14,
             HyperdriveUtils.calculateMaxLong(hyperdrive)
