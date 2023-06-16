@@ -8,9 +8,12 @@ import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
+import { Lib } from "../../utils/Lib.sol";
+import "forge-std/console2.sol";
 
 contract RoundTripTest is HyperdriveTest {
     using FixedPointMath for uint256;
+    using Lib for *;
 
     function test_long_round_trip_immediately_at_checkpoint() external {
         uint256 apr = 0.05e18;
@@ -54,7 +57,7 @@ contract RoundTripTest is HyperdriveTest {
         advanceTime(CHECKPOINT_DURATION / 2, 0);
 
         // Open a long position.
-        uint256 basePaid = 10e18;
+        uint256 basePaid = 50_000_000e18;
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
 
         // Immediately close the long.
@@ -161,5 +164,59 @@ contract RoundTripTest is HyperdriveTest {
         assertGe(poolInfoAfter.shareReserves, poolInfoBefore.shareReserves);
         // should be exact if out = in
         assertEq(poolInfoAfter.bondReserves, poolInfoBefore.bondReserves);
+    }
+
+    function test_long_multiblock_round_trip_end_of_checkpoint(
+        //uint256 apr, 
+        //uint256 timeStretchApr,
+        //uint256 basePaid
+    )
+        external
+    {
+        uint256 apr = 0.05e18;//apr.normalizeToRange(0.005e18,.5e18);
+        uint256 timeStretchApr = 0.05e18;//timeStretchApr.normalizeToRange(0.02e18,.2e18);
+        console2.log("apr", apr.toString(18));
+        console2.log("timeStretchApr", timeStretchApr.toString(18));
+
+        // Deploy the pool and initialize the market
+        uint256 curveFee = 0;//0.05e18;  // 5% of APR
+        uint256 flatFee = 0;//0.0005e18; // 5 bps
+        deploy(alice, timeStretchApr, curveFee, flatFee, .015e18);
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // basePaid = basePaid.normalizeToRange(
+        //     0.001e6,
+        //     HyperdriveUtils.calculateMaxLong(hyperdrive)
+        // );
+
+        uint256 basePaid =0.001e6;
+
+        console2.log("basePaid", basePaid.toString(18));
+        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
+        console2.log("poolInfo.shareReserves", poolInfo.shareReserves.toString(18));
+        console2.log("poolInfo.bondReserves", poolInfo.bondReserves.toString(18));
+
+
+        // Get the poolInfo before opening the long.
+        IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
+
+        // fast forward time to almost the end of the checkpoint
+        advanceTime(CHECKPOINT_DURATION - 1, 0);
+
+        // Open a long position.
+        (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
+
+        // // fast forward time to the end of the checkpoint
+        // advanceTime(1, 0);
+
+        // // Immediately close the long.
+        // closeLong(bob, maturityTime, bondAmount);
+
+        // // Get the poolInfo after closing the long.
+        // IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
+
+        // // if they aren't the same, then the pool should be the one that wins
+        // assertGe(poolInfoAfter.shareReserves, poolInfoBefore.shareReserves);
     }
 }

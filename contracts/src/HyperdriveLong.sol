@@ -7,6 +7,7 @@ import { AssetId } from "./libraries/AssetId.sol";
 import { Errors } from "./libraries/Errors.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
+import "forge-std/console2.sol";
 
 /// @author DELV
 /// @title HyperdriveLong
@@ -58,6 +59,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
             uint256 bondProceeds,
             uint256 totalGovernanceFee
         ) = _calculateOpenLong(shares, sharePrice, timeRemaining);
+
+        console2.log("after _calculateOpenLong");
 
         // If the ending spot price is greater than or equal to 1, we are in the
         // negative interest region of the trading function. The spot price is
@@ -393,7 +396,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
 
         // Record an oracle update
         recordPrice(spotPrice);
-
+        console2.log("beforeFeeCalc:", bondReservesDelta);
         (
             uint256 totalCurveFee,
             uint256 governanceCurveFee
@@ -403,9 +406,12 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 spotPrice,
                 _sharePrice
             );
+        console2.log("totalCurveFee", totalCurveFee);
+        console2.log("governanceCurveFee", governanceCurveFee);
         bondProceeds = bondReservesDelta - totalCurveFee;
+        console2.log("bondProceeds", bondProceeds);
         bondReservesDelta -= totalCurveFee - governanceCurveFee;
-
+        console2.log("bondReservesDelta", bondReservesDelta);
         // Calculate the fees owed to governance in shares.
         shareReservesDelta =
             _shareAmount -
