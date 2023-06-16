@@ -56,7 +56,7 @@ contract RoundTripTest is HyperdriveTest {
         advanceTime(CHECKPOINT_DURATION / 2, 0);
 
         // Open a long position.
-        uint256 basePaid = 50_000_000e18;
+        uint256 basePaid = 10e18;
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
 
         // Immediately close the long.
