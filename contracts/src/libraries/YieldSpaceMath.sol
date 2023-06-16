@@ -325,10 +325,7 @@ library YieldSpaceMath {
         // ((c / µ) * (µ * z)^(1 - t) + y^(1 - t) - (c / µ) * (µ * (z + dz))^(1 - t))^(1 / (1 - t)))
         uint256 _y = k.sub(z).pow(FixedPointMath.ONE_18.divUp(t));
         // Δy = y - ((c / µ) * (µ * z)^(1 - t) + y^(1 - t) - (c / µ) * (µ * (z + dz))^(1 - t))^(1 / (1 - t)))
-        if (y > _y) {
-            return y - _y;
-        }
-        return 0;
+        return y.sub(_y);
     }
 
     /// Calculates the amount of shares a user must provide the pool to receive

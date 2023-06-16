@@ -167,36 +167,42 @@ contract RoundTripTest is HyperdriveTest {
     }
 
     function test_long_multiblock_round_trip_end_of_checkpoint(
-        //uint256 apr, 
-        //uint256 timeStretchApr,
-        //uint256 basePaid
+        uint256 apr, 
+        uint256 timeStretchApr,
+        uint256 basePaid
     )
         external
     {
-        uint256 apr = 0.05e18;//apr.normalizeToRange(0.005e18,.5e18);
-        uint256 timeStretchApr = 0.05e18;//timeStretchApr.normalizeToRange(0.02e18,.2e18);
+        apr = apr.normalizeToRange(0.001e18,.4e18);
+        timeStretchApr = timeStretchApr.normalizeToRange(0.05e18,0.4e18);
         console2.log("apr", apr.toString(18));
         console2.log("timeStretchApr", timeStretchApr.toString(18));
 
         // Deploy the pool and initialize the market
-        uint256 curveFee = 0;//0.05e18;  // 5% of APR
-        uint256 flatFee = 0;//0.0005e18; // 5 bps
+        uint256 curveFee = 0.05e18;  // 5% of APR
+        uint256 flatFee = 0.0005e18; // 5 bps
         deploy(alice, timeStretchApr, curveFee, flatFee, .015e18);
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
 
-        // basePaid = basePaid.normalizeToRange(
-        //     0.001e6,
-        //     HyperdriveUtils.calculateMaxLong(hyperdrive)
-        // );
+        // NOTE: There is a relationship between min(basePaid), contribution, apr and timestretchAPR 
+        // that must be satisfied to preven subOverflow in calculateBondsOutGivenSharesIn().abi
+        // The relationship is:
+        // subOverflow happens with a low ratio of basePaid/contribution
+        // subOverflow happens with a low timeStretchAPR and a high APR
+        // e.g. (apr: 57% time stretch apr: 5% basePaid: 1e14 contribution: 500 million)
 
-        uint256 basePaid =0.001e6;
-
+        // NOTE: The following condition results in a small loss to the LP
+        // apr: 49.9% basePaid: 1e14 contribution: 500 million
+        // timeStretchAPR doesn't impact the loss 
+        // -> higher fees fix this
+        // -> changing min(basePaid) to 1e15 fixes this
+        // reserves go from 500_000_000e18 to 499_999_999.999999167490380404
+        basePaid = basePaid.normalizeToRange(
+            1e14,
+            HyperdriveUtils.calculateMaxLong(hyperdrive)
+        );
         console2.log("basePaid", basePaid.toString(18));
-        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
-        console2.log("poolInfo.shareReserves", poolInfo.shareReserves.toString(18));
-        console2.log("poolInfo.bondReserves", poolInfo.bondReserves.toString(18));
-
 
         // Get the poolInfo before opening the long.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
@@ -207,16 +213,17 @@ contract RoundTripTest is HyperdriveTest {
         // Open a long position.
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
 
-        // // fast forward time to the end of the checkpoint
-        // advanceTime(1, 0);
+        // fast forward time to the end of the checkpoint
+        advanceTime(1, 0);
 
-        // // Immediately close the long.
-        // closeLong(bob, maturityTime, bondAmount);
+        // Immediately close the long.
+        closeLong(bob, maturityTime, bondAmount);
 
-        // // Get the poolInfo after closing the long.
-        // IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
+        // Get the poolInfo after closing the long.
+        IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
+        console2.log("poolInfoAfter.shareReserves", poolInfoAfter.shareReserves.toString(18));
 
-        // // if they aren't the same, then the pool should be the one that wins
-        // assertGe(poolInfoAfter.shareReserves, poolInfoBefore.shareReserves);
+        // if they aren't the same, then the pool should be the one that wins
+        assertGe(poolInfoAfter.shareReserves, poolInfoBefore.shareReserves);
     }
 }
