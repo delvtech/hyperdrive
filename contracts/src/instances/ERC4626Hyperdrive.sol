@@ -141,11 +141,15 @@ contract ERC4626Hyperdrive is Hyperdrive {
     ///                integrating contracts should be checked for that, as it may result in an unexpected call
     ///                from this address.
     function sweep(IERC20 token) external {
-        // TODO - Should we add a governance lock?
+        // Only governance address can call
+        if (msg.sender != _feeCollector && !_pausers[msg.sender])
+            revert Errors.Unauthorized();
+        // Cannot rug the yield source or base token
         if (
             address(token) == address(pool) ||
             address(token) == address(_baseToken)
         ) revert Errors.UnsupportedToken();
+        // Transfer to the fee collector
         uint256 balance = token.balanceOf(address(this));
         token.transfer(_feeCollector, balance);
     }

@@ -66,7 +66,7 @@ contract HyperdriveER4626Test is HyperdriveTest {
             timeStretch: FixedPointMath.ONE_18.divDown(
                 22.186877016851916266e18
             ),
-            governance: address(0),
+            governance: alice,
             feeCollector: bob,
             fees: IHyperdrive.Fees(0, 0, 0),
             oracleSize: 2,
@@ -100,7 +100,6 @@ contract HyperdriveER4626Test is HyperdriveTest {
     }
 
     function test_erc4626_deposit() external {
-        setUp();
         // First we add some interest
         vm.startPrank(alice);
         dai.transfer(address(pool), 5e18);
@@ -127,7 +126,6 @@ contract HyperdriveER4626Test is HyperdriveTest {
     }
 
     function test_erc4626_withdraw() external {
-        setUp();
         // First we add some shares and interest
         vm.startPrank(alice);
         dai.transfer(address(pool), 5e18);
@@ -146,7 +144,6 @@ contract HyperdriveER4626Test is HyperdriveTest {
     }
 
     function test_erc4626_pricePerShare() external {
-        setUp();
         // First we add some shares and interest
         vm.startPrank(alice);
         dai.transfer(address(pool), 2e18);
@@ -156,7 +153,6 @@ contract HyperdriveER4626Test is HyperdriveTest {
     }
 
     function test_erc4626_testDeploy() external {
-        setUp();
         vm.startPrank(alice);
         uint256 apr = 0.01e18; // 1% apr
         uint256 contribution = 2_500e18;
@@ -166,7 +162,7 @@ contract HyperdriveER4626Test is HyperdriveTest {
             positionDuration: 365 days,
             checkpointDuration: 1 days,
             timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
-            governance: address(0),
+            governance: alice,
             feeCollector: bob,
             fees: IHyperdrive.Fees(0, 0, 0),
             oracleSize: 2,
@@ -202,8 +198,9 @@ contract HyperdriveER4626Test is HyperdriveTest {
     function test_erc4626_sweep() public {
         setUp();
         ERC20Mintable otherToken = new ERC20Mintable();
-
         otherToken.mint(address(mockHyperdrive), 1e18);
+
+        vm.startPrank(bob);
 
         mockHyperdrive.sweep(IERC20(address(otherToken)));
         assertEq(otherToken.balanceOf(bob), 1e18);
@@ -213,5 +210,15 @@ contract HyperdriveER4626Test is HyperdriveTest {
 
         vm.expectRevert(Errors.UnsupportedToken.selector);
         mockHyperdrive.sweep(IERC20(address(pool)));
+
+        vm.stopPrank();
+        vm.startPrank(alice);
+
+        vm.expectRevert(Errors.Unauthorized.selector);
+        mockHyperdrive.sweep(IERC20(address(pool)));
+
+        // We set alice to be the pauser so she can call the function now
+        mockHyperdrive.setPauser(alice, true);
+        mockHyperdrive.sweep(IERC20(address(otherToken)));
     }
 }
