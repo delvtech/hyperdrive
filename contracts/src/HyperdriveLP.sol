@@ -450,19 +450,22 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         return (shareProceeds, uint256(withdrawalShares));
     }
 
-    // TODO: How do we account for the interest that is accruing on open longs?
-    // We'll need to do a deep dive to make sure that we aren't leaking interest
-    // that shouldn't be leaked.
-    //
     /// @dev If the idle capital in the pool is worth more than the active LP
     ///      supply, then we pay out the withdrawal pool with the excess idle.
+    /// @param _shareReserves The current share reserves. This parameter is
+    ///        needed because it's possible for the share reserves to be zero
+    ///        after all of the shorts are closed even though value should be
+    ///        returned to the withdrawal pool.
     /// @param _sharePrice The current share price.
-    function _rebalanceWithdrawalPool(uint256 _sharePrice) internal {
+    function _rebalanceWithdrawalPool(
+        uint256 _shareReserves,
+        uint256 _sharePrice
+    ) internal {
         // Calculate the amount of idle capital in the pool as:
         //
         // idle = z - (y_l / c_0)
         uint256 longsOutstanding = _marketState.longsOutstanding;
-        uint256 idle = _marketState.shareReserves;
+        uint256 idle = _shareReserves;
         if (longsOutstanding > 0) {
             idle -= uint256(longsOutstanding).divDown(
                 _marketState.longOpenSharePrice
@@ -479,7 +482,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         uint256 totalLpSupply = activeLpSupply + withdrawalSharesOutstanding;
         uint256 presentValue = HyperdriveMath.calculatePresentValue(
             HyperdriveMath.PresentValueParams({
-                shareReserves: _marketState.shareReserves,
+                shareReserves: _shareReserves,
                 bondReserves: _marketState.bondReserves,
                 sharePrice: _sharePrice,
                 initialSharePrice: _initialSharePrice,
@@ -514,8 +517,6 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         );
     }
 
-    // FIXME: Can this be replaced everywhere by _rebalanceWithdrawalPool?
-    //
     /// @dev Pays out the maximum amount of withdrawal shares given a specified
     ///      amount of withdrawal proceeds.
     /// @param _withdrawalProceeds The amount of withdrawal proceeds to pay out.
