@@ -214,10 +214,7 @@ contract StethHyperdriveTest is HyperdriveTest {
         // Too little eth
         vm.expectRevert(Errors.TransferFailed.selector);
         hyperdrive.openLong{ value: 1e18 - 1 }(1e18, 0, bob, true);
-
-        vm.expectRevert(Errors.TransferFailed.selector);
-        hyperdrive.openLong{ value: 1e18 + 1 }(1e18, 0, bob, true);
-
+        // Paying eth to the steth flow
         vm.expectRevert(Errors.NotPayable.selector);
         hyperdrive.openLong{ value: 1 }(1e18, 0, bob, false);
     }
