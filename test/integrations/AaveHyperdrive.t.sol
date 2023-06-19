@@ -17,7 +17,7 @@ import { MockAaveHyperdrive } from "../mocks/MockAaveHyperdrive.sol";
 import { HyperdriveUtils } from "../utils/HyperdriveUtils.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 
-contract HyperdriveER4626Test is HyperdriveTest {
+contract AaveHyperdriveTest is HyperdriveTest {
     using FixedPointMath for *;
 
     AaveHyperdriveFactory factory;
