@@ -41,7 +41,7 @@ contract AddLiquidityTest is HyperdriveTest {
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
 
-        // Attempt to add zero base as liquidity. This should fail.
+        // Ensure that non-pauser can't pause the pool.
         vm.stopPrank();
         pause(true);
         vm.startPrank(bob);
