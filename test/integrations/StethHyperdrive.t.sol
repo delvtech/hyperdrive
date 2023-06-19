@@ -210,6 +210,18 @@ contract StethHyperdriveTest is HyperdriveTest {
         );
     }
 
+    function test_open_long_failures(uint256 basePaid) external {
+        // Too little eth
+        vm.expectRevert(Errors.TransferFailed.selector);
+        hyperdrive.openLong{ value: basePaid - 1 }(basePaid, 0, bob, true);
+
+        vm.expectRevert(Errors.TransferFailed.selector);
+        hyperdrive.openLong{ value: basePaid + 1 }(basePaid, 0, bob, true);
+
+        vm.expectRevert(Errors.NotPayable.selector);
+        hyperdrive.openLong{ value: 1 }(basePaid, 0, bob, false);
+    }
+
     function test_open_long_with_steth(uint256 basePaid) external {
         // Get some balance information before the deposit.
         uint256 totalPooledEtherBefore = LIDO.getTotalPooledEther();
