@@ -95,9 +95,12 @@ library HyperdriveUtils {
 
     /// @dev Calculates the maximum amount of longs that can be opened.
     /// @param _hyperdrive A Hyperdrive instance.
+    /// @param _maxIterations The maximum number of iterations of the
+    ///        approximation.
     /// @return baseAmount The cost of buying the maximum amount of longs.
     function calculateMaxLong(
-        IHyperdrive _hyperdrive
+        IHyperdrive _hyperdrive,
+        uint256 _maxIterations
     ) internal view returns (uint256 baseAmount) {
         IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
         IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
@@ -110,9 +113,18 @@ library HyperdriveUtils {
                     poolConfig.timeStretch,
                     poolInfo.sharePrice,
                     poolConfig.initialSharePrice,
-                    7
+                    _maxIterations
                 )
                 .baseAmount;
+    }
+
+    /// @dev Calculates the maximum amount of longs that can be opened.
+    /// @param _hyperdrive A Hyperdrive instance.
+    /// @return baseAmount The cost of buying the maximum amount of longs.
+    function calculateMaxLong(
+        IHyperdrive _hyperdrive
+    ) internal view returns (uint256 baseAmount) {
+        return calculateMaxLong(_hyperdrive, 7);
     }
 
     /// @dev Calculates the maximum amount of shorts that can be opened.
@@ -293,5 +305,15 @@ library HyperdriveUtils {
                     })
                 )
                 .mulDown(poolInfo.sharePrice);
+    }
+
+    function totalLpSupply(
+        IHyperdrive hyperdrive
+    ) internal view returns (uint256) {
+        IHyperdrive.PoolInfo memory info = hyperdrive.getPoolInfo();
+        return
+            info.lpTotalSupply +
+            hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID) -
+            info.withdrawalSharesReadyToWithdraw;
     }
 }

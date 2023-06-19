@@ -320,30 +320,9 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // Remove the flat part of the trade from the pool's liquidity.
         _updateLiquidity(-int256(_shareProceeds - _shareReservesDelta));
 
-        // If there are withdrawal shares outstanding, we pay out the maximum
-        // amount of withdrawal shares. The proceeds owed to LPs when a long is
-        // closed is equivalent to short proceeds as LPs take the other side of
-        // every trade.
-        uint256 withdrawalSharesOutstanding = _totalSupply[
-            AssetId._WITHDRAWAL_SHARE_ASSET_ID
-        ] - _withdrawPool.readyToWithdraw;
-        if (withdrawalSharesOutstanding > 0) {
-            uint256 openSharePrice = _checkpoints[
-                _maturityTime - _positionDuration
-            ].longSharePrice;
-            uint256 withdrawalProceeds = HyperdriveMath.calculateShortProceeds(
-                _bondAmount,
-                _shareProceeds,
-                openSharePrice,
-                _sharePrice,
-                _sharePrice
-            );
-            _applyWithdrawalProceeds(
-                withdrawalProceeds,
-                withdrawalSharesOutstanding,
-                _sharePrice
-            );
-        }
+        // Rebalance the withdrawal pool so that withdrawal shares benefit from
+        // the increase in the pool's idle funds after the long was closed.
+        _rebalanceWithdrawalPool(_sharePrice);
     }
 
     /// @dev Calculate the pool reserve and trader deltas that result from

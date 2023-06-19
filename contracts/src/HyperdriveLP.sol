@@ -450,6 +450,63 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         return (shareProceeds, uint256(withdrawalShares));
     }
 
+    /// @dev If the idle capital in the pool is worth more than the active LP
+    ///      supply, then we pay out the withdrawal pool with the excess idle.
+    /// @param _sharePrice The current share price.
+    function _rebalanceWithdrawalPool(uint256 _sharePrice) internal {
+        // FIXME: Should this be in HyperdriveMath?
+        //
+        // FIXME: How do we account for the interest that is accruing on open
+        // longs? We'll need to do a deep dive to make sure that we aren't
+        // leaking interest that shouldn't be leaked.
+        //
+        // Calculate the amount of idle capital in the pool.
+        uint256 idle = _marketState.shareReserves -
+            uint256(_marketState.longsOutstanding).divDown(_sharePrice);
+
+        // Calculate the value of the active LP shares as l_a * (PV / l).
+        uint256 activeLpSupply = _totalSupply[AssetId._LP_ASSET_ID];
+        uint256 withdrawalSharesOutstanding = _totalSupply[
+            AssetId._WITHDRAWAL_SHARE_ASSET_ID
+        ] - _withdrawPool.readyToWithdraw;
+        uint256 totalLpSupply = activeLpSupply + withdrawalSharesOutstanding;
+        uint256 presentValue = HyperdriveMath.calculatePresentValue(
+            HyperdriveMath.PresentValueParams({
+                shareReserves: _marketState.shareReserves,
+                bondReserves: _marketState.bondReserves,
+                sharePrice: _sharePrice,
+                initialSharePrice: _initialSharePrice,
+                timeStretch: _timeStretch,
+                longsOutstanding: _marketState.longsOutstanding,
+                longAverageTimeRemaining: _calculateTimeRemainingScaled(
+                    _marketState.longAverageMaturityTime
+                ),
+                shortsOutstanding: _marketState.shortsOutstanding,
+                shortAverageTimeRemaining: _calculateTimeRemainingScaled(
+                    _marketState.shortAverageMaturityTime
+                ),
+                shortBaseVolume: _marketState.shortBaseVolume
+            })
+        );
+        uint256 activeLpValue = activeLpSupply.mulDivDown(
+            presentValue,
+            totalLpSupply
+        );
+
+        // If the value of the active LP shares is less than the idle capital,
+        // we pay out the excess idle to the withdrawal pool.
+        if (idle > activeLpValue) {
+            _compensateWithdrawalPool(
+                idle - activeLpValue,
+                presentValue,
+                totalLpSupply,
+                withdrawalSharesOutstanding
+            );
+        }
+    }
+
+    // FIXME: Can this be replaced everywhere by _rebalanceWithdrawalPool?
+    //
     /// @dev Pays out the maximum amount of withdrawal shares given a specified
     ///      amount of withdrawal proceeds.
     /// @param _withdrawalProceeds The amount of withdrawal proceeds to pay out.
