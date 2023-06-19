@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-// FIXME
-import "forge-std/console.sol";
-
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
@@ -160,20 +157,19 @@ contract LpWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(longProceeds, longAmount, 10); // TODO: Investigate this bound.
 
         // Alice redeems her withdrawal shares. She receives the interest
-        // collected on the capital underlying the long for all but the first
-        // checkpoint. This will leave dust which is the interest from the first
-        // checkpoint compounded over the whole term.
+        // collected on the capital underlying the long.
         (, int256 estimatedProceeds) = HyperdriveUtils
             .calculateCompoundInterest(
                 longAmount,
                 variableRate,
                 POSITION_DURATION
             );
-        (uint256 withdrawalProceeds, ) = redeemWithdrawalShares(
-            alice,
-            withdrawalShares
-        );
+        (
+            uint256 withdrawalProceeds,
+            uint256 withdrawalSharesRedeemed
+        ) = redeemWithdrawalShares(alice, withdrawalShares);
         assertApproxEqAbs(withdrawalProceeds, uint256(estimatedProceeds), 1e10); // TODO: Investigate this bound.
+        assertEq(withdrawalSharesRedeemed, withdrawalShares);
 
         // Ensure approximately all of the base and withdrawal shares has been
         // removed from the Hyperdrive instance.

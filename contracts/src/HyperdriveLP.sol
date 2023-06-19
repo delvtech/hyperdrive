@@ -450,21 +450,28 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         return (shareProceeds, uint256(withdrawalShares));
     }
 
+    // TODO: How do we account for the interest that is accruing on open longs?
+    // We'll need to do a deep dive to make sure that we aren't leaking interest
+    // that shouldn't be leaked.
+    //
     /// @dev If the idle capital in the pool is worth more than the active LP
     ///      supply, then we pay out the withdrawal pool with the excess idle.
     /// @param _sharePrice The current share price.
     function _rebalanceWithdrawalPool(uint256 _sharePrice) internal {
-        // FIXME: Should this be in HyperdriveMath?
+        // Calculate the amount of idle capital in the pool as:
         //
-        // FIXME: How do we account for the interest that is accruing on open
-        // longs? We'll need to do a deep dive to make sure that we aren't
-        // leaking interest that shouldn't be leaked.
-        //
-        // Calculate the amount of idle capital in the pool.
-        uint256 idle = _marketState.shareReserves -
-            uint256(_marketState.longsOutstanding).divDown(_sharePrice);
+        // idle = z - (y_l / c_0)
+        uint256 longsOutstanding = _marketState.longsOutstanding;
+        uint256 idle = _marketState.shareReserves;
+        if (longsOutstanding > 0) {
+            idle -= uint256(longsOutstanding).divDown(
+                _marketState.longOpenSharePrice
+            );
+        }
 
-        // Calculate the value of the active LP shares as l_a * (PV / l).
+        // Calculate the value of the active LP shares as:
+        //
+        // activeLpValue = l_a * (PV / l).
         uint256 activeLpSupply = _totalSupply[AssetId._LP_ASSET_ID];
         uint256 withdrawalSharesOutstanding = _totalSupply[
             AssetId._WITHDRAWAL_SHARE_ASSET_ID
@@ -495,14 +502,16 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
 
         // If the value of the active LP shares is less than the idle capital,
         // we pay out the excess idle to the withdrawal pool.
+        uint256 withdrawalProceeds = 0;
         if (idle > activeLpValue) {
-            _compensateWithdrawalPool(
-                idle - activeLpValue,
-                presentValue,
-                totalLpSupply,
-                withdrawalSharesOutstanding
-            );
+            withdrawalProceeds = idle - activeLpValue;
         }
+        _compensateWithdrawalPool(
+            withdrawalProceeds,
+            presentValue,
+            totalLpSupply,
+            withdrawalSharesOutstanding
+        );
     }
 
     // FIXME: Can this be replaced everywhere by _rebalanceWithdrawalPool?
