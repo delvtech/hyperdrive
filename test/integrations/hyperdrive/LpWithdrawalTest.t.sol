@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import "forge-std/console.sol";
+
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
@@ -21,6 +25,7 @@ import { Lib } from "../../utils/Lib.sol";
 //           favorable for LPs that join the pool.
 contract LpWithdrawalTest is HyperdriveTest {
     using FixedPointMath for uint256;
+    using HyperdriveUtils for IHyperdrive;
     using Lib for *;
 
     // This test is designed to ensure that a single LP receives all of the
@@ -711,6 +716,84 @@ contract LpWithdrawalTest is HyperdriveTest {
             0,
             1
         );
+    }
+
+    // FIXME: Make this a fuzz test.
+    function test_lp_withdrawal_two_lps() external {
+        // Alice and Bob add liquidity to the pool.
+        uint256 contribution = 100e18;
+        uint256 aliceLpShares = initialize(alice, 0.05e18, contribution);
+        uint256 bobLpShares = addLiquidity(bob, contribution);
+
+        // Celine opens a long.
+        uint256 basePaid = hyperdrive.calculateMaxLong();
+        (uint256 maturityTime, uint256 longAmount) = openLong(celine, basePaid);
+
+        // Alice removes her liquidity.
+        uint256 aliceWithdrawalShares;
+        {
+            // We expect Alice to receive half of the idle funds in the pool and
+            // withdrawal shares that are worth more than the amount of her
+            // capital that remains in the pool. She gets a discount on the
+            // withdrawal shares because she is increasing the pool's slippage
+            // by removing liquidity, which increases the present value.
+            uint256 idle = hyperdrive.getPoolInfo().shareReserves -
+                hyperdrive.getPoolInfo().longsOutstanding.divDown(
+                    hyperdrive.getPoolInfo().sharePrice
+                );
+            uint256 aliceLpProceeds;
+            (aliceLpProceeds, aliceWithdrawalShares) = removeLiquidity(
+                alice,
+                aliceLpShares
+            );
+            uint256 lpSharePrice = presentValueRatio();
+            assertEq(aliceLpProceeds, idle / 2);
+            assertGt(
+                aliceWithdrawalShares.mulDown(lpSharePrice),
+                (contribution - idle / 2)
+            );
+        }
+
+        // The term passes and no interest accrues.
+        advanceTime(hyperdrive.getPoolConfig().positionDuration, 0);
+
+        // Celine closes her long.
+        {
+            uint256 longProceeds = closeLong(celine, maturityTime, longAmount);
+            assertEq(longProceeds, longAmount);
+        }
+
+        // Alice redeems her withdrawal shares. Since all of the positions have
+        // been closed, she should be able to redeem all of her withdrawal
+        // shares for her portion of the pool's idle capital.
+        console.log("Alice removes liquidity");
+        {
+            uint256 idle = hyperdrive.getPoolInfo().shareReserves -
+                hyperdrive.getPoolInfo().longsOutstanding.divDown(
+                    hyperdrive.getPoolInfo().sharePrice
+                );
+            (
+                uint256 withdrawalProceeds,
+                uint256 withdrawalSharesRedeemed
+            ) = redeemWithdrawalShares(alice, aliceWithdrawalShares);
+            assertEq(
+                withdrawalProceeds,
+                idle.mulDown(aliceWithdrawalShares).divDown(
+                    aliceWithdrawalShares + bobLpShares
+                )
+            );
+            assertEq(withdrawalSharesRedeemed, aliceWithdrawalShares);
+        }
+
+        // Bob removes his liquidity for all of the pool's remaining capital.
+        console.log("Bob removes liquidity");
+        uint256 expectedLpProceeds = hyperdrive.getPoolInfo().shareReserves;
+        (uint256 bobLpProceeds, uint256 bobWithdrawalShares) = removeLiquidity(
+            bob,
+            bobLpShares
+        );
+        assertEq(bobLpProceeds, expectedLpProceeds);
+        assertEq(bobWithdrawalShares, 0);
     }
 
     function test_lp_withdrawal_three_lps(
