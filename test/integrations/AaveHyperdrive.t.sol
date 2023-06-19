@@ -196,5 +196,24 @@ contract AaveHyperdriveTest is HyperdriveTest {
         aDaiEncoding[0] = bytes32(uint256(uint160(address(aDAI))));
         // Verify that the correct events were emitted.
         verifyFactoryEvents(factory, alice, contribution, apr, aDaiEncoding);
+
+        // Test the revert condition for eth payment
+        vm.expectRevert(Errors.NotPayable.selector);
+        hyperdrive = factory.deployAndInitialize{ value: 100 }(
+            config,
+            new bytes32[](0),
+            contribution,
+            apr
+        );
+
+        config.baseToken = IERC20(address(0));
+        vm.expectRevert(Errors.InvalidToken.selector);
+        hyperdrive = factory.deployAndInitialize(
+            config,
+            new bytes32[](0),
+            2500e18,
+            //1% apr
+            1e16
+        );
     }
 }
