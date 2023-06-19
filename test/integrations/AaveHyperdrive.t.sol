@@ -145,11 +145,17 @@ contract AaveHyperdriveTest is HyperdriveTest {
         amountWithdrawn = mockHyperdrive.withdraw(2e18, alice, false);
         assertEq(aDAI.balanceOf(alice), 3e18 + balanceBefore);
         assertEq(amountWithdrawn, 3e18);
+
+        // Check the zero withdraw revert
+        vm.expectRevert(Errors.NoAssetsToWithdraw.selector);
+        mockHyperdrive.withdraw(0, alice, false);
     }
 
     function test_aave_hyperdrive_pricePerShare() external {
         // First we add some shares and interest
         vm.startPrank(alice);
+        // check it's zero before deposit
+        assertEq(0, mockHyperdrive.pricePerShare());
         // deposit the initial shares
         mockHyperdrive.deposit(10e18, true);
         // add interest
