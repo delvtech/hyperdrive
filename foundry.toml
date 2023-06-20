@@ -32,6 +32,13 @@ via_ir = true
 gas_reports = ["*"]
 evm_version = "paris"
 
+[profile.production.optimizer_details]
+constantOptimizer = true
+yul = true
+
+[profile.production.optimizer_details.yulDetails]
+stackAllocation = true
+
 [fuzz]
 runs = 1000
 
