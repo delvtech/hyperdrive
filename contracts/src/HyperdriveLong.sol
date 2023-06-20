@@ -79,7 +79,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
 
         // Apply the open long to the state.
         _applyOpenLong(
-            _baseAmount - totalGovernanceFee,
             shareReservesDelta,
             bondProceeds,
             bondReservesDelta,
@@ -190,7 +189,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
 
     /// @dev Applies an open long to the state. This includes updating the
     ///      reserves and maintaining the reserve invariants.
-    /// @param _baseAmount The amount of base paid by the trader.
     /// @param _shareReservesDelta The amount of shares paid to the curve.
     /// @param _bondProceeds The amount of bonds purchased by the trader.
     /// @param _bondReservesDelta The amount of bonds sold by the curve.
@@ -198,7 +196,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
     /// @param _checkpointTime The time of the latest checkpoint.
     /// @param _maturityTime The maturity time of the long.
     function _applyOpenLong(
-        uint256 _baseAmount,
         uint256 _shareReservesDelta,
         uint256 _bondProceeds,
         uint256 _bondReservesDelta,
