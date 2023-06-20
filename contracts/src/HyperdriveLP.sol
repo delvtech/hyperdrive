@@ -54,9 +54,6 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             revert Errors.TooFewSharesMinted();
         }
 
-        // Subtract shares for address(0) from the initial amount given
-        shares -= 1e4;
-
         // Create an initial checkpoint.
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
 
@@ -76,9 +73,12 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             )
             .toUint128();
 
+        // Subtract shares for address(0) from the initial amount given
+        uint256 sharesToGrant = shares - 1e4;
+
         // Mint LP shares to the initializer.
         _mint(AssetId._LP_ASSET_ID, address(0), 1e4);
-        _mint(AssetId._LP_ASSET_ID, _destination, shares);
+        _mint(AssetId._LP_ASSET_ID, _destination, sharesToGrant);
 
         // Emit an Initialize event.
         emit Initialize(_destination, shares, _contribution, _apr);

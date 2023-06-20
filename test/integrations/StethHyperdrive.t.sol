@@ -139,7 +139,7 @@ contract StethHyperdriveTest is HyperdriveTest {
             )
         );
         assertEq(
-            hyperdrive.getPoolInfo().lpTotalSupply,
+            hyperdrive.getPoolInfo().lpTotalSupply, // - 1e4,
             hyperdrive.getPoolInfo().shareReserves
         );
 

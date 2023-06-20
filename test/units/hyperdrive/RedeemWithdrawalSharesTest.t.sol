@@ -30,13 +30,11 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
 
         // Alice removes her liquidity.
         (, uint256 withdrawalShares) = removeLiquidity(alice, lpShares);
-
         // The term passes and no interest accrues.
         advanceTime(POSITION_DURATION, 0);
 
         // Bob closes his short.
         closeShort(bob, maturityTime, shortAmount);
-
         // Alice tries to redeem her withdrawal shares with a large output limit.
         vm.stopPrank();
         vm.startPrank(alice);
