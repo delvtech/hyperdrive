@@ -254,11 +254,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
         _marketState.bondReserves -= _bondReservesDelta.toUint128();
         _marketState.longsOutstanding += _bondProceeds.toUint128();
 
-        // Add the flat component of the trade to the pool's liquidity.
-        _updateLiquidity(
-            int256(_baseAmount.divDown(_sharePrice) - _shareReservesDelta)
-        );
-
         // Since the base buffer may have increased relative to the base
         // reserves and the bond reserves decreased, we must ensure that the
         // base reserves are greater than the longsOutstanding.
