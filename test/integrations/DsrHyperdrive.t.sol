@@ -287,6 +287,6 @@ contract DsrHyperdrive is BaseTest {
             true
         );
         // Shares are still minted, and Alice does not get 0 shares out
-        assertEq(newShares, 55554);
+        assertEq(newShares, 49999);
     }
 }

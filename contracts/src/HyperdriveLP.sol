@@ -8,6 +8,8 @@ import { Errors } from "./libraries/Errors.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { HyperdriveTWAP } from "./HyperdriveTWAP.sol";
+import { Lib } from "test/utils/Lib.sol";
+import { console } from "forge-std/console.sol";
 
 /// @author DELV
 /// @title HyperdriveLP
@@ -18,6 +20,7 @@ import { HyperdriveTWAP } from "./HyperdriveTWAP.sol";
 abstract contract HyperdriveLP is HyperdriveTWAP {
     using FixedPointMath for uint256;
     using SafeCast for uint256;
+    using Lib for *;
 
     /// @notice Allows the first LP to initialize the market with a target APR.
     /// @param _contribution The amount of base to supply.
@@ -31,7 +34,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         uint256 _apr,
         address _destination,
         bool _asUnderlying
-    ) external payable {
+    ) external payable returns (uint256 sharesGranted) {
         // Check that the message value and base amount are valid.
         _checkMessageValue();
         if (_contribution == 0) {
@@ -60,6 +63,9 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // Set the initialized state to true.
         _marketState.isInitialized = true;
 
+        // Subtract shares for address(0) from the initial amount given
+        shares -= 1e4;
+
         // Update the reserves. The bond reserves are calculated so that the
         // pool is initialized with the target APR.
         _marketState.shareReserves = shares.toUint128();
@@ -73,15 +79,15 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             )
             .toUint128();
 
-        // Subtract shares for address(0) from the initial amount given
-        uint256 sharesToGrant = shares - 1e4;
-
         // Mint LP shares to the initializer.
         _mint(AssetId._LP_ASSET_ID, address(0), 1e4);
-        _mint(AssetId._LP_ASSET_ID, _destination, sharesToGrant);
+        _mint(AssetId._LP_ASSET_ID, _destination, shares);
 
         // Emit an Initialize event.
         emit Initialize(_destination, shares, _contribution, _apr);
+
+        // Return the number of shares granted.
+        return shares;
     }
 
     /// @notice Allows LPs to supply liquidity for LP shares.
@@ -357,6 +363,8 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // by increasing the share reserves and preserving the previous ratio of
         // share reserves to bond reserves.
         uint256 shareReserves = _marketState.shareReserves;
+        console.log(_shareReservesDelta.toString(18));
+        console.log(shareReserves.toString(18));
         if (_shareReservesDelta != 0 && shareReserves > 0) {
             int256 updatedShareReserves = int256(shareReserves) +
                 _shareReservesDelta;

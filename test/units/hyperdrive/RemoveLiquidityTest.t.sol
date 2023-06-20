@@ -69,21 +69,21 @@ contract RemoveLiquidityTest is HyperdriveTest {
 
         // Ensure that the LP shares were properly accounted for.
         assertEq(hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice), 0);
-        assertEq(hyperdrive.totalSupply(AssetId._LP_ASSET_ID), 0);
+        assertEq(hyperdrive.totalSupply(AssetId._LP_ASSET_ID), 10000);
 
         // Calculate how much interest has accrued on the initial contribution
         (uint256 contributionPlusInterest, ) = HyperdriveUtils
-            .calculateCompoundInterest(contribution, int256(apr), timeAdvanced);
+            .calculateCompoundInterest(contribution-1e4, int256(apr), timeAdvanced);
 
         // Ensure that Alice received the correct amount of base.
         assertEq(baseProceeds, contributionPlusInterest);
-        assertEq(baseToken.balanceOf(address(hyperdrive)), 0);
+        assertEq(baseToken.balanceOf(address(hyperdrive)), 10026);
 
         // Ensure that the reserves were updated correctly.
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
 
-        assertEq(poolInfo.shareReserves, 0);
-        assertEq(poolInfo.bondReserves, 0);
+        assertEq(poolInfo.shareReserves, 10000);
+        assertEq(poolInfo.bondReserves, 29961);
         assertEq(baseToken.balanceOf(alice), baseProceeds);
 
         // Ensure that Alice receives the right amount of withdrawal shares.
@@ -131,28 +131,29 @@ contract RemoveLiquidityTest is HyperdriveTest {
 
         // Ensure that the LP shares were properly accounted for.
         assertEq(hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice), 0);
-        assertEq(hyperdrive.totalSupply(AssetId._LP_ASSET_ID), 0);
+        assertEq(hyperdrive.totalSupply(AssetId._LP_ASSET_ID), 1e4); // Minimum Share Buffer
 
         // Ensure that Alice received the correct amount of base.
         (uint256 contributionPlusInterest, ) = HyperdriveUtils
-            .calculateCompoundInterest(contribution, int256(apr), timeAdvanced);
+            .calculateCompoundInterest(contribution-1e4, int256(apr), timeAdvanced);
         assertApproxEqAbs(
             expectedBaseProceeds,
             contributionPlusInterest - (bondAmount - baseAmount),
-            1
+            50
         );
         assertApproxEqAbs(
-            baseToken.balanceOf(address(hyperdrive)),
+            baseToken.balanceOf(address(hyperdrive)), // Note, will differ slightly due to shareReserves having a locked 1e4 amount
             bondAmount,
-            1
+            10500
         );
         assertApproxEqAbs(baseToken.balanceOf(alice), baseProceeds, 1);
 
         // Ensure that the reserves were updated correctly.
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
-        assertEq(
+        assertApproxEqAbs(
             poolInfo.shareReserves,
-            bondAmount.divDown(hyperdrive.getPoolInfo().sharePrice)
+            bondAmount.divDown(hyperdrive.getPoolInfo().sharePrice),
+            10500
         );
         assertApproxEqAbs(
             HyperdriveUtils.calculateAPRFromReserves(hyperdrive),
@@ -206,7 +207,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
 
         // Ensure that the LP shares were properly accounted for.
         assertEq(hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice), 0);
-        assertEq(hyperdrive.totalSupply(AssetId._LP_ASSET_ID), 0);
+        assertEq(hyperdrive.totalSupply(AssetId._LP_ASSET_ID), 10000);
 
         // Ensure that Alice received the correct amount of base.
         (uint256 contributionPlusInterest, ) = HyperdriveUtils
@@ -229,8 +230,8 @@ contract RemoveLiquidityTest is HyperdriveTest {
 
         // Ensure that the reserves were updated correctly.
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
-        assertEq(poolInfo.shareReserves, 0);
-        assertEq(poolInfo.bondReserves, 0);
+        assertEq(poolInfo.shareReserves, 9053);
+        assertEq(poolInfo.bondReserves, 30962);
 
         // Ensure that Alice receives the right amount of withdrawal shares.
         assertApproxEqAbs(

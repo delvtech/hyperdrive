@@ -306,8 +306,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         uint256 _shareReservesDelta,
         uint256 _maturityTime,
         uint256 _sharePrice
-    ) internal {
-        // Update the short average maturity time.
+    ) internal {        // Update the short average maturity time.
         _marketState.shortAverageMaturityTime = uint256(
             _marketState.shortAverageMaturityTime
         )
