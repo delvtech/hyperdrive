@@ -714,7 +714,139 @@ contract LpWithdrawalTest is HyperdriveTest {
         );
     }
 
-    function test_lp_withdrawal_two_lps_long(
+    function test_lp_withdrawal_two_lps_long_halfway_through_term(
+        uint256 contribution,
+        uint256 fixedRate,
+        int256 variableRate,
+        uint256 basePaid
+    ) public {
+        // contribution = 0;
+        // fixedRate = 0;
+        // variableRate = 2004;
+        // basePaid = 0;
+
+        // Deploy and initialize the pool so that we can calculate the bounds
+        // for the `basePaid` parameter.
+        contribution = contribution.normalizeToRange(1000e18, 500_000_000e18);
+        fixedRate = fixedRate.normalizeToRange(0.001e18, 0.5e18); // TODO: Try to extend this bound.
+        variableRate = variableRate.normalizeToRange(0, 2e18);
+        deploy(alice, 0.05e18, 0, 0, 0);
+        initialize(alice, fixedRate, contribution);
+        basePaid = basePaid.normalizeToRange(
+            0.001e18,
+            hyperdrive.calculateMaxLong(20)
+        );
+
+        // Run the test with the fuzzed parameters.
+        _test_lp_withdrawal_two_lps_long_halfway_through_term(
+            contribution,
+            fixedRate,
+            variableRate,
+            basePaid
+        );
+    }
+
+    function _test_lp_withdrawal_two_lps_long_halfway_through_term(
+        uint256 contribution,
+        uint256 fixedRate,
+        int256 variableRate,
+        uint256 basePaid
+    ) internal {
+        // Deploy the Hyperdrive pool.
+        deploy(alice, 0.05e18, 0, 0, 0);
+
+        // Alice and Bob add liquidity to the pool.
+        uint256 aliceLpShares = initialize(alice, fixedRate, contribution);
+        uint256 bobLpShares = addLiquidity(bob, contribution);
+
+        // Celine opens a long.
+        (uint256 maturityTime, uint256 longAmount) = openLong(celine, basePaid);
+
+        // Half of the term passes and interest accrues.
+        advanceTime(
+            hyperdrive.getPoolConfig().positionDuration / 2,
+            variableRate
+        );
+
+        // Alice removes her liquidity.
+        uint256 aliceWithdrawalShares;
+        {
+            // We expect Alice to receive half of the idle funds in the pool and
+            // withdrawal shares that are worth more than the amount of her
+            // capital that remains in the pool. She gets a discount on the
+            // withdrawal shares because she is increasing the pool's slippage
+            // by removing liquidity, which increases the present value.
+            uint256 idle = (hyperdrive.getPoolInfo().shareReserves -
+                hyperdrive.getPoolInfo().longsOutstanding.divDown(
+                    hyperdrive.getPoolInfo().sharePrice
+                )).mulDown(hyperdrive.getPoolInfo().sharePrice);
+            uint256 lpSharePrice = presentValueRatio();
+            uint256 aliceLpProceeds;
+            (aliceLpProceeds, aliceWithdrawalShares) = removeLiquidity(
+                alice,
+                aliceLpShares
+            );
+            assertApproxEqAbs(aliceLpProceeds, idle / 2, 10);
+            uint256 alicePresentValue = aliceLpShares.mulDown(lpSharePrice);
+            assertGe(
+                aliceWithdrawalShares.mulDown(lpSharePrice),
+                (
+                    alicePresentValue > aliceLpProceeds
+                        ? (alicePresentValue - aliceLpProceeds)
+                        : 0
+                ).mulDown(0.95e18)
+            );
+        }
+
+        // The term remainder of the term passes and interest accrues.
+        advanceTime(
+            hyperdrive.getPoolConfig().positionDuration / 2,
+            variableRate
+        );
+
+        // Calculate Alice's expected withdrawal proceeds. Since the long is
+        // being closed at redemption and is the only open position, we expect
+        // that the actual value should be extremely close to the expected value.
+        uint256 expectedWithdrawalProceeds = aliceWithdrawalShares.mulDivDown(
+            hyperdrive.presentValue(),
+            hyperdrive.totalLpSupply()
+        );
+
+        // Celine closes her long.
+        {
+            uint256 longProceeds = closeLong(celine, maturityTime, longAmount);
+            assertApproxEqAbs(longProceeds, longAmount, 10);
+        }
+
+        // Alice redeems her withdrawal shares. Since all of the positions have
+        // been closed, she should be able to redeem all of her withdrawal
+        // shares for her portion of the pool's idle capital.
+        {
+            (
+                uint256 withdrawalProceeds,
+                uint256 withdrawalSharesRedeemed
+            ) = redeemWithdrawalShares(alice, aliceWithdrawalShares);
+            // FIXME: Why do we need such a high tolerance.
+            assertApproxEqAbs(
+                withdrawalProceeds,
+                expectedWithdrawalProceeds,
+                1e9
+            );
+            assertEq(withdrawalSharesRedeemed, aliceWithdrawalShares);
+        }
+
+        // Bob removes his liquidity for all of the pool's remaining capital.
+        uint256 expectedLpProceeds = baseToken.balanceOf(address(hyperdrive));
+        (uint256 bobLpProceeds, uint256 bobWithdrawalShares) = removeLiquidity(
+            bob,
+            bobLpShares
+        );
+        // FIXME: Why do we need this tolerance?
+        assertApproxEqAbs(bobLpProceeds, expectedLpProceeds, 1e11);
+        assertEq(bobWithdrawalShares, 0);
+    }
+
+    function test_lp_withdrawal_two_lps_long_redemption(
         uint256 contribution,
         uint256 fixedRate,
         uint256 basePaid
@@ -731,10 +863,14 @@ contract LpWithdrawalTest is HyperdriveTest {
         );
 
         // Run the test with the fuzzed parameters.
-        _test_lp_withdrawal_two_lps_long(contribution, fixedRate, basePaid);
+        _test_lp_withdrawal_two_lps_long_redemption(
+            contribution,
+            fixedRate,
+            basePaid
+        );
     }
 
-    function _test_lp_withdrawal_two_lps_long(
+    function _test_lp_withdrawal_two_lps_long_redemption(
         uint256 contribution,
         uint256 fixedRate,
         uint256 basePaid
@@ -817,7 +953,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         assertEq(bobWithdrawalShares, 0);
     }
 
-    function test_lp_withdrawal_two_lps_short(
+    function test_lp_withdrawal_two_lps_short_redemption(
         uint256 contribution,
         uint256 fixedRate,
         uint256 shortAmount
@@ -834,10 +970,14 @@ contract LpWithdrawalTest is HyperdriveTest {
         );
 
         // Run the test with the fuzzed parameters.
-        _test_lp_withdrawal_two_lps_short(contribution, fixedRate, shortAmount);
+        _test_lp_withdrawal_two_lps_short_redemption(
+            contribution,
+            fixedRate,
+            shortAmount
+        );
     }
 
-    function _test_lp_withdrawal_two_lps_short(
+    function _test_lp_withdrawal_two_lps_short_redemption(
         uint256 contribution,
         uint256 fixedRate,
         uint256 shortAmount
