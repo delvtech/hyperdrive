@@ -9,7 +9,7 @@ Hyperdrive is a new AMM that allows users to open long and short positions to ge
 
 In Hyperdrive, trades only take place on a single invariant.  When a user opens a new position, the trade is made on a curve that prices the asset as a function of the reserves and a **fixed** time until maturity. When a user closes a position, we price the trade by splitting into two components: new bonds and matured bonds.  The new bonds are priced on the curve and matured bonds can be redeemed 1:1 with the base asset.  For example, let's say Alice wants to sell 12 bonds that are 9 months from maturity on a 12 month term.  We would consider 3 bonds mature and offer a 1:1 redemption for them and the remaining 9 bonds would be priced on the curve with the full time remaining until maturity.
 
-A safe invariant is an invariant that doesn't allow any combination of trading, adding liquidity, and removing liquidity to reduce the wealth of existing LPs (up to impermanent loss). Flat+curve assumes that the "curve" invariant is safe. With this in mind, we prevent prevent sandwich attacks by considering the "new bonds" component of the trade to be a trade on the invariant and the "matured bonds" component of the trade to be an add liquidity or remove liquidity action.
+A safe invariant is an invariant that doesn't allow any combination of trading, adding liquidity, and removing liquidity to reduce the wealth of existing LPs (up to impermanent loss). Flat+curve assumes that the "curve" invariant is safe. With this in mind, we prevent sandwich attacks by considering the "new bonds" component of the trade to be a trade on the invariant and the "matured bonds" component of the trade to be an add liquidity or remove liquidity action.
 
 ## Backdating
 

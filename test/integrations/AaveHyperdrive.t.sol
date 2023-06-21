@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
+import { IPool } from "@aave/interfaces/IPool.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
-import { ERC4626HyperdriveDeployer } from "contracts/src/factory/ERC4626HyperdriveDeployer.sol";
-import { ERC4626HyperdriveFactory } from "contracts/src/factory/ERC4626HyperdriveFactory.sol";
+import { AaveHyperdriveDeployer } from "contracts/src/factory/AaveHyperdriveDeployer.sol";
+import { AaveHyperdriveFactory } from "contracts/src/factory/AaveHyperdriveFactory.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
@@ -13,18 +13,19 @@ import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
 import { Mock4626, ERC20 } from "../mocks/Mock4626.sol";
-import { MockERC4626Hyperdrive } from "../mocks/Mock4626Hyperdrive.sol";
+import { MockAaveHyperdrive } from "../mocks/MockAaveHyperdrive.sol";
 import { HyperdriveUtils } from "../utils/HyperdriveUtils.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 
-contract HyperdriveER4626Test is HyperdriveTest {
+contract AaveHyperdriveTest is HyperdriveTest {
     using FixedPointMath for *;
 
-    ERC4626HyperdriveFactory factory;
+    AaveHyperdriveFactory factory;
     IERC20 dai = IERC20(address(0x6B175474E89094C44Da98b954EedeAC495271d0F));
-    IERC4626 pool;
+    IPool pool = IPool(address(0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2));
+    IERC20 aDAI = IERC20(address(0x018008bfb33d285247A21d44E50697654f754e63));
     uint256 aliceShares;
-    MockERC4626Hyperdrive mockHyperdrive;
+    MockAaveHyperdrive mockHyperdrive;
 
     function setUp() public override __mainnet_fork(16_685_972) {
         alice = createUser("alice");
@@ -32,18 +33,13 @@ contract HyperdriveER4626Test is HyperdriveTest {
 
         vm.startPrank(deployer);
 
-        // Deploy the ERC4626Hyperdrive factory and deployer.
-        pool = IERC4626(
-            address(new Mock4626(ERC20(address(dai)), "yearn dai", "yDai"))
+        AaveHyperdriveDeployer simpleDeployer = new AaveHyperdriveDeployer(
+            pool
         );
-
-        ERC4626HyperdriveDeployer simpleDeployer = new ERC4626HyperdriveDeployer(
-                pool
-            );
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
         forwarderFactory = new ForwarderFactory();
-        factory = new ERC4626HyperdriveFactory(
+        factory = new AaveHyperdriveFactory(
             alice,
             simpleDeployer,
             bob,
@@ -51,12 +47,12 @@ contract HyperdriveER4626Test is HyperdriveTest {
             IHyperdrive.Fees(0, 0, 0),
             defaults,
             address(forwarderFactory),
-            forwarderFactory.ERC20LINK_HASH(),
-            pool
+            forwarderFactory.ERC20LINK_HASH()
         );
 
         address daiWhale = 0x075e72a5eDf65F0A5f44699c7654C1a76941Ddc8;
         whaleTransfer(daiWhale, dai, alice);
+        whaleTransfer(daiWhale, dai, bob);
 
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: dai,
@@ -74,11 +70,12 @@ contract HyperdriveER4626Test is HyperdriveTest {
         });
 
         // Create a mock hyperdrive with functions available
-        mockHyperdrive = new MockERC4626Hyperdrive(
+        mockHyperdrive = new MockAaveHyperdrive(
             config,
             address(0),
             bytes32(0),
             address(0),
+            aDAI,
             pool
         );
 
@@ -87,7 +84,7 @@ contract HyperdriveER4626Test is HyperdriveTest {
         dai.approve(address(hyperdrive), type(uint256).max);
         dai.approve(address(mockHyperdrive), type(uint256).max);
         dai.approve(address(pool), type(uint256).max);
-        aliceShares = pool.deposit(10e18, alice);
+        pool.supply(address(dai), 100e18, alice, 0);
 
         vm.stopPrank();
         vm.startPrank(bob);
@@ -99,37 +96,43 @@ contract HyperdriveER4626Test is HyperdriveTest {
         vm.recordLogs();
     }
 
-    function test_erc4626_deposit() external {
-        // First we add some interest
+    function test_aave_hyperdrive_deposit() external {
         vm.startPrank(alice);
-        dai.transfer(address(pool), 5e18);
-        // Now we try a deposit
+        // Do a first deposit
         (uint256 sharesMinted, uint256 sharePrice) = mockHyperdrive.deposit(
-            1e18,
+            10e18,
             true
         );
-        assertEq(sharePrice, 1.5e18 + 1);
+        assertEq(sharePrice, 1e18);
+        // 0.6 repeating
+        assertEq(sharesMinted, 10e18);
+        assertEq(aDAI.balanceOf(address(mockHyperdrive)), 10e18);
+
+        // add interest
+        aDAI.transfer(address(mockHyperdrive), 5e18);
+        // Now we try a deposit
+        (sharesMinted, sharePrice) = mockHyperdrive.deposit(1e18, true);
+        assertEq(sharePrice, 1.5e18);
         // 0.6 repeating
         assertEq(sharesMinted, 666666666666666666);
-        assertEq(pool.balanceOf(address(mockHyperdrive)), 666666666666666666);
+        assertEq(aDAI.balanceOf(address(mockHyperdrive)), 16e18);
 
-        // Now we try to do a deposit from alice's shares
-        pool.approve(address(mockHyperdrive), type(uint256).max);
+        // Now we try to do a deposit from alice's aDAI
+        aDAI.approve(address(mockHyperdrive), type(uint256).max);
         (sharesMinted, sharePrice) = mockHyperdrive.deposit(3e18, false);
-        assertEq(sharePrice, 1.5e18 + 1);
+        assertEq(sharePrice, 1.5e18);
         assertApproxEqAbs(sharesMinted, 2e18, 1);
-        assertApproxEqAbs(
-            pool.balanceOf(address(mockHyperdrive)),
-            2666666666666666666,
-            2
-        );
+        assertApproxEqAbs(aDAI.balanceOf(address(mockHyperdrive)), 19e18, 2);
     }
 
-    function test_erc4626_withdraw() external {
+    function test_aave_hyperdrive_withdraw() external {
         // First we add some shares and interest
         vm.startPrank(alice);
-        dai.transfer(address(pool), 5e18);
-        pool.transfer(address(mockHyperdrive), 10e18);
+        //init pool
+        mockHyperdrive.deposit(10e18, true);
+        // add interest
+        aDAI.transfer(address(mockHyperdrive), 5e18);
+
         uint256 balanceBefore = dai.balanceOf(alice);
         // test an underlying withdraw
         uint256 amountWithdrawn = mockHyperdrive.withdraw(2e18, alice, true);
@@ -138,21 +141,31 @@ contract HyperdriveER4626Test is HyperdriveTest {
         assertEq(amountWithdrawn, 3e18);
 
         // Test a share withdraw
+        balanceBefore = aDAI.balanceOf(alice);
         amountWithdrawn = mockHyperdrive.withdraw(2e18, alice, false);
-        assertEq(pool.balanceOf(alice), 2e18);
+        assertEq(aDAI.balanceOf(alice), 3e18 + balanceBefore);
         assertEq(amountWithdrawn, 3e18);
+
+        // Check the zero withdraw revert
+        vm.expectRevert(Errors.NoAssetsToWithdraw.selector);
+        mockHyperdrive.withdraw(0, alice, false);
     }
 
-    function test_erc4626_pricePerShare() external {
+    function test_aave_hyperdrive_pricePerShare() external {
         // First we add some shares and interest
         vm.startPrank(alice);
-        dai.transfer(address(pool), 2e18);
+        // check it's zero before deposit
+        assertEq(0, mockHyperdrive.pricePerShare());
+        // deposit the initial shares
+        mockHyperdrive.deposit(10e18, true);
+        // add interest
+        aDAI.transfer(address(mockHyperdrive), 2e18);
 
         uint256 price = mockHyperdrive.pricePerShare();
         assertEq(price, 1.2e18);
     }
 
-    function test_erc4626_testDeploy() external {
+    function test_aave_hyperdrive_testDeploy() external {
         vm.startPrank(alice);
         uint256 apr = 0.01e18; // 1% apr
         uint256 contribution = 2_500e18;
@@ -183,42 +196,30 @@ contract HyperdriveER4626Test is HyperdriveTest {
             alice
         );
         // lp shares should equal number of share reserves initialized with
-        assertEq(createdShares, 2500e18-1e4);
+        assertEq(createdShares, 2500e18);
 
+        bytes32[] memory aDaiEncoding = new bytes32[](1);
+        aDaiEncoding[0] = bytes32(uint256(uint160(address(aDAI))));
         // Verify that the correct events were emitted.
-        verifyFactoryEvents(
-            factory,
-            alice,
+        verifyFactoryEvents(factory, alice, contribution, apr, aDaiEncoding);
+
+        // Test the revert condition for eth payment
+        vm.expectRevert(Errors.NotPayable.selector);
+        hyperdrive = factory.deployAndInitialize{ value: 100 }(
+            config,
+            new bytes32[](0),
             contribution,
-            apr,
-            new bytes32[](0)
+            apr
         );
-    }
 
-    function test_erc4626_sweep() public {
-        setUp();
-        ERC20Mintable otherToken = new ERC20Mintable();
-        otherToken.mint(address(mockHyperdrive), 1e18);
-
-        vm.startPrank(bob);
-
-        mockHyperdrive.sweep(IERC20(address(otherToken)));
-        assertEq(otherToken.balanceOf(bob), 1e18);
-
-        vm.expectRevert(Errors.UnsupportedToken.selector);
-        mockHyperdrive.sweep(dai);
-
-        vm.expectRevert(Errors.UnsupportedToken.selector);
-        mockHyperdrive.sweep(IERC20(address(pool)));
-
-        vm.stopPrank();
-        vm.startPrank(alice);
-
-        vm.expectRevert(Errors.Unauthorized.selector);
-        mockHyperdrive.sweep(IERC20(address(pool)));
-
-        // We set alice to be the pauser so she can call the function now
-        mockHyperdrive.setPauser(alice, true);
-        mockHyperdrive.sweep(IERC20(address(otherToken)));
+        config.baseToken = IERC20(address(0));
+        vm.expectRevert(Errors.InvalidToken.selector);
+        hyperdrive = factory.deployAndInitialize(
+            config,
+            new bytes32[](0),
+            2500e18,
+            //1% apr
+            1e16
+        );
     }
 }

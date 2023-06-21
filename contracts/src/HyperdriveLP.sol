@@ -455,6 +455,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
                 uint256(-withdrawalShares),
                 _totalLpSupply
             );
+            shareProceeds -= overestimatedProceeds;
             _updateLiquidity(int256(overestimatedProceeds));
             _applyWithdrawalProceeds(
                 overestimatedProceeds,
