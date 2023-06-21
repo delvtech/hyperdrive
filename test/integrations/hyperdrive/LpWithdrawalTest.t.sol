@@ -744,9 +744,6 @@ contract LpWithdrawalTest is HyperdriveTest {
         uint256 longBasePaid,
         uint256 shortAmount
     ) internal {
-        longBasePaid = 112170932646299875910875406166125657089448113380145817758488853472421676363950;
-        shortAmount = 0;
-
         // Set up the test parameters.
         TestLpWithdrawalParams memory testParams = TestLpWithdrawalParams({
             fixedRate: 0.02e18,
@@ -864,7 +861,6 @@ contract LpWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(bobWithdrawalShares, 0, 1);
         assertApproxEqAbs(celineWithdrawalShares, 0, 1);
 
-        // Ensure that the ending base balance of Hyperdrive is zero.
         assertApproxEqAbs(
             hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID) -
                 hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw,
@@ -874,6 +870,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         // TODO: There is an edge case where the withdrawal pool doesn't receive
         // all of its portion of the available idle liquidity when a closed
         // position doesn't perform well.
+        // Ensure that the ending base balance of Hyperdrive is zero.
         // assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1);
     }
 
