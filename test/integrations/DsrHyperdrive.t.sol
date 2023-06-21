@@ -291,7 +291,7 @@ contract DsrHyperdrive is BaseTest {
     }
 
     // Tests for https://github.com/delvtech/hyperdrive/issues/356
-    function testMinimalDeploymentRecievesLiquidity() public {
+    function testMinimalDeploymentReceivesLiquidity() public {
         vm.stopPrank();
         vm.startPrank(alice);
         uint256 apr = 0.05e18;
