@@ -8,6 +8,14 @@ import { Errors } from "../libraries/Errors.sol";
 import { IERC20 } from "../interfaces/IERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 
+/// @author DELV
+/// @title ERC4626Hyperdrive
+/// @notice An instance of Hyperdrive that utilizes Erc4626's tokenized 
+///         vault standard as a yield source.
+/// @custom:disclaimer The language used in this code is for coding convenience
+///                    only, and is not intended to, and does not, have any
+///                    particular legal or regulatory significance.
+
 contract ERC4626Hyperdrive is Hyperdrive {
     using FixedPointMath for uint256;
 

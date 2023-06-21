@@ -12,6 +12,14 @@ import { MultiTokenStorage } from "./MultiTokenStorage.sol";
 // NOTE - We remove on transfer callbacks and safe transfer because of the
 //        risk of external calls to untrusted code.
 
+/// @author DELV
+/// @title MultiToken
+/// @notice Our MultiToken contract consists of fungible sub-tokens that
+///         are similar to ERC20 tokens.
+/// @custom:disclaimer The language used in this code is for coding convenience
+///                    only, and is not intended to, and does not, have any
+///                    particular legal or regulatory significance.
+
 contract MultiToken is DataProvider, MultiTokenStorage, IMultiTokenWrite {
     // EIP712
     // DOMAIN_SEPARATOR changes based on token name
