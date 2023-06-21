@@ -44,6 +44,15 @@ abstract contract HyperdriveFactory {
     // A constant for the ETH value
     address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
+    // A constant for the Maximum Fees on a trade
+    uint256 internal constant max_curve_fee = .1e18;
+
+    // A constant for the Maximum Fees on a trade
+    uint256 internal constant max_flat_fee = .1e18;
+
+    // A constant for the Maximum Fees on a trade
+    uint256 internal constant max_governance_fee = .1e18;
+
     // An event that is emitted when a new Hyperdrive instance is deployed.
     event Deployed(
         uint256 indexed version,
@@ -179,6 +188,13 @@ abstract contract HyperdriveFactory {
         IHyperdrive.Fees calldata newFees
     ) external onlyGovernance {
         // Update the fee struct
+        if (
+            newFees.curve > max_curve_fee ||
+            newFees.flat > max_flat_fee ||
+            newFees.governance > max_governance_fee
+        ) {
+            revert Errors.FeeTooHigh();
+        }
         fees = newFees;
     }
 
