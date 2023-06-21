@@ -102,7 +102,7 @@ contract HyperdriveDSRTest is HyperdriveTest {
         verifyFactoryEvents(
             factory,
             alice,
-            contribution-1e5,
+            contribution - 1e5,
             apr,
             new bytes32[](0)
         );

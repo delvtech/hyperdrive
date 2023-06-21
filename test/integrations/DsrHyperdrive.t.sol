@@ -240,16 +240,15 @@ contract DsrHyperdrive is BaseTest {
         hyperdrive.addLiquidity(1e5, 0, type(uint256).max, address(0), true);
 
         // Now totalShares = 2e5
-        assertEq(hyperdrive.totalShares(), 2e5+1);
+        assertEq(hyperdrive.totalShares(), 2e5 + 1);
         assertEq(dsrManager.daiBalance(address(hyperdrive)), 199998);
 
         vm.stopPrank();
         vm.startPrank(bob);
         // Bob attempts to rug the pool by removing all liquidity except a small amount of shares
-        hyperdrive.removeLiquidity(contribution-10, 0, bob, true);
+        hyperdrive.removeLiquidity(contribution - 10, 0, bob, true);
         vm.stopPrank();
         vm.startPrank(alice);
-
 
         dai.transfer(bob, 2002e18);
 
@@ -266,7 +265,7 @@ contract DsrHyperdrive is BaseTest {
         );
 
         // Some dust leftover
-        assertEq(hyperdrive.totalShares(), 1e5+11);
+        assertEq(hyperdrive.totalShares(), 1e5 + 11);
 
         uint256 shareReserves = hyperdrive.getPoolInfo().shareReserves;
         uint256 bondReserves = hyperdrive.getPoolInfo().bondReserves;

@@ -183,13 +183,13 @@ contract HyperdriveER4626Test is HyperdriveTest {
             alice
         );
         // lp shares should equal number of share reserves initialized with
-        assertEq(createdShares, 2500e18-1e5);
+        assertEq(createdShares, 2500e18 - 1e5);
 
         // Verify that the correct events were emitted.
         verifyFactoryEvents(
             factory,
             alice,
-            contribution-1e5,
+            contribution - 1e5,
             apr,
             new bytes32[](0)
         );

@@ -207,14 +207,20 @@ abstract contract HyperdriveFactory {
             _config.baseToken.transferFrom(
                 msg.sender,
                 address(this),
-                _contribution+1e5
+                _contribution + 1e5
             );
             _config.baseToken.approve(address(hyperdrive), type(uint256).max);
             hyperdrive.initialize(_contribution, _apr, msg.sender, true);
-            hyperdrive.addLiquidity(1e5, 0, type(uint256).max, address(0), true);
+            hyperdrive.addLiquidity(
+                1e5,
+                0,
+                type(uint256).max,
+                address(0),
+                true
+            );
         } else {
             // Require the caller sent value
-            if (msg.value != _contribution+1e5) {
+            if (msg.value != _contribution + 1e5) {
                 revert Errors.TransferFailed();
             }
             hyperdrive.initialize{ value: _contribution }(
@@ -223,7 +229,13 @@ abstract contract HyperdriveFactory {
                 msg.sender,
                 true
             );
-            hyperdrive.addLiquidity{ value: 1e5 }(1e5, 0, type(uint256).max, address(0), true);
+            hyperdrive.addLiquidity{ value: 1e5 }(
+                1e5,
+                0,
+                type(uint256).max,
+                address(0),
+                true
+            );
         }
 
         // Setup the pausers roles from the default array
