@@ -135,7 +135,7 @@ contract StethHyperdrive is Hyperdrive {
 
     /// @dev Returns the current share price. We simply use Lido's share price.
     /// @return price The current share price.
-    ///@dev must remain consistent with the impl inside of the DataProvider
+    /// @dev must remain consistent with the impl inside of the DataProvider
     function _pricePerShare() internal view override returns (uint256 price) {
         return lido.getTotalPooledEther().divDown(lido.getTotalShares());
     }
