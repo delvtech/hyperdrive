@@ -236,10 +236,20 @@ contract DsrHyperdrive is BaseTest {
         // The pool gets initialized with a minimal contribution
         hyperdrive.initialize(contribution, apr, bob, true);
 
-        // Now totalShares = 1e5
-        assertEq(hyperdrive.totalShares(), 1e5);
+        // Alice deposits 1e5 DAI to the 0 address
+        hyperdrive.addLiquidity(1e5, 0, type(uint256).max, address(0), true);
 
-        assertEq(dsrManager.daiBalance(address(hyperdrive)), 99999);
+        // Now totalShares = 2e5
+        assertEq(hyperdrive.totalShares(), 2e5+1);
+        assertEq(dsrManager.daiBalance(address(hyperdrive)), 199998);
+
+        vm.stopPrank();
+        vm.startPrank(bob);
+        // Bob attempts to rug the pool by removing all liquidity except a small amount of shares
+        hyperdrive.removeLiquidity(contribution-10, 0, bob, true);
+        vm.stopPrank();
+        vm.startPrank(alice);
+
 
         dai.transfer(bob, 2002e18);
 
@@ -252,10 +262,11 @@ contract DsrHyperdrive is BaseTest {
 
         assertEq(
             dsrManager.daiBalance(address(hyperdrive)),
-            2000010000000000099998
+            2000010000000000100008
         );
 
-        assertEq(hyperdrive.totalShares(), 1e5);
+        // Some dust leftover
+        assertEq(hyperdrive.totalShares(), 1e5+11);
 
         uint256 shareReserves = hyperdrive.getPoolInfo().shareReserves;
         uint256 bondReserves = hyperdrive.getPoolInfo().bondReserves;
@@ -287,7 +298,7 @@ contract DsrHyperdrive is BaseTest {
             true
         );
         // Shares are still minted, and Alice does not get 0 shares out
-        assertEq(newShares, 49999);
+        assertEq(newShares, 50005);
     }
 
     // Tests for https://github.com/delvtech/hyperdrive/issues/356

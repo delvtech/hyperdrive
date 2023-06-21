@@ -147,7 +147,7 @@ contract StethHyperdriveTest is HyperdriveTest {
         verifyFactoryEvents(
             factory,
             bob,
-            contribution,
+            contribution-1e5,
             FIXED_RATE,
             new bytes32[](0)
         );
