@@ -45,12 +45,12 @@ contract AaveHyperdrive is Hyperdrive {
         _config.baseToken.approve(address(pool), type(uint256).max);
     }
 
-    ///@notice Transfers amount of 'token' from the user and commits it to the yield source.
-    ///@param amount The amount of token to transfer
+    /// @notice Transfers amount of 'token' from the user and commits it to the yield source.
+    /// @param amount The amount of token to transfer
     /// @param asUnderlying If true the yield source will transfer underlying tokens
     ///                     if false it will transfer the yielding asset directly
-    ///@return sharesMinted The shares this deposit creates
-    ///@return sharePrice The share price at time of deposit
+    /// @return sharesMinted The shares this deposit creates
+    /// @return sharePrice The share price at time of deposit
     function _deposit(
         uint256 amount,
         bool asUnderlying
@@ -87,12 +87,12 @@ contract AaveHyperdrive is Hyperdrive {
         }
     }
 
-    ///@notice Withdraws shares from the yield source and sends the resulting tokens to the destination
-    ///@param shares The shares to withdraw from the yield source
+    /// @notice Withdraws shares from the yield source and sends the resulting tokens to the destination
+    /// @param shares The shares to withdraw from the yield source
     /// @param asUnderlying If true the yield source will transfer underlying tokens
     ///                     if false it will transfer the yielding asset directly
-    ///@param destination The address which is where to send the resulting tokens
-    ///@return amountWithdrawn the amount of 'token' produced by this withdraw
+    /// @param destination The address which is where to send the resulting tokens
+    /// @return amountWithdrawn the amount of 'token' produced by this withdraw
     function _withdraw(
         uint256 shares,
         address destination,
