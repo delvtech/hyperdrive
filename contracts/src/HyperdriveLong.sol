@@ -255,8 +255,10 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // reserves and the bond reserves decreased, we must ensure that the
         // base reserves are greater than the longsOutstanding.
         if (
-            _sharePrice.mulDown(uint256(_marketState.shareReserves)) <
-            _marketState.longsOutstanding
+            _sharePrice.mulDown(
+                uint256(_marketState.shareReserves) -
+                    HyperdriveMath.MINIMUM_SHARE_RESERVES
+            ) < _marketState.longsOutstanding
         ) {
             revert Errors.BaseBufferExceedsShareReserves();
         }
@@ -305,10 +307,16 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // Reduce the amount of outstanding longs.
         _marketState.longsOutstanding -= _bondAmount.toUint128();
 
+        // FIXME: We shouldn't need to worry about the minimum share reserves
+        // here; however, we'll want to add a comment that explains why.
+        //
         // Apply the updates from the curve trade to the reserves.
         _marketState.shareReserves -= _shareReservesDelta.toUint128();
         _marketState.bondReserves += _bondReservesDelta.toUint128();
 
+        // FIXME: We shouldn't need to worry about the minimum share reserves
+        // here; however, we'll want to add a comment that explains why.
+        //
         // Remove the flat part of the trade from the pool's liquidity.
         _updateLiquidity(-int256(_shareProceeds - _shareReservesDelta));
 

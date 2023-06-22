@@ -19,6 +19,8 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
     using FixedPointMath for uint256;
     using SafeCast for uint256;
 
+    // FIXME: Make sure that we are adding the burned funds to the share reserves.
+    //
     /// @notice Allows the first LP to initialize the market with a target APR.
     /// @param _contribution The amount of base to supply.
     /// @param _apr The target APR.
@@ -401,6 +403,8 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             params
         );
 
+        // FIXME: Use the minimum share reserves to restrict the idle.
+        //
         // The LP is given their share of the idle capital in the pool. This
         // is removed from the pool's reserves and paid out immediately. We use
         // the average opening share price of longs to avoid double counting
