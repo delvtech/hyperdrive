@@ -328,7 +328,9 @@ library HyperdriveMath {
             _initialSharePrice
         );
         if (
-            _shareReserves + dz >= (_longsOutstanding + dy).divDown(_sharePrice)
+            _shareReserves + dz >=
+            MINIMUM_SHARE_RESERVES +
+                (_longsOutstanding + dy).divDown(_sharePrice)
         ) {
             result.baseAmount = dz.mulDown(_sharePrice);
             result.bondAmount = dy;
@@ -338,20 +340,24 @@ library HyperdriveMath {
         // To make an initial guess for the iterative approximation, we consider
         // the solvency check to be the error that we want to reduce. The amount
         // the long buffer exceeds the share reserves is given by
-        // (y_l + dy) / c - (z + dz). Since the error could be large, we'll use
-        // the realized price of the trade instead of the spot price to
-        // approximate the change in trade output. This gives us dy = c * 1/p * dz.
+        // (y_l + dy) / c + z_min - (z + dz). Since the error could be large,
+        // we'll use the realized price of the trade instead of the spot price
+        // to approximate the change in trade output. This gives us dy = c * 1/p * dz.
         // Substituting this into error equation and setting the error equal to
         // zero allows us to solve for the initial guess as:
         //
-        // (y_l + c * 1/p * dz) / c - (z + dz) = 0
+        // (y_l + c * 1/p * dz) / c + z_min - (z + dz) = 0
         //              =>
-        // (1/p - 1) * dz = z - y_l/c
+        // (1/p - 1) * dz = z - z_min - y_l/c
         //              =>
-        // dz = (z - y_l/c) * (p / (p - 1))
+        // dz = (z - z_min - y_l/c) * (p / (p - 1))
         uint256 p = _sharePrice.mulDivDown(dz, dy);
-        dz = (_shareReserves - _longsOutstanding.divDown(_sharePrice))
-            .mulDivDown(p, FixedPointMath.ONE_18 - p);
+        dz = (_shareReserves -
+            MINIMUM_SHARE_RESERVES -
+            _longsOutstanding.divDown(_sharePrice)).mulDivDown(
+                p,
+                FixedPointMath.ONE_18 - p
+            );
         dy = YieldSpaceMath.calculateBondsOutGivenSharesIn(
             _shareReserves,
             _bondReserves,
@@ -364,8 +370,8 @@ library HyperdriveMath {
         // Our maximum long will be the largest trade size that doesn't fail
         // the solvency check.
         for (uint256 i = 0; i < _maxIterations; i++) {
-            // If the trade size
             int256 error = int256((_shareReserves + dz)) -
+                int256(MINIMUM_SHARE_RESERVES) -
                 int256((_longsOutstanding + dy).divDown(_sharePrice));
             if (error > 0 && dz.mulDown(_sharePrice) > result.baseAmount) {
                 result.baseAmount = dz.mulDown(_sharePrice);
@@ -383,11 +389,11 @@ library HyperdriveMath {
             // error equation and setting the error equation equal to zero
             // allows us to solve for the trade size update:
             //
-            // (y_l + dy + c * (1/p) * dz') / c - (z + dz + dz') = 0
+            // (y_l + dy + c * (1/p) * dz') / c + z_min - (z + dz + dz') = 0
             //                  =>
-            // (1/p - 1) * dz' = (z + dz) - (y_l + dy) / c
+            // (1/p - 1) * dz' = (z + dz) - z_min - (y_l + dy) / c
             //                  =>
-            // dz' = ((z + dz) - (y_l + dy) / c) * (p / (p - 1)).
+            // dz' = ((z + dz) - z_min - (y_l + dy) / c) * (p / (p - 1)).
             p = calculateSpotPrice(
                 _shareReserves + dz,
                 _bondReserves - dy,
@@ -437,11 +443,11 @@ library HyperdriveMath {
     ) internal pure returns (uint256) {
         // The only constraint on the maximum short is that the share reserves
         // don't go negative and satisfy the solvency requirements. Thus, we can
-        // set z = y_l/c and solve for the maximum short directly as:
+        // set z = y_l/c + z_min and solve for the maximum short directly as:
         //
-        // k = (c / mu) * (mu * (longBuffer / c)) ** (1 - tau) + y ** (1 - tau)
+        // k = (c / mu) * (mu * (y_l/c + z_min)) ** (1 - tau) + y ** (1 - tau)
         //                         =>
-        // y = (k - (c / mu) * (mu * (longBuffer / c)) ** (1 - tau)) ** (1 / (1 - tau)).
+        // y = (k - (c / mu) * (mu * (y_l/c + z_min)) ** (1 - tau)) ** (1 / (1 - tau)).
         uint256 t = FixedPointMath.ONE_18 - _timeStretch;
         uint256 priceFactor = _sharePrice.divDown(_initialSharePrice);
         uint256 k = YieldSpaceMath.modifiedYieldSpaceConstant(
@@ -451,12 +457,14 @@ library HyperdriveMath {
             t,
             _bondReserves
         );
-        uint256 optimalBondReserves = (k -
-            priceFactor.mulDown(
-                _initialSharePrice
-                    .mulDivDown(_longsOutstanding, _sharePrice)
-                    .pow(t)
-            )).pow(FixedPointMath.ONE_18.divDown(t));
+        uint256 inner = _initialSharePrice
+            .mulDown(
+                _longsOutstanding.divDown(_sharePrice) + MINIMUM_SHARE_RESERVES
+            )
+            .pow(t);
+        uint256 optimalBondReserves = (k - priceFactor.mulDown(inner)).pow(
+            FixedPointMath.ONE_18.divDown(t)
+        );
 
         // The optimal bond reserves imply a maximum short of dy = y - y0.
         return optimalBondReserves - _bondReserves;
