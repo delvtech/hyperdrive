@@ -15,6 +15,8 @@ HDLong_origin = ../contracts/src/HyperdriveLong.sol
 HDLong_munged = ./munged/HyperdriveLong.sol
 ForwarderFactory_origin = ../contracts/src/token/ForwarderFactory.sol
 ForwarderFactory_munged = ./munged/ForwarderFactory.sol
+AssetId_origin = ../contracts/src/libraries/AssetId.sol
+AssetId_munged = ./munged/AssetId.sol
 
 help:
 	@echo "usage:"
@@ -29,6 +31,7 @@ munge:
 	cp $(HDShort_origin) $(MUNGED_DIR)
 	cp $(HDLong_origin) $(MUNGED_DIR)
 	cp $(ForwarderFactory_origin) $(MUNGED_DIR)
+	cp $(AssetId_origin) $(MUNGED_DIR)
 	patch -d $(MUNGED_DIR) < $(PATCH)
 
 record:
@@ -38,6 +41,7 @@ record:
 	diff -burN $(HDShort_origin) $(HDShort_munged) | sed 's+\$(HDShort_origin)/++g' | sed 's+$(HDShort_munged)++g' >> $(PATCH)
 	diff -burN $(HDLong_origin) $(HDLong_munged) | sed 's+\$(HDLong_origin)/++g' | sed 's+$(HDLong_munged)++g' >> $(PATCH)
 	diff -burN $(ForwarderFactory_origin) $(ForwarderFactory_munged) | sed 's+\$(ForwarderFactory_origin)/++g' | sed 's+$(ForwarderFactory_munged)++g' >> $(PATCH)
+	diff -burN $(AssetId_origin) $(AssetId_munged) | sed 's+\$(AssetId_origin)/++g' | sed 's+$(AssetId_munged)++g' >> $(PATCH)
 
 clean:
 	git clean -fdX

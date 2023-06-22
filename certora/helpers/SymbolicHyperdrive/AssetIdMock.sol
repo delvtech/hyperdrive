@@ -1,7 +1,7 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { AssetId } from "../../../contracts/src/libraries/AssetId.sol";
+import { AssetId } from "../../munged/AssetId.sol";
 
 contract AssetIdMock {
 

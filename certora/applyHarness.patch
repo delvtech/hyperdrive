@@ -1,5 +1,5 @@
---- ../contracts/src/instances/AaveHyperdrive.sol	2023-06-14 08:00:16.485475749 +0300
-+++ 	2023-06-14 08:28:12.509849386 +0300
+--- ../contracts/src/instances/AaveHyperdrive.sol	2023-06-22 09:53:47
++++ 	2023-06-22 10:20:22
 @@ -1,12 +1,13 @@
  // SPDX-License-Identifier: Apache-2.0
 -pragma solidity 0.8.19;
@@ -39,17 +39,18 @@
      }
  
      ///@notice Transfers amount of 'token' from the user and commits it to the yield source.
-@@ -142,4 +144,8 @@
+@@ -141,5 +143,9 @@
+             return assets.divDown(totalShares_);
          }
          return 0;
-     }
++    }
 +
 +    function sharePrice() external view returns (uint256) {
 +        return _pricePerShare();
-+    }
+     }
  }
---- ../contracts/src/Hyperdrive.sol	2023-06-14 08:00:16.409642436 +0300
-+++ 	2023-06-14 08:15:22.834316460 +0300
+--- ../contracts/src/Hyperdrive.sol	2023-06-15 01:13:33
++++ 	2023-06-22 10:20:22
 @@ -2,15 +2,18 @@
  pragma solidity 0.8.19;
  
@@ -88,8 +89,8 @@
  {
      using FixedPointMath for uint256;
      using SafeCast for uint256;
---- ../contracts/src/HyperdriveLP.sol	2023-06-14 08:00:16.431309096 +0300
-+++ 	2023-06-14 08:20:24.661696213 +0300
+--- ../contracts/src/HyperdriveLP.sol	2023-06-15 01:13:33
++++ 	2023-06-22 10:20:22
 @@ -1,13 +1,14 @@
  // SPDX-License-Identifier: Apache-2.0
  pragma solidity 0.8.19;
@@ -157,8 +158,8 @@
              HyperdriveMath.PresentValueParams({
                  shareReserves: _marketState.shareReserves,
                  bondReserves: _marketState.bondReserves,
---- ../contracts/src/HyperdriveShort.sol	2023-06-14 08:00:16.442142427 +0300
-+++ 	2023-06-14 08:23:20.562461615 +0300
+--- ../contracts/src/HyperdriveShort.sol	2023-06-15 01:13:33
++++ 	2023-06-22 10:20:22
 @@ -1,13 +1,14 @@
  // SPDX-License-Identifier: Apache-2.0
  pragma solidity 0.8.19;
@@ -215,22 +216,25 @@
          shareReservesDelta -= totalCurveFee;
          return (shareReservesDelta, totalGovernanceFee);
      }
-@@ -492,6 +501,14 @@
+@@ -492,17 +501,25 @@
          // Record an oracle update
          recordPrice(spotPrice);
  
 +        HDFee memory fee = MockCalculateFeesInGivenBondsOut(_bondAmount, timeRemaining, spotPrice, _sharePrice);
+         (
+             uint256 totalCurveFee,
+             uint256 totalFlatFee,
+             uint256 governanceCurveFee,
+             uint256 governanceFlatFee
++        ) = destructHDFee(fee);
++        /*
 +        (
 +            uint256 totalCurveFee,
 +            uint256 totalFlatFee,
 +            uint256 governanceCurveFee,
 +            uint256 governanceFlatFee
-+        ) = destructHDFee(fee);
-+        /*
-         (
-             uint256 totalCurveFee,
-             uint256 totalFlatFee,
-@@ -502,7 +519,7 @@
+         ) = _calculateFeesInGivenBondsOut(
+                 _bondAmount, // amountOut
                  timeRemaining,
                  spotPrice,
                  _sharePrice
@@ -239,8 +243,8 @@
          shareReservesDelta += totalCurveFee - governanceCurveFee;
          sharePayment += totalCurveFee + totalFlatFee;
  
---- ../contracts/src/HyperdriveLong.sol	2023-06-14 08:00:16.431309096 +0300
-+++ 	2023-06-14 08:19:20.571721289 +0300
+--- ../contracts/src/HyperdriveLong.sol	2023-06-15 01:13:33
++++ 	2023-06-22 10:20:22
 @@ -1,12 +1,13 @@
  // SPDX-License-Identifier: Apache-2.0
  pragma solidity 0.8.19;
@@ -313,8 +317,8 @@
          shareReservesDelta -= totalCurveFee;
          shareProceeds -= totalCurveFee + totalFlatFee;
  
---- ../contracts/src/token/ForwarderFactory.sol	2023-06-14 08:00:16.582975725 +0300
-+++ 	2023-06-14 08:13:47.956020117 +0300
+--- ../contracts/src/token/ForwarderFactory.sol	2023-06-15 01:13:33
++++ 	2023-06-22 10:20:22
 @@ -1,9 +1,9 @@
  // SPDX-License-Identifier: Apache-2.0
  pragma solidity 0.8.19;
@@ -343,7 +347,7 @@
  
      /// @notice Uses create2 to deploy a forwarder at a predictable address as part of
      ///         our ERC20 multitoken implementation.
-@@ -42,18 +43,20 @@
+@@ -42,17 +43,19 @@
          _tokenId = tokenId;
          _token = token;
          // The salt is the _tokenId hashed with the multi token
@@ -362,9 +366,30 @@
 -        return (deployed);
 +        return (tmp);
      }
- 
-+    ERC20Forwarder tmp;
 +
++    ERC20Forwarder tmp;
+ 
      /// @notice Returns the transient storage of this contract
      /// @return Returns the stored multitoken address and the sub token id
-     function getDeployDetails() external view returns (IMultiToken, uint256) {
+--- ../contracts/src/libraries/AssetId.sol	2023-06-22 10:21:24
++++ 	2023-06-22 10:27:06
+@@ -1,8 +1,8 @@
+ // SPDX-License-Identifier: Apache-2.0
+ pragma solidity 0.8.19;
+ 
+-import { Errors } from "./Errors.sol";
+-import { FixedPointMath } from "./FixedPointMath.sol";
++import { Errors } from "../../contracts/src/libraries/Errors.sol";
++import { FixedPointMath } from "../../contracts/src/libraries/FixedPointMath.sol";
+ 
+ /// @author DELV
+ /// @title Hyperdrive
+@@ -33,7 +33,7 @@
+     function encodeAssetId(
+         AssetIdPrefix _prefix,
+         uint256 _timestamp
+-    ) internal pure returns (uint256 id) {
++    ) external pure returns (uint256 id) {
+         // [identifier: 8 bits][timestamp: 248 bits]
+         if (
+             _timestamp >
