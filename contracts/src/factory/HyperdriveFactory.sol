@@ -175,7 +175,7 @@ abstract contract HyperdriveFactory {
         uint256 _apr
     ) public payable virtual returns (IHyperdrive) {
         // No invalid deployments
-        if (_contribution == 0) revert Errors.InvalidContribution();
+        if (_contribution < 2e5) revert Errors.InvalidContribution();
         // Set aside some of the contribution for address(0) donation
         _contribution -= 1e5;
         // Overwrite the governance and fees field of the config.
