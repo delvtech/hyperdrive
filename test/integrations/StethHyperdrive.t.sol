@@ -13,6 +13,7 @@ import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
+import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
@@ -34,6 +35,8 @@ contract StethHyperdriveTest is HyperdriveTest {
     address internal STETH_WHALE = 0x1982b2F5814301d4e9a8b0201555376e62F82428;
     address internal ETH_WHALE = 0x00000000219ab540356cBB839Cbe05303d7705Fa;
 
+    StethHyperdriveFactory factory;
+
     function setUp() public override __mainnet_fork(17_376_154) {
         super.setUp();
 
@@ -44,13 +47,16 @@ contract StethHyperdriveTest is HyperdriveTest {
         );
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
-        StethHyperdriveFactory factory = new StethHyperdriveFactory(
+        forwarderFactory = new ForwarderFactory();
+        factory = new StethHyperdriveFactory(
             alice,
             simpleDeployer,
             bob,
             bob,
             IHyperdrive.Fees(0, 0, 0),
             defaults,
+            address(forwarderFactory),
+            forwarderFactory.ERC20LINK_HASH(),
             LIDO
         );
 
@@ -74,8 +80,6 @@ contract StethHyperdriveTest is HyperdriveTest {
         uint256 contribution = 10_000e18;
         hyperdrive = factory.deployAndInitialize{ value: contribution }(
             config,
-            bytes32(0),
-            address(0),
             new bytes32[](0),
             contribution,
             FIXED_RATE
@@ -94,6 +98,59 @@ contract StethHyperdriveTest is HyperdriveTest {
         accounts[1] = bob;
         accounts[2] = celine;
         fundAccounts(address(hyperdrive), IERC20(LIDO), STETH_WHALE, accounts);
+
+        // Start recording event logs.
+        vm.recordLogs();
+    }
+
+    /// Deploy and Initialize ///
+
+    function test__steth__deployAndInitialize() external {
+        vm.stopPrank();
+        vm.startPrank(bob);
+        IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
+            baseToken: IERC20(ETH),
+            initialSharePrice: LIDO.getTotalPooledEther().divDown(
+                LIDO.getTotalShares()
+            ),
+            positionDuration: POSITION_DURATION,
+            checkpointDuration: CHECKPOINT_DURATION,
+            timeStretch: HyperdriveUtils.calculateTimeStretch(0.05e18),
+            governance: governance,
+            feeCollector: feeCollector,
+            fees: IHyperdrive.Fees({ curve: 0, flat: 0, governance: 0 }),
+            oracleSize: ORACLE_SIZE,
+            updateGap: UPDATE_GAP
+        });
+        uint256 contribution = 10_000e18;
+        hyperdrive = factory.deployAndInitialize{ value: contribution }(
+            config,
+            new bytes32[](0),
+            contribution,
+            FIXED_RATE
+        );
+
+        // Ensure that the share reserves and LP total supply are equal and correct.
+        assertEq(
+            hyperdrive.getPoolInfo().shareReserves,
+            contribution.mulDivDown(
+                LIDO.getTotalShares(),
+                LIDO.getTotalPooledEther()
+            )
+        );
+        assertEq(
+            hyperdrive.getPoolInfo().lpTotalSupply,
+            hyperdrive.getPoolInfo().shareReserves
+        );
+
+        // Verify that the correct events were emitted.
+        verifyFactoryEvents(
+            factory,
+            bob,
+            contribution,
+            FIXED_RATE,
+            new bytes32[](0)
+        );
     }
 
     /// Price Per Share ///
@@ -151,6 +208,15 @@ contract StethHyperdriveTest is HyperdriveTest {
             bobBalancesBefore,
             hyperdriveBalancesBefore
         );
+    }
+
+    function test_open_long_failures() external {
+        // Too little eth
+        vm.expectRevert(Errors.TransferFailed.selector);
+        hyperdrive.openLong{ value: 1e18 - 1 }(1e18, 0, bob, true);
+        // Paying eth to the steth flow
+        vm.expectRevert(Errors.NotPayable.selector);
+        hyperdrive.openLong{ value: 1 }(1e18, 0, bob, false);
     }
 
     function test_open_long_with_steth(uint256 basePaid) external {

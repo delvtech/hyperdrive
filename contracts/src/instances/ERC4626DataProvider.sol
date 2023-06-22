@@ -40,7 +40,7 @@ contract ERC4626DataProvider is MultiTokenDataProvider, HyperdriveDataProvider {
 
     /// @notice Loads the share price from the yield source.
     /// @return sharePrice The current share price.
-    ///@dev must remain consistent with the impl inside of the HyperdriveInstance
+    /// @dev must remain consistent with the impl inside of the HyperdriveInstance
     function _pricePerShare()
         internal
         view

@@ -124,9 +124,33 @@ contract ERC4626Hyperdrive is Hyperdrive {
 
     /// @notice Loads the share price from the yield source.
     /// @return The current share price.
-    ///@dev must remain consistent with the impl inside of the DataProvider
+    /// @dev must remain consistent with the impl inside of the DataProvider
     function _pricePerShare() internal view override returns (uint256) {
         uint256 shareEstimate = pool.convertToShares(FixedPointMath.ONE_18);
         return (FixedPointMath.ONE_18.divDown(shareEstimate));
+    }
+
+    /// @notice Some yield sources [eg Morpho] pay rewards directly to this contract
+    ///         but we can't handle distributing them internally so we sweep to the
+    ///         fee collector address to then redistribute to users
+    /// @param token The ERC20 we want to call
+    /// @dev WARNING - This sweep only checks that the token is not equal to the base or yield source
+    ///                if another token is expected to have a balance on this contract it is unsafe.
+    ///                ANY TOKENS IN THIS CONTRACT BESIDES YIELD SOURCE SHARES OR BASE TOKEN CAN BE STOLEN.
+    /// @dev WARNING - It is unlikely but possible that there is a selector overlap with 'transferFrom'. Any
+    ///                integrating contracts should be checked for that, as it may result in an unexpected call
+    ///                from this address.
+    function sweep(IERC20 token) external {
+        // Only governance address can call
+        if (msg.sender != _feeCollector && !_pausers[msg.sender])
+            revert Errors.Unauthorized();
+        // Cannot rug the yield source or base token
+        if (
+            address(token) == address(pool) ||
+            address(token) == address(_baseToken)
+        ) revert Errors.UnsupportedToken();
+        // Transfer to the fee collector
+        uint256 balance = token.balanceOf(address(this));
+        token.transfer(_feeCollector, balance);
     }
 }

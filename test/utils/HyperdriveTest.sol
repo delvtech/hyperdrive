@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import { VmSafe } from "forge-std/Vm.sol";
 import { HyperdriveBase } from "contracts/src/HyperdriveBase.sol";
+import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
@@ -11,11 +13,13 @@ import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { MockHyperdrive, MockHyperdriveDataProvider } from "../mocks/MockHyperdrive.sol";
+import { Lib } from "../utils/Lib.sol";
 import { BaseTest } from "./BaseTest.sol";
 import { HyperdriveUtils } from "./HyperdriveUtils.sol";
 
 contract HyperdriveTest is BaseTest {
     using FixedPointMath for uint256;
+    using Lib for *;
 
     ERC20Mintable baseToken;
     IHyperdrive hyperdrive;
@@ -334,6 +338,15 @@ contract HyperdriveTest is BaseTest {
 
     /// Event Utils ///
 
+    event Deployed(
+        uint256 indexed version,
+        address hyperdrive,
+        IHyperdrive.PoolConfig config,
+        address linkerFactory,
+        bytes32 linkerCodeHash,
+        bytes32[] extraData
+    );
+
     event Initialize(
         address indexed provider,
         uint256 lpAmount,
@@ -391,4 +404,81 @@ contract HyperdriveTest is BaseTest {
         uint256 baseAmount,
         uint256 bondAmount
     );
+
+    function verifyFactoryEvents(
+        HyperdriveFactory factory,
+        address deployer,
+        uint256 contribution,
+        uint256 apr,
+        bytes32[] memory expectedExtraData
+    ) internal {
+        // Ensure that the correct `Deployed` and `Initialize` events were emitted.
+        VmSafe.Log[] memory logs = vm.getRecordedLogs();
+
+        // Verify that a single `Deployed` event was emitted.
+        {
+            VmSafe.Log[] memory filteredLogs = logs.filterLogs(
+                Deployed.selector
+            );
+            assertEq(filteredLogs.length, 1);
+            VmSafe.Log memory log = filteredLogs[0];
+
+            // Verify the event topics.
+            assertEq(log.topics[0], Deployed.selector);
+            assertEq(uint256(log.topics[1]), factory.versionCounter());
+
+            // Verify the event data.
+            (
+                address eventHyperdrive,
+                IHyperdrive.PoolConfig memory eventConfig,
+                address eventLinkerFactory,
+                bytes32 eventLinkerCodeHash,
+                bytes32[] memory eventExtraData
+            ) = abi.decode(
+                    log.data,
+                    (
+                        address,
+                        IHyperdrive.PoolConfig,
+                        address,
+                        bytes32,
+                        bytes32[]
+                    )
+                );
+            assertEq(eventHyperdrive, address(hyperdrive));
+            assertEq(
+                keccak256(abi.encode(eventConfig)),
+                keccak256(abi.encode(hyperdrive.getPoolConfig()))
+            );
+            assertEq(eventLinkerFactory, address(forwarderFactory));
+            assertEq(eventLinkerCodeHash, forwarderFactory.ERC20LINK_HASH());
+            assertEq(
+                keccak256(abi.encode(eventExtraData)),
+                keccak256(abi.encode(expectedExtraData))
+            );
+        }
+
+        // Verify that the second log is the expected `Initialize` event.
+        {
+            VmSafe.Log[] memory filteredLogs = Lib.filterLogs(
+                logs,
+                Initialize.selector
+            );
+            assertEq(filteredLogs.length, 1);
+            VmSafe.Log memory log = filteredLogs[0];
+
+            // Verify the event topics.
+            assertEq(log.topics[0], Initialize.selector);
+            assertEq(address(uint160(uint256(log.topics[1]))), deployer);
+
+            // Verify the event data.
+            (
+                uint256 eventLpAmount,
+                uint256 eventBaseAmount,
+                uint256 eventApr
+            ) = abi.decode(log.data, (uint256, uint256, uint256));
+            assertEq(eventLpAmount, hyperdrive.getPoolInfo().shareReserves);
+            assertEq(eventBaseAmount, contribution);
+            assertEq(eventApr, apr);
+        }
+    }
 }
