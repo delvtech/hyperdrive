@@ -6,16 +6,13 @@ import { IMultiTokenWrite } from "../interfaces/IMultiTokenWrite.sol";
 import { Errors } from "../libraries/Errors.sol";
 import { MultiTokenStorage } from "./MultiTokenStorage.sol";
 
-// A lite version of a semi fungible, which removes some methods and so
-// is not technically a 1155 compliant multi-token semi fungible, but almost
-// follows the standard.
-// NOTE - We remove on transfer callbacks and safe transfer because of the
-//        risk of external calls to untrusted code.
-
 /// @author DELV
 /// @title MultiToken
-/// @notice Our MultiToken contract consists of fungible sub-tokens that
-///         are similar to ERC20 tokens.
+/// @notice A lite version of a semi fungible, which removes some methods and so
+///         is not technically a 1155 compliant multi-token semi fungible, but almost
+///         follows the standard.
+/// @dev We remove on transfer callbacks and safe transfer because of the
+///      risk of external calls to untrusted code.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
