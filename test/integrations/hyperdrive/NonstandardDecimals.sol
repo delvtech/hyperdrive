@@ -228,11 +228,13 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         uint256 longBasePaid,
         uint256 shortAmount
     ) external {
+    ///    longBasePaid = 279154570667275;
+
         // Set up the test parameters.
         TestLpWithdrawalParams memory testParams = TestLpWithdrawalParams({
             fixedRate: 0.02e18,
             variableRate: 0,
-            contribution: 500_000_000e6,
+            contribution: 550_000_000e6,
             longAmount: 0,
             longBasePaid: 0,
             longMaturityTime: 0,
