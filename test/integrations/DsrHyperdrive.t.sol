@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import "forge-std/console.sol";
+
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
@@ -232,16 +235,20 @@ contract DsrHyperdrive is BaseTest {
         vm.startPrank(alice);
         uint256 apr = 0.05e18;
 
+        console.log(1);
         uint256 contribution = 1e5;
         // The pool gets initialized with a minimal contribution
         hyperdrive.initialize(contribution, apr, bob, true);
+        console.log(2);
 
         // Alice deposits 1e5 DAI to the 0 address
         hyperdrive.addLiquidity(1e5, 0, type(uint256).max, address(0), true);
+        console.log(3);
 
         // Now totalShares = 2e5
         assertEq(hyperdrive.totalShares(), 2e5 + 1);
         assertEq(dsrManager.daiBalance(address(hyperdrive)), 199998);
+        console.log(4);
 
         vm.stopPrank();
         vm.startPrank(bob);
@@ -249,23 +256,29 @@ contract DsrHyperdrive is BaseTest {
         hyperdrive.removeLiquidity(contribution - 10, 0, bob, true);
         vm.stopPrank();
         vm.startPrank(alice);
+        console.log(5);
 
         dai.transfer(bob, 2002e18);
+        console.log(6);
 
         vm.stopPrank();
         vm.startPrank(bob);
+        console.log(7);
 
         // Bob front-runs Alice with a call to dsrManager.join() with 2000.01 DAI
         dai.approve(address(dsrManager), 2002e18);
         dsrManager.join(address(hyperdrive), 200001e16);
+        console.log(8);
 
         assertEq(
             dsrManager.daiBalance(address(hyperdrive)),
             2000010000000000100008
         );
+        console.log(9);
 
         // Some dust leftover
         assertEq(hyperdrive.totalShares(), 1e5 + 11);
+        console.log(10);
 
         uint256 shareReserves = hyperdrive.getPoolInfo().shareReserves;
         uint256 bondReserves = hyperdrive.getPoolInfo().bondReserves;
@@ -276,6 +289,7 @@ contract DsrHyperdrive is BaseTest {
             .initialSharePrice;
         uint256 positionDuration = hyperdrive.getPoolConfig().positionDuration;
         uint256 timeStretch = hyperdrive.getPoolConfig().timeStretch;
+        console.log(11);
 
         apr = HyperdriveMath.calculateAPRFromReserves(
             shareReserves,
@@ -284,6 +298,7 @@ contract DsrHyperdrive is BaseTest {
             positionDuration,
             timeStretch
         );
+        console.log(12);
 
         vm.stopPrank();
         vm.startPrank(alice);
@@ -298,6 +313,7 @@ contract DsrHyperdrive is BaseTest {
         );
         // Shares are still minted, and Alice does not get 0 shares out
         assertEq(newShares, 50005);
+        console.log(13);
     }
 
     // Tests for https://github.com/delvtech/hyperdrive/issues/356

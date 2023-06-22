@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import "forge-std/console.sol";
+import "test/utils/Lib.sol";
+
 import { SafeCast } from "./libraries/SafeCast.sol";
 import { HyperdriveBase } from "./HyperdriveBase.sol";
 import { AssetId } from "./libraries/AssetId.sol";
@@ -16,14 +20,12 @@ import { HyperdriveTWAP } from "./HyperdriveTWAP.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveLP is HyperdriveTWAP {
+    // FIXME
+    using Lib for *;
+
     using FixedPointMath for uint256;
     using SafeCast for uint256;
 
-    // FIXME: Make sure that we are adding the burned funds to the share reserves.
-    //
-    // FIXME: Instead of doing the `addLiquidity` trick in the factory, it would
-    // be better to do the burning here.
-    //
     /// @notice Allows the first LP to initialize the market with a target APR.
     /// @param _contribution The amount of base to supply.
     /// @param _apr The target APR.
@@ -39,9 +41,6 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
     ) external payable {
         // Check that the message value and base amount are valid.
         _checkMessageValue();
-        if (_contribution < 1e5) {
-            revert Errors.BelowMinimumContribution();
-        }
 
         // Ensure that the pool hasn't been initialized yet.
         if (_marketState.isInitialized) {
@@ -53,6 +52,9 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             _contribution,
             _asUnderlying
         );
+        if (shares < HyperdriveMath.MINIMUM_SHARE_RESERVES) {
+            revert Errors.BelowMinimumContribution();
+        }
 
         // Create an initial checkpoint.
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
@@ -73,11 +75,20 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             )
             .toUint128();
 
-        // Mint LP shares to the initializer.
-        _mint(AssetId._LP_ASSET_ID, _destination, shares);
+        // Mint LP shares to the initializer. Burn some LP shares to the zero
+        // address to avoid dangerous rounding behavior during the LP share
+        // calculatations.
+        uint256 initialLpShares = shares -
+            HyperdriveMath.MINIMUM_SHARE_RESERVES;
+        _mint(AssetId._LP_ASSET_ID, _destination, initialLpShares);
+        _mint(
+            AssetId._LP_ASSET_ID,
+            address(0),
+            HyperdriveMath.MINIMUM_SHARE_RESERVES
+        );
 
         // Emit an Initialize event.
-        emit Initialize(_destination, shares, _contribution, _apr);
+        emit Initialize(_destination, initialLpShares, _contribution, _apr);
     }
 
     /// @notice Allows LPs to supply liquidity for LP shares.
