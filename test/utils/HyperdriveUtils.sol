@@ -87,6 +87,7 @@ library HyperdriveUtils {
         // rate = (1 - p) / (p * t) = (1 - dx / dy) * (dx / dy * t)
         //       =>
         // apr = (dy - dx) / (dx * t)
+        require(timeRemaining <= 1e18 && timeRemaining > 0, "Expecting NormalizedTimeRemaining");
         return
             (bondAmount.sub(baseAmount)).divDown(
                 baseAmount.mulDown(timeRemaining)
