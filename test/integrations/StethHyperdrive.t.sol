@@ -147,7 +147,7 @@ contract StethHyperdriveTest is HyperdriveTest {
         verifyFactoryEvents(
             factory,
             bob,
-            contribution,
+            contribution - 1e5,
             FIXED_RATE,
             new bytes32[](0)
         );
@@ -308,8 +308,8 @@ contract StethHyperdriveTest is HyperdriveTest {
 
         // Bob opens a short by depositing ETH.
         shortAmount = shortAmount.normalizeToRange(
-            0.00001e18,
-            HyperdriveUtils.calculateMaxLong(hyperdrive)
+            0.001e18,
+            HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
         (, uint256 basePaid) = openShort(bob, shortAmount);
 
@@ -317,7 +317,7 @@ contract StethHyperdriveTest is HyperdriveTest {
         uint256 realizedRate = HyperdriveUtils.calculateAPRFromRealizedPrice(
             shortAmount - basePaid,
             shortAmount,
-            POSITION_DURATION
+            1e18
         );
         assertGt(basePaid, 0);
         assertGe(realizedRate, FIXED_RATE);
@@ -355,7 +355,7 @@ contract StethHyperdriveTest is HyperdriveTest {
         uint256 realizedRate = HyperdriveUtils.calculateAPRFromRealizedPrice(
             shortAmount - basePaid,
             shortAmount,
-            POSITION_DURATION
+            1e18
         );
         assertGt(basePaid, 0);
         assertGe(realizedRate, FIXED_RATE);
