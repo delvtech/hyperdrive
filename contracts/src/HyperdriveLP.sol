@@ -21,6 +21,9 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
 
     // FIXME: Make sure that we are adding the burned funds to the share reserves.
     //
+    // FIXME: Instead of doing the `addLiquidity` trick in the factory, it would
+    // be better to do the burning here.
+    //
     /// @notice Allows the first LP to initialize the market with a target APR.
     /// @param _contribution The amount of base to supply.
     /// @param _apr The target APR.
@@ -403,16 +406,16 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             params
         );
 
-        // FIXME: Use the minimum share reserves to restrict the idle.
-        //
         // The LP is given their share of the idle capital in the pool. This
         // is removed from the pool's reserves and paid out immediately. We use
         // the average opening share price of longs to avoid double counting
         // the variable rate interest accrued on long positions. The idle amount
         // is given by:
         //
-        // idle = (z - (o_l / c_0)) * (dl / l_a)
-        shareProceeds = _marketState.shareReserves;
+        // idle = (z - z_min - (y_l / c_0)) * (dl / l_a)
+        shareProceeds =
+            _marketState.shareReserves -
+            HyperdriveMath.MINIMUM_SHARE_RESERVES;
         if (_marketState.longsOutstanding > 0) {
             shareProceeds -= uint256(_marketState.longsOutstanding).divDown(
                 _marketState.longOpenSharePrice

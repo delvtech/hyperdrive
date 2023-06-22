@@ -281,13 +281,14 @@ abstract contract HyperdriveShort is HyperdriveLP {
         _marketState.bondReserves += _bondAmount.toUint128();
         _marketState.shortsOutstanding += _bondAmount.toUint128();
 
-        // FIXME: We need to add the minimum share reserves here.
-        //
         // Since the share reserves are reduced, we need to verify that the base
-        // reserves are greater than or equal to the amount of longs outstanding.
+        // reserves minus the minimum base reserves are greater than or equal to
+        // the amount of longs outstanding
         if (
-            _sharePrice.mulDown(_marketState.shareReserves) <
-            _marketState.longsOutstanding
+            _sharePrice.mulDown(
+                _marketState.shareReserves -
+                    HyperdriveMath.MINIMUM_SHARE_RESERVES
+            ) < _marketState.longsOutstanding
         ) {
             revert Errors.BaseBufferExceedsShareReserves();
         }
