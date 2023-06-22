@@ -17,6 +17,8 @@ import { Lib } from "../utils/Lib.sol";
 import { BaseTest } from "./BaseTest.sol";
 import { HyperdriveUtils } from "./HyperdriveUtils.sol";
 
+import "forge-std/console2.sol";
+
 contract HyperdriveTest is BaseTest {
     using FixedPointMath for uint256;
     using Lib for *;
@@ -262,7 +264,6 @@ contract HyperdriveTest is BaseTest {
     ) internal returns (uint256 maturityTime, uint256 baseAmount) {
         vm.stopPrank();
         vm.startPrank(trader);
-
         // Open the short
         maturityTime = HyperdriveUtils.maturityTimeFromLatestCheckpoint(
             hyperdrive
@@ -271,9 +272,12 @@ contract HyperdriveTest is BaseTest {
             address(hyperdrive.getPoolConfig().baseToken) == address(ETH) &&
             asUnderlying
         ) {
+            uint256 balanceBefore = trader.balance;
+            vm.deal(trader, bondAmount);
             (maturityTime, baseAmount) = hyperdrive.openShort{
                 value: bondAmount
             }(bondAmount, type(uint256).max, trader, asUnderlying);
+            vm.deal(trader, balanceBefore - baseAmount);
         } else {
             baseToken.mint(bondAmount);
             baseToken.approve(address(hyperdrive), bondAmount);

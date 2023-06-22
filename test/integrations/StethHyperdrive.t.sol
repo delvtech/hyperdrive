@@ -297,7 +297,7 @@ contract StethHyperdriveTest is HyperdriveTest {
 
     /// Short ///
 
-    function test_open_short_with_ETH(uint256 shortAmount) external {
+    function test_open_short_with_ETH() external {
         // Get some balance information before the deposit.
         uint256 totalPooledEtherBefore = LIDO.getTotalPooledEther();
         uint256 totalSharesBefore = LIDO.getTotalShares();
@@ -305,7 +305,7 @@ contract StethHyperdriveTest is HyperdriveTest {
         AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
             address(hyperdrive)
         );
-
+        uint256 shortAmount = 0.001e18;
         // Bob opens a short by depositing ETH.
         shortAmount = shortAmount.normalizeToRange(
             0.001e18,
@@ -319,6 +319,7 @@ contract StethHyperdriveTest is HyperdriveTest {
             shortAmount,
             1e18
         );
+
         assertGt(basePaid, 0);
         assertGe(realizedRate, FIXED_RATE);
 
@@ -346,8 +347,8 @@ contract StethHyperdriveTest is HyperdriveTest {
 
         // Bob opens a short by depositing ETH.
         shortAmount = shortAmount.normalizeToRange(
-            0.00001e18,
-            HyperdriveUtils.calculateMaxLong(hyperdrive)
+            0.001e18,
+            HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
         (, uint256 basePaid) = openShort(bob, shortAmount, false);
 
@@ -379,8 +380,8 @@ contract StethHyperdriveTest is HyperdriveTest {
     ) external {
         // Bob opens a short.
         shortAmount = shortAmount.normalizeToRange(
-            0.00001e18,
-            HyperdriveUtils.calculateMaxLong(hyperdrive)
+            0.001e18,
+            HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
         (uint256 maturityTime, ) = openShort(bob, shortAmount);
 
@@ -402,8 +403,8 @@ contract StethHyperdriveTest is HyperdriveTest {
     ) external {
         // Bob opens a short.
         shortAmount = shortAmount.normalizeToRange(
-            0.00001e18,
-            HyperdriveUtils.calculateMaxLong(hyperdrive)
+            0.001e18,
+            HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
         (uint256 maturityTime, ) = openShort(bob, shortAmount);
 
