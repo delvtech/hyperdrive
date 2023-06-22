@@ -1,6 +1,6 @@
 pragma solidity ^0.8.18;
 
-import { MultiToken } from "../../../contracts/src/MultiToken.sol";
+import { MultiToken } from "../../../contracts/src/token/MultiToken.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import { FixedPointMath } from "../../../contracts/src/libraries/FixedPointMath.sol";
 import { Errors } from "../../../contracts/src/libraries/Errors.sol";
@@ -94,7 +94,7 @@ contract SymbolicHyperdrive is MultiToken {
         //         rate.mulDown(timeElapsed)
         //     );
         uint256 something;
-        return 5;
+        return something;
     }
 
     function accrueInterest() internal {

@@ -158,12 +158,12 @@ function curveFixedInterest() returns mathint {
 
 /// Average maturity time for longs
 function AvgMTimeLongs() returns mathint {
-    AaveHyperdrive.MarketState Mstate = marketState();
+    IHyperdrive.MarketState Mstate = marketState();
     return to_mathint(Mstate.longAverageMaturityTime);
 }
 
 /// Average maturity time for shorts
 function AvgMTimeShorts() returns mathint {
-    AaveHyperdrive.MarketState Mstate = marketState();
+    IHyperdrive.MarketState Mstate = marketState();
     return to_mathint(Mstate.shortAverageMaturityTime);
 }

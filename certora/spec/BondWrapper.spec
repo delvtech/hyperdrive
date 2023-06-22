@@ -2,7 +2,10 @@ import "./MathSummaries.spec";
 import "./Sanity.spec";
 import "./erc20.spec";
 
-using ERC20Mintable as baseToken;
+using DummyMintableERC20Impl as baseToken;
+using AssetIdMock as assetIdMock;
+using SymbolicHyperdrive as symbolicHyperdrive;
+using BondWrapper as bondWrapper;
 
 use rule sanity;
 
@@ -17,6 +20,7 @@ methods {
 
     function mintPercent() external returns (uint256) envfree;
     function balanceOf(address) external returns (uint256) envfree;
+    function deposits(address, uint256) external returns (uint256) envfree;
 }
 
 function getAccruedInterestCVL(uint256 time) returns uint256 {
@@ -26,6 +30,23 @@ function getAccruedInterestCVL(uint256 time) returns uint256 {
 ghost mapping(uint256 => uint256) interestOverTime {
     axiom forall uint256 x. forall uint256 y. x > y => interestOverTime[x] >= interestOverTime[y];
 }
+
+ghost mathint balanceSum {
+    init_state axiom balanceSum == 0;
+}
+hook Sload uint256 balance balanceOf[KEY address user] STORAGE {
+    require balanceSum >= to_mathint(balance);
+}
+hook Sstore balanceOf[KEY address user] uint256 balance
+    (uint256 old_balance) STORAGE
+{
+    balanceSum = balanceSum - old_balance + balance;
+}
+
+
+invariant erc20Solvency(env e)
+    balanceSum == to_mathint(totalSupply(e));
+
 
 rule basicFRule(env e, env e2, method f, method g) filtered { f -> !f.isView, g -> !g.isView } {
     calldataarg argsF;
@@ -37,8 +58,9 @@ rule basicFRule(env e, env e2, method f, method g) filtered { f -> !f.isView, g 
 }
 
 
-// other users can't frontrun close(), sweep(), redeem() and mint() 
-rule frontRunCheck(env e, env e2, method f) 
+// STATUS - timeout
+// other users can't frontrun close()
+rule frontRunClose(env e, env e2, method f) 
     filtered { f -> !f.isView && f.selector != sig:sweepAndRedeem(uint256[], uint256).selector
 } {
     uint256 maturityTime;
@@ -52,6 +74,8 @@ rule frontRunCheck(env e, env e2, method f)
     bool andBurnFr;
     address destinationFr;
     uint256 minOutputFr;
+
+    require mintPercent() > 10 && mintPercent() < 1000;
 
     storage initialStorage = lastStorage; 
 
@@ -70,6 +94,97 @@ rule frontRunCheck(env e, env e2, method f)
     assert baseBalanceAfterSingle - baseBalanceBefore 
             == baseBalanceAfterDouble - baseBalanceBefore;
 }
+
+
+// STATUS - in progress (can be violated in many cases)
+// - other users can't frontrun mint() 
+rule frontRunMint(env e, env e2, method f) 
+    filtered { f -> !f.isView && f.selector != sig:sweepAndRedeem(uint256[], uint256).selector
+} {
+    uint256 maturityTime;
+    uint256 amount;
+    bool andBurn;
+    address destination;
+    uint256 minOutput;
+
+    uint256 maturityTimeFr;
+    uint256 amountFr;
+    bool andBurnFr;
+    address destinationFr;
+    uint256 minOutputFr;
+
+    uint256 assetIdVar;
+    
+    require assetIdVar == assetIdMock.encodeAssetId(e, AssetId.AssetIdPrefix.Long, maturityTime);
+    require destination != destinationFr;
+
+    storage initialStorage = lastStorage; 
+
+    uint256 balanceBefore = balanceOf(e, destination);
+    uint256 hyperBalanceBefore = symbolicHyperdrive.balanceOf(e, assetIdVar, e.msg.sender);
+
+    mint(e, maturityTime, amount, destination);
+
+    uint256 balanceAfterSingle = balanceOf(e, destination);
+    uint256 hyperBalanceAfterSingle = symbolicHyperdrive.balanceOf(e, assetIdVar, e.msg.sender);
+
+    callHelper(e2, f, maturityTimeFr, amountFr, andBurnFr, destinationFr, minOutputFr, initialStorage);
+
+    mint(e, maturityTime, amount, destination);
+
+    uint256 balanceAfterDouble = balanceOf(e, destination);
+    uint256 hyperBalanceAfterDouble = symbolicHyperdrive.balanceOf(e, assetIdVar, e.msg.sender);
+
+    assert balanceAfterSingle - balanceBefore 
+            == balanceAfterDouble - balanceBefore;
+    assert e.msg.sender != e2.msg.sender 
+                => (hyperBalanceAfterSingle - hyperBalanceBefore 
+                    == hyperBalanceAfterDouble - hyperBalanceBefore);
+}
+
+
+// - other users can't frontrun redeem()
+rule frontRunRedeem(env e, env e2, method f) 
+    filtered { f -> !f.isView && f.selector != sig:sweepAndRedeem(uint256[], uint256).selector
+} {
+    uint256 maturityTime;
+    uint256 amount;
+    bool andBurn;
+    address destination;
+    uint256 minOutput;
+
+    uint256 maturityTimeFr;
+    uint256 amountFr;
+    bool andBurnFr;
+    address destinationFr;
+    uint256 minOutputFr;
+
+    require e.msg.sender != e2.msg.sender;
+
+    storage initialStorage = lastStorage; 
+
+    uint256 balanceBefore = balanceOf(e, e.msg.sender);
+    uint256 baseBalanceBefore = baseToken.balanceOf(e, e.msg.sender);
+
+    redeem(e, amount);
+
+    uint256 balanceAfterSingle = balanceOf(e, e.msg.sender);
+    uint256 baseBalanceAfterSingle = baseToken.balanceOf(e, e.msg.sender);
+
+    callHelper(e2, f, maturityTimeFr, amountFr, andBurnFr, destinationFr, minOutputFr, initialStorage);
+
+    redeem(e, amount);
+
+    uint256 balanceAfterDouble = balanceOf(e, e.msg.sender);
+    uint256 baseBalanceAfterDouble = baseToken.balanceOf(e, e.msg.sender);
+
+    assert balanceBefore - balanceAfterSingle
+            == balanceBefore - balanceAfterDouble;
+    assert baseBalanceAfterSingle - baseBalanceBefore 
+            == baseBalanceAfterDouble - baseBalanceBefore;
+}
+
+
 
 function callHelper(
     env e, 
@@ -91,7 +206,7 @@ function callHelper(
         redeem(e, amount) at initialStorage;
     } else {
         calldataarg args;
-        f(e, args);
+        f(e, args) at initialStorage;
     }
 }
 
@@ -116,38 +231,220 @@ invariant test(env e, address user)
     balanceOf(user) * mintPercent() / 10000 >= userDepositSum[user];
 
 
-/* properties:
+// STATUS - in progress
+// monotonicity of close(): more have, more will get
+rule closeMonoton(env e, env e2) {
+    uint256 maturityTime;
+    uint256 amount;
+    bool andBurn;
+    address destination;
+    uint256 minOutput;
+    uint256 assetIdVar;
+    
+    require mintPercent() > 10 && mintPercent() < 1000;
+    require assetIdVar == assetIdMock.encodeAssetId(e, AssetId.AssetIdPrefix.Long, maturityTime);
+    require e.block.timestamp == e2.block.timestamp;
+    require destination != symbolicHyperdrive;
 
-- other users can't frontrun close(), sweep(), redeem() and mint() 
+    uint256 amountBeforeSmall = deposits(e.msg.sender, assetIdVar);
+    uint256 amountBeforeBig = deposits(e2.msg.sender, assetIdVar);
 
-- monotonicity of close() and sweep(): more have, more will get
+    uint256 destinationBalanceBefore = baseToken.balanceOf(e, destination);
 
-- mint() integrity:
-    - user's bond balance is decreased
-    - system's bond balance is increased
-    - destination gets wrapped bonds but less than amount
-    - 2 small mints is not better than 1 big mint
+    storage initialStorage = lastStorage;
 
-- close() integrity:
-    - msg.sender's and destination's bond balances are unchanged
-    - system's bond balance is decreased
-    - user burns gets wrapped bonds but less than amount
-    - destination gets baseToken
-    - if fully matured, 2 small closes is not better than 1 big close
+    close(e, maturityTime, amountBeforeSmall, andBurn, destination, minOutput);
 
+    uint256 destinationBalanceAfterSmall = baseToken.balanceOf(e, destination);
 
+    close(e2, maturityTime, amountBeforeBig, andBurn, destination, minOutput) at initialStorage;
 
+    uint256 destinationBalanceAfterBig = baseToken.balanceOf(e, destination);
 
-Questions:
-
-- close() and secuence sweep(), redeem() for matured bonds seems to be very similar, except the fact the deposits isn't updated. I don't think it's an issue because we have a specific assetId/maturity time slot for each bond, so overflow is almost impossible. But it's inconsistent. What do you think?
-
-- close() and secuence sweep(), redeem(). Calling close() might not burn everything because of the rounding, so we need to call redeem() again. But calling sweep() or redeem() will burn everything because we can set burn amount in redeem(). Is it a problem?
-
-- what value should mintPercent have?
-
-- why do we need two base token transfers in close()? one in closeLong() and another in close() itself?
+    assert amountBeforeSmall < amountBeforeBig 
+            => ((destinationBalanceAfterSmall - destinationBalanceBefore) 
+                <= (destinationBalanceAfterBig - destinationBalanceBefore));
+}
 
 
+// STATUS - verified
+rule mintIntegrityUser(env e, env e2) {
+    uint256 maturityTime;
+    uint256 amount;
+    address destination;
+    uint256 assetIdVar;
+    
+    require e.msg.sender != bondWrapper;
+    requireInvariant erc20Solvency(e);
+    require assetIdVar == assetIdMock.encodeAssetId(e, AssetId.AssetIdPrefix.Long, maturityTime);
+
+    uint256 balanceBefore = balanceOf(e, destination);
+    uint256 hyperBalanceBefore = symbolicHyperdrive.balanceOf(e, assetIdVar, e.msg.sender);
+
+    mint(e, maturityTime, amount, destination);
+
+    uint256 balanceAfter = balanceOf(e, destination);
+    uint256 hyperBalanceAfter = symbolicHyperdrive.balanceOf(e, assetIdVar, e.msg.sender);
+
+    assert balanceBefore <= balanceAfter;
+    assert hyperBalanceBefore - hyperBalanceAfter == to_mathint(amount);
+}
 
 
+// STATUS - verified
+rule mintIntegritySystem(env e, env e2) {
+    uint256 maturityTime;
+    uint256 amount;
+    address destination;
+    uint256 assetIdVar;
+    
+    require e.msg.sender != bondWrapper;
+    requireInvariant erc20Solvency(e);
+    require assetIdVar == assetIdMock.encodeAssetId(e, AssetId.AssetIdPrefix.Long, maturityTime);
+
+    uint256 totalBefore = totalSupply(e);
+    uint256 hyperBalanceBefore = symbolicHyperdrive.balanceOf(e, assetIdVar, bondWrapper);
+
+    mint(e, maturityTime, amount, destination);
+
+    uint256 totalAfter = totalSupply(e);
+    uint256 hyperBalanceAfter = symbolicHyperdrive.balanceOf(e, assetIdVar, bondWrapper);
+
+    assert totalBefore <= totalAfter;
+    assert hyperBalanceAfter - hyperBalanceBefore == to_mathint(amount);
+}
+
+
+// STATUS - verified
+rule mintIntegrityOthers(env e, env e2) {
+    uint256 maturityTime;
+    uint256 amount;
+    address destination;
+    uint256 assetIdVar;
+    address randAddr;
+    
+    require e.msg.sender != bondWrapper;
+    requireInvariant erc20Solvency(e);
+    require randAddr != destination && randAddr != bondWrapper && randAddr != e.msg.sender;
+    require assetIdVar == assetIdMock.encodeAssetId(e, AssetId.AssetIdPrefix.Long, maturityTime);
+
+    uint256 balanceBefore = balanceOf(e, randAddr);
+    uint256 hyperBalanceBefore = symbolicHyperdrive.balanceOf(e, assetIdVar, randAddr);
+
+    mint(e, maturityTime, amount, destination);
+
+    uint256 balanceAfter = balanceOf(e, randAddr);
+    uint256 hyperBalanceAfter = symbolicHyperdrive.balanceOf(e, assetIdVar, randAddr);
+
+    assert balanceBefore == balanceAfter;
+    assert hyperBalanceBefore == hyperBalanceAfter;
+}
+
+
+// STATUS - verified
+rule mintIntegritySmallsVsBig(env e, env e2) {
+    uint256 maturityTime;
+    uint256 amount; uint256 amount1; uint256 amount2;
+    address destination;
+    uint256 assetIdVar;
+    
+    require e.msg.sender != bondWrapper;
+    requireInvariant erc20Solvency(e);
+    require amount == require_uint256(amount1 + amount2);
+    require assetIdVar == assetIdMock.encodeAssetId(e, AssetId.AssetIdPrefix.Long, maturityTime);
+
+    uint256 balanceBefore = balanceOf(e, destination);
+    uint256 hyperBalanceBefore = symbolicHyperdrive.balanceOf(e, assetIdVar, e.msg.sender);
+
+    storage initialStorage = lastStorage; 
+
+    mint(e, maturityTime, amount, destination);
+
+    uint256 balanceAfterBig = balanceOf(e, destination);
+    uint256 hyperBalanceAfterBig = symbolicHyperdrive.balanceOf(e, assetIdVar, e.msg.sender);
+
+    mint(e, maturityTime, amount1, destination) at initialStorage;
+    mint(e, maturityTime, amount2, destination);
+
+    uint256 balanceAfterSmall = balanceOf(e, destination);
+    uint256 hyperBalanceAfterSmall = symbolicHyperdrive.balanceOf(e, assetIdVar, e.msg.sender);
+
+    assert balanceAfterBig >= balanceAfterSmall;
+    assert hyperBalanceAfterBig == hyperBalanceAfterSmall;
+}
+
+
+// STATUS - in progress
+rule closeIntegrityUser(env e) {
+    uint256 maturityTime;
+    uint256 amount;
+    bool andBurn;
+    address destination;
+    uint256 minOutput;
+    
+    require e.msg.sender != bondWrapper && bondWrapper != destination;
+    requireInvariant erc20Solvency(e);
+
+    uint256 balanceBefore = balanceOf(e, e.msg.sender);
+    uint256 hyperBalanceBefore = baseToken.balanceOf(e, destination);
+
+    close(e, maturityTime, amount, andBurn, destination, minOutput);
+
+    uint256 balanceAfter = balanceOf(e, e.msg.sender);
+    uint256 hyperBalanceAfter = baseToken.balanceOf(e, destination);
+
+    assert balanceBefore != balanceAfter => hyperBalanceAfter != hyperBalanceBefore;
+    assert hyperBalanceAfter - hyperBalanceBefore >= to_mathint(minOutput);
+    assert hyperBalanceAfter - hyperBalanceBefore >= balanceBefore - balanceAfter;
+}
+
+
+// STATUS - in progress
+rule closeIntegritySystem(env e) {
+    uint256 maturityTime;
+    uint256 amount;
+    bool andBurn;
+    address destination;
+    uint256 minOutput;
+    
+    require e.msg.sender != bondWrapper;
+    requireInvariant erc20Solvency(e);
+
+    uint256 totalBefore = totalSupply(e);
+    uint256 hyperBalanceBefore = baseToken.balanceOf(e, bondWrapper);
+
+    close(e, maturityTime, amount, andBurn, destination, minOutput);
+
+    uint256 totalAfter = totalSupply(e);
+    uint256 hyperBalanceAfter = baseToken.balanceOf(e, bondWrapper);
+
+    assert andBurn => totalBefore >= totalAfter;
+    assert hyperBalanceBefore - hyperBalanceAfter >= to_mathint(minOutput);
+    assert hyperBalanceAfter - hyperBalanceBefore >= totalBefore - totalAfter;
+}
+
+
+// STATUS - in progress
+rule closeIntegrityOthers(env e) {
+    uint256 maturityTime;
+    uint256 amount;
+    bool andBurn;
+    address destination;
+    uint256 minOutput;
+    address randAddr;
+    
+    require randAddr != destination && randAddr != bondWrapper && randAddr != e.msg.sender;
+    require e.msg.sender != bondWrapper;
+    requireInvariant erc20Solvency(e);
+
+    uint256 balanceBefore = balanceOf(e, randAddr);
+    uint256 hyperBalanceBefore = baseToken.balanceOf(e, randAddr);
+
+    close(e, maturityTime, amount, andBurn, destination, minOutput);
+
+    uint256 balanceAfter = balanceOf(e, randAddr);
+    uint256 hyperBalanceAfter = baseToken.balanceOf(e, randAddr);
+
+    assert balanceBefore == balanceAfter;
+    assert hyperBalanceAfter == hyperBalanceBefore;
+}

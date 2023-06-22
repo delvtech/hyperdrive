@@ -19,7 +19,7 @@ methods {
     function pool.liquidityIndex(address,uint256) external returns (uint256) envfree;
     function totalShares() external returns (uint256) envfree;
 
-    function MockAssetId.encodeAssetId(MockAssetId.AssetIdPrefix, uint256) external returns (uint256) envfree;
+    function MockAssetId.encodeAssetId(AssetId.AssetIdPrefix, uint256) external returns (uint256) envfree;
     function _.recordPrice(uint256 price) internal => NONDET;
 
     /*
@@ -284,9 +284,9 @@ rule cannotChangeCheckPointSharePriceTwice(uint256 _checkpoint, method f) {
     env e;
     calldataarg args;
 
-    AaveHyperdrive.Checkpoint CP1 = checkPoints(_checkpoint);
+    IHyperdrive.Checkpoint CP1 = checkPoints(_checkpoint);
         f(e,args);
-    AaveHyperdrive.Checkpoint CP2 = checkPoints(_checkpoint);
+    IHyperdrive.Checkpoint CP2 = checkPoints(_checkpoint);
 
     assert CP1.sharePrice !=0 => CP1.sharePrice == CP2.sharePrice;
 }
@@ -345,7 +345,7 @@ rule openLongIntegrity(uint256 baseAmount) {
 
     setHyperdrivePoolParams();
 
-    AaveHyperdrive.MarketState Mstate = marketState();
+    IHyperdrive.MarketState Mstate = marketState();
     uint128 bondReserves = Mstate.bondReserves;
 
     uint256 bondsReceived =
@@ -431,7 +431,7 @@ rule openLongPreservesOutstandingLongs(uint256 baseAmount) {
     uint256 latestCP = require_uint256(e.block.timestamp -
             (e.block.timestamp % checkpointDuration()));
 
-    AaveHyperdrive.MarketState preState = marketState();
+    IHyperdrive.MarketState preState = marketState();
     uint128 bondReserves1 = preState.bondReserves;
     uint128 longsOutstanding1 = preState.longsOutstanding;
     uint256 sharePrice1 = sharePrice(e);
@@ -442,7 +442,7 @@ rule openLongPreservesOutstandingLongs(uint256 baseAmount) {
     uint256 bondsReceived =
         openLong(e, baseAmount, minOutput, destination, asUnderlying);
 
-    AaveHyperdrive.MarketState postState = marketState();
+    IHyperdrive.MarketState postState = marketState();
     uint128 bondReserves2 = postState.bondReserves;
     uint128 longsOutstanding2 = postState.longsOutstanding;
     uint256 sharePrice2 = sharePrice(e);
@@ -812,7 +812,7 @@ rule shortRoundTripSameBaseVolume(uint256 bondAmount) {
     uint256 maturityTime;
     uint256 userDeposit;
 
-    AaveHyperdrive.MarketState Mstate = marketState();
+    IHyperdrive.MarketState Mstate = marketState();
     uint128 baseVolumeBefore = Mstate.shortBaseVolume;
         maturityTime, userDeposit = openShort(e, bondAmount, maxDeposit, destination, asUnderlying);
         uint256 baseRewards = closeShort(e, maturityTime, bondAmount, minOutput, destination, asUnderlying);

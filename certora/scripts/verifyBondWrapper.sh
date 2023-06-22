@@ -13,12 +13,14 @@ certoraRun contracts/src/token/BondWrapper.sol \
     \
     certora/helpers/DummyERC20A.sol \
     certora/helpers/DummyERC20B.sol \
-    contracts/test/ERC20Mintable.sol \
+    certora/helpers/SymbolicHyperdrive/DummyERC20Impl.sol:DummyMintableERC20Impl \
+    certora/helpers/SymbolicHyperdrive/AssetIdMock.sol \
+    contracts/src/libraries/AssetId.sol \
     \
     --verify BondWrapper:certora/spec/BondWrapper.spec \
     --link BondWrapper:hyperdrive=SymbolicHyperdrive \
-        BondWrapper:token=ERC20Mintable \
-        SymbolicHyperdrive:_baseToken=ERC20Mintable \
+        BondWrapper:token=DummyMintableERC20Impl \
+        SymbolicHyperdrive:_baseToken=DummyMintableERC20Impl \
     --solc solc8.19 \
     --loop_iter 3 \
     --optimistic_loop \

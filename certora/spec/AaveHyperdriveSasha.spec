@@ -190,3 +190,45 @@ function shortFunctionsCallHelper(method f, env e, uint256 maxDeposit) {
 // _marketState.shortBaseVolume should be greater or equal to traderDeposit ?
 // _marketState.shortBaseVolume >= _checkpoints[any].shortBaseVolume
 // 
+
+
+// Timeout
+rule checkpointFrontRunsCloseShort(uint256 checkpointTime) {
+    env e;
+    calldataarg args;
+    
+    setHyperdrivePoolParams();
+    require require_uint256(stateShareReserves()) == ONE18();
+    storage initState = lastStorage;
+
+    closeShort(e, args);
+
+    checkpoint(e, checkpointTime) at initState;
+    closeShort@withrevert(e, args);
+
+    assert !lastReverted;
+}
+
+
+// @doc There should always be more aTokens (assets) than number of shares
+// otherwise, the share price will decrease (or less than 1).
+invariant aTokenBalanceGEToShares(env e)
+    totalShares() <= aToken.balanceOf(e, currentContract)
+    filtered { f -> onlyShortMethods(f) }
+    {
+        preserved with (env eP) {
+            require eP.block.timestamp == e.block.timestamp;
+        }
+    }
+
+
+rule SharePriceCannotDecreaseInTime(method f) filtered { f -> onlyShortMethods(f) } {
+    env e;
+    calldataarg args;
+    uint256 sharePriceBefore = sharePrice(e);
+        f(e, args);
+    uint256 sharePriceAfter = sharePrice(e);
+
+    assert sharePriceAfter >= sharePriceBefore;
+}
+
