@@ -15,7 +15,6 @@ import { MultiTokenDataProvider } from "../token/MultiTokenDataProvider.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-
 contract DsrHyperdriveDataProvider is
     MultiTokenDataProvider,
     HyperdriveDataProvider

@@ -14,7 +14,6 @@ import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-
 contract DsrHyperdrive is Hyperdrive {
     using FixedPointMath for uint256;
 

@@ -16,7 +16,6 @@ import { MultiTokenStorage } from "./MultiTokenStorage.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-
 contract MultiToken is DataProvider, MultiTokenStorage, IMultiTokenWrite {
     // EIP712
     // DOMAIN_SEPARATOR changes based on token name
