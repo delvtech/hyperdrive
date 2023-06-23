@@ -311,8 +311,10 @@ contract StethHyperdriveTest is HyperdriveTest {
             0.001e18,
             HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
+        uint256 balanceBefore = bob.balance;
+        vm.deal(bob, shortAmount);
         (, uint256 basePaid) = openShort(bob, shortAmount);
-
+        vm.deal(bob, balanceBefore - basePaid);
         // Ensure that the amount of base paid by the short is reasonable.
         uint256 realizedRate = HyperdriveUtils.calculateAPRFromRealizedPrice(
             shortAmount - basePaid,
@@ -383,8 +385,10 @@ contract StethHyperdriveTest is HyperdriveTest {
             0.001e18,
             HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
-        (uint256 maturityTime, ) = openShort(bob, shortAmount);
-
+        uint256 balanceBefore = bob.balance;
+        vm.deal(bob, shortAmount);
+        (uint256 maturityTime, uint256 basePaid) = openShort(bob, shortAmount);
+        vm.deal(bob, balanceBefore - basePaid);
         // The term passes and interest accrues.
         variableRate = variableRate.normalizeToRange(0, 2.5e18);
         advanceTime(POSITION_DURATION, variableRate);
@@ -406,7 +410,10 @@ contract StethHyperdriveTest is HyperdriveTest {
             0.001e18,
             HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
-        (uint256 maturityTime, ) = openShort(bob, shortAmount);
+        uint256 balanceBefore = bob.balance;
+        vm.deal(bob, shortAmount);
+        (uint256 maturityTime, uint256 basePaid) = openShort(bob, shortAmount);
+        vm.deal(bob, balanceBefore - basePaid);
 
         // The term passes and interest accrues.
         variableRate = variableRate.normalizeToRange(0, 2.5e18);
