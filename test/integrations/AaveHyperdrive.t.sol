@@ -196,12 +196,18 @@ contract AaveHyperdriveTest is HyperdriveTest {
             alice
         );
         // lp shares should equal number of share reserves initialized with
-        assertEq(createdShares, 2500e18);
+        assertEq(createdShares, 2500e18 - 1e5);
 
         bytes32[] memory aDaiEncoding = new bytes32[](1);
         aDaiEncoding[0] = bytes32(uint256(uint160(address(aDAI))));
         // Verify that the correct events were emitted.
-        verifyFactoryEvents(factory, alice, contribution, apr, aDaiEncoding);
+        verifyFactoryEvents(
+            factory,
+            alice,
+            contribution - 1e5,
+            apr,
+            aDaiEncoding
+        );
 
         // Test the revert condition for eth payment
         vm.expectRevert(Errors.NotPayable.selector);

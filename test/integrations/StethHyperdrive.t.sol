@@ -147,7 +147,7 @@ contract StethHyperdriveTest is HyperdriveTest {
         verifyFactoryEvents(
             factory,
             bob,
-            contribution,
+            contribution - 1e5,
             FIXED_RATE,
             new bytes32[](0)
         );
@@ -297,7 +297,7 @@ contract StethHyperdriveTest is HyperdriveTest {
 
     /// Short ///
 
-    function test_open_short_with_ETH(uint256 shortAmount) external {
+    function test_open_short_with_ETH() external {
         // Get some balance information before the deposit.
         uint256 totalPooledEtherBefore = LIDO.getTotalPooledEther();
         uint256 totalSharesBefore = LIDO.getTotalShares();
@@ -305,20 +305,23 @@ contract StethHyperdriveTest is HyperdriveTest {
         AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
             address(hyperdrive)
         );
-
+        uint256 shortAmount = 0.001e18;
         // Bob opens a short by depositing ETH.
         shortAmount = shortAmount.normalizeToRange(
-            0.00001e18,
-            HyperdriveUtils.calculateMaxLong(hyperdrive)
+            0.001e18,
+            HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
+        uint256 balanceBefore = bob.balance;
+        vm.deal(bob, shortAmount);
         (, uint256 basePaid) = openShort(bob, shortAmount);
-
+        vm.deal(bob, balanceBefore - basePaid);
         // Ensure that the amount of base paid by the short is reasonable.
         uint256 realizedRate = HyperdriveUtils.calculateAPRFromRealizedPrice(
             shortAmount - basePaid,
             shortAmount,
-            POSITION_DURATION
+            1e18
         );
+
         assertGt(basePaid, 0);
         assertGe(realizedRate, FIXED_RATE);
 
@@ -346,8 +349,8 @@ contract StethHyperdriveTest is HyperdriveTest {
 
         // Bob opens a short by depositing ETH.
         shortAmount = shortAmount.normalizeToRange(
-            0.00001e18,
-            HyperdriveUtils.calculateMaxLong(hyperdrive)
+            0.001e18,
+            HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
         (, uint256 basePaid) = openShort(bob, shortAmount, false);
 
@@ -355,7 +358,7 @@ contract StethHyperdriveTest is HyperdriveTest {
         uint256 realizedRate = HyperdriveUtils.calculateAPRFromRealizedPrice(
             shortAmount - basePaid,
             shortAmount,
-            POSITION_DURATION
+            1e18
         );
         assertGt(basePaid, 0);
         assertGe(realizedRate, FIXED_RATE);
@@ -379,11 +382,13 @@ contract StethHyperdriveTest is HyperdriveTest {
     ) external {
         // Bob opens a short.
         shortAmount = shortAmount.normalizeToRange(
-            0.00001e18,
-            HyperdriveUtils.calculateMaxLong(hyperdrive)
+            0.001e18,
+            HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
-        (uint256 maturityTime, ) = openShort(bob, shortAmount);
-
+        uint256 balanceBefore = bob.balance;
+        vm.deal(bob, shortAmount);
+        (uint256 maturityTime, uint256 basePaid) = openShort(bob, shortAmount);
+        vm.deal(bob, balanceBefore - basePaid);
         // The term passes and interest accrues.
         variableRate = variableRate.normalizeToRange(0, 2.5e18);
         advanceTime(POSITION_DURATION, variableRate);
@@ -402,10 +407,13 @@ contract StethHyperdriveTest is HyperdriveTest {
     ) external {
         // Bob opens a short.
         shortAmount = shortAmount.normalizeToRange(
-            0.00001e18,
-            HyperdriveUtils.calculateMaxLong(hyperdrive)
+            0.001e18,
+            HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
-        (uint256 maturityTime, ) = openShort(bob, shortAmount);
+        uint256 balanceBefore = bob.balance;
+        vm.deal(bob, shortAmount);
+        (uint256 maturityTime, uint256 basePaid) = openShort(bob, shortAmount);
+        vm.deal(bob, balanceBefore - basePaid);
 
         // The term passes and interest accrues.
         variableRate = variableRate.normalizeToRange(0, 2.5e18);

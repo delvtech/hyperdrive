@@ -34,8 +34,8 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
     ) external payable {
         // Check that the message value and base amount are valid.
         _checkMessageValue();
-        if (_contribution == 0) {
-            revert Errors.ZeroAmount();
+        if (_contribution < 1e5) {
+            revert Errors.BelowMinimumContribution();
         }
 
         // Ensure that the pool hasn't been initialized yet.

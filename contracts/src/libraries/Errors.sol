@@ -29,6 +29,7 @@ library Errors {
     error UnexpectedSender();
     error UnsupportedToken();
     error ZeroAmount();
+    error BelowMinimumContribution();
     error ZeroLpTotalSupply();
     error NoAssetsToWithdraw();
     error NotPayable();

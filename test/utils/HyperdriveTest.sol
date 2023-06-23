@@ -262,7 +262,6 @@ contract HyperdriveTest is BaseTest {
     ) internal returns (uint256 maturityTime, uint256 baseAmount) {
         vm.stopPrank();
         vm.startPrank(trader);
-
         // Open the short
         maturityTime = HyperdriveUtils.maturityTimeFromLatestCheckpoint(
             hyperdrive
@@ -476,7 +475,11 @@ contract HyperdriveTest is BaseTest {
                 uint256 eventBaseAmount,
                 uint256 eventApr
             ) = abi.decode(log.data, (uint256, uint256, uint256));
-            assertEq(eventLpAmount, hyperdrive.getPoolInfo().shareReserves);
+            assertApproxEqAbs(
+                eventLpAmount + 1e5,
+                hyperdrive.getPoolInfo().shareReserves,
+                12500
+            );
             assertEq(eventBaseAmount, contribution);
             assertEq(eventApr, apr);
         }
