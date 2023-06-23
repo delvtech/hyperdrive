@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import "forge-std/console.sol";
+
 import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import { SafeCast } from "./libraries/SafeCast.sol";
 import { HyperdriveBase } from "./HyperdriveBase.sol";
@@ -91,15 +94,18 @@ abstract contract Hyperdrive is
         uint256 _sharePrice
     ) internal override returns (uint256 openSharePrice) {
         // Return early if the checkpoint has already been updated.
+        console.log("_applyCheckpoint: 1");
         if (
             _checkpoints[_checkpointTime].sharePrice != 0 ||
             _checkpointTime > block.timestamp
         ) {
             return _checkpoints[_checkpointTime].sharePrice;
         }
+        console.log("_applyCheckpoint: 2");
 
         // Create the share price checkpoint.
         _checkpoints[_checkpointTime].sharePrice = _sharePrice.toUint128();
+        console.log("_applyCheckpoint: 3");
 
         // Pay out the long withdrawal pool for longs that have matured.
         uint256 maturedLongsAmount = _totalSupply[
@@ -115,12 +121,16 @@ abstract contract Hyperdrive is
                 _sharePrice
             );
         }
+        console.log("_applyCheckpoint: 4");
 
         // Pay out the short withdrawal pool for shorts that have matured.
+        console.log("_applyCheckpoint: 4.1");
         uint256 maturedShortsAmount = _totalSupply[
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _checkpointTime)
         ];
+        console.log("_applyCheckpoint: 4.2");
         if (maturedShortsAmount > 0) {
+            console.log("_applyCheckpoint: 4.3");
             _applyCloseShort(
                 maturedShortsAmount,
                 0,
@@ -129,7 +139,9 @@ abstract contract Hyperdrive is
                 _checkpointTime,
                 _sharePrice
             );
+            console.log("_applyCheckpoint: 4.4");
         }
+        console.log("_applyCheckpoint: 5");
 
         return _checkpoints[_checkpointTime].sharePrice;
     }

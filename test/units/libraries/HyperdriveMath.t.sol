@@ -688,7 +688,10 @@ contract HyperdriveMathTest is HyperdriveTest {
                     shortBaseVolume: 0
                 });
             uint256 presentValue = hyperdriveMath.calculatePresentValue(params);
-            assertEq(presentValue, params.shareReserves);
+            assertEq(
+                presentValue,
+                params.shareReserves - HyperdriveMath.MINIMUM_SHARE_RESERVES
+            );
         }
 
         // all longs on the curve.
@@ -722,7 +725,10 @@ contract HyperdriveMathTest is HyperdriveTest {
                     params.sharePrice,
                     params.initialSharePrice
                 );
-            assertEq(presentValue, params.shareReserves);
+            assertEq(
+                presentValue,
+                params.shareReserves - HyperdriveMath.MINIMUM_SHARE_RESERVES
+            );
         }
 
         // all longs on the flat.
@@ -750,7 +756,10 @@ contract HyperdriveMathTest is HyperdriveTest {
             params.shareReserves -= params.longsOutstanding.divDown(
                 params.sharePrice
             );
-            assertEq(presentValue, params.shareReserves);
+            assertEq(
+                presentValue,
+                params.shareReserves - HyperdriveMath.MINIMUM_SHARE_RESERVES
+            );
         }
 
         // all shorts on the curve.
@@ -784,7 +793,10 @@ contract HyperdriveMathTest is HyperdriveTest {
                     params.sharePrice,
                     params.initialSharePrice
                 );
-            assertEq(presentValue, params.shareReserves);
+            assertEq(
+                presentValue,
+                params.shareReserves - HyperdriveMath.MINIMUM_SHARE_RESERVES
+            );
         }
 
         // all shorts on the flat.
@@ -812,7 +824,10 @@ contract HyperdriveMathTest is HyperdriveTest {
             params.shareReserves += params.shortsOutstanding.divDown(
                 params.sharePrice
             );
-            assertEq(presentValue, params.shareReserves);
+            assertEq(
+                presentValue,
+                params.shareReserves - HyperdriveMath.MINIMUM_SHARE_RESERVES
+            );
         }
 
         // longs and shorts completely net.
@@ -837,7 +852,10 @@ contract HyperdriveMathTest is HyperdriveTest {
                     shortBaseVolume: 9_500_000e18
                 });
             uint256 presentValue = hyperdriveMath.calculatePresentValue(params);
-            assertEq(presentValue, params.shareReserves);
+            assertEq(
+                presentValue,
+                params.shareReserves - HyperdriveMath.MINIMUM_SHARE_RESERVES
+            );
         }
 
         // all shorts on the curve, all longs on the flat.
@@ -874,7 +892,10 @@ contract HyperdriveMathTest is HyperdriveTest {
             params.shareReserves -= params.longsOutstanding.divDown(
                 params.sharePrice
             );
-            assertEq(presentValue, params.shareReserves);
+            assertEq(
+                presentValue,
+                params.shareReserves - HyperdriveMath.MINIMUM_SHARE_RESERVES
+            );
         }
 
         // all longs on the curve, all shorts on the flat.
@@ -911,7 +932,10 @@ contract HyperdriveMathTest is HyperdriveTest {
             params.shareReserves += params.shortsOutstanding.divDown(
                 params.sharePrice
             );
-            assertEq(presentValue, params.shareReserves);
+            assertEq(
+                presentValue,
+                params.shareReserves - HyperdriveMath.MINIMUM_SHARE_RESERVES
+            );
         }
 
         // small amount of longs, large amount of shorts
@@ -961,7 +985,10 @@ contract HyperdriveMathTest is HyperdriveTest {
                     1e18 - params.longAverageTimeRemaining,
                     params.sharePrice
                 );
-            assertEq(presentValue, params.shareReserves);
+            assertEq(
+                presentValue,
+                params.shareReserves - HyperdriveMath.MINIMUM_SHARE_RESERVES
+            );
         }
 
         // large amount of longs, small amount of shorts
@@ -1011,7 +1038,10 @@ contract HyperdriveMathTest is HyperdriveTest {
                     1e18 - params.shortAverageTimeRemaining,
                     params.sharePrice
                 );
-            assertEq(presentValue, params.shareReserves);
+            assertEq(
+                presentValue,
+                params.shareReserves - HyperdriveMath.MINIMUM_SHARE_RESERVES
+            );
         }
 
         // small amount of longs, large amount of shorts, no excess liquidity
@@ -1079,7 +1109,10 @@ contract HyperdriveMathTest is HyperdriveTest {
                     1e18 - params.longAverageTimeRemaining,
                     params.sharePrice
                 );
-            assertEq(presentValue, params.shareReserves);
+            assertEq(
+                presentValue,
+                params.shareReserves - HyperdriveMath.MINIMUM_SHARE_RESERVES
+            );
         }
     }
 

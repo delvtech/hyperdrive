@@ -33,12 +33,13 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
     /// @param _asUnderlying If true the user is charged in underlying if false
     ///                      the contract transfers in yield source directly.
     ///                      Note - for some paths one choice may be disabled or blocked.
+    /// @return lpShares The number of LP tokens minted to the destination.
     function initialize(
         uint256 _contribution,
         uint256 _apr,
         address _destination,
         bool _asUnderlying
-    ) external payable {
+    ) external payable returns (uint256 lpShares) {
         // Check that the message value and base amount are valid.
         _checkMessageValue();
 
@@ -78,9 +79,8 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // Mint LP shares to the initializer. Burn some LP shares to the zero
         // address to avoid dangerous rounding behavior during the LP share
         // calculatations.
-        uint256 initialLpShares = shares -
-            HyperdriveMath.MINIMUM_SHARE_RESERVES;
-        _mint(AssetId._LP_ASSET_ID, _destination, initialLpShares);
+        lpShares = shares - HyperdriveMath.MINIMUM_SHARE_RESERVES;
+        _mint(AssetId._LP_ASSET_ID, _destination, lpShares);
         _mint(
             AssetId._LP_ASSET_ID,
             address(0),
@@ -88,7 +88,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         );
 
         // Emit an Initialize event.
-        emit Initialize(_destination, initialLpShares, _contribution, _apr);
+        emit Initialize(_destination, lpShares, _contribution, _apr);
     }
 
     /// @notice Allows LPs to supply liquidity for LP shares.
@@ -140,7 +140,8 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         uint256 withdrawalSharesOutstanding = _totalSupply[
             AssetId._WITHDRAWAL_SHARE_ASSET_ID
         ] - _withdrawPool.readyToWithdraw;
-        uint256 lpTotalSupply = _totalSupply[AssetId._LP_ASSET_ID] +
+        uint256 lpTotalSupply = (_totalSupply[AssetId._LP_ASSET_ID] -
+            HyperdriveMath.MINIMUM_SHARE_RESERVES) +
             withdrawalSharesOutstanding;
 
         // Calculate the number of LP shares to mint.
@@ -243,12 +244,12 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
 
         // Burn the LP shares.
-        uint256 totalActiveLpSupply = _totalSupply[AssetId._LP_ASSET_ID];
+        uint256 activeLpSupply = _totalSupply[AssetId._LP_ASSET_ID] -
+            HyperdriveMath.MINIMUM_SHARE_RESERVES;
         uint256 withdrawalSharesOutstanding = _totalSupply[
             AssetId._WITHDRAWAL_SHARE_ASSET_ID
         ] - _withdrawPool.readyToWithdraw;
-        uint256 totalLpSupply = totalActiveLpSupply +
-            withdrawalSharesOutstanding;
+        uint256 totalLpSupply = activeLpSupply + withdrawalSharesOutstanding;
         _burn(AssetId._LP_ASSET_ID, msg.sender, _shares);
 
         // Remove the liquidity from the pool.
@@ -259,7 +260,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
                 _shares,
                 sharePrice,
                 totalLpSupply,
-                totalActiveLpSupply,
+                activeLpSupply,
                 withdrawalSharesOutstanding
             );
 
@@ -356,6 +357,12 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
     /// @dev Updates the pool's liquidity and holds the pool's APR constant.
     /// @param _shareReservesDelta The delta that should be applied to share reserves.
     function _updateLiquidity(int256 _shareReservesDelta) internal {
+        console.log(
+            "_marketState.shareReserves",
+            _marketState.shareReserves.toString(18)
+        );
+        console.log("_shareReservesDelta", _shareReservesDelta.toString(18));
+        console.log("_updateLiquidity: 1");
         // If the share reserves delta is equal to zero, there is no need to
         // update the reserves. If the share reserves are equal to zero, the
         // APR is undefined and the reserves cannot be updated. This only occurs
@@ -365,16 +372,24 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // share reserves to bond reserves.
         uint256 shareReserves = _marketState.shareReserves;
         if (_shareReservesDelta != 0 && shareReserves > 0) {
+            console.log("_updateLiquidity: 2");
             int256 updatedShareReserves = int256(shareReserves) +
                 _shareReservesDelta;
+            console.log("_updateLiquidity: 3");
             _marketState.shareReserves = uint256(
                 // NOTE: There is a 1 wei discrepancy in some of the
                 // calculations which results in this clamping being required.
                 updatedShareReserves >= 0 ? updatedShareReserves : int256(0)
             ).toUint128();
+            console.log("_updateLiquidity: 4");
+            console.log(
+                "_marketState.bondReserves",
+                _marketState.bondReserves.toString(18)
+            );
             _marketState.bondReserves = uint256(_marketState.bondReserves)
                 .mulDivDown(_marketState.shareReserves, shareReserves)
                 .toUint128();
+            console.log("_updateLiquidity: 5");
         }
     }
 
@@ -498,7 +513,8 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
                 shortBaseVolume: _marketState.shortBaseVolume
             })
         );
-        uint256 lpTotalSupply = _totalSupply[AssetId._LP_ASSET_ID] +
+        uint256 lpTotalSupply = (_totalSupply[AssetId._LP_ASSET_ID] -
+            HyperdriveMath.MINIMUM_SHARE_RESERVES) +
             _withdrawalSharesOutstanding;
         _compensateWithdrawalPool(
             _withdrawalProceeds,

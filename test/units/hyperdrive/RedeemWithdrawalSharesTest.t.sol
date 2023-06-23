@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import "forge-std/console.sol";
+
 import { VmSafe } from "forge-std/Vm.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
@@ -99,21 +102,27 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
     }
 
     function test_redeem_withdrawal_shares_clamping() external {
+        console.log(1);
         // Initialize the pool.
-        uint256 lpShares = initialize(alice, 0.02e18, 500_000_000e18);
+        uint256 lpShares = initialize(alice, 0.02e18, 120_000_000e18);
+        console.log(2);
 
         // Bob opens a large short.
         uint256 shortAmount = HyperdriveUtils.calculateMaxShort(hyperdrive);
         (uint256 maturityTime, ) = openShort(bob, shortAmount);
+        console.log(3);
 
         // Alice removes her liquidity.
         (, uint256 withdrawalShares) = removeLiquidity(alice, lpShares);
+        console.log(4);
 
         // The term passes and no interest accrues.
         advanceTime(POSITION_DURATION, 0);
+        console.log(5);
 
         // Bob closes his short.
         closeShort(bob, maturityTime, shortAmount);
+        console.log(6);
 
         // Alice redeems half of her withdrawal shares.
         uint256 aliceBaseBalanceBefore = baseToken.balanceOf(alice);
@@ -126,9 +135,11 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
         );
         assertApproxEqAbs(baseProceeds, shortAmount / 2, 1);
         assertApproxEqAbs(sharesRedeemed, withdrawalShares / 2, 1);
+        console.log(7);
 
         // Ensure that a `RedeemWithdrawalShares` event was emitted.
         verifyRedeemWithdrawalSharesEvent(alice, sharesRedeemed, baseProceeds);
+        console.log(8);
 
         // Ensure that the base proceeds were transferred.
         assertEq(
@@ -139,6 +150,7 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
             baseToken.balanceOf(address(hyperdrive)),
             hyperdriveBaseBalanceBefore - baseProceeds
         );
+        console.log(9);
 
         // Alice redeems the next half of her withdrawal shares.
         aliceBaseBalanceBefore = baseToken.balanceOf(alice);
@@ -149,14 +161,17 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
         );
         assertApproxEqAbs(baseProceeds, shortAmount / 2, 1);
         assertApproxEqAbs(sharesRedeemed, withdrawalShares / 2, 1);
+        console.log(10);
 
         // Ensure that a `RedeemWithdrawalShares` event was emitted.
         verifyRedeemWithdrawalSharesEvent(alice, sharesRedeemed, baseProceeds);
+        console.log(11);
 
         // Ensure that all of the withdrawal shares were burned.
         assertEq(hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID), 0);
         assertEq(hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw, 0);
         assertEq(hyperdrive.getPoolInfo().withdrawalSharesProceeds, 0);
+        console.log(12);
 
         // Ensure that the base proceeds were transferred.
         assertEq(
@@ -167,6 +182,7 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
             baseToken.balanceOf(address(hyperdrive)),
             hyperdriveBaseBalanceBefore - baseProceeds
         );
+        console.log(13);
     }
 
     function test_redeem_withdrawal_shares_long_halfway_through_term()

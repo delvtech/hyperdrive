@@ -14,7 +14,8 @@ import { YieldSpaceMath } from "./YieldSpaceMath.sol";
 library HyperdriveMath {
     using FixedPointMath for uint256;
 
-    uint256 internal constant MINIMUM_SHARE_RESERVES = 1e5;
+    // FIXME: We need to make this an immutable
+    uint256 internal constant MINIMUM_SHARE_RESERVES = 1e15;
 
     /// @dev Calculates the spot price without slippage of bonds in terms of shares.
     /// @param _shareReserves The pool's share reserves.
@@ -483,10 +484,6 @@ library HyperdriveMath {
         uint256 shortBaseVolume;
     }
 
-    // FIXME: We need to use the minimum share reserves here to reduce the
-    //        present value of the LP pool. We could also reduce the share
-    //        reserves whenever we pass them in.
-    //
     /// @dev Calculates the present value LPs capital in the pool.
     /// @param _params The parameters for the present value calculation.
     /// @return The present value of the pool.
@@ -571,6 +568,10 @@ library HyperdriveMath {
         _params.shareReserves = uint256(
             int256(_params.shareReserves) + netFlatTrade
         );
+
+        // Remove the minimum share reserves from the present value since this
+        // can't be removed from the pool.
+        _params.shareReserves -= MINIMUM_SHARE_RESERVES;
 
         return _params.shareReserves;
     }

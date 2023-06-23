@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import "forge-std/console.sol";
+import "test/utils/Lib.sol";
+
 import { SafeCast } from "./libraries/SafeCast.sol";
 import { HyperdriveLP } from "./HyperdriveLP.sol";
 import { AssetId } from "./libraries/AssetId.sol";
@@ -16,6 +20,9 @@ import { YieldSpaceMath } from "./libraries/YieldSpaceMath.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveShort is HyperdriveLP {
+    // FIXME
+    using Lib for *;
+
     using FixedPointMath for uint256;
     using SafeCast for uint256;
 
@@ -139,9 +146,11 @@ abstract contract HyperdriveShort is HyperdriveLP {
             revert Errors.ZeroAmount();
         }
 
+        console.log("closeShort: 1");
         // Perform a checkpoint.
         uint256 sharePrice = _pricePerShare();
         _applyCheckpoint(_maturityTime, sharePrice);
+        console.log("closeShort: 2");
 
         // Burn the shorts that are being closed.
         _burn(
@@ -149,6 +158,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             msg.sender,
             _bondAmount
         );
+        console.log("closeShort: 3");
 
         // Calculate the pool and user deltas using the trading function.
         (
@@ -157,6 +167,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             uint256 sharePayment,
             uint256 totalGovernanceFee
         ) = _calculateCloseShort(_bondAmount, sharePrice, _maturityTime);
+        console.log("closeShort: 4");
 
         // If the ending spot price is greater than or equal to 1, we are in the
         // negative interest region of the trading function. The spot price is
@@ -178,9 +189,11 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 revert Errors.NegativeInterest();
             }
         }
+        console.log("closeShort: 5");
 
         // Attribute the governance fees.
         _governanceFeesAccrued += totalGovernanceFee;
+        console.log("closeShort: 6");
 
         // If the position hasn't matured, apply the accounting updates that
         // result from closing the short to the reserves and pay out the
@@ -195,6 +208,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 sharePrice
             );
         }
+        console.log("closeShort: 7");
 
         // Withdraw the profit to the trader. This includes the proceeds from
         // the short sale as well as the variable interest that was collected
@@ -216,9 +230,11 @@ abstract contract HyperdriveShort is HyperdriveLP {
             _destination,
             _asUnderlying
         );
+        console.log("closeShort: 8");
 
         // Enforce min user outputs
         if (baseProceeds < _minOutput) revert Errors.OutputLimit();
+        console.log("closeShort: 9");
 
         // Emit a CloseShort event.
         uint256 maturityTime = _maturityTime; // Avoid stack too deep error.
@@ -310,6 +326,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         uint256 _maturityTime,
         uint256 _sharePrice
     ) internal {
+        console.log("_applyCloseShort: 1");
         // Update the short average maturity time.
         _marketState.shortAverageMaturityTime = uint256(
             _marketState.shortAverageMaturityTime
@@ -321,6 +338,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 false
             )
             .toUint128();
+        console.log("_applyCloseShort: 2");
 
         // Update the base volume aggregates.
         {
@@ -348,19 +366,26 @@ abstract contract HyperdriveShort is HyperdriveLP {
             _checkpoints[checkpointTime]
                 .shortBaseVolume -= proportionalBaseVolume;
         }
+        console.log("_applyCloseShort: 3");
 
         // Decrease the amount of shorts outstanding.
         _marketState.shortsOutstanding -= _bondAmount.toUint128();
+        console.log("_applyCloseShort: 4");
 
         // Apply the updates from the curve trade to the reserves.
         _marketState.shareReserves += _shareReservesDelta.toUint128();
         _marketState.bondReserves -= _bondReservesDelta.toUint128();
+        console.log("_applyCloseShort: 5");
+
+        console.log("_sharePayment", _sharePayment.toString(18));
+        console.log("_shareReservesDelta", _shareReservesDelta.toString(18));
 
         // Add the flat part of the trade to the pool's liquidity. We add to
         // the pool's liquidity because the LPs have a long position and thus
         // receive their principal and some fixed interest along with any
         // trading profits that have accrued.
         _updateLiquidity(int256(_sharePayment - _shareReservesDelta));
+        console.log("_applyCloseShort: 6");
 
         // If there are withdrawal shares outstanding, we pay out the maximum
         // amount of withdrawal shares. The proceeds owed to LPs when a long is
@@ -376,6 +401,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 _sharePrice
             );
         }
+        console.log("_applyCloseShort: 7");
     }
 
     /// @dev Calculate the pool reserve and trader deltas that result from
