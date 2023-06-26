@@ -349,7 +349,7 @@ contract NegativeInterestTest is HyperdriveTest {
     ) external {
         // Fuzz inputs
         // initialSharePrice [0.1,10]
-        // preTradeVariableInterest [-50,0]
+        // preTradeVariableInterest [-100,0]
         // variableInterest [-100,0]
         initialSharePrice = initialSharePrice.normalizeToRange(.1e18, 10e18);
         preTradeVariableInterest = -preTradeVariableInterest.normalizeToRange(
