@@ -77,6 +77,24 @@ contract HyperdriveTest is BaseTest {
         uint256 flatFee,
         uint256 governanceFee
     ) internal {
+        deploy(
+            deployer,
+            apr,
+            INITIAL_SHARE_PRICE,
+            curveFee,
+            flatFee,
+            governanceFee
+        );
+    }
+
+    function deploy(
+        address deployer,
+        uint256 apr,
+        uint256 initialSharePrice,
+        uint256 curveFee,
+        uint256 flatFee,
+        uint256 governanceFee
+    ) internal {
         vm.stopPrank();
         vm.startPrank(deployer);
         IHyperdrive.Fees memory fees = IHyperdrive.Fees({
@@ -86,7 +104,7 @@ contract HyperdriveTest is BaseTest {
         });
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: IERC20(address(baseToken)),
-            initialSharePrice: INITIAL_SHARE_PRICE,
+            initialSharePrice: initialSharePrice,
             positionDuration: POSITION_DURATION,
             checkpointDuration: CHECKPOINT_DURATION,
             timeStretch: HyperdriveUtils.calculateTimeStretch(apr),

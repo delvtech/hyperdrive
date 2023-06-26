@@ -263,6 +263,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                 timeStretch,
                 1 ether,
                 1 ether,
+                1 ether,
                 1 ether
             );
         // verify that the poolBondDelta equals the amountIn/2
@@ -307,6 +308,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                 timeStretch,
                 1 ether,
                 1 ether,
+                1 ether,
                 1 ether
             );
         // verify that the curve part is zero
@@ -345,6 +347,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                 timeStretch,
                 0.8 ether,
                 0.8 ether,
+                1 ether,
                 1 ether
             );
         // verify that the curve part is zero
@@ -369,6 +372,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                 timeStretch,
                 0.8 ether,
                 1.2 ether,
+                1 ether,
                 1 ether
             );
         // verify that the curve part is zero
