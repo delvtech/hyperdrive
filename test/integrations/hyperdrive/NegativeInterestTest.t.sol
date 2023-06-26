@@ -160,9 +160,7 @@ contract NegativeInterestTest is HyperdriveTest {
     ) internal {
         // Initialize the market
         uint256 apr = 0.05e18;
-        uint256 curveFee = 0; //0.10e18; // 5% of APR
-        uint256 flatFee = 0; //0.05e18; // 5 bps
-        deploy(alice, apr, initialSharePrice, curveFee, flatFee, 0); //.1e18);
+        deploy(alice, apr, initialSharePrice, 0, 0, 0);
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
 
@@ -264,9 +262,7 @@ contract NegativeInterestTest is HyperdriveTest {
     ) internal {
         // Initialize the market
         uint256 apr = 0.05e18;
-        uint256 curveFee = 0; //0.10e18; // 5% of APR
-        uint256 flatFee = 0; //0.05e18; // 5 bps
-        deploy(alice, apr, initialSharePrice, curveFee, flatFee, 0); //.1e18);
+        deploy(alice, apr, initialSharePrice, 0, 0, 0);
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
 
@@ -375,9 +371,7 @@ contract NegativeInterestTest is HyperdriveTest {
     ) internal {
         // Initialize the market
         uint256 apr = 0.05e18;
-        uint256 curveFee = 0; //0.10e18; // 5% of APR
-        uint256 flatFee = 0; //0.05e18; // 5 bps
-        deploy(alice, apr, initialSharePrice, curveFee, flatFee, 0); //.1e18);
+        deploy(alice, apr, initialSharePrice, 0, 0, 0);
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
 
