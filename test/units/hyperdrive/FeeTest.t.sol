@@ -169,14 +169,15 @@ contract FeeTest is HyperdriveTest {
             address(hyperdrive)
         ).calculateFeesOutGivenSharesIn(
                 1 ether, // amountIn
-                1 ether, //amountOut
                 0.5 ether, // spotPrice
                 1 ether // sharePrice
             );
-        // curve fee = ((1 / p) - 1) * phi_curve * c * d_z * t
-        // ((1/.5)-1) * .1*1*1*1 = .1
+        // curve fee = ((1 / p) - 1) * phi_curve * c * d_z 
+        // ((1/.5)-1) * .1*1*1 = .1
         assertEq(curveFee, .1 ether);
-        assertEq(governanceCurveFee, .05 ether);
+        // governance curve fee = (1 - p) * phi_curve * c * d_z * phi_governance
+        // (1-.5) * .1*1*1*1*.5 = .025
+        assertEq(governanceCurveFee, .025 ether);
     }
 
     function test_calcFeesOutGivenBondsIn() public {

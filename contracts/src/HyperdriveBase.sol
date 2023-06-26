@@ -253,14 +253,12 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
 
     /// @dev Calculates the fees for the flat and curve portion of hyperdrive calcOutGivenIn
     /// @param _amountIn The given amount in, either in terms of shares or bonds.
-    /// @param _amountOut The amount of the asset that is received before fees.
     /// @param _spotPrice The price without slippage of bonds in terms of shares.
     /// @param _sharePrice The current price of shares in terms of base.
     /// @return totalCurveFee The total curve fee. The fee is in terms of bonds.
     /// @return governanceCurveFee The curve fee that goes to governance. The fee is in terms of bonds.
     function _calculateFeesOutGivenSharesIn(
         uint256 _amountIn,
-        uint256 _amountOut,
         uint256 _spotPrice,
         uint256 _sharePrice
     )
@@ -268,19 +266,18 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
         view
         returns (uint256 totalCurveFee, uint256 governanceCurveFee)
     {
-        // curve fee = ((1 / p) - 1) * phi_curve * c * d_z
-        totalCurveFee = (FixedPointMath.ONE_18.divDown(_spotPrice)).sub(
-            FixedPointMath.ONE_18
-        );
-        totalCurveFee = totalCurveFee
+        uint256 rhs = _amountIn
             .mulDown(_curveFee)
-            .mulDown(_sharePrice)
-            .mulDown(_amountIn);
-        // governanceCurveFee = d_z * (curve_fee / d_y) * c * phi_gov
-        governanceCurveFee = _amountIn
-            .mulDivDown(totalCurveFee, _amountOut)
-            .mulDown(_sharePrice)
-            .mulDown(_governanceFee);
+            .mulDown(_sharePrice);
+
+        // total curve fee = ((1 / p) - 1) * phi_curve * c * d_z
+        totalCurveFee = (FixedPointMath.ONE_18.divDown(_spotPrice)).sub(FixedPointMath.ONE_18)
+            .mulDown(rhs);
+
+        // governanceCurveFee = (1 - p) * phi_curve * c * d_z * phi_gov
+        governanceCurveFee = (FixedPointMath.ONE_18.sub(_spotPrice))
+            .mulDown(rhs)
+            .mulDown(_governanceFee); 
     }
 
     /// @dev Calculates the fees for the flat and curve portion of hyperdrive calcOutGivenIn

@@ -141,7 +141,6 @@ contract MockHyperdrive is Hyperdrive {
 
     function calculateFeesOutGivenSharesIn(
         uint256 _amountIn,
-        uint256 _amountOut,
         uint256 _spotPrice,
         uint256 sharePrice
     )
@@ -151,7 +150,6 @@ contract MockHyperdrive is Hyperdrive {
     {
         (totalCurveFee, governanceCurveFee) = _calculateFeesOutGivenSharesIn(
             _amountIn,
-            _amountOut,
             _spotPrice,
             sharePrice
         );
