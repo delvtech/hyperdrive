@@ -8,8 +8,6 @@ import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import { Lib } from "../../utils/Lib.sol";
 
-import "forge-std/console2.sol";
-
 // TODO: We need to test several cases for long negative interest.
 //
 // - [ ] Negative interest leading to haircut.
