@@ -6,6 +6,7 @@ import { IERC20 } from "../interfaces/IERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { AssetId } from "../libraries/AssetId.sol";
 import { Errors } from "../libraries/Errors.sol";
+import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 
 /// @author DELV
 /// @title BondWrapper
@@ -14,6 +15,8 @@ import { Errors } from "../libraries/Errors.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract BondWrapper is ERC20 {
+    using SafeERC20 for IERC20;
+
     // The multitoken of the bond
     IHyperdrive public immutable hyperdrive;
     // The underlying token from the bond
@@ -145,8 +148,7 @@ contract BondWrapper is ERC20 {
         if (userFunds < minOutput) revert Errors.OutputLimit();
 
         // Transfer the released funds to the user
-        bool success = token.transfer(destination, userFunds);
-        if (!success) revert Errors.TransferFailed();
+        token.safeTransfer(destination, userFunds);
     }
 
     /// @notice Sells all assets from the contract if they are matured, has no affect if
@@ -180,8 +182,7 @@ contract BondWrapper is ERC20 {
         _burn(msg.sender, amount);
 
         // Transfer the released funds to the user
-        bool success = token.transfer(msg.sender, amount);
-        if (!success) revert Errors.TransferFailed();
+        token.safeTransfer(msg.sender, amount);
     }
 
     /// @notice Calls both force close and redeem to enable easy liquidation of a user account

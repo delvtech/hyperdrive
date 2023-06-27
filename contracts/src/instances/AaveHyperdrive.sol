@@ -7,6 +7,7 @@ import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { Errors } from "../libraries/Errors.sol";
 import { IERC20 } from "../interfaces/IERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 
 /// @author DELV
 /// @title AaveHyperdrive
@@ -16,6 +17,7 @@ import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 ///                    particular legal or regulatory significance.
 contract AaveHyperdrive is Hyperdrive {
     using FixedPointMath for uint256;
+    using SafeERC20 for IERC20;
 
     // The aave deployment details, the a token for this asset and the aave pool
     IERC20 internal immutable aToken;
@@ -66,19 +68,12 @@ contract AaveHyperdrive is Hyperdrive {
 
         if (asUnderlying) {
             // Transfer from user
-            bool success = _baseToken.transferFrom(
-                msg.sender,
-                address(this),
-                amount
-            );
-            if (!success) {
-                revert Errors.TransferFailed();
-            }
+            _baseToken.safeTransferFrom(msg.sender, address(this), amount);
             // Supply for the user
             pool.supply(address(_baseToken), amount, address(this), 0);
         } else {
             // aTokens are known to be revert on failed transfer tokens
-            aToken.transferFrom(msg.sender, address(this), amount);
+            aToken.safeTransferFrom(msg.sender, address(this), amount);
         }
 
         // Do share calculations
