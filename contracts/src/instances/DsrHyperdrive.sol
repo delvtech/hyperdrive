@@ -7,7 +7,6 @@ import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { Errors } from "../libraries/Errors.sol";
 import { Pot, DsrManager } from "../interfaces/IMaker.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
-import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 
 /// @author DELV
 /// @title DsrHyperdrive
@@ -17,7 +16,6 @@ import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 ///                    particular legal or regulatory significance.
 contract DsrHyperdrive is Hyperdrive {
     using FixedPointMath for uint256;
-    using SafeERC20 for IERC20;
 
     // @notice The shares created by this pool, starts at 1 to one with
     //         deposits and increases
@@ -75,7 +73,14 @@ contract DsrHyperdrive is Hyperdrive {
         }
 
         // Transfer the base token from the user to this contract
-        _baseToken.safeTransferFrom(msg.sender, address(this), amount);
+        bool success = _baseToken.transferFrom(
+            msg.sender,
+            address(this),
+            amount
+        );
+        if (!success) {
+            revert Errors.TransferFailed();
+        }
 
         // Get total invested balance of pool, deposits + interest
         uint256 totalBase = dsrManager.daiBalance(address(this));

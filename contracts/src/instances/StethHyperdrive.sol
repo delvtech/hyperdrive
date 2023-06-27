@@ -7,7 +7,6 @@ import { ILido } from "../interfaces/ILido.sol";
 import { IWETH } from "../interfaces/IWETH.sol";
 import { Errors } from "../libraries/Errors.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
-import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 
 /// @author DELV
 /// @title StethHyperdrive
