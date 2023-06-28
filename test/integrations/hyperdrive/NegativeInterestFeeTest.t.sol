@@ -113,7 +113,6 @@ contract NegativeInterestFeeTest is HyperdriveTest {
         advanceTime(POSITION_DURATION, variableInterest);
 
         // Record the sharePrice after interest accrual.
-
         (uint256 sharePrice, ) = HyperdriveUtils.calculateCompoundInterest(
             initialSharePrice,
             variableInterest,
@@ -144,6 +143,7 @@ contract NegativeInterestFeeTest is HyperdriveTest {
         uint256 governanceFeesAfterOpenLong = IMockHyperdrive(
             address(hyperdrive)
         ).getGovernanceFeesAccrued();
+
         // Calculate the expected fees from opening the long
         uint256 expectedGovernanceFees = (
             FixedPointMath.ONE_18.sub(calculatedSpotPrice)
@@ -156,10 +156,12 @@ contract NegativeInterestFeeTest is HyperdriveTest {
 
         // Immediately close the long.
         closeLong(bob, maturityTime, bondAmount);
+
         // Get the fees accrued from closing the long.
         uint256 governanceFeesAfterCloseLong = IMockHyperdrive(
             address(hyperdrive)
         ).getGovernanceFeesAccrued() - governanceFeesAfterOpenLong;
+
         // Calculate the expected fees from closing the long
         expectedGovernanceFees = (
             FixedPointMath.ONE_18.sub(calculatedSpotPrice)
@@ -493,7 +495,6 @@ contract NegativeInterestFeeTest is HyperdriveTest {
         // Open a long position.
         uint256 basePaid = 1e18;
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
-
         uint256 calculatedSpotPrice = HyperdriveUtils.calculateSpotPrice(
             hyperdrive
         );
@@ -526,6 +527,7 @@ contract NegativeInterestFeeTest is HyperdriveTest {
             variableInterest,
             POSITION_DURATION / 2
         );
+
         // Close the long.
         closeLong(bob, maturityTime, bondAmount);
 
