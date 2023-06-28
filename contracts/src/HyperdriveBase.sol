@@ -266,18 +266,17 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
         view
         returns (uint256 totalCurveFee, uint256 governanceCurveFee)
     {
-        uint256 rhs = _amountIn
-            .mulDown(_curveFee)
-            .mulDown(_sharePrice);
+        uint256 rhs = _amountIn.mulDown(_curveFee).mulDown(_sharePrice);
 
         // total curve fee = ((1 / p) - 1) * phi_curve * c * d_z
-        totalCurveFee = (FixedPointMath.ONE_18.divDown(_spotPrice)).sub(FixedPointMath.ONE_18)
+        totalCurveFee = (FixedPointMath.ONE_18.divDown(_spotPrice))
+            .sub(FixedPointMath.ONE_18)
             .mulDown(rhs);
 
         // governanceCurveFee = (1 - p) * phi_curve * c * d_z * phi_gov
         governanceCurveFee = (FixedPointMath.ONE_18.sub(_spotPrice))
             .mulDown(rhs)
-            .mulDown(_governanceFee); 
+            .mulDown(_governanceFee);
     }
 
     /// @dev Calculates the fees for the flat and curve portion of hyperdrive calcOutGivenIn

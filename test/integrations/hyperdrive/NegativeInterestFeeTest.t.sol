@@ -145,7 +145,9 @@ contract NegativeInterestFeeTest is HyperdriveTest {
             address(hyperdrive)
         ).getGovernanceFeesAccrued();
         // Calculate the expected fees from opening the long
-        uint256 expectedGovernanceFees = (FixedPointMath.ONE_18.sub(calculatedSpotPrice)).mulDown(basePaid).mulDivDown(curveFee, sharePrice);
+        uint256 expectedGovernanceFees = (
+            FixedPointMath.ONE_18.sub(calculatedSpotPrice)
+        ).mulDown(basePaid).mulDivDown(curveFee, sharePrice);
         assertApproxEqAbs(
             governanceFeesAfterOpenLong,
             expectedGovernanceFees,
@@ -159,7 +161,9 @@ contract NegativeInterestFeeTest is HyperdriveTest {
             address(hyperdrive)
         ).getGovernanceFeesAccrued() - governanceFeesAfterOpenLong;
         // Calculate the expected fees from closing the long
-        expectedGovernanceFees = (FixedPointMath.ONE_18.sub(calculatedSpotPrice)).mulDown(basePaid).mulDivDown(curveFee, sharePrice);
+        expectedGovernanceFees = (
+            FixedPointMath.ONE_18.sub(calculatedSpotPrice)
+        ).mulDown(basePaid).mulDivDown(curveFee, sharePrice);
         assertApproxEqAbs(
             governanceFeesAfterCloseLong,
             expectedGovernanceFees,
@@ -176,7 +180,10 @@ contract NegativeInterestFeeTest is HyperdriveTest {
         // initialSharePrice [0.5,10]
         // variableInterest [-50,0]
         initialSharePrice = initialSharePrice.normalizeToRange(.5e18, 10e18);
-        preTradeVariableInterest = -preTradeVariableInterest.normalizeToRange(0, .5e18);
+        preTradeVariableInterest = -preTradeVariableInterest.normalizeToRange(
+            0,
+            .5e18
+        );
         variableInterest = -variableInterest.normalizeToRange(0, .5e18);
         uint256 curveFee = 0e18;
         uint256 flatFee = 0.1e18;
@@ -350,7 +357,10 @@ contract NegativeInterestFeeTest is HyperdriveTest {
         // initialSharePrice [0.5,10]
         // variableInterest [-50,0]
         initialSharePrice = initialSharePrice.normalizeToRange(.5e18, 10e18);
-        preTradeVariableInterest = -preTradeVariableInterest.normalizeToRange(0, .5e18);
+        preTradeVariableInterest = -preTradeVariableInterest.normalizeToRange(
+            0,
+            .5e18
+        );
         variableInterest = -variableInterest.normalizeToRange(0, .5e18);
         uint256 curveFee = 0.1e18;
         uint256 flatFee = 0.1e18;
@@ -496,7 +506,9 @@ contract NegativeInterestFeeTest is HyperdriveTest {
         // Calculate the expected accrued fees from opening the long and compare to the actual.
         {
             // This is close enough
-        uint256 expectedGovernanceFees = (FixedPointMath.ONE_18.sub(calculatedSpotPrice)).mulDown(basePaid).mulDivDown(curveFee, openSharePrice);
+            uint256 expectedGovernanceFees = (
+                FixedPointMath.ONE_18.sub(calculatedSpotPrice)
+            ).mulDown(basePaid).mulDivDown(curveFee, openSharePrice);
 
             assertApproxEqAbs(
                 governanceFeesAfterOpenLong,

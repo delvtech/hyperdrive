@@ -172,7 +172,7 @@ contract FeeTest is HyperdriveTest {
                 0.5 ether, // spotPrice
                 1 ether // sharePrice
             );
-        // curve fee = ((1 / p) - 1) * phi_curve * c * d_z 
+        // curve fee = ((1 / p) - 1) * phi_curve * c * d_z
         // ((1/.5)-1) * .1*1*1 = .1
         assertEq(curveFee, .1 ether);
         // governance curve fee = (1 - p) * phi_curve * c * d_z * phi_governance
