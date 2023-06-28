@@ -446,6 +446,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 _bondAmount,
                 timeRemaining,
                 _timeStretch,
+                _checkpoints[_maturityTime - _positionDuration].longSharePrice,
                 closeSharePrice,
                 _sharePrice,
                 _initialSharePrice

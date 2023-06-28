@@ -63,6 +63,7 @@ contract MockHyperdriveMath {
         uint256 _amountIn,
         uint256 _normalizedTimeRemaining,
         uint256 _timeStretch,
+        uint256 _openSharePrice,
         uint256 _closeSharePrice,
         uint256 _sharePrice,
         uint256 _initialSharePrice
@@ -74,6 +75,7 @@ contract MockHyperdriveMath {
                 _amountIn,
                 _normalizedTimeRemaining,
                 _timeStretch,
+                _openSharePrice,
                 _closeSharePrice,
                 _sharePrice,
                 _initialSharePrice
