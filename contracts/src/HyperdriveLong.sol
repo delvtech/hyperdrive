@@ -379,7 +379,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
             _marketState.shareReserves,
             _marketState.bondReserves,
             _initialSharePrice,
-            _timeRemaining,
             _timeStretch
         );
 
@@ -464,7 +463,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 _marketState.shareReserves,
                 _marketState.bondReserves,
                 _initialSharePrice,
-                timeRemaining,
                 _timeStretch
             )
             : FixedPointMath.ONE_18;

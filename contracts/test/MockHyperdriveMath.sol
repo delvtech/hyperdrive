@@ -173,7 +173,6 @@ contract MockHyperdriveMath {
             _shareReserves,
             _bondReserves,
             _initialSharePrice,
-            _normalizedTimeRemaining,
             _timeStretch
         );
         return result;

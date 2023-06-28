@@ -14,27 +14,24 @@ import { YieldSpaceMath } from "./YieldSpaceMath.sol";
 library HyperdriveMath {
     using FixedPointMath for uint256;
 
-    /// @dev Calculates the spot price without slippage of bonds in terms of shares.
+    /// @dev Calculates the spot price without slippage of bonds in terms of base.
     /// @param _shareReserves The pool's share reserves.
     /// @param _bondReserves The pool's bond reserves.
     /// @param _initialSharePrice The initial share price as an 18 fixed-point value.
-    /// @param _normalizedTimeRemaining The normalized amount of time remaining until maturity.
     /// @param _timeStretch The time stretch parameter as an 18 fixed-point value.
-    /// @return spotPrice The spot price of bonds in terms of shares as an 18 fixed-point value.
+    /// @return spotPrice The spot price of bonds in terms of base as an 18 fixed-point value.
     function calculateSpotPrice(
         uint256 _shareReserves,
         uint256 _bondReserves,
         uint256 _initialSharePrice,
-        uint256 _normalizedTimeRemaining,
         uint256 _timeStretch
     ) internal pure returns (uint256 spotPrice) {
-        // (y / (mu * z)) ** -tau
-        // ((mu * z) / y) ** tau
-        uint256 tau = _normalizedTimeRemaining.mulDown(_timeStretch);
+        // (y / (mu * z)) ** -ts
+        // ((mu * z) / y) ** ts
 
         spotPrice = _initialSharePrice
             .mulDivDown(_shareReserves, _bondReserves)
-            .pow(tau);
+            .pow(_timeStretch);
     }
 
     /// @dev Calculates the APR from the pool's reserves.
@@ -60,8 +57,6 @@ library HyperdriveMath {
             _shareReserves,
             _bondReserves,
             _initialSharePrice,
-            // full time remaining of position
-            FixedPointMath.ONE_18,
             _timeStretch
         );
 
@@ -390,7 +385,6 @@ library HyperdriveMath {
                 _shareReserves + dz,
                 _bondReserves - dy,
                 _initialSharePrice,
-                FixedPointMath.ONE_18,
                 _timeStretch
             );
             if (p >= FixedPointMath.ONE_18) {

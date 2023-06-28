@@ -247,7 +247,6 @@ contract YieldSpaceMathTest is Test {
                 shareReserves + maxDz,
                 bondReserves - maxDy,
                 initialSharePrice,
-                FixedPointMath.ONE_18,
                 timeStretch
             ),
             1e18,

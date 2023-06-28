@@ -41,8 +41,7 @@ library HyperdriveUtils {
     }
 
     function calculateSpotPrice(
-        IHyperdrive _hyperdrive,
-        uint256 _normalizedTimeRemaining
+        IHyperdrive _hyperdrive
     ) internal view returns (uint256) {
         IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
         IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
@@ -51,15 +50,8 @@ library HyperdriveUtils {
                 poolInfo.shareReserves,
                 poolInfo.bondReserves,
                 poolConfig.initialSharePrice,
-                _normalizedTimeRemaining,
                 poolConfig.timeStretch
             );
-    }
-
-    function calculateSpotPrice(
-        IHyperdrive _hyperdrive
-    ) internal view returns (uint256) {
-        return _hyperdrive.calculateSpotPrice(FixedPointMath.ONE_18);
     }
 
     function calculateAPRFromReserves(
@@ -233,7 +225,6 @@ library HyperdriveUtils {
             poolInfo.shareReserves,
             poolInfo.bondReserves,
             poolConfig.initialSharePrice,
-            timeRemaining,
             poolConfig.timeStretch
         );
 
