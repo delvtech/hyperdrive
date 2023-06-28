@@ -272,8 +272,8 @@ contract MockHyperdrive is Hyperdrive {
             revert Errors.TransferFailed();
         }
         if (totalShares == 0) {
-            totalShares = amount;
-            return (amount, FixedPointMath.ONE_18);
+            totalShares = amount.divDown(_initialSharePrice);
+            return (amount, _initialSharePrice);
         } else {
             uint256 newShares = totalShares.mulDivDown(amount, assets);
             totalShares += newShares;
