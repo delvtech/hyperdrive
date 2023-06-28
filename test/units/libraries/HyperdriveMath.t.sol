@@ -345,9 +345,9 @@ contract HyperdriveMathTest is HyperdriveTest {
                 amountIn,
                 normalizedTimeRemaining,
                 timeStretch,
-                0.8 ether,
-                0.8 ether,
                 1 ether,
+                0.8 ether,
+                0.8 ether,
                 1 ether
             );
         // verify that the curve part is zero
@@ -370,9 +370,9 @@ contract HyperdriveMathTest is HyperdriveTest {
                 amountIn,
                 normalizedTimeRemaining,
                 timeStretch,
+                1 ether,
                 0.8 ether,
                 1.2 ether,
-                1 ether,
                 1 ether
             );
         // verify that the curve part is zero

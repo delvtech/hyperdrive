@@ -134,9 +134,9 @@ library HyperdriveMath {
     /// @param _normalizedTimeRemaining The normalized time remaining of the
     ///        position.
     /// @param _timeStretch The time stretch parameter.
+    /// @param _openSharePrice The share price at open.
     /// @param _closeSharePrice The share price at close.
     /// @param _sharePrice The share price.
-    /// @param _openSharePrice The share price at open.
     /// @param _initialSharePrice The share price when the pool was deployed.
     /// @return shareReservesDelta The shares paid by the reserves in the trade.
     /// @return bondReservesDelta The bonds paid to the reserves in the trade.
@@ -147,9 +147,9 @@ library HyperdriveMath {
         uint256 _amountIn,
         uint256 _normalizedTimeRemaining,
         uint256 _timeStretch,
+        uint256 _openSharePrice,
         uint256 _closeSharePrice,
         uint256 _sharePrice,
-        uint256 _openSharePrice,
         uint256 _initialSharePrice
     )
         internal

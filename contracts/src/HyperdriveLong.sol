@@ -439,8 +439,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
         uint256 closeSharePrice = block.timestamp < _maturityTime
             ? _sharePrice
             : _checkpoints[_maturityTime].sharePrice;
-        uint256 openSharePrice = _checkpoints[_maturityTime - _positionDuration]
-            .longSharePrice;
         (shareReservesDelta, bondReservesDelta, shareProceeds) = HyperdriveMath
             .calculateCloseLong(
                 _marketState.shareReserves,
@@ -448,9 +446,9 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 _bondAmount,
                 timeRemaining,
                 _timeStretch,
+                _checkpoints[_maturityTime - _positionDuration].longSharePrice,
                 closeSharePrice,
                 _sharePrice,
-                openSharePrice,
                 _initialSharePrice
             );
 

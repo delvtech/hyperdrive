@@ -63,9 +63,9 @@ contract MockHyperdriveMath {
         uint256 _amountIn,
         uint256 _normalizedTimeRemaining,
         uint256 _timeStretch,
+        uint256 _openSharePrice,
         uint256 _closeSharePrice,
         uint256 _sharePrice,
-        uint256 _openSharePrice,
         uint256 _initialSharePrice
     ) external pure returns (uint256, uint256, uint256) {
         (uint256 result1, uint256 result2, uint256 result3) = HyperdriveMath
@@ -75,9 +75,9 @@ contract MockHyperdriveMath {
                 _amountIn,
                 _normalizedTimeRemaining,
                 _timeStretch,
+                _openSharePrice,
                 _closeSharePrice,
                 _sharePrice,
-                _openSharePrice,
                 _initialSharePrice
             );
         return (result1, result2, result3);

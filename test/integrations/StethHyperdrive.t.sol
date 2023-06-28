@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import "forge-std/Test.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { StethHyperdriveDeployer } from "contracts/src/factory/StethHyperdriveDeployer.sol";
@@ -17,7 +18,6 @@ import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
-import "forge-std/Test.sol";
 
 contract StethHyperdriveTest is HyperdriveTest {
     using FixedPointMath for uint256;
@@ -465,7 +465,6 @@ contract StethHyperdriveTest is HyperdriveTest {
         (uint256 maturityTime, uint256 longAmount) = openLong(bob, basePaid);
 
         // Get some balance information before the withdrawal.
-
         uint256 totalPooledEtherBefore = LIDO.getTotalPooledEther();
         uint256 totalSharesBefore = LIDO.getTotalShares();
         AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
@@ -505,8 +504,8 @@ contract StethHyperdriveTest is HyperdriveTest {
         // pre-computes the share price.
         uint256 basePaid = HyperdriveUtils.calculateMaxLong(hyperdrive) / 10;
         uint256 hyperdriveSharesBefore = LIDO.sharesOf(address(hyperdrive));
-        // # Bob calls openLong() #\n");
 
+        // Bob calls openLong()
         (uint256 maturityTime, uint256 longAmount) = openLong(bob, basePaid);
         // Bob paid basePaid == ", basePaid);
         // Bob received longAmount == ", longAmount);
@@ -517,16 +516,15 @@ contract StethHyperdriveTest is HyperdriveTest {
         );
 
         // Get some balance information before the withdrawal.
-
         uint256 totalPooledEtherBefore = LIDO.getTotalPooledEther();
         uint256 totalSharesBefore = LIDO.getTotalShares();
         AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
         AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
             address(hyperdrive)
         );
-
         uint256 snapshotId = vm.snapshot();
-        // # Taking a Snapshot of the state #\n");
+
+        // Taking a Snapshot of the state 
         // Bob closes his long with stETH as the target asset.
         uint256 baseProceeds = closeLong(
             bob,
@@ -534,12 +532,7 @@ contract StethHyperdriveTest is HyperdriveTest {
             longAmount / 2,
             false
         );
-        // # Bob calls closeLong() #\n");
-        console.log(
-            "Bob received baseProceeds == %s for closing %s",
-            baseProceeds,
-            longAmount / 2
-        );
+
         // Ensure that Lido's aggregates and the token balances were updated
         // correctly during the trade.
         verifyStethWithdrawal(
@@ -562,10 +555,6 @@ contract StethHyperdriveTest is HyperdriveTest {
         );
         // LIDO.CL_BALANCE_POSITION Before: ", uint(balanceBefore));
         uint beforeTotalPooledEther = uint(LIDO.getTotalPooledEther());
-        console.log(
-            "LIDO.getTotalPooledEther() Before: ",
-            beforeTotalPooledEther
-        );
         hyperdrive.balanceOf(
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
             bob
@@ -592,28 +581,14 @@ contract StethHyperdriveTest is HyperdriveTest {
                 )
             )
         );
-        console.log(
-            "LIDO.CL_BALANCE_POSITION Before - After:  ",
-            uint(balanceBefore) - uint(balanceAfter)
-        );
-        console.log(
-            "LIDO.getTotalPooledEther() After:  ",
-            uint(LIDO.getTotalPooledEther())
-        );
-        console.log(
-            "LIDO.getTotalPooledEther() Before - After:  ",
-            beforeTotalPooledEther - uint(LIDO.getTotalPooledEther())
-        );
 
         // Bob closes his long with stETH as the target asset.
         hyperdrive.balanceOf(
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime_),
             bob
         );
-        console.log(
-            "# Bob now calls closeLong() after LIDO's balance update, but this will revert #\n"
-        );
-
+        
+        // The fact that this doesn't revert means that it works
         closeLong(bob, maturityTime_, longAmount_ / 2, false);
     }
 
