@@ -554,7 +554,7 @@ contract StethHyperdriveTest is HyperdriveTest {
             )
         );
         // LIDO.CL_BALANCE_POSITION Before: ", uint(balanceBefore));
-        uint beforeTotalPooledEther = uint(LIDO.getTotalPooledEther());
+        uint(LIDO.getTotalPooledEther());
         hyperdrive.balanceOf(
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
             bob
@@ -573,7 +573,7 @@ contract StethHyperdriveTest is HyperdriveTest {
         uint256 maturityTime_ = maturityTime;
         uint256 longAmount_ = longAmount;
 
-        bytes32 balanceAfter = vm.load(
+        vm.load(
             address(LIDO),
             bytes32(
                 uint256(
