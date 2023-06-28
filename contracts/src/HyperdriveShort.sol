@@ -416,7 +416,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
             _marketState.shareReserves,
             _marketState.bondReserves,
             _initialSharePrice,
-            _timeRemaining,
             _timeStretch
         );
         // Add the spot price to the oracle if an oracle update is required
@@ -484,7 +483,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 _marketState.shareReserves,
                 _marketState.bondReserves,
                 _initialSharePrice,
-                timeRemaining,
                 _timeStretch
             )
             : FixedPointMath.ONE_18;

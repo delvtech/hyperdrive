@@ -166,14 +166,12 @@ contract MockHyperdriveMath {
         uint256 _shareReserves,
         uint256 _bondReserves,
         uint256 _initialSharePrice,
-        uint256 _normalizedTimeRemaining,
         uint256 _timeStretch
     ) external pure returns (uint256) {
         uint256 result = HyperdriveMath.calculateSpotPrice(
             _shareReserves,
             _bondReserves,
             _initialSharePrice,
-            _normalizedTimeRemaining,
             _timeStretch
         );
         return result;

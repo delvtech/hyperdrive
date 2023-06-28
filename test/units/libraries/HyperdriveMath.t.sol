@@ -27,7 +27,6 @@ contract HyperdriveMathTest is HyperdriveTest {
                 1 ether, // shareReserves
                 1 ether, // bondReserves
                 1 ether, // initialSharePrice
-                1 ether, // timeRemaining
                 1 ether // timeStretch
             ),
             1 ether // 1.0 spot price
@@ -38,7 +37,6 @@ contract HyperdriveMathTest is HyperdriveTest {
                 1.1 ether, // shareReserves
                 1 ether, // bondReserves
                 1 ether, // initialSharePrice
-                1 ether, // timeRemaining
                 1 ether // timeStretch
             ),
             1.1 ether, // 1.1 spot price
