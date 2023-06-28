@@ -524,7 +524,7 @@ contract StethHyperdriveTest is HyperdriveTest {
         );
         uint256 snapshotId = vm.snapshot();
 
-        // Taking a Snapshot of the state 
+        // Taking a Snapshot of the state
         // Bob closes his long with stETH as the target asset.
         uint256 baseProceeds = closeLong(
             bob,
@@ -587,7 +587,7 @@ contract StethHyperdriveTest is HyperdriveTest {
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime_),
             bob
         );
-        
+
         // The fact that this doesn't revert means that it works
         closeLong(bob, maturityTime_, longAmount_ / 2, false);
     }
