@@ -387,7 +387,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
             uint256 governanceCurveFee
         ) = _calculateFeesOutGivenSharesIn(
                 _shareAmount, // amountIn
-                bondReservesDelta, // amountOut
                 spotPrice,
                 _sharePrice
             );

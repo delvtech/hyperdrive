@@ -418,6 +418,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             _initialSharePrice,
             _timeStretch
         );
+
         // Add the spot price to the oracle if an oracle update is required
         recordPrice(spotPrice);
 
