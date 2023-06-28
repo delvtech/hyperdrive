@@ -50,14 +50,12 @@ abstract contract HyperdriveLong is HyperdriveLP {
 
         // Calculate the pool and user deltas using the trading function. We
         // backdate the bonds purchased to the beginning of the checkpoint.
-        uint256 maturityTime = latestCheckpoint + _positionDuration;
-        uint256 timeRemaining = _calculateTimeRemaining(maturityTime);
         (
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
             uint256 bondProceeds,
             uint256 totalGovernanceFee
-        ) = _calculateOpenLong(shares, sharePrice, timeRemaining);
+        ) = _calculateOpenLong(shares, sharePrice);
 
         // If the ending spot price is greater than or equal to 1, we are in the
         // negative interest region of the trading function. The spot price is
@@ -78,6 +76,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         _governanceFeesAccrued += totalGovernanceFee;
 
         // Apply the open long to the state.
+        uint256 maturityTime = latestCheckpoint + _positionDuration;
         _applyOpenLong(
             shareReservesDelta,
             bondProceeds,
@@ -342,15 +341,13 @@ abstract contract HyperdriveLong is HyperdriveLP {
     ///      opening a long. This calculation includes trading fees.
     /// @param _shareAmount The amount of shares being paid to open the long.
     /// @param _sharePrice The current share price.
-    /// @param _timeRemaining The time remaining in the position.
     /// @return shareReservesDelta The change in the share reserves.
     /// @return bondReservesDelta The change in the bond reserves.
     /// @return bondProceeds The proceeds in bonds.
     /// @return totalGovernanceFee The governance fee in shares.
     function _calculateOpenLong(
         uint256 _shareAmount,
-        uint256 _sharePrice,
-        uint256 _timeRemaining
+        uint256 _sharePrice
     )
         internal
         returns (

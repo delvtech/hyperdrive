@@ -222,8 +222,7 @@ contract MockHyperdrive is Hyperdrive {
     // Calls Hyperdrive._calculateOpenLong
     function calculateOpenLong(
         uint256 _shareAmount,
-        uint256 _sharePrice,
-        uint256 _timeRemaining
+        uint256 _sharePrice
     )
         external
         returns (
@@ -233,7 +232,7 @@ contract MockHyperdrive is Hyperdrive {
             uint256 totalGovernanceFee
         )
     {
-        return _calculateOpenLong(_shareAmount, _sharePrice, _timeRemaining);
+        return _calculateOpenLong(_shareAmount, _sharePrice);
     }
 
     function calculateTimeRemaining(
