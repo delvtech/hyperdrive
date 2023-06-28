@@ -7,6 +7,7 @@ import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { Errors } from "../libraries/Errors.sol";
 import { IERC20 } from "../interfaces/IERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 
 /// @author DELV
 /// @title ERC4626Hyperdrive
@@ -16,6 +17,7 @@ import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 ///                    particular legal or regulatory significance.
 contract ERC4626Hyperdrive is Hyperdrive {
     using FixedPointMath for uint256;
+    using SafeERC20 for IERC20;
 
     // The yield source contract for this hyperdrive
     IERC4626 internal immutable pool;
@@ -71,14 +73,7 @@ contract ERC4626Hyperdrive is Hyperdrive {
     ) internal override returns (uint256 sharesMinted, uint256 sharePrice) {
         if (asUnderlying) {
             // Transfer from user
-            bool success = _baseToken.transferFrom(
-                msg.sender,
-                address(this),
-                amount
-            );
-            if (!success) {
-                revert Errors.TransferFailed();
-            }
+            _baseToken.safeTransferFrom(msg.sender, address(this), amount);
             // Supply for the user
             sharesMinted = pool.deposit(amount, address(this));
             sharePrice = _pricePerShare();
@@ -89,14 +84,11 @@ contract ERC4626Hyperdrive is Hyperdrive {
             //        then this can create bugs.
             uint256 converted = pool.convertToShares(amount);
             // Transfer erc4626 shares from the user
-            bool success = IERC20(address(pool)).transferFrom(
+            IERC20(address(pool)).safeTransferFrom(
                 msg.sender,
                 address(this),
                 converted
             );
-            if (!success) {
-                revert Errors.TransferFailed();
-            }
             sharesMinted = converted;
             sharePrice = _pricePerShare();
         }
@@ -118,10 +110,7 @@ contract ERC4626Hyperdrive is Hyperdrive {
             amountWithdrawn = pool.redeem(shares, destination, address(this));
         } else {
             // Transfer erc4626 shares to the user
-            bool success = IERC20(address(pool)).transfer(destination, shares);
-            if (!success) {
-                revert Errors.TransferFailed();
-            }
+            IERC20(address(pool)).safeTransfer(destination, shares);
             // Now we calculate the price per share
             uint256 estimated = pool.convertToAssets(shares);
             amountWithdrawn = estimated;
@@ -157,6 +146,6 @@ contract ERC4626Hyperdrive is Hyperdrive {
         ) revert Errors.UnsupportedToken();
         // Transfer to the fee collector
         uint256 balance = token.balanceOf(address(this));
-        token.transfer(_feeCollector, balance);
+        token.safeTransfer(_feeCollector, balance);
     }
 }
