@@ -28,7 +28,6 @@ library HyperdriveMath {
     ) internal pure returns (uint256 spotPrice) {
         // (y / (mu * z)) ** -ts
         // ((mu * z) / y) ** ts
-
         spotPrice = _initialSharePrice
             .mulDivDown(_shareReserves, _bondReserves)
             .pow(_timeStretch);
