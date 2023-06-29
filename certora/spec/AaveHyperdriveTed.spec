@@ -216,7 +216,8 @@ rule openLongPreservesOutstandingLongs(env e) {
     assert sharePrice2*bondReserves2 >= to_mathint(ONE18()*longsOutstanding2);
 }
 
-// Verified with NONDET _applyCheckpoint.
+/// When calling openLong a long position is opened 
+/// Verified with NONDET _applyCheckpoint.
 rule openLongReallyOpensLong(env e) {
     uint256 baseAmount;
     uint256 minOutput;

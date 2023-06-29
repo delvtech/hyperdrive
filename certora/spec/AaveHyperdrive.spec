@@ -136,7 +136,8 @@ function depositOutput(env e, uint256 totalSharesBefore, uint256 assetsBefore, u
 
 /// Checks the balance difference after transfering aTokens.
 /// Due to rounding errors of index divison and multiplication, the difference
-/// is bounded by the index + 1/RAY
+/// is bounded by index + 1/RAY
+/// @notice [VERIFIED]
 rule aTokenTransferBalanceTest(uint256 amount, address recipient) {
     env e;
     require e.msg.sender != recipient;
@@ -262,7 +263,7 @@ rule longPositionRoundTrip2() {
     assert minOutput_close <= assetsReceived;
 }
 
-/// No action can change the share price for two different checkpoints.
+/// No action can change the share price for two different checkpoints at the same time.
 /// @notice [VERIFIED]
 rule sharePriceChangesForOnlyOneCheckPoint(method f) {
     env e;
@@ -296,6 +297,7 @@ rule cannotChangeCheckPointSharePriceTwice(uint256 _checkpoint, method f) {
 /// No function can change the total supply of two different tokens at the same time.
 /// @notice the only exception to this rule is 
 /// the function removeLiqudity() that can change both LP tokens types only!
+/// @notice [VERIFIED]
 rule onlyOneTokenTotalSupplyChangesAtATime(method f, uint256 assetID1, uint256 assetID2) 
 filtered{ f -> !f.isView } {
     env e;

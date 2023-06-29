@@ -267,7 +267,9 @@ rule closeMonoton(env e, env e2) {
 }
 
 
-// STATUS - verified
+/// mint() correctly updates msg.sender’s MultiToken balance and
+/// sdestination’s BondWrapper balance won’t be decreased.
+/// STATUS - verified
 rule mintIntegrityUser(env e, env e2) {
     uint256 maturityTime;
     uint256 amount;
@@ -315,7 +317,8 @@ rule mintIntegritySystem(env e, env e2) {
 }
 
 
-// STATUS - verified
+/// mint() doesn’t affect the balances of other users on any token involved.
+/// STATUS - verified
 rule mintIntegrityOthers(env e, env e2) {
     uint256 maturityTime;
     uint256 amount;
@@ -341,7 +344,8 @@ rule mintIntegrityOthers(env e, env e2) {
 }
 
 
-// STATUS - verified
+/// Spliting mint amount into two smaller mint amounts is not profitable.
+/// STATUS - verified
 rule mintIntegritySmallsVsBig(env e, env e2) {
     uint256 maturityTime;
     uint256 amount; uint256 amount1; uint256 amount2;
@@ -373,8 +377,8 @@ rule mintIntegritySmallsVsBig(env e, env e2) {
     assert hyperBalanceAfterBig == hyperBalanceAfterSmall;
 }
 
-
-// STATUS - in progress
+/// close() correctly updates msg.sender’s BondWrapper and destination’s ERC20 balances.
+/// STATUS - in progress
 rule closeIntegrityUser(env e) {
     uint256 maturityTime;
     uint256 amount;
@@ -424,7 +428,8 @@ rule closeIntegritySystem(env e) {
 }
 
 
-// STATUS - in progress
+/// close() doesn’t affect the balances of other users on any token involved.
+/// STATUS - in progress
 rule closeIntegrityOthers(env e) {
     uint256 maturityTime;
     uint256 amount;
