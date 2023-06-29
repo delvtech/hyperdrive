@@ -157,7 +157,7 @@ contract FeeTest is HyperdriveTest {
         assertGt(governanceBalanceAfter, governanceBalanceBefore);
     }
 
-    function test_calcFeesOutGivenSharesIn() public {
+    function test_calculateOpenLongFees() public {
         uint256 apr = 0.05e18;
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
@@ -170,13 +170,13 @@ contract FeeTest is HyperdriveTest {
         ).calculateFeesOutGivenSharesIn(
                 1 ether, // amountIn
                 0.5 ether, // spotPrice
-                1 ether // sharePrice
+                1 ether //sharePrice
             );
-        // curve fee = ((1 / p) - 1) * phi_curve * c * d_z
+        // total curve fee = ((1 / p) - 1) * phi_curve * c * dz
         // ((1/.5)-1) * .1*1*1 = .1
         assertEq(curveFee, .1 ether);
-        // governance curve fee = (1 - p) * phi_curve * c * d_z * phi_governance
-        // (1-.5) * .1*1*1*1*.5 = .025
+        // governance curve fee = total curve fee * spot price * phi_gov
+        // .1 * 0.5 * 0.5 = .025
         assertEq(governanceCurveFee, .025 ether);
     }
 

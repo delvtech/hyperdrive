@@ -383,20 +383,36 @@ abstract contract HyperdriveLong is HyperdriveLP {
         recordPrice(spotPrice);
 
         (
-            uint256 totalCurveFee,
-            uint256 governanceCurveFee
+            uint256 totalCurveFee, // bonds
+            uint256 governanceCurveFee // base
         ) = _calculateFeesOutGivenSharesIn(
-                _shareAmount, // amountIn
+                _shareAmount,
                 spotPrice,
                 _sharePrice
             );
         bondProceeds = bondReservesDelta - totalCurveFee;
-        bondReservesDelta -= totalCurveFee - governanceCurveFee;
+
+        // totalCurveFee is in bonds and governanceCurveFee is in base
+        // so we divide it by the spot price to convert it to bonds:
+        // bonds -= bonds - base/(base/bonds)
+        // bonds -= bonds - bonds
+        bondReservesDelta -=
+            totalCurveFee -
+            governanceCurveFee.divDown(spotPrice);
 
         // Calculate the fees owed to governance in shares.
+        // shareReservesDelta and totalGovernanceFee is in shares
+        // so we divide it by the share price (base/shares)
+        // to convert it to shares:
+        // shares -= shares - base/(base/shares)
+        // shares -= shares - shares
         shareReservesDelta =
             _shareAmount -
             governanceCurveFee.divDown(_sharePrice);
+
+        // totalGovernanceFee is in base and we want it in shares
+        // shares = base/(base/shares)
+        // shares = shares
         totalGovernanceFee = governanceCurveFee.divDown(_sharePrice);
 
         return (

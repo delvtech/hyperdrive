@@ -134,7 +134,6 @@ contract NegativeInterestFeeTest is HyperdriveTest {
         // Open a long position.
         uint256 basePaid = 1e18;
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
-
         uint256 calculatedSpotPrice = HyperdriveUtils.calculateSpotPrice(
             hyperdrive
         );
@@ -146,8 +145,11 @@ contract NegativeInterestFeeTest is HyperdriveTest {
 
         // Calculate the expected fees from opening the long
         uint256 expectedGovernanceFees = (
-            FixedPointMath.ONE_18.sub(calculatedSpotPrice)
-        ).mulDown(basePaid).mulDivDown(curveFee, sharePrice);
+            FixedPointMath.ONE_18.divDown(calculatedSpotPrice)
+        ).sub(FixedPointMath.ONE_18).mulDown(basePaid).mulDivDown(
+                calculatedSpotPrice,
+                sharePrice
+            );
         assertApproxEqAbs(
             governanceFeesAfterOpenLong,
             expectedGovernanceFees,
@@ -164,8 +166,12 @@ contract NegativeInterestFeeTest is HyperdriveTest {
 
         // Calculate the expected fees from closing the long
         expectedGovernanceFees = (
-            FixedPointMath.ONE_18.sub(calculatedSpotPrice)
-        ).mulDown(basePaid).mulDivDown(curveFee, sharePrice);
+            FixedPointMath.ONE_18.divDown(calculatedSpotPrice)
+        ).sub(FixedPointMath.ONE_18).mulDown(basePaid).mulDivDown(
+                calculatedSpotPrice,
+                sharePrice
+            );
+
         assertApproxEqAbs(
             governanceFeesAfterCloseLong,
             expectedGovernanceFees,
@@ -506,11 +512,13 @@ contract NegativeInterestFeeTest is HyperdriveTest {
 
         // Calculate the expected accrued fees from opening the long and compare to the actual.
         {
-            // This is close enough
             uint256 expectedGovernanceFees = (
-                FixedPointMath.ONE_18.sub(calculatedSpotPrice)
-            ).mulDown(basePaid).mulDivDown(curveFee, openSharePrice);
-
+                FixedPointMath.ONE_18.divDown(calculatedSpotPrice)
+            )
+                .sub(FixedPointMath.ONE_18)
+                .mulDown(basePaid)
+                .mulDown(curveFee)
+                .mulDivDown(calculatedSpotPrice, openSharePrice);
             assertApproxEqAbs(
                 governanceFeesAfterOpenLong,
                 expectedGovernanceFees,
