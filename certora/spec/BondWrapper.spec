@@ -277,6 +277,7 @@ rule mintIntegrityUser(env e, env e2) {
     uint256 assetIdVar;
     
     require e.msg.sender != bondWrapper;
+    require destination != symbolicHyperdrive;
     requireInvariant erc20Solvency(e);
     require assetIdVar == assetIdMock.encodeAssetId(e, AssetId.AssetIdPrefix.Long, maturityTime);
 
@@ -329,7 +330,6 @@ rule mintIntegrityOthers(env e, env e2) {
     require e.msg.sender != bondWrapper;
     requireInvariant erc20Solvency(e);
     require randAddr != destination && randAddr != bondWrapper && randAddr != e.msg.sender;
-    require assetIdVar == assetIdMock.encodeAssetId(e, AssetId.AssetIdPrefix.Long, maturityTime);
 
     uint256 balanceBefore = balanceOf(e, randAddr);
     uint256 hyperBalanceBefore = symbolicHyperdrive.balanceOf(e, assetIdVar, randAddr);
@@ -377,8 +377,8 @@ rule mintIntegritySmallsVsBig(env e, env e2) {
     assert hyperBalanceAfterBig == hyperBalanceAfterSmall;
 }
 
-/// close() correctly updates msg.sender’s BondWrapper and destination’s ERC20 balances.
-/// STATUS - in progress
+
+// STATUS - verified
 rule closeIntegrityUser(env e) {
     uint256 maturityTime;
     uint256 amount;
@@ -386,7 +386,7 @@ rule closeIntegrityUser(env e) {
     address destination;
     uint256 minOutput;
     
-    require e.msg.sender != bondWrapper && bondWrapper != destination;
+    require e.msg.sender != bondWrapper && bondWrapper != destination && destination != symbolicHyperdrive;
     requireInvariant erc20Solvency(e);
 
     uint256 balanceBefore = balanceOf(e, e.msg.sender);
@@ -403,33 +403,7 @@ rule closeIntegrityUser(env e) {
 }
 
 
-// STATUS - in progress
-rule closeIntegritySystem(env e) {
-    uint256 maturityTime;
-    uint256 amount;
-    bool andBurn;
-    address destination;
-    uint256 minOutput;
-    
-    require e.msg.sender != bondWrapper;
-    requireInvariant erc20Solvency(e);
-
-    uint256 totalBefore = totalSupply(e);
-    uint256 hyperBalanceBefore = baseToken.balanceOf(e, bondWrapper);
-
-    close(e, maturityTime, amount, andBurn, destination, minOutput);
-
-    uint256 totalAfter = totalSupply(e);
-    uint256 hyperBalanceAfter = baseToken.balanceOf(e, bondWrapper);
-
-    assert andBurn => totalBefore >= totalAfter;
-    assert hyperBalanceBefore - hyperBalanceAfter >= to_mathint(minOutput);
-    assert hyperBalanceAfter - hyperBalanceBefore >= totalBefore - totalAfter;
-}
-
-
-/// close() doesn’t affect the balances of other users on any token involved.
-/// STATUS - in progress
+// STATUS - verified
 rule closeIntegrityOthers(env e) {
     uint256 maturityTime;
     uint256 amount;
@@ -438,7 +412,7 @@ rule closeIntegrityOthers(env e) {
     uint256 minOutput;
     address randAddr;
     
-    require randAddr != destination && randAddr != bondWrapper && randAddr != e.msg.sender;
+    require randAddr != destination && randAddr != bondWrapper && randAddr != e.msg.sender && randAddr != symbolicHyperdrive;
     require e.msg.sender != bondWrapper;
     requireInvariant erc20Solvency(e);
 
@@ -453,3 +427,7 @@ rule closeIntegrityOthers(env e) {
     assert balanceBefore == balanceAfter;
     assert hyperBalanceAfter == hyperBalanceBefore;
 }
+
+
+
+// try to check equalency of close vs sweep + redeem

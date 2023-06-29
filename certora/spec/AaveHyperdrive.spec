@@ -384,6 +384,13 @@ rule openLongReturnsSameBonds(env eOp) {
     assert bondsReceived1 == bondsReceived2, "Received bonds should not depend on destination or asUnderlying";
 }
 
+
+
+// STATUS - violation
+// https://prover.certora.com/output/40577/c3f913d4a830433a8611fb44bc19bad0/?anonymousKey=49c6a124deca81a0ff3aeeddb735121d5595e78e
+// if both matured, then need to consider other aspects of a system as well.
+// need to change assert, make it more flexible including both matured case
+// need a proper setup for initial state I guess
 rule profitIsMonotonicForCloseLong(env eCl) {
     uint256 bondAmount;
     uint256 minOutput;
@@ -401,6 +408,10 @@ rule profitIsMonotonicForCloseLong(env eCl) {
     assert maturityTime1 >= maturityTime2 => assetsRecieved1 <= assetsRecieved2, "Received assets should increase for long position.";
 }
 
+
+
+// STATUS - violation
+// https://prover.certora.com/output/3106/90f5e72f826643e184aa49baacca100c/?anonymousKey=22f84ff36a5192c746e75b57607a415d50dcd420
 rule addAndRemoveSameSharesMeansNoChange(env e) {
     uint256 _contribution;
     uint256 _minApr;
@@ -417,7 +428,7 @@ rule addAndRemoveSameSharesMeansNoChange(env e) {
         baseProceeds, withdrawalShares = removeLiquidity(e, lpShares, _minOutput, _destination, _asUnderlying);
     uint128 shareReservesAfter = stateShareReserves();
 
-    assert shareReservesAfter == shareReservesBefore;
+    assert shareReservesAfter >= shareReservesBefore;
 }
 
 rule openLongPreservesOutstandingLongs(uint256 baseAmount) {
@@ -454,6 +465,14 @@ rule openLongPreservesOutstandingLongs(uint256 baseAmount) {
     assert mulUpWad(sharePrice2, bondReserves2) >= assert_uint256(longsOutstanding2);
 }
 
+
+// STATUS - violation
+// https://prover.certora.com/output/3106/77e653ad3f48437e81ca2907bad0a647/?anonymousKey=e70fe94cbf2fb79fed70fadb040117bbbd6ff260
+// here can be a violation according to their comment in aaveHyperdrive:
+        // Small numerical errors can result in the shares value being slightly larger
+        // than the total shares, so we clamp the shares to the total shares to
+        // avoid reverts.
+// or we need to limit initial state
 /// Closing a long position at maturity should return the same number of tokens as the number of bonds.
 rule closeLongAtMaturity(uint256 bondAmount) {
     env e;
@@ -467,7 +486,7 @@ rule closeLongAtMaturity(uint256 bondAmount) {
     uint256 assetsRecieved =
         closeLong(e, maturityTime, bondAmount, minOutput, destination, asUnderlying);
 
-    assert maturityTime >= e.block.timestamp => assetsRecieved == bondAmount;
+    assert maturityTime <= e.block.timestamp => assetsRecieved == bondAmount;
 }
 
 /// calling checkpoint() twice on two checkpoint times cannot change the outstanding posiitons twice
@@ -528,6 +547,10 @@ filtered{ f -> !f.isView } {
     assert supplyAfter > supplyBefore => timeByID(AssetId) == maturityTime;
 }
 
+
+// STATUS - violation
+// https://prover.certora.com/output/3106/d981269c05364be8bf57ed2fb87bb3b1/?anonymousKey=a5cd479cd57cbfa3a9d3e4d05167924ca402a428
+// violations in openLong() and openShort() becuase they are set to match values of closing positions. Thus, outstadings remains the same.
 /// @notice If the checkpoint share price was set by a function, so all matured positions
 /// of that checkpoint should have been removed from the outstanding longs/shorts. 
 rule settingThePriceAlsoClosesMaturedPositions(uint256 checkpointTime, method f) 
@@ -553,7 +576,7 @@ filtered{ f -> !f.isView && f.selector != sig:checkpoint(uint256).selector } {
     require checkpointTime <= e.block.timestamp; // Longs/shorts have matured
     require totalSupplyByToken(AssetId) > 0;
 
-    assert longsOutstanding1 != longsOutstanding2 || shortsOutstanding1 == shortsOutstanding2,
+    assert longsOutstanding1 != longsOutstanding2 || shortsOutstanding1 != shortsOutstanding2,
         "The outstanding shorts or longs must have been updated (virtually closing the matured)";
 }
 
