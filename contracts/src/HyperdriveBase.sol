@@ -275,6 +275,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
         // p (spot price) tells us how many base a bond is worth -> p = base/bonds
         // 1/p tells us how many bonds a base is worth -> 1/p = bonds/base
         // 1/p - 1 tells us how many additional bonds we get for each base -> (1/p - 1) = additional bonds/base
+        // the curve fee is taken from the additional bonds the user gets for each base
         // total curve fee = ((1 / p) - 1) * phi_curve * c * dz
         //                 = r * phi_curve * base/shares * shares
         //                 = bonds/base * phi_curve * base
