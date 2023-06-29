@@ -29,6 +29,7 @@ contract ERC4626HyperdriveDeployer is IHyperdriveDeployer {
     ///        constructor code.
     /// @param _linkerFactory The address of the factory which is used to deploy
     ///        the ERC20 linker contracts.
+    /// @return The address of the newly deployed ERC4626Hyperdrive Instance
     function deploy(
         IHyperdrive.PoolConfig memory _config,
         address _dataProvider,
