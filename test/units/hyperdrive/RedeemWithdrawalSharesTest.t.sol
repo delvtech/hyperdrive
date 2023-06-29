@@ -104,21 +104,57 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
     function test_redeem_withdrawal_shares_clamping() external {
         console.log(1);
         // Initialize the pool.
-        uint256 lpShares = initialize(alice, 0.02e18, 120_000_000e18);
+        uint256 lpShares = initialize(alice, 0.02e18, 500_000_000e18);
         console.log(2);
+
+        console.log(
+            "shareReserves",
+            hyperdrive.getPoolInfo().shareReserves.toString(18)
+        );
+        console.log(
+            "bondReserves",
+            hyperdrive.getPoolInfo().bondReserves.toString(18)
+        );
 
         // Bob opens a large short.
         uint256 shortAmount = HyperdriveUtils.calculateMaxShort(hyperdrive);
         (uint256 maturityTime, ) = openShort(bob, shortAmount);
         console.log(3);
 
+        console.log(
+            "shareReserves",
+            hyperdrive.getPoolInfo().shareReserves.toString(18)
+        );
+        console.log(
+            "bondReserves",
+            hyperdrive.getPoolInfo().bondReserves.toString(18)
+        );
+
         // Alice removes her liquidity.
         (, uint256 withdrawalShares) = removeLiquidity(alice, lpShares);
         console.log(4);
 
+        console.log(
+            "shareReserves",
+            hyperdrive.getPoolInfo().shareReserves.toString(18)
+        );
+        console.log(
+            "bondReserves",
+            hyperdrive.getPoolInfo().bondReserves.toString(18)
+        );
+
         // The term passes and no interest accrues.
         advanceTime(POSITION_DURATION, 0);
         console.log(5);
+
+        console.log(
+            "shareReserves",
+            hyperdrive.getPoolInfo().shareReserves.toString(18)
+        );
+        console.log(
+            "bondReserves",
+            hyperdrive.getPoolInfo().bondReserves.toString(18)
+        );
 
         // Bob closes his short.
         closeShort(bob, maturityTime, shortAmount);

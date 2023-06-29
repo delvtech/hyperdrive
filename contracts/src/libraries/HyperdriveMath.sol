@@ -15,7 +15,7 @@ library HyperdriveMath {
     using FixedPointMath for uint256;
 
     // FIXME: We need to make this an immutable
-    uint256 internal constant MINIMUM_SHARE_RESERVES = 1e15;
+    uint256 internal constant MINIMUM_SHARE_RESERVES = 1e18;
 
     /// @dev Calculates the spot price without slippage of bonds in terms of shares.
     /// @param _shareReserves The pool's share reserves.

@@ -382,14 +382,24 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
                 updatedShareReserves >= 0 ? updatedShareReserves : int256(0)
             ).toUint128();
             console.log("_updateLiquidity: 4");
+            console.log("shareReserves", shareReserves.toString(18));
+            console.log(
+                "_marketState.shareReserves",
+                _marketState.shareReserves.toString(18)
+            );
             console.log(
                 "_marketState.bondReserves",
                 _marketState.bondReserves.toString(18)
             );
             _marketState.bondReserves = uint256(_marketState.bondReserves)
-                .mulDivDown(_marketState.shareReserves, shareReserves)
+                .mulDown(_marketState.shareReserves)
+                .divDown(shareReserves)
                 .toUint128();
             console.log("_updateLiquidity: 5");
+            console.log(
+                "_marketState.bondReserves",
+                _marketState.bondReserves.toString(18)
+            );
         }
     }
 
