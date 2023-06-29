@@ -517,7 +517,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         shareReservesDelta -= totalCurveFee;
 
         // Calculate the number of shares the trader receives.
-        // The shareProcees, totalCurveFee, and totalFlatFee are all in terms of shares
+        // The shareProceeds, totalCurveFee, and totalFlatFee are all in terms of shares
         // shares -= shares + shares
         shareProceeds -= totalCurveFee + totalFlatFee;
 
