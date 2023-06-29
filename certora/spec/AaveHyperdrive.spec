@@ -22,6 +22,8 @@ methods {
     function MockAssetId.encodeAssetId(AssetId.AssetIdPrefix, uint256) external returns (uint256) envfree;
     function _.recordPrice(uint256 price) internal => NONDET;
 
+    // function Hyperdrive._applyCheckpoint(uint256 _checkpointTime, uint256 _sharePrice) internal returns (uint256) => NONDET;
+
     /*
     /// Fee calculations summaries -> NONDET
     function HDAave.MockCalculateFeesOutGivenSharesIn(uint256,uint256,uint256,uint256,uint256) internal returns(AaveHyperdrive.HDFee memory) => NONDET;
@@ -716,6 +718,8 @@ rule shortAverageMaturityTimeIsBoundedAfterOpenShort2(env e)
 // When trader comes and closes the position, he returns all the bonds he has and get all the shares
 // present in the pool. Resulting in zero shares in the pool, meaning, that _pricePerShare = 0, meaning sharePrice() == 0 
 // https://prover.certora.com/output/40577/3c3ca3c5cf954d91919a1f8854c35265/?anonymousKey=fd43525a0a4bb704c529e645938885bb049fe59e
+// Even more interesting violation is one capturing when _pricePerShare went from 1 to 8/9 when closing a big long:
+// https://prover.certora.com/output/40577/476f67e7466140ed9201b9feae0f72c3/?anonymousKey=ed105fa247c69313ebcc2c35d543135c88533ae0
 /// @notice The share price cannot go below the initial price.
 invariant SharePriceAlwaysGreaterThanInitial(env e)
     sharePrice(e) >= initialSharePrice()
@@ -740,7 +744,10 @@ rule SharePriceCannotDecreaseAfterOperation(method f)
         f(e, args);
     uint256 sharePriceAfter = sharePrice(e);
 
+    require aToken.balanceOf(e, currentContract) != 0; // non-zero shares
+    require totalShares() != 0; // non-zero assets
     assert sharePriceAfter >= sharePriceBefore;
+    // assert 5 * sharePriceAfter >= 3 * sharePriceBefore;
 }
 
 /// There should always be more aTokens (assets) than number of shares
@@ -787,15 +794,32 @@ invariant TotalSharesGreaterThanLiquidity()
     to_mathint(stateShareReserves()) <= to_mathint(totalShares())
     filtered{f -> isCloseShort(f)}
 
+invariant TotalSharesGreaterThanLongs(env e)
+    to_mathint(stateLongs()) <= to_mathint(totalShares()) * sharePrice(e)
+    filtered{f -> isCloseShort(f)}
+
 /// If there are no shares in the pool, then there are only shorts in the pool (no longs)
-/// Timeout
-invariant NoSharesNoLongs()
+/// Probably Unreal Violation:
+/// https://prover.certora.com/output/40577/c002ed40599e448a8391975ff4ba94db/?anonymousKey=0b24b9373c24264c61a22188b6863615e903e13f
+/// When closeShort called, it induced 
+/// pricePerShare  ........ 10^18 + 5 -> ?
+/// shareReserves ......... 10^18     -> 0                    // in function _updateLiquidity called from HyperdriveLong._applyCloseLong which was called from applyCheckpoint
+/// stateLongs  ........... MAXUINT   -> MAXUINT - (10^18+4)
+invariant NoSharesNoLongs(env e)
     stateShareReserves() == 0 => stateLongs() == 0
+    filtered{f -> !isRemoveLiq(f)}
     {
-        preserved {
+        preserved with (env eP)  {
+            require e.block.timestamp == eP.block.timestamp;
             setHyperdrivePoolParams();
             requireInvariant SumOfLongsGEOutstanding();
             requireInvariant SumOfShortsGEOutstanding();
+            requireInvariant TotalSharesGreaterThanLiquidity();
+            requireInvariant TotalSharesGreaterThanLongs(eP);
+            requireInvariant ShareReservesCoverLongs(eP);
+            // There always should be more money than bonds(=longs)
+            // require stateLongs() == 0;
+            // require stateLongs() < 10 * RAY();
         }
     }
 
@@ -845,7 +869,6 @@ rule openShortMustPay(uint256 bondAmount) {
     env e1; require e1.msg.sender != currentContract;
     
     uint256 maxDeposit;
-    uint256 traderDeposit; uint256 maturityTime;
     address destination;
     setHyperdrivePoolParams();
     require bondAmount >= 10^6;
@@ -854,7 +877,8 @@ rule openShortMustPay(uint256 bondAmount) {
     require e1.block.timestamp == 10^6;
 
     uint256 balance1 = aToken.balanceOf(e1, e1.msg.sender);
-        maturityTime, traderDeposit = openShort(e1, bondAmount, maxDeposit, destination, false);
+    uint256 traderDeposit;
+    _, traderDeposit = openShort(e1, bondAmount, maxDeposit, destination, false);
     uint256 balance2 = aToken.balanceOf(e1, e1.msg.sender);
 
     assert traderDeposit !=0;
