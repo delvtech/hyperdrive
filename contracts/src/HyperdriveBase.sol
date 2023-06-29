@@ -201,7 +201,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
             msg.sender != _governance
         ) revert Errors.Unauthorized();
         uint256 governanceFeesAccrued = _governanceFeesAccrued;
-        _governanceFeesAccrued = 0;
+        delete _governanceFeesAccrued;
         proceeds = _withdraw(
             governanceFeesAccrued,
             _feeCollector,

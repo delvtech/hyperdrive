@@ -445,7 +445,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
                 _withdrawalSharesOutstanding,
                 _sharePrice
             );
-            withdrawalShares = 0;
+            delete withdrawalShares;
         }
 
         return (shareProceeds, uint256(withdrawalShares));
