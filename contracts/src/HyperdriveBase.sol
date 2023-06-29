@@ -354,7 +354,8 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
 
         // Calculate the flat portion of the governance fee
         // governanceFlatFee = total_flat_fee * phi_gov
-        //                    = shares * phi_gov
+        //                   = shares * phi_gov
+        //
         // The totalGovernanceFee is the sum of the curve and flat governance fees
         // totalGovernanceFee = governanceCurveFee + governanceFlatFee
         totalGovernanceFee += totalFlatFee.mulDown(_governanceFee);
