@@ -339,7 +339,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
         //                    = shares * phi_gov
         totalGovernanceFee = totalCurveFee.mulDown(_governanceFee);
 
-        // The flat portion of the fee is taken from the matured bonds.abi
+        // The flat portion of the fee is taken from the matured bonds.
         // Since a matured bond is worth 1 base, it is appropriate to consider
         // d_y in units of base.
         // flat fee = (d_y * (1 - t) * phi_flat) / c
