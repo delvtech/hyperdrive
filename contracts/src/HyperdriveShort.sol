@@ -515,9 +515,9 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 _sharePrice
             );
 
-        // Add the total curve fee minus the governance curve fee to the amount that will 
-        // be added to the share reserves. This ensures that the LPs are credited with the 
-        // fee the trader paid on the curve trade minus the portion of the curve fee that 
+        // Add the total curve fee minus the governance curve fee to the amount that will
+        // be added to the share reserves. This ensures that the LPs are credited with the
+        // fee the trader paid on the curve trade minus the portion of the curve fee that
         // was paid to governance.
         // shareReservesDelta, totalGovernanceFee and governanceCurveFee
         // are all denominated in shares so we just need to subtract out
