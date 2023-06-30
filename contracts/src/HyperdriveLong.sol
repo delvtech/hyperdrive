@@ -412,16 +412,17 @@ abstract contract HyperdriveLong is HyperdriveLP {
             bondProceeds +
             governanceCurveFee.divDown(spotPrice);
 
-        // Calculate the fees owed to governance in shares.
-        // shareReservesDelta and totalGovernanceFee is in shares
-        // so we divide it by the share price (base/shares)
+        // Calculate the number of shares to add to the shareReserves.
+        // shareReservesDelta and totalGovernanceFee denominated in
+        // shares so we divide it by the share price (base/shares)
         // to convert it to shares:
-        // shares -= shares - base/(base/shares)
-        // shares -= shares - shares
+        // shares = shares - base/(base/shares)
+        // shares = shares - shares
         shareReservesDelta =
             _shareAmount -
             governanceCurveFee.divDown(_sharePrice);
 
+        // Calculate the fees owed to governance in shares.
         // totalGovernanceFee is in base and we want it in shares
         // shares = base/(base/shares)
         // shares = shares
@@ -495,19 +496,32 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // Record an oracle update
         recordPrice(spotPrice);
 
+        // Calculate the fees charged to the user (totalCurveFe, totalFlatFee) and the portion of those
+        // fees that are paid to governance (governanceCurveFee).
         uint256 totalCurveFee;
         uint256 totalFlatFee;
         (
-            totalCurveFee,
-            totalFlatFee,
-            totalGovernanceFee
+            totalCurveFee, // shares
+            totalFlatFee, // shares
+            totalGovernanceFee // shares
         ) = _calculateFeesOutGivenBondsIn(
-            _bondAmount, // amountIn
+            _bondAmount,
             timeRemaining,
             spotPrice,
             _sharePrice
         );
+
+        // Calculate the number of shares to remove from the shareReserves.
+        // We do this bc the shareReservesDelta represents how many shares to remove
+        // from the shareReserves.  Making the shareReservesDelta smaller pays out the
+        // totalCurveFee to the LPs.
+        // The shareReservesDelta and the totalCurveFee are both in terms of shares
+        // shares -= shares
         shareReservesDelta -= totalCurveFee;
+
+        // Calculate the number of shares the trader receives.
+        // The shareProceeds, totalCurveFee, and totalFlatFee are all in terms of shares
+        // shares -= shares + shares
         shareProceeds -= totalCurveFee + totalFlatFee;
 
         return (
