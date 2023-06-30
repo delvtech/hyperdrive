@@ -422,17 +422,26 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // Add the spot price to the oracle if an oracle update is required
         recordPrice(spotPrice);
 
+        // Calculate the fees charged to the user (totalCurveFe) and the portion of those
+        // fees that are paid to governance (governanceCurveFee).
         uint256 totalCurveFee;
         (
-            totalCurveFee, // there is no flat fee on opening shorts
-            ,
+            totalCurveFee, 
+            ,                   // there is no flat fee on opening shorts
             totalGovernanceFee
         ) = _calculateFeesOutGivenBondsIn(
-            _bondAmount, // amountIn
+            _bondAmount,
             _timeRemaining,
             spotPrice,
             _sharePrice
         );
+
+        // Calculate the number of shares to remove from the shareReserves.
+        // We do this bc the shareReservesDelta represents how many shares to remove
+        // from the shareReserves.  Making the shareReservesDelta smaller pays out the
+        // totalCurveFee to the LPs.
+        // The shareReservesDelta and the totalCurveFee are both in terms of shares
+        // shares -= shares
         shareReservesDelta -= totalCurveFee;
         return (shareReservesDelta, totalGovernanceFee);
     }

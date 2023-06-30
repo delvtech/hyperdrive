@@ -296,7 +296,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
         );
     }
 
-    /// @dev Calculates the fees for the flat and curve portion of hyperdrive calcOutGivenIn
+    /// @dev Calculates the fees that go to the LPs and governance.
     /// @param _amountIn Amount in terms of bonds.
     /// @param _normalizedTimeRemaining The normalized amount of time until maturity.
     /// @param _spotPrice The price without slippage of bonds in terms of base (base/bonds).
