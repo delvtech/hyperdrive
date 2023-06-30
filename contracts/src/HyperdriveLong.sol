@@ -412,9 +412,9 @@ abstract contract HyperdriveLong is HyperdriveLP {
             bondProceeds +
             governanceCurveFee.divDown(spotPrice);
 
-        // Calculate how many shares to add to the shareReserves.
-        // shareReservesDelta and totalGovernanceFee is in shares
-        // so we divide it by the share price (base/shares)
+        // Calculate the number of shares to add to the shareReserves.
+        // shareReservesDelta and totalGovernanceFee demoninated in
+        // shares so we divide it by the share price (base/shares)
         // to convert it to shares:
         // shares = shares - base/(base/shares)
         // shares = shares - shares
@@ -512,6 +512,9 @@ abstract contract HyperdriveLong is HyperdriveLP {
         );
 
         // Calculate the number of shares to remove from the shareReserves.
+        // We do this bc the shareReservesDelta represents how many shares to remove
+        // from the shareReserves.  Making the shareReservesDelta smaller pays out the
+        // totalCurveFee to the LPs.
         // The shareReservesDelta and the totalCurveFee are both in terms of shares
         // shares -= shares
         shareReservesDelta -= totalCurveFee;

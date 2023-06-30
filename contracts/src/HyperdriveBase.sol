@@ -323,8 +323,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
 
         // The curve fee is taken from the additional base the user gets for each bond at maturity
         // total curve fee = ((1 - p) * phi_curve * d_y * t)/c
-        //                 = (r * phi_curve * bonds * t) / (base/shares)
-        //                 = (r * phi_curve * bonds * t) * (shares/base)
+        //                 = (base/bonds * phi_curve * bonds * t) / (base/shares)
         //                 = (base/bonds * phi_curve * bonds * t) * (shares/base)
         //                 = (base * phi_curve * t) * (shares/base)
         //                 = phi_curve * t * shares
