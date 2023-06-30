@@ -41,7 +41,7 @@ jobs:
         run: |
           forge coverage --report lcov
           sudo apt-get install lcov
-          lcov --remove lcov.info  -o lcov.info 'test/*' 'script/*'
+          lcov --remove lcov.info  -o lcov.info 'test/*' 'script/*' 'contracts/test/*'
 
       - name: Edit lcov.info
         run: |
