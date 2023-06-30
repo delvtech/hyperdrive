@@ -208,7 +208,7 @@ contract NegativeInterestTest is HyperdriveTest {
         // - initial_share_price > 1
         // - negative interest causes the share price to go down
         // - a long is opened
-        // - negative interest accrues over the full term
+        // - negative interest accrues over half term
         // - long is closed
         {
             uint256 initialSharePrice = 1.5e18;
@@ -225,7 +225,7 @@ contract NegativeInterestTest is HyperdriveTest {
         // - initial_share_price = 1
         // - negative interest causes the share price to go down
         // - a long is opened
-        // - negative interest accrues over the full term
+        // - negative interest accrues over half term
         // - long is closed
         {
             uint256 initialSharePrice = 1e18;
@@ -242,7 +242,7 @@ contract NegativeInterestTest is HyperdriveTest {
         // - initial_share_price < 1
         // - negative interest causes the share price to go further down
         // - a long is opened
-        // - negative interest accrues over the full term
+        // - negative interest accrues over half term
         // - long is closed
         {
             uint256 initialSharePrice = 0.90e18;
@@ -296,7 +296,7 @@ contract NegativeInterestTest is HyperdriveTest {
         uint256 basePaid = 10_000e18;
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
 
-        // Full term passes
+        // half term passes
         advanceTime(POSITION_DURATION / 2, variableInterest);
 
         // Close the long.
