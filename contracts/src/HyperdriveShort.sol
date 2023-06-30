@@ -500,7 +500,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // Record an oracle update
         recordPrice(spotPrice);
 
-        // Calculate the fees charged to the user (totalCurveFe and totalFlatFee)
+        // Calculate the fees charged to the user (totalCurveFee and totalFlatFee)
         // and the portion of those fees that are paid to governance
         // (governanceCurveFee and governanceFlatFee).
         (
