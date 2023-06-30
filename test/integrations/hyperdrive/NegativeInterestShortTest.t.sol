@@ -161,20 +161,12 @@ contract NegativeInterestTest is HyperdriveTest {
         uint256 shortAmount = 10_000e18;
         (uint256 maturityTime, uint256 basePaid) = openShort(bob, shortAmount);
 
-        // Calculate the estimated proceeds.
-        uint256 estimatedProceeds = estimateShortProceeds(
-            shortAmount,
-            variableInterest,
-            HyperdriveUtils.calculateTimeRemaining(hyperdrive, maturityTime),
-            0
-        );
-
         // Immediately close the short position.
         uint256 baseProceeds = closeShort(bob, maturityTime, shortAmount);
 
         // It shouldn't be profitable to open and close a short position immediately with negative interest
         assertGe(basePaid, baseProceeds);
-        assertApproxEqAbs(baseProceeds, estimatedProceeds, 1e7);
+        assertApproxEqAbs(baseProceeds, basePaid, 1e7);
     }
 
     function test_negative_interest_short_full_term_fuzz(
@@ -273,17 +265,9 @@ contract NegativeInterestTest is HyperdriveTest {
         // Full term passes
         advanceTime(POSITION_DURATION, variableInterest);
 
-        // Calculate the estimated proceeds.
-        uint256 estimatedProceeds = estimateShortProceeds(
-            shortAmount,
-            variableInterest,
-            HyperdriveUtils.calculateTimeRemaining(hyperdrive, maturityTime),
-            POSITION_DURATION
-        );
-
         // Close the short.
         uint256 baseProceeds = closeShort(bob, maturityTime, shortAmount);
-        assertApproxEqAbs(baseProceeds, estimatedProceeds, 10);
+        assertApproxEqAbs(baseProceeds, 0, 10);
     }
 
     function test_negative_interest_short_half_term_fuzz(

@@ -90,7 +90,6 @@ contract NegativeInterestTest is HyperdriveTest {
 
         // It shouldn't be profitable to open and close a long position with negative interest.
         assertGe(basePaid, baseProceeds);
-        // User loses less than 1000 gwei
         assertApproxEqAbs(baseProceeds, basePaid, 1e12);
     }
 
@@ -203,6 +202,28 @@ contract NegativeInterestTest is HyperdriveTest {
         assertApproxEqAbs(baseProceeds, expectedProceeds, 1e6);
     }
 
+    function test_negative_interest_long_half_term_fuzz(
+        uint256 initialSharePrice,
+        int256 preTradeVariableInterest,
+        int256 variableInterest
+    ) external {
+        // Fuzz inputs
+        // initialSharePrice [0.1,10]
+        // preTradeVariableInterest [-100,0]
+        // variableInterest [-100,0]
+        initialSharePrice = initialSharePrice.normalizeToRange(.1e18, 10e18);
+        preTradeVariableInterest = -preTradeVariableInterest.normalizeToRange(
+            0,
+            1e18
+        );
+        variableInterest = -variableInterest.normalizeToRange(0, 1e18);
+        test_negative_interest_long_half_term(
+            initialSharePrice,
+            preTradeVariableInterest,
+            variableInterest
+        );
+    }
+
     function test_negative_interest_long_half_term() external {
         // This tests the following scenario:
         // - initial_share_price > 1
@@ -256,28 +277,6 @@ contract NegativeInterestTest is HyperdriveTest {
         }
     }
 
-    function test_negative_interest_long_half_term_fuzz(
-        uint256 initialSharePrice,
-        int256 preTradeVariableInterest,
-        int256 variableInterest
-    ) external {
-        // Fuzz inputs
-        // initialSharePrice [0.1,10]
-        // preTradeVariableInterest [-100,0]
-        // variableInterest [-100,0]
-        initialSharePrice = initialSharePrice.normalizeToRange(.1e18, 10e18);
-        preTradeVariableInterest = -preTradeVariableInterest.normalizeToRange(
-            0,
-            1e18
-        );
-        variableInterest = -variableInterest.normalizeToRange(0, 1e18);
-        test_negative_interest_long_half_term(
-            initialSharePrice,
-            preTradeVariableInterest,
-            variableInterest
-        );
-    }
-
     function test_negative_interest_long_half_term(
         uint256 initialSharePrice,
         int256 preTradeVariableInterest,
@@ -309,8 +308,10 @@ contract NegativeInterestTest is HyperdriveTest {
             POSITION_DURATION / 2
         );
         uint256 expectedProceeds = bondAmount / 2 - uint256(-interest);
+
         // The other half are sold at the market rate
         expectedProceeds += basePaid / 2;
+
         // The expected proceeds overestimate the actual proceeds
         assertGe(expectedProceeds, baseProceeds);
     }
