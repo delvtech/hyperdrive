@@ -413,7 +413,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
             governanceCurveFee.divDown(spotPrice);
 
         // Calculate the number of shares to add to the shareReserves.
-        // shareReservesDelta and totalGovernanceFee demoninated in
+        // shareReservesDelta and totalGovernanceFee denominated in
         // shares so we divide it by the share price (base/shares)
         // to convert it to shares:
         // shares = shares - base/(base/shares)
