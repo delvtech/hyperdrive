@@ -382,7 +382,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // Record an oracle update
         recordPrice(spotPrice);
 
-        // Calculate the fees charged to the user (totalCurveFe) and the portion of those
+        // Calculate the fees charged to the user (totalCurveFee) and the portion of those
         // fees that are paid to governance (governanceCurveFee).
         (
             uint256 totalCurveFee, // bonds
@@ -414,7 +414,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
 
         // Calculate the number of shares to add to the shareReserves.
         // shareReservesDelta and totalGovernanceFee denominated in
-        // shares so we divide it by the share price (base/shares)
+        // shares so we divide governanceCurveFee by the share price (base/shares)
         // to convert it to shares:
         // shares = shares - base/(base/shares)
         // shares = shares - shares
