@@ -181,6 +181,8 @@ contract NegativeInterestTest is HyperdriveTest {
 
         // fast forward time and accrue negative interest
         advanceTime(POSITION_DURATION, preTradeVariableInterest);
+        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
+        uint256 openSharePrice = poolInfo.sharePrice;
 
         // Open a long position.
         uint256 basePaid = 10_000e18;
@@ -188,18 +190,20 @@ contract NegativeInterestTest is HyperdriveTest {
 
         // Full term passes
         advanceTime(POSITION_DURATION, variableInterest);
+        poolInfo = hyperdrive.getPoolInfo();
+        uint256 closeSharePrice = poolInfo.sharePrice;
 
-        // Close the long.
+        // Estimate the proceeds
+        uint256 estimatedProceeds = estimateLongProceeds(
+            bondAmount,
+            HyperdriveUtils.calculateTimeRemaining(hyperdrive, maturityTime),
+            openSharePrice,
+            closeSharePrice
+        );
+
+        // Close the long
         uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
-
-        // We calculate the expected loss from the bonds bc the long still matures 1:1.
-        (uint256 expectedProceeds, ) = HyperdriveUtils
-            .calculateCompoundInterest(
-                bondAmount,
-                variableInterest,
-                POSITION_DURATION
-            );
-        assertApproxEqAbs(baseProceeds, expectedProceeds, 1e6);
+        assertEq(baseProceeds, estimatedProceeds);
     }
 
     function test_negative_interest_long_half_term_fuzz(
@@ -290,6 +294,8 @@ contract NegativeInterestTest is HyperdriveTest {
 
         // fast forward time and accrue negative interest
         advanceTime(POSITION_DURATION, preTradeVariableInterest);
+        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
+        uint256 openSharePrice = poolInfo.sharePrice;
 
         // Open a long position.
         uint256 basePaid = 10_000e18;
@@ -298,21 +304,40 @@ contract NegativeInterestTest is HyperdriveTest {
         // half term passes
         advanceTime(POSITION_DURATION / 2, variableInterest);
 
+        // Estimate the proceeds.
+        poolInfo = hyperdrive.getPoolInfo();
+        uint256 closeSharePrice = poolInfo.sharePrice;
+        uint256 estimatedProceeds = estimateLongProceeds(
+            bondAmount,
+            HyperdriveUtils.calculateTimeRemaining(hyperdrive, maturityTime),
+            openSharePrice,
+            closeSharePrice
+        );
+
         // Close the long.
         uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
+        assertEq(baseProceeds, estimatedProceeds);
+    }
 
-        // Half the bonds mature 1:1
-        (, int256 interest) = HyperdriveUtils.calculateCompoundInterest(
-            basePaid,
-            variableInterest,
-            POSITION_DURATION / 2
+    function estimateLongProceeds(
+        uint256 bondAmount,
+        uint256 normalizedTimeRemaining,
+        uint256 openSharePrice,
+        uint256 closeSharePrice
+    ) internal view returns (uint256) {
+        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
+        IHyperdrive.PoolConfig memory poolConfig = hyperdrive.getPoolConfig();
+        (, , uint256 shareProceeds) = HyperdriveMath.calculateCloseLong(
+            poolInfo.shareReserves,
+            poolInfo.bondReserves,
+            bondAmount,
+            normalizedTimeRemaining,
+            poolConfig.timeStretch,
+            openSharePrice,
+            closeSharePrice,
+            poolInfo.sharePrice,
+            poolConfig.initialSharePrice
         );
-        uint256 expectedProceeds = bondAmount / 2 - uint256(-interest);
-
-        // The other half are sold at the market rate
-        expectedProceeds += basePaid / 2;
-
-        // The expected proceeds overestimate the actual proceeds
-        assertGe(expectedProceeds, baseProceeds);
+        return shareProceeds.mulDivDown(poolInfo.sharePrice, 1e18);
     }
 }
