@@ -109,8 +109,6 @@ contract NegativeInterestTest is HyperdriveTest {
         // variableInterest [-100,0]
         initialSharePrice = initialSharePrice.normalizeToRange(.1e18, 10e18);
         variableInterest = -variableInterest.normalizeToRange(0, 1e18);
-        console2.log("initialSharePrice: %s", initialSharePrice.toString(18));
-        console2.log("variableInterest: %s", variableInterest.toString(18));
         test_negative_interest_short_immediate_open_close(
             initialSharePrice,
             variableInterest
@@ -173,9 +171,7 @@ contract NegativeInterestTest is HyperdriveTest {
 
         // Open a short position.
         uint256 shortAmount = 10_000e18;
-        console2.log("shortAmount", shortAmount.toString(18));
         (uint256 maturityTime, uint256 basePaid) = openShort(bob, shortAmount);
-        console2.log("basePaid", basePaid.toString(18));
 
         // Calculate the estimated proceeds.
         uint256 estimatedProceeds = estimateShortProceeds(
@@ -187,12 +183,122 @@ contract NegativeInterestTest is HyperdriveTest {
 
         // Immediately close the short position.
         uint256 baseProceeds = closeShort(bob, maturityTime, shortAmount);
-        console2.log("baseProceeds", baseProceeds.toString(18));
 
-        console2.log("estimatedProceeds", estimatedProceeds.toString(18));
         // It shouldn't be profitable to open and close a short position immediately with negative interest
         assertGe(basePaid, baseProceeds);
         assertApproxEqAbs(baseProceeds, estimatedProceeds, 1e7);
+    }
+
+    function test_negative_interest_short_full_term_fuzz(
+        uint256 initialSharePrice,
+        int256 preTradeVariableInterest,
+        int256 variableInterest
+    ) external {
+        // Fuzz inputs
+        // initialSharePrice [0.1,10]
+        // preTradeVariableInterest [-100,0]
+        // variableInterest [-100,0]
+        initialSharePrice = initialSharePrice.normalizeToRange(.1e18, 10e18);
+        preTradeVariableInterest = -preTradeVariableInterest.normalizeToRange(
+            0,
+            1e18
+        );
+        variableInterest = -variableInterest.normalizeToRange(0, 1e18);
+        console2.log("initialSharePrice: %s", initialSharePrice.toString(18));
+        console2.log("preTradeVariableInterest: %s", preTradeVariableInterest.toString(18));
+        console2.log("variableInterest: %s", variableInterest.toString(18));
+        test_negative_interest_short_full_term(
+            initialSharePrice,
+            preTradeVariableInterest,
+            variableInterest
+        );
+    }
+
+    function test_negative_interest_short_full_term() external {
+        // This tests the following scenario:
+        // - initial_share_price > 1
+        // - negative interest causes the share price to go down
+        // - a short is opened
+        // - negative interest accrues over the full term
+        // - short is closed
+        {
+            uint256 initialSharePrice = 1.5e18;
+            int256 preTradeVariableInterest = -0.10e18;
+            int256 variableInterest = -0.05e18;
+            test_negative_interest_short_full_term(
+                initialSharePrice,
+                preTradeVariableInterest,
+                variableInterest
+            );
+        }
+
+        // This tests the following scenario:
+        // - initial_share_price = 1
+        // - negative interest causes the share price to go down
+        // - a short is opened
+        // - negative interest accrues over the full term
+        // - short is closed
+        {
+            uint256 initialSharePrice = 1e18;
+            int256 preTradeVariableInterest = -0.10e18;
+            int256 variableInterest = -0.05e18;
+            test_negative_interest_short_full_term(
+                initialSharePrice,
+                preTradeVariableInterest,
+                variableInterest
+            );
+        }
+
+        // This tests the following scenario:
+        // - initial_share_price < 1
+        // - negative interest causes the share price to go further down
+        // - a short is opened
+        // - negative interest accrues over the full term
+        // - short is closed
+        {
+            uint256 initialSharePrice = 0.95e18;
+            int256 preTradeVariableInterest = -0.10e18;
+            int256 variableInterest = -0.05e18;
+            test_negative_interest_short_full_term(
+                initialSharePrice,
+                preTradeVariableInterest,
+                variableInterest
+            );
+        }
+    }
+
+    function test_negative_interest_short_full_term(
+        uint256 initialSharePrice,
+        int256 preTradeVariableInterest,
+        int256 variableInterest
+    ) internal {
+        // Initialize the market
+        uint256 apr = 0.05e18;
+        deploy(alice, apr, initialSharePrice, 0, 0, 0);
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // fast forward time and accrue negative interest
+        advanceTime(POSITION_DURATION, preTradeVariableInterest);
+
+        // Open a short position.
+        uint256 shortAmount = 10_000e18;
+        (uint256 maturityTime, ) = openShort(bob, shortAmount);
+
+        // Full term passes
+        advanceTime(POSITION_DURATION, variableInterest);
+
+        // Calculate the estimated proceeds.
+        uint256 estimatedProceeds = estimateShortProceeds(
+            shortAmount,
+            variableInterest,
+            HyperdriveUtils.calculateTimeRemaining(hyperdrive, maturityTime),
+            POSITION_DURATION
+        );
+
+        // Close the short.
+        uint256 baseProceeds = closeShort(bob, maturityTime, shortAmount);
+        assertApproxEqAbs(baseProceeds, estimatedProceeds, 10);
     }
 
     function estimateShortProceeds(
@@ -213,6 +319,7 @@ contract NegativeInterestTest is HyperdriveTest {
             poolInfo.sharePrice,
             poolConfig.initialSharePrice
         );
+        console2.log("shortAmount", shortAmount.toString(18));
         console2.log(
             "expectedSharePayment",
             expectedSharePayment.toString(18));
@@ -223,18 +330,17 @@ contract NegativeInterestTest is HyperdriveTest {
             timeElapsed
         );
         console2.log(
-            "expectedInterest",
-            expectedInterest.toString(18));
-
-        console2.log(
             "sharePrice", poolInfo.sharePrice.toString(18)
         );
-        return
-            uint256(
-                int256(
-                    shortAmount -
-                        poolInfo.sharePrice.mulDown(expectedSharePayment)
-                ) + expectedInterest
-            );
+        console2.log("poolInfo.sharePrice.mulDown(expectedSharePayment)",poolInfo.sharePrice.mulDown(expectedSharePayment).toString(18));
+        console2.log(
+            "expectedInterest",
+            expectedInterest.toString(18));
+        int256 delta = int256(shortAmount - poolInfo.sharePrice.mulDown(expectedSharePayment));
+        if ( delta + expectedInterest > 0 ) {
+            return uint256(delta + expectedInterest);
+        } else {
+            return 0;
+        }
     }
 }
