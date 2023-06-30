@@ -165,11 +165,11 @@ library FixedPointMath {
         unchecked {
             // When the result is < 0.5 we return zero. This happens when
             // x <= floor(log(0.5e18) * 1e18) ~ -42e18
-            if (x <= -42_139_678_854_452_767_551) return 0;
+            if (x <= -42139678854452767551) return 0;
 
             // When the result is > (2**255 - 1) / 1e18 we can not represent it as an
             // int. This happens when x >= floor(log((2**255 - 1) / 1e18) * 1e18) ~ 135.
-            if (x >= 135_305_999_368_893_231_589)
+            if (x >= 135305999368893231589)
                 revert Errors.FixedPointMath_InvalidExponent();
 
             // x is now in the range (-42, 136) * 1e18. Convert to (-42, 136) * 2**96
@@ -180,18 +180,18 @@ library FixedPointMath {
             // Reduce range of x to (-½ ln 2, ½ ln 2) * 2**96 by factoring out powers
             // of two such that exp(x) = exp(x') * 2**k, where k is an integer.
             // Solving this gives k = round(x / log(2)) and x' = x - k * log(2).
-            int256 k = ((x << 96) / 54_916_777_467_707_473_351_141_471_128 + 2 ** 95) >>
+            int256 k = ((x << 96) / 54916777467707473351141471128 + 2 ** 95) >>
                 96;
-            x = x - k * 54_916_777_467_707_473_351_141_471_128;
+            x = x - k * 54916777467707473351141471128;
 
             // k is in the range [-61, 195].
 
             // Evaluate using a (6, 7)-term rational approximation.
             // p is made monic, we'll multiply by a scale factor later.
-            int256 y = x + 1_346_386_616_545_796_478_920_950_773_328;
-            y = ((y * x) >> 96) + 57_155_421_227_552_351_082_224_309_758_442;
-            int256 p = y + x - 94_201_549_194_550_492_254_356_042_504_812;
-            p = ((p * y) >> 96) + 28_719_021_644_029_726_153_956_944_680_412_240;
+            int256 y = x + 1346386616545796478920950773328;
+            y = ((y * x) >> 96) + 57155421227552351082224309758442;
+            int256 p = y + x - 94201549194550492254356042504812;
+            p = ((p * y) >> 96) + 28719021644029726153956944680412240;
             p = p * x + (4385272521454847904659076985693276 << 96);
 
             // We leave p in 2**192 basis so we don't need to scale it back up for the division.
