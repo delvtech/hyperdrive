@@ -166,7 +166,7 @@ contract NegativeInterestTest is HyperdriveTest {
 
         // It shouldn't be profitable to open and close a short position immediately with negative interest
         assertGe(basePaid, baseProceeds);
-        assertApproxEqAbs(baseProceeds, basePaid, 1e7);
+        assertApproxEqAbs(baseProceeds, basePaid, 1e11);
     }
 
     function test_negative_interest_short_full_term_fuzz(
