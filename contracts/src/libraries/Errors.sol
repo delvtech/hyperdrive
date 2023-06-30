@@ -28,6 +28,7 @@ library Errors {
     error UnexpectedAssetId();
     error UnexpectedSender();
     error UnsupportedToken();
+    error ApprovalFailed();
     error ZeroAmount();
     error BelowMinimumContribution();
     error ZeroLpTotalSupply();

@@ -209,7 +209,9 @@ abstract contract HyperdriveFactory {
                 address(this),
                 _contribution + 1e5
             );
-            _config.baseToken.approve(address(hyperdrive), type(uint256).max);
+            if (!_config.baseToken.approve(address(hyperdrive), type(uint256).max)) {
+                revert Errors.ApprovalFailed();
+            }
             hyperdrive.initialize(_contribution, _apr, msg.sender, true);
             hyperdrive.addLiquidity(
                 1e5,

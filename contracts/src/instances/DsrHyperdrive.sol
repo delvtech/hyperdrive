@@ -55,7 +55,9 @@ contract DsrHyperdrive is Hyperdrive {
 
         dsrManager = _dsrManager;
         pot = Pot(dsrManager.pot());
-        _baseToken.approve(address(dsrManager), type(uint256).max);
+        if(!_baseToken.approve(address(dsrManager), type(uint256).max)) {
+            revert Errors.ApprovalFailed();
+        }
     }
 
     /// @notice Transfers base or shares from the user and commits it to the yield source.
