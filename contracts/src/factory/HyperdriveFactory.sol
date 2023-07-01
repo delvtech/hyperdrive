@@ -90,6 +90,8 @@ abstract contract HyperdriveFactory {
         _;
     }
 
+    event implementationUpdated(address indexed newDeployer);
+
     /// @notice Allows governance to update the deployer contract.
     /// @param newDeployer The new deployment contract.
     function updateImplementation(
@@ -99,7 +101,11 @@ abstract contract HyperdriveFactory {
         // Update version and increment the counter
         hyperdriveDeployer = newDeployer;
         versionCounter++;
+
+        emit implementationUpdated(address(newDeployer));
     }
+
+    event governanceUpdated(address indexed newGovernance);
 
     /// @notice Allows governance to change the governance address
     /// @param newGovernance The new governor address
@@ -107,7 +113,11 @@ abstract contract HyperdriveFactory {
         require(newGovernance != address(0));
         // Update governance
         governance = newGovernance;
+
+        emit governanceUpdated(newGovernance);
     }
+
+    event hyperdriveGovernanceUpdated(address indexed newGovernance);
 
     /// @notice Allows governance to change the hyperdrive governance address
     /// @param newGovernance The new governor address
@@ -117,7 +127,11 @@ abstract contract HyperdriveFactory {
         require(newGovernance != address(0));
         // Update hyperdrive governance
         hyperdriveGovernance = newGovernance;
+
+        emit hyperdriveGovernanceUpdated(newGovernance);
     }
+
+    event linkerFactoryUpdated(address indexed newLinkerFactory);
 
     /// @notice Allows governance to change the linker factory.
     /// @param newLinkerFactory The new linker code hash.
@@ -127,7 +141,11 @@ abstract contract HyperdriveFactory {
         require(newLinkerFactory != address(0));
         // Update the linker factory
         linkerFactory = newLinkerFactory;
+
+        emit linkerFactoryUpdated(newLinkerFactory);
     }
+
+    event linkerCodeHashUpdated(bytes32 indexed newCodeHash);
 
     /// @notice Allows governance to change the linker code hash. This allows
     ///         governance to update the implementation of the ERC20Forwarder.
@@ -137,7 +155,11 @@ abstract contract HyperdriveFactory {
     ) external onlyGovernance {
         // Update the linker code hash
         linkerCodeHash = newLinkerCodeHash;
+
+        emit linkerCodeHashUpdated(newLinkerCodeHash);
     }
+
+    event feeCollectorUpdated(address indexed newFeeCollector);
 
     /// @notice Allows governance to change the fee collector address
     /// @param newFeeCollector The new governor address
@@ -147,6 +169,8 @@ abstract contract HyperdriveFactory {
         require(newFeeCollector != address(0));
         // Update fee collector
         feeCollector = newFeeCollector;
+
+        emit feeCollectorUpdated(newFeeCollector);
     }
 
     /// @notice Allows governance to change the fee schedule for the newly deployed factories
@@ -215,7 +239,12 @@ abstract contract HyperdriveFactory {
                 address(this),
                 _contribution + 1e5
             );
-            if (!_config.baseToken.approve(address(hyperdrive), type(uint256).max)) {
+            if (
+                !_config.baseToken.approve(
+                    address(hyperdrive),
+                    type(uint256).max
+                )
+            ) {
                 revert Errors.ApprovalFailed();
             }
             hyperdrive.initialize(_contribution, _apr, msg.sender, true);

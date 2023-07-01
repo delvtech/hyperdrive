@@ -118,7 +118,11 @@ contract DsrHyperdriveDataProvider is
 
     /// @notice Taken from https://github.com/makerdao/dss/blob/master/src/pot.sol#L85
     /// @return z
-    function _rpow(uint256 x, uint256 n, uint256 base) internal pure returns (uint z) {
+    function _rpow(
+        uint256 x,
+        uint256 n,
+        uint256 base
+    ) internal pure returns (uint z) {
         assembly ("memory-safe") {
             switch x
             case 0 {

@@ -16,13 +16,15 @@ contract MultiTokenStorage {
     bytes32 internal immutable _linkerCodeHash;
 
     // Allows loading of each balance
-    mapping(uint256 tokenId => mapping(address user => uint256 balance)) internal _balanceOf;
+    mapping(uint256 tokenId => mapping(address user => uint256 balance))
+        internal _balanceOf;
 
     // Allows loading of each total supply
     mapping(uint256 tokenId => uint256 supply) internal _totalSupply;
 
     // Uniform approval for all tokens
-    mapping(address from => mapping(address caller => bool isApproved)) internal _isApprovedForAll;
+    mapping(address from => mapping(address caller => bool isApproved))
+        internal _isApprovedForAll;
 
     // Additional optional per token approvals
     // Note - non standard for erc1150 but we want to replicate erc20 interface

@@ -13,7 +13,7 @@ library FixedPointMath {
     using FixedPointMath for uint256;
 
     uint256 public constant ONE_18 = 1e18;
-    uint256 internal constant MAX_UINT256 = 2**256 -1;
+    uint256 internal constant MAX_UINT256 = 2 ** 256 - 1;
 
     /// @dev Credit to Balancer (https://github.com/balancer-labs/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/FixedPoint.sol)
     /// @param a Fixed point number in 1e18 format.

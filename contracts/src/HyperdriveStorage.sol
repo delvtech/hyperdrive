@@ -52,7 +52,8 @@ abstract contract HyperdriveStorage is MultiTokenStorage {
     ///         allows us to avoid poking in any period that has LP or trading
     ///         activity. The checkpoints contain the starting share price from
     ///         the checkpoint as well as aggregate volume values.
-    mapping(uint256 checkpointNumber => IHyperdrive.Checkpoint ckpt) internal _checkpoints;
+    mapping(uint256 checkpointNumber => IHyperdrive.Checkpoint ckpt)
+        internal _checkpoints;
 
     /// @notice Addresses approved in this mapping can pause all deposits into
     ///         the contract and other non essential functionality.

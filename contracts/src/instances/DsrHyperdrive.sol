@@ -55,7 +55,7 @@ contract DsrHyperdrive is Hyperdrive {
 
         dsrManager = _dsrManager;
         pot = Pot(dsrManager.pot());
-        if(!_baseToken.approve(address(dsrManager), type(uint256).max)) {
+        if (!_baseToken.approve(address(dsrManager), type(uint256).max)) {
             revert Errors.ApprovalFailed();
         }
     }
@@ -187,7 +187,11 @@ contract DsrHyperdrive is Hyperdrive {
 
     /// @notice Taken from https://github.com/makerdao/dss/blob/master/src/pot.sol#L85
     /// @return z
-    function _rpow(uint256 x, uint256 n, uint256 base) internal pure returns (uint z) {
+    function _rpow(
+        uint256 x,
+        uint256 n,
+        uint256 base
+    ) internal pure returns (uint z) {
         assembly ("memory-safe") {
             switch x
             case 0 {

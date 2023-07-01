@@ -25,7 +25,8 @@ contract BondWrapper is ERC20 {
     uint256 public immutable mintPercent;
 
     // Store the user deposits as a mapping from user address -> asset id -> amount
-    mapping(address user => mapping(uint256 assetId => uint256 amount)) public deposits;
+    mapping(address user => mapping(uint256 assetId => uint256 amount))
+        public deposits;
 
     /// @notice Constructs the contract and initializes the variables.
     /// @param _hyperdrive The hyperdrive contract.
@@ -165,7 +166,7 @@ contract BondWrapper is ERC20 {
         uint256 balance = hyperdrive.balanceOf(assetId, address(this));
         // Only close if we have something to close
         if (balance != 0) {
-            // Since we're closing the entire position output can be ignored 
+            // Since we're closing the entire position output can be ignored
             hyperdrive.closeLong(
                 maturityTime,
                 balance,

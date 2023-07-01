@@ -145,19 +145,26 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
 
     /// Pause ///
 
+    event pauserUpdated(address indexed newPauser);
+
     ///@notice Allows governance to set the ability of an address to pause deposits
     ///@param who The address to change
     ///@param status The new pauser status
     function setPauser(address who, bool status) external {
         if (msg.sender != _governance) revert Errors.Unauthorized();
         _pausers[who] = status;
+        emit pauserUpdated(who);
     }
+
+    event governanceUpdated(address indexed newGovernance);
 
     ///@notice Allows governance to change governance
     ///@param who The new governance address
     function setGovernance(address who) external {
         if (msg.sender != _governance) revert Errors.Unauthorized();
         _governance = who;
+
+        emit governanceUpdated(who);
     }
 
     ///@notice Allows an authorized address to pause this contract
