@@ -8,7 +8,7 @@ import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import { Lib } from "../../utils/Lib.sol";
 
-contract NegativeInterestTest is HyperdriveTest {
+contract NegativeInterestLongTest is HyperdriveTest {
     using FixedPointMath for uint256;
     using Lib for *;
 
