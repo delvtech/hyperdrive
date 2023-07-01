@@ -25,7 +25,8 @@ contract BondWrapper is ERC20 {
     uint256 public immutable mintPercent;
 
     // Store the user deposits as a mapping from user address -> asset id -> amount
-    mapping(address => mapping(uint256 => uint256)) public deposits;
+    mapping(address user => mapping(uint256 assetId => uint256 amount))
+        public deposits;
 
     /// @notice Constructs the contract and initializes the variables.
     /// @param _hyperdrive The hyperdrive contract.
@@ -40,7 +41,7 @@ contract BondWrapper is ERC20 {
         string memory name_,
         string memory symbol_
     ) ERC20(name_, symbol_, 18) {
-        if (_mintPercent >= 10000) {
+        if (_mintPercent >= 10_000) {
             revert Errors.MintPercentTooHigh();
         }
 
@@ -81,7 +82,7 @@ contract BondWrapper is ERC20 {
         hyperdrive.transferFrom(assetId, msg.sender, address(this), amount);
 
         // Mint them the tokens for their deposit
-        uint256 mintAmount = (amount * mintPercent) / 10000;
+        uint256 mintAmount = (amount * mintPercent) / 10_000;
         _mint(destination, mintAmount);
 
         // Add this to the deposited amount
@@ -131,7 +132,7 @@ contract BondWrapper is ERC20 {
 
         // Close the user position
         // We require that this won't make the position unbacked
-        uint256 mintedFromBonds = (amount * mintPercent) / 10000;
+        uint256 mintedFromBonds = (amount * mintPercent) / 10_000;
 
         if (receivedAmount < mintedFromBonds) revert Errors.InsufficientPrice();
 
@@ -165,6 +166,7 @@ contract BondWrapper is ERC20 {
         uint256 balance = hyperdrive.balanceOf(assetId, address(this));
         // Only close if we have something to close
         if (balance != 0) {
+            // Since we're closing the entire position, the output can be ignored.
             hyperdrive.closeLong(
                 maturityTime,
                 balance,
