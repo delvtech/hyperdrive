@@ -382,21 +382,50 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // Record an oracle update
         recordPrice(spotPrice);
 
+        // Calculate the fees charged to the user (totalCurveFee) and the portion of those
+        // fees that are paid to governance (governanceCurveFee).
         (
-            uint256 totalCurveFee,
-            uint256 governanceCurveFee
+            uint256 totalCurveFee, // bonds
+            uint256 governanceCurveFee // base
         ) = _calculateFeesOutGivenSharesIn(
-                _shareAmount, // amountIn
+                _shareAmount,
                 spotPrice,
                 _sharePrice
             );
-        bondProceeds = bondReservesDelta - totalCurveFee;
-        bondReservesDelta -= totalCurveFee - governanceCurveFee;
 
-        // Calculate the fees owed to governance in shares.
+        // Calculate the number of bonds the trader receives.
+        // This is the amount of bonds the trader receives minus the fees.
+        bondProceeds = bondReservesDelta - totalCurveFee;
+
+        // Calculate how many bonds to remove from the bondReserves.
+        // The bondReservesDelta represents how many bonds to remove
+        // from the bondReserves. This should be the number of bonds the trader
+        // receives plus the number of bonds we need to pay to governance.
+        // In other words, we want to keep the totalCurveFee in the bondReserves; however,
+        // since the governanceCurveFee will be paid from the sharesReserves we don't
+        // need it removed from the bondReserves. bondProceeds is in bonds
+        // and governanceCurveFee is in base so we divide it by the spot price
+        // to convert it to bonds:
+        // bonds = bonds + base/(base/bonds)
+        // bonds = bonds + bonds
+        bondReservesDelta =
+            bondProceeds +
+            governanceCurveFee.divDown(spotPrice);
+
+        // Calculate the number of shares to add to the shareReserves.
+        // shareReservesDelta and totalGovernanceFee denominated in
+        // shares so we divide governanceCurveFee by the share price (base/shares)
+        // to convert it to shares:
+        // shares = shares - base/(base/shares)
+        // shares = shares - shares
         shareReservesDelta =
             _shareAmount -
             governanceCurveFee.divDown(_sharePrice);
+
+        // Calculate the fees owed to governance in shares.
+        // totalGovernanceFee is in base and we want it in shares
+        // shares = base/(base/shares)
+        // shares = shares
         totalGovernanceFee = governanceCurveFee.divDown(_sharePrice);
 
         return (
@@ -467,19 +496,32 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // Record an oracle update
         recordPrice(spotPrice);
 
+        // Calculate the fees charged to the user (totalCurveFe, totalFlatFee) and the portion of those
+        // fees that are paid to governance (governanceCurveFee).
         uint256 totalCurveFee;
         uint256 totalFlatFee;
         (
-            totalCurveFee,
-            totalFlatFee,
-            totalGovernanceFee
+            totalCurveFee, // shares
+            totalFlatFee, // shares
+            totalGovernanceFee // shares
         ) = _calculateFeesOutGivenBondsIn(
-            _bondAmount, // amountIn
+            _bondAmount,
             timeRemaining,
             spotPrice,
             _sharePrice
         );
+
+        // Calculate the number of shares to remove from the shareReserves.
+        // We do this bc the shareReservesDelta represents how many shares to remove
+        // from the shareReserves.  Making the shareReservesDelta smaller pays out the
+        // totalCurveFee to the LPs.
+        // The shareReservesDelta and the totalCurveFee are both in terms of shares
+        // shares -= shares
         shareReservesDelta -= totalCurveFee;
+
+        // Calculate the number of shares the trader receives.
+        // The shareProceeds, totalCurveFee, and totalFlatFee are all in terms of shares
+        // shares -= shares + shares
         shareProceeds -= totalCurveFee + totalFlatFee;
 
         return (

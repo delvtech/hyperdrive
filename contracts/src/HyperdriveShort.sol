@@ -422,17 +422,26 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // Add the spot price to the oracle if an oracle update is required
         recordPrice(spotPrice);
 
+        // Calculate the fees charged to the user (totalCurveFe) and the portion of those
+        // fees that are paid to governance (governanceCurveFee).
         uint256 totalCurveFee;
         (
             totalCurveFee, // there is no flat fee on opening shorts
             ,
             totalGovernanceFee
         ) = _calculateFeesOutGivenBondsIn(
-            _bondAmount, // amountIn
+            _bondAmount,
             _timeRemaining,
             spotPrice,
             _sharePrice
         );
+
+        // Remove the curve fee from the amount of shares to remove from the shareReserves.
+        // We do this bc the shareReservesDelta represents how many shares to remove
+        // from the shareReserves.  Making the shareReservesDelta smaller pays out the
+        // totalCurveFee to the LPs.
+        // The shareReservesDelta and the totalCurveFee are both in terms of shares
+        // shares -= shares
         shareReservesDelta -= totalCurveFee;
         return (shareReservesDelta, totalGovernanceFee);
     }
@@ -491,18 +500,36 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // Record an oracle update
         recordPrice(spotPrice);
 
+        // Calculate the fees charged to the user (totalCurveFee and totalFlatFee)
+        // and the portion of those fees that are paid to governance
+        // (governanceCurveFee and governanceFlatFee).
         (
             uint256 totalCurveFee,
             uint256 totalFlatFee,
             uint256 governanceCurveFee,
             uint256 governanceFlatFee
         ) = _calculateFeesInGivenBondsOut(
-                _bondAmount, // amountOut
+                _bondAmount,
                 timeRemaining,
                 spotPrice,
                 _sharePrice
             );
+
+        // Add the total curve fee minus the governance curve fee to the amount that will
+        // be added to the share reserves. This ensures that the LPs are credited with the
+        // fee the trader paid on the curve trade minus the portion of the curve fee that
+        // was paid to governance.
+        // shareReservesDelta, totalGovernanceFee and governanceCurveFee
+        // are all denominated in shares so we just need to subtract out
+        // the governanceCurveFees from the shareReservesDelta since that
+        // fee isn't reserved for the LPs
+        // shares += shares - shares
         shareReservesDelta += totalCurveFee - governanceCurveFee;
+
+        // Calculate the sharePayment that the user must make to close out
+        // the short. We add the totalCurveFee (shares) and totalFlatFee (shares)
+        // to the sharePayment to ensure that fees are collected.
+        // shares += shares + shares
         sharePayment += totalCurveFee + totalFlatFee;
 
         return (
