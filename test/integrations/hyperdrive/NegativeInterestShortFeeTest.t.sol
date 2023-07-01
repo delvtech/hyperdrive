@@ -9,8 +9,6 @@ import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import { MockHyperdrive, IMockHyperdrive } from "../../mocks/MockHyperdrive.sol";
 import { Lib } from "../../utils/Lib.sol";
 
-import "forge-std/console2.sol";
-
 contract NegativeInterestShortFeeTest is HyperdriveTest {
     using FixedPointMath for uint256;
     using Lib for *;
