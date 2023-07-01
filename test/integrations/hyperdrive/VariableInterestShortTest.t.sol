@@ -8,7 +8,7 @@ import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import { Lib } from "../../utils/Lib.sol";
 
-contract NegativeInterestShortTest is HyperdriveTest {
+contract VariableInterestShortTest is HyperdriveTest {
     using FixedPointMath for uint256;
     using Lib for *;
 
@@ -97,7 +97,7 @@ contract NegativeInterestShortTest is HyperdriveTest {
         // variableInterest [-100,0]
         initialSharePrice = initialSharePrice.normalizeToRange(.1e18, 10e18);
         variableInterest = -variableInterest.normalizeToRange(0, 1e18);
-        test_negative_interest_short_immediate_open_close(
+        immediate_open_close(
             initialSharePrice,
             variableInterest
         );
@@ -111,7 +111,7 @@ contract NegativeInterestShortTest is HyperdriveTest {
         {
             uint256 initialSharePrice = 1.5e18;
             int256 variableInterest = -0.05e18;
-            test_negative_interest_short_immediate_open_close(
+            immediate_open_close(
                 initialSharePrice,
                 variableInterest
             );
@@ -124,7 +124,7 @@ contract NegativeInterestShortTest is HyperdriveTest {
         {
             uint256 initialSharePrice = 1e18;
             int256 variableInterest = -0.05e18;
-            test_negative_interest_short_immediate_open_close(
+            immediate_open_close(
                 initialSharePrice,
                 variableInterest
             );
@@ -137,14 +137,14 @@ contract NegativeInterestShortTest is HyperdriveTest {
         {
             uint256 initialSharePrice = 0.95e18;
             int256 variableInterest = -0.05e18;
-            test_negative_interest_short_immediate_open_close(
+            immediate_open_close(
                 initialSharePrice,
                 variableInterest
             );
         }
     }
 
-    function test_negative_interest_short_immediate_open_close(
+    function immediate_open_close(
         uint256 initialSharePrice,
         int256 variableInterest
     ) internal {
@@ -184,7 +184,7 @@ contract NegativeInterestShortTest is HyperdriveTest {
             1e18
         );
         variableInterest = -variableInterest.normalizeToRange(0, 1e18);
-        test_negative_interest_short_full_term(
+        full_term(
             initialSharePrice,
             preTradeVariableInterest,
             variableInterest
@@ -202,7 +202,7 @@ contract NegativeInterestShortTest is HyperdriveTest {
             uint256 initialSharePrice = 1.5e18;
             int256 preTradeVariableInterest = -0.10e18;
             int256 variableInterest = -0.05e18;
-            test_negative_interest_short_full_term(
+            full_term(
                 initialSharePrice,
                 preTradeVariableInterest,
                 variableInterest
@@ -219,7 +219,7 @@ contract NegativeInterestShortTest is HyperdriveTest {
             uint256 initialSharePrice = 1e18;
             int256 preTradeVariableInterest = -0.10e18;
             int256 variableInterest = -0.05e18;
-            test_negative_interest_short_full_term(
+            full_term(
                 initialSharePrice,
                 preTradeVariableInterest,
                 variableInterest
@@ -236,7 +236,7 @@ contract NegativeInterestShortTest is HyperdriveTest {
             uint256 initialSharePrice = 0.95e18;
             int256 preTradeVariableInterest = -0.10e18;
             int256 variableInterest = -0.05e18;
-            test_negative_interest_short_full_term(
+            full_term(
                 initialSharePrice,
                 preTradeVariableInterest,
                 variableInterest
@@ -244,7 +244,7 @@ contract NegativeInterestShortTest is HyperdriveTest {
         }
     }
 
-    function test_negative_interest_short_full_term(
+    function full_term(
         uint256 initialSharePrice,
         int256 preTradeVariableInterest,
         int256 variableInterest
@@ -285,7 +285,7 @@ contract NegativeInterestShortTest is HyperdriveTest {
             1e18
         );
         variableInterest = -variableInterest.normalizeToRange(0, 1e18);
-        test_negative_interest_short_half_term(
+        half_term(
             initialSharePrice,
             preTradeVariableInterest,
             variableInterest
@@ -303,7 +303,7 @@ contract NegativeInterestShortTest is HyperdriveTest {
             uint256 initialSharePrice = 1.5e18;
             int256 preTradeVariableInterest = -0.10e18;
             int256 variableInterest = -0.05e18;
-            test_negative_interest_short_half_term(
+            half_term(
                 initialSharePrice,
                 preTradeVariableInterest,
                 variableInterest
@@ -320,7 +320,7 @@ contract NegativeInterestShortTest is HyperdriveTest {
             uint256 initialSharePrice = 1e18;
             int256 preTradeVariableInterest = -0.10e18;
             int256 variableInterest = -0.05e18;
-            test_negative_interest_short_half_term(
+            half_term(
                 initialSharePrice,
                 preTradeVariableInterest,
                 variableInterest
@@ -337,7 +337,7 @@ contract NegativeInterestShortTest is HyperdriveTest {
             uint256 initialSharePrice = 0.95e18;
             int256 preTradeVariableInterest = -0.10e18;
             int256 variableInterest = -0.05e18;
-            test_negative_interest_short_half_term(
+            half_term(
                 initialSharePrice,
                 preTradeVariableInterest,
                 variableInterest
@@ -345,7 +345,7 @@ contract NegativeInterestShortTest is HyperdriveTest {
         }
     }
 
-    function test_negative_interest_short_half_term(
+    function half_term(
         uint256 initialSharePrice,
         int256 preTradeVariableInterest,
         int256 variableInterest
