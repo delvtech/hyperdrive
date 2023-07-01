@@ -152,15 +152,10 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
             0,
             1e18
         );
-        assertEq(
-            governanceFeesAfterOpenShort,
-            expectedGovernanceFees
-        );
+        assertEq(governanceFeesAfterOpenShort, expectedGovernanceFees);
 
         // Close the short.
-        calculatedSpotPrice = HyperdriveUtils.calculateSpotPrice(
-            hyperdrive
-        );
+        calculatedSpotPrice = HyperdriveUtils.calculateSpotPrice(hyperdrive);
         closeShort(bob, maturityTime, shortAmount);
 
         // Get the fees accrued from closing the short.
@@ -338,9 +333,7 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
         uint256 closeSharePrice = poolInfo.sharePrice;
 
         // Close the short.
-        calculatedSpotPrice = HyperdriveUtils.calculateSpotPrice(
-            hyperdrive
-        );
+        calculatedSpotPrice = HyperdriveUtils.calculateSpotPrice(hyperdrive);
         closeShort(bob, maturityTime, shortAmount);
         {
             // Get the fees accrued from closing the short.
@@ -361,10 +354,7 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
                 .1e18,
                 1e18
             );
-            assertEq(
-                governanceFeesAfterCloseShort,
-                expectedFees
-            );
+            assertEq(governanceFeesAfterCloseShort, expectedFees);
         }
     }
 
@@ -532,10 +522,7 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
                 .1e18,
                 1e18
             );
-            assertEq(
-                governanceFeesAfterOpenShort,
-                expectedGovernanceFees
-            );
+            assertEq(governanceFeesAfterOpenShort, expectedGovernanceFees);
         }
 
         // 1/2 term matures and accrues interest
@@ -546,9 +533,7 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
         uint256 closeSharePrice = poolInfo.sharePrice;
 
         // Close the short.
-        calculatedSpotPrice = HyperdriveUtils.calculateSpotPrice(
-            hyperdrive
-        );
+        calculatedSpotPrice = HyperdriveUtils.calculateSpotPrice(hyperdrive);
         closeShort(bob, maturityTime, shortAmount);
         {
             // Get the fees after closing the short.
