@@ -21,10 +21,7 @@ contract VariableInterestLongTest is HyperdriveTest {
         // variableInterest [-100,0]
         initialSharePrice = initialSharePrice.normalizeToRange(.1e18, 10e18);
         variableInterest = -variableInterest.normalizeToRange(0, 1e18);
-        immediate_open_close(
-            initialSharePrice,
-            variableInterest
-        );
+        immediate_open_close(initialSharePrice, variableInterest);
     }
 
     function test_negative_interest_long_immediate_open_close() external {
@@ -35,10 +32,7 @@ contract VariableInterestLongTest is HyperdriveTest {
         {
             uint256 initialSharePrice = 1.5e18;
             int256 variableInterest = -0.05e18;
-            immediate_open_close(
-                initialSharePrice,
-                variableInterest
-            );
+            immediate_open_close(initialSharePrice, variableInterest);
         }
 
         // This tests the following scenario:
@@ -48,10 +42,7 @@ contract VariableInterestLongTest is HyperdriveTest {
         {
             uint256 initialSharePrice = 1e18;
             int256 variableInterest = -0.05e18;
-            immediate_open_close(
-                initialSharePrice,
-                variableInterest
-            );
+            immediate_open_close(initialSharePrice, variableInterest);
         }
 
         // This tests the following scenario:
@@ -61,10 +52,7 @@ contract VariableInterestLongTest is HyperdriveTest {
         {
             uint256 initialSharePrice = 0.95e18;
             int256 variableInterest = -0.05e18;
-            immediate_open_close(
-                initialSharePrice,
-                variableInterest
-            );
+            immediate_open_close(initialSharePrice, variableInterest);
         }
     }
 

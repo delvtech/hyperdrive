@@ -88,19 +88,48 @@ contract VariableInterestShortTest is HyperdriveTest {
         assertApproxEqAbs(baseProceeds, estimatedProceeds, 1e5);
     }
 
-    function test_negative_interest_short_immediate_open_close_fuzz(
+    function test_positive_negative_interest_short_immediate_open_close_fuzz(
         uint256 initialSharePrice,
         int256 variableInterest
     ) external {
         // Fuzz inputs
-        // initialSharePrice [0.1,10]
-        // variableInterest [-100,0]
-        initialSharePrice = initialSharePrice.normalizeToRange(.1e18, 10e18);
-        variableInterest = -variableInterest.normalizeToRange(0, 1e18);
-        immediate_open_close(
-            initialSharePrice,
-            variableInterest
-        );
+        // initialSharePrice [0.1,5]
+        // variableInterest [-50,50]
+        initialSharePrice = initialSharePrice.normalizeToRange(.1e18, 5e18);
+        variableInterest = variableInterest.normalizeToRange(-.5e18, .5e18);
+        immediate_open_close(initialSharePrice, variableInterest);
+    }
+
+    function test_positive_interest_short_immediate_open_close() external {
+        // This tests the following scenario:
+        // - initial_share_price > 1
+        // - positive interest causes the share price to go up
+        // - a short is opened and immediately closed
+        {
+            uint256 initialSharePrice = 1.5e18;
+            int256 variableInterest = 0.05e18;
+            immediate_open_close(initialSharePrice, variableInterest);
+        }
+
+        // This tests the following scenario:
+        // - initial_share_price = 1
+        // - positive interest causes the share price to go up
+        // - a short is opened and immediately closed
+        {
+            uint256 initialSharePrice = 1e18;
+            int256 variableInterest = 0.05e18;
+            immediate_open_close(initialSharePrice, variableInterest);
+        }
+
+        // This tests the following scenario:
+        // - initial_share_price < 1
+        // - positive interest causes the share price to go up
+        // - a short is opened and immediately closed
+        {
+            uint256 initialSharePrice = 0.95e18;
+            int256 variableInterest = 0.10e18;
+            immediate_open_close(initialSharePrice, variableInterest);
+        }
     }
 
     function test_negative_interest_short_immediate_open_close() external {
@@ -111,10 +140,7 @@ contract VariableInterestShortTest is HyperdriveTest {
         {
             uint256 initialSharePrice = 1.5e18;
             int256 variableInterest = -0.05e18;
-            immediate_open_close(
-                initialSharePrice,
-                variableInterest
-            );
+            immediate_open_close(initialSharePrice, variableInterest);
         }
 
         // This tests the following scenario:
@@ -124,10 +150,7 @@ contract VariableInterestShortTest is HyperdriveTest {
         {
             uint256 initialSharePrice = 1e18;
             int256 variableInterest = -0.05e18;
-            immediate_open_close(
-                initialSharePrice,
-                variableInterest
-            );
+            immediate_open_close(initialSharePrice, variableInterest);
         }
 
         // This tests the following scenario:
@@ -137,10 +160,7 @@ contract VariableInterestShortTest is HyperdriveTest {
         {
             uint256 initialSharePrice = 0.95e18;
             int256 variableInterest = -0.05e18;
-            immediate_open_close(
-                initialSharePrice,
-                variableInterest
-            );
+            immediate_open_close(initialSharePrice, variableInterest);
         }
     }
 
@@ -164,31 +184,84 @@ contract VariableInterestShortTest is HyperdriveTest {
         // Immediately close the short position.
         uint256 baseProceeds = closeShort(bob, maturityTime, shortAmount);
 
-        // It shouldn't be profitable to open and close a short position immediately with negative interest
+        // It shouldn't be profitable to open and close a short position immediately
         assertGe(basePaid, baseProceeds);
-        assertApproxEqAbs(baseProceeds, basePaid, 1e11);
+        assertApproxEqAbs(baseProceeds, basePaid, 1e11); // NOTE: This error grows with initialSharePrice and variableInterest
     }
 
-    function test_negative_interest_short_full_term_fuzz(
+    function test_positive_negative_interest_short_full_term_fuzz(
         uint256 initialSharePrice,
         int256 preTradeVariableInterest,
         int256 variableInterest
     ) external {
         // Fuzz inputs
-        // initialSharePrice [0.1,10]
-        // preTradeVariableInterest [-100,0]
-        // variableInterest [-100,0]
-        initialSharePrice = initialSharePrice.normalizeToRange(.1e18, 10e18);
-        preTradeVariableInterest = -preTradeVariableInterest.normalizeToRange(
-            0,
-            1e18
+        // initialSharePrice [0.1,5]
+        // preTradeVariableInterest [-50,50]
+        // variableInterest [-50,50]
+        initialSharePrice = initialSharePrice.normalizeToRange(.1e18, 5e18);
+        preTradeVariableInterest = preTradeVariableInterest.normalizeToRange(
+            -0.5e18,
+            0.5e18
         );
-        variableInterest = -variableInterest.normalizeToRange(0, 1e18);
+        variableInterest = variableInterest.normalizeToRange(-0.5e18, 0.5e18);
         full_term(
             initialSharePrice,
             preTradeVariableInterest,
             variableInterest
         );
+    }
+
+    function test_positive_interest_short_full_term() external {
+        // This tests the following scenario:
+        // - initial_share_price > 1
+        // - positive interest causes the share price to go up
+        // - a short is opened
+        // - positive interest accrues over the full term
+        // - short is closed
+        {
+            uint256 initialSharePrice = 1.5e18;
+            int256 preTradeVariableInterest = 0.10e18;
+            int256 variableInterest = 0.05e18;
+            full_term(
+                initialSharePrice,
+                preTradeVariableInterest,
+                variableInterest
+            );
+        }
+
+        // This tests the following scenario:
+        // - initial_share_price = 1
+        // - positive interest causes the share price to go up
+        // - a short is opened
+        // - positive interest accrues over the full term
+        // - short is closed
+        {
+            uint256 initialSharePrice = 1e18;
+            int256 preTradeVariableInterest = 0.10e18;
+            int256 variableInterest = 0.05e18;
+            full_term(
+                initialSharePrice,
+                preTradeVariableInterest,
+                variableInterest
+            );
+        }
+
+        // This tests the following scenario:
+        // - initial_share_price < 1
+        // - positive interest causes the share price to go up
+        // - a short is opened
+        // - positive interest accrues over the full term
+        // - short is closed
+        {
+            uint256 initialSharePrice = 0.95e18;
+            int256 preTradeVariableInterest = 0.10e18;
+            int256 variableInterest = 0.05e18;
+            full_term(
+                initialSharePrice,
+                preTradeVariableInterest,
+                variableInterest
+            );
+        }
     }
 
     function test_negative_interest_short_full_term() external {
@@ -202,11 +275,13 @@ contract VariableInterestShortTest is HyperdriveTest {
             uint256 initialSharePrice = 1.5e18;
             int256 preTradeVariableInterest = -0.10e18;
             int256 variableInterest = -0.05e18;
-            full_term(
+            uint256 baseProceeds = full_term(
                 initialSharePrice,
                 preTradeVariableInterest,
                 variableInterest
             );
+            // Because variable interest is negative, the short position earns nothing
+            assertApproxEqAbs(baseProceeds, 0, 10);
         }
 
         // This tests the following scenario:
@@ -219,11 +294,13 @@ contract VariableInterestShortTest is HyperdriveTest {
             uint256 initialSharePrice = 1e18;
             int256 preTradeVariableInterest = -0.10e18;
             int256 variableInterest = -0.05e18;
-            full_term(
+            uint256 baseProceeds = full_term(
                 initialSharePrice,
                 preTradeVariableInterest,
                 variableInterest
             );
+            // Because variable interest is negative, the short position earns nothing
+            assertApproxEqAbs(baseProceeds, 0, 10);
         }
 
         // This tests the following scenario:
@@ -236,11 +313,13 @@ contract VariableInterestShortTest is HyperdriveTest {
             uint256 initialSharePrice = 0.95e18;
             int256 preTradeVariableInterest = -0.10e18;
             int256 variableInterest = -0.05e18;
-            full_term(
+            uint256 baseProceeds = full_term(
                 initialSharePrice,
                 preTradeVariableInterest,
                 variableInterest
             );
+            // Because variable interest is negative, the short position earns nothing
+            assertApproxEqAbs(baseProceeds, 0, 10);
         }
     }
 
@@ -248,14 +327,14 @@ contract VariableInterestShortTest is HyperdriveTest {
         uint256 initialSharePrice,
         int256 preTradeVariableInterest,
         int256 variableInterest
-    ) internal {
+    ) internal returns (uint256) {
         // Initialize the market
         uint256 apr = 0.05e18;
         deploy(alice, apr, initialSharePrice, 0, 0, 0);
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
 
-        // fast forward time and accrue negative interest
+        // fast forward time and accrue interest
         advanceTime(POSITION_DURATION, preTradeVariableInterest);
 
         // Open a short position.
@@ -265,31 +344,93 @@ contract VariableInterestShortTest is HyperdriveTest {
         // Full term passes
         advanceTime(POSITION_DURATION, variableInterest);
 
+        // Calculate the estimated proceeds.
+        uint256 estimatedProceeds = estimateShortProceeds(
+            shortAmount,
+            variableInterest,
+            HyperdriveUtils.calculateTimeRemaining(hyperdrive, maturityTime),
+            POSITION_DURATION
+        );
+
         // Close the short.
         uint256 baseProceeds = closeShort(bob, maturityTime, shortAmount);
-        assertApproxEqAbs(baseProceeds, 0, 10);
+        assertApproxEqAbs(baseProceeds, estimatedProceeds, 1e7);
+        return baseProceeds;
     }
 
-    function test_negative_interest_short_half_term_fuzz(
+    function test_positive_negative_interest_short_half_term_fuzz(
         uint256 initialSharePrice,
         int256 preTradeVariableInterest,
         int256 variableInterest
     ) external {
         // Fuzz inputs
-        // initialSharePrice [0.1,10]
-        // preTradeVariableInterest [-100,0]
-        // variableInterest [-100,0]
+        // initialSharePrice [0.1,5]
+        // preTradeVariableInterest [-50,50]
+        // variableInterest [-50,50]
         initialSharePrice = initialSharePrice.normalizeToRange(.1e18, 10e18);
-        preTradeVariableInterest = -preTradeVariableInterest.normalizeToRange(
-            0,
-            1e18
+        preTradeVariableInterest = preTradeVariableInterest.normalizeToRange(
+            -0.5e18,
+            0.5e18
         );
-        variableInterest = -variableInterest.normalizeToRange(0, 1e18);
+        variableInterest = variableInterest.normalizeToRange(-0.5e18, 0.5e18);
         half_term(
             initialSharePrice,
             preTradeVariableInterest,
             variableInterest
         );
+    }
+
+    function test_positive_interest_short_half_term() external {
+        // This tests the following scenario:
+        // - initial_share_price > 1
+        // - positive interest causes the share price to go up
+        // - a short is opened
+        // - positive interest accrues over half term
+        // - short is closed
+        {
+            uint256 initialSharePrice = 1.5e18;
+            int256 preTradeVariableInterest = 0.10e18;
+            int256 variableInterest = 0.05e18;
+            half_term(
+                initialSharePrice,
+                preTradeVariableInterest,
+                variableInterest
+            );
+        }
+
+        // This tests the following scenario:
+        // - initial_share_price = 1
+        // - positive  interest causes the share price to go up
+        // - a short is opened
+        // - positive interest accrues over half term
+        // - short is closed
+        {
+            uint256 initialSharePrice = 1e18;
+            int256 preTradeVariableInterest = 0.10e18;
+            int256 variableInterest = 0.05e18;
+            half_term(
+                initialSharePrice,
+                preTradeVariableInterest,
+                variableInterest
+            );
+        }
+
+        // This tests the following scenario:
+        // - initial_share_price < 1
+        // - positive interest causes the share price to go further down
+        // - a short is opened
+        // - positive interest accrues over half term
+        // - short is closed
+        {
+            uint256 initialSharePrice = 0.95e18;
+            int256 preTradeVariableInterest = 0.10e18;
+            int256 variableInterest = 0.05e18;
+            half_term(
+                initialSharePrice,
+                preTradeVariableInterest,
+                variableInterest
+            );
+        }
     }
 
     function test_negative_interest_short_half_term() external {
