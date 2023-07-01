@@ -166,7 +166,7 @@ contract BondWrapper is ERC20 {
         uint256 balance = hyperdrive.balanceOf(assetId, address(this));
         // Only close if we have something to close
         if (balance != 0) {
-            // Since we're closing the entire position output can be ignored
+            // Since we're closing the entire position, the output can be ignored.
             hyperdrive.closeLong(
                 maturityTime,
                 balance,
