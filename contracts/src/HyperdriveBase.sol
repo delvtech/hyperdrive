@@ -145,7 +145,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
 
     /// Pause ///
 
-    event pauserUpdated(address indexed newPauser);
+    event PauserUpdated(address indexed newPauser);
 
     ///@notice Allows governance to set the ability of an address to pause deposits
     ///@param who The address to change
@@ -153,10 +153,10 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     function setPauser(address who, bool status) external {
         if (msg.sender != _governance) revert Errors.Unauthorized();
         _pausers[who] = status;
-        emit pauserUpdated(who);
+        emit PauserUpdated(who);
     }
 
-    event governanceUpdated(address indexed newGovernance);
+    event GovernanceUpdated(address indexed newGovernance);
 
     ///@notice Allows governance to change governance
     ///@param who The new governance address
@@ -164,7 +164,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
         if (msg.sender != _governance) revert Errors.Unauthorized();
         _governance = who;
 
-        emit governanceUpdated(who);
+        emit GovernanceUpdated(who);
     }
 
     ///@notice Allows an authorized address to pause this contract

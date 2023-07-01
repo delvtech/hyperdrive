@@ -90,7 +90,7 @@ abstract contract HyperdriveFactory {
         _;
     }
 
-    event implementationUpdated(address indexed newDeployer);
+    event ImplementationUpdated(address indexed newDeployer);
 
     /// @notice Allows governance to update the deployer contract.
     /// @param newDeployer The new deployment contract.
@@ -102,10 +102,10 @@ abstract contract HyperdriveFactory {
         hyperdriveDeployer = newDeployer;
         versionCounter++;
 
-        emit implementationUpdated(address(newDeployer));
+        emit ImplementationUpdated(address(newDeployer));
     }
 
-    event governanceUpdated(address indexed newGovernance);
+    event GovernanceUpdated(address indexed newGovernance);
 
     /// @notice Allows governance to change the governance address
     /// @param newGovernance The new governor address
@@ -114,10 +114,10 @@ abstract contract HyperdriveFactory {
         // Update governance
         governance = newGovernance;
 
-        emit governanceUpdated(newGovernance);
+        emit GovernanceUpdated(newGovernance);
     }
 
-    event hyperdriveGovernanceUpdated(address indexed newGovernance);
+    event HyperdriveGovernanceUpdated(address indexed newGovernance);
 
     /// @notice Allows governance to change the hyperdrive governance address
     /// @param newGovernance The new governor address
@@ -128,10 +128,10 @@ abstract contract HyperdriveFactory {
         // Update hyperdrive governance
         hyperdriveGovernance = newGovernance;
 
-        emit hyperdriveGovernanceUpdated(newGovernance);
+        emit HyperdriveGovernanceUpdated(newGovernance);
     }
 
-    event linkerFactoryUpdated(address indexed newLinkerFactory);
+    event LinkerFactoryUpdated(address indexed newLinkerFactory);
 
     /// @notice Allows governance to change the linker factory.
     /// @param newLinkerFactory The new linker code hash.
@@ -142,10 +142,10 @@ abstract contract HyperdriveFactory {
         // Update the linker factory
         linkerFactory = newLinkerFactory;
 
-        emit linkerFactoryUpdated(newLinkerFactory);
+        emit LinkerFactoryUpdated(newLinkerFactory);
     }
 
-    event linkerCodeHashUpdated(bytes32 indexed newCodeHash);
+    event LinkerCodeHashUpdated(bytes32 indexed newCodeHash);
 
     /// @notice Allows governance to change the linker code hash. This allows
     ///         governance to update the implementation of the ERC20Forwarder.
@@ -156,10 +156,10 @@ abstract contract HyperdriveFactory {
         // Update the linker code hash
         linkerCodeHash = newLinkerCodeHash;
 
-        emit linkerCodeHashUpdated(newLinkerCodeHash);
+        emit LinkerCodeHashUpdated(newLinkerCodeHash);
     }
 
-    event feeCollectorUpdated(address indexed newFeeCollector);
+    event FeeCollectorUpdated(address indexed newFeeCollector);
 
     /// @notice Allows governance to change the fee collector address
     /// @param newFeeCollector The new governor address
@@ -170,7 +170,7 @@ abstract contract HyperdriveFactory {
         // Update fee collector
         feeCollector = newFeeCollector;
 
-        emit feeCollectorUpdated(newFeeCollector);
+        emit FeeCollectorUpdated(newFeeCollector);
     }
 
     /// @notice Allows governance to change the fee schedule for the newly deployed factories
