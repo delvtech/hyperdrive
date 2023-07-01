@@ -340,6 +340,61 @@ contract HyperdriveTest is BaseTest {
         return closeShort(trader, maturityTime, bondAmount, true);
     }
 
+    function estimateLongProceeds(
+        uint256 bondAmount,
+        uint256 normalizedTimeRemaining,
+        uint256 openSharePrice,
+        uint256 closeSharePrice
+    ) internal view returns (uint256) {
+        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
+        IHyperdrive.PoolConfig memory poolConfig = hyperdrive.getPoolConfig();
+        (, , uint256 shareProceeds) = HyperdriveMath.calculateCloseLong(
+            poolInfo.shareReserves,
+            poolInfo.bondReserves,
+            bondAmount,
+            normalizedTimeRemaining,
+            poolConfig.timeStretch,
+            openSharePrice,
+            closeSharePrice,
+            poolInfo.sharePrice,
+            poolConfig.initialSharePrice
+        );
+        return shareProceeds.mulDivDown(poolInfo.sharePrice, 1e18);
+    }
+
+    function estimateShortProceeds(
+        uint256 shortAmount,
+        int256 variableRate,
+        uint256 normalizedTimeRemaining,
+        uint256 timeElapsed
+    ) internal view returns (uint256) {
+        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
+        IHyperdrive.PoolConfig memory poolConfig = hyperdrive.getPoolConfig();
+
+        (, , uint256 expectedSharePayment) = HyperdriveMath.calculateCloseShort(
+            poolInfo.shareReserves,
+            poolInfo.bondReserves,
+            shortAmount,
+            normalizedTimeRemaining,
+            poolConfig.timeStretch,
+            poolInfo.sharePrice,
+            poolConfig.initialSharePrice
+        );
+        (, int256 expectedInterest) = HyperdriveUtils.calculateCompoundInterest(
+            shortAmount,
+            variableRate,
+            timeElapsed
+        );
+        int256 delta = int256(
+            shortAmount - poolInfo.sharePrice.mulDown(expectedSharePayment)
+        );
+        if (delta + expectedInterest > 0) {
+            return uint256(delta + expectedInterest);
+        } else {
+            return 0;
+        }
+    }
+
     /// Utils ///
 
     function advanceTime(uint256 time, int256 apr) internal virtual {

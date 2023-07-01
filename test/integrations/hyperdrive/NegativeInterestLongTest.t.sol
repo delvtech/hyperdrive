@@ -318,26 +318,4 @@ contract NegativeInterestLongTest is HyperdriveTest {
         uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
         assertEq(baseProceeds, estimatedProceeds);
     }
-
-    function estimateLongProceeds(
-        uint256 bondAmount,
-        uint256 normalizedTimeRemaining,
-        uint256 openSharePrice,
-        uint256 closeSharePrice
-    ) internal view returns (uint256) {
-        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
-        IHyperdrive.PoolConfig memory poolConfig = hyperdrive.getPoolConfig();
-        (, , uint256 shareProceeds) = HyperdriveMath.calculateCloseLong(
-            poolInfo.shareReserves,
-            poolInfo.bondReserves,
-            bondAmount,
-            normalizedTimeRemaining,
-            poolConfig.timeStretch,
-            openSharePrice,
-            closeSharePrice,
-            poolInfo.sharePrice,
-            poolConfig.initialSharePrice
-        );
-        return shareProceeds.mulDivDown(poolInfo.sharePrice, 1e18);
-    }
 }
