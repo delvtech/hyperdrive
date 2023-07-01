@@ -24,7 +24,7 @@ contract ERC20Forwarder is IERC20 {
     // The ID for this contract's 'ERC20' as a sub token of the main token
     uint256 public immutable tokenId;
     // A mapping to track the permit signature nonces
-    mapping(address => uint256) public nonces;
+    mapping(address user => uint256 nonce) public nonces;
     // EIP712
     bytes32 public immutable DOMAIN_SEPARATOR; // solhint-disable-line var-name-mixedcase
     bytes32 public constant PERMIT_TYPEHASH =
