@@ -114,6 +114,7 @@ abstract contract HyperdriveFactory {
     function updateHyperdriveGovernance(
         address newGovernance
     ) external onlyGovernance {
+        require(newGovernance != address(0));
         // Update hyperdrive governance
         hyperdriveGovernance = newGovernance;
     }
@@ -123,6 +124,7 @@ abstract contract HyperdriveFactory {
     function updateLinkerFactory(
         address newLinkerFactory
     ) external onlyGovernance {
+        require(newLinkerFactory != address(0));
         // Update the linker factory
         linkerFactory = newLinkerFactory;
     }
