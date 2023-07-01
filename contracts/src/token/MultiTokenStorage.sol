@@ -16,25 +16,25 @@ contract MultiTokenStorage {
     bytes32 internal immutable _linkerCodeHash;
 
     // Allows loading of each balance
-    mapping(uint256 => mapping(address => uint256)) internal _balanceOf;
+    mapping(uint256 tokenId => mapping(address user => uint256 balance)) internal _balanceOf;
 
     // Allows loading of each total supply
-    mapping(uint256 => uint256) internal _totalSupply;
+    mapping(uint256 tokenId => uint256 supply) internal _totalSupply;
 
     // Uniform approval for all tokens
-    mapping(address => mapping(address => bool)) internal _isApprovedForAll;
+    mapping(address from => mapping(address caller => bool isApproved)) internal _isApprovedForAll;
 
     // Additional optional per token approvals
     // Note - non standard for erc1150 but we want to replicate erc20 interface
-    mapping(uint256 => mapping(address => mapping(address => uint256)))
+    mapping(uint256 tokenId => mapping(address from => mapping(address caller => uint256 approved)))
         internal _perTokenApprovals;
 
     // Sub Token Name and Symbol, created by inheriting contracts
-    mapping(uint256 => string) internal _name;
-    mapping(uint256 => string) internal _symbol;
+    mapping(uint256 tokenId => string name) internal _name;
+    mapping(uint256 tokenId => string symbol) internal _symbol;
 
     // A mapping to track the permitForAll signature nonces
-    mapping(address => uint256) internal _nonces;
+    mapping(address user => uint256 nonce) internal _nonces;
 
     /// @notice Initializes the MultiToken's storage.
     /// @param _linkerCodeHash_ The hash of the erc20 linker contract deploy code

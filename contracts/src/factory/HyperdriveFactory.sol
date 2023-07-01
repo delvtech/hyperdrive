@@ -20,7 +20,7 @@ abstract contract HyperdriveFactory {
     address public governance;
     // A mapping of all previously deployed hyperdrive instances of all versions
     // 0 is un-deployed then increments for increasing versions
-    mapping(address => uint256) public isOfficial;
+    mapping(address instance => uint256 version) public isOfficial;
     uint256 public versionCounter;
 
     // The address which should control hyperdrive instances
