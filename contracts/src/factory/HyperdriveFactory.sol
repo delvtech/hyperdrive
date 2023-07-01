@@ -95,6 +95,7 @@ abstract contract HyperdriveFactory {
     function updateImplementation(
         IHyperdriveDeployer newDeployer
     ) external onlyGovernance {
+        require(address(newDeployer) != address(0));
         // Update version and increment the counter
         hyperdriveDeployer = newDeployer;
         versionCounter++;
@@ -103,6 +104,7 @@ abstract contract HyperdriveFactory {
     /// @notice Allows governance to change the governance address
     /// @param newGovernance The new governor address
     function updateGovernance(address newGovernance) external onlyGovernance {
+        require(newGovernance != address(0));
         // Update governance
         governance = newGovernance;
     }
@@ -140,6 +142,7 @@ abstract contract HyperdriveFactory {
     function updateFeeCollector(
         address newFeeCollector
     ) external onlyGovernance {
+        require(newFeeCollector != address(0));
         // Update fee collector
         feeCollector = newFeeCollector;
     }
@@ -158,6 +161,7 @@ abstract contract HyperdriveFactory {
     function updateDefaultPausers(
         address[] calldata newDefaults
     ) external onlyGovernance {
+        require(newDefaults.length != 0);
         // Update the default pausers
         defaultPausers = newDefaults;
     }

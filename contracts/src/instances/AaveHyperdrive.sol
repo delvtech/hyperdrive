@@ -130,7 +130,8 @@ contract AaveHyperdrive is Hyperdrive {
         // If the user wants underlying we withdraw for them otherwise send the base
         if (asUnderlying) {
             // Now we call aave to fulfill this withdraw for the user
-            pool.withdraw(address(_baseToken), withdrawValue, destination);
+            uint256 amountOut = pool.withdraw(address(_baseToken), withdrawValue, destination);
+            require(amountOut == withdrawValue);
         } else {
             // Otherwise we simply transfer to them
             aToken.transfer(destination, withdrawValue);
