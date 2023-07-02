@@ -37,6 +37,20 @@ contract OpenLongTest is HyperdriveTest {
         hyperdrive.openLong(0, 0, bob, true);
     }
 
+    function test_open_long_failure_not_payable() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Attempt to open long. This should fail.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        vm.expectRevert(Errors.NotPayable.selector);
+        hyperdrive.openLong{ value: 1 }(1, 0, bob, true);
+    }
+
     function test_open_long_failure_pause() external {
         uint256 apr = 0.05e18;
 

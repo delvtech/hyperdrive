@@ -40,6 +40,19 @@ contract InitializeTest is HyperdriveTest {
         hyperdrive.initialize(contribution, apr, bob, true);
     }
 
+    function test_initialize_failure_not_payable() external {
+        uint256 apr = 0.5e18;
+        uint256 contribution = 1000.0e18;
+
+        // Attempt to initialize the pool. This should fail.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        baseToken.mint(contribution);
+        baseToken.approve(address(hyperdrive), contribution);
+        vm.expectRevert(Errors.NotPayable.selector);
+        hyperdrive.initialize{ value: 1 }(contribution, apr, bob, true);
+    }
+
     // TODO: This should ultimately be a fuzz test that fuzzes over the initial
     // share price, the APR, the contribution, the position duration, and other
     // parameters that can have an impact on the pool's APR.

@@ -35,6 +35,20 @@ contract OpenShortTest is HyperdriveTest {
         hyperdrive.openShort(0, type(uint256).max, bob, true);
     }
 
+    function test_open_short_failure_not_payable() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Attempt to open short. This should fail.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        vm.expectRevert(Errors.NotPayable.selector);
+        hyperdrive.openShort{ value: 1 }(1, type(uint256).max, bob, true);
+    }
+
     function test_open_short_failure_pause() external {
         uint256 apr = 0.05e18;
 
