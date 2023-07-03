@@ -33,6 +33,8 @@ ENV RPC_URL="$RPC_URL"
 
 # Run anvil as a background process. We will run the migrations on this anvil
 # node at build time and dump the state to the "data/" directory.
-RUN anvil --dump-state ./data & ANVIL="$!" && ./run_migrations.sh && kill $ANVIL && ls ./data
-
-RUN ls ./data
+RUN anvil --dump-state ./data & \
+    ANVIL="$!" && \ 
+    ./run_migrations.sh && \
+    kill $ANVIL && \
+    sleep 1s
