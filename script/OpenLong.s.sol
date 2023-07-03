@@ -40,12 +40,6 @@ contract OpenLongScript is Script {
         );
 
         console.log("Bob opened a long position of %s bonds", longAmount);
-
-        console.log(
-            "maturityTime: %s",
-            HYPERDRIVE.latestCheckpoint() +
-                HYPERDRIVE.getPoolConfig().positionDuration
-        );
         console.log(
             "Bob's long balance is now %s bonds",
             HYPERDRIVE.balanceOf(

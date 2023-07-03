@@ -44,7 +44,6 @@ contract CloseLongScript is Script {
             "Bob closed a long position for %s base",
             baseProceeds.toString(18)
         );
-
         console.log(
             "Bob's long balance is now %s bonds",
             HYPERDRIVE.balanceOf(
