@@ -1,13 +1,22 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import "forge-std/console.sol";
+import "test/utils/Lib.sol";
+
+import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
 
 contract ExtremeInputs is HyperdriveTest {
+    // FIXME
+    using Lib for *;
+
     using FixedPointMath for uint256;
+    using HyperdriveUtils for IHyperdrive;
 
     function test_max_open_long() external {
         // Initialize the pools with a large amount of capital.
@@ -17,14 +26,14 @@ contract ExtremeInputs is HyperdriveTest {
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
 
         // Max base amount
-        uint256 baseAmount = HyperdriveUtils.calculateMaxLong(hyperdrive);
+        uint256 baseAmount = hyperdrive.calculateMaxLong();
 
         // Open long with max base amount
         (, uint256 bondAmount) = openLong(bob, baseAmount);
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
 
         // Ensure that the ending APR is approximately 0%.
-        uint256 apr = HyperdriveUtils.calculateAPRFromReserves(hyperdrive);
+        uint256 apr = hyperdrive.calculateAPRFromReserves();
         assertApproxEqAbs(
             apr,
             0,
@@ -38,7 +47,7 @@ contract ExtremeInputs is HyperdriveTest {
         // transferred; however, the pool's APR should be identical to the APR
         // that the bond amount transfer implies.
         assertApproxEqAbs(
-            HyperdriveUtils.calculateAPRFromReserves(hyperdrive),
+            hyperdrive.calculateAPRFromReserves(),
             HyperdriveMath.calculateAPRFromReserves(
                 poolInfoAfter.shareReserves,
                 poolInfoBefore.bondReserves - bondAmount,
@@ -58,14 +67,12 @@ contract ExtremeInputs is HyperdriveTest {
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
 
         // Max amount of bonds to short
-        uint256 bondAmount = HyperdriveUtils.calculateMaxShort(hyperdrive);
+        uint256 bondAmount = hyperdrive.calculateMaxShort();
 
-        // Open long with max base amount
-        uint256 aprBefore = HyperdriveUtils.calculateAPRFromReserves(
-            hyperdrive
-        );
+        // Open short with max base amount
+        uint256 aprBefore = hyperdrive.calculateAPRFromReserves();
         openShort(bob, bondAmount);
-        uint256 aprAfter = HyperdriveUtils.calculateAPRFromReserves(hyperdrive);
+        uint256 aprAfter = hyperdrive.calculateAPRFromReserves();
 
         // Ensure the share reserves are approximately empty and that the apr
         // increased.
@@ -84,7 +91,7 @@ contract ExtremeInputs is HyperdriveTest {
         // transferred; however, the pool's APR should be identical to the APR
         // that the bond amount transfer implies.
         assertApproxEqAbs(
-            HyperdriveUtils.calculateAPRFromReserves(hyperdrive),
+            hyperdrive.calculateAPRFromReserves(),
             HyperdriveMath.calculateAPRFromReserves(
                 poolInfoAfter.shareReserves,
                 poolInfoBefore.bondReserves + bondAmount,
@@ -94,5 +101,23 @@ contract ExtremeInputs is HyperdriveTest {
             ),
             5
         );
+    }
+
+    // This test verifies that the share reserves can't be brought to zero.
+    function test_short_to_empty_share_reserves() external {
+        // Alice initializes the pool.
+        initialize(alice, 0.02e18, 500_000_000e6);
+
+        // FIXME: We should be able to configure `calculateMaxShort` so that
+        // this test will still work after we change the behavior in Hyperdrive.
+        //
+        // Bob attempts to short exactly the maximum amount of bonds needed for
+        // the share reserves to be equal to zero. This should fail because the
+        // share reserves fall below the minimum share reserves.
+        uint256 shortAmount = hyperdrive.calculateMaxShort();
+        baseToken.mint(shortAmount);
+        baseToken.approve(address(hyperdrive), shortAmount);
+        vm.expectRevert(Errors.BelowMinimumShareReserves.selector);
+        hyperdrive.openShort(shortAmount, type(uint256).max, bob, true);
     }
 }

@@ -31,6 +31,7 @@ library Errors {
     error ApprovalFailed();
     error ZeroAmount();
     error BelowMinimumContribution();
+    error BelowMinimumShareReserves();
     error ZeroLpTotalSupply();
     error NoAssetsToWithdraw();
     error NotPayable();

@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import "forge-std/console.sol";
+import "test/utils/Lib.sol";
+
 import { SafeCast } from "./libraries/SafeCast.sol";
 import { HyperdriveLP } from "./HyperdriveLP.sol";
 import { AssetId } from "./libraries/AssetId.sol";
@@ -16,6 +20,9 @@ import { YieldSpaceMath } from "./libraries/YieldSpaceMath.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveShort is HyperdriveLP {
+    // FIXME
+    using Lib for *;
+
     using FixedPointMath for uint256;
     using SafeCast for uint256;
 
@@ -135,13 +142,16 @@ abstract contract HyperdriveShort is HyperdriveLP {
         address _destination,
         bool _asUnderlying
     ) external returns (uint256) {
+        console.log("closeShort: 1");
         if (_bondAmount == 0) {
             revert Errors.ZeroAmount();
         }
+        console.log("closeShort: 2");
 
         // Perform a checkpoint.
         uint256 sharePrice = _pricePerShare();
         _applyCheckpoint(_maturityTime, sharePrice);
+        console.log("closeShort: 3");
 
         // Burn the shorts that are being closed.
         _burn(
@@ -149,6 +159,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             msg.sender,
             _bondAmount
         );
+        console.log("closeShort: 4");
 
         // Calculate the pool and user deltas using the trading function.
         (
@@ -157,6 +168,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             uint256 sharePayment,
             uint256 totalGovernanceFee
         ) = _calculateCloseShort(_bondAmount, sharePrice, _maturityTime);
+        console.log("closeShort: 5");
 
         // If the ending spot price is greater than or equal to 1, we are in the
         // negative interest region of the trading function. The spot price is
@@ -178,9 +190,11 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 revert Errors.NegativeInterest();
             }
         }
+        console.log("closeShort: 6");
 
         // Attribute the governance fees.
         _governanceFeesAccrued += totalGovernanceFee;
+        console.log("closeShort: 7");
 
         // If the position hasn't matured, apply the accounting updates that
         // result from closing the short to the reserves and pay out the
@@ -195,15 +209,18 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 sharePrice
             );
         }
+        console.log("closeShort: 8");
 
         // Withdraw the profit to the trader. This includes the proceeds from
         // the short sale as well as the variable interest that was collected
         // on the face value of the bonds:
         uint256 openSharePrice = _checkpoints[_maturityTime - _positionDuration]
             .sharePrice;
+        console.log("closeShort: 9");
         uint256 closeSharePrice = _maturityTime <= block.timestamp
             ? _checkpoints[_maturityTime].sharePrice
             : sharePrice;
+        console.log("closeShort: 10");
         uint256 shortProceeds = HyperdriveMath.calculateShortProceeds(
             _bondAmount,
             sharePayment,
@@ -211,14 +228,17 @@ abstract contract HyperdriveShort is HyperdriveLP {
             closeSharePrice,
             sharePrice
         );
+        console.log("closeShort: 11");
         uint256 baseProceeds = _withdraw(
             shortProceeds,
             _destination,
             _asUnderlying
         );
+        console.log("closeShort: 12");
 
         // Enforce min user outputs
         if (baseProceeds < _minOutput) revert Errors.OutputLimit();
+        console.log("closeShort: 13");
 
         // Emit a CloseShort event.
         uint256 maturityTime = _maturityTime; // Avoid stack too deep error.
@@ -230,6 +250,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             baseProceeds,
             bondAmount
         );
+        console.log("closeShort: 14");
 
         return baseProceeds;
     }
