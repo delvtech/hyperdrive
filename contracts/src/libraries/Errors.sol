@@ -54,6 +54,7 @@ library Errors {
     error InvalidContribution();
     error InvalidToken();
     error FeeTooHigh();
+    error MaxFeeTooHigh();
 
     /// ######################
     /// ### ERC20Forwarder ###

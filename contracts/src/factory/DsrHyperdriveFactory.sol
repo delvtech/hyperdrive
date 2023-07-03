@@ -24,6 +24,7 @@ contract DsrHyperdriveFactory is HyperdriveFactory {
     /// @param _hyperdriveGovernance The address which is set as the governor of hyperdrive
     /// @param _feeCollector The address which should be set as the fee collector in new deployments
     /// @param _fees The fees each deployed instance from this contract will have
+    /// @param _maxFees The maximum fees each deployed instance from this contract can have
     /// @param _defaultPausers The default addresses which will be set to have the pauser role
     /// @param _linkerFactory The address of the linker factory
     /// @param _linkerCodeHash The hash of the linker contract's constructor code.
@@ -33,7 +34,8 @@ contract DsrHyperdriveFactory is HyperdriveFactory {
         IHyperdriveDeployer _deployer,
         address _hyperdriveGovernance,
         address _feeCollector,
-        IHyperdrive.Fees memory _fees,
+        IHyperdrive.Fees memory _fees, 
+        IHyperdrive.Fees memory _maxFees,
         address[] memory _defaultPausers,
         address _linkerFactory,
         bytes32 _linkerCodeHash,
@@ -45,6 +47,7 @@ contract DsrHyperdriveFactory is HyperdriveFactory {
             _hyperdriveGovernance,
             _feeCollector,
             _fees,
+            _maxFees,
             _defaultPausers,
             _linkerFactory,
             _linkerCodeHash

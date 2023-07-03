@@ -42,7 +42,10 @@ contract HyperdriveDSRTest is HyperdriveTest {
             defaults,
             address(forwarderFactory),
             forwarderFactory.ERC20LINK_HASH(),
-            address(manager)
+            address(manager),
+            .1e18,
+            .1e18,
+            .1e18
         );
 
         // Set up DAI balances for Alice and Bob.

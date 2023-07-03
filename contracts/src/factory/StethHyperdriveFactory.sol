@@ -30,6 +30,9 @@ contract StethHyperdriveFactory is HyperdriveFactory {
     /// @param _linkerFactory The address of the linker factory
     /// @param _linkerCodeHash The hash of the linker contract's constructor code.
     /// @param _lido The Lido contract.
+    /// @param _maxFlatFee The maximum amount of flat fees allowed to be charged.
+    /// @param _maxCurveFee The maximum amount of curve fees allowed to be charged.
+    /// @param _maxGovernanceFee The maximum amount of governance fees allowed to be charged.
     constructor(
         address _governance,
         IHyperdriveDeployer _deployer,
@@ -39,7 +42,10 @@ contract StethHyperdriveFactory is HyperdriveFactory {
         address[] memory _defaultPausers,
         address _linkerFactory,
         bytes32 _linkerCodeHash,
-        ILido _lido
+        ILido _lido,
+        uint256 _maxFlatFee,
+        uint256 _maxCurveFee,
+        uint256 _maxGovernanceFee
     )
         HyperdriveFactory(
             _governance,
@@ -49,7 +55,10 @@ contract StethHyperdriveFactory is HyperdriveFactory {
             _fees,
             _defaultPausers,
             _linkerFactory,
-            _linkerCodeHash
+            _linkerCodeHash,
+            _maxCurveFee,
+            _maxFlatFee,
+            _maxGovernanceFee
         )
     {
         lido = _lido;
