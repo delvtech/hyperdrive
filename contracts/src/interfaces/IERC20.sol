@@ -2,7 +2,7 @@
 // OpenZeppelin Contracts (last updated v4.9.0) (token/ERC20/IERC20.sol)
 pragma solidity 0.8.19;
 
-import { IERC20 as OZERC20 } from "openzeppelin/token/ERC20/IERC20.sol";
+import { IERC20 as OZERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * @dev Interface of the ERC20 standard as defined in the EIP.

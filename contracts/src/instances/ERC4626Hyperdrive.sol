@@ -7,7 +7,7 @@ import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { Errors } from "../libraries/Errors.sol";
 import { IERC20 } from "../interfaces/IERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
-import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @author DELV
 /// @title ERC4626Hyperdrive
