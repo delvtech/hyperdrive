@@ -2,8 +2,8 @@
 pragma solidity 0.8.19;
 
 import { VmSafe } from "forge-std/Vm.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol";
@@ -36,7 +36,7 @@ contract InitializeTest is HyperdriveTest {
         vm.startPrank(bob);
         baseToken.mint(contribution);
         baseToken.approve(address(hyperdrive), contribution);
-        vm.expectRevert(Errors.PoolAlreadyInitialized.selector);
+        vm.expectRevert(IHyperdrive.PoolAlreadyInitialized.selector);
         hyperdrive.initialize(contribution, apr, bob, true);
     }
 
@@ -49,7 +49,7 @@ contract InitializeTest is HyperdriveTest {
         vm.startPrank(bob);
         baseToken.mint(contribution);
         baseToken.approve(address(hyperdrive), contribution);
-        vm.expectRevert(Errors.NotPayable.selector);
+        vm.expectRevert(IHyperdrive.NotPayable.selector);
         hyperdrive.initialize{ value: 1 }(contribution, apr, bob, true);
     }
 

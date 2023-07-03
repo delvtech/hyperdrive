@@ -2,9 +2,8 @@
 pragma solidity 0.8.19;
 
 import { HyperdriveBase } from "./HyperdriveBase.sol";
-import { Errors } from "./libraries/Errors.sol";
-import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
+import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 
 /// @author DELV
 /// @title HyperdriveTWAP

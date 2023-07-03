@@ -3,8 +3,8 @@ pragma solidity 0.8.19;
 
 import { IERC20 } from "../interfaces/IERC20.sol";
 import { IForwarderFactory } from "../interfaces/IForwarderFactory.sol";
+import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IMultiToken } from "../interfaces/IMultiToken.sol";
-import { Errors } from "../libraries/Errors.sol";
 
 /// @author DELV
 /// @title ERC20Forwarder
@@ -194,9 +194,9 @@ contract ERC20Forwarder is IERC20 {
         bytes32 s
     ) external {
         // Require that the signature is not expired
-        if (block.timestamp > deadline) revert Errors.ExpiredDeadline();
+        if (block.timestamp > deadline) revert IHyperdrive.ExpiredDeadline();
         // Require that the owner is not zero
-        if (owner == address(0)) revert Errors.RestrictedZeroAddress();
+        if (owner == address(0)) revert IHyperdrive.RestrictedZeroAddress();
 
         bytes32 structHash = keccak256(
             abi.encodePacked(
@@ -217,7 +217,7 @@ contract ERC20Forwarder is IERC20 {
 
         // Check that the signature is valid
         address signer = ecrecover(structHash, v, r, s);
-        if (signer != owner) revert Errors.InvalidSignature();
+        if (signer != owner) revert IHyperdrive.InvalidSignature();
 
         // Increment the signature nonce
         nonces[owner]++;

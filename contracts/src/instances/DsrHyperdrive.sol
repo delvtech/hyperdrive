@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { IERC20 } from "../interfaces/IERC20.sol";
 import { Hyperdrive } from "../Hyperdrive.sol";
-import { FixedPointMath } from "../libraries/FixedPointMath.sol";
-import { Errors } from "../libraries/Errors.sol";
-import { Pot, DsrManager } from "../interfaces/IMaker.sol";
+import { IERC20 } from "../interfaces/IERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { Pot, DsrManager } from "../interfaces/IMaker.sol";
+import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 
 /// @author DELV
 /// @title DsrHyperdrive
@@ -47,16 +46,16 @@ contract DsrHyperdrive is Hyperdrive {
     ) Hyperdrive(_config, _dataProvider, _linkerCodeHash, _linkerFactory) {
         // Ensure that the Hyperdrive pool was configured properly.
         if (address(_config.baseToken) != address(_dsrManager.dai())) {
-            revert Errors.InvalidBaseToken();
+            revert IHyperdrive.InvalidBaseToken();
         }
         if (_config.initialSharePrice != FixedPointMath.ONE_18) {
-            revert Errors.InvalidInitialSharePrice();
+            revert IHyperdrive.InvalidInitialSharePrice();
         }
 
         dsrManager = _dsrManager;
         pot = Pot(dsrManager.pot());
         if (!_baseToken.approve(address(dsrManager), type(uint256).max)) {
-            revert Errors.ApprovalFailed();
+            revert IHyperdrive.ApprovalFailed();
         }
     }
 
@@ -71,7 +70,7 @@ contract DsrHyperdrive is Hyperdrive {
         bool asUnderlying
     ) internal override returns (uint256 sharesMinted, uint256 sharePrice) {
         if (!asUnderlying) {
-            revert Errors.UnsupportedToken();
+            revert IHyperdrive.UnsupportedToken();
         }
 
         // Transfer the base token from the user to this contract
@@ -81,7 +80,7 @@ contract DsrHyperdrive is Hyperdrive {
             amount
         );
         if (!success) {
-            revert Errors.TransferFailed();
+            revert IHyperdrive.TransferFailed();
         }
 
         // Get total invested balance of pool, deposits + interest
@@ -115,7 +114,7 @@ contract DsrHyperdrive is Hyperdrive {
         bool asUnderlying
     ) internal override returns (uint256 amountWithdrawn) {
         if (!asUnderlying) {
-            revert Errors.UnsupportedToken();
+            revert IHyperdrive.UnsupportedToken();
         }
 
         // Small numerical errors can result in the shares value being slightly

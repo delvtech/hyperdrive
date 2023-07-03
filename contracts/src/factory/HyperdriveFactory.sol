@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import { HyperdriveDataProvider } from "../HyperdriveDataProvider.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
-import { HyperdriveDataProvider } from "../HyperdriveDataProvider.sol";
-import { Errors } from "../libraries/Errors.sol";
 
 /// @author DELV
 /// @title HyperdriveFactory
@@ -86,7 +85,7 @@ abstract contract HyperdriveFactory {
 
     modifier onlyGovernance() {
         // Only governance can call this
-        if (msg.sender != governance) revert Errors.Unauthorized();
+        if (msg.sender != governance) revert IHyperdrive.Unauthorized();
         _;
     }
 
@@ -205,7 +204,7 @@ abstract contract HyperdriveFactory {
         uint256 _apr
     ) public payable virtual returns (IHyperdrive) {
         // No invalid deployments
-        if (_contribution < 2e5) revert Errors.InvalidContribution();
+        if (_contribution < 2e5) revert IHyperdrive.InvalidContribution();
         // Set aside some of the contribution for address(0) donation
         _contribution -= 1e5;
         // Overwrite the governance and fees field of the config.
@@ -245,7 +244,7 @@ abstract contract HyperdriveFactory {
                     type(uint256).max
                 )
             ) {
-                revert Errors.ApprovalFailed();
+                revert IHyperdrive.ApprovalFailed();
             }
             hyperdrive.initialize(_contribution, _apr, msg.sender, true);
             hyperdrive.addLiquidity(
@@ -258,7 +257,7 @@ abstract contract HyperdriveFactory {
         } else {
             // Require the caller sent value
             if (msg.value != _contribution + 1e5) {
-                revert Errors.TransferFailed();
+                revert IHyperdrive.TransferFailed();
             }
             hyperdrive.initialize{ value: _contribution }(
                 _contribution,

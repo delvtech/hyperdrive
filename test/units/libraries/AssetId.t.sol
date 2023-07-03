@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { Errors } from "contracts/src/libraries/Errors.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { MockAssetId } from "../../mocks/MockAssetId.sol";
 
@@ -29,7 +29,7 @@ contract AssetIdTest is HyperdriveTest {
         MockAssetId assetId = new MockAssetId();
         uint256 maturityTime = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff +
                 1;
-        vm.expectRevert(Errors.InvalidTimestamp.selector);
+        vm.expectRevert(IHyperdrive.InvalidTimestamp.selector);
         assetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime);
     }
 
