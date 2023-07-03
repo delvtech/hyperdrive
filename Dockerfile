@@ -4,9 +4,8 @@ FROM ghcr.io/foundry-rs/foundry:master
 
 WORKDIR /src
 
-# FIXME: Use the production profile.
 # Use the production foundry profile.
-# ENV FOUNDRY_PROFILE="production"
+ENV FOUNDRY_PROFILE="production"
 
 # Copy the contract dependencies required to run the migration script.
 COPY ./.git/ ./.git/
