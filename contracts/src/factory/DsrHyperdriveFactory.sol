@@ -34,7 +34,7 @@ contract DsrHyperdriveFactory is HyperdriveFactory {
         IHyperdriveDeployer _deployer,
         address _hyperdriveGovernance,
         address _feeCollector,
-        IHyperdrive.Fees memory _fees, 
+        IHyperdrive.Fees memory _fees,
         IHyperdrive.Fees memory _maxFees,
         address[] memory _defaultPausers,
         address _linkerFactory,
