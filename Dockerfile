@@ -30,8 +30,10 @@ ENV ETH_FROM="$ETH_FROM"
 ENV PRIVATE_KEY="$PRIVATE_KEY"
 ENV RPC_URL="$RPC_URL"
 
-# Run anvil as a background process. We will run the migrations on this anvil
-# node at build time and dump the state to the "data/" directory.
+# Run anvil as a background process. We run the migrations against this anvil 
+# node and dump the state into the "./data" directory. At runtime, the consumer
+# can start anvil with the "--load-state ./data" flag to start up anvil with 
+# the post-migrations state.
 RUN anvil --dump-state ./data & \
     ANVIL="$!" && \ 
     ./run_migrations.sh && \
