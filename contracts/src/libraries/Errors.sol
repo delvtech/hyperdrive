@@ -18,6 +18,7 @@ library Errors {
     error InvalidCheckpointDuration();
     error InvalidInitialSharePrice();
     error InvalidMaturityTime();
+    error InvalidMinimumShareReserves();
     error InvalidPositionDuration();
     error InvalidFeeAmounts();
     error NegativeInterest();

@@ -68,6 +68,7 @@ abstract contract HyperdriveDataProvider is
                 IHyperdrive.PoolConfig({
                     baseToken: _baseToken,
                     initialSharePrice: _initialSharePrice,
+                    minimumShareReserves: _minimumShareReserves,
                     positionDuration: _positionDuration,
                     checkpointDuration: _checkpointDuration,
                     timeStretch: _timeStretch,

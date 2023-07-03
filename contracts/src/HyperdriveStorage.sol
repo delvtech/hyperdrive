@@ -15,24 +15,30 @@ import { MultiTokenStorage } from "./token/MultiTokenStorage.sol";
 abstract contract HyperdriveStorage is MultiTokenStorage {
     /// Tokens ///
 
-    // @notice The base asset.
+    /// @notice The base asset.
     IERC20 internal immutable _baseToken;
 
     /// Time ///
 
-    // @notice The amount of seconds between share price checkpoints.
+    /// @notice The amount of seconds between share price checkpoints.
     uint256 internal immutable _checkpointDuration;
 
-    // @notice The amount of seconds that elapse before a bond can be redeemed.
+    /// @notice The amount of seconds that elapse before a bond can be redeemed.
     uint256 internal immutable _positionDuration;
 
-    // @notice A parameter that decreases slippage around a target rate.
+    /// @notice A parameter that decreases slippage around a target rate.
     uint256 internal immutable _timeStretch;
 
     /// Market State ///
 
-    // @notice The share price at the time the pool was created.
+    /// @notice The share price at the time the pool was created.
     uint256 internal immutable _initialSharePrice;
+
+    /// @notice The minimum amount of share reserves that must be maintained at
+    ///         all times. This is used to enforce practical limits on the share
+    ///         reserves to avoid numerical issues that can occur if the share
+    ///         reserves become very small or are equal to zero.
+    uint256 internal immutable _minimumShareReserves;
 
     /// @notice The state of the market. This includes the reserves, buffers,
     ///         and other data used to price trades and maintain solvency.
@@ -92,6 +98,14 @@ abstract contract HyperdriveStorage is MultiTokenStorage {
     constructor(IHyperdrive.PoolConfig memory _config) {
         // Initialize the base token address.
         _baseToken = _config.baseToken;
+
+        // Initialize the minimum share reserves. This must be greater than
+        // 1e6 to ensure that the share reserves can't be brought to zero by
+        // opening a short.
+        if (_config.minimumShareReserves < 1e6) {
+            revert Errors.InvalidMinimumShareReserves();
+        }
+        _minimumShareReserves = _config.minimumShareReserves;
 
         // Initialize the time configurations. There must be at least one
         // checkpoint per term to avoid having a position duration of zero.

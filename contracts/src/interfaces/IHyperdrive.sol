@@ -72,6 +72,8 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
         IERC20 baseToken;
         /// @dev The initial share price.
         uint256 initialSharePrice;
+        /// @dev The minimum share reserves.
+        uint256 minimumShareReserves;
         /// @dev The duration of a position prior to maturity.
         uint256 positionDuration;
         /// @dev The duration of a checkpoint.
