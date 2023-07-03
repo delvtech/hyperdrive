@@ -25,26 +25,22 @@ contract StethHyperdriveFactory is HyperdriveFactory {
     /// @param _hyperdriveGovernance The address which is set as the governor of hyperdrive
     /// @param _feeCollector The address which should be set as the fee collector in new deployments
     /// @param _fees The fees each deployed instance from this contract will have
+    /// @param _maxFees The maximum fees each deployed instance from this contract can have.
     /// @param _defaultPausers The default addresses which will be set to have the pauser role
     /// @param _linkerFactory The address of the linker factory
     /// @param _linkerCodeHash The hash of the linker contract's constructor code.
     /// @param _lido The Lido contract.
-    /// @param _maxFlatFee The maximum amount of flat fees allowed to be charged.
-    /// @param _maxCurveFee The maximum amount of curve fees allowed to be charged.
-    /// @param _maxGovernanceFee The maximum amount of governance fees allowed to be charged.
     constructor(
         address _governance,
         IHyperdriveDeployer _deployer,
         address _hyperdriveGovernance,
         address _feeCollector,
         IHyperdrive.Fees memory _fees,
+        IHyperdrive.Fees memory _maxFees,
         address[] memory _defaultPausers,
         address _linkerFactory,
         bytes32 _linkerCodeHash,
-        ILido _lido,
-        uint256 _maxFlatFee,
-        uint256 _maxCurveFee,
-        uint256 _maxGovernanceFee
+        ILido _lido
     )
         HyperdriveFactory(
             _governance,
@@ -52,12 +48,10 @@ contract StethHyperdriveFactory is HyperdriveFactory {
             _hyperdriveGovernance,
             _feeCollector,
             _fees,
+            _maxFees,
             _defaultPausers,
             _linkerFactory,
-            _linkerCodeHash,
-            _maxCurveFee,
-            _maxFlatFee,
-            _maxGovernanceFee
+            _linkerCodeHash
         )
     {
         lido = _lido;
