@@ -49,13 +49,11 @@ contract HyperdriveER4626Test is HyperdriveTest {
             bob,
             bob,
             IHyperdrive.Fees(0, 0, 0),
+            IHyperdrive.Fees(0, 0, 0),
             defaults,
             address(forwarderFactory),
             forwarderFactory.ERC20LINK_HASH(),
-            pool,
-            .1e18,
-            .1e18,
-            .1e18
+            pool
         );
 
         address daiWhale = 0x075e72a5eDf65F0A5f44699c7654C1a76941Ddc8;

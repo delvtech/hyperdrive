@@ -39,13 +39,11 @@ contract HyperdriveDSRTest is HyperdriveTest {
             bob,
             bob,
             IHyperdrive.Fees(0, 0, 0),
+            IHyperdrive.Fees(0, 0, 0),
             defaults,
             address(forwarderFactory),
             forwarderFactory.ERC20LINK_HASH(),
-            address(manager),
-            .1e18,
-            .1e18,
-            .1e18
+            address(manager)
         );
 
         // Set up DAI balances for Alice and Bob.

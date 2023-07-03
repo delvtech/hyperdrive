@@ -11,7 +11,7 @@ import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { DsrManager } from "contracts/test/MockDsrHyperdrive.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 
-contract HyperdriveFactoryTest is HyperdriveTest {
+contract DsrHyperdriveFactoryTest is HyperdriveTest {
     function test_hyperdrive_factory_admin_functions() external {
         // Deploy the DsrHyperdrive factory and deployer.
         DsrManager manager = DsrManager(
@@ -28,13 +28,11 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             bob,
             bob,
             IHyperdrive.Fees(0, 0, 0),
+            IHyperdrive.Fees(1e18, 1e18, 1e18),
             defaults,
             address(0),
             bytes32(0),
-            address(manager),
-            .1e18,
-            .1e18,
-            .1e18
+            address(manager)
         );
         assertEq(factory.governance(), alice);
 
@@ -54,7 +52,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         vm.expectRevert(Errors.Unauthorized.selector);
         factory.updateFeeCollector(bob);
         vm.expectRevert(Errors.Unauthorized.selector);
-        factory.updateFees(IHyperdrive.Fees(1, 2, 4));
+        factory.updateFees(IHyperdrive.Fees(1, 2, 3));
         vm.expectRevert(Errors.Unauthorized.selector);
         factory.updateDefaultPausers(defaults);
         vm.stopPrank();
@@ -77,15 +75,21 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         assertEq(factory.linkerFactory(), address(uint160(0xdeadbeef)));
         factory.updateLinkerCodeHash(bytes32(uint256(0xdeadbeef)));
         assertEq(factory.linkerCodeHash(), bytes32(uint256(0xdeadbeef)));
-        factory.updateFees(IHyperdrive.Fees(1, 2, 3));
+        factory.updateFees(IHyperdrive.Fees(1, 2, 4));
         (uint256 curve, uint256 flat, uint256 govFee) = factory.fees();
         assertEq(curve, 1);
         assertEq(flat, 2);
-        assertEq(govFee, 3);
+        assertEq(govFee, 4);
         defaults[0] = alice;
         factory.updateDefaultPausers(defaults);
         assertEq(factory.defaultPausers(0), alice);
         factory.updateFeeCollector(alice);
         assertEq(factory.feeCollector(), alice);
+        vm.stopPrank();
+
+        // Fees can not exceed maximum fees.
+        vm.startPrank(bob);
+        vm.expectRevert(Errors.FeeTooHigh.selector);
+        factory.updateFees(IHyperdrive.Fees(2e18, 2, 4));
     }
 }
