@@ -26,6 +26,9 @@ contract AaveHyperdriveFactory is HyperdriveFactory {
     /// @param _defaultPausers The default addresses which will be set to have the pauser role
     /// @param _linkerFactory The address of the linker factory
     /// @param _linkerCodeHash The hash of the linker contract's constructor code.
+    /// @param _maxFlatFee The maximum amount of flat fees allowed to be charged.
+    /// @param _maxCurveFee The maximum amount of curve fees allowed to be charged.
+    /// @param _maxGovernanceFee The maximum amount of governance fees allowed to be charged.
     constructor(
         address _governance,
         IHyperdriveDeployer _deployer,
@@ -34,7 +37,10 @@ contract AaveHyperdriveFactory is HyperdriveFactory {
         IHyperdrive.Fees memory _fees,
         address[] memory _defaultPausers,
         address _linkerFactory,
-        bytes32 _linkerCodeHash
+        bytes32 _linkerCodeHash,
+        uint256 _maxFlatFee,
+        uint256 _maxCurveFee,
+        uint256 _maxGovernanceFee
     )
         HyperdriveFactory(
             _governance,
@@ -44,7 +50,10 @@ contract AaveHyperdriveFactory is HyperdriveFactory {
             _fees,
             _defaultPausers,
             _linkerFactory,
-            _linkerCodeHash
+            _linkerCodeHash,
+            _maxFlatFee,
+            _maxCurveFee,
+            _maxGovernanceFee
         )
     {}
 

@@ -28,6 +28,9 @@ contract ERC4626HyperdriveFactory is HyperdriveFactory {
     /// @param _linkerFactory The address of the linker factory
     /// @param _linkerCodeHash The hash of the linker contract's constructor code.
     /// @param _pool The Maker ERC4626 manger contract address
+    /// @param _maxFlatFee The maximum amount of flat fees allowed to be charged.
+    /// @param _maxCurveFee The maximum amount of curve fees allowed to be charged.
+    /// @param _maxGovernanceFee The maximum amount of governance fees allowed to be charged.
     constructor(
         address _governance,
         IHyperdriveDeployer _deployer,
@@ -37,7 +40,10 @@ contract ERC4626HyperdriveFactory is HyperdriveFactory {
         address[] memory _defaultPausers,
         address _linkerFactory,
         bytes32 _linkerCodeHash,
-        IERC4626 _pool
+        IERC4626 _pool,
+        uint256 _maxFlatFee,
+        uint256 _maxCurveFee,
+        uint256 _maxGovernanceFee
     )
         HyperdriveFactory(
             _governance,
@@ -47,7 +53,10 @@ contract ERC4626HyperdriveFactory is HyperdriveFactory {
             _fees,
             _defaultPausers,
             _linkerFactory,
-            _linkerCodeHash
+            _linkerCodeHash,
+            _maxFlatFee,
+            _maxCurveFee,
+            _maxGovernanceFee
         )
     {
         pool = _pool;

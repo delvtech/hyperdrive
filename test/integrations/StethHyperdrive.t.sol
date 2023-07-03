@@ -59,7 +59,10 @@ contract StethHyperdriveTest is HyperdriveTest {
             defaults,
             address(forwarderFactory),
             forwarderFactory.ERC20LINK_HASH(),
-            LIDO
+            LIDO,
+            .1e18,
+            .1e18,
+            .1e18
         );
 
         // Alice deploys the hyperdrive instance.

@@ -47,13 +47,13 @@ abstract contract HyperdriveFactory {
     address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     // A constant for the Maximum Fees on a trade
-    uint256 internal constant max_curve_fee = .1e18;
+    uint256 internal immutable maxCurveFee;
 
     // A constant for the Maximum Fees on a trade
-    uint256 internal constant max_flat_fee = .1e18;
+    uint256 internal immutable maxFlatFee;
 
     // A constant for the Maximum Fees on a trade
-    uint256 internal constant max_governance_fee = .1e18;
+    uint256 internal immutable maxGovernanceFee;
 
     // An event that is emitted when a new Hyperdrive instance is deployed.
     event Deployed(
@@ -65,14 +65,15 @@ abstract contract HyperdriveFactory {
         bytes32[] extraData
     );
 
-    /// @notice Deploys the contract
+    /// @notice Deploys the contract.
     /// @param _governance The address which can update this factory.
     /// @param _deployer The contract which holds the bytecode and deploys new versions.
-    /// @param _hyperdriveGovernance The address which is set as the governor of hyperdrive
-    /// @param _feeCollector The address which should be set as the fee collector in new deployments
-    /// @param _fees The fees each deployed instance from this contract will have
-    /// @param _defaultPausers The default addresses which will be set to have the pauser role
-    /// @param _linkerFactory The address of the linker factory
+    /// @param _hyperdriveGovernance The address which is set as the governor of hyperdrive.
+    /// @param _feeCollector The address which should be set as the fee collector in new deployments.
+    /// @param _fees The fees each deployed instance from this contract will have.
+    /// @param _maxFees The maximum fees each deployed instance from this contract can have.
+    /// @param _defaultPausers The default addresses which will be set to have the pauser role.
+    /// @param _linkerFactory The address of the linker factory.
     /// @param _linkerCodeHash The hash of the linker contract's constructor code.
     constructor(
         address _governance,
@@ -80,16 +81,39 @@ abstract contract HyperdriveFactory {
         address _hyperdriveGovernance,
         address _feeCollector,
         IHyperdrive.Fees memory _fees,
+        IHyperdrive.Fees memory _maxFees,
         address[] memory _defaultPausers,
         address _linkerFactory,
         bytes32 _linkerCodeHash
     ) {
+        // Initalize feem paramaters to ensure that max fees are less than
+        // 100% and that the inital fee configuration satisfies the max fee
+        // constraint.
+        maxCurveFee = _maxFees.curve;
+        maxFlatFee = _maxFees.flat;
+        maxGovernanceFee = _maxFees.governance;
+        if (
+            maxCurveFee > FixedPointMath.ONE_18 ||
+            maxFlatFee > FixedPointMath.ONE_18 ||
+            maxGovernanceFee > FixedPointMath.ONE_18
+        ) {
+            revert Errors.MaxFeeTooHigh();
+        }
+        if (
+            _fees.curve > maxCurveFee ||
+            _fees.flat > maxFlatFee ||
+            _fees.governance > maxGovernanceFee
+        ) {
+            revert Errors.FeeTooHigh();
+        }
+        fees = _fees;
+
+        // Initialize the other paramters.
         governance = _governance;
         hyperdriveDeployer = _deployer;
         versionCounter = 1;
         hyperdriveGovernance = _hyperdriveGovernance;
         feeCollector = _feeCollector;
-        fees = _fees;
         defaultPausers = _defaultPausers;
         linkerFactory = _linkerFactory;
         linkerCodeHash = _linkerCodeHash;
@@ -191,9 +215,9 @@ abstract contract HyperdriveFactory {
     ) external onlyGovernance {
         // Update the fee struct
         if (
-            newFees.curve > max_curve_fee ||
-            newFees.flat > max_flat_fee ||
-            newFees.governance > max_governance_fee
+            newFees.curve > maxCurveFee ||
+            newFees.flat > maxFlatFee ||
+            newFees.governance > maxGovernanceFee
         ) {
             revert Errors.FeeTooHigh();
         }

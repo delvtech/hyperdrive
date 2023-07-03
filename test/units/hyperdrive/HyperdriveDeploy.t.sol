@@ -30,7 +30,10 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             defaults,
             address(0),
             bytes32(0),
-            address(manager)
+            address(manager),
+            .1e18,
+            .1e18,
+            .1e18
         );
         assertEq(factory.governance(), alice);
 

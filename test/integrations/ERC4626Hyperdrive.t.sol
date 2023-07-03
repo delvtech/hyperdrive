@@ -51,7 +51,10 @@ contract ER4626HyperdriveTest is HyperdriveTest {
             defaults,
             address(forwarderFactory),
             forwarderFactory.ERC20LINK_HASH(),
-            pool
+            pool,
+            .1e18,
+            .1e18,
+            .1e18
         );
 
         address daiWhale = 0x075e72a5eDf65F0A5f44699c7654C1a76941Ddc8;
