@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { SafeCast } from "./libraries/SafeCast.sol";
 import { HyperdriveLP } from "./HyperdriveLP.sol";
+import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { AssetId } from "./libraries/AssetId.sol";
-import { Errors } from "./libraries/Errors.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
+import { SafeCast } from "./libraries/SafeCast.sol";
 import { YieldSpaceMath } from "./libraries/YieldSpaceMath.sol";
 
 /// @author DELV
@@ -42,7 +42,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // Check that the message value and base amount are valid.
         _checkMessageValue();
         if (_bondAmount == 0) {
-            revert Errors.ZeroAmount();
+            revert IHyperdrive.ZeroAmount();
         }
 
         // Perform a checkpoint and compute the amount of interest the short
@@ -85,7 +85,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 sharePrice
             )
             .mulDown(sharePrice);
-        if (_maxDeposit < traderDeposit) revert Errors.OutputLimit();
+        if (_maxDeposit < traderDeposit) revert IHyperdrive.OutputLimit();
         _deposit(traderDeposit, _asUnderlying);
 
         // Apply the state updates caused by opening the short.
@@ -136,7 +136,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         bool _asUnderlying
     ) external returns (uint256) {
         if (_bondAmount == 0) {
-            revert Errors.ZeroAmount();
+            revert IHyperdrive.ZeroAmount();
         }
 
         // Perform a checkpoint.
@@ -175,7 +175,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
                     _marketState.bondReserves > 0) &&
                 adjustedShareReserves >= bondReserves
             ) {
-                revert Errors.NegativeInterest();
+                revert IHyperdrive.NegativeInterest();
             }
         }
 
@@ -218,7 +218,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         );
 
         // Enforce min user outputs
-        if (baseProceeds < _minOutput) revert Errors.OutputLimit();
+        if (baseProceeds < _minOutput) revert IHyperdrive.OutputLimit();
 
         // Emit a CloseShort event.
         uint256 maturityTime = _maturityTime; // Avoid stack too deep error.
@@ -287,7 +287,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             _sharePrice.mulDown(_marketState.shareReserves) <
             _marketState.longsOutstanding
         ) {
-            revert Errors.BaseBufferExceedsShareReserves();
+            revert IHyperdrive.BaseBufferExceedsShareReserves();
         }
     }
 
@@ -406,7 +406,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // amount, then the trade occurred in the negative interest domain. We
         // revert in these pathological cases.
         if (shareReservesDelta.mulDown(_sharePrice) > _bondAmount)
-            revert Errors.NegativeInterest();
+            revert IHyperdrive.NegativeInterest();
 
         // Calculate the fees charged on the curve and flat parts of the trade.
         // Since we calculate the amount of shares received given bonds in, we

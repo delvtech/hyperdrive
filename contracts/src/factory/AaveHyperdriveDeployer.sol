@@ -6,7 +6,6 @@ import { IERC20 } from "../interfaces/IERC20.sol";
 import { AaveHyperdrive } from "../instances/AaveHyperdrive.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
-import { Errors } from "../libraries/Errors.sol";
 
 /// @author DELV
 /// @title AaveHyperdriveDeployer

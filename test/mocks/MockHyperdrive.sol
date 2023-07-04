@@ -4,8 +4,8 @@ pragma solidity 0.8.19;
 import { ERC20PresetMinterPauser } from "openzeppelin-contracts/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
 import { Hyperdrive } from "contracts/src/Hyperdrive.sol";
 import { HyperdriveDataProvider } from "contracts/src/HyperdriveDataProvider.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
-import { Errors } from "contracts/src/libraries/Errors.sol";
 import { MultiTokenDataProvider } from "contracts/src/token/MultiTokenDataProvider.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
@@ -267,7 +267,7 @@ contract MockHyperdrive is Hyperdrive {
             amount
         );
         if (!success) {
-            revert Errors.TransferFailed();
+            revert IHyperdrive.TransferFailed();
         }
         if (totalShares == 0) {
             totalShares = amount.divDown(_initialSharePrice);
@@ -291,7 +291,7 @@ contract MockHyperdrive is Hyperdrive {
             : 0;
         bool success = _baseToken.transfer(destination, withdrawValue);
         if (!success) {
-            revert Errors.TransferFailed();
+            revert IHyperdrive.TransferFailed();
         }
         totalShares -= shares;
         return withdrawValue;

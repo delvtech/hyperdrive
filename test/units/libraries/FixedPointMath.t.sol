@@ -2,8 +2,8 @@
 pragma solidity 0.8.19;
 
 import { stdError, Test } from "forge-std/Test.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { MockFixedPointMath } from "contracts/test/MockFixedPointMath.sol";
-import { Errors } from "contracts/src/libraries/Errors.sol";
 import { LogExpMath } from "test/3rdPartyLibs/LogExpMath.sol";
 import { BalancerErrors } from "test/3rdPartyLibs/BalancerErrors.sol";
 import { Lib } from "test/utils/Lib.sol";
@@ -39,7 +39,7 @@ contract FixedPointMathTest is Test {
     function test_fail_sub_overflow() public {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
-        vm.expectRevert(Errors.FixedPointMath_SubOverflow.selector);
+        vm.expectRevert(IHyperdrive.FixedPointMath_SubOverflow.selector);
         mockFixedPointMath.sub(0, 1e18);
     }
 
@@ -215,7 +215,7 @@ contract FixedPointMathTest is Test {
     function test_fail_exp_negative_or_zero_input() public {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
-        vm.expectRevert(Errors.FixedPointMath_InvalidExponent.selector);
+        vm.expectRevert(IHyperdrive.FixedPointMath_InvalidExponent.selector);
         mockFixedPointMath.exp(135305999368893231589);
     }
 
@@ -229,7 +229,9 @@ contract FixedPointMathTest is Test {
     function test_fail_ln_negative_or_zero_input() public {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
-        vm.expectRevert(Errors.FixedPointMath_NegativeOrZeroInput.selector);
+        vm.expectRevert(
+            IHyperdrive.FixedPointMath_NegativeOrZeroInput.selector
+        );
         mockFixedPointMath.ln(0);
     }
 

@@ -3,9 +3,8 @@ pragma solidity 0.8.19;
 
 import { IERC4626 } from "../interfaces/IERC4626.sol";
 import { HyperdriveDataProvider } from "../HyperdriveDataProvider.sol";
-import { FixedPointMath } from "../libraries/FixedPointMath.sol";
-import { Errors } from "../libraries/Errors.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { MultiTokenDataProvider } from "../token/MultiTokenDataProvider.sol";
 
 /// @author DELV

@@ -3,10 +3,9 @@ pragma solidity 0.8.19;
 
 import { IPool } from "@aave/interfaces/IPool.sol";
 import { Hyperdrive } from "../Hyperdrive.sol";
-import { FixedPointMath } from "../libraries/FixedPointMath.sol";
-import { Errors } from "../libraries/Errors.sol";
 import { IERC20 } from "../interfaces/IERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 
 /// @author DELV
 /// @title AaveHyperdrive
@@ -43,13 +42,13 @@ contract AaveHyperdrive is Hyperdrive {
     ) Hyperdrive(_config, _dataProvider, _linkerCodeHash, _linkerFactory) {
         // Ensure that the Hyperdrive pool was configured properly.
         if (_config.initialSharePrice != FixedPointMath.ONE_18) {
-            revert Errors.InvalidInitialSharePrice();
+            revert IHyperdrive.InvalidInitialSharePrice();
         }
 
         aToken = _aToken;
         pool = _pool;
         if (!_config.baseToken.approve(address(pool), type(uint256).max)) {
-            revert Errors.ApprovalFailed();
+            revert IHyperdrive.ApprovalFailed();
         }
     }
 
@@ -74,7 +73,7 @@ contract AaveHyperdrive is Hyperdrive {
                 amount
             );
             if (!success) {
-                revert Errors.TransferFailed();
+                revert IHyperdrive.TransferFailed();
             }
             // Supply for the user
             pool.supply(address(_baseToken), amount, address(this), 0);
@@ -121,7 +120,7 @@ contract AaveHyperdrive is Hyperdrive {
             : 0;
 
         if (withdrawValue == 0) {
-            revert Errors.NoAssetsToWithdraw();
+            revert IHyperdrive.NoAssetsToWithdraw();
         }
 
         // Remove the shares from the total share supply

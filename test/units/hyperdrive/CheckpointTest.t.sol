@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { Errors } from "contracts/src/libraries/Errors.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { HyperdriveTest, HyperdriveUtils, MockHyperdrive, IHyperdrive } from "../../utils/HyperdriveTest.sol";
 
 contract CheckpointTest is HyperdriveTest {
     function test_checkpoint_failure_future_checkpoint() external {
-        vm.expectRevert(Errors.InvalidCheckpointTime.selector);
+        vm.expectRevert(IHyperdrive.InvalidCheckpointTime.selector);
         hyperdrive.checkpoint(block.timestamp + CHECKPOINT_DURATION);
     }
 
     function test_checkpoint_failure_invalid_checkpoint_time() external {
         uint256 checkpointTime = HyperdriveUtils.latestCheckpoint(hyperdrive);
-        vm.expectRevert(Errors.InvalidCheckpointTime.selector);
+        vm.expectRevert(IHyperdrive.InvalidCheckpointTime.selector);
         hyperdrive.checkpoint(checkpointTime + 1);
     }
 

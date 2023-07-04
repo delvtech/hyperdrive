@@ -5,7 +5,6 @@ import { HyperdriveStorage } from "./HyperdriveStorage.sol";
 import { IERC20 } from "./interfaces/IERC20.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { AssetId } from "./libraries/AssetId.sol";
-import { Errors } from "./libraries/Errors.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { SafeCast } from "./libraries/SafeCast.sol";
@@ -107,7 +106,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     ///         transferred to Hyperdrive instances that don't accept ether.
     function _checkMessageValue() internal view virtual {
         if (msg.value != 0) {
-            revert Errors.NotPayable();
+            revert IHyperdrive.NotPayable();
         }
     }
 
@@ -151,7 +150,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     ///@param who The address to change
     ///@param status The new pauser status
     function setPauser(address who, bool status) external {
-        if (msg.sender != _governance) revert Errors.Unauthorized();
+        if (msg.sender != _governance) revert IHyperdrive.Unauthorized();
         _pausers[who] = status;
         emit PauserUpdated(who);
     }
@@ -161,7 +160,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     ///@notice Allows governance to change governance
     ///@param who The new governance address
     function setGovernance(address who) external {
-        if (msg.sender != _governance) revert Errors.Unauthorized();
+        if (msg.sender != _governance) revert IHyperdrive.Unauthorized();
         _governance = who;
 
         emit GovernanceUpdated(who);
@@ -170,13 +169,13 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     ///@notice Allows an authorized address to pause this contract
     ///@param status True to pause all deposits and false to unpause them
     function pause(bool status) external {
-        if (!_pausers[msg.sender]) revert Errors.Unauthorized();
+        if (!_pausers[msg.sender]) revert IHyperdrive.Unauthorized();
         _marketState.isPaused = status;
     }
 
     ///@notice Blocks a function execution if the contract is paused
     modifier isNotPaused() {
-        if (_marketState.isPaused) revert Errors.Paused();
+        if (_marketState.isPaused) revert IHyperdrive.Paused();
         _;
     }
 
@@ -206,7 +205,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
             !_pausers[msg.sender] &&
             msg.sender != _feeCollector &&
             msg.sender != _governance
-        ) revert Errors.Unauthorized();
+        ) revert IHyperdrive.Unauthorized();
         uint256 governanceFeesAccrued = _governanceFeesAccrued;
         delete _governanceFeesAccrued;
         proceeds = _withdraw(

@@ -5,7 +5,6 @@ import { Hyperdrive } from "../Hyperdrive.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { ILido } from "../interfaces/ILido.sol";
 import { IWETH } from "../interfaces/IWETH.sol";
-import { Errors } from "../libraries/Errors.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 
 /// @author DELV
@@ -44,7 +43,7 @@ contract StethHyperdrive is Hyperdrive {
             _initialSharePrice !=
             _lido.getTotalPooledEther().divDown(_lido.getTotalShares())
         ) {
-            revert Errors.InvalidInitialSharePrice();
+            revert IHyperdrive.InvalidInitialSharePrice();
         }
         lido = _lido;
     }
@@ -66,7 +65,7 @@ contract StethHyperdrive is Hyperdrive {
         if (_asUnderlying) {
             // Ensure that sufficient ether was provided and refund any excess.
             if (msg.value < _amount) {
-                revert Errors.TransferFailed();
+                revert IHyperdrive.TransferFailed();
             }
             if (msg.value > _amount) {
                 // Return excess ether to the user.
@@ -74,7 +73,7 @@ contract StethHyperdrive is Hyperdrive {
                     value: msg.value - _amount
                 }("");
                 if (!success) {
-                    revert Errors.TransferFailed();
+                    revert IHyperdrive.TransferFailed();
                 }
             }
 
@@ -89,7 +88,7 @@ contract StethHyperdrive is Hyperdrive {
         } else {
             // Ensure that the user didn't send ether to the contract.
             if (msg.value > 0) {
-                revert Errors.NotPayable();
+                revert IHyperdrive.NotPayable();
             }
 
             // Transfer stETH into the contract.
@@ -99,7 +98,7 @@ contract StethHyperdrive is Hyperdrive {
                 _amount
             );
             if (!success) {
-                revert Errors.TransferFailed();
+                revert IHyperdrive.TransferFailed();
             }
 
             // Calculate the share price and the amount of shares deposited.
@@ -124,7 +123,7 @@ contract StethHyperdrive is Hyperdrive {
     ) internal override returns (uint256 amountWithdrawn) {
         // At the time of writing there's no stETH -> eth withdraw path
         if (_asUnderlying) {
-            revert Errors.UnsupportedToken();
+            revert IHyperdrive.UnsupportedToken();
         }
 
         // Transfer stETH to the destination.

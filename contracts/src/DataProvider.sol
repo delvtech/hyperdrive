@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { Errors } from "./libraries/Errors.sol";
+import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 
 /// @author DELV
 /// @title DataProvider
@@ -33,10 +33,10 @@ contract DataProvider {
             _data
         );
         if (success) {
-            revert Errors.UnexpectedSuccess();
+            revert IHyperdrive.UnexpectedSuccess();
         }
         bytes4 selector = bytes4(returndata);
-        if (selector != Errors.ReturnData.selector) {
+        if (selector != IHyperdrive.ReturnData.selector) {
             assembly {
                 revert(add(returndata, 32), mload(returndata))
             }

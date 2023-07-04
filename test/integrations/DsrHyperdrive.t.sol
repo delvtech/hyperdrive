@@ -2,8 +2,8 @@
 pragma solidity 0.8.19;
 
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
-import { Errors } from "contracts/src/libraries/Errors.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { IMockDsrHyperdrive, MockDsrHyperdrive, MockDsrHyperdriveDataProvider, DsrManager } from "contracts/test/MockDsrHyperdrive.sol";
 import { BaseTest } from "test/utils/BaseTest.sol";
@@ -217,12 +217,12 @@ contract DsrHyperdrive is BaseTest {
     }
 
     function test__unsupported_deposit() public {
-        vm.expectRevert(Errors.UnsupportedToken.selector);
+        vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
         hyperdrive.deposit(1, false);
     }
 
     function test__unsupported_withdraw() public {
-        vm.expectRevert(Errors.UnsupportedToken.selector);
+        vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
         hyperdrive.withdraw(1, alice, false);
     }
 
@@ -341,7 +341,7 @@ contract DsrHyperdrive is BaseTest {
 
         uint256 contribution = (1e5) - 1;
         // The pool gets initialized with a minimal contribution
-        vm.expectRevert(Errors.BelowMinimumContribution.selector);
+        vm.expectRevert(IHyperdrive.BelowMinimumContribution.selector);
         hyperdrive.initialize(contribution, apr, bob, true);
     }
 }
