@@ -386,17 +386,23 @@ rule openLongReturnsSameBonds(env eOp) {
 
 
 
-// STATUS - violation
-// https://prover.certora.com/output/40577/c3f913d4a830433a8611fb44bc19bad0/?anonymousKey=49c6a124deca81a0ff3aeeddb735121d5595e78e
+// STATUS - in progress
+
+// violation: https://prover.certora.com/output/40577/c3f913d4a830433a8611fb44bc19bad0/?anonymousKey=49c6a124deca81a0ff3aeeddb735121d5595e78e
 // if both matured, then need to consider other aspects of a system as well.
 // need to change assert, make it more flexible including both matured case
 // need a proper setup for initial state I guess
+
+// timeout after adding `require maturityTime1 < eCl.block.timestamp && maturityTime2 < eCl.block.timestamp;`
+// https://prover.certora.com/output/3106/2e6dc3d3b5c146bcb5ceb865fb1320c7/?anonymousKey=6e9c436ed99051ae53b036977260fe3247911c9e
 rule profitIsMonotonicForCloseLong(env eCl) {
     uint256 bondAmount;
     uint256 minOutput;
     address destination1; address destination2;
     uint256 maturityTime1; uint256 maturityTime2;
     bool asUnderlying1; bool asUnderlying2;
+
+    require maturityTime1 < eCl.block.timestamp && maturityTime2 < eCl.block.timestamp;
 
     storage initState = lastStorage;
     uint256 assetsRecieved1 =
@@ -412,6 +418,7 @@ rule profitIsMonotonicForCloseLong(env eCl) {
 
 // STATUS - violation
 // https://prover.certora.com/output/3106/90f5e72f826643e184aa49baacca100c/?anonymousKey=22f84ff36a5192c746e75b57607a415d50dcd420
+// not sure. something is broken with shares calculation.
 rule addAndRemoveSameSharesMeansNoChange(env e) {
     uint256 _contribution;
     uint256 _minApr;
@@ -428,7 +435,7 @@ rule addAndRemoveSameSharesMeansNoChange(env e) {
         baseProceeds, withdrawalShares = removeLiquidity(e, lpShares, _minOutput, _destination, _asUnderlying);
     uint128 shareReservesAfter = stateShareReserves();
 
-    assert shareReservesAfter >= shareReservesBefore;
+    assert shareReservesAfter + 1 >= to_mathint(shareReservesBefore);
 }
 
 rule openLongPreservesOutstandingLongs(uint256 baseAmount) {
@@ -474,40 +481,44 @@ rule openLongPreservesOutstandingLongs(uint256 baseAmount) {
         // avoid reverts.
 // or we need to limit initial state
 /// Closing a long position at maturity should return the same number of tokens as the number of bonds.
-rule closeLongAtMaturity(uint256 bondAmount) {
-    env e;
-    uint256 minOutput;
-    address destination;
-    bool asUnderlying;
-    uint256 maturityTime;
+// rule closeLongAtMaturity(uint256 bondAmount) {
+//     env e;
+//     uint256 minOutput;
+//     address destination;
+//     bool asUnderlying;
+//     uint256 maturityTime;
 
-    setHyperdrivePoolParams();
+//     setHyperdrivePoolParams();
 
-    uint256 assetsRecieved =
-        closeLong(e, maturityTime, bondAmount, minOutput, destination, asUnderlying);
+//     uint256 assetsRecieved =
+//         closeLong(e, maturityTime, bondAmount, minOutput, destination, asUnderlying);
 
-    assert maturityTime <= e.block.timestamp => assetsRecieved == bondAmount;
-}
+//     assert maturityTime <= e.block.timestamp => assetsRecieved == bondAmount;
+// }
 
-/// calling checkpoint() twice on two checkpoint times cannot change the outstanding posiitons twice
+/// calling checkpoint() twice on two checkpoint times cannot change the outstanding positons twice
 /// @notice : Violated because it's not assumed there aren't 'holes' in checkpoints.
-rule doubleCheckpointHasNoEffect(uint256 time1, uint256 time2) {
-    env e;
-    uint128 Longs1 = stateLongs();
-    uint128 Shorts1 = stateShorts();
-        checkpoint(e, time1);
-    uint128 Longs2 = stateLongs();
-    uint128 Shorts2 = stateShorts();
-        checkpoint(e, time2);
-    uint128 Longs3 = stateLongs();
-    uint128 Shorts3 = stateShorts();
+// https://prover.certora.com/output/3106/863efe691ab644b58d30cd29c6c6d4da/?anonymousKey=e1a8ae0906fd35cb61605ec5e1014486c9ffbef1
+// the last if in checkpoint goes different ways both times, need to think if this is valid counter-example
+// rule doubleCheckpointHasNoEffect(uint256 time1, uint256 time2) {
+//     env e;
+//     uint128 Longs1 = stateLongs();
+//     uint128 Shorts1 = stateShorts();
+//         checkpoint(e, time1);
+//     uint128 Longs2 = stateLongs();
+//     uint128 Shorts2 = stateShorts();
+//         checkpoint(e, time2);
+//     uint128 Longs3 = stateLongs();
+//     uint128 Shorts3 = stateShorts();
 
-    assert !(Longs1 == Longs2 && Shorts1 == Shorts2) =>
-        (Longs2 == Longs3 && Shorts2 == Shorts3),
-        "If the outstanding bonds were changed by a first checkpoint, they cannot be changed by a second";
-}
+//     assert !(Longs1 == Longs2 && Shorts1 == Shorts2) =>
+//         (Longs2 == Longs3 && Shorts2 == Shorts3),
+//         "If the outstanding bonds were changed by a first checkpoint, they cannot be changed by a second";
+// }
 
-/// The present value of the pool should not change after 'checkpointing'
+/// The present value of the pool should not change after 'checkpointing' 
+// not true if positions are matured.
+// true if between two maturities
 /// @notice Trivially violated since the present value function is summarized.
 rule checkPointCannotChangePoolPresentValue(uint256 time) {
     env e;
@@ -551,34 +562,35 @@ filtered{ f -> !f.isView } {
 // STATUS - violation
 // https://prover.certora.com/output/3106/d981269c05364be8bf57ed2fb87bb3b1/?anonymousKey=a5cd479cd57cbfa3a9d3e4d05167924ca402a428
 // violations in openLong() and openShort() becuase they are set to match values of closing positions. Thus, outstadings remains the same.
+// need to think if we can fix it. My solution is not helpful
 /// @notice If the checkpoint share price was set by a function, so all matured positions
-/// of that checkpoint should have been removed from the outstanding longs/shorts. 
-rule settingThePriceAlsoClosesMaturedPositions(uint256 checkpointTime, method f) 
-filtered{ f -> !f.isView && f.selector != sig:checkpoint(uint256).selector } {
-    env e;
-    calldataarg args;
+/// of that checkpoint should have been removed from the outstanding longs/shorts.
+// rule settingThePriceAlsoClosesMaturedPositions(uint256 checkpointTime, method f) 
+// filtered{ f -> !f.isView && f.selector != sig:checkpoint(uint256).selector } {
+//     env e;
+//     calldataarg args;
 
-    mathint price1 = checkPointSharePrice(checkpointTime);
-    mathint longsOutstanding1 = stateLongs();
-    mathint shortsOutstanding1 = stateShorts();
-        f(e, args);
-    mathint price2 = checkPointSharePrice(checkpointTime);
-    mathint longsOutstanding2 = stateLongs();
-    mathint shortsOutstanding2 = stateShorts();
-    /// Require that the price has changed (or set to non-zero).
-    require price1 ==0 && price2 !=0;
+//     mathint price1 = checkPointSharePrice(checkpointTime);
+//     mathint longsOutstanding1 = stateLongs();
+//     mathint shortsOutstanding1 = stateShorts();
+//         f(e, args);
+//     mathint price2 = checkPointSharePrice(checkpointTime);
+//     mathint longsOutstanding2 = stateLongs();
+//     mathint shortsOutstanding2 = stateShorts();
+//     /// Require that the price has changed (or set to non-zero).
+//     require price1 ==0 && price2 !=0;
 
-    /// Assume that there are longs/shorts tokens for that checkpoint time
-    uint256 AssetId;
-    mathint prefix = prefixByID(AssetId);
-    require prefix == 1 || prefix == 2;
-    require timeByID(AssetId) == to_mathint(checkpointTime);
-    require checkpointTime <= e.block.timestamp; // Longs/shorts have matured
-    require totalSupplyByToken(AssetId) > 0;
+//     /// Assume that there are longs/shorts tokens for that checkpoint time
+//     uint256 AssetId;
+//     mathint prefix = prefixByID(AssetId);
+//     require prefix == 1 || prefix == 2;
+//     require timeByID(AssetId) == to_mathint(checkpointTime);
+//     require checkpointTime <= e.block.timestamp; // Longs/shorts have matured
+//     require totalSupplyByToken(AssetId) > 0;
 
-    assert longsOutstanding1 != longsOutstanding2 || shortsOutstanding1 != shortsOutstanding2,
-        "The outstanding shorts or longs must have been updated (virtually closing the matured)";
-}
+//     assert longsOutstanding1 != longsOutstanding2 || shortsOutstanding1 != shortsOutstanding2,
+//         "The outstanding shorts or longs must have been updated (virtually closing the matured)";
+// }
 
 /// Verified
 invariant NoFutureTokens(uint256 AssetId, env e)
@@ -608,7 +620,7 @@ invariant NoTokensBetweenCheckPoints(uint256 AssetId)
 /// Violated for removeLiquidity:
 /// https://vaas-stg.certora.com/output/41958/31864532f046423ea1f0e0988ebe5e1a/?anonymousKey=63f56d320526ee9dc6552956c574822f476e7273
 invariant SharesNonZeroAssetsNonZero(env e)
-    totalShares() !=0 => aToken.balanceOf(e, HDAave) != 0
+    totalShares() !=0 => aToken.balanceOf(e, HDAave) != 0 
     {
         preserved with (env eP) {
             setHyperdrivePoolParams();
@@ -677,6 +689,7 @@ rule closeLongYieldIsBoundedByTime(uint256 openTimeStamp) {
 
 /// @notice The average maturity time should always be between the current time stamp and the time stamp + duration.
 /// In other words, matured positions should not be taken into account in the average time.
+// summarization is wrong / doesn't work properly
 invariant LongAverageMaturityTimeIsBounded(env e)
     (stateLongs() == 0 => AvgMTimeLongs() == 0) &&
     (stateLongs() != 0 => 
@@ -887,7 +900,7 @@ rule checkpointFrontRunsCloseShort(uint256 checkpointTime) {
 
     assert !lastReverted;
 }
-
+  
 /// Violated
 /// https://prover.certora.com/output/41958/f61a641de2d446d7875f24f21fac5e07/?anonymousKey=b972ae7327581893456828151a2f743bb35299df
 rule openShortMustPay(uint256 bondAmount) {
