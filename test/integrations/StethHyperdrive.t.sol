@@ -70,6 +70,7 @@ contract StethHyperdriveTest is HyperdriveTest {
             initialSharePrice: LIDO.getTotalPooledEther().divDown(
                 LIDO.getTotalShares()
             ),
+            minimumShareReserves: 1e15,
             positionDuration: POSITION_DURATION,
             checkpointDuration: CHECKPOINT_DURATION,
             timeStretch: HyperdriveUtils.calculateTimeStretch(0.05e18),
@@ -115,6 +116,7 @@ contract StethHyperdriveTest is HyperdriveTest {
             initialSharePrice: LIDO.getTotalPooledEther().divDown(
                 LIDO.getTotalShares()
             ),
+            minimumShareReserves: 1e15,
             positionDuration: POSITION_DURATION,
             checkpointDuration: CHECKPOINT_DURATION,
             timeStretch: HyperdriveUtils.calculateTimeStretch(0.05e18),

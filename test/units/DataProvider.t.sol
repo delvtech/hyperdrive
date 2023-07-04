@@ -3,7 +3,6 @@ pragma solidity ^0.8.18;
 
 import { DataProvider } from "contracts/src/DataProvider.sol";
 import { Test } from "forge-std/Test.sol";
-import { console } from "forge-std/console.sol";
 import { Errors } from "contracts/src/libraries/Errors.sol";
 
 contract MockProvider {

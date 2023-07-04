@@ -40,6 +40,7 @@ contract DsrHyperdriveScript is Script {
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: dai,
             initialSharePrice: 1e18,
+            minimumShareReserves: 1e18,
             positionDuration: 365 days,
             checkpointDuration: 1 days,
             timeStretch: HyperdriveUtils.calculateTimeStretch(0.02e18),

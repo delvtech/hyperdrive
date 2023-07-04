@@ -23,6 +23,7 @@ contract MockHyperdriveTestnet is Hyperdrive {
         ERC20Mintable _baseToken,
         uint256 _initialRate,
         uint256 _initialSharePrice,
+        uint256 _minimumShareReserves,
         uint256 _positionDuration,
         uint256 _checkpointDuration,
         uint256 _timeStretch,
@@ -33,6 +34,7 @@ contract MockHyperdriveTestnet is Hyperdrive {
             IHyperdrive.PoolConfig({
                 baseToken: IERC20(address(_baseToken)),
                 initialSharePrice: _initialSharePrice,
+                minimumShareReserves: _minimumShareReserves,
                 positionDuration: _positionDuration,
                 checkpointDuration: _checkpointDuration,
                 timeStretch: _timeStretch,
@@ -154,6 +156,7 @@ contract MockHyperdriveDataProviderTestnet is
         ERC20Mintable _baseToken,
         uint256 _initialRate,
         uint256 _initialSharePrice,
+        uint256 _minimumShareReserves,
         uint256 _positionDuration,
         uint256 _checkpointDuration,
         uint256 _timeStretch,
@@ -164,6 +167,7 @@ contract MockHyperdriveDataProviderTestnet is
             IHyperdrive.PoolConfig({
                 baseToken: IERC20(address(_baseToken)),
                 initialSharePrice: _initialSharePrice,
+                minimumShareReserves: _minimumShareReserves,
                 positionDuration: _positionDuration,
                 checkpointDuration: _checkpointDuration,
                 timeStretch: _timeStretch,

@@ -25,6 +25,7 @@ contract HyperdriveTest is BaseTest {
     IHyperdrive hyperdrive;
 
     uint256 internal constant INITIAL_SHARE_PRICE = FixedPointMath.ONE_18;
+    uint256 internal constant MINIMUM_SHARE_RESERVES = FixedPointMath.ONE_18;
     uint256 internal constant CHECKPOINT_DURATION = 1 days;
     uint256 internal constant POSITION_DURATION = 365 days;
     uint256 internal constant ORACLE_SIZE = 5;
@@ -48,6 +49,7 @@ contract HyperdriveTest is BaseTest {
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: IERC20(address(baseToken)),
             initialSharePrice: INITIAL_SHARE_PRICE,
+            minimumShareReserves: MINIMUM_SHARE_RESERVES,
             positionDuration: POSITION_DURATION,
             checkpointDuration: CHECKPOINT_DURATION,
             timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
@@ -105,6 +107,7 @@ contract HyperdriveTest is BaseTest {
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: IERC20(address(baseToken)),
             initialSharePrice: initialSharePrice,
+            minimumShareReserves: MINIMUM_SHARE_RESERVES,
             positionDuration: POSITION_DURATION,
             checkpointDuration: CHECKPOINT_DURATION,
             timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
