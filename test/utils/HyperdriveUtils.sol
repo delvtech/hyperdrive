@@ -269,6 +269,7 @@ library HyperdriveUtils {
                         bondReserves: poolInfo.bondReserves,
                         sharePrice: poolInfo.sharePrice,
                         initialSharePrice: poolConfig.initialSharePrice,
+                        minimumShareReserves: poolConfig.minimumShareReserves,
                         timeStretch: poolConfig.timeStretch,
                         longsOutstanding: poolInfo.longsOutstanding,
                         longAverageTimeRemaining: calculateTimeRemaining(

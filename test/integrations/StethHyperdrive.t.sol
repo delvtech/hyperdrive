@@ -151,8 +151,9 @@ contract StethHyperdriveTest is HyperdriveTest {
         verifyFactoryEvents(
             factory,
             bob,
-            contribution - 1e5,
+            contribution,
             FIXED_RATE,
+            config.minimumShareReserves,
             new bytes32[](0)
         );
     }

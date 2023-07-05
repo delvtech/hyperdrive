@@ -15,7 +15,7 @@ interface IHyperdriveWrite is IMultiTokenWrite {
         uint256 _apr,
         address _destination,
         bool _asUnderlying
-    ) external payable;
+    ) external payable returns (uint256);
 
     function addLiquidity(
         uint256 _contribution,

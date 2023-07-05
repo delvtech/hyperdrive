@@ -464,6 +464,7 @@ library HyperdriveMath {
         uint256 bondReserves;
         uint256 sharePrice;
         uint256 initialSharePrice;
+        uint256 minimumShareReserves;
         uint256 timeStretch;
         uint256 longsOutstanding;
         uint256 longAverageTimeRemaining;
@@ -557,7 +558,10 @@ library HyperdriveMath {
             int256(_params.shareReserves) + netFlatTrade
         );
 
-        return _params.shareReserves;
+        // The present value is the final share reserves minus the minimum share
+        // reserves. This ensures that LP withdrawals won't include the minimum
+        // share reserves.
+        return _params.shareReserves - _params.minimumShareReserves;
     }
 
     /// @dev Calculates the proceeds in shares of closing a short position. This

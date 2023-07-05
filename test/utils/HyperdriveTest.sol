@@ -136,9 +136,7 @@ contract HyperdriveTest is BaseTest {
         // Initialize the pool.
         baseToken.mint(contribution);
         baseToken.approve(address(hyperdrive), contribution);
-        hyperdrive.initialize(contribution, apr, lp, true);
-
-        return hyperdrive.balanceOf(AssetId._LP_ASSET_ID, lp);
+        return hyperdrive.initialize(contribution, apr, lp, true);
     }
 
     function addLiquidity(
@@ -485,6 +483,7 @@ contract HyperdriveTest is BaseTest {
         address deployer,
         uint256 contribution,
         uint256 apr,
+        uint256 minimumShareReserves,
         bytes32[] memory expectedExtraData
     ) internal {
         // Ensure that the correct `Deployed` and `Initialize` events were emitted.
@@ -551,10 +550,9 @@ contract HyperdriveTest is BaseTest {
                 uint256 eventBaseAmount,
                 uint256 eventApr
             ) = abi.decode(log.data, (uint256, uint256, uint256));
-            assertApproxEqAbs(
-                eventLpAmount + 1e5,
-                hyperdrive.getPoolInfo().shareReserves,
-                12500
+            assertEq(
+                eventLpAmount,
+                hyperdrive.getPoolInfo().shareReserves - minimumShareReserves
             );
             assertEq(eventBaseAmount, contribution);
             assertEq(eventApr, apr);

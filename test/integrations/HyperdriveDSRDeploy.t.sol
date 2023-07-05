@@ -97,14 +97,15 @@ contract HyperdriveDSRTest is HyperdriveTest {
         );
 
         // lp shares should equal number of shares reserves initialized with
-        assertEq(createdShares, 2500e18);
+        assertEq(createdShares, 2500e18 - config.minimumShareReserves);
 
         // Verify that the correct events were emitted.
         verifyFactoryEvents(
             factory,
             alice,
-            contribution - 1e5,
+            contribution,
             apr,
+            config.minimumShareReserves,
             new bytes32[](0)
         );
     }

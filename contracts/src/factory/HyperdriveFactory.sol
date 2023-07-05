@@ -204,10 +204,6 @@ abstract contract HyperdriveFactory {
         uint256 _contribution,
         uint256 _apr
     ) public payable virtual returns (IHyperdrive) {
-        // No invalid deployments
-        if (_contribution < 2e5) revert Errors.InvalidContribution();
-        // Set aside some of the contribution for address(0) donation
-        _contribution -= 1e5;
         // Overwrite the governance and fees field of the config.
         _config.feeCollector = feeCollector;
         _config.governance = address(this);
@@ -237,7 +233,7 @@ abstract contract HyperdriveFactory {
             _config.baseToken.transferFrom(
                 msg.sender,
                 address(this),
-                _contribution + 1e5
+                _contribution
             );
             if (
                 !_config.baseToken.approve(
@@ -248,29 +244,15 @@ abstract contract HyperdriveFactory {
                 revert Errors.ApprovalFailed();
             }
             hyperdrive.initialize(_contribution, _apr, msg.sender, true);
-            hyperdrive.addLiquidity(
-                1e5,
-                0,
-                type(uint256).max,
-                address(0),
-                true
-            );
         } else {
             // Require the caller sent value
-            if (msg.value != _contribution + 1e5) {
+            if (msg.value != _contribution) {
                 revert Errors.TransferFailed();
             }
             hyperdrive.initialize{ value: _contribution }(
                 _contribution,
                 _apr,
                 msg.sender,
-                true
-            );
-            hyperdrive.addLiquidity{ value: 1e5 }(
-                1e5,
-                0,
-                type(uint256).max,
-                address(0),
                 true
             );
         }
