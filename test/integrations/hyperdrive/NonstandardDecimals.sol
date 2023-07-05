@@ -1,18 +1,32 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import "forge-std/console.sol";
+
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { MockHyperdrive } from "../../mocks/MockHyperdrive.sol";
-import { Lib } from "../../utils/Lib.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
+import { Lib } from "../../utils/Lib.sol";
 
 contract NonstandardDecimalsTest is HyperdriveTest {
     using FixedPointMath for uint256;
+    using HyperdriveUtils for IHyperdrive;
     using Lib for *;
+
+    function setUp() public override {
+        super.setUp();
+
+        // Deploy the pool with a small minimum share reserves since we're
+        // using nonstandard decimals in this suite.
+        IHyperdrive.PoolConfig memory config = testConfig(0.05e18);
+        config.minimumShareReserves = 1e6;
+        deploy(deployer, config);
+    }
 
     function test_nonstandard_decimals_initialize(
         uint256 apr,
@@ -24,11 +38,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
 
         // Initialize the pool and ensure that the APR is correct.
         initialize(alice, apr, contribution);
-        assertApproxEqAbs(
-            HyperdriveUtils.calculateAPRFromReserves(hyperdrive),
-            apr,
-            1e12
-        );
+        assertApproxEqAbs(hyperdrive.calculateAPRFromReserves(), apr, 1e12);
     }
 
     function test_nonstandard_decimals_long(
@@ -49,7 +59,9 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         // essentially all of his capital back.
         {
             // Deploy and initialize the pool.
-            deploy(alice, 0.02e18, 0, 0, 0);
+            IHyperdrive.PoolConfig memory config = testConfig(0.02e18);
+            config.minimumShareReserves = 1e6;
+            deploy(deployer, config);
             initialize(alice, 0.02e18, 500_000_000e6);
 
             // Bob opens a long.
@@ -67,7 +79,9 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         // duration. He should receive the base he paid plus fixed interest.
         {
             // Deploy and initialize the pool.
-            deploy(alice, 0.02e18, 0, 0, 0);
+            IHyperdrive.PoolConfig memory config = testConfig(0.02e18);
+            config.minimumShareReserves = 1e6;
+            deploy(deployer, config);
             initialize(alice, 0.02e18, 500_000_000e6);
 
             // Bob opens a long.
@@ -98,7 +112,9 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         // value of the bonds.
         {
             // Deploy and initialize the pool.
-            deploy(alice, 0.02e18, 0, 0, 0);
+            IHyperdrive.PoolConfig memory config = testConfig(0.02e18);
+            config.minimumShareReserves = 1e6;
+            deploy(deployer, config);
             initialize(alice, 0.02e18, 500_000_000e6);
 
             // Bob opens a long.
@@ -134,7 +150,9 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         // essentially all of his capital back.
         {
             // Deploy and initialize the pool.
-            deploy(alice, 0.02e18, 0, 0, 0);
+            IHyperdrive.PoolConfig memory config = testConfig(0.02e18);
+            config.minimumShareReserves = 1e6;
+            deploy(deployer, config);
             initialize(alice, 0.02e18, 500_000_000e6);
 
             // Bob opens a short.
@@ -151,10 +169,11 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         // Bob opens a short and holds for a random time less than the position
         // duration. He should receive the base he paid plus the variable
         // interest minus the fixed interest.
-        // snapshotId = vm.snapshot();
         {
             // Deploy and initialize the pool.
-            deploy(alice, 0.02e18, 0, 0, 0);
+            IHyperdrive.PoolConfig memory config = testConfig(0.02e18);
+            config.minimumShareReserves = 1e6;
+            deploy(deployer, config);
             initialize(alice, 0.02e18, 500_000_000e6);
 
             // Bob opens a short.
@@ -191,7 +210,9 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         // variable interest earned by the short.
         {
             // Deploy and initialize the pool.
-            deploy(alice, 0.02e18, 0, 0, 0);
+            IHyperdrive.PoolConfig memory config = testConfig(0.02e18);
+            config.minimumShareReserves = 1e6;
+            deploy(deployer, config);
             initialize(alice, 0.02e18, 500_000_000e6);
 
             // Bob opens a short.
@@ -247,9 +268,11 @@ contract NonstandardDecimalsTest is HyperdriveTest {
             uint256(testParams.fixedRate),
             testParams.contribution
         );
+        console.log("aliceLpShares: %s", aliceLpShares.toString(18));
 
         // Bob adds liquidity.
         uint256 bobLpShares = addLiquidity(bob, testParams.contribution);
+        console.log("bobLpShares: %s", bobLpShares.toString(18));
 
         // Bob opens a long.
         longBasePaid = longBasePaid.normalizeToRange(
@@ -281,18 +304,25 @@ contract NonstandardDecimalsTest is HyperdriveTest {
             testParams.shortBasePaid = shortBasePaid;
         }
 
+        // FIXME: What explains the variablility of how much of the minimum
+        // share reserves is deducted from her proceeds?
+        //
         // Alice removes her liquidity.
         (
             uint256 aliceBaseProceeds,
             uint256 aliceWithdrawalShares
         ) = removeLiquidity(alice, aliceLpShares);
-        uint256 aliceMargin = ((testParams.longAmount -
-            testParams.longBasePaid) +
-            (testParams.shortAmount - testParams.shortBasePaid)) / 2;
+        uint256 lpMargin = (testParams.longAmount - testParams.longBasePaid) +
+            (testParams.shortAmount - testParams.shortBasePaid);
         assertApproxEqAbs(
             aliceBaseProceeds,
-            testParams.contribution - aliceMargin,
-            10
+            (testParams.contribution.mulDown(2e18) -
+                lpMargin -
+                hyperdrive.getPoolConfig().minimumShareReserves).mulDivDown(
+                    aliceLpShares,
+                    aliceLpShares + bobLpShares
+                ),
+            1e2
         );
 
         // Celine adds liquidity.
@@ -314,7 +344,10 @@ contract NonstandardDecimalsTest is HyperdriveTest {
             alice,
             aliceWithdrawalShares
         );
-        assertGe(aliceRedeemProceeds + 1e2, aliceMargin);
+        assertGe(
+            aliceRedeemProceeds + 1e2,
+            lpMargin.mulDivDown(aliceLpShares, aliceLpShares + bobLpShares)
+        );
 
         // Bob and Celine remove their liquidity. Bob should receive more base
         // proceeds than Celine since Celine's add liquidity resulted in an

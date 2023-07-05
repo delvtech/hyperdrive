@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import "forge-std/console.sol";
+import "test/utils/Lib.sol";
+
 import { HyperdriveBase } from "./HyperdriveBase.sol";
 import { HyperdriveTWAP } from "./HyperdriveTWAP.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
@@ -16,6 +20,9 @@ import { SafeCast } from "./libraries/SafeCast.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveLP is HyperdriveTWAP {
+    // FIXME
+    using Lib for *;
+
     using FixedPointMath for uint256;
     using SafeCast for uint256;
 
@@ -435,7 +442,13 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
                 _marketState.longOpenSharePrice
             );
         }
+        console.log("_shares: %s", _shares.toString(18));
+        console.log(
+            "_totalActiveLpSupply: %s",
+            _totalActiveLpSupply.toString(18)
+        );
         shareProceeds = shareProceeds.mulDivDown(_shares, _totalActiveLpSupply);
+        console.log("shareProceeds: %s", shareProceeds.toString(18));
         _updateLiquidity(-int256(shareProceeds));
         params.shareReserves = _marketState.shareReserves;
         params.bondReserves = _marketState.bondReserves;
