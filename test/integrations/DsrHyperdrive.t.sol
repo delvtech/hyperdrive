@@ -232,16 +232,15 @@ contract DsrHyperdrive is BaseTest {
         vm.startPrank(alice);
         uint256 apr = 0.05e18;
 
-        uint256 contribution = 1e5;
         // The pool gets initialized with a minimal contribution
+        uint256 contribution = hyperdrive.getPoolConfig().minimumShareReserves *
+            2;
         hyperdrive.initialize(contribution, apr, bob, true);
+        contribution -= hyperdrive.getPoolConfig().minimumShareReserves;
 
-        // Alice deposits 1e5 DAI to the 0 address
-        hyperdrive.addLiquidity(1e5, 0, type(uint256).max, address(0), true);
-
-        // Now totalShares = 2e5
-        assertEq(hyperdrive.totalShares(), 2e5 + 1);
-        assertEq(dsrManager.daiBalance(address(hyperdrive)), 199998);
+        // Now totalShares = 2e18
+        assertEq(hyperdrive.totalShares(), 2e18);
+        assertApproxEqAbs(dsrManager.daiBalance(address(hyperdrive)), 2e18, 1);
 
         vm.stopPrank();
         vm.startPrank(bob);
@@ -259,13 +258,14 @@ contract DsrHyperdrive is BaseTest {
         dai.approve(address(dsrManager), 2002e18);
         dsrManager.join(address(hyperdrive), 200001e16);
 
-        assertEq(
+        assertApproxEqAbs(
             dsrManager.daiBalance(address(hyperdrive)),
-            2000010000000000100008
+            2001.01e18,
+            10
         );
 
         // Some dust leftover
-        assertEq(hyperdrive.totalShares(), 1e5 + 11);
+        assertEq(hyperdrive.totalShares(), 1e18 + 10);
 
         uint256 shareReserves = hyperdrive.getPoolInfo().shareReserves;
         uint256 bondReserves = hyperdrive.getPoolInfo().bondReserves;
@@ -297,7 +297,7 @@ contract DsrHyperdrive is BaseTest {
             true
         );
         // Shares are still minted, and Alice does not get 0 shares out
-        assertEq(newShares, 50005);
+        assertEq(newShares, 499747627448138694);
     }
 
     // Tests for https://github.com/delvtech/hyperdrive/issues/356
@@ -306,8 +306,9 @@ contract DsrHyperdrive is BaseTest {
         vm.startPrank(alice);
         uint256 apr = 0.05e18;
 
-        uint256 contribution = 1e5;
         // The pool gets initialized with a minimal contribution
+        uint256 contribution = 2 *
+            hyperdrive.getPoolConfig().minimumShareReserves;
         hyperdrive.initialize(contribution, apr, bob, true);
 
         uint256 shareReserves = hyperdrive.getPoolInfo().shareReserves;
@@ -329,22 +330,20 @@ contract DsrHyperdrive is BaseTest {
         );
 
         // Alice calls addLiquidity() with 1000 DAI
-        // This would have reverted if minimum contribution was too small to cause
-        // division by zero
+        // This would have reverted if minimum contribution was small enough to
+        // cause division by zero
         hyperdrive.addLiquidity(1000e18, apr, apr, alice, true);
     }
 
-    // FIXME: Fix this test. Go through and make sure that our tests are testing
-    // the right thing now that we've changed the behavior fairly significantly.
-    //
-    // function testCannotInitializeBelowMinimumContribution() public {
-    //     vm.stopPrank();
-    //     vm.startPrank(alice);
-    //     uint256 apr = 0.05e18;
+    function testCannotInitializeBelowMinimumContribution() public {
+        vm.stopPrank();
+        vm.startPrank(alice);
+        uint256 apr = 0.05e18;
 
-    //     uint256 contribution = (1e5) - 1;
-    //     // The pool gets initialized with a minimal contribution
-    //     vm.expectRevert(IHyperdrive.BelowMinimumContribution.selector);
-    //     hyperdrive.initialize(contribution, apr, bob, true);
-    // }
+        // The pool gets initialized with a minimal contribution
+        uint256 contribution = hyperdrive.getPoolConfig().minimumShareReserves -
+            1;
+        vm.expectRevert(IHyperdrive.BelowMinimumContribution.selector);
+        hyperdrive.initialize(contribution, apr, bob, true);
+    }
 }

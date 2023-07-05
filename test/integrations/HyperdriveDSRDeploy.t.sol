@@ -23,6 +23,10 @@ contract HyperdriveDSRTest is HyperdriveTest {
         DsrManager(address(0x373238337Bfe1146fb49989fc222523f83081dDb));
 
     function setUp() public override __mainnet_fork(16_685_972) {
+        // TODO: Because the underlying setUp isn't called, the addresses aren't
+        // configured correctly.
+        alice = createUser("alice");
+
         vm.startPrank(deployer);
 
         // Deploy the DsrHyperdrive deployer and factory.
@@ -96,7 +100,7 @@ contract HyperdriveDSRTest is HyperdriveTest {
         );
 
         // lp shares should equal number of shares reserves initialized with
-        assertEq(createdShares, 2500e18 - config.minimumShareReserves);
+        assertEq(createdShares, contribution - config.minimumShareReserves);
 
         // Verify that the correct events were emitted.
         verifyFactoryEvents(

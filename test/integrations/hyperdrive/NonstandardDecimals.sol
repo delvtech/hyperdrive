@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-// FIXME
-import "forge-std/console.sol";
-
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
@@ -34,7 +31,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
     ) external {
         // Normalize the fuzzed variables.
         apr = apr.normalizeToRange(0.001e18, 2e18);
-        contribution = contribution.normalizeToRange(1e6, 1_000_000_000e6);
+        contribution = contribution.normalizeToRange(2e6, 1_000_000_000e6);
 
         // Initialize the pool and ensure that the APR is correct.
         initialize(alice, apr, contribution);
@@ -268,11 +265,9 @@ contract NonstandardDecimalsTest is HyperdriveTest {
             uint256(testParams.fixedRate),
             testParams.contribution
         );
-        console.log("aliceLpShares: %s", aliceLpShares.toString(18));
 
         // Bob adds liquidity.
         uint256 bobLpShares = addLiquidity(bob, testParams.contribution);
-        console.log("bobLpShares: %s", bobLpShares.toString(18));
 
         // Bob opens a long.
         longBasePaid = longBasePaid.normalizeToRange(

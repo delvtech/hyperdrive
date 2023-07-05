@@ -192,6 +192,8 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
     /// ### Hyperdrive ###
     /// ##################
     error BaseBufferExceedsShareReserves();
+    error BelowMinimumContribution();
+    error BelowMinimumShareReserves();
     error InvalidApr();
     error InvalidBaseToken();
     error InvalidCheckpointTime();
@@ -211,7 +213,6 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
     error UnsupportedToken();
     error ApprovalFailed();
     error ZeroAmount();
-    error BelowMinimumShareReserves();
     error ZeroLpTotalSupply();
     error NoAssetsToWithdraw();
     error NotPayable();
