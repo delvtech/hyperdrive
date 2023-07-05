@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import { HyperdriveBase } from "./HyperdriveBase.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
+import { SafeCast } from "./libraries/SafeCast.sol";
 
 /// @author DELV
 /// @title HyperdriveTWAP
@@ -14,6 +15,7 @@ import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveTWAP is HyperdriveBase {
     using FixedPointMath for uint256;
+    using SafeCast for uint256;
 
     /// @notice Records data into a time weighted sum oracle entry. This function only writes to the oracle
     ///         if some amount of time has passed since the previous update.
@@ -44,9 +46,12 @@ abstract contract HyperdriveTWAP is HyperdriveBase {
         // If we are updating first we calculate the index to update
         uint256 toUpdate = (uint256(head) + 1) % _buffer.length;
         // Now we update the slot with this data
-        _buffer[toUpdate] = OracleData(uint32(block.timestamp), uint224(sum));
+        _buffer[toUpdate] = OracleData(
+            uint32(block.timestamp),
+            uint256(sum).toUint224()
+        );
         _oracle = IHyperdrive.OracleState(
-            uint128(toUpdate),
+            uint256(toUpdate).toUint128(),
             uint128(block.timestamp)
         );
     }

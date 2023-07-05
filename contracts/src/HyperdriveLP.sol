@@ -317,8 +317,8 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         );
 
         // Apply the update to the withdrawal pool.
-        _withdrawPool.readyToWithdraw -= uint128(_shares);
-        _withdrawPool.proceeds -= uint128(shareProceeds);
+        _withdrawPool.readyToWithdraw -= uint256(_shares).toUint128();
+        _withdrawPool.proceeds -= uint256(shareProceeds).toUint128();
 
         // Withdraw for the user
         uint256 proceeds = _withdraw(
@@ -530,8 +530,8 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
                 maxSharesReleased
             );
         }
-        _withdrawPool.readyToWithdraw += uint128(sharesReleased);
-        _withdrawPool.proceeds += uint128(withdrawalPoolProceeds);
+        _withdrawPool.readyToWithdraw += uint256(sharesReleased).toUint128();
+        _withdrawPool.proceeds += uint256(withdrawalPoolProceeds).toUint128();
 
         // Remove the withdrawal pool proceeds from the reserves.
         _updateLiquidity(-int256(withdrawalPoolProceeds));
