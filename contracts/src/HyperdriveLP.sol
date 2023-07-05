@@ -185,7 +185,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             //
             // PV0 / l0 = PV1 / (l0 + dl) => dl = ((PV1 - PV0) * l0) / PV0
             lpShares = (endingPresentValue - startingPresentValue).mulDivDown(
-                lpTotalSupply - _minimumShareReserves, // FIXME: Document this.
+                lpTotalSupply,
                 startingPresentValue
             );
         }
@@ -428,8 +428,8 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // the variable rate interest accrued on long positions. The idle amount
         // is given by:
         //
-        // idle = (z - (o_l / c_0)) * (dl / l_a)
-        shareProceeds = _marketState.shareReserves;
+        // idle = (z - z_min - (o_l / c_0)) * (dl / l_a)
+        shareProceeds = _marketState.shareReserves - _minimumShareReserves;
         if (_marketState.longsOutstanding > 0) {
             shareProceeds -= uint256(_marketState.longsOutstanding).divDown(
                 _marketState.longOpenSharePrice

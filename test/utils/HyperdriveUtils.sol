@@ -97,18 +97,19 @@ library HyperdriveUtils {
     ) internal view returns (uint256 baseAmount) {
         IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
         IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
-        return
-            HyperdriveMath
-                .calculateMaxLong(
-                    poolInfo.shareReserves,
-                    poolInfo.bondReserves,
-                    poolInfo.longsOutstanding,
-                    poolConfig.timeStretch,
-                    poolInfo.sharePrice,
-                    poolConfig.initialSharePrice,
-                    7
-                )
-                .baseAmount;
+        (baseAmount, ) = HyperdriveMath.calculateMaxLong(
+            HyperdriveMath.MaxTradeParams({
+                shareReserves: poolInfo.shareReserves,
+                bondReserves: poolInfo.bondReserves,
+                longsOutstanding: poolInfo.longsOutstanding,
+                timeStretch: poolConfig.timeStretch,
+                sharePrice: poolInfo.sharePrice,
+                initialSharePrice: poolConfig.initialSharePrice,
+                minimumShareReserves: poolConfig.minimumShareReserves
+            }),
+            7
+        );
+        return baseAmount;
     }
 
     /// @dev Calculates the maximum amount of shorts that can be opened.
@@ -121,12 +122,15 @@ library HyperdriveUtils {
         IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
         return
             HyperdriveMath.calculateMaxShort(
-                poolInfo.shareReserves,
-                poolInfo.bondReserves,
-                poolInfo.longsOutstanding,
-                poolConfig.timeStretch,
-                poolInfo.sharePrice,
-                poolConfig.initialSharePrice
+                HyperdriveMath.MaxTradeParams({
+                    shareReserves: poolInfo.shareReserves,
+                    bondReserves: poolInfo.bondReserves,
+                    longsOutstanding: poolInfo.longsOutstanding,
+                    timeStretch: poolConfig.timeStretch,
+                    sharePrice: poolInfo.sharePrice,
+                    initialSharePrice: poolConfig.initialSharePrice,
+                    minimumShareReserves: poolConfig.minimumShareReserves
+                })
             );
     }
 

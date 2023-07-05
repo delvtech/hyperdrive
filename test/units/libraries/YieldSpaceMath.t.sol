@@ -130,12 +130,14 @@ contract YieldSpaceMathTest is Test {
         uint256 shareReserves,
         uint256 sharePrice,
         uint256 initialSharePrice,
+        uint256 minimumShareReserves,
         uint256 tradeSize
     ) external {
         MockYieldSpaceMath yieldSpaceMath = new MockYieldSpaceMath();
 
         fixedRate = fixedRate.normalizeToRange(0.01e18, 1e18);
         initialSharePrice = initialSharePrice.normalizeToRange(0.8e18, 5e18);
+        minimumShareReserves = minimumShareReserves.normalizeToRange(1e5, 1e18);
         sharePrice = sharePrice.normalizeToRange(initialSharePrice, 5e18);
 
         // Test a large span of orders of magnitudes of both the reserves and
@@ -160,20 +162,24 @@ contract YieldSpaceMathTest is Test {
                         365 days,
                         timeStretch
                     );
-                tradeSize = tradeSize.normalizeToRange(
-                    10 ** j,
-                    HyperdriveMath
-                        .calculateMaxLong(
-                            shareReserves,
-                            bondReserves,
-                            0,
-                            timeStretch,
-                            sharePrice,
-                            initialSharePrice,
-                            15
-                        )
-                        .baseAmount
-                );
+                {
+                    (uint256 maxBasePaid, ) = HyperdriveMath.calculateMaxLong(
+                        HyperdriveMath.MaxTradeParams({
+                            shareReserves: shareReserves,
+                            bondReserves: bondReserves,
+                            longsOutstanding: 0,
+                            timeStretch: timeStretch,
+                            sharePrice: sharePrice,
+                            initialSharePrice: initialSharePrice,
+                            minimumShareReserves: minimumShareReserves
+                        }),
+                        15
+                    );
+                    tradeSize = tradeSize.normalizeToRange(
+                        10 ** j,
+                        maxBasePaid
+                    );
+                }
                 uint256 result = yieldSpaceMath.calculateSharesInGivenBondsOut(
                     shareReserves,
                     bondReserves,

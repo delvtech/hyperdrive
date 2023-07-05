@@ -215,8 +215,12 @@ contract AddLiquidityTest is HyperdriveTest {
             1e9
         );
 
-        // Ensure that all of the capital has been removed from the system.
-        assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1);
+        // Ensure that all of the capital (except for the minimum share reserves)
+        // has been removed from the system.
+        assertEq(
+            baseToken.balanceOf(address(hyperdrive)),
+            hyperdrive.getPoolConfig().minimumShareReserves
+        );
     }
 
     function test_add_liquidity_with_short_at_open() external {
@@ -291,7 +295,10 @@ contract AddLiquidityTest is HyperdriveTest {
         );
 
         // Ensure that all of the capital has been removed from the system.
-        assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1);
+        assertEq(
+            baseToken.balanceOf(address(hyperdrive)),
+            hyperdrive.getPoolConfig().minimumShareReserves
+        );
     }
 
     function test_add_liquidity_with_long_at_maturity() external {
@@ -436,8 +443,12 @@ contract AddLiquidityTest is HyperdriveTest {
         (withdrawalProceeds, ) = removeLiquidity(bob, bobLpShares);
         assertApproxEqAbs(withdrawalProceeds, contribution, 1);
 
-        // Ensure that all of the capital has been removed from the system.
-        assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1);
+        // Ensure that all of the capital (except for the minimum share reserves)
+        // has been removed from the system.
+        assertEq(
+            baseToken.balanceOf(address(hyperdrive)),
+            hyperdrive.getPoolConfig().minimumShareReserves
+        );
     }
 
     function verifyAddLiquidityEvent(
@@ -460,11 +471,10 @@ contract AddLiquidityTest is HyperdriveTest {
     }
 
     function presentValueRatio() internal view returns (uint256) {
-        return
-            HyperdriveUtils.presentValue(hyperdrive).divDown(
-                hyperdrive.totalSupply(AssetId._LP_ASSET_ID) +
-                    hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID) -
-                    hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw
-            );
+        uint256 totalLpSupply = hyperdrive.totalSupply(AssetId._LP_ASSET_ID) +
+            hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID) -
+            hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw -
+            hyperdrive.getPoolConfig().minimumShareReserves;
+        return HyperdriveUtils.presentValue(hyperdrive).divDown(totalLpSupply);
     }
 }

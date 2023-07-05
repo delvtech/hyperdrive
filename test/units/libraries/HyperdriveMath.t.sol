@@ -573,17 +573,18 @@ contract HyperdriveMathTest is HyperdriveTest {
         if (fixedRate > 0.35e18) {
             maxIterations += 5;
         }
-        uint256 maxLong = hyperdriveMath
-            .calculateMaxLong(
-                info.shareReserves,
-                info.bondReserves,
-                info.longsOutstanding,
-                config.timeStretch,
-                info.sharePrice,
-                config.initialSharePrice,
-                maxIterations
-            )
-            .baseAmount;
+        (uint256 maxLong, ) = hyperdriveMath.calculateMaxLong(
+            HyperdriveMath.MaxTradeParams({
+                shareReserves: info.shareReserves,
+                bondReserves: info.bondReserves,
+                longsOutstanding: info.longsOutstanding,
+                timeStretch: config.timeStretch,
+                sharePrice: info.sharePrice,
+                initialSharePrice: config.initialSharePrice,
+                minimumShareReserves: config.minimumShareReserves
+            }),
+            maxIterations
+        );
         (uint256 maturityTime, uint256 longAmount) = openLong(bob, maxLong);
 
         // Ensure that opening another long fails.
@@ -634,12 +635,15 @@ contract HyperdriveMathTest is HyperdriveTest {
         IHyperdrive.PoolInfo memory info = hyperdrive.getPoolInfo();
         IHyperdrive.PoolConfig memory config = hyperdrive.getPoolConfig();
         uint256 maxShort = hyperdriveMath.calculateMaxShort(
-            info.shareReserves,
-            info.bondReserves,
-            info.longsOutstanding,
-            config.timeStretch,
-            info.sharePrice,
-            config.initialSharePrice
+            HyperdriveMath.MaxTradeParams({
+                shareReserves: info.shareReserves,
+                bondReserves: info.bondReserves,
+                longsOutstanding: info.longsOutstanding,
+                timeStretch: config.timeStretch,
+                sharePrice: info.sharePrice,
+                initialSharePrice: config.initialSharePrice,
+                minimumShareReserves: config.minimumShareReserves
+            })
         );
         (uint256 maturityTime, ) = openShort(bob, maxShort);
 
