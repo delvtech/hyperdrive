@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { SafeCast } from "./libraries/SafeCast.sol";
 import { HyperdriveLP } from "./HyperdriveLP.sol";
+import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { AssetId } from "./libraries/AssetId.sol";
-import { Errors } from "./libraries/Errors.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
+import { SafeCast } from "./libraries/SafeCast.sol";
 
 /// @author DELV
 /// @title HyperdriveLong
@@ -35,7 +35,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // Check that the message value and base amount are valid.
         _checkMessageValue();
         if (_baseAmount == 0) {
-            revert Errors.ZeroAmount();
+            revert IHyperdrive.ZeroAmount();
         }
 
         // Deposit the user's base.
@@ -66,11 +66,11 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 _marketState.shareReserves + shareReservesDelta
             ) >= _marketState.bondReserves - bondReservesDelta
         ) {
-            revert Errors.NegativeInterest();
+            revert IHyperdrive.NegativeInterest();
         }
 
         // Enforce min user outputs
-        if (_minOutput > bondProceeds) revert Errors.OutputLimit();
+        if (_minOutput > bondProceeds) revert IHyperdrive.OutputLimit();
 
         // Attribute the governance fee.
         _governanceFeesAccrued += totalGovernanceFee;
@@ -123,7 +123,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         bool _asUnderlying
     ) external returns (uint256) {
         if (_bondAmount == 0) {
-            revert Errors.ZeroAmount();
+            revert IHyperdrive.ZeroAmount();
         }
 
         // Perform a checkpoint at the maturity time. This ensures the long and
@@ -172,7 +172,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         );
 
         // Enforce min user outputs
-        if (_minOutput > baseProceeds) revert Errors.OutputLimit();
+        if (_minOutput > baseProceeds) revert IHyperdrive.OutputLimit();
 
         // Emit a CloseLong event.
         emit CloseLong(
@@ -258,7 +258,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 uint256(_marketState.shareReserves) - _minimumShareReserves
             ) < _marketState.longsOutstanding
         ) {
-            revert Errors.BaseBufferExceedsShareReserves();
+            revert IHyperdrive.BaseBufferExceedsShareReserves();
         }
     }
 

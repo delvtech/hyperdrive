@@ -7,6 +7,68 @@ import { IHyperdriveWrite } from "./IHyperdriveWrite.sol";
 import { IMultiToken } from "./IMultiToken.sol";
 
 interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
+    /// Events ///
+
+    event Initialize(
+        address indexed provider,
+        uint256 lpAmount,
+        uint256 baseAmount,
+        uint256 apr
+    );
+
+    event AddLiquidity(
+        address indexed provider,
+        uint256 lpAmount,
+        uint256 baseAmount
+    );
+
+    event RemoveLiquidity(
+        address indexed provider,
+        uint256 lpAmount,
+        uint256 baseAmount,
+        uint256 withdrawalShareAmount
+    );
+
+    event RedeemWithdrawalShares(
+        address indexed provider,
+        uint256 withdrawalShareAmount,
+        uint256 baseAmount
+    );
+
+    event OpenLong(
+        address indexed trader,
+        uint256 indexed assetId,
+        uint256 maturityTime,
+        uint256 baseAmount,
+        uint256 bondAmount
+    );
+
+    event OpenShort(
+        address indexed trader,
+        uint256 indexed assetId,
+        uint256 maturityTime,
+        uint256 baseAmount,
+        uint256 bondAmount
+    );
+
+    event CloseLong(
+        address indexed trader,
+        uint256 indexed assetId,
+        uint256 maturityTime,
+        uint256 baseAmount,
+        uint256 bondAmount
+    );
+
+    event CloseShort(
+        address indexed trader,
+        uint256 indexed assetId,
+        uint256 maturityTime,
+        uint256 baseAmount,
+        uint256 bondAmount
+    );
+
+    /// Structs ///
+
     struct MarketState {
         /// @dev The pool's share reserves.
         uint128 shareReserves;
@@ -123,4 +185,84 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
         /// @notice The last timestamp we wrote to the buffer
         uint128 lastTimestamp;
     }
+
+    /// IHyperdrive ///
+
+    /// ##################
+    /// ### Hyperdrive ###
+    /// ##################
+    error BaseBufferExceedsShareReserves();
+    error InvalidApr();
+    error InvalidBaseToken();
+    error InvalidCheckpointTime();
+    error InvalidCheckpointDuration();
+    error InvalidInitialSharePrice();
+    error InvalidMaturityTime();
+    error InvalidPositionDuration();
+    error InvalidFeeAmounts();
+    error NegativeInterest();
+    error OutputLimit();
+    error Paused();
+    error PoolAlreadyInitialized();
+    error TransferFailed();
+    error UnexpectedAssetId();
+    error UnexpectedSender();
+    error UnsupportedToken();
+    error ApprovalFailed();
+    error ZeroAmount();
+    error BelowMinimumContribution();
+    error ZeroLpTotalSupply();
+    error NoAssetsToWithdraw();
+    error NotPayable();
+
+    /// ############
+    /// ### TWAP ###
+    /// ############
+    error QueryOutOfRange();
+
+    /// ####################
+    /// ### DataProvider ###
+    /// ####################
+    error ReturnData(bytes data);
+    error CallFailed(bytes4 underlyingError);
+    error UnexpectedSuccess();
+
+    /// ###############
+    /// ### Factory ###
+    /// ###############
+    error Unauthorized();
+    error InvalidContribution();
+    error InvalidToken();
+
+    /// ######################
+    /// ### ERC20Forwarder ###
+    /// ######################
+    error BatchInputLengthMismatch();
+    error ExpiredDeadline();
+    error InvalidSignature();
+    error InvalidERC20Bridge();
+    error RestrictedZeroAddress();
+
+    /// #####################
+    /// ### BondWrapper ###
+    /// #####################
+    error AlreadyClosed();
+    error BondMatured();
+    error BondNotMatured();
+    error InsufficientPrice();
+    error MintPercentTooHigh();
+
+    /// ###############
+    /// ### AssetId ###
+    /// ###############
+    error InvalidTimestamp();
+
+    /// ######################
+    /// ### FixedPointMath ###
+    /// ######################
+    error FixedPointMath_AddOverflow();
+    error FixedPointMath_SubOverflow();
+    error FixedPointMath_InvalidExponent();
+    error FixedPointMath_NegativeOrZeroInput();
+    error FixedPointMath_NegativeInput();
 }

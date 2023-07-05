@@ -11,7 +11,6 @@ import { StethHyperdriveDataProvider } from "contracts/src/instances/StethHyperd
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { ILido } from "contracts/src/interfaces/ILido.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
@@ -217,10 +216,10 @@ contract StethHyperdriveTest is HyperdriveTest {
 
     function test_open_long_failures() external {
         // Too little eth
-        vm.expectRevert(Errors.TransferFailed.selector);
+        vm.expectRevert(IHyperdrive.TransferFailed.selector);
         hyperdrive.openLong{ value: 1e18 - 1 }(1e18, 0, bob, true);
         // Paying eth to the steth flow
-        vm.expectRevert(Errors.NotPayable.selector);
+        vm.expectRevert(IHyperdrive.NotPayable.selector);
         hyperdrive.openLong{ value: 1 }(1e18, 0, bob, false);
     }
 
@@ -265,7 +264,7 @@ contract StethHyperdriveTest is HyperdriveTest {
         // fails since ETH isn't supported as a withdrawal asset.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(Errors.UnsupportedToken.selector);
+        vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
         hyperdrive.closeLong(maturityTime, longAmount, 0, bob, true);
     }
 
@@ -402,7 +401,7 @@ contract StethHyperdriveTest is HyperdriveTest {
         // fails since ETH isn't supported as a withdrawal asset.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(Errors.UnsupportedToken.selector);
+        vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
         hyperdrive.closeShort(maturityTime, shortAmount, 0, bob, true);
     }
 

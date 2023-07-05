@@ -7,7 +7,6 @@ import "forge-std/console2.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { Errors } from "contracts/src/libraries/Errors.sol";
 import { MultiTokenDataProvider } from "contracts/src/token/MultiTokenDataProvider.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { MockBondWrapper } from "contracts/test/MockBondWrapper.sol";
@@ -156,7 +155,9 @@ contract BondWrapper_mint is CombinatorialTest {
             : type(uint256).max / testCase.mintPercent < testCase.amount;
 
         if (bondHasMatured) {
-            __fail_error = abi.encodeWithSelector(Errors.BondMatured.selector);
+            __fail_error = abi.encodeWithSelector(
+                IHyperdrive.BondMatured.selector
+            );
         } else if (notEnoughBonds || mintAmountOverflow) {
             __fail_error = stdError.arithmeticError;
         }

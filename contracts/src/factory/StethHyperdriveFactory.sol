@@ -7,7 +7,6 @@ import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
 import { ILido } from "../interfaces/ILido.sol";
 import { IWETH } from "../interfaces/IWETH.sol";
 import { StethHyperdriveDataProvider } from "../instances/StethHyperdriveDataProvider.sol";
-import { Errors } from "../libraries/Errors.sol";
 
 /// @author DELV
 /// @title StethHyperdriveFactory

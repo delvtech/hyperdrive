@@ -7,7 +7,6 @@ import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
 import { ILido } from "../interfaces/ILido.sol";
 import { IWETH } from "../interfaces/IWETH.sol";
-import { Errors } from "../libraries/Errors.sol";
 
 /// @author DELV
 /// @title StethHyperdriveDeployer
@@ -48,7 +47,7 @@ contract StethHyperdriveDeployer is IHyperdriveDeployer {
     ) external override returns (address) {
         // Ensure that the base token is configured properly.
         if (address(_config.baseToken) != ETH) {
-            revert Errors.InvalidBaseToken();
+            revert IHyperdrive.InvalidBaseToken();
         }
 
         return (

@@ -3,10 +3,9 @@ pragma solidity 0.8.19;
 
 import { IERC4626 } from "../interfaces/IERC4626.sol";
 import { Hyperdrive } from "../Hyperdrive.sol";
-import { FixedPointMath } from "../libraries/FixedPointMath.sol";
-import { Errors } from "../libraries/Errors.sol";
 import { IERC20 } from "../interfaces/IERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @author DELV
@@ -48,16 +47,16 @@ contract ERC4626Hyperdrive is Hyperdrive {
             _config.initialSharePrice !=
             FixedPointMath.ONE_18.divDown(shareEstimate)
         ) {
-            revert Errors.InvalidInitialSharePrice();
+            revert IHyperdrive.InvalidInitialSharePrice();
         }
         if (address(_config.baseToken) != _pool.asset()) {
-            revert Errors.InvalidBaseToken();
+            revert IHyperdrive.InvalidBaseToken();
         }
 
         // Set immutables and prepare for deposits by setting immutables
         pool = _pool;
         if (!_config.baseToken.approve(address(pool), type(uint256).max)) {
-            revert Errors.ApprovalFailed();
+            revert IHyperdrive.ApprovalFailed();
         }
     }
 
@@ -140,12 +139,12 @@ contract ERC4626Hyperdrive is Hyperdrive {
     function sweep(IERC20 token) external {
         // Only governance address can call
         if (msg.sender != _feeCollector && !_pausers[msg.sender])
-            revert Errors.Unauthorized();
+            revert IHyperdrive.Unauthorized();
         // Cannot rug the yield source or base token
         if (
             address(token) == address(pool) ||
             address(token) == address(_baseToken)
-        ) revert Errors.UnsupportedToken();
+        ) revert IHyperdrive.UnsupportedToken();
         // Transfer to the fee collector
         uint256 balance = token.balanceOf(address(this));
         token.safeTransfer(_feeCollector, balance);

@@ -3,12 +3,12 @@ pragma solidity 0.8.19;
 
 import { stdError } from "forge-std/StdError.sol";
 import { VmSafe } from "forge-std/Vm.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
-import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
+import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol";
 import { Lib } from "../../utils/Lib.sol";
 
 contract OpenLongTest is HyperdriveTest {
@@ -33,7 +33,7 @@ contract OpenLongTest is HyperdriveTest {
         // Attempt to purchase bonds with zero base. This should fail.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(Errors.ZeroAmount.selector);
+        vm.expectRevert(IHyperdrive.ZeroAmount.selector);
         hyperdrive.openLong(0, 0, bob, true);
     }
 
@@ -47,7 +47,7 @@ contract OpenLongTest is HyperdriveTest {
         // Attempt to open long. This should fail.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(Errors.NotPayable.selector);
+        vm.expectRevert(IHyperdrive.NotPayable.selector);
         hyperdrive.openLong{ value: 1 }(1, 0, bob, true);
     }
 
@@ -62,7 +62,7 @@ contract OpenLongTest is HyperdriveTest {
         vm.stopPrank();
         pause(true);
         vm.startPrank(bob);
-        vm.expectRevert(Errors.Paused.selector);
+        vm.expectRevert(IHyperdrive.Paused.selector);
         hyperdrive.openLong(0, 0, bob, true);
         vm.stopPrank();
         pause(false);
@@ -86,7 +86,7 @@ contract OpenLongTest is HyperdriveTest {
         uint256 basePaid = hyperdrive.calculateMaxLong() + 0.0001e18;
         baseToken.mint(bob, basePaid);
         baseToken.approve(address(hyperdrive), basePaid);
-        vm.expectRevert(Errors.NegativeInterest.selector);
+        vm.expectRevert(IHyperdrive.NegativeInterest.selector);
         hyperdrive.openLong(basePaid, 0, bob, true);
 
         // Ensure that the max long results in spot price very close to 1 to
@@ -99,9 +99,9 @@ contract OpenLongTest is HyperdriveTest {
     function test_pauser_authorization_fail() external {
         vm.stopPrank();
         vm.startPrank(alice);
-        vm.expectRevert(Errors.Unauthorized.selector);
+        vm.expectRevert(IHyperdrive.Unauthorized.selector);
         hyperdrive.setPauser(alice, true);
-        vm.expectRevert(Errors.Unauthorized.selector);
+        vm.expectRevert(IHyperdrive.Unauthorized.selector);
         hyperdrive.pause(true);
         vm.stopPrank();
     }
@@ -119,7 +119,7 @@ contract OpenLongTest is HyperdriveTest {
         uint256 baseAmount = hyperdrive.getPoolInfo().bondReserves;
         baseToken.mint(baseAmount);
         baseToken.approve(address(hyperdrive), baseAmount);
-        vm.expectRevert(Errors.NegativeInterest.selector);
+        vm.expectRevert(IHyperdrive.NegativeInterest.selector);
         hyperdrive.openLong(baseAmount, 0, bob, true);
     }
 
@@ -193,12 +193,12 @@ contract OpenLongTest is HyperdriveTest {
         baseToken.mint(overlyLargeLonge);
         baseToken.approve(address(hyperdrive), overlyLargeLonge);
 
-        vm.expectRevert(Errors.BaseBufferExceedsShareReserves.selector);
+        vm.expectRevert(IHyperdrive.BaseBufferExceedsShareReserves.selector);
         hyperdrive.openLong(overlyLargeLonge, 0, bob, true);
     }
 
     function testAvoidsDustAttack(uint256 contribution, uint256 apr) public {
-        /* 
+        /*
             - Tests an edge case in updateWeightedAverage where The function output is not bounded by the average and the delta.
             This test ensures that this never occurs by attempting to induce a wild variation in avgPrice, and ensures that they remain relatively consistent.
         */
