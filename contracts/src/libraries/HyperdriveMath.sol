@@ -1,7 +1,7 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { Errors } from "./Errors.sol";
+import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { FixedPointMath } from "./FixedPointMath.sol";
 import { YieldSpaceMath } from "./YieldSpaceMath.sol";
 
@@ -14,27 +14,23 @@ import { YieldSpaceMath } from "./YieldSpaceMath.sol";
 library HyperdriveMath {
     using FixedPointMath for uint256;
 
-    /// @dev Calculates the spot price without slippage of bonds in terms of shares.
+    /// @dev Calculates the spot price without slippage of bonds in terms of base.
     /// @param _shareReserves The pool's share reserves.
     /// @param _bondReserves The pool's bond reserves.
     /// @param _initialSharePrice The initial share price as an 18 fixed-point value.
-    /// @param _normalizedTimeRemaining The normalized amount of time remaining until maturity.
     /// @param _timeStretch The time stretch parameter as an 18 fixed-point value.
-    /// @return spotPrice The spot price of bonds in terms of shares as an 18 fixed-point value.
+    /// @return spotPrice The spot price of bonds in terms of base as an 18 fixed-point value.
     function calculateSpotPrice(
         uint256 _shareReserves,
         uint256 _bondReserves,
         uint256 _initialSharePrice,
-        uint256 _normalizedTimeRemaining,
         uint256 _timeStretch
     ) internal pure returns (uint256 spotPrice) {
-        // (y / (mu * z)) ** -tau
-        // ((mu * z) / y) ** tau
-        uint256 tau = _normalizedTimeRemaining.mulDown(_timeStretch);
-
+        // (y / (mu * z)) ** -ts
+        // ((mu * z) / y) ** ts
         spotPrice = _initialSharePrice
             .mulDivDown(_shareReserves, _bondReserves)
-            .pow(tau);
+            .pow(_timeStretch);
     }
 
     /// @dev Calculates the APR from the pool's reserves.
@@ -60,8 +56,6 @@ library HyperdriveMath {
             _shareReserves,
             _bondReserves,
             _initialSharePrice,
-            // full time remaining of position
-            FixedPointMath.ONE_18,
             _timeStretch
         );
 
@@ -140,9 +134,10 @@ library HyperdriveMath {
     /// @param _normalizedTimeRemaining The normalized time remaining of the
     ///        position.
     /// @param _timeStretch The time stretch parameter.
+    /// @param _openSharePrice The share price at open.
     /// @param _closeSharePrice The share price at close.
     /// @param _sharePrice The share price.
-    /// @param _initialSharePrice The initial share price.
+    /// @param _initialSharePrice The share price when the pool was deployed.
     /// @return shareReservesDelta The shares paid by the reserves in the trade.
     /// @return bondReservesDelta The bonds paid to the reserves in the trade.
     /// @return shareProceeds The shares that the user will receive.
@@ -152,6 +147,7 @@ library HyperdriveMath {
         uint256 _amountIn,
         uint256 _normalizedTimeRemaining,
         uint256 _timeStretch,
+        uint256 _openSharePrice,
         uint256 _closeSharePrice,
         uint256 _sharePrice,
         uint256 _initialSharePrice
@@ -194,10 +190,14 @@ library HyperdriveMath {
         // is adjusted down by the rate of negative interest. We always attribute negative
         // interest to the long since it's difficult or impossible to attribute
         // the negative interest to the short in practice.
-        if (_initialSharePrice > _closeSharePrice) {
+        if (_openSharePrice > _closeSharePrice) {
             shareProceeds = shareProceeds.mulDivDown(
                 _closeSharePrice,
-                _initialSharePrice
+                _openSharePrice
+            );
+            shareReservesDelta = shareReservesDelta.mulDivDown(
+                _closeSharePrice,
+                _openSharePrice
             );
         }
     }
@@ -390,7 +390,6 @@ library HyperdriveMath {
                 _shareReserves + dz,
                 _bondReserves - dy,
                 _initialSharePrice,
-                FixedPointMath.ONE_18,
                 _timeStretch
             );
             if (p >= FixedPointMath.ONE_18) {

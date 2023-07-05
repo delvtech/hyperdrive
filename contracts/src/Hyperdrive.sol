@@ -2,15 +2,14 @@
 pragma solidity 0.8.19;
 
 import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import { SafeCast } from "./libraries/SafeCast.sol";
 import { HyperdriveBase } from "./HyperdriveBase.sol";
 import { HyperdriveLong } from "./HyperdriveLong.sol";
 import { HyperdriveShort } from "./HyperdriveShort.sol";
+import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { AssetId } from "./libraries/AssetId.sol";
-import { Errors } from "./libraries/Errors.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
-import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
+import { SafeCast } from "./libraries/SafeCast.sol";
 
 /// @author DELV
 /// @title Hyperdrive
@@ -56,7 +55,7 @@ abstract contract Hyperdrive is
             _checkpointTime % _checkpointDuration != 0 ||
             latestCheckpoint < _checkpointTime
         ) {
-            revert Errors.InvalidCheckpointTime();
+            revert IHyperdrive.InvalidCheckpointTime();
         }
 
         // If the checkpoint time is the latest checkpoint, we use the current

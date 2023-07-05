@@ -3,7 +3,6 @@ pragma solidity 0.8.19;
 
 import { IERC20 } from "./interfaces/IERC20.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
-import { Errors } from "./libraries/Errors.sol";
 import { MultiTokenStorage } from "./token/MultiTokenStorage.sol";
 
 /// @author DELV
@@ -52,11 +51,12 @@ abstract contract HyperdriveStorage is MultiTokenStorage {
     ///         allows us to avoid poking in any period that has LP or trading
     ///         activity. The checkpoints contain the starting share price from
     ///         the checkpoint as well as aggregate volume values.
-    mapping(uint256 => IHyperdrive.Checkpoint) internal _checkpoints;
+    mapping(uint256 checkpointNumber => IHyperdrive.Checkpoint checkpoint)
+        internal _checkpoints;
 
     /// @notice Addresses approved in this mapping can pause all deposits into
     ///         the contract and other non essential functionality.
-    mapping(address => bool) internal _pausers;
+    mapping(address user => bool isPauser) internal _pausers;
 
     // Governance fees that haven't been collected yet denominated in shares.
     uint256 internal _governanceFeesAccrued;
@@ -95,14 +95,14 @@ abstract contract HyperdriveStorage is MultiTokenStorage {
         // Initialize the time configurations. There must be at least one
         // checkpoint per term to avoid having a position duration of zero.
         if (_config.checkpointDuration == 0) {
-            revert Errors.InvalidCheckpointDuration();
+            revert IHyperdrive.InvalidCheckpointDuration();
         }
         _checkpointDuration = _config.checkpointDuration;
         if (
             _config.positionDuration < _config.checkpointDuration ||
             _config.positionDuration % _config.checkpointDuration != 0
         ) {
-            revert Errors.InvalidPositionDuration();
+            revert IHyperdrive.InvalidPositionDuration();
         }
         _positionDuration = _config.positionDuration;
         _timeStretch = _config.timeStretch;
@@ -115,7 +115,7 @@ abstract contract HyperdriveStorage is MultiTokenStorage {
             _config.fees.flat > 1e18 ||
             _config.fees.governance > 1e18
         ) {
-            revert Errors.InvalidFeeAmounts();
+            revert IHyperdrive.InvalidFeeAmounts();
         }
         _curveFee = _config.fees.curve;
         _flatFee = _config.fees.flat;

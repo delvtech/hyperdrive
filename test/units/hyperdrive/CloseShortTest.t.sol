@@ -3,12 +3,12 @@ pragma solidity 0.8.19;
 
 import { VmSafe } from "forge-std/Vm.sol";
 import { stdError } from "forge-std/StdError.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
-import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
+import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol";
 import { Lib } from "../../utils/Lib.sol";
 
 contract CloseShortTest is HyperdriveTest {
@@ -37,7 +37,7 @@ contract CloseShortTest is HyperdriveTest {
         // Attempt to close zero shorts. This should fail.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(Errors.ZeroAmount.selector);
+        vm.expectRevert(IHyperdrive.ZeroAmount.selector);
         hyperdrive.closeShort(maturityTime, 0, 0, bob, true);
     }
 
@@ -73,7 +73,7 @@ contract CloseShortTest is HyperdriveTest {
         // Attempt to use a timestamp greater than the maximum range.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(Errors.InvalidTimestamp.selector);
+        vm.expectRevert(IHyperdrive.InvalidTimestamp.selector);
         hyperdrive.closeShort(uint256(type(uint248).max) + 1, 1, 0, bob, true);
     }
 
@@ -114,7 +114,7 @@ contract CloseShortTest is HyperdriveTest {
             0.00001e18,
             initialShortAmount
         );
-        vm.expectRevert(Errors.NegativeInterest.selector);
+        vm.expectRevert(IHyperdrive.NegativeInterest.selector);
         hyperdrive.closeShort(maturityTime, finalShortAmount, 0, bob, true);
     }
 

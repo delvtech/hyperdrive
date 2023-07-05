@@ -2,8 +2,8 @@
 pragma solidity 0.8.19;
 
 import { VmSafe } from "forge-std/Vm.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol";
@@ -30,8 +30,22 @@ contract AddLiquidityTest is HyperdriveTest {
         // Attempt to add zero base as liquidity. This should fail.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(Errors.ZeroAmount.selector);
+        vm.expectRevert(IHyperdrive.ZeroAmount.selector);
         hyperdrive.addLiquidity(0, 0, type(uint256).max, bob, true);
+    }
+
+    function test_add_liquidity_failure_not_payable() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Attempt to add zero base as liquidity. This should fail.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        vm.expectRevert(IHyperdrive.NotPayable.selector);
+        hyperdrive.addLiquidity{ value: 1 }(0, 0, type(uint256).max, bob, true);
     }
 
     function test_add_liquidity_failure_pause() external {
@@ -45,7 +59,7 @@ contract AddLiquidityTest is HyperdriveTest {
         vm.stopPrank();
         pause(true);
         vm.startPrank(bob);
-        vm.expectRevert(Errors.Paused.selector);
+        vm.expectRevert(IHyperdrive.Paused.selector);
         hyperdrive.addLiquidity(0, 0, type(uint256).max, bob, true);
         vm.stopPrank();
         pause(false);
@@ -61,13 +75,13 @@ contract AddLiquidityTest is HyperdriveTest {
         // Attempt to add liquidity with a minimum APR that is too high.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(Errors.InvalidApr.selector);
+        vm.expectRevert(IHyperdrive.InvalidApr.selector);
         hyperdrive.addLiquidity(10e18, 0.06e18, type(uint256).max, bob, true);
 
         // Attempt to add liquidity with a maximum APR that is too low.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(Errors.InvalidApr.selector);
+        vm.expectRevert(IHyperdrive.InvalidApr.selector);
         hyperdrive.addLiquidity(10e18, 0, 0.04e18, bob, true);
     }
 

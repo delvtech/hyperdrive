@@ -3,7 +3,6 @@ pragma solidity 0.8.19;
 
 import { ERC20PresetFixedSupply } from "openzeppelin-contracts/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/HyperdriveMath.sol";
@@ -27,7 +26,6 @@ contract HyperdriveMathTest is HyperdriveTest {
                 1 ether, // shareReserves
                 1 ether, // bondReserves
                 1 ether, // initialSharePrice
-                1 ether, // timeRemaining
                 1 ether // timeStretch
             ),
             1 ether // 1.0 spot price
@@ -38,7 +36,6 @@ contract HyperdriveMathTest is HyperdriveTest {
                 1.1 ether, // shareReserves
                 1 ether, // bondReserves
                 1 ether, // initialSharePrice
-                1 ether, // timeRemaining
                 1 ether // timeStretch
             ),
             1.1 ether, // 1.1 spot price
@@ -265,6 +262,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                 timeStretch,
                 1 ether,
                 1 ether,
+                1 ether,
                 1 ether
             );
         // verify that the poolBondDelta equals the amountIn/2
@@ -309,6 +307,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                 timeStretch,
                 1 ether,
                 1 ether,
+                1 ether,
                 1 ether
             );
         // verify that the curve part is zero
@@ -345,6 +344,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                 amountIn,
                 normalizedTimeRemaining,
                 timeStretch,
+                1 ether,
                 0.8 ether,
                 0.8 ether,
                 1 ether
@@ -369,6 +369,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                 amountIn,
                 normalizedTimeRemaining,
                 timeStretch,
+                1 ether,
                 0.8 ether,
                 1.2 ether,
                 1 ether

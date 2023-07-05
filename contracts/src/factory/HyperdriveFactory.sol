@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import { HyperdriveDataProvider } from "../HyperdriveDataProvider.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
-import { HyperdriveDataProvider } from "../HyperdriveDataProvider.sol";
-import { Errors } from "../libraries/Errors.sol";
 
 /// @author DELV
 /// @title HyperdriveFactory
@@ -20,7 +19,7 @@ abstract contract HyperdriveFactory {
     address public governance;
     // A mapping of all previously deployed hyperdrive instances of all versions
     // 0 is un-deployed then increments for increasing versions
-    mapping(address => uint256) public isOfficial;
+    mapping(address instance => uint256 version) public isOfficial;
     uint256 public versionCounter;
 
     // The address which should control hyperdrive instances
@@ -86,44 +85,66 @@ abstract contract HyperdriveFactory {
 
     modifier onlyGovernance() {
         // Only governance can call this
-        if (msg.sender != governance) revert Errors.Unauthorized();
+        if (msg.sender != governance) revert IHyperdrive.Unauthorized();
         _;
     }
+
+    event ImplementationUpdated(address indexed newDeployer);
 
     /// @notice Allows governance to update the deployer contract.
     /// @param newDeployer The new deployment contract.
     function updateImplementation(
         IHyperdriveDeployer newDeployer
     ) external onlyGovernance {
+        require(address(newDeployer) != address(0));
         // Update version and increment the counter
         hyperdriveDeployer = newDeployer;
         versionCounter++;
+
+        emit ImplementationUpdated(address(newDeployer));
     }
+
+    event GovernanceUpdated(address indexed newGovernance);
 
     /// @notice Allows governance to change the governance address
     /// @param newGovernance The new governor address
     function updateGovernance(address newGovernance) external onlyGovernance {
+        require(newGovernance != address(0));
         // Update governance
         governance = newGovernance;
+
+        emit GovernanceUpdated(newGovernance);
     }
+
+    event HyperdriveGovernanceUpdated(address indexed newGovernance);
 
     /// @notice Allows governance to change the hyperdrive governance address
     /// @param newGovernance The new governor address
     function updateHyperdriveGovernance(
         address newGovernance
     ) external onlyGovernance {
+        require(newGovernance != address(0));
         // Update hyperdrive governance
         hyperdriveGovernance = newGovernance;
+
+        emit HyperdriveGovernanceUpdated(newGovernance);
     }
+
+    event LinkerFactoryUpdated(address indexed newLinkerFactory);
 
     /// @notice Allows governance to change the linker factory.
     /// @param newLinkerFactory The new linker code hash.
     function updateLinkerFactory(
         address newLinkerFactory
     ) external onlyGovernance {
+        require(newLinkerFactory != address(0));
         // Update the linker factory
         linkerFactory = newLinkerFactory;
+
+        emit LinkerFactoryUpdated(newLinkerFactory);
     }
+
+    event LinkerCodeHashUpdated(bytes32 indexed newCodeHash);
 
     /// @notice Allows governance to change the linker code hash. This allows
     ///         governance to update the implementation of the ERC20Forwarder.
@@ -133,15 +154,22 @@ abstract contract HyperdriveFactory {
     ) external onlyGovernance {
         // Update the linker code hash
         linkerCodeHash = newLinkerCodeHash;
+
+        emit LinkerCodeHashUpdated(newLinkerCodeHash);
     }
+
+    event FeeCollectorUpdated(address indexed newFeeCollector);
 
     /// @notice Allows governance to change the fee collector address
     /// @param newFeeCollector The new governor address
     function updateFeeCollector(
         address newFeeCollector
     ) external onlyGovernance {
+        require(newFeeCollector != address(0));
         // Update fee collector
         feeCollector = newFeeCollector;
+
+        emit FeeCollectorUpdated(newFeeCollector);
     }
 
     /// @notice Allows governance to change the fee schedule for the newly deployed factories
@@ -158,6 +186,7 @@ abstract contract HyperdriveFactory {
     function updateDefaultPausers(
         address[] calldata newDefaults
     ) external onlyGovernance {
+        require(newDefaults.length != 0);
         // Update the default pausers
         defaultPausers = newDefaults;
     }
@@ -175,7 +204,9 @@ abstract contract HyperdriveFactory {
         uint256 _apr
     ) public payable virtual returns (IHyperdrive) {
         // No invalid deployments
-        if (_contribution == 0) revert Errors.InvalidContribution();
+        if (_contribution < 2e5) revert IHyperdrive.InvalidContribution();
+        // Set aside some of the contribution for address(0) donation
+        _contribution -= 1e5;
         // Overwrite the governance and fees field of the config.
         _config.feeCollector = feeCollector;
         _config.governance = address(this);
@@ -205,19 +236,40 @@ abstract contract HyperdriveFactory {
             _config.baseToken.transferFrom(
                 msg.sender,
                 address(this),
-                _contribution
+                _contribution + 1e5
             );
-            _config.baseToken.approve(address(hyperdrive), type(uint256).max);
+            if (
+                !_config.baseToken.approve(
+                    address(hyperdrive),
+                    type(uint256).max
+                )
+            ) {
+                revert IHyperdrive.ApprovalFailed();
+            }
             hyperdrive.initialize(_contribution, _apr, msg.sender, true);
+            hyperdrive.addLiquidity(
+                1e5,
+                0,
+                type(uint256).max,
+                address(0),
+                true
+            );
         } else {
             // Require the caller sent value
-            if (msg.value != _contribution) {
-                revert Errors.TransferFailed();
+            if (msg.value != _contribution + 1e5) {
+                revert IHyperdrive.TransferFailed();
             }
             hyperdrive.initialize{ value: _contribution }(
                 _contribution,
                 _apr,
                 msg.sender,
+                true
+            );
+            hyperdrive.addLiquidity{ value: 1e5 }(
+                1e5,
+                0,
+                type(uint256).max,
+                address(0),
                 true
             );
         }

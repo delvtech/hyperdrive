@@ -6,7 +6,6 @@ import { IERC20 } from "../interfaces/IERC20.sol";
 import { AaveHyperdrive } from "../instances/AaveHyperdrive.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
-import { Errors } from "../libraries/Errors.sol";
 
 /// @author DELV
 /// @title AaveHyperdriveDeployer
@@ -32,6 +31,7 @@ contract AaveHyperdriveDeployer is IHyperdriveDeployer {
     /// @param _linkerFactory The address of the factory which is used to deploy
     ///        the ERC20 linker contracts.
     /// @param _extraData This extra data contains the address of the aToken.
+    /// @return The address of the newly deployed AaveHyperdrive Instance
     function deploy(
         IHyperdrive.PoolConfig memory _config,
         address _dataProvider,

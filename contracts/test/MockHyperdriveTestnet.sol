@@ -7,7 +7,6 @@ import { HyperdriveDataProvider } from "../src/HyperdriveDataProvider.sol";
 import { IERC20 } from "../src/interfaces/IERC20.sol";
 import { IHyperdrive } from "../src/interfaces/IHyperdrive.sol";
 import { FixedPointMath } from "../src/libraries/FixedPointMath.sol";
-import { Errors } from "../src/libraries/Errors.sol";
 import { MultiTokenDataProvider } from "../src/token/MultiTokenDataProvider.sol";
 import { ERC20Mintable } from "./ERC20Mintable.sol";
 
@@ -71,7 +70,7 @@ contract MockHyperdriveTestnet is Hyperdrive {
             _amount
         );
         if (!success) {
-            revert Errors.TransferFailed();
+            revert IHyperdrive.TransferFailed();
         }
 
         // Update the total shares calculation.
@@ -101,7 +100,7 @@ contract MockHyperdriveTestnet is Hyperdrive {
         amountWithdrawn = _shares.mulDown(sharePrice);
         bool success = _baseToken.transfer(_destination, amountWithdrawn);
         if (!success) {
-            revert Errors.TransferFailed();
+            revert IHyperdrive.TransferFailed();
         }
 
         return amountWithdrawn;

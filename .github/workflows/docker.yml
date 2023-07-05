@@ -10,7 +10,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/migrations
+  IMAGE_NAME: ${{ github.repository }}/devnet
 
 jobs:
   push-image:

@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { SafeCast } from "./libraries/SafeCast.sol";
 import { HyperdriveBase } from "./HyperdriveBase.sol";
+import { HyperdriveTWAP } from "./HyperdriveTWAP.sol";
+import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { AssetId } from "./libraries/AssetId.sol";
-import { Errors } from "./libraries/Errors.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
-import { HyperdriveTWAP } from "./HyperdriveTWAP.sol";
+import { SafeCast } from "./libraries/SafeCast.sol";
 
 /// @author DELV
 /// @title HyperdriveLP
@@ -34,13 +34,13 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
     ) external payable {
         // Check that the message value and base amount are valid.
         _checkMessageValue();
-        if (_contribution == 0) {
-            revert Errors.ZeroAmount();
+        if (_contribution < 1e5) {
+            revert IHyperdrive.BelowMinimumContribution();
         }
 
         // Ensure that the pool hasn't been initialized yet.
         if (_marketState.isInitialized) {
-            revert Errors.PoolAlreadyInitialized();
+            revert IHyperdrive.PoolAlreadyInitialized();
         }
 
         // Deposit for the user, this transfers from them.
@@ -94,7 +94,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // Check that the message value and base amount are valid.
         _checkMessageValue();
         if (_contribution == 0) {
-            revert Errors.ZeroAmount();
+            revert IHyperdrive.ZeroAmount();
         }
 
         // Enforce the slippage guard.
@@ -105,7 +105,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             _positionDuration,
             _timeStretch
         );
-        if (apr < _minApr || apr > _maxApr) revert Errors.InvalidApr();
+        if (apr < _minApr || apr > _maxApr) revert IHyperdrive.InvalidApr();
 
         // Deposit for the user, this call also transfers from them
         (uint256 shares, uint256 sharePrice) = _deposit(
@@ -219,7 +219,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         bool _asUnderlying
     ) external returns (uint256, uint256) {
         if (_shares == 0) {
-            revert Errors.ZeroAmount();
+            revert IHyperdrive.ZeroAmount();
         }
 
         // Perform a checkpoint.
@@ -262,7 +262,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         );
 
         // Enforce min user outputs
-        if (_minOutput > baseProceeds) revert Errors.OutputLimit();
+        if (_minOutput > baseProceeds) revert IHyperdrive.OutputLimit();
 
         // Emit a RemoveLiquidity event.
         uint256 shares = _shares;
@@ -329,7 +329,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
 
         // Enforce the minimum user output per share.
         if (_minOutputPerShare.mulDown(_shares) > proceeds)
-            revert Errors.OutputLimit();
+            revert IHyperdrive.OutputLimit();
 
         // Emit a RedeemWithdrawalShares event.
         emit RedeemWithdrawalShares(_destination, _shares, proceeds);
@@ -445,7 +445,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
                 _withdrawalSharesOutstanding,
                 _sharePrice
             );
-            withdrawalShares = 0;
+            delete withdrawalShares;
         }
 
         return (shareProceeds, uint256(withdrawalShares));

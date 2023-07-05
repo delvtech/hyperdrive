@@ -77,6 +77,24 @@ contract HyperdriveTest is BaseTest {
         uint256 flatFee,
         uint256 governanceFee
     ) internal {
+        deploy(
+            deployer,
+            apr,
+            INITIAL_SHARE_PRICE,
+            curveFee,
+            flatFee,
+            governanceFee
+        );
+    }
+
+    function deploy(
+        address deployer,
+        uint256 apr,
+        uint256 initialSharePrice,
+        uint256 curveFee,
+        uint256 flatFee,
+        uint256 governanceFee
+    ) internal {
         vm.stopPrank();
         vm.startPrank(deployer);
         IHyperdrive.Fees memory fees = IHyperdrive.Fees({
@@ -86,7 +104,7 @@ contract HyperdriveTest is BaseTest {
         });
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: IERC20(address(baseToken)),
-            initialSharePrice: INITIAL_SHARE_PRICE,
+            initialSharePrice: initialSharePrice,
             positionDuration: POSITION_DURATION,
             checkpointDuration: CHECKPOINT_DURATION,
             timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
@@ -262,7 +280,6 @@ contract HyperdriveTest is BaseTest {
     ) internal returns (uint256 maturityTime, uint256 baseAmount) {
         vm.stopPrank();
         vm.startPrank(trader);
-
         // Open the short
         maturityTime = HyperdriveUtils.maturityTimeFromLatestCheckpoint(
             hyperdrive
@@ -321,6 +338,61 @@ contract HyperdriveTest is BaseTest {
         uint256 bondAmount
     ) internal returns (uint256 baseAmount) {
         return closeShort(trader, maturityTime, bondAmount, true);
+    }
+
+    function estimateLongProceeds(
+        uint256 bondAmount,
+        uint256 normalizedTimeRemaining,
+        uint256 openSharePrice,
+        uint256 closeSharePrice
+    ) internal view returns (uint256) {
+        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
+        IHyperdrive.PoolConfig memory poolConfig = hyperdrive.getPoolConfig();
+        (, , uint256 shareProceeds) = HyperdriveMath.calculateCloseLong(
+            poolInfo.shareReserves,
+            poolInfo.bondReserves,
+            bondAmount,
+            normalizedTimeRemaining,
+            poolConfig.timeStretch,
+            openSharePrice,
+            closeSharePrice,
+            poolInfo.sharePrice,
+            poolConfig.initialSharePrice
+        );
+        return shareProceeds.mulDivDown(poolInfo.sharePrice, 1e18);
+    }
+
+    function estimateShortProceeds(
+        uint256 shortAmount,
+        int256 variableRate,
+        uint256 normalizedTimeRemaining,
+        uint256 timeElapsed
+    ) internal view returns (uint256) {
+        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
+        IHyperdrive.PoolConfig memory poolConfig = hyperdrive.getPoolConfig();
+
+        (, , uint256 expectedSharePayment) = HyperdriveMath.calculateCloseShort(
+            poolInfo.shareReserves,
+            poolInfo.bondReserves,
+            shortAmount,
+            normalizedTimeRemaining,
+            poolConfig.timeStretch,
+            poolInfo.sharePrice,
+            poolConfig.initialSharePrice
+        );
+        (, int256 expectedInterest) = HyperdriveUtils.calculateCompoundInterest(
+            shortAmount,
+            variableRate,
+            timeElapsed
+        );
+        int256 delta = int256(
+            shortAmount - poolInfo.sharePrice.mulDown(expectedSharePayment)
+        );
+        if (delta + expectedInterest > 0) {
+            return uint256(delta + expectedInterest);
+        } else {
+            return 0;
+        }
     }
 
     /// Utils ///
@@ -476,7 +548,11 @@ contract HyperdriveTest is BaseTest {
                 uint256 eventBaseAmount,
                 uint256 eventApr
             ) = abi.decode(log.data, (uint256, uint256, uint256));
-            assertEq(eventLpAmount, hyperdrive.getPoolInfo().shareReserves);
+            assertApproxEqAbs(
+                eventLpAmount + 1e5,
+                hyperdrive.getPoolInfo().shareReserves,
+                12500
+            );
             assertEq(eventBaseAmount, contribution);
             assertEq(eventApr, apr);
         }

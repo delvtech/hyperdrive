@@ -8,7 +8,6 @@ import { AaveHyperdriveFactory } from "contracts/src/factory/AaveHyperdriveFacto
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
@@ -147,7 +146,7 @@ contract AaveHyperdriveTest is HyperdriveTest {
         assertEq(amountWithdrawn, 3e18);
 
         // Check the zero withdraw revert
-        vm.expectRevert(Errors.NoAssetsToWithdraw.selector);
+        vm.expectRevert(IHyperdrive.NoAssetsToWithdraw.selector);
         mockHyperdrive.withdraw(0, alice, false);
     }
 
@@ -196,15 +195,21 @@ contract AaveHyperdriveTest is HyperdriveTest {
             alice
         );
         // lp shares should equal number of share reserves initialized with
-        assertEq(createdShares, 2500e18);
+        assertEq(createdShares, 2500e18 - 1e5);
 
         bytes32[] memory aDaiEncoding = new bytes32[](1);
         aDaiEncoding[0] = bytes32(uint256(uint160(address(aDAI))));
         // Verify that the correct events were emitted.
-        verifyFactoryEvents(factory, alice, contribution, apr, aDaiEncoding);
+        verifyFactoryEvents(
+            factory,
+            alice,
+            contribution - 1e5,
+            apr,
+            aDaiEncoding
+        );
 
         // Test the revert condition for eth payment
-        vm.expectRevert(Errors.NotPayable.selector);
+        vm.expectRevert(IHyperdrive.NotPayable.selector);
         hyperdrive = factory.deployAndInitialize{ value: 100 }(
             config,
             new bytes32[](0),
@@ -213,7 +218,7 @@ contract AaveHyperdriveTest is HyperdriveTest {
         );
 
         config.baseToken = IERC20(address(0));
-        vm.expectRevert(Errors.InvalidToken.selector);
+        vm.expectRevert(IHyperdrive.InvalidToken.selector);
         hyperdrive = factory.deployAndInitialize(
             config,
             new bytes32[](0),

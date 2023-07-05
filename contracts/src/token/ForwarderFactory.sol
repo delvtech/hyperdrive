@@ -46,7 +46,7 @@ contract ForwarderFactory is IForwarderFactory {
         // Deploy using create2 with that salt
         ERC20Forwarder deployed = new ERC20Forwarder{ salt: salt }();
         // As a consistency check we check that this is in the right address
-        assert(address(deployed) == getForwarder(token, tokenId));
+        require(address(deployed) == getForwarder(token, tokenId));
         // Reset the transient state
         _token = IMultiToken(address(1));
         _tokenId = 1;

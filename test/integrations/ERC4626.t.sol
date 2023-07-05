@@ -8,7 +8,6 @@ import { ERC4626HyperdriveFactory } from "contracts/src/factory/ERC4626Hyperdriv
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
@@ -183,13 +182,13 @@ contract HyperdriveER4626Test is HyperdriveTest {
             alice
         );
         // lp shares should equal number of share reserves initialized with
-        assertEq(createdShares, 2500e18);
+        assertEq(createdShares, 2500e18 - 1e5);
 
         // Verify that the correct events were emitted.
         verifyFactoryEvents(
             factory,
             alice,
-            contribution,
+            contribution - 1e5,
             apr,
             new bytes32[](0)
         );
@@ -205,16 +204,16 @@ contract HyperdriveER4626Test is HyperdriveTest {
         mockHyperdrive.sweep(IERC20(address(otherToken)));
         assertEq(otherToken.balanceOf(bob), 1e18);
 
-        vm.expectRevert(Errors.UnsupportedToken.selector);
+        vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
         mockHyperdrive.sweep(dai);
 
-        vm.expectRevert(Errors.UnsupportedToken.selector);
+        vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
         mockHyperdrive.sweep(IERC20(address(pool)));
 
         vm.stopPrank();
         vm.startPrank(alice);
 
-        vm.expectRevert(Errors.Unauthorized.selector);
+        vm.expectRevert(IHyperdrive.Unauthorized.selector);
         mockHyperdrive.sweep(IERC20(address(pool)));
 
         // We set alice to be the pauser so she can call the function now
