@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { Errors } from "contracts/src/libraries/Errors.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
-import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
+import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol";
 
 contract ExtremeInputs is HyperdriveTest {
     using FixedPointMath for uint256;
@@ -110,7 +110,7 @@ contract ExtremeInputs is HyperdriveTest {
         uint256 shortAmount = hyperdrive.calculateMaxShort();
         baseToken.mint(shortAmount);
         baseToken.approve(address(hyperdrive), shortAmount);
-        vm.expectRevert(Errors.BelowMinimumShareReserves.selector);
+        vm.expectRevert(IHyperdrive.BelowMinimumShareReserves.selector);
         hyperdrive.openShort(shortAmount, type(uint256).max, bob, true);
     }
 }

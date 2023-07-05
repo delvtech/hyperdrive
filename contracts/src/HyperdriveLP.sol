@@ -48,7 +48,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             _asUnderlying
         );
         if (shares < _minimumShareReserves) {
-            revert Errors.BelowMinimumContribution();
+            revert IHyperdrive.BelowMinimumShareReserves();
         }
 
         // Create an initial checkpoint.

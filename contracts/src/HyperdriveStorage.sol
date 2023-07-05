@@ -102,7 +102,7 @@ abstract contract HyperdriveStorage is MultiTokenStorage {
         // 1e6 to ensure that the share reserves can't be brought to zero by
         // opening a short.
         if (_config.minimumShareReserves < 1e6) {
-            revert Errors.InvalidMinimumShareReserves();
+            revert IHyperdrive.InvalidMinimumShareReserves();
         }
         _minimumShareReserves = _config.minimumShareReserves;
 

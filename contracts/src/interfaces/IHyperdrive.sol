@@ -198,6 +198,7 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
     error InvalidCheckpointDuration();
     error InvalidInitialSharePrice();
     error InvalidMaturityTime();
+    error InvalidMinimumShareReserves();
     error InvalidPositionDuration();
     error InvalidFeeAmounts();
     error NegativeInterest();
@@ -210,7 +211,7 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
     error UnsupportedToken();
     error ApprovalFailed();
     error ZeroAmount();
-    error BelowMinimumContribution();
+    error BelowMinimumShareReserves();
     error ZeroLpTotalSupply();
     error NoAssetsToWithdraw();
     error NotPayable();
