@@ -203,19 +203,18 @@ contract OpenLongTest is HyperdriveTest {
             This test ensures that this never occurs by attempting to induce a wild variation in avgPrice, and ensures that they remain relatively consistent.
         */
         // Apr between 0.5e18 and 0.25e18
-        // Contribution between 100e6 to 500 million e6
-        // openLong value should be 1/5 of contribution, nornmalize range subrange
         apr = apr.normalizeToRange(0.05e18, 0.25e18);
-        contribution = contribution.normalizeToRange(
-            100_000_000e18,
-            500_000_000e18
-        );
-
         // Initialize the pool with a large amount of capital.
         contribution = contribution.normalizeToRange(
             100_000_000e6,
             500_000_000e6
         );
+
+        // Deploy the pool with a minimum share reserves that is significantly
+        // smaller than the contribution.
+        IHyperdrive.PoolConfig memory config = testConfig(apr);
+        config.minimumShareReserves = 1e6;
+        deploy(deployer, config);
 
         initialize(alice, apr, contribution);
 

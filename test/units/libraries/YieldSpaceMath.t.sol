@@ -130,14 +130,13 @@ contract YieldSpaceMathTest is Test {
         uint256 shareReserves,
         uint256 sharePrice,
         uint256 initialSharePrice,
-        uint256 minimumShareReserves,
         uint256 tradeSize
     ) external {
         MockYieldSpaceMath yieldSpaceMath = new MockYieldSpaceMath();
 
+        uint256 minimumShareReserves = 1e5;
         fixedRate = fixedRate.normalizeToRange(0.01e18, 1e18);
         initialSharePrice = initialSharePrice.normalizeToRange(0.8e18, 5e18);
-        minimumShareReserves = minimumShareReserves.normalizeToRange(1e5, 1e18);
         sharePrice = sharePrice.normalizeToRange(initialSharePrice, 5e18);
 
         // Test a large span of orders of magnitudes of both the reserves and

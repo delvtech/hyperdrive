@@ -67,14 +67,14 @@ contract ExtremeInputs is HyperdriveTest {
         openShort(bob, bondAmount);
         uint256 aprAfter = hyperdrive.calculateAPRFromReserves();
 
-        // Ensure the share reserves are approximately empty and that the apr
-        // increased.
+        // Ensure the share reserves are approximately equal to the minimum
+        // share reserves and that the apr increased.
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
         assertApproxEqAbs(
             poolInfoAfter.shareReserves,
-            0,
+            hyperdrive.getPoolConfig().minimumShareReserves,
             1e10,
-            "shareReserves should be approximately empty"
+            "shareReserves should be the minimum share reserves"
         );
         assertGt(aprAfter, aprBefore);
 
@@ -98,19 +98,36 @@ contract ExtremeInputs is HyperdriveTest {
 
     // This test verifies that the share reserves can't be brought to zero.
     function test_short_to_empty_share_reserves() external {
-        // Alice initializes the pool.
-        initialize(alice, 0.02e18, 500_000_000e6);
+        uint256 fixedRate = 0.02e18;
 
-        // FIXME: We should be able to configure `calculateMaxShort` so that
-        // this test will still work after we change the behavior in Hyperdrive.
-        //
+        // Deploy the pool with a small minimum share reserves.
+        IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
+        config.minimumShareReserves = 1e6;
+        deploy(deployer, config);
+
+        // Alice initializes the pool.
+        uint256 contribution = 500_000_000e6;
+        initialize(alice, fixedRate, contribution);
+
         // Bob attempts to short exactly the maximum amount of bonds needed for
         // the share reserves to be equal to zero. This should fail because the
         // share reserves fall below the minimum share reserves.
-        uint256 shortAmount = hyperdrive.calculateMaxShort();
+        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
+        IHyperdrive.PoolConfig memory poolConfig = hyperdrive.getPoolConfig();
+        uint256 shortAmount = HyperdriveMath.calculateMaxShort(
+            HyperdriveMath.MaxTradeParams({
+                shareReserves: poolInfo.shareReserves,
+                bondReserves: poolInfo.bondReserves,
+                longsOutstanding: poolInfo.longsOutstanding,
+                timeStretch: poolConfig.timeStretch,
+                sharePrice: poolInfo.sharePrice,
+                initialSharePrice: poolConfig.initialSharePrice,
+                minimumShareReserves: 0 // Set the minimum share reserves to zero
+            })
+        );
         baseToken.mint(shortAmount);
         baseToken.approve(address(hyperdrive), shortAmount);
-        vm.expectRevert(IHyperdrive.BelowMinimumShareReserves.selector);
+        vm.expectRevert(IHyperdrive.BaseBufferExceedsShareReserves.selector);
         hyperdrive.openShort(shortAmount, type(uint256).max, bob, true);
     }
 }
