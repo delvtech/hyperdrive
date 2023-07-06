@@ -10,6 +10,16 @@ contract LPFairnessTest is HyperdriveTest {
     using FixedPointMath for uint256;
     using Lib for *;
 
+    function setUp() public override {
+        super.setUp();
+
+        // Deploy Hyperdrive with a small minimum share reserves so that it is
+        // negligible relative to our error tolerances.
+        IHyperdrive.PoolConfig memory config = testConfig(0.05e18);
+        config.minimumShareReserves = 1e6;
+        deploy(deployer, config);
+    }
+
     function test_lp_fairness_short_lp(
         uint256 variableRateParam,
         uint256 tradeSizeParam
