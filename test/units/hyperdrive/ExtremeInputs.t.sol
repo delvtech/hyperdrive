@@ -139,4 +139,383 @@ contract ExtremeInputs is HyperdriveTest {
         vm.expectRevert(IHyperdrive.BaseBufferExceedsShareReserves.selector);
         hyperdrive.openShort(shortAmount, type(uint256).max, bob, true);
     }
+
+    // This test stresses the edge cases of the `_updateLiquidity` function
+    // with sane values that are expected to be used for the most important
+    // Hyperdrive integrations.
+    function test__updateLiquidity__extremeValues() external {
+        uint256 fixedRate = 0.02e18;
+
+        // Test some concrete values with the max long scenario.
+        _updateLiquidity__scenario__maxLong(
+            1e6,
+            fixedRate,
+            10_000_000_000e6,
+            5_000_000_000e6,
+            5_000_000_000e6,
+            1e12
+        );
+        _updateLiquidity__scenario__maxLong(
+            1e15,
+            fixedRate,
+            200_000_000e18,
+            100_000_000e18,
+            100_000_000e18,
+            1
+        );
+        _updateLiquidity__scenario__maxLong(
+            1e18,
+            fixedRate,
+            10_000_000_000e18,
+            5_000_000_000e18,
+            50_000_000e18,
+            1
+        );
+
+        // Test some concrete values with the max short scenario.
+        _updateLiquidity__scenario__maxShort(
+            1e6,
+            fixedRate,
+            10_000_000_000e6,
+            5_000_000_000e6,
+            5_000_000_000e6,
+            1e12
+        );
+        _updateLiquidity__scenario__maxShort(
+            1e15,
+            fixedRate,
+            200_000_000e18,
+            100_000_000e18,
+            100_000_000e18,
+            1
+        );
+        _updateLiquidity__scenario__maxShort(
+            1e18,
+            fixedRate,
+            10_000_000_000e18,
+            5_000_000_000e18,
+            50_000_000e18,
+            1
+        );
+    }
+
+    // TODO: The `calculateMaxLong` function isn't reliable enough to fuzz over
+    // the fixed rate in this test. Once we've updated the `calculateMaxLong`
+    // function based on Spearbit's suggestions, we should give generalizing
+    // this another try.
+    //
+    // This test fuzzes scenarios for `_updateLiquidity` with extreme values.
+    function test__updateLiquidity__extremeValues__fuzz(
+        uint256 _contribution,
+        uint256 _longAmount,
+        uint256 _shortAmount
+    ) external {
+        uint256 fixedRate = 0.05e18;
+
+        // minimumShareReserves = 1e6
+        {
+            uint256 minimumShareReserves = 1e6;
+
+            // Sample the contribution. We simulate the pool being deployed and
+            // initialized so that we can calculate the bounds for the longs and
+            // shorts.
+            uint256 contribution = _contribution.normalizeToRange(
+                100e6,
+                10_000_000_000e6
+            );
+            IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
+            config.minimumShareReserves = minimumShareReserves;
+            deploy(deployer, config);
+            initialize(alice, fixedRate, contribution);
+            uint256 longAmount = _longAmount.normalizeToRange(
+                1e6,
+                hyperdrive.calculateMaxLong(15)
+            );
+            uint256 shortAmount = _shortAmount.normalizeToRange(
+                1e6,
+                hyperdrive.calculateMaxShort()
+            );
+
+            // Run the scenario tests.
+            _updateLiquidity__scenario__maxLong(
+                minimumShareReserves,
+                fixedRate,
+                contribution,
+                longAmount,
+                shortAmount,
+                1e12
+            );
+            _updateLiquidity__scenario__maxShort(
+                minimumShareReserves,
+                fixedRate,
+                contribution,
+                longAmount,
+                shortAmount,
+                1e12
+            );
+        }
+
+        // minimumShareReserves = 1e15
+        {
+            uint256 minimumShareReserves = 1e15;
+
+            // Sample the contribution. We simulate the pool being deployed and
+            // initialized so that we can calculate the bounds for the longs and
+            // shorts.
+            uint256 contribution = _contribution.normalizeToRange(
+                1e18,
+                200_000_000e18
+            );
+            IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
+            config.minimumShareReserves = minimumShareReserves;
+            deploy(deployer, config);
+            initialize(alice, fixedRate, contribution);
+            uint256 longAmount = _longAmount.normalizeToRange(
+                0.000_1e18,
+                hyperdrive.calculateMaxLong()
+            );
+            uint256 shortAmount = _shortAmount.normalizeToRange(
+                0.000_1e18,
+                hyperdrive.calculateMaxShort()
+            );
+
+            // Run the scenario tests.
+            _updateLiquidity__scenario__maxLong(
+                minimumShareReserves,
+                fixedRate,
+                contribution,
+                longAmount,
+                shortAmount,
+                1e6
+            );
+            _updateLiquidity__scenario__maxShort(
+                minimumShareReserves,
+                fixedRate,
+                contribution,
+                longAmount,
+                shortAmount,
+                1e6
+            );
+        }
+
+        // minimumShareReserves = 1e18
+        {
+            uint256 minimumShareReserves = 1e18;
+
+            // Sample the contribution. We simulate the pool being deployed and
+            // initialized so that we can calculate the bounds for the longs and
+            // shorts.
+            uint256 contribution = _contribution.normalizeToRange(
+                1_000e18,
+                10_000_000_000e18
+            );
+            IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
+            config.minimumShareReserves = minimumShareReserves;
+            deploy(deployer, config);
+            initialize(alice, fixedRate, contribution);
+            uint256 longAmount = _longAmount.normalizeToRange(
+                0.000_1e18,
+                hyperdrive.calculateMaxLong()
+            );
+            uint256 shortAmount = _shortAmount.normalizeToRange(
+                0.000_1e18,
+                hyperdrive.calculateMaxShort()
+            );
+
+            // Run the scenario tests.
+            _updateLiquidity__scenario__maxLong(
+                minimumShareReserves,
+                fixedRate,
+                contribution,
+                longAmount,
+                shortAmount,
+                1
+            );
+            _updateLiquidity__scenario__maxShort(
+                minimumShareReserves,
+                fixedRate,
+                contribution,
+                longAmount,
+                shortAmount,
+                1
+            );
+        }
+    }
+
+    // This verifies that the `updateLiquidity` gives the expected result with
+    // the provided parameters when a max long is opened right before a position
+    // matures. This is verifying that `z_1 * y_0 / z_0` doesn't result in
+    // invalid outputs.
+    function _updateLiquidity__scenario__maxLong(
+        uint256 minimumShareReserves,
+        uint256 fixedRate,
+        uint256 contribution,
+        uint256 longAmount,
+        uint256 shortAmount,
+        uint256 tolerance
+    ) internal {
+        // Bob opens a long and holds it for almost the entire term. Before
+        // the long matures, Celine opens a max short. After Bob's position
+        // matures, Bob should be able to close his position. This tests the
+        // edge case where `z_1 < z_0` and `y_0` is very small.
+        {
+            // Deploy the pool with the specified minimum share reserves.
+            IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
+            config.minimumShareReserves = minimumShareReserves;
+            deploy(deployer, config);
+
+            // Alice initializes the pool.
+            initialize(alice, fixedRate, contribution);
+
+            // Bob opens a long.
+            (uint256 maturityTime0, ) = openLong(bob, longAmount);
+
+            // Most of the term passes.
+            advanceTime(POSITION_DURATION.mulDown(0.99e18), 0);
+
+            // Celine opens a max long.
+            openLong(celine, hyperdrive.calculateMaxLong(15).mulDown(0.9e18));
+
+            // The rest of the term passes.
+            advanceTime(POSITION_DURATION.mulDown(0.1e18), 0);
+
+            // Verify that the ending bond reserves are greater than zero and
+            // that the ending spot rate is the same as it was before the trade
+            // is closed.
+            uint256 aprBefore = hyperdrive.calculateAPRFromReserves();
+            closeLong(bob, maturityTime0, longAmount);
+            assertApproxEqAbs(
+                hyperdrive.calculateAPRFromReserves(),
+                aprBefore,
+                tolerance
+            );
+            assertGt(hyperdrive.getPoolInfo().bondReserves, 0);
+        }
+
+        // Bob opens a short and holds it for almost the entire term. Before
+        // the short matures, Celine opens a max short. After Bob's position
+        // matures, Bob should be able to close his position. This tests the
+        // edge case where `z_1 > z_0` and `y_0` is very small.
+        {
+            // Deploy the pool with the specified minimum share reserves.
+            IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
+            config.minimumShareReserves = minimumShareReserves;
+            deploy(deployer, config);
+
+            // Alice initializes the pool.
+            initialize(alice, fixedRate, contribution);
+
+            // Bob opens a short.
+            (uint256 maturityTime0, ) = openShort(bob, shortAmount);
+
+            // Most of the term passes.
+            advanceTime(POSITION_DURATION.mulDown(0.99e18), 0);
+
+            // Celine opens a max long.
+            openLong(celine, hyperdrive.calculateMaxLong().mulDown(0.9e18));
+
+            // The rest of the term passes.
+            advanceTime(POSITION_DURATION.mulDown(0.1e18), 0);
+
+            // Verify that the ending bond reserves are greater than zero and
+            // that the ending spot rate is the same as it was before the trade
+            // is closed.
+            uint256 aprBefore = hyperdrive.calculateAPRFromReserves();
+            closeShort(bob, maturityTime0, shortAmount);
+            assertApproxEqAbs(
+                hyperdrive.calculateAPRFromReserves(),
+                aprBefore,
+                tolerance
+            );
+            assertGt(hyperdrive.getPoolInfo().bondReserves, 0);
+        }
+    }
+
+    // This verifies that the `updateLiquidity` doesn't overflow with the
+    // provided parameters when a max short is opened right before a position
+    // matures. This is verifying that `z_1 * y_0 / z_0` doesn't overflow.
+    function _updateLiquidity__scenario__maxShort(
+        uint256 minimumShareReserves,
+        uint256 fixedRate,
+        uint256 contribution,
+        uint256 longAmount,
+        uint256 shortAmount,
+        uint256 tolerance
+    ) internal {
+        // Bob opens a long and holds it for almost the entire term. Before
+        // the long matures, Celine opens a max short. After Bob's position
+        // matures, Bob should be able to close his position. This tests the
+        // edge case where `z_1 < z_0` and `y_0` is very large.
+        {
+            // Deploy the pool with the specified minimum share reserves.
+            IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
+            config.minimumShareReserves = minimumShareReserves;
+            deploy(deployer, config);
+
+            // Alice initializes the pool.
+            initialize(alice, fixedRate, contribution);
+
+            // Bob opens a long.
+            (uint256 maturityTime0, ) = openLong(bob, longAmount);
+
+            // Most of the term passes.
+            advanceTime(POSITION_DURATION.mulDown(0.99e18), 0);
+
+            // Celine opens a max short.
+            openShort(celine, hyperdrive.calculateMaxShort().mulDown(0.9e18));
+
+            // The rest of the term passes.
+            advanceTime(POSITION_DURATION.mulDown(0.1e18), 0);
+
+            // Verify that the ending bond reserves are greater than zero and
+            // that the ending spot rate is the same as it was before the trade
+            // is closed.
+            uint256 aprBefore = hyperdrive.calculateAPRFromReserves();
+            closeLong(bob, maturityTime0, longAmount);
+            assertApproxEqAbs(
+                hyperdrive.calculateAPRFromReserves(),
+                aprBefore,
+                tolerance
+            );
+            assertGt(hyperdrive.getPoolInfo().bondReserves, 0);
+        }
+
+        // Bob opens a short and holds it for almost the entire term. Before
+        // the short matures, Celine opens a max short. After Bob's position
+        // matures, Bob should be able to close his position. This tests the
+        // edge case where `z_1 > z_0` and `y_0` is very large.
+        {
+            // Deploy the pool with the specified minimum share reserves.
+            IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
+            config.minimumShareReserves = minimumShareReserves;
+            deploy(deployer, config);
+
+            // Alice initializes the pool.
+            initialize(alice, fixedRate, contribution);
+
+            // Bob opens a short.
+            (uint256 maturityTime0, ) = openShort(bob, shortAmount);
+
+            // Most of the term passes.
+            advanceTime(POSITION_DURATION.mulDown(0.99e18), 0);
+
+            // Celine opens a max short.
+            openShort(celine, hyperdrive.calculateMaxShort().mulDown(0.9e18));
+
+            // The rest of the term passes.
+            advanceTime(POSITION_DURATION.mulDown(0.1e18), 0);
+
+            // Verify that the ending bond reserves are greater than zero and
+            // that the ending spot rate is the same as it was before the trade
+            // is closed.
+            uint256 aprBefore = hyperdrive.calculateAPRFromReserves();
+            closeShort(bob, maturityTime0, shortAmount);
+            assertApproxEqAbs(
+                hyperdrive.calculateAPRFromReserves(),
+                aprBefore,
+                tolerance
+            );
+            assertGt(hyperdrive.getPoolInfo().bondReserves, 0);
+        }
+    }
 }
