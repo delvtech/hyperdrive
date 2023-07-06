@@ -8,4 +8,9 @@ contract MockSafeCast {
         uint128 y = SafeCast.toUint128(x);
         return y;
     }
+
+    function toUint224(uint256 x) external pure returns (uint224) {
+        uint224 y = SafeCast.toUint224(x);
+        return y;
+    }
 }
