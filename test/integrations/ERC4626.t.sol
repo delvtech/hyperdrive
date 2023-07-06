@@ -184,13 +184,13 @@ contract HyperdriveER4626Test is HyperdriveTest {
             alice
         );
         // lp shares should equal number of share reserves initialized with
-        assertEq(createdShares, contribution - config.minimumShareReserves);
+        assertEq(createdShares, contribution - 2 * config.minimumShareReserves);
 
         // Verify that the correct events were emitted.
         verifyFactoryEvents(
             factory,
             alice,
-            contribution,
+            contribution - config.minimumShareReserves,
             apr,
             config.minimumShareReserves,
             new bytes32[](0)

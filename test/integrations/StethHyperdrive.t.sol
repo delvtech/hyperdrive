@@ -90,7 +90,9 @@ contract StethHyperdriveTest is HyperdriveTest {
         // Ensure that Alice has the correct amount of LP shares.
         assertApproxEqAbs(
             hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
-            contribution.divDown(config.initialSharePrice),
+            contribution.divDown(config.initialSharePrice) -
+                2 *
+                config.minimumShareReserves,
             1e5
         );
 
@@ -134,12 +136,13 @@ contract StethHyperdriveTest is HyperdriveTest {
         );
 
         // Ensure that the share reserves and LP total supply are equal and correct.
-        assertEq(
+        assertApproxEqAbs(
             hyperdrive.getPoolInfo().shareReserves,
             contribution.mulDivDown(
                 LIDO.getTotalShares(),
                 LIDO.getTotalPooledEther()
-            )
+            ),
+            1
         );
         assertEq(
             hyperdrive.getPoolInfo().lpTotalSupply,
@@ -150,7 +153,8 @@ contract StethHyperdriveTest is HyperdriveTest {
         verifyFactoryEvents(
             factory,
             bob,
-            contribution,
+            contribution -
+                config.minimumShareReserves.mulDown(config.initialSharePrice),
             FIXED_RATE,
             config.minimumShareReserves,
             new bytes32[](0)

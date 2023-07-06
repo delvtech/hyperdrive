@@ -197,7 +197,7 @@ contract AaveHyperdriveTest is HyperdriveTest {
             alice
         );
         // lp shares should equal number of share reserves initialized with
-        assertEq(createdShares, 2500e18 - config.minimumShareReserves);
+        assertEq(createdShares, 2500e18 - 2 * config.minimumShareReserves);
 
         bytes32[] memory aDaiEncoding = new bytes32[](1);
         aDaiEncoding[0] = bytes32(uint256(uint160(address(aDAI))));
@@ -205,7 +205,7 @@ contract AaveHyperdriveTest is HyperdriveTest {
         verifyFactoryEvents(
             factory,
             alice,
-            contribution,
+            contribution - config.minimumShareReserves,
             apr,
             config.minimumShareReserves,
             aDaiEncoding
