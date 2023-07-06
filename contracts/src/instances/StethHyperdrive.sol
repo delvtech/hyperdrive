@@ -39,6 +39,9 @@ contract StethHyperdrive is Hyperdrive {
         address _linkerFactory,
         ILido _lido
     ) Hyperdrive(_config, _dataProvider, _linkerCodeHash, _linkerFactory) {
+        if (_config.minimumShareReserves != 1e15) {
+            revert IHyperdrive.InvalidMinimumShareReserves();
+        }
         if (
             _initialSharePrice !=
             _lido.getTotalPooledEther().divDown(_lido.getTotalShares())

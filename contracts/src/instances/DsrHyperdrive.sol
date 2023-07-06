@@ -45,6 +45,9 @@ contract DsrHyperdrive is Hyperdrive {
         DsrManager _dsrManager
     ) Hyperdrive(_config, _dataProvider, _linkerCodeHash, _linkerFactory) {
         // Ensure that the Hyperdrive pool was configured properly.
+        if (_config.minimumShareReserves != FixedPointMath.ONE_18) {
+            revert IHyperdrive.InvalidMinimumShareReserves();
+        }
         if (address(_config.baseToken) != address(_dsrManager.dai())) {
             revert IHyperdrive.InvalidBaseToken();
         }
