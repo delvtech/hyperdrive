@@ -24,6 +24,16 @@ contract LpWithdrawalTest is HyperdriveTest {
     using HyperdriveUtils for IHyperdrive;
     using Lib for *;
 
+    function setUp() public override {
+        super.setUp();
+
+        // Deploy Hyperdrive with a small minimum share reserves so that it is
+        // negligible relative to our error tolerances.
+        IHyperdrive.PoolConfig memory config = testConfig(0.05e18);
+        config.minimumShareReserves = 1e6;
+        deploy(deployer, config);
+    }
+
     // This test is designed to ensure that a single LP receives all of the
     // trading profits earned when a new long position is closed immediately
     // after the LP withdraws. A bound is placed on these profits to ensure that
@@ -136,10 +146,11 @@ contract LpWithdrawalTest is HyperdriveTest {
             alice,
             lpShares
         );
-        assertApproxEqAbs(
+        assertEq(
             baseProceeds,
-            contribution - (longAmount - basePaid),
-            1
+            contribution -
+                (longAmount - basePaid) -
+                hyperdrive.getPoolConfig().minimumShareReserves
         );
 
         // Positive interest accrues over the term. We create a checkpoint for
@@ -262,7 +273,12 @@ contract LpWithdrawalTest is HyperdriveTest {
             alice,
             lpShares
         );
-        assertEq(baseProceeds, contribution - (shortAmount - basePaid));
+        assertEq(
+            baseProceeds,
+            contribution -
+                (shortAmount - basePaid) -
+                hyperdrive.getPoolConfig().minimumShareReserves
+        );
 
         // Positive interest accrues over the term.
         variableRate = variableRate.normalizeToRange(0, 2e18);
@@ -813,8 +829,10 @@ contract LpWithdrawalTest is HyperdriveTest {
             (testParams.shortAmount - testParams.shortBasePaid)) / 2;
         assertApproxEqAbs(
             aliceBaseProceeds,
-            testParams.contribution - aliceMargin,
-            10
+            testParams.contribution -
+                aliceMargin -
+                hyperdrive.getPoolConfig().minimumShareReserves,
+            1e6 // TODO: This test should be refactored to use idle. Then we could remove this.
         );
         assertApproxEqAbs(presentValueRatio(), ratio, 10);
         ratio = presentValueRatio();
@@ -874,11 +892,10 @@ contract LpWithdrawalTest is HyperdriveTest {
     }
 
     function presentValueRatio() internal view returns (uint256) {
-        return
-            HyperdriveUtils.presentValue(hyperdrive).divDown(
-                hyperdrive.totalSupply(AssetId._LP_ASSET_ID) +
-                    hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID) -
-                    hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw
-            );
+        uint256 totalLpSupply = hyperdrive.totalSupply(AssetId._LP_ASSET_ID) +
+            hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID) -
+            hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw -
+            hyperdrive.getPoolConfig().minimumShareReserves;
+        return HyperdriveUtils.presentValue(hyperdrive).divDown(totalLpSupply);
     }
 }

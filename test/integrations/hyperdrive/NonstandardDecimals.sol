@@ -299,9 +299,6 @@ contract NonstandardDecimalsTest is HyperdriveTest {
             testParams.shortBasePaid = shortBasePaid;
         }
 
-        // FIXME: What explains the variablility of how much of the minimum
-        // share reserves is deducted from her proceeds?
-        //
         // Alice removes her liquidity.
         (
             uint256 aliceBaseProceeds,

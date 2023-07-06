@@ -73,7 +73,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             .toUint128();
 
         // Mint LP shares to the initializer and mints the minimum share
-        // reserves to the zero address. This migates donation attacks and some
+        // reserves to the zero address. This mitigates donation attacks and some
         // numerical issues that could cause Hyperdrive to lock up during normal
         // trading operations.
         _mint(AssetId._LP_ASSET_ID, address(0), _minimumShareReserves);
