@@ -294,7 +294,8 @@ contract AddLiquidityTest is HyperdriveTest {
             1e10
         );
 
-        // Ensure that all of the capital has been removed from the system.
+        // Ensure that all of the capital has been removed  (except for the
+        // minimum share reserves) from the system.
         assertEq(
             baseToken.balanceOf(address(hyperdrive)),
             hyperdrive.getPoolConfig().minimumShareReserves

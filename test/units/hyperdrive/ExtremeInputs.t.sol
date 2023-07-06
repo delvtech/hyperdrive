@@ -6,10 +6,12 @@ import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol";
+import { Lib } from "../../utils/Lib.sol";
 
 contract ExtremeInputs is HyperdriveTest {
     using FixedPointMath for uint256;
     using HyperdriveUtils for IHyperdrive;
+    using Lib for *;
 
     function test_max_open_long() external {
         // Initialize the pools with a large amount of capital.
@@ -96,8 +98,11 @@ contract ExtremeInputs is HyperdriveTest {
         );
     }
 
-    // This test verifies that the share reserves can't be brought to zero.
-    function test_short_to_empty_share_reserves() external {
+    // This test verifies that the share reserves can't be brought below the
+    // minimum share reserves.
+    function test_short_below_minimum_share_reserves(
+        uint256 targetReserves
+    ) external {
         uint256 fixedRate = 0.02e18;
 
         // Deploy the pool with a small minimum share reserves.
@@ -114,6 +119,10 @@ contract ExtremeInputs is HyperdriveTest {
         // share reserves fall below the minimum share reserves.
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
         IHyperdrive.PoolConfig memory poolConfig = hyperdrive.getPoolConfig();
+        targetReserves = targetReserves.normalizeToRange(
+            0,
+            poolConfig.minimumShareReserves - 1
+        );
         uint256 shortAmount = HyperdriveMath.calculateMaxShort(
             HyperdriveMath.MaxTradeParams({
                 shareReserves: poolInfo.shareReserves,
@@ -122,7 +131,7 @@ contract ExtremeInputs is HyperdriveTest {
                 timeStretch: poolConfig.timeStretch,
                 sharePrice: poolInfo.sharePrice,
                 initialSharePrice: poolConfig.initialSharePrice,
-                minimumShareReserves: 0 // Set the minimum share reserves to zero
+                minimumShareReserves: targetReserves
             })
         );
         baseToken.mint(shortAmount);
