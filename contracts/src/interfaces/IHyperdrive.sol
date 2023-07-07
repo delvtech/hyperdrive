@@ -202,6 +202,7 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
     error InvalidMaturityTime();
     error InvalidMinimumShareReserves();
     error InvalidPositionDuration();
+    error InvalidShareReserves();
     error InvalidFeeAmounts();
     error NegativeInterest();
     error OutputLimit();

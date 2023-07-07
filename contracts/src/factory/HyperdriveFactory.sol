@@ -206,21 +206,6 @@ abstract contract HyperdriveFactory {
         uint256 _contribution,
         uint256 _apr
     ) public payable virtual returns (IHyperdrive) {
-        // Ensure that the contribution is adequate to set up the pool. To
-        // protect against a variety of fixed point math issues, the deployer
-        // donates a minimum amount of LP shares and share reserves that will
-        // be reserved to ensure that the LP total supply and total supply of
-        // shares are never zero. As an additional precaution, the initial LP
-        // will burn the minimum share reserves to the zero address, so there
-        // will always be a small balance of normal LP shares.
-        uint256 minimumBaseReserves = _config.minimumShareReserves.mulDown(
-            _config.initialSharePrice
-        );
-        if (_contribution < 3 * minimumBaseReserves) {
-            revert IHyperdrive.InvalidContribution();
-        }
-        _contribution -= minimumBaseReserves;
-
         // Overwrite the governance and fees field of the config.
         _config.feeCollector = feeCollector;
         _config.governance = address(this);
@@ -251,7 +236,7 @@ abstract contract HyperdriveFactory {
             _config.baseToken.transferFrom(
                 msg.sender,
                 address(this),
-                _contribution + minimumBaseReserves
+                _contribution
             );
             if (
                 !_config.baseToken.approve(
@@ -262,29 +247,15 @@ abstract contract HyperdriveFactory {
                 revert IHyperdrive.ApprovalFailed();
             }
             hyperdrive.initialize(_contribution, _apr, msg.sender, true);
-            hyperdrive.addLiquidity(
-                minimumBaseReserves,
-                0,
-                type(uint256).max,
-                address(0),
-                true
-            );
         } else {
             // Require the caller sent value
-            if (msg.value != _contribution + minimumBaseReserves) {
+            if (msg.value != _contribution) {
                 revert IHyperdrive.TransferFailed();
             }
             hyperdrive.initialize{ value: _contribution }(
                 _contribution,
                 _apr,
                 msg.sender,
-                true
-            );
-            hyperdrive.addLiquidity{ value: minimumBaseReserves }(
-                minimumBaseReserves,
-                0,
-                type(uint256).max,
-                address(0),
                 true
             );
         }

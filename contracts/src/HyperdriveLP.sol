@@ -41,14 +41,25 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             revert IHyperdrive.PoolAlreadyInitialized();
         }
 
-        // Deposit for the user, this transfers from them. We verify that the
-        // initial contribution satisfies the minimum share reserves, and we
-        // ensure that the initial reserves are large enough that the initial
-        // present value is greater than zero.
+        // Deposit the users contribution and get the amount of shares that
+        // their contribution was worth.
         (uint256 shares, uint256 sharePrice) = _deposit(
             _contribution,
             _asUnderlying
         );
+
+        // Ensure that the contribution is large enough to set aside the minimum
+        // share reserves permanently. After initialization, none of the LPs
+        // will have a claim on the minimum share reserves, and longs and shorts
+        // will not be able to consume this liquidity. This ensures that the
+        // share reserves are always greater than zero, which prevents a host of
+        // numerical issues when we are updating the reserves during normal
+        // operations. As an additional precaution, we will also set aside an
+        // amount of shares equalling the minimum share reserves as the initial
+        // LP contribution from the zero address. This ensures that the total
+        // LP supply will always be greater than or equal to the minimum share
+        // reserves, which is helping for preventing donation attacks and other
+        // numerical issues.
         if (shares < 2 * _minimumShareReserves) {
             revert IHyperdrive.BelowMinimumContribution();
         }
@@ -72,26 +83,29 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             )
             .toUint128();
 
-        // Mint LP shares to the initializer and mints the minimum share
-        // reserves to the zero address. This mitigates donation attacks and some
-        // numerical issues that could cause Hyperdrive to lock up during normal
-        // trading operations.
+        // Mint the minimum share reserves to the zero address as a buffer that
+        // ensures that the total LP supply is always greater than or equal to
+        // the minimum share reserves. The initializer will receive slightly
+        // less shares than they contributed to cover the shares set aside as a
+        // buffer on the share reserves and the shares set aside for the zero
+        // address, but this is a small price to pay for the added security
+        // in practice.
         _mint(AssetId._LP_ASSET_ID, address(0), _minimumShareReserves);
         _mint(
             AssetId._LP_ASSET_ID,
             _destination,
-            shares - _minimumShareReserves
+            shares - 2 * _minimumShareReserves // NOTE: Deducting the funds that were set aside.
         );
 
         // Emit an Initialize event.
         emit Initialize(
             _destination,
-            shares - _minimumShareReserves,
+            shares - 2 * _minimumShareReserves,
             _contribution,
             _apr
         );
 
-        return shares - _minimumShareReserves;
+        return shares - 2 * _minimumShareReserves;
     }
 
     /// @notice Allows LPs to supply liquidity for LP shares.
@@ -135,17 +149,17 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // Perform a checkpoint.
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
 
-        // The total LP supply is given by `l = l_a + l_w - l_r - l_min` where
-        // `l_a` is the total supply of active LP shares, `l_w` is the total
-        // supply of withdrawal shares, `l_r` is the amount of withdrawal
-        // shares ready for withdrawal, and `l_min` is the minimum amount of
-        // shares that must be kept in the pool.
+        // Get the initial value for the total LP supply and the total supply
+        // of withdrawal shares before the liquidity is added. The total LP
+        // supply is given by `l = l_a + l_w - l_r` where `l_a` is the total
+        // supply of active LP shares, `l_w` is the total supply of withdrawal
+        // shares, and `l_r` is the amount of withdrawal shares ready for
+        // withdrawal.
         uint256 withdrawalSharesOutstanding = _totalSupply[
             AssetId._WITHDRAWAL_SHARE_ASSET_ID
         ] - _withdrawPool.readyToWithdraw;
         uint256 lpTotalSupply = _totalSupply[AssetId._LP_ASSET_ID] +
-            withdrawalSharesOutstanding -
-            _minimumShareReserves;
+            withdrawalSharesOutstanding;
 
         // Calculate the number of LP shares to mint.
         uint256 endingPresentValue;
@@ -248,8 +262,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
 
         // Burn the LP shares.
-        uint256 totalActiveLpSupply = _totalSupply[AssetId._LP_ASSET_ID] -
-            _minimumShareReserves;
+        uint256 totalActiveLpSupply = _totalSupply[AssetId._LP_ASSET_ID];
         uint256 withdrawalSharesOutstanding = _totalSupply[
             AssetId._WITHDRAWAL_SHARE_ASSET_ID
         ] - _withdrawPool.readyToWithdraw;
@@ -359,29 +372,46 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         return (proceeds, _shares);
     }
 
-    /// @dev Updates the pool's liquidity and holds the pool's APR constant.
+    /// @dev Updates the pool's liquidity and holds the pool's spot price constant.
     /// @param _shareReservesDelta The delta that should be applied to share reserves.
     function _updateLiquidity(int256 _shareReservesDelta) internal {
-        // If the share reserves delta is equal to zero, there is no need to
-        // update the reserves. If the share reserves are equal to zero, the
-        // APR is undefined and the reserves cannot be updated. This only occurs
-        // when all of the liquidity has been removed from the pool and the
-        // only remaining positions are shorts. Otherwise, we update the pool
-        // by increasing the share reserves and preserving the previous ratio of
-        // share reserves to bond reserves.
-        uint256 shareReserves = _marketState.shareReserves;
-        if (_shareReservesDelta != 0 && shareReserves > 0) {
-            int256 updatedShareReserves = int256(shareReserves) +
-                _shareReservesDelta;
-            _marketState.shareReserves = uint256(
-                // NOTE: There is a 1 wei discrepancy in some of the
-                // calculations which results in this clamping being required.
-                updatedShareReserves >= 0 ? updatedShareReserves : int256(0)
-            ).toUint128();
-            _marketState.bondReserves = uint256(_marketState.bondReserves)
-                .mulDivDown(_marketState.shareReserves, shareReserves)
-                .toUint128();
+        // If the share reserves delta is zero, we can return early since no
+        // action is needed.
+        if (_shareReservesDelta == 0) {
+            return;
         }
+
+        // Ensure that the share reserves are greater than the minimum share
+        // reserves. If this invariant isn't satisfied after initialization, the
+        // system is not in a healthy state.
+        uint256 shareReserves = _marketState.shareReserves;
+        if (shareReserves < _minimumShareReserves) {
+            revert IHyperdrive.InvalidShareReserves();
+        }
+
+        // Update the share reserves by applying the share reserves delta. We
+        // ensure that our minimum share reserves invariant is still maintained.
+        uint256 updatedShareReserves = uint256(
+            int256(shareReserves) + _shareReservesDelta
+        );
+        if (updatedShareReserves < _minimumShareReserves) {
+            revert IHyperdrive.InvalidShareReserves();
+        }
+        _marketState.shareReserves = updatedShareReserves.toUint128();
+
+        // We don't want the spot price to change after this liquidity update.
+        // The spot price of base in terms of bonds is given by:
+        //
+        // p = (mu * z / y) ** tau
+        //
+        // From this formula, if we hold the ratio of share to bond reserves
+        // constant, then the spot price will not change. We can use this to
+        // calculate the new bond reserves, which gives us:
+        //
+        // z_old / y_old = z_new / y_new => y_new = z_new * (y_old / z_old)
+        _marketState.bondReserves = updatedShareReserves
+            .mulDivDown(_marketState.bondReserves, shareReserves)
+            .toUint128();
     }
 
     /// @dev Removes liquidity from the pool and calculates the amount of
@@ -424,13 +454,28 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             params
         );
 
-        // The LP is given their share of the idle capital in the pool. This
-        // is removed from the pool's reserves and paid out immediately. We use
-        // the average opening share price of longs to avoid double counting
-        // the variable rate interest accrued on long positions. The idle amount
-        // is given by:
+        // TODO: Update this documentation once we've made the update to how
+        // idle capital is paid out to the withdrawal pool.
         //
-        // idle = (z - z_min - (o_l / c_0)) * (dl / l_a)
+        // A portion of Hyperdrive's capital may be "idle" capital that isn't
+        // being used to ensure that open positions are fully collateralized.
+        // To calculate the amount of idle liquidity in the system, we remove
+        // the amount of shares required for longs to be solvent and the minimum
+        // share reserves from the share reserves. When we are calculating the
+        // shares required for long solvency, we use the average opening share
+        // price of longs to avoid double counting the variable rate interest
+        // accrued on long positions. Since the capital that LPs provide for
+        // shorts are removed from the share reserves when the short is opened,
+        // we don't need to account for them in the idle calculation. Thus, we
+        // can calculate the idle capital as:
+        //
+        // idle = (z - z_min - (y_l / c_0))
+        //
+        // The LP is given their share of the idle capital in the pool. We
+        // assume that the active LPs are the only LPs entitled to the pool's
+        // idle capital, so the LP's proceeds are calculated as:
+        //
+        // proceeds = idle * (dl / l_a)
         shareProceeds = _marketState.shareReserves - _minimumShareReserves;
         if (_marketState.longsOutstanding > 0) {
             shareProceeds -= uint256(_marketState.longsOutstanding).divDown(
