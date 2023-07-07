@@ -103,6 +103,9 @@ contract MockHyperdriveTestnet is Hyperdrive {
             revert IHyperdrive.TransferFailed();
         }
 
+        // Remove shares from the total supply
+        totalShares -= _shares;
+
         return amountWithdrawn;
     }
 
