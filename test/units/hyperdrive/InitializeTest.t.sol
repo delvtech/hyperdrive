@@ -74,7 +74,7 @@ contract InitializeTest is HyperdriveTest {
         assertEq(baseToken.balanceOf(address(hyperdrive)), contribution);
         assertEq(
             lpShares,
-            hyperdrive.getPoolInfo().shareReserves - MINIMUM_SHARE_RESERVES
+            hyperdrive.getPoolInfo().shareReserves - 2 * MINIMUM_SHARE_RESERVES
         );
 
         // Ensure that the total supply of LP shares and Alice's balance of LP
