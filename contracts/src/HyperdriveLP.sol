@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import "forge-std/console.sol";
+
 import { HyperdriveBase } from "./HyperdriveBase.sol";
 import { HyperdriveTWAP } from "./HyperdriveTWAP.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
@@ -63,6 +66,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         if (shares < 2 * _minimumShareReserves) {
             revert IHyperdrive.BelowMinimumContribution();
         }
+        uint256 shareContribution = shares - 2 * _minimumShareReserves;
 
         // Create an initial checkpoint.
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
@@ -91,21 +95,12 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // address, but this is a small price to pay for the added security
         // in practice.
         _mint(AssetId._LP_ASSET_ID, address(0), _minimumShareReserves);
-        _mint(
-            AssetId._LP_ASSET_ID,
-            _destination,
-            shares - 2 * _minimumShareReserves // NOTE: Deducting the funds that were set aside.
-        );
+        _mint(AssetId._LP_ASSET_ID, _destination, shareContribution);
 
         // Emit an Initialize event.
-        emit Initialize(
-            _destination,
-            shares - 2 * _minimumShareReserves,
-            _contribution,
-            _apr
-        );
+        emit Initialize(_destination, shareContribution, _contribution, _apr);
 
-        return shares - 2 * _minimumShareReserves;
+        return shareContribution;
     }
 
     /// @notice Allows LPs to supply liquidity for LP shares.

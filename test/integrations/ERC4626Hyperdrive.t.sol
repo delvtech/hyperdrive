@@ -16,7 +16,7 @@ import { MockERC4626Hyperdrive } from "../mocks/Mock4626Hyperdrive.sol";
 import { HyperdriveUtils } from "../utils/HyperdriveUtils.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 
-contract HyperdriveER4626Test is HyperdriveTest {
+contract ER4626HyperdriveTest is HyperdriveTest {
     using FixedPointMath for *;
 
     ERC4626HyperdriveFactory factory;
@@ -177,23 +177,24 @@ contract HyperdriveER4626Test is HyperdriveTest {
             apr
         );
 
-        // The initial price per share is one so we should have that the
-        // shares in the alice account are 1
-        uint256 createdShares = hyperdrive.balanceOf(
-            AssetId._LP_ASSET_ID,
-            alice
+        // The initial price per share is one so the LP shares will initially
+        // be worth one base. Alice should receive LP shares equaling her
+        // contribution minus the shares that she set aside for the minumum
+        // share reserves and the zero address's initial LP contribution.
+        assertEq(
+            hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
+            contribution - 2 * config.minimumShareReserves
         );
-        // lp shares should equal number of share reserves initialized with
-        assertEq(createdShares, contribution - 2 * config.minimumShareReserves);
 
         // Verify that the correct events were emitted.
         verifyFactoryEvents(
             factory,
             alice,
-            contribution - config.minimumShareReserves,
+            contribution,
             apr,
             config.minimumShareReserves,
-            new bytes32[](0)
+            new bytes32[](0),
+            0
         );
     }
 

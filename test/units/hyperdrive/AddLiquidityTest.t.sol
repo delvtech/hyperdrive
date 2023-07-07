@@ -101,7 +101,7 @@ contract AddLiquidityTest is HyperdriveTest {
         // Bob closes his long.
         closeLong(bob, maturityTime, longAmount);
 
-        // Attempt to add liquidity when the LP total supply is zero. This
+        // Attempt to add liquidity when the LP total supply is zero.
         vm.stopPrank();
         vm.startPrank(bob);
         baseToken.mint(contribution);
@@ -130,12 +130,18 @@ contract AddLiquidityTest is HyperdriveTest {
             baseBalance.add(contribution)
         );
 
-        // Ensure that the new LP receives the same amount of LP shares as
-        // the initializer.
-        assertEq(lpShares, lpSupplyBefore);
+        // Ensure that the new LP receives a similar amount of LP shares as the
+        // initializer. The difference will be that the new LP will receive the
+        // same amount of shares as their contribution, whereas the old LP
+        // received slightly less shares to set aside some shares for the
+        // minimum share reserves and the zero address's initial LP contribution.
+        assertEq(
+            lpShares,
+            lpSupplyBefore + hyperdrive.getPoolConfig().minimumShareReserves
+        );
         assertEq(
             hyperdrive.totalSupply(AssetId._LP_ASSET_ID),
-            lpSupplyBefore * 2
+            lpSupplyBefore * 2 + hyperdrive.getPoolConfig().minimumShareReserves
         );
 
         // Ensure the pool APR is still approximately equal to the target APR.
@@ -215,11 +221,13 @@ contract AddLiquidityTest is HyperdriveTest {
             1e9
         );
 
-        // Ensure that all of the capital (except for the minimum share reserves)
-        // has been removed from the system.
+        // Ensure that all of the capital except for the minimum share reserves
+        // and the zero address's LP present value was removed from the system.
         assertEq(
             baseToken.balanceOf(address(hyperdrive)),
-            hyperdrive.getPoolConfig().minimumShareReserves
+            (FixedPointMath.ONE_18 + presentValueRatio()).mulDown(
+                hyperdrive.getPoolConfig().minimumShareReserves
+            )
         );
     }
 
@@ -294,11 +302,13 @@ contract AddLiquidityTest is HyperdriveTest {
             1e10
         );
 
-        // Ensure that all of the capital has been removed  (except for the
-        // minimum share reserves) from the system.
+        // Ensure that all of the capital except for the minimum share reserves
+        // and the zero address's LP present value was removed from the system.
         assertEq(
             baseToken.balanceOf(address(hyperdrive)),
-            hyperdrive.getPoolConfig().minimumShareReserves
+            (FixedPointMath.ONE_18 + presentValueRatio()).mulDown(
+                hyperdrive.getPoolConfig().minimumShareReserves
+            )
         );
     }
 
@@ -313,8 +323,8 @@ contract AddLiquidityTest is HyperdriveTest {
         uint256 basePaid = 50_000_000e18;
         (uint256 maturityTime, uint256 longAmount) = openLong(celine, basePaid);
 
-        // The term passes.
-        vm.warp(block.timestamp + POSITION_DURATION);
+        // The term passes and no interest accrues.
+        advanceTime(POSITION_DURATION, 0);
 
         // Get Alice's withdrawal proceeds if the long is closed immediately.
         uint256 aliceWithdrawalProceeds;
@@ -369,10 +379,13 @@ contract AddLiquidityTest is HyperdriveTest {
         (withdrawalProceeds, ) = removeLiquidity(bob, bobLpShares);
         assertApproxEqAbs(withdrawalProceeds, contribution, 1);
 
-        // Ensure that all of the capital has been removed from the system.
+        // Ensure that all of the capital except for the minimum share reserves
+        // and the zero address's LP present value was removed from the system.
         assertEq(
             baseToken.balanceOf(address(hyperdrive)),
-            hyperdrive.getPoolConfig().minimumShareReserves
+            (FixedPointMath.ONE_18 + presentValueRatio()).mulDown(
+                hyperdrive.getPoolConfig().minimumShareReserves
+            )
         );
     }
 
@@ -387,8 +400,8 @@ contract AddLiquidityTest is HyperdriveTest {
         uint256 shortAmount = 50_000_000e18;
         (uint256 maturityTime, ) = openShort(celine, shortAmount);
 
-        // The term passes.
-        vm.warp(block.timestamp + POSITION_DURATION);
+        // The term passes and no interest accrues.
+        advanceTime(POSITION_DURATION, 0);
 
         // Get Alice's withdrawal proceeds if the short is closed immediately.
         uint256 aliceWithdrawalProceeds;
@@ -437,17 +450,19 @@ contract AddLiquidityTest is HyperdriveTest {
         // Ensure that Alice's withdrawal proceeds are equivalent to what they
         // would have been had Bob not added liquidity.
         (uint256 withdrawalProceeds, ) = removeLiquidity(alice, aliceLpShares);
-        assertEq(withdrawalProceeds, aliceWithdrawalProceeds);
+        assertApproxEqAbs(withdrawalProceeds, aliceWithdrawalProceeds, 1);
 
         // Ensure that Bob received his contribution minus Celine's profits.
         (withdrawalProceeds, ) = removeLiquidity(bob, bobLpShares);
         assertApproxEqAbs(withdrawalProceeds, contribution, 1);
 
-        // Ensure that all of the capital (except for the minimum share reserves)
-        // has been removed from the system.
+        // Ensure that all of the capital except for the minimum share reserves
+        // and the zero address's LP present value was removed from the system.
         assertEq(
             baseToken.balanceOf(address(hyperdrive)),
-            hyperdrive.getPoolConfig().minimumShareReserves
+            (FixedPointMath.ONE_18 + presentValueRatio()).mulDown(
+                hyperdrive.getPoolConfig().minimumShareReserves
+            )
         );
     }
 
@@ -473,8 +488,7 @@ contract AddLiquidityTest is HyperdriveTest {
     function presentValueRatio() internal view returns (uint256) {
         uint256 totalLpSupply = hyperdrive.totalSupply(AssetId._LP_ASSET_ID) +
             hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID) -
-            hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw -
-            hyperdrive.getPoolConfig().minimumShareReserves;
+            hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw;
         return HyperdriveUtils.presentValue(hyperdrive).divDown(totalLpSupply);
     }
 }

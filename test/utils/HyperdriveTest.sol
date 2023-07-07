@@ -515,7 +515,8 @@ contract HyperdriveTest is BaseTest {
         uint256 contribution,
         uint256 apr,
         uint256 minimumShareReserves,
-        bytes32[] memory expectedExtraData
+        bytes32[] memory expectedExtraData,
+        uint256 tolerance
     ) internal {
         // Ensure that the correct `Deployed` and `Initialize` events were emitted.
         VmSafe.Log[] memory logs = vm.getRecordedLogs();
@@ -585,8 +586,8 @@ contract HyperdriveTest is BaseTest {
                 eventLpAmount,
                 contribution.divDown(
                     hyperdrive.getPoolConfig().initialSharePrice
-                ) - minimumShareReserves,
-                1e5
+                ) - 2 * minimumShareReserves,
+                tolerance
             );
             assertEq(eventBaseAmount, contribution);
             assertEq(eventApr, apr);

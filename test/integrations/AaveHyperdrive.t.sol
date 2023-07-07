@@ -190,25 +190,26 @@ contract AaveHyperdriveTest is HyperdriveTest {
             apr
         );
 
-        // The initial price per share is one so we should have that the
-        // shares in the alice account are 1
-        uint256 createdShares = hyperdrive.balanceOf(
-            AssetId._LP_ASSET_ID,
-            alice
+        // The initial price per share is one so the LP shares will initially
+        // be worth one base. Alice should receive LP shares equaling her
+        // contribution minus the shares that she set aside for the minumum
+        // share reserves and the zero address's initial LP contribution.
+        assertEq(
+            hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
+            contribution - 2 * config.minimumShareReserves
         );
-        // lp shares should equal number of share reserves initialized with
-        assertEq(createdShares, 2500e18 - 2 * config.minimumShareReserves);
 
+        // Verify that the correct events were emitted.
         bytes32[] memory aDaiEncoding = new bytes32[](1);
         aDaiEncoding[0] = bytes32(uint256(uint160(address(aDAI))));
-        // Verify that the correct events were emitted.
         verifyFactoryEvents(
             factory,
             alice,
-            contribution - config.minimumShareReserves,
+            contribution,
             apr,
             config.minimumShareReserves,
-            aDaiEncoding
+            aDaiEncoding,
+            0
         );
 
         // Test the revert condition for eth payment

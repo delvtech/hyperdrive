@@ -232,20 +232,31 @@ contract DsrHyperdrive is BaseTest {
         vm.startPrank(alice);
         uint256 apr = 0.05e18;
 
-        // The pool gets initialized with a minimal contribution
-        uint256 contribution = hyperdrive.getPoolConfig().minimumShareReserves *
-            2;
+        // The pool gets initialized with an amount that is slightly higher
+        // than the minimum possible contribution.
+        uint256 contribution = 3 *
+            hyperdrive.getPoolConfig().minimumShareReserves;
         hyperdrive.initialize(contribution, apr, bob, true);
-        contribution -= hyperdrive.getPoolConfig().minimumShareReserves;
 
-        // Now totalShares = 2e18
-        assertEq(hyperdrive.totalShares(), 2e18);
-        assertApproxEqAbs(dsrManager.daiBalance(address(hyperdrive)), 2e18, 1);
+        // Ensure that Bob's contribution was added to the pool correctly.
+        assertEq(hyperdrive.totalShares(), contribution);
+        assertApproxEqAbs(
+            dsrManager.daiBalance(address(hyperdrive)),
+            contribution,
+            1
+        );
 
         vm.stopPrank();
         vm.startPrank(bob);
         // Bob attempts to rug the pool by removing all liquidity except a small amount of shares
-        hyperdrive.removeLiquidity(contribution - 10, 0, bob, true);
+        hyperdrive.removeLiquidity(
+            (contribution -
+                2 *
+                hyperdrive.getPoolConfig().minimumShareReserves) - 10,
+            0,
+            bob,
+            true
+        );
         vm.stopPrank();
         vm.startPrank(alice);
 
@@ -256,16 +267,16 @@ contract DsrHyperdrive is BaseTest {
 
         // Bob front-runs Alice with a call to dsrManager.join() with 2000.01 DAI
         dai.approve(address(dsrManager), 2002e18);
-        dsrManager.join(address(hyperdrive), 200001e16);
+        dsrManager.join(address(hyperdrive), 2000.01e18);
 
         assertApproxEqAbs(
             dsrManager.daiBalance(address(hyperdrive)),
-            2001.01e18,
+            2002.01e18,
             10
         );
 
         // Some dust leftover
-        assertEq(hyperdrive.totalShares(), 1e18 + 10);
+        assertEq(hyperdrive.totalShares(), 2e18 + 10);
 
         uint256 shareReserves = hyperdrive.getPoolInfo().shareReserves;
         uint256 bondReserves = hyperdrive.getPoolInfo().bondReserves;
@@ -288,16 +299,18 @@ contract DsrHyperdrive is BaseTest {
         vm.stopPrank();
         vm.startPrank(alice);
 
-        // Alice calls addLiquidity() with 1000 DAI
+        // Alice calls addLiquidity() with 1000 DAI. She should receive shares
+        // that are approximately equal in amount to her contribution. We allow
+        // a fairly large tolerance since the donation changed the share price.
+        uint256 aliceContribution = 1_000e18;
         uint256 newShares = hyperdrive.addLiquidity(
-            1000e18,
+            aliceContribution,
             apr,
             apr,
             alice,
             true
         );
-        // Shares are still minted, and Alice does not get 0 shares out
-        assertEq(newShares, 499747627448138694);
+        assertEq(newShares, 998996009010944006);
     }
 
     // Tests for https://github.com/delvtech/hyperdrive/issues/356
