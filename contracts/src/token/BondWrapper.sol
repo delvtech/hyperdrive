@@ -2,11 +2,10 @@
 pragma solidity 0.8.19;
 
 import { ERC20 } from "solmate/tokens/ERC20.sol";
-import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "../interfaces/IERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { AssetId } from "../libraries/AssetId.sol";
-import { Errors } from "../libraries/Errors.sol";
 
 /// @author DELV
 /// @title BondWrapper
@@ -42,7 +41,7 @@ contract BondWrapper is ERC20 {
         string memory symbol_
     ) ERC20(name_, symbol_, 18) {
         if (_mintPercent >= 10_000) {
-            revert Errors.MintPercentTooHigh();
+            revert IHyperdrive.MintPercentTooHigh();
         }
 
         // By setting these addresses to the max uint256, attempting to execute
@@ -70,7 +69,7 @@ contract BondWrapper is ERC20 {
         address destination
     ) external {
         // Must not be matured
-        if (maturityTime <= block.timestamp) revert Errors.BondMatured();
+        if (maturityTime <= block.timestamp) revert IHyperdrive.BondMatured();
 
         // Encode the asset ID
         uint256 assetId = AssetId.encodeAssetId(
@@ -134,7 +133,8 @@ contract BondWrapper is ERC20 {
         // We require that this won't make the position unbacked
         uint256 mintedFromBonds = (amount * mintPercent) / 10_000;
 
-        if (receivedAmount < mintedFromBonds) revert Errors.InsufficientPrice();
+        if (receivedAmount < mintedFromBonds)
+            revert IHyperdrive.InsufficientPrice();
 
         // The user gets at least the interest implied from
         uint256 userFunds = receivedAmount - mintedFromBonds;
@@ -146,7 +146,7 @@ contract BondWrapper is ERC20 {
         }
 
         // The user has to get at least what they expect.
-        if (userFunds < minOutput) revert Errors.OutputLimit();
+        if (userFunds < minOutput) revert IHyperdrive.OutputLimit();
 
         // Transfer the released funds to the user
         token.safeTransfer(destination, userFunds);
@@ -157,7 +157,7 @@ contract BondWrapper is ERC20 {
     /// @param maturityTime The maturity time of the asset to sell
     function sweep(uint256 maturityTime) public {
         // Require only sweeping after maturity
-        if (maturityTime > block.timestamp) revert Errors.BondNotMatured();
+        if (maturityTime > block.timestamp) revert IHyperdrive.BondNotMatured();
         // Load the balance of this contract
         uint256 assetId = AssetId.encodeAssetId(
             AssetId.AssetIdPrefix.Long,

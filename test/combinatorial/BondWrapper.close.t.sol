@@ -11,7 +11,6 @@ import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 
 contract __MockHyperDrive__ {
@@ -227,7 +226,7 @@ contract BondWrapper_close is CombinatorialTest {
             __fail_error = stdError.arithmeticError;
         } else if (unbackedPosition) {
             __fail_error = abi.encodeWithSelector(
-                Errors.InsufficientPrice.selector
+                IHyperdrive.InsufficientPrice.selector
             );
         } else if (userWrappedBondUnderflow) {
             __fail_error = stdError.arithmeticError;

@@ -3,7 +3,6 @@ pragma solidity 0.8.19;
 
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
@@ -227,7 +226,7 @@ contract LpWithdrawalTest is HyperdriveTest {
 
         // Bob attempts to close his short. This will fail since there isn't any
         // liquidity in the pool after Alice removed her liquidity.
-        vm.expectRevert(Errors.FixedPointMath_SubOverflow.selector);
+        vm.expectRevert(IHyperdrive.FixedPointMath_SubOverflow.selector);
         vm.stopPrank();
         vm.startPrank(bob);
         hyperdrive.closeShort(maturityTime, shortAmount, 0, bob, true);
@@ -434,7 +433,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         // term to elapse.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(Errors.FixedPointMath_SubOverflow.selector);
+        vm.expectRevert(IHyperdrive.FixedPointMath_SubOverflow.selector);
         hyperdrive.closeShort(
             testParams.shortMaturityTime,
             testParams.shortAmount,

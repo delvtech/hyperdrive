@@ -14,6 +14,8 @@ import { MockERC4626Hyperdrive } from "../mocks/Mock4626Hyperdrive.sol";
 import { HyperdriveUtils } from "../utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
 import { ERC4626ValidationTest } from "./ERC4626Validation.t.sol"; 
+import {console } from "forge-std/console.sol";
+
 
 contract sDaiTest is ERC4626ValidationTest {
   using FixedPointMath for *;
@@ -53,34 +55,34 @@ contract sDaiTest is ERC4626ValidationTest {
     whaleTransfer(daiWhale, dai, alice);
 
     IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
-        baseToken: dai,
-        initialSharePrice: FixedPointMath.ONE_18.divDown(sDai.convertToShares(FixedPointMath.ONE_18)),
-        positionDuration: 365 days,
-        checkpointDuration: 1 days,
-        timeStretch: FixedPointMath.ONE_18.divDown(
-            22.186877016851916266e18
-        ),
-        governance: alice,
-        feeCollector: bob,
-        fees: IHyperdrive.Fees(0, 0, 0),
-        oracleSize: 2,
-        updateGap: 0
+      baseToken: underlyingToken,
+      initialSharePrice: FixedPointMath.ONE_18.divDown(token.convertToShares(FixedPointMath.ONE_18)),
+      positionDuration: POSITION_DURATION,
+      checkpointDuration: CHECKPOINT_DURATION,
+      timeStretch: FixedPointMath.ONE_18.divDown(
+        22.186877016851916266e18
+      ),
+      governance: governance,
+      feeCollector: feeCollector,
+      fees: IHyperdrive.Fees({ curve: 0, flat: 0, governance: 0 }),
+      oracleSize: ORACLE_SIZE,
+      updateGap: UPDATE_GAP
     });
-    
-    // Create a mock hyperdrive with functions available
-    hyperdriveInstance = new MockERC4626Hyperdrive(
-        config,
-        address(0),
-        bytes32(0),
-        address(0),
-        sDai
-    );
+
+    uint256 contribution = 10_000e18; // Revisit
 
     vm.stopPrank();
     vm.startPrank(alice);
+    underlyingToken.approve(address(factory), type(uint256).max);
+
+    hyperdrive = factory.deployAndInitialize(config,
+      new bytes32[](0),
+      contribution,
+      FIXED_RATE
+    );
+
     dai.approve(address(hyperdriveInstance), type(uint256).max);
     dai.approve(address(sDai), type(uint256).max);
-    sDai.deposit(10e18, alice);
 
     vm.stopPrank();
     vm.startPrank(bob);

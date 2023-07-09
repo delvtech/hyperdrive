@@ -3,8 +3,8 @@ pragma solidity ^0.8.18;
 
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { Errors } from "contracts/src/libraries/Errors.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { MultiTokenDataProvider } from "contracts/src/token/MultiTokenDataProvider.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
@@ -144,7 +144,7 @@ contract BondWrapperTest is BaseTest {
 
         uint256 deposited = bondWrapper.deposits(alice, assetId);
 
-        vm.expectRevert(Errors.OutputLimit.selector);
+        vm.expectRevert(IHyperdrive.OutputLimit.selector);
         bondWrapper.close(365 days, deposited, true, bob, deposited + 1);
 
         // Should pass when you get the right amount

@@ -2,8 +2,8 @@
 pragma solidity 0.8.19;
 
 import { stdError } from "forge-std/StdError.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { MockHyperdrive, IMockHyperdrive } from "../../mocks/MockHyperdrive.sol";
 import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol";
@@ -140,7 +140,7 @@ contract FeeTest is HyperdriveTest {
         assertGt(governanceFeesAfterCloseShort, governanceFeesAfterOpenShort);
 
         // collect governance fees
-        vm.expectRevert(Errors.Unauthorized.selector);
+        vm.expectRevert(IHyperdrive.Unauthorized.selector);
         MockHyperdrive(address(hyperdrive)).collectGovernanceFee(true);
         vm.stopPrank();
         vm.prank(governance);

@@ -61,21 +61,21 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         // Bob can't change access the admin functions.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(Errors.Unauthorized.selector);
+        vm.expectRevert(IHyperdrive.Unauthorized.selector);
         factory.updateGovernance(bob);
-        vm.expectRevert(Errors.Unauthorized.selector);
+        vm.expectRevert(IHyperdrive.Unauthorized.selector);
         factory.updateImplementation(IHyperdriveDeployer(bob));
-        vm.expectRevert(Errors.Unauthorized.selector);
+        vm.expectRevert(IHyperdrive.Unauthorized.selector);
         factory.updateHyperdriveGovernance(bob);
-        vm.expectRevert(Errors.Unauthorized.selector);
+        vm.expectRevert(IHyperdrive.Unauthorized.selector);
         factory.updateLinkerFactory(address(uint160(0xdeadbeef)));
-        vm.expectRevert(Errors.Unauthorized.selector);
+        vm.expectRevert(IHyperdrive.Unauthorized.selector);
         factory.updateLinkerCodeHash(bytes32(uint256(0xdeadbeef)));
-        vm.expectRevert(Errors.Unauthorized.selector);
+        vm.expectRevert(IHyperdrive.Unauthorized.selector);
         factory.updateFeeCollector(bob);
-        vm.expectRevert(Errors.Unauthorized.selector);
+        vm.expectRevert(IHyperdrive.Unauthorized.selector);
         factory.updateFees(IHyperdrive.Fees(1, 2, 4));
-        vm.expectRevert(Errors.Unauthorized.selector);
+        vm.expectRevert(IHyperdrive.Unauthorized.selector);
         factory.updateDefaultPausers(defaults);
         vm.stopPrank();
 
