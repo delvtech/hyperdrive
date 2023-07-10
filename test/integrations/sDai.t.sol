@@ -17,6 +17,13 @@ import { ERC4626ValidationTest } from "./ERC4626Validation.t.sol";
 import {console } from "forge-std/console.sol";
 
 
+// Interface for the `Pot` of the underlying DSR
+interface PotLike {
+  function rho() external view returns (uint256);
+  function dsr() external view returns (uint256);
+  function drip() external returns (uint256);
+}
+
 contract sDaiTest is ERC4626ValidationTest {
   using FixedPointMath for *;
   
@@ -91,5 +98,15 @@ contract sDaiTest is ERC4626ValidationTest {
 
     // Start recording events.
     vm.recordLogs();
+  }
+
+  function advanceTimeWithYield(uint256 timeDelta) override public {
+    vm.warp(block.timestamp + timeDelta);
+    // Should accumulate interest in the dsr based on the time passed
+    // in theory if used in excess this may cause pot insolvency (no actual dai accuring, just 1 share growing bigger and withdrawing)
+    // but shouldn't be a problem for small tests
+
+    // Note - Mainnet only address for Pot, but fine since this test explicitly uses a Mainnet fork in test
+    PotLike(0x197E90f9FAD81970bA7976f33CbD77088E5D7cf7).drip();
   }
 }

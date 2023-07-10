@@ -27,7 +27,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
 
   uint256 internal constant FIXED_RATE = 0.05e18;
 
-  //function advanceTimeWithYield() virtual external;
+  function advanceTimeWithYield(uint256 timeDelta) virtual public;
 
   function test_deployAndInitialize() external {
     vm.startPrank(alice);
@@ -136,7 +136,11 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
       min(HyperdriveUtils.calculateMaxShort(hyperdrive), underlyingToken.balanceOf(alice))
     );
 
-    openShortERC4626(alice, shortAmount, true);
+    (uint256 maturityTime, ) = openShortERC4626(alice, shortAmount, true);
+
+    advanceTimeWithYield(POSITION_DURATION);
+
+    hyperdrive.closeShort(maturityTime, shortAmount, 0, alice, true);
   }
   
   function test_OpenShortWithToken(uint256 shortAmount) external {
@@ -156,9 +160,13 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
       min(HyperdriveUtils.calculateMaxShort(hyperdrive), underlyingToken.balanceOf(alice))
     );
 
-    (uint256 maturityTime, uint256 basePaid) = openShortERC4626(alice, shortAmount, true);
+    (uint256 maturityTime, ) = openShortERC4626(alice, shortAmount, true);
     // The term passes and interest accrues.
     variableRate = variableRate.normalizeToRange(0, 2.5e18);
+  
+    advanceTimeWithYield(POSITION_DURATION);
+
+    hyperdrive.closeShort(maturityTime, shortAmount, 0, alice, true);
   }
   
   function test_CloseShortWithToken(uint256 shortAmount, int256 variableRate) external {
@@ -169,9 +177,13 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
     );
 
     token.deposit(shortAmount, alice);
-    (uint256 maturityTime, uint256 basePaid) = openShortERC4626(alice, shortAmount, true);
+    (uint256 maturityTime, ) = openShortERC4626(alice, shortAmount, true);
     // The term passes and interest accrues.
     variableRate = variableRate.normalizeToRange(0, 2.5e18);
+
+    advanceTimeWithYield(POSITION_DURATION);
+
+    hyperdrive.closeShort(maturityTime, shortAmount, 0, alice, false);
   }
 
   /* Helper Functions for dealing with Forked ERC4626 behavior */
