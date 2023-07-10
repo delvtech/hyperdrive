@@ -46,9 +46,7 @@ contract ERC4626DataProvider is MultiTokenDataProvider, HyperdriveDataProvider {
         override
         returns (uint256 sharePrice)
     {
-        uint256 shareEstimate = _pool.convertToShares(FixedPointMath.ONE_18);
-        sharePrice = shareEstimate.divDown(FixedPointMath.ONE_18);
-        return (sharePrice);
+        sharePrice = _pool.convertToAssets(FixedPointMath.ONE_18);
     }
 
     /// Getters ///
