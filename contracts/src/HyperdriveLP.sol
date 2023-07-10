@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-// FIXME
-import "forge-std/console.sol";
-
 import { HyperdriveBase } from "./HyperdriveBase.sol";
 import { HyperdriveTWAP } from "./HyperdriveTWAP.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
@@ -545,8 +542,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             })
         );
         uint256 lpTotalSupply = _totalSupply[AssetId._LP_ASSET_ID] +
-            _withdrawalSharesOutstanding -
-            _minimumShareReserves;
+            _withdrawalSharesOutstanding;
         _compensateWithdrawalPool(
             _withdrawalProceeds,
             presentValue,

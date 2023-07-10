@@ -305,4 +305,19 @@ library HyperdriveUtils {
                 )
                 .mulDown(poolInfo.sharePrice);
     }
+
+    function lpSharePrice(
+        IHyperdrive hyperdrive
+    ) internal view returns (uint256) {
+        return hyperdrive.presentValue().divDown(hyperdrive.lpTotalSupply());
+    }
+
+    function lpTotalSupply(
+        IHyperdrive hyperdrive
+    ) internal view returns (uint256) {
+        return
+            hyperdrive.totalSupply(AssetId._LP_ASSET_ID) +
+            hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID) -
+            hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw;
+    }
 }
