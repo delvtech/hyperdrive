@@ -240,7 +240,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
     /// @param _asUnderlying If true the user is paid in underlying if false
     ///                      the contract transfers in yield source directly.
     ///                      Note - for some paths one choice may be disabled or blocked.
-    /// @return Returns the base out, the lond withdraw shares out and the short withdraw
+    /// @return Returns the base out, the long withdraw shares out and the short withdraw
     ///         shares out.
     function removeLiquidity(
         uint256 _shares,
@@ -347,8 +347,8 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         );
 
         // Apply the update to the withdrawal pool.
-        _withdrawPool.readyToWithdraw -= uint128(_shares);
-        _withdrawPool.proceeds -= uint128(shareProceeds);
+        _withdrawPool.readyToWithdraw -= _shares.toUint128();
+        _withdrawPool.proceeds -= shareProceeds.toUint128();
 
         // Withdraw for the user
         uint256 proceeds = _withdraw(
@@ -595,8 +595,8 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
                 maxSharesReleased
             );
         }
-        _withdrawPool.readyToWithdraw += uint128(sharesReleased);
-        _withdrawPool.proceeds += uint128(withdrawalPoolProceeds);
+        _withdrawPool.readyToWithdraw += sharesReleased.toUint128();
+        _withdrawPool.proceeds += withdrawalPoolProceeds.toUint128();
 
         // Remove the withdrawal pool proceeds from the reserves.
         _updateLiquidity(-int256(withdrawalPoolProceeds));
