@@ -90,7 +90,7 @@ contract StethHyperdriveTest is HyperdriveTest {
         // Ensure that Bob received the correct amount of LP tokens. She should
         // receive LP shares totaling the amount of shares that she contributed
         // minus the shares set aside for the minimum share reserves and the
-        // zero address's intial LP contribution.
+        // zero address's initial LP contribution.
         assertApproxEqAbs(
             hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
             contribution.divDown(config.initialSharePrice) -
@@ -141,7 +141,7 @@ contract StethHyperdriveTest is HyperdriveTest {
         // Ensure that Bob received the correct amount of LP tokens. He should
         // receive LP shares totaling the amount of shares that he contributed
         // minus the shares set aside for the minimum share reserves and the
-        // zero address's intial LP contribution.
+        // zero address's initial LP contribution.
         assertApproxEqAbs(
             hyperdrive.balanceOf(AssetId._LP_ASSET_ID, bob),
             contribution.divDown(config.initialSharePrice) -
