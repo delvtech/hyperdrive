@@ -49,11 +49,11 @@ contract DsrHyperdrive is Hyperdrive {
             revert IHyperdrive.InvalidBaseToken();
         }
 
-        // Ensure that the minimum share reserves are equal to 1e18. This value
+        // Ensure that the minimum share reserves are equal to 10e18. This value
         // has been tested to prevent arithmetic overflows in the
         // `_updateLiquidity` function when the share reserves are as high as
-        // 10 billion.
-        if (_config.minimumShareReserves != FixedPointMath.ONE_18) {
+        // 100 billion.
+        if (_config.minimumShareReserves != 10e18) {
             revert IHyperdrive.InvalidMinimumShareReserves();
         }
 

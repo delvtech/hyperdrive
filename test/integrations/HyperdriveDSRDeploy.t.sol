@@ -66,7 +66,7 @@ contract HyperdriveDsrTest is HyperdriveTest {
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: dai,
             initialSharePrice: FixedPointMath.ONE_18,
-            minimumShareReserves: FixedPointMath.ONE_18,
+            minimumShareReserves: 10e18,
             positionDuration: 365 days,
             checkpointDuration: 1 days,
             timeStretch: HyperdriveUtils.calculateTimeStretch(apr),

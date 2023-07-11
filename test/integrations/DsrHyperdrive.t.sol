@@ -273,17 +273,15 @@ contract DsrHyperdriveTest is BaseTest {
 
         // The minimum share reserves, the zero address's LP capital, and some
         // dust remaining from Bob's withdrawal should be left in the pool.
-        uint256 dust = 10;
+        // This is all that is accounted for in the total shares, but the base
+        // balance also includes the donation.
         assertEq(
             dsrManager.daiBalance(address(hyperdrive)),
-            donation +
-                2 *
-                hyperdrive.getPoolConfig().minimumShareReserves +
-                dust
+            donation + 2 * hyperdrive.getPoolConfig().minimumShareReserves + 9
         );
         assertEq(
             hyperdrive.totalShares(),
-            2 * hyperdrive.getPoolConfig().minimumShareReserves + dust
+            2 * hyperdrive.getPoolConfig().minimumShareReserves + 10
         );
 
         uint256 shareReserves = hyperdrive.getPoolInfo().shareReserves;

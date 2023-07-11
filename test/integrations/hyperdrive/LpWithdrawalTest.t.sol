@@ -202,13 +202,6 @@ contract LpWithdrawalTest is HyperdriveTest {
             ) + hyperdrive.presentValue(),
             1e10
         ); // TODO: Investigate this bound.
-
-        // TODO: We'll have more to assert about this once we implement the
-        // feature that pays out all excess idle to the withdrawal pool. As of
-        // right now, this check isn't accurate and only worked before minimum
-        // share reserves since we had a special case for when the LP total
-        // supply was zero.
-        // assertEq(hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID), 0);
     }
 
     function test_lp_withdrawal_short_immediate_close(
