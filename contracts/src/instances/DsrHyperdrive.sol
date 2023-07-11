@@ -44,10 +44,20 @@ contract DsrHyperdrive is Hyperdrive {
         address _linkerFactory,
         DsrManager _dsrManager
     ) Hyperdrive(_config, _dataProvider, _linkerCodeHash, _linkerFactory) {
-        // Ensure that the Hyperdrive pool was configured properly.
+        // Ensure that the base token is DAI.
         if (address(_config.baseToken) != address(_dsrManager.dai())) {
             revert IHyperdrive.InvalidBaseToken();
         }
+
+        // Ensure that the minimum share reserves are equal to 10e18. This value
+        // has been tested to prevent arithmetic overflows in the
+        // `_updateLiquidity` function when the share reserves are as high as
+        // 100 billion.
+        if (_config.minimumShareReserves != 10e18) {
+            revert IHyperdrive.InvalidMinimumShareReserves();
+        }
+
+        // Ensure that the initial share price is one.
         if (_config.initialSharePrice != FixedPointMath.ONE_18) {
             revert IHyperdrive.InvalidInitialSharePrice();
         }

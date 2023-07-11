@@ -56,6 +56,7 @@ contract AaveHyperdriveTest is HyperdriveTest {
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: dai,
             initialSharePrice: FixedPointMath.ONE_18,
+            minimumShareReserves: FixedPointMath.ONE_18,
             positionDuration: 365 days,
             checkpointDuration: 1 days,
             timeStretch: FixedPointMath.ONE_18.divDown(
@@ -171,6 +172,7 @@ contract AaveHyperdriveTest is HyperdriveTest {
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: dai,
             initialSharePrice: FixedPointMath.ONE_18,
+            minimumShareReserves: FixedPointMath.ONE_18,
             positionDuration: 365 days,
             checkpointDuration: 1 days,
             timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
@@ -188,24 +190,26 @@ contract AaveHyperdriveTest is HyperdriveTest {
             apr
         );
 
-        // The initial price per share is one so we should have that the
-        // shares in the alice account are 1
-        uint256 createdShares = hyperdrive.balanceOf(
-            AssetId._LP_ASSET_ID,
-            alice
+        // The initial price per share is one so the LP shares will initially
+        // be worth one base. Alice should receive LP shares equaling her
+        // contribution minus the shares that she set aside for the minimum
+        // share reserves and the zero address's initial LP contribution.
+        assertEq(
+            hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
+            contribution - 2 * config.minimumShareReserves
         );
-        // lp shares should equal number of share reserves initialized with
-        assertEq(createdShares, 2500e18 - 1e5);
 
+        // Verify that the correct events were emitted.
         bytes32[] memory aDaiEncoding = new bytes32[](1);
         aDaiEncoding[0] = bytes32(uint256(uint160(address(aDAI))));
-        // Verify that the correct events were emitted.
         verifyFactoryEvents(
             factory,
             alice,
-            contribution - 1e5,
+            contribution,
             apr,
-            aDaiEncoding
+            config.minimumShareReserves,
+            aDaiEncoding,
+            0
         );
 
         // Test the revert condition for eth payment

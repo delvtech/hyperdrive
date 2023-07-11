@@ -11,6 +11,7 @@ import { Lib } from "../../utils/Lib.sol";
 
 contract RedeemWithdrawalSharesTest is HyperdriveTest {
     using FixedPointMath for uint256;
+    using HyperdriveUtils for IHyperdrive;
     using Lib for *;
 
     function setUp() public override {
@@ -67,7 +68,9 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
         // Bob closes his short.
         closeShort(bob, maturityTime, shortAmount);
 
-        // Alice redeems her withdrawal shares.
+        // Alice redeems her withdrawal shares. The proceeds of the trade are
+        // used to pay out the withdrawal pool, so we can approximate Alice's
+        // proceeds by splitting the short proceeds in proportion to LP shares.
         uint256 aliceBaseBalanceBefore = baseToken.balanceOf(alice);
         uint256 hyperdriveBaseBalanceBefore = baseToken.balanceOf(
             address(hyperdrive)
@@ -76,7 +79,15 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
             alice,
             withdrawalShares
         );
-        assertEq(baseProceeds, shortAmount);
+        assertApproxEqAbs(
+            baseProceeds,
+            shortAmount.mulDivDown(
+                withdrawalShares,
+                withdrawalShares +
+                    hyperdrive.getPoolConfig().minimumShareReserves
+            ),
+            1e2
+        );
         assertEq(sharesRedeemed, withdrawalShares);
 
         // Ensure that a `RedeemWithdrawalShares` event was emitted.
@@ -115,6 +126,14 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
         // Bob closes his short.
         closeShort(bob, maturityTime, shortAmount);
 
+        // The proceeds of the trade are used to pay out the withdrawal pool.
+        // We can approximate Alice's proceeds by splitting the short proceeds
+        // in proportion to LP shares.
+        uint256 aliceProceeds = shortAmount.mulDivDown(
+            withdrawalShares,
+            withdrawalShares + hyperdrive.getPoolConfig().minimumShareReserves
+        );
+
         // Alice redeems half of her withdrawal shares.
         uint256 aliceBaseBalanceBefore = baseToken.balanceOf(alice);
         uint256 hyperdriveBaseBalanceBefore = baseToken.balanceOf(
@@ -124,7 +143,7 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
             alice,
             withdrawalShares / 2
         );
-        assertApproxEqAbs(baseProceeds, shortAmount / 2, 1);
+        assertApproxEqAbs(baseProceeds, aliceProceeds / 2, 10);
         assertApproxEqAbs(sharesRedeemed, withdrawalShares / 2, 1);
 
         // Ensure that a `RedeemWithdrawalShares` event was emitted.
@@ -147,7 +166,7 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
             alice,
             withdrawalShares
         );
-        assertApproxEqAbs(baseProceeds, shortAmount / 2, 1);
+        assertApproxEqAbs(baseProceeds, aliceProceeds / 2, 10);
         assertApproxEqAbs(sharesRedeemed, withdrawalShares / 2, 1);
 
         // Ensure that a `RedeemWithdrawalShares` event was emitted.
@@ -190,17 +209,23 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
         // Bob closes his long.
         uint256 longBaseProceeds = closeLong(bob, maturityTime, longAmount);
 
-        // Alice redeems her withdrawal shares.
+        // Get the base balances before the trade.
         uint256 aliceBaseBalanceBefore = baseToken.balanceOf(alice);
         uint256 hyperdriveBaseBalanceBefore = baseToken.balanceOf(
             address(hyperdrive)
+        );
+
+        // Alice redeems her withdrawal shares.
+        uint256 expectedBaseProceeds = longAmount - longBaseProceeds;
+        uint256 expectedSharesRedeemed = expectedBaseProceeds.divDown(
+            hyperdrive.lpSharePrice()
         );
         (uint256 baseProceeds, uint256 sharesRedeemed) = redeemWithdrawalShares(
             alice,
             withdrawalShares
         );
-        assertEq(baseProceeds, longAmount - longBaseProceeds);
-        assertEq(sharesRedeemed, withdrawalShares);
+        assertEq(baseProceeds, expectedBaseProceeds);
+        assertApproxEqAbs(sharesRedeemed, expectedSharesRedeemed, 1e8);
 
         // Ensure that a `RedeemWithdrawalShares` event was emitted.
         verifyRedeemWithdrawalSharesEvent(alice, sharesRedeemed, baseProceeds);
@@ -238,13 +263,23 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
         uint256 hyperdriveBaseBalanceBefore = baseToken.balanceOf(
             address(hyperdrive)
         );
-        uint256 expectedSharePrice = shortAmount.divDown(withdrawalShares);
+        uint256 expectedSharePrice = shortAmount.divDown(
+            withdrawalShares + hyperdrive.getPoolConfig().minimumShareReserves
+        );
         (uint256 baseProceeds, uint256 sharesRedeemed) = redeemWithdrawalShares(
             alice,
             withdrawalShares,
             expectedSharePrice
         );
-        assertEq(baseProceeds, shortAmount);
+        assertApproxEqAbs(
+            baseProceeds,
+            shortAmount.mulDivDown(
+                withdrawalShares,
+                withdrawalShares +
+                    hyperdrive.getPoolConfig().minimumShareReserves
+            ),
+            1e2
+        );
         assertEq(sharesRedeemed, withdrawalShares);
 
         // Ensure that a `RedeemWithdrawalShares` event was emitted.

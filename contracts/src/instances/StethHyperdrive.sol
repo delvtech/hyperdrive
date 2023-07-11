@@ -39,13 +39,21 @@ contract StethHyperdrive is Hyperdrive {
         address _linkerFactory,
         ILido _lido
     ) Hyperdrive(_config, _dataProvider, _linkerCodeHash, _linkerFactory) {
-        if (
-            _initialSharePrice !=
-            _lido.getTotalPooledEther().divDown(_lido.getTotalShares())
-        ) {
+        lido = _lido;
+
+        // Ensure that the initial share price is equal to the current share
+        // price.
+        if (_initialSharePrice != _pricePerShare()) {
             revert IHyperdrive.InvalidInitialSharePrice();
         }
-        lido = _lido;
+
+        // Ensure that the minimum share reserves are equal to 1e18. This value
+        // has been tested to prevent arithmetic overflows in the
+        // `_updateLiquidity` function when the share reserves are as high as
+        // 200 million.
+        if (_config.minimumShareReserves != 1e15) {
+            revert IHyperdrive.InvalidMinimumShareReserves();
+        }
     }
 
     /// @dev We override the message value check since this integration is

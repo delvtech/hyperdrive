@@ -36,6 +36,7 @@ contract MockDsrHyperdrive is DsrHyperdrive {
             IHyperdrive.PoolConfig({
                 baseToken: IERC20(address(_dsrManager.dai())),
                 initialSharePrice: FixedPointMath.ONE_18,
+                minimumShareReserves: 10e18,
                 positionDuration: 365 days,
                 checkpointDuration: 1 days,
                 timeStretch: FixedPointMath.ONE_18.divDown(
@@ -84,6 +85,7 @@ contract MockDsrHyperdriveDataProvider is DsrHyperdriveDataProvider {
             IHyperdrive.PoolConfig({
                 baseToken: IERC20(address(_dsrManager.dai())),
                 initialSharePrice: FixedPointMath.ONE_18,
+                minimumShareReserves: 10e18,
                 positionDuration: 365 days,
                 checkpointDuration: 1 days,
                 timeStretch: FixedPointMath.ONE_18.divDown(

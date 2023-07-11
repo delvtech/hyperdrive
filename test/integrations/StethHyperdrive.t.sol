@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import "forge-std/Test.sol";
+import { stdStorage, StdStorage } from "forge-std/Test.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { StethHyperdriveDeployer } from "contracts/src/factory/StethHyperdriveDeployer.sol";
@@ -69,6 +69,7 @@ contract StethHyperdriveTest is HyperdriveTest {
             initialSharePrice: LIDO.getTotalPooledEther().divDown(
                 LIDO.getTotalShares()
             ),
+            minimumShareReserves: 1e15,
             positionDuration: POSITION_DURATION,
             checkpointDuration: CHECKPOINT_DURATION,
             timeStretch: HyperdriveUtils.calculateTimeStretch(0.05e18),
@@ -86,10 +87,15 @@ contract StethHyperdriveTest is HyperdriveTest {
             FIXED_RATE
         );
 
-        // Ensure that Alice has the correct amount of LP shares.
+        // Ensure that Bob received the correct amount of LP tokens. She should
+        // receive LP shares totaling the amount of shares that she contributed
+        // minus the shares set aside for the minimum share reserves and the
+        // zero address's initial LP contribution.
         assertApproxEqAbs(
             hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
-            contribution.divDown(config.initialSharePrice),
+            contribution.divDown(config.initialSharePrice) -
+                2 *
+                config.minimumShareReserves,
             1e5
         );
 
@@ -114,6 +120,7 @@ contract StethHyperdriveTest is HyperdriveTest {
             initialSharePrice: LIDO.getTotalPooledEther().divDown(
                 LIDO.getTotalShares()
             ),
+            minimumShareReserves: 1e15,
             positionDuration: POSITION_DURATION,
             checkpointDuration: CHECKPOINT_DURATION,
             timeStretch: HyperdriveUtils.calculateTimeStretch(0.05e18),
@@ -131,26 +138,41 @@ contract StethHyperdriveTest is HyperdriveTest {
             FIXED_RATE
         );
 
+        // Ensure that Bob received the correct amount of LP tokens. He should
+        // receive LP shares totaling the amount of shares that he contributed
+        // minus the shares set aside for the minimum share reserves and the
+        // zero address's initial LP contribution.
+        assertApproxEqAbs(
+            hyperdrive.balanceOf(AssetId._LP_ASSET_ID, bob),
+            contribution.divDown(config.initialSharePrice) -
+                2 *
+                config.minimumShareReserves,
+            1e5
+        );
+
         // Ensure that the share reserves and LP total supply are equal and correct.
-        assertEq(
+        assertApproxEqAbs(
             hyperdrive.getPoolInfo().shareReserves,
             contribution.mulDivDown(
                 LIDO.getTotalShares(),
                 LIDO.getTotalPooledEther()
-            )
+            ),
+            1
         );
         assertEq(
             hyperdrive.getPoolInfo().lpTotalSupply,
-            hyperdrive.getPoolInfo().shareReserves
+            hyperdrive.getPoolInfo().shareReserves - config.minimumShareReserves
         );
 
         // Verify that the correct events were emitted.
         verifyFactoryEvents(
             factory,
             bob,
-            contribution - 1e5,
+            contribution,
             FIXED_RATE,
-            new bytes32[](0)
+            config.minimumShareReserves,
+            new bytes32[](0),
+            1e5 // NOTE: We need some tolerance since stETH uses mulDivDown for share calculations.
         );
     }
 
