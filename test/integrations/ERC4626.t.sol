@@ -20,14 +20,13 @@ import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/Sa
 
 contract HyperdriveER4626Test is HyperdriveTest {
     using FixedPointMath for *;
-    using SafeERC20 for IERC20;
 
     ERC4626HyperdriveFactory factory;
     IERC20 dai = IERC20(address(0x6B175474E89094C44Da98b954EedeAC495271d0F));
     IERC4626 pool;
     uint256 aliceShares;
     MockERC4626Hyperdrive mockHyperdrive;
-
+    ERC4626DataProvider dataProvider;
 
     function setUp() public override __mainnet_fork(16_685_972) {
         alice = createUser("alice");
@@ -80,6 +79,13 @@ contract HyperdriveER4626Test is HyperdriveTest {
         mockHyperdrive = new MockERC4626Hyperdrive(
             config,
             address(0),
+            bytes32(0),
+            address(0),
+            pool
+        );
+
+        dataProvider = new ERC4626DataProvider(
+            config,
             bytes32(0),
             address(0),
             pool
@@ -153,9 +159,6 @@ contract HyperdriveER4626Test is HyperdriveTest {
 
         uint256 price = mockHyperdrive.pricePerShare();
         assertEq(price, 1.2e18);
-
-        vm.expectRevert(IHyperdrive.InverseSharePrice.selector);
-        ERC4626DataProvider.sharePrice != 1/ERC4626DataProvider.sharePrice;
     }
 
     function test_erc4626_testDeploy() external {
@@ -181,6 +184,16 @@ contract HyperdriveER4626Test is HyperdriveTest {
             contribution,
             apr
         );
+
+        // EXAMPLE: This will utilize ERC4626HypedriveDataProvider's `_pricePerShare` function
+        // under the hood. We want to make sure that this is correct in different circumstances
+        // (aka when the share price is different).
+        assertEq(hyperdrive.getPoolInfo().sharePrice, 1e18);
+        vm.stopPrank();
+        vm.startPrank(alice);
+        dai.transfer(address(pool), 2e22);
+        assertEq(hyperdrive.getPoolInfo().sharePrice, 8968127490039840637);
+        vm.stopPrank();
 
         // The initial price per share is one so we should have that the
         // shares in the alice account are 1
