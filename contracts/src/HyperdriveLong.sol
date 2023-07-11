@@ -31,7 +31,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         uint256 _minOutput,
         address _destination,
         bool _asUnderlying
-    ) external payable isNotPaused returns (uint256) {
+    ) external payable nonReentrant isNotPaused returns (uint256) {
         // Check that the message value and base amount are valid.
         _checkMessageValue();
         if (_baseAmount == 0) {
@@ -121,7 +121,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         uint256 _minOutput,
         address _destination,
         bool _asUnderlying
-    ) external returns (uint256) {
+    ) external nonReentrant returns (uint256) {
         if (_bondAmount == 0) {
             revert IHyperdrive.ZeroAmount();
         }

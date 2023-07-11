@@ -32,7 +32,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         uint256 _apr,
         address _destination,
         bool _asUnderlying
-    ) external payable returns (uint256 lpShares) {
+    ) external payable nonReentrant returns (uint256 lpShares) {
         // Check that the message value and base amount are valid.
         _checkMessageValue();
 
@@ -115,7 +115,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         uint256 _maxApr,
         address _destination,
         bool _asUnderlying
-    ) external payable isNotPaused returns (uint256 lpShares) {
+    ) external payable nonReentrant isNotPaused returns (uint256 lpShares) {
         // Check that the message value and base amount are valid.
         _checkMessageValue();
         if (_contribution == 0) {
