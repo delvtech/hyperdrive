@@ -6,8 +6,9 @@ import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { IMockDsrHyperdrive, MockDsrHyperdrive, MockDsrHyperdriveDataProvider, DsrManager } from "contracts/test/MockDsrHyperdrive.sol";
-import { BaseTest } from "test/utils/BaseTest.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
+import { BaseTest } from "test/utils/BaseTest.sol";
+import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 
 contract DsrHyperdrive is BaseTest {
     using FixedPointMath for uint256;
@@ -275,7 +276,8 @@ contract DsrHyperdrive is BaseTest {
             10
         );
 
-        // Some dust leftover
+        // The minimum share reserves, the zero address's LP capital, and some
+        // dust remaining from Bob's withdrawal should be left in the pool.
         assertEq(hyperdrive.totalShares(), 2e18 + 10);
 
         uint256 shareReserves = hyperdrive.getPoolInfo().shareReserves;
@@ -299,9 +301,9 @@ contract DsrHyperdrive is BaseTest {
         vm.stopPrank();
         vm.startPrank(alice);
 
-        // Alice calls addLiquidity() with 1000 DAI. She should receive shares
-        // that are approximately equal in amount to her contribution. We allow
-        // a fairly large tolerance since the donation changed the share price.
+        // Alice calls addLiquidity() with 1000 DAI. She should receive a
+        // substantial amount of shares (which helps to avoid numerical issues)
+        // that are close in value to her contribution.
         uint256 aliceContribution = 1_000e18;
         uint256 newShares = hyperdrive.addLiquidity(
             aliceContribution,
@@ -310,7 +312,12 @@ contract DsrHyperdrive is BaseTest {
             alice,
             true
         );
-        assertEq(newShares, 998996009010944006);
+        assertGt(newShares, 1e16);
+        assertApproxEqAbs(
+            newShares.mulDown(HyperdriveUtils.lpSharePrice(hyperdrive)),
+            aliceContribution,
+            1e6
+        );
     }
 
     // Tests for https://github.com/delvtech/hyperdrive/issues/356

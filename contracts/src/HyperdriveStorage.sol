@@ -36,7 +36,7 @@ abstract contract HyperdriveStorage is MultiTokenStorage {
     /// @notice The minimum amount of share reserves that must be maintained at
     ///         all times. This is used to enforce practical limits on the share
     ///         reserves to avoid numerical issues that can occur if the share
-    ///         reserves become very small or are equal to zero.
+    ///         reserves become very small or equal to zero.
     uint256 internal immutable _minimumShareReserves;
 
     /// @notice The state of the market. This includes the reserves, buffers,
@@ -98,10 +98,14 @@ abstract contract HyperdriveStorage is MultiTokenStorage {
         // Initialize the base token address.
         _baseToken = _config.baseToken;
 
-        // Initialize the minimum share reserves. This must be greater than
-        // 1e6 to ensure that the share reserves can't be brought to zero by
-        // opening a short.
-        if (_config.minimumShareReserves < 1e6) {
+        // Initialize the minimum share reserves. The minimum share reserves
+        // defines the amount of shares that will be reserved to ensure that
+        // the share reserves are never empty. We will also burn LP shares equal
+        // to the minimum share reserves upon initialization to ensure that the
+        // total supply of active LP tokens is always greater than zero. We
+        // don't allow a value less than 1e3 to avoid numerical issues that
+        // occur with small amounts of shares.
+        if (_config.minimumShareReserves < 1e3) {
             revert IHyperdrive.InvalidMinimumShareReserves();
         }
         _minimumShareReserves = _config.minimumShareReserves;
