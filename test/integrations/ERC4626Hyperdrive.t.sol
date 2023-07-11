@@ -177,14 +177,15 @@ contract ER4626HyperdriveTest is HyperdriveTest {
             apr
         );
 
-        // The initial price per share is one so the LP shares will initially
+         // The initial price per share is one so the LP shares will initially
         // be worth one base. Alice should receive LP shares equaling her
         // contribution minus the shares that she set aside for the minimum
         // share reserves and the zero address's initial LP contribution.
         assertEq(
             hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
-            contribution - 2 * config.minimumShareReserves
-        );
+            contribution - 2 * config.minimumShareReserves);
+
+
 
         // Verify that the correct events were emitted.
         verifyFactoryEvents(
