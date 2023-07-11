@@ -26,6 +26,7 @@ contract ER4626HyperdriveTest is HyperdriveTest {
     uint256 aliceShares;
     MockERC4626Hyperdrive mockHyperdrive;
 
+
     function setUp() public override __mainnet_fork(16_685_972) {
         alice = createUser("alice");
         bob = createUser("bob");
@@ -151,6 +152,9 @@ contract ER4626HyperdriveTest is HyperdriveTest {
 
         uint256 price = mockHyperdrive.pricePerShare();
         assertEq(price, 1.2e18);
+
+        vm.expectRevert(IHyperdrive.InverseSharePrice.selector);
+        ERC4626DataProvider.sharePrice != 1/ERC4626DataProvider.sharePrice;
     }
 
     function test_erc4626_testDeploy() external {
