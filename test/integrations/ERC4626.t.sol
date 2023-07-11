@@ -15,15 +15,19 @@ import { Mock4626, ERC20 } from "../mocks/Mock4626.sol";
 import { MockERC4626Hyperdrive } from "../mocks/Mock4626Hyperdrive.sol";
 import { HyperdriveUtils } from "../utils/HyperdriveUtils.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
+import { ERC4626DataProvider } from "contracts/src/instances/ERC4626DataProvider.sol";
+import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract HyperdriveER4626Test is HyperdriveTest {
     using FixedPointMath for *;
+    using SafeERC20 for IERC20;
 
     ERC4626HyperdriveFactory factory;
     IERC20 dai = IERC20(address(0x6B175474E89094C44Da98b954EedeAC495271d0F));
     IERC4626 pool;
     uint256 aliceShares;
     MockERC4626Hyperdrive mockHyperdrive;
+
 
     function setUp() public override __mainnet_fork(16_685_972) {
         alice = createUser("alice");
@@ -149,6 +153,9 @@ contract HyperdriveER4626Test is HyperdriveTest {
 
         uint256 price = mockHyperdrive.pricePerShare();
         assertEq(price, 1.2e18);
+
+        vm.expectRevert(IHyperdrive.InverseSharePrice.selector);
+        ERC4626DataProvider.sharePrice != 1/ERC4626DataProvider.sharePrice;
     }
 
     function test_erc4626_testDeploy() external {
