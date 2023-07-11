@@ -36,17 +36,16 @@ contract ERC4626Hyperdrive is Hyperdrive {
         address _linkerFactory,
         IERC4626 _pool
     ) Hyperdrive(_config, _dataProvider, _linkerCodeHash, _linkerFactory) {
+        // Initialize the pool immutable.
+        pool = _pool;
+
         // Ensure that the Hyperdrive pool was configured properly.
         // WARN - 4626 implementations should be checked that if they use an asset
         //        with decimals less than 18 that the preview deposit is scale
         //        invariant. EG - because this line uses a very large query to load
         //        price for USDC if the price per share changes based on size of deposit
         //        then this line will read an incorrect and possibly dangerous price.
-        uint256 shareEstimate = _pool.convertToShares(FixedPointMath.ONE_18);
-        if (
-            _config.initialSharePrice !=
-            FixedPointMath.ONE_18.divDown(shareEstimate)
-        ) {
+        if (_config.initialSharePrice != _pricePerShare()) {
             revert IHyperdrive.InvalidInitialSharePrice();
         }
         if (address(_config.baseToken) != _pool.asset()) {
@@ -54,7 +53,6 @@ contract ERC4626Hyperdrive is Hyperdrive {
         }
 
         // Set immutables and prepare for deposits by setting immutables
-        pool = _pool;
         if (!_config.baseToken.approve(address(pool), type(uint256).max)) {
             revert IHyperdrive.ApprovalFailed();
         }
