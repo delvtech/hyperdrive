@@ -152,15 +152,6 @@ contract ER4626HyperdriveTest is HyperdriveTest {
         assertEq(amountWithdrawn, 3e18);
     }
 
-    function test_erc4626_pricePerShare() external {
-        // First we add some shares and interest
-        vm.startPrank(alice);
-        dai.transfer(address(pool), 2e18);
-
-        uint256 price = mockHyperdrive.pricePerShare();
-        assertEq(price, 1.2e18);
-    }
-
     function test_erc4626_testDeploy() external {
         vm.startPrank(alice);
         uint256 apr = 0.01e18; // 1% apr
@@ -185,6 +176,16 @@ contract ER4626HyperdriveTest is HyperdriveTest {
             contribution,
             apr
         );
+
+        // EXAMPLE: This will utilize ERC4626HypedriveDataProvider's `_pricePerShare` function
+        // under the hood. We want to make sure that this is correct in different circumstances
+        // (aka when the share price is different).
+        assertEq(hyperdrive.getPoolInfo().sharePrice, 1e18);
+        vm.stopPrank();
+        vm.startPrank(alice);
+        dai.transfer(address(pool), 2e22);
+        assertEq(hyperdrive.getPoolInfo().sharePrice, 8968127490039840637);
+        vm.stopPrank();
 
         // The initial price per share is one so the LP shares will initially
         // be worth one base. Alice should receive LP shares equaling her
