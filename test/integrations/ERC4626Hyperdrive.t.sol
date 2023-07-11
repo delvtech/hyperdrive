@@ -16,7 +16,6 @@ import { MockERC4626Hyperdrive } from "../mocks/Mock4626Hyperdrive.sol";
 import { HyperdriveUtils } from "../utils/HyperdriveUtils.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { ERC4626DataProvider } from "contracts/src/instances/ERC4626DataProvider.sol";
-import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract ER4626HyperdriveTest is HyperdriveTest {
     using FixedPointMath for *;
