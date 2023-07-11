@@ -17,22 +17,15 @@ import { Lib } from "test/utils/Lib.sol";
 import { ERC4626ValidationTest } from "./ERC4626Validation.t.sol"; 
 
 
-// Interface for the `Pot` of the underlying DSR
-interface PotLike {
-  function rho() external view returns (uint256);
-  function dsr() external view returns (uint256);
-  function drip() external returns (uint256);
-}
-
-contract sDaiTest is ERC4626ValidationTest {
+contract StethERC4626 is ERC4626ValidationTest {
   using FixedPointMath for *;
-  
-  function setUp() public override __mainnet_fork(17_318_972) {
-    underlyingToken = IERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
-    token = IERC4626(0x83F20F44975D03b1b09e64809B757c47f942BEeA);
 
-    IERC20 dai = underlyingToken;
-    IERC4626 sDai = token;
+  function setUp() public override __mainnet_fork(17_059_368) {
+    underlyingToken = IERC20(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
+    token = IERC4626(0xF9A98A9452485ed55cd3Ce5260C2b71c9807b11a);
+
+    IERC20 steth = underlyingToken;
+    IERC4626 stethERC4626 = token;
 
     alice = createUser("alice");
     bob = createUser("bob");
@@ -40,7 +33,7 @@ contract sDaiTest is ERC4626ValidationTest {
     vm.startPrank(deployer);
 
     ERC4626HyperdriveDeployer simpleDeployer = new ERC4626HyperdriveDeployer(
-      sDai
+      stethERC4626
     );
 
     address[] memory defaults = new address[](1);
@@ -55,12 +48,13 @@ contract sDaiTest is ERC4626ValidationTest {
       defaults,
       address(forwarderFactory),
       forwarderFactory.ERC20LINK_HASH(),
-      sDai
+      stethERC4626
     );
 
-    address daiWhale = 0x60FaAe176336dAb62e284Fe19B885B095d29fB7F;
-    whaleTransfer(daiWhale, dai, alice);
-
+    // Note this is wsteth so it could be somewhat problematic in the future
+    address stethWhale = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
+    whaleTransfer(stethWhale, steth, alice);
+   
     IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
       baseToken: underlyingToken,
       initialSharePrice: FixedPointMath.ONE_18.divDown(token.convertToShares(FixedPointMath.ONE_18)),
@@ -76,7 +70,7 @@ contract sDaiTest is ERC4626ValidationTest {
       updateGap: UPDATE_GAP
     });
 
-    uint256 contribution = 10_000e18; // Revisit
+    uint256 contribution = 1_000e18; // Revisit
 
     vm.stopPrank();
     vm.startPrank(alice);
@@ -88,25 +82,18 @@ contract sDaiTest is ERC4626ValidationTest {
       FIXED_RATE
     );
 
-    dai.approve(address(hyperdriveInstance), type(uint256).max);
-    dai.approve(address(sDai), type(uint256).max);
+    steth.approve(address(stethERC4626), type(uint256).max);
 
     vm.stopPrank();
     vm.startPrank(bob);
-    dai.approve(address(hyperdriveInstance), type(uint256).max);
+    steth.approve(address(hyperdrive), type(uint256).max);
     vm.stopPrank();
 
     // Start recording events.
-    vm.recordLogs();
+    vm.recordLogs(); 
   }
 
   function advanceTimeWithYield(uint256 timeDelta) override public {
     vm.warp(block.timestamp + timeDelta);
-    // Should accumulate interest in the dsr based on the time passed
-    // in theory if used in excess this may cause pot insolvency (no actual dai accuring, just 1 share growing bigger and withdrawing)
-    // but shouldn't be a problem for small tests
-
-    // Note - Mainnet only address for Pot, but fine since this test explicitly uses a Mainnet fork in test
-    PotLike(0x197E90f9FAD81970bA7976f33CbD77088E5D7cf7).drip();
   }
 }
