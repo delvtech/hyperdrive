@@ -305,7 +305,6 @@ contract MockHyperdrive is Hyperdrive {
     {
         uint256 assets = _baseToken.balanceOf(address(this));
         sharePrice = totalShares != 0 ? assets.divDown(totalShares) : 0;
-        return sharePrice;
     }
 }
 
