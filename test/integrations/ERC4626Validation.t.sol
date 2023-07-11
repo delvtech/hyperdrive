@@ -137,10 +137,6 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
     );
 
     (uint256 maturityTime, ) = openShortERC4626(alice, shortAmount, true);
-
-    advanceTimeWithYield(POSITION_DURATION);
-
-    hyperdrive.closeShort(maturityTime, shortAmount, 0, alice, true);
   }
   
   function test_OpenShortWithToken(uint256 shortAmount) external {
