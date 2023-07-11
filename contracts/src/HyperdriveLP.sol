@@ -26,13 +26,13 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
     /// @param _asUnderlying If true the user is charged in underlying if false
     ///                      the contract transfers in yield source directly.
     ///                      Note - for some paths one choice may be disabled or blocked.
-    /// @return shares The initial number of LP shares created.
+    /// @return lpShares The initial number of LP shares created.
     function initialize(
         uint256 _contribution,
         uint256 _apr,
         address _destination,
         bool _asUnderlying
-    ) external payable returns (uint256) {
+    ) external payable returns (uint256 lpShares) {
         // Check that the message value and base amount are valid.
         _checkMessageValue();
 
@@ -63,7 +63,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         if (shares < 2 * _minimumShareReserves) {
             revert IHyperdrive.BelowMinimumContribution();
         }
-        uint256 shareContribution = shares - 2 * _minimumShareReserves;
+        lpShares = shares - 2 * _minimumShareReserves;
 
         // Create an initial checkpoint.
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
@@ -92,12 +92,12 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // address, but this is a small price to pay for the added security
         // in practice.
         _mint(AssetId._LP_ASSET_ID, address(0), _minimumShareReserves);
-        _mint(AssetId._LP_ASSET_ID, _destination, shareContribution);
+        _mint(AssetId._LP_ASSET_ID, _destination, lpShares);
 
         // Emit an Initialize event.
-        emit Initialize(_destination, shareContribution, _contribution, _apr);
+        emit Initialize(_destination, lpShares, _contribution, _apr);
 
-        return shareContribution;
+        return lpShares;
     }
 
     /// @notice Allows LPs to supply liquidity for LP shares.
@@ -230,21 +230,26 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
     /// @notice Allows an LP to burn shares and withdraw from the pool.
     /// @param _shares The LP shares to burn.
     /// @param _minOutput The minium amount of the base token to receive.Note - this
-    ///                   value is likely to be less than the amount LP shares are worth.
-    ///                   The remainder is in short and long withdraw shares which are hard
-    ///                   to game the value of.
+    ///        value is likely to be less than the amount LP shares are worth.
+    ///        The remainder is in short and long withdraw shares which are hard
+    ///        to game the value of.
     /// @param _destination The address which will receive the withdraw proceeds
     /// @param _asUnderlying If true the user is paid in underlying if false
-    ///                      the contract transfers in yield source directly.
-    ///                      Note - for some paths one choice may be disabled or blocked.
-    /// @return Returns the base out, the long withdraw shares out and the short withdraw
-    ///         shares out.
+    ///        the contract transfers in yield source directly.
+    ///        Note - for some paths one choice may be disabled or blocked.
+    /// @return baseProceeds The base the LP removing liquidity receives. The
+    ///         LP receives a proportional amount of the pool's idle capital
+    /// @return withdrawalShares The base that the LP receives buys out some of
+    ///         their LP shares, but it may not be sufficient to fully buy the
+    ///         LP out. In this case, the LP receives withdrawal shares equal
+    ///         in value to the present value they are owed. As idle capital
+    ///         becomes available, the pool will buy back these shares.
     function removeLiquidity(
         uint256 _shares,
         uint256 _minOutput,
         address _destination,
         bool _asUnderlying
-    ) external returns (uint256, uint256) {
+    ) external returns (uint256 baseProceeds, uint256 withdrawalShares) {
         if (_shares == 0) {
             revert IHyperdrive.ZeroAmount();
         }
@@ -263,16 +268,14 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         _burn(AssetId._LP_ASSET_ID, msg.sender, _shares);
 
         // Remove the liquidity from the pool.
-        (
-            uint256 shareProceeds,
-            uint256 withdrawalShares
-        ) = _applyRemoveLiquidity(
-                _shares,
-                sharePrice,
-                totalLpSupply,
-                totalActiveLpSupply,
-                withdrawalSharesOutstanding
-            );
+        uint256 shareProceeds;
+        (shareProceeds, withdrawalShares) = _applyRemoveLiquidity(
+            _shares,
+            sharePrice,
+            totalLpSupply,
+            totalActiveLpSupply,
+            withdrawalSharesOutstanding
+        );
 
         // Mint the withdrawal shares to the LP.
         _mint(
@@ -282,11 +285,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         );
 
         // Withdraw the shares from the yield source.
-        uint256 baseProceeds = _withdraw(
-            shareProceeds,
-            _destination,
-            _asUnderlying
-        );
+        baseProceeds = _withdraw(shareProceeds, _destination, _asUnderlying);
 
         // Enforce min user outputs
         if (_minOutput > baseProceeds) revert IHyperdrive.OutputLimit();
@@ -300,7 +299,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             uint256(withdrawalShares)
         );
 
-        return (baseProceeds, uint256(withdrawalShares));
+        return (baseProceeds, withdrawalShares);
     }
 
     /// @notice Redeems withdrawal shares by giving the LP a pro-rata amount of
@@ -314,14 +313,14 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
     /// @param _asUnderlying If true the user is paid in underlying if false
     ///                      the contract transfers in yield source directly.
     ///                      Note - for some paths one choice may be disabled or blocked.
-    /// @return proceeds The amount of base the LP received.
+    /// @return baseProceeds The amount of base the LP received.
     /// @return sharesRedeemed The amount of withdrawal shares that were redeemed.
     function redeemWithdrawalShares(
         uint256 _shares,
         uint256 _minOutputPerShare,
         address _destination,
         bool _asUnderlying
-    ) external returns (uint256, uint256) {
+    ) external returns (uint256 baseProceeds, uint256 sharesRedeemed) {
         // Perform a checkpoint.
         uint256 sharePrice = _pricePerShare();
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
@@ -329,39 +328,36 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // Clamp the shares to the total amount of shares ready for withdrawal
         // to avoid unnecessary reverts. We exit early if the user has no shares
         // available to redeem.
-        if (_shares > _withdrawPool.readyToWithdraw) {
-            _shares = _withdrawPool.readyToWithdraw;
+        sharesRedeemed = _shares;
+        if (sharesRedeemed > _withdrawPool.readyToWithdraw) {
+            sharesRedeemed = _withdrawPool.readyToWithdraw;
         }
-        if (_shares == 0) return (0, 0);
+        if (sharesRedeemed == 0) return (0, 0);
 
         // We burn the shares from the user
-        _burn(AssetId._WITHDRAWAL_SHARE_ASSET_ID, msg.sender, _shares);
+        _burn(AssetId._WITHDRAWAL_SHARE_ASSET_ID, msg.sender, sharesRedeemed);
 
         // The LP gets the pro-rata amount of the collected proceeds.
-        uint256 shareProceeds = _shares.mulDivDown(
+        uint256 shareProceeds = sharesRedeemed.mulDivDown(
             uint128(_withdrawPool.proceeds),
             uint128(_withdrawPool.readyToWithdraw)
         );
 
         // Apply the update to the withdrawal pool.
-        _withdrawPool.readyToWithdraw -= _shares.toUint128();
+        _withdrawPool.readyToWithdraw -= sharesRedeemed.toUint128();
         _withdrawPool.proceeds -= shareProceeds.toUint128();
 
         // Withdraw for the user
-        uint256 proceeds = _withdraw(
-            shareProceeds,
-            _destination,
-            _asUnderlying
-        );
+        baseProceeds = _withdraw(shareProceeds, _destination, _asUnderlying);
 
         // Enforce the minimum user output per share.
-        if (_minOutputPerShare.mulDown(_shares) > proceeds)
+        if (_minOutputPerShare.mulDown(sharesRedeemed) > baseProceeds)
             revert IHyperdrive.OutputLimit();
 
         // Emit a RedeemWithdrawalShares event.
-        emit RedeemWithdrawalShares(_destination, _shares, proceeds);
+        emit RedeemWithdrawalShares(_destination, sharesRedeemed, baseProceeds);
 
-        return (proceeds, _shares);
+        return (baseProceeds, sharesRedeemed);
     }
 
     /// @dev Updates the pool's liquidity and holds the pool's spot price constant.
@@ -374,8 +370,8 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         }
 
         // Ensure that the share reserves are greater than the minimum share
-        // reserves. If this invariant isn't satisfied after initialization, the
-        // system is not in a healthy state.
+        // reserves. This invariant should never break. If it breaks, all
+        // activity should cease.
         uint256 shareReserves = _marketState.shareReserves;
         if (shareReserves < _minimumShareReserves) {
             revert IHyperdrive.InvalidShareReserves();

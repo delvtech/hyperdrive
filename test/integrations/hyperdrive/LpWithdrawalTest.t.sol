@@ -465,15 +465,6 @@ contract LpWithdrawalTest is HyperdriveTest {
                 celine,
                 celineLpShares
             );
-            // TODO: Investigate this more when working on paying out excess
-            // idle liquidity.
-            //
-            // uint256 _celineMargin = (testParams.shortAmount - testParams.shortBasePaid).mulDivDown(celineLpShares, celineLpShares + aliceWithdrawalShares + hyperdrive.getPoolConfig().minimumShareReserves);
-            // assertApproxEqAbs(
-            //     celineBaseProceeds,
-            //     testParams.contribution - celineMargin - celineSlippagePayment,
-            //     1e9
-            // );
         }
 
         // Bob closes his long.
@@ -552,7 +543,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         );
         assertGt(
             celineBaseProceeds + celineRedeemProceeds,
-            testParams.contribution - celineSlippagePayment
+            testParams.contribution - celineSlippagePayment // TODO: This bound is WAY too large
         );
 
         // Ensure that the ending base balance of Hyperdrive is zero.
@@ -931,11 +922,6 @@ contract LpWithdrawalTest is HyperdriveTest {
             0,
             1e9 // TODO: Why is this not equal to zero?
         );
-        // TODO: There is an edge case where the withdrawal pool doesn't receive
-        // all of its portion of the available idle liquidity when a closed
-        // position doesn't perform well.
-        // Ensure that the ending base balance of Hyperdrive is zero.
-        // assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1);
     }
 
     function presentValueRatio() internal view returns (uint256) {

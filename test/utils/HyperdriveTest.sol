@@ -67,9 +67,13 @@ contract HyperdriveTest is BaseTest {
         vm.startPrank(governance);
         hyperdrive.setPauser(pauser, true);
 
-        // Advance time so that Hyperdrive can look back more than a position
-        // duration.
-        vm.warp(POSITION_DURATION * 3);
+        // If this isn't a forked environment, advance time so that Hyperdrive
+        // can look back more than a position duration. We assume that fork
+        // tests are using a sufficiently recent block that this won't be an
+        // issue.
+        if (!isForked) {
+            vm.warp(POSITION_DURATION * 3);
+        }
     }
 
     function deploy(

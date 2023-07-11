@@ -14,7 +14,7 @@ import { DsrManager } from "contracts/test/MockDsrHyperdrive.sol";
 import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../utils/HyperdriveUtils.sol";
 
-contract HyperdriveDSRTest is HyperdriveTest {
+contract HyperdriveDsrTest is HyperdriveTest {
     using FixedPointMath for *;
 
     DsrHyperdriveFactory factory;
@@ -23,9 +23,7 @@ contract HyperdriveDSRTest is HyperdriveTest {
         DsrManager(address(0x373238337Bfe1146fb49989fc222523f83081dDb));
 
     function setUp() public override __mainnet_fork(16_685_972) {
-        // TODO: Because the underlying setUp isn't called, the addresses aren't
-        // configured correctly.
-        alice = createUser("alice");
+        super.setUp();
 
         vm.startPrank(deployer);
 
@@ -48,16 +46,9 @@ contract HyperdriveDSRTest is HyperdriveTest {
             address(manager)
         );
 
-        // Set up DAI balances for Alice and Bob.
+        // Set up DAI balances for Alice.
         address daiWhale = 0x075e72a5eDf65F0A5f44699c7654C1a76941Ddc8;
         whaleTransfer(daiWhale, dai, alice);
-        vm.stopPrank();
-        vm.startPrank(alice);
-        dai.approve(address(hyperdrive), type(uint256).max);
-        vm.stopPrank();
-        vm.startPrank(bob);
-        dai.approve(address(hyperdrive), type(uint256).max);
-        vm.stopPrank();
 
         // Start recording event logs.
         vm.recordLogs();

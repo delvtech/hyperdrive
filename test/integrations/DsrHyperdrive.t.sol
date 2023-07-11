@@ -10,7 +10,7 @@ import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { BaseTest } from "test/utils/BaseTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 
-contract DsrHyperdrive is BaseTest {
+contract DsrHyperdriveTest is BaseTest {
     using FixedPointMath for uint256;
 
     IMockDsrHyperdrive hyperdrive;
@@ -261,24 +261,30 @@ contract DsrHyperdrive is BaseTest {
         vm.stopPrank();
         vm.startPrank(alice);
 
-        dai.transfer(bob, 2002e18);
+        uint256 donation = 2000.01e18;
+        dai.transfer(bob, donation);
 
         vm.stopPrank();
         vm.startPrank(bob);
 
         // Bob front-runs Alice with a call to dsrManager.join() with 2000.01 DAI
-        dai.approve(address(dsrManager), 2002e18);
-        dsrManager.join(address(hyperdrive), 2000.01e18);
-
-        assertApproxEqAbs(
-            dsrManager.daiBalance(address(hyperdrive)),
-            2002.01e18,
-            10
-        );
+        dai.approve(address(dsrManager), donation);
+        dsrManager.join(address(hyperdrive), donation);
 
         // The minimum share reserves, the zero address's LP capital, and some
         // dust remaining from Bob's withdrawal should be left in the pool.
-        assertEq(hyperdrive.totalShares(), 2e18 + 10);
+        uint256 dust = 10;
+        assertEq(
+            dsrManager.daiBalance(address(hyperdrive)),
+            donation +
+                2 *
+                hyperdrive.getPoolConfig().minimumShareReserves +
+                dust
+        );
+        assertEq(
+            hyperdrive.totalShares(),
+            2 * hyperdrive.getPoolConfig().minimumShareReserves + dust
+        );
 
         uint256 shareReserves = hyperdrive.getPoolInfo().shareReserves;
         uint256 bondReserves = hyperdrive.getPoolInfo().bondReserves;

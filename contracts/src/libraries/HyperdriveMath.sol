@@ -364,14 +364,17 @@ library HyperdriveMath {
         // Our maximum long will be the largest trade size that doesn't fail
         // the solvency check.
         for (uint256 i = 0; i < _maxIterations; i++) {
-            // If the error is greater than zero and the solution is the largest
-            // we've found so far, then we update our result.
-            int256 error = int256((_params.shareReserves + dz)) -
+            // If the approximation error is greater than zero and the solution
+            // is the largest we've found so far, then we update our result.
+            int256 approximationError = int256((_params.shareReserves + dz)) -
                 int256(
                     (_params.longsOutstanding + dy).divDown(_params.sharePrice)
                 ) -
                 int256(_params.minimumShareReserves);
-            if (error > 0 && dz.mulDown(_params.sharePrice) > baseAmount) {
+            if (
+                approximationError > 0 &&
+                dz.mulDown(_params.sharePrice) > baseAmount
+            ) {
                 baseAmount = dz.mulDown(_params.sharePrice);
                 bondAmount = dy;
             }
@@ -403,10 +406,16 @@ library HyperdriveMath {
                 // positive,
                 break;
             }
-            if (error < 0) {
-                dz -= uint256(-error).mulDivDown(p, FixedPointMath.ONE_18 - p);
+            if (approximationError < 0) {
+                dz -= uint256(-approximationError).mulDivDown(
+                    p,
+                    FixedPointMath.ONE_18 - p
+                );
             } else {
-                dz += uint256(error).mulDivDown(p, FixedPointMath.ONE_18 - p);
+                dz += uint256(approximationError).mulDivDown(
+                    p,
+                    FixedPointMath.ONE_18 - p
+                );
             }
             dy = YieldSpaceMath.calculateBondsOutGivenSharesIn(
                 _params.shareReserves,

@@ -148,9 +148,9 @@ contract ExtremeInputs is HyperdriveTest {
 
         // Test some concrete values with the max long scenario.
         _updateLiquidity__scenario__maxLong(
-            1e6,
+            10e6,
             fixedRate,
-            10_000_000_000e6,
+            100_000_000_000e6,
             5_000_000_000e6,
             5_000_000_000e6,
             1e12
@@ -174,11 +174,11 @@ contract ExtremeInputs is HyperdriveTest {
 
         // Test some concrete values with the max short scenario.
         _updateLiquidity__scenario__maxShort(
-            1e6,
+            10e6,
             fixedRate,
-            10_000_000_000e6,
-            5_000_000_000e6,
-            5_000_000_000e6,
+            100_000_000_000e6,
+            50_000_000_000e6,
+            50_000_000_000e6,
             1e12
         );
         _updateLiquidity__scenario__maxShort(
@@ -190,11 +190,11 @@ contract ExtremeInputs is HyperdriveTest {
             1
         );
         _updateLiquidity__scenario__maxShort(
-            1e18,
+            10e18,
             fixedRate,
-            10_000_000_000e18,
-            5_000_000_000e18,
-            50_000_000e18,
+            100_000_000_000e18,
+            50_000_000_000e18,
+            50_000_000_000e18,
             1
         );
     }
@@ -212,16 +212,18 @@ contract ExtremeInputs is HyperdriveTest {
     ) external {
         uint256 fixedRate = 0.05e18;
 
-        // minimumShareReserves = 1e6
+        // Validate the safe bounds for a minimum share reserves of 10e6. This
+        // is a suitable default for USDC pools that supports pool total
+        // supplies up to 100 billion USDC.
         {
-            uint256 minimumShareReserves = 1e6;
+            uint256 minimumShareReserves = 10e6;
 
             // Sample the contribution. We simulate the pool being deployed and
             // initialized so that we can calculate the bounds for the longs and
             // shorts.
             uint256 contribution = _contribution.normalizeToRange(
-                100e6,
-                10_000_000_000e6
+                1_000e6,
+                100_000_000_000e6
             );
             IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
             config.minimumShareReserves = minimumShareReserves;
@@ -255,7 +257,9 @@ contract ExtremeInputs is HyperdriveTest {
             );
         }
 
-        // minimumShareReserves = 1e15
+        // Validate the safe bounds for a minimum share reserves of 1e15. This
+        // is a suitable default for ETH pools that supports pool total
+        // supplies up to 200 million ETH
         {
             uint256 minimumShareReserves = 1e15;
 
@@ -298,16 +302,18 @@ contract ExtremeInputs is HyperdriveTest {
             );
         }
 
-        // minimumShareReserves = 1e18
+        // Validate the safe bounds for a minimum share reserves of 1e18. This
+        // is a suitable default for DAI pools and pools with other stablecoins.
+        // It supports pool total supplies up to 100 billion DAI.
         {
-            uint256 minimumShareReserves = 1e18;
+            uint256 minimumShareReserves = 10e18;
 
             // Sample the contribution. We simulate the pool being deployed and
             // initialized so that we can calculate the bounds for the longs and
             // shorts.
             uint256 contribution = _contribution.normalizeToRange(
                 1_000e18,
-                10_000_000_000e18
+                100_000_000_000e18
             );
             IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
             config.minimumShareReserves = minimumShareReserves;
