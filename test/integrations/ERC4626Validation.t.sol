@@ -97,6 +97,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
       0.00001e18,
       min(HyperdriveUtils.calculateMaxLong(hyperdrive), underlyingToken.balanceOf(alice))
     );
+    underlyingToken.approve(address(token), type(uint256).max);
     token.deposit(basePaid, alice);
 
     openLongERC4626(alice, basePaid, false);
@@ -145,6 +146,8 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
       0.00001e18,
       min(HyperdriveUtils.calculateMaxShort(hyperdrive), underlyingToken.balanceOf(alice))
     );
+
+    underlyingToken.approve(address(token), type(uint256).max);
     token.deposit(shortAmount, alice);
     openShortERC4626(alice, shortAmount, false);
   }
@@ -172,6 +175,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
       min(HyperdriveUtils.calculateMaxShort(hyperdrive), underlyingToken.balanceOf(alice))
     );
 
+    underlyingToken.approve(address(token), type(uint256).max);
     token.deposit(shortAmount, alice);
     (uint256 maturityTime, ) = openShortERC4626(alice, shortAmount, true);
     // The term passes and interest accrues.
