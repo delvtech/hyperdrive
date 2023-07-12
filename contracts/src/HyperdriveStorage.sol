@@ -14,24 +14,30 @@ import { MultiTokenStorage } from "./token/MultiTokenStorage.sol";
 abstract contract HyperdriveStorage is MultiTokenStorage {
     /// Tokens ///
 
-    // @notice The base asset.
+    /// @notice The base asset.
     IERC20 internal immutable _baseToken;
 
     /// Time ///
 
-    // @notice The amount of seconds between share price checkpoints.
+    /// @notice The amount of seconds between share price checkpoints.
     uint256 internal immutable _checkpointDuration;
 
-    // @notice The amount of seconds that elapse before a bond can be redeemed.
+    /// @notice The amount of seconds that elapse before a bond can be redeemed.
     uint256 internal immutable _positionDuration;
 
-    // @notice A parameter that decreases slippage around a target rate.
+    /// @notice A parameter that decreases slippage around a target rate.
     uint256 internal immutable _timeStretch;
 
     /// Market State ///
 
-    // @notice The share price at the time the pool was created.
+    /// @notice The share price at the time the pool was created.
     uint256 internal immutable _initialSharePrice;
+
+    /// @notice The minimum amount of share reserves that must be maintained at
+    ///         all times. This is used to enforce practical limits on the share
+    ///         reserves to avoid numerical issues that can occur if the share
+    ///         reserves become very small or equal to zero.
+    uint256 internal immutable _minimumShareReserves;
 
     /// @notice The state of the market. This includes the reserves, buffers,
     ///         and other data used to price trades and maintain solvency.
@@ -91,6 +97,18 @@ abstract contract HyperdriveStorage is MultiTokenStorage {
     constructor(IHyperdrive.PoolConfig memory _config) {
         // Initialize the base token address.
         _baseToken = _config.baseToken;
+
+        // Initialize the minimum share reserves. The minimum share reserves
+        // defines the amount of shares that will be reserved to ensure that
+        // the share reserves are never empty. We will also burn LP shares equal
+        // to the minimum share reserves upon initialization to ensure that the
+        // total supply of active LP tokens is always greater than zero. We
+        // don't allow a value less than 1e3 to avoid numerical issues that
+        // occur with small amounts of shares.
+        if (_config.minimumShareReserves < 1e3) {
+            revert IHyperdrive.InvalidMinimumShareReserves();
+        }
+        _minimumShareReserves = _config.minimumShareReserves;
 
         // Initialize the time configurations. There must be at least one
         // checkpoint per term to avoid having a position duration of zero.

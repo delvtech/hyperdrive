@@ -254,8 +254,9 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // reserves and the bond reserves decreased, we must ensure that the
         // base reserves are greater than the longsOutstanding.
         if (
-            _sharePrice.mulDown(uint256(_marketState.shareReserves)) <
-            _marketState.longsOutstanding
+            _sharePrice.mulDown(_marketState.shareReserves) <
+            uint256(_marketState.longsOutstanding).divDown(_sharePrice) +
+                _minimumShareReserves
         ) {
             revert IHyperdrive.BaseBufferExceedsShareReserves();
         }

@@ -55,49 +55,39 @@ contract sDaiTest is ERC4626ValidationTest {
       defaults,
       address(forwarderFactory),
       forwarderFactory.ERC20LINK_HASH(),
-      sDai
+      token
     );
 
     address daiWhale = 0x60FaAe176336dAb62e284Fe19B885B095d29fB7F;
     whaleTransfer(daiWhale, dai, alice);
 
-    IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
-      baseToken: underlyingToken,
-      initialSharePrice: FixedPointMath.ONE_18.divDown(token.convertToShares(FixedPointMath.ONE_18)),
-      positionDuration: POSITION_DURATION,
-      checkpointDuration: CHECKPOINT_DURATION,
-      timeStretch: FixedPointMath.ONE_18.divDown(
-        22.186877016851916266e18
-      ),
-      governance: governance,
-      feeCollector: feeCollector,
-      fees: IHyperdrive.Fees({ curve: 0, flat: 0, governance: 0 }),
-      oracleSize: ORACLE_SIZE,
-      updateGap: UPDATE_GAP
-    });
-
+    IHyperdrive.PoolConfig memory config = testConfig(FIXED_RATE);
+    config.baseToken = underlyingToken;
+    config.initialSharePrice = FixedPointMath.ONE_18.divDown(token.convertToShares(FixedPointMath.ONE_18));
+    
     uint256 contribution = 10_000e18; // Revisit
 
     vm.stopPrank();
     vm.startPrank(alice);
     underlyingToken.approve(address(factory), type(uint256).max);
-
+    
+    
     hyperdrive = factory.deployAndInitialize(config,
       new bytes32[](0),
       contribution,
       FIXED_RATE
     );
-
-    dai.approve(address(hyperdriveInstance), type(uint256).max);
+  
+    dai.approve(address(hyperdrive), type(uint256).max);
     dai.approve(address(sDai), type(uint256).max);
 
     vm.stopPrank();
     vm.startPrank(bob);
-    dai.approve(address(hyperdriveInstance), type(uint256).max);
+    dai.approve(address(hyperdrive), type(uint256).max);
     vm.stopPrank();
 
     // Start recording events.
-    vm.recordLogs();
+    vm.recordLogs(); 
   }
 
   function advanceTimeWithYield(uint256 timeDelta) override public {

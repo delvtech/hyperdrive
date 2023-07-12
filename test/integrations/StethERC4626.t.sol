@@ -14,6 +14,7 @@ import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
 import { MockERC4626Hyperdrive } from "../mocks/Mock4626Hyperdrive.sol";
 import { HyperdriveUtils } from "../utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
+import { ILido } from "contracts/src/interfaces/ILido.sol";
 import { ERC4626ValidationTest } from "./ERC4626Validation.t.sol"; 
 
 
@@ -55,20 +56,9 @@ contract StethERC4626 is ERC4626ValidationTest {
     address stethWhale = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
     whaleTransfer(stethWhale, steth, alice);
    
-    IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
-      baseToken: underlyingToken,
-      initialSharePrice: FixedPointMath.ONE_18.divDown(token.convertToShares(FixedPointMath.ONE_18)),
-      positionDuration: POSITION_DURATION,
-      checkpointDuration: CHECKPOINT_DURATION,
-      timeStretch: FixedPointMath.ONE_18.divDown(
-        22.186877016851916266e18
-      ),
-      governance: governance,
-      feeCollector: feeCollector,
-      fees: IHyperdrive.Fees({ curve: 0, flat: 0, governance: 0 }),
-      oracleSize: ORACLE_SIZE,
-      updateGap: UPDATE_GAP
-    });
+    IHyperdrive.PoolConfig memory config = testConfig(FIXED_RATE);
+    config.baseToken = underlyingToken;
+    config.initialSharePrice = FixedPointMath.ONE_18.divDown(token.convertToShares(FixedPointMath.ONE_18));
 
     uint256 contribution = 1_000e18; // Revisit
 
@@ -95,5 +85,31 @@ contract StethERC4626 is ERC4626ValidationTest {
 
   function advanceTimeWithYield(uint256 timeDelta) override public {
     vm.warp(block.timestamp + timeDelta);
+
+    // The Lido storage location that tracks buffered ether reserves. We can
+    // simulate the accrual of interest by updating this value.
+    bytes32 BUFFERED_ETHER_POSITION =
+        keccak256("lido.Lido.bufferedEther");
+
+    ILido LIDO =
+        ILido(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
+
+    uint256 variableRate = 1.5e18;
+
+    // Accrue interest in Lido. Since the share price is given by
+    // `getTotalPooledEther() / getTotalShares()`, we can simulate the
+    // accrual of interest by multiplying the total pooled ether by the
+    // variable rate plus one.
+    uint256 bufferedEther = variableRate >= 0
+      ? LIDO.getBufferedEther() +
+        LIDO.getTotalPooledEther().mulDown(uint256(variableRate))
+      : LIDO.getBufferedEther() -
+        LIDO.getTotalPooledEther().mulDown(uint256(variableRate));
+    
+    vm.store(
+      address(LIDO),
+      BUFFERED_ETHER_POSITION,
+      bytes32(bufferedEther)
+    );
   }
 }

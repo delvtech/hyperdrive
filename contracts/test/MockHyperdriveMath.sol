@@ -125,43 +125,20 @@ contract MockHyperdriveMath {
     }
 
     function calculateMaxLong(
-        uint256 _shareReserves,
-        uint256 _bondReserves,
-        uint256 _longsOutstanding,
-        uint256 _timeStretch,
-        uint256 _sharePrice,
-        uint256 _initialSharePrice,
+        HyperdriveMath.MaxTradeParams memory _params,
         uint256 _maxIterations
-    ) external pure returns (HyperdriveMath.MaxLongResult memory) {
-        return
-            HyperdriveMath.calculateMaxLong(
-                _shareReserves,
-                _bondReserves,
-                _longsOutstanding,
-                _timeStretch,
-                _sharePrice,
-                _initialSharePrice,
-                _maxIterations
-            );
+    ) external pure returns (uint256, uint256) {
+        (uint256 result1, uint256 result2) = HyperdriveMath.calculateMaxLong(
+            _params,
+            _maxIterations
+        );
+        return (result1, result2);
     }
 
     function calculateMaxShort(
-        uint256 _shareReserves,
-        uint256 _bondReserves,
-        uint256 _longsOutstanding,
-        uint256 _timeStretch,
-        uint256 _sharePrice,
-        uint256 _initialSharePrice
+        HyperdriveMath.MaxTradeParams memory _params
     ) external pure returns (uint256) {
-        return
-            HyperdriveMath.calculateMaxShort(
-                _shareReserves,
-                _bondReserves,
-                _longsOutstanding,
-                _timeStretch,
-                _sharePrice,
-                _initialSharePrice
-            );
+        return HyperdriveMath.calculateMaxShort(_params);
     }
 
     function calculateSpotPrice(

@@ -285,7 +285,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // reserves are greater than or equal to the amount of longs outstanding.
         if (
             _sharePrice.mulDown(_marketState.shareReserves) <
-            _marketState.longsOutstanding
+            uint256(_marketState.longsOutstanding).divDown(_sharePrice) +
+                _minimumShareReserves
         ) {
             revert IHyperdrive.BaseBufferExceedsShareReserves();
         }

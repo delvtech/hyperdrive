@@ -31,20 +31,10 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
 
   function test_deployAndInitialize() external {
     vm.startPrank(alice);
-    IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
-      baseToken: underlyingToken,
-      initialSharePrice: FixedPointMath.ONE_18.divDown(token.convertToShares(FixedPointMath.ONE_18)),
-      positionDuration: POSITION_DURATION,
-      checkpointDuration: CHECKPOINT_DURATION,
-      timeStretch: FixedPointMath.ONE_18.divDown(
-        22.186877016851916266e18
-      ),
-      governance: governance,
-      feeCollector: feeCollector,
-      fees: IHyperdrive.Fees({ curve: 0, flat: 0, governance: 0 }),
-      oracleSize: ORACLE_SIZE,
-      updateGap: UPDATE_GAP
-    });
+
+    IHyperdrive.PoolConfig memory config = testConfig(FIXED_RATE);
+    config.baseToken = underlyingToken;
+    config.initialSharePrice = FixedPointMath.ONE_18.divDown(token.convertToShares(FixedPointMath.ONE_18));
 
     uint256 contribution = 10_000e18; // Revisit
 
@@ -58,16 +48,19 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
 
     assertEq(
         hyperdrive.getPoolInfo().lpTotalSupply,
-        hyperdrive.getPoolInfo().shareReserves
+        hyperdrive.getPoolInfo().shareReserves - config.minimumShareReserves
     );
+
 
     // Verify that the correct events were emitted.
     verifyFactoryEvents(
       factory,
       alice,
-      contribution - 1e5,
+      contribution,
       FIXED_RATE,
-      new bytes32[](0)
+      config.minimumShareReserves,
+      new bytes32[](0),
+      1e5
     );
   }
   
