@@ -13,9 +13,10 @@ import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { MockHyperdrive, MockHyperdriveDataProvider } from "../mocks/MockHyperdrive.sol";
-import { Lib } from "../utils/Lib.sol";
-import { BaseTest } from "./BaseTest.sol";
-import { HyperdriveUtils } from "./HyperdriveUtils.sol";
+import { BaseTest } from "test/utils/BaseTest.sol";
+import { ETH } from "test/utils/Constants.sol";
+import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
+import { Lib } from "test/utils/Lib.sol";
 
 contract HyperdriveTest is BaseTest {
     using FixedPointMath for uint256;
@@ -30,8 +31,6 @@ contract HyperdriveTest is BaseTest {
     uint256 internal constant POSITION_DURATION = 365 days;
     uint256 internal constant ORACLE_SIZE = 5;
     uint256 internal constant UPDATE_GAP = 1000;
-
-    address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     function setUp() public virtual override {
         super.setUp();
@@ -160,20 +159,71 @@ contract HyperdriveTest is BaseTest {
 
     /// Actions ///
 
+    // Overrides for functions that use deposits.
+    struct DepositOverrides {
+        // A boolean flag specifying whether or not the underlying should be used.
+        bool asUnderlying;
+        // The amount of tokens the action should prepare to deposit. Note that
+        // the actual deposit amount will still be specified by the action being
+        // called; however, this is the amount that will be minted as a
+        // convenience. In the case of ETH, this is the amount that will be
+        // transferred into the YieldSource, which allows us to test ETH
+        // reentrancy.
+        uint256 depositAmount;
+    }
+
+    function initialize(
+        address lp,
+        uint256 apr,
+        uint256 contribution,
+        DepositOverrides memory overrides
+    ) internal returns (uint256 lpShares) {
+        vm.stopPrank();
+        vm.startPrank(lp);
+
+        if (
+            address(hyperdrive.getPoolConfig().baseToken) == address(ETH) &&
+            overrides.asUnderlying
+        ) {
+            return
+                hyperdrive.initialize{ value: overrides.depositAmount }(
+                    contribution,
+                    apr,
+                    lp,
+                    overrides.asUnderlying
+                );
+        } else {
+            baseToken.mint(contribution);
+            baseToken.approve(address(hyperdrive), contribution);
+            return
+                hyperdrive.initialize(
+                    contribution,
+                    apr,
+                    lp,
+                    overrides.asUnderlying
+                );
+        }
+    }
+
     function initialize(
         address lp,
         uint256 apr,
         uint256 contribution
     ) internal returns (uint256 lpShares) {
-        vm.stopPrank();
-        vm.startPrank(lp);
-
-        // Initialize the pool.
-        baseToken.mint(contribution);
-        baseToken.approve(address(hyperdrive), contribution);
-        return hyperdrive.initialize(contribution, apr, lp, true);
+        return
+            initialize(
+                lp,
+                apr,
+                contribution,
+                DepositOverrides({
+                    asUnderlying: true,
+                    depositAmount: contribution
+                })
+            );
     }
 
+    // FIXME: Implement the ETH flows in this wrapper. Also use the return
+    // value instead of calculating the return in our tests.
     function addLiquidity(
         address lp,
         uint256 contribution
