@@ -17,11 +17,10 @@ import { Lib } from "test/utils/Lib.sol";
 import { ILido } from "contracts/src/interfaces/ILido.sol";
 import { ERC4626ValidationTest } from "./ERC4626Validation.t.sol"; 
 
-
 contract StethERC4626 is ERC4626ValidationTest {
   using FixedPointMath for *;
 
-  function setUp() public override __mainnet_fork(17_059_368) {
+  function setUp() public override __mainnet_fork(17_376_154) {
     underlyingToken = IERC20(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
     token = IERC4626(0xF9A98A9452485ed55cd3Ce5260C2b71c9807b11a);
 
@@ -105,7 +104,7 @@ contract StethERC4626 is ERC4626ValidationTest {
         LIDO.getTotalPooledEther().mulDown(uint256(variableRate))
       : LIDO.getBufferedEther() -
         LIDO.getTotalPooledEther().mulDown(uint256(variableRate));
-    
+   
     vm.store(
       address(LIDO),
       BUFFERED_ETHER_POSITION,
