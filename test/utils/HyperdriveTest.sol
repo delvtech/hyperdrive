@@ -538,6 +538,19 @@ contract HyperdriveTest is BaseTest {
             );
     }
 
+    /// Utils ///
+
+    function advanceTime(uint256 time, int256 apr) internal virtual {
+        MockHyperdrive(address(hyperdrive)).accrue(time, apr);
+        vm.warp(block.timestamp + time);
+    }
+
+    function pause(bool paused) internal {
+        vm.startPrank(pauser);
+        hyperdrive.pause(paused);
+        vm.stopPrank();
+    }
+
     function estimateLongProceeds(
         uint256 bondAmount,
         uint256 normalizedTimeRemaining,
@@ -558,19 +571,6 @@ contract HyperdriveTest is BaseTest {
             poolConfig.initialSharePrice
         );
         return shareProceeds.mulDivDown(poolInfo.sharePrice, 1e18);
-    }
-
-    /// Utils ///
-
-    function advanceTime(uint256 time, int256 apr) internal virtual {
-        MockHyperdrive(address(hyperdrive)).accrue(time, apr);
-        vm.warp(block.timestamp + time);
-    }
-
-    function pause(bool paused) internal {
-        vm.startPrank(pauser);
-        hyperdrive.pause(paused);
-        vm.stopPrank();
     }
 
     function estimateShortProceeds(
