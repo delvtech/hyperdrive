@@ -15,6 +15,7 @@ import { Mock4626, ERC20 } from "../mocks/Mock4626.sol";
 import { MockERC4626Hyperdrive } from "../mocks/Mock4626Hyperdrive.sol";
 import { HyperdriveUtils } from "../utils/HyperdriveUtils.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
+import { ERC4626DataProvider } from "contracts/src/instances/ERC4626DataProvider.sol";
 
 contract ER4626HyperdriveTest is HyperdriveTest {
     using FixedPointMath for *;
@@ -24,6 +25,7 @@ contract ER4626HyperdriveTest is HyperdriveTest {
     IERC4626 pool;
     uint256 aliceShares;
     MockERC4626Hyperdrive mockHyperdrive;
+    ERC4626DataProvider dataProvider;
 
     function setUp() public override __mainnet_fork(16_685_972) {
         alice = createUser("alice");
@@ -77,6 +79,13 @@ contract ER4626HyperdriveTest is HyperdriveTest {
         mockHyperdrive = new MockERC4626Hyperdrive(
             config,
             address(0),
+            bytes32(0),
+            address(0),
+            pool
+        );
+
+        dataProvider = new ERC4626DataProvider(
+            config,
             bytes32(0),
             address(0),
             pool
@@ -186,7 +195,6 @@ contract ER4626HyperdriveTest is HyperdriveTest {
             hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
             contribution - 2 * config.minimumShareReserves
         );
-
         // Verify that the correct events were emitted.
         verifyFactoryEvents(
             factory,
