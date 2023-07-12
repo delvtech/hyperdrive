@@ -372,7 +372,7 @@ contract HyperdriveTest is BaseTest {
             overrides.asUnderlying
         ) {
             return
-                hyperdrive.openLong{ value: baseAmount }(
+                hyperdrive.openLong{ value: overrides.depositAmount }(
                     baseAmount,
                     overrides.minSlippage, // min bond proceeds
                     trader,
