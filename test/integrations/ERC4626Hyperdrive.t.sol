@@ -25,7 +25,7 @@ contract ER4626HyperdriveTest is HyperdriveTest {
     IERC4626 pool;
     uint256 aliceShares;
     MockERC4626Hyperdrive mockHyperdrive;
-
+    ERC4626DataProvider dataProvider;
 
     function setUp() public override __mainnet_fork(16_685_972) {
         alice = createUser("alice");
@@ -79,6 +79,13 @@ contract ER4626HyperdriveTest is HyperdriveTest {
         mockHyperdrive = new MockERC4626Hyperdrive(
             config,
             address(0),
+            bytes32(0),
+            address(0),
+            pool
+        );
+
+        dataProvider = new ERC4626DataProvider(
+            config,
             bytes32(0),
             address(0),
             pool
@@ -152,9 +159,6 @@ contract ER4626HyperdriveTest is HyperdriveTest {
 
         uint256 price = mockHyperdrive.pricePerShare();
         assertEq(price, 1.2e18);
-
-        vm.expectRevert(IHyperdrive.InverseSharePrice.selector);
-        ERC4626DataProvider.sharePrice != 1/ERC4626DataProvider.sharePrice;
     }
 
     function test_erc4626_testDeploy() external {
@@ -182,15 +186,13 @@ contract ER4626HyperdriveTest is HyperdriveTest {
             apr
         );
 
-         // The initial price per share is one so the LP shares will initially
+        // The initial price per share is one so the LP shares will initially
         // be worth one base. Alice should receive LP shares equaling her
         // contribution minus the shares that she set aside for the minimum
         // share reserves and the zero address's initial LP contribution.
         assertEq(
             hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
             contribution - 2 * config.minimumShareReserves);
-
-
 
         // Verify that the correct events were emitted.
         verifyFactoryEvents(
