@@ -186,7 +186,9 @@ contract ReentrancyTest is HyperdriveTest {
             // the ETH receiver will receive a refund.
             DepositOverrides({
                 asUnderlying: true,
-                depositAmount: CONTRIBUTION + 1
+                depositAmount: CONTRIBUTION + 1,
+                minSlippage: 0,
+                maxSlippage: type(uint256).max
             })
         );
         assert(tester.isSuccess());
@@ -204,7 +206,18 @@ contract ReentrancyTest is HyperdriveTest {
         tester.setData(_data);
 
         // Ensure that `addLiquidity` can't be reentered.
-        addLiquidity(_trader, CONTRIBUTION);
+        addLiquidity(
+            _trader,
+            CONTRIBUTION,
+            // NOTE: Depositing 1 wei more than the contribution to ensure that
+            // the ETH receiver will receive a refund.
+            DepositOverrides({
+                asUnderlying: true,
+                depositAmount: CONTRIBUTION + 1,
+                minSlippage: 0,
+                maxSlippage: type(uint256).max
+            })
+        );
         assert(tester.isSuccess());
     }
 
@@ -258,7 +271,18 @@ contract ReentrancyTest is HyperdriveTest {
         tester.setData(_data);
 
         // Ensure that `openLong` can't be reentered.
-        openLong(_trader, BASE_PAID);
+        openLong(
+            _trader,
+            BASE_PAID,
+            // NOTE: Depositing 1 wei more than the base payment to ensure that
+            // the ETH receiver will receive a refund.
+            DepositOverrides({
+                asUnderlying: true,
+                depositAmount: BASE_PAID + 1,
+                minSlippage: 0,
+                maxSlippage: type(uint256).max
+            })
+        );
         assert(tester.isSuccess());
     }
 
@@ -285,7 +309,18 @@ contract ReentrancyTest is HyperdriveTest {
         tester.setData(_data);
 
         // Ensure that `openShort` can't be reentered.
-        openShort(_trader, BOND_AMOUNT);
+        openShort(
+            _trader,
+            BOND_AMOUNT,
+            // NOTE: Depositing more than the base payment to ensure that the
+            // ETH receiver will receive a refund.
+            DepositOverrides({
+                asUnderlying: true,
+                depositAmount: BOND_AMOUNT,
+                minSlippage: 0,
+                maxSlippage: type(uint256).max
+            })
+        );
         assert(tester.isSuccess());
     }
 

@@ -159,7 +159,7 @@ contract HyperdriveTest is BaseTest {
 
     /// Actions ///
 
-    // Overrides for functions that use deposits.
+    // Overrides for functions that initiate deposits.
     struct DepositOverrides {
         // A boolean flag specifying whether or not the underlying should be used.
         bool asUnderlying;
@@ -170,6 +170,21 @@ contract HyperdriveTest is BaseTest {
         // transferred into the YieldSource, which allows us to test ETH
         // reentrancy.
         uint256 depositAmount;
+        // This is the slippage parameter that defines a lower bound on the
+        // quantity being measured. It may not be used by some actions.
+        uint256 minSlippage;
+        // This is the slippage parameter that defines an upper bound on the
+        // quantity being measured. It may not be used by some actions.
+        uint256 maxSlippage;
+    }
+
+    // Overrides for functions that initiate withdrawals.
+    struct WithdrawalOverrides {
+        // A boolean flag specifying whether or not the underlying should be used.
+        bool asUnderlying;
+        // This is the slippage parameter that defines a lower bound on the
+        // quantity being measured.
+        uint256 minSlippage;
     }
 
     function initialize(
@@ -218,7 +233,9 @@ contract HyperdriveTest is BaseTest {
                 contribution,
                 DepositOverrides({
                     asUnderlying: true,
-                    depositAmount: contribution
+                    depositAmount: contribution,
+                    minSlippage: 0, // unused
+                    maxSlippage: type(uint256).max // unused
                 })
             );
     }
@@ -239,8 +256,8 @@ contract HyperdriveTest is BaseTest {
             return
                 hyperdrive.addLiquidity{ value: overrides.depositAmount }(
                     contribution,
-                    0,
-                    type(uint256).max,
+                    overrides.minSlippage, // min spot rate
+                    overrides.maxSlippage, // max spot rate
                     lp,
                     overrides.asUnderlying
                 );
@@ -250,8 +267,8 @@ contract HyperdriveTest is BaseTest {
             return
                 hyperdrive.addLiquidity(
                     contribution,
-                    0,
-                    type(uint256).max,
+                    overrides.minSlippage, // min spot rate
+                    overrides.maxSlippage, // max spot rate
                     lp,
                     overrides.asUnderlying
                 );
@@ -268,8 +285,28 @@ contract HyperdriveTest is BaseTest {
                 contribution,
                 DepositOverrides({
                     asUnderlying: true,
-                    depositAmount: contribution
+                    depositAmount: contribution,
+                    minSlippage: 0, // min spot rate of 0
+                    maxSlippage: type(uint256).max // max spot rate of uint256 max
                 })
+            );
+    }
+
+    function removeLiquidity(
+        address lp,
+        uint256 shares,
+        WithdrawalOverrides memory overrides
+    ) internal returns (uint256 baseProceeds, uint256 withdrawalShares) {
+        vm.stopPrank();
+        vm.startPrank(lp);
+
+        // Remove liquidity from the pool.
+        return
+            hyperdrive.removeLiquidity(
+                shares,
+                overrides.minSlippage, // min base proceeds
+                lp,
+                overrides.asUnderlying
             );
     }
 
@@ -277,35 +314,21 @@ contract HyperdriveTest is BaseTest {
         address lp,
         uint256 shares
     ) internal returns (uint256 baseProceeds, uint256 withdrawalShares) {
-        vm.stopPrank();
-        vm.startPrank(lp);
-
-        // Remove liquidity from the pool.
-        uint256 baseBalanceBefore = baseToken.balanceOf(lp);
-        uint256 withdrawalShareBalanceBefore = hyperdrive.balanceOf(
-            AssetId._WITHDRAWAL_SHARE_ASSET_ID,
-            lp
-        );
-        hyperdrive.removeLiquidity(shares, 0, lp, true);
-
-        return (
-            baseToken.balanceOf(lp) - baseBalanceBefore,
-            hyperdrive.balanceOf(AssetId._WITHDRAWAL_SHARE_ASSET_ID, lp) -
-                withdrawalShareBalanceBefore
-        );
-    }
-
-    function redeemWithdrawalShares(
-        address lp,
-        uint256 shares
-    ) internal returns (uint256 baseProceeds, uint256 sharesRedeemed) {
-        return redeemWithdrawalShares(lp, shares, 0);
+        return
+            removeLiquidity(
+                lp,
+                shares,
+                WithdrawalOverrides({
+                    asUnderlying: true,
+                    minSlippage: 0 // min base proceeds of 0
+                })
+            );
     }
 
     function redeemWithdrawalShares(
         address lp,
         uint256 shares,
-        uint256 minOutputPerShare
+        WithdrawalOverrides memory overrides
     ) internal returns (uint256 baseProceeds, uint256 sharesRedeemed) {
         vm.stopPrank();
         vm.startPrank(lp);
@@ -314,16 +337,31 @@ contract HyperdriveTest is BaseTest {
         return
             hyperdrive.redeemWithdrawalShares(
                 shares,
-                minOutputPerShare,
+                overrides.minSlippage, // min output per share
                 lp,
-                true
+                overrides.asUnderlying
+            );
+    }
+
+    function redeemWithdrawalShares(
+        address lp,
+        uint256 shares
+    ) internal returns (uint256 baseProceeds, uint256 sharesRedeemed) {
+        return
+            redeemWithdrawalShares(
+                lp,
+                shares,
+                WithdrawalOverrides({
+                    asUnderlying: true,
+                    minSlippage: 0 // min output per share of 0
+                })
             );
     }
 
     function openLong(
         address trader,
         uint256 baseAmount,
-        bool asUnderlying
+        DepositOverrides memory overrides
     ) internal returns (uint256 maturityTime, uint256 bondProceeds) {
         vm.stopPrank();
         vm.startPrank(trader);
@@ -331,19 +369,25 @@ contract HyperdriveTest is BaseTest {
         // Open the long.
         if (
             address(hyperdrive.getPoolConfig().baseToken) == address(ETH) &&
-            asUnderlying
+            overrides.asUnderlying
         ) {
             return
                 hyperdrive.openLong{ value: baseAmount }(
                     baseAmount,
-                    0,
+                    overrides.minSlippage, // min bond proceeds
                     trader,
-                    asUnderlying
+                    overrides.asUnderlying
                 );
         } else {
             baseToken.mint(baseAmount);
             baseToken.approve(address(hyperdrive), baseAmount);
-            return hyperdrive.openLong(baseAmount, 0, trader, asUnderlying);
+            return
+                hyperdrive.openLong(
+                    baseAmount,
+                    overrides.minSlippage, // min bond proceeds
+                    trader,
+                    overrides.asUnderlying
+                );
         }
     }
 
@@ -351,14 +395,24 @@ contract HyperdriveTest is BaseTest {
         address trader,
         uint256 baseAmount
     ) internal returns (uint256 maturityTime, uint256 bondAmount) {
-        return openLong(trader, baseAmount, true);
+        return
+            openLong(
+                trader,
+                baseAmount,
+                DepositOverrides({
+                    asUnderlying: true,
+                    depositAmount: baseAmount,
+                    minSlippage: baseAmount, // min bond proceeds of baseAmount
+                    maxSlippage: type(uint256).max // unused
+                })
+            );
     }
 
     function closeLong(
         address trader,
         uint256 maturityTime,
         uint256 bondAmount,
-        bool asUnderlying
+        WithdrawalOverrides memory overrides
     ) internal returns (uint256 baseAmount) {
         vm.stopPrank();
         vm.startPrank(trader);
@@ -368,9 +422,9 @@ contract HyperdriveTest is BaseTest {
             hyperdrive.closeLong(
                 maturityTime,
                 bondAmount,
-                0,
+                overrides.minSlippage, // min base proceeds
                 trader,
-                asUnderlying
+                overrides.asUnderlying
             );
     }
 
@@ -379,38 +433,54 @@ contract HyperdriveTest is BaseTest {
         uint256 maturityTime,
         uint256 bondAmount
     ) internal returns (uint256 baseAmount) {
-        return closeLong(trader, maturityTime, bondAmount, true);
+        return
+            closeLong(
+                trader,
+                maturityTime,
+                bondAmount,
+                WithdrawalOverrides({
+                    asUnderlying: true,
+                    minSlippage: 0 // min base proceeds of 0
+                })
+            );
     }
 
     function openShort(
         address trader,
         uint256 bondAmount,
-        bool asUnderlying
+        DepositOverrides memory overrides
     ) internal returns (uint256 maturityTime, uint256 baseAmount) {
         vm.stopPrank();
         vm.startPrank(trader);
-        // Open the short
+
+        // Open the short.
         maturityTime = HyperdriveUtils.maturityTimeFromLatestCheckpoint(
             hyperdrive
         );
         if (
             address(hyperdrive.getPoolConfig().baseToken) == address(ETH) &&
-            asUnderlying
+            overrides.asUnderlying
         ) {
             (maturityTime, baseAmount) = hyperdrive.openShort{
-                value: bondAmount
-            }(bondAmount, type(uint256).max, trader, asUnderlying);
+                value: overrides.depositAmount
+            }(
+                bondAmount,
+                overrides.maxSlippage, // max base payment
+                trader,
+                overrides.asUnderlying
+            );
         } else {
             baseToken.mint(bondAmount);
             baseToken.approve(address(hyperdrive), bondAmount);
             (maturityTime, baseAmount) = hyperdrive.openShort(
                 bondAmount,
-                type(uint256).max,
+                overrides.maxSlippage, // max base payment
                 trader,
-                asUnderlying
+                overrides.asUnderlying
             );
-            baseToken.burn(bondAmount - baseAmount);
+            baseToken.burn(overrides.depositAmount - baseAmount);
         }
+
         return (maturityTime, baseAmount);
     }
 
@@ -418,14 +488,24 @@ contract HyperdriveTest is BaseTest {
         address trader,
         uint256 bondAmount
     ) internal returns (uint256 maturityTime, uint256 baseAmount) {
-        return openShort(trader, bondAmount, true);
+        return
+            openShort(
+                trader,
+                bondAmount,
+                DepositOverrides({
+                    asUnderlying: true,
+                    depositAmount: bondAmount,
+                    minSlippage: 0, // unused
+                    maxSlippage: bondAmount // max base payment of bondAmount
+                })
+            );
     }
 
     function closeShort(
         address trader,
         uint256 maturityTime,
         uint256 bondAmount,
-        bool asUnderlying
+        WithdrawalOverrides memory overrides
     ) internal returns (uint256 baseAmount) {
         vm.stopPrank();
         vm.startPrank(trader);
@@ -435,9 +515,9 @@ contract HyperdriveTest is BaseTest {
             hyperdrive.closeShort(
                 maturityTime,
                 bondAmount,
-                0,
+                overrides.minSlippage, // min base proceeds
                 trader,
-                asUnderlying
+                overrides.asUnderlying
             );
     }
 
@@ -446,7 +526,16 @@ contract HyperdriveTest is BaseTest {
         uint256 maturityTime,
         uint256 bondAmount
     ) internal returns (uint256 baseAmount) {
-        return closeShort(trader, maturityTime, bondAmount, true);
+        return
+            closeShort(
+                trader,
+                maturityTime,
+                bondAmount,
+                WithdrawalOverrides({
+                    asUnderlying: true,
+                    minSlippage: 0 // min base proceeds of 0
+                })
+            );
     }
 
     function estimateLongProceeds(
@@ -469,6 +558,19 @@ contract HyperdriveTest is BaseTest {
             poolConfig.initialSharePrice
         );
         return shareProceeds.mulDivDown(poolInfo.sharePrice, 1e18);
+    }
+
+    /// Utils ///
+
+    function advanceTime(uint256 time, int256 apr) internal virtual {
+        MockHyperdrive(address(hyperdrive)).accrue(time, apr);
+        vm.warp(block.timestamp + time);
+    }
+
+    function pause(bool paused) internal {
+        vm.startPrank(pauser);
+        hyperdrive.pause(paused);
+        vm.stopPrank();
     }
 
     function estimateShortProceeds(
@@ -502,19 +604,6 @@ contract HyperdriveTest is BaseTest {
         } else {
             return 0;
         }
-    }
-
-    /// Utils ///
-
-    function advanceTime(uint256 time, int256 apr) internal virtual {
-        MockHyperdrive(address(hyperdrive)).accrue(time, apr);
-        vm.warp(block.timestamp + time);
-    }
-
-    function pause(bool paused) internal {
-        vm.startPrank(pauser);
-        hyperdrive.pause(paused);
-        vm.stopPrank();
     }
 
     /// Event Utils ///

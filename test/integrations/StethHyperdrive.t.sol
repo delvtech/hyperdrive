@@ -257,7 +257,16 @@ contract StethHyperdriveTest is HyperdriveTest {
             0.00001e18,
             HyperdriveUtils.calculateMaxLong(hyperdrive)
         );
-        openLong(bob, basePaid, false);
+        openLong(
+            bob,
+            basePaid,
+            DepositOverrides({
+                asUnderlying: false,
+                depositAmount: basePaid,
+                minSlippage: 0,
+                maxSlippage: type(uint256).max
+            })
+        );
 
         // Ensure that Lido's aggregates and the token balances were updated
         // correctly during the trade.
@@ -305,7 +314,12 @@ contract StethHyperdriveTest is HyperdriveTest {
         );
 
         // Bob closes his long with stETH as the target asset.
-        uint256 baseProceeds = closeLong(bob, maturityTime, longAmount, false);
+        uint256 baseProceeds = closeLong(
+            bob,
+            maturityTime,
+            longAmount,
+            WithdrawalOverrides({ asUnderlying: false, minSlippage: 0 })
+        );
 
         // Ensure that Lido's aggregates and the token balances were updated
         // correctly during the trade.
@@ -376,7 +390,16 @@ contract StethHyperdriveTest is HyperdriveTest {
             0.001e18,
             HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
-        (, uint256 basePaid) = openShort(bob, shortAmount, false);
+        (, uint256 basePaid) = openShort(
+            bob,
+            shortAmount,
+            DepositOverrides({
+                asUnderlying: false,
+                depositAmount: shortAmount,
+                minSlippage: 0,
+                maxSlippage: shortAmount
+            })
+        );
 
         // Ensure that the amount of base paid by the short is reasonable.
         uint256 realizedRate = HyperdriveUtils.calculateAPRFromRealizedPrice(
@@ -462,7 +485,7 @@ contract StethHyperdriveTest is HyperdriveTest {
             bob,
             maturityTime,
             shortAmount,
-            false
+            WithdrawalOverrides({ asUnderlying: false, minSlippage: 0 })
         );
         assertApproxEqAbs(baseProceeds, uint256(expectedBaseProceeds), 1e9);
 
@@ -495,7 +518,12 @@ contract StethHyperdriveTest is HyperdriveTest {
         );
 
         // Bob closes his long with stETH as the target asset.
-        uint256 baseProceeds = closeLong(bob, maturityTime, longAmount, false);
+        uint256 baseProceeds = closeLong(
+            bob,
+            maturityTime,
+            longAmount,
+            WithdrawalOverrides({ asUnderlying: false, minSlippage: 0 })
+        );
 
         // Ensure that Lido's aggregates and the token balances were updated
         // correctly during the trade.
@@ -552,7 +580,7 @@ contract StethHyperdriveTest is HyperdriveTest {
             bob,
             maturityTime,
             longAmount / 2,
-            false
+            WithdrawalOverrides({ asUnderlying: false, minSlippage: 0 })
         );
 
         // Ensure that Lido's aggregates and the token balances were updated
@@ -611,7 +639,12 @@ contract StethHyperdriveTest is HyperdriveTest {
         );
 
         // The fact that this doesn't revert means that it works
-        closeLong(bob, maturityTime_, longAmount_ / 2, false);
+        closeLong(
+            bob,
+            maturityTime_,
+            longAmount_ / 2,
+            WithdrawalOverrides({ asUnderlying: false, minSlippage: 0 })
+        );
     }
 
     function verifyDeposit(
