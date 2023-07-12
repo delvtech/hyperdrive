@@ -240,38 +240,27 @@ contract HyperdriveTest is BaseTest {
         address trader,
         uint256 baseAmount,
         bool asUnderlying
-    ) internal returns (uint256 maturityTime, uint256 bondAmount) {
+    ) internal returns (uint256 maturityTime, uint256 bondProceeds) {
         vm.stopPrank();
         vm.startPrank(trader);
 
         // Open the long.
-        maturityTime = HyperdriveUtils.maturityTimeFromLatestCheckpoint(
-            hyperdrive
-        );
-        uint256 bondBalanceBefore = hyperdrive.balanceOf(
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
-            trader
-        );
         if (
             address(hyperdrive.getPoolConfig().baseToken) == address(ETH) &&
             asUnderlying
         ) {
-            hyperdrive.openLong{ value: baseAmount }(
-                baseAmount,
-                0,
-                trader,
-                asUnderlying
-            );
+            return
+                hyperdrive.openLong{ value: baseAmount }(
+                    baseAmount,
+                    0,
+                    trader,
+                    asUnderlying
+                );
         } else {
             baseToken.mint(baseAmount);
             baseToken.approve(address(hyperdrive), baseAmount);
-            hyperdrive.openLong(baseAmount, 0, trader, asUnderlying);
+            return hyperdrive.openLong(baseAmount, 0, trader, asUnderlying);
         }
-        uint256 bondBalanceAfter = hyperdrive.balanceOf(
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
-            trader
-        );
-        return (maturityTime, bondBalanceAfter.sub(bondBalanceBefore));
     }
 
     function openLong(

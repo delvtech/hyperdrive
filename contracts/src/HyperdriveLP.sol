@@ -249,7 +249,11 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         uint256 _minOutput,
         address _destination,
         bool _asUnderlying
-    ) external returns (uint256 baseProceeds, uint256 withdrawalShares) {
+    )
+        external
+        nonReentrant
+        returns (uint256 baseProceeds, uint256 withdrawalShares)
+    {
         if (_shares == 0) {
             revert IHyperdrive.ZeroAmount();
         }
@@ -320,7 +324,11 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         uint256 _minOutputPerShare,
         address _destination,
         bool _asUnderlying
-    ) external returns (uint256 baseProceeds, uint256 sharesRedeemed) {
+    )
+        external
+        nonReentrant
+        returns (uint256 baseProceeds, uint256 sharesRedeemed)
+    {
         // Perform a checkpoint.
         uint256 sharePrice = _pricePerShare();
         _applyCheckpoint(_latestCheckpoint(), sharePrice);

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { ReentrancyGuard } from "solmate/utils/ReentrancyGuard.sol";
 import { HyperdriveStorage } from "./HyperdriveStorage.sol";
 import { IERC20 } from "./interfaces/IERC20.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
@@ -17,11 +16,7 @@ import { MultiToken } from "./token/MultiToken.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract HyperdriveBase is
-    ReentrancyGuard,
-    MultiToken,
-    HyperdriveStorage
-{
+abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     using FixedPointMath for uint256;
     using SafeCast for uint256;
 
