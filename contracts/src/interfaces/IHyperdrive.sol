@@ -229,7 +229,7 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
     error ReturnData(bytes data);
     error CallFailed(bytes4 underlyingError);
     error UnexpectedSuccess();
-    error InverseSharePrice();
+    error DifferentSharePrice();
 
     /// ###############
     /// ### Factory ###
