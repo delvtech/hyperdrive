@@ -181,6 +181,7 @@ contract HyperdriveTest is BaseTest {
         vm.stopPrank();
         vm.startPrank(lp);
 
+        // Initialize the pool.
         if (
             address(hyperdrive.getPoolConfig().baseToken) == address(ETH) &&
             overrides.asUnderlying
@@ -193,8 +194,8 @@ contract HyperdriveTest is BaseTest {
                     overrides.asUnderlying
                 );
         } else {
-            baseToken.mint(contribution);
-            baseToken.approve(address(hyperdrive), contribution);
+            baseToken.mint(overrides.depositAmount);
+            baseToken.approve(address(hyperdrive), overrides.depositAmount);
             return
                 hyperdrive.initialize(
                     contribution,
@@ -222,21 +223,54 @@ contract HyperdriveTest is BaseTest {
             );
     }
 
-    // FIXME: Implement the ETH flows in this wrapper. Also use the return
-    // value instead of calculating the return in our tests.
     function addLiquidity(
         address lp,
-        uint256 contribution
+        uint256 contribution,
+        DepositOverrides memory overrides
     ) internal returns (uint256 lpShares) {
         vm.stopPrank();
         vm.startPrank(lp);
 
         // Add liquidity to the pool.
-        baseToken.mint(contribution);
-        baseToken.approve(address(hyperdrive), contribution);
-        hyperdrive.addLiquidity(contribution, 0, type(uint256).max, lp, true);
+        if (
+            address(hyperdrive.getPoolConfig().baseToken) == address(ETH) &&
+            overrides.asUnderlying
+        ) {
+            return
+                hyperdrive.addLiquidity{ value: overrides.depositAmount }(
+                    contribution,
+                    0,
+                    type(uint256).max,
+                    lp,
+                    overrides.asUnderlying
+                );
+        } else {
+            baseToken.mint(overrides.depositAmount);
+            baseToken.approve(address(hyperdrive), overrides.depositAmount);
+            return
+                hyperdrive.addLiquidity(
+                    contribution,
+                    0,
+                    type(uint256).max,
+                    lp,
+                    overrides.asUnderlying
+                );
+        }
+    }
 
-        return hyperdrive.balanceOf(AssetId._LP_ASSET_ID, lp);
+    function addLiquidity(
+        address lp,
+        uint256 contribution
+    ) internal returns (uint256 lpShares) {
+        return
+            addLiquidity(
+                lp,
+                contribution,
+                DepositOverrides({
+                    asUnderlying: true,
+                    depositAmount: contribution
+                })
+            );
     }
 
     function removeLiquidity(
