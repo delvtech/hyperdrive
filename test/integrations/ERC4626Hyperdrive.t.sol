@@ -204,7 +204,6 @@ contract ER4626HyperdriveTest is HyperdriveTest {
             hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
             contribution - 2 * config.minimumShareReserves
         );
-
         // Verify that the correct events were emitted.
         verifyFactoryEvents(
             factory,
