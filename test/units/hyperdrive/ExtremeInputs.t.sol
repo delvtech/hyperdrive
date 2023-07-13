@@ -375,6 +375,10 @@ contract ExtremeInputs is HyperdriveTest {
             initialize(alice, fixedRate, contribution);
 
             // Celine opens a max long.
+            // TODO: Using a high number of max iterations because of the issues
+            // with a wide range of parameters. We should be able to lower this
+            // after https://github.com/spearbit-audits/review-element/issues/65
+            // is addressed.
             openLong(celine, hyperdrive.calculateMaxLong(15).mulDown(0.9e18));
 
             // TODO: When we address the issue related to sandwiching large
