@@ -2,16 +2,20 @@
 pragma solidity 0.8.19;
 
 import { DataProvider } from "../DataProvider.sol";
+import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IMultiTokenWrite } from "../interfaces/IMultiTokenWrite.sol";
-import { Errors } from "../libraries/Errors.sol";
 import { MultiTokenStorage } from "./MultiTokenStorage.sol";
 
-// A lite version of a semi fungible, which removes some methods and so
-// is not technically a 1155 compliant multi-token semi fungible, but almost
-// follows the standard.
-// NOTE - We remove on transfer callbacks and safe transfer because of the
-//        risk of external calls to untrusted code.
-
+/// @author DELV
+/// @title MultiToken
+/// @notice A lite version of a semi fungible, which removes some methods and so
+///         is not technically a 1155 compliant multi-token semi fungible, but almost
+///         follows the standard.
+/// @dev We remove on transfer callbacks and safe transfer because of the
+///      risk of external calls to untrusted code.
+/// @custom:disclaimer The language used in this code is for coding convenience
+///                    only, and is not intended to, and does not, have any
+///                    particular legal or regulatory significance.
 contract MultiToken is DataProvider, MultiTokenStorage, IMultiTokenWrite {
     // EIP712
     // DOMAIN_SEPARATOR changes based on token name
@@ -58,7 +62,7 @@ contract MultiToken is DataProvider, MultiTokenStorage, IMultiTokenWrite {
         // If the caller does not match the address hash, we revert because it is not
         // allowed to access permission-ed methods.
         if (msg.sender != _deriveForwarderAddress(tokenID)) {
-            revert Errors.InvalidERC20Bridge();
+            revert IHyperdrive.InvalidERC20Bridge();
         }
         // Execute the following function
         _;
@@ -250,11 +254,11 @@ contract MultiToken is DataProvider, MultiTokenStorage, IMultiTokenWrite {
     ) external {
         // Checks for inconsistent addresses
         if (from == address(0) || to == address(0))
-            revert Errors.RestrictedZeroAddress();
+            revert IHyperdrive.RestrictedZeroAddress();
 
         // Check for inconsistent length
         if (ids.length != values.length)
-            revert Errors.BatchInputLengthMismatch();
+            revert IHyperdrive.BatchInputLengthMismatch();
 
         // Call internal transfer for each asset
         for (uint256 i = 0; i < ids.length; i++) {
@@ -285,9 +289,9 @@ contract MultiToken is DataProvider, MultiTokenStorage, IMultiTokenWrite {
         bytes32 s
     ) external {
         // Require that the signature is not expired
-        if (block.timestamp > deadline) revert Errors.ExpiredDeadline();
+        if (block.timestamp > deadline) revert IHyperdrive.ExpiredDeadline();
         // Require that the owner is not zero
-        if (owner == address(0)) revert Errors.RestrictedZeroAddress();
+        if (owner == address(0)) revert IHyperdrive.RestrictedZeroAddress();
 
         bytes32 structHash = keccak256(
             abi.encodePacked(
@@ -308,7 +312,7 @@ contract MultiToken is DataProvider, MultiTokenStorage, IMultiTokenWrite {
 
         // Check that the signature is valid
         address signer = ecrecover(structHash, v, r, s);
-        if (signer != owner) revert Errors.InvalidSignature();
+        if (signer != owner) revert IHyperdrive.InvalidSignature();
 
         // Increment the signature nonce
         _nonces[owner]++;

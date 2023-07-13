@@ -5,7 +5,6 @@ import { Hyperdrive } from "../Hyperdrive.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { ILido } from "../interfaces/ILido.sol";
 import { IWETH } from "../interfaces/IWETH.sol";
-import { Errors } from "../libraries/Errors.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 
 /// @author DELV
@@ -40,13 +39,21 @@ contract StethHyperdrive is Hyperdrive {
         address _linkerFactory,
         ILido _lido
     ) Hyperdrive(_config, _dataProvider, _linkerCodeHash, _linkerFactory) {
-        if (
-            _initialSharePrice !=
-            _lido.getTotalPooledEther().divDown(_lido.getTotalShares())
-        ) {
-            revert Errors.InvalidInitialSharePrice();
-        }
         lido = _lido;
+
+        // Ensure that the initial share price is equal to the current share
+        // price.
+        if (_initialSharePrice != _pricePerShare()) {
+            revert IHyperdrive.InvalidInitialSharePrice();
+        }
+
+        // Ensure that the minimum share reserves are equal to 1e18. This value
+        // has been tested to prevent arithmetic overflows in the
+        // `_updateLiquidity` function when the share reserves are as high as
+        // 200 million.
+        if (_config.minimumShareReserves != 1e15) {
+            revert IHyperdrive.InvalidMinimumShareReserves();
+        }
     }
 
     /// @dev We override the message value check since this integration is
@@ -66,7 +73,7 @@ contract StethHyperdrive is Hyperdrive {
         if (_asUnderlying) {
             // Ensure that sufficient ether was provided and refund any excess.
             if (msg.value < _amount) {
-                revert Errors.TransferFailed();
+                revert IHyperdrive.TransferFailed();
             }
             if (msg.value > _amount) {
                 // Return excess ether to the user.
@@ -74,7 +81,7 @@ contract StethHyperdrive is Hyperdrive {
                     value: msg.value - _amount
                 }("");
                 if (!success) {
-                    revert Errors.TransferFailed();
+                    revert IHyperdrive.TransferFailed();
                 }
             }
 
@@ -89,7 +96,7 @@ contract StethHyperdrive is Hyperdrive {
         } else {
             // Ensure that the user didn't send ether to the contract.
             if (msg.value > 0) {
-                revert Errors.NotPayable();
+                revert IHyperdrive.NotPayable();
             }
 
             // Transfer stETH into the contract.
@@ -99,7 +106,7 @@ contract StethHyperdrive is Hyperdrive {
                 _amount
             );
             if (!success) {
-                revert Errors.TransferFailed();
+                revert IHyperdrive.TransferFailed();
             }
 
             // Calculate the share price and the amount of shares deposited.
@@ -124,7 +131,7 @@ contract StethHyperdrive is Hyperdrive {
     ) internal override returns (uint256 amountWithdrawn) {
         // At the time of writing there's no stETH -> eth withdraw path
         if (_asUnderlying) {
-            revert Errors.UnsupportedToken();
+            revert IHyperdrive.UnsupportedToken();
         }
 
         // Transfer stETH to the destination.
@@ -135,7 +142,7 @@ contract StethHyperdrive is Hyperdrive {
 
     /// @dev Returns the current share price. We simply use Lido's share price.
     /// @return price The current share price.
-    ///@dev must remain consistent with the impl inside of the DataProvider
+    /// @dev must remain consistent with the impl inside of the DataProvider
     function _pricePerShare() internal view override returns (uint256 price) {
         return lido.getTotalPooledEther().divDown(lido.getTotalShares());
     }

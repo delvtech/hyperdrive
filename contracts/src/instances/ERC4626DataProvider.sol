@@ -3,9 +3,8 @@ pragma solidity 0.8.19;
 
 import { IERC4626 } from "../interfaces/IERC4626.sol";
 import { HyperdriveDataProvider } from "../HyperdriveDataProvider.sol";
-import { FixedPointMath } from "../libraries/FixedPointMath.sol";
-import { Errors } from "../libraries/Errors.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { MultiTokenDataProvider } from "../token/MultiTokenDataProvider.sol";
 
 /// @author DELV
@@ -40,7 +39,7 @@ contract ERC4626DataProvider is MultiTokenDataProvider, HyperdriveDataProvider {
 
     /// @notice Loads the share price from the yield source.
     /// @return sharePrice The current share price.
-    ///@dev must remain consistent with the impl inside of the HyperdriveInstance
+    /// @dev must remain consistent with the impl inside of the HyperdriveInstance
     function _pricePerShare()
         internal
         view

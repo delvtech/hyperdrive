@@ -1,13 +1,18 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { IERC20 } from "../interfaces/IERC20.sol";
 import { Hyperdrive } from "../Hyperdrive.sol";
-import { FixedPointMath } from "../libraries/FixedPointMath.sol";
-import { Errors } from "../libraries/Errors.sol";
-import { Pot, DsrManager } from "../interfaces/IMaker.sol";
+import { IERC20 } from "../interfaces/IERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { Pot, DsrManager } from "../interfaces/IMaker.sol";
+import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 
+/// @author DELV
+/// @title DsrHyperdrive
+/// @notice An instance of Hyperdrive that utilizes Maker's DSR as a yield source.
+/// @custom:disclaimer The language used in this code is for coding convenience
+///                    only, and is not intended to, and does not, have any
+///                    particular legal or regulatory significance.
 contract DsrHyperdrive is Hyperdrive {
     using FixedPointMath for uint256;
 
@@ -39,17 +44,29 @@ contract DsrHyperdrive is Hyperdrive {
         address _linkerFactory,
         DsrManager _dsrManager
     ) Hyperdrive(_config, _dataProvider, _linkerCodeHash, _linkerFactory) {
-        // Ensure that the Hyperdrive pool was configured properly.
+        // Ensure that the base token is DAI.
         if (address(_config.baseToken) != address(_dsrManager.dai())) {
-            revert Errors.InvalidBaseToken();
+            revert IHyperdrive.InvalidBaseToken();
         }
+
+        // Ensure that the minimum share reserves are equal to 10e18. This value
+        // has been tested to prevent arithmetic overflows in the
+        // `_updateLiquidity` function when the share reserves are as high as
+        // 100 billion.
+        if (_config.minimumShareReserves != 10e18) {
+            revert IHyperdrive.InvalidMinimumShareReserves();
+        }
+
+        // Ensure that the initial share price is one.
         if (_config.initialSharePrice != FixedPointMath.ONE_18) {
-            revert Errors.InvalidInitialSharePrice();
+            revert IHyperdrive.InvalidInitialSharePrice();
         }
 
         dsrManager = _dsrManager;
         pot = Pot(dsrManager.pot());
-        _baseToken.approve(address(dsrManager), type(uint256).max);
+        if (!_baseToken.approve(address(dsrManager), type(uint256).max)) {
+            revert IHyperdrive.ApprovalFailed();
+        }
     }
 
     /// @notice Transfers base or shares from the user and commits it to the yield source.
@@ -63,7 +80,7 @@ contract DsrHyperdrive is Hyperdrive {
         bool asUnderlying
     ) internal override returns (uint256 sharesMinted, uint256 sharePrice) {
         if (!asUnderlying) {
-            revert Errors.UnsupportedToken();
+            revert IHyperdrive.UnsupportedToken();
         }
 
         // Transfer the base token from the user to this contract
@@ -73,7 +90,7 @@ contract DsrHyperdrive is Hyperdrive {
             amount
         );
         if (!success) {
-            revert Errors.TransferFailed();
+            revert IHyperdrive.TransferFailed();
         }
 
         // Get total invested balance of pool, deposits + interest
@@ -107,7 +124,7 @@ contract DsrHyperdrive is Hyperdrive {
         bool asUnderlying
     ) internal override returns (uint256 amountWithdrawn) {
         if (!asUnderlying) {
-            revert Errors.UnsupportedToken();
+            revert IHyperdrive.UnsupportedToken();
         }
 
         // Small numerical errors can result in the shares value being slightly
@@ -136,7 +153,7 @@ contract DsrHyperdrive is Hyperdrive {
 
     /// @notice Loads the share price from the yield source.
     /// @return sharePrice The current share price.
-    ///@dev must remain consistent with the impl inside of the DataProvider
+    /// @dev must remain consistent with the impl inside of the DataProvider
     function _pricePerShare()
         internal
         view
@@ -179,7 +196,11 @@ contract DsrHyperdrive is Hyperdrive {
 
     /// @notice Taken from https://github.com/makerdao/dss/blob/master/src/pot.sol#L85
     /// @return z
-    function _rpow(uint x, uint n, uint base) internal pure returns (uint z) {
+    function _rpow(
+        uint256 x,
+        uint256 n,
+        uint256 base
+    ) internal pure returns (uint z) {
         assembly ("memory-safe") {
             switch x
             case 0 {

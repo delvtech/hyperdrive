@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import { VmSafe } from "forge-std/Vm.sol";
 import { HyperdriveBase } from "contracts/src/HyperdriveBase.sol";
+import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
@@ -11,16 +13,19 @@ import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { MockHyperdrive, MockHyperdriveDataProvider } from "../mocks/MockHyperdrive.sol";
+import { Lib } from "../utils/Lib.sol";
 import { BaseTest } from "./BaseTest.sol";
 import { HyperdriveUtils } from "./HyperdriveUtils.sol";
 
 contract HyperdriveTest is BaseTest {
     using FixedPointMath for uint256;
+    using Lib for *;
 
     ERC20Mintable baseToken;
     IHyperdrive hyperdrive;
 
     uint256 internal constant INITIAL_SHARE_PRICE = FixedPointMath.ONE_18;
+    uint256 internal constant MINIMUM_SHARE_RESERVES = FixedPointMath.ONE_18;
     uint256 internal constant CHECKPOINT_DURATION = 1 days;
     uint256 internal constant POSITION_DURATION = 365 days;
     uint256 internal constant ORACLE_SIZE = 5;
@@ -44,6 +49,7 @@ contract HyperdriveTest is BaseTest {
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: IERC20(address(baseToken)),
             initialSharePrice: INITIAL_SHARE_PRICE,
+            minimumShareReserves: MINIMUM_SHARE_RESERVES,
             positionDuration: POSITION_DURATION,
             checkpointDuration: CHECKPOINT_DURATION,
             timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
@@ -61,9 +67,25 @@ contract HyperdriveTest is BaseTest {
         vm.startPrank(governance);
         hyperdrive.setPauser(pauser, true);
 
-        // Advance time so that Hyperdrive can look back more than a position
-        // duration.
-        vm.warp(POSITION_DURATION * 3);
+        // If this isn't a forked environment, advance time so that Hyperdrive
+        // can look back more than a position duration. We assume that fork
+        // tests are using a sufficiently recent block that this won't be an
+        // issue.
+        if (!isForked) {
+            vm.warp(POSITION_DURATION * 3);
+        }
+    }
+
+    function deploy(
+        address deployer,
+        IHyperdrive.PoolConfig memory _config
+    ) internal {
+        vm.stopPrank();
+        vm.startPrank(deployer);
+        address dataProvider = address(new MockHyperdriveDataProvider(_config));
+        hyperdrive = IHyperdrive(
+            address(new MockHyperdrive(_config, dataProvider))
+        );
     }
 
     function deploy(
@@ -73,8 +95,24 @@ contract HyperdriveTest is BaseTest {
         uint256 flatFee,
         uint256 governanceFee
     ) internal {
-        vm.stopPrank();
-        vm.startPrank(deployer);
+        deploy(
+            deployer,
+            apr,
+            INITIAL_SHARE_PRICE,
+            curveFee,
+            flatFee,
+            governanceFee
+        );
+    }
+
+    function deploy(
+        address deployer,
+        uint256 apr,
+        uint256 initialSharePrice,
+        uint256 curveFee,
+        uint256 flatFee,
+        uint256 governanceFee
+    ) internal {
         IHyperdrive.Fees memory fees = IHyperdrive.Fees({
             curve: curveFee,
             flat: flatFee,
@@ -82,7 +120,8 @@ contract HyperdriveTest is BaseTest {
         });
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: IERC20(address(baseToken)),
-            initialSharePrice: INITIAL_SHARE_PRICE,
+            initialSharePrice: initialSharePrice,
+            minimumShareReserves: MINIMUM_SHARE_RESERVES,
             positionDuration: POSITION_DURATION,
             checkpointDuration: CHECKPOINT_DURATION,
             timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
@@ -92,10 +131,31 @@ contract HyperdriveTest is BaseTest {
             oracleSize: ORACLE_SIZE,
             updateGap: UPDATE_GAP
         });
-        address dataProvider = address(new MockHyperdriveDataProvider(config));
-        hyperdrive = IHyperdrive(
-            address(new MockHyperdrive(config, dataProvider))
-        );
+        deploy(deployer, config);
+    }
+
+    function testConfig(
+        uint256 fixedRate
+    ) internal view returns (IHyperdrive.PoolConfig memory) {
+        IHyperdrive.Fees memory fees = IHyperdrive.Fees({
+            curve: 0,
+            flat: 0,
+            governance: 0
+        });
+        return
+            IHyperdrive.PoolConfig({
+                baseToken: IERC20(address(baseToken)),
+                initialSharePrice: FixedPointMath.ONE_18,
+                minimumShareReserves: MINIMUM_SHARE_RESERVES,
+                positionDuration: POSITION_DURATION,
+                checkpointDuration: CHECKPOINT_DURATION,
+                timeStretch: HyperdriveUtils.calculateTimeStretch(fixedRate),
+                governance: governance,
+                feeCollector: feeCollector,
+                fees: fees,
+                oracleSize: ORACLE_SIZE,
+                updateGap: UPDATE_GAP
+            });
     }
 
     /// Actions ///
@@ -111,9 +171,7 @@ contract HyperdriveTest is BaseTest {
         // Initialize the pool.
         baseToken.mint(contribution);
         baseToken.approve(address(hyperdrive), contribution);
-        hyperdrive.initialize(contribution, apr, lp, true);
-
-        return hyperdrive.balanceOf(AssetId._LP_ASSET_ID, lp);
+        return hyperdrive.initialize(contribution, apr, lp, true);
     }
 
     function addLiquidity(
@@ -258,7 +316,6 @@ contract HyperdriveTest is BaseTest {
     ) internal returns (uint256 maturityTime, uint256 baseAmount) {
         vm.stopPrank();
         vm.startPrank(trader);
-
         // Open the short
         maturityTime = HyperdriveUtils.maturityTimeFromLatestCheckpoint(
             hyperdrive
@@ -319,6 +376,61 @@ contract HyperdriveTest is BaseTest {
         return closeShort(trader, maturityTime, bondAmount, true);
     }
 
+    function estimateLongProceeds(
+        uint256 bondAmount,
+        uint256 normalizedTimeRemaining,
+        uint256 openSharePrice,
+        uint256 closeSharePrice
+    ) internal view returns (uint256) {
+        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
+        IHyperdrive.PoolConfig memory poolConfig = hyperdrive.getPoolConfig();
+        (, , uint256 shareProceeds) = HyperdriveMath.calculateCloseLong(
+            poolInfo.shareReserves,
+            poolInfo.bondReserves,
+            bondAmount,
+            normalizedTimeRemaining,
+            poolConfig.timeStretch,
+            openSharePrice,
+            closeSharePrice,
+            poolInfo.sharePrice,
+            poolConfig.initialSharePrice
+        );
+        return shareProceeds.mulDivDown(poolInfo.sharePrice, 1e18);
+    }
+
+    function estimateShortProceeds(
+        uint256 shortAmount,
+        int256 variableRate,
+        uint256 normalizedTimeRemaining,
+        uint256 timeElapsed
+    ) internal view returns (uint256) {
+        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
+        IHyperdrive.PoolConfig memory poolConfig = hyperdrive.getPoolConfig();
+
+        (, , uint256 expectedSharePayment) = HyperdriveMath.calculateCloseShort(
+            poolInfo.shareReserves,
+            poolInfo.bondReserves,
+            shortAmount,
+            normalizedTimeRemaining,
+            poolConfig.timeStretch,
+            poolInfo.sharePrice,
+            poolConfig.initialSharePrice
+        );
+        (, int256 expectedInterest) = HyperdriveUtils.calculateCompoundInterest(
+            shortAmount,
+            variableRate,
+            timeElapsed
+        );
+        int256 delta = int256(
+            shortAmount - poolInfo.sharePrice.mulDown(expectedSharePayment)
+        );
+        if (delta + expectedInterest > 0) {
+            return uint256(delta + expectedInterest);
+        } else {
+            return 0;
+        }
+    }
+
     /// Utils ///
 
     function advanceTime(uint256 time, int256 apr) internal virtual {
@@ -333,6 +445,15 @@ contract HyperdriveTest is BaseTest {
     }
 
     /// Event Utils ///
+
+    event Deployed(
+        uint256 indexed version,
+        address hyperdrive,
+        IHyperdrive.PoolConfig config,
+        address linkerFactory,
+        bytes32 linkerCodeHash,
+        bytes32[] extraData
+    );
 
     event Initialize(
         address indexed provider,
@@ -391,4 +512,89 @@ contract HyperdriveTest is BaseTest {
         uint256 baseAmount,
         uint256 bondAmount
     );
+
+    function verifyFactoryEvents(
+        HyperdriveFactory factory,
+        address deployer,
+        uint256 contribution,
+        uint256 apr,
+        uint256 minimumShareReserves,
+        bytes32[] memory expectedExtraData,
+        uint256 tolerance
+    ) internal {
+        // Ensure that the correct `Deployed` and `Initialize` events were emitted.
+        VmSafe.Log[] memory logs = vm.getRecordedLogs();
+
+        // Verify that a single `Deployed` event was emitted.
+        {
+            VmSafe.Log[] memory filteredLogs = logs.filterLogs(
+                Deployed.selector
+            );
+            assertEq(filteredLogs.length, 1);
+            VmSafe.Log memory log = filteredLogs[0];
+
+            // Verify the event topics.
+            assertEq(log.topics[0], Deployed.selector);
+            assertEq(uint256(log.topics[1]), factory.versionCounter());
+
+            // Verify the event data.
+            (
+                address eventHyperdrive,
+                IHyperdrive.PoolConfig memory eventConfig,
+                address eventLinkerFactory,
+                bytes32 eventLinkerCodeHash,
+                bytes32[] memory eventExtraData
+            ) = abi.decode(
+                    log.data,
+                    (
+                        address,
+                        IHyperdrive.PoolConfig,
+                        address,
+                        bytes32,
+                        bytes32[]
+                    )
+                );
+            assertEq(eventHyperdrive, address(hyperdrive));
+            assertEq(
+                keccak256(abi.encode(eventConfig)),
+                keccak256(abi.encode(hyperdrive.getPoolConfig()))
+            );
+            assertEq(eventLinkerFactory, address(forwarderFactory));
+            assertEq(eventLinkerCodeHash, forwarderFactory.ERC20LINK_HASH());
+            assertEq(
+                keccak256(abi.encode(eventExtraData)),
+                keccak256(abi.encode(expectedExtraData))
+            );
+        }
+
+        // Verify that the second log is the expected `Initialize` event.
+        {
+            VmSafe.Log[] memory filteredLogs = Lib.filterLogs(
+                logs,
+                Initialize.selector
+            );
+            assertEq(filteredLogs.length, 1);
+            VmSafe.Log memory log = filteredLogs[0];
+
+            // Verify the event topics.
+            assertEq(log.topics[0], Initialize.selector);
+            assertEq(address(uint160(uint256(log.topics[1]))), deployer);
+
+            // Verify the event data.
+            (
+                uint256 eventLpAmount,
+                uint256 eventBaseAmount,
+                uint256 eventApr
+            ) = abi.decode(log.data, (uint256, uint256, uint256));
+            assertApproxEqAbs(
+                eventLpAmount,
+                contribution.divDown(
+                    hyperdrive.getPoolConfig().initialSharePrice
+                ) - 2 * minimumShareReserves,
+                tolerance
+            );
+            assertEq(eventBaseAmount, contribution);
+            assertEq(eventApr, apr);
+        }
+    }
 }

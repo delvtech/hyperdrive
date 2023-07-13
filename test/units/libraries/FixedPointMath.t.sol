@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import "forge-std/Test.sol";
-import "contracts/test/MockFixedPointMath.sol";
-import "test/3rdPartyLibs/LogExpMath.sol";
-import "test/3rdPartyLibs/BalancerErrors.sol";
-import { Errors } from "contracts/src/libraries/Errors.sol";
+import { stdError, Test } from "forge-std/Test.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { MockFixedPointMath } from "contracts/test/MockFixedPointMath.sol";
+import { LogExpMath } from "test/3rdPartyLibs/LogExpMath.sol";
+import { BalancerErrors } from "test/3rdPartyLibs/BalancerErrors.sol";
+import { Lib } from "test/utils/Lib.sol";
 
 contract FixedPointMathTest is Test {
-    function setUp() public {}
+    using Lib for *;
 
     function test_add() public {
         // NOTE: Coverage only works if I initialize the fixture in the test function
@@ -38,7 +39,7 @@ contract FixedPointMathTest is Test {
     function test_fail_sub_overflow() public {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
-        vm.expectRevert(Errors.FixedPointMath_SubOverflow.selector);
+        vm.expectRevert(IHyperdrive.FixedPointMath_SubOverflow.selector);
         mockFixedPointMath.sub(0, 1e18);
     }
 
@@ -214,7 +215,7 @@ contract FixedPointMathTest is Test {
     function test_fail_exp_negative_or_zero_input() public {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
-        vm.expectRevert(Errors.FixedPointMath_InvalidExponent.selector);
+        vm.expectRevert(IHyperdrive.FixedPointMath_InvalidExponent.selector);
         mockFixedPointMath.exp(135305999368893231589);
     }
 
@@ -228,7 +229,9 @@ contract FixedPointMathTest is Test {
     function test_fail_ln_negative_or_zero_input() public {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
-        vm.expectRevert(Errors.FixedPointMath_NegativeOrZeroInput.selector);
+        vm.expectRevert(
+            IHyperdrive.FixedPointMath_NegativeOrZeroInput.selector
+        );
         mockFixedPointMath.ln(0);
     }
 
@@ -268,8 +271,10 @@ contract FixedPointMathTest is Test {
     }
 
     function test_differential_fuzz_pow(uint256 x, uint256 y) public {
-        vm.assume(x < 2 ** 255);
-        vm.assume(y < 1);
+        x = x.normalizeToRange(0, 2 ** 255);
+        // TODO: If this is updated to a larger range (like [0, 1e18]), the
+        // tolerance becomes very large.
+        y = y.normalizeToRange(0, 1);
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
         uint256 result = mockFixedPointMath.pow(x, y);
@@ -279,8 +284,7 @@ contract FixedPointMathTest is Test {
 
     /// @dev This test is to check that the pow function returns 1e18 when the exponent is 0
     function test_differential_fuzz_pow_zero(uint256 x) public {
-        vm.assume(x > 0);
-        vm.assume(x < 2 ** 255);
+        x = x.normalizeToRange(0, 2 ** 255);
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
         uint256 result = mockFixedPointMath.pow(x, 0);

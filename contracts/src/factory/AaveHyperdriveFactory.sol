@@ -7,7 +7,6 @@ import { HyperdriveFactory } from "./HyperdriveFactory.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
 import { AaveHyperdriveDataProvider } from "../instances/AaveHyperdriveDataProvider.sol";
-import { Errors } from "../libraries/Errors.sol";
 
 /// @author DELV
 /// @title AaveHyperdriveFactory
@@ -25,13 +24,17 @@ contract AaveHyperdriveFactory is HyperdriveFactory {
     /// @param _feeCollector The address which should be set as the fee collector in new deployments
     /// @param _fees The fees each deployed instance from this contract will have
     /// @param _defaultPausers The default addresses which will be set to have the pauser role
+    /// @param _linkerFactory The address of the linker factory
+    /// @param _linkerCodeHash The hash of the linker contract's constructor code.
     constructor(
         address _governance,
         IHyperdriveDeployer _deployer,
         address _hyperdriveGovernance,
         address _feeCollector,
         IHyperdrive.Fees memory _fees,
-        address[] memory _defaultPausers
+        address[] memory _defaultPausers,
+        address _linkerFactory,
+        bytes32 _linkerCodeHash
     )
         HyperdriveFactory(
             _governance,
@@ -39,23 +42,19 @@ contract AaveHyperdriveFactory is HyperdriveFactory {
             _hyperdriveGovernance,
             _feeCollector,
             _fees,
-            _defaultPausers
+            _defaultPausers,
+            _linkerFactory,
+            _linkerCodeHash
         )
     {}
 
     /// @notice Deploys a copy of hyperdrive with the given params
     /// @param _config The configuration of the Hyperdrive pool.
-    /// @param _linkerCodeHash The hash of the ERC20 linker contract's
-    ///        constructor code.
-    /// @param _linkerFactory The address of the factory which is used to deploy
-    ///        the ERC20 linker contracts.
     /// @param _contribution Base token to call init with
     /// @param _apr The apr to call init with
     /// @return The hyperdrive address deployed
     function deployAndInitialize(
         IHyperdrive.PoolConfig memory _config,
-        bytes32 _linkerCodeHash,
-        address _linkerFactory,
         bytes32[] memory,
         uint256 _contribution,
         uint256 _apr
@@ -63,7 +62,7 @@ contract AaveHyperdriveFactory is HyperdriveFactory {
         // Ensure that ether wasn't sent. This is only marked as payable to
         // satisfy the interface.
         if (msg.value > 0) {
-            revert Errors.NotPayable();
+            revert IHyperdrive.NotPayable();
         }
 
         // Encode the aToken address corresponding to the base token in the
@@ -73,7 +72,7 @@ contract AaveHyperdriveFactory is HyperdriveFactory {
             .getReserveData(address(_config.baseToken))
             .aTokenAddress;
         if (address(_config.baseToken) == address(0) || aToken == address(0)) {
-            revert Errors.InvalidToken();
+            revert IHyperdrive.InvalidToken();
         }
 
         bytes32[] memory extraData = new bytes32[](1);
@@ -81,14 +80,7 @@ contract AaveHyperdriveFactory is HyperdriveFactory {
 
         // Deploy and initialize the hyperdrive instance.
         return
-            super.deployAndInitialize(
-                _config,
-                _linkerCodeHash,
-                _linkerFactory,
-                extraData,
-                _contribution,
-                _apr
-            );
+            super.deployAndInitialize(_config, extraData, _contribution, _apr);
     }
 
     /// @notice This deploys a data provider for the aave hyperdrive instance

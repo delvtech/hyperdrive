@@ -41,8 +41,7 @@ library HyperdriveUtils {
     }
 
     function calculateSpotPrice(
-        IHyperdrive _hyperdrive,
-        uint256 _normalizedTimeRemaining
+        IHyperdrive _hyperdrive
     ) internal view returns (uint256) {
         IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
         IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
@@ -51,15 +50,8 @@ library HyperdriveUtils {
                 poolInfo.shareReserves,
                 poolInfo.bondReserves,
                 poolConfig.initialSharePrice,
-                _normalizedTimeRemaining,
                 poolConfig.timeStretch
             );
-    }
-
-    function calculateSpotPrice(
-        IHyperdrive _hyperdrive
-    ) internal view returns (uint256) {
-        return _hyperdrive.calculateSpotPrice(FixedPointMath.ONE_18);
     }
 
     function calculateAPRFromReserves(
@@ -87,6 +79,10 @@ library HyperdriveUtils {
         // rate = (1 - p) / (p * t) = (1 - dx / dy) * (dx / dy * t)
         //       =>
         // apr = (dy - dx) / (dx * t)
+        require(
+            timeRemaining <= 1e18 && timeRemaining > 0,
+            "Expecting NormalizedTimeRemaining"
+        );
         return
             (bondAmount.sub(baseAmount)).divDown(
                 baseAmount.mulDown(timeRemaining)
@@ -95,24 +91,36 @@ library HyperdriveUtils {
 
     /// @dev Calculates the maximum amount of longs that can be opened.
     /// @param _hyperdrive A Hyperdrive instance.
+    /// @param _maxIterations The maximum number of iterations to use.
+    /// @return baseAmount The cost of buying the maximum amount of longs.
+    function calculateMaxLong(
+        IHyperdrive _hyperdrive,
+        uint256 _maxIterations
+    ) internal view returns (uint256 baseAmount) {
+        IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
+        IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
+        (baseAmount, ) = HyperdriveMath.calculateMaxLong(
+            HyperdriveMath.MaxTradeParams({
+                shareReserves: poolInfo.shareReserves,
+                bondReserves: poolInfo.bondReserves,
+                longsOutstanding: poolInfo.longsOutstanding,
+                timeStretch: poolConfig.timeStretch,
+                sharePrice: poolInfo.sharePrice,
+                initialSharePrice: poolConfig.initialSharePrice,
+                minimumShareReserves: poolConfig.minimumShareReserves
+            }),
+            _maxIterations
+        );
+        return baseAmount;
+    }
+
+    /// @dev Calculates the maximum amount of longs that can be opened.
+    /// @param _hyperdrive A Hyperdrive instance.
     /// @return baseAmount The cost of buying the maximum amount of longs.
     function calculateMaxLong(
         IHyperdrive _hyperdrive
     ) internal view returns (uint256 baseAmount) {
-        IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
-        IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
-        return
-            HyperdriveMath
-                .calculateMaxLong(
-                    poolInfo.shareReserves,
-                    poolInfo.bondReserves,
-                    poolInfo.longsOutstanding,
-                    poolConfig.timeStretch,
-                    poolInfo.sharePrice,
-                    poolConfig.initialSharePrice,
-                    7
-                )
-                .baseAmount;
+        return calculateMaxLong(_hyperdrive, 7);
     }
 
     /// @dev Calculates the maximum amount of shorts that can be opened.
@@ -125,12 +133,15 @@ library HyperdriveUtils {
         IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
         return
             HyperdriveMath.calculateMaxShort(
-                poolInfo.shareReserves,
-                poolInfo.bondReserves,
-                poolInfo.longsOutstanding,
-                poolConfig.timeStretch,
-                poolInfo.sharePrice,
-                poolConfig.initialSharePrice
+                HyperdriveMath.MaxTradeParams({
+                    shareReserves: poolInfo.shareReserves,
+                    bondReserves: poolInfo.bondReserves,
+                    longsOutstanding: poolInfo.longsOutstanding,
+                    timeStretch: poolConfig.timeStretch,
+                    sharePrice: poolInfo.sharePrice,
+                    initialSharePrice: poolConfig.initialSharePrice,
+                    minimumShareReserves: poolConfig.minimumShareReserves
+                })
             );
     }
 
@@ -229,7 +240,6 @@ library HyperdriveUtils {
             poolInfo.shareReserves,
             poolInfo.bondReserves,
             poolConfig.initialSharePrice,
-            timeRemaining,
             poolConfig.timeStretch
         );
 
@@ -274,6 +284,7 @@ library HyperdriveUtils {
                         bondReserves: poolInfo.bondReserves,
                         sharePrice: poolInfo.sharePrice,
                         initialSharePrice: poolConfig.initialSharePrice,
+                        minimumShareReserves: poolConfig.minimumShareReserves,
                         timeStretch: poolConfig.timeStretch,
                         longsOutstanding: poolInfo.longsOutstanding,
                         longAverageTimeRemaining: calculateTimeRemaining(
@@ -293,5 +304,20 @@ library HyperdriveUtils {
                     })
                 )
                 .mulDown(poolInfo.sharePrice);
+    }
+
+    function lpSharePrice(
+        IHyperdrive hyperdrive
+    ) internal view returns (uint256) {
+        return hyperdrive.presentValue().divDown(hyperdrive.lpTotalSupply());
+    }
+
+    function lpTotalSupply(
+        IHyperdrive hyperdrive
+    ) internal view returns (uint256) {
+        return
+            hyperdrive.totalSupply(AssetId._LP_ASSET_ID) +
+            hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID) -
+            hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw;
     }
 }

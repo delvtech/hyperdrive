@@ -1,7 +1,7 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { Errors } from "./Errors.sol";
+import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { FixedPointMath } from "./FixedPointMath.sol";
 import { YieldSpaceMath } from "./YieldSpaceMath.sol";
 
@@ -14,27 +14,23 @@ import { YieldSpaceMath } from "./YieldSpaceMath.sol";
 library HyperdriveMath {
     using FixedPointMath for uint256;
 
-    /// @dev Calculates the spot price without slippage of bonds in terms of shares.
+    /// @dev Calculates the spot price without slippage of bonds in terms of base.
     /// @param _shareReserves The pool's share reserves.
     /// @param _bondReserves The pool's bond reserves.
     /// @param _initialSharePrice The initial share price as an 18 fixed-point value.
-    /// @param _normalizedTimeRemaining The normalized amount of time remaining until maturity.
     /// @param _timeStretch The time stretch parameter as an 18 fixed-point value.
-    /// @return spotPrice The spot price of bonds in terms of shares as an 18 fixed-point value.
+    /// @return spotPrice The spot price of bonds in terms of base as an 18 fixed-point value.
     function calculateSpotPrice(
         uint256 _shareReserves,
         uint256 _bondReserves,
         uint256 _initialSharePrice,
-        uint256 _normalizedTimeRemaining,
         uint256 _timeStretch
     ) internal pure returns (uint256 spotPrice) {
-        // (y / (mu * z)) ** -tau
-        // ((mu * z) / y) ** tau
-        uint256 tau = _normalizedTimeRemaining.mulDown(_timeStretch);
-
+        // (y / (mu * z)) ** -ts
+        // ((mu * z) / y) ** ts
         spotPrice = _initialSharePrice
             .mulDivDown(_shareReserves, _bondReserves)
-            .pow(tau);
+            .pow(_timeStretch);
     }
 
     /// @dev Calculates the APR from the pool's reserves.
@@ -60,8 +56,6 @@ library HyperdriveMath {
             _shareReserves,
             _bondReserves,
             _initialSharePrice,
-            // full time remaining of position
-            FixedPointMath.ONE_18,
             _timeStretch
         );
 
@@ -140,9 +134,10 @@ library HyperdriveMath {
     /// @param _normalizedTimeRemaining The normalized time remaining of the
     ///        position.
     /// @param _timeStretch The time stretch parameter.
+    /// @param _openSharePrice The share price at open.
     /// @param _closeSharePrice The share price at close.
     /// @param _sharePrice The share price.
-    /// @param _initialSharePrice The initial share price.
+    /// @param _initialSharePrice The share price when the pool was deployed.
     /// @return shareReservesDelta The shares paid by the reserves in the trade.
     /// @return bondReservesDelta The bonds paid to the reserves in the trade.
     /// @return shareProceeds The shares that the user will receive.
@@ -152,6 +147,7 @@ library HyperdriveMath {
         uint256 _amountIn,
         uint256 _normalizedTimeRemaining,
         uint256 _timeStretch,
+        uint256 _openSharePrice,
         uint256 _closeSharePrice,
         uint256 _sharePrice,
         uint256 _initialSharePrice
@@ -194,10 +190,14 @@ library HyperdriveMath {
         // is adjusted down by the rate of negative interest. We always attribute negative
         // interest to the long since it's difficult or impossible to attribute
         // the negative interest to the short in practice.
-        if (_initialSharePrice > _closeSharePrice) {
+        if (_openSharePrice > _closeSharePrice) {
             shareProceeds = shareProceeds.mulDivDown(
                 _closeSharePrice,
-                _initialSharePrice
+                _openSharePrice
+            );
+            shareReservesDelta = shareReservesDelta.mulDivDown(
+                _closeSharePrice,
+                _openSharePrice
             );
         }
     }
@@ -285,32 +285,28 @@ library HyperdriveMath {
         }
     }
 
-    struct MaxLongResult {
-        uint256 baseAmount;
-        uint256 bondAmount;
+    struct MaxTradeParams {
+        uint256 shareReserves;
+        uint256 bondReserves;
+        uint256 longsOutstanding;
+        uint256 timeStretch;
+        uint256 sharePrice;
+        uint256 initialSharePrice;
+        uint256 minimumShareReserves;
     }
 
     /// @dev Calculates the maximum amount of shares a user can spend on buying
     ///      bonds before the spot crosses above a price of 1.
-    /// @param _shareReserves The pool's share reserves.
-    /// @param _bondReserves The pool's bonds reserves.
-    /// @param _longsOutstanding The amount of longs outstanding.
-    /// @param _timeStretch The time stretch parameter.
-    /// @param _sharePrice The share price.
-    /// @param _initialSharePrice The initial share price.
+    /// @param _params Information about the market state and pool configuration
+    ///        used to compute the maximum trade.
     /// @param _maxIterations The maximum number of iterations to perform before
     ///        returning the result.
-    /// @return result The maximum amount of bonds that can be purchased and the
-    ///         amount of base that must be spent to purchase them.
+    /// @return baseAmount The cost of the maximum long.
+    /// @return bondAmount The maximum amount of longs that can be opened.
     function calculateMaxLong(
-        uint256 _shareReserves,
-        uint256 _bondReserves,
-        uint256 _longsOutstanding,
-        uint256 _timeStretch,
-        uint256 _sharePrice,
-        uint256 _initialSharePrice,
+        MaxTradeParams memory _params,
         uint256 _maxIterations
-    ) internal pure returns (MaxLongResult memory result) {
+    ) internal pure returns (uint256 baseAmount, uint256 bondAmount) {
         // We first solve for the maximum buy that is possible on the YieldSpace
         // curve. This will give us an upper bound on our maximum buy by giving
         // us the maximum buy that is possible without going into negative
@@ -319,18 +315,20 @@ library HyperdriveMath {
         // checks, then we're done. If not, then we need to solve for the
         // maximum trade size iteratively.
         (uint256 dz, uint256 dy) = YieldSpaceMath.calculateMaxBuy(
-            _shareReserves,
-            _bondReserves,
-            FixedPointMath.ONE_18 - _timeStretch,
-            _sharePrice,
-            _initialSharePrice
+            _params.shareReserves,
+            _params.bondReserves,
+            FixedPointMath.ONE_18 - _params.timeStretch,
+            _params.sharePrice,
+            _params.initialSharePrice
         );
         if (
-            _shareReserves + dz >= (_longsOutstanding + dy).divDown(_sharePrice)
+            _params.shareReserves + dz >=
+            (_params.longsOutstanding + dy).divDown(_params.sharePrice) +
+                _params.minimumShareReserves
         ) {
-            result.baseAmount = dz.mulDown(_sharePrice);
-            result.bondAmount = dy;
-            return result;
+            baseAmount = dz.mulDown(_params.sharePrice);
+            bondAmount = dy;
+            return (baseAmount, bondAmount);
         }
 
         // To make an initial guess for the iterative approximation, we consider
@@ -342,26 +340,45 @@ library HyperdriveMath {
         // Substituting this into error equation and setting the error equal to
         // zero allows us to solve for the initial guess as:
         //
-        // (y_l + c * 1/p * dz) / c - (z + dz) = 0
+        // (y_l + c * 1/p * dz) / c + z_min - (z + dz) = 0
         //              =>
-        // (1/p - 1) * dz = z - y_l/c
+        // (1/p - 1) * dz = z - y_l/c - z_min
         //              =>
-        // dz = (z - y_l/c) * (p / (p - 1))
-        uint256 p = _sharePrice.mulDivDown(dz, dy);
-        dz = (_shareReserves - _longsOutstanding.divDown(_sharePrice))
-            .mulDivDown(p, FixedPointMath.ONE_18 - p);
+        // dz = (z - y_l/c - z_min) * (p / (p - 1))
+        uint256 p = _params.sharePrice.mulDivDown(dz, dy);
+        dz = (_params.shareReserves -
+            _params.longsOutstanding.divDown(_params.sharePrice) -
+            _params.minimumShareReserves).mulDivDown(
+                p,
+                FixedPointMath.ONE_18 - p
+            );
         dy = YieldSpaceMath.calculateBondsOutGivenSharesIn(
-            _shareReserves,
-            _bondReserves,
+            _params.shareReserves,
+            _params.bondReserves,
             dz,
-            FixedPointMath.ONE_18 - _timeStretch,
-            _sharePrice,
-            _initialSharePrice
+            FixedPointMath.ONE_18 - _params.timeStretch,
+            _params.sharePrice,
+            _params.initialSharePrice
         );
 
         // Our maximum long will be the largest trade size that doesn't fail
         // the solvency check.
         for (uint256 i = 0; i < _maxIterations; i++) {
+            // If the approximation error is greater than zero and the solution
+            // is the largest we've found so far, then we update our result.
+            int256 approximationError = int256((_params.shareReserves + dz)) -
+                int256(
+                    (_params.longsOutstanding + dy).divDown(_params.sharePrice)
+                ) -
+                int256(_params.minimumShareReserves);
+            if (
+                approximationError > 0 &&
+                dz.mulDown(_params.sharePrice) > baseAmount
+            ) {
+                baseAmount = dz.mulDown(_params.sharePrice);
+                bondAmount = dy;
+            }
+
             // Even though YieldSpace isn't linear, we can use a linear
             // approximation to get closer to the optimal solution. Our guess
             // should bring us close enough to the optimal point that we can
@@ -373,84 +390,80 @@ library HyperdriveMath {
             // error equation and setting the error equation equal to zero
             // allows us to solve for the trade size update:
             //
-            // (y_l + dy + c * (1/p) * dz') / c - (z + dz + dz') = 0
+            // (y_l + dy + c * (1/p) * dz') / c + z_min - (z + dz + dz') = 0
             //                  =>
-            // (1/p - 1) * dz' = (z + dz) - (y_l + dy) / c
+            // (1/p - 1) * dz' = (z + dz) - (y_l + dy) / c - z_min
             //                  =>
-            // dz' = ((z + dz) - (y_l + dy) / c) * (p / (p - 1)).
+            // dz' = ((z + dz) - (y_l + dy) / c - z_min) * (p / (p - 1)).
             p = calculateSpotPrice(
-                _shareReserves + dz,
-                _bondReserves - dy,
-                _initialSharePrice,
-                FixedPointMath.ONE_18,
-                _timeStretch
+                _params.shareReserves + dz,
+                _params.bondReserves - dy,
+                _params.initialSharePrice,
+                _params.timeStretch
             );
-            int256 error = int256((_shareReserves + dz)) -
-                int256((_longsOutstanding + dy).divDown(_sharePrice));
-            if (error < 0) {
-                dz -= uint256(-error).mulDivDown(p, FixedPointMath.ONE_18 - p);
+            if (p >= FixedPointMath.ONE_18) {
+                // If the spot price is greater than one and the error is
+                // positive,
+                break;
+            }
+            if (approximationError < 0) {
+                dz -= uint256(-approximationError).mulDivDown(
+                    p,
+                    FixedPointMath.ONE_18 - p
+                );
             } else {
-                if (dz.mulDown(_sharePrice) > result.baseAmount) {
-                    result.baseAmount = dz.mulDown(_sharePrice);
-                    result.bondAmount = dy;
-                }
-                dz += uint256(error).mulDivDown(p, FixedPointMath.ONE_18 - p);
+                dz += uint256(approximationError).mulDivDown(
+                    p,
+                    FixedPointMath.ONE_18 - p
+                );
             }
             dy = YieldSpaceMath.calculateBondsOutGivenSharesIn(
-                _shareReserves,
-                _bondReserves,
+                _params.shareReserves,
+                _params.bondReserves,
                 dz,
-                FixedPointMath.ONE_18 - _timeStretch,
-                _sharePrice,
-                _initialSharePrice
+                FixedPointMath.ONE_18 - _params.timeStretch,
+                _params.sharePrice,
+                _params.initialSharePrice
             );
         }
 
-        return result;
+        return (baseAmount, bondAmount);
     }
 
     /// @dev Calculates the maximum amount of shares that can be used to open
     ///      shorts.
-    /// @param _shareReserves The pool's share reserves.
-    /// @param _bondReserves The pool's bonds reserves.
-    /// @param _longsOutstanding The amount of longs outstanding.
-    /// @param _timeStretch The time stretch parameter.
-    /// @param _sharePrice The share price.
-    /// @param _initialSharePrice The initial share price.
+    /// @param _params Information about the market state and pool configuration
+    ///        used to compute the maximum trade.
     /// @return The maximum amount of shares that can be used to open shorts.
     function calculateMaxShort(
-        uint256 _shareReserves,
-        uint256 _bondReserves,
-        uint256 _longsOutstanding,
-        uint256 _timeStretch,
-        uint256 _sharePrice,
-        uint256 _initialSharePrice
+        MaxTradeParams memory _params
     ) internal pure returns (uint256) {
         // The only constraint on the maximum short is that the share reserves
         // don't go negative and satisfy the solvency requirements. Thus, we can
-        // set z = y_l/c and solve for the maximum short directly as:
+        // set z = y_l/c + z_min and solve for the maximum short directly as:
         //
-        // k = (c / mu) * (mu * (longBuffer / c)) ** (1 - tau) + y ** (1 - tau)
+        // k = (c / mu) * (mu * (y_l / c + z_min)) ** (1 - tau) + y ** (1 - tau)
         //                         =>
-        // y = (k - (c / mu) * (mu * (longBuffer / c)) ** (1 - tau)) ** (1 / (1 - tau)).
-        uint256 t = FixedPointMath.ONE_18 - _timeStretch;
-        uint256 priceFactor = _sharePrice.divDown(_initialSharePrice);
+        // y = (k - (c / mu) * (mu * (y_l / c + z_min)) ** (1 - tau)) ** (1 / (1 - tau)).
+        uint256 t = FixedPointMath.ONE_18 - _params.timeStretch;
+        uint256 priceFactor = _params.sharePrice.divDown(
+            _params.initialSharePrice
+        );
         uint256 k = YieldSpaceMath.modifiedYieldSpaceConstant(
             priceFactor,
-            _initialSharePrice,
-            _shareReserves,
+            _params.initialSharePrice,
+            _params.shareReserves,
             t,
-            _bondReserves
+            _params.bondReserves
         );
-        uint256 optimalBondReserves = (k -
-            priceFactor.mulDown(
-                _initialSharePrice
-                    .mulDivDown(_longsOutstanding, _sharePrice)
-                    .pow(t)
-            )).pow(FixedPointMath.ONE_18.divDown(t));
+        uint256 innerFactor = (_params.initialSharePrice.mulDown(
+            _params.longsOutstanding.divDown(_params.sharePrice)
+        ) + _params.minimumShareReserves).pow(t);
+        uint256 optimalBondReserves = (k - priceFactor.mulDown(innerFactor))
+            .pow(FixedPointMath.ONE_18.divDown(t));
 
         // The optimal bond reserves imply a maximum short of dy = y - y0.
-        return optimalBondReserves - _bondReserves;
+        return optimalBondReserves - _params.bondReserves;
     }
 
     struct PresentValueParams {
@@ -458,6 +471,7 @@ library HyperdriveMath {
         uint256 bondReserves;
         uint256 sharePrice;
         uint256 initialSharePrice;
+        uint256 minimumShareReserves;
         uint256 timeStretch;
         uint256 longsOutstanding;
         uint256 longAverageTimeRemaining;
@@ -551,7 +565,10 @@ library HyperdriveMath {
             int256(_params.shareReserves) + netFlatTrade
         );
 
-        return _params.shareReserves;
+        // The present value is the final share reserves minus the minimum share
+        // reserves. This ensures that LP withdrawals won't include the minimum
+        // share reserves.
+        return _params.shareReserves - _params.minimumShareReserves;
     }
 
     /// @dev Calculates the proceeds in shares of closing a short position. This

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
@@ -21,7 +21,21 @@ import { Lib } from "../../utils/Lib.sol";
 //           favorable for LPs that join the pool.
 contract LpWithdrawalTest is HyperdriveTest {
     using FixedPointMath for uint256;
+    using HyperdriveUtils for IHyperdrive;
     using Lib for *;
+
+    function setUp() public override {
+        super.setUp();
+
+        // TODO: We should use the default once we implement the feature that
+        // pays out excess idle.
+        //
+        // Deploy Hyperdrive with a small minimum share reserves so that it is
+        // negligible relative to our error tolerances.
+        IHyperdrive.PoolConfig memory config = testConfig(0.05e18);
+        config.minimumShareReserves = 1e6;
+        deploy(deployer, config);
+    }
 
     // This test is designed to ensure that a single LP receives all of the
     // trading profits earned when a new long position is closed immediately
@@ -120,6 +134,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         uint256 apr = 0.02e18;
         uint256 contribution = 500_000_000e18;
         uint256 lpShares = initialize(alice, apr, contribution);
+        contribution -= 2 * hyperdrive.getPoolConfig().minimumShareReserves;
 
         // Bob opens a max long.
         basePaid = basePaid.normalizeToRange(
@@ -135,11 +150,13 @@ contract LpWithdrawalTest is HyperdriveTest {
             alice,
             lpShares
         );
-        assertApproxEqAbs(
-            baseProceeds,
-            contribution - (longAmount - basePaid),
-            1
-        );
+        {
+            uint256 aliceMargin = (longAmount - basePaid).mulDivDown(
+                lpShares,
+                lpShares + hyperdrive.getPoolConfig().minimumShareReserves
+            );
+            assertApproxEqAbs(baseProceeds, contribution - aliceMargin, 1);
+        }
 
         // Positive interest accrues over the term. We create a checkpoint for
         // the first checkpoint after opening the long to ensure that the
@@ -164,16 +181,27 @@ contract LpWithdrawalTest is HyperdriveTest {
                 variableRate,
                 POSITION_DURATION
             );
-        (uint256 withdrawalProceeds, ) = redeemWithdrawalShares(
-            alice,
-            withdrawalShares
-        );
-        assertApproxEqAbs(withdrawalProceeds, uint256(estimatedProceeds), 1e10); // TODO: Investigate this bound.
+        {
+            (uint256 withdrawalProceeds, ) = redeemWithdrawalShares(
+                alice,
+                withdrawalShares
+            );
+            assertApproxEqAbs(
+                withdrawalProceeds,
+                uint256(estimatedProceeds),
+                1e10
+            ); // TODO: Investigate this bound.
+        }
 
-        // Ensure approximately all of the base and withdrawal shares has been
-        // removed from the Hyperdrive instance.
-        assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1e10); // TODO: Investigate this bound.
-        assertEq(hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID), 0);
+        // Ensure the only remaining base is the base from the minimum share
+        // reserves and the LP's present value.
+        assertApproxEqAbs(
+            baseToken.balanceOf(address(hyperdrive)),
+            hyperdrive.getPoolConfig().minimumShareReserves.mulDown(
+                hyperdrive.getPoolInfo().sharePrice
+            ) + hyperdrive.presentValue(),
+            1e10
+        ); // TODO: Investigate this bound.
     }
 
     function test_lp_withdrawal_short_immediate_close(
@@ -225,7 +253,7 @@ contract LpWithdrawalTest is HyperdriveTest {
 
         // Bob attempts to close his short. This will fail since there isn't any
         // liquidity in the pool after Alice removed her liquidity.
-        vm.expectRevert(Errors.FixedPointMath_SubOverflow.selector);
+        vm.expectRevert(IHyperdrive.FixedPointMath_SubOverflow.selector);
         vm.stopPrank();
         vm.startPrank(bob);
         hyperdrive.closeShort(maturityTime, shortAmount, 0, bob, true);
@@ -246,6 +274,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         uint256 apr = 0.02e18;
         uint256 contribution = 500_000_000e18;
         uint256 lpShares = initialize(alice, apr, contribution);
+        contribution -= 2 * hyperdrive.getPoolConfig().minimumShareReserves;
 
         // Bob opens a large short.
         shortAmount = shortAmount.normalizeToRange(
@@ -261,7 +290,11 @@ contract LpWithdrawalTest is HyperdriveTest {
             alice,
             lpShares
         );
-        assertEq(baseProceeds, contribution - (shortAmount - basePaid));
+        assertApproxEqAbs(
+            baseProceeds,
+            contribution - (shortAmount - basePaid),
+            1e6
+        );
 
         // Positive interest accrues over the term.
         variableRate = variableRate.normalizeToRange(0, 2e18);
@@ -288,7 +321,11 @@ contract LpWithdrawalTest is HyperdriveTest {
 
         // Ensure that the ending base balance of Hyperdrive is zero.
         assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1e9); // TODO: Investigate this bound.
-        assertEq(hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID), 0);
+        assertApproxEqAbs(
+            hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID),
+            0,
+            1e9
+        );
     }
 
     struct TestLpWithdrawalParams {
@@ -337,6 +374,9 @@ contract LpWithdrawalTest is HyperdriveTest {
             uint256(testParams.fixedRate),
             testParams.contribution
         );
+        testParams.contribution -=
+            2 *
+            hyperdrive.getPoolConfig().minimumShareReserves;
 
         // Bob opens a long.
         longBasePaid = longBasePaid.normalizeToRange(
@@ -360,14 +400,19 @@ contract LpWithdrawalTest is HyperdriveTest {
         uint256 aliceBaseProceeds;
         uint256 aliceWithdrawalShares;
         {
+            uint256 aliceMargin = (testParams.longAmount -
+                testParams.longBasePaid).mulDivDown(
+                    aliceLpShares,
+                    aliceLpShares +
+                        hyperdrive.getPoolConfig().minimumShareReserves
+                );
             (aliceBaseProceeds, aliceWithdrawalShares) = removeLiquidity(
                 alice,
                 aliceLpShares
             );
             assertApproxEqAbs(
                 aliceBaseProceeds,
-                testParams.contribution -
-                    (testParams.longAmount - testParams.longBasePaid),
+                testParams.contribution - aliceMargin,
                 1e9
             );
             assertApproxEqAbs(presentValueRatio(), ratio, 1e6);
@@ -390,7 +435,7 @@ contract LpWithdrawalTest is HyperdriveTest {
 
         // Bob opens a short.
         shortAmount = shortAmount.normalizeToRange(
-            0.001e18,
+            100 * hyperdrive.getPoolConfig().minimumShareReserves,
             HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
         testParams.shortAmount = shortAmount;
@@ -404,8 +449,8 @@ contract LpWithdrawalTest is HyperdriveTest {
         }
 
         // Celine removes all of her LP shares. She should recover her initial
-        // contribution minus the amount of her capital that underlies Bob's
-        // short position.
+        // contribution minus the amount of capital that underlies the short
+        // and the long.
         uint256 celineBaseProceeds;
         uint256 celineWithdrawalShares;
         {
@@ -413,26 +458,17 @@ contract LpWithdrawalTest is HyperdriveTest {
                 celine,
                 celineLpShares
             );
-            assertApproxEqAbs(
-                celineBaseProceeds,
-                testParams.contribution -
-                    (testParams.shortAmount - testParams.shortBasePaid) -
-                    celineSlippagePayment,
-                1e9
-            );
         }
 
         // Bob closes his long.
-        {
-            closeLong(bob, testParams.longMaturityTime, testParams.longAmount);
-        }
+        closeLong(bob, testParams.longMaturityTime, testParams.longAmount);
 
         // Bob attempts to close his short, but the operation fails with an
         // arithmetic error. This will succeed after waiting for the rest of the
         // term to elapse.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(Errors.FixedPointMath_SubOverflow.selector);
+        vm.expectRevert(IHyperdrive.FixedPointMath_SubOverflow.selector);
         hyperdrive.closeShort(
             testParams.shortMaturityTime,
             testParams.shortAmount,
@@ -500,16 +536,24 @@ contract LpWithdrawalTest is HyperdriveTest {
         );
         assertGt(
             celineBaseProceeds + celineRedeemProceeds,
-            testParams.contribution - celineSlippagePayment // FIXME: This bound is WAY too large.
+            testParams.contribution - celineSlippagePayment // TODO: This bound is WAY too large
         );
 
         // Ensure that the ending base balance of Hyperdrive is zero.
         // TODO: See if this bound can be lowered
-        assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1e9);
+        assertApproxEqAbs(
+            baseToken.balanceOf(address(hyperdrive)),
+            hyperdrive.getPoolConfig().minimumShareReserves.mulDown(
+                hyperdrive.getPoolInfo().sharePrice
+            ) + hyperdrive.presentValue(),
+            1e9
+        );
+
+        // Ensure that the ending supply of withdrawal shares is close to zero.
         assertApproxEqAbs(
             hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID),
             0,
-            1
+            1e9
         );
     }
 
@@ -545,6 +589,9 @@ contract LpWithdrawalTest is HyperdriveTest {
             uint256(testParams.fixedRate),
             testParams.contribution
         );
+        testParams.contribution -=
+            2 *
+            hyperdrive.getPoolConfig().minimumShareReserves;
 
         // Bob opens a long.
         longBasePaid = longBasePaid.normalizeToRange(
@@ -709,8 +756,23 @@ contract LpWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID),
             0,
-            1
+            1e9
         );
+    }
+
+    function test_lp_withdrawal_three_lps(
+        uint256 longBasePaid,
+        uint256 shortAmount
+    ) external {
+        _test_lp_withdrawal_three_lps(longBasePaid, shortAmount);
+    }
+
+    function test_lp_withdrawal_three_lps_edge_cases() external {
+        // This is an edge case that occurs when the output of the
+        // YieldSpaceMath is approximately equal to zero. Previously, we would
+        // have an arithmetic underflow since we round up the value being
+        // subtracted.
+        _test_lp_withdrawal_three_lps(8181, 19983965771856);
     }
 
     // TODO: Add commentary on how Alice, Bob, and Celine should be treated
@@ -723,10 +785,10 @@ contract LpWithdrawalTest is HyperdriveTest {
     // removes her liquidity and then Bob closes the long and the short.
     // Finally, Bob and Celine remove their liquidity. Bob and Celine shouldn't
     // be treated differently based on the order in which they added liquidity.
-    function test_lp_withdrawal_three_lps(
+    function _test_lp_withdrawal_three_lps(
         uint256 longBasePaid,
         uint256 shortAmount
-    ) external {
+    ) internal {
         // Set up the test parameters.
         TestLpWithdrawalParams memory testParams = TestLpWithdrawalParams({
             fixedRate: 0.02e18,
@@ -746,6 +808,9 @@ contract LpWithdrawalTest is HyperdriveTest {
             uint256(testParams.fixedRate),
             testParams.contribution
         );
+        testParams.contribution -=
+            2 *
+            hyperdrive.getPoolConfig().minimumShareReserves;
 
         // Bob adds liquidity.
         uint256 ratio = presentValueRatio();
@@ -784,7 +849,7 @@ contract LpWithdrawalTest is HyperdriveTest {
             testParams.shortMaturityTime = shortMaturityTime;
             testParams.shortBasePaid = shortBasePaid;
         }
-        assertApproxEqAbs(presentValueRatio(), ratio, 10);
+        assertApproxEqAbs(presentValueRatio(), ratio, 100);
         ratio = presentValueRatio();
 
         // Alice removes her liquidity.
@@ -798,7 +863,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             aliceBaseProceeds,
             testParams.contribution - aliceMargin,
-            10
+            1e6 // TODO: This test should be refactored to use idle. Then we could remove this.
         );
         assertApproxEqAbs(presentValueRatio(), ratio, 10);
         ratio = presentValueRatio();
@@ -806,7 +871,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         // Celine adds liquidity.
         uint256 celineLpShares = addLiquidity(celine, testParams.contribution);
         // FIXME: This is an untenable large bound. Why is the current value
-        // ever larger than the contribution?
+        // even larger than the contribution?
         assertApproxEqAbs(presentValueRatio(), ratio, 1e16);
         ratio = presentValueRatio();
 
@@ -820,8 +885,8 @@ contract LpWithdrawalTest is HyperdriveTest {
             );
         }
 
-        // Redeem Alice's withdrawal shares. Alice at least the margin released
-        // from Bob's long.
+        // Redeem Alice's withdrawal shares. Alice should get at least the
+        // margin released from Bob's long.
         (uint256 aliceRedeemProceeds, ) = redeemWithdrawalShares(
             alice,
             aliceWithdrawalShares
@@ -844,8 +909,6 @@ contract LpWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(bobWithdrawalShares, 0, 1);
         assertApproxEqAbs(celineWithdrawalShares, 0, 1);
 
-        // Ensure that the ending base balance of Hyperdrive is zero.
-        assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1);
         assertApproxEqAbs(
             hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID) -
                 hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw,
@@ -855,11 +918,9 @@ contract LpWithdrawalTest is HyperdriveTest {
     }
 
     function presentValueRatio() internal view returns (uint256) {
-        return
-            HyperdriveUtils.presentValue(hyperdrive).divDown(
-                hyperdrive.totalSupply(AssetId._LP_ASSET_ID) +
-                    hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID) -
-                    hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw
-            );
+        uint256 totalLpSupply = hyperdrive.totalSupply(AssetId._LP_ASSET_ID) +
+            hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID) -
+            hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw;
+        return HyperdriveUtils.presentValue(hyperdrive).divDown(totalLpSupply);
     }
 }

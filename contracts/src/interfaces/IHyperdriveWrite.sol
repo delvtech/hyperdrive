@@ -15,7 +15,7 @@ interface IHyperdriveWrite is IMultiTokenWrite {
         uint256 _apr,
         address _destination,
         bool _asUnderlying
-    ) external payable;
+    ) external payable returns (uint256 lpShares);
 
     function addLiquidity(
         uint256 _contribution,
@@ -23,14 +23,14 @@ interface IHyperdriveWrite is IMultiTokenWrite {
         uint256 _maxApr,
         address _destination,
         bool _asUnderlying
-    ) external payable returns (uint256);
+    ) external payable returns (uint256 lpShares);
 
     function removeLiquidity(
         uint256 _shares,
         uint256 _minOutput,
         address _destination,
         bool _asUnderlying
-    ) external returns (uint256, uint256);
+    ) external returns (uint256 baseProceeds, uint256 withdrawalShares);
 
     function redeemWithdrawalShares(
         uint256 _shares,

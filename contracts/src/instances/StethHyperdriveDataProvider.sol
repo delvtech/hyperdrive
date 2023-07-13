@@ -5,7 +5,6 @@ import { HyperdriveDataProvider } from "../HyperdriveDataProvider.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { ILido } from "../interfaces/ILido.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
-import { Errors } from "../libraries/Errors.sol";
 import { MultiTokenDataProvider } from "../token/MultiTokenDataProvider.sol";
 
 /// @author DELV
@@ -44,7 +43,7 @@ contract StethHyperdriveDataProvider is
 
     /// @dev Returns the current share price. We simply use Lido's share price.
     /// @return price The current share price.
-    ///@dev must remain consistent with the impl inside of the HyperdriveInstance
+    /// @dev must remain consistent with the impl inside of the HyperdriveInstance
     function _pricePerShare() internal view override returns (uint256 price) {
         return _lido.getTotalPooledEther().divDown(_lido.getTotalShares());
     }

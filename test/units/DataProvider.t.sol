@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
-import { DataProvider } from "contracts/src/DataProvider.sol";
 import { Test } from "forge-std/Test.sol";
-import { console } from "forge-std/console.sol";
-import { Errors } from "contracts/src/libraries/Errors.sol";
+import { DataProvider } from "contracts/src/DataProvider.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 
 contract MockProvider {
     function get() external pure returns (uint256) {
@@ -17,7 +16,7 @@ contract MockProvider {
     ///      with the force-revert delegatecall pattern.
     /// @param _bytes The bytes to revert with.
     function _revert(bytes memory _bytes) internal pure {
-        revert Errors.ReturnData(_bytes);
+        revert IHyperdrive.ReturnData(_bytes);
     }
 }
 

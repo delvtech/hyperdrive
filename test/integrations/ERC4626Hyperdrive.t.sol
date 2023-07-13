@@ -8,14 +8,15 @@ import { ERC4626HyperdriveFactory } from "contracts/src/factory/ERC4626Hyperdriv
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
 import { Mock4626, ERC20 } from "../mocks/Mock4626.sol";
 import { MockERC4626Hyperdrive } from "../mocks/Mock4626Hyperdrive.sol";
 import { HyperdriveUtils } from "../utils/HyperdriveUtils.sol";
+import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 
-contract HyperdriveER4626Test is HyperdriveTest {
+contract ER4626HyperdriveTest is HyperdriveTest {
     using FixedPointMath for *;
 
     ERC4626HyperdriveFactory factory;
@@ -25,9 +26,12 @@ contract HyperdriveER4626Test is HyperdriveTest {
     MockERC4626Hyperdrive mockHyperdrive;
 
     function setUp() public override __mainnet_fork(16_685_972) {
+        alice = createUser("alice");
+        bob = createUser("bob");
+
         vm.startPrank(deployer);
 
-        // Deploy a new yield source
+        // Deploy the ERC4626Hyperdrive factory and deployer.
         pool = IERC4626(
             address(new Mock4626(ERC20(address(dai)), "yearn dai", "yDai"))
         );
@@ -37,7 +41,7 @@ contract HyperdriveER4626Test is HyperdriveTest {
             );
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
-
+        forwarderFactory = new ForwarderFactory();
         factory = new ERC4626HyperdriveFactory(
             alice,
             simpleDeployer,
@@ -45,23 +49,25 @@ contract HyperdriveER4626Test is HyperdriveTest {
             bob,
             IHyperdrive.Fees(0, 0, 0),
             defaults,
+            address(forwarderFactory),
+            forwarderFactory.ERC20LINK_HASH(),
             pool
         );
 
         address daiWhale = 0x075e72a5eDf65F0A5f44699c7654C1a76941Ddc8;
-
         whaleTransfer(daiWhale, dai, alice);
 
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: dai,
             initialSharePrice: FixedPointMath.ONE_18,
+            minimumShareReserves: FixedPointMath.ONE_18,
             positionDuration: 365 days,
             checkpointDuration: 1 days,
             timeStretch: FixedPointMath.ONE_18.divDown(
                 22.186877016851916266e18
             ),
-            governance: address(0),
-            feeCollector: address(0),
+            governance: alice,
+            feeCollector: bob,
             fees: IHyperdrive.Fees(0, 0, 0),
             oracleSize: 2,
             updateGap: 0
@@ -88,10 +94,12 @@ contract HyperdriveER4626Test is HyperdriveTest {
         dai.approve(address(hyperdrive), type(uint256).max);
         dai.approve(address(mockHyperdrive), type(uint256).max);
         vm.stopPrank();
+
+        // Start recording events.
+        vm.recordLogs();
     }
 
     function test_erc4626_deposit() external {
-        setUp();
         // First we add some interest
         vm.startPrank(alice);
         dai.transfer(address(pool), 5e18);
@@ -105,7 +113,7 @@ contract HyperdriveER4626Test is HyperdriveTest {
         assertEq(sharesMinted, 666666666666666666);
         assertEq(pool.balanceOf(address(mockHyperdrive)), 666666666666666666);
 
-        //Now we try to do a deposit from alice's shares
+        // Now we try to do a deposit from alice's shares
         pool.approve(address(mockHyperdrive), type(uint256).max);
         (sharesMinted, sharePrice) = mockHyperdrive.deposit(3e18, false);
         assertEq(sharePrice, 1.5e18 + 1);
@@ -118,7 +126,6 @@ contract HyperdriveER4626Test is HyperdriveTest {
     }
 
     function test_erc4626_withdraw() external {
-        setUp();
         // First we add some shares and interest
         vm.startPrank(alice);
         dai.transfer(address(pool), 5e18);
@@ -137,7 +144,6 @@ contract HyperdriveER4626Test is HyperdriveTest {
     }
 
     function test_erc4626_pricePerShare() external {
-        setUp();
         // First we add some shares and interest
         vm.startPrank(alice);
         dai.transfer(address(pool), 2e18);
@@ -147,17 +153,18 @@ contract HyperdriveER4626Test is HyperdriveTest {
     }
 
     function test_erc4626_testDeploy() external {
-        setUp();
         vm.startPrank(alice);
-        uint256 apr = 1e16; // 1% apr
+        uint256 apr = 0.01e18; // 1% apr
+        uint256 contribution = 2_500e18;
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: dai,
             initialSharePrice: FixedPointMath.ONE_18,
+            minimumShareReserves: FixedPointMath.ONE_18,
             positionDuration: 365 days,
             checkpointDuration: 1 days,
             timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
-            governance: address(0),
-            feeCollector: address(0),
+            governance: alice,
+            feeCollector: bob,
             fees: IHyperdrive.Fees(0, 0, 0),
             oracleSize: 2,
             updateGap: 0
@@ -165,20 +172,56 @@ contract HyperdriveER4626Test is HyperdriveTest {
         dai.approve(address(factory), type(uint256).max);
         hyperdrive = factory.deployAndInitialize(
             config,
-            bytes32(0),
-            address(0),
             new bytes32[](0),
-            2500e18,
+            contribution,
             apr
         );
 
-        // The initial price per share is one so we should have that the
-        // shares in the alice account are 1
-        uint256 createdShares = hyperdrive.balanceOf(
-            AssetId._LP_ASSET_ID,
-            alice
+        // The initial price per share is one so the LP shares will initially
+        // be worth one base. Alice should receive LP shares equaling her
+        // contribution minus the shares that she set aside for the minimum
+        // share reserves and the zero address's initial LP contribution.
+        assertEq(
+            hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
+            contribution - 2 * config.minimumShareReserves
         );
-        // lp shares should equal number of share reserves initialized with
-        assertEq(createdShares, 2500e18);
+
+        // Verify that the correct events were emitted.
+        verifyFactoryEvents(
+            factory,
+            alice,
+            contribution,
+            apr,
+            config.minimumShareReserves,
+            new bytes32[](0),
+            0
+        );
+    }
+
+    function test_erc4626_sweep() public {
+        setUp();
+        ERC20Mintable otherToken = new ERC20Mintable();
+        otherToken.mint(address(mockHyperdrive), 1e18);
+
+        vm.startPrank(bob);
+
+        mockHyperdrive.sweep(IERC20(address(otherToken)));
+        assertEq(otherToken.balanceOf(bob), 1e18);
+
+        vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
+        mockHyperdrive.sweep(dai);
+
+        vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
+        mockHyperdrive.sweep(IERC20(address(pool)));
+
+        vm.stopPrank();
+        vm.startPrank(alice);
+
+        vm.expectRevert(IHyperdrive.Unauthorized.selector);
+        mockHyperdrive.sweep(IERC20(address(pool)));
+
+        // We set alice to be the pauser so she can call the function now
+        mockHyperdrive.setPauser(alice, true);
+        mockHyperdrive.sweep(IERC20(address(otherToken)));
     }
 }

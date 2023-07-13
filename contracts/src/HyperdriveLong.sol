@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { SafeCast } from "./libraries/SafeCast.sol";
 import { HyperdriveLP } from "./HyperdriveLP.sol";
+import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { AssetId } from "./libraries/AssetId.sol";
-import { Errors } from "./libraries/Errors.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
+import { SafeCast } from "./libraries/SafeCast.sol";
 
 /// @author DELV
 /// @title HyperdriveLong
@@ -35,7 +35,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // Check that the message value and base amount are valid.
         _checkMessageValue();
         if (_baseAmount == 0) {
-            revert Errors.ZeroAmount();
+            revert IHyperdrive.ZeroAmount();
         }
 
         // Deposit the user's base.
@@ -50,14 +50,12 @@ abstract contract HyperdriveLong is HyperdriveLP {
 
         // Calculate the pool and user deltas using the trading function. We
         // backdate the bonds purchased to the beginning of the checkpoint.
-        uint256 maturityTime = latestCheckpoint + _positionDuration;
-        uint256 timeRemaining = _calculateTimeRemaining(maturityTime);
         (
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
             uint256 bondProceeds,
             uint256 totalGovernanceFee
-        ) = _calculateOpenLong(shares, sharePrice, timeRemaining);
+        ) = _calculateOpenLong(shares, sharePrice);
 
         // If the ending spot price is greater than or equal to 1, we are in the
         // negative interest region of the trading function. The spot price is
@@ -68,18 +66,18 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 _marketState.shareReserves + shareReservesDelta
             ) >= _marketState.bondReserves - bondReservesDelta
         ) {
-            revert Errors.NegativeInterest();
+            revert IHyperdrive.NegativeInterest();
         }
 
         // Enforce min user outputs
-        if (_minOutput > bondProceeds) revert Errors.OutputLimit();
+        if (_minOutput > bondProceeds) revert IHyperdrive.OutputLimit();
 
         // Attribute the governance fee.
         _governanceFeesAccrued += totalGovernanceFee;
 
         // Apply the open long to the state.
+        uint256 maturityTime = latestCheckpoint + _positionDuration;
         _applyOpenLong(
-            _baseAmount - totalGovernanceFee,
             shareReservesDelta,
             bondProceeds,
             bondReservesDelta,
@@ -125,7 +123,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         bool _asUnderlying
     ) external returns (uint256) {
         if (_bondAmount == 0) {
-            revert Errors.ZeroAmount();
+            revert IHyperdrive.ZeroAmount();
         }
 
         // Perform a checkpoint at the maturity time. This ensures the long and
@@ -174,7 +172,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         );
 
         // Enforce min user outputs
-        if (_minOutput > baseProceeds) revert Errors.OutputLimit();
+        if (_minOutput > baseProceeds) revert IHyperdrive.OutputLimit();
 
         // Emit a CloseLong event.
         emit CloseLong(
@@ -190,7 +188,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
 
     /// @dev Applies an open long to the state. This includes updating the
     ///      reserves and maintaining the reserve invariants.
-    /// @param _baseAmount The amount of base paid by the trader.
     /// @param _shareReservesDelta The amount of shares paid to the curve.
     /// @param _bondProceeds The amount of bonds purchased by the trader.
     /// @param _bondReservesDelta The amount of bonds sold by the curve.
@@ -198,7 +195,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
     /// @param _checkpointTime The time of the latest checkpoint.
     /// @param _maturityTime The maturity time of the long.
     function _applyOpenLong(
-        uint256 _baseAmount,
         uint256 _shareReservesDelta,
         uint256 _bondProceeds,
         uint256 _bondReservesDelta,
@@ -254,19 +250,15 @@ abstract contract HyperdriveLong is HyperdriveLP {
         _marketState.bondReserves -= _bondReservesDelta.toUint128();
         _marketState.longsOutstanding += _bondProceeds.toUint128();
 
-        // Add the flat component of the trade to the pool's liquidity.
-        _updateLiquidity(
-            int256(_baseAmount.divDown(_sharePrice) - _shareReservesDelta)
-        );
-
         // Since the base buffer may have increased relative to the base
         // reserves and the bond reserves decreased, we must ensure that the
         // base reserves are greater than the longsOutstanding.
         if (
-            _sharePrice.mulDown(uint256(_marketState.shareReserves)) <
-            _marketState.longsOutstanding
+            _sharePrice.mulDown(_marketState.shareReserves) <
+            uint256(_marketState.longsOutstanding).divDown(_sharePrice) +
+                _minimumShareReserves
         ) {
-            revert Errors.BaseBufferExceedsShareReserves();
+            revert IHyperdrive.BaseBufferExceedsShareReserves();
         }
     }
 
@@ -350,15 +342,13 @@ abstract contract HyperdriveLong is HyperdriveLP {
     ///      opening a long. This calculation includes trading fees.
     /// @param _shareAmount The amount of shares being paid to open the long.
     /// @param _sharePrice The current share price.
-    /// @param _timeRemaining The time remaining in the position.
     /// @return shareReservesDelta The change in the share reserves.
     /// @return bondReservesDelta The change in the bond reserves.
     /// @return bondProceeds The proceeds in bonds.
     /// @return totalGovernanceFee The governance fee in shares.
     function _calculateOpenLong(
         uint256 _shareAmount,
-        uint256 _sharePrice,
-        uint256 _timeRemaining
+        uint256 _sharePrice
     )
         internal
         returns (
@@ -387,29 +377,56 @@ abstract contract HyperdriveLong is HyperdriveLP {
             _marketState.shareReserves,
             _marketState.bondReserves,
             _initialSharePrice,
-            _timeRemaining,
             _timeStretch
         );
 
         // Record an oracle update
         recordPrice(spotPrice);
 
+        // Calculate the fees charged to the user (totalCurveFee) and the portion of those
+        // fees that are paid to governance (governanceCurveFee).
         (
-            uint256 totalCurveFee,
-            uint256 governanceCurveFee
+            uint256 totalCurveFee, // bonds
+            uint256 governanceCurveFee // base
         ) = _calculateFeesOutGivenSharesIn(
-                _shareAmount, // amountIn
-                bondReservesDelta, // amountOut
+                _shareAmount,
                 spotPrice,
                 _sharePrice
             );
-        bondProceeds = bondReservesDelta - totalCurveFee;
-        bondReservesDelta -= totalCurveFee - governanceCurveFee;
 
-        // Calculate the fees owed to governance in shares.
+        // Calculate the number of bonds the trader receives.
+        // This is the amount of bonds the trader receives minus the fees.
+        bondProceeds = bondReservesDelta - totalCurveFee;
+
+        // Calculate how many bonds to remove from the bondReserves.
+        // The bondReservesDelta represents how many bonds to remove
+        // from the bondReserves. This should be the number of bonds the trader
+        // receives plus the number of bonds we need to pay to governance.
+        // In other words, we want to keep the totalCurveFee in the bondReserves; however,
+        // since the governanceCurveFee will be paid from the sharesReserves we don't
+        // need it removed from the bondReserves. bondProceeds is in bonds
+        // and governanceCurveFee is in base so we divide it by the spot price
+        // to convert it to bonds:
+        // bonds = bonds + base/(base/bonds)
+        // bonds = bonds + bonds
+        bondReservesDelta =
+            bondProceeds +
+            governanceCurveFee.divDown(spotPrice);
+
+        // Calculate the number of shares to add to the shareReserves.
+        // shareReservesDelta and totalGovernanceFee denominated in
+        // shares so we divide governanceCurveFee by the share price (base/shares)
+        // to convert it to shares:
+        // shares = shares - base/(base/shares)
+        // shares = shares - shares
         shareReservesDelta =
             _shareAmount -
             governanceCurveFee.divDown(_sharePrice);
+
+        // Calculate the fees owed to governance in shares.
+        // totalGovernanceFee is in base and we want it in shares
+        // shares = base/(base/shares)
+        // shares = shares
         totalGovernanceFee = governanceCurveFee.divDown(_sharePrice);
 
         return (
@@ -458,6 +475,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 _bondAmount,
                 timeRemaining,
                 _timeStretch,
+                _checkpoints[_maturityTime - _positionDuration].longSharePrice,
                 closeSharePrice,
                 _sharePrice,
                 _initialSharePrice
@@ -472,7 +490,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 _marketState.shareReserves,
                 _marketState.bondReserves,
                 _initialSharePrice,
-                timeRemaining,
                 _timeStretch
             )
             : FixedPointMath.ONE_18;
@@ -480,19 +497,32 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // Record an oracle update
         recordPrice(spotPrice);
 
+        // Calculate the fees charged to the user (totalCurveFe, totalFlatFee) and the portion of those
+        // fees that are paid to governance (governanceCurveFee).
         uint256 totalCurveFee;
         uint256 totalFlatFee;
         (
-            totalCurveFee,
-            totalFlatFee,
-            totalGovernanceFee
+            totalCurveFee, // shares
+            totalFlatFee, // shares
+            totalGovernanceFee // shares
         ) = _calculateFeesOutGivenBondsIn(
-            _bondAmount, // amountIn
+            _bondAmount,
             timeRemaining,
             spotPrice,
             _sharePrice
         );
+
+        // Calculate the number of shares to remove from the shareReserves.
+        // We do this bc the shareReservesDelta represents how many shares to remove
+        // from the shareReserves.  Making the shareReservesDelta smaller pays out the
+        // totalCurveFee to the LPs.
+        // The shareReservesDelta and the totalCurveFee are both in terms of shares
+        // shares -= shares
         shareReservesDelta -= totalCurveFee;
+
+        // Calculate the number of shares the trader receives.
+        // The shareProceeds, totalCurveFee, and totalFlatFee are all in terms of shares
+        // shares -= shares + shares
         shareProceeds -= totalCurveFee + totalFlatFee;
 
         return (

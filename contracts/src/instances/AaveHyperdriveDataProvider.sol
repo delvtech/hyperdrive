@@ -2,11 +2,10 @@
 pragma solidity 0.8.19;
 
 import { IPool } from "@aave/interfaces/IPool.sol";
-import { IERC20 } from "../interfaces/IERC20.sol";
 import { HyperdriveDataProvider } from "../HyperdriveDataProvider.sol";
-import { FixedPointMath } from "../libraries/FixedPointMath.sol";
-import { Errors } from "../libraries/Errors.sol";
+import { IERC20 } from "../interfaces/IERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { MultiTokenDataProvider } from "../token/MultiTokenDataProvider.sol";
 
 /// @author DELV
@@ -49,9 +48,9 @@ contract AaveHyperdriveDataProvider is
 
     /// Yield Source ///
 
-    ///@notice Loads the share price from the yield source.
-    ///@return sharePrice The current share price.
-    ///@dev must remain consistent with the impl inside of the HyperdriveInstance
+    /// @notice Loads the share price from the yield source.
+    /// @return sharePrice The current share price.
+    /// @dev must remain consistent with the impl inside of the HyperdriveInstance
     function _pricePerShare()
         internal
         view

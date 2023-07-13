@@ -3,7 +3,6 @@ pragma solidity 0.8.19;
 
 import { ERC20PresetFixedSupply } from "openzeppelin-contracts/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/HyperdriveMath.sol";
@@ -27,7 +26,6 @@ contract HyperdriveMathTest is HyperdriveTest {
                 1 ether, // shareReserves
                 1 ether, // bondReserves
                 1 ether, // initialSharePrice
-                1 ether, // timeRemaining
                 1 ether // timeStretch
             ),
             1 ether // 1.0 spot price
@@ -38,7 +36,6 @@ contract HyperdriveMathTest is HyperdriveTest {
                 1.1 ether, // shareReserves
                 1 ether, // bondReserves
                 1 ether, // initialSharePrice
-                1 ether, // timeRemaining
                 1 ether // timeStretch
             ),
             1.1 ether, // 1.1 spot price
@@ -265,6 +262,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                 timeStretch,
                 1 ether,
                 1 ether,
+                1 ether,
                 1 ether
             );
         // verify that the poolBondDelta equals the amountIn/2
@@ -309,6 +307,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                 timeStretch,
                 1 ether,
                 1 ether,
+                1 ether,
                 1 ether
             );
         // verify that the curve part is zero
@@ -345,6 +344,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                 amountIn,
                 normalizedTimeRemaining,
                 timeStretch,
+                1 ether,
                 0.8 ether,
                 0.8 ether,
                 1 ether
@@ -369,6 +369,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                 amountIn,
                 normalizedTimeRemaining,
                 timeStretch,
+                1 ether,
                 0.8 ether,
                 1.2 ether,
                 1 ether
@@ -508,12 +509,44 @@ contract HyperdriveMathTest is HyperdriveTest {
         uint256 initialShortAmount,
         uint256 finalLongAmount
     ) external {
+        _test__calculateMaxLong(
+            fixedRate,
+            contribution,
+            initialLongAmount,
+            initialShortAmount,
+            finalLongAmount
+        );
+    }
+
+    function test__calculateMaxLong__edgeCases() external {
+        // This is an edge case where pool has a spot price of 1 at the optimal
+        // trade size but the optimal trade size is less than the value that we
+        // solve for when checking the endpoint.
+        _test__calculateMaxLong(
+            78006570044966433744465072258,
+            0,
+            0,
+            115763819684266577237839082600338781403556286119250692248603493285535482011337,
+            0
+        );
+    }
+
+    function _test__calculateMaxLong(
+        uint256 fixedRate,
+        uint256 contribution,
+        uint256 initialLongAmount,
+        uint256 initialShortAmount,
+        uint256 finalLongAmount
+    ) internal {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
 
+        // Deploy Hyperdrive.
+        fixedRate = fixedRate.normalizeToRange(0.001e18, 0.5e18);
+        deploy(alice, fixedRate, 0, 0, 0);
+
         // Initialize the Hyperdrive pool.
         contribution = contribution.normalizeToRange(1_000e18, 500_000_000e18);
-        fixedRate = fixedRate.normalizeToRange(0.001e18, 0.5e18);
         initialize(alice, fixedRate, contribution);
 
         // Open a long and a short. This sets the long buffer to a non-trivial
@@ -539,17 +572,18 @@ contract HyperdriveMathTest is HyperdriveTest {
         if (fixedRate > 0.35e18) {
             maxIterations += 5;
         }
-        uint256 maxLong = hyperdriveMath
-            .calculateMaxLong(
-                info.shareReserves,
-                info.bondReserves,
-                info.longsOutstanding,
-                config.timeStretch,
-                info.sharePrice,
-                config.initialSharePrice,
-                maxIterations
-            )
-            .baseAmount;
+        (uint256 maxLong, ) = hyperdriveMath.calculateMaxLong(
+            HyperdriveMath.MaxTradeParams({
+                shareReserves: info.shareReserves,
+                bondReserves: info.bondReserves,
+                longsOutstanding: info.longsOutstanding,
+                timeStretch: config.timeStretch,
+                sharePrice: info.sharePrice,
+                initialSharePrice: config.initialSharePrice,
+                minimumShareReserves: config.minimumShareReserves
+            }),
+            maxIterations
+        );
         (uint256 maturityTime, uint256 longAmount) = openLong(bob, maxLong);
 
         // Ensure that opening another long fails.
@@ -600,12 +634,15 @@ contract HyperdriveMathTest is HyperdriveTest {
         IHyperdrive.PoolInfo memory info = hyperdrive.getPoolInfo();
         IHyperdrive.PoolConfig memory config = hyperdrive.getPoolConfig();
         uint256 maxShort = hyperdriveMath.calculateMaxShort(
-            info.shareReserves,
-            info.bondReserves,
-            info.longsOutstanding,
-            config.timeStretch,
-            info.sharePrice,
-            config.initialSharePrice
+            HyperdriveMath.MaxTradeParams({
+                shareReserves: info.shareReserves,
+                bondReserves: info.bondReserves,
+                longsOutstanding: info.longsOutstanding,
+                timeStretch: config.timeStretch,
+                sharePrice: info.sharePrice,
+                initialSharePrice: config.initialSharePrice,
+                minimumShareReserves: config.minimumShareReserves
+            })
         );
         (uint256 maturityTime, ) = openShort(bob, maxShort);
 
@@ -646,6 +683,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                         positionDuration,
                         timeStretch
                     ),
+                    minimumShareReserves: 1e5,
                     sharePrice: 2e18,
                     initialSharePrice: 1e18,
                     timeStretch: timeStretch,
@@ -656,7 +694,10 @@ contract HyperdriveMathTest is HyperdriveTest {
                     shortBaseVolume: 0
                 });
             uint256 presentValue = hyperdriveMath.calculatePresentValue(params);
-            assertEq(presentValue, params.shareReserves);
+            assertEq(
+                presentValue,
+                params.shareReserves - params.minimumShareReserves
+            );
         }
 
         // all longs on the curve.
@@ -673,6 +714,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                     ),
                     sharePrice: 2e18,
                     initialSharePrice: 1e18,
+                    minimumShareReserves: 1e5,
                     timeStretch: timeStretch,
                     longsOutstanding: 10_000_000e18,
                     longAverageTimeRemaining: 1e18,
@@ -690,7 +732,10 @@ contract HyperdriveMathTest is HyperdriveTest {
                     params.sharePrice,
                     params.initialSharePrice
                 );
-            assertEq(presentValue, params.shareReserves);
+            assertEq(
+                presentValue,
+                params.shareReserves - params.minimumShareReserves
+            );
         }
 
         // all longs on the flat.
@@ -707,6 +752,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                     ),
                     sharePrice: 2e18,
                     initialSharePrice: 1e18,
+                    minimumShareReserves: 1e5,
                     timeStretch: timeStretch,
                     longsOutstanding: 10_000_000e18,
                     longAverageTimeRemaining: 0,
@@ -718,7 +764,10 @@ contract HyperdriveMathTest is HyperdriveTest {
             params.shareReserves -= params.longsOutstanding.divDown(
                 params.sharePrice
             );
-            assertEq(presentValue, params.shareReserves);
+            assertEq(
+                presentValue,
+                params.shareReserves - params.minimumShareReserves
+            );
         }
 
         // all shorts on the curve.
@@ -735,6 +784,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                     ),
                     sharePrice: 2e18,
                     initialSharePrice: 1e18,
+                    minimumShareReserves: 1e5,
                     timeStretch: timeStretch,
                     longsOutstanding: 0,
                     longAverageTimeRemaining: 0,
@@ -752,7 +802,10 @@ contract HyperdriveMathTest is HyperdriveTest {
                     params.sharePrice,
                     params.initialSharePrice
                 );
-            assertEq(presentValue, params.shareReserves);
+            assertEq(
+                presentValue,
+                params.shareReserves - params.minimumShareReserves
+            );
         }
 
         // all shorts on the flat.
@@ -769,6 +822,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                     ),
                     sharePrice: 2e18,
                     initialSharePrice: 1e18,
+                    minimumShareReserves: 1e5,
                     timeStretch: timeStretch,
                     longsOutstanding: 0,
                     longAverageTimeRemaining: 0,
@@ -780,7 +834,10 @@ contract HyperdriveMathTest is HyperdriveTest {
             params.shareReserves += params.shortsOutstanding.divDown(
                 params.sharePrice
             );
-            assertEq(presentValue, params.shareReserves);
+            assertEq(
+                presentValue,
+                params.shareReserves - params.minimumShareReserves
+            );
         }
 
         // longs and shorts completely net.
@@ -797,6 +854,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                     ),
                     sharePrice: 2e18,
                     initialSharePrice: 1e18,
+                    minimumShareReserves: 1e5,
                     timeStretch: timeStretch,
                     longsOutstanding: 10_000_000e18,
                     longAverageTimeRemaining: 0.3e18,
@@ -805,7 +863,10 @@ contract HyperdriveMathTest is HyperdriveTest {
                     shortBaseVolume: 9_500_000e18
                 });
             uint256 presentValue = hyperdriveMath.calculatePresentValue(params);
-            assertEq(presentValue, params.shareReserves);
+            assertEq(
+                presentValue,
+                params.shareReserves - params.minimumShareReserves
+            );
         }
 
         // all shorts on the curve, all longs on the flat.
@@ -822,6 +883,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                     ),
                     sharePrice: 2e18,
                     initialSharePrice: 1e18,
+                    minimumShareReserves: 1e5,
                     timeStretch: timeStretch,
                     longsOutstanding: 10_000_000e18,
                     longAverageTimeRemaining: 0,
@@ -842,7 +904,10 @@ contract HyperdriveMathTest is HyperdriveTest {
             params.shareReserves -= params.longsOutstanding.divDown(
                 params.sharePrice
             );
-            assertEq(presentValue, params.shareReserves);
+            assertEq(
+                presentValue,
+                params.shareReserves - params.minimumShareReserves
+            );
         }
 
         // all longs on the curve, all shorts on the flat.
@@ -859,6 +924,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                     ),
                     sharePrice: 2e18,
                     initialSharePrice: 1e18,
+                    minimumShareReserves: 1e5,
                     timeStretch: timeStretch,
                     longsOutstanding: 10_000_000e18,
                     longAverageTimeRemaining: 1e18,
@@ -879,7 +945,10 @@ contract HyperdriveMathTest is HyperdriveTest {
             params.shareReserves += params.shortsOutstanding.divDown(
                 params.sharePrice
             );
-            assertEq(presentValue, params.shareReserves);
+            assertEq(
+                presentValue,
+                params.shareReserves - params.minimumShareReserves
+            );
         }
 
         // small amount of longs, large amount of shorts
@@ -896,6 +965,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                     ),
                     sharePrice: 2e18,
                     initialSharePrice: 1e18,
+                    minimumShareReserves: 1e5,
                     timeStretch: timeStretch,
                     longsOutstanding: 100_000e18,
                     longAverageTimeRemaining: 0.75e18,
@@ -929,7 +999,10 @@ contract HyperdriveMathTest is HyperdriveTest {
                     1e18 - params.longAverageTimeRemaining,
                     params.sharePrice
                 );
-            assertEq(presentValue, params.shareReserves);
+            assertEq(
+                presentValue,
+                params.shareReserves - params.minimumShareReserves
+            );
         }
 
         // large amount of longs, small amount of shorts
@@ -946,6 +1019,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                     ),
                     sharePrice: 2e18,
                     initialSharePrice: 1e18,
+                    minimumShareReserves: 1e5,
                     timeStretch: timeStretch,
                     longsOutstanding: 10_000_000e18,
                     longAverageTimeRemaining: 0.75e18,
@@ -979,7 +1053,10 @@ contract HyperdriveMathTest is HyperdriveTest {
                     1e18 - params.shortAverageTimeRemaining,
                     params.sharePrice
                 );
-            assertEq(presentValue, params.shareReserves);
+            assertEq(
+                presentValue,
+                params.shareReserves - params.minimumShareReserves
+            );
         }
 
         // small amount of longs, large amount of shorts, no excess liquidity
@@ -999,6 +1076,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                     ),
                     sharePrice: 2e18,
                     initialSharePrice: 1e18,
+                    minimumShareReserves: 1e5,
                     timeStretch: timeStretch,
                     longsOutstanding: 100_000e18,
                     longAverageTimeRemaining: 0.75e18,
@@ -1047,7 +1125,79 @@ contract HyperdriveMathTest is HyperdriveTest {
                     1e18 - params.longAverageTimeRemaining,
                     params.sharePrice
                 );
-            assertEq(presentValue, params.shareReserves);
+            assertEq(
+                presentValue,
+                params.shareReserves - params.minimumShareReserves
+            );
+        }
+
+        // complicate scenario with non-trivial minimum share reserves
+        {
+            HyperdriveMath.PresentValueParams memory params = HyperdriveMath
+                .PresentValueParams({
+                    shareReserves: 100_000e18,
+                    bondReserves: calculateBondReserves(
+                        100_000e18,
+                        initialSharePrice,
+                        apr,
+                        positionDuration,
+                        timeStretch
+                    ),
+                    sharePrice: 2e18,
+                    initialSharePrice: 1e18,
+                    minimumShareReserves: 1e18,
+                    timeStretch: timeStretch,
+                    longsOutstanding: 100_000e18,
+                    longAverageTimeRemaining: 0.75e18,
+                    shortsOutstanding: 10_000_000e18,
+                    shortAverageTimeRemaining: 0.25e18,
+                    shortBaseVolume: 9_500_000e18
+                });
+            uint256 presentValue = hyperdriveMath.calculatePresentValue(params);
+
+            // Apply as much as possible to the curve and mark the rest of the
+            // curve trade to the short base volume.
+            uint256 netCurveTrade = params.shortsOutstanding.mulDown(
+                params.shortAverageTimeRemaining
+            ) -
+                params.longsOutstanding.mulDown(
+                    params.longAverageTimeRemaining
+                );
+            (, uint256 maxCurveTrade) = YieldSpaceMath.calculateMaxBuy(
+                params.shareReserves,
+                params.bondReserves,
+                FixedPointMath.ONE_18.sub(params.timeStretch),
+                params.sharePrice,
+                params.initialSharePrice
+            );
+            params.shareReserves += YieldSpaceMath
+                .calculateSharesInGivenBondsOut(
+                    params.shareReserves,
+                    params.bondReserves,
+                    maxCurveTrade,
+                    FixedPointMath.ONE_18.sub(params.timeStretch),
+                    params.sharePrice,
+                    params.initialSharePrice
+                );
+            params.shareReserves += params.shortBaseVolume.mulDivDown(
+                netCurveTrade - maxCurveTrade,
+                params.shortsOutstanding.mulDown(params.sharePrice)
+            );
+
+            // Apply the flat part to the reserves.
+            params.shareReserves +=
+                params.shortsOutstanding.mulDivDown(
+                    1e18 - params.shortAverageTimeRemaining,
+                    params.sharePrice
+                ) -
+                params.longsOutstanding.mulDivDown(
+                    1e18 - params.longAverageTimeRemaining,
+                    params.sharePrice
+                );
+            assertEq(
+                presentValue,
+                params.shareReserves - params.minimumShareReserves
+            );
         }
     }
 

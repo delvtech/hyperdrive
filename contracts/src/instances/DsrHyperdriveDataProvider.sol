@@ -1,14 +1,19 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { IERC20 } from "../interfaces/IERC20.sol";
 import { HyperdriveDataProvider } from "../HyperdriveDataProvider.sol";
-import { FixedPointMath } from "../libraries/FixedPointMath.sol";
-import { Errors } from "../libraries/Errors.sol";
-import { Pot, DsrManager } from "../interfaces/IMaker.sol";
+import { IERC20 } from "../interfaces/IERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { Pot, DsrManager } from "../interfaces/IMaker.sol";
+import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { MultiTokenDataProvider } from "../token/MultiTokenDataProvider.sol";
 
+/// @author DELV
+/// @title DsrHyperdriveDataProvider
+/// @notice The data provider for DsrHyperdrive instances.
+/// @custom:disclaimer The language used in this code is for coding convenience
+///                    only, and is not intended to, and does not, have any
+///                    particular legal or regulatory significance.
 contract DsrHyperdriveDataProvider is
     MultiTokenDataProvider,
     HyperdriveDataProvider
@@ -70,7 +75,7 @@ contract DsrHyperdriveDataProvider is
 
     /// @notice Loads the share price from the yield source.
     /// @return sharePrice The current share price.
-    ///@dev must remain consistent with the impl inside of the HyperdriveInstance
+    /// @dev must remain consistent with the impl inside of the HyperdriveInstance
     function _pricePerShare()
         internal
         view
@@ -112,7 +117,11 @@ contract DsrHyperdriveDataProvider is
 
     /// @notice Taken from https://github.com/makerdao/dss/blob/master/src/pot.sol#L85
     /// @return z
-    function _rpow(uint x, uint n, uint base) internal pure returns (uint z) {
+    function _rpow(
+        uint256 x,
+        uint256 n,
+        uint256 base
+    ) internal pure returns (uint z) {
         assembly ("memory-safe") {
             switch x
             case 0 {

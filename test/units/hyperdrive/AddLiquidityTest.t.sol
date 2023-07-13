@@ -2,8 +2,8 @@
 pragma solidity 0.8.19;
 
 import { VmSafe } from "forge-std/Vm.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol";
@@ -30,8 +30,22 @@ contract AddLiquidityTest is HyperdriveTest {
         // Attempt to add zero base as liquidity. This should fail.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(Errors.ZeroAmount.selector);
+        vm.expectRevert(IHyperdrive.ZeroAmount.selector);
         hyperdrive.addLiquidity(0, 0, type(uint256).max, bob, true);
+    }
+
+    function test_add_liquidity_failure_not_payable() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Attempt to add zero base as liquidity. This should fail.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        vm.expectRevert(IHyperdrive.NotPayable.selector);
+        hyperdrive.addLiquidity{ value: 1 }(0, 0, type(uint256).max, bob, true);
     }
 
     function test_add_liquidity_failure_pause() external {
@@ -45,7 +59,7 @@ contract AddLiquidityTest is HyperdriveTest {
         vm.stopPrank();
         pause(true);
         vm.startPrank(bob);
-        vm.expectRevert(Errors.Paused.selector);
+        vm.expectRevert(IHyperdrive.Paused.selector);
         hyperdrive.addLiquidity(0, 0, type(uint256).max, bob, true);
         vm.stopPrank();
         pause(false);
@@ -61,13 +75,13 @@ contract AddLiquidityTest is HyperdriveTest {
         // Attempt to add liquidity with a minimum APR that is too high.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(Errors.InvalidApr.selector);
+        vm.expectRevert(IHyperdrive.InvalidApr.selector);
         hyperdrive.addLiquidity(10e18, 0.06e18, type(uint256).max, bob, true);
 
         // Attempt to add liquidity with a maximum APR that is too low.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(Errors.InvalidApr.selector);
+        vm.expectRevert(IHyperdrive.InvalidApr.selector);
         hyperdrive.addLiquidity(10e18, 0, 0.04e18, bob, true);
     }
 
@@ -87,7 +101,7 @@ contract AddLiquidityTest is HyperdriveTest {
         // Bob closes his long.
         closeLong(bob, maturityTime, longAmount);
 
-        // Attempt to add liquidity when the LP total supply is zero. This
+        // Attempt to add liquidity when the LP total supply is zero.
         vm.stopPrank();
         vm.startPrank(bob);
         baseToken.mint(contribution);
@@ -116,12 +130,18 @@ contract AddLiquidityTest is HyperdriveTest {
             baseBalance.add(contribution)
         );
 
-        // Ensure that the new LP receives the same amount of LP shares as
-        // the initializer.
-        assertEq(lpShares, lpSupplyBefore);
+        // Ensure that the new LP receives a similar amount of LP shares as the
+        // initializer. The difference will be that the new LP will receive the
+        // same amount of shares as their contribution, whereas the old LP
+        // received slightly less shares to set aside some shares for the
+        // minimum share reserves and the zero address's initial LP contribution.
+        assertEq(
+            lpShares,
+            lpSupplyBefore + hyperdrive.getPoolConfig().minimumShareReserves
+        );
         assertEq(
             hyperdrive.totalSupply(AssetId._LP_ASSET_ID),
-            lpSupplyBefore * 2
+            lpSupplyBefore * 2 + hyperdrive.getPoolConfig().minimumShareReserves
         );
 
         // Ensure the pool APR is still approximately equal to the target APR.
@@ -201,8 +221,14 @@ contract AddLiquidityTest is HyperdriveTest {
             1e9
         );
 
-        // Ensure that all of the capital has been removed from the system.
-        assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1);
+        // Ensure that all of the capital except for the minimum share reserves
+        // and the zero address's LP present value was removed from the system.
+        assertEq(
+            baseToken.balanceOf(address(hyperdrive)),
+            (FixedPointMath.ONE_18 + presentValueRatio()).mulDown(
+                hyperdrive.getPoolConfig().minimumShareReserves
+            )
+        );
     }
 
     function test_add_liquidity_with_short_at_open() external {
@@ -276,8 +302,14 @@ contract AddLiquidityTest is HyperdriveTest {
             1e10
         );
 
-        // Ensure that all of the capital has been removed from the system.
-        assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1);
+        // Ensure that all of the capital except for the minimum share reserves
+        // and the zero address's LP present value was removed from the system.
+        assertEq(
+            baseToken.balanceOf(address(hyperdrive)),
+            (FixedPointMath.ONE_18 + presentValueRatio()).mulDown(
+                hyperdrive.getPoolConfig().minimumShareReserves
+            )
+        );
     }
 
     function test_add_liquidity_with_long_at_maturity() external {
@@ -291,8 +323,8 @@ contract AddLiquidityTest is HyperdriveTest {
         uint256 basePaid = 50_000_000e18;
         (uint256 maturityTime, uint256 longAmount) = openLong(celine, basePaid);
 
-        // The term passes.
-        vm.warp(block.timestamp + POSITION_DURATION);
+        // The term passes and no interest accrues.
+        advanceTime(POSITION_DURATION, 0);
 
         // Get Alice's withdrawal proceeds if the long is closed immediately.
         uint256 aliceWithdrawalProceeds;
@@ -341,14 +373,20 @@ contract AddLiquidityTest is HyperdriveTest {
         // Ensure that Alice's withdrawal proceeds are equivalent to what they
         // would have been had Bob not added liquidity.
         (uint256 withdrawalProceeds, ) = removeLiquidity(alice, aliceLpShares);
-        assertEq(withdrawalProceeds, aliceWithdrawalProceeds);
+        assertApproxEqAbs(withdrawalProceeds, aliceWithdrawalProceeds, 1);
 
         // Ensure that Bob receives his contribution back.
         (withdrawalProceeds, ) = removeLiquidity(bob, bobLpShares);
         assertApproxEqAbs(withdrawalProceeds, contribution, 1);
 
-        // Ensure that all of the capital has been removed from the system.
-        assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1);
+        // Ensure that all of the capital except for the minimum share reserves
+        // and the zero address's LP present value was removed from the system.
+        assertEq(
+            baseToken.balanceOf(address(hyperdrive)),
+            (FixedPointMath.ONE_18 + presentValueRatio()).mulDown(
+                hyperdrive.getPoolConfig().minimumShareReserves
+            )
+        );
     }
 
     function test_add_liquidity_with_short_at_maturity() external {
@@ -362,8 +400,8 @@ contract AddLiquidityTest is HyperdriveTest {
         uint256 shortAmount = 50_000_000e18;
         (uint256 maturityTime, ) = openShort(celine, shortAmount);
 
-        // The term passes.
-        vm.warp(block.timestamp + POSITION_DURATION);
+        // The term passes and no interest accrues.
+        advanceTime(POSITION_DURATION, 0);
 
         // Get Alice's withdrawal proceeds if the short is closed immediately.
         uint256 aliceWithdrawalProceeds;
@@ -412,14 +450,20 @@ contract AddLiquidityTest is HyperdriveTest {
         // Ensure that Alice's withdrawal proceeds are equivalent to what they
         // would have been had Bob not added liquidity.
         (uint256 withdrawalProceeds, ) = removeLiquidity(alice, aliceLpShares);
-        assertEq(withdrawalProceeds, aliceWithdrawalProceeds);
+        assertApproxEqAbs(withdrawalProceeds, aliceWithdrawalProceeds, 1);
 
         // Ensure that Bob received his contribution minus Celine's profits.
         (withdrawalProceeds, ) = removeLiquidity(bob, bobLpShares);
         assertApproxEqAbs(withdrawalProceeds, contribution, 1);
 
-        // Ensure that all of the capital has been removed from the system.
-        assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1);
+        // Ensure that all of the capital except for the minimum share reserves
+        // and the zero address's LP present value was removed from the system.
+        assertEq(
+            baseToken.balanceOf(address(hyperdrive)),
+            (FixedPointMath.ONE_18 + presentValueRatio()).mulDown(
+                hyperdrive.getPoolConfig().minimumShareReserves
+            )
+        );
     }
 
     function verifyAddLiquidityEvent(
@@ -442,11 +486,9 @@ contract AddLiquidityTest is HyperdriveTest {
     }
 
     function presentValueRatio() internal view returns (uint256) {
-        return
-            HyperdriveUtils.presentValue(hyperdrive).divDown(
-                hyperdrive.totalSupply(AssetId._LP_ASSET_ID) +
-                    hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID) -
-                    hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw
-            );
+        uint256 totalLpSupply = hyperdrive.totalSupply(AssetId._LP_ASSET_ID) +
+            hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID) -
+            hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw;
+        return HyperdriveUtils.presentValue(hyperdrive).divDown(totalLpSupply);
     }
 }
