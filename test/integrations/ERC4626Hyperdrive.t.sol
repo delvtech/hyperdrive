@@ -176,7 +176,8 @@ contract ER4626HyperdriveTest is HyperdriveTest {
         // share reserves and the zero address's initial LP contribution.
         assertEq(
             hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
-            contribution - 2 * config.minimumShareReserves);
+            contribution - 2 * config.minimumShareReserves
+        );
 
         // Verify that the correct events were emitted.
         verifyFactoryEvents(
@@ -219,10 +220,7 @@ contract ER4626HyperdriveTest is HyperdriveTest {
         assertEq(hyperdrive.getPoolInfo().shareReserves, contribution);
         assertEq(hyperdrive.getPoolInfo().sharePrice, 1e18);
         dai.transfer(address(pool), 2_500e18);
-        assertEq(
-            pool.totalAssets(),
-            contribution + 2_500e18 + aliceShares
-        );
+        assertEq(pool.totalAssets(), contribution + 2_500e18 + aliceShares);
         assertEq(
             hyperdrive.getPoolInfo().sharePrice,
             (pool.totalAssets()).divDown(pool.totalSupply())
