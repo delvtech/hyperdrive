@@ -360,6 +360,36 @@ contract ExtremeInputs is HyperdriveTest {
         uint256 shortAmount,
         uint256 tolerance
     ) internal {
+        // Bob adds liquidity to the pool. Celine front-runs him by opening a
+        // max long. After adding liquidity, Bob receives LP shares that are
+        // close in value to his contribution (he pays a small penalty for
+        // hurting the trader's profit and loss). This tests the edge case where
+        // `z_1 > z_0` and `y_0` is very large.
+        {
+            // Deploy the pool with the specified minimum share reserves.
+            IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
+            config.minimumShareReserves = minimumShareReserves;
+            deploy(deployer, config);
+
+            // Alice initializes the pool.
+            initialize(alice, fixedRate, contribution);
+
+            // Celine opens a max long.
+            openLong(celine, hyperdrive.calculateMaxLong(15).mulDown(0.9e18));
+
+            // TODO: When we address the issue related to sandwiching large
+            // shorts around adding liquidity, we should tighten this bound.
+            //
+            // Bob adds liquidity. He should receive LP shares that are close
+            // to the value of his contribution.
+            uint256 lpShares = addLiquidity(bob, contribution);
+            assertGt(
+                lpShares.mulDown(hyperdrive.lpSharePrice()),
+                contribution.mulDown(0.9e18)
+            );
+            assertGt(lpShares, contribution.mulDown(0.9e18));
+        }
+
         // Bob opens a long and holds it for almost the entire term. Before
         // the long matures, Celine opens a max short. After Bob's position
         // matures, Bob should be able to close his position. This tests the
@@ -448,6 +478,34 @@ contract ExtremeInputs is HyperdriveTest {
         uint256 shortAmount,
         uint256 tolerance
     ) internal {
+        // Bob adds liquidity to the pool. Celine front-runs him by opening a
+        // max short. After adding liquidity, Bob a reasonable present value.
+        // This tests the edge case where `z_1 > z_0` and `y_0` is very large.
+        {
+            // Deploy the pool with the specified minimum share reserves.
+            IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
+            config.minimumShareReserves = minimumShareReserves;
+            deploy(deployer, config);
+
+            // Alice initializes the pool.
+            initialize(alice, fixedRate, contribution);
+
+            // Celine opens a max short.
+            openShort(celine, hyperdrive.calculateMaxShort().mulDown(0.9e18));
+
+            // TODO: When we address the issue related to sandwiching large
+            // shorts around adding liquidity, we should tighten this bound.
+            //
+            // Bob adds liquidity. He should receive LP shares that are close
+            // to the value of his contribution.
+            uint256 lpShares = addLiquidity(bob, contribution);
+            assertGt(
+                lpShares.mulDown(hyperdrive.lpSharePrice()),
+                contribution.mulDown(0.9e18)
+            );
+            assertGt(lpShares, contribution.mulDown(0.9e18));
+        }
+
         // Bob opens a long and holds it for almost the entire term. Before
         // the long matures, Celine opens a max short. After Bob's position
         // matures, Bob should be able to close his position. This tests the
