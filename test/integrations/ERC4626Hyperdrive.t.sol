@@ -84,13 +84,6 @@ contract ER4626HyperdriveTest is HyperdriveTest {
             pool
         );
 
-        dataProvider = new ERC4626DataProvider(
-            config,
-            bytes32(0),
-            address(0),
-            pool
-        );
-
         vm.stopPrank();
         vm.startPrank(alice);
         dai.approve(address(hyperdrive), type(uint256).max);
@@ -177,16 +170,6 @@ contract ER4626HyperdriveTest is HyperdriveTest {
             apr
         );
 
-        // EXAMPLE: This will utilize ERC4626HypedriveDataProvider's `_pricePerShare` function
-        // under the hood. We want to make sure that this is correct in different circumstances
-        // (aka when the share price is different).
-        assertEq(hyperdrive.getPoolInfo().sharePrice, 1e18);
-        vm.stopPrank();
-        vm.startPrank(alice);
-        dai.transfer(address(pool), 2e22);
-        assertEq(hyperdrive.getPoolInfo().sharePrice, 8968127490039840637);
-        vm.stopPrank();
-
         // The initial price per share is one so the LP shares will initially
         // be worth one base. Alice should receive LP shares equaling her
         // contribution minus the shares that she set aside for the minimum
@@ -205,6 +188,46 @@ contract ER4626HyperdriveTest is HyperdriveTest {
             new bytes32[](0),
             0
         );
+    }
+
+    function test_erc4626_sharePrice() public {
+        // This test makes sure that the ERC4626DataProvider function returns
+        // the correct share price.
+        vm.startPrank(alice);
+        uint256 apr = 0.01e18; // 1% apr
+        uint256 contribution = 2_500e18;
+        IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
+            baseToken: dai,
+            initialSharePrice: FixedPointMath.ONE_18,
+            minimumShareReserves: FixedPointMath.ONE_18,
+            positionDuration: 365 days,
+            checkpointDuration: 1 days,
+            timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
+            governance: alice,
+            feeCollector: bob,
+            fees: IHyperdrive.Fees(0, 0, 0),
+            oracleSize: 2,
+            updateGap: 0
+        });
+        dai.approve(address(factory), type(uint256).max);
+        hyperdrive = factory.deployAndInitialize(
+            config,
+            new bytes32[](0),
+            contribution,
+            apr
+        );
+        assertEq(hyperdrive.getPoolInfo().shareReserves, contribution);
+        assertEq(hyperdrive.getPoolInfo().sharePrice, 1e18);
+        dai.transfer(address(pool), 2_500e18);
+        assertEq(
+            pool.totalAssets(),
+            contribution + 2_500e18 + apr.mulDown(1000e18)
+        );
+        assertEq(
+            hyperdrive.getPoolInfo().sharePrice,
+            (pool.totalAssets()).divDown(pool.totalSupply())
+        );
+        vm.stopPrank();
     }
 
     function test_erc4626_sweep() public {
