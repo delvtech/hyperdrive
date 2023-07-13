@@ -1,0 +1,767 @@
+import "./AaveHyperdriveVerified.spec";
+
+use invariant SumOfLongsGEOutstanding;
+use invariant SumOfShortsGEOutstanding;
+use invariant WithdrawalSharesGEReadyShares;
+
+/// Checks the post state of the _deposit() function.
+rule depositOutputChecker(uint256 baseAmount, bool asUnderlying) {
+    env e;
+    require e.msg.sender != currentContract;
+    uint256 minOutput;
+    address destination;
+
+    uint256 totalSharesBefore = totalShares();
+    uint256 assetsBefore = aToken.balanceOf(e, HDAave);
+        openLong(e, baseAmount, minOutput, destination, asUnderlying);
+    uint256 totalSharesAfter = totalShares();
+    uint256 assetsAfter = aToken.balanceOf(e, HDAave);
+    uint256 index = getPoolIndex(e.block.timestamp);
+
+    if(totalSharesBefore == 0) {
+        assert totalSharesAfter == baseAmount;
+    }
+    else {
+        uint256 sharesMinted = mulDivDownAbstractPlus(totalSharesBefore, baseAmount, assetsBefore);
+        //uint256 sharePrice = mulDivDownAbstractPlus(baseAmount, ONE18(), sharesMinted);
+        assert totalSharesBefore + sharesMinted == to_mathint(totalSharesAfter);
+    }
+}
+
+/// A helper function to simulate a round trip of open and close a long position.
+function LongPositionRoundTripHelper(
+    env eOp,  /// openLong() env variable.
+    env eCl,  /// closeLong() env variable.
+    uint256 baseAmount, /// Amount of tokens to open position with.
+    uint256 bondAmount, /// Amount of bonds to redeem (close position).
+    uint256 minOutput_open, /// Minimal amount of bonds to receive.
+    uint256 minOutput_close, /// Minimal amount of assets to receive.
+    address destination_open, /// Address of bonds recipient (open).
+    address destination_close, /// Address of assets recipient (close).
+    bool asUnderlying_open, /// true - underlying (base token), false - yield token (aToken)
+    bool asUnderlying_close, /// true - underlying (base token), false - yield token (aToken)
+    uint256 maturityTime /// maturity time (close)
+) returns uint256[2] { /// returns[0:1] = [bondsReceived,undelyingRecieved]
+    require eOp.msg.sender == eCl.msg.sender;
+    require eOp.msg.sender != currentContract;
+
+    uint256 bondsReceived =
+        openLong(eOp, baseAmount, minOutput_open, destination_open, asUnderlying_open);
+
+    uint256 assetsRecieved =
+        closeLong(eCl, maturityTime, bondAmount, minOutput_close, destination_close, asUnderlying_close);
+
+    uint256[2] result;
+    require result[0] == bondsReceived;
+    require result[1] == assetsRecieved;
+
+    return result;
+}
+
+/// @notice : in progress
+/// (In : aToken, Out : aToken)
+rule longPositionRoundTrip1() {
+    env eOp;
+    env eCl;
+    uint256 baseAmount; uint256 bondAmount;
+    uint256 minOutput_open; uint256 minOutput_close;
+    address destination_open; address destination_close;
+    uint256 maturityTime;
+
+    /// Probe balances before transaction
+    uint256 aTokenBalanceSender_before =
+        aToken.balanceOf(eOp, eOp.msg.sender);
+    uint256 aTokenBalanceDestOpen_before =
+        aToken.balanceOf(eOp, destination_open);
+    uint256 aTokenBalanceDestClose_before =
+        aToken.balanceOf(eOp, destination_close);
+
+    /// Perform round trip (open aToken -> close aToken)
+    uint256[2] result = LongPositionRoundTripHelper(eOp, eCl,
+        baseAmount, bondAmount, minOutput_open, minOutput_close,
+        destination_open, destination_close, false, false, maturityTime);
+    uint256 bondsReceived = result[0];
+    uint256 assetsReceived = result[1];
+
+    /// Probe balances after transaction
+    uint256 aTokenBalanceSender_after =
+        aToken.balanceOf(eCl, eOp.msg.sender);
+    uint256 aTokenBalanceDestOpen_after =
+        aToken.balanceOf(eCl, destination_open);
+    uint256 aTokenBalanceDestClose_after =
+        aToken.balanceOf(eCl, destination_close);
+
+    assert minOutput_open <= bondsReceived;
+    assert minOutput_close <= assetsReceived;
+}
+
+/// @notice : in progress
+/// (In : aToken, Out : base token)
+rule longPositionRoundTrip2() {
+    env eOp;
+    env eCl;
+    uint256 baseAmount; uint256 bondAmount;
+    uint256 minOutput_open; uint256 minOutput_close;
+    address destination_open; address destination_close;
+    uint256 maturityTime;
+
+    uint256[2] result = LongPositionRoundTripHelper(eOp, eCl,
+        baseAmount, bondAmount, minOutput_open, minOutput_close,
+        destination_open, destination_close, false, true, maturityTime);
+
+    uint256 bondsReceived = result[0];
+    uint256 assetsReceived = result[1];
+
+    assert minOutput_open <= bondsReceived;
+    assert minOutput_close <= assetsReceived;
+}
+
+/// Violated
+rule checkPointPriceIsSetCorrectly(uint256 _checkpoint) {
+    env e;
+    calldataarg args;
+    setHyperdrivePoolParams();
+
+    mathint price1 = to_mathint(sharePrice(e));
+    mathint preSharePrice = checkPointSharePrice(_checkpoint);
+        checkpoint(e, args);
+    mathint postSharePrice = checkPointSharePrice(_checkpoint);
+    mathint price2 = to_mathint(sharePrice(e));
+
+    assert (preSharePrice ==0 && postSharePrice !=0) => 
+       (postSharePrice <= max(price1,price2) && postSharePrice >= min(price1,price2));
+}
+
+/// @notice integrity rule for 'openLong'
+/// - There must be assets in the pool after opening a position.
+/// - cannot receive more bonds than registered reserves.
+rule openLongIntegrity(uint256 baseAmount) {
+    env e;
+    uint256 minOutput;
+    address destination;
+    bool asUnderlying = false;
+
+    setHyperdrivePoolParams();
+
+    IHyperdrive.MarketState Mstate = marketState();
+    uint128 bondReserves = Mstate.bondReserves;
+
+    uint256 bondsReceived =
+        openLong(e, baseAmount, minOutput, destination, asUnderlying);
+
+    uint256 totalShares = totalShares();
+    uint256 assets = aToken.balanceOf(e, currentContract);
+
+    assert totalShares > 0 && assets > 0,
+        "Assets must have been deposited in the pool after opening a position";
+
+    assert to_mathint(bondsReceived) <= to_mathint(bondReserves),
+        "A position cannot be opened with more bonds than bonds reserves";
+}
+
+rule openLongReturnsSameBonds(env eOp) {
+    uint256 baseAmount; uint256 bondAmount;
+    uint256 minOutput_open; uint256 minOutput_close;
+    address destination_open1; address destination_close1;
+    address destination_open2; address destination_close2;
+    uint256 maturityTime1; uint256 maturityTime2;
+    bool asUnderlying_open1; bool asUnderlying_open2;
+
+    storage initState = lastStorage;
+    uint256 bondsReceived1 = openLong(
+        eOp, baseAmount, minOutput_open, destination_open1, asUnderlying_open1
+    );
+    uint256 bondsReceived2 = openLong(
+        eOp, baseAmount, minOutput_open, destination_open2, asUnderlying_open2
+    ) at initState;
+
+    assert bondsReceived1 == bondsReceived2, "Received bonds should not depend on destination or asUnderlying";
+}
+
+
+
+// STATUS - in progress
+
+// violation: https://prover.certora.com/output/40577/c3f913d4a830433a8611fb44bc19bad0/?anonymousKey=49c6a124deca81a0ff3aeeddb735121d5595e78e
+// if both matured, then need to consider other aspects of a system as well.
+// need to change assert, make it more flexible including both matured case
+// need a proper setup for initial state I guess
+
+// timeout after adding `require maturityTime1 < eCl.block.timestamp && maturityTime2 < eCl.block.timestamp;`
+// https://prover.certora.com/output/3106/2e6dc3d3b5c146bcb5ceb865fb1320c7/?anonymousKey=6e9c436ed99051ae53b036977260fe3247911c9e
+rule profitIsMonotonicForCloseLong(env eCl) {
+    uint256 bondAmount;
+    uint256 minOutput;
+    address destination1; address destination2;
+    uint256 maturityTime1; uint256 maturityTime2;
+    bool asUnderlying1; bool asUnderlying2;
+
+    require maturityTime1 > eCl.block.timestamp && maturityTime2 > eCl.block.timestamp;
+
+    storage initState = lastStorage;
+    uint256 assetsRecieved1 =
+        closeLong(eCl, maturityTime1, bondAmount, minOutput, destination1, asUnderlying1);
+
+    uint256 assetsRecieved2 =
+        closeLong(eCl, maturityTime2, bondAmount, minOutput, destination2, asUnderlying2) at initState;
+
+    assert maturityTime1 >= maturityTime2 => assetsRecieved1 <= assetsRecieved2, "Received assets should increase for long position.";
+}
+
+
+
+// STATUS - violation
+// https://prover.certora.com/output/3106/90f5e72f826643e184aa49baacca100c/?anonymousKey=22f84ff36a5192c746e75b57607a415d50dcd420
+// not sure. something is broken with shares calculation.
+rule addAndRemoveSameSharesMeansNoChange(env e) {
+    uint256 _contribution;
+    uint256 _minApr;
+    uint256 _maxApr;
+    address _destination;
+    bool _asUnderlying;
+
+    uint256 _minOutput;
+    uint256 baseProceeds;
+    uint256 withdrawalShares;
+
+    uint128 shareReservesBefore = stateShareReserves();
+        uint256 lpShares = addLiquidity(e, _contribution, _minApr, _maxApr, _destination, _asUnderlying);
+        baseProceeds, withdrawalShares = removeLiquidity(e, lpShares, _minOutput, _destination, _asUnderlying);
+    uint128 shareReservesAfter = stateShareReserves();
+
+    assert shareReservesAfter + 1 >= to_mathint(shareReservesBefore);
+}
+
+rule openLongPreservesOutstandingLongs(uint256 baseAmount) {
+    env e;
+    uint256 minOutput;
+    address destination;
+    bool asUnderlying;
+
+    setHyperdrivePoolParams();
+    /// Not proven yet, used for filtering counter-examples
+    requireInvariant aTokenBalanceGEToShares(e);
+    requireInvariant SumOfShortsGEOutstanding();
+    requireInvariant SumOfLongsGEOutstanding();
+
+    uint256 latestCP = require_uint256(e.block.timestamp -
+            (e.block.timestamp % checkpointDuration()));
+
+    IHyperdrive.MarketState preState = marketState();
+    uint128 bondReserves1 = preState.bondReserves;
+    uint128 longsOutstanding1 = preState.longsOutstanding;
+    uint256 sharePrice1 = sharePrice(e);
+    require to_mathint(checkPointSharePrice(latestCP)) == to_mathint(sharePrice1);
+
+    require mulUpWad(sharePrice1, bondReserves1) >= assert_uint256(longsOutstanding1);
+
+    uint256 bondsReceived =
+        openLong(e, baseAmount, minOutput, destination, asUnderlying);
+
+    IHyperdrive.MarketState postState = marketState();
+    uint128 bondReserves2 = postState.bondReserves;
+    uint128 longsOutstanding2 = postState.longsOutstanding;
+    uint256 sharePrice2 = sharePrice(e);
+
+    assert mulUpWad(sharePrice2, bondReserves2) >= assert_uint256(longsOutstanding2);
+}
+
+
+// STATUS - violation
+// https://prover.certora.com/output/3106/77e653ad3f48437e81ca2907bad0a647/?anonymousKey=e70fe94cbf2fb79fed70fadb040117bbbd6ff260
+// here can be a violation according to their comment in aaveHyperdrive:
+        // Small numerical errors can result in the shares value being slightly larger
+        // than the total shares, so we clamp the shares to the total shares to
+        // avoid reverts.
+// or we need to limit initial state
+/// Closing a long position at maturity should return the same number of tokens as the number of bonds.
+// rule closeLongAtMaturity(uint256 bondAmount) {
+//     env e;
+//     uint256 minOutput;
+//     address destination;
+//     bool asUnderlying;
+//     uint256 maturityTime;
+
+//     setHyperdrivePoolParams();
+
+//     uint256 assetsRecieved =
+//         closeLong(e, maturityTime, bondAmount, minOutput, destination, asUnderlying);
+
+//     assert maturityTime <= e.block.timestamp => assetsRecieved == bondAmount;
+// }
+
+/// calling checkpoint() twice on two checkpoint times cannot change the outstanding positons twice
+/// @notice : Violated because it's not assumed there aren't 'holes' in checkpoints.
+// https://prover.certora.com/output/3106/863efe691ab644b58d30cd29c6c6d4da/?anonymousKey=e1a8ae0906fd35cb61605ec5e1014486c9ffbef1
+// the last if in checkpoint goes different ways both times, need to think if this is valid counter-example
+// rule doubleCheckpointHasNoEffect(uint256 time1, uint256 time2) {
+//     env e;
+//     uint128 Longs1 = stateLongs();
+//     uint128 Shorts1 = stateShorts();
+//         checkpoint(e, time1);
+//     uint128 Longs2 = stateLongs();
+//     uint128 Shorts2 = stateShorts();
+//         checkpoint(e, time2);
+//     uint128 Longs3 = stateLongs();
+//     uint128 Shorts3 = stateShorts();
+
+//     assert !(Longs1 == Longs2 && Shorts1 == Shorts2) =>
+//         (Longs2 == Longs3 && Shorts2 == Shorts3),
+//         "If the outstanding bonds were changed by a first checkpoint, they cannot be changed by a second";
+// }
+
+/// The present value of the pool should not change after 'checkpointing' 
+// not true if positions are matured.
+// true if between two maturities
+/// @notice Trivially violated since the present value function is summarized.
+rule checkPointCannotChangePoolPresentValue(uint256 time) {
+    env e;
+    setHyperdrivePoolParams();
+    uint256 _sharePrice = require_uint256(2*ONE18());
+
+    /// Calc present value:
+    uint256 value1 = getPresentValue(e, _sharePrice);
+    /// Checkpoint:
+        checkpoint(e, time);
+    /// Calc present value:
+    uint256 value2 = getPresentValue(e, _sharePrice);
+
+    assert value1 == value2;
+}
+
+
+// STATUS - violation
+// https://prover.certora.com/output/3106/d981269c05364be8bf57ed2fb87bb3b1/?anonymousKey=a5cd479cd57cbfa3a9d3e4d05167924ca402a428
+// violations in openLong() and openShort() becuase they are set to match values of closing positions. Thus, outstadings remains the same.
+// need to think if we can fix it. My solution is not helpful
+/// @notice If the checkpoint share price was set by a function, so all matured positions
+/// of that checkpoint should have been removed from the outstanding longs/shorts.
+// rule settingThePriceAlsoClosesMaturedPositions(uint256 checkpointTime, method f) 
+// filtered{ f -> !f.isView && f.selector != sig:checkpoint(uint256).selector } {
+//     env e;
+//     calldataarg args;
+
+//     mathint price1 = checkPointSharePrice(checkpointTime);
+//     mathint longsOutstanding1 = stateLongs();
+//     mathint shortsOutstanding1 = stateShorts();
+//         f(e, args);
+//     mathint price2 = checkPointSharePrice(checkpointTime);
+//     mathint longsOutstanding2 = stateLongs();
+//     mathint shortsOutstanding2 = stateShorts();
+//     /// Require that the price has changed (or set to non-zero).
+//     require price1 ==0 && price2 !=0;
+
+//     /// Assume that there are longs/shorts tokens for that checkpoint time
+//     uint256 AssetId;
+//     mathint prefix = prefixByID(AssetId);
+//     require prefix == 1 || prefix == 2;
+//     require timeByID(AssetId) == to_mathint(checkpointTime);
+//     require checkpointTime <= e.block.timestamp; // Longs/shorts have matured
+//     require totalSupplyByToken(AssetId) > 0;
+
+//     assert longsOutstanding1 != longsOutstanding2 || shortsOutstanding1 != shortsOutstanding2,
+//         "The outstanding shorts or longs must have been updated (virtually closing the matured)";
+// }
+
+
+/// Long and shorts tokens could only be minted at checkpoint time intervals.
+invariant NoTokensBetweenCheckPoints(uint256 AssetId)
+    (
+        AssetId != WITHDRAWAL_SHARE_ASSET_ID() && 
+        AssetId != LP_ASSET_ID() && 
+        (timeByID(AssetId) - positionDuration()) % checkpointDuration() !=0
+    )
+        => totalSupplyByToken(AssetId) == 0 
+    {
+        preserved{
+            setHyperdrivePoolParams(); 
+            require checkpointDuration() !=0;
+        }
+    }
+
+
+/// If there are shares in the pool, there must be underlying assets.
+/// Violated for removeLiquidity:
+/// https://vaas-stg.certora.com/output/41958/31864532f046423ea1f0e0988ebe5e1a/?anonymousKey=63f56d320526ee9dc6552956c574822f476e7273
+invariant SharesNonZeroAssetsNonZero(env e)
+    totalShares() !=0 => aToken.balanceOf(e, HDAave) != 0 
+    {
+        preserved with (env eP) {
+            setHyperdrivePoolParams();
+            require eP.block.timestamp == e.block.timestamp;
+            require totalShares() >= ONE18();
+        }
+    }
+
+
+/// The Spot price p = [(mu * z / y) ^ tau] must be smaller than one.
+/// Violated
+/// https://vaas-stg.certora.com/output/41958/794fadd9600c4a728e23eca6712b6b66/?anonymousKey=a3bc9d0843c440ba8c78610f331c921eb65744e9
+invariant SpotPriceIsLessThanOne()
+    stateBondReserves() !=0 => mulDivDownAbstractPlus(stateShareReserves(), initialSharePrice(), stateBondReserves()) <= ONE18()
+    filtered{f -> isOpenShort(f)}
+    {
+        preserved with (env e) {
+            setHyperdrivePoolParams();
+            require sharePrice(e) >= initialSharePrice(); 
+        }
+    }
+
+/// It's impossible to get to a state where both shares and bonds are empty
+/// @dev maybe it's possible if all liquidity has been withdrawan?
+/*
+rule cannotCompletelyDepletePool(method f) filtered{f -> !f.isView} {
+    env e;
+    calldataarg args;
+    setHyperdrivePoolParams();
+    require require_uint256(stateBondReserves()) >= ONE18() && require_uint256(stateShareReserves()) >= ONE18();
+        f(e,args);
+    assert !(stateBondReserves() == 0 && stateShareReserves() == 0);
+}
+*/
+
+/// The yield from closing a bond should be linearly bounded by the time passed since the position was opened.
+/// @notice The rule is still in progress.
+/// Need to think how to take into account the curve share proceeds
+rule closeLongYieldIsBoundedByTime(uint256 openTimeStamp) {
+    env e;
+    require e.block.timestamp >= 10000000;
+    require openTimeStamp <= e.block.timestamp;
+    setHyperdrivePoolParams();
+    
+    uint256 minOutput;
+    address destination;
+    uint256 bondAmount;
+    uint256 latestCP = require_uint256(openTimeStamp - (openTimeStamp % checkpointDuration()));
+
+    /// This is the outcome of opening a long at `openTimeStamp`:
+    uint256 maturityTime = require_uint256(latestCP + positionDuration());
+    require openTimeStamp >= latestCP && to_mathint(openTimeStamp) < latestCP + checkpointDuration();
+    uint256 timeElapsed = require_uint256(min(to_mathint(positionDuration()), e.block.timestamp - openTimeStamp));
+
+    /// Calling closeLong 
+    uint256 assetsRecieved =
+        closeLong(e, maturityTime, bondAmount, minOutput, destination, false);
+
+    /// The amount of assets received should be (time elapsed / positionDuration) * bonds
+    assert assetsRecieved <= mulDivUpAbstractPlus(timeElapsed, bondAmount, positionDuration());
+}
+
+/// @notice The average maturity time should always be between the current time stamp and the time stamp + duration.
+/// In other words, matured positions should not be taken into account in the average time.
+// summarization is wrong / doesn't work properly
+invariant LongAverageMaturityTimeIsBounded(env e)
+    (stateLongs() == 0 => AvgMTimeLongs() == 0) &&
+    (stateLongs() != 0 => 
+        AvgMTimeLongs() >= e.block.timestamp * ONE18() &&
+        AvgMTimeLongs() <= ONE18()*(e.block.timestamp + positionDuration()))
+    filtered {
+        f->isOpenLong(f)
+    }
+    {
+        preserved with (env eP) {
+            require e.block.timestamp == eP.block.timestamp;
+            setHyperdrivePoolParams();
+            requireInvariant SumOfLongsGEOutstanding();
+            // require stateLongs() == 0;
+        }
+    }
+
+
+/// @notice The average maturity time should always be between the current time stamp and the time stamp + duration.
+/// In other words, matured positions should not be taken into account in the average time.
+invariant ShortAverageMaturityTimeIsBounded(env e)
+    (stateShorts() == 0 => AvgMTimeShorts() == 0) &&
+    (stateShorts() != 0 => 
+        AvgMTimeShorts() >= e.block.timestamp * ONE18() &&
+        AvgMTimeShorts() <= ONE18()*(e.block.timestamp + positionDuration()))
+    filtered {
+        f->isOpenLong(f)
+    }
+    {
+        preserved with (env eP) {
+            require e.block.timestamp == eP.block.timestamp;
+            setHyperdrivePoolParams();
+            requireInvariant SumOfShortsGEOutstanding();
+        }
+    }
+
+/// Tadeas trying to verify ShortAverageMaturityTimeIsBounded using split and rule
+/// Very similar violation here:
+/// https://vaas-stg.certora.com/output/40577/42200a0dbfc64327b94bf77475fc94f8/?anonymousKey=f8c90f7eba1651774b848c4aa436e18058511e38
+///     - e.block.timestamp = *   ... is arbitrary
+///     - AvgMTimeShorts()  = *   ... is arbitrary
+rule shortAverageMaturityTimeIsBoundedAfterOpenShort2(env e)
+{
+    setHyperdrivePoolParams();
+
+    require stateShorts() == 0 && AvgMTimeShorts() == 0;
+
+    uint256 baseAmount;
+    uint256 maxDeposit;
+    address destination;
+    bool asUnderlying;
+
+    // TODO: Consider limiting this short to be "normal"
+    openShort(e, baseAmount, maxDeposit, destination, asUnderlying);
+
+    assert stateShorts() == 0 => AvgMTimeShorts() == 0;
+    assert stateShorts() != 0 =>
+        AvgMTimeShorts() >= e.block.timestamp * ONE18() &&
+        AvgMTimeShorts() <= ONE18()*(e.block.timestamp + positionDuration());
+}
+
+
+// Counter example when trader had opened long position covering all money in the pool:
+// When trader comes and closes the position, he returns all the bonds he has and get all the shares
+// present in the pool. Resulting in zero shares in the pool, meaning, that _pricePerShare = 0, meaning sharePrice() == 0 
+// https://prover.certora.com/output/40577/3c3ca3c5cf954d91919a1f8854c35265/?anonymousKey=fd43525a0a4bb704c529e645938885bb049fe59e
+// Even more interesting violation is one capturing when _pricePerShare went from 1 to 8/9 when closing a big long:
+// https://prover.certora.com/output/40577/476f67e7466140ed9201b9feae0f72c3/?anonymousKey=ed105fa247c69313ebcc2c35d543135c88533ae0
+/// @notice The share price cannot go below the initial price.
+invariant SharePriceAlwaysGreaterThanInitial(env e)
+    sharePrice(e) >= initialSharePrice()
+    filtered{f -> isCloseLong(f)}
+    {
+        preserved with (env eP) {
+            require eP.block.timestamp == e.block.timestamp;
+            requireInvariant SumOfLongsGEOutstanding();
+            requireInvariant SumOfShortsGEOutstanding();
+            requireInvariant WithdrawalSharesGEReadyShares();
+            requireInvariant SpotPriceIsLessThanOne();
+            setHyperdrivePoolParams();
+        }
+    }
+
+rule SharePriceCannotDecreaseAfterOperation(method f)
+    filtered{f -> isCloseLong(f)} {
+    env e;
+    calldataarg args;
+    uint256 sharePriceBefore = sharePrice(e);
+    // require sharePriceBefore >= 2 * 10^18; // To get better counterexample
+        f(e, args);
+    uint256 sharePriceAfter = sharePrice(e);
+
+    require aToken.balanceOf(e, currentContract) != 0; // non-zero shares
+    require totalShares() != 0; // non-zero assets
+    assert sharePriceAfter >= sharePriceBefore;
+    // assert 5 * sharePriceAfter >= 3 * sharePriceBefore;
+}
+
+/// There should always be more aTokens (assets) than number of shares
+/// otherwise, the share price will decrease (or less than 1).
+invariant aTokenBalanceGEToShares(env e)
+    totalShares() <= aToken.balanceOf(e, currentContract)
+    filtered{f -> isCloseLong(f)}
+    {
+        preserved with (env eP) {
+            require eP.block.timestamp == e.block.timestamp;
+            requireInvariant SumOfLongsGEOutstanding();
+            requireInvariant SumOfShortsGEOutstanding();
+            requireInvariant WithdrawalSharesGEReadyShares();
+            requireInvariant SpotPriceIsLessThanOne();
+            setHyperdrivePoolParams();
+        }
+    }
+
+
+/// There are always enough shares to cover all long positions
+invariant ShareReservesCoverLongs(env e)
+    mulDownWad(require_uint256(stateShareReserves()), sharePrice(e)) >= require_uint256(stateLongs())
+    filtered{f -> isOpenShort(f)}
+    {
+        preserved with (env eP) {
+            require e.block.timestamp == eP.block.timestamp;
+            setHyperdrivePoolParams();
+            requireInvariant SpotPriceIsLessThanOne();
+        }
+    }
+
+
+invariant TotalSharesGreaterThanLiquidity()
+    to_mathint(stateShareReserves()) <= to_mathint(totalShares())
+    filtered{f -> isCloseShort(f)}
+
+
+invariant TotalSharesGreaterThanLongs(env e)
+    to_mathint(stateLongs()) <= to_mathint(totalShares()) * sharePrice(e)
+    filtered{f -> isCloseShort(f)}
+
+
+/// If there are no shares in the pool, then there are only shorts in the pool (no longs)
+/// Probably Unreal Violation:
+/// https://prover.certora.com/output/40577/c002ed40599e448a8391975ff4ba94db/?anonymousKey=0b24b9373c24264c61a22188b6863615e903e13f
+/// When closeShort called, it induced 
+/// pricePerShare  ........ 10^18 + 5 -> ?
+/// shareReserves ......... 10^18     -> 0                    // in function _updateLiquidity called from HyperdriveLong._applyCloseLong which was called from applyCheckpoint
+/// stateLongs  ........... MAXUINT   -> MAXUINT - (10^18+4)
+invariant NoSharesNoLongs(env e)
+    stateShareReserves() == 0 => stateLongs() == 0
+    filtered{f -> !isRemoveLiq(f)}
+    {
+        preserved with (env eP)  {
+            require e.block.timestamp == eP.block.timestamp;
+            setHyperdrivePoolParams();
+            requireInvariant SumOfLongsGEOutstanding();
+            requireInvariant SumOfShortsGEOutstanding();
+            requireInvariant TotalSharesGreaterThanLiquidity();
+            requireInvariant TotalSharesGreaterThanLongs(eP);
+            requireInvariant ShareReservesCoverLongs(eP);
+            // There always should be more money than bonds(=longs)
+            // require stateLongs() == 0;
+            // require stateLongs() < 10 * RAY();
+        }
+    }
+
+
+/// Timeout
+rule shortRoundTripSameBaseVolume(uint256 bondAmount) {
+    env e;
+    uint256 maxDeposit;
+    address destination;
+    bool asUnderlying;
+    uint256 minOutput;
+    
+    setHyperdrivePoolParams();
+    
+    uint256 maturityTime;
+    uint256 userDeposit;
+
+    IHyperdrive.MarketState Mstate = marketState();
+    uint128 baseVolumeBefore = Mstate.shortBaseVolume;
+        maturityTime, userDeposit = openShort(e, bondAmount, maxDeposit, destination, asUnderlying);
+        uint256 baseRewards = closeShort(e, maturityTime, bondAmount, minOutput, destination, asUnderlying);
+    uint128 baseVolumeAfter = Mstate.shortBaseVolume;
+
+    assert baseVolumeAfter == baseVolumeBefore;
+    assert baseRewards <= userDeposit;
+}
+
+
+/// Timeout
+rule checkpointFrontRunsCloseShort(uint256 checkpointTime) {
+    env e;
+    calldataarg args;
+    
+    setHyperdrivePoolParams();
+    require require_uint256(stateShareReserves()) == ONE18();
+    storage initState = lastStorage;
+
+    closeShort(e, args);
+
+    checkpoint(e, checkpointTime) at initState;
+    closeShort@withrevert(e, args);
+
+    assert !lastReverted;
+}
+  
+
+/// Violated
+/// https://prover.certora.com/output/41958/f61a641de2d446d7875f24f21fac5e07/?anonymousKey=b972ae7327581893456828151a2f743bb35299df
+// no summarization: https://prover.certora.com/output/3106/5556eaa47094442183fed567a81aa14b/?anonymousKey=3e7c111ec98a0150c917b774ff85bcca9ec5deb7
+rule openShortMustPay(uint256 bondAmount) {
+    env e1; require e1.msg.sender != currentContract;
+    
+    uint256 maxDeposit;
+    address destination;
+    setHyperdrivePoolParams();
+    require bondAmount >= 10^6;
+    require sharePrice(e1) >= ONE18();
+    requireInvariant SpotPriceIsLessThanOne();    
+    require e1.block.timestamp == 10^6;
+
+    uint256 balance1 = aToken.balanceOf(e1, e1.msg.sender);
+    uint256 traderDeposit;
+    _, traderDeposit = openShort(e1, bondAmount, maxDeposit, destination, false);
+    uint256 balance2 = aToken.balanceOf(e1, e1.msg.sender);
+
+    assert traderDeposit !=0;
+}
+
+
+/// Violated:
+/// https://vaas-stg.certora.com/output/41958/180ad13e3b71470dbb54453056e5b4f7/?anonymousKey=462752cde7c7ecca90733908249a351c0425f2f7
+rule addLiquidityPreservesAPR() {
+    env e;
+    calldataarg args;
+    setHyperdrivePoolParams();
+    
+    uint256 mu = initialSharePrice();
+    uint256 z1 = stateShareReserves(); require z1 >= ONE18();
+    uint256 y1 = stateBondReserves(); require y1 !=0;
+    uint256 R1 = mulDivDownAbstractPlus(z1, mu, y1);
+    require R1 <= ONE18(); // The fixed interest should be > 1
+        addLiquidity(e, args);
+    uint256 z2 = stateShareReserves();
+    uint256 y2 = stateBondReserves();
+    uint256 R2 = mulDivDownAbstractPlus(z2, mu, y2);
+
+    assert z2 !=0 && y2 !=0, "Sanity check";
+    assert abs(R1-R2) < 2, "APR was changed beyond allowed error bound";
+}
+
+/// Violated
+rule removeLiquidityPreservesAPR() {
+    env e;
+    calldataarg args;
+    setHyperdrivePoolParams();
+
+    uint256 mu = initialSharePrice();
+    uint256 z1 = stateShareReserves(); require z1 >= ONE18();
+    uint256 y1 = stateBondReserves(); require y1 !=0;
+    uint256 R1 = mulDivDownAbstractPlus(z1, mu, y1);
+    require R1 <= ONE18(); // The fixed interest should be > 1
+        removeLiquidity(e, args);
+    uint256 z2 = stateShareReserves();
+    uint256 y2 = stateBondReserves();
+    uint256 R2 = mulDivDownAbstractPlus(z2, mu, y2);
+
+    // Assuming the pool isn't depleted
+    require (z2 !=0 && y2 !=0);
+    assert abs(R1-R2) < 2, "APR was changed beyond allowed error bound";
+}
+
+
+/// The change of the the share reserves should account for three sources:
+///     a. Deposit or withdrawal of pool shares from adding/removing liquidity
+///     b. Closing matured shorts and longs (by checkpointing)
+///     c. Transfer of shares to the ready-to-redeem withdrawal pool
+rule changeOfShareReserves() {
+    env e;
+    calldataarg args;
+    uint256 price = sharePrice(e); require price !=0 ;
+    setHyperdrivePoolParams();
+    requireInvariant TotalSharesGreaterThanLiquidity();
+    
+    uint256 totalShares1 = totalShares();
+    uint128 shareReserves1 = stateShareReserves();
+    mathint readyProceeds1 = withdrawalProceeds();
+    mathint Longs1 = stateLongs();
+    mathint Shorts1 = stateShorts();
+        addLiquidity(e, args); // also remove
+    uint256 totalShares2 = totalShares();
+    uint128 shareReserves2 = stateShareReserves();
+    mathint readyProceeds2 = withdrawalProceeds();
+    mathint Longs2 = stateLongs();
+    mathint Shorts2 = stateShorts();
+    
+    mathint longProceeds = ((Longs2 - Longs1) * ONE18()) / price;
+    mathint shortProceeds = ((Shorts2 - Shorts1) * ONE18()) / price;
+
+    require shareReserves1 > 0;
+    ///
+    assert shareReserves2 - shareReserves1 == 
+        (shortProceeds - longProceeds) + 
+        (totalShares2 - totalShares1) -
+        (readyProceeds2 - readyProceeds1);
+}
+
+rule removeLiquidityEmptyBothReserves() {
+    env e;
+    calldataarg args;
+    setHyperdrivePoolParams();
+    requireInvariant SpotPriceIsLessThanOne();
+        removeLiquidity(e, args);
+    assert stateShareReserves() ==0 <=> stateBondReserves() == 0;
+}
+
