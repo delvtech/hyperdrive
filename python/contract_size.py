@@ -30,6 +30,8 @@ def get_artifact_paths(out_path):
 # Get the file in which the compiled contract resides. This is useful for
 # filtering for contracts
 def get_compilation_target(artifact):
+    if not "metadata" in artifact:
+        return None
     return list(artifact["metadata"]["settings"]["compilationTarget"].keys())[0]
 
 
@@ -37,6 +39,8 @@ def get_compilation_target(artifact):
 # mock contracts that we may need to deploy.
 def should_check_code_size(artifact):
     compilation_target = get_compilation_target(artifact)
+    if not compilation_target:
+        return False
     return (
         "contracts/src/" in compilation_target
         or "MockHyperdriveTestnet" in compilation_target

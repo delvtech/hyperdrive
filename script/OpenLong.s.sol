@@ -32,14 +32,18 @@ contract OpenLongScript is Script {
 
         BASE.mint(msg.sender, 10_000e18);
         BASE.approve(address(HYPERDRIVE), 10_000e18);
-        uint256 longAmount = HYPERDRIVE.openLong(
+        (uint256 maturityTime, uint256 longAmount) = HYPERDRIVE.openLong(
             10_000e18,
             0,
             msg.sender,
             true
         );
 
-        console.log("Bob opened a long position of %s bonds", longAmount);
+        console.log(
+            "Bob opened a long position of %s bonds that matures in timestamp %s",
+            longAmount,
+            maturityTime
+        );
         console.log(
             "Bob's long balance is now %s bonds",
             HYPERDRIVE.balanceOf(

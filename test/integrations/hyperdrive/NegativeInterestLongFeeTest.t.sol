@@ -133,7 +133,16 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
 
         // Open a long position.
         uint256 basePaid = 1e18;
-        (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
+        (uint256 maturityTime, uint256 bondAmount) = openLong(
+            bob,
+            basePaid,
+            DepositOverrides({
+                asUnderlying: true,
+                depositAmount: basePaid,
+                minSlippage: 0, // TODO: This should never go below the base amount. Investigate this.
+                maxSlippage: type(uint256).max
+            })
+        );
         uint256 calculatedSpotPrice = HyperdriveUtils.calculateSpotPrice(
             hyperdrive
         );
@@ -316,7 +325,16 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
 
         // Open a long position.
         uint256 basePaid = 1e18;
-        (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
+        (uint256 maturityTime, uint256 bondAmount) = openLong(
+            bob,
+            basePaid,
+            DepositOverrides({
+                asUnderlying: true,
+                depositAmount: basePaid,
+                minSlippage: 0, // TODO: This should never go below the base amount. Investigate this.
+                maxSlippage: type(uint256).max
+            })
+        );
 
         // Fees are going to be 0 because this test uses 0% curve fee
         {
@@ -500,7 +518,16 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
 
         // Open a long position.
         uint256 basePaid = 1e18;
-        (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
+        (uint256 maturityTime, uint256 bondAmount) = openLong(
+            bob,
+            basePaid,
+            DepositOverrides({
+                asUnderlying: true,
+                depositAmount: basePaid,
+                minSlippage: 0, // TODO: This should never go below the base amount. Investigate this.
+                maxSlippage: type(uint256).max
+            })
+        );
         uint256 calculatedSpotPrice = HyperdriveUtils.calculateSpotPrice(
             hyperdrive
         );

@@ -36,6 +36,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
     )
         external
         payable
+        nonReentrant
         isNotPaused
         returns (uint256 maturityTime, uint256 traderDeposit)
     {
@@ -134,7 +135,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         uint256 _minOutput,
         address _destination,
         bool _asUnderlying
-    ) external returns (uint256) {
+    ) external nonReentrant returns (uint256) {
         if (_bondAmount == 0) {
             revert IHyperdrive.ZeroAmount();
         }
