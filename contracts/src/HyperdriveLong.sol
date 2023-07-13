@@ -25,13 +25,20 @@ abstract contract HyperdriveLong is HyperdriveLP {
     /// @param _asUnderlying If true the user is charged in underlying if false
     ///                      the contract transfers in yield source directly.
     ///                      Note - for some paths one choice may be disabled or blocked.
-    /// @return The number of bonds the user received
+    /// @return maturityTime The maturity time of the bonds.
+    /// @return bondProceeds The amount of bonds the user received
     function openLong(
         uint256 _baseAmount,
         uint256 _minOutput,
         address _destination,
         bool _asUnderlying
-    ) external payable isNotPaused returns (uint256) {
+    )
+        external
+        payable
+        nonReentrant
+        isNotPaused
+        returns (uint256 maturityTime, uint256 bondProceeds)
+    {
         // Check that the message value and base amount are valid.
         _checkMessageValue();
         if (_baseAmount == 0) {
@@ -50,11 +57,14 @@ abstract contract HyperdriveLong is HyperdriveLP {
 
         // Calculate the pool and user deltas using the trading function. We
         // backdate the bonds purchased to the beginning of the checkpoint.
+        uint256 shareReservesDelta;
+        uint256 bondReservesDelta;
+        uint256 totalGovernanceFee;
         (
-            uint256 shareReservesDelta,
-            uint256 bondReservesDelta,
-            uint256 bondProceeds,
-            uint256 totalGovernanceFee
+            shareReservesDelta,
+            bondReservesDelta,
+            bondProceeds,
+            totalGovernanceFee
         ) = _calculateOpenLong(shares, sharePrice);
 
         // If the ending spot price is greater than or equal to 1, we are in the
@@ -76,7 +86,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         _governanceFeesAccrued += totalGovernanceFee;
 
         // Apply the open long to the state.
-        uint256 maturityTime = latestCheckpoint + _positionDuration;
+        maturityTime = latestCheckpoint + _positionDuration;
         _applyOpenLong(
             shareReservesDelta,
             bondProceeds,
@@ -103,7 +113,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
             bondProceeds
         );
 
-        return (bondProceeds);
+        return (maturityTime, bondProceeds);
     }
 
     /// @notice Closes a long position with a specified maturity time.
@@ -121,7 +131,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         uint256 _minOutput,
         address _destination,
         bool _asUnderlying
-    ) external returns (uint256) {
+    ) external nonReentrant returns (uint256) {
         if (_bondAmount == 0) {
             revert IHyperdrive.ZeroAmount();
         }
