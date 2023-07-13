@@ -101,33 +101,6 @@ rule dontSpendMore(env e) {
 }
 
 
-// STATUS - not interesting property
-// _checkpoints[_latestCheckpoint()].shortBaseVolume was increased, then _marketState.shortBaseVolume was increased too, and vice versa 
-// Only true for openShort and only when a checkpoint was updated before.
-// https://vaas-stg.certora.com/output/3106/85862aef974d4ea28c238b735a8c0471/?anonymousKey=776d4d97587056c6ef69f86a6d87371fe5af4c1c
-rule shortBaseVolumeCerrelation(method f, env e) 
-filtered { f -> onlyShortMethods(f) } {
-    setHyperdrivePoolParams();
-
-    uint256 latestCP = require_uint256(e.block.timestamp -
-            (e.block.timestamp % checkpointDuration()));
-
-    AaveHyperdrive.MarketState mState1 = marketState();
-    AaveHyperdrive.Checkpoint checkpoint1 = checkPoints(latestCP);
-    require checkpoint1.sharePrice > 0;
-    
-    calldataarg args;
-    f(e, args);
-    
-    AaveHyperdrive.MarketState mState2 = marketState();
-    AaveHyperdrive.Checkpoint checkpoint2 = checkPoints(latestCP);
-
-    assert mState1.shortBaseVolume < mState2.shortBaseVolume <=> checkpoint1.shortBaseVolume < checkpoint2.shortBaseVolume;
-    assert mState1.shortBaseVolume > mState2.shortBaseVolume <=> checkpoint1.shortBaseVolume > checkpoint2.shortBaseVolume;
-    assert mState1.shortBaseVolume == mState2.shortBaseVolume <=> checkpoint1.shortBaseVolume == checkpoint2.shortBaseVolume;
-}
-
-
 // STATUS - in progress
 // failing (need to prove _shareAmount): https://vaas-stg.certora.com/output/3106/c8cf384bc8e64aefaa0f3c81450155e2/?anonymousKey=723ce2ad4f397856acb6a0aedc04fdd7c40cc27a
 // more bonds are opened, more trader will deposit

@@ -49,6 +49,189 @@ invariant erc20Solvency(env e)
     balanceSum == to_mathint(totalSupply(e));
 
 
+rule basicFRule(env e, env e2, method f, method g) filtered { f -> !f.isView, g -> !g.isView } {
+    calldataarg argsF;
+    calldataarg argsG;
+    f(e, argsF);
+    g(e2, argsG);
+
+    assert false, "Remember, with great power comes great responsibility.";
+}
+
+
+// STATUS - timeout
+// other users can't frontrun close()
+rule frontRunClose(env e, env e2, method f) 
+    filtered { f -> !f.isView && f.selector != sig:sweepAndRedeem(uint256[], uint256).selector
+} {
+    uint256 maturityTime;
+    uint256 amount;
+    bool andBurn;
+    address destination;
+    uint256 minOutput;
+
+    uint256 maturityTimeFr;
+    uint256 amountFr;
+    bool andBurnFr;
+    address destinationFr;
+    uint256 minOutputFr;
+
+    require mintPercent() > 10 && mintPercent() < 1000;
+
+    storage initialStorage = lastStorage; 
+
+    uint256 baseBalanceBefore = baseToken.balanceOf(e, destination);
+
+    close(e, maturityTime, amount, andBurn, destination, minOutput);
+
+    uint256 baseBalanceAfterSingle = baseToken.balanceOf(e, destination);
+
+    callHelper(e2, f, maturityTimeFr, amountFr, andBurnFr, destinationFr, minOutputFr, initialStorage);
+
+    close(e, maturityTime, amount, andBurn, destination, minOutput);
+
+    uint256 baseBalanceAfterDouble = baseToken.balanceOf(e, destination);
+
+    assert baseBalanceAfterSingle - baseBalanceBefore 
+            == baseBalanceAfterDouble - baseBalanceBefore;
+}
+
+
+// STATUS - in progress (can be violated in many cases)
+// - other users can't frontrun mint() 
+rule frontRunMint(env e, env e2, method f) 
+    filtered { f -> !f.isView && f.selector != sig:sweepAndRedeem(uint256[], uint256).selector
+} {
+    uint256 maturityTime;
+    uint256 amount;
+    bool andBurn;
+    address destination;
+    uint256 minOutput;
+
+    uint256 maturityTimeFr;
+    uint256 amountFr;
+    bool andBurnFr;
+    address destinationFr;
+    uint256 minOutputFr;
+
+    uint256 assetIdVar;
+    
+    require assetIdVar == assetIdMock.encodeAssetId(e, AssetId.AssetIdPrefix.Long, maturityTime);
+    require destination != destinationFr;
+
+    storage initialStorage = lastStorage; 
+
+    uint256 balanceBefore = balanceOf(e, destination);
+    uint256 hyperBalanceBefore = symbolicHyperdrive.balanceOf(e, assetIdVar, e.msg.sender);
+
+    mint(e, maturityTime, amount, destination);
+
+    uint256 balanceAfterSingle = balanceOf(e, destination);
+    uint256 hyperBalanceAfterSingle = symbolicHyperdrive.balanceOf(e, assetIdVar, e.msg.sender);
+
+    callHelper(e2, f, maturityTimeFr, amountFr, andBurnFr, destinationFr, minOutputFr, initialStorage);
+
+    mint(e, maturityTime, amount, destination);
+
+    uint256 balanceAfterDouble = balanceOf(e, destination);
+    uint256 hyperBalanceAfterDouble = symbolicHyperdrive.balanceOf(e, assetIdVar, e.msg.sender);
+
+    assert balanceAfterSingle - balanceBefore 
+            == balanceAfterDouble - balanceBefore;
+    assert e.msg.sender != e2.msg.sender 
+                => (hyperBalanceAfterSingle - hyperBalanceBefore 
+                    == hyperBalanceAfterDouble - hyperBalanceBefore);
+}
+
+
+// - other users can't frontrun redeem()
+rule frontRunRedeem(env e, env e2, method f) 
+    filtered { f -> !f.isView && f.selector != sig:sweepAndRedeem(uint256[], uint256).selector
+} {
+    uint256 maturityTime;
+    uint256 amount;
+    bool andBurn;
+    address destination;
+    uint256 minOutput;
+
+    uint256 maturityTimeFr;
+    uint256 amountFr;
+    bool andBurnFr;
+    address destinationFr;
+    uint256 minOutputFr;
+
+    require e.msg.sender != e2.msg.sender;
+
+    storage initialStorage = lastStorage; 
+
+    uint256 balanceBefore = balanceOf(e, e.msg.sender);
+    uint256 baseBalanceBefore = baseToken.balanceOf(e, e.msg.sender);
+
+    redeem(e, amount);
+
+    uint256 balanceAfterSingle = balanceOf(e, e.msg.sender);
+    uint256 baseBalanceAfterSingle = baseToken.balanceOf(e, e.msg.sender);
+
+    callHelper(e2, f, maturityTimeFr, amountFr, andBurnFr, destinationFr, minOutputFr, initialStorage);
+
+    redeem(e, amount);
+
+    uint256 balanceAfterDouble = balanceOf(e, e.msg.sender);
+    uint256 baseBalanceAfterDouble = baseToken.balanceOf(e, e.msg.sender);
+
+    assert balanceBefore - balanceAfterSingle
+            == balanceBefore - balanceAfterDouble;
+    assert baseBalanceAfterSingle - baseBalanceBefore 
+            == baseBalanceAfterDouble - baseBalanceBefore;
+}
+
+
+
+function callHelper(
+    env e, 
+    method f, 
+    uint256 maturityTime,
+    uint256 amount,
+    bool andBurn,
+    address destination, 
+    uint256 minOutput,
+    storage initialStorage
+) {
+    if (f.selector == sig:mint(uint256, uint256, address).selector) {
+        mint(e, maturityTime, amount, destination) at initialStorage;
+    } else if (f.selector == sig:close(uint256, uint256, bool, address, uint256).selector) {
+        close(e, maturityTime, amount, andBurn, destination, minOutput) at initialStorage;
+    } else if (f.selector == sig:sweep(uint256).selector) {
+        sweep(e, maturityTime) at initialStorage;
+    } else if (f.selector == sig:redeem(uint256).selector) {
+        redeem(e, amount) at initialStorage;
+    } else {
+        calldataarg args;
+        f(e, args) at initialStorage;
+    }
+}
+
+
+ghost mapping(address => mathint) userDepositSum {
+    init_state axiom forall address a. userDepositSum[a] == 0;
+}
+
+hook Sload uint256 amount deposits[KEY address user][KEY uint256 assetId]  STORAGE {
+    require userDepositSum[user] >= to_mathint(amount);
+}
+
+hook Sstore deposits[KEY address user][KEY uint256 assetId] uint256 amount
+    (uint256 old_amount) STORAGE
+{
+    userDepositSum[user] = to_mathint(userDepositSum[user] - old_amount + amount);
+}
+
+// STATUS - in progress
+// BondWrapper.balanceOf(msg.sender) * mintPercent / 10000 >= sum of deposits[msg.sender][assetId]
+invariant test(env e, address user)
+    balanceOf(user) * mintPercent() / 10000 >= userDepositSum[user];
+
+
 // STATUS - in progress
 // monotonicity of close(): more have, more will get
 rule closeMonoton(env e, env e2) {

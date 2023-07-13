@@ -1,155 +1,8 @@
-import "./erc20.spec";
-import "./MathSummaries.spec";
-import "./Sanity.spec";
-import "./HyperdriveStorage.spec";
-import "./LiquidityDefinitions.spec";
+import "./AaveHyperdriveVerified.spec";
 
-using AaveHyperdrive as HDAave;
-using DummyATokenA as aToken;
-using Pool as pool;
-using MockAssetId as assetId;
-
-use rule sanity;
-
-methods {
-    function _.mint(address,address,uint256,uint256) external => DISPATCHER(true);
-    function _.burn(address,address,uint256,uint256) external => DISPATCHER(true);
-
-    function aToken.UNDERLYING_ASSET_ADDRESS() external returns (address) envfree;
-    function pool.liquidityIndex(address,uint256) external returns (uint256) envfree;
-    function totalShares() external returns (uint256) envfree;
-
-    function MockAssetId.encodeAssetId(AssetId.AssetIdPrefix, uint256) external returns (uint256) envfree;
-    function _.recordPrice(uint256 price) internal => NONDET;
-
-    // function Hyperdrive._applyCheckpoint(uint256 _checkpointTime, uint256 _sharePrice) internal returns (uint256) => NONDET;
-
-    /*
-    /// Fee calculations summaries -> NONDET
-    function HDAave.MockCalculateFeesOutGivenSharesIn(uint256,uint256,uint256,uint256,uint256) internal returns(AaveHyperdrive.HDFee memory) => NONDET;
-    function HDAave.MockCalculateFeesOutGivenBondsIn(uint256,uint256,uint256,uint256) internal returns(AaveHyperdrive.HDFee memory) => NONDET;
-    function HDAave.MockCalculateFeesInGivenBondsOut(uint256,uint256,uint256,uint256) internal returns(AaveHyperdrive.HDFee memory) => NONDET;
-    */
-
-    /*
-    /// Fee calculations summaries -> CVL Summary
-    function HDAave.MockCalculateFeesOutGivenSharesIn(uint256 a,uint256 b ,uint256 c ,uint256 d,uint256 e) internal returns(AaveHyperdrive.HDFee memory) =>
-        CVLFeesOutGivenSharesIn(a,b,c,d,e);
-    function HDAave.MockCalculateFeesOutGivenBondsIn(uint256 a, uint256 b,uint256 c, uint256 d) internal returns(AaveHyperdrive.HDFee memory) =>
-        CVLFeesOutGivenAmountsIn(a,b,c,d);
-    function HDAave.MockCalculateFeesInGivenBondsOut(uint256 a, uint256 b, uint256 c, uint256 d) internal returns(AaveHyperdrive.HDFee memory) =>
-        CVLFeesOutGivenAmountsIn(a,b,c,d);
-    */
-}
-
-/// Aave pool aToken indices
-definition indexA() returns uint256 = require_uint256(RAY()*2);
-definition indexB() returns uint256 = require_uint256((RAY()*125)/100);
-/// Maximum share price of the Hyperdrive
-definition MaxSharePrice() returns mathint = ONE18() * 1000;
-
-definition isInitialize(method f) returns bool = 
-    f.selector == sig:initialize(uint256,uint256,address,bool).selector;
-
-/// @dev Under-approximation of the pool parameters (based on developers' test)
-/// @notice Use only to find violations!
-function setHyperdrivePoolParams() {
-    require initialSharePrice() == ONE18();
-    require timeStretch() == 45071688063194104; /// 5% APR
-    require checkpointDuration() == 86400;
-    require positionDuration() == 31536000;
-    require updateGap() == 1000;
-    /// Realistic conditions
-    require require_uint256(stateShareReserves()) == ONE18();
-    require require_uint256(stateBondReserves()) >= ONE18();
-    /// Alternative
-    //require curveFee() == require_uint256(ONE18() / 10);
-    //require flatFee() == require_uint256(ONE18() / 10);
-    //require governanceFee() == require_uint256(ONE18() / 2);
-    ///
-    //require curveFee() <= require_uint256(ONE18() / 10);
-    //require flatFee() <= require_uint256(ONE18() / 10);
-    //require governanceFee() <= require_uint256(ONE18() / 2);
-}
-/*
-function HyperdriveInvariants(env e) {
-    requireInvariant LongAverageMaturityTimeIsBounded(e);
-    requireInvariant ShortAverageMaturityTimeIsBounded(e);
-    requireInvariant SpotPriceIsLessThanOne();
-    requireInvariant WithdrawalSharesGEReadyShares();
-    requireInvariant SumOfShortsGEOutstanding();
-    requireInvariant SumOfLongsGEOutstanding();
-}
-*/
-
-/// A hook for loading the Aave pool liquidity index
-hook Sload uint256 index Pool.liquidityIndex[KEY address token][KEY uint256 timestamp] STORAGE {
-    /// @WARNING : UNDER-APPROXIMATION!
-    /// @notice : to simplify the SMT formulas, we assume a specific value for the index.
-    /// so in general, the index as a function of time is actually a constant.
-    require index == indexA();// || index == indexB();
-    //require index >= RAY();
-}
-
-/// A hook for loading the checkpoint prices
-/// @notice To focus on realistic values, we assume the checkpoint was either not set
-/// (zero price), or that the price is bounded between 1 and 100.
-hook Sload uint128 price currentContract._checkpoints[KEY uint256 timestamp].sharePrice STORAGE {
-    require (price == 0) || (require_uint256(price) >= ONE18() && to_mathint(price) <= MaxSharePrice());
-}
-
-function getPoolIndex(uint256 timestamp) returns uint256 {
-    return pool.liquidityIndex(aToken.UNDERLYING_ASSET_ADDRESS(), timestamp);
-}
-
-/// @notice Simulates the output of the `_deposit()` function
-/// @param totalSharesBefore - totalShares before deposit function
-/// @param assetsBefore - assets of contract before deposit function.
-/// @param baseAmount - The amount of token to transfer
-/// @param asUnderlying - underlying tokens (true) or yield source tokens (false)
-/// @return output[0] = sharesMinted
-/// @return output[1] = sharePrice
-function depositOutput(env e, uint256 totalSharesBefore, uint256 assetsBefore, uint256 baseAmount, bool asUnderlying) returns uint256[2] {
-    uint256[2] output;
-    uint256 totalSharesAfter = totalShares();
-    uint256 assetsAfter = aToken.balanceOf(e, HDAave);
-    uint256 index = getPoolIndex(e.block.timestamp);
-
-    if(totalSharesBefore == 0) {
-        require baseAmount == output[0];
-        require ONE18() == output[1];
-    }
-    else {
-        if(asUnderlying) {
-            require baseAmount > 0 => assetsBefore < assetsAfter;
-        }
-        else {
-            require to_mathint(assetsAfter) >= assetsBefore + baseAmount;
-            require to_mathint(assetsAfter) <= assetsBefore + baseAmount + index/RAY();
-        }
-        require mulDivDownAbstractPlus(totalSharesBefore, baseAmount, assetsBefore) == output[0];
-        require mulDivDownAbstractPlus(baseAmount, ONE18(), output[0]) == output[1];
-        require totalSharesBefore + output[0] == to_mathint(totalSharesAfter);
-    }
-    return output;
-}
-
-/// Checks the balance difference after transfering aTokens.
-/// Due to rounding errors of index divison and multiplication, the difference
-/// is bounded by index + 1/RAY
-/// @notice [VERIFIED]
-rule aTokenTransferBalanceTest(uint256 amount, address recipient) {
-    env e;
-    require e.msg.sender != recipient;
-
-    uint256 assetsBefore = aToken.balanceOf(e, recipient);
-        aToken.transfer(e, recipient, amount);
-    uint256 assetsAfter = aToken.balanceOf(e, recipient);
-    uint256 index = getPoolIndex(e.block.timestamp);
-
-    assert to_mathint(assetsAfter) >= assetsBefore + amount;
-    assert to_mathint(assetsAfter) <= assetsBefore + amount + index/RAY() + 1;
-}
+use invariant SumOfLongsGEOutstanding;
+use invariant SumOfShortsGEOutstanding;
+use invariant WithdrawalSharesGEReadyShares;
 
 /// Checks the post state of the _deposit() function.
 rule depositOutputChecker(uint256 baseAmount, bool asUnderlying) {
@@ -263,65 +116,6 @@ rule longPositionRoundTrip2() {
     assert minOutput_close <= assetsReceived;
 }
 
-/// No action can change the share price for two different checkpoints at the same time.
-/// @notice [VERIFIED]
-rule sharePriceChangesForOnlyOneCheckPoint(method f) {
-    env e;
-    calldataarg args;
-    uint256 _checkpointA;
-    uint256 _checkpointB;
-
-    uint128 sharePriceA1 = checkPointSharePrice(_checkpointA);
-    uint128 sharePriceB1 = checkPointSharePrice(_checkpointB);
-        f(e, args);
-    uint128 sharePriceA2 = checkPointSharePrice(_checkpointA);
-    uint128 sharePriceB2 = checkPointSharePrice(_checkpointB);
-
-    assert (sharePriceA1 != sharePriceA2 && sharePriceB1 != sharePriceB2)
-        => _checkpointA == _checkpointB;
-}
-
-/// For every checkpoint, if the share price has been set, it cannot be set again.
-/// @notice [VERIFIED]
-rule cannotChangeCheckPointSharePriceTwice(uint256 _checkpoint, method f) {
-    env e;
-    calldataarg args;
-
-    IHyperdrive.Checkpoint CP1 = checkPoints(_checkpoint);
-        f(e,args);
-    IHyperdrive.Checkpoint CP2 = checkPoints(_checkpoint);
-
-    assert CP1.sharePrice !=0 => CP1.sharePrice == CP2.sharePrice;
-}
-
-/// No function can change the total supply of two different tokens at the same time.
-/// @notice the only exception to this rule is 
-/// the function removeLiqudity() that can change both LP tokens types only!
-/// @notice [VERIFIED]
-rule onlyOneTokenTotalSupplyChangesAtATime(method f, uint256 assetID1, uint256 assetID2) 
-filtered{ f -> !f.isView } {
-    env e;
-    calldataarg args;
-
-    uint256 supply1_before = totalSupplyByToken(assetID1);
-    uint256 supply2_before = totalSupplyByToken(assetID2);
-        f(e, args);
-    uint256 supply1_after = totalSupplyByToken(assetID1);
-    uint256 supply2_after = totalSupplyByToken(assetID2);
-
-    bool bothSuppliesChanged = supply1_before != supply1_after && supply2_before != supply2_after;
-
-    if (isRemoveLiq(f)) {
-        assert bothSuppliesChanged => (
-            (assetID1 == assetID2) || 
-            (assetID1 == LP_ASSET_ID() && assetID2 == WITHDRAWAL_SHARE_ASSET_ID()) ||
-            (assetID2 == LP_ASSET_ID() && assetID1 == WITHDRAWAL_SHARE_ASSET_ID()));
-    }
-    else {
-        assert bothSuppliesChanged => assetID1 == assetID2;
-    }
-}
-
 /// Violated
 rule checkPointPriceIsSetCorrectly(uint256 _checkpoint) {
     env e;
@@ -402,7 +196,7 @@ rule profitIsMonotonicForCloseLong(env eCl) {
     uint256 maturityTime1; uint256 maturityTime2;
     bool asUnderlying1; bool asUnderlying2;
 
-    require maturityTime1 < eCl.block.timestamp && maturityTime2 < eCl.block.timestamp;
+    require maturityTime1 > eCl.block.timestamp && maturityTime2 > eCl.block.timestamp;
 
     storage initState = lastStorage;
     uint256 assetsRecieved1 =
@@ -535,29 +329,6 @@ rule checkPointCannotChangePoolPresentValue(uint256 time) {
     assert value1 == value2;
 }
 
-/// Tokens could be minted at a time that corresponds to position duration time in the future
-/// (since the latest checkpoint)
-/// [VERIFIED]
-rule mintingTokensOnlyAtMaturityTime(method f, uint256 AssetId) 
-filtered{ f -> !f.isView } {
-    /// We are only concerned with longs and shorts tokens.
-    mathint prefix = prefixByID(AssetId);
-    require prefix == 1 || prefix == 2;
-    
-    env e;
-    calldataarg args;
-    /// Avoid dividing by zero
-    require checkpointDuration() !=0;
-    /// Maturity time = latest checkpoint + position duration
-    mathint maturityTime = 
-        e.block.timestamp - (e.block.timestamp % checkpointDuration()) + positionDuration();
-    uint256 supplyBefore = totalSupplyByToken(AssetId);
-        f(e, args);
-    uint256 supplyAfter = totalSupplyByToken(AssetId);
-
-    assert supplyAfter > supplyBefore => timeByID(AssetId) == maturityTime;
-}
-
 
 // STATUS - violation
 // https://prover.certora.com/output/3106/d981269c05364be8bf57ed2fb87bb3b1/?anonymousKey=a5cd479cd57cbfa3a9d3e4d05167924ca402a428
@@ -592,14 +363,6 @@ filtered{ f -> !f.isView } {
 //         "The outstanding shorts or longs must have been updated (virtually closing the matured)";
 // }
 
-/// Verified
-invariant NoFutureTokens(uint256 AssetId, env e)
-    timeByID(AssetId) > e.block.timestamp + positionDuration() => totalSupplyByToken(AssetId) == 0
-    {
-        preserved with (env eP) {
-            require e.block.timestamp == eP.block.timestamp;
-        }
-    }
 
 /// Long and shorts tokens could only be minted at checkpoint time intervals.
 invariant NoTokensBetweenCheckPoints(uint256 AssetId)
@@ -616,6 +379,7 @@ invariant NoTokensBetweenCheckPoints(uint256 AssetId)
         }
     }
 
+
 /// If there are shares in the pool, there must be underlying assets.
 /// Violated for removeLiquidity:
 /// https://vaas-stg.certora.com/output/41958/31864532f046423ea1f0e0988ebe5e1a/?anonymousKey=63f56d320526ee9dc6552956c574822f476e7273
@@ -629,10 +393,6 @@ invariant SharesNonZeroAssetsNonZero(env e)
         }
     }
 
-/// The ready to redeem shares cannot exceed the total withdrawal shares.
-/// [VERIFIED]
-invariant WithdrawalSharesGEReadyShares()
-    totalWithdrawalShares() >= readyToRedeemShares();
 
 /// The Spot price p = [(mu * z / y) ^ tau] must be smaller than one.
 /// Violated
@@ -804,18 +564,7 @@ invariant aTokenBalanceGEToShares(env e)
         }
     }
 
-/// The sum of longs tokens is greater or equal to the outstanding longs.
-/// @notice The sum is not necessarily equal to the outstanding count.
-/// @notice [VERIFIED]
-invariant SumOfLongsGEOutstanding()
-    sumOfLongs() >= to_mathint(stateLongs());
 
-/// The sum of shorts tokens is greater or equal to the outstanding shorts.
-/// @notice The sum is not necessarily equal to the outstanding count.
-/// @notice [VERIFIED]
-invariant SumOfShortsGEOutstanding()
-    sumOfShorts() >= to_mathint(stateShorts());
-    
 /// There are always enough shares to cover all long positions
 invariant ShareReservesCoverLongs(env e)
     mulDownWad(require_uint256(stateShareReserves()), sharePrice(e)) >= require_uint256(stateLongs())
@@ -828,13 +577,16 @@ invariant ShareReservesCoverLongs(env e)
         }
     }
 
+
 invariant TotalSharesGreaterThanLiquidity()
     to_mathint(stateShareReserves()) <= to_mathint(totalShares())
     filtered{f -> isCloseShort(f)}
 
+
 invariant TotalSharesGreaterThanLongs(env e)
     to_mathint(stateLongs()) <= to_mathint(totalShares()) * sharePrice(e)
     filtered{f -> isCloseShort(f)}
+
 
 /// If there are no shares in the pool, then there are only shorts in the pool (no longs)
 /// Probably Unreal Violation:
@@ -861,6 +613,7 @@ invariant NoSharesNoLongs(env e)
         }
     }
 
+
 /// Timeout
 rule shortRoundTripSameBaseVolume(uint256 bondAmount) {
     env e;
@@ -884,6 +637,7 @@ rule shortRoundTripSameBaseVolume(uint256 bondAmount) {
     assert baseRewards <= userDeposit;
 }
 
+
 /// Timeout
 rule checkpointFrontRunsCloseShort(uint256 checkpointTime) {
     env e;
@@ -901,8 +655,10 @@ rule checkpointFrontRunsCloseShort(uint256 checkpointTime) {
     assert !lastReverted;
 }
   
+
 /// Violated
 /// https://prover.certora.com/output/41958/f61a641de2d446d7875f24f21fac5e07/?anonymousKey=b972ae7327581893456828151a2f743bb35299df
+// no summarization: https://prover.certora.com/output/3106/5556eaa47094442183fed567a81aa14b/?anonymousKey=3e7c111ec98a0150c917b774ff85bcca9ec5deb7
 rule openShortMustPay(uint256 bondAmount) {
     env e1; require e1.msg.sender != currentContract;
     
@@ -921,3 +677,91 @@ rule openShortMustPay(uint256 bondAmount) {
 
     assert traderDeposit !=0;
 }
+
+
+/// Violated:
+/// https://vaas-stg.certora.com/output/41958/180ad13e3b71470dbb54453056e5b4f7/?anonymousKey=462752cde7c7ecca90733908249a351c0425f2f7
+rule addLiquidityPreservesAPR() {
+    env e;
+    calldataarg args;
+    setHyperdrivePoolParams();
+    
+    uint256 mu = initialSharePrice();
+    uint256 z1 = stateShareReserves(); require z1 >= ONE18();
+    uint256 y1 = stateBondReserves(); require y1 !=0;
+    uint256 R1 = mulDivDownAbstractPlus(z1, mu, y1);
+    require R1 <= ONE18(); // The fixed interest should be > 1
+        addLiquidity(e, args);
+    uint256 z2 = stateShareReserves();
+    uint256 y2 = stateBondReserves();
+    uint256 R2 = mulDivDownAbstractPlus(z2, mu, y2);
+
+    assert z2 !=0 && y2 !=0, "Sanity check";
+    assert abs(R1-R2) < 2, "APR was changed beyond allowed error bound";
+}
+
+/// Violated
+rule removeLiquidityPreservesAPR() {
+    env e;
+    calldataarg args;
+    setHyperdrivePoolParams();
+
+    uint256 mu = initialSharePrice();
+    uint256 z1 = stateShareReserves(); require z1 >= ONE18();
+    uint256 y1 = stateBondReserves(); require y1 !=0;
+    uint256 R1 = mulDivDownAbstractPlus(z1, mu, y1);
+    require R1 <= ONE18(); // The fixed interest should be > 1
+        removeLiquidity(e, args);
+    uint256 z2 = stateShareReserves();
+    uint256 y2 = stateBondReserves();
+    uint256 R2 = mulDivDownAbstractPlus(z2, mu, y2);
+
+    // Assuming the pool isn't depleted
+    require (z2 !=0 && y2 !=0);
+    assert abs(R1-R2) < 2, "APR was changed beyond allowed error bound";
+}
+
+
+/// The change of the the share reserves should account for three sources:
+///     a. Deposit or withdrawal of pool shares from adding/removing liquidity
+///     b. Closing matured shorts and longs (by checkpointing)
+///     c. Transfer of shares to the ready-to-redeem withdrawal pool
+rule changeOfShareReserves() {
+    env e;
+    calldataarg args;
+    uint256 price = sharePrice(e); require price !=0 ;
+    setHyperdrivePoolParams();
+    requireInvariant TotalSharesGreaterThanLiquidity();
+    
+    uint256 totalShares1 = totalShares();
+    uint128 shareReserves1 = stateShareReserves();
+    mathint readyProceeds1 = withdrawalProceeds();
+    mathint Longs1 = stateLongs();
+    mathint Shorts1 = stateShorts();
+        addLiquidity(e, args); // also remove
+    uint256 totalShares2 = totalShares();
+    uint128 shareReserves2 = stateShareReserves();
+    mathint readyProceeds2 = withdrawalProceeds();
+    mathint Longs2 = stateLongs();
+    mathint Shorts2 = stateShorts();
+    
+    mathint longProceeds = ((Longs2 - Longs1) * ONE18()) / price;
+    mathint shortProceeds = ((Shorts2 - Shorts1) * ONE18()) / price;
+
+    require shareReserves1 > 0;
+    ///
+    assert shareReserves2 - shareReserves1 == 
+        (shortProceeds - longProceeds) + 
+        (totalShares2 - totalShares1) -
+        (readyProceeds2 - readyProceeds1);
+}
+
+rule removeLiquidityEmptyBothReserves() {
+    env e;
+    calldataarg args;
+    setHyperdrivePoolParams();
+    requireInvariant SpotPriceIsLessThanOne();
+        removeLiquidity(e, args);
+    assert stateShareReserves() ==0 <=> stateBondReserves() == 0;
+}
+
