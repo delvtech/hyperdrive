@@ -221,7 +221,7 @@ contract ER4626HyperdriveTest is HyperdriveTest {
         dai.transfer(address(pool), 2_500e18);
         assertEq(
             pool.totalAssets(),
-            contribution + 2_500e18 + apr.mulDown(1000e18)
+            contribution + 2_500e18 + aliceShares
         );
         assertEq(
             hyperdrive.getPoolInfo().sharePrice,
