@@ -1,26 +1,24 @@
---- ../contracts/src/instances/AaveHyperdrive.sol	2023-06-22 10:55:20
-+++ 	2023-06-22 10:55:29
-@@ -1,12 +1,13 @@
- // SPDX-License-Identifier: Apache-2.0
--pragma solidity 0.8.19;
-+pragma solidity ^0.8.18;
+--- ../contracts/src/instances/AaveHyperdrive.sol	2023-07-13 17:56:43
++++ 	2023-07-13 21:54:00
+@@ -2,11 +2,13 @@
+ pragma solidity 0.8.19;
  
  import { IPool } from "@aave/interfaces/IPool.sol";
 -import { Hyperdrive } from "../Hyperdrive.sol";
--import { FixedPointMath } from "../libraries/FixedPointMath.sol";
--import { Errors } from "../libraries/Errors.sol";
 -import { IERC20 } from "../interfaces/IERC20.sol";
 -import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+-import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 +import { Hyperdrive } from "./Hyperdrive.sol";
 +import { FixedPointMath } from "../../contracts/src/libraries/FixedPointMath.sol";
-+import { Errors } from "../../contracts/src/libraries/Errors.sol";
 +import { IERC20 } from "../../contracts/src/interfaces/IERC20.sol";
 +import { IHyperdrive } from "../../contracts/src/interfaces/IHyperdrive.sol";
 +import { HyperdriveMath } from "../../contracts/src/libraries/HyperdriveMath.sol";
  
- contract AaveHyperdrive is Hyperdrive {
-     using FixedPointMath for uint256;
-@@ -16,7 +17,7 @@
++
+ /// @author DELV
+ /// @title AaveHyperdrive
+ /// @notice An instance of Hyperdrive that utilizes Aave's lending pool as a yield source.
+@@ -21,7 +23,7 @@
      IPool internal immutable pool;
  
      // The shares created by this pool, starts at one to one with deposits and increases
@@ -29,17 +27,7 @@
  
      /// @notice Initializes a Hyperdrive pool.
      /// @param _config The configuration of the Hyperdrive pool.
-@@ -42,7 +43,8 @@
- 
-         aToken = _aToken;
-         pool = _pool;
--        _config.baseToken.approve(address(pool), type(uint256).max);
-+        IERC20 base = _config.baseToken;
-+        base.approve(address(pool), type(uint256).max);
-     }
- 
-     /// @notice Transfers amount of 'token' from the user and commits it to the yield source.
-@@ -141,5 +143,9 @@
+@@ -153,5 +155,9 @@
              return assets.divDown(totalShares_);
          }
          return 0;
@@ -49,35 +37,34 @@
 +        return _pricePerShare();
      }
  }
---- ../contracts/src/Hyperdrive.sol	2023-06-15 01:13:33
-+++ 	2023-06-22 10:55:29
-@@ -2,15 +2,18 @@
+--- ../contracts/src/Hyperdrive.sol	2023-07-13 17:56:43
++++ 	2023-07-13 21:54:35
+@@ -2,14 +2,18 @@
  pragma solidity 0.8.19;
  
  import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
--import { SafeCast } from "./libraries/SafeCast.sol";
 -import { HyperdriveBase } from "./HyperdriveBase.sol";
-+import { SafeCast } from "../../contracts/src/libraries/SafeCast.sol";
 +import { HyperdriveBase } from "../../contracts/src/HyperdriveBase.sol";
  import { HyperdriveLong } from "./HyperdriveLong.sol";
  import { HyperdriveShort } from "./HyperdriveShort.sol";
+-import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 -import { AssetId } from "./libraries/AssetId.sol";
--import { Errors } from "./libraries/Errors.sol";
 -import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 -import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
--import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
+-import { SafeCast } from "./libraries/SafeCast.sol";
++import { IHyperdrive } from "../../contracts/src/interfaces/IHyperdrive.sol";
 +import { AssetId } from "../../contracts/src/libraries/AssetId.sol";
-+import { Errors } from "../../contracts/src/libraries/Errors.sol";
 +import { FixedPointMath } from "../../contracts/src/libraries/FixedPointMath.sol";
 +import { HyperdriveMath } from "../../contracts/src/libraries/HyperdriveMath.sol";
-+import { IHyperdrive } from "../../contracts/src/interfaces/IHyperdrive.sol";
++import { SafeCast } from "../../contracts/src/libraries/SafeCast.sol";
++import { HyperdriveStorageGetters } from "../helpers/HyperdriveStorageGetters.sol";
 +import { HyperdriveStorageGetters } from "../helpers/HyperdriveStorageGetters.sol";
 +import { IHyperdriveTypes } from "../helpers/IHyperdriveTypes.sol";
 +import { HyperdrivePresentValue } from "../helpers/HyperdrivePresentValue.sol";
  
  /// @author DELV
  /// @title Hyperdrive
-@@ -21,7 +24,10 @@
+@@ -20,7 +24,13 @@
  abstract contract Hyperdrive is
      HyperdriveBase,
      HyperdriveLong,
@@ -86,96 +73,98 @@
 +    HyperdriveStorageGetters,
 +    IHyperdriveTypes,
 +    HyperdrivePresentValue
++    // , 44
++    // IHyperdriveTypes,
++    // HyperdrivePresentValue
  {
      using FixedPointMath for uint256;
      using SafeCast for uint256;
---- ../contracts/src/HyperdriveLP.sol	2023-06-30 10:35:36
-+++ 	2023-06-22 10:55:29
+--- ../contracts/src/HyperdriveLP.sol	2023-07-13 17:56:43
++++ 	2023-07-13 21:55:44
 @@ -1,13 +1,14 @@
  // SPDX-License-Identifier: Apache-2.0
  pragma solidity 0.8.19;
  
--import { SafeCast } from "./libraries/SafeCast.sol";
 -import { HyperdriveBase } from "./HyperdriveBase.sol";
+-import { HyperdriveTWAP } from "./HyperdriveTWAP.sol";
+-import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 -import { AssetId } from "./libraries/AssetId.sol";
--import { Errors } from "./libraries/Errors.sol";
 -import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 -import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
--import { HyperdriveTWAP } from "./HyperdriveTWAP.sol";
-+import { SafeCast } from "../../contracts/src/libraries/SafeCast.sol";
+-import { SafeCast } from "./libraries/SafeCast.sol";
 +import { HyperdriveBase } from "../../contracts/src/HyperdriveBase.sol";
++import { HyperdriveTWAP } from "../../contracts/src/HyperdriveTWAP.sol";
++import { IHyperdrive } from "../../contracts/src/interfaces/IHyperdrive.sol";
 +import { AssetId } from "../../contracts/src/libraries/AssetId.sol";
-+import { Errors } from "../../contracts/src/libraries/Errors.sol";
 +import { FixedPointMath } from "../../contracts/src/libraries/FixedPointMath.sol";
 +import { HyperdriveMath } from "../../contracts/src/libraries/HyperdriveMath.sol";
-+import { HyperdriveTWAP } from "../../contracts/src/HyperdriveTWAP.sol";
++import { SafeCast } from "../../contracts/src/libraries/SafeCast.sol";
 +import { HyperdriveMathMock } from "../helpers/HyperdriveMathMock.sol";
  
  /// @author DELV
  /// @title HyperdriveLP
-@@ -148,7 +149,7 @@
+@@ -175,7 +176,7 @@
                      ),
                      shortBaseVolume: _marketState.shortBaseVolume
                  });
 -            uint256 startingPresentValue = HyperdriveMath.calculatePresentValue(
-+            uint256 startingPresentValue = HyperdriveMathMock.calculatePresentValue(
++            uint256 startingPresentValue = HyperdriveMathMock.calculatePresentValue( // 444 HyperdriveMathMock
                  params
              );
  
-@@ -157,7 +158,7 @@
+@@ -184,7 +185,7 @@
              _updateLiquidity(int256(shares));
              params.shareReserves = _marketState.shareReserves;
              params.bondReserves = _marketState.bondReserves;
 -            endingPresentValue = HyperdriveMath.calculatePresentValue(params);
-+            endingPresentValue = HyperdriveMathMock.calculatePresentValue(params);
++            endingPresentValue = HyperdriveMathMock.calculatePresentValue(params); // 444 HyperdriveMathMock
  
              // The LP shares minted to the LP is derived by solving for the
              // change in LP shares that preserves the ratio of present value to
-@@ -397,7 +398,7 @@
+@@ -438,7 +439,7 @@
                  ),
                  shortBaseVolume: _marketState.shortBaseVolume
              });
 -        uint256 startingPresentValue = HyperdriveMath.calculatePresentValue(
-+        uint256 startingPresentValue = HyperdriveMathMock.calculatePresentValue(
++        uint256 startingPresentValue = HyperdriveMathMock.calculatePresentValue( // 444 HyperdriveMathMock
              params
          );
  
-@@ -418,7 +419,7 @@
+@@ -474,7 +475,7 @@
          _updateLiquidity(-int256(shareProceeds));
          params.shareReserves = _marketState.shareReserves;
          params.bondReserves = _marketState.bondReserves;
 -        uint256 endingPresentValue = HyperdriveMath.calculatePresentValue(
-+        uint256 endingPresentValue = HyperdriveMathMock.calculatePresentValue(
++        uint256 endingPresentValue = HyperdriveMathMock.calculatePresentValue( // 444 HyperdriveMathMock
              params
          );
  
-@@ -462,7 +463,7 @@
+@@ -518,7 +519,7 @@
          uint256 _withdrawalSharesOutstanding,
          uint256 _sharePrice
      ) internal {
 -        uint256 presentValue = HyperdriveMath.calculatePresentValue(
-+        uint256 presentValue = HyperdriveMathMock.calculatePresentValue(
++        uint256 presentValue = HyperdriveMathMock.calculatePresentValue( // 444 HyperdriveMathMock
              HyperdriveMath.PresentValueParams({
                  shareReserves: _marketState.shareReserves,
                  bondReserves: _marketState.bondReserves,
---- ../contracts/src/HyperdriveShort.sol	2023-06-15 01:13:33
-+++ 	2023-06-22 10:55:29
-@@ -1,13 +1,14 @@
- // SPDX-License-Identifier: Apache-2.0
+--- ../contracts/src/HyperdriveShort.sol	2023-07-13 17:56:43
++++ 	2023-07-13 18:57:37
+@@ -2,12 +2,13 @@
  pragma solidity 0.8.19;
  
--import { SafeCast } from "./libraries/SafeCast.sol";
-+import { SafeCast } from "../../contracts/src/libraries/SafeCast.sol";
  import { HyperdriveLP } from "./HyperdriveLP.sol";
+-import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 -import { AssetId } from "./libraries/AssetId.sol";
--import { Errors } from "./libraries/Errors.sol";
 -import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 -import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
+-import { SafeCast } from "./libraries/SafeCast.sol";
 -import { YieldSpaceMath } from "./libraries/YieldSpaceMath.sol";
++import { IHyperdrive } from "../../contracts/src/interfaces/IHyperdrive.sol";
 +import { AssetId } from "../../contracts/src/libraries/AssetId.sol";
-+import { Errors } from "../../contracts/src/libraries/Errors.sol";
 +import { FixedPointMath } from "../../contracts/src/libraries/FixedPointMath.sol";
 +import { HyperdriveMath } from "../../contracts/src/libraries/HyperdriveMath.sol";
++import { SafeCast } from "../../contracts/src/libraries/SafeCast.sol";
 +import { YieldSpaceMath } from "../../contracts/src/libraries/YieldSpaceMath.sol";
 +import { HyperdriveFeeMath } from "../helpers/HyperdriveFeeMath.sol";
  
@@ -190,76 +179,102 @@
      using FixedPointMath for uint256;
      using SafeCast for uint256;
  
-@@ -421,7 +422,15 @@
+@@ -421,22 +422,31 @@
          );
+ 
          // Add the spot price to the oracle if an oracle update is required
-         recordPrice(spotPrice);
--
+-        recordPrice(spotPrice);
++        // recordPrice(spotPrice);
+ 
+         // Calculate the fees charged to the user (totalCurveFe) and the portion of those
+         // fees that are paid to governance (governanceCurveFee).
+-        uint256 totalCurveFee;
 +        HDFee memory fee = MockCalculateFeesOutGivenBondsIn(_bondAmount, _timeRemaining, spotPrice, _sharePrice);
-+        (
+         (
+-            totalCurveFee, // there is no flat fee on opening shorts
 +            uint256 totalCurveFee,
-+            ,
+             ,
+-            totalGovernanceFee
+-        ) = _calculateFeesOutGivenBondsIn(
+-            _bondAmount,
+-            _timeRemaining,
+-            spotPrice,
+-            _sharePrice
+-        );
 +            uint256 governanceCurveFee,
 +            uint256 governanceFlatFee
 +        ) = destructHDFee(fee);
 +        totalGovernanceFee = governanceCurveFee + governanceFlatFee;
-+        /*
-         uint256 totalCurveFee;
-         (
-             totalCurveFee, // there is no flat fee on opening shorts
-@@ -432,7 +441,7 @@
-             _timeRemaining,
-             spotPrice,
-             _sharePrice
--        );
-+        );*/
-         shareReservesDelta -= totalCurveFee;
-         return (shareReservesDelta, totalGovernanceFee);
-     }
-@@ -492,17 +501,25 @@
-         // Record an oracle update
-         recordPrice(spotPrice);
+         
++        // uint256 totalCurveFee;
++        // (
++        //     totalCurveFee, // there is no flat fee on opening shorts
++        //     ,
++        //     totalGovernanceFee
++        // ) = _calculateFeesOutGivenBondsIn(
++        //     _bondAmount,
++        //     _timeRemaining,
++        //     spotPrice,
++        //     _sharePrice
++        // );
++
+         // Remove the curve fee from the amount of shares to remove from the shareReserves.
+         // We do this bc the shareReservesDelta represents how many shares to remove
+         // from the shareReserves.  Making the shareReservesDelta smaller pays out the
+@@ -499,22 +509,30 @@
+             : FixedPointMath.ONE_18;
  
+         // Record an oracle update
+-        recordPrice(spotPrice);
++        // recordPrice(spotPrice);
+ 
+         // Calculate the fees charged to the user (totalCurveFee and totalFlatFee)
+         // and the portion of those fees that are paid to governance
+         // (governanceCurveFee and governanceFlatFee).
 +        HDFee memory fee = MockCalculateFeesInGivenBondsOut(_bondAmount, timeRemaining, spotPrice, _sharePrice);
          (
              uint256 totalCurveFee,
              uint256 totalFlatFee,
              uint256 governanceCurveFee,
              uint256 governanceFlatFee
-+        ) = destructHDFee(fee);
-+        /*
-+        (
-+            uint256 totalCurveFee,
-+            uint256 totalFlatFee,
-+            uint256 governanceCurveFee,
-+            uint256 governanceFlatFee
-         ) = _calculateFeesInGivenBondsOut(
-                 _bondAmount, // amountOut
-                 timeRemaining,
-                 spotPrice,
-                 _sharePrice
+-        ) = _calculateFeesInGivenBondsOut(
+-                _bondAmount,
+-                timeRemaining,
+-                spotPrice,
+-                _sharePrice
 -            );
-+            );*/
-         shareReservesDelta += totalCurveFee - governanceCurveFee;
-         sharePayment += totalCurveFee + totalFlatFee;
++        ) = destructHDFee(fee);
++        
++        // (
++        //     uint256 totalCurveFee,
++        //     uint256 totalFlatFee,
++        //     uint256 governanceCurveFee,
++        //     uint256 governanceFlatFee
++        // ) = _calculateFeesInGivenBondsOut(
++        //         _bondAmount,
++        //         timeRemaining,
++        //         spotPrice,
++        //         _sharePrice
++        //     );
  
---- ../contracts/src/HyperdriveLong.sol	2023-07-04 15:40:25
-+++ 	2023-07-10 10:59:00
-@@ -1,12 +1,13 @@
- // SPDX-License-Identifier: Apache-2.0
+         // Add the total curve fee minus the governance curve fee to the amount that will
+         // be added to the share reserves. This ensures that the LPs are credited with the
+--- ../contracts/src/HyperdriveLong.sol	2023-07-13 17:56:43
++++ 	2023-07-13 18:37:06
+@@ -2,11 +2,12 @@
  pragma solidity 0.8.19;
  
--import { SafeCast } from "./libraries/SafeCast.sol";
-+import { SafeCast } from "../../contracts/src/libraries/SafeCast.sol";
  import { HyperdriveLP } from "./HyperdriveLP.sol";
+-import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 -import { AssetId } from "./libraries/AssetId.sol";
--import { Errors } from "./libraries/Errors.sol";
 -import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 -import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
+-import { SafeCast } from "./libraries/SafeCast.sol";
++import { IHyperdrive } from "../../contracts/src/interfaces/IHyperdrive.sol";
 +import { AssetId } from "../../contracts/src/libraries/AssetId.sol";
-+import { Errors } from "../../contracts/src/libraries/Errors.sol";
 +import { FixedPointMath } from "../../contracts/src/libraries/FixedPointMath.sol";
 +import { HyperdriveMath } from "../../contracts/src/libraries/HyperdriveMath.sol";
++import { SafeCast } from "../../contracts/src/libraries/SafeCast.sol";
 +import { HyperdriveFeeMath } from "../helpers/HyperdriveFeeMath.sol";
  
  /// @author DELV
@@ -273,7 +288,7 @@
      using FixedPointMath for uint256;
      using SafeCast for uint256;
  
-@@ -384,8 +385,15 @@
+@@ -381,18 +382,25 @@
          );
  
          // Record an oracle update
@@ -286,102 +301,128 @@
 +             uint256 governanceCurveFee,
  
 +        ) = destructHDFee(fee);
-+        /*
-         (
-             uint256 totalCurveFee,
-             uint256 governanceCurveFee
-@@ -395,6 +403,7 @@
-                 spotPrice,
-                 _sharePrice
-             );
-+        */
-         bondProceeds = bondReservesDelta - totalCurveFee;
-         bondReservesDelta -= totalCurveFee - governanceCurveFee;
- 
-@@ -474,7 +483,8 @@
- 
-         uint256 totalCurveFee;
-         uint256 totalFlatFee;
++
+         // Calculate the fees charged to the user (totalCurveFee) and the portion of those
+         // fees that are paid to governance (governanceCurveFee).
 -        (
-+        HDFee memory fee = MockCalculateFeesOutGivenBondsIn(_bondAmount, timeRemaining, spotPrice, _sharePrice);
-+        /*(
-             totalCurveFee,
-             totalFlatFee,
-             totalGovernanceFee
-@@ -483,7 +493,9 @@
-             timeRemaining,
-             spotPrice,
-             _sharePrice
--        );
-+        );*/
-+        (totalCurveFee, totalFlatFee, ,) = destructHDFee(fee);
-+        totalGovernanceFee = totalCurveFee.add(totalFlatFee).mulDown(_governanceFee);
-         shareReservesDelta -= totalCurveFee;
-         shareProceeds -= totalCurveFee + totalFlatFee;
+-            uint256 totalCurveFee, // bonds
+-            uint256 governanceCurveFee // base
+-        ) = _calculateFeesOutGivenSharesIn(
+-                _shareAmount,
+-                spotPrice,
+-                _sharePrice
+-            );
++        // (
++        //     uint256 totalCurveFee, // bonds
++        //     uint256 governanceCurveFee // base
++        // ) = _calculateFeesOutGivenSharesIn(
++        //         _shareAmount,
++        //         spotPrice,
++        //         _sharePrice
++        //     );
  
---- ../contracts/src/token/ForwarderFactory.sol	2023-06-15 01:13:33
-+++ 	2023-06-22 10:55:29
-@@ -1,9 +1,9 @@
- // SPDX-License-Identifier: Apache-2.0
- pragma solidity 0.8.19;
+         // Calculate the number of bonds the trader receives.
+         // This is the amount of bonds the trader receives minus the fees.
+@@ -495,7 +503,7 @@
+             : FixedPointMath.ONE_18;
  
+         // Record an oracle update
+-        recordPrice(spotPrice);
++        // recordPrice(spotPrice);
+ 
+         // Calculate the fees charged to the user (totalCurveFe, totalFlatFee) and the portion of those
+         // fees that are paid to governance (governanceCurveFee).
+--- ../contracts/src/token/ForwarderFactory.sol	2023-07-13 17:56:43
++++ 	1970-01-01 01:00:00
+@@ -1,79 +0,0 @@
+-// SPDX-License-Identifier: Apache-2.0
+-pragma solidity 0.8.19;
+-
 -import { IForwarderFactory } from "../interfaces/IForwarderFactory.sol";
 -import { IMultiToken } from "../interfaces/IMultiToken.sol";
 -import { ERC20Forwarder } from "./ERC20Forwarder.sol";
-+import { IForwarderFactory } from "../../contracts/src/interfaces/IForwarderFactory.sol";
-+import { IMultiToken } from "../../contracts/src/interfaces/IMultiToken.sol";
-+import { ERC20Forwarder } from "../../contracts/src/token/ERC20Forwarder.sol";
- 
- /// @author DELV
- /// @title ForwarderFactory
-@@ -23,10 +23,11 @@
-     uint256 private _tokenId = 1;
- 
-     // For reference
+-
+-/// @author DELV
+-/// @title ForwarderFactory
+-/// @notice Our MultiToken contract consists of fungible sub-tokens that
+-///         are similar to ERC20 tokens. In order to support ERC20 compatibility
+-///         we can deploy interfaces which are ERC20s.
+-/// @dev This factory deploys them using create2 so that the multi token can do
+-///      cheap verification of the interfaces before they access sensitive
+-///      functions.
+-/// @custom:disclaimer The language used in this code is for coding convenience
+-///                    only, and is not intended to, and does not, have any
+-///                    particular legal or regulatory significance.
+-contract ForwarderFactory is IForwarderFactory {
+-    // The transient state variables used in deployment
+-    // Note - It saves us a bit of gas to not fully zero them at any point
+-    IMultiToken private _token = IMultiToken(address(1));
+-    uint256 private _tokenId = 1;
+-
+-    // For reference
 -    bytes32 public constant ERC20LINK_HASH =
 -        keccak256(type(ERC20Forwarder).creationCode);
-+    bytes32 public immutable ERC20LINK_HASH;
- 
+-
 -    constructor() {} // solhint-disable-line no-empty-blocks
-+    constructor() {
-+        ERC20LINK_HASH = keccak256(type(ERC20Forwarder).creationCode);
-+    } // solhint-disable-line no-empty-blocks
- 
-     /// @notice Uses create2 to deploy a forwarder at a predictable address as part of
-     ///         our ERC20 multitoken implementation.
-@@ -42,17 +43,19 @@
-         _tokenId = tokenId;
-         _token = token;
-         // The salt is the _tokenId hashed with the multi token
+-
+-    /// @notice Uses create2 to deploy a forwarder at a predictable address as part of
+-    ///         our ERC20 multitoken implementation.
+-    /// @param token The multitoken which the forwarder should link to
+-    /// @param tokenId The id of the sub token from the multitoken which we are creating
+-    ///                 an interface for.
+-    /// @return returns the address of the deployed forwarder
+-    function create(
+-        IMultiToken token,
+-        uint256 tokenId
+-    ) external returns (ERC20Forwarder) {
+-        // Set the transient state variables before deploy
+-        _tokenId = tokenId;
+-        _token = token;
+-        // The salt is the _tokenId hashed with the multi token
 -        bytes32 salt = keccak256(abi.encode(token, tokenId));
-+        // bytes32 salt = keccak256(abi.encode(token, tokenId));
-         // Deploy using create2 with that salt
+-        // Deploy using create2 with that salt
 -        ERC20Forwarder deployed = new ERC20Forwarder{ salt: salt }();
-+        // ERC20Forwarder deployed = new ERC20Forwarder{ salt: salt }();
-         // As a consistency check we check that this is in the right address
--        assert(address(deployed) == getForwarder(token, tokenId));
-+        assert(address(tmp) == getForwarder(token, tokenId));
-         // Reset the transient state
-         _token = IMultiToken(address(1));
-         _tokenId = 1;
-         // return the deployed forwarder
+-        // As a consistency check we check that this is in the right address
+-        require(address(deployed) == getForwarder(token, tokenId));
+-        // Reset the transient state
+-        _token = IMultiToken(address(1));
+-        _tokenId = 1;
+-        // return the deployed forwarder
 -        return (deployed);
-+        return (tmp);
-     }
-+
-+    ERC20Forwarder tmp;
- 
-     /// @notice Returns the transient storage of this contract
-     /// @return Returns the stored multitoken address and the sub token id
---- ../contracts/src/libraries/AssetId.sol	2023-06-22 10:21:24
-+++ 	2023-06-22 10:55:29
+-    }
+-
+-    /// @notice Returns the transient storage of this contract
+-    /// @return Returns the stored multitoken address and the sub token id
+-    function getDeployDetails() external view returns (IMultiToken, uint256) {
+-        return (_token, _tokenId);
+-    }
+-
+-    /// @notice Helper to calculate expected forwarder contract addresses
+-    /// @param token The multitoken which the forwarder should link to
+-    /// @param tokenId The id of the sub token from the multitoken
+-    /// @return The expected address of the forwarder
+-    function getForwarder(
+-        IMultiToken token,
+-        uint256 tokenId
+-    ) public view returns (address) {
+-        // Get the salt and hash to predict the address
+-        bytes32 salt = keccak256(abi.encode(token, tokenId));
+-        bytes32 addressBytes = keccak256(
+-            abi.encodePacked(bytes1(0xff), address(this), salt, ERC20LINK_HASH)
+-        );
+-        // Beautiful type safety from the solidity language
+-        return address(uint160(uint256(addressBytes)));
+-    }
+-}
+--- ../contracts/src/libraries/AssetId.sol	2023-07-13 17:56:43
++++ 	2023-07-13 18:17:35
 @@ -1,8 +1,8 @@
  // SPDX-License-Identifier: Apache-2.0
  pragma solidity 0.8.19;
  
--import { Errors } from "./Errors.sol";
+-import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 -import { FixedPointMath } from "./FixedPointMath.sol";
-+import { Errors } from "../../contracts/src/libraries/Errors.sol";
++import { IHyperdrive } from "../../contracts/src/interfaces/IHyperdrive.sol";
 +import { FixedPointMath } from "../../contracts/src/libraries/FixedPointMath.sol";
  
  /// @author DELV

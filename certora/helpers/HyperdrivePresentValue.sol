@@ -16,6 +16,7 @@ abstract contract HyperdrivePresentValue is HyperdriveStorage {
                 bondReserves: _marketState.bondReserves,
                 sharePrice: _sharePrice,
                 initialSharePrice: _initialSharePrice,
+                minimumShareReserves: _minimumShareReserves,
                 timeStretch: _timeStretch,
                 longsOutstanding: _marketState.longsOutstanding,
                 longAverageTimeRemaining: calculateTimeRemaining(
