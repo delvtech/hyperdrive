@@ -143,15 +143,6 @@ contract ER4626HyperdriveTest is HyperdriveTest {
         assertEq(amountWithdrawn, 3e18);
     }
 
-    function test_erc4626_pricePerShare() external {
-        // First we add some shares and interest
-        vm.startPrank(alice);
-        dai.transfer(address(pool), 2e18);
-
-        uint256 price = mockHyperdrive.pricePerShare();
-        assertEq(price, 1.2e18);
-    }
-
     function test_erc4626_testDeploy() external {
         vm.startPrank(alice);
         uint256 apr = 0.01e18; // 1% apr
@@ -195,6 +186,46 @@ contract ER4626HyperdriveTest is HyperdriveTest {
             config.minimumShareReserves,
             new bytes32[](0),
             0
+        );
+    }
+
+    function test_erc4626_sharePrice() public {
+        // This test makes sure that the ERC4626DataProvider function returns
+        // the correct share price.
+        vm.startPrank(alice);
+        uint256 apr = 0.01e18; // 1% apr
+        uint256 contribution = 2_500e18;
+        IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
+            baseToken: dai,
+            initialSharePrice: FixedPointMath.ONE_18,
+            minimumShareReserves: FixedPointMath.ONE_18,
+            positionDuration: 365 days,
+            checkpointDuration: 1 days,
+            timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
+            governance: alice,
+            feeCollector: bob,
+            fees: IHyperdrive.Fees(0, 0, 0),
+            oracleSize: 2,
+            updateGap: 0
+        });
+        dai.approve(address(factory), type(uint256).max);
+        hyperdrive = factory.deployAndInitialize(
+            config,
+            new bytes32[](0),
+            contribution,
+            apr
+        );
+
+        // Ensure the share price is 1 after initialization.
+        assertEq(hyperdrive.getPoolInfo().sharePrice, 1e18);
+
+        // Simulate interest accrual by sending funds to the pool.
+        dai.transfer(address(pool), contribution);
+
+        // Ensure that the share price calculations are correct when share price is not equal to 1e18.
+        assertEq(
+            hyperdrive.getPoolInfo().sharePrice,
+            (pool.totalAssets()).divDown(pool.totalSupply())
         );
     }
 
