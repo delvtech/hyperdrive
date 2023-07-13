@@ -1,6 +1,6 @@
 ---
 name: Crash Report
-about: Describe this issue template's purpose here.
+about: A template for submitting crash reports related to the hyperdrive protocol.
 title: "[CRASH REPORT]"
 labels: ''
 assignees: ''
@@ -55,6 +55,7 @@ assignees: ''
 - Hyperdrive Version: [Specify the release version, i.e. 0.0.4.]
 - Elf Simulations Version: [Specify the release version, i.e. 0.0.4.]
 - Infra Version: [Specify the release version, i.e. 0.0.4.]
+- Cloud Environment: [If applicable, which EC2 instance and docker containers]
 - Additional Information: [Include any additional information about your environment that may be relevant, such as device type, software versions, etc.]
 
 
