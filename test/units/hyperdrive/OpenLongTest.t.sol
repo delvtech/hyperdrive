@@ -13,8 +13,8 @@ import { Lib } from "../../utils/Lib.sol";
 
 contract OpenLongTest is HyperdriveTest {
     using FixedPointMath for uint256;
-    using Lib for *;
     using HyperdriveUtils for IHyperdrive;
+    using Lib for *;
 
     function setUp() public override {
         super.setUp();
@@ -339,11 +339,20 @@ contract OpenLongTest is HyperdriveTest {
     ) internal {
         uint256 checkpointTime = maturityTime - POSITION_DURATION;
 
-        // Verify the base transfers.
+        // Verify that base was transferred from the trader to Hyperdrive.
         assertEq(baseToken.balanceOf(user), 0);
         assertEq(
             baseToken.balanceOf(address(hyperdrive)),
             contribution + baseAmount
+        );
+
+        // Verify that the trader received the correct amount of bonds.
+        assertEq(
+            hyperdrive.balanceOf(
+                AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
+                user
+            ),
+            bondAmount
         );
 
         // Verify that opening a long doesn't make the APR go up.
@@ -357,7 +366,6 @@ contract OpenLongTest is HyperdriveTest {
         // Ensure that the state changes to the share reserves were applied
         // correctly and that the other pieces of state were left untouched.
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
-
         assertEq(
             poolInfoAfter.shareReserves,
             poolInfoBefore.shareReserves +

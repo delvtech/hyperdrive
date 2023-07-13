@@ -30,6 +30,17 @@ library Lib {
         return filteredLogs;
     }
 
+    /// @dev Encodes a reason into a string error. This is useful for verifying
+    ///      string errors in low-level calls.
+    /// @param reason The reason to encode.
+    /// @return The encoded string error.
+    function toError(
+        string memory reason
+    ) internal pure returns (bytes memory) {
+        return
+            abi.encodeWithSelector(bytes4(keccak256("Error(string)")), reason);
+    }
+
     /// @dev Converts a signed integer to a string with a specified amount of
     ///      decimals. In the event that the integer doesn't have any digits to
     ///      the left of the decimal place, zeros will be filled in.
