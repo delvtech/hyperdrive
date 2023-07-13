@@ -8,14 +8,13 @@ import { DsrHyperdriveDataProvider } from "contracts/src/instances/DsrHyperdrive
 import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { DsrManager } from "contracts/test/MockDsrHyperdrive.sol";
 import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../utils/HyperdriveUtils.sol";
 
-contract HyperdriveDSRTest is HyperdriveTest {
+contract HyperdriveDsrTest is HyperdriveTest {
     using FixedPointMath for *;
 
     DsrHyperdriveFactory factory;
@@ -24,6 +23,8 @@ contract HyperdriveDSRTest is HyperdriveTest {
         DsrManager(address(0x373238337Bfe1146fb49989fc222523f83081dDb));
 
     function setUp() public override __mainnet_fork(16_685_972) {
+        super.setUp();
+
         vm.startPrank(deployer);
 
         // Deploy the DsrHyperdrive deployer and factory.
@@ -45,16 +46,9 @@ contract HyperdriveDSRTest is HyperdriveTest {
             address(manager)
         );
 
-        // Set up DAI balances for Alice and Bob.
+        // Set up DAI balances for Alice.
         address daiWhale = 0x075e72a5eDf65F0A5f44699c7654C1a76941Ddc8;
         whaleTransfer(daiWhale, dai, alice);
-        vm.stopPrank();
-        vm.startPrank(alice);
-        dai.approve(address(hyperdrive), type(uint256).max);
-        vm.stopPrank();
-        vm.startPrank(bob);
-        dai.approve(address(hyperdrive), type(uint256).max);
-        vm.stopPrank();
 
         // Start recording event logs.
         vm.recordLogs();
@@ -72,6 +66,7 @@ contract HyperdriveDSRTest is HyperdriveTest {
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: dai,
             initialSharePrice: FixedPointMath.ONE_18,
+            minimumShareReserves: 10e18,
             positionDuration: 365 days,
             checkpointDuration: 1 days,
             timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
@@ -88,15 +83,14 @@ contract HyperdriveDSRTest is HyperdriveTest {
             apr
         );
 
-        // The initial price per share is one so we should have that the
-        // shares in the alice account are 1
-        uint256 createdShares = hyperdrive.balanceOf(
-            AssetId._LP_ASSET_ID,
-            alice
+        // The initial price per share is one so the LP shares will initially
+        // be worth one base. Alice should receive LP shares equaling her
+        // contribution minus the shares that she set aside for the minimum
+        // share reserves and the zero address's initial LP contribution.
+        assertEq(
+            hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
+            contribution - 2 * config.minimumShareReserves
         );
-
-        // lp shares should equal number of shares reserves initialized with
-        assertEq(createdShares, 2500e18);
 
         // Verify that the correct events were emitted.
         verifyFactoryEvents(
@@ -104,7 +98,9 @@ contract HyperdriveDSRTest is HyperdriveTest {
             alice,
             contribution,
             apr,
-            new bytes32[](0)
+            config.minimumShareReserves,
+            new bytes32[](0),
+            0
         );
     }
 }

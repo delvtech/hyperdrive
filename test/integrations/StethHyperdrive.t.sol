@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import { stdStorage, StdStorage } from "forge-std/Test.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { StethHyperdriveDeployer } from "contracts/src/factory/StethHyperdriveDeployer.sol";
@@ -10,7 +11,6 @@ import { StethHyperdriveDataProvider } from "contracts/src/instances/StethHyperd
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { ILido } from "contracts/src/interfaces/ILido.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
@@ -20,6 +20,7 @@ import { Lib } from "test/utils/Lib.sol";
 
 contract StethHyperdriveTest is HyperdriveTest {
     using FixedPointMath for uint256;
+    using stdStorage for StdStorage;
     using Lib for *;
 
     uint256 internal constant FIXED_RATE = 0.05e18;
@@ -68,6 +69,7 @@ contract StethHyperdriveTest is HyperdriveTest {
             initialSharePrice: LIDO.getTotalPooledEther().divDown(
                 LIDO.getTotalShares()
             ),
+            minimumShareReserves: 1e15,
             positionDuration: POSITION_DURATION,
             checkpointDuration: CHECKPOINT_DURATION,
             timeStretch: HyperdriveUtils.calculateTimeStretch(0.05e18),
@@ -85,10 +87,15 @@ contract StethHyperdriveTest is HyperdriveTest {
             FIXED_RATE
         );
 
-        // Ensure that Alice has the correct amount of LP shares.
+        // Ensure that Bob received the correct amount of LP tokens. She should
+        // receive LP shares totaling the amount of shares that she contributed
+        // minus the shares set aside for the minimum share reserves and the
+        // zero address's initial LP contribution.
         assertApproxEqAbs(
             hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
-            contribution.divDown(config.initialSharePrice),
+            contribution.divDown(config.initialSharePrice) -
+                2 *
+                config.minimumShareReserves,
             1e5
         );
 
@@ -113,6 +120,7 @@ contract StethHyperdriveTest is HyperdriveTest {
             initialSharePrice: LIDO.getTotalPooledEther().divDown(
                 LIDO.getTotalShares()
             ),
+            minimumShareReserves: 1e15,
             positionDuration: POSITION_DURATION,
             checkpointDuration: CHECKPOINT_DURATION,
             timeStretch: HyperdriveUtils.calculateTimeStretch(0.05e18),
@@ -130,17 +138,30 @@ contract StethHyperdriveTest is HyperdriveTest {
             FIXED_RATE
         );
 
+        // Ensure that Bob received the correct amount of LP tokens. He should
+        // receive LP shares totaling the amount of shares that he contributed
+        // minus the shares set aside for the minimum share reserves and the
+        // zero address's initial LP contribution.
+        assertApproxEqAbs(
+            hyperdrive.balanceOf(AssetId._LP_ASSET_ID, bob),
+            contribution.divDown(config.initialSharePrice) -
+                2 *
+                config.minimumShareReserves,
+            1e5
+        );
+
         // Ensure that the share reserves and LP total supply are equal and correct.
-        assertEq(
+        assertApproxEqAbs(
             hyperdrive.getPoolInfo().shareReserves,
             contribution.mulDivDown(
                 LIDO.getTotalShares(),
                 LIDO.getTotalPooledEther()
-            )
+            ),
+            1
         );
         assertEq(
             hyperdrive.getPoolInfo().lpTotalSupply,
-            hyperdrive.getPoolInfo().shareReserves
+            hyperdrive.getPoolInfo().shareReserves - config.minimumShareReserves
         );
 
         // Verify that the correct events were emitted.
@@ -149,7 +170,9 @@ contract StethHyperdriveTest is HyperdriveTest {
             bob,
             contribution,
             FIXED_RATE,
-            new bytes32[](0)
+            config.minimumShareReserves,
+            new bytes32[](0),
+            1e5 // NOTE: We need some tolerance since stETH uses mulDivDown for share calculations.
         );
     }
 
@@ -212,10 +235,10 @@ contract StethHyperdriveTest is HyperdriveTest {
 
     function test_open_long_failures() external {
         // Too little eth
-        vm.expectRevert(Errors.TransferFailed.selector);
+        vm.expectRevert(IHyperdrive.TransferFailed.selector);
         hyperdrive.openLong{ value: 1e18 - 1 }(1e18, 0, bob, true);
         // Paying eth to the steth flow
-        vm.expectRevert(Errors.NotPayable.selector);
+        vm.expectRevert(IHyperdrive.NotPayable.selector);
         hyperdrive.openLong{ value: 1 }(1e18, 0, bob, false);
     }
 
@@ -260,7 +283,7 @@ contract StethHyperdriveTest is HyperdriveTest {
         // fails since ETH isn't supported as a withdrawal asset.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(Errors.UnsupportedToken.selector);
+        vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
         hyperdrive.closeLong(maturityTime, longAmount, 0, bob, true);
     }
 
@@ -297,7 +320,7 @@ contract StethHyperdriveTest is HyperdriveTest {
 
     /// Short ///
 
-    function test_open_short_with_ETH(uint256 shortAmount) external {
+    function test_open_short_with_ETH() external {
         // Get some balance information before the deposit.
         uint256 totalPooledEtherBefore = LIDO.getTotalPooledEther();
         uint256 totalSharesBefore = LIDO.getTotalShares();
@@ -305,20 +328,23 @@ contract StethHyperdriveTest is HyperdriveTest {
         AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
             address(hyperdrive)
         );
-
+        uint256 shortAmount = 0.001e18;
         // Bob opens a short by depositing ETH.
         shortAmount = shortAmount.normalizeToRange(
-            0.00001e18,
-            HyperdriveUtils.calculateMaxLong(hyperdrive)
+            0.001e18,
+            HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
+        uint256 balanceBefore = bob.balance;
+        vm.deal(bob, shortAmount);
         (, uint256 basePaid) = openShort(bob, shortAmount);
-
+        vm.deal(bob, balanceBefore - basePaid);
         // Ensure that the amount of base paid by the short is reasonable.
         uint256 realizedRate = HyperdriveUtils.calculateAPRFromRealizedPrice(
             shortAmount - basePaid,
             shortAmount,
-            POSITION_DURATION
+            1e18
         );
+
         assertGt(basePaid, 0);
         assertGe(realizedRate, FIXED_RATE);
 
@@ -346,8 +372,8 @@ contract StethHyperdriveTest is HyperdriveTest {
 
         // Bob opens a short by depositing ETH.
         shortAmount = shortAmount.normalizeToRange(
-            0.00001e18,
-            HyperdriveUtils.calculateMaxLong(hyperdrive)
+            0.001e18,
+            HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
         (, uint256 basePaid) = openShort(bob, shortAmount, false);
 
@@ -355,7 +381,7 @@ contract StethHyperdriveTest is HyperdriveTest {
         uint256 realizedRate = HyperdriveUtils.calculateAPRFromRealizedPrice(
             shortAmount - basePaid,
             shortAmount,
-            POSITION_DURATION
+            1e18
         );
         assertGt(basePaid, 0);
         assertGe(realizedRate, FIXED_RATE);
@@ -379,11 +405,13 @@ contract StethHyperdriveTest is HyperdriveTest {
     ) external {
         // Bob opens a short.
         shortAmount = shortAmount.normalizeToRange(
-            0.00001e18,
-            HyperdriveUtils.calculateMaxLong(hyperdrive)
+            0.001e18,
+            HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
-        (uint256 maturityTime, ) = openShort(bob, shortAmount);
-
+        uint256 balanceBefore = bob.balance;
+        vm.deal(bob, shortAmount);
+        (uint256 maturityTime, uint256 basePaid) = openShort(bob, shortAmount);
+        vm.deal(bob, balanceBefore - basePaid);
         // The term passes and interest accrues.
         variableRate = variableRate.normalizeToRange(0, 2.5e18);
         advanceTime(POSITION_DURATION, variableRate);
@@ -392,7 +420,7 @@ contract StethHyperdriveTest is HyperdriveTest {
         // fails since ETH isn't supported as a withdrawal asset.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(Errors.UnsupportedToken.selector);
+        vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
         hyperdrive.closeShort(maturityTime, shortAmount, 0, bob, true);
     }
 
@@ -402,10 +430,13 @@ contract StethHyperdriveTest is HyperdriveTest {
     ) external {
         // Bob opens a short.
         shortAmount = shortAmount.normalizeToRange(
-            0.00001e18,
-            HyperdriveUtils.calculateMaxLong(hyperdrive)
+            0.001e18,
+            HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
-        (uint256 maturityTime, ) = openShort(bob, shortAmount);
+        uint256 balanceBefore = bob.balance;
+        vm.deal(bob, shortAmount);
+        (uint256 maturityTime, uint256 basePaid) = openShort(bob, shortAmount);
+        vm.deal(bob, balanceBefore - basePaid);
 
         // The term passes and interest accrues.
         variableRate = variableRate.normalizeToRange(0, 2.5e18);
@@ -446,7 +477,141 @@ contract StethHyperdriveTest is HyperdriveTest {
         );
     }
 
-    /// Assertions ///
+    function test_attack_long_stEth() external {
+        // Get some balance information before the deposit.
+        LIDO.sharesOf(address(hyperdrive));
+
+        // Bob opens a long by depositing ETH.
+        uint256 basePaid = HyperdriveUtils.calculateMaxLong(hyperdrive);
+        (uint256 maturityTime, uint256 longAmount) = openLong(bob, basePaid);
+
+        // Get some balance information before the withdrawal.
+        uint256 totalPooledEtherBefore = LIDO.getTotalPooledEther();
+        uint256 totalSharesBefore = LIDO.getTotalShares();
+        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
+        AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
+            address(hyperdrive)
+        );
+
+        // Bob closes his long with stETH as the target asset.
+        uint256 baseProceeds = closeLong(bob, maturityTime, longAmount, false);
+
+        // Ensure that Lido's aggregates and the token balances were updated
+        // correctly during the trade.
+        verifyStethWithdrawal(
+            bob,
+            baseProceeds,
+            totalPooledEtherBefore,
+            totalSharesBefore,
+            bobBalancesBefore,
+            hyperdriveBalancesBefore
+        );
+    }
+
+    function test__DOSStethHyperdriveCloseLong() external {
+        //###########################################################################"
+        //#### TEST: Denial of Service when LIDO's `TotalPooledEther` decreases. ####"
+        //###########################################################################"
+
+        // Ensure that the share price is the expected value.
+        uint256 totalPooledEther = LIDO.getTotalPooledEther();
+        uint256 totalShares = LIDO.getTotalShares();
+        uint256 sharePrice = hyperdrive.getPoolInfo().sharePrice;
+        assertEq(sharePrice, totalPooledEther.divDown(totalShares));
+
+        // Ensure that the share price accurately predicts the amount of shares
+        // that will be minted for depositing a given amount of ETH. This will
+        // be an approximation since Lido uses `mulDivDown` whereas this test
+        // pre-computes the share price.
+        uint256 basePaid = HyperdriveUtils.calculateMaxLong(hyperdrive) / 10;
+        uint256 hyperdriveSharesBefore = LIDO.sharesOf(address(hyperdrive));
+
+        // Bob calls openLong()
+        (uint256 maturityTime, uint256 longAmount) = openLong(bob, basePaid);
+        // Bob paid basePaid == ", basePaid);
+        // Bob received longAmount == ", longAmount);
+        assertApproxEqAbs(
+            LIDO.sharesOf(address(hyperdrive)),
+            hyperdriveSharesBefore + basePaid.divDown(sharePrice),
+            1e4
+        );
+
+        // Get some balance information before the withdrawal.
+        uint256 totalPooledEtherBefore = LIDO.getTotalPooledEther();
+        uint256 totalSharesBefore = LIDO.getTotalShares();
+        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
+        AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
+            address(hyperdrive)
+        );
+        uint256 snapshotId = vm.snapshot();
+
+        // Taking a Snapshot of the state
+        // Bob closes his long with stETH as the target asset.
+        uint256 baseProceeds = closeLong(
+            bob,
+            maturityTime,
+            longAmount / 2,
+            false
+        );
+
+        // Ensure that Lido's aggregates and the token balances were updated
+        // correctly during the trade.
+        verifyStethWithdrawal(
+            bob,
+            baseProceeds,
+            totalPooledEtherBefore,
+            totalSharesBefore,
+            bobBalancesBefore,
+            hyperdriveBalancesBefore
+        );
+        // # Reverting to the saved state Snapshot #\n");
+        vm.revertTo(snapshotId);
+
+        // # Manipulating Lido's totalPooledEther : removing only 1e18
+        bytes32 balanceBefore = vm.load(
+            address(LIDO),
+            bytes32(
+                0xa66d35f054e68143c18f32c990ed5cb972bb68a68f500cd2dd3a16bbf3686483
+            )
+        );
+        // LIDO.CL_BALANCE_POSITION Before: ", uint(balanceBefore));
+        uint(LIDO.getTotalPooledEther());
+        hyperdrive.balanceOf(
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
+            bob
+        );
+        vm.store(
+            address(LIDO),
+            bytes32(
+                uint256(
+                    0xa66d35f054e68143c18f32c990ed5cb972bb68a68f500cd2dd3a16bbf3686483
+                )
+            ),
+            bytes32(uint256(balanceBefore) - 1e18)
+        );
+
+        // Avoid Stack too deep
+        uint256 maturityTime_ = maturityTime;
+        uint256 longAmount_ = longAmount;
+
+        vm.load(
+            address(LIDO),
+            bytes32(
+                uint256(
+                    0xa66d35f054e68143c18f32c990ed5cb972bb68a68f500cd2dd3a16bbf3686483
+                )
+            )
+        );
+
+        // Bob closes his long with stETH as the target asset.
+        hyperdrive.balanceOf(
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime_),
+            bob
+        );
+
+        // The fact that this doesn't revert means that it works
+        closeLong(bob, maturityTime_, longAmount_ / 2, false);
+    }
 
     function verifyDeposit(
         address trader,

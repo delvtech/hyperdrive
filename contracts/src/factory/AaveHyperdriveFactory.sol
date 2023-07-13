@@ -7,7 +7,6 @@ import { HyperdriveFactory } from "./HyperdriveFactory.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
 import { AaveHyperdriveDataProvider } from "../instances/AaveHyperdriveDataProvider.sol";
-import { Errors } from "../libraries/Errors.sol";
 
 /// @author DELV
 /// @title AaveHyperdriveFactory
@@ -63,7 +62,7 @@ contract AaveHyperdriveFactory is HyperdriveFactory {
         // Ensure that ether wasn't sent. This is only marked as payable to
         // satisfy the interface.
         if (msg.value > 0) {
-            revert Errors.NotPayable();
+            revert IHyperdrive.NotPayable();
         }
 
         // Encode the aToken address corresponding to the base token in the
@@ -73,7 +72,7 @@ contract AaveHyperdriveFactory is HyperdriveFactory {
             .getReserveData(address(_config.baseToken))
             .aTokenAddress;
         if (address(_config.baseToken) == address(0) || aToken == address(0)) {
-            revert Errors.InvalidToken();
+            revert IHyperdrive.InvalidToken();
         }
 
         bytes32[] memory extraData = new bytes32[](1);

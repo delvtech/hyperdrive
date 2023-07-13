@@ -369,7 +369,7 @@ library YieldSpaceMath {
     /// @param t Amount of time elapsed since term start
     /// @param c Conversion rate between base and shares
     /// @param mu Interest normalization factor for shares
-    /// @return The amount of shares the user will receive
+    /// @return result The amount of shares the user will receive
     function calculateSharesOutGivenBondsIn(
         uint256 z,
         uint256 y,
@@ -377,7 +377,7 @@ library YieldSpaceMath {
         uint256 t,
         uint256 c,
         uint256 mu
-    ) internal pure returns (uint256) {
+    ) internal pure returns (uint256 result) {
         // c/µ
         uint256 cDivMu = c.divDown(mu);
         // (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
@@ -392,9 +392,8 @@ library YieldSpaceMath {
         _z = _z.divDown(mu);
         // Δz = z - (((c / µ) * (µ * z)^(1 - t) + y^(1 - t) - (y + dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
         if (z > _z) {
-            return z - _z;
+            result = z - _z;
         }
-        return 0;
     }
 
     /// @dev Calculates the maximum amount of bonds that can be purchased with

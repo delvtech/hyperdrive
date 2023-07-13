@@ -7,7 +7,6 @@ import { HyperdriveDataProvider } from "../src/HyperdriveDataProvider.sol";
 import { IERC20 } from "../src/interfaces/IERC20.sol";
 import { IHyperdrive } from "../src/interfaces/IHyperdrive.sol";
 import { FixedPointMath } from "../src/libraries/FixedPointMath.sol";
-import { Errors } from "../src/libraries/Errors.sol";
 import { MultiTokenDataProvider } from "../src/token/MultiTokenDataProvider.sol";
 import { ERC20Mintable } from "./ERC20Mintable.sol";
 
@@ -23,6 +22,7 @@ contract MockHyperdriveTestnet is Hyperdrive {
         ERC20Mintable _baseToken,
         uint256 _initialRate,
         uint256 _initialSharePrice,
+        uint256 _minimumShareReserves,
         uint256 _positionDuration,
         uint256 _checkpointDuration,
         uint256 _timeStretch,
@@ -33,6 +33,7 @@ contract MockHyperdriveTestnet is Hyperdrive {
             IHyperdrive.PoolConfig({
                 baseToken: IERC20(address(_baseToken)),
                 initialSharePrice: _initialSharePrice,
+                minimumShareReserves: _minimumShareReserves,
                 positionDuration: _positionDuration,
                 checkpointDuration: _checkpointDuration,
                 timeStretch: _timeStretch,
@@ -71,7 +72,7 @@ contract MockHyperdriveTestnet is Hyperdrive {
             _amount
         );
         if (!success) {
-            revert Errors.TransferFailed();
+            revert IHyperdrive.TransferFailed();
         }
 
         // Update the total shares calculation.
@@ -101,8 +102,11 @@ contract MockHyperdriveTestnet is Hyperdrive {
         amountWithdrawn = _shares.mulDown(sharePrice);
         bool success = _baseToken.transfer(_destination, amountWithdrawn);
         if (!success) {
-            revert Errors.TransferFailed();
+            revert IHyperdrive.TransferFailed();
         }
+
+        // Remove shares from the total supply
+        totalShares -= _shares;
 
         return amountWithdrawn;
     }
@@ -154,6 +158,7 @@ contract MockHyperdriveDataProviderTestnet is
         ERC20Mintable _baseToken,
         uint256 _initialRate,
         uint256 _initialSharePrice,
+        uint256 _minimumShareReserves,
         uint256 _positionDuration,
         uint256 _checkpointDuration,
         uint256 _timeStretch,
@@ -164,6 +169,7 @@ contract MockHyperdriveDataProviderTestnet is
             IHyperdrive.PoolConfig({
                 baseToken: IERC20(address(_baseToken)),
                 initialSharePrice: _initialSharePrice,
+                minimumShareReserves: _minimumShareReserves,
                 positionDuration: _positionDuration,
                 checkpointDuration: _checkpointDuration,
                 timeStretch: _timeStretch,

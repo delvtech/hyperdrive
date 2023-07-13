@@ -4,7 +4,6 @@ pragma solidity 0.8.19;
 import { HyperdriveStorage } from "./HyperdriveStorage.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { AssetId } from "./libraries/AssetId.sol";
-import { Errors } from "./libraries/Errors.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { MultiTokenDataProvider } from "./token/MultiTokenDataProvider.sol";
 
@@ -68,6 +67,7 @@ abstract contract HyperdriveDataProvider is
                 IHyperdrive.PoolConfig({
                     baseToken: _baseToken,
                     initialSharePrice: _initialSharePrice,
+                    minimumShareReserves: _minimumShareReserves,
                     positionDuration: _positionDuration,
                     checkpointDuration: _checkpointDuration,
                     timeStretch: _timeStretch,
@@ -152,7 +152,7 @@ abstract contract HyperdriveDataProvider is
                 : currentIndex - 1;
         }
 
-        if (oldData.timestamp == 0) revert Errors.QueryOutOfRange();
+        if (oldData.timestamp == 0) revert IHyperdrive.QueryOutOfRange();
 
         // To get twap in period we take the increase in the sum then divide by
         // the amount of time passed

@@ -43,6 +43,7 @@ contract StethHyperdriveScript is Script {
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: WETH,
             initialSharePrice: initialSharePrice,
+            minimumShareReserves: 1e15,
             positionDuration: 365 days,
             checkpointDuration: 1 days,
             timeStretch: HyperdriveUtils.calculateTimeStretch(0.05e18),

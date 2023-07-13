@@ -41,6 +41,8 @@ contract BaseTest is Test {
     string MAINNET_RPC_URL = vm.envString("MAINNET_RPC_URL");
     string GOERLI_RPC_URL = vm.envString("GOERLI_RPC_URL");
 
+    bool isForked;
+
     constructor() {
         mainnetForkId = vm.createFork(MAINNET_RPC_URL);
         goerliForkId = vm.createFork(GOERLI_RPC_URL);
@@ -65,6 +67,7 @@ contract BaseTest is Test {
     modifier __mainnet_fork(uint256 blockNumber) {
         vm.selectFork(mainnetForkId);
         vm.rollFork(blockNumber);
+        isForked = true;
 
         _;
     }
@@ -72,6 +75,7 @@ contract BaseTest is Test {
     modifier __goerli_fork(uint256 blockNumber) {
         vm.selectFork(goerliForkId);
         vm.rollFork(blockNumber);
+        isForked = true;
 
         _;
     }

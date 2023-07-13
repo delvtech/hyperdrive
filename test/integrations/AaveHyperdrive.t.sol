@@ -8,7 +8,6 @@ import { AaveHyperdriveFactory } from "contracts/src/factory/AaveHyperdriveFacto
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
@@ -57,6 +56,7 @@ contract AaveHyperdriveTest is HyperdriveTest {
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: dai,
             initialSharePrice: FixedPointMath.ONE_18,
+            minimumShareReserves: FixedPointMath.ONE_18,
             positionDuration: 365 days,
             checkpointDuration: 1 days,
             timeStretch: FixedPointMath.ONE_18.divDown(
@@ -147,7 +147,7 @@ contract AaveHyperdriveTest is HyperdriveTest {
         assertEq(amountWithdrawn, 3e18);
 
         // Check the zero withdraw revert
-        vm.expectRevert(Errors.NoAssetsToWithdraw.selector);
+        vm.expectRevert(IHyperdrive.NoAssetsToWithdraw.selector);
         mockHyperdrive.withdraw(0, alice, false);
     }
 
@@ -172,6 +172,7 @@ contract AaveHyperdriveTest is HyperdriveTest {
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: dai,
             initialSharePrice: FixedPointMath.ONE_18,
+            minimumShareReserves: FixedPointMath.ONE_18,
             positionDuration: 365 days,
             checkpointDuration: 1 days,
             timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
@@ -189,22 +190,30 @@ contract AaveHyperdriveTest is HyperdriveTest {
             apr
         );
 
-        // The initial price per share is one so we should have that the
-        // shares in the alice account are 1
-        uint256 createdShares = hyperdrive.balanceOf(
-            AssetId._LP_ASSET_ID,
-            alice
+        // The initial price per share is one so the LP shares will initially
+        // be worth one base. Alice should receive LP shares equaling her
+        // contribution minus the shares that she set aside for the minimum
+        // share reserves and the zero address's initial LP contribution.
+        assertEq(
+            hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
+            contribution - 2 * config.minimumShareReserves
         );
-        // lp shares should equal number of share reserves initialized with
-        assertEq(createdShares, 2500e18);
 
+        // Verify that the correct events were emitted.
         bytes32[] memory aDaiEncoding = new bytes32[](1);
         aDaiEncoding[0] = bytes32(uint256(uint160(address(aDAI))));
-        // Verify that the correct events were emitted.
-        verifyFactoryEvents(factory, alice, contribution, apr, aDaiEncoding);
+        verifyFactoryEvents(
+            factory,
+            alice,
+            contribution,
+            apr,
+            config.minimumShareReserves,
+            aDaiEncoding,
+            0
+        );
 
         // Test the revert condition for eth payment
-        vm.expectRevert(Errors.NotPayable.selector);
+        vm.expectRevert(IHyperdrive.NotPayable.selector);
         hyperdrive = factory.deployAndInitialize{ value: 100 }(
             config,
             new bytes32[](0),
@@ -213,7 +222,7 @@ contract AaveHyperdriveTest is HyperdriveTest {
         );
 
         config.baseToken = IERC20(address(0));
-        vm.expectRevert(Errors.InvalidToken.selector);
+        vm.expectRevert(IHyperdrive.InvalidToken.selector);
         hyperdrive = factory.deployAndInitialize(
             config,
             new bytes32[](0),

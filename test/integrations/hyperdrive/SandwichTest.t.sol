@@ -23,6 +23,7 @@ contract SandwichTest is HyperdriveTest {
         }
         uint256 contribution = 500_000_000e18;
         uint256 lpShares = initialize(alice, apr, contribution);
+        contribution -= 2 * hyperdrive.getPoolConfig().minimumShareReserves;
 
         // Bob opens a long.
         uint256 longPaid = 50_000_000e18;

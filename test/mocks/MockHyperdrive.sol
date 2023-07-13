@@ -4,8 +4,8 @@ pragma solidity 0.8.19;
 import { ERC20PresetMinterPauser } from "openzeppelin-contracts/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
 import { Hyperdrive } from "contracts/src/Hyperdrive.sol";
 import { HyperdriveDataProvider } from "contracts/src/HyperdriveDataProvider.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
-import { Errors } from "contracts/src/libraries/Errors.sol";
 import { MultiTokenDataProvider } from "contracts/src/token/MultiTokenDataProvider.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
@@ -141,7 +141,6 @@ contract MockHyperdrive is Hyperdrive {
 
     function calculateFeesOutGivenSharesIn(
         uint256 _amountIn,
-        uint256 _amountOut,
         uint256 _spotPrice,
         uint256 sharePrice
     )
@@ -151,7 +150,6 @@ contract MockHyperdrive is Hyperdrive {
     {
         (totalCurveFee, governanceCurveFee) = _calculateFeesOutGivenSharesIn(
             _amountIn,
-            _amountOut,
             _spotPrice,
             sharePrice
         );
@@ -222,8 +220,7 @@ contract MockHyperdrive is Hyperdrive {
     // Calls Hyperdrive._calculateOpenLong
     function calculateOpenLong(
         uint256 _shareAmount,
-        uint256 _sharePrice,
-        uint256 _timeRemaining
+        uint256 _sharePrice
     )
         external
         returns (
@@ -233,7 +230,7 @@ contract MockHyperdrive is Hyperdrive {
             uint256 totalGovernanceFee
         )
     {
-        return _calculateOpenLong(_shareAmount, _sharePrice, _timeRemaining);
+        return _calculateOpenLong(_shareAmount, _sharePrice);
     }
 
     function calculateTimeRemaining(
@@ -270,11 +267,11 @@ contract MockHyperdrive is Hyperdrive {
             amount
         );
         if (!success) {
-            revert Errors.TransferFailed();
+            revert IHyperdrive.TransferFailed();
         }
         if (totalShares == 0) {
-            totalShares = amount;
-            return (amount, FixedPointMath.ONE_18);
+            totalShares = amount.divDown(_initialSharePrice);
+            return (amount, _initialSharePrice);
         } else {
             uint256 newShares = totalShares.mulDivDown(amount, assets);
             totalShares += newShares;
@@ -294,7 +291,7 @@ contract MockHyperdrive is Hyperdrive {
             : 0;
         bool success = _baseToken.transfer(destination, withdrawValue);
         if (!success) {
-            revert Errors.TransferFailed();
+            revert IHyperdrive.TransferFailed();
         }
         totalShares -= shares;
         return withdrawValue;

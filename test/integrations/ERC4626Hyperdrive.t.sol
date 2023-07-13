@@ -8,7 +8,6 @@ import { ERC4626HyperdriveFactory } from "contracts/src/factory/ERC4626Hyperdriv
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
@@ -17,7 +16,7 @@ import { MockERC4626Hyperdrive } from "../mocks/Mock4626Hyperdrive.sol";
 import { HyperdriveUtils } from "../utils/HyperdriveUtils.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 
-contract HyperdriveER4626Test is HyperdriveTest {
+contract ER4626HyperdriveTest is HyperdriveTest {
     using FixedPointMath for *;
 
     ERC4626HyperdriveFactory factory;
@@ -61,6 +60,7 @@ contract HyperdriveER4626Test is HyperdriveTest {
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: dai,
             initialSharePrice: FixedPointMath.ONE_18,
+            minimumShareReserves: FixedPointMath.ONE_18,
             positionDuration: 365 days,
             checkpointDuration: 1 days,
             timeStretch: FixedPointMath.ONE_18.divDown(
@@ -159,6 +159,7 @@ contract HyperdriveER4626Test is HyperdriveTest {
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: dai,
             initialSharePrice: FixedPointMath.ONE_18,
+            minimumShareReserves: FixedPointMath.ONE_18,
             positionDuration: 365 days,
             checkpointDuration: 1 days,
             timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
@@ -176,14 +177,14 @@ contract HyperdriveER4626Test is HyperdriveTest {
             apr
         );
 
-        // The initial price per share is one so we should have that the
-        // shares in the alice account are 1
-        uint256 createdShares = hyperdrive.balanceOf(
-            AssetId._LP_ASSET_ID,
-            alice
+        // The initial price per share is one so the LP shares will initially
+        // be worth one base. Alice should receive LP shares equaling her
+        // contribution minus the shares that she set aside for the minimum
+        // share reserves and the zero address's initial LP contribution.
+        assertEq(
+            hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
+            contribution - 2 * config.minimumShareReserves
         );
-        // lp shares should equal number of share reserves initialized with
-        assertEq(createdShares, 2500e18);
 
         // Verify that the correct events were emitted.
         verifyFactoryEvents(
@@ -191,7 +192,9 @@ contract HyperdriveER4626Test is HyperdriveTest {
             alice,
             contribution,
             apr,
-            new bytes32[](0)
+            config.minimumShareReserves,
+            new bytes32[](0),
+            0
         );
     }
 
@@ -205,16 +208,16 @@ contract HyperdriveER4626Test is HyperdriveTest {
         mockHyperdrive.sweep(IERC20(address(otherToken)));
         assertEq(otherToken.balanceOf(bob), 1e18);
 
-        vm.expectRevert(Errors.UnsupportedToken.selector);
+        vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
         mockHyperdrive.sweep(dai);
 
-        vm.expectRevert(Errors.UnsupportedToken.selector);
+        vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
         mockHyperdrive.sweep(IERC20(address(pool)));
 
         vm.stopPrank();
         vm.startPrank(alice);
 
-        vm.expectRevert(Errors.Unauthorized.selector);
+        vm.expectRevert(IHyperdrive.Unauthorized.selector);
         mockHyperdrive.sweep(IERC20(address(pool)));
 
         // We set alice to be the pauser so she can call the function now
