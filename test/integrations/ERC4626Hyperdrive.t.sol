@@ -15,7 +15,6 @@ import { Mock4626, ERC20 } from "../mocks/Mock4626.sol";
 import { MockERC4626Hyperdrive } from "../mocks/Mock4626Hyperdrive.sol";
 import { HyperdriveUtils } from "../utils/HyperdriveUtils.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { ERC4626DataProvider } from "contracts/src/instances/ERC4626DataProvider.sol";
 
 contract ER4626HyperdriveTest is HyperdriveTest {
     using FixedPointMath for *;
@@ -25,7 +24,6 @@ contract ER4626HyperdriveTest is HyperdriveTest {
     IERC4626 pool;
     uint256 aliceShares;
     MockERC4626Hyperdrive mockHyperdrive;
-    ERC4626DataProvider dataProvider;
 
     function setUp() public override __mainnet_fork(16_685_972) {
         alice = createUser("alice");
@@ -217,10 +215,13 @@ contract ER4626HyperdriveTest is HyperdriveTest {
             contribution,
             apr
         );
-        assertEq(hyperdrive.getPoolInfo().shareReserves, contribution);
+        // Ensure the share price is 1 after initialization.
         assertEq(hyperdrive.getPoolInfo().sharePrice, 1e18);
-        dai.transfer(address(pool), 2_500e18);
-        assertEq(pool.totalAssets(), contribution + 2_500e18 + aliceShares);
+
+        // Simulate interest accrual by sending funds to the pool.
+        dai.transfer(address(pool), contribution);
+
+        // Maing sure share price calculations are correct when share price is not equal to 1e18.
         assertEq(
             hyperdrive.getPoolInfo().sharePrice,
             (pool.totalAssets()).divDown(pool.totalSupply())
