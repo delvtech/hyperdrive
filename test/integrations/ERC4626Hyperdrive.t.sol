@@ -215,18 +215,18 @@ contract ER4626HyperdriveTest is HyperdriveTest {
             contribution,
             apr
         );
+
         // Ensure the share price is 1 after initialization.
         assertEq(hyperdrive.getPoolInfo().sharePrice, 1e18);
 
         // Simulate interest accrual by sending funds to the pool.
         dai.transfer(address(pool), contribution);
 
-        // Maing sure share price calculations are correct when share price is not equal to 1e18.
+        // Ensure that the share price calculations are correct when share price is not equal to 1e18.
         assertEq(
             hyperdrive.getPoolInfo().sharePrice,
             (pool.totalAssets()).divDown(pool.totalSupply())
         );
-        vm.stopPrank();
     }
 
     function test_erc4626_sweep() public {
