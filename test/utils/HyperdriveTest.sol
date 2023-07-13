@@ -240,6 +240,26 @@ contract HyperdriveTest is BaseTest {
             );
     }
 
+    function initialize(
+        address lp,
+        uint256 apr,
+        uint256 contribution,
+        bool asUnderlying
+    ) internal returns (uint256 lpShares) {
+        return
+            initialize(
+                lp,
+                apr,
+                contribution,
+                DepositOverrides({
+                    asUnderlying: asUnderlying,
+                    depositAmount: contribution,
+                    minSlippage: 0, // unused
+                    maxSlippage: type(uint256).max // unused
+                })
+            );
+    }
+
     function addLiquidity(
         address lp,
         uint256 contribution,
@@ -292,6 +312,24 @@ contract HyperdriveTest is BaseTest {
             );
     }
 
+    function addLiquidity(
+        address lp,
+        uint256 contribution,
+        bool asUnderlying
+    ) internal returns (uint256 lpShares) {
+        return
+            addLiquidity(
+                lp,
+                contribution,
+                DepositOverrides({
+                    asUnderlying: asUnderlying,
+                    depositAmount: contribution,
+                    minSlippage: 0, // min spot rate of 0
+                    maxSlippage: type(uint256).max // max spot rate of uint256 max
+                })
+            );
+    }
+
     function removeLiquidity(
         address lp,
         uint256 shares,
@@ -325,6 +363,22 @@ contract HyperdriveTest is BaseTest {
             );
     }
 
+    function removeLiquidity(
+        address lp,
+        uint256 shares,
+        bool asUnderlying
+    ) internal returns (uint256 baseProceeds, uint256 withdrawalShares) {
+        return
+            removeLiquidity(
+                lp,
+                shares,
+                WithdrawalOverrides({
+                    asUnderlying: asUnderlying,
+                    minSlippage: 0 // min base proceeds of 0
+                })
+            );
+    }
+
     function redeemWithdrawalShares(
         address lp,
         uint256 shares,
@@ -353,6 +407,22 @@ contract HyperdriveTest is BaseTest {
                 shares,
                 WithdrawalOverrides({
                     asUnderlying: true,
+                    minSlippage: 0 // min output per share of 0
+                })
+            );
+    }
+
+    function redeemWithdrawalShares(
+        address lp,
+        uint256 shares,
+        bool asUnderlying
+    ) internal returns (uint256 baseProceeds, uint256 sharesRedeemed) {
+        return
+            redeemWithdrawalShares(
+                lp,
+                shares,
+                WithdrawalOverrides({
+                    asUnderlying: asUnderlying,
                     minSlippage: 0 // min output per share of 0
                 })
             );
@@ -408,6 +478,24 @@ contract HyperdriveTest is BaseTest {
             );
     }
 
+    function openLong(
+        address trader,
+        uint256 baseAmount,
+        bool asUnderlying
+    ) internal returns (uint256 maturityTime, uint256 bondAmount) {
+        return
+            openLong(
+                trader,
+                baseAmount,
+                DepositOverrides({
+                    asUnderlying: asUnderlying,
+                    depositAmount: baseAmount,
+                    minSlippage: baseAmount, // min bond proceeds of baseAmount
+                    maxSlippage: type(uint256).max // unused
+                })
+            );
+    }
+
     function closeLong(
         address trader,
         uint256 maturityTime,
@@ -440,6 +528,24 @@ contract HyperdriveTest is BaseTest {
                 bondAmount,
                 WithdrawalOverrides({
                     asUnderlying: true,
+                    minSlippage: 0 // min base proceeds of 0
+                })
+            );
+    }
+
+    function closeLong(
+        address trader,
+        uint256 maturityTime,
+        uint256 bondAmount,
+        bool asUnderlying
+    ) internal returns (uint256 baseAmount) {
+        return
+            closeLong(
+                trader,
+                maturityTime,
+                bondAmount,
+                WithdrawalOverrides({
+                    asUnderlying: asUnderlying,
                     minSlippage: 0 // min base proceeds of 0
                 })
             );
@@ -501,6 +607,24 @@ contract HyperdriveTest is BaseTest {
             );
     }
 
+    function openShort(
+        address trader,
+        uint256 bondAmount,
+        bool asUnderlying
+    ) internal returns (uint256 maturityTime, uint256 baseAmount) {
+        return
+            openShort(
+                trader,
+                bondAmount,
+                DepositOverrides({
+                    asUnderlying: asUnderlying,
+                    depositAmount: bondAmount,
+                    minSlippage: 0, // unused
+                    maxSlippage: bondAmount // max base payment of bondAmount
+                })
+            );
+    }
+
     function closeShort(
         address trader,
         uint256 maturityTime,
@@ -533,6 +657,24 @@ contract HyperdriveTest is BaseTest {
                 bondAmount,
                 WithdrawalOverrides({
                     asUnderlying: true,
+                    minSlippage: 0 // min base proceeds of 0
+                })
+            );
+    }
+
+    function closeShort(
+        address trader,
+        uint256 maturityTime,
+        uint256 bondAmount,
+        bool asUnderlying
+    ) internal returns (uint256 baseAmount) {
+        return
+            closeShort(
+                trader,
+                maturityTime,
+                bondAmount,
+                WithdrawalOverrides({
+                    asUnderlying: asUnderlying,
                     minSlippage: 0 // min base proceeds of 0
                 })
             );
