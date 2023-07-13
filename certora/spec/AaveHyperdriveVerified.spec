@@ -139,44 +139,10 @@ invariant SumOfShortsGEOutstanding()
     sumOfShorts() >= to_mathint(stateShorts())
     {
         preserved closeShort(uint256 _maturityTime, uint256 _bondAmount, uint256 _minOutput, address _destination, bool _asUnderlying) with (env e2) {
-            require checkPointSharePrice(_maturityTime) != 0 => (sumOfLongs() >= stateLongs() + _bondAmount);
+            require checkPointSharePrice(_maturityTime) != 0 => (sumOfShorts() >= stateShorts() + _bondAmount);
         }
     }
     
-
-/// When calling openLong a long position is opened 
-/// Verified with NONDET _applyCheckpoint.
-rule openLongReallyOpensLong(env e) {
-    uint256 baseAmount;
-    uint256 minOutput;
-    address destination;
-    bool asUnderlying;
-
-    setHyperdrivePoolParams();
-
-    uint256 latestCP = require_uint256(e.block.timestamp -
-            (e.block.timestamp % checkpointDuration()));
-
-    uint256 anyCheckpoint;
-    bool myRequire = checkPointSharePrice(anyCheckpoint) != 0;
-    //bool myRequire = _checkpoints[latestCP].sharePrice != 0;
-    require(myRequire);
-
-    AaveHyperdrive.MarketState preState = marketState();
-    mathint longsOutstanding1 = preState.longsOutstanding;
-
-    uint256 bondsReceived =
-        openLong(e, baseAmount, minOutput, destination, asUnderlying);
-
-    require(bondsReceived < 1329227995784915872903807060280344576); // 2^120
-
-    AaveHyperdrive.MarketState postState = marketState();
-    mathint longsOutstanding2 = postState.longsOutstanding;
-
-    assert longsOutstanding2 >= longsOutstanding1;
-    assert longsOutstanding1 + bondsReceived == longsOutstanding2;
-}
-
 
 /// When calling openLong a long position is opened 
 /// Verified with NONDET _applyCheckpoint.

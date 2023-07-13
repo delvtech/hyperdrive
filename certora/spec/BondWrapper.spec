@@ -49,42 +49,6 @@ invariant erc20Solvency(env e)
     balanceSum == to_mathint(totalSupply(e));
 
 
-// STATUS - in progress
-// monotonicity of close(): more have, more will get
-rule closeMonoton(env e, env e2) {
-    uint256 maturityTime;
-    uint256 amount;
-    bool andBurn;
-    address destination;
-    uint256 minOutput;
-    uint256 assetIdVar;
-    
-    require mintPercent() > 10 && mintPercent() < 1000;
-    require assetIdVar == assetIdMock.encodeAssetId(e, AssetId.AssetIdPrefix.Long, maturityTime);
-    require e.block.timestamp == e2.block.timestamp;
-    require destination != symbolicHyperdrive;
-
-    uint256 amountBeforeSmall = deposits(e.msg.sender, assetIdVar);
-    uint256 amountBeforeBig = deposits(e2.msg.sender, assetIdVar);
-
-    uint256 destinationBalanceBefore = baseToken.balanceOf(e, destination);
-
-    storage initialStorage = lastStorage;
-
-    close(e, maturityTime, amountBeforeSmall, andBurn, destination, minOutput);
-
-    uint256 destinationBalanceAfterSmall = baseToken.balanceOf(e, destination);
-
-    close(e2, maturityTime, amountBeforeBig, andBurn, destination, minOutput) at initialStorage;
-
-    uint256 destinationBalanceAfterBig = baseToken.balanceOf(e, destination);
-
-    assert amountBeforeSmall < amountBeforeBig 
-            => ((destinationBalanceAfterSmall - destinationBalanceBefore) 
-                <= (destinationBalanceAfterBig - destinationBalanceBefore));
-}
-
-
 /// mint() correctly updates msg.sender’s MultiToken balance and
 /// sdestination’s BondWrapper balance won’t be decreased.
 /// STATUS - verified

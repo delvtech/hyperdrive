@@ -23,7 +23,7 @@ methods {
     function MockAssetId.encodeAssetId(AssetId.AssetIdPrefix, uint256) external returns (uint256) envfree;
     function _.recordPrice(uint256 price) internal => NONDET;
 
-    function Hyperdrive._applyCheckpoint(uint256 _checkpointTime, uint256 _sharePrice) internal returns (uint256) => NONDET;
+    // function Hyperdrive._applyCheckpoint(uint256 _checkpointTime, uint256 _sharePrice) internal returns (uint256) => NONDET; // uncomment for openLongReallyOpensLong
 }
 
 /// Aave pool aToken indices

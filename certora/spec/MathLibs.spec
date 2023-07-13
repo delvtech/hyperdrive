@@ -24,7 +24,7 @@ methods {
     function HDMath.calculateSpotPrice(uint256,uint256,uint256,uint256,uint256) external returns uint256 envfree;
     function HDMath.calculateAPRFromReserves(uint256,uint256,uint256,uint256,uint256) external returns uint256 envfree;
     //function HDMath.calculateInitialBondReserves(uint256,uint256,uint256,uint256,uint256,uint256) external returns uint256 envfree;
-    function HDMath.calculatePresentValue(MockHyperdriveMath.PresentValueParams) external returns (uint256) envfree;
+    function HDMath.calculatePresentValue(HyperdriveMath.PresentValueParams) external returns (uint256) envfree;
     function HDMath.calculateShortInterest(uint256,uint256,uint256,uint256) external returns uint256 envfree;
     function HDMath.calculateShortProceeds(uint256,uint256,uint256,uint256,uint256) external returns uint256 envfree;
 
@@ -544,7 +544,7 @@ uint256 shortAverageTimeRemaining;
 uint256 shortBaseVolume;
 */
 rule presentValueTimeContinuous() {
-    MockHyperdriveMath.PresentValueParams params;
+    HyperdriveMath.PresentValueParams params;
     uint256 z = params.shareReserves;
     require params.shortsOutstanding == 0;
     require params.longAverageTimeRemaining == 0;
