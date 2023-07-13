@@ -362,7 +362,6 @@ contract MockHyperdrive is Hyperdrive {
         // The share price is the total amount of base divided by the total
         // amount of shares.
         sharePrice = totalShares != 0 ? assets.divDown(totalShares) : 0;
-        return sharePrice;
     }
 }
 
