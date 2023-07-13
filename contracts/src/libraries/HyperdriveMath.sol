@@ -407,10 +407,15 @@ library HyperdriveMath {
                 break;
             }
             if (approximationError < 0) {
-                dz -= uint256(-approximationError).mulDivDown(
+                uint256 delta = uint256(-approximationError).mulDivDown(
                     p,
                     FixedPointMath.ONE_18 - p
                 );
+                if (dz > delta) {
+                    dz -= delta;
+                } else {
+                    dz = 0;
+                }
             } else {
                 dz += uint256(approximationError).mulDivDown(
                     p,
