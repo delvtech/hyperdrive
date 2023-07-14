@@ -335,7 +335,7 @@ contract ExtremeInputs is HyperdriveTest {
                 contribution,
                 longAmount,
                 shortAmount,
-                1
+                10
             );
             _updateLiquidity__scenario__maxShort(
                 minimumShareReserves,
@@ -343,7 +343,7 @@ contract ExtremeInputs is HyperdriveTest {
                 contribution,
                 longAmount,
                 shortAmount,
-                1
+                10
             );
         }
     }
