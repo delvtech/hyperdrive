@@ -5,6 +5,8 @@ import { HyperdriveDataProvider } from "../HyperdriveDataProvider.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
+import { HyperdriveDataProvider } from "../HyperdriveDataProvider.sol";
+import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 
 /// @author DELV
 /// @title HyperdriveFactory
