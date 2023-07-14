@@ -97,14 +97,14 @@ abstract contract HyperdriveFactory {
             maxFlatFee > FixedPointMath.ONE_18 ||
             maxGovernanceFee > FixedPointMath.ONE_18
         ) {
-            revert Errors.MaxFeeTooHigh();
+            revert IHyperdrive.MaxFeeTooHigh();
         }
         if (
             _fees.curve > maxCurveFee ||
             _fees.flat > maxFlatFee ||
             _fees.governance > maxGovernanceFee
         ) {
-            revert Errors.FeeTooHigh();
+            revert IHyperdrive.FeeTooHigh();
         }
         fees = _fees;
 
@@ -219,7 +219,7 @@ abstract contract HyperdriveFactory {
             newFees.flat > maxFlatFee ||
             newFees.governance > maxGovernanceFee
         ) {
-            revert Errors.FeeTooHigh();
+            revert IHyperdrive.FeeTooHigh();
         }
         fees = newFees;
     }

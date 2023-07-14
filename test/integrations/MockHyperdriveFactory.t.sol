@@ -8,7 +8,6 @@ import { DsrHyperdriveDataProvider } from "contracts/src/instances/DsrHyperdrive
 import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { DsrManager } from "contracts/test/MockDsrHyperdrive.sol";
@@ -36,7 +35,7 @@ contract MockHyperdriveFactoryTest is HyperdriveTest {
         vm.startPrank(alice);
 
         // Fees can not exceed maximum fees.
-        vm.expectRevert(Errors.FeeTooHigh.selector);
+        vm.expectRevert(IHyperdrive.FeeTooHigh.selector);
         factory.updateFees(IHyperdrive.Fees(2e18, 2, 4));
     }
 
@@ -44,7 +43,7 @@ contract MockHyperdriveFactoryTest is HyperdriveTest {
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
         IHyperdriveDeployer simpleDeployer;
-        vm.expectRevert(Errors.MaxFeeTooHigh.selector);
+        vm.expectRevert(IHyperdrive.MaxFeeTooHigh.selector);
         new MockHyperdriveFactory(
             alice,
             simpleDeployer,

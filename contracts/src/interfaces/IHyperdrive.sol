@@ -236,6 +236,8 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
     error Unauthorized();
     error InvalidContribution();
     error InvalidToken();
+    error FeeTooHigh();
+    error MaxFeeTooHigh();
 
     /// ######################
     /// ### ERC20Forwarder ###
