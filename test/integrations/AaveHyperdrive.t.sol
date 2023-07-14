@@ -44,6 +44,7 @@ contract AaveHyperdriveTest is HyperdriveTest {
             bob,
             bob,
             IHyperdrive.Fees(0, 0, 0),
+            IHyperdrive.Fees(0, 0, 0),
             defaults,
             address(forwarderFactory),
             forwarderFactory.ERC20LINK_HASH()

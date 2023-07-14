@@ -27,6 +27,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             bob,
             bob,
             IHyperdrive.Fees(0, 0, 0),
+            IHyperdrive.Fees(1e18, 1e18, 1e18),
             defaults,
             address(0),
             bytes32(0),
