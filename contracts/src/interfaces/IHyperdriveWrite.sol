@@ -44,7 +44,7 @@ interface IHyperdriveWrite is IMultiTokenWrite {
         uint256 _minOutput,
         address _destination,
         bool _asUnderlying
-    ) external payable returns (uint256);
+    ) external payable returns (uint256 maturityTime, uint256 bondProceeds);
 
     function closeLong(
         uint256 _maturityTime,

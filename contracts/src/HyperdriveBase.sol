@@ -199,7 +199,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     /// @return proceeds The amount of base collected.
     function collectGovernanceFee(
         bool asUnderlying
-    ) external returns (uint256 proceeds) {
+    ) external nonReentrant returns (uint256 proceeds) {
         // Must have been granted a role
         if (
             !_pausers[msg.sender] &&

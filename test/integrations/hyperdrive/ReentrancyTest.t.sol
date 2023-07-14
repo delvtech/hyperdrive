@@ -1,0 +1,340 @@
+// SPDX-License-Identifier: Apache-2.0
+pragma solidity 0.8.19;
+
+import { stdError } from "forge-std/StdError.sol";
+import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
+import { ETH } from "test/utils/Constants.sol";
+import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
+import { Lib } from "test/utils/Lib.sol";
+
+contract ReentrancyTester {
+    using Lib for *;
+
+    // State that determines the target of the reentrant call and the data that
+    // will be used.
+    address internal _target;
+    bytes internal _data;
+
+    // A boolean flag indicating whether or not the test passes.
+    bool public isSuccess;
+
+    function setTarget(address _target_) external {
+        _target = _target_;
+    }
+
+    function setData(bytes calldata _data_) external {
+        _data = _data_;
+    }
+
+    function _testReentrancy() internal {
+        (bool success, bytes memory data) = _target.call(_data);
+        if (!success && data.eq("REENTRANCY".toError())) {
+            isSuccess = true;
+        }
+    }
+}
+
+contract ReentrantEthReceiver is ReentrancyTester {
+    receive() external payable {
+        // If the target calls this token, make a reentrant call and verify
+        // that it fails with the correct error.
+        if (msg.sender == _target) {
+            _testReentrancy();
+        }
+    }
+}
+
+contract ReentrantERC20 is ERC20Mintable, ReentrancyTester {
+    function _afterTokenTransfer(address, address, uint256) internal override {
+        // If the target calls this token, make a reentrant call and verify
+        // that it fails with the correct error.
+        if (msg.sender == _target) {
+            _testReentrancy();
+        }
+    }
+}
+
+// This test suite validates that Hyperdrive's core functions cannot be reentered.
+contract ReentrancyTest is HyperdriveTest {
+    ReentrancyTester tester;
+
+    uint256 internal constant CONTRIBUTION = 1_000e18;
+    uint256 internal constant FIXED_RATE = 0.02e18;
+    uint256 internal constant BASE_PAID = 10e18;
+    uint256 internal constant BOND_AMOUNT = 10e18;
+
+    /// Test ///
+
+    function test_reentrancy() external {
+        function(address, bytes memory) internal[]
+            memory assertions = new function(address, bytes memory) internal[](
+                8
+            );
+        assertions[0] = _reenter_initialize;
+        assertions[1] = _reenter_addLiquidity;
+        assertions[2] = _reenter_removeLiquidity;
+        assertions[3] = _reenter_redeemWithdrawalShares;
+        assertions[4] = _reenter_openLong;
+        assertions[5] = _reenter_closeLong;
+        assertions[6] = _reenter_openShort;
+        assertions[7] = _reenter_closeShort;
+
+        // Verify that none of the core Hyperdrive functions can be reentered
+        // with a reentrant ERC20 token.
+        _setUpERC20();
+        bytes[] memory data = _generateReentrantData(alice);
+        for (uint256 i = 0; i < assertions.length; i++) {
+            for (uint256 j = 0; j < data.length; j++) {
+                uint256 id = vm.snapshot();
+                assertions[i](alice, data[j]);
+                vm.revertTo(id);
+            }
+        }
+
+        // Verify that none of the core Hyperdrive functions can be reentered
+        // with a reentrant ETH receiver.
+        _setUpETH();
+        data = _generateReentrantData(address(tester));
+        for (uint256 i = 0; i < assertions.length; i++) {
+            for (uint256 j = 0; j < data.length; j++) {
+                uint256 id = vm.snapshot();
+                assertions[i](address(tester), data[j]);
+                vm.revertTo(id);
+            }
+        }
+    }
+
+    /// Helpers ///
+
+    function _generateReentrantData(
+        address _trader
+    ) internal view returns (bytes[] memory) {
+        // Encode the reentrant data. We use reasonable values, but in practice,
+        // the calls will fail immediately. With this in mind, the parameters
+        // that are used aren't that important.
+        bytes[] memory data = new bytes[](8);
+        data[0] = abi.encodeCall(
+            hyperdrive.initialize,
+            (CONTRIBUTION, FIXED_RATE, _trader, true)
+        );
+        data[1] = abi.encodeCall(
+            hyperdrive.addLiquidity,
+            (CONTRIBUTION, 0, 1e18, _trader, true)
+        );
+        data[2] = abi.encodeCall(
+            hyperdrive.removeLiquidity,
+            (CONTRIBUTION, 0, _trader, true)
+        );
+        data[3] = abi.encodeCall(
+            hyperdrive.redeemWithdrawalShares,
+            (BOND_AMOUNT, 0, _trader, true)
+        );
+        data[4] = abi.encodeCall(
+            hyperdrive.openLong,
+            (BASE_PAID, 0, _trader, true)
+        );
+        data[5] = abi.encodeCall(
+            hyperdrive.closeLong,
+            (block.timestamp, BOND_AMOUNT, 0, _trader, true)
+        );
+        data[6] = abi.encodeCall(
+            hyperdrive.openShort,
+            (BOND_AMOUNT, type(uint256).max, _trader, true)
+        );
+        data[7] = abi.encodeCall(
+            hyperdrive.closeShort,
+            (block.timestamp, BOND_AMOUNT, 0, _trader, true)
+        );
+
+        return data;
+    }
+
+    function _setUpERC20() internal {
+        // Deploy a Hyperdrive term with a reentrant ERC20 as the base token.
+        vm.startPrank(deployer);
+        tester = new ReentrantERC20();
+        baseToken = ERC20Mintable(address(tester));
+        IHyperdrive.PoolConfig memory config = testConfig(0.05e18);
+        config.baseToken = IERC20(address(baseToken));
+        deploy(deployer, config);
+    }
+
+    function _setUpETH() internal {
+        // Deploy a Hyperdrive term with a reentrant ERC20 as the base token.
+        vm.startPrank(deployer);
+        tester = new ReentrantEthReceiver();
+        vm.deal(address(tester), 10_000e18);
+        baseToken = ERC20Mintable(address(ETH));
+        IHyperdrive.PoolConfig memory config = testConfig(0.05e18);
+        config.baseToken = IERC20(address(ETH));
+        deploy(deployer, config);
+    }
+
+    function _reenter_initialize(address _trader, bytes memory _data) internal {
+        // Set up the reentrant call.
+        tester.setTarget(address(hyperdrive));
+        tester.setData(_data);
+
+        // Ensure that `initialize` can't be reentered.
+        initialize(
+            _trader,
+            FIXED_RATE,
+            CONTRIBUTION,
+            // NOTE: Depositing 1 wei more than the contribution to ensure that
+            // the ETH receiver will receive a refund.
+            DepositOverrides({
+                asUnderlying: true,
+                depositAmount: CONTRIBUTION + 1,
+                minSlippage: 0,
+                maxSlippage: type(uint256).max
+            })
+        );
+        assert(tester.isSuccess());
+    }
+
+    function _reenter_addLiquidity(
+        address _trader,
+        bytes memory _data
+    ) internal {
+        // Initialize the pool.
+        initialize(_trader, FIXED_RATE, CONTRIBUTION);
+
+        // Set up the reentrant call.
+        tester.setTarget(address(hyperdrive));
+        tester.setData(_data);
+
+        // Ensure that `addLiquidity` can't be reentered.
+        addLiquidity(
+            _trader,
+            CONTRIBUTION,
+            // NOTE: Depositing 1 wei more than the contribution to ensure that
+            // the ETH receiver will receive a refund.
+            DepositOverrides({
+                asUnderlying: true,
+                depositAmount: CONTRIBUTION + 1,
+                minSlippage: 0,
+                maxSlippage: type(uint256).max
+            })
+        );
+        assert(tester.isSuccess());
+    }
+
+    function _reenter_removeLiquidity(
+        address _trader,
+        bytes memory _data
+    ) internal {
+        // Initialize the pool.
+        uint256 lpShares = initialize(_trader, FIXED_RATE, CONTRIBUTION);
+
+        // Set up the reentrant call.
+        tester.setTarget(address(hyperdrive));
+        tester.setData(_data);
+
+        // Ensure that `removeLiquidity` can't be reentered.
+        removeLiquidity(_trader, lpShares);
+        assert(tester.isSuccess());
+    }
+
+    function _reenter_redeemWithdrawalShares(
+        address _trader,
+        bytes memory _data
+    ) internal {
+        // Initialize the pool.
+        uint256 lpShares = initialize(_trader, FIXED_RATE, CONTRIBUTION);
+
+        // Bob opens a long.
+        (uint256 maturityTime, uint256 bondAmount) = openLong(bob, BASE_PAID);
+
+        // The trader removes their liquidity.
+        (, uint256 withdrawalShares) = removeLiquidity(_trader, lpShares);
+
+        // Bob closes his long.
+        closeLong(bob, maturityTime, bondAmount);
+
+        // Set up the reentrant call.
+        tester.setTarget(address(hyperdrive));
+        tester.setData(_data);
+
+        // Ensure that `redeemWithdrawalShares` can't be reentered.
+        redeemWithdrawalShares(_trader, withdrawalShares);
+        assert(tester.isSuccess());
+    }
+
+    function _reenter_openLong(address _trader, bytes memory _data) internal {
+        // Initialize the pool.
+        initialize(_trader, FIXED_RATE, CONTRIBUTION);
+
+        // Set up the reentrant call.
+        tester.setTarget(address(hyperdrive));
+        tester.setData(_data);
+
+        // Ensure that `openLong` can't be reentered.
+        openLong(
+            _trader,
+            BASE_PAID,
+            // NOTE: Depositing 1 wei more than the base payment to ensure that
+            // the ETH receiver will receive a refund.
+            DepositOverrides({
+                asUnderlying: true,
+                depositAmount: BASE_PAID + 1,
+                minSlippage: 0,
+                maxSlippage: type(uint256).max
+            })
+        );
+        assert(tester.isSuccess());
+    }
+
+    function _reenter_closeLong(address _trader, bytes memory _data) internal {
+        // Initialize the pool and open a long.
+        initialize(_trader, FIXED_RATE, CONTRIBUTION);
+        (uint256 maturityTime, uint256 bondAmount) = openLong(_trader, 10e18);
+
+        // Set up the reentrant call.
+        tester.setTarget(address(hyperdrive));
+        tester.setData(_data);
+
+        // Ensure that `closeLong` can't be reentered.
+        closeLong(_trader, maturityTime, bondAmount);
+        assert(tester.isSuccess());
+    }
+
+    function _reenter_openShort(address _trader, bytes memory _data) internal {
+        // Initialize the pool.
+        initialize(_trader, FIXED_RATE, CONTRIBUTION);
+
+        // Set up the reentrant call.
+        tester.setTarget(address(hyperdrive));
+        tester.setData(_data);
+
+        // Ensure that `openShort` can't be reentered.
+        openShort(
+            _trader,
+            BOND_AMOUNT,
+            // NOTE: Depositing more than the base payment to ensure that the
+            // ETH receiver will receive a refund.
+            DepositOverrides({
+                asUnderlying: true,
+                depositAmount: BOND_AMOUNT,
+                minSlippage: 0,
+                maxSlippage: type(uint256).max
+            })
+        );
+        assert(tester.isSuccess());
+    }
+
+    function _reenter_closeShort(address _trader, bytes memory _data) internal {
+        // Initialize the pool and open a short.
+        initialize(_trader, FIXED_RATE, CONTRIBUTION);
+        (uint256 maturityTime, ) = openShort(_trader, BOND_AMOUNT);
+
+        // Set up the reentrant call.
+        tester.setTarget(address(hyperdrive));
+        tester.setData(_data);
+
+        // Ensure that `closeShort` can't be reentered.
+        closeShort(_trader, maturityTime, BOND_AMOUNT);
+        assert(tester.isSuccess());
+    }
+}
