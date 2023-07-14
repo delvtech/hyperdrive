@@ -224,6 +224,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
 
         assertGt(basePaid, 0);
         assertGe(realizedRate, FIXED_RATE);
+
         verifyDepositUnderlying(
             alice,
             basePaid,
@@ -432,15 +433,17 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             hyperdriveBalancesBefore.underlyingTokenBalance,
             2
         );
-        assertEq(
+        assertApproxEqAbs(
             underlyingToken.balanceOf(trader),
-            traderBalancesBefore.underlyingTokenBalance - basePaid
+            traderBalancesBefore.underlyingTokenBalance - basePaid,
+            2
         );
 
         // Ensure that the token balances were updated correctly.
         assertApproxEqAbs(
             token.balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.tokenBalance + basePaid,
+            hyperdriveBalancesBefore.tokenBalance +
+                token.convertToShares(basePaid),
             1
         );
         assertApproxEqAbs(
@@ -448,7 +451,6 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             traderBalancesBefore.tokenBalance,
             2
         );
-
         // Ensure that the token shares were updated correctly.
         uint256 expectedShares = basePaid.mulDivDown(
             totalSharesBefore,
@@ -460,13 +462,13 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             2
         );
         assertApproxEqAbs(
-            token.convertToShares(token.balanceOf(address(hyperdrive))),
-            hyperdriveBalancesBefore.shares + expectedShares,
+            token.balanceOf(address(hyperdrive)),
+            hyperdriveBalancesBefore.tokenBalance + expectedShares,
             2
         );
         assertApproxEqAbs(
-            token.convertToShares(token.balanceOf(trader)),
-            traderBalancesBefore.shares,
+            token.balanceOf(trader),
+            traderBalancesBefore.tokenBalance,
             2
         );
     }
@@ -495,12 +497,13 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         // Ensure that the token balances were updated correctly.
         assertApproxEqAbs(
             token.balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.tokenBalance + basePaid,
+            hyperdriveBalancesBefore.tokenBalance +
+                token.convertToShares(basePaid),
             1
         );
         assertApproxEqAbs(
             token.balanceOf(trader),
-            traderBalancesBefore.tokenBalance - basePaid,
+            traderBalancesBefore.tokenBalance - token.convertToShares(basePaid),
             1
         );
 
@@ -515,13 +518,13 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             2
         );
         assertApproxEqAbs(
-            token.convertToShares(token.balanceOf(address(hyperdrive))),
-            hyperdriveBalancesBefore.shares + expectedShares,
+            token.balanceOf(address(hyperdrive)),
+            hyperdriveBalancesBefore.tokenBalance + expectedShares,
             1
         );
         assertApproxEqAbs(
-            token.convertToShares(token.balanceOf(trader)),
-            traderBalancesBefore.shares - expectedShares,
+            token.balanceOf(trader),
+            traderBalancesBefore.tokenBalance - expectedShares,
             1
         );
     }
@@ -563,26 +566,9 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             traderBalancesBefore.tokenBalance + shareProceeds,
             1
         );
-
-        // Ensure that the token shares were updated correctly.
-        uint256 expectedShares = shareProceeds.mulDivDown(
-            totalSharesBefore,
-            totalPooledAssetsBefore
-        );
-        assertApproxEqAbs(
-            token.convertToShares(token.balanceOf(address(hyperdrive))),
-            hyperdriveBalancesBefore.shares - expectedShares,
-            2
-        );
-        assertApproxEqAbs(
-            token.convertToShares(token.balanceOf(trader)),
-            traderBalancesBefore.shares + expectedShares,
-            2
-        );
     }
 
     struct AccountBalances {
-        uint256 shares;
         uint256 tokenBalance;
         uint256 underlyingTokenBalance;
     }
@@ -592,7 +578,6 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
     ) internal view returns (AccountBalances memory) {
         return
             AccountBalances({
-                shares: token.convertToShares(token.balanceOf(account)),
                 tokenBalance: token.balanceOf(account),
                 underlyingTokenBalance: underlyingToken.balanceOf(account)
             });
