@@ -14,89 +14,92 @@ import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
 import { MockERC4626Hyperdrive } from "../mocks/Mock4626Hyperdrive.sol";
 import { HyperdriveUtils } from "../utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
-import { ERC4626ValidationTest } from "./ERC4626Validation.t.sol"; 
-
+import { ERC4626ValidationTest } from "./ERC4626Validation.t.sol";
 
 // Interface for the `Pot` of the underlying DSR
 interface PotLike {
-  function rho() external view returns (uint256);
-  function dsr() external view returns (uint256);
-  function drip() external returns (uint256);
+    function rho() external view returns (uint256);
+
+    function dsr() external view returns (uint256);
+
+    function drip() external returns (uint256);
 }
 
 contract sDaiTest is ERC4626ValidationTest {
-  using FixedPointMath for *;
-  
-  function setUp() public override __mainnet_fork(17_318_972) {
-    underlyingToken = IERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
-    token = IERC4626(0x83F20F44975D03b1b09e64809B757c47f942BEeA);
+    using FixedPointMath for *;
 
-    IERC20 dai = underlyingToken;
-    IERC4626 sDai = token;
+    function setUp() public override __mainnet_fork(17_318_972) {
+        underlyingToken = IERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
+        token = IERC4626(0x83F20F44975D03b1b09e64809B757c47f942BEeA);
 
-    alice = createUser("alice");
-    bob = createUser("bob");
+        IERC20 dai = underlyingToken;
+        IERC4626 sDai = token;
 
-    vm.startPrank(deployer);
+        alice = createUser("alice");
+        bob = createUser("bob");
 
-    ERC4626HyperdriveDeployer simpleDeployer = new ERC4626HyperdriveDeployer(
-      sDai
-    );
+        vm.startPrank(deployer);
 
-    address[] memory defaults = new address[](1);
-    defaults[0] = bob;
-    forwarderFactory = new ForwarderFactory();
-    factory = new ERC4626HyperdriveFactory(
-      alice,
-      simpleDeployer,
-      bob,
-      bob,
-      IHyperdrive.Fees(0, 0, 0),
-      defaults,
-      address(forwarderFactory),
-      forwarderFactory.ERC20LINK_HASH(),
-      token
-    );
+        ERC4626HyperdriveDeployer simpleDeployer = new ERC4626HyperdriveDeployer(
+                sDai
+            );
 
-    address daiWhale = 0x60FaAe176336dAb62e284Fe19B885B095d29fB7F;
-    whaleTransfer(daiWhale, dai, alice);
+        address[] memory defaults = new address[](1);
+        defaults[0] = bob;
+        forwarderFactory = new ForwarderFactory();
+        factory = new ERC4626HyperdriveFactory(
+            alice,
+            simpleDeployer,
+            bob,
+            bob,
+            IHyperdrive.Fees(0, 0, 0),
+            defaults,
+            address(forwarderFactory),
+            forwarderFactory.ERC20LINK_HASH(),
+            token
+        );
 
-    IHyperdrive.PoolConfig memory config = testConfig(FIXED_RATE);
-    config.baseToken = underlyingToken;
-    config.initialSharePrice = FixedPointMath.ONE_18.divDown(token.convertToShares(FixedPointMath.ONE_18));
-    
-    uint256 contribution = 10_000e18; // Revisit
+        address daiWhale = 0x60FaAe176336dAb62e284Fe19B885B095d29fB7F;
+        whaleTransfer(daiWhale, dai, alice);
 
-    vm.stopPrank();
-    vm.startPrank(alice);
-    underlyingToken.approve(address(factory), type(uint256).max);
-    
-    
-    hyperdrive = factory.deployAndInitialize(config,
-      new bytes32[](0),
-      contribution,
-      FIXED_RATE
-    );
-  
-    dai.approve(address(hyperdrive), type(uint256).max);
-    dai.approve(address(sDai), type(uint256).max);
+        IHyperdrive.PoolConfig memory config = testConfig(FIXED_RATE);
+        config.baseToken = underlyingToken;
+        config.initialSharePrice = FixedPointMath.ONE_18.divDown(
+            token.convertToShares(FixedPointMath.ONE_18)
+        );
 
-    vm.stopPrank();
-    vm.startPrank(bob);
-    dai.approve(address(hyperdrive), type(uint256).max);
-    vm.stopPrank();
+        uint256 contribution = 10_000e18; // Revisit
 
-    // Start recording events.
-    vm.recordLogs(); 
-  }
+        vm.stopPrank();
+        vm.startPrank(alice);
+        underlyingToken.approve(address(factory), type(uint256).max);
 
-  function advanceTimeWithYield(uint256 timeDelta) override public {
-    vm.warp(block.timestamp + timeDelta);
-    // Should accumulate interest in the dsr based on the time passed
-    // in theory if used in excess this may cause pot insolvency (no actual dai accuring, just 1 share growing bigger and withdrawing)
-    // but shouldn't be a problem for small tests
+        hyperdrive = factory.deployAndInitialize(
+            config,
+            new bytes32[](0),
+            contribution,
+            FIXED_RATE
+        );
 
-    // Note - Mainnet only address for Pot, but fine since this test explicitly uses a Mainnet fork in test
-    PotLike(0x197E90f9FAD81970bA7976f33CbD77088E5D7cf7).drip();
-  }
+        dai.approve(address(hyperdrive), type(uint256).max);
+        dai.approve(address(sDai), type(uint256).max);
+
+        vm.stopPrank();
+        vm.startPrank(bob);
+        dai.approve(address(hyperdrive), type(uint256).max);
+        vm.stopPrank();
+
+        // Start recording events.
+        vm.recordLogs();
+    }
+
+    function advanceTimeWithYield(uint256 timeDelta) public override {
+        vm.warp(block.timestamp + timeDelta);
+        // Should accumulate interest in the dsr based on the time passed
+        // in theory if used in excess this may cause pot insolvency (no actual dai accruing, just 1 share growing bigger and withdrawing)
+        // but shouldn't be a problem for small tests
+
+        // Note - Mainnet only address for Pot, but fine since this test explicitly uses a Mainnet fork in test
+        PotLike(0x197E90f9FAD81970bA7976f33CbD77088E5D7cf7).drip();
+    }
 }

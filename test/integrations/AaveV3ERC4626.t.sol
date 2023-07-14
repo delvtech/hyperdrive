@@ -19,72 +19,79 @@ import { ERC4626ValidationTest } from "./ERC4626Validation.t.sol";
 import { AaveV3ERC4626Factory, IPool, IRewardsController, ERC20 } from "yield-daddy/src/aave-v3/AaveV3ERC4626Factory.sol";
 
 contract AaveV3ERC4626Test is ERC4626ValidationTest {
-  using FixedPointMath for uint256;
+    using FixedPointMath for uint256;
 
-  function setUp() public override __mainnet_fork(17_318_972) {
-    IPool pool = IPool(0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2);
-    AaveV3ERC4626Factory yieldDaddyFactory = new AaveV3ERC4626Factory(pool, address(0), IRewardsController(address(0)));
-    ERC20 dai = ERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
+    function setUp() public override __mainnet_fork(17_318_972) {
+        IPool pool = IPool(0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2);
+        AaveV3ERC4626Factory yieldDaddyFactory = new AaveV3ERC4626Factory(
+            pool,
+            address(0),
+            IRewardsController(address(0))
+        );
+        ERC20 dai = ERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
 
-    token = IERC4626(address(yieldDaddyFactory.createERC4626(dai)));
-    underlyingToken = IERC20(address(dai));
+        token = IERC4626(address(yieldDaddyFactory.createERC4626(dai)));
+        underlyingToken = IERC20(address(dai));
 
-    alice = createUser("alice");
-    bob = createUser("bob");
+        alice = createUser("alice");
+        bob = createUser("bob");
 
-    vm.startPrank(deployer);
+        vm.startPrank(deployer);
 
-    ERC4626HyperdriveDeployer simpleDeployer = new ERC4626HyperdriveDeployer(
-      token
-    );
+        ERC4626HyperdriveDeployer simpleDeployer = new ERC4626HyperdriveDeployer(
+                token
+            );
 
-    address[] memory defaults = new address[](1);
-    defaults[0] = bob;
-    forwarderFactory = new ForwarderFactory();
-    factory = new ERC4626HyperdriveFactory(
-      alice,
-      simpleDeployer,
-      bob,
-      bob,
-      IHyperdrive.Fees(0, 0, 0),
-      defaults,
-      address(forwarderFactory),
-      forwarderFactory.ERC20LINK_HASH(),
-      token
-    );
+        address[] memory defaults = new address[](1);
+        defaults[0] = bob;
+        forwarderFactory = new ForwarderFactory();
+        factory = new ERC4626HyperdriveFactory(
+            alice,
+            simpleDeployer,
+            bob,
+            bob,
+            IHyperdrive.Fees(0, 0, 0),
+            defaults,
+            address(forwarderFactory),
+            forwarderFactory.ERC20LINK_HASH(),
+            token
+        );
 
-    address daiWhale = 0x60FaAe176336dAb62e284Fe19B885B095d29fB7F;
-    whaleTransfer(daiWhale, IERC20(address(dai)), alice);
+        address daiWhale = 0x60FaAe176336dAb62e284Fe19B885B095d29fB7F;
+        whaleTransfer(daiWhale, IERC20(address(dai)), alice);
 
-    IHyperdrive.PoolConfig memory config = testConfig(FIXED_RATE);
-    config.baseToken = underlyingToken;
-    config.initialSharePrice = FixedPointMath.ONE_18.divDown(token.convertToShares(FixedPointMath.ONE_18));
+        IHyperdrive.PoolConfig memory config = testConfig(FIXED_RATE);
+        config.baseToken = underlyingToken;
+        config.initialSharePrice = FixedPointMath.ONE_18.divDown(
+            token.convertToShares(FixedPointMath.ONE_18)
+        );
 
-    uint256 contribution = 10_000e18; // Revisit
+        uint256 contribution = 10_000e18; // Revisit
 
-    vm.stopPrank();
-    vm.startPrank(alice);
-    underlyingToken.approve(address(factory), type(uint256).max);
+        vm.stopPrank();
+        vm.startPrank(alice);
+        underlyingToken.approve(address(factory), type(uint256).max);
 
-    hyperdrive = factory.deployAndInitialize(config,
-      new bytes32[](0),
-      contribution,
-      FIXED_RATE
-    );
+        hyperdrive = factory.deployAndInitialize(
+            config,
+            new bytes32[](0),
+            contribution,
+            FIXED_RATE
+        );
 
-    dai.approve(address(hyperdriveInstance), type(uint256).max);
-    dai.approve(address(underlyingToken), type(uint256).max);
+        dai.approve(address(hyperdriveInstance), type(uint256).max);
+        dai.approve(address(underlyingToken), type(uint256).max);
 
-    vm.stopPrank();
-    vm.startPrank(bob);
-    dai.approve(address(hyperdriveInstance), type(uint256).max);
-    vm.stopPrank();
+        vm.stopPrank();
+        vm.startPrank(bob);
+        dai.approve(address(hyperdriveInstance), type(uint256).max);
+        vm.stopPrank();
 
-    // Start recording events.
-    vm.recordLogs();
-  } 
+        // Start recording events.
+        vm.recordLogs();
+    }
 
-  function advanceTimeWithYield(uint256 timeDelta) override public {
-    vm.warp(block.timestamp + timeDelta);
-  }
+    function advanceTimeWithYield(uint256 timeDelta) public override {
+        vm.warp(block.timestamp + timeDelta);
+    }
 }
