@@ -29,14 +29,13 @@ contract sDaiTest is ERC4626ValidationTest {
     using FixedPointMath for *;
 
     function setUp() public override __mainnet_fork(17_318_972) {
+        super.setUp();
+
         underlyingToken = IERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
         token = IERC4626(0x83F20F44975D03b1b09e64809B757c47f942BEeA);
 
         IERC20 dai = underlyingToken;
         IERC4626 sDai = token;
-
-        alice = createUser("alice");
-        bob = createUser("bob");
 
         vm.startPrank(deployer);
 

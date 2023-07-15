@@ -22,6 +22,7 @@ contract AaveV3ERC4626Test is ERC4626ValidationTest {
     using FixedPointMath for uint256;
 
     function setUp() public override __mainnet_fork(17_318_972) {
+        super.setUp();
         // Aave v3 Lending Pool Contract
         IPool pool = IPool(0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2);
         AaveV3ERC4626Factory yieldDaddyFactory = new AaveV3ERC4626Factory(
@@ -36,9 +37,6 @@ contract AaveV3ERC4626Test is ERC4626ValidationTest {
         // Deploy a new instance of an Aave v3 ERC4626 token, for aDai
         token = IERC4626(address(yieldDaddyFactory.createERC4626(dai)));
         underlyingToken = IERC20(address(dai));
-
-        alice = createUser("alice");
-        bob = createUser("bob");
 
         vm.startPrank(deployer);
 

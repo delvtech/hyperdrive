@@ -21,14 +21,12 @@ contract StethERC4626 is ERC4626ValidationTest {
     using FixedPointMath for *;
 
     function setUp() public override __mainnet_fork(17_376_154) {
+        super.setUp();
         underlyingToken = IERC20(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
         token = IERC4626(0xF9A98A9452485ed55cd3Ce5260C2b71c9807b11a);
 
         IERC20 steth = underlyingToken;
         IERC4626 stethERC4626 = token;
-
-        alice = createUser("alice");
-        bob = createUser("bob");
 
         vm.startPrank(deployer);
 
