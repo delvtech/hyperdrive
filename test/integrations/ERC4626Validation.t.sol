@@ -582,7 +582,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             1
         );
 
-        // Ensure that the token balances were updated correctly.
+        // Ensure that the underlying balances were updated correctly.
         assertEq(
             underlyingToken.balanceOf(address(hyperdrive)),
             hyperdriveBalancesBefore.underlyingTokenBalance
