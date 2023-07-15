@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import "forge-std/console.sol";
+
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
@@ -8,6 +11,7 @@ import { Lib } from "../../utils/Lib.sol";
 
 contract SandwichTest is HyperdriveTest {
     using FixedPointMath for uint256;
+    using HyperdriveUtils for IHyperdrive;
     using Lib for *;
 
     function test_sandwich_trades(uint8 _apr, uint64 _timeDelta) external {
@@ -125,6 +129,59 @@ contract SandwichTest is HyperdriveTest {
             baselineProfit = bondsReceived.sub(basePaid);
         }
         assertGe(baselineProfit, sandwichProfit - 10000 gwei);
+    }
+
+    // FIXME: Once I understand the issue, generalize the test.
+    function test_sandwich_short_trade() external {
+        IHyperdrive.PoolConfig memory config = testConfig(0.05e18);
+        config.fees.curve = 0.05e18;
+        config.fees.flat = 0.0005e18;
+        config.fees.governance = 0.15e18;
+        deploy(deployer, config);
+
+        // Alice initializes the pool.
+        uint256 fixedRate = 0.05e18;
+        uint256 contribution = 500_000_000e18;
+        uint256 aliceLpShares = initialize(alice, fixedRate, contribution);
+
+        // Bob opens a max short.
+        uint256 shortAmount = hyperdrive.calculateMaxShort();
+        (uint256 maturityTime, uint256 basePaid) = openShort(bob, shortAmount);
+
+        // Celine adds liquidity.
+        console.log(
+            "spot price before = %s",
+            hyperdrive.calculateSpotPrice().toString(18)
+        );
+        uint256 multiplier = 10e18;
+        uint256 celineLpShares = addLiquidity(
+            celine,
+            contribution.mulDown(multiplier)
+        );
+        console.log(
+            "spot price after  = %s",
+            hyperdrive.calculateSpotPrice().toString(18)
+        );
+
+        // Bob closes his short.
+        uint256 baseProceeds = closeShort(bob, maturityTime, shortAmount);
+
+        console.log("shortAmount  = %s", shortAmount.toString(18));
+        console.log("basePaid     = %s", basePaid.toString(18));
+        console.log("baseProceeds = %s", baseProceeds.toString(18));
+        console.log(
+            "profit       = %s",
+            (baseProceeds - basePaid).toString(18)
+        );
+
+        // Alice and Celine remove their liquidity.
+        (uint256 aliceBaseProceeds, ) = removeLiquidity(alice, aliceLpShares);
+        (uint256 celineBaseProceeds, ) = removeLiquidity(
+            celine,
+            celineLpShares
+        );
+        console.log("aliceBaseProceeds  = %s", aliceBaseProceeds.toString(18));
+        console.log("celineBaseProceeds = %s", celineBaseProceeds.toString(18));
     }
 
     // TODO: Use the normalize function to improve this test.
