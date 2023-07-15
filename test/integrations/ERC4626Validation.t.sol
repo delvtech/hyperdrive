@@ -33,15 +33,17 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         vm.startPrank(alice);
 
         IHyperdrive.PoolConfig memory config = testConfig(FIXED_RATE);
+        // Required to support ERC4626, since the test config initialSharePrice is wrong
         config.baseToken = underlyingToken;
         config.initialSharePrice = FixedPointMath.ONE_18.divDown(
             token.convertToShares(FixedPointMath.ONE_18)
         );
 
-        uint256 contribution = 10_000e18; // Revisit
+        uint256 contribution = 10_000e18;
 
         underlyingToken.approve(address(factory), type(uint256).max);
 
+        // Deploy a new hyperdrive instance
         hyperdrive = factory.deployAndInitialize(
             config,
             new bytes32[](0),
@@ -49,12 +51,13 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             FIXED_RATE
         );
 
+        // Ensure minimumShareReserves were added, and lpTotalSupply increased
         assertEq(
             hyperdrive.getPoolInfo().lpTotalSupply,
             hyperdrive.getPoolInfo().shareReserves - config.minimumShareReserves
         );
 
-        // Verify that the correct events were emitted.
+        // Verify that the correct events were emitted during creation
         verifyFactoryEvents(
             factory,
             alice,
@@ -67,6 +70,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
     }
 
     function test_OpenLongWithUnderlying(uint256 basePaid) external {
+        // Establish baseline variables
         uint256 totalPooledAssetsBefore = token.totalAssets();
         uint256 totalSharesBefore = token.convertToShares(
             totalPooledAssetsBefore
@@ -78,6 +82,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         );
 
         vm.startPrank(alice);
+
         basePaid = basePaid.normalizeToRange(
             0.00001e18,
             min(
@@ -86,8 +91,10 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             )
         );
 
+        // Open a long with underlying tokens
         openLongERC4626(alice, basePaid, true);
 
+        // Verify balances correctly updated
         verifyDepositUnderlying(
             alice,
             basePaid,
@@ -108,8 +115,11 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             )
         );
         underlyingToken.approve(address(token), type(uint256).max);
+        // Deposit into the ERC4626 so underlying doesn't need ot be used
         token.deposit(basePaid, alice);
 
+        // Establish baseline, important underlying balance must be taken AFTER
+        // deposit into ERC4626 token
         uint256 totalPooledAssetsBefore = token.totalAssets();
         uint256 totalSharesBefore = token.convertToShares(
             totalPooledAssetsBefore
@@ -119,8 +129,10 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             address(hyperdrive)
         );
 
+        // Open the long
         openLongERC4626(alice, basePaid, false);
 
+        // Ensure balances correctly updated
         verifyDepositActual(
             alice,
             basePaid,
@@ -141,12 +153,15 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
                 underlyingToken.balanceOf(alice)
             )
         );
+
+        // Open a long
         (uint256 maturityTime, uint256 longAmount) = openLongERC4626(
             alice,
             basePaid,
             true
         );
 
+        // Close long with underlying assets
         hyperdrive.closeLong(maturityTime, longAmount, 0, alice, true);
     }
 
@@ -160,12 +175,15 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
                 underlyingToken.balanceOf(alice)
             )
         );
+
+        // Open a long
         (uint256 maturityTime, uint256 longAmount) = openLongERC4626(
             alice,
             basePaid,
             true
         );
 
+        // Establish a baseline of balances before closing long
         uint256 totalPooledAssetsBefore = token.totalAssets();
         uint256 totalSharesBefore = token.convertToShares(
             totalPooledAssetsBefore
@@ -175,6 +193,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             address(hyperdrive)
         );
 
+        // Close the long
         uint256 baseProceeds = hyperdrive.closeLong(
             maturityTime,
             longAmount,
@@ -183,6 +202,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             false
         );
 
+        // Ensure balances updated correctly
         verifyTokenWithdrawal(
             alice,
             token.convertToShares(baseProceeds),
@@ -204,6 +224,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             )
         );
 
+        // Take a baseline
         uint256 totalPooledAssetsBefore = token.totalAssets();
         uint256 totalSharesBefore = token.convertToShares(
             totalPooledAssetsBefore
@@ -213,6 +234,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             address(hyperdrive)
         );
 
+        // Open a short
         (, uint256 basePaid) = openShortERC4626(alice, shortAmount, true);
 
         // Ensure that the amount of base paid by the short is reasonable.
@@ -222,9 +244,11 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             1e18
         );
 
+        // Ensure some base was paid
         assertGt(basePaid, 0);
         assertGe(realizedRate, FIXED_RATE);
 
+        // Ensure the balances updated correctly
         verifyDepositUnderlying(
             alice,
             basePaid,
@@ -246,8 +270,10 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         );
 
         underlyingToken.approve(address(token), type(uint256).max);
+        // Deposit into the actual ERC4626 token
         token.deposit(shortAmount, alice);
 
+        // Establish a baseline before we open the short
         uint256 totalPooledAssetsBefore = token.totalAssets();
         uint256 totalSharesBefore = token.convertToShares(
             totalPooledAssetsBefore
@@ -257,10 +283,13 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             address(hyperdrive)
         );
 
+        // Open the short
         (, uint256 basePaid) = openShortERC4626(alice, shortAmount, false);
 
+        // Ensure we did actually paid a non-Zero amount of base
         assertGt(basePaid, 0);
 
+        // Ensure balances were correctly updated
         verifyDepositActual(
             alice,
             basePaid,
@@ -288,8 +317,10 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         // The term passes and interest accrues.
         variableRate = variableRate.normalizeToRange(0, 2.5e18);
 
+        // Accumulate yield and let the short mature
         advanceTimeWithYield(POSITION_DURATION);
 
+        // Close the short
         hyperdrive.closeShort(maturityTime, shortAmount, 0, alice, true);
     }
 
@@ -306,14 +337,19 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             )
         );
 
+        // Deposit into the actual ERC4626
         underlyingToken.approve(address(token), type(uint256).max);
         token.deposit(shortAmount, alice);
+
+        // Open the short
         (uint256 maturityTime, ) = openShortERC4626(alice, shortAmount, true);
         // The term passes and interest accrues.
         variableRate = variableRate.normalizeToRange(0, 2.5e18);
 
+        // Advance time and accumulate the yield
         advanceTimeWithYield(POSITION_DURATION);
 
+        // Establish a baseline before closing the short
         uint256 totalPooledAssetsBefore = token.totalAssets();
         uint256 totalSharesBefore = token.convertToShares(
             totalPooledAssetsBefore
@@ -323,6 +359,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             address(hyperdrive)
         );
 
+        // Close the short
         uint256 baseProceeds = hyperdrive.closeShort(
             maturityTime,
             shortAmount,

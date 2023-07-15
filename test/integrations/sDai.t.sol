@@ -47,6 +47,7 @@ contract sDaiTest is ERC4626ValidationTest {
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
         forwarderFactory = new ForwarderFactory();
+        // New hyperdrive factory for sDai instances
         factory = new ERC4626HyperdriveFactory(
             alice,
             simpleDeployer,
@@ -59,21 +60,24 @@ contract sDaiTest is ERC4626ValidationTest {
             token
         );
 
+        // Fund alice with DAI
         address daiWhale = 0x60FaAe176336dAb62e284Fe19B885B095d29fB7F;
         whaleTransfer(daiWhale, dai, alice);
 
         IHyperdrive.PoolConfig memory config = testConfig(FIXED_RATE);
+        // Config changes required from default for ERC4626 support
         config.baseToken = underlyingToken;
         config.initialSharePrice = FixedPointMath.ONE_18.divDown(
             token.convertToShares(FixedPointMath.ONE_18)
         );
 
-        uint256 contribution = 10_000e18; // Revisit
+        uint256 contribution = 10_000e18;
 
         vm.stopPrank();
         vm.startPrank(alice);
         underlyingToken.approve(address(factory), type(uint256).max);
 
+        // Deploy and set the global hyperdrive instance
         hyperdrive = factory.deployAndInitialize(
             config,
             new bytes32[](0),

@@ -22,14 +22,18 @@ contract AaveV3ERC4626Test is ERC4626ValidationTest {
     using FixedPointMath for uint256;
 
     function setUp() public override __mainnet_fork(17_318_972) {
+        // Aave v3 Lending Pool Contract
         IPool pool = IPool(0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2);
         AaveV3ERC4626Factory yieldDaddyFactory = new AaveV3ERC4626Factory(
             pool,
             address(0),
             IRewardsController(address(0))
         );
+
+        // Dai is the underlying token used for Aave instances
         ERC20 dai = ERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
 
+        // Deploy a new instance of an Aave v3 ERC4626 token, for aDai
         token = IERC4626(address(yieldDaddyFactory.createERC4626(dai)));
         underlyingToken = IERC20(address(dai));
 
@@ -44,6 +48,7 @@ contract AaveV3ERC4626Test is ERC4626ValidationTest {
 
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
+
         forwarderFactory = new ForwarderFactory();
         factory = new ERC4626HyperdriveFactory(
             alice,
@@ -58,20 +63,24 @@ contract AaveV3ERC4626Test is ERC4626ValidationTest {
         );
 
         address daiWhale = 0x60FaAe176336dAb62e284Fe19B885B095d29fB7F;
+        // Alice account must be prefunded with lots of the underlyingToken
         whaleTransfer(daiWhale, IERC20(address(dai)), alice);
 
         IHyperdrive.PoolConfig memory config = testConfig(FIXED_RATE);
+
+        // Changes based off the default test config needed for ERC4626 support
         config.baseToken = underlyingToken;
         config.initialSharePrice = FixedPointMath.ONE_18.divDown(
             token.convertToShares(FixedPointMath.ONE_18)
         );
 
-        uint256 contribution = 10_000e18; // Revisit
+        uint256 contribution = 10_000e18;
 
         vm.stopPrank();
         vm.startPrank(alice);
         underlyingToken.approve(address(factory), type(uint256).max);
 
+        // Initialize a new instance of hyperdrive and set the global instance
         hyperdrive = factory.deployAndInitialize(
             config,
             new bytes32[](0),

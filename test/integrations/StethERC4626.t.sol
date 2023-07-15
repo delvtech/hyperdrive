@@ -39,6 +39,8 @@ contract StethERC4626 is ERC4626ValidationTest {
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
         forwarderFactory = new ForwarderFactory();
+
+        // Hyperdrive factory to produce ERC4626 instances for stethERC4626
         factory = new ERC4626HyperdriveFactory(
             alice,
             simpleDeployer,
@@ -56,17 +58,19 @@ contract StethERC4626 is ERC4626ValidationTest {
         whaleTransfer(stethWhale, steth, alice);
 
         IHyperdrive.PoolConfig memory config = testConfig(FIXED_RATE);
+        // Config changes required to support ERC4626 with the correct initial Share Price
         config.baseToken = underlyingToken;
         config.initialSharePrice = FixedPointMath.ONE_18.divDown(
             token.convertToShares(FixedPointMath.ONE_18)
         );
 
-        uint256 contribution = 1_000e18; // Revisit
+        uint256 contribution = 1_000e18;
 
         vm.stopPrank();
         vm.startPrank(alice);
         underlyingToken.approve(address(factory), type(uint256).max);
 
+        // Deploy and set hyperdrive instance
         hyperdrive = factory.deployAndInitialize(
             config,
             new bytes32[](0),
