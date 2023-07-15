@@ -162,32 +162,39 @@ library Lib {
 
     function normalizeToRange(
         uint256 value,
-        uint256 min,
-        uint256 max
+        uint256 minimum,
+        uint256 maximum
     ) internal pure returns (uint256) {
-        require(min <= max, "Lib: min > max");
+        require(minimum <= maximum, "Lib: min > max");
 
-        uint256 rangeSize = max - min + 1;
+        uint256 rangeSize = maximum - minimum + 1;
         uint256 modValue = value % rangeSize;
 
-        return modValue + min;
+        return modValue + minimum;
     }
 
     function normalizeToRange(
         int256 value,
-        int256 min,
-        int256 max
+        int256 minimum,
+        int256 maximum
     ) internal pure returns (int256) {
-        require(min <= max, "Lib: min > max");
+        require(minimum <= maximum, "Lib: min > max");
 
-        int256 rangeSize = max - min + 1;
+        int256 rangeSize = maximum - minimum + 1;
         int256 modValue = value % rangeSize;
 
         if (modValue < 0) {
             modValue += rangeSize;
         }
 
-        return modValue + min;
+        return modValue + minimum;
+    }
+
+    /**
+     * @dev Returns the smallest of two numbers.
+     */
+    function min(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a < b ? a : b;
     }
 
     function eq(bytes memory b1, bytes memory b2) public pure returns (bool) {
