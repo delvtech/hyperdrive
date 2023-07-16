@@ -83,8 +83,7 @@ filtered{ f -> !f.isView } {
 /// Tokens could be minted at a time that corresponds to position duration time in the future
 /// (since the latest checkpoint)
 /// [VERIFIED]
-rule mintingTokensOnlyAtMaturityTime(method f, uint256 AssetId) 
-filtered{ f -> !f.isView } {
+rule mintingTokensOnlyAtMaturityTime(method f, uint256 AssetId) {
     /// We are only concerned with longs and shorts tokens.
     mathint prefix = prefixByID(AssetId);
     require prefix == 1 || prefix == 2;

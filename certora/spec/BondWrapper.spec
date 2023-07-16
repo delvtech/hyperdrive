@@ -45,6 +45,7 @@ hook Sstore balanceOf[KEY address user] uint256 balance
 }
 
 
+/// @notice fails in initial state, but it's ok
 invariant erc20Solvency(env e)
     balanceSum == to_mathint(totalSupply(e));
 

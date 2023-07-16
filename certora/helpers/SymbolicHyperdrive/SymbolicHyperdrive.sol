@@ -3,7 +3,6 @@ pragma solidity ^0.8.18;
 import { MultiToken } from "../../../contracts/src/token/MultiToken.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import { FixedPointMath } from "../../../contracts/src/libraries/FixedPointMath.sol";
-import { Errors } from "../../../contracts/src/libraries/Errors.sol";
 import { AssetId } from "../../../contracts/src/libraries/AssetId.sol";
 import { ERC20Mintable } from "../../../contracts/test/ERC20Mintable.sol";
 
@@ -36,7 +35,7 @@ contract SymbolicHyperdrive is MultiToken {
         bool _asUnderlying
     ) external returns (uint256) {
         if (_bondAmount == 0) {
-            revert Errors.ZeroAmount();
+            revert();
         }
 
         uint256 pricePerShare = _pricePerShare();
@@ -74,7 +73,7 @@ contract SymbolicHyperdrive is MultiToken {
         amountWithdrawn = _shares.mulDown(sharePrice);
         bool success = _baseToken.transfer(_destination, amountWithdrawn);
         if (!success) {
-            revert Errors.TransferFailed();
+            revert();
         }
 
         return (amountWithdrawn, sharePrice);

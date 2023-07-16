@@ -1,5 +1,5 @@
---- ../contracts/src/instances/AaveHyperdrive.sol	2023-07-13 17:56:43
-+++ 	2023-07-13 21:54:00
+--- ../contracts/src/instances/AaveHyperdrive.sol	2023-07-13 18:56:43
++++ 	2023-07-13 22:54:00
 @@ -2,11 +2,13 @@
  pragma solidity 0.8.19;
  
@@ -37,8 +37,8 @@
 +        return _pricePerShare();
      }
  }
---- ../contracts/src/Hyperdrive.sol	2023-07-13 17:56:43
-+++ 	2023-07-13 21:54:35
+--- ../contracts/src/Hyperdrive.sol	2023-07-13 18:56:43
++++ 	2023-07-13 22:54:35
 @@ -2,14 +2,18 @@
  pragma solidity 0.8.19;
  
@@ -79,8 +79,8 @@
  {
      using FixedPointMath for uint256;
      using SafeCast for uint256;
---- ../contracts/src/HyperdriveLP.sol	2023-07-13 17:56:43
-+++ 	2023-07-13 21:55:44
+--- ../contracts/src/HyperdriveLP.sol	2023-07-13 18:56:43
++++ 	2023-07-13 22:55:44
 @@ -1,13 +1,14 @@
  // SPDX-License-Identifier: Apache-2.0
  pragma solidity 0.8.19;
@@ -148,8 +148,8 @@
              HyperdriveMath.PresentValueParams({
                  shareReserves: _marketState.shareReserves,
                  bondReserves: _marketState.bondReserves,
---- ../contracts/src/HyperdriveShort.sol	2023-07-13 17:56:43
-+++ 	2023-07-13 18:57:37
+--- ../contracts/src/HyperdriveShort.sol	2023-07-13 18:56:43
++++ 	2023-07-13 19:57:37
 @@ -2,12 +2,13 @@
  pragma solidity 0.8.19;
  
@@ -259,8 +259,8 @@
  
          // Add the total curve fee minus the governance curve fee to the amount that will
          // be added to the share reserves. This ensures that the LPs are credited with the
---- ../contracts/src/HyperdriveLong.sol	2023-07-13 17:56:43
-+++ 	2023-07-13 18:37:06
+--- ../contracts/src/HyperdriveLong.sol	2023-07-13 18:56:43
++++ 	2023-07-13 19:37:06
 @@ -2,11 +2,12 @@
  pragma solidity 0.8.19;
  
@@ -332,7 +332,7 @@
  
          // Calculate the fees charged to the user (totalCurveFe, totalFlatFee) and the portion of those
          // fees that are paid to governance (governanceCurveFee).
---- ../contracts/src/token/ForwarderFactory.sol	2023-07-13 17:56:43
+--- ../contracts/src/token/ForwarderFactory.sol	2023-07-13 18:56:43
 +++ 	1970-01-01 01:00:00
 @@ -1,79 +0,0 @@
 -// SPDX-License-Identifier: Apache-2.0
@@ -414,8 +414,8 @@
 -        return address(uint160(uint256(addressBytes)));
 -    }
 -}
---- ../contracts/src/libraries/AssetId.sol	2023-07-13 17:56:43
-+++ 	2023-07-13 18:17:35
+--- ../contracts/src/libraries/AssetId.sol	2023-07-13 18:56:43
++++ 	2023-07-13 19:17:35
 @@ -1,8 +1,8 @@
  // SPDX-License-Identifier: Apache-2.0
  pragma solidity 0.8.19;
