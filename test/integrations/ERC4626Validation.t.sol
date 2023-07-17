@@ -389,25 +389,15 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         vm.startPrank(trader);
 
         // Open the long.
-        maturityTime = HyperdriveUtils.maturityTimeFromLatestCheckpoint(
-            hyperdrive
-        );
-        uint256 bondBalanceBefore = hyperdrive.balanceOf(
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
-            trader
-        );
         if (asUnderlying) {
             underlyingToken.approve(address(hyperdrive), baseAmount);
-            hyperdrive.openLong(baseAmount, 0, trader, asUnderlying);
+            (maturityTime, bondAmount) = hyperdrive.openLong(baseAmount, 0, trader, asUnderlying);
         } else {
             token.approve(address(hyperdrive), baseAmount);
-            hyperdrive.openLong(baseAmount, 0, trader, asUnderlying);
+            (maturityTime, bondAmount) = hyperdrive.openLong(baseAmount, 0, trader, asUnderlying);
         }
-        uint256 bondBalanceAfter = hyperdrive.balanceOf(
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
-            trader
-        );
-        return (maturityTime, bondBalanceAfter.sub(bondBalanceBefore));
+
+        return (maturityTime, bondAmount);
     }
 
     function openShortERC4626(
@@ -418,9 +408,6 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(trader);
         // Open the short
-        maturityTime = HyperdriveUtils.maturityTimeFromLatestCheckpoint(
-            hyperdrive
-        );
         if (asUnderlying) {
             underlyingToken.approve(address(hyperdrive), bondAmount);
             (maturityTime, baseAmount) = hyperdrive.openShort(
