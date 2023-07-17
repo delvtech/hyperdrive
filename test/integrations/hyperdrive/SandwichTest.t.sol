@@ -134,7 +134,7 @@ contract SandwichTest is HyperdriveTest {
     // FIXME: Once I understand the issue, generalize the test.
     function test_sandwich_short_trade() external {
         IHyperdrive.PoolConfig memory config = testConfig(0.05e18);
-        config.fees.curve = 0.05e18;
+        config.fees.curve = 0.1e18;
         config.fees.flat = 0.0005e18;
         config.fees.governance = 0.15e18;
         deploy(deployer, config);
@@ -145,8 +145,16 @@ contract SandwichTest is HyperdriveTest {
         uint256 aliceLpShares = initialize(alice, fixedRate, contribution);
 
         // Bob opens a max short.
+        console.log("test: 1");
         uint256 shortAmount = hyperdrive.calculateMaxShort();
+        console.log("test: 2");
+        console.log("shortAmount = %s", shortAmount.toString(18));
+        console.log(
+            "bondReserves = %s",
+            hyperdrive.getPoolInfo().bondReserves.toString(18)
+        );
         (uint256 maturityTime, uint256 basePaid) = openShort(bob, shortAmount);
+        console.log("test: 3");
 
         // Celine adds liquidity.
         console.log(
@@ -171,7 +179,7 @@ contract SandwichTest is HyperdriveTest {
         console.log("baseProceeds = %s", baseProceeds.toString(18));
         console.log(
             "profit       = %s",
-            (baseProceeds - basePaid).toString(18)
+            (int256(baseProceeds) - int256(basePaid)).toString(18)
         );
 
         // Alice and Celine remove their liquidity.

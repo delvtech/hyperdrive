@@ -30,7 +30,14 @@ contract MockYieldSpaceMath {
         uint256 t,
         uint256 c,
         uint256 mu
-    ) external pure returns (uint256) {
+    )
+        external
+        view
+        returns (
+            // FIXME
+            uint256
+        )
+    {
         uint256 result = YieldSpaceMath.calculateBondsOutGivenSharesIn(
             z,
             y,

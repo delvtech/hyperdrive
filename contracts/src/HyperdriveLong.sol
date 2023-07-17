@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import "forge-std/console.sol";
+
 import { HyperdriveLP } from "./HyperdriveLP.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { AssetId } from "./libraries/AssetId.sol";
@@ -39,21 +42,25 @@ abstract contract HyperdriveLong is HyperdriveLP {
         isNotPaused
         returns (uint256 maturityTime, uint256 bondProceeds)
     {
+        console.log("openLong: 1");
         // Check that the message value and base amount are valid.
         _checkMessageValue();
         if (_baseAmount == 0) {
             revert IHyperdrive.ZeroAmount();
         }
+        console.log("openLong: 2");
 
         // Deposit the user's base.
         (uint256 shares, uint256 sharePrice) = _deposit(
             _baseAmount,
             _asUnderlying
         );
+        console.log("openLong: 3");
 
         // Perform a checkpoint.
         uint256 latestCheckpoint = _latestCheckpoint();
         _applyCheckpoint(latestCheckpoint, sharePrice);
+        console.log("openLong: 4");
 
         // Calculate the pool and user deltas using the trading function. We
         // backdate the bonds purchased to the beginning of the checkpoint.
@@ -66,24 +73,33 @@ abstract contract HyperdriveLong is HyperdriveLP {
             bondProceeds,
             totalGovernanceFee
         ) = _calculateOpenLong(shares, sharePrice);
+        console.log("openLong: 5");
 
+        // FIXME: Redo this analysis.
+        //
         // If the ending spot price is greater than or equal to 1, we are in the
         // negative interest region of the trading function. The spot price is
         // given by ((mu * z) / y) ** tau, so all that we need to check is that
         // (mu * z) / y < 1 or, equivalently, that mu * z >= y.
         if (
-            _initialSharePrice.mulDown(
-                _marketState.shareReserves + shareReservesDelta
-            ) >= _marketState.bondReserves - bondReservesDelta
+            HyperdriveMath.calculateSpotPrice(
+                _marketState.shareReserves + shareReservesDelta,
+                _marketState.bondReserves - bondReservesDelta,
+                _initialSharePrice,
+                _timeStretch
+            ) >= FixedPointMath.ONE_18
         ) {
             revert IHyperdrive.NegativeInterest();
         }
+        console.log("openLong: 6");
 
         // Enforce min user outputs
         if (_minOutput > bondProceeds) revert IHyperdrive.OutputLimit();
+        console.log("openLong: 7");
 
         // Attribute the governance fee.
         _governanceFeesAccrued += totalGovernanceFee;
+        console.log("openLong: 8");
 
         // Apply the open long to the state.
         maturityTime = latestCheckpoint + _positionDuration;
@@ -95,6 +111,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
             latestCheckpoint,
             maturityTime
         );
+        console.log("openLong: 9");
 
         // Mint the bonds to the trader with an ID of the maturity time.
         uint256 assetId = AssetId.encodeAssetId(
@@ -102,6 +119,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
             maturityTime
         );
         _mint(assetId, _destination, bondProceeds);
+        console.log("openLong: 10");
 
         // Emit an OpenLong event.
         uint256 baseAmount = _baseAmount; // Avoid stack too deep error.
@@ -112,6 +130,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
             baseAmount,
             bondProceeds
         );
+        console.log("openLong: 11");
 
         return (maturityTime, bondProceeds);
     }
@@ -370,6 +389,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
     {
         // Calculate the effect that opening the long should have on the pool's
         // reserves as well as the amount of bond the trader receives.
+        console.log("_calculateOpenLong: 1");
         bondReservesDelta = HyperdriveMath.calculateOpenLong(
             _marketState.shareReserves,
             _marketState.bondReserves,
@@ -378,6 +398,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
             _sharePrice,
             _initialSharePrice
         );
+        console.log("_calculateOpenLong: 2");
 
         // Calculate the fees charged on the curve and flat parts of the trade.
         // Since we calculate the amount of bonds received given shares in, we
@@ -389,9 +410,11 @@ abstract contract HyperdriveLong is HyperdriveLP {
             _initialSharePrice,
             _timeStretch
         );
+        console.log("_calculateOpenLong: 3");
 
         // Record an oracle update
         recordPrice(spotPrice);
+        console.log("_calculateOpenLong: 4");
 
         // Calculate the fees charged to the user (totalCurveFee) and the portion of those
         // fees that are paid to governance (governanceCurveFee).
@@ -403,10 +426,12 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 spotPrice,
                 _sharePrice
             );
+        console.log("_calculateOpenLong: 5");
 
         // Calculate the number of bonds the trader receives.
         // This is the amount of bonds the trader receives minus the fees.
         bondProceeds = bondReservesDelta - totalCurveFee;
+        console.log("_calculateOpenLong: 6");
 
         // Calculate how many bonds to remove from the bondReserves.
         // The bondReservesDelta represents how many bonds to remove
@@ -422,6 +447,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         bondReservesDelta =
             bondProceeds +
             governanceCurveFee.divDown(spotPrice);
+        console.log("_calculateOpenLong: 7");
 
         // Calculate the number of shares to add to the shareReserves.
         // shareReservesDelta and totalGovernanceFee denominated in
@@ -432,12 +458,14 @@ abstract contract HyperdriveLong is HyperdriveLP {
         shareReservesDelta =
             _shareAmount -
             governanceCurveFee.divDown(_sharePrice);
+        console.log("_calculateOpenLong: 8");
 
         // Calculate the fees owed to governance in shares.
         // totalGovernanceFee is in base and we want it in shares
         // shares = base/(base/shares)
         // shares = shares
         totalGovernanceFee = governanceCurveFee.divDown(_sharePrice);
+        console.log("_calculateOpenLong: 9");
 
         return (
             shareReservesDelta,

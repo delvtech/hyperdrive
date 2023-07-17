@@ -14,25 +14,8 @@ import { YieldSpaceMath } from "./YieldSpaceMath.sol";
 library HyperdriveMath {
     using FixedPointMath for uint256;
 
-    /// @dev Calculates the spot price without slippage of bonds in terms of base.
-    /// @param _shareReserves The pool's share reserves.
-    /// @param _bondReserves The pool's bond reserves.
-    /// @param _initialSharePrice The initial share price as an 18 fixed-point value.
-    /// @param _timeStretch The time stretch parameter as an 18 fixed-point value.
-    /// @return spotPrice The spot price of bonds in terms of base as an 18 fixed-point value.
-    function calculateSpotPrice(
-        uint256 _shareReserves,
-        uint256 _bondReserves,
-        uint256 _initialSharePrice,
-        uint256 _timeStretch
-    ) internal pure returns (uint256 spotPrice) {
-        // (y / (mu * z)) ** -ts
-        // ((mu * z) / y) ** ts
-        spotPrice = _initialSharePrice
-            .mulDivDown(_shareReserves, _bondReserves)
-            .pow(_timeStretch);
-    }
-
+    // FIXME: Move this to `YieldSpaceMath` and rename it `calculateSpotRate`.
+    //
     /// @dev Calculates the APR from the pool's reserves.
     /// @param _shareReserves The pool's share reserves.
     /// @param _bondReserves The pool's bond reserves.
@@ -90,12 +73,24 @@ library HyperdriveMath {
         uint256 t = _positionDuration.divDown(365 days);
         uint256 tau = FixedPointMath.ONE_18.mulDown(_timeStretch);
         // mu * z * (1 + apr * t) ** (1 / tau)
+        //
+        // 1 / (1 + apr * t) == y_factor * ((mu * z) / (y * y_factor)) ** tau
+        //
+        // =>
+        //
+        // (1 / y_factor * (1 + apr * t)) ** (1 / tau) == (mu * z) / (y * y_factor)
+        //
+        // y = (mu * z) * (y_factor * (1 + apr * t)) ** (1 / tau) / y_factor
         return
-            _initialSharePrice.mulDown(_shareReserves).mulDown(
-                FixedPointMath.ONE_18.add(_apr.mulDown(t)).pow(
-                    FixedPointMath.ONE_18.divUp(tau)
+            _initialSharePrice
+                .mulDown(_shareReserves)
+                .mulDown(
+                    YieldSpaceMath
+                        .BOND_CONVERSION_FACTOR
+                        .mulDown(FixedPointMath.ONE_18 + _apr.mulDown(t))
+                        .pow(FixedPointMath.ONE_18.divUp(tau))
                 )
-            );
+                .divDown(YieldSpaceMath.BOND_CONVERSION_FACTOR);
     }
 
     /// @dev Calculates the number of bonds a user will receive when opening a long position.
@@ -113,7 +108,14 @@ library HyperdriveMath {
         uint256 _timeStretch,
         uint256 _sharePrice,
         uint256 _initialSharePrice
-    ) internal pure returns (uint256) {
+    )
+        internal
+        view
+        returns (
+            // FIXME: pure
+            uint256
+        )
+    {
         // (time remaining)/(term length) is always 1 so we just use _timeStretch
         return
             YieldSpaceMath.calculateBondsOutGivenSharesIn(
@@ -306,7 +308,15 @@ library HyperdriveMath {
     function calculateMaxLong(
         MaxTradeParams memory _params,
         uint256 _maxIterations
-    ) internal pure returns (uint256 baseAmount, uint256 bondAmount) {
+    )
+        internal
+        view
+        returns (
+            // FIXME: pure
+            uint256 baseAmount,
+            uint256 bondAmount
+        )
+    {
         // We first solve for the maximum buy that is possible on the YieldSpace
         // curve. This will give us an upper bound on our maximum buy by giving
         // us the maximum buy that is possible without going into negative
@@ -435,6 +445,8 @@ library HyperdriveMath {
         return (baseAmount, bondAmount);
     }
 
+    // FIXME: This needs to be updated.
+    //
     /// @dev Calculates the maximum amount of shares that can be used to open
     ///      shorts.
     /// @param _params Information about the market state and pool configuration

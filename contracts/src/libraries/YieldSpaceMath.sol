@@ -1,6 +1,10 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import "forge-std/console.sol";
+import "test/utils/Lib.sol";
+
 import { FixedPointMath } from "./FixedPointMath.sol";
 import { HyperdriveMath } from "./HyperdriveMath.sol";
 
@@ -264,7 +268,12 @@ import { HyperdriveMath } from "./HyperdriveMath.sol";
 ///        https://www.desmos.com/calculator/vfrzlsopsb
 ///
 library YieldSpaceMath {
+    // FIXME
+    using Lib for *;
+
     using FixedPointMath for uint256;
+
+    uint256 internal constant BOND_CONVERSION_FACTOR = 0.6e18;
 
     /// Calculates the amount of bonds a user must provide the pool to receive
     /// a specified amount of shares
@@ -283,6 +292,8 @@ library YieldSpaceMath {
         uint256 c,
         uint256 mu
     ) internal pure returns (uint256) {
+        y = y.mulDown(BOND_CONVERSION_FACTOR);
+
         // c/µ
         uint256 cDivMu = c.divDown(mu);
         // (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
@@ -294,7 +305,7 @@ library YieldSpaceMath {
         // ((c / µ) * (µ * z)^(1 - t) + y^(1 - t) - (c / µ) * (µ * (z - dz))^(1 - t))^(1 / (1 - t)))
         uint256 _y = k.sub(z).pow(FixedPointMath.ONE_18.divUp(t));
         // Δy = ((c / µ) * (µ * z)^(1 - t) + y^(1 - t) - (c / µ) * (µ * (z - dz))^(1 - t))^(1 / (1 - t))) - y
-        return _y.sub(y);
+        return (_y - y).divDown(BOND_CONVERSION_FACTOR);
     }
 
     /// Calculates the amount of bonds a user will receive from the pool by
@@ -313,19 +324,37 @@ library YieldSpaceMath {
         uint256 t,
         uint256 c,
         uint256 mu
-    ) internal pure returns (uint256) {
+    )
+        internal
+        view
+        returns (
+            // FIXME
+            uint256
+        )
+    {
+        console.log("z", z.toString(18));
+        console.log("dz", dz.toString(18));
+        console.log("y", y.toString(18));
+        y = y.mulDown(BOND_CONVERSION_FACTOR);
+        console.log("modified y", y.toString(18));
+
         // c/µ
         uint256 cDivMu = c.divDown(mu);
+        console.log("c / mu", cDivMu.toString(18));
         // (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
         uint256 k = modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
+        console.log("k", k.toString(18));
         // (µ * (z + dz))^(1 - t)
         z = mu.mulDown(z.add(dz)).pow(t);
+        console.log("z", z.toString(18));
         // (c / µ) * (µ * (z + dz))^(1 - t)
         z = cDivMu.mulDown(z);
+        console.log("z", z.toString(18));
         // ((c / µ) * (µ * z)^(1 - t) + y^(1 - t) - (c / µ) * (µ * (z + dz))^(1 - t))^(1 / (1 - t)))
         uint256 _y = k.sub(z).pow(FixedPointMath.ONE_18.divUp(t));
+        console.log("_y", _y.toString(18));
         // Δy = y - ((c / µ) * (µ * z)^(1 - t) + y^(1 - t) - (c / µ) * (µ * (z + dz))^(1 - t))^(1 / (1 - t)))
-        return y.sub(_y);
+        return (y - _y).divDown(BOND_CONVERSION_FACTOR);
     }
 
     /// Calculates the amount of shares a user must provide the pool to receive
@@ -345,20 +374,23 @@ library YieldSpaceMath {
         uint256 c,
         uint256 mu
     ) internal pure returns (uint256) {
+        y = y.mulDown(BOND_CONVERSION_FACTOR);
+        dy = dy.mulDown(BOND_CONVERSION_FACTOR);
+
         // c/µ
         uint256 cDivMu = c.divDown(mu);
         // (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
         uint256 k = modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
         // (y - dy)^(1 - t)
-        y = y.sub(dy).pow(t);
+        y = (y - dy).pow(t);
         // (((µ * z)^(1 - t) + y^(1 - t) - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))
-        uint256 _z = k.sub(y).divDown(cDivMu).pow(
+        uint256 _z = (k - y).divDown(cDivMu).pow(
             FixedPointMath.ONE_18.divUp(t)
         );
         // (((µ * z)^(1 - t) + y^(1 - t) - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
         _z = _z.divDown(mu);
         // Δz = ((((c / µ) * (µ * z)^(1 - t) + y^(1 - t) - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ) - z
-        return _z.sub(z);
+        return (_z - z);
     }
 
     /// Calculates the amount of shares a user will receive from the pool by
@@ -378,14 +410,17 @@ library YieldSpaceMath {
         uint256 c,
         uint256 mu
     ) internal pure returns (uint256 result) {
+        y = y.mulDown(BOND_CONVERSION_FACTOR);
+        dy = dy.mulDown(BOND_CONVERSION_FACTOR);
+
         // c/µ
         uint256 cDivMu = c.divDown(mu);
         // (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
         uint256 k = modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
         // (y + dy)^(1 - t)
-        y = y.add(dy).pow(t);
+        y = (y + dy).pow(t);
         // (((µ * z)^(1 - t) + y^(1 - t) - (y + dy)^(1 - t)) / (c / µ))^(1 / (1 - t)))
-        uint256 _z = k.sub(y).divDown(cDivMu).pow(
+        uint256 _z = (k - y).divDown(cDivMu).pow(
             FixedPointMath.ONE_18.divUp(t)
         );
         // (((µ * z)^(1 - t) + y^(1 - t) - (y + dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
@@ -412,6 +447,11 @@ library YieldSpaceMath {
         uint256 c,
         uint256 mu
     ) internal pure returns (uint256, uint256) {
+        y = y.mulDown(BOND_CONVERSION_FACTOR);
+
+        // FIXME: This isn't right anymore. Redo this analysis using the bond
+        // conversion factor so that we can continue our testing.
+        //
         // We solve for the maximum buy using the constraint that the pool's
         // spot price can never exceed 1. We do this by noting that a spot price
         // of 1, (mu * z) / y ** tau = 1, implies that mu * z = y. This
@@ -426,7 +466,7 @@ library YieldSpaceMath {
         uint256 optimalZ = optimalY.divDown(mu);
 
         // The optimal trade sizes are given by dz = z' - z and dy = y - y'.
-        return (optimalZ - z, y - optimalY);
+        return (optimalZ - z, (y - optimalY).divDown(BOND_CONVERSION_FACTOR));
     }
 
     /// @dev Helper function to derive invariant constant C
