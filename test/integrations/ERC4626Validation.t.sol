@@ -26,6 +26,62 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
 
     uint256 internal constant FIXED_RATE = 0.05e18;
 
+    function _setUp() internal {
+        super.setUp();
+
+        vm.startPrank(deployer);
+
+        ERC4626HyperdriveDeployer simpleDeployer = new ERC4626HyperdriveDeployer(
+                token
+            );
+
+        address[] memory defaults = new address[](1);
+        defaults[0] = bob;
+        forwarderFactory = new ForwarderFactory();
+
+        // Hyperdrive factory to produce ERC4626 instances for stethERC4626
+        factory = new ERC4626HyperdriveFactory(
+            alice,
+            simpleDeployer,
+            bob,
+            bob,
+            IHyperdrive.Fees(0, 0, 0),
+            defaults,
+            address(forwarderFactory),
+            forwarderFactory.ERC20LINK_HASH(),
+            token
+        );
+
+        IHyperdrive.PoolConfig memory config = testConfig(FIXED_RATE);
+        // Config changes required to support ERC4626 with the correct initial Share Price
+        config.baseToken = underlyingToken;
+        config.initialSharePrice = FixedPointMath.ONE_18.divDown(
+            token.convertToShares(FixedPointMath.ONE_18)
+        );
+
+        uint256 contribution = 1_000e18;
+
+        vm.stopPrank();
+        vm.startPrank(alice);
+        underlyingToken.approve(address(factory), type(uint256).max);
+
+        // Deploy and set hyperdrive instance
+        hyperdrive = factory.deployAndInitialize(
+            config,
+            new bytes32[](0),
+            contribution,
+            FIXED_RATE
+        );
+
+        underlyingToken.approve(address(hyperdrive), type(uint256).max);
+        underlyingToken.approve(address(token), type(uint256).max);
+        token.approve(address(hyperdrive), type(uint256).max);
+        vm.stopPrank();
+
+        // Start recording events.
+        vm.recordLogs();
+    }
+
     function advanceTimeWithYield(uint256 timeDelta) public virtual;
 
     function test_deployAndInitialize() external {
@@ -391,10 +447,20 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         // Open the long.
         if (asUnderlying) {
             underlyingToken.approve(address(hyperdrive), baseAmount);
-            (maturityTime, bondAmount) = hyperdrive.openLong(baseAmount, 0, trader, asUnderlying);
+            (maturityTime, bondAmount) = hyperdrive.openLong(
+                baseAmount,
+                0,
+                trader,
+                asUnderlying
+            );
         } else {
             token.approve(address(hyperdrive), baseAmount);
-            (maturityTime, bondAmount) = hyperdrive.openLong(baseAmount, 0, trader, asUnderlying);
+            (maturityTime, bondAmount) = hyperdrive.openLong(
+                baseAmount,
+                0,
+                trader,
+                asUnderlying
+            );
         }
 
         return (maturityTime, bondAmount);

@@ -25,66 +25,11 @@ contract StethERC4626 is ERC4626ValidationTest {
         underlyingToken = IERC20(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
         token = IERC4626(0xF9A98A9452485ed55cd3Ce5260C2b71c9807b11a);
 
-        IERC20 steth = underlyingToken;
-        IERC4626 stethERC4626 = token;
-
-        vm.startPrank(deployer);
-
-        ERC4626HyperdriveDeployer simpleDeployer = new ERC4626HyperdriveDeployer(
-                stethERC4626
-            );
-
-        address[] memory defaults = new address[](1);
-        defaults[0] = bob;
-        forwarderFactory = new ForwarderFactory();
-
-        // Hyperdrive factory to produce ERC4626 instances for stethERC4626
-        factory = new ERC4626HyperdriveFactory(
-            alice,
-            simpleDeployer,
-            bob,
-            bob,
-            IHyperdrive.Fees(0, 0, 0),
-            defaults,
-            address(forwarderFactory),
-            forwarderFactory.ERC20LINK_HASH(),
-            stethERC4626
-        );
-
         // Note this is wsteth so it could be somewhat problematic in the future
         address stethWhale = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
-        whaleTransfer(stethWhale, steth, alice);
+        whaleTransfer(stethWhale, underlyingToken, alice);
 
-        IHyperdrive.PoolConfig memory config = testConfig(FIXED_RATE);
-        // Config changes required to support ERC4626 with the correct initial Share Price
-        config.baseToken = underlyingToken;
-        config.initialSharePrice = FixedPointMath.ONE_18.divDown(
-            token.convertToShares(FixedPointMath.ONE_18)
-        );
-
-        uint256 contribution = 1_000e18;
-
-        vm.stopPrank();
-        vm.startPrank(alice);
-        underlyingToken.approve(address(factory), type(uint256).max);
-
-        // Deploy and set hyperdrive instance
-        hyperdrive = factory.deployAndInitialize(
-            config,
-            new bytes32[](0),
-            contribution,
-            FIXED_RATE
-        );
-
-        steth.approve(address(stethERC4626), type(uint256).max);
-
-        vm.stopPrank();
-        vm.startPrank(bob);
-        steth.approve(address(hyperdrive), type(uint256).max);
-        vm.stopPrank();
-
-        // Start recording events.
-        vm.recordLogs();
+        _setUp();
     }
 
     function advanceTimeWithYield(uint256 timeDelta) public override {
