@@ -219,9 +219,6 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
 
         // Establish a baseline of balances before closing long
         uint256 totalPooledAssetsBefore = token.totalAssets();
-        uint256 totalSharesBefore = token.convertToShares(
-            totalPooledAssetsBefore
-        );
         AccountBalances memory aliceBalancesBefore = getAccountBalances(alice);
         AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
             address(hyperdrive)
@@ -242,7 +239,6 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             alice,
             baseProceeds,
             totalPooledAssetsBefore,
-            totalSharesBefore,
             aliceBalancesBefore,
             hyperdriveBalancesBefore
         );
@@ -405,9 +401,6 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
 
         // Establish a baseline before closing the short
         uint256 totalPooledAssetsBefore = token.totalAssets();
-        uint256 totalSharesBefore = token.convertToShares(
-            totalPooledAssetsBefore
-        );
         AccountBalances memory aliceBalancesBefore = getAccountBalances(alice);
         AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
             address(hyperdrive)
@@ -429,7 +422,6 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             alice,
             baseProceeds,
             totalPooledAssetsBefore,
-            totalSharesBefore,
             aliceBalancesBefore,
             hyperdriveBalancesBefore
         );
@@ -709,7 +701,6 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         address trader,
         uint256 baseProceeds,
         uint256 totalPooledAssetsBefore,
-        uint256 totalSharesBefore,
         AccountBalances memory traderBalancesBefore,
         AccountBalances memory hyperdriveBalancesBefore
     ) internal {
