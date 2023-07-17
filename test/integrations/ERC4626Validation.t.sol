@@ -59,7 +59,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             token.convertToShares(FixedPointMath.ONE_18)
         );
 
-        uint256 contribution = 1_000e18;
+        uint256 contribution = 7_500e18;
 
         vm.stopPrank();
         vm.startPrank(alice);
@@ -228,12 +228,19 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         );
 
         // Close long with underlying assets
-        uint256 baseProceeds = hyperdrive.closeLong(maturityTime, longAmount, 0, alice, true);
-    
-        // Ensure balances updated correctly
+        uint256 baseProceeds = hyperdrive.closeLong(
+            maturityTime,
+            longAmount,
+            0,
+            alice,
+            true
+        );
+
+        // Ensure that the ERC4626 aggregates and the token balances were updated
+        // correctly during the trade.
         verifyShareWithdrawal(
             alice,
-            token.convertToShares(baseProceeds),
+            baseProceeds,
             totalPooledAssetsBefore,
             totalSharesBefore,
             aliceBalancesBefore,
@@ -407,11 +414,18 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         );
 
         // Close the short
-        uint256 baseProceeds = hyperdrive.closeShort(maturityTime, shortAmount, 0, alice, true);
+        uint256 baseProceeds = hyperdrive.closeShort(
+            maturityTime,
+            shortAmount,
+            0,
+            alice,
+            true
+        );
+        // Convert baseProceeds to base rather than shares
 
         // Ensure that the ERC4626 aggregates and the token balances were updated
         // correctly during the trade.
-        verifyTokenWithdrawal(
+        verifyShareWithdrawal(
             alice,
             baseProceeds,
             totalPooledAssetsBefore,
@@ -419,7 +433,6 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             aliceBalancesBefore,
             hyperdriveBalancesBefore
         );
-        
     }
 
     function test_CloseShortWithShares(
@@ -700,21 +713,26 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         AccountBalances memory traderBalancesBefore,
         AccountBalances memory hyperdriveBalancesBefore
     ) internal {
+        // Allowances are set to 3 due to the expected number of conversions which can occur.
         // Ensure that the total pooled assets decreased by the amount paid out
-        assertApproxEqAbs(token.totalAssets() + baseProceeds, totalPooledAssetsBefore, 2);
-
+        assertApproxEqAbs(
+            token.totalAssets() + baseProceeds,
+            totalPooledAssetsBefore,
+            3
+        );
 
         // Ensure that the underlying balances were updated correctly.
         // Token should be converted to underlyingToken and set to the trader
         assertApproxEqAbs(
-            underlyingToken.balanceOf(trader) + baseProceeds,
-            traderBalancesBefore.underlyingBalance,
-            2
+            underlyingToken.balanceOf(trader),
+            traderBalancesBefore.underlyingBalance + baseProceeds,
+            3
         );
         assertApproxEqAbs(
             token.balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.shareBalance - token.convertToShares(baseProceeds),
-            1
+            hyperdriveBalancesBefore.shareBalance -
+                token.convertToShares(baseProceeds),
+            3
         );
     }
 
