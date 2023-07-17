@@ -217,8 +217,28 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             true
         );
 
+        // Establish a baseline of balances before closing long
+        uint256 totalPooledAssetsBefore = token.totalAssets();
+        uint256 totalSharesBefore = token.convertToShares(
+            totalPooledAssetsBefore
+        );
+        AccountBalances memory aliceBalancesBefore = getAccountBalances(alice);
+        AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
+            address(hyperdrive)
+        );
+
         // Close long with underlying assets
-        hyperdrive.closeLong(maturityTime, longAmount, 0, alice, true);
+        uint256 baseProceeds = hyperdrive.closeLong(maturityTime, longAmount, 0, alice, true);
+    
+        // Ensure balances updated correctly
+        verifyShareWithdrawal(
+            alice,
+            token.convertToShares(baseProceeds),
+            totalPooledAssetsBefore,
+            totalSharesBefore,
+            aliceBalancesBefore,
+            hyperdriveBalancesBefore
+        );
     }
 
     function test_CloseLongWithShares(uint256 basePaid) external {
@@ -376,8 +396,30 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         // Accumulate yield and let the short mature
         advanceTimeWithYield(POSITION_DURATION);
 
+        // Establish a baseline before closing the short
+        uint256 totalPooledAssetsBefore = token.totalAssets();
+        uint256 totalSharesBefore = token.convertToShares(
+            totalPooledAssetsBefore
+        );
+        AccountBalances memory aliceBalancesBefore = getAccountBalances(alice);
+        AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
+            address(hyperdrive)
+        );
+
         // Close the short
-        hyperdrive.closeShort(maturityTime, shortAmount, 0, alice, true);
+        uint256 baseProceeds = hyperdrive.closeShort(maturityTime, shortAmount, 0, alice, true);
+
+        // Ensure that the ERC4626 aggregates and the token balances were updated
+        // correctly during the trade.
+        verifyTokenWithdrawal(
+            alice,
+            baseProceeds,
+            totalPooledAssetsBefore,
+            totalSharesBefore,
+            aliceBalancesBefore,
+            hyperdriveBalancesBefore
+        );
+        
     }
 
     function test_CloseShortWithShares(
@@ -646,6 +688,32 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         assertApproxEqAbs(
             token.balanceOf(trader),
             traderBalancesBefore.shareBalance + shareProceeds,
+            1
+        );
+    }
+
+    function verifyShareWithdrawal(
+        address trader,
+        uint256 baseProceeds,
+        uint256 totalPooledAssetsBefore,
+        uint256 totalSharesBefore,
+        AccountBalances memory traderBalancesBefore,
+        AccountBalances memory hyperdriveBalancesBefore
+    ) internal {
+        // Ensure that the total pooled assets decreased by the amount paid out
+        assertApproxEqAbs(token.totalAssets() + baseProceeds, totalPooledAssetsBefore, 2);
+
+
+        // Ensure that the underlying balances were updated correctly.
+        // Token should be converted to underlyingToken and set to the trader
+        assertApproxEqAbs(
+            underlyingToken.balanceOf(trader) + baseProceeds,
+            traderBalancesBefore.underlyingBalance,
+            2
+        );
+        assertApproxEqAbs(
+            token.balanceOf(address(hyperdrive)),
+            hyperdriveBalancesBefore.shareBalance - token.convertToShares(baseProceeds),
             1
         );
     }
