@@ -273,7 +273,13 @@ library YieldSpaceMath {
 
     using FixedPointMath for uint256;
 
-    uint256 internal constant BOND_CONVERSION_FACTOR = 0.6e18;
+    // FIXME: The current plan is to use a combination of the bond conversion
+    // factor and a max rate to ensure that the short sandwich attack isn't
+    // profitable.
+    //
+    // FIXME: Analyzing the sandwich situations would be helpful since we might
+    // be able to solve for the safe parameters directly.
+    uint256 internal constant BOND_CONVERSION_FACTOR = 0.8e18;
 
     /// Calculates the amount of bonds a user must provide the pool to receive
     /// a specified amount of shares
@@ -431,6 +437,9 @@ library YieldSpaceMath {
         }
     }
 
+    // FIXME: This isn't correct anymore. We need to solve for a price of 1
+    // with the bond conversion factor included in the spot price.
+    //
     /// @dev Calculates the maximum amount of bonds that can be purchased with
     ///      the specified reserves.
     /// @param z Amount of share reserves in the pool
@@ -449,24 +458,67 @@ library YieldSpaceMath {
     ) internal pure returns (uint256, uint256) {
         y = y.mulDown(BOND_CONVERSION_FACTOR);
 
-        // FIXME: This isn't right anymore. Redo this analysis using the bond
-        // conversion factor so that we can continue our testing.
+        // FIXME: Double check this math. See if fixing this fixes the issue in
+        // the present value calculation.
         //
-        // We solve for the maximum buy using the constraint that the pool's
-        // spot price can never exceed 1. We do this by noting that a spot price
-        // of 1, (mu * z) / y ** tau = 1, implies that mu * z = y. This
-        // simplifies YieldSpace to k = ((c / mu) + 1) * y ** (1 - tau), and
-        // gives us the maximum bond reserves of y' = (k / ((c / mu) + 1)) ** (1 / (1 - tau))
-        // and the maximum share reserves of z' = y/mu.
+        // C * ((mu * z) / (C * y)) ** ts = 1
+        //
+        // =>
+        //
+        // ((mu * z) / (C * y)) = (1 / C) ** (1 / ts)
+        //
+        // =>
+        //
+        // mu * z = (1 / C) ** (1 / ts) * C * y
+        //
+        // Substituting this into YieldSpace, we get:
+        //
+        // k = ((1 / C) ** (1 / ts) * C * y) ** (1 - ts) + (C * y) ** (1 - ts)
+        //
+        // =>
+        //
+        // k = (C * y) ** (1 - ts) * (((1 / C) ** (1 / ts)) ** (1 - ts)) + (C * y) ** (1 - ts)
+        //
+        // =>
+        //
+        // k = (C * y) ** (1 - ts) * (((1 / C) ** (1 / ts)) ** (1 - ts) + 1)
+        //
+        // =>
+        //
+        // y = (1 / C) * (k / (((1 / C) ** (1 / ts)) ** (1 - ts) + 1)) ** (1 / (1 - ts))
         uint256 cDivMu = c.divDown(mu);
         uint256 k = modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
-        uint256 optimalY = (k.divDown(cDivMu + FixedPointMath.ONE_18)).pow(
-            FixedPointMath.ONE_18.divDown(t)
-        );
+        uint256 optimalY = (
+            k.divDown(
+                cDivMu.divDown(
+                    BOND_CONVERSION_FACTOR.pow(
+                        t.divDown(FixedPointMath.ONE_18 + t)
+                    )
+                ) + FixedPointMath.ONE_18
+            )
+        ).pow(FixedPointMath.ONE_18.divDown(t));
         uint256 optimalZ = optimalY.divDown(mu);
 
-        // The optimal trade sizes are given by dz = z' - z and dy = y - y'.
-        return (optimalZ - z, (y - optimalY).divDown(BOND_CONVERSION_FACTOR));
+        // // The optimal trade sizes are given by dz = z' - z and dy = y - y'.
+        // return (optimalZ - z, (y - optimalY).divDown(BOND_CONVERSION_FACTOR));
+
+        // FIXME
+        //
+        // // We solve for the maximum buy using the constraint that the pool's
+        // // spot price can never exceed 1. We do this by noting that a spot price
+        // // of 1, (mu * z) / y ** tau = 1, implies that mu * z = y. This
+        // // simplifies YieldSpace to k = ((c / mu) + 1) * y ** (1 - tau), and
+        // // gives us the maximum bond reserves of y' = (k / ((c / mu) + 1)) ** (1 / (1 - tau))
+        // // and the maximum share reserves of z' = y/mu.
+        // uint256 cDivMu = c.divDown(mu);
+        // uint256 k = modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
+        // uint256 optimalY = (k.divDown(cDivMu + FixedPointMath.ONE_18)).pow(
+        //     FixedPointMath.ONE_18.divDown(t)
+        // );
+        // uint256 optimalZ = optimalY.divDown(mu);
+
+        // // The optimal trade sizes are given by dz = z' - z and dy = y - y'.
+        // return (optimalZ - z, (y - optimalY).divDown(BOND_CONVERSION_FACTOR));
     }
 
     /// @dev Helper function to derive invariant constant C

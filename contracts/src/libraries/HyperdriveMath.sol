@@ -1,6 +1,10 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import "forge-std/console.sol";
+import "test/utils/Lib.sol";
+
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { FixedPointMath } from "./FixedPointMath.sol";
 import { YieldSpaceMath } from "./YieldSpaceMath.sol";
@@ -13,6 +17,32 @@ import { YieldSpaceMath } from "./YieldSpaceMath.sol";
 ///                    particular legal or regulatory significance.
 library HyperdriveMath {
     using FixedPointMath for uint256;
+
+    // FIXME: Redocument this.
+    //
+    /// @dev Calculates the spot price without slippage of bonds in terms of base.
+    /// @param _shareReserves The pool's share reserves.
+    /// @param _bondReserves The pool's bond reserves.
+    /// @param _initialSharePrice The initial share price as an 18 fixed-point value.
+    /// @param _timeStretch The time stretch parameter as an 18 fixed-point value.
+    /// @return spotPrice The spot price of bonds in terms of base as an 18 fixed-point value.
+    function calculateSpotPrice(
+        uint256 _shareReserves,
+        uint256 _bondReserves,
+        uint256 _initialSharePrice,
+        uint256 _timeStretch
+    ) internal pure returns (uint256 spotPrice) {
+        // (y / (mu * z)) ** -ts
+        // ((mu * z) / y) ** ts
+        spotPrice = YieldSpaceMath.BOND_CONVERSION_FACTOR.mulDown(
+            _initialSharePrice
+                .mulDivDown(
+                    _shareReserves,
+                    _bondReserves.mulDown(YieldSpaceMath.BOND_CONVERSION_FACTOR)
+                )
+                .pow(_timeStretch)
+        );
+    }
 
     // FIXME: Move this to `YieldSpaceMath` and rename it `calculateSpotRate`.
     //
@@ -502,9 +532,10 @@ library HyperdriveMath {
     /// @return The present value of the pool.
     function calculatePresentValue(
         PresentValueParams memory _params
-    ) internal pure returns (uint256) {
+    ) internal view returns (uint256) {
         // Compute the net of the longs and shorts that will be traded on the
         // curve and apply this net to the reserves.
+        console.log("calculatePresentValue: 1");
         int256 netCurveTrade = int256(
             _params.longsOutstanding.mulDown(_params.longAverageTimeRemaining)
         ) -
@@ -513,12 +544,14 @@ library HyperdriveMath {
                     _params.shortAverageTimeRemaining
                 )
             );
+        console.log("calculatePresentValue: 2");
         if (netCurveTrade > 0) {
             // Apply the curve trade directly to the reserves. Unlike shorts,
             // the capital that backs longs is accounted for within the share
             // reserves (the capital backing shorts is taken out of the
             // reserves). This ensures that even if all the liquidity is
             // removed, there is always liquidity available for longs to close.
+            console.log("calculatePresentValue: 3");
             _params.shareReserves -= YieldSpaceMath
                 .calculateSharesOutGivenBondsIn(
                     _params.shareReserves,
@@ -528,6 +561,7 @@ library HyperdriveMath {
                     _params.sharePrice,
                     _params.initialSharePrice
                 );
+            console.log("calculatePresentValue: 4");
         } else if (netCurveTrade < 0) {
             // It's possible that the exchange gets into a state where the
             // net curve trade can't be applied to the reserves. In particular,
@@ -537,6 +571,7 @@ library HyperdriveMath {
             // the outstanding long amount is zero when we apply the net curve
             // trade, so the only constraint is that the spot price cannot
             // exceed 1.
+            console.log("calculatePresentValue: 5");
             (, uint256 maxCurveTrade) = YieldSpaceMath.calculateMaxBuy(
                 _params.shareReserves,
                 _params.bondReserves,
@@ -544,9 +579,11 @@ library HyperdriveMath {
                 _params.sharePrice,
                 _params.initialSharePrice
             );
+            console.log("calculatePresentValue: 6");
             maxCurveTrade = uint256(-netCurveTrade) <= maxCurveTrade
                 ? uint256(-netCurveTrade)
                 : maxCurveTrade;
+            console.log("calculatePresentValue: 7");
             if (maxCurveTrade > 0) {
                 _params.shareReserves += YieldSpaceMath
                     .calculateSharesInGivenBondsOut(
@@ -558,14 +595,17 @@ library HyperdriveMath {
                         _params.initialSharePrice
                     );
             }
+            console.log("calculatePresentValue: 8");
             _params.shareReserves += _params.shortBaseVolume.mulDivDown(
                 uint256(-netCurveTrade) - maxCurveTrade,
                 _params.shortsOutstanding.mulDown(_params.sharePrice)
             );
+            console.log("calculatePresentValue: 9");
         }
 
         // Compute the net of the longs and shorts that will be traded flat
         // and apply this net to the reserves.
+        console.log("calculatePresentValue: 10");
         int256 netFlatTrade = int256(
             _params.shortsOutstanding.mulDivDown(
                 FixedPointMath.ONE_18 - _params.shortAverageTimeRemaining,
@@ -578,9 +618,11 @@ library HyperdriveMath {
                     _params.sharePrice
                 )
             );
+        console.log("calculatePresentValue: 11");
         _params.shareReserves = uint256(
             int256(_params.shareReserves) + netFlatTrade
         );
+        console.log("calculatePresentValue: 12");
 
         // The present value is the final share reserves minus the minimum share
         // reserves. This ensures that LP withdrawals won't include the minimum

@@ -173,7 +173,14 @@ contract MockHyperdriveMath {
 
     function calculatePresentValue(
         HyperdriveMath.PresentValueParams memory _params
-    ) external pure returns (uint256) {
+    )
+        external
+        view
+        returns (
+            // FIXME: pure
+            uint256
+        )
+    {
         return HyperdriveMath.calculatePresentValue(_params);
     }
 

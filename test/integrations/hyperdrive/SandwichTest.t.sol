@@ -131,6 +131,8 @@ contract SandwichTest is HyperdriveTest {
         assertGe(baselineProfit, sandwichProfit - 10000 gwei);
     }
 
+    // FIXME: Fix the negative interest issue.
+    //
     // FIXME: Once I understand the issue, generalize the test.
     function test_sandwich_short_trade() external {
         IHyperdrive.PoolConfig memory config = testConfig(0.05e18);
@@ -143,10 +145,14 @@ contract SandwichTest is HyperdriveTest {
         uint256 fixedRate = 0.05e18;
         uint256 contribution = 500_000_000e18;
         uint256 aliceLpShares = initialize(alice, fixedRate, contribution);
+        console.log(
+            "spot rate before = %s",
+            hyperdrive.calculateAPRFromReserves().toString(18)
+        );
 
         // Bob opens a max short.
         console.log("test: 1");
-        uint256 shortAmount = hyperdrive.calculateMaxShort();
+        uint256 shortAmount = hyperdrive.calculateMaxShort().mulDown(0.5e18);
         console.log("test: 2");
         console.log("shortAmount = %s", shortAmount.toString(18));
         console.log(
@@ -161,14 +167,24 @@ contract SandwichTest is HyperdriveTest {
             "spot price before = %s",
             hyperdrive.calculateSpotPrice().toString(18)
         );
+        console.log(
+            "spot rate before = %s",
+            hyperdrive.calculateAPRFromReserves().toString(18)
+        );
         uint256 multiplier = 10e18;
+        console.log(1);
         uint256 celineLpShares = addLiquidity(
             celine,
             contribution.mulDown(multiplier)
         );
+        console.log(2);
         console.log(
             "spot price after  = %s",
             hyperdrive.calculateSpotPrice().toString(18)
+        );
+        console.log(
+            "spot rate after = %s",
+            hyperdrive.calculateAPRFromReserves().toString(18)
         );
 
         // Bob closes his short.

@@ -87,7 +87,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 _marketState.bondReserves - bondReservesDelta,
                 _initialSharePrice,
                 _timeStretch
-            ) >= FixedPointMath.ONE_18
+            ) > FixedPointMath.ONE_18
         ) {
             revert IHyperdrive.NegativeInterest();
         }

@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import "forge-std/console.sol";
+import "test/utils/Lib.sol";
+
 import { HyperdriveBase } from "./HyperdriveBase.sol";
 import { HyperdriveTWAP } from "./HyperdriveTWAP.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
@@ -16,6 +20,9 @@ import { SafeCast } from "./libraries/SafeCast.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveLP is HyperdriveTWAP {
+    // FIXME
+    using Lib for *;
+
     using FixedPointMath for uint256;
     using SafeCast for uint256;
 
@@ -117,10 +124,12 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         bool _asUnderlying
     ) external payable nonReentrant isNotPaused returns (uint256 lpShares) {
         // Check that the message value and base amount are valid.
+        console.log(10);
         _checkMessageValue();
         if (_contribution == 0) {
             revert IHyperdrive.ZeroAmount();
         }
+        console.log(11);
 
         // Enforce the slippage guard.
         uint256 apr = HyperdriveMath.calculateAPRFromReserves(
@@ -130,16 +139,20 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             _positionDuration,
             _timeStretch
         );
+        console.log(12);
         if (apr < _minApr || apr > _maxApr) revert IHyperdrive.InvalidApr();
+        console.log(13);
 
         // Deposit for the user, this call also transfers from them
         (uint256 shares, uint256 sharePrice) = _deposit(
             _contribution,
             _asUnderlying
         );
+        console.log(14);
 
         // Perform a checkpoint.
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
+        console.log(15);
 
         // Get the initial value for the total LP supply and the total supply
         // of withdrawal shares before the liquidity is added. The total LP
@@ -152,16 +165,19 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         ] - _withdrawPool.readyToWithdraw;
         uint256 lpTotalSupply = _totalSupply[AssetId._LP_ASSET_ID] +
             withdrawalSharesOutstanding;
+        console.log(16);
 
         // Calculate the number of LP shares to mint.
         uint256 endingPresentValue;
         {
             // Calculate the present value before updating the reserves.
+            console.log("16.1");
             HyperdriveMath.PresentValueParams
                 memory params = _getPresentValueParams(sharePrice);
             uint256 startingPresentValue = HyperdriveMath.calculatePresentValue(
                 params
             );
+            console.log("16.2");
 
             // Add the liquidity to the pool's reserves and calculate the new
             // present value.
@@ -169,6 +185,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             params.shareReserves = _marketState.shareReserves;
             params.bondReserves = _marketState.bondReserves;
             endingPresentValue = HyperdriveMath.calculatePresentValue(params);
+            console.log("16.3");
 
             // The LP shares minted to the LP is derived by solving for the
             // change in LP shares that preserves the ratio of present value to
@@ -176,11 +193,17 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             // adding liquidity.This is given by:
             //
             // PV0 / l0 = PV1 / (l0 + dl) => dl = ((PV1 - PV0) * l0) / PV0
+            console.log(
+                "startingPresentValue",
+                startingPresentValue.toString(18)
+            );
+            console.log("endingPresentValue", endingPresentValue.toString(18));
             lpShares = (endingPresentValue - startingPresentValue).mulDivDown(
                 lpTotalSupply,
                 startingPresentValue
             );
         }
+        console.log(17);
 
         // By maintaining the ratio of present value to total LP shares, we may
         // end up increasing the idle that is available to withdraw by other
@@ -203,9 +226,11 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
                 withdrawalSharesOutstanding
             );
         }
+        console.log(18);
 
         // Mint LP shares to the supplier.
         _mint(AssetId._LP_ASSET_ID, _destination, lpShares);
+        console.log(19);
 
         // Emit an AddLiquidity event.
         emit AddLiquidity(_destination, lpShares, _contribution);
