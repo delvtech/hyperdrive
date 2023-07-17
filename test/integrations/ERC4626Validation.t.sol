@@ -34,6 +34,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         IHyperdrive.PoolConfig memory config = testConfig(FIXED_RATE);
         // Required to support ERC4626, since the test config initialSharePrice is wrong
         config.baseToken = underlyingToken;
+        // Designed to ensure compatibility ../../contracts/src/instances/ERC4626Hyperdrive.sol#L122C1-L122C1
         config.initialSharePrice = FixedPointMath.ONE_18.divDown(
             token.convertToShares(FixedPointMath.ONE_18)
         );
@@ -132,7 +133,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         openLongERC4626(alice, basePaid, false);
 
         // Ensure balances correctly updated
-        verifyDepositActual(
+        verifyDepositShares(
             alice,
             basePaid,
             totalPooledAssetsBefore,
@@ -289,7 +290,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         assertGt(basePaid, 0);
 
         // Ensure balances were correctly updated
-        verifyDepositActual(
+        verifyDepositShares(
             alice,
             basePaid,
             totalPooledAssetsBefore,
@@ -501,7 +502,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         );
     }
 
-    function verifyDepositActual(
+    function verifyDepositShares(
         address trader,
         uint256 basePaid,
         uint256 totalPooledAssetsBefore,
