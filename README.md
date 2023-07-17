@@ -43,16 +43,6 @@ If you want to automatically format the code, run `yarn prettier`.
 
 The current suggested way of integrating your yield source with hyperdrive is through the [ERC-4626 standard](https://eips.ethereum.org/EIPS/eip-4626) although accomodations can be made if this is not possible. Hyperdrive currently makes use of [Yield Daddy](https://github.com/timeless-fi/yield-daddy) to wrap many existing yield sources into this standard.
 
-# Dependencies
-
-1. [Yield Daddy](https://github.com/timeless-fi/yield-daddy)
-    - Yield Daddy is used to wrap existing yield sources into an ERC4626 token standard, which is then supported by our ERC4626 instance.
-    - [Audit](https://reports.yaudit.dev/reports/08-2022-Timeless-Yield-Daddy/)
-
-2. [Solmate](https://github.com/transmissions11/solmate)
-    - Solmate is used for its general efficiency in many library functions
-    - [Audit](https://github.com/transmissions11/solmate/blob/main/audits/v6-Fixed-Point-Solutions.pdf)
-
 # Disclaimer
 
 The language used in this codebase is for coding convenience only, and is not
