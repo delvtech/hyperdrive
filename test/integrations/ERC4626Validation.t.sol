@@ -459,25 +459,25 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         // Ensure that the underlyingToken balances were updated correctly.
         assertApproxEqAbs(
             underlyingToken.balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.underlyingTokenBalance,
+            hyperdriveBalancesBefore.underlyingBalance,
             2
         );
         assertApproxEqAbs(
             underlyingToken.balanceOf(trader),
-            traderBalancesBefore.underlyingTokenBalance - basePaid,
+            traderBalancesBefore.underlyingBalance - basePaid,
             2
         );
 
         // Ensure that the token balances were updated correctly.
         assertApproxEqAbs(
             token.balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.tokenBalance +
+            hyperdriveBalancesBefore.shareBalance +
                 token.convertToShares(basePaid),
             1
         );
         assertApproxEqAbs(
             token.balanceOf(trader),
-            traderBalancesBefore.tokenBalance,
+            traderBalancesBefore.shareBalance,
             2
         );
         // Ensure that the token shares were updated correctly.
@@ -492,12 +492,12 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         );
         assertApproxEqAbs(
             token.balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.tokenBalance + expectedShares,
+            hyperdriveBalancesBefore.shareBalance + expectedShares,
             2
         );
         assertApproxEqAbs(
             token.balanceOf(trader),
-            traderBalancesBefore.tokenBalance,
+            traderBalancesBefore.shareBalance,
             2
         );
     }
@@ -516,23 +516,23 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         // Ensure that the underlying token balances were updated correctly.
         assertEq(
             underlyingToken.balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.underlyingTokenBalance
+            hyperdriveBalancesBefore.underlyingBalance
         );
         assertEq(
             underlyingToken.balanceOf(trader),
-            traderBalancesBefore.underlyingTokenBalance
+            traderBalancesBefore.underlyingBalance
         );
 
         // Ensure that the token balances were updated correctly.
         assertApproxEqAbs(
             token.balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.tokenBalance +
+            hyperdriveBalancesBefore.shareBalance +
                 token.convertToShares(basePaid),
             1
         );
         assertApproxEqAbs(
             token.balanceOf(trader),
-            traderBalancesBefore.tokenBalance - token.convertToShares(basePaid),
+            traderBalancesBefore.shareBalance - token.convertToShares(basePaid),
             1
         );
 
@@ -548,12 +548,12 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         );
         assertApproxEqAbs(
             token.balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.tokenBalance + expectedShares,
+            hyperdriveBalancesBefore.shareBalance + expectedShares,
             1
         );
         assertApproxEqAbs(
             token.balanceOf(trader),
-            traderBalancesBefore.tokenBalance - expectedShares,
+            traderBalancesBefore.shareBalance - expectedShares,
             1
         );
     }
@@ -577,29 +577,29 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         // Ensure that the underlying balances were updated correctly.
         assertEq(
             underlyingToken.balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.underlyingTokenBalance
+            hyperdriveBalancesBefore.underlyingBalance
         );
         assertEq(
             underlyingToken.balanceOf(trader),
-            traderBalancesBefore.underlyingTokenBalance
+            traderBalancesBefore.underlyingBalance
         );
 
         // Ensure that the token balances were updated correctly.
         assertApproxEqAbs(
             token.balanceOf(address(hyperdrive)),
-            hyperdriveBalancesBefore.tokenBalance - shareProceeds,
+            hyperdriveBalancesBefore.shareBalance - shareProceeds,
             1
         );
         assertApproxEqAbs(
             token.balanceOf(trader),
-            traderBalancesBefore.tokenBalance + shareProceeds,
+            traderBalancesBefore.shareBalance + shareProceeds,
             1
         );
     }
 
     struct AccountBalances {
-        uint256 tokenBalance;
-        uint256 underlyingTokenBalance;
+        uint256 shareBalance;
+        uint256 underlyingBalance;
     }
 
     function getAccountBalances(
@@ -607,8 +607,8 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
     ) internal view returns (AccountBalances memory) {
         return
             AccountBalances({
-                tokenBalance: token.balanceOf(account),
-                underlyingTokenBalance: underlyingToken.balanceOf(account)
+                shareBalance: token.balanceOf(account),
+                underlyingBalance: underlyingToken.balanceOf(account)
             });
     }
 }
