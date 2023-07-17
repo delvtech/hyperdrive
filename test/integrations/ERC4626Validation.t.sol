@@ -104,7 +104,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         );
     }
 
-    function test_OpenLongWithToken(uint256 basePaid) external {
+    function test_OpenLongWithShares(uint256 basePaid) external {
         vm.startPrank(alice);
         basePaid = basePaid.normalizeToRange(
             0.00001e18,
@@ -164,7 +164,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         hyperdrive.closeLong(maturityTime, longAmount, 0, alice, true);
     }
 
-    function test_CloseLongWithToken(uint256 basePaid) external {
+    function test_CloseLongWithShares(uint256 basePaid) external {
         vm.startPrank(alice);
         // Alice opens a long.
         basePaid = basePaid.normalizeToRange(
@@ -258,7 +258,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         );
     }
 
-    function test_OpenShortWithToken(uint256 shortAmount) external {
+    function test_OpenShortWithShares(uint256 shortAmount) external {
         vm.startPrank(alice);
         shortAmount = shortAmount.normalizeToRange(
             0.00001e18,
@@ -323,7 +323,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         hyperdrive.closeShort(maturityTime, shortAmount, 0, alice, true);
     }
 
-    function test_CloseShortWithToken(
+    function test_CloseShortWithShares(
         uint256 shortAmount,
         int256 variableRate
     ) external {
