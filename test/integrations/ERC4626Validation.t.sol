@@ -59,7 +59,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         uint256 contribution = 7_500e18;
         vm.stopPrank();
         vm.startPrank(alice);
-        
+
         // Set approval to allow initial contribution to factory
         underlyingToken.approve(address(factory), type(uint256).max);
 
@@ -232,7 +232,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
 
         // Ensure that the ERC4626 aggregates and the token balances were updated
         // correctly during the trade.
-        verifyShareWithdrawal(
+        verifyWithdrawalShares(
             alice,
             baseProceeds,
             totalPooledAssetsBefore,
@@ -279,7 +279,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         );
 
         // Ensure balances updated correctly
-        verifyTokenWithdrawal(
+        verifyWithdrawalToken(
             alice,
             token.convertToShares(baseProceeds),
             totalPooledAssetsBefore,
@@ -414,7 +414,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
 
         // Ensure that the ERC4626 aggregates and the token balances were updated
         // correctly during the trade.
-        verifyShareWithdrawal(
+        verifyWithdrawalShares(
             alice,
             baseProceeds,
             totalPooledAssetsBefore,
@@ -470,7 +470,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
 
         // Ensure that the ERC4626 aggregates and the token balances were updated
         // correctly during the trade.
-        verifyTokenWithdrawal(
+        verifyWithdrawalToken(
             alice,
             token.convertToShares(baseProceeds),
             totalPooledAssetsBefore,
@@ -655,7 +655,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         );
     }
 
-    function verifyTokenWithdrawal(
+    function verifyWithdrawalToken(
         address trader,
         uint256 shareProceeds,
         uint256 totalPooledAssetsBefore,
@@ -694,7 +694,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         );
     }
 
-    function verifyShareWithdrawal(
+    function verifyWithdrawalShares(
         address trader,
         uint256 baseProceeds,
         uint256 totalPooledAssetsBefore,
