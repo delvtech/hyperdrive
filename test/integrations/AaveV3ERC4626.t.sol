@@ -47,6 +47,8 @@ contract AaveV3ERC4626Test is ERC4626ValidationTest {
     }
 
     function advanceTimeWithYield(uint256 timeDelta) public override {
+        // Aave derives interest based on time, so all we need
+        // to do is advance the block timestamp.
         vm.warp(block.timestamp + timeDelta);
     }
 }
