@@ -128,7 +128,6 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         uint256 totalSharesBefore = token.convertToShares(
             totalPooledAssetsBefore
         );
-
         AccountBalances memory aliceBalancesBefore = getAccountBalances(alice);
         AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
             address(hyperdrive)
