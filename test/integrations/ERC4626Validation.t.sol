@@ -128,7 +128,6 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         uint256 totalSharesBefore = token.convertToShares(
             totalPooledAssetsBefore
         );
-
         AccountBalances memory aliceBalancesBefore = getAccountBalances(alice);
         AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
             address(hyperdrive)
@@ -168,7 +167,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             )
         );
         underlyingToken.approve(address(token), type(uint256).max);
-        // Deposit into the ERC4626 so underlying doesn't need ot be used
+        // Deposit into the ERC4626 so underlying doesn't need to be used
         token.deposit(basePaid, alice);
 
         // Establish baseline, important underlying balance must be taken AFTER
