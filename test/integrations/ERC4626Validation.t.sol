@@ -52,8 +52,8 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             token
         );
 
-        IHyperdrive.PoolConfig memory config = testConfig(FIXED_RATE);
         // Config changes required to support ERC4626 with the correct initial Share Price
+        IHyperdrive.PoolConfig memory config = testConfig(FIXED_RATE);
         config.baseToken = underlyingToken;
         config.initialSharePrice = FixedPointMath.ONE_18.divDown(
             token.convertToShares(FixedPointMath.ONE_18)
