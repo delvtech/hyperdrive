@@ -120,8 +120,7 @@ contract ERC4626Hyperdrive is Hyperdrive {
     /// @return The current share price.
     /// @dev must remain consistent with the impl inside of the DataProvider
     function _pricePerShare() internal view override returns (uint256) {
-        uint256 shareEstimate = pool.convertToShares(FixedPointMath.ONE_18);
-        return (FixedPointMath.ONE_18.divDown(shareEstimate));
+        return pool.convertToAssets(FixedPointMath.ONE_18);
     }
 
     /// @notice Some yield sources [eg Morpho] pay rewards directly to this contract
