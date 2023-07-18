@@ -39,8 +39,8 @@ contract AaveV3ERC4626Test is ERC4626ValidationTest {
         token = IERC4626(address(yieldDaddyFactory.createERC4626(dai)));
         underlyingToken = IERC20(address(dai));
 
+        // Alice account must be prefunded with lots of the underlyingToken.
         address daiWhale = 0x60FaAe176336dAb62e284Fe19B885B095d29fB7F;
-        // Alice account must be prefunded with lots of the underlyingToken
         whaleTransfer(daiWhale, IERC20(address(dai)), alice);
 
         _setUp();
