@@ -240,15 +240,11 @@ abstract contract HyperdriveFactory {
             _contribution
         );
         if (
-            !_config.baseToken.approve(
-                address(hyperdrive),
-                type(uint256).max
-            )
+            !_config.baseToken.approve(address(hyperdrive), type(uint256).max)
         ) {
             revert IHyperdrive.ApprovalFailed();
         }
         hyperdrive.initialize(_contribution, _apr, msg.sender, true);
-    
 
         // Setup the pausers roles from the default array
         for (uint256 i = 0; i < defaultPausers.length; i++) {
