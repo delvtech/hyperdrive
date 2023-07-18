@@ -195,6 +195,9 @@ abstract contract HyperdriveFactory {
     }
 
     /// @notice Deploys a copy of hyperdrive with the given params
+    /// @dev Function is declared payable to allow payable overrides
+    ///     for accepting Ether on initialization, but not supported
+    ///     by default within this instance.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _extraData The extra data is used by some factories
     /// @param _contribution Base token to call init with
@@ -230,35 +233,22 @@ abstract contract HyperdriveFactory {
             )
         );
 
-        // We only do ERC20 transfers when we deploy an ERC20 pool
-        if (address(_config.baseToken) != ETH) {
-            // Initialize the Hyperdrive instance.
-            _config.baseToken.transferFrom(
-                msg.sender,
-                address(this),
-                _contribution
-            );
-            if (
-                !_config.baseToken.approve(
-                    address(hyperdrive),
-                    type(uint256).max
-                )
-            ) {
-                revert IHyperdrive.ApprovalFailed();
-            }
-            hyperdrive.initialize(_contribution, _apr, msg.sender, true);
-        } else {
-            // Require the caller sent value
-            if (msg.value != _contribution) {
-                revert IHyperdrive.TransferFailed();
-            }
-            hyperdrive.initialize{ value: _contribution }(
-                _contribution,
-                _apr,
-                msg.sender,
-                true
-            );
+        // Initialize the Hyperdrive instance.
+        _config.baseToken.transferFrom(
+            msg.sender,
+            address(this),
+            _contribution
+        );
+        if (
+            !_config.baseToken.approve(
+                address(hyperdrive),
+                type(uint256).max
+            )
+        ) {
+            revert IHyperdrive.ApprovalFailed();
         }
+        hyperdrive.initialize(_contribution, _apr, msg.sender, true);
+    
 
         // Setup the pausers roles from the default array
         for (uint256 i = 0; i < defaultPausers.length; i++) {
