@@ -26,6 +26,7 @@ contract StethERC4626 is ERC4626ValidationTest {
         token = IERC4626(0xF9A98A9452485ed55cd3Ce5260C2b71c9807b11a);
 
         // Note this is wsteth so it could be somewhat problematic in the future
+        // depending on whether or not tests interact with wsEth.
         address stethWhale = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
         whaleTransfer(stethWhale, underlyingToken, alice);
 
