@@ -52,7 +52,6 @@ contract StethERC4626 is ERC4626ValidationTest {
                 LIDO.getTotalPooledEther().mulDown(uint256(variableRate))
             : LIDO.getBufferedEther() -
                 LIDO.getTotalPooledEther().mulDown(uint256(variableRate));
-
         vm.store(
             address(LIDO),
             BUFFERED_ETHER_POSITION,
