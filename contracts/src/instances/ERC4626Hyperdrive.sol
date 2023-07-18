@@ -7,7 +7,6 @@ import { IERC20 } from "../interfaces/IERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
-import { console } from "forge-std/console.sol";
 
 /// @author DELV
 /// @title ERC4626Hyperdrive
@@ -47,8 +46,6 @@ contract ERC4626Hyperdrive is Hyperdrive {
         //        price for USDC if the price per share changes based on size of deposit
         //        then this line will read an incorrect and possibly dangerous price.
         if (_config.initialSharePrice != _pricePerShare()) {
-            console.log(uint256(_config.initialSharePrice));
-            console.log(uint256(_pricePerShare()));
             revert IHyperdrive.InvalidInitialSharePrice();
         }
         if (address(_config.baseToken) != _pool.asset()) {
