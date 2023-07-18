@@ -56,11 +56,11 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         IHyperdrive.PoolConfig memory config = testConfig(FIXED_RATE);
         config.baseToken = underlyingToken;
         config.initialSharePrice = token.convertToAssets(FixedPointMath.ONE_18);
-
         uint256 contribution = 7_500e18;
-
         vm.stopPrank();
         vm.startPrank(alice);
+        
+        // Set approval to allow initial contribution to factory
         underlyingToken.approve(address(factory), type(uint256).max);
 
         // Deploy and set hyperdrive instance
@@ -71,6 +71,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             FIXED_RATE
         );
 
+        // Setup maximum approvals so transfers don't require further approval
         underlyingToken.approve(address(hyperdrive), type(uint256).max);
         underlyingToken.approve(address(token), type(uint256).max);
         token.approve(address(hyperdrive), type(uint256).max);
@@ -410,7 +411,6 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             alice,
             true
         );
-        // Convert baseProceeds to base rather than shares
 
         // Ensure that the ERC4626 aggregates and the token balances were updated
         // correctly during the trade.
