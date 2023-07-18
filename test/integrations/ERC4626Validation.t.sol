@@ -442,6 +442,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
 
         // Open the short
         (uint256 maturityTime, ) = openShortERC4626(alice, shortAmount, true);
+
         // The term passes and interest accrues.
         variableRate = variableRate.normalizeToRange(0, 2.5e18);
 
