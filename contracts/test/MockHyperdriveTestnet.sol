@@ -183,6 +183,10 @@ contract MockHyperdriveDataProviderTestnet is
         MultiTokenDataProvider(_linkerCodeHash, _factory)
     {}
 
+    function getRate() external view returns (uint256) {
+        _revert(abi.encode(rate));
+    }
+
     /// Overrides ///
 
     function _pricePerShare() internal view override returns (uint256) {
