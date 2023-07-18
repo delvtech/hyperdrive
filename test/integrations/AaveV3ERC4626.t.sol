@@ -23,7 +23,7 @@ contract AaveV3ERC4626Test is ERC4626ValidationTest {
 
     function setUp() public override __mainnet_fork(17_318_972) {
         super.setUp();
-        
+
         // Aave v3 Lending Pool Contract
         IPool pool = IPool(0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2);
         AaveV3ERC4626Factory yieldDaddyFactory = new AaveV3ERC4626Factory(
