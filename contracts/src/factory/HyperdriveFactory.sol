@@ -209,6 +209,9 @@ abstract contract HyperdriveFactory {
         uint256 _contribution,
         uint256 _apr
     ) public payable virtual returns (IHyperdrive) {
+        if (msg.value > 0) {
+            revert IHyperdrive.NonPayableInitialization();
+        }
         // Overwrite the governance and fees field of the config.
         _config.feeCollector = feeCollector;
         _config.governance = address(this);

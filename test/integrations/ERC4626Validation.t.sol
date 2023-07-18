@@ -363,6 +363,12 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
 
         // Ensure we did actually paid a non-Zero amount of base
         assertGt(basePaid, 0);
+        uint256 realizedRate = HyperdriveUtils.calculateAPRFromRealizedPrice(
+            shortAmount - basePaid,
+            shortAmount,
+            1e18
+        );
+        assertGe(realizedRate, FIXED_RATE);
 
         // Ensure balances were correctly updated
         verifyDepositShares(
