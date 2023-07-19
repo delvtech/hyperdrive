@@ -226,8 +226,9 @@ abstract contract HyperdriveLong is HyperdriveLP {
 
         // Update the long share price of the checkpoint and the global long
         // open share price.
-        _checkpoints[_checkpointTime].longSharePrice = uint256(
-            _checkpoints[_checkpointTime].longSharePrice
+        IHyperdrive.Checkpoint storage checkpoint = _checkpoints[_checkpointTime];
+        checkpoint.longSharePrice = uint256(
+            checkpoint.longSharePrice
         )
             .updateWeightedAverage(
                 uint256(
