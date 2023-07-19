@@ -340,11 +340,12 @@ abstract contract HyperdriveShort is HyperdriveLP {
             // Remove a proportional amount of the checkpoints base volume from
             // the aggregates.
             uint256 checkpointTime = _maturityTime - _positionDuration;
+            IHyperdrive.Checkpoint storage checkpoint = _checkpoints[checkpointTime];
             uint128 proportionalBaseVolume = uint256(
-                _checkpoints[checkpointTime].shortBaseVolume
+                    checkpoint.shortBaseVolume
             ).mulDown(_bondAmount.divDown(checkpointAmount)).toUint128();
             _marketState.shortBaseVolume -= proportionalBaseVolume;
-            _checkpoints[checkpointTime]
+            checkpoint
                 .shortBaseVolume -= proportionalBaseVolume;
         }
 
