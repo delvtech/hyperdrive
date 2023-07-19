@@ -8,24 +8,14 @@ import { MockHyperdriveDataProvider } from "test/mocks/MockHyperdrive.sol";
 
 contract MockHyperdriveFactory is HyperdriveFactory {
     constructor(
-        address _governance,
+        FactoryConfig memory _factoryConfig,
         IHyperdriveDeployer _deployer,
-        address _hyperdriveGovernance,
-        address _feeCollector,
-        IHyperdrive.Fees memory _fees,
-        IHyperdrive.Fees memory _maxFees,
-        address[] memory _defaultPausers,
         address _linkerFactory,
         bytes32 _linkerCodeHash
     )
         HyperdriveFactory(
-            _governance,
+            _factoryConfig,
             _deployer,
-            _hyperdriveGovernance,
-            _feeCollector,
-            _fees,
-            _maxFees,
-            _defaultPausers,
             _linkerFactory,
             _linkerCodeHash
         )

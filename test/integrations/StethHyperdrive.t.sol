@@ -18,6 +18,7 @@ import { ETH } from "test/utils/Constants.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
+import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 
 contract StethHyperdriveTest is HyperdriveTest {
     using FixedPointMath for uint256;
@@ -51,13 +52,15 @@ contract StethHyperdriveTest is HyperdriveTest {
         defaults[0] = bob;
         forwarderFactory = new ForwarderFactory();
         factory = new StethHyperdriveFactory(
-            alice,
+            HyperdriveFactory.FactoryConfig(
+                alice,
+                bob,
+                bob,
+                IHyperdrive.Fees(0, 0, 0),
+                IHyperdrive.Fees(0, 0, 0),
+                defaults
+            ),
             simpleDeployer,
-            bob,
-            bob,
-            IHyperdrive.Fees(0, 0, 0),
-            IHyperdrive.Fees(0, 0, 0),
-            defaults,
             address(forwarderFactory),
             forwarderFactory.ERC20LINK_HASH(),
             LIDO

@@ -15,6 +15,7 @@ import { Mock4626, ERC20 } from "../mocks/Mock4626.sol";
 import { MockAaveHyperdrive } from "../mocks/MockAaveHyperdrive.sol";
 import { HyperdriveUtils } from "../utils/HyperdriveUtils.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
+import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 
 contract AaveHyperdriveTest is HyperdriveTest {
     using FixedPointMath for *;
@@ -39,13 +40,15 @@ contract AaveHyperdriveTest is HyperdriveTest {
         defaults[0] = bob;
         forwarderFactory = new ForwarderFactory();
         factory = new AaveHyperdriveFactory(
-            alice,
+            HyperdriveFactory.FactoryConfig(
+                alice,
+                bob,
+                bob,
+                IHyperdrive.Fees(0, 0, 0),
+                IHyperdrive.Fees(0, 0, 0),
+                defaults
+            ),
             simpleDeployer,
-            bob,
-            bob,
-            IHyperdrive.Fees(0, 0, 0),
-            IHyperdrive.Fees(0, 0, 0),
-            defaults,
             address(forwarderFactory),
             forwarderFactory.ERC20LINK_HASH()
         );

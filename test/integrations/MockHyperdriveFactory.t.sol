@@ -14,6 +14,7 @@ import { DsrManager } from "contracts/test/MockDsrHyperdrive.sol";
 import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../utils/HyperdriveUtils.sol";
 import { MockHyperdriveFactory } from "test/mocks/MockHyperdriveFactory.sol";
+import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 
 contract MockHyperdriveFactoryTest is HyperdriveTest {
     function test_hyperdrive_factory_fees() external {
@@ -21,17 +22,20 @@ contract MockHyperdriveFactoryTest is HyperdriveTest {
         defaults[0] = bob;
         IHyperdriveDeployer simpleDeployer;
         MockHyperdriveFactory factory = new MockHyperdriveFactory(
-            alice,
+            HyperdriveFactory.FactoryConfig(
+                alice,
+                bob,
+                bob,
+                IHyperdrive.Fees(0, 0, 0),
+                IHyperdrive.Fees(0, 0, 0),
+                defaults
+            ),
             simpleDeployer,
-            bob,
-            bob,
-            IHyperdrive.Fees(0, 0, 0),
-            IHyperdrive.Fees(1e18, 1e18, 1e18),
-            defaults,
             address(0),
             bytes32(0)
         );
-        assertEq(factory.governance(), alice);
+
+        assertEq(factory._governance(), alice);
         vm.startPrank(alice);
 
         // Fees can not exceed maximum fees.
@@ -45,13 +49,15 @@ contract MockHyperdriveFactoryTest is HyperdriveTest {
         IHyperdriveDeployer simpleDeployer;
         vm.expectRevert(IHyperdrive.MaxFeeTooHigh.selector);
         new MockHyperdriveFactory(
-            alice,
+            HyperdriveFactory.FactoryConfig(
+                alice,
+                bob,
+                bob,
+                IHyperdrive.Fees(0, 0, 0),
+                IHyperdrive.Fees(2e18, 1e18, 1e18),
+                defaults
+            ),
             simpleDeployer,
-            bob,
-            bob,
-            IHyperdrive.Fees(0, 0, 0),
-            IHyperdrive.Fees(2e18, 1e18, 1e18),
-            defaults,
             address(0),
             bytes32(0)
         );

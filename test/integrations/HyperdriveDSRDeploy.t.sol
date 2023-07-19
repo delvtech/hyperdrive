@@ -13,6 +13,7 @@ import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { DsrManager } from "contracts/test/MockDsrHyperdrive.sol";
 import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../utils/HyperdriveUtils.sol";
+import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 
 contract HyperdriveDsrTest is HyperdriveTest {
     using FixedPointMath for *;
@@ -35,13 +36,15 @@ contract HyperdriveDsrTest is HyperdriveTest {
         defaults[0] = bob;
         forwarderFactory = new ForwarderFactory();
         factory = new DsrHyperdriveFactory(
-            alice,
+            HyperdriveFactory.FactoryConfig(
+                alice,
+                bob,
+                bob,
+                IHyperdrive.Fees(0, 0, 0),
+                IHyperdrive.Fees(0, 0, 0),
+                defaults
+            ),
             simpleDeployer,
-            bob,
-            bob,
-            IHyperdrive.Fees(0, 0, 0),
-            IHyperdrive.Fees(0, 0, 0),
-            defaults,
             address(forwarderFactory),
             forwarderFactory.ERC20LINK_HASH(),
             address(manager)

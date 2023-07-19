@@ -9,6 +9,7 @@ import { DsrHyperdriveFactory } from "contracts/src/factory/DsrHyperdriveFactory
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { DsrManager } from "contracts/test/MockDsrHyperdrive.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
+import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 
 contract HyperdriveFactoryTest is HyperdriveTest {
     function test_hyperdrive_factory_admin_functions() external {
@@ -22,19 +23,20 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
         DsrHyperdriveFactory factory = new DsrHyperdriveFactory(
-            alice,
+            HyperdriveFactory.FactoryConfig(
+                alice,
+                bob,
+                bob,
+                IHyperdrive.Fees(0, 0, 0),
+                IHyperdrive.Fees(1e18, 1e18, 1e18),
+                defaults
+            ),
             simpleDeployer,
-            bob,
-            bob,
-            IHyperdrive.Fees(0, 0, 0),
-            IHyperdrive.Fees(1e18, 1e18, 1e18),
-            defaults,
             address(0),
             bytes32(0),
             address(manager)
         );
-        assertEq(factory.governance(), alice);
-
+        assertEq(factory._governance(), alice);
         // Bob can't change access the admin functions.
         vm.stopPrank();
         vm.startPrank(bob);
@@ -59,7 +61,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         // Alice can change governance and then bob can change implementation
         vm.startPrank(alice);
         factory.updateGovernance(bob);
-        assertEq(factory.governance(), bob);
+        assertEq(factory._governance(), bob);
         vm.stopPrank();
         vm.startPrank(bob);
         factory.updateImplementation(IHyperdriveDeployer(bob));
@@ -69,20 +71,20 @@ contract HyperdriveFactoryTest is HyperdriveTest {
 
         // Bob can change the other values as well.
         factory.updateHyperdriveGovernance(alice);
-        assertEq(factory.hyperdriveGovernance(), alice);
+        assertEq(factory._hyperdriveGovernance(), alice);
         factory.updateLinkerFactory(address(uint160(0xdeadbeef)));
         assertEq(factory.linkerFactory(), address(uint160(0xdeadbeef)));
         factory.updateLinkerCodeHash(bytes32(uint256(0xdeadbeef)));
         assertEq(factory.linkerCodeHash(), bytes32(uint256(0xdeadbeef)));
         factory.updateFees(IHyperdrive.Fees(1, 2, 3));
-        (uint256 curve, uint256 flat, uint256 govFee) = factory.fees();
+        (uint256 curve, uint256 flat, uint256 govFee) = factory._fees();
         assertEq(curve, 1);
         assertEq(flat, 2);
         assertEq(govFee, 3);
         defaults[0] = alice;
         factory.updateDefaultPausers(defaults);
-        assertEq(factory.defaultPausers(0), alice);
+        assertEq(defaults[0], alice);
         factory.updateFeeCollector(alice);
-        assertEq(factory.feeCollector(), alice);
+        assertEq(factory._feeCollector(), alice);
     }
 }
