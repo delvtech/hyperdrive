@@ -30,31 +30,19 @@ abstract contract HyperdriveFactory {
     // The hash of the ERC20 linker contract's constructor code.
     bytes32 public linkerCodeHash;
 
-    // A constant for the ETH value
-    address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-
-    // A variable for the curve fee.
-    uint256 public _curveFee;
-
-    // A variable for the flat free.
-    uint256 public _flatFee;
-
-    // A variable for the governanve fee.
-    uint256 public _govFee;
-
     // A variable for total fees.
     IHyperdrive.Fees public _fees;
 
-    // A variable for the governance.
+    // The address that can pause the contract.
     address public _governance;
 
-    // A variable for the hyperdrive governance.
+    // The address of this contract.
     address public _hyperdriveGovernance;
 
-    // A variable for the fee collector.
+    // The address which collects governance fees.
     address public _feeCollector;
 
-    // A variable for the default pausers.
+    // The default address for governance.
     address[] internal _defaultPausers;
 
     // A constant for the Maximum Fees on a trade
@@ -67,7 +55,7 @@ abstract contract HyperdriveFactory {
     uint256 internal immutable _maxGovernanceFee;
 
     struct FactoryConfig {
-        /// @dev The address which can ubdate a factory.
+        /// @dev The address which can update a factory.
         address governance;
         /// @dev The address which is set as the governor of hyperdrive.
         address hyperdriveGovernance;
@@ -92,7 +80,7 @@ abstract contract HyperdriveFactory {
     );
 
     /// @notice Deploys the contract.
-    /// @param _factoryConfig The variables that configure the factory;
+    /// @param _factoryConfig Configuration of the Hyperdrive Factory;
     /// @param _deployer The contract which holds the bytecode and deploys new versions.
     /// @param _linkerFactory The address of the linker factory.
     /// @param _linkerCodeHash The hash of the linker contract's constructor code.
@@ -102,7 +90,7 @@ abstract contract HyperdriveFactory {
         address _linkerFactory,
         bytes32 _linkerCodeHash
     ) {
-        // Initalize fee paramaters to ensure that max fees are less than
+        // Initalize fee parameters to ensure that max fees are less than
         // 100% and that the inital fee configuration satisfies the max fee
         // constraint.
         _maxCurveFee = _factoryConfig.maxFees.curve;
@@ -123,11 +111,8 @@ abstract contract HyperdriveFactory {
             revert IHyperdrive.FeeTooHigh();
         }
         _fees = _factoryConfig.fees;
-        _curveFee = _factoryConfig.fees.curve;
-        _flatFee = _factoryConfig.fees.flat;
-        _govFee = _factoryConfig.fees.governance;
 
-        // Initialize the other paramters.
+        // Initialize the other parameters.
         _governance = _factoryConfig.governance;
         _hyperdriveGovernance = _factoryConfig.hyperdriveGovernance;
         _feeCollector = _factoryConfig.feeCollector;
