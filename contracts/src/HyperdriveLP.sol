@@ -321,8 +321,9 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // to avoid unnecessary reverts. We exit early if the user has no shares
         // available to redeem.
         sharesRedeemed = _shares;
-        if (sharesRedeemed > _withdrawPool.readyToWithdraw) {
-            sharesRedeemed = _withdrawPool.readyToWithdraw;
+        uint128 readyToWithdraw_ = _withdrawPool.readyToWithdraw;
+        if (sharesRedeemed > readyToWithdraw_) {
+            sharesRedeemed = readyToWithdraw_;
         }
         if (sharesRedeemed == 0) return (0, 0);
 
@@ -330,13 +331,14 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         _burn(AssetId._WITHDRAWAL_SHARE_ASSET_ID, msg.sender, sharesRedeemed);
 
         // The LP gets the pro-rata amount of the collected proceeds.
+        uint128 proceeds_ = _withdrawPool.proceeds;
         uint256 shareProceeds = sharesRedeemed.mulDivDown(
-            uint128(_withdrawPool.proceeds),
-            uint128(_withdrawPool.readyToWithdraw)
+            uint128(proceeds_),
+            uint128(readyToWithdraw_)
         );
 
         // Apply the update to the withdrawal pool.
-        _withdrawPool.readyToWithdraw -= sharesRedeemed.toUint128();
+        _withdrawPool.readyToWithdraw = readyToWithdraw_ - sharesRedeemed.toUint128();
         _withdrawPool.proceeds -= shareProceeds.toUint128();
 
         // Withdraw for the user
