@@ -90,16 +90,16 @@ abstract contract Hyperdrive is
         uint256 _sharePrice
     ) internal override returns (uint256 openSharePrice) {
         // Return early if the checkpoint has already been updated.
-        IHyperdrive.Checkpoint storage checkpoint = _checkpoints[_checkpointTime];
+        IHyperdrive.Checkpoint storage ckpt = _checkpoints[_checkpointTime];
         if (
-            checkpoint.sharePrice != 0 ||
+            ckpt.sharePrice != 0 ||
             _checkpointTime > block.timestamp
         ) {
             return _checkpoints[_checkpointTime].sharePrice;
         }
 
         // Create the share price checkpoint.
-        checkpoint.sharePrice = _sharePrice.toUint128();
+        ckpt.sharePrice = _sharePrice.toUint128();
 
         // Pay out the long withdrawal pool for longs that have matured.
         uint256 maturedLongsAmount = _totalSupply[
@@ -131,6 +131,6 @@ abstract contract Hyperdrive is
             );
         }
 
-        return checkpoint.sharePrice;
+        return ckpt.sharePrice;
     }
 }
