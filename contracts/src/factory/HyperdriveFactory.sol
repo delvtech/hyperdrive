@@ -18,7 +18,7 @@ abstract contract HyperdriveFactory {
 
     // The address of the hyperdrive deployer of the most recent code.
     IHyperdriveDeployer public hyperdriveDeployer;
-    // The address which coordinates upgrades of the official version of the code
+
     // A mapping of all previously deployed hyperdrive instances of all versions
     // 0 is un-deployed then increments for increasing versions
     mapping(address instance => uint256 version) public isOfficial;
@@ -30,29 +30,29 @@ abstract contract HyperdriveFactory {
     // The hash of the ERC20 linker contract's constructor code.
     bytes32 public linkerCodeHash;
 
-    // A variable for total fees.
-    IHyperdrive.Fees public _fees;
+    // The default fee paramters.
+    IHyperdrive.Fees public fees;
 
     // The address that can pause the contract.
-    address public _governance;
+    address public governance;
 
     // The address of this contract.
-    address public _hyperdriveGovernance;
+    address public hyperdriveGovernance;
 
     // The address which collects governance fees.
-    address public _feeCollector;
+    address public feeCollector;
 
     // The default address for governance.
-    address[] internal _defaultPausers;
+    address[] internal defaultPausers;
 
-    // A constant for the Maximum Fees on a trade
-    uint256 internal immutable _maxCurveFee;
+    // The maximum curve fee that can be used as a factory default.
+    uint256 internal immutable maxCurveFee;
 
-    // A constant for the Maximum Fees on a trade
-    uint256 internal immutable _maxFlatFee;
+    // The maximum flat fee that can be used as a factory default.
+    uint256 internal immutable maxFlatFee;
 
-    // A constant for the Maximum Fees on a trade
-    uint256 internal immutable _maxGovernanceFee;
+    // The maximum governance fee that can be used as a factory default.
+    uint256 internal immutable maxGovernanceFee;
 
     struct FactoryConfig {
         /// @dev The address which can update a factory.
@@ -63,7 +63,7 @@ abstract contract HyperdriveFactory {
         address feeCollector;
         /// @dev The fees each deployed instance will have.
         IHyperdrive.Fees fees;
-        /// @dev The maximum fees each deployed instance can have.
+        /// @dev The maximum values that governance can use when updating the default fees.
         IHyperdrive.Fees maxFees;
         /// @dev The default addresses which will be set to have the pauser role.
         address[] defaultPausers;
@@ -93,30 +93,30 @@ abstract contract HyperdriveFactory {
         // Initalize fee parameters to ensure that max fees are less than
         // 100% and that the inital fee configuration satisfies the max fee
         // constraint.
-        _maxCurveFee = _factoryConfig.maxFees.curve;
-        _maxFlatFee = _factoryConfig.maxFees.flat;
-        _maxGovernanceFee = _factoryConfig.maxFees.governance;
+        maxCurveFee = _factoryConfig.maxFees.curve;
+        maxFlatFee = _factoryConfig.maxFees.flat;
+        maxGovernanceFee = _factoryConfig.maxFees.governance;
         if (
-            _maxCurveFee > FixedPointMath.ONE_18 ||
-            _maxFlatFee > FixedPointMath.ONE_18 ||
-            _maxGovernanceFee > FixedPointMath.ONE_18
+            maxCurveFee > FixedPointMath.ONE_18 ||
+            maxFlatFee > FixedPointMath.ONE_18 ||
+            maxGovernanceFee > FixedPointMath.ONE_18
         ) {
             revert IHyperdrive.MaxFeeTooHigh();
         }
         if (
-            _factoryConfig.fees.curve > _maxCurveFee ||
-            _factoryConfig.fees.flat > _maxFlatFee ||
-            _factoryConfig.fees.governance > _maxGovernanceFee
+            _factoryConfig.fees.curve > maxCurveFee ||
+            _factoryConfig.fees.flat > maxFlatFee ||
+            _factoryConfig.fees.governance > maxGovernanceFee
         ) {
             revert IHyperdrive.FeeTooHigh();
         }
-        _fees = _factoryConfig.fees;
+        fees = _factoryConfig.fees;
 
         // Initialize the other parameters.
-        _governance = _factoryConfig.governance;
-        _hyperdriveGovernance = _factoryConfig.hyperdriveGovernance;
-        _feeCollector = _factoryConfig.feeCollector;
-        _defaultPausers = _factoryConfig.defaultPausers;
+        governance = _factoryConfig.governance;
+        hyperdriveGovernance = _factoryConfig.hyperdriveGovernance;
+        feeCollector = _factoryConfig.feeCollector;
+        defaultPausers = _factoryConfig.defaultPausers;
         versionCounter = 1;
         hyperdriveDeployer = _deployer;
         linkerFactory = _linkerFactory;
@@ -125,7 +125,7 @@ abstract contract HyperdriveFactory {
 
     modifier onlyGovernance() {
         // Only governance can call this
-        if (msg.sender != _governance) revert IHyperdrive.Unauthorized();
+        if (msg.sender != governance) revert IHyperdrive.Unauthorized();
         _;
     }
 
@@ -151,7 +151,7 @@ abstract contract HyperdriveFactory {
     function updateGovernance(address newGovernance) external onlyGovernance {
         require(newGovernance != address(0));
         // Update governance
-        _governance = newGovernance;
+        governance = newGovernance;
 
         emit GovernanceUpdated(newGovernance);
     }
@@ -165,7 +165,7 @@ abstract contract HyperdriveFactory {
     ) external onlyGovernance {
         require(newGovernance != address(0));
         // Update hyperdrive governance
-        _hyperdriveGovernance = newGovernance;
+        hyperdriveGovernance = newGovernance;
 
         emit HyperdriveGovernanceUpdated(newGovernance);
     }
@@ -207,7 +207,7 @@ abstract contract HyperdriveFactory {
     ) external onlyGovernance {
         require(newFeeCollector != address(0));
         // Update fee collector
-        _feeCollector = newFeeCollector;
+        feeCollector = newFeeCollector;
 
         emit FeeCollectorUpdated(newFeeCollector);
     }
@@ -218,14 +218,14 @@ abstract contract HyperdriveFactory {
         IHyperdrive.Fees calldata newFees
     ) external onlyGovernance {
         if (
-            newFees.curve > _maxCurveFee ||
-            newFees.flat > _maxFlatFee ||
-            newFees.governance > _maxGovernanceFee
+            newFees.curve > maxCurveFee ||
+            newFees.flat > maxFlatFee ||
+            newFees.governance > maxGovernanceFee
         ) {
             revert IHyperdrive.FeeTooHigh();
         }
         // Update the fee struct
-        _fees = newFees;
+        fees = newFees;
     }
 
     /// @notice Allows governance to change the fee collector address
@@ -235,7 +235,7 @@ abstract contract HyperdriveFactory {
     ) external onlyGovernance {
         require(newDefaults.length != 0);
         // Update the default pausers
-        _defaultPausers = newDefaults;
+        defaultPausers = newDefaults;
     }
 
     /// @notice Deploys a copy of hyperdrive with the given params
@@ -257,9 +257,9 @@ abstract contract HyperdriveFactory {
             revert IHyperdrive.NonPayableInitialization();
         }
         // Overwrite the governance and fees field of the config.
-        _config.feeCollector = _feeCollector;
+        _config.feeCollector = feeCollector;
         _config.governance = address(this);
-        _config.fees = _fees;
+        _config.fees = fees;
 
         // We deploy a new data provider for this instance
         address dataProvider = deployDataProvider(
@@ -294,17 +294,17 @@ abstract contract HyperdriveFactory {
         hyperdrive.initialize(_contribution, _apr, msg.sender, true);
 
         // Setup the pausers roles from the default array
-        for (uint256 i = 0; i < _defaultPausers.length; i++) {
-            hyperdrive.setPauser(_defaultPausers[i], true);
+        for (uint256 i = 0; i < defaultPausers.length; i++) {
+            hyperdrive.setPauser(defaultPausers[i], true);
         }
         // Reset governance to be the default one
-        hyperdrive.setGovernance(_hyperdriveGovernance);
+        hyperdrive.setGovernance(hyperdriveGovernance);
 
         // Mark as a version
         isOfficial[address(hyperdrive)] = versionCounter;
 
         // Emit a deployed event.
-        _config.governance = _hyperdriveGovernance;
+        _config.governance = hyperdriveGovernance;
         emit Deployed(
             versionCounter,
             address(hyperdrive),

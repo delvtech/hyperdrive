@@ -31,7 +31,7 @@ contract MockHyperdriveFactoryTest is HyperdriveTest {
             bytes32(0)
         );
 
-        assertEq(factory._governance(), alice);
+        assertEq(factory.governance(), alice);
         vm.startPrank(alice);
 
         // Curve fee can not exceed maximum curve fee.

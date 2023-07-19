@@ -59,7 +59,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             pool
         );
 
-        assertEq(factory._governance(), alice);
+        assertEq(factory.governance(), alice);
 
         // Bob can't change access the admin functions.
 
@@ -86,7 +86,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         // Alice can change governance and then bob can change implementation
         vm.startPrank(alice);
         factory.updateGovernance(bob);
-        assertEq(factory._governance(), bob);
+        assertEq(factory.governance(), bob);
         vm.stopPrank();
         vm.startPrank(bob);
         factory.updateImplementation(IHyperdriveDeployer(bob));
@@ -96,13 +96,13 @@ contract HyperdriveFactoryTest is HyperdriveTest {
 
         // Bob can change the other values as well.
         factory.updateHyperdriveGovernance(alice);
-        assertEq(factory._hyperdriveGovernance(), alice);
+        assertEq(factory.hyperdriveGovernance(), alice);
         factory.updateLinkerFactory(address(uint160(0xdeadbeef)));
         assertEq(factory.linkerFactory(), address(uint160(0xdeadbeef)));
         factory.updateLinkerCodeHash(bytes32(uint256(0xdeadbeef)));
         assertEq(factory.linkerCodeHash(), bytes32(uint256(0xdeadbeef)));
         factory.updateFees(IHyperdrive.Fees(1, 2, 3));
-        (uint256 curve, uint256 flat, uint256 govFee) = factory._fees();
+        (uint256 curve, uint256 flat, uint256 govFee) = factory.fees();
         assertEq(curve, 1);
         assertEq(flat, 2);
         assertEq(govFee, 3);
@@ -110,6 +110,6 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         factory.updateDefaultPausers(defaults);
         assertEq(defaults[0], alice);
         factory.updateFeeCollector(alice);
-        assertEq(factory._feeCollector(), alice);
+        assertEq(factory.feeCollector(), alice);
     }
 }
