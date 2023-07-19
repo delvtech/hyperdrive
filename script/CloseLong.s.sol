@@ -5,7 +5,6 @@ import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
-import { DsrManager } from "contracts/src/interfaces/IMaker.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
