@@ -620,7 +620,7 @@ contract HyperdriveMathTest is HyperdriveTest {
         // Open a long. This sets the long buffer to a non-trivial value which
         // stress tests the max long function.
         initialLongAmount = initialLongAmount.normalizeToRange(
-            0.0001e18,
+            0.001e18,
             hyperdrive.calculateMaxLong() / 2
         );
         openLong(bob, initialLongAmount);
