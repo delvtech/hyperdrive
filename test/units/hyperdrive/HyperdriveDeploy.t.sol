@@ -62,7 +62,6 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         assertEq(factory.governance(), alice);
 
         // Bob can't change access the admin functions.
-
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(IHyperdrive.Unauthorized.selector);

@@ -30,7 +30,7 @@ abstract contract HyperdriveFactory {
     // The hash of the ERC20 linker contract's constructor code.
     bytes32 public linkerCodeHash;
 
-    // The default fee paramters.
+    // The default fee parameters.
     IHyperdrive.Fees public fees;
 
     // The address that can pause the contract.
@@ -80,7 +80,7 @@ abstract contract HyperdriveFactory {
     );
 
     /// @notice Deploys the contract.
-    /// @param _factoryConfig Configuration of the Hyperdrive Factory;
+    /// @param _factoryConfig Configuration of the Hyperdrive Factory.
     /// @param _deployer The contract which holds the bytecode and deploys new versions.
     /// @param _linkerFactory The address of the linker factory.
     /// @param _linkerCodeHash The hash of the linker contract's constructor code.
@@ -90,8 +90,8 @@ abstract contract HyperdriveFactory {
         address _linkerFactory,
         bytes32 _linkerCodeHash
     ) {
-        // Initalize fee parameters to ensure that max fees are less than
-        // 100% and that the inital fee configuration satisfies the max fee
+        // Initialize fee parameters to ensure that max fees are less than
+        // 100% and that the initial fee configuration satisfies the max fee
         // constraint.
         maxCurveFee = _factoryConfig.maxFees.curve;
         maxFlatFee = _factoryConfig.maxFees.flat;
