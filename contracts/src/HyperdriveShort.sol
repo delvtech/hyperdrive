@@ -310,12 +310,13 @@ abstract contract HyperdriveShort is HyperdriveLP {
         uint256 _maturityTime,
         uint256 _sharePrice
     ) internal {
+        uint128 shortsOutstanding_ = _marketState.shortsOutstanding;
         // Update the short average maturity time.
         _marketState.shortAverageMaturityTime = uint256(
             _marketState.shortAverageMaturityTime
         )
             .updateWeightedAverage(
-                _marketState.shortsOutstanding,
+                shortsOutstanding_,
                 _maturityTime * 1e18, // scale up to fixed point scale
                 _bondAmount,
                 false
@@ -341,17 +342,18 @@ abstract contract HyperdriveShort is HyperdriveLP {
             // Remove a proportional amount of the checkpoints base volume from
             // the aggregates.
             uint256 checkpointTime = _maturityTime - _positionDuration;
+            uint128 checkpointShortBaseVolume = _checkpoints[checkpointTime].shortBaseVolume;
             IHyperdrive.Checkpoint storage checkpoint = _checkpoints[checkpointTime];
             uint128 proportionalBaseVolume = uint256(
-                    checkpoint.shortBaseVolume
+                    checkpointShortBaseVolume
             ).mulDown(_bondAmount.divDown(checkpointAmount)).toUint128();
             _marketState.shortBaseVolume -= proportionalBaseVolume;
             checkpoint
-                .shortBaseVolume -= proportionalBaseVolume;
-        }
+                .shortBaseVolume = checkpointShortBaseVolume - proportionalBaseVolume;
+            }
 
         // Decrease the amount of shorts outstanding.
-        _marketState.shortsOutstanding -= _bondAmount.toUint128();
+        _marketState.shortsOutstanding = shortsOutstanding_ - _bondAmount.toUint128();
 
         // Apply the updates from the curve trade to the reserves.
         _marketState.shareReserves += _shareReservesDelta.toUint128();
