@@ -279,7 +279,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // margin or pre-paid interest to the reserves because of the way that
         // the close short accounting works.
         uint128 shareReserves_ = _marketState.shareReserves - _shareReservesDelta.toUint128();
-        _marketState.shareReserves -= shareReserves_;
+        _marketState.shareReserves = shareReserves_;
         _marketState.bondReserves += _bondAmount.toUint128();
         _marketState.shortsOutstanding += _bondAmount.toUint128();
 
