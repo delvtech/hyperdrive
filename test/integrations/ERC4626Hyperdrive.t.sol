@@ -257,11 +257,10 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
     function test_erc4626_sweep() public {
         // Ensure that deployment will fail if the pool or base token is
         // specified as a sweep target.
-        address[] memory sweepTargets = new address[](1);
         vm.startPrank(alice);
+        address[] memory sweepTargets = new address[](1);
         sweepTargets[0] = address(dai);
         factory.updateSweepTargets(sweepTargets);
-        vm.stopPrank();
         IHyperdrive.PoolConfig memory config = IHyperdrive(
             address(mockHyperdrive)
         ).getPoolConfig();
@@ -272,10 +271,13 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             1_000e18,
             0.05e18
         );
-        vm.startPrank(alice);
+        assert(
+            !ERC4626DataProvider(address(mockHyperdrive)).isSweepable(
+                address(dai)
+            )
+        );
         sweepTargets[0] = address(pool);
         factory.updateSweepTargets(sweepTargets);
-        vm.stopPrank();
         vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
         factory.deployAndInitialize(
             config,
@@ -283,6 +285,12 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             1_000e18,
             0.05e18
         );
+        assert(
+            !ERC4626DataProvider(address(mockHyperdrive)).isSweepable(
+                address(pool)
+            )
+        );
+        vm.stopPrank();
 
         // Ensure that the base token and the pool cannot be swept.
         vm.startPrank(bob);
@@ -306,6 +314,11 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                     1_000e18,
                     0.05e18
                 )
+            )
+        );
+        assert(
+            ERC4626DataProvider(address(mockHyperdrive)).isSweepable(
+                address(otherToken)
             )
         );
         vm.stopPrank();
