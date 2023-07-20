@@ -29,8 +29,9 @@ abstract contract HyperdriveTWAP is HyperdriveBase {
         }
 
         // Load the current data from storage
-        uint256 previousTime = uint256(_oracle.lastTimestamp);
-        uint256 previousSum = uint256(_buffer[head].data);
+        OracleData storage headData = _buffer[head];
+        uint256 previousTime = uint256(headData.timestamp);
+        uint256 previousSum = uint256(headData.data);
 
         // Calculate sum
         uint256 delta = block.timestamp - previousTime;
