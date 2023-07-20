@@ -386,10 +386,11 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
     }
 
     function test_CloseShortWithUnderlying(
-        uint256 shortAmount,
+        uint128 shortAmount_,
         int256 variableRate
     ) external {
         vm.startPrank(alice);
+        uint256 shortAmount = uint256(shortAmount_);
         shortAmount = shortAmount.normalizeToRange(
             0.00001e18,
             Lib.min(
