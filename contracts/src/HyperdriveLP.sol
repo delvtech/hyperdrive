@@ -338,7 +338,9 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         );
 
         // Apply the update to the withdrawal pool.
-        _withdrawPool.readyToWithdraw = readyToWithdraw_ - sharesRedeemed.toUint128();
+        _withdrawPool.readyToWithdraw =
+            readyToWithdraw_ -
+            sharesRedeemed.toUint128();
         _withdrawPool.proceeds -= shareProceeds.toUint128();
 
         // Withdraw for the user

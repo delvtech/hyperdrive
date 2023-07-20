@@ -91,10 +91,7 @@ abstract contract Hyperdrive is
     ) internal override returns (uint256 openSharePrice) {
         // Return early if the checkpoint has already been updated.
         IHyperdrive.Checkpoint storage ckpt = _checkpoints[_checkpointTime];
-        if (
-            ckpt.sharePrice != 0 ||
-            _checkpointTime > block.timestamp
-        ) {
+        if (ckpt.sharePrice != 0 || _checkpointTime > block.timestamp) {
             return _checkpoints[_checkpointTime].sharePrice;
         }
 

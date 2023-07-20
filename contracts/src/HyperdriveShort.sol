@@ -278,7 +278,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // by the amount of bonds that were shorted. We don't need to add the
         // margin or pre-paid interest to the reserves because of the way that
         // the close short accounting works.
-        uint128 shareReserves_ = _marketState.shareReserves - _shareReservesDelta.toUint128();
+        uint128 shareReserves_ = _marketState.shareReserves -
+            _shareReservesDelta.toUint128();
         _marketState.shareReserves = shareReserves_;
         _marketState.bondReserves += _bondAmount.toUint128();
         _marketState.shortsOutstanding += _bondAmount.toUint128();
@@ -342,18 +343,24 @@ abstract contract HyperdriveShort is HyperdriveLP {
             // Remove a proportional amount of the checkpoints base volume from
             // the aggregates.
             uint256 checkpointTime = _maturityTime - _positionDuration;
-            uint128 checkpointShortBaseVolume = _checkpoints[checkpointTime].shortBaseVolume;
-            IHyperdrive.Checkpoint storage checkpoint = _checkpoints[checkpointTime];
-            uint128 proportionalBaseVolume = uint256(
-                    checkpointShortBaseVolume
-            ).mulDown(_bondAmount.divDown(checkpointAmount)).toUint128();
+            uint128 checkpointShortBaseVolume = _checkpoints[checkpointTime]
+                .shortBaseVolume;
+            IHyperdrive.Checkpoint storage checkpoint = _checkpoints[
+                checkpointTime
+            ];
+            uint128 proportionalBaseVolume = uint256(checkpointShortBaseVolume)
+                .mulDown(_bondAmount.divDown(checkpointAmount))
+                .toUint128();
             _marketState.shortBaseVolume -= proportionalBaseVolume;
-            checkpoint
-                .shortBaseVolume = checkpointShortBaseVolume - proportionalBaseVolume;
-            }
+            checkpoint.shortBaseVolume =
+                checkpointShortBaseVolume -
+                proportionalBaseVolume;
+        }
 
         // Decrease the amount of shorts outstanding.
-        _marketState.shortsOutstanding = shortsOutstanding_ - _bondAmount.toUint128();
+        _marketState.shortsOutstanding =
+            shortsOutstanding_ -
+            _bondAmount.toUint128();
 
         // Apply the updates from the curve trade to the reserves.
         _marketState.shareReserves += _shareReservesDelta.toUint128();
