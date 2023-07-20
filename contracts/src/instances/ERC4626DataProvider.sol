@@ -19,6 +19,10 @@ contract ERC4626DataProvider is MultiTokenDataProvider, HyperdriveDataProvider {
     // The deployed pool
     IERC4626 internal immutable _pool;
 
+    /// @dev A mapping from addresses to their status as a sweep target. This
+    ///      mapping does not change after construction.
+    mapping(address target => bool canSweep) internal _isSweepable;
+
     /// @notice Initializes the data provider.
     /// @param _linkerCodeHash_ The hash of the erc20 linker contract deploy code
     /// @param _factory_ The factory which is used to deploy the linking contracts
@@ -55,5 +59,11 @@ contract ERC4626DataProvider is MultiTokenDataProvider, HyperdriveDataProvider {
     /// @return The 4626 pool.
     function pool() external view returns (IERC4626) {
         _revert(abi.encode(_pool));
+    }
+
+    /// @notice Gets the sweepable status of a target.
+    /// @param _target The target address.
+    function isSweepable(address _target) external view returns (bool) {
+        _revert(abi.encode(_isSweepable[_target]));
     }
 }

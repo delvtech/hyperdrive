@@ -52,7 +52,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             defaults,
             address(forwarderFactory),
             forwarderFactory.ERC20LINK_HASH(),
-            pool
+            pool,
+            new address[](0)
         );
 
         assertEq(factory.governance(), alice);
@@ -103,7 +104,9 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         assertEq(govFee, 3);
         defaults[0] = alice;
         factory.updateDefaultPausers(defaults);
-        assertEq(factory.defaultPausers(0), alice);
+        address[] memory updateDefaultPausers = factory.getDefaultPausers();
+        assertEq(updateDefaultPausers.length, 1);
+        assertEq(updateDefaultPausers[0], alice);
         factory.updateFeeCollector(alice);
         assertEq(factory.feeCollector(), alice);
     }
