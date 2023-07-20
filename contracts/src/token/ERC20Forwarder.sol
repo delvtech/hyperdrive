@@ -198,6 +198,7 @@ contract ERC20Forwarder is IERC20 {
         // Require that the owner is not zero
         if (owner == address(0)) revert IHyperdrive.RestrictedZeroAddress();
 
+        uint256 nonce = nonces[owner];
         bytes32 structHash = keccak256(
             abi.encodePacked(
                 "\x19\x01",
@@ -208,7 +209,7 @@ contract ERC20Forwarder is IERC20 {
                         owner,
                         spender,
                         value,
-                        nonces[owner],
+                        nonce,
                         deadline
                     )
                 )
@@ -220,7 +221,7 @@ contract ERC20Forwarder is IERC20 {
         if (signer != owner) revert IHyperdrive.InvalidSignature();
 
         // Increment the signature nonce
-        nonces[owner]++;
+        nonces[owner] = nonce + 1;
         // Set the approval to the new value
         token.setApprovalBridge(tokenId, spender, value, owner);
         emit Approval(owner, spender, value);
