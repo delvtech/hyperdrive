@@ -8,6 +8,7 @@ import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol";
 import { Lib } from "../../utils/Lib.sol";
+import { console } from "forge-std/console.sol";
 
 contract OpenShortTest is HyperdriveTest {
     using FixedPointMath for uint256;
@@ -177,6 +178,29 @@ contract OpenShortTest is HyperdriveTest {
         uint256 baseAmount = (hyperdrive.calculateMaxShort() * 100) / 100;
         openShort(bob, baseAmount);
         //I think we could trigger this with big short, open long, and short?
+    }
+
+    function test_governance_fees_excluded_share_reserves() public {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        vm.stopPrank();
+        vm.startPrank(bob);
+
+        uint256[] memory slots = new uint256[](1);
+        slots[0] = 9;
+        uint256 startFeesAccrued = uint256(hyperdrive.load(slots)[0]);
+
+        uint256 bondAmount = (hyperdrive.calculateMaxShort() * 90) / 100;
+        openShort(bob, bondAmount);
+
+        uint256 endFeesAccrued = uint256(hyperdrive.load(slots)[0]);
+
+        console.log(startFeesAccrued);
+        console.log(endFeesAccrued);
     }
 
     function verifyOpenShort(
