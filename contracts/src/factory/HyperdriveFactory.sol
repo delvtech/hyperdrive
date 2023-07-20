@@ -33,16 +33,16 @@ abstract contract HyperdriveFactory {
     // The default fee parameters.
     IHyperdrive.Fees public fees;
 
-    // The address that can pause the contract.
+    // The address that can update the factory's configuration.
     address public governance;
 
-    // The address of this contract.
+    // The hyperdrive governance address for new deployments.
     address public hyperdriveGovernance;
 
-    // The address which collects governance fees.
+    // The address which collects governance fees in new deployments.
     address public feeCollector;
 
-    // The default address for governance.
+    // The addresses that will be set as the initial pausers in new deployments.
     address[] public defaultPausers;
 
     // The maximum curve fee that can be used as a factory default.
