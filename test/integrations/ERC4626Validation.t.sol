@@ -14,6 +14,7 @@ import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
 import { MockERC4626Hyperdrive } from "../mocks/Mock4626Hyperdrive.sol";
 import { HyperdriveUtils } from "../utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
+import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 
 abstract contract ERC4626ValidationTest is HyperdriveTest {
     using FixedPointMath for *;
@@ -41,12 +42,15 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
 
         // Hyperdrive factory to produce ERC4626 instances for stethERC4626
         factory = new ERC4626HyperdriveFactory(
-            alice,
+            HyperdriveFactory.FactoryConfig(
+                alice,
+                bob,
+                bob,
+                IHyperdrive.Fees(0, 0, 0),
+                IHyperdrive.Fees(1e18, 1e18, 1e18),
+                defaults
+            ),
             simpleDeployer,
-            bob,
-            bob,
-            IHyperdrive.Fees(0, 0, 0),
-            defaults,
             address(forwarderFactory),
             forwarderFactory.ERC20LINK_HASH(),
             token

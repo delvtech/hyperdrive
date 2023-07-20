@@ -8,6 +8,7 @@ import { ERC4626HyperdriveDeployer } from "contracts/src/factory/ERC4626Hyperdri
 import { ERC4626HyperdriveFactory } from "contracts/src/factory/ERC4626HyperdriveFactory.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
+import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
@@ -44,12 +45,15 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         defaults[0] = bob;
         forwarderFactory = new ForwarderFactory();
         ERC4626HyperdriveFactory factory = new ERC4626HyperdriveFactory(
-            alice,
+            HyperdriveFactory.FactoryConfig(
+                alice,
+                bob,
+                bob,
+                IHyperdrive.Fees(0, 0, 0),
+                IHyperdrive.Fees(1e18, 1e18, 1e18),
+                defaults
+            ),
             simpleDeployer,
-            bob,
-            bob,
-            IHyperdrive.Fees(0, 0, 0),
-            defaults,
             address(forwarderFactory),
             forwarderFactory.ERC20LINK_HASH(),
             pool
