@@ -278,14 +278,15 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // by the amount of bonds that were shorted. We don't need to add the
         // margin or pre-paid interest to the reserves because of the way that
         // the close short accounting works.
-        _marketState.shareReserves -= _shareReservesDelta.toUint128();
+        uint128 shareReserves_ = _marketState.shareReserves - _shareReservesDelta.toUint128();
+        _marketState.shareReserves -= shareReserves_;
         _marketState.bondReserves += _bondAmount.toUint128();
         _marketState.shortsOutstanding += _bondAmount.toUint128();
 
         // Since the share reserves are reduced, we need to verify that the base
         // reserves are greater than or equal to the amount of longs outstanding.
         if (
-            _sharePrice.mulDown(_marketState.shareReserves) <
+            _sharePrice.mulDown(shareReserves_) <
             uint256(_marketState.longsOutstanding).divDown(_sharePrice) +
                 _minimumShareReserves
         ) {
