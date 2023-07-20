@@ -108,7 +108,7 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         assertEq(govFee, 3);
         defaults[0] = alice;
         factory.updateDefaultPausers(defaults);
-        assertEq(defaults[0], alice);
+        assertEq(factory.defaultPausers(0), alice);
         factory.updateFeeCollector(alice);
         assertEq(factory.feeCollector(), alice);
     }

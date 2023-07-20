@@ -48,10 +48,12 @@ contract MockHyperdriveFactoryTest is HyperdriveTest {
     }
 
     // Ensure that the maximum curve fee can not exceed 100%.
-    function test_hyperdrive_factory_max_curve_fee() external {
+    function test_hyperdrive_factory_max_fees() external {
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
         IHyperdriveDeployer simpleDeployer;
+
+        // Ensure that the maximum curve fee can not exceed 100%.
         vm.expectRevert(IHyperdrive.MaxFeeTooHigh.selector);
         new MockHyperdriveFactory(
             HyperdriveFactory.FactoryConfig(
@@ -66,13 +68,8 @@ contract MockHyperdriveFactoryTest is HyperdriveTest {
             address(0),
             bytes32(0)
         );
-    }
 
-    // Ensure that the maximum flat fee can not exceed 100%.
-    function test_hyperdrive_factory_max_flat_fee() external {
-        address[] memory defaults = new address[](1);
-        defaults[0] = bob;
-        IHyperdriveDeployer simpleDeployer;
+        // Ensure that the maximum flat fee can not exceed 100%.
         vm.expectRevert(IHyperdrive.MaxFeeTooHigh.selector);
         new MockHyperdriveFactory(
             HyperdriveFactory.FactoryConfig(
@@ -87,13 +84,8 @@ contract MockHyperdriveFactoryTest is HyperdriveTest {
             address(0),
             bytes32(0)
         );
-    }
 
-    // Ensure that the maximum governance fee can not exceed 100%.
-    function test_hyperdrive_factory_max_governance_fee() external {
-        address[] memory defaults = new address[](1);
-        defaults[0] = bob;
-        IHyperdriveDeployer simpleDeployer;
+        // Ensure that the maximum governance fee can not exceed 100%.
         vm.expectRevert(IHyperdrive.MaxFeeTooHigh.selector);
         new MockHyperdriveFactory(
             HyperdriveFactory.FactoryConfig(

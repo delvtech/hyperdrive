@@ -43,7 +43,7 @@ abstract contract HyperdriveFactory {
     address public feeCollector;
 
     // The default address for governance.
-    address[] internal defaultPausers;
+    address[] public defaultPausers;
 
     // The maximum curve fee that can be used as a factory default.
     uint256 internal immutable maxCurveFee;
