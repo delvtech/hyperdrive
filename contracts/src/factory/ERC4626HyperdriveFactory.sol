@@ -25,35 +25,23 @@ contract ERC4626HyperdriveFactory is HyperdriveFactory {
     address[] internal _sweepTargets;
 
     /// @notice Initializes the factory.
-    /// @param _governance The address which can update this factory.
+    /// @param _factoryConfig The variables that configure the factory;
     /// @param _deployer The contract that deploys new hyperdrive instances.
-    /// @param _hyperdriveGovernance The governance address for Hyperdrive pools.
-    /// @param _feeCollector The fee collector address.
-    /// @param _fees The fee parameters.
-    /// @param _defaultPausers The default pausers.
     /// @param _linkerFactory The linker factory.
     /// @param _linkerCodeHash The hash of the linker contract's constructor code.
     /// @param _pool The ERC4626 pool.
     /// @param _sweepTargets_ The addresses that can be swept by the fee collector.
     constructor(
-        address _governance,
+        FactoryConfig memory _factoryConfig,
         IHyperdriveDeployer _deployer,
-        address _hyperdriveGovernance,
-        address _feeCollector,
-        IHyperdrive.Fees memory _fees,
-        address[] memory _defaultPausers,
         address _linkerFactory,
         bytes32 _linkerCodeHash,
         IERC4626 _pool,
         address[] memory _sweepTargets_
     )
         HyperdriveFactory(
-            _governance,
+            _factoryConfig,
             _deployer,
-            _hyperdriveGovernance,
-            _feeCollector,
-            _fees,
-            _defaultPausers,
             _linkerFactory,
             _linkerCodeHash
         )

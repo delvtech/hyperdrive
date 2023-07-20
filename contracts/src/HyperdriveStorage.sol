@@ -68,29 +68,29 @@ abstract contract HyperdriveStorage is ReentrancyGuard, MultiTokenStorage {
     // Governance fees that haven't been collected yet denominated in shares.
     uint256 internal _governanceFeesAccrued;
 
-    // The address that can pause the contract
+    // The address that can pause the contract.
     address internal _governance;
 
-    /// The address which collects governance fees
+    /// The address which collects governance fees.
     address internal immutable _feeCollector;
 
     /// TWAP ///
 
-    /// @notice The amount of time between oracle data sample updates
+    /// @notice The amount of time between oracle data sample updates.
     uint256 internal immutable _updateGap;
 
-    /// @notice A struct to hold packed oracle entries
+    /// @notice A struct to hold packed oracle entries.
     struct OracleData {
-        // The timestamp this data was added at
+        // The timestamp this data was added at.
         uint32 timestamp;
-        // The running sun of all previous data entries weighted by time
+        // The running sun of all previous data entries weighted by time.
         uint224 data;
     }
 
-    /// @notice This buffer contains the timestamps and data recorded in the oracle
+    /// @notice This buffer contains the timestamps and data recorded in the oracle.
     OracleData[] internal _buffer;
 
-    /// @notice The struct holding the head and last timestamp
+    /// @notice The struct holding the head and last timestamp.
     IHyperdrive.OracleState internal _oracle;
 
     /// @notice Initializes Hyperdrive's storage.
