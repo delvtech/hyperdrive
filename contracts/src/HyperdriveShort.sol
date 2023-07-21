@@ -279,14 +279,16 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // by the amount of bonds that were shorted. We don't need to add the
         // margin or pre-paid interest to the reserves because of the way that
         // the close short accounting works.
-        _marketState.shareReserves -= _shareReservesDelta.toUint128();
+        uint128 shareReserves_ = _marketState.shareReserves -
+            _shareReservesDelta.toUint128();
+        _marketState.shareReserves = shareReserves_;
         _marketState.bondReserves += _bondAmount.toUint128();
         _marketState.shortsOutstanding += _bondAmount.toUint128();
 
         // Since the share reserves are reduced, we need to verify that the base
         // reserves are greater than or equal to the amount of longs outstanding.
         if (
-            _sharePrice.mulDown(_marketState.shareReserves) <
+            _sharePrice.mulDown(shareReserves_) <
             uint256(_marketState.longsOutstanding).divDown(_sharePrice) +
                 _minimumShareReserves
         ) {
@@ -310,12 +312,13 @@ abstract contract HyperdriveShort is HyperdriveLP {
         uint256 _maturityTime,
         uint256 _sharePrice
     ) internal {
+        uint128 shortsOutstanding_ = _marketState.shortsOutstanding;
         // Update the short average maturity time.
         _marketState.shortAverageMaturityTime = uint256(
             _marketState.shortAverageMaturityTime
         )
             .updateWeightedAverage(
-                _marketState.shortsOutstanding,
+                shortsOutstanding_,
                 _maturityTime * 1e18, // scale up to fixed point scale
                 _bondAmount,
                 false
@@ -341,16 +344,24 @@ abstract contract HyperdriveShort is HyperdriveLP {
             // Remove a proportional amount of the checkpoints base volume from
             // the aggregates.
             uint256 checkpointTime = _maturityTime - _positionDuration;
-            uint128 proportionalBaseVolume = uint256(
-                _checkpoints[checkpointTime].shortBaseVolume
-            ).mulDown(_bondAmount.divDown(checkpointAmount)).toUint128();
+            uint128 checkpointShortBaseVolume = _checkpoints[checkpointTime]
+                .shortBaseVolume;
+            IHyperdrive.Checkpoint storage checkpoint = _checkpoints[
+                checkpointTime
+            ];
+            uint128 proportionalBaseVolume = uint256(checkpointShortBaseVolume)
+                .mulDown(_bondAmount.divDown(checkpointAmount))
+                .toUint128();
             _marketState.shortBaseVolume -= proportionalBaseVolume;
-            _checkpoints[checkpointTime]
-                .shortBaseVolume -= proportionalBaseVolume;
+            checkpoint.shortBaseVolume =
+                checkpointShortBaseVolume -
+                proportionalBaseVolume;
         }
 
         // Decrease the amount of shorts outstanding.
-        _marketState.shortsOutstanding -= _bondAmount.toUint128();
+        _marketState.shortsOutstanding =
+            shortsOutstanding_ -
+            _bondAmount.toUint128();
 
         // Apply the updates from the curve trade to the reserves.
         _marketState.shareReserves += _shareReservesDelta.toUint128();

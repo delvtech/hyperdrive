@@ -143,8 +143,9 @@ abstract contract HyperdriveDataProvider is
         while (currentIndex != head) {
             // If the timestamp of the current index has older data than the target
             // this is the newest data which is older than the target so we break
-            if (uint256(_buffer[currentIndex].timestamp) <= targetTime) {
-                oldData = _buffer[currentIndex];
+            OracleData storage currentDataCache = _buffer[currentIndex];
+            if (uint256(currentDataCache.timestamp) <= targetTime) {
+                oldData = currentDataCache;
                 break;
             }
             currentIndex = currentIndex == 0
