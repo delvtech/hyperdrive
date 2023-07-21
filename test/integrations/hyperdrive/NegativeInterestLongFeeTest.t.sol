@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { MockHyperdrive, IMockHyperdrive } from "../../mocks/MockHyperdrive.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
-import { MockHyperdrive, IMockHyperdrive } from "../../mocks/MockHyperdrive.sol";
 import { Lib } from "../../utils/Lib.sol";
 
 contract NegativeInterestLongFeeTest is HyperdriveTest {

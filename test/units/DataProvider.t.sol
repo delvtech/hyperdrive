@@ -2,8 +2,9 @@
 pragma solidity ^0.8.18;
 
 import { Test } from "forge-std/Test.sol";
-import { DataProvider } from "contracts/src/DataProvider.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { DataProvider } from "contracts/src/DataProvider.sol";
+
 
 contract MockProvider {
     function get() external pure returns (uint256) {

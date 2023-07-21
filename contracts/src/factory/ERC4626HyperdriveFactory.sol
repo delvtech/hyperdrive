@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import { ERC4626DataProvider } from "../instances/ERC4626DataProvider.sol";
 import { IERC20 } from "../interfaces/IERC20.sol";
+import { IERC4626 } from "../interfaces/IERC4626.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
-import { ERC4626DataProvider } from "../instances/ERC4626DataProvider.sol";
 import { HyperdriveFactory } from "./HyperdriveFactory.sol";
-import { IERC4626 } from "../interfaces/IERC4626.sol";
 
 /// @author DELV
 /// @title ERC4626HyperdriveFactory

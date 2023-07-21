@@ -1,20 +1,20 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
-import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { ERC4626HyperdriveDeployer } from "contracts/src/factory/ERC4626HyperdriveDeployer.sol";
 import { ERC4626HyperdriveFactory } from "contracts/src/factory/ERC4626HyperdriveFactory.sol";
+import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
+import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
+import { ILido } from "contracts/src/interfaces/ILido.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
-import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
 import { MockERC4626Hyperdrive } from "../mocks/Mock4626Hyperdrive.sol";
+import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../utils/HyperdriveUtils.sol";
-import { Lib } from "test/utils/Lib.sol";
-import { ILido } from "contracts/src/interfaces/ILido.sol";
+import { Lib } from "../utils/Lib.sol";
 import { ERC4626ValidationTest } from "./ERC4626Validation.t.sol";
 
 contract StethERC4626 is ERC4626ValidationTest {
