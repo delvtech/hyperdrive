@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { ERC4626Hyperdrive, IHyperdrive, IERC4626 } from "contracts/src/instances/ERC4626Hyperdrive.sol";
+import { ERC4626Hyperdrive, IERC4626, IHyperdrive } from "contracts/src/instances/ERC4626Hyperdrive.sol";
 
 // We make a contract which can directly access the underlying yield source
 // functions so that we can test them directly

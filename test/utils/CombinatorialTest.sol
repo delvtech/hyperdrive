@@ -4,15 +4,15 @@ pragma solidity 0.8.19;
 import "forge-std/console2.sol";
 import "forge-std/Vm.sol";
 
-import { BaseTest } from "./BaseTest.sol";
-import { Lib as lib } from "./Lib.sol";
-import { Hyperdrive } from "contracts/src/Hyperdrive.sol";
+import { Address } from "openzeppelin-contracts/contracts/utils/Address.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { ERC20PresetFixedSupply } from "openzeppelin-contracts/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
-import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
-import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
-import { Address } from "openzeppelin-contracts/contracts/utils/Address.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
+import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
+import { Hyperdrive } from "contracts/src/Hyperdrive.sol";
+import { BaseTest } from "./BaseTest.sol";
+import { Lib as lib } from "./Lib.sol";
 
 contract CombinatorialTest is BaseTest {
     enum CombinatorialTestKind {
