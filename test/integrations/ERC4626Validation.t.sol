@@ -53,7 +53,8 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             simpleDeployer,
             address(forwarderFactory),
             forwarderFactory.ERC20LINK_HASH(),
-            token
+            token,
+            new address[](0)
         );
 
         // Config changes required to support ERC4626 with the correct initial Share Price

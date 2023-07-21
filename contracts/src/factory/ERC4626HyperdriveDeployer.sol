@@ -25,6 +25,7 @@ contract ERC4626HyperdriveDeployer is IHyperdriveDeployer {
     /// @notice Deploys a copy of hyperdrive with the given params.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _dataProvider The address of the data provider.
+    /// @param _extraData The extra data that contains the sweep targets.
     /// @param _linkerCodeHash The hash of the ERC20 linker contract's
     ///        constructor code.
     /// @param _linkerFactory The address of the factory which is used to deploy
@@ -35,8 +36,15 @@ contract ERC4626HyperdriveDeployer is IHyperdriveDeployer {
         address _dataProvider,
         bytes32 _linkerCodeHash,
         address _linkerFactory,
-        bytes32[] calldata
+        bytes32[] memory _extraData
     ) external override returns (address) {
+        // Convert the extra data to an array of addresses.
+        address[] memory sweepTargets;
+        assembly ("memory-safe") {
+            sweepTargets := _extraData
+        }
+
+        // Deploy the ERC4626Hyperdrive instance.
         return (
             address(
                 new ERC4626Hyperdrive(
@@ -44,7 +52,8 @@ contract ERC4626HyperdriveDeployer is IHyperdriveDeployer {
                     _dataProvider,
                     _linkerCodeHash,
                     _linkerFactory,
-                    pool
+                    pool,
+                    sweepTargets
                 )
             )
         );
