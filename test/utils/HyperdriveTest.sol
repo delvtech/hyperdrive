@@ -2,7 +2,6 @@
 pragma solidity 0.8.19;
 
 import { VmSafe } from "forge-std/Vm.sol";
-import { HyperdriveBase } from "contracts/src/HyperdriveBase.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
@@ -12,6 +11,7 @@ import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
+import { HyperdriveBase } from "contracts/src/HyperdriveBase.sol";
 import { MockHyperdrive, MockHyperdriveDataProvider } from "test/mocks/MockHyperdrive.sol";
 import { BaseTest } from "test/utils/BaseTest.sol";
 import { ETH } from "test/utils/Constants.sol";

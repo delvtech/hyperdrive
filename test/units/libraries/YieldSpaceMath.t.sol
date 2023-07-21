@@ -3,8 +3,7 @@ pragma solidity 0.8.19;
 
 import { Test } from "forge-std/Test.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
-import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { YieldSpaceMath } from "contracts/src/libraries/HyperdriveMath.sol";
+import { HyperdriveMath, YieldSpaceMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { MockYieldSpaceMath } from "contracts/test/MockYieldSpaceMath.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
