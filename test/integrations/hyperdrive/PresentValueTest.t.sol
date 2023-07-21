@@ -9,7 +9,6 @@ import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { IHyperdrive, HyperdriveTest, HyperdriveUtils } from "test/utils/HyperdriveTest.sol";
 import { Lib } from "test/utils/Lib.sol";
 
-
 contract PresentValueTest is HyperdriveTest {
     using Lib for *;
     using FixedPointMath for *;

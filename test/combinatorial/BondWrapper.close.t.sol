@@ -13,7 +13,6 @@ import { MockMultiToken } from "contracts/test/MockMultiToken.sol";
 import { MockBondWrapper } from "contracts/test/MockBondWrapper.sol";
 import { CombinatorialTest } from "test/utils/CombinatorialTest.sol";
 
-
 contract __MockHyperDrive__ {
     uint256 __closeLongReturnValue__;
 

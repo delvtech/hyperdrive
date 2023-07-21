@@ -5,7 +5,6 @@ import { Test } from "forge-std/Test.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { DataProvider } from "contracts/src/DataProvider.sol";
 
-
 contract MockProvider {
     function get() external pure returns (uint256) {
         _revert(abi.encode(42));
