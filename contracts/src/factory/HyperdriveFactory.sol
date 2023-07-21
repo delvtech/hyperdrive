@@ -101,8 +101,6 @@ abstract contract HyperdriveFactory {
 
     /// @notice Initializes the factory.
     /// @param _factoryConfig Configuration of the Hyperdrive Factory.
-    /// @notice Deploys the contract.
-    /// @param _factoryConfig Configuration of the Hyperdrive Factory.
     /// @param _deployer The contract which holds the bytecode and deploys new versions.
     /// @param _linkerFactory The address of the linker factory.
     /// @param _linkerCodeHash The hash of the linker contract's constructor code.
