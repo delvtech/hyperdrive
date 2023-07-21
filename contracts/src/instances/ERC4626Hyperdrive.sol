@@ -18,8 +18,12 @@ contract ERC4626Hyperdrive is Hyperdrive {
     using FixedPointMath for uint256;
     using SafeERC20 for IERC20;
 
-    // The yield source contract for this hyperdrive
+    /// @dev The yield source contract for this hyperdrive
     IERC4626 internal immutable pool;
+
+    /// @dev A mapping from addresses to their status as a sweep target. This
+    ///      mapping does not change after construction.
+    mapping(address target => bool canSweep) internal isSweepable;
 
     /// @notice Initializes a Hyperdrive pool.
     /// @param _config The configuration of the Hyperdrive pool.
@@ -29,12 +33,17 @@ contract ERC4626Hyperdrive is Hyperdrive {
     /// @param _linkerFactory The factory which is used to deploy the ERC20
     ///        linker contracts.
     /// @param _pool The ERC4626 compatible yield source
+    /// @param _targets The addresses that can be swept by governance. This
+    ///        allows governance to collect rewards derived from incentive
+    ///        programs while also preventing edge cases where `sweep` is used
+    ///        to access the pool or base tokens.
     constructor(
         IHyperdrive.PoolConfig memory _config,
         address _dataProvider,
         bytes32 _linkerCodeHash,
         address _linkerFactory,
-        IERC4626 _pool
+        IERC4626 _pool,
+        address[] memory _targets
     ) Hyperdrive(_config, _dataProvider, _linkerCodeHash, _linkerFactory) {
         // Initialize the pool immutable.
         pool = _pool;
@@ -55,6 +64,19 @@ contract ERC4626Hyperdrive is Hyperdrive {
         // Set immutables and prepare for deposits by setting immutables
         if (!_config.baseToken.approve(address(pool), type(uint256).max)) {
             revert IHyperdrive.ApprovalFailed();
+        }
+
+        // Set the sweep targets. The base and pool tokens can't be set as
+        // sweep targets to prevent governance from rugging the pool.
+        for (uint256 i = 0; i < _targets.length; i++) {
+            address target = _targets[i];
+            if (
+                address(target) == address(pool) ||
+                address(target) == address(_baseToken)
+            ) {
+                revert IHyperdrive.UnsupportedToken();
+            }
+            isSweepable[target] = true;
         }
     }
 
@@ -123,27 +145,29 @@ contract ERC4626Hyperdrive is Hyperdrive {
         return pool.convertToAssets(FixedPointMath.ONE_18);
     }
 
-    /// @notice Some yield sources [eg Morpho] pay rewards directly to this contract
-    ///         but we can't handle distributing them internally so we sweep to the
-    ///         fee collector address to then redistribute to users
-    /// @param token The ERC20 we want to call
-    /// @dev WARNING - This sweep only checks that the token is not equal to the base or yield source
-    ///                if another token is expected to have a balance on this contract it is unsafe.
-    ///                ANY TOKENS IN THIS CONTRACT BESIDES YIELD SOURCE SHARES OR BASE TOKEN CAN BE STOLEN.
-    /// @dev WARNING - It is unlikely but possible that there is a selector overlap with 'transferFrom'. Any
-    ///                integrating contracts should be checked for that, as it may result in an unexpected call
-    ///                from this address.
-    function sweep(IERC20 token) external {
-        // Only governance address can call
+    /// @notice Some yield sources [eg Morpho] pay rewards directly to this
+    ///         contract but we can't handle distributing them internally so we
+    ///         sweep to the fee collector address to then redistribute to users.
+    /// @dev WARNING: The entire balance of any of the sweep targets can be
+    ///      swept by governance. If these sweep targets provide access to the
+    ///      base or pool token, then governance has the ability to rug the pool.
+    /// @dev WARNING: It is unlikely but possible that there is a selector
+    ///      overlap with 'transferFrom'. Any integrating contracts should be
+    ///      checked for that, as it may result in an unexpected call from this
+    ///      address.
+    /// @param _target The token to sweep.
+    function sweep(IERC20 _target) external {
+        // Ensure that the sender is the fee collector or a pauser.
         if (msg.sender != _feeCollector && !_pausers[msg.sender])
             revert IHyperdrive.Unauthorized();
-        // Cannot rug the yield source or base token
-        if (
-            address(token) == address(pool) ||
-            address(token) == address(_baseToken)
-        ) revert IHyperdrive.UnsupportedToken();
-        // Transfer to the fee collector
-        uint256 balance = token.balanceOf(address(this));
-        token.safeTransfer(_feeCollector, balance);
+
+        // Ensure that thet target can be swept by governance.
+        if (!isSweepable[address(_target)]) {
+            revert IHyperdrive.UnsupportedToken();
+        }
+
+        // Transfer the entire balance of the sweep target to the fee collector.
+        uint256 balance = _target.balanceOf(address(this));
+        _target.safeTransfer(_feeCollector, balance);
     }
 }

@@ -5,21 +5,22 @@ import { ERC4626Hyperdrive, IERC4626, IHyperdrive } from "contracts/src/instance
 
 // We make a contract which can directly access the underlying yield source
 // functions so that we can test them directly
-
 contract MockERC4626Hyperdrive is ERC4626Hyperdrive {
     constructor(
         IHyperdrive.PoolConfig memory _config,
         address _dataProvider,
         bytes32 _linkerCodeHash,
         address _linkerFactory,
-        IERC4626 _pool
+        IERC4626 _pool,
+        address[] memory _sweepTargets
     )
         ERC4626Hyperdrive(
             _config,
             _dataProvider,
             _linkerCodeHash,
             _linkerFactory,
-            _pool
+            _pool,
+            _sweepTargets
         )
     {}
 
