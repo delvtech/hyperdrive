@@ -6,7 +6,7 @@ import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol";
+import { HyperdriveTest, HyperdriveUtils, IERC20, MockHyperdrive, MockHyperdriveDataProvider } from "../../utils/HyperdriveTest.sol";
 import { Lib } from "../../utils/Lib.sol";
 import { console } from "forge-std/console.sol";
 
@@ -181,7 +181,35 @@ contract OpenShortTest is HyperdriveTest {
     }
 
     function test_governance_fees_excluded_share_reserves() public {
+        // Borrowed logic from the test setup to initialize with ridiculous (and therefore easily measurable)
+        // fees
+        IHyperdrive.Fees memory fees = IHyperdrive.Fees({
+            curve: 1e18 - 5,
+            flat: 0,
+            governance: 1e18 - 5
+        });
+        // Instantiate Hyperdrive.
         uint256 apr = 0.05e18;
+        IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
+            baseToken: IERC20(address(baseToken)),
+            initialSharePrice: INITIAL_SHARE_PRICE,
+            minimumShareReserves: MINIMUM_SHARE_RESERVES,
+            positionDuration: POSITION_DURATION,
+            checkpointDuration: CHECKPOINT_DURATION,
+            timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
+            governance: governance,
+            feeCollector: feeCollector,
+            fees: fees,
+            oracleSize: ORACLE_SIZE,
+            updateGap: UPDATE_GAP
+        });
+        address dataProvider = address(new MockHyperdriveDataProvider(config));
+        hyperdrive = IHyperdrive(
+            address(new MockHyperdrive(config, dataProvider))
+        );
+        vm.stopPrank();
+        vm.startPrank(governance);
+        hyperdrive.setPauser(pauser, true);
 
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
@@ -190,17 +218,28 @@ contract OpenShortTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(bob);
 
-        uint256[] memory slots = new uint256[](1);
-        slots[0] = 9;
-        uint256 startFeesAccrued = uint256(hyperdrive.load(slots)[0]);
+        uint256 startFeesAccrued = hyperdrive.getPoolFees();
+        assertEq(startFeesAccrued, 0);
+
+        IHyperdrive.MarketState memory initialState = hyperdrive
+            .getMarketState();
 
         uint256 bondAmount = (hyperdrive.calculateMaxShort() * 90) / 100;
+        // Open a short so we can ensure fees are tracked correctly
         openShort(bob, bondAmount);
 
-        uint256 endFeesAccrued = uint256(hyperdrive.load(slots)[0]);
+        // Snapshot new state
+        uint256 endFeesAccrued = hyperdrive.getPoolFees();
+        IHyperdrive.MarketState memory endState = hyperdrive.getMarketState();
 
-        console.log(startFeesAccrued);
-        console.log(endFeesAccrued);
+        assertGt(initialState.shareReserves, endState.shareReserves);
+        // The magic number represents the shareReserves from before the fix, where fees were included
+        // Unfortunately I could not not find an easier way to demonstrate the fix
+        assertApproxEqAbs(
+            endState.shareReserves + endFeesAccrued,
+            68357991885727826629572110,
+            5
+        );
     }
 
     function verifyOpenShort(

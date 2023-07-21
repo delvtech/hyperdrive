@@ -8,7 +8,6 @@ import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { SafeCast } from "./libraries/SafeCast.sol";
 import { YieldSpaceMath } from "./libraries/YieldSpaceMath.sol";
-import { console } from "forge-std/console.sol";
 
 /// @author DELV
 /// @title HyperdriveShort
@@ -449,7 +448,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
             spotPrice,
             _sharePrice
         );
-        console.log(totalGovernanceFee);
         // Remove the curve fee from the amount of shares to remove from the shareReserves.
         // We do this bc the shareReservesDelta represents how many shares to remove
         // from the shareReserves.  Making the shareReservesDelta smaller pays out the
