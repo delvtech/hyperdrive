@@ -8,8 +8,8 @@ sleep 2
 # Create an artifacts directory if it doesn't already exist.
 mkdir -p ./artifacts
 
-# Deploy the MockHyperdrive instance and the MockHyperdriveMath contract.
-forge script script/MockHyperdrive.s.sol:MockHyperdriveScript \
+# Execute the devnet migration script.
+forge script script/Devnet.s.sol:DevnetScript \
    --sender "${ETH_FROM}" \
    --private-key "${PRIVATE_KEY}" \
    --rpc-url "${RPC_URL}" \
