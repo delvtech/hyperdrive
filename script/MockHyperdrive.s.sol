@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 
 import { stdJson } from "forge-std/StdJson.sol";
 import { Script } from "forge-std/Script.sol";
+import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { MockHyperdriveMath } from "contracts/test/MockHyperdriveMath.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
@@ -18,46 +19,44 @@ contract MockHyperdriveScript is Script {
     function run() public {
         vm.startBroadcast();
 
-        // Mock ERC20
+        // Deploy the base token.
         ERC20Mintable baseToken = new ERC20Mintable();
-        baseToken.mint(1_000_000e18);
 
-        // Mock Hyperdrive, 1 year term
-        MockHyperdriveDataProviderTestnet dataProvider = new MockHyperdriveDataProviderTestnet(
-                baseToken,
-                5e18,
-                FixedPointMath.ONE_18,
-                FixedPointMath.ONE_18,
-                365 days,
-                1 days,
-                FixedPointMath.ONE_18.divDown(22.186877016851916266e18),
-                IHyperdrive.Fees({
-                    curve: 0.1e18,
-                    flat: 0.05e18,
-                    governance: 0.1e18
-                }),
-                address(0)
-            );
-        MockHyperdriveTestnet hyperdrive = new MockHyperdriveTestnet(
-            address(dataProvider),
-            baseToken,
-            5e18,
-            FixedPointMath.ONE_18,
-            FixedPointMath.ONE_18,
-            365 days,
-            1 days,
-            FixedPointMath.ONE_18.divDown(22.186877016851916266e18),
-            IHyperdrive.Fees({
+        // Deploy the hyperdrive instance.
+        IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
+            baseToken: IERC20(address(baseToken)),
+            initialSharePrice: FixedPointMath.ONE_18,
+            minimumShareReserves: 10e18,
+            positionDuration: 365 days,
+            checkpointDuration: 1 days,
+            timeStretch: FixedPointMath.ONE_18.divDown(
+                22.186877016851916266e18
+            ),
+            fees: IHyperdrive.Fees({
                 curve: 0.1e18,
                 flat: 0.05e18,
                 governance: 0.1e18
             }),
-            address(0)
+            governance: address(0),
+            feeCollector: address(0),
+            oracleSize: 10,
+            updateGap: 3600
+        });
+        MockHyperdriveDataProviderTestnet dataProvider = new MockHyperdriveDataProviderTestnet(
+                config
+            );
+        MockHyperdriveTestnet hyperdrive = new MockHyperdriveTestnet(
+            config,
+            address(dataProvider),
+            0.05e18
         );
 
-        // Initializes the Hyperdrive pool.
-        baseToken.approve(address(hyperdrive), 10_000_000e18);
-        hyperdrive.initialize(100_000e18, 0.05e18, msg.sender, true);
+        // Initialize the Hyperdrive pool.
+        uint256 contribution = 1_000_000e18;
+        uint256 fixedRate = 0.05e18;
+        baseToken.mint(msg.sender, contribution);
+        baseToken.approve(address(hyperdrive), contribution);
+        hyperdrive.initialize(contribution, fixedRate, msg.sender, true);
 
         // Deploy the MockHyperdriveMath contract.
         MockHyperdriveMath mockHyperdriveMath = new MockHyperdriveMath();

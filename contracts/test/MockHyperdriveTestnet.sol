@@ -18,36 +18,10 @@ contract MockHyperdriveTestnet is Hyperdrive {
     uint256 internal totalShares;
 
     constructor(
+        IHyperdrive.PoolConfig memory _config,
         address _dataProvider,
-        ERC20Mintable _baseToken,
-        uint256 _initialRate,
-        uint256 _initialSharePrice,
-        uint256 _minimumShareReserves,
-        uint256 _positionDuration,
-        uint256 _checkpointDuration,
-        uint256 _timeStretch,
-        IHyperdrive.Fees memory _fees,
-        address _governance
-    )
-        Hyperdrive(
-            IHyperdrive.PoolConfig({
-                baseToken: IERC20(address(_baseToken)),
-                initialSharePrice: _initialSharePrice,
-                minimumShareReserves: _minimumShareReserves,
-                positionDuration: _positionDuration,
-                checkpointDuration: _checkpointDuration,
-                timeStretch: _timeStretch,
-                governance: _governance,
-                feeCollector: _feeCollector,
-                fees: _fees,
-                oracleSize: 2,
-                updateGap: 0
-            }),
-            _dataProvider,
-            bytes32(0),
-            address(0)
-        )
-    {
+        uint256 _initialRate
+    ) Hyperdrive(_config, _dataProvider, bytes32(0), address(0)) {
         rate = _initialRate;
         lastUpdated = block.timestamp;
     }
@@ -155,31 +129,9 @@ contract MockHyperdriveDataProviderTestnet is
     uint256 internal totalShares;
 
     constructor(
-        ERC20Mintable _baseToken,
-        uint256 _initialRate,
-        uint256 _initialSharePrice,
-        uint256 _minimumShareReserves,
-        uint256 _positionDuration,
-        uint256 _checkpointDuration,
-        uint256 _timeStretch,
-        IHyperdrive.Fees memory _fees,
-        address _governance
+        IHyperdrive.PoolConfig memory _config
     )
-        HyperdriveDataProvider(
-            IHyperdrive.PoolConfig({
-                baseToken: IERC20(address(_baseToken)),
-                initialSharePrice: _initialSharePrice,
-                minimumShareReserves: _minimumShareReserves,
-                positionDuration: _positionDuration,
-                checkpointDuration: _checkpointDuration,
-                timeStretch: _timeStretch,
-                governance: _governance,
-                feeCollector: _feeCollector,
-                fees: _fees,
-                oracleSize: 2,
-                updateGap: 0
-            })
-        )
+        HyperdriveDataProvider(_config)
         MultiTokenDataProvider(_linkerCodeHash, _factory)
     {}
 
