@@ -15,14 +15,14 @@ import { MockHyperdriveMath } from "contracts/test/MockHyperdriveMath.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 
 /// @author DELV
-/// @title DevnetScript
+/// @title DevnetMigration
 /// @notice This script deploys a mock ERC4626 yield source and a Hyperdrive
 ///         factory on top of it. For convenience, it also deploys a Hyperdrive
 ///         pool with a 1 week duration.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract DevnetScript is Script {
+contract DevnetMigration is Script {
     using stdJson for string;
     using HyperdriveUtils for *;
 
