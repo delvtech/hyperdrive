@@ -5,8 +5,6 @@ on:
   push:
     branches:
       - "main"
-      # FIXME: Remove this after testing.
-      - "jalextowle/competition/flexible-configuration"
     tags:
       - "v*"
 
