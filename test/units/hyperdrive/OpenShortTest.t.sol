@@ -186,7 +186,6 @@ contract OpenShortTest is HyperdriveTest {
         // 1. Deploy a pool with zero fees
         IHyperdrive.PoolConfig memory config = testConfig(apr);
         deploy(address(deployer), config);
-
         // Initialize the pool with a large amount of capital.
         initialize(alice, apr, contribution);
 
@@ -229,7 +228,6 @@ contract OpenShortTest is HyperdriveTest {
         // 7. deploy a pool with 100% curve fees and 0% gov fees
         config = testConfig(apr);
         config.fees = IHyperdrive.Fees({ curve: 1e18, flat: 0, governance: 0 });
-
         // Deploy and initialize the new pool
         deploy(address(deployer), config);
         initialize(alice, apr, contribution);
