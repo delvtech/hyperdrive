@@ -198,7 +198,9 @@ contract OpenShortTest is HyperdriveTest {
         IHyperdrive.MarketState memory zeroFeeState = hyperdrive
             .getMarketState();
 
-        // 4. deploy a pool with 100% curve fees and 100% gov fees (this is nice bc it ensures that all the fees are credited to governance and thus subtracted from the shareReserves
+        // 4. deploy a pool with 100% curve fees and 100% gov fees (this is nice bc
+        // it ensures that all the fees are credited to governance and thus subtracted 
+        // from the shareReserves
         config = testConfig(apr);
         config.fees = IHyperdrive.Fees({
             curve: 1e18,
