@@ -206,8 +206,6 @@ contract OpenShortTest is HyperdriveTest {
             flat: 1e18,
             governance: 1e18
         });
-
-        // Deploy and initialize the new pool
         deploy(address(deployer), config);
         initialize(alice, apr, contribution);
 
