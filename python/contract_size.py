@@ -41,11 +41,7 @@ def should_check_code_size(artifact):
     compilation_target = get_compilation_target(artifact)
     if not compilation_target:
         return False
-    return (
-        "contracts/src/" in compilation_target
-        or "MockHyperdriveTestnet" in compilation_target
-        or "MockMakerDsrHyperdrive" in compilation_target
-    )
+    return "contracts/src/" in compilation_target
 
 
 ARTIFACTS_PATH = sys.argv[1]
