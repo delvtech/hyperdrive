@@ -41,9 +41,6 @@ contract DevnetMigration is Script {
             0.05e18 // initial rate of 5%
         );
 
-        // Deploy the forwarder factory.
-        ForwarderFactory forwarderFactory = new ForwarderFactory();
-
         // Deploy the Hyperdrive factory.
         ERC4626HyperdriveFactory factory;
         {
@@ -66,6 +63,7 @@ contract DevnetMigration is Script {
                     }),
                     defaultPausers: defaultPausers
                 });
+            ForwarderFactory forwarderFactory = new ForwarderFactory();
             ERC4626HyperdriveDeployer deployer = new ERC4626HyperdriveDeployer(
                 IERC4626(address(pool))
             );
@@ -119,8 +117,7 @@ contract DevnetMigration is Script {
         // Writes the addresses to a file.
         string memory result = "result";
         vm.serializeAddress(result, "baseToken", address(baseToken));
-        vm.serializeAddress(result, "factory", address(factory));
-        vm.serializeAddress(result, "hyperdrive", address(hyperdrive));
+        vm.serializeAddress(result, "hyperdriveFactory", address(factory));
         // TODO: This is deprecated and should be removed by 0.0.11.
         vm.serializeAddress(result, "mockHyperdrive", address(hyperdrive));
         result = vm.serializeAddress(
