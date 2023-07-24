@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import { SafeCast } from "contracts/src/libraries/SafeCast.sol";
 import { Vm } from "forge-std/Vm.sol";
+import { SafeCast } from "contracts/src/libraries/SafeCast.sol";
 import { MockSafeCast } from "contracts/test/MockSafeCast.sol";
 import { BaseTest } from "test/utils/BaseTest.sol";
 
