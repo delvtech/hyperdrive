@@ -103,7 +103,7 @@ abstract contract HyperdriveDataProvider is
 
     /// @notice Gets info about the fees presently accrued by the pool
     /// @return Governance fees denominated in shares yet to be collected
-    function getPoolFees() external view returns (uint256) {
+    function getUncollectedGovernanceFees() external view returns (uint256) {
         _revert(abi.encode(_governanceFeesAccrued));
     }
 

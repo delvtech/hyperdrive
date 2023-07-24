@@ -26,7 +26,7 @@ interface IHyperdriveRead is IMultiTokenRead {
         view
         returns (IHyperdrive.MarketState memory);
 
-    function getPoolFees() external view returns (uint256);
+    function getUncollectedGovernanceFees() external view returns (uint256);
 
     function getPoolInfo() external view returns (IHyperdrive.PoolInfo memory);
 

@@ -184,6 +184,7 @@ contract OpenShortTest is HyperdriveTest {
         // Borrowed logic from the test setup to initialize with ridiculous (and therefore easily measurable)
         // fees
         IHyperdrive.Fees memory fees = IHyperdrive.Fees({
+            // Subtracting 5 to create a large fee very close to max allowed fee
             curve: 1e18 - 5,
             flat: 0,
             governance: 1e18 - 5
@@ -218,7 +219,7 @@ contract OpenShortTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(bob);
 
-        uint256 startFeesAccrued = hyperdrive.getPoolFees();
+        uint256 startFeesAccrued = hyperdrive.getUncollectedGovernanceFees();
         assertEq(startFeesAccrued, 0);
 
         IHyperdrive.MarketState memory initialState = hyperdrive
@@ -229,7 +230,7 @@ contract OpenShortTest is HyperdriveTest {
         openShort(bob, bondAmount);
 
         // Snapshot new state
-        uint256 endFeesAccrued = hyperdrive.getPoolFees();
+        uint256 endFeesAccrued = hyperdrive.getUncollectedGovernanceFees();
         IHyperdrive.MarketState memory endState = hyperdrive.getMarketState();
 
         assertGt(initialState.shareReserves, endState.shareReserves);

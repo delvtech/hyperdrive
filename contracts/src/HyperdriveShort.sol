@@ -448,6 +448,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             spotPrice,
             _sharePrice
         );
+
         // Remove the curve fee from the amount of shares to remove from the shareReserves.
         // We do this bc the shareReservesDelta represents how many shares to remove
         // from the shareReserves.  Making the shareReservesDelta smaller pays out the
