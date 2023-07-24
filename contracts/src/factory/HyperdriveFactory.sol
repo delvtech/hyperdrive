@@ -16,34 +16,61 @@ import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 abstract contract HyperdriveFactory {
     using FixedPointMath for uint256;
 
-    // The address of the hyperdrive deployer of the most recent code.
-    IHyperdriveDeployer public hyperdriveDeployer;
+    /// @notice Emitted when governance is transferred.
+    event GovernanceUpdated(address indexed governance);
 
-    // A mapping of all previously deployed hyperdrive instances of all versions
-    // 0 is un-deployed then increments for increasing versions
-    mapping(address instance => uint256 version) public isOfficial;
-    uint256 public versionCounter;
+    /// @notice Emitted when the Hyperdrive implementation is updated.
+    event ImplementationUpdated(address indexed newDeployer);
 
-    // The linker factory which is used to deploy the ERC20 linker contracts.
-    address public linkerFactory;
+    /// @notice Emitted when the Hyperdrive governance address is updated.
+    event HyperdriveGovernanceUpdated(address indexed hyperdriveGovernance);
 
-    // The hash of the ERC20 linker contract's constructor code.
-    bytes32 public linkerCodeHash;
+    /// @notice Emitted when the fee collector is updated.
+    event FeeCollectorUpdated(address indexed newFeeCollector);
 
-    // The default fee parameters.
-    IHyperdrive.Fees public fees;
+    /// @notice Emitted when the linker factory is updated.
+    event LinkerFactoryUpdated(address indexed newLinkerFactory);
 
-    // The address that can update the factory's configuration.
+    /// @notice Emitted when the linker code hash is updated.
+    event LinkerCodeHashUpdated(bytes32 indexed newCodeHash);
+
+    /// @notice The event that is emitted when new instances are deployed.
+    event Deployed(
+        uint256 indexed version,
+        address hyperdrive,
+        IHyperdrive.PoolConfig config,
+        address linkerFactory,
+        bytes32 linkerCodeHash,
+        bytes32[] extraData
+    );
+
+    /// @notice The governance address that updates the factory's configuration.
     address public governance;
 
-    // The hyperdrive governance address for new deployments.
+    /// @notice The number of times the factory's deployer has been updated.
+    uint256 public versionCounter;
+
+    /// @notice A mapping from deployed Hyperdrive instances to the version
+    ///         of the deployer that deployed them.
+    mapping(address instance => uint256 version) public isOfficial;
+
+    /// @notice The contract used to deploy new instances.
+    IHyperdriveDeployer public hyperdriveDeployer;
+
+    /// @notice The governance address used when new instances are deployed.
     address public hyperdriveGovernance;
 
-    // The address which collects governance fees in new deployments.
-    address public feeCollector;
+    /// @notice The linker factory used when new instances are deployed.
+    address public linkerFactory;
 
-    // The addresses that will be set as the initial pausers in new deployments.
-    address[] public defaultPausers;
+    /// @notice The linker code hash used when new instances are deployed.
+    bytes32 public linkerCodeHash;
+
+    /// @notice The fee parameters used when new instances are deployed.
+    IHyperdrive.Fees public fees;
+
+    /// @notice The fee collector used when new instances are deployed.
+    address public feeCollector;
 
     // The maximum curve fee that can be used as a factory default.
     uint256 internal immutable maxCurveFee;
@@ -53,6 +80,9 @@ abstract contract HyperdriveFactory {
 
     // The maximum governance fee that can be used as a factory default.
     uint256 internal immutable maxGovernanceFee;
+
+    /// @dev The defaultPausers used when new instances are deployed.
+    address[] internal _defaultPausers;
 
     struct FactoryConfig {
         /// @dev The address which can update a factory.
@@ -69,17 +99,7 @@ abstract contract HyperdriveFactory {
         address[] defaultPausers;
     }
 
-    // An event that is emitted when a new Hyperdrive instance is deployed.
-    event Deployed(
-        uint256 indexed version,
-        address hyperdrive,
-        IHyperdrive.PoolConfig config,
-        address linkerFactory,
-        bytes32 linkerCodeHash,
-        bytes32[] extraData
-    );
-
-    /// @notice Deploys the contract.
+    /// @notice Initializes the factory.
     /// @param _factoryConfig Configuration of the Hyperdrive Factory.
     /// @param _deployer The contract which holds the bytecode and deploys new versions.
     /// @param _linkerFactory The address of the linker factory.
@@ -116,132 +136,106 @@ abstract contract HyperdriveFactory {
         governance = _factoryConfig.governance;
         hyperdriveGovernance = _factoryConfig.hyperdriveGovernance;
         feeCollector = _factoryConfig.feeCollector;
-        defaultPausers = _factoryConfig.defaultPausers;
+        _defaultPausers = _factoryConfig.defaultPausers;
         versionCounter = 1;
         hyperdriveDeployer = _deployer;
         linkerFactory = _linkerFactory;
         linkerCodeHash = _linkerCodeHash;
     }
 
+    /// @dev Ensure that the sender is the governance address.
     modifier onlyGovernance() {
-        // Only governance can call this
         if (msg.sender != governance) revert IHyperdrive.Unauthorized();
         _;
     }
-
-    event ImplementationUpdated(address indexed newDeployer);
 
     /// @notice Allows governance to update the deployer contract.
     /// @param newDeployer The new deployment contract.
     function updateImplementation(
         IHyperdriveDeployer newDeployer
     ) external onlyGovernance {
+        // Update the deployer.
         require(address(newDeployer) != address(0));
-        // Update version and increment the counter
         hyperdriveDeployer = newDeployer;
+
+        // Increment the version number.
         versionCounter++;
 
         emit ImplementationUpdated(address(newDeployer));
     }
 
-    event GovernanceUpdated(address indexed newGovernance);
-
-    /// @notice Allows governance to change the governance address
-    /// @param newGovernance The new governor address
-    function updateGovernance(address newGovernance) external onlyGovernance {
-        require(newGovernance != address(0));
-        // Update governance
-        governance = newGovernance;
-
-        emit GovernanceUpdated(newGovernance);
+    /// @notice Allows governance to transfer the governance role.
+    /// @param _governance The new governance address.
+    function updateGovernance(address _governance) external onlyGovernance {
+        governance = _governance;
+        emit GovernanceUpdated(_governance);
     }
-
-    event HyperdriveGovernanceUpdated(address indexed newGovernance);
 
     /// @notice Allows governance to change the hyperdrive governance address
-    /// @param newGovernance The new governor address
+    /// @param _hyperdriveGovernance The new hyperdrive governance address.
     function updateHyperdriveGovernance(
-        address newGovernance
+        address _hyperdriveGovernance
     ) external onlyGovernance {
-        require(newGovernance != address(0));
-        // Update hyperdrive governance
-        hyperdriveGovernance = newGovernance;
-
-        emit HyperdriveGovernanceUpdated(newGovernance);
+        hyperdriveGovernance = _hyperdriveGovernance;
+        emit HyperdriveGovernanceUpdated(_hyperdriveGovernance);
     }
-
-    event LinkerFactoryUpdated(address indexed newLinkerFactory);
 
     /// @notice Allows governance to change the linker factory.
-    /// @param newLinkerFactory The new linker code hash.
+    /// @param _linkerFactory The new linker factory.
     function updateLinkerFactory(
-        address newLinkerFactory
+        address _linkerFactory
     ) external onlyGovernance {
-        require(newLinkerFactory != address(0));
-        // Update the linker factory
-        linkerFactory = newLinkerFactory;
-
-        emit LinkerFactoryUpdated(newLinkerFactory);
+        require(_linkerFactory != address(0));
+        linkerFactory = _linkerFactory;
+        emit LinkerFactoryUpdated(_linkerFactory);
     }
-
-    event LinkerCodeHashUpdated(bytes32 indexed newCodeHash);
 
     /// @notice Allows governance to change the linker code hash. This allows
     ///         governance to update the implementation of the ERC20Forwarder.
-    /// @param newLinkerCodeHash The new linker code hash.
+    /// @param _linkerCodeHash The new linker code hash.
     function updateLinkerCodeHash(
-        bytes32 newLinkerCodeHash
+        bytes32 _linkerCodeHash
     ) external onlyGovernance {
-        // Update the linker code hash
-        linkerCodeHash = newLinkerCodeHash;
-
-        emit LinkerCodeHashUpdated(newLinkerCodeHash);
+        linkerCodeHash = _linkerCodeHash;
+        emit LinkerCodeHashUpdated(_linkerCodeHash);
     }
 
-    event FeeCollectorUpdated(address indexed newFeeCollector);
-
-    /// @notice Allows governance to change the fee collector address
-    /// @param newFeeCollector The new governor address
-    function updateFeeCollector(
-        address newFeeCollector
-    ) external onlyGovernance {
-        require(newFeeCollector != address(0));
-        // Update fee collector
-        feeCollector = newFeeCollector;
-
-        emit FeeCollectorUpdated(newFeeCollector);
+    /// @notice Allows governance to change the fee collector address.
+    /// @param _feeCollector The new fee collector address.
+    function updateFeeCollector(address _feeCollector) external onlyGovernance {
+        feeCollector = _feeCollector;
+        emit FeeCollectorUpdated(_feeCollector);
     }
 
-    /// @notice Allows governance to change the fee schedule for the newly deployed factories
-    /// @param newFees The fees for all newly deployed contracts
+    /// @notice Allows governance to update the default fee schedule that will
+    ///         be used in new deployments.
+    /// @param _fees The new defaults for the fee parameters.
     function updateFees(
-        IHyperdrive.Fees calldata newFees
+        IHyperdrive.Fees calldata _fees
     ) external onlyGovernance {
         if (
-            newFees.curve > maxCurveFee ||
-            newFees.flat > maxFlatFee ||
-            newFees.governance > maxGovernanceFee
+            _fees.curve > maxCurveFee ||
+            _fees.flat > maxFlatFee ||
+            _fees.governance > maxGovernanceFee
         ) {
             revert IHyperdrive.FeeTooHigh();
         }
-        // Update the fee struct
-        fees = newFees;
+        fees = _fees;
     }
 
-    /// @notice Allows governance to change the fee collector address
-    /// @param newDefaults The new governor address
+    /// @notice Allows governance to change the default pausers.
+    /// @param _defaultPausers_ The new list of default pausers.
     function updateDefaultPausers(
-        address[] calldata newDefaults
+        address[] calldata _defaultPausers_
     ) external onlyGovernance {
-        require(newDefaults.length != 0);
-        // Update the default pausers
-        defaultPausers = newDefaults;
+        // Update the list of default pausers.
+        _defaultPausers = _defaultPausers_;
     }
 
-    /// @notice Deploys a copy of hyperdrive with the given params
-    /// @dev Function is declared payable to allow payable overrides
-    ///     for accepting Ether on initialization, but not supported
-    ///     by default within this instance.
+    /// @notice Deploys a Hyperdrive instance with the factory's configuration.
+    /// @dev This function is declared as payable to allow payable overrides
+    ///      to accept ether on initialization, but payability is not supported
+    ///      by default.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _extraData The extra data is used by some factories
     /// @param _contribution Base token to call init with
@@ -256,20 +250,22 @@ abstract contract HyperdriveFactory {
         if (msg.value > 0) {
             revert IHyperdrive.NonPayableInitialization();
         }
-        // Overwrite the governance and fees field of the config.
+
+        // Deploy the data provider and the instance with the factory's
+        // configuration. Add this instance to the registry and emit an event
+        // with the deployment configuration. The factory assumes the governance
+        // role during deployment so that it can set up some initial values;
+        // however the governance role will ultimately be transferred to the
+        // hyperdrive governance address.
         _config.feeCollector = feeCollector;
         _config.governance = address(this);
         _config.fees = fees;
-
-        // We deploy a new data provider for this instance
         address dataProvider = deployDataProvider(
             _config,
             _extraData,
             linkerCodeHash,
             linkerFactory
         );
-
-        // Then we call the simplified factory
         IHyperdrive hyperdrive = IHyperdrive(
             hyperdriveDeployer.deploy(
                 _config,
@@ -278,6 +274,16 @@ abstract contract HyperdriveFactory {
                 linkerFactory,
                 _extraData
             )
+        );
+        isOfficial[address(hyperdrive)] = versionCounter;
+        _config.governance = hyperdriveGovernance;
+        emit Deployed(
+            versionCounter,
+            address(hyperdrive),
+            _config,
+            linkerFactory,
+            linkerCodeHash,
+            _extraData
         );
 
         // Initialize the Hyperdrive instance.
@@ -293,32 +299,23 @@ abstract contract HyperdriveFactory {
         }
         hyperdrive.initialize(_contribution, _apr, msg.sender, true);
 
-        // Setup the pausers roles from the default array
-        for (uint256 i = 0; i < defaultPausers.length; i++) {
-            hyperdrive.setPauser(defaultPausers[i], true);
+        // Set the default pausers and transfer the governance status to the
+        // hyperdrive governance address.
+        for (uint256 i = 0; i < _defaultPausers.length; i++) {
+            hyperdrive.setPauser(_defaultPausers[i], true);
         }
-        // Reset governance to be the default one
         hyperdrive.setGovernance(hyperdriveGovernance);
-
-        // Mark as a version
-        isOfficial[address(hyperdrive)] = versionCounter;
-
-        // Emit a deployed event.
-        _config.governance = hyperdriveGovernance;
-        emit Deployed(
-            versionCounter,
-            address(hyperdrive),
-            _config,
-            linkerFactory,
-            linkerCodeHash,
-            _extraData
-        );
 
         return hyperdrive;
     }
 
-    /// @notice This should deploy a data provider which matches the type of the hyperdrives
-    ///         this contract will deploy
+    // TODO: We should be able to update the data providers bytecode when we
+    // up the deployer; however, this change should be made in the context of
+    // our mainnet proxy design.
+    //
+    /// @notice Deploys a Hyperdrive instance with the factory's configuration.
+    /// @dev This should be overrided so that the data provider corresponding
+    ///      to an individual instance is used.
     /// @param _config The configuration of the pool we are deploying
     /// @param _extraData The extra data from the pool deployment
     /// @param _linkerCodeHash The code hash from the multitoken deployer
@@ -329,4 +326,10 @@ abstract contract HyperdriveFactory {
         bytes32 _linkerCodeHash,
         address _linkerFactory
     ) internal virtual returns (address);
+
+    /// @notice Gets the default pausers.
+    /// @return The default pausers.
+    function getDefaultPausers() external view returns (address[] memory) {
+        return _defaultPausers;
+    }
 }
