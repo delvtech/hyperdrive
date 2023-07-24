@@ -31,9 +31,18 @@ contract DevnetSmokeTest is Script {
         // Execute all transactions with the ETH_FROM address.
         vm.startBroadcast(msg.sender);
 
+        console.log("Starting pool info:");
+        _logInfo();
+        console.log("");
+
         // Execute the smoke tests.
+        _testLp();
         _testLong();
         _testShort();
+
+        console.log("Ending pool info:");
+        _logInfo();
+        console.log("");
 
         vm.stopBroadcast();
     }
@@ -72,6 +81,36 @@ contract DevnetSmokeTest is Script {
         );
     }
 
+    function _testLp() internal {
+        // Add liquidity.
+        console.log("sender=%s: Adding liquidity...", msg.sender);
+        BASE.mint(msg.sender, 10_000e18);
+        BASE.approve(address(HYPERDRIVE), 10_000e18);
+        uint256 lpShares = HYPERDRIVE.addLiquidity(
+            10_000e18,
+            0,
+            type(uint256).max,
+            msg.sender,
+            true
+        );
+        console.log(
+            "sender=%s: Added liquidity: lpShares=%s",
+            msg.sender,
+            lpShares.toString(18)
+        );
+
+        // Removing liquidity.
+        console.log("sender=%s: Removing liquidity...", msg.sender);
+        (uint256 proceeds, uint256 withdrawalShares) = HYPERDRIVE
+            .removeLiquidity(lpShares, 0, msg.sender, true);
+        console.log(
+            "sender=%s: Removed liquidity: proceeds=%s, withdrawalShares=%s",
+            msg.sender,
+            proceeds.toString(18),
+            withdrawalShares.toString(18)
+        );
+    }
+
     function _testShort() internal {
         // Open a short.
         console.log("sender=%s: Opening a short position...", msg.sender);
@@ -106,9 +145,15 @@ contract DevnetSmokeTest is Script {
         );
     }
 
-    function createUser(string memory name) internal returns (address _user) {
-        _user = address(uint160(uint256(keccak256(abi.encode(name)))));
-        vm.label(_user, name);
-        vm.deal(_user, 10000 ether);
+    function _logInfo() internal view {
+        IHyperdrive.PoolInfo memory info = HYPERDRIVE.getPoolInfo();
+        console.log("shareReserves: %s", info.shareReserves.toString(18));
+        console.log("bondReserves: %s", info.bondReserves.toString(18));
+        console.log("sharePrice: %s", info.sharePrice.toString(18));
+        console.log("longsOutstanding: %s", info.longsOutstanding.toString(18));
+        console.log(
+            "shortsOutstanding: %s",
+            info.shortsOutstanding.toString(18)
+        );
     }
 }
