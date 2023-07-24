@@ -226,10 +226,10 @@ contract CloseShortTest is HyperdriveTest {
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
-
+        IHyperdrive.PoolInfo memory poolInfoInitial = hyperdrive.getPoolInfo();
         // Short some bonds.
         uint256 bondAmount = 10e18;
-        (uint256 maturityTime, ) = openShort(bob, bondAmount);
+        (uint256 maturityTime, uint256 baseAmount) = openShort(bob, bondAmount);
 
         // Get the reserves and account balances before closing the short.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
@@ -239,13 +239,21 @@ contract CloseShortTest is HyperdriveTest {
         );
 
         // The term passes.
-        vm.warp(block.timestamp + 365 days);
+        advanceTime(POSITION_DURATION, 0);
 
         // Redeem the bonds.
         uint256 baseProceeds = closeShort(bob, maturityTime, bondAmount);
 
         // Verify that Bob doesn't receive any base from closing the short.
         assertEq(baseProceeds, 0);
+
+        // Verify that the reserves now include the short position's shareAmount
+        IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
+
+        assertEq(
+            poolInfoAfter.shareReserves,
+            poolInfoInitial.shareReserves + baseAmount
+        );
 
         // Verify that the close short updates were correct.
         verifyCloseShort(
