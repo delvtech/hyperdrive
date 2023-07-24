@@ -181,66 +181,68 @@ contract OpenShortTest is HyperdriveTest {
     }
 
     function test_governance_fees_excluded_share_reserves() public {
-        // Borrowed logic from the test setup to initialize with ridiculous (and therefore easily measurable)
-        // fees
-        IHyperdrive.Fees memory fees = IHyperdrive.Fees({
-            // Subtracting 5 to create a large fee very close to max allowed fee
-            curve: 1e18 - 5,
-            flat: 0,
-            governance: 1e18 - 5
-        });
-        // Instantiate Hyperdrive.
         uint256 apr = 0.05e18;
-        IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
-            baseToken: IERC20(address(baseToken)),
-            initialSharePrice: INITIAL_SHARE_PRICE,
-            minimumShareReserves: MINIMUM_SHARE_RESERVES,
-            positionDuration: POSITION_DURATION,
-            checkpointDuration: CHECKPOINT_DURATION,
-            timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
-            governance: governance,
-            feeCollector: feeCollector,
-            fees: fees,
-            oracleSize: ORACLE_SIZE,
-            updateGap: UPDATE_GAP
-        });
-        address dataProvider = address(new MockHyperdriveDataProvider(config));
-        hyperdrive = IHyperdrive(
-            address(new MockHyperdrive(config, dataProvider))
-        );
-        vm.stopPrank();
-        vm.startPrank(governance);
-        hyperdrive.setPauser(pauser, true);
+        uint256 contribution = 500_000_000e18;
+
+        // 1. Deploy a pool with zero fees
+        IHyperdrive.PoolConfig memory config = testConfig(apr);
+        deploy(address(deployer), config);
 
         // Initialize the pool with a large amount of capital.
-        uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
 
-        vm.stopPrank();
-        vm.startPrank(bob);
-
-        uint256 startFeesAccrued = hyperdrive.getUncollectedGovernanceFees();
-        assertEq(startFeesAccrued, 0);
-
-        IHyperdrive.MarketState memory initialState = hyperdrive
-            .getMarketState();
-
+        // 2. Open a short
         uint256 bondAmount = (hyperdrive.calculateMaxShort() * 90) / 100;
-        // Open a short so we can ensure fees are tracked correctly
         openShort(bob, bondAmount);
 
-        // Snapshot new state
-        uint256 endFeesAccrued = hyperdrive.getUncollectedGovernanceFees();
-        IHyperdrive.MarketState memory endState = hyperdrive.getMarketState();
+        // 3. Record Share Reserves
+        IHyperdrive.MarketState memory zeroFeeState = hyperdrive
+            .getMarketState();
 
-        assertGt(initialState.shareReserves, endState.shareReserves);
-        // The magic number represents the shareReserves from before the fix, where fees were included
-        // Unfortunately I could not not find an easier way to demonstrate the fix
-        assertApproxEqAbs(
-            endState.shareReserves + endFeesAccrued,
-            68357991885727826629572110,
-            5
-        );
+        // 4. deploy a pool with 100% curve fees and 100% gov fees (this is nice bc it ensures that all the fees are credited to governance and thus subtracted from the shareReserves
+        config = testConfig(apr);
+        config.fees = IHyperdrive.Fees({
+            curve: 1e18,
+            flat: 1e18,
+            governance: 1e18
+        });
+
+        // Deploy and initialize the new pool
+        deploy(address(deployer), config);
+        initialize(alice, apr, contribution);
+
+        // 5. Open a Short
+        bondAmount = (hyperdrive.calculateMaxShort() * 90) / 100;
+        openShort(bob, bondAmount);
+
+        // 6. Record Share Reserves
+        IHyperdrive.MarketState memory maxFeeState = hyperdrive
+            .getMarketState();
+
+        assertEq(zeroFeeState.shareReserves, maxFeeState.shareReserves);
+
+        uint256 govFees = hyperdrive.getUncollectedGovernanceFees();
+        // Governance fees collected are non-zero
+        assert(govFees > 1e5);
+
+        // 7. deploy a pool with 100% curve fees and 0% gov fees
+        config = testConfig(apr);
+        config.fees = IHyperdrive.Fees({ curve: 1e18, flat: 0, governance: 0 });
+
+        // Deploy and initialize the new pool
+        deploy(address(deployer), config);
+        initialize(alice, apr, contribution);
+
+        // 8. Open a Short
+        bondAmount = (hyperdrive.calculateMaxShort() * 90) / 100;
+        openShort(bob, bondAmount);
+
+        // 9. Record Share Reserves
+        IHyperdrive.MarketState memory maxCurveFeeState = hyperdrive
+            .getMarketState();
+
+        // shareReserves should be greater here because there is no Gov being deducted
+        assertGe(maxCurveFeeState.shareReserves, maxFeeState.shareReserves);
     }
 
     function verifyOpenShort(

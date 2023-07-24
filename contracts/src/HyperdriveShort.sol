@@ -449,7 +449,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             _sharePrice
         );
 
-        // ShareReservesDelta is the number of shares to remove from the shareReserves and 
+        // ShareReservesDelta is the number of shares to remove from the shareReserves and
         // since the totalCurveFee includes the totalGovernanceFee it needs to be added back
         // to so that it is removed from the shareReserves. The shareReservesDelta,
         // totalCurveFee and totalGovernanceFee are all in terms of shares:
