@@ -9,6 +9,7 @@ import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { MockERC4626 } from "contracts/test/MockERC4626.sol";
 import { MockHyperdriveMath } from "contracts/test/MockHyperdriveMath.sol";
@@ -40,6 +41,9 @@ contract DevnetMigration is Script {
             0.05e18 // initial rate of 5%
         );
 
+        // Deploy the forwarder factory.
+        ForwarderFactory forwarderFactory = new ForwarderFactory();
+
         // Deploy the Hyperdrive factory.
         ERC4626HyperdriveFactory factory;
         {
@@ -68,8 +72,8 @@ contract DevnetMigration is Script {
             factory = new ERC4626HyperdriveFactory(
                 factoryConfig,
                 deployer,
-                address(0), // TODO: Use a real configuration here.
-                bytes32(0), // TODO: Use a real configuration here.
+                address(forwarderFactory),
+                forwarderFactory.ERC20LINK_HASH(),
                 IERC4626(address(pool)),
                 new address[](0)
             );
