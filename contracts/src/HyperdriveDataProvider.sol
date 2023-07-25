@@ -101,6 +101,20 @@ abstract contract HyperdriveDataProvider is
         _revert(abi.encode(poolInfo));
     }
 
+    /// @notice Gets info about the fees presently accrued by the pool
+    /// @return Governance fees denominated in shares yet to be collected
+    function getUncollectedGovernanceFees() external view returns (uint256) {
+        _revert(abi.encode(_governanceFeesAccrued));
+    }
+
+    function getMarketState()
+        external
+        view
+        returns (IHyperdrive.MarketState memory)
+    {
+        _revert(abi.encode(_marketState));
+    }
+
     /// @notice Allows plugin data libs to provide getters or other complex
     ///         logic instead of the main.
     /// @param _slots The storage slots the caller wants the data from
