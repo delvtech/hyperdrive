@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import "forge-std/console.sol";
+import "test/utils/Lib.sol";
+
 import { HyperdriveLP } from "./HyperdriveLP.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { AssetId } from "./libraries/AssetId.sol";
@@ -15,6 +19,9 @@ import { SafeCast } from "./libraries/SafeCast.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveLong is HyperdriveLP {
+    // FIXME
+    using Lib for *;
+
     using FixedPointMath for uint256;
     using SafeCast for uint256;
 
@@ -50,6 +57,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
             _baseAmount,
             _asUnderlying
         );
+        console.log("sharePrice: %s", sharePrice.toString(18));
 
         // Perform a checkpoint.
         uint256 latestCheckpoint = _latestCheckpoint();
@@ -266,6 +274,17 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // Since the base buffer may have increased relative to the base
         // reserves and the bond reserves decreased, we must ensure that the
         // base reserves are greater than the longsOutstanding.
+        console.log("_pricePerShare: %s", _pricePerShare().toString(18));
+        console.log("_sharePrice: %s", _sharePrice.toString(18));
+        console.log(
+            "_marketState.shareReserves: %s",
+            _marketState.shareReserves.toString(18)
+        );
+        console.log("longsOutstanding_: %s", longsOutstanding_.toString(18));
+        console.log(
+            "_minimumShareReserves: %s",
+            _minimumShareReserves.toString(18)
+        );
         if (
             _sharePrice.mulDown(_marketState.shareReserves) <
             uint256(longsOutstanding_).divDown(_sharePrice) +
