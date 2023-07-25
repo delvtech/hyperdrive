@@ -2,8 +2,8 @@
 pragma solidity 0.8.19;
 
 import { ERC20 } from "solmate/tokens/ERC20.sol";
-import { IHyperdrive } from "../src/interfaces/IHyperdrive.sol";
 import { IERC20 } from "../src/interfaces/IERC20.sol";
+import { IHyperdrive } from "../src/interfaces/IHyperdrive.sol";
 import { BondWrapper } from "../src/token/BondWrapper.sol";
 
 contract MockBondWrapper is BondWrapper {

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { FixedPointMath } from "./FixedPointMath.sol";
+import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 
 /// @author DELV
 /// @title Hyperdrive
