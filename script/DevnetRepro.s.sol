@@ -54,12 +54,14 @@ contract DevnetRepro is Script {
         vm.writeLine(REPRO_PATH, "import { console } from \"forge-std/console.sol\";");
         vm.writeLine(REPRO_PATH, "import { IERC20 } from \"contracts/src/interfaces/IERC20.sol\";");
         vm.writeLine(REPRO_PATH, "import { IHyperdrive } from \"contracts/src/interfaces/IHyperdrive.sol\";");
+        vm.writeLine(REPRO_PATH, "import { FixedPointMath } from \"contracts/src/libraries/FixedPointMath.sol\";");
         vm.writeLine(REPRO_PATH, "import { MockHyperdrive } from \"test/mocks/MockHyperdrive.sol\";");
         vm.writeLine(REPRO_PATH, "import { HyperdriveTest } from \"test/utils/HyperdriveTest.sol\";");
         vm.writeLine(REPRO_PATH, "import { HyperdriveUtils } from \"test/utils/HyperdriveUtils.sol\";");
         vm.writeLine(REPRO_PATH, "import { Lib } from \"test/utils/Lib.sol\";");
         vm.writeLine(REPRO_PATH, "");
         vm.writeLine(REPRO_PATH, "contract TestRepro is HyperdriveTest {");
+        vm.writeLine(REPRO_PATH, "    using FixedPointMath for *;");
         vm.writeLine(REPRO_PATH, "    using HyperdriveUtils for *;");
         vm.writeLine(REPRO_PATH, "    using Lib for *;");
         vm.writeLine(REPRO_PATH, "");
