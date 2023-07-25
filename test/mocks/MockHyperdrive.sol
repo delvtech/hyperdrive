@@ -101,6 +101,16 @@ contract MockHyperdrive is Hyperdrive {
 
     /// Mocks ///
 
+    function setMarketState(
+        IHyperdrive.MarketState memory _marketState_
+    ) external {
+        _marketState = _marketState_;
+    }
+
+    function setTotalShares(uint256 _totalShares) external {
+        totalShares = _totalShares;
+    }
+
     // Accrues compounded interest for a given number of seconds and readjusts
     // share price to reflect such compounding
     function accrue(uint256 time, int256 apr) external {
