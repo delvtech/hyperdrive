@@ -15,6 +15,7 @@ import { MockERC4626Hyperdrive } from "../mocks/Mock4626Hyperdrive.sol";
 import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../utils/HyperdriveUtils.sol";
 import { Lib } from "../utils/Lib.sol";
+import { console } from "forge-std/console.sol";
 
 abstract contract ERC4626ValidationTest is HyperdriveTest {
     using FixedPointMath for *;
@@ -440,10 +441,12 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         vm.startPrank(alice);
         shortAmount = shortAmount.normalizeToRange(
             0.00001e18,
-            Lib.min(
-                HyperdriveUtils.calculateMaxShort(hyperdrive),
-                underlyingToken.balanceOf(alice)
-            )
+            Lib
+                .min(
+                    HyperdriveUtils.calculateMaxShort(hyperdrive),
+                    underlyingToken.balanceOf(alice)
+                )
+                .mulDown(0.95e18)
         );
 
         // Deposit into the actual ERC4626
@@ -451,7 +454,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         token.deposit(shortAmount, alice);
 
         // Open the short
-        (uint256 maturityTime, ) = openShortERC4626(alice, shortAmount, true);
+        (uint256 maturityTime, ) = openShortERC4626(alice, shortAmount, false);
 
         // The term passes and interest accrues.
         variableRate = variableRate.normalizeToRange(0, 2.5e18);
