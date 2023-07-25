@@ -47,6 +47,7 @@ contract DevnetRepro is Script {
         vm.writeLine(REPRO_PATH, "// SPDX-License-Identifier: Apache-2.0");
         vm.writeLine(REPRO_PATH, "pragma solidity 0.8.19;");
         vm.writeLine(REPRO_PATH, "");
+        vm.writeLine(REPRO_PATH, "import { console } from \"forge-std/console.sol\";");
         vm.writeLine(REPRO_PATH, "import { IERC20 } from \"contracts/src/interfaces/IERC20.sol\";");
         vm.writeLine(REPRO_PATH, "import { IHyperdrive } from \"contracts/src/interfaces/IHyperdrive.sol\";");
         vm.writeLine(REPRO_PATH, "import { MockHyperdrive } from \"test/mocks/MockHyperdrive.sol\";");
