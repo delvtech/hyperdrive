@@ -3,7 +3,9 @@ pragma solidity 0.8.19;
 
 import { console } from "forge-std/console.sol";
 import { Script } from "forge-std/Script.sol";
+import { ERC4626DataProvider } from "contracts/src/instances/ERC4626DataProvider.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
+import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
@@ -34,7 +36,8 @@ contract DevnetRepro is Script {
     // prettier-ignore
     function run() external {
         // Query the Hyperdrive instance for some data.
-        uint256 balance = BASE.balanceOf(address(HYPERDRIVE));
+        IERC4626 pool = ERC4626DataProvider(address(HYPERDRIVE)).pool();
+        uint256 balance = pool.balanceOf(address(HYPERDRIVE));
         IHyperdrive.PoolConfig memory config = HYPERDRIVE.getPoolConfig();
         IHyperdrive.PoolInfo memory info = HYPERDRIVE.getPoolInfo();
 
