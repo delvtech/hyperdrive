@@ -37,7 +37,8 @@ contract DevnetRepro is Script {
     function run() external {
         // Query the Hyperdrive instance for some data.
         IERC4626 pool = ERC4626DataProvider(address(HYPERDRIVE)).pool();
-        uint256 balance = pool.balanceOf(address(HYPERDRIVE));
+        uint256 assets = pool.balanceOf(address(HYPERDRIVE));
+        uint256 totalShares = pool.convertToShares(assets);
         IHyperdrive.PoolConfig memory config = HYPERDRIVE.getPoolConfig();
         IHyperdrive.PoolInfo memory info = HYPERDRIVE.getPoolInfo();
 
@@ -97,8 +98,8 @@ contract DevnetRepro is Script {
         vm.writeLine(REPRO_PATH, "            isPaused: false");
         vm.writeLine(REPRO_PATH, "        });");
         vm.writeLine(REPRO_PATH, "        MockHyperdrive(address(hyperdrive)).setMarketState(state);");
-        vm.writeLine(REPRO_PATH, string.concat(string.concat("        MockHyperdrive(address(hyperdrive)).setTotalShares(", vm.toString(balance.divDown(info.sharePrice))), ");"));
-        vm.writeLine(REPRO_PATH, string.concat(string.concat("        baseToken.mint(address(hyperdrive), ", vm.toString(balance)), ");"));
+        vm.writeLine(REPRO_PATH, string.concat(string.concat("        MockHyperdrive(address(hyperdrive)).setTotalShares(", vm.toString(totalShares)), ");"));
+        vm.writeLine(REPRO_PATH, string.concat(string.concat("        baseToken.mint(address(hyperdrive), ", vm.toString(assets)), ");"));
         vm.writeLine(REPRO_PATH, "    }");
         vm.writeLine(REPRO_PATH, "}");
 
