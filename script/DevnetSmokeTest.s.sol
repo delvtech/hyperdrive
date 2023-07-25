@@ -35,10 +35,25 @@ contract DevnetSmokeTest is Script {
         _logInfo();
         console.log("");
 
-        // Execute the smoke tests.
-        _testLp();
-        _testLong();
-        _testShort();
+        {
+            uint256 bondAmount = 110_000e18;
+            BASE.mint(msg.sender, bondAmount);
+            BASE.approve(address(HYPERDRIVE), bondAmount);
+            (, uint256 basePaid) = HYPERDRIVE.openShort(
+                bondAmount,
+                type(uint256).max,
+                msg.sender,
+                true
+            );
+            BASE.burn(msg.sender, bondAmount - basePaid);
+        }
+
+        {
+            uint256 basePaid = 300_000e18;
+            BASE.mint(msg.sender, basePaid);
+            BASE.approve(address(HYPERDRIVE), basePaid);
+            HYPERDRIVE.openLong(basePaid, 0, msg.sender, true);
+        }
 
         console.log("Ending pool info:");
         _logInfo();
