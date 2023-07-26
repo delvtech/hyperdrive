@@ -5,6 +5,8 @@ on:
   push:
     branches:
       - "main"
+      # FIXME
+      - "jalextowle/repro/competition-bug-1"
     tags:
       - "v*"
 
