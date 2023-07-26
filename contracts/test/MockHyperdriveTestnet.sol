@@ -1,10 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-// FIXME
-import "forge-std/console.sol";
-import "test/utils/Lib.sol";
-
 import { ERC20PresetMinterPauser } from "openzeppelin-contracts/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
 import { Hyperdrive } from "../src/Hyperdrive.sol";
 import { HyperdriveDataProvider } from "../src/HyperdriveDataProvider.sol";
@@ -16,7 +12,6 @@ import { ERC20Mintable } from "./ERC20Mintable.sol";
 
 contract MockHyperdriveTestnet is Hyperdrive {
     using FixedPointMath for uint256;
-    using Lib for *;
 
     uint256 internal rate;
     uint256 internal lastUpdated;
@@ -68,9 +63,7 @@ contract MockHyperdriveTestnet is Hyperdrive {
         if (!_asUnderlying) revert UnsupportedOption();
 
         // Accrue interest.
-        console.log("_pricePerShare: %s", _pricePerShare());
         accrueInterest();
-        console.log("_pricePerShare: %s", _pricePerShare());
 
         // Take custody of the base.
         bool success = _baseToken.transferFrom(
@@ -88,7 +81,6 @@ contract MockHyperdriveTestnet is Hyperdrive {
             return (_amount, FixedPointMath.ONE_18);
         } else {
             sharePrice = _pricePerShare();
-            console.log("sharePrice: %s", sharePrice);
             sharesMinted = _amount.divDown(sharePrice);
             totalShares += sharesMinted;
             return (sharesMinted, sharePrice);
@@ -120,15 +112,6 @@ contract MockHyperdriveTestnet is Hyperdrive {
     }
 
     function _pricePerShare() internal view override returns (uint256) {
-        console.log(
-            "baseBalance: %s",
-            _baseToken.balanceOf(address(this)).toString(18)
-        );
-        console.log(
-            "getAccruedInterest: %s",
-            getAccruedInterest().toString(18)
-        );
-        console.log("totalShares: %s", totalShares.toString(18));
         uint256 underlying = _baseToken.balanceOf(address(this)) +
             getAccruedInterest();
         return underlying.divDown(totalShares);
@@ -166,7 +149,6 @@ contract MockHyperdriveDataProviderTestnet is
     HyperdriveDataProvider
 {
     using FixedPointMath for uint256;
-    using Lib for *;
 
     uint256 internal rate;
     uint256 internal lastUpdated;
@@ -208,15 +190,6 @@ contract MockHyperdriveDataProviderTestnet is
     /// Overrides ///
 
     function _pricePerShare() internal view override returns (uint256) {
-        console.log(
-            "baseBalance: %s",
-            _baseToken.balanceOf(address(this)).toString(18)
-        );
-        console.log(
-            "getAccruedInterest: %s",
-            getAccruedInterest().toString(18)
-        );
-        console.log("totalShares: %s", totalShares.toString(18));
         uint256 underlying = _baseToken.balanceOf(address(this)) +
             getAccruedInterest();
         return underlying.divDown(totalShares);
