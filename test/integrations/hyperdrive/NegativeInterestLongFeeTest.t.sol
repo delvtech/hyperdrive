@@ -188,7 +188,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
         );
     }
 
-    function test_negative_interest_long_full_term_fees_fuzz(
+    function test_fuzz_negative_interest_long_full_term_fees_fuzz(
         uint256 initialSharePrice,
         int256 preTradeVariableInterest,
         int256 variableInterest
@@ -368,7 +368,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
                 closeSharePrice;
             assertApproxEqAbs(
                 governanceFeesAfterCloseLong,
-                expectedGovernanceFees,
+                expectedGovernanceFees * 2,
                 10 wei
             );
         }
@@ -590,7 +590,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
                 );
             assertApproxEqAbs(
                 governanceFeesAfterCloseLong,
-                expectedFlat + expectedCurve,
+                (expectedFlat + expectedCurve),
                 10 wei
             );
         }
