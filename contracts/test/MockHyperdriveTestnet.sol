@@ -1,10 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-// FIXME
-import "forge-std/console.sol";
-import "test/utils/Lib.sol";
-
 import { ERC20PresetMinterPauser } from "openzeppelin-contracts/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
 import { Hyperdrive } from "../src/Hyperdrive.sol";
 import { HyperdriveDataProvider } from "../src/HyperdriveDataProvider.sol";
@@ -16,7 +12,6 @@ import { ERC20Mintable } from "./ERC20Mintable.sol";
 
 contract MockHyperdriveTestnet is Hyperdrive {
     using FixedPointMath for uint256;
-    using Lib for *;
 
     uint256 internal rate;
     uint256 internal lastUpdated;
@@ -85,7 +80,8 @@ contract MockHyperdriveTestnet is Hyperdrive {
             totalShares = _amount;
             return (_amount, FixedPointMath.ONE_18);
         } else {
-            sharesMinted = _amount.divDown(sharePrice);
+            uint256 assets = _baseToken.balanceOf(address(this));
+            sharesMinted = _amount.mulDivDown(totalShares, assets);
             totalShares += sharesMinted;
             sharePrice = _pricePerShare();
             return (sharesMinted, sharePrice);
