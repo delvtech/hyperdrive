@@ -217,46 +217,6 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
 
     /// Helpers ///
 
-    /// @dev Calculates the normalized time remaining of a position.
-    /// @param _maturityTime The maturity time of the position.
-    /// @return timeRemaining The normalized time remaining (in [0, 1]).
-    function _calculateTimeRemaining(
-        uint256 _maturityTime
-    ) internal view returns (uint256 timeRemaining) {
-        uint256 latestCheckpoint = _latestCheckpoint();
-        timeRemaining = _maturityTime > latestCheckpoint
-            ? _maturityTime - latestCheckpoint
-            : 0;
-        timeRemaining = (timeRemaining).divDown(_positionDuration);
-    }
-
-    /// @dev Calculates the normalized time remaining of a position when the
-    ///      maturity time is scaled up 18 decimals.
-    /// @param _maturityTime The maturity time of the position.
-    function _calculateTimeRemainingScaled(
-        uint256 _maturityTime
-    ) internal view returns (uint256 timeRemaining) {
-        uint256 latestCheckpoint = _latestCheckpoint() * FixedPointMath.ONE_18;
-        timeRemaining = _maturityTime > latestCheckpoint
-            ? _maturityTime - latestCheckpoint
-            : 0;
-        timeRemaining = (timeRemaining).divDown(
-            _positionDuration * FixedPointMath.ONE_18
-        );
-    }
-
-    /// @dev Gets the most recent checkpoint time.
-    /// @return latestCheckpoint The latest checkpoint.
-    function _latestCheckpoint()
-        internal
-        view
-        returns (uint256 latestCheckpoint)
-    {
-        latestCheckpoint =
-            block.timestamp -
-            (block.timestamp % _checkpointDuration);
-    }
-
     /// @dev Calculates the fees that go to the LPs and governance.
     /// @param _amountIn Amount in shares.
     /// @param _spotPrice The price without slippage of bonds in terms of base (base/bonds).
