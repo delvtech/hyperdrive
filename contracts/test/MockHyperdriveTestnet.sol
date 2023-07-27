@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import "forge-std/console.sol";
+import "test/utils/Lib.sol";
+
 import { ERC20PresetMinterPauser } from "openzeppelin-contracts/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
 import { Hyperdrive } from "../src/Hyperdrive.sol";
 import { HyperdriveDataProvider } from "../src/HyperdriveDataProvider.sol";
@@ -12,6 +16,7 @@ import { ERC20Mintable } from "./ERC20Mintable.sol";
 
 contract MockHyperdriveTestnet is Hyperdrive {
     using FixedPointMath for uint256;
+    using Lib for *;
 
     uint256 internal rate;
     uint256 internal lastUpdated;
@@ -62,8 +67,20 @@ contract MockHyperdriveTestnet is Hyperdrive {
     ) internal override returns (uint256 sharesMinted, uint256 sharePrice) {
         if (!_asUnderlying) revert UnsupportedOption();
 
+        console.log(
+            "_deposit: balance: %s",
+            _baseToken.balanceOf(address(this)).toString(18)
+        );
+        console.log("_deposit: totalShares: %s", totalShares.toString(18));
+
         // Accrue interest.
         accrueInterest();
+
+        console.log(
+            "_deposit: balance: %s",
+            _baseToken.balanceOf(address(this)).toString(18)
+        );
+        console.log("_deposit: totalShares: %s", totalShares.toString(18));
 
         // Take custody of the base.
         bool success = _baseToken.transferFrom(
@@ -83,6 +100,7 @@ contract MockHyperdriveTestnet is Hyperdrive {
             sharePrice = _pricePerShare();
             sharesMinted = _amount.divDown(sharePrice);
             totalShares += sharesMinted;
+            console.log("_deposit: sharePrice: %s", sharePrice.toString(18));
             return (sharesMinted, sharePrice);
         }
     }
@@ -114,6 +132,18 @@ contract MockHyperdriveTestnet is Hyperdrive {
     function _pricePerShare() internal view override returns (uint256) {
         uint256 underlying = _baseToken.balanceOf(address(this)) +
             getAccruedInterest();
+        console.log(
+            "_pricePerShare: balance=%s",
+            _baseToken.balanceOf(address(this)).toString(18)
+        );
+        console.log(
+            "_pricePerShare: getAccruedInterest()=%s",
+            getAccruedInterest().toString(18)
+        );
+        console.log(
+            "_pricePerShare: _totalShares=%s",
+            totalShares.toString(18)
+        );
         return underlying.divDown(totalShares);
     }
 

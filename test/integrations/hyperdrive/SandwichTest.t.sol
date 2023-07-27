@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import "forge-std/console.sol";
+
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
@@ -9,6 +12,26 @@ import { Lib } from "../../utils/Lib.sol";
 contract SandwichTest is HyperdriveTest {
     using FixedPointMath for uint256;
     using Lib for *;
+
+    function test_example() external {
+        uint256 sharePrice = 1013054901205587337;
+        uint256 shareReserves = 2582914787021925392491;
+        uint256 longsOutstanding = 2664373160528077277119;
+        uint256 minimumShareReserves = 1e18;
+
+        console.log(
+            "invariant_passed=%s",
+            shareReserves <
+                uint256(longsOutstanding).divDown(sharePrice) +
+                    minimumShareReserves
+        );
+        console.log(
+            "idle=%s",
+            (int256(sharePrice.mulDown(shareReserves)) -
+                int256(longsOutstanding) -
+                int256(sharePrice.mulDown(minimumShareReserves))).toString(18)
+        );
+    }
 
     function test_sandwich_trades(uint8 _apr, uint64 _timeDelta) external {
         uint256 apr = uint256(_apr) * 0.01e18;
