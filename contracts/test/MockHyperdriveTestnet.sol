@@ -97,9 +97,9 @@ contract MockHyperdriveTestnet is Hyperdrive {
             totalShares = _amount;
             return (_amount, FixedPointMath.ONE_18);
         } else {
-            sharePrice = _pricePerShare();
             sharesMinted = _amount.divDown(sharePrice);
             totalShares += sharesMinted;
+            sharePrice = _pricePerShare();
             console.log("_deposit: sharePrice: %s", sharePrice.toString(18));
             return (sharesMinted, sharePrice);
         }
