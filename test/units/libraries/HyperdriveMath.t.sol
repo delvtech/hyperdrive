@@ -662,6 +662,8 @@ contract HyperdriveMathTest is HyperdriveTest {
         closeShort(bob, maturityTime, maxShort);
     }
 
+    // FIXME: Add tests cases with the share adjustment and verify that the
+    // changes work properly.
     function test__calculatePresentValue() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
@@ -676,6 +678,7 @@ contract HyperdriveMathTest is HyperdriveTest {
             HyperdriveMath.PresentValueParams memory params = HyperdriveMath
                 .PresentValueParams({
                     shareReserves: 500_000_000e18,
+                    shareAdjustment: 0,
                     bondReserves: calculateBondReserves(
                         500_000_000e18,
                         initialSharePrice,
@@ -705,6 +708,7 @@ contract HyperdriveMathTest is HyperdriveTest {
             HyperdriveMath.PresentValueParams memory params = HyperdriveMath
                 .PresentValueParams({
                     shareReserves: 500_000_000e18,
+                    shareAdjustment: 0,
                     bondReserves: calculateBondReserves(
                         500_000_000e18,
                         initialSharePrice,
@@ -743,6 +747,7 @@ contract HyperdriveMathTest is HyperdriveTest {
             HyperdriveMath.PresentValueParams memory params = HyperdriveMath
                 .PresentValueParams({
                     shareReserves: 500_000_000e18,
+                    shareAdjustment: 0,
                     bondReserves: calculateBondReserves(
                         500_000_000e18,
                         initialSharePrice,
@@ -775,6 +780,7 @@ contract HyperdriveMathTest is HyperdriveTest {
             HyperdriveMath.PresentValueParams memory params = HyperdriveMath
                 .PresentValueParams({
                     shareReserves: 500_000_000e18,
+                    shareAdjustment: 0,
                     bondReserves: calculateBondReserves(
                         500_000_000e18,
                         initialSharePrice,
@@ -813,6 +819,7 @@ contract HyperdriveMathTest is HyperdriveTest {
             HyperdriveMath.PresentValueParams memory params = HyperdriveMath
                 .PresentValueParams({
                     shareReserves: 500_000_000e18,
+                    shareAdjustment: 0,
                     bondReserves: calculateBondReserves(
                         500_000_000e18,
                         initialSharePrice,
@@ -845,6 +852,7 @@ contract HyperdriveMathTest is HyperdriveTest {
             HyperdriveMath.PresentValueParams memory params = HyperdriveMath
                 .PresentValueParams({
                     shareReserves: 500_000_000e18,
+                    shareAdjustment: 0,
                     bondReserves: calculateBondReserves(
                         500_000_000e18,
                         initialSharePrice,
@@ -874,6 +882,7 @@ contract HyperdriveMathTest is HyperdriveTest {
             HyperdriveMath.PresentValueParams memory params = HyperdriveMath
                 .PresentValueParams({
                     shareReserves: 500_000_000e18,
+                    shareAdjustment: 0,
                     bondReserves: calculateBondReserves(
                         500_000_000e18,
                         initialSharePrice,
@@ -894,7 +903,9 @@ contract HyperdriveMathTest is HyperdriveTest {
             uint256 presentValue = hyperdriveMath.calculatePresentValue(params);
             params.shareReserves += YieldSpaceMath
                 .calculateSharesInGivenBondsOut(
-                    params.shareReserves,
+                    uint256(
+                        int256(params.shareReserves) - params.shareAdjustment
+                    ),
                     params.bondReserves,
                     params.shortsOutstanding,
                     FixedPointMath.ONE_18.sub(params.timeStretch),
@@ -915,6 +926,7 @@ contract HyperdriveMathTest is HyperdriveTest {
             HyperdriveMath.PresentValueParams memory params = HyperdriveMath
                 .PresentValueParams({
                     shareReserves: 500_000_000e18,
+                    shareAdjustment: 0,
                     bondReserves: calculateBondReserves(
                         500_000_000e18,
                         initialSharePrice,
@@ -935,7 +947,9 @@ contract HyperdriveMathTest is HyperdriveTest {
             uint256 presentValue = hyperdriveMath.calculatePresentValue(params);
             params.shareReserves -= YieldSpaceMath
                 .calculateSharesOutGivenBondsIn(
-                    params.shareReserves,
+                    uint256(
+                        int256(params.shareReserves) - params.shareAdjustment
+                    ),
                     params.bondReserves,
                     params.longsOutstanding,
                     FixedPointMath.ONE_18.sub(params.timeStretch),
@@ -956,6 +970,7 @@ contract HyperdriveMathTest is HyperdriveTest {
             HyperdriveMath.PresentValueParams memory params = HyperdriveMath
                 .PresentValueParams({
                     shareReserves: 500_000_000e18,
+                    shareAdjustment: 0,
                     bondReserves: calculateBondReserves(
                         500_000_000e18,
                         initialSharePrice,
@@ -978,7 +993,9 @@ contract HyperdriveMathTest is HyperdriveTest {
             // net curve short and net flat short
             params.shareReserves += YieldSpaceMath
                 .calculateSharesInGivenBondsOut(
-                    params.shareReserves,
+                    uint256(
+                        int256(params.shareReserves) - params.shareAdjustment
+                    ),
                     params.bondReserves,
                     params.shortsOutstanding.mulDown(
                         params.shortAverageTimeRemaining
@@ -1010,6 +1027,7 @@ contract HyperdriveMathTest is HyperdriveTest {
             HyperdriveMath.PresentValueParams memory params = HyperdriveMath
                 .PresentValueParams({
                     shareReserves: 500_000_000e18,
+                    shareAdjustment: 0,
                     bondReserves: calculateBondReserves(
                         500_000_000e18,
                         initialSharePrice,
@@ -1032,7 +1050,9 @@ contract HyperdriveMathTest is HyperdriveTest {
             // net curve long and net flat long
             params.shareReserves -= YieldSpaceMath
                 .calculateSharesOutGivenBondsIn(
-                    params.shareReserves,
+                    uint256(
+                        int256(params.shareReserves) - params.shareAdjustment
+                    ),
                     params.bondReserves,
                     params.longsOutstanding.mulDown(
                         params.longAverageTimeRemaining
@@ -1067,6 +1087,7 @@ contract HyperdriveMathTest is HyperdriveTest {
             HyperdriveMath.PresentValueParams memory params = HyperdriveMath
                 .PresentValueParams({
                     shareReserves: 100_000e18,
+                    shareAdjustment: 0,
                     bondReserves: calculateBondReserves(
                         100_000e18,
                         initialSharePrice,
@@ -1095,7 +1116,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                     params.longAverageTimeRemaining
                 );
             (, uint256 maxCurveTrade) = YieldSpaceMath.calculateMaxBuy(
-                params.shareReserves,
+                uint256(int256(params.shareReserves) - params.shareAdjustment),
                 params.bondReserves,
                 FixedPointMath.ONE_18.sub(params.timeStretch),
                 params.sharePrice,
@@ -1103,7 +1124,9 @@ contract HyperdriveMathTest is HyperdriveTest {
             );
             params.shareReserves += YieldSpaceMath
                 .calculateSharesInGivenBondsOut(
-                    params.shareReserves,
+                    uint256(
+                        int256(params.shareReserves) - params.shareAdjustment
+                    ),
                     params.bondReserves,
                     maxCurveTrade,
                     FixedPointMath.ONE_18.sub(params.timeStretch),
@@ -1131,11 +1154,12 @@ contract HyperdriveMathTest is HyperdriveTest {
             );
         }
 
-        // complicate scenario with non-trivial minimum share reserves
+        // complicated scenario with non-trivial minimum share reserves
         {
             HyperdriveMath.PresentValueParams memory params = HyperdriveMath
                 .PresentValueParams({
                     shareReserves: 100_000e18,
+                    shareAdjustment: 0,
                     bondReserves: calculateBondReserves(
                         100_000e18,
                         initialSharePrice,
@@ -1164,7 +1188,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                     params.longAverageTimeRemaining
                 );
             (, uint256 maxCurveTrade) = YieldSpaceMath.calculateMaxBuy(
-                params.shareReserves,
+                uint256(int256(params.shareReserves) - params.shareAdjustment),
                 params.bondReserves,
                 FixedPointMath.ONE_18.sub(params.timeStretch),
                 params.sharePrice,
@@ -1172,7 +1196,9 @@ contract HyperdriveMathTest is HyperdriveTest {
             );
             params.shareReserves += YieldSpaceMath
                 .calculateSharesInGivenBondsOut(
-                    params.shareReserves,
+                    uint256(
+                        int256(params.shareReserves) - params.shareAdjustment
+                    ),
                     params.bondReserves,
                     maxCurveTrade,
                     FixedPointMath.ONE_18.sub(params.timeStretch),

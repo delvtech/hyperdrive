@@ -358,8 +358,6 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         return (baseProceeds, sharesRedeemed);
     }
 
-    // FIXME: Update this to work with the effective share reserves.
-    //
     /// @dev Updates the pool's liquidity and holds the pool's spot price constant.
     /// @param _shareReservesDelta The delta that should be applied to share reserves.
     function _updateLiquidity(int256 _shareReservesDelta) internal {
@@ -387,22 +385,48 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         }
         _marketState.shareReserves = updatedShareReserves.toUint128();
 
-        // We don't want the spot price to change after this liquidity update.
-        // The spot price of base in terms of bonds is given by:
+        // Update the share adjustment by holding the ratio of share reserves
+        // to share adjusment proportional. In general, our pricing model cannot
+        // support negative values for the z coordinate, so this is important as
+        // it ensures that if z - zeta starts as a positive value, it ends as a
+        // positive value. With this in mind, we update the share adjustment as:
+        //
+        // zeta_old / z_old = zeta_new / z_new => zeta_new = zeta_old * (z_new / z_old)
+        int256 updatedShareAdjustment;
+        int256 shareAdjustment = _marketState.shareAdjustment;
+        if (shareAdjustment >= 0) {
+            updatedShareAdjustment = int256(
+                updatedShareReserves.mulDivDown(
+                    uint256(shareAdjustment),
+                    shareReserves
+                )
+            );
+        } else {
+            updatedShareAdjustment = -int256(
+                updatedShareReserves.mulDivDown(
+                    uint256(-shareAdjustment),
+                    shareReserves
+                )
+            );
+        }
+
+        // The liquidity update should hold the spot price invariant. The spot
+        // price of base in terms of bonds is given by:
         //
         // p = (mu * (z - zeta) / y) ** tau
         //
-        // From this formula, if we hold the ratio of share to bond reserves
-        // constant, then the spot price will not change. We can use this to
-        // calculate the new bond reserves, which gives us:
+        // This formula implies that holding the ratio of share reserves to bond
+        // reserves constant will hold the spot price constant. This allows us
+        // to calculate the updated bond reserves as:
         //
-        // (z_old - zeta) / y_old = (z_new - zeta) / y_new => y_new = (z_new - zeta) * (y_old / (z_old - zeta))
-        int256 shareAdjustment = _marketState.shareAdjustment;
+        // (z_old - zeta_old) / y_old = (z_new - zeta_new) / y_new
+        // =>
+        // y_new = (z_new - zeta_new) * (y_old / (z_old - zeta_old))
         shareReserves = uint256(
             int256(uint256(shareReserves)) - shareAdjustment
         );
         updatedShareReserves = uint256(
-            int256(uint256(updatedShareReserves)) - shareAdjustment
+            int256(uint256(updatedShareReserves)) - updatedShareAdjustment
         );
         _marketState.bondReserves = updatedShareReserves
             .mulDivDown(_marketState.bondReserves, shareReserves)

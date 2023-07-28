@@ -281,6 +281,7 @@ library HyperdriveUtils {
                 .calculatePresentValue(
                     HyperdriveMath.PresentValueParams({
                         shareReserves: poolInfo.shareReserves,
+                        shareAdjustment: poolInfo.shareAdjustment,
                         bondReserves: poolInfo.bondReserves,
                         sharePrice: poolInfo.sharePrice,
                         initialSharePrice: poolConfig.initialSharePrice,

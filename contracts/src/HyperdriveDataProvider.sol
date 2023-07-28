@@ -95,6 +95,7 @@ abstract contract HyperdriveDataProvider is
             .mulDown(sharePrice);
         IHyperdrive.PoolInfo memory poolInfo = IHyperdrive.PoolInfo({
             shareReserves: _marketState.shareReserves,
+            shareAdjustment: _marketState.shareAdjustment,
             bondReserves: _marketState.bondReserves,
             sharePrice: sharePrice,
             longsOutstanding: _marketState.longsOutstanding,

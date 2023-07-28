@@ -210,6 +210,7 @@ abstract contract HyperdriveStorage is ReentrancyGuard, MultiTokenStorage {
     {
         presentValue = HyperdriveMath.PresentValueParams({
             shareReserves: _marketState.shareReserves,
+            shareAdjustment: _marketState.shareAdjustment,
             bondReserves: _marketState.bondReserves,
             sharePrice: _sharePrice,
             initialSharePrice: _initialSharePrice,

@@ -161,6 +161,10 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
     struct PoolInfo {
         /// @dev The reserves of shares held by the pool.
         uint256 shareReserves;
+        /// @dev The adjustment applied to the share reserves when pricing
+        ///      bonds. This is used to ensure that the pricing mechanism is
+        ///      held invariant under flat updates for security reasons.
+        int256 shareAdjustment;
         /// @dev The reserves of bonds held by the pool.
         uint256 bondReserves;
         /// @dev The total supply of LP shares.

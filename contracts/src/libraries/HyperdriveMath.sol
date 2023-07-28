@@ -495,9 +495,9 @@ library HyperdriveMath {
         return optimalBondReserves - _params.bondReserves;
     }
 
-    // FIXME: Document this.
     struct PresentValueParams {
         uint256 shareReserves;
+        int256 shareAdjustment;
         uint256 bondReserves;
         uint256 sharePrice;
         uint256 initialSharePrice;
@@ -510,8 +510,6 @@ library HyperdriveMath {
         uint256 shortBaseVolume;
     }
 
-    // FIXME: Update this to work with the effective share reserves.
-    //
     /// @dev Calculates the present value LPs capital in the pool.
     /// @param _params The parameters for the present value calculation.
     /// @return The present value of the pool.
@@ -528,6 +526,14 @@ library HyperdriveMath {
                     _params.shortAverageTimeRemaining
                 )
             );
+        // FIXME: We should use safecasts here and everywhere else.
+        // Otherwise, we need to make sure that we enforce the
+        // invariant that `_params.shareAdjusment` is always less
+        // than `_params.shareReserves`. This should be true, but
+        // we may need to enforce this somewhere in the code.
+        uint256 effectiveShareReserves = uint256(
+            int256(_params.shareReserves) - _params.shareAdjustment
+        );
         if (netCurveTrade > 0) {
             // Apply the curve trade directly to the reserves. Unlike shorts,
             // the capital that backs longs is accounted for within the share
@@ -536,7 +542,7 @@ library HyperdriveMath {
             // removed, there is always liquidity available for longs to close.
             _params.shareReserves -= YieldSpaceMath
                 .calculateSharesOutGivenBondsIn(
-                    _params.shareReserves,
+                    effectiveShareReserves,
                     _params.bondReserves,
                     uint256(netCurveTrade),
                     FixedPointMath.ONE_18.sub(_params.timeStretch),
@@ -544,16 +550,16 @@ library HyperdriveMath {
                     _params.initialSharePrice
                 );
         } else if (netCurveTrade < 0) {
-            // It's possible that the exchange gets into a state where the
-            // net curve trade can't be applied to the reserves. In particular,
-            // this can happen if all of the liquidity is removed. We first
-            // attempt to trade as much as possible on the curve, and then we
-            // mark the remaining amount to the base volume. We can assume that
-            // the outstanding long amount is zero when we apply the net curve
+            // It's possible that the exchange gets into a state where the net
+            // curve trade can't be applied to the reserves. In particular, this
+            // can happen if all of the liquidity is removed. We first attempt
+            // to trade as much as possible on the curve, and then we mark the
+            // remaining amount to the base volume. We can assume that the
+            // outstanding long amount is zero when we apply the net curve
             // trade, so the only constraint is that the spot price cannot
             // exceed 1.
             (, uint256 maxCurveTrade) = YieldSpaceMath.calculateMaxBuy(
-                _params.shareReserves,
+                effectiveShareReserves,
                 _params.bondReserves,
                 FixedPointMath.ONE_18 - _params.timeStretch,
                 _params.sharePrice,
@@ -565,7 +571,7 @@ library HyperdriveMath {
             if (maxCurveTrade > 0) {
                 _params.shareReserves += YieldSpaceMath
                     .calculateSharesInGivenBondsOut(
-                        _params.shareReserves,
+                        effectiveShareReserves,
                         _params.bondReserves,
                         maxCurveTrade,
                         FixedPointMath.ONE_18 - _params.timeStretch,
@@ -579,8 +585,8 @@ library HyperdriveMath {
             );
         }
 
-        // Compute the net of the longs and shorts that will be traded flat
-        // and apply this net to the reserves.
+        // Compute the net of the longs and shorts that will be traded flat and
+        // apply this net to the reserves.
         int256 netFlatTrade = int256(
             _params.shortsOutstanding.mulDivDown(
                 FixedPointMath.ONE_18 - _params.shortAverageTimeRemaining,
