@@ -140,7 +140,7 @@ contract SandwichTest is HyperdriveTest {
         (uint256 shortMaturityTime, ) = openShort(bob, shortAmount);
 
         // Most of the term passes and no interest accrues.
-        advanceTime(POSITION_DURATION.mulDown(0.99e18), 0);
+        advanceTime(POSITION_DURATION - 12 seconds, 0);
 
         // Celine opens a large short.
         uint256 celineShortAmount = hyperdrive.calculateMaxShort();
@@ -150,7 +150,7 @@ contract SandwichTest is HyperdriveTest {
         );
 
         // The rest of the term passes and no interest accrues.
-        advanceTime(POSITION_DURATION.mulDown(0.01e18), 0);
+        advanceTime(12 seconds, 0);
 
         // Celine closes her short.
         uint256 celineShortProceeds = closeShort(
