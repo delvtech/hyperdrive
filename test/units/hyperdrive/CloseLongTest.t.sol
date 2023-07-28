@@ -490,13 +490,20 @@ contract CloseLongTest is HyperdriveTest {
         );
     }
 
-    function test_fees_collect_on_close() external {
+    function test_long_fees_collect_on_close() external {
         uint256 apr = 0.05e18;
         uint256 contribution = 500_000_000e18;
 
-        WithdrawalOverrides memory overrides = WithdrawalOverrides({
+        WithdrawalOverrides memory wOverrides = WithdrawalOverrides({
             asUnderlying: false,
             minSlippage: 0
+        });
+
+        DepositOverrides memory dOverrides = DepositOverrides({
+            asUnderlying: false,
+            depositAmount: 10e18,
+            minSlippage: 0,
+            maxSlippage: type(uint256).max
         });
 
         // 1. Deploy a pool with zero fees
@@ -505,10 +512,10 @@ contract CloseLongTest is HyperdriveTest {
         // Initialize the pool with a large amount of capital.
         initialize(alice, apr, contribution);
 
-        // 2. Open a short
-        (uint256 maturityTime, uint256 bondAmount) = openLong(bob, 10e18);
+        // 2. Open and then close a Long
+        (uint256 maturityTime, uint256 bondAmount) = openLong(bob, 10e18, dOverrides);
         advanceTime(POSITION_DURATION, int256(apr));
-        closeLong(bob, maturityTime, bondAmount, overrides);
+        closeLong(bob, maturityTime, bondAmount, wOverrides);
         
         // 3. Record Share Reserves
         IHyperdrive.MarketState memory zeroFeeState = hyperdrive
@@ -519,17 +526,17 @@ contract CloseLongTest is HyperdriveTest {
         // from the shareReserves
         config = testConfig(apr);
         config.fees = IHyperdrive.Fees({
-            curve: 1e18,
+            curve: 0,
             flat: 1e18,
             governance: 1e18
         });
         deploy(address(deployer), config);
         initialize(alice, apr, contribution);
 
-        // 5. Open a Short
-        (maturityTime, bondAmount) = openLong(bob, 10e18);
+        // 5. Open and close a Long
+        (maturityTime, bondAmount) = openLong(bob, 10e18, dOverrides);
         advanceTime(POSITION_DURATION, int256(apr));
-        closeLong(bob, maturityTime, bondAmount, overrides);
+        closeLong(bob, maturityTime, bondAmount, wOverrides);
 
         // 6. Record Share Reserves
         IHyperdrive.MarketState memory maxFeeState = hyperdrive
@@ -537,28 +544,30 @@ contract CloseLongTest is HyperdriveTest {
 
         // Since the fees are subtracted from reserves and accounted for
         // seperately, so this will be true
-        //assertEq(zeroFeeState.shareReserves, maxFeeState.shareReserves);
+        assertEq(zeroFeeState.shareReserves, maxFeeState.shareReserves);
 
         uint256 govFees = hyperdrive.getUncollectedGovernanceFees();
         // Governance fees collected are non-zero
-        //assert(govFees > 1e5);
+        assert(govFees > 1e5);
 
         // 7. deploy a pool with 100% curve fees and 0% gov fees
         config = testConfig(apr);
-        config.fees = IHyperdrive.Fees({ curve: 1e18, flat: 0, governance: 0 });
+        config.fees = IHyperdrive.Fees({ curve: 0, flat: 1e18, governance: 0 });
         // Deploy and initialize the new pool
         deploy(address(deployer), config);
         initialize(alice, apr, contribution);
 
-        // 8. Open a Short
-        //(maturityTime, bondAmount) = openLong(bob, 10e18);
-        //advanceTime(POSITION_DURATION, int256(apr));
-        //closeLong(bob, maturityTime, bondAmount, overrides);
+        // 8. Open and close another Long
+        (maturityTime, bondAmount) = openLong(bob, 10e18, dOverrides);
+        advanceTime(POSITION_DURATION, int256(apr));
+        closeLong(bob, maturityTime, bondAmount, wOverrides);
 
         // 9. Record Share Reserves
-        IHyperdrive.MarketState memory maxCurveFeeState = hyperdrive
+        IHyperdrive.MarketState memory maxFlatFeeState = hyperdrive
             .getMarketState(); 
 
+        assertGt(maxFlatFeeState.shareReserves, zeroFeeState.shareReserves);
+        assertGt(maxFlatFeeState.shareReserves, maxFeeState.shareReserves);
     }
 
     function verifyCloseLong(

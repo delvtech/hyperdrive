@@ -143,8 +143,7 @@ abstract contract Hyperdrive is
             // TODO: Thorough fee documentation, consider withdrawalPool implications here
             // Reduce shareProceeds by the flatFeeCharged, and less the govFee from the amount as it doesn't count
             // towards reserves. shareProceeds will only be used to update reserves, so its fine to take fees here.
-            shareProceeds -= flatFeeCharged - govFee;
-
+            shareProceeds += flatFeeCharged - govFee;
 
             _applyCloseShort(
                 maturedShortsAmount,
