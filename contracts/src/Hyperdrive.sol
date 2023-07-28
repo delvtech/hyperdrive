@@ -107,7 +107,7 @@ abstract contract Hyperdrive is
         if (maturedLongsAmount > 0) {
             uint256 shareProceeds = maturedLongsAmount.divDown(_sharePrice);
             uint256 flatFee = shareProceeds.mulDown(_flatFee);
-            uint256 govFee = flatFeeCharged.mulDown(_governanceFee);
+            uint256 govFee = flatFee.mulDown(_governanceFee);
 
             // Add accrued governance fees to the totalGovernanceFeesAccrued in terms of shares
             _governanceFeesAccrued += govFee;
@@ -133,7 +133,7 @@ abstract contract Hyperdrive is
         if (maturedShortsAmount > 0) {
             uint256 shareProceeds = maturedShortsAmount.divDown(_sharePrice);
             uint256 flatFee = shareProceeds.mulDown(_flatFee);
-            uint256 govFee = flatFeeCharged.mulDown(_governanceFee);
+            uint256 govFee = flatFee.mulDown(_governanceFee);
 
             // Add accrued governance fees to the totalGovernanceFeesAccrued in terms of shares
             _governanceFeesAccrued += govFee;
