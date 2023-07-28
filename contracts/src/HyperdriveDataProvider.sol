@@ -5,6 +5,7 @@ import { HyperdriveStorage } from "./HyperdriveStorage.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { AssetId } from "./libraries/AssetId.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
+import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { MultiTokenDataProvider } from "./token/MultiTokenDataProvider.sol";
 
 /// @author DELV
@@ -85,16 +86,26 @@ abstract contract HyperdriveDataProvider is
     ///         important to evaluate potential trades.
     /// @return The PoolInfo struct.
     function getPoolInfo() external view returns (IHyperdrive.PoolInfo memory) {
+        uint256 sharePrice = _pricePerShare();
+        uint256 lpTotalSupply = _totalSupply[AssetId._LP_ASSET_ID] +
+            _totalSupply[AssetId._WITHDRAWAL_SHARE_ASSET_ID] -
+            _withdrawPool.readyToWithdraw;
+        uint256 presentValue = HyperdriveMath
+            .calculatePresentValue(_getPresentValueParams(sharePrice))
+            .mulDown(sharePrice);
         IHyperdrive.PoolInfo memory poolInfo = IHyperdrive.PoolInfo({
             shareReserves: _marketState.shareReserves,
             bondReserves: _marketState.bondReserves,
-            lpTotalSupply: _totalSupply[AssetId._LP_ASSET_ID],
-            sharePrice: _pricePerShare(),
+            sharePrice: sharePrice,
             longsOutstanding: _marketState.longsOutstanding,
             longAverageMaturityTime: _marketState.longAverageMaturityTime,
             shortsOutstanding: _marketState.shortsOutstanding,
             shortAverageMaturityTime: _marketState.shortAverageMaturityTime,
             shortBaseVolume: _marketState.shortBaseVolume,
+            lpTotalSupply: lpTotalSupply,
+            lpSharePrice: lpTotalSupply == 0
+                ? 0
+                : presentValue.divDown(lpTotalSupply),
             withdrawalSharesReadyToWithdraw: _withdrawPool.readyToWithdraw,
             withdrawalSharesProceeds: _withdrawPool.proceeds
         });

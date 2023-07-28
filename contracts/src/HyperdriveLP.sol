@@ -557,33 +557,4 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // Remove the withdrawal pool proceeds from the reserves.
         _updateLiquidity(-int256(withdrawalPoolProceeds));
     }
-
-    /// @dev Gets the present value parameters from the current state.
-    /// @param _sharePrice The current share price.
-    /// @return presentValue The present value parameters.
-    function _getPresentValueParams(
-        uint256 _sharePrice
-    )
-        internal
-        view
-        returns (HyperdriveMath.PresentValueParams memory presentValue)
-    {
-        presentValue = HyperdriveMath.PresentValueParams({
-            shareReserves: _marketState.shareReserves,
-            bondReserves: _marketState.bondReserves,
-            sharePrice: _sharePrice,
-            initialSharePrice: _initialSharePrice,
-            minimumShareReserves: _minimumShareReserves,
-            timeStretch: _timeStretch,
-            longsOutstanding: _marketState.longsOutstanding,
-            longAverageTimeRemaining: _calculateTimeRemainingScaled(
-                _marketState.longAverageMaturityTime
-            ),
-            shortsOutstanding: _marketState.shortsOutstanding,
-            shortAverageTimeRemaining: _calculateTimeRemainingScaled(
-                _marketState.shortAverageMaturityTime
-            ),
-            shortBaseVolume: _marketState.shortBaseVolume
-        });
-    }
 }
