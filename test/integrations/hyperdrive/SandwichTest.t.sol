@@ -133,11 +133,12 @@ contract SandwichTest is HyperdriveTest {
 
     function test_sandwich_short_trade() external {
         IHyperdrive.PoolConfig memory config = testConfig(0.05e18);
+        deploy(alice, config);
         initialize(alice, 0.05e18, 100_000_000e18);
 
         // Bob opens a short.
         uint256 shortAmount = 10_000_000e18;
-        (uint256 shortMaturityTime, ) = openShort(bob, shortAmount);
+        openShort(bob, shortAmount);
 
         // Most of the term passes and no interest accrues.
         advanceTime(POSITION_DURATION - 12 seconds, 0);
@@ -147,6 +148,12 @@ contract SandwichTest is HyperdriveTest {
         (uint256 celineShortMaturityTime, uint256 celineBasePaid) = openShort(
             celine,
             celineShortAmount
+        );
+        console.log("celine short amount = %s", celineShortAmount.toString(18));
+        console.log("celine base paid = %s", celineBasePaid.toString(18));
+        console.log(
+            "spot rate = %s",
+            hyperdrive.calculateAPRFromReserves().toString(18)
         );
 
         // The rest of the term passes and no interest accrues.
