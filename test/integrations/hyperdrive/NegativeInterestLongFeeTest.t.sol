@@ -188,7 +188,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
         );
     }
 
-    function test_fuzz_negative_interest_long_full_term_fees_fuzz(
+    function test_negative_interest_long_full_term_fees_fuzz(
         uint256 initialSharePrice,
         int256 preTradeVariableInterest,
         int256 variableInterest
