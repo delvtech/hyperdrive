@@ -124,7 +124,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
 
         // Enforce the slippage guard.
         uint256 apr = HyperdriveMath.calculateAPRFromReserves(
-            _marketState.shareReserves,
+            _effectiveShareReserves(),
             _marketState.bondReserves,
             _initialSharePrice,
             _positionDuration,
@@ -163,6 +163,8 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
                 params
             );
 
+            // FIXME: Update this to make use of the effective share reserves.
+            //
             // Add the liquidity to the pool's reserves and calculate the new
             // present value.
             _updateLiquidity(int256(shares));
@@ -356,6 +358,8 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         return (baseProceeds, sharesRedeemed);
     }
 
+    // FIXME: Update this to work with the effective share reserves.
+    //
     /// @dev Updates the pool's liquidity and holds the pool's spot price constant.
     /// @param _shareReservesDelta The delta that should be applied to share reserves.
     function _updateLiquidity(int256 _shareReservesDelta) internal {
@@ -398,6 +402,9 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             .toUint128();
     }
 
+    // FIXME: Evaluate whether or not anything needs to change on account of the
+    //        effective share reserves.
+    //
     /// @dev Removes liquidity from the pool and calculates the amount of
     ///      withdrawal shares that should be minted.
     /// @param _shares The amount of shares to remove.

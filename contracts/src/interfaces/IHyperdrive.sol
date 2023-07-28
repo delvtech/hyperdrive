@@ -78,11 +78,11 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
         uint128 longsOutstanding;
         /// @dev The amount of shorts that are still open.
         uint128 shortsOutstanding;
-        /// @dev The average maturity time of outstanding positions.
+        /// @dev The average maturity time of outstanding long positions.
         uint128 longAverageMaturityTime;
         /// @dev The average open share price of longs.
         uint128 longOpenSharePrice;
-        /// @dev The average maturity time of outstanding positions.
+        /// @dev The average maturity time of outstanding short positions.
         uint128 shortAverageMaturityTime;
         /// @dev The total amount of base that was transferred as a result of
         ///      opening the outstanding positions. This is an idealized value
@@ -90,6 +90,10 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
         ///      positions were opened at the beginning of their respective
         ///      checkpoints.
         uint128 shortBaseVolume;
+        /// FIXME: We need to think about this in the context of storage packing.
+        /// @dev The net amount of shares that have been added and removed from
+        ///      the share reserves due to flat updates.
+        int256 shareAdjustment;
         /// @dev A flag indicating whether or not the pool has been initialized.
         bool isInitialized;
         /// @dev A flag indicating whether or not the pool is paused.

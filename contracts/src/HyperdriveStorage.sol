@@ -190,6 +190,14 @@ abstract contract HyperdriveStorage is ReentrancyGuard, MultiTokenStorage {
             (block.timestamp % _checkpointDuration);
     }
 
+    function _effectiveShareReserves() internal view returns (uint256) {
+        return
+            uint256(
+                int256(uint256(_marketState.shareReserves)) -
+                    _marketState.shareAdjustment
+            );
+    }
+
     /// @dev Gets the present value parameters from the current state.
     /// @param _sharePrice The current share price.
     /// @return presentValue The present value parameters.
