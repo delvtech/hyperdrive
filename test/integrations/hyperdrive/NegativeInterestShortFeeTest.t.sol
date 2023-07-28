@@ -352,7 +352,7 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
                 .1e18,
                 1e18
             );
-            assertEq(governanceFeesAfterCloseShort, expectedFees*2);
+            assertEq(governanceFeesAfterCloseShort, expectedFees * 2);
         }
     }
 

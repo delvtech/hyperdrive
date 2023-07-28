@@ -425,7 +425,7 @@ contract CloseShortTest is HyperdriveTest {
             false
         );
     }
-    
+
     function test_short_fees_collect_on_close() external {
         uint256 apr = 0.05e18;
         int256 actualAPR = -0.05e18;
@@ -450,10 +450,14 @@ contract CloseShortTest is HyperdriveTest {
         initialize(alice, apr, contribution);
 
         // 2. Open and then close a Long
-        (uint256 maturityTime, uint256 bondAmount) = openShort(bob, 10e18, dOverrides);
+        (uint256 maturityTime, uint256 bondAmount) = openShort(
+            bob,
+            10e18,
+            dOverrides
+        );
         advanceTime(POSITION_DURATION, actualAPR);
         closeShort(bob, maturityTime, bondAmount, wOverrides);
-        
+
         // 3. Record Share Reserves
         IHyperdrive.MarketState memory zeroFeeState = hyperdrive
             .getMarketState();
@@ -501,7 +505,7 @@ contract CloseShortTest is HyperdriveTest {
 
         // 9. Record Share Reserves
         IHyperdrive.MarketState memory maxFlatFeeState = hyperdrive
-            .getMarketState(); 
+            .getMarketState();
 
         assertGt(maxFlatFeeState.shareReserves, zeroFeeState.shareReserves);
         assertGt(maxFlatFeeState.shareReserves, maxFeeState.shareReserves);

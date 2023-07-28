@@ -10,7 +10,6 @@ import { AssetId } from "./libraries/AssetId.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { SafeCast } from "./libraries/SafeCast.sol";
-import { console } from "forge-std/console.sol";
 
 /// @author DELV
 /// @title Hyperdrive

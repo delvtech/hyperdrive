@@ -513,10 +513,14 @@ contract CloseLongTest is HyperdriveTest {
         initialize(alice, apr, contribution);
 
         // 2. Open and then close a Long
-        (uint256 maturityTime, uint256 bondAmount) = openLong(bob, 10e18, dOverrides);
+        (uint256 maturityTime, uint256 bondAmount) = openLong(
+            bob,
+            10e18,
+            dOverrides
+        );
         advanceTime(POSITION_DURATION, int256(apr));
         closeLong(bob, maturityTime, bondAmount, wOverrides);
-        
+
         // 3. Record Share Reserves
         IHyperdrive.MarketState memory zeroFeeState = hyperdrive
             .getMarketState();
@@ -564,7 +568,7 @@ contract CloseLongTest is HyperdriveTest {
 
         // 9. Record Share Reserves
         IHyperdrive.MarketState memory maxFlatFeeState = hyperdrive
-            .getMarketState(); 
+            .getMarketState();
 
         assertGt(maxFlatFeeState.shareReserves, zeroFeeState.shareReserves);
         assertGt(maxFlatFeeState.shareReserves, maxFeeState.shareReserves);
