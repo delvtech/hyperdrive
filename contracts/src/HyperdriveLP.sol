@@ -390,13 +390,20 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // We don't want the spot price to change after this liquidity update.
         // The spot price of base in terms of bonds is given by:
         //
-        // p = (mu * z / y) ** tau
+        // p = (mu * (z - zeta) / y) ** tau
         //
         // From this formula, if we hold the ratio of share to bond reserves
         // constant, then the spot price will not change. We can use this to
         // calculate the new bond reserves, which gives us:
         //
-        // z_old / y_old = z_new / y_new => y_new = z_new * (y_old / z_old)
+        // (z_old - zeta) / y_old = (z_new - zeta) / y_new => y_new = (z_new - zeta) * (y_old / (z_old - zeta))
+        int256 shareAdjustment = _marketState.shareAdjustment;
+        shareReserves = uint256(
+            int256(uint256(shareReserves)) - shareAdjustment
+        );
+        updatedShareReserves = uint256(
+            int256(uint256(updatedShareReserves)) - shareAdjustment
+        );
         _marketState.bondReserves = updatedShareReserves
             .mulDivDown(_marketState.bondReserves, shareReserves)
             .toUint128();
@@ -429,6 +436,8 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             params
         );
 
+        // FIXME: How do we change zeta?
+        //
         // TODO: Update this documentation once we've made the update to how
         // idle capital is paid out to the withdrawal pool.
         //

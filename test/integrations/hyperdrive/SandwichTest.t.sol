@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import "forge-std/console.sol";
+
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
@@ -8,6 +11,7 @@ import { Lib } from "../../utils/Lib.sol";
 
 contract SandwichTest is HyperdriveTest {
     using FixedPointMath for uint256;
+    using HyperdriveUtils for *;
     using Lib for *;
 
     function test_sandwich_trades(uint8 _apr, uint64 _timeDelta) external {
@@ -125,6 +129,40 @@ contract SandwichTest is HyperdriveTest {
             baselineProfit = bondsReceived.sub(basePaid);
         }
         assertGe(baselineProfit, sandwichProfit - 10000 gwei);
+    }
+
+    function test_sandwich_short_trade() external {
+        IHyperdrive.PoolConfig memory config = testConfig(0.05e18);
+        initialize(alice, 0.05e18, 100_000_000e18);
+
+        // Bob opens a short.
+        uint256 shortAmount = 10_000_000e18;
+        (uint256 shortMaturityTime, ) = openShort(bob, shortAmount);
+
+        // Most of the term passes and no interest accrues.
+        advanceTime(POSITION_DURATION.mulDown(0.99e18), 0);
+
+        // Celine opens a large short.
+        uint256 celineShortAmount = hyperdrive.calculateMaxShort();
+        (uint256 celineShortMaturityTime, uint256 celineBasePaid) = openShort(
+            celine,
+            celineShortAmount
+        );
+
+        // The rest of the term passes and no interest accrues.
+        advanceTime(POSITION_DURATION.mulDown(0.01e18), 0);
+
+        // Celine closes her short.
+        uint256 celineShortProceeds = closeShort(
+            celine,
+            celineShortMaturityTime,
+            celineShortAmount
+        );
+
+        console.log(
+            "celine pnl = %s",
+            (int256(celineShortProceeds) - int256(celineBasePaid)).toString(18)
+        );
     }
 
     // TODO: Use the normalize function to improve this test.
