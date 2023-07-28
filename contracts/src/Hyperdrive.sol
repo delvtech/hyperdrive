@@ -106,16 +106,15 @@ abstract contract Hyperdrive is
         ];
         if (maturedLongsAmount > 0) {
             uint256 shareProceeds = maturedLongsAmount.divDown(_sharePrice);
-            uint256 flatFeeCharged = shareProceeds.mulDown(_flatFee);
+            uint256 flatFee = shareProceeds.mulDown(_flatFee);
             uint256 govFee = flatFeeCharged.mulDown(_governanceFee);
 
             // Add accrued governance fees to the totalGovernanceFeesAccrued in terms of shares
             _governanceFeesAccrued += govFee;
 
-            // TODO: Thorough fee documentation, consider withdrawalPool implications here
             // Reduce shareProceeds by the flatFeeCharged, and less the govFee from the amount as it doesn't count
             // towards reserves. shareProceeds will only be used to update reserves, so its fine to take fees here.
-            shareProceeds -= flatFeeCharged - govFee;
+            shareProceeds -= flatFee - govFee;
 
             _applyCloseLong(
                 maturedLongsAmount,
@@ -133,16 +132,15 @@ abstract contract Hyperdrive is
         ];
         if (maturedShortsAmount > 0) {
             uint256 shareProceeds = maturedShortsAmount.divDown(_sharePrice);
-            uint256 flatFeeCharged = shareProceeds.mulDown(_flatFee);
+            uint256 flatFee = shareProceeds.mulDown(_flatFee);
             uint256 govFee = flatFeeCharged.mulDown(_governanceFee);
 
             // Add accrued governance fees to the totalGovernanceFeesAccrued in terms of shares
             _governanceFeesAccrued += govFee;
 
-            // TODO: Thorough fee documentation, consider withdrawalPool implications here
             // Reduce shareProceeds by the flatFeeCharged, and less the govFee from the amount as it doesn't count
             // towards reserves. shareProceeds will only be used to update reserves, so its fine to take fees here.
-            shareProceeds += flatFeeCharged - govFee;
+            shareProceeds += flatFee - govFee;
 
             _applyCloseShort(
                 maturedShortsAmount,
