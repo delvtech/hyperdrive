@@ -67,7 +67,7 @@ library HyperdriveMath {
 
         // r = (1 - p) / (p * t)
         return
-            FixedPointMath.ONE_18.sub(spotPrice).divDown(
+            (FixedPointMath.ONE_18 - spotPrice).divDown(
                 spotPrice.mulDown(annualizedTime)
             );
     }
@@ -128,7 +128,7 @@ library HyperdriveMath {
         // (time remaining)/(term length) is always 1 so we just use _timeStretch
         return
             YieldSpaceMath.calculateBondsOutGivenSharesIn(
-                _effectiveShareReserves, // FIXME: This should be able to be negative.
+                _effectiveShareReserves,
                 _bondReserves,
                 _shareAmount,
                 FixedPointMath.ONE_18.sub(_timeStretch),
@@ -192,7 +192,7 @@ library HyperdriveMath {
 
             // (time remaining)/(term length) is always 1 so we just use _timeStretch
             shareReservesDelta = YieldSpaceMath.calculateSharesOutGivenBondsIn(
-                _effectiveShareReserves, // FIXME: This should be able to be negative.
+                _effectiveShareReserves,
                 _bondReserves,
                 bondReservesDelta,
                 FixedPointMath.ONE_18.sub(_timeStretch),
@@ -240,7 +240,7 @@ library HyperdriveMath {
         // (time remaining)/(term length) is always 1 so we just use _timeStretch
         return
             YieldSpaceMath.calculateSharesOutGivenBondsIn(
-                _effectiveShareReserves, // FIXME: This should be able to be negative.
+                _effectiveShareReserves,
                 _bondReserves,
                 _amountIn,
                 FixedPointMath.ONE_18.sub(_timeStretch),
@@ -288,16 +288,16 @@ library HyperdriveMath {
         // minted bonds are traded on a YieldSpace curve configured to
         // timeRemaining = 1.
         sharePayment = _amountOut.mulDivDown(
-            FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
+            FixedPointMath.ONE_18 - _normalizedTimeRemaining,
             _sharePrice
         );
         bondReservesDelta = _amountOut.mulDown(_normalizedTimeRemaining);
         if (bondReservesDelta > 0) {
             shareReservesDelta = YieldSpaceMath.calculateSharesInGivenBondsOut(
-                _effectiveShareReserves, // FIXME: This should be able to be negative.
+                _effectiveShareReserves,
                 _bondReserves,
                 bondReservesDelta,
-                FixedPointMath.ONE_18.sub(_timeStretch),
+                FixedPointMath.ONE_18 - _timeStretch,
                 _sharePrice,
                 _initialSharePrice
             );
@@ -307,6 +307,7 @@ library HyperdriveMath {
 
     struct MaxTradeParams {
         uint256 shareReserves;
+        int256 shareAdjustment;
         uint256 bondReserves;
         uint256 longsOutstanding;
         uint256 timeStretch;
@@ -315,7 +316,9 @@ library HyperdriveMath {
         uint256 minimumShareReserves;
     }
 
-    // FIXME: Update this to work with the effective share reserves.
+    // TODO: We should only need to calculate the effective share reserves once.
+    //       This will cause a stack too deep issue, so we may need to
+    //       encapsulate some of the computation in a function.
     //
     /// @dev Calculates the maximum amount of shares a user can spend on buying
     ///      bonds before the spot crosses above a price of 1.
@@ -337,7 +340,10 @@ library HyperdriveMath {
         // checks, then we're done. If not, then we need to solve for the
         // maximum trade size iteratively.
         (uint256 dz, uint256 dy) = YieldSpaceMath.calculateMaxBuy(
-            _params.shareReserves,
+            calculateEffectiveShareReserves(
+                _params.shareReserves,
+                _params.shareAdjustment
+            ),
             _params.bondReserves,
             FixedPointMath.ONE_18 - _params.timeStretch,
             _params.sharePrice,
@@ -375,7 +381,10 @@ library HyperdriveMath {
                 FixedPointMath.ONE_18 - p
             );
         dy = YieldSpaceMath.calculateBondsOutGivenSharesIn(
-            _params.shareReserves,
+            calculateEffectiveShareReserves(
+                _params.shareReserves,
+                _params.shareAdjustment
+            ),
             _params.bondReserves,
             dz,
             FixedPointMath.ONE_18 - _params.timeStretch,
@@ -418,7 +427,10 @@ library HyperdriveMath {
             //                  =>
             // dz' = ((z + dz) - (y_l + dy) / c - z_min) * (p / (p - 1)).
             p = calculateSpotPrice(
-                _params.shareReserves + dz,
+                calculateEffectiveShareReserves(
+                    _params.shareReserves,
+                    _params.shareAdjustment
+                ) + dz,
                 _params.bondReserves - dy,
                 _params.initialSharePrice,
                 _params.timeStretch
@@ -445,7 +457,10 @@ library HyperdriveMath {
                 );
             }
             dy = YieldSpaceMath.calculateBondsOutGivenSharesIn(
-                _params.shareReserves,
+                calculateEffectiveShareReserves(
+                    _params.shareReserves,
+                    _params.shareAdjustment
+                ),
                 _params.bondReserves,
                 dz,
                 FixedPointMath.ONE_18 - _params.timeStretch,
@@ -457,8 +472,6 @@ library HyperdriveMath {
         return (baseAmount, bondAmount);
     }
 
-    // FIXME: Update this to work with the effective share reserves.
-    //
     /// @dev Calculates the maximum amount of shares that can be used to open
     ///      shorts.
     /// @param _params Information about the market state and pool configuration
@@ -471,9 +484,9 @@ library HyperdriveMath {
         // don't go negative and satisfy the solvency requirements. Thus, we can
         // set z = y_l/c + z_min and solve for the maximum short directly as:
         //
-        // k = (c / mu) * (mu * (y_l / c + z_min)) ** (1 - tau) + y ** (1 - tau)
+        // k = (c / mu) * (mu * ((y_l / c + z_min) - zeta)) ** (1 - tau) + y ** (1 - tau)
         //                         =>
-        // y = (k - (c / mu) * (mu * (y_l / c + z_min)) ** (1 - tau)) ** (1 / (1 - tau)).
+        // y = (k - (c / mu) * (mu * ((y_l / c + z_min) - zeta)) ** (1 - tau)) ** (1 / (1 - tau)).
         uint256 t = FixedPointMath.ONE_18 - _params.timeStretch;
         uint256 priceFactor = _params.sharePrice.divDown(
             _params.initialSharePrice
@@ -481,13 +494,22 @@ library HyperdriveMath {
         uint256 k = YieldSpaceMath.modifiedYieldSpaceConstant(
             priceFactor,
             _params.initialSharePrice,
-            _params.shareReserves,
+            calculateEffectiveShareReserves(
+                _params.shareReserves,
+                _params.shareAdjustment
+            ),
             t,
             _params.bondReserves
         );
-        uint256 innerFactor = (_params.initialSharePrice.mulDown(
-            _params.longsOutstanding.divDown(_params.sharePrice)
-        ) + _params.minimumShareReserves).pow(t);
+        uint256 innerFactor = uint256(
+            int256(
+                _params.initialSharePrice.mulDown(
+                    _params.longsOutstanding.divDown(_params.sharePrice)
+                )
+            ) +
+                int256(_params.minimumShareReserves) -
+                _params.shareAdjustment
+        ).pow(t);
         uint256 optimalBondReserves = (k - priceFactor.mulDown(innerFactor))
             .pow(FixedPointMath.ONE_18.divDown(t));
 
@@ -712,5 +734,21 @@ library HyperdriveMath {
                 (FixedPointMath.ONE_18.sub(_timeRemaining)).mulDown(_bondAmount)
             )
         ).divDown(_timeRemaining);
+    }
+
+    /// @dev Calculates the effective share reserves. The effective share
+    ///      reserves are the share reserves minus the share adjustment or
+    ///      z - zeta. We use the effective share reserves as the z-parameter
+    ///      to the YieldSpace pricing model. The share adjustment is used to
+    ///      hold the pricing mechanism invariant under the flat component of
+    ///      flat+curve trades.
+    /// @param _shareReserves The pool's share reserves.
+    /// @param _shareAdjustment The pool's share adjustment.
+    /// @return The effective share reserves.
+    function calculateEffectiveShareReserves(
+        uint256 _shareReserves,
+        int256 _shareAdjustment
+    ) internal pure returns (uint256) {
+        return uint256(int256(_shareReserves) - _shareAdjustment);
     }
 }

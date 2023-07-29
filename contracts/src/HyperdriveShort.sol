@@ -99,6 +99,17 @@ abstract contract HyperdriveShort is HyperdriveLP {
             maturityTime
         );
 
+        // FIXME: Test this.
+        //
+        // The share reserves are decreased in this operation, so we need to
+        // ensure that the effective share reserves are non-negative.
+        if (
+            int256(uint256(_marketState.shareReserves)) <
+            _marketState.shareAdjustment
+        ) {
+            revert IHyperdrive.NegativeReserves();
+        }
+
         // Mint the short tokens to the trader. The ID is a concatenation of the
         // current share price and the maturity time of the shorts.
         uint256 assetId = AssetId.encodeAssetId(
@@ -479,8 +490,9 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // Calculate the effect that closing the short should have on the pool's
         // reserves as well as the amount of shares the trader needs to pay to
         // purchase the shorted bonds at the market price.
-        // NOTE: We calculate the time remaining from the latest checkpoint to ensure that
-        // opening/closing a position doesn't result in immediate profit.
+        // NOTE: We calculate the time remaining from the latest checkpoint to
+        // ensure that opening/closing a position doesn't result in immediate
+        // profit.
         uint256 timeRemaining = _calculateTimeRemaining(_maturityTime);
         (shareReservesDelta, bondReservesDelta, sharePayment) = HyperdriveMath
             .calculateCloseShort(

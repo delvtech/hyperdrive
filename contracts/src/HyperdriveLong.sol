@@ -175,6 +175,17 @@ abstract contract HyperdriveLong is HyperdriveLP {
             );
         }
 
+        // FIXME: Test this.
+        //
+        // The share reserves are decreased in this operation, so we need to
+        // ensure that the effective share reserves are non-negative.
+        if (
+            int256(uint256(_marketState.shareReserves)) <
+            _marketState.shareAdjustment
+        ) {
+            revert IHyperdrive.NegativeReserves();
+        }
+
         // Withdraw the profit to the trader.
         uint256 baseProceeds = _withdraw(
             shareProceeds,

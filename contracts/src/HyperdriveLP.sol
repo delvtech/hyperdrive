@@ -163,12 +163,11 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
                 params
             );
 
-            // FIXME: Update this to make use of the effective share reserves.
-            //
             // Add the liquidity to the pool's reserves and calculate the new
             // present value.
             _updateLiquidity(int256(shares));
             params.shareReserves = _marketState.shareReserves;
+            params.shareAdjustment = _marketState.shareAdjustment;
             params.bondReserves = _marketState.bondReserves;
             endingPresentValue = HyperdriveMath.calculatePresentValue(params);
 
@@ -460,8 +459,6 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             params
         );
 
-        // FIXME: How do we change zeta?
-        //
         // TODO: Update this documentation once we've made the update to how
         // idle capital is paid out to the withdrawal pool.
         //
@@ -493,6 +490,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         shareProceeds = shareProceeds.mulDivDown(_shares, _totalActiveLpSupply);
         _updateLiquidity(-int256(shareProceeds));
         params.shareReserves = _marketState.shareReserves;
+        params.shareAdjustment = _marketState.shareAdjustment;
         params.bondReserves = _marketState.bondReserves;
         uint256 endingPresentValue = HyperdriveMath.calculatePresentValue(
             params
