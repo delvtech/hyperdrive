@@ -4,8 +4,8 @@ pragma solidity 0.8.19;
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
-import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
+import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 
 library HyperdriveUtils {
     using HyperdriveUtils for *;
@@ -47,7 +47,10 @@ library HyperdriveUtils {
         IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
         return
             HyperdriveMath.calculateSpotPrice(
-                poolInfo.shareReserves,
+                HyperdriveMath.calculateEffectiveShareReserves(
+                    poolInfo.shareReserves,
+                    poolInfo.shareAdjustment
+                ),
                 poolInfo.bondReserves,
                 poolConfig.initialSharePrice,
                 poolConfig.timeStretch
@@ -61,7 +64,10 @@ library HyperdriveUtils {
         IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
         return
             HyperdriveMath.calculateAPRFromReserves(
-                poolInfo.shareReserves,
+                HyperdriveMath.calculateEffectiveShareReserves(
+                    poolInfo.shareReserves,
+                    poolInfo.shareAdjustment
+                ),
                 poolInfo.bondReserves,
                 poolConfig.initialSharePrice,
                 poolConfig.positionDuration,
@@ -228,8 +234,13 @@ library HyperdriveUtils {
         }
 
         // Calculate the openShort trade
+        uint256 effectiveShareReserves = HyperdriveMath
+            .calculateEffectiveShareReserves(
+                poolInfo.shareReserves,
+                poolInfo.shareAdjustment
+            );
         uint256 shareProceeds = HyperdriveMath.calculateOpenShort(
-            poolInfo.shareReserves,
+            effectiveShareReserves,
             poolInfo.bondReserves,
             _bondAmount,
             poolConfig.timeStretch,
@@ -239,7 +250,7 @@ library HyperdriveUtils {
 
         // Price without slippage of bonds in terms of shares
         uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
-            poolInfo.shareReserves,
+            effectiveShareReserves,
             poolInfo.bondReserves,
             poolConfig.initialSharePrice,
             poolConfig.timeStretch

@@ -16,7 +16,7 @@ contract HyperdriveDataProviderTest is HyperdriveTest {
     function testLoadSlots() public {
         uint256[] memory slots = new uint256[](1);
 
-        slots[0] = 17;
+        slots[0] = 18;
 
         bytes32[] memory values = hyperdrive.load(slots);
 

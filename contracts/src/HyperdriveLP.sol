@@ -205,6 +205,14 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             );
         }
 
+        apr = HyperdriveMath.calculateAPRFromReserves(
+            _effectiveShareReserves(),
+            _marketState.bondReserves,
+            _initialSharePrice,
+            _positionDuration,
+            _timeStretch
+        );
+
         // Mint LP shares to the supplier.
         _mint(AssetId._LP_ASSET_ID, _destination, lpShares);
 
@@ -408,6 +416,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
                 )
             );
         }
+        _marketState.shareAdjustment = updatedShareAdjustment;
 
         // The liquidity update should hold the spot price invariant. The spot
         // price of base in terms of bonds is given by:
@@ -421,14 +430,18 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // (z_old - zeta_old) / y_old = (z_new - zeta_new) / y_new
         // =>
         // y_new = (z_new - zeta_new) * (y_old / (z_old - zeta_old))
-        shareReserves = uint256(
-            int256(uint256(shareReserves)) - shareAdjustment
-        );
-        updatedShareReserves = uint256(
-            int256(uint256(updatedShareReserves)) - updatedShareAdjustment
-        );
-        _marketState.bondReserves = updatedShareReserves
-            .mulDivDown(_marketState.bondReserves, shareReserves)
+        _marketState.bondReserves = HyperdriveMath
+            .calculateEffectiveShareReserves(
+                updatedShareReserves,
+                updatedShareAdjustment
+            )
+            .mulDivDown(
+                _marketState.bondReserves,
+                HyperdriveMath.calculateEffectiveShareReserves(
+                    shareReserves,
+                    shareAdjustment
+                )
+            )
             .toUint128();
     }
 
