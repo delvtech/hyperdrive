@@ -131,6 +131,32 @@ contract SandwichTest is HyperdriveTest {
         assertGe(baselineProfit, sandwichProfit - 10000 gwei);
     }
 
+    function test_example() external {
+        IHyperdrive.PoolConfig memory config = testConfig(0.05e18);
+        deploy(alice, config);
+        initialize(alice, 0.05e18, 100_000_000e18);
+
+        // Bob opens a short of 2 million bonds.
+        uint256 shortAmount = 2_000_000e18;
+        openShort(bob, shortAmount);
+
+        // Most of the term passes and no interest accrues.
+        advanceTime(POSITION_DURATION, 0);
+
+        // Celine opens and closes a short.
+        shortAmount = 12_000_000e18;
+        (uint256 shortMaturityTime, uint256 paid) = openShort(
+            celine,
+            shortAmount
+        );
+        uint256 proceeds = closeShort(celine, shortMaturityTime, shortAmount);
+
+        console.log(
+            "short pnl = %s",
+            (int256(proceeds) - int256(paid)).toString(18)
+        );
+    }
+
     function test_sandwich_short_trade() external {
         IHyperdrive.PoolConfig memory config = testConfig(0.05e18);
         deploy(alice, config);

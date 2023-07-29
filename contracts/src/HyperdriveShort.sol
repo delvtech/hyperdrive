@@ -354,16 +354,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
             shortsOutstanding_ -
             _bondAmount.toUint128();
 
-        // Apply the updates from the curve trade to the reserves.
-        _marketState.shareReserves += _shareReservesDelta.toUint128();
-        _marketState.bondReserves -= _bondReservesDelta.toUint128();
-
-        // Add the flat part of the trade to the pool's liquidity. We add to
-        // the pool's liquidity because the LPs have a long position and thus
-        // receive their principal and some fixed interest along with any
-        // trading profits that have accrued.
-        _updateLiquidity(int256(_sharePayment - _shareReservesDelta));
-
         // Apply the updates from the curve and flat components of the trade to
         // the reserves. The share proceeds are added to the share reserves
         // since the LPs are selling bonds for shares.  The bond reserves are
