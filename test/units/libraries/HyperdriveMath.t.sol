@@ -575,6 +575,7 @@ contract HyperdriveMathTest is HyperdriveTest {
         (uint256 maxLong, ) = hyperdriveMath.calculateMaxLong(
             HyperdriveMath.MaxTradeParams({
                 shareReserves: info.shareReserves,
+                shareAdjustment: info.shareAdjustment,
                 bondReserves: info.bondReserves,
                 longsOutstanding: info.longsOutstanding,
                 timeStretch: config.timeStretch,
@@ -636,6 +637,7 @@ contract HyperdriveMathTest is HyperdriveTest {
         uint256 maxShort = hyperdriveMath.calculateMaxShort(
             HyperdriveMath.MaxTradeParams({
                 shareReserves: info.shareReserves,
+                shareAdjustment: info.shareAdjustment,
                 bondReserves: info.bondReserves,
                 longsOutstanding: info.longsOutstanding,
                 timeStretch: config.timeStretch,

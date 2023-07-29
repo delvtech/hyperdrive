@@ -385,7 +385,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         _marketState.shareReserves = updatedShareReserves.toUint128();
 
         // Update the share adjustment by holding the ratio of share reserves
-        // to share adjusment proportional. In general, our pricing model cannot
+        // to share adjustment proportional. In general, our pricing model cannot
         // support negative values for the z coordinate, so this is important as
         // it ensures that if z - zeta starts as a positive value, it ends as a
         // positive value. With this in mind, we update the share adjustment as:

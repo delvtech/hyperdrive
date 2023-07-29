@@ -126,6 +126,7 @@ contract ExtremeInputs is HyperdriveTest {
         uint256 shortAmount = HyperdriveMath.calculateMaxShort(
             HyperdriveMath.MaxTradeParams({
                 shareReserves: poolInfo.shareReserves,
+                shareAdjustment: poolInfo.shareAdjustment,
                 bondReserves: poolInfo.bondReserves,
                 longsOutstanding: poolInfo.longsOutstanding,
                 timeStretch: poolConfig.timeStretch,

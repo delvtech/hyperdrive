@@ -165,6 +165,7 @@ contract YieldSpaceMathTest is Test {
                     (uint256 maxBasePaid, ) = HyperdriveMath.calculateMaxLong(
                         HyperdriveMath.MaxTradeParams({
                             shareReserves: shareReserves,
+                            shareAdjustment: 0, // FIXME: Test non-trivial values for this.
                             bondReserves: bondReserves,
                             longsOutstanding: 0,
                             timeStretch: timeStretch,

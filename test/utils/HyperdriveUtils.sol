@@ -102,6 +102,7 @@ library HyperdriveUtils {
         (baseAmount, ) = HyperdriveMath.calculateMaxLong(
             HyperdriveMath.MaxTradeParams({
                 shareReserves: poolInfo.shareReserves,
+                shareAdjustment: poolInfo.shareAdjustment,
                 bondReserves: poolInfo.bondReserves,
                 longsOutstanding: poolInfo.longsOutstanding,
                 timeStretch: poolConfig.timeStretch,
@@ -135,6 +136,7 @@ library HyperdriveUtils {
             HyperdriveMath.calculateMaxShort(
                 HyperdriveMath.MaxTradeParams({
                     shareReserves: poolInfo.shareReserves,
+                    shareAdjustment: poolInfo.shareAdjustment,
                     bondReserves: poolInfo.bondReserves,
                     longsOutstanding: poolInfo.longsOutstanding,
                     timeStretch: poolConfig.timeStretch,
