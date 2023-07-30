@@ -1,10 +1,10 @@
 use ethers::types::{I256, U256};
 use rand::distributions::{Distribution, Standard};
 use rand::Rng;
-use std::ops::BitOr;
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
-struct FixedPoint(U256);
+pub struct FixedPoint(U256);
 
 impl From<U256> for FixedPoint {
     fn from(u: U256) -> FixedPoint {
@@ -36,62 +36,115 @@ impl Distribution<FixedPoint> for Standard {
     }
 }
 
-// FIXME: Implement this as a math library with trait definitions for Zero, One,
-// Add, Sub, Mul, Div, etc.
-//
+impl Add for FixedPoint {
+    type Output = FixedPoint;
+
+    fn add(self, other: FixedPoint) -> FixedPoint {
+        FixedPoint(self.0 + other.0)
+    }
+}
+
+impl AddAssign for FixedPoint {
+    fn add_assign(&mut self, other: FixedPoint) {
+        *self = *self + other;
+    }
+}
+
+impl Sub for FixedPoint {
+    type Output = FixedPoint;
+
+    fn sub(self, other: FixedPoint) -> FixedPoint {
+        FixedPoint(self.0 - other.0)
+    }
+}
+
+impl SubAssign for FixedPoint {
+    fn sub_assign(&mut self, other: FixedPoint) {
+        *self = *self - other;
+    }
+}
+
+impl Mul for FixedPoint {
+    type Output = FixedPoint;
+
+    fn mul(self, other: FixedPoint) -> FixedPoint {
+        self.mul_down(other)
+    }
+}
+
+impl MulAssign for FixedPoint {
+    fn mul_assign(&mut self, other: FixedPoint) {
+        *self = *self * other;
+    }
+}
+
+impl Div for FixedPoint {
+    type Output = FixedPoint;
+
+    fn div(self, other: FixedPoint) -> FixedPoint {
+        self.div_down(other)
+    }
+}
+
+impl DivAssign for FixedPoint {
+    fn div_assign(&mut self, other: FixedPoint) {
+        *self = *self / other;
+    }
+}
+
 // FIXME: It's convenient to use the panics from the U256 library, but it would
 // be nice to have a good way of converting this to a result during execution.
 // This should become obvious when testing more.
 impl FixedPoint {
-    fn zero() -> FixedPoint {
+    pub fn zero() -> FixedPoint {
         FixedPoint(U256::zero())
     }
 
-    fn one() -> FixedPoint {
+    pub fn one() -> FixedPoint {
         FixedPoint(U256::from(10_u128).pow(U256::from(18)))
     }
 
-    fn add(&self, other: &FixedPoint) -> FixedPoint {
+    pub fn add(self, other: FixedPoint) -> FixedPoint {
         FixedPoint(self.0 + other.0)
     }
 
-    fn sub(&self, other: &FixedPoint) -> FixedPoint {
+    pub fn sub(self, other: FixedPoint) -> FixedPoint {
         FixedPoint(self.0 - other.0)
     }
 
-    fn mul_div_down(&self, other: &FixedPoint, divisor: &FixedPoint) -> FixedPoint {
+    pub fn mul_div_down(self, other: FixedPoint, divisor: FixedPoint) -> FixedPoint {
         FixedPoint((self.0 * other.0) / divisor.0)
     }
 
-    fn mul_div_up(&self, other: &FixedPoint, divisor: &FixedPoint) -> FixedPoint {
+    pub fn mul_div_up(self, other: FixedPoint, divisor: FixedPoint) -> FixedPoint {
         let offset = (self.0 * other.0 % divisor.0 > U256::zero()) as u128;
         FixedPoint((self.0 * other.0) / divisor.0 + offset)
     }
 
-    fn mul_down(&self, other: &FixedPoint) -> FixedPoint {
-        self.mul_div_down(other, &FixedPoint::one())
+    pub fn mul_down(self, other: FixedPoint) -> FixedPoint {
+        self.mul_div_down(other, FixedPoint::one())
     }
 
-    fn mul_up(&self, other: &FixedPoint) -> FixedPoint {
-        self.mul_div_up(other, &FixedPoint::one())
+    pub fn mul_up(self, other: FixedPoint) -> FixedPoint {
+        self.mul_div_up(other, FixedPoint::one())
     }
 
-    fn div_down(&self, other: &FixedPoint) -> FixedPoint {
-        self.mul_div_down(&FixedPoint::one(), other)
+    pub fn div_down(self, other: FixedPoint) -> FixedPoint {
+        self.mul_div_down(FixedPoint::one(), other)
     }
 
-    fn div_up(&self, other: &FixedPoint) -> FixedPoint {
-        self.mul_div_up(&FixedPoint::one(), other)
+    pub fn div_up(self, other: FixedPoint) -> FixedPoint {
+        self.mul_div_up(FixedPoint::one(), other)
     }
 
-    fn pow(&self, y: &FixedPoint) -> FixedPoint {
+    pub fn pow(self, y: FixedPoint) -> FixedPoint {
         // If the exponent is 0, return 1.
-        if y == &FixedPoint::zero() {
+        if y == FixedPoint::zero() {
             return FixedPoint::one();
         }
 
         // If the base is 0, return 0.
-        if self == &FixedPoint::zero() {
+        if self == FixedPoint::zero() {
             return FixedPoint::zero();
         }
 
@@ -111,9 +164,6 @@ impl FixedPoint {
     }
 
     // FIXME: If we use statics for the large values, the cost should be very low.
-    //
-    // TODO: Document this to make it more understandable. Part of the exercise
-    // is getting a better understanding of the details.
     fn exp(mut x: I256) -> I256 {
         // When the result is < 0.5 we return zero. This happens when
         // x <= floor(log(0.5e18) * 1e18) ~ -42e18
@@ -207,8 +257,7 @@ impl FixedPoint {
         r
     }
 
-    // TODO: Document this to make it more understandable. Part of the exercise
-    // is getting a better understanding of the details.
+    // FIXME: If we use statics for the large values, the cost should be very low.
     fn ln(mut x: I256) -> I256 {
         if x <= I256::zero() {
             panic!("ln of negative number or zero");
@@ -222,35 +271,21 @@ impl FixedPoint {
         let mut r: I256 =
             I256::from((x > I256::from(0xffffffffffffffffffffffffffffffff_u128)) as u128)
                 .wrapping_shl(7);
-        r = r.bitor(
-            I256::from(
-                (x.wrapping_shr(r.as_usize()) > I256::from(0xffffffffffffffff_u128)) as u128,
-            )
-            .wrapping_shl(6),
-        );
-        r = r.bitor(
-            I256::from((x.wrapping_shr(r.as_usize()) > I256::from(0xffffffff_u128)) as u128)
-                .wrapping_shl(5),
-        );
-        r = r.bitor(
-            I256::from((x.wrapping_shr(r.as_usize()) > I256::from(0xffff_u128)) as u128)
-                .wrapping_shl(4),
-        );
-        r = r.bitor(
-            I256::from((x.wrapping_shr(r.as_usize()) > I256::from(0xff_u128)) as u128)
-                .wrapping_shl(3),
-        );
-        r = r.bitor(
-            I256::from((x.wrapping_shr(r.as_usize()) > I256::from(0xf_u128)) as u128)
-                .wrapping_shl(2),
-        );
-        r = r.bitor(
-            I256::from((x.wrapping_shr(r.as_usize()) > I256::from(0x3_u128)) as u128)
-                .wrapping_shl(1),
-        );
-        r = r.bitor(I256::from(
-            (x.wrapping_shr(r.as_usize()) > I256::from(0x1_u128)) as u128,
-        ));
+        r = r | I256::from(
+            (x.wrapping_shr(r.as_usize()) > I256::from(0xffffffffffffffff_u128)) as u128,
+        )
+        .wrapping_shl(6);
+        r = r | I256::from((x.wrapping_shr(r.as_usize()) > I256::from(0xffffffff_u128)) as u128)
+            .wrapping_shl(5);
+        r = r | I256::from((x.wrapping_shr(r.as_usize()) > I256::from(0xffff_u128)) as u128)
+            .wrapping_shl(4);
+        r = r | I256::from((x.wrapping_shr(r.as_usize()) > I256::from(0xff_u128)) as u128)
+            .wrapping_shl(3);
+        r = r | I256::from((x.wrapping_shr(r.as_usize()) > I256::from(0xf_u128)) as u128)
+            .wrapping_shl(2);
+        r = r | I256::from((x.wrapping_shr(r.as_usize()) > I256::from(0x3_u128)) as u128)
+            .wrapping_shl(1);
+        r = r | I256::from((x.wrapping_shr(r.as_usize()) > I256::from(0x1_u128)) as u128);
 
         // Reduce range of x to (1, 2) * 2**96
         // ln(2^k * x) = k * ln(2) + ln(x)
@@ -390,7 +425,7 @@ mod tests {
         for _ in 0..FUZZ_RUNS {
             let a: FixedPoint = rng.gen();
             let b: FixedPoint = rng.gen();
-            let actual = panic::catch_unwind(|| a.add(&b));
+            let actual = panic::catch_unwind(|| a + b);
             match runner.mock.add(a.into(), b.into()).call().await {
                 Ok(expected) => assert_eq!(actual.unwrap(), FixedPoint::from(expected)),
                 Err(_) => {
@@ -411,7 +446,7 @@ mod tests {
         for _ in 0..FUZZ_RUNS {
             let a: FixedPoint = rng.gen();
             let b: FixedPoint = rng.gen();
-            let actual = panic::catch_unwind(|| a.sub(&b));
+            let actual = panic::catch_unwind(|| a - b);
             match runner.mock.sub(a.into(), b.into()).call().await {
                 Ok(expected) => assert_eq!(actual.unwrap(), FixedPoint::from(expected)),
                 Err(_) => {
@@ -428,7 +463,7 @@ mod tests {
         let a = FixedPoint(U256::from(10_u128).pow(U256::from(18)));
         let b = FixedPoint(U256::from(10_u128).pow(U256::from(18)));
         let c = FixedPoint(U256::from(0));
-        assert!(panic::catch_unwind(|| a.mul_div_down(&b, &c)).is_err());
+        assert!(panic::catch_unwind(|| a.mul_div_down(b, c)).is_err());
     }
 
     #[tokio::test]
@@ -441,7 +476,7 @@ mod tests {
             let a: FixedPoint = rng.gen();
             let b: FixedPoint = rng.gen();
             let c: FixedPoint = rng.gen();
-            let actual = panic::catch_unwind(|| a.mul_div_down(&b, &c));
+            let actual = panic::catch_unwind(|| a.mul_div_down(b, c));
             match runner
                 .mock
                 .mul_div_down(a.into(), b.into(), c.into())
@@ -463,7 +498,7 @@ mod tests {
         let a = FixedPoint(U256::from(10_u128).pow(U256::from(18)));
         let b = FixedPoint(U256::from(10_u128).pow(U256::from(18)));
         let c = FixedPoint(U256::from(0));
-        assert!(panic::catch_unwind(|| a.mul_div_up(&b, &c)).is_err());
+        assert!(panic::catch_unwind(|| a.mul_div_up(b, c)).is_err());
     }
 
     #[tokio::test]
@@ -476,7 +511,7 @@ mod tests {
             let a: FixedPoint = rng.gen();
             let b: FixedPoint = rng.gen();
             let c: FixedPoint = rng.gen();
-            let actual = panic::catch_unwind(|| a.mul_div_up(&b, &c));
+            let actual = panic::catch_unwind(|| a.mul_div_up(b, c));
             match runner
                 .mock
                 .mul_div_up(a.into(), b.into(), c.into())
@@ -502,7 +537,7 @@ mod tests {
         for _ in 0..FUZZ_RUNS {
             let a: FixedPoint = rng.gen();
             let b: FixedPoint = rng.gen();
-            let actual = panic::catch_unwind(|| a.mul_down(&b));
+            let actual = panic::catch_unwind(|| a * b);
             match runner.mock.mul_down(a.into(), b.into()).call().await {
                 Ok(expected) => assert_eq!(actual.unwrap(), FixedPoint::from(expected)),
                 Err(_) => {
@@ -523,7 +558,7 @@ mod tests {
         for _ in 0..FUZZ_RUNS {
             let a: FixedPoint = rng.gen();
             let b: FixedPoint = rng.gen();
-            let actual = panic::catch_unwind(|| a.mul_up(&b));
+            let actual = panic::catch_unwind(|| a.mul_up(b));
             match runner.mock.mul_up(a.into(), b.into()).call().await {
                 Ok(expected) => assert_eq!(actual.unwrap(), FixedPoint::from(expected)),
                 Err(_) => {
@@ -539,7 +574,7 @@ mod tests {
     fn test_div_down_failure() {
         let a = FixedPoint(U256::from(10_u128).pow(U256::from(18)));
         let b = FixedPoint(U256::from(0));
-        assert!(panic::catch_unwind(|| a.div_down(&b)).is_err());
+        assert!(panic::catch_unwind(|| a / b).is_err());
     }
 
     #[tokio::test]
@@ -551,7 +586,7 @@ mod tests {
         for _ in 0..FUZZ_RUNS {
             let a: FixedPoint = rng.gen();
             let b: FixedPoint = rng.gen();
-            let actual = panic::catch_unwind(|| a.div_down(&b));
+            let actual = panic::catch_unwind(|| a / b);
             match runner.mock.div_down(a.into(), b.into()).call().await {
                 Ok(expected) => assert_eq!(actual.unwrap(), FixedPoint::from(expected)),
                 Err(_) => {
@@ -567,7 +602,7 @@ mod tests {
     fn test_div_up_failure() {
         let a = FixedPoint(U256::from(10_u128).pow(U256::from(18)));
         let b = FixedPoint(U256::from(0));
-        assert!(panic::catch_unwind(|| a.div_up(&b)).is_err());
+        assert!(panic::catch_unwind(|| a.div_up(b)).is_err());
     }
 
     #[tokio::test]
@@ -579,7 +614,7 @@ mod tests {
         for _ in 0..FUZZ_RUNS {
             let a: FixedPoint = rng.gen();
             let b: FixedPoint = rng.gen();
-            let actual = panic::catch_unwind(|| a.div_up(&b));
+            let actual = panic::catch_unwind(|| a.div_up(b));
             match runner.mock.div_up(a.into(), b.into()).call().await {
                 Ok(expected) => assert_eq!(actual.unwrap(), FixedPoint::from(expected)),
                 Err(_) => {
@@ -600,7 +635,7 @@ mod tests {
         for _ in 0..FUZZ_RUNS {
             let x: FixedPoint = rng.gen();
             let y: FixedPoint = rng.gen();
-            let actual = panic::catch_unwind(|| x.pow(&y));
+            let actual = panic::catch_unwind(|| x.pow(y));
             match runner.mock.pow(x.into(), y.into()).call().await {
                 Ok(expected) => assert_eq!(actual.unwrap(), FixedPoint::from(expected)),
                 Err(_) => {
