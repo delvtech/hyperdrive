@@ -170,15 +170,15 @@ abstract contract HyperdriveShort is HyperdriveLP {
             uint256 totalGovernanceFee
         ) = _calculateCloseShort(_bondAmount, sharePrice, _maturityTime);
 
-        // If the ending spot price is greater than or equal to 1, we are in the
-        // negative interest region of the trading function. The spot price is
-        // given by ((mu * (z - zeta)) / y) ** tau, so all that we need to check
-        // is that (mu * (z - zeta)) / y < 1 or, equivalently, that
-        // mu * (z - zeta) >= y.
+        // If the ending spot price is greater than 1, we are in the negative
+        // interest region of the trading function. The spot price is given by
+        // ((mu * (z - zeta)) / y) ** tau, so all that we need to check is that
+        // (mu * (z - zeta)) / y <= 1. With this in mind, we can use a revert
+        // condition of mu * (z - zeta) > y.
         if (
             _initialSharePrice.mulDown(
                 _effectiveShareReserves() + shareReservesDelta
-            ) >= _marketState.bondReserves - bondReservesDelta
+            ) > _marketState.bondReserves - bondReservesDelta
         ) {
             revert IHyperdrive.NegativeInterest();
         }

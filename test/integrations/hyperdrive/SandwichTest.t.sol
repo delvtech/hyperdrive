@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-// FIXME
-import "forge-std/console.sol";
-
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
@@ -131,71 +128,57 @@ contract SandwichTest is HyperdriveTest {
         assertGe(baselineProfit, sandwichProfit - 10000 gwei);
     }
 
-    function test_example() external {
+    function test_sandwich_short_trade(
+        uint256 fixedRate,
+        uint256 contribution,
+        uint256 tradeAmount,
+        uint256 sandwichAmount
+    ) external {
         IHyperdrive.PoolConfig memory config = testConfig(0.05e18);
         deploy(alice, config);
-        initialize(alice, 0.05e18, 100_000_000e18);
-
-        // Bob opens a short of 2 million bonds.
-        uint256 shortAmount = 2_000_000e18;
-        openShort(bob, shortAmount);
-
-        // Most of the term passes and no interest accrues.
-        advanceTime(POSITION_DURATION, 0);
-
-        // Celine opens and closes a short.
-        shortAmount = 12_000_000e18;
-        (uint256 shortMaturityTime, uint256 paid) = openShort(
-            celine,
-            shortAmount
-        );
-        uint256 proceeds = closeShort(celine, shortMaturityTime, shortAmount);
-
-        console.log(
-            "short pnl = %s",
-            (int256(proceeds) - int256(paid)).toString(18)
-        );
-    }
-
-    function test_sandwich_short_trade() external {
-        IHyperdrive.PoolConfig memory config = testConfig(0.05e18);
-        deploy(alice, config);
-        initialize(alice, 0.05e18, 100_000_000e18);
+        // FIXME: We can calculate the max rate that a given instantiation of
+        // YieldSpace can support. We should use this in tests like this as it
+        // would allow us to fuzz over the entire range.
+        fixedRate = fixedRate.normalizeToRange(0.001e18, 1e18);
+        contribution = contribution.normalizeToRange(1_000e18, 500_000_000e18);
+        uint256 lpShares = initialize(alice, fixedRate, contribution);
+        contribution -= 2 * config.minimumShareReserves;
 
         // Bob opens a short.
-        uint256 shortAmount = 10_000_000e18;
-        openShort(bob, shortAmount);
+        tradeAmount = tradeAmount.normalizeToRange(
+            1e18,
+            hyperdrive.calculateMaxShort().mulDown(0.9e18)
+        );
+        openShort(bob, tradeAmount);
 
         // Most of the term passes and no interest accrues.
         advanceTime(POSITION_DURATION - 12 seconds, 0);
 
-        // Celine opens a large short.
-        uint256 celineShortAmount = hyperdrive.calculateMaxShort();
-        (uint256 celineShortMaturityTime, uint256 celineBasePaid) = openShort(
-            celine,
-            celineShortAmount
+        // Celine opens a short to sandwich the closing of Bob's short.
+        sandwichAmount = sandwichAmount.normalizeToRange(
+            1e18,
+            hyperdrive.calculateMaxShort()
         );
-        console.log("celine short amount = %s", celineShortAmount.toString(18));
-        console.log("celine base paid = %s", celineBasePaid.toString(18));
-        console.log(
-            "spot rate = %s",
-            hyperdrive.calculateAPRFromReserves().toString(18)
+        (uint256 maturityTime, uint256 shortPayment) = openShort(
+            celine,
+            sandwichAmount
         );
 
         // The rest of the term passes and no interest accrues.
         advanceTime(12 seconds, 0);
 
-        // Celine closes her short.
-        uint256 celineShortProceeds = closeShort(
+        // Celine closes her short. Her short should have been unprofitable.
+        uint256 shortProceeds = closeShort(
             celine,
-            celineShortMaturityTime,
-            celineShortAmount
+            maturityTime,
+            sandwichAmount
         );
+        assertLt(shortProceeds, shortPayment);
 
-        console.log(
-            "celine pnl = %s",
-            (int256(celineShortProceeds) - int256(celineBasePaid)).toString(18)
-        );
+        // Alice removes her liquidity. She should receive at least as much as
+        // as she put in.
+        (uint256 withdrawalProceeds, ) = removeLiquidity(alice, lpShares);
+        assertGe(withdrawalProceeds, contribution);
     }
 
     // TODO: Use the normalize function to improve this test.
