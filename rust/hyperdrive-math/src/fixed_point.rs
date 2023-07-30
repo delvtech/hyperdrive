@@ -1,10 +1,8 @@
 use ethers::types::{I256, U256};
 use rand::distributions::{Distribution, Standard};
 use rand::Rng;
-use std::ops::{BitOr, Shl, Shr};
+use std::ops::BitOr;
 
-// FIXME: We should implement the Rng trait for FixedPoint so that we can
-//        generate random FixedPoint numbers for testing.
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 struct FixedPoint(U256);
 
@@ -45,6 +43,10 @@ impl Distribution<FixedPoint> for Standard {
 // be nice to have a good way of converting this to a result during execution.
 // This should become obvious when testing more.
 impl FixedPoint {
+    fn zero() -> FixedPoint {
+        FixedPoint(U256::zero())
+    }
+
     fn one() -> FixedPoint {
         FixedPoint(U256::from(10_u128).pow(U256::from(18)))
     }
@@ -82,7 +84,128 @@ impl FixedPoint {
         self.mul_div_up(&FixedPoint::one(), other)
     }
 
-    // FIXME: Implement the remaining functions.
+    fn pow(&self, y: &FixedPoint) -> FixedPoint {
+        // If the exponent is 0, return 1.
+        if y == &FixedPoint::zero() {
+            return FixedPoint::one();
+        }
+
+        // If the base is 0, return 0.
+        if self == &FixedPoint::zero() {
+            return FixedPoint::zero();
+        }
+
+        // Using properties of logarithms we calculate x^y:
+        // -> ln(x^y) = y * ln(x)
+        // -> e^(y * ln(x)) = x^y
+        let y_int256: I256 = I256::from_raw(y.0);
+
+        // Compute y*ln(x)
+        // Any overflow for x will be caught in _ln() in the initial bounds check
+        let lnx: I256 = FixedPoint::ln(I256::from_raw(self.0));
+        let mut ylnx: I256 = y_int256.wrapping_mul(lnx);
+        ylnx = ylnx.wrapping_div(I256::from_raw(FixedPoint::one().0));
+
+        // Calculate exp(y * ln(x)) to get x^y
+        FixedPoint::from(FixedPoint::exp(ylnx).into_raw())
+    }
+
+    // FIXME: If we use statics for the large values, the cost should be very low.
+    //
+    // TODO: Document this to make it more understandable. Part of the exercise
+    // is getting a better understanding of the details.
+    fn exp(mut x: I256) -> I256 {
+        // When the result is < 0.5 we return zero. This happens when
+        // x <= floor(log(0.5e18) * 1e18) ~ -42e18
+        if x <= I256::from(-42139678854452767551_i128) {
+            return I256::zero();
+        }
+
+        // When the result is > (2**255 - 1) / 1e18 we can not represent it as an
+        // int. This happens when x >= floor(log((2**255 - 1) / 1e18) * 1e18) ~ 135.
+        if x >= I256::from(135305999368893231589_u128) {
+            panic!("invalid exponent");
+        }
+
+        // x is now in the range (-42, 136) * 1e18. Convert to (-42, 136) * 2**96
+        // for more intermediate precision and a binary basis. This base conversion
+        // is a multiplication by 1e18 / 2**96 = 5**18 / 2**78.
+        x = x.wrapping_shl(78) / I256::from(5).pow(18);
+
+        // Reduce range of x to (-½ ln 2, ½ ln 2) * 2**96 by factoring out powers
+        // of two such that exp(x) = exp(x') * 2**k, where k is an integer.
+        // Solving this gives k = round(x / log(2)) and x' = x - k * log(2).
+        let k: I256 = ((x.wrapping_shl(96) / I256::from(54916777467707473351141471128_u128))
+            .wrapping_add(I256::from(2).pow(95)))
+        .wrapping_shr(96);
+        x = x.wrapping_sub(k.wrapping_mul(54916777467707473351141471128_u128.into()));
+
+        // k is in the range [-61, 195].
+
+        // Evaluate using a (6, 7)-term rational approximation.
+        // p is made monic, we'll multiply by a scale factor later.
+        let mut y: I256 = x.wrapping_add(1346386616545796478920950773328_u128.into());
+        y = y
+            .wrapping_mul(x)
+            .wrapping_shr(96)
+            .wrapping_add(57155421227552351082224309758442_u128.into());
+        let mut p: I256 = y
+            .wrapping_add(x)
+            .wrapping_sub(94201549194550492254356042504812_u128.into());
+        p = p
+            .wrapping_mul(y)
+            .wrapping_shr(96)
+            .wrapping_add(28719021644029726153956944680412240_u128.into());
+        p = p
+            .wrapping_mul(x)
+            .wrapping_add(I256::from(4385272521454847904659076985693276_u128).wrapping_shl(96));
+
+        // We leave p in 2**192 basis so we don't need to scale it back up for the division.
+        let mut q: I256 = x.wrapping_sub(2855989394907223263936484059900_u128.into());
+        q = q
+            .wrapping_mul(x)
+            .wrapping_shr(96)
+            .wrapping_add(50020603652535783019961831881945_u128.into());
+        q = q
+            .wrapping_mul(x)
+            .wrapping_shr(96)
+            .wrapping_sub(533845033583426703283633433725380_u128.into());
+        q = q
+            .wrapping_mul(x)
+            .wrapping_shr(96)
+            .wrapping_add(3604857256930695427073651918091429_u128.into());
+        q = q
+            .wrapping_mul(x)
+            .wrapping_shr(96)
+            .wrapping_sub(14423608567350463180887372962807573_u128.into());
+        q = q
+            .wrapping_mul(x)
+            .wrapping_shr(96)
+            .wrapping_add(26449188498355588339934803723976023_u128.into());
+
+        let mut r = p.wrapping_div(q);
+
+        I256::zero();
+
+        // r should be in the range (0.09, 0.25) * 2**96.
+
+        // We now need to multiply r by:
+        // * the scale factor s = ~6.031367120.
+        // * the 2**k factor from the range reduction.
+        // * the 1e18 / 2**96 factor for base conversion.
+        // We do this all at once, with an intermediate result in 2**213
+        // basis, so the final right shift is always by a positive amount.
+        r = I256::from_raw(
+            r.into_raw()
+                .overflowing_mul(U256::from(
+                    "0x0000000000000000000000029d9dc38563c32e5c2f6dc192ee70ef65f9978af3",
+                ))
+                .0,
+        )
+        .wrapping_shr(I256::from(195).wrapping_sub(k).low_usize());
+
+        r
+    }
 
     // TODO: Document this to make it more understandable. Part of the exercise
     // is getting a better understanding of the details.
@@ -91,36 +214,52 @@ impl FixedPoint {
             panic!("ln of negative number or zero");
         }
 
+        // We want to convert x from 10**18 fixed point to 2**96 fixed point.
+        // We do this by multiplying by 2**96 / 10**18. But since
+        // ln(x * C) = ln(x) + ln(C), we can simply do nothing here
+        // and add ln(2**96 / 10**18) at the end.
+
         let mut r: I256 =
             I256::from((x > I256::from(0xffffffffffffffffffffffffffffffff_u128)) as u128)
                 .wrapping_shl(7);
         r = r.bitor(
-            I256::from(((x >> r.as_usize()) > I256::from(0xffffffffffffffff_u128)) as u128)
-                .wrapping_shl(6),
+            I256::from(
+                (x.wrapping_shr(r.as_usize()) > I256::from(0xffffffffffffffff_u128)) as u128,
+            )
+            .wrapping_shl(6),
         );
         r = r.bitor(
-            I256::from(((x >> r.as_usize()) > I256::from(0xffffffff_u128)) as u128).wrapping_shl(5),
+            I256::from((x.wrapping_shr(r.as_usize()) > I256::from(0xffffffff_u128)) as u128)
+                .wrapping_shl(5),
         );
         r = r.bitor(
-            I256::from(((x >> r.as_usize()) > I256::from(0xffff_u128)) as u128).wrapping_shl(4),
+            I256::from((x.wrapping_shr(r.as_usize()) > I256::from(0xffff_u128)) as u128)
+                .wrapping_shl(4),
         );
         r = r.bitor(
-            I256::from(((x >> r.as_usize()) > I256::from(0xff_u128)) as u128).wrapping_shl(3),
+            I256::from((x.wrapping_shr(r.as_usize()) > I256::from(0xff_u128)) as u128)
+                .wrapping_shl(3),
         );
         r = r.bitor(
-            I256::from(((x >> r.as_usize()) > I256::from(0xf_u128)) as u128).wrapping_shl(2),
+            I256::from((x.wrapping_shr(r.as_usize()) > I256::from(0xf_u128)) as u128)
+                .wrapping_shl(2),
         );
         r = r.bitor(
-            I256::from(((x >> r.as_usize()) > I256::from(0x3_u128)) as u128).wrapping_shl(1),
+            I256::from((x.wrapping_shr(r.as_usize()) > I256::from(0x3_u128)) as u128)
+                .wrapping_shl(1),
         );
         r = r.bitor(I256::from(
             (x.wrapping_shr(r.as_usize()) > I256::from(0x1_u128)) as u128,
         ));
 
+        // Reduce range of x to (1, 2) * 2**96
+        // ln(2^k * x) = k * ln(2) + ln(x)
         let k: I256 = r.wrapping_sub(I256::from(96));
         x = x.wrapping_shl(I256::from(159).wrapping_sub(k).as_usize());
         x = x.wrapping_shr(159);
 
+        // Evaluate using a (8, 8)-term rational approximation.
+        // p is made monic, we will multiply by a scale factor later.
         let mut p: I256 = x.wrapping_add(I256::from(3273285459638523848632254066296_u128));
         p = ((p.wrapping_mul(x)).wrapping_shr(96))
             .wrapping_add(I256::from(24828157081833163892658089445524_u128));
@@ -136,6 +275,8 @@ impl FixedPoint {
             .wrapping_mul(x)
             .wrapping_sub(I256::from(795164235651350426258249787498_u128).wrapping_shl(96));
 
+        // We leave p in 2**192 basis so we don't need to scale it back up for the division.
+        // q is monic by convention.
         let mut q: I256 = x.wrapping_add(I256::from(5573035233440673466300451813936_u128));
         q = (q.wrapping_mul(x).wrapping_shr(96))
             .wrapping_add(I256::from(71694874799317883764090561454958_u128));
@@ -160,28 +301,40 @@ impl FixedPoint {
             .wrapping_shr(96)
             .wrapping_add(I256::from(909429971244387300277376558375_u128));
 
-        r = p / q;
+        r = p.wrapping_div(q);
+
+        // r is in the range (0, 0.125) * 2**96
 
         // FIXME: Can we avoid string conversions here? This is going to slow us down.
+        //
+        // Finalization, we need to:
+        // * multiply by the scale factor s = 5.549…
+        // * add ln(2**96 / 10**18)
+        // * add k * ln(2)
+        // * multiply by 10**18 / 2**96 = 5**18 >> 78
+
+        // mul s * 5e18 * 2**96, base is now 5**18 * 2**192
         r = r.wrapping_mul(I256::from_raw(U256::from(
             "0x00000000000000000000000000001340daa0d5f769dba1915cef59f0815a5506",
         )));
+        // add ln(2) * k * 5e18 * 2**192
         r = r.wrapping_add(
             I256::from_raw(U256::from(
                 "0x00000267a36c0c95b3975ab3ee5b203a7614a3f75373f047d803ae7b6687f2b3",
             ))
             .wrapping_mul(k),
         );
+        // add ln(2**96 / 10**18) * 5e18 * 2**192
         r = r.wrapping_add(I256::from_raw(U256::from(
             "0x000057115e47018c7177eebf7cd370a3356a1b7863008a5ae8028c72b8864284",
         )));
+        // base conversion: mul 2**18 / 2**192
         r = r.wrapping_shr(174);
 
         r
     }
 }
 
-// DRY this test suite up.
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -197,7 +350,8 @@ mod tests {
     use rand::{thread_rng, Rng};
     use std::{convert::TryFrom, panic, sync::Arc, time::Duration};
 
-    // FIXME: Is there a better way of doing this?
+    // FIXME: Ideally, we'd compile the contracts at this point so that we're
+    // always testing against the most up to date contracts.
     abigen!(
         MockFixedPointMath,
         "../../out/MockFixedPointMath.sol/MockFixedPointMath.json",
@@ -428,6 +582,47 @@ mod tests {
             let actual = panic::catch_unwind(|| a.div_up(&b));
             match runner.mock.div_up(a.into(), b.into()).call().await {
                 Ok(expected) => assert_eq!(actual.unwrap(), FixedPoint::from(expected)),
+                Err(_) => {
+                    let _ = actual.unwrap_err();
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn fuzz_pow() -> Result<()> {
+        let runner = setup().await?;
+
+        // Fuzz the rust and solidity implementations against each other.
+        let mut rng = thread_rng();
+        for _ in 0..FUZZ_RUNS {
+            let x: FixedPoint = rng.gen();
+            let y: FixedPoint = rng.gen();
+            let actual = panic::catch_unwind(|| x.pow(&y));
+            match runner.mock.pow(x.into(), y.into()).call().await {
+                Ok(expected) => assert_eq!(actual.unwrap(), FixedPoint::from(expected)),
+                Err(_) => {
+                    let _ = actual.unwrap_err();
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn fuzz_exp() -> Result<()> {
+        let runner = setup().await?;
+
+        // Fuzz the rust and solidity implementations against each other.
+        let mut rng = thread_rng();
+        for _ in 0..FUZZ_RUNS {
+            let x: I256 = I256::from_raw(rng.gen::<FixedPoint>().0);
+            let actual = panic::catch_unwind(|| FixedPoint::exp(x));
+            match runner.mock.exp(x).call().await {
+                Ok(expected) => assert_eq!(actual.unwrap(), expected),
                 Err(_) => {
                     let _ = actual.unwrap_err();
                 }
