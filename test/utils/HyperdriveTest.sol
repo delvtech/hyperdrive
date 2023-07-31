@@ -576,7 +576,7 @@ contract HyperdriveTest is BaseTest {
                 overrides.asUnderlying
             );
         } else {
-            baseToken.mint(bondAmount);
+            baseToken.mint(overrides.depositAmount);
             baseToken.approve(address(hyperdrive), bondAmount);
             (maturityTime, baseAmount) = hyperdrive.openShort(
                 bondAmount,
@@ -584,7 +584,7 @@ contract HyperdriveTest is BaseTest {
                 trader,
                 overrides.asUnderlying
             );
-            baseToken.burn(bondAmount - baseAmount);
+            baseToken.burn(overrides.depositAmount - baseAmount);
         }
 
         return (maturityTime, baseAmount);
