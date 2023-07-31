@@ -39,6 +39,10 @@ practices and style, prettier is a Solidity formatter that checks for formatting
 and style, and cSpell is a spell checker. To run all three, run `yarn lint`.
 If you want to automatically format the code, run `yarn prettier`.
 
+## Yield Sources
+
+The current suggested way of integrating your yield source with hyperdrive is through the [ERC-4626 standard](https://eips.ethereum.org/EIPS/eip-4626) although accomodations can be made if this is not possible. Hyperdrive currently makes use of [Yield Daddy](https://github.com/timeless-fi/yield-daddy) to wrap many existing yield sources into this standard.
+
 # Disclaimer
 
 The language used in this codebase is for coding convenience only, and is not

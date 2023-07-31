@@ -12,3 +12,6 @@
 [submodule "lib/solmate"]
 	path = lib/solmate
 	url = https://github.com/transmissions11/solmate
+[submodule "lib/yield-daddy"]
+	path = lib/yield-daddy
+	url = https://github.com/timeless-fi/yield-daddy

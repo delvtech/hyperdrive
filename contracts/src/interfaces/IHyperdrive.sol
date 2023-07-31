@@ -177,6 +177,9 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
         uint256 withdrawalSharesReadyToWithdraw;
         /// @dev The proceeds recovered by the withdrawal pool.
         uint256 withdrawalSharesProceeds;
+        /// @dev The share price of LP shares. This can be used to mark LP
+        ///      shares to market.
+        uint256 lpSharePrice;
     }
 
     struct OracleState {
@@ -236,6 +239,9 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
     error Unauthorized();
     error InvalidContribution();
     error InvalidToken();
+    error MaxFeeTooHigh();
+    error FeeTooHigh();
+    error NonPayableInitialization();
 
     /// ######################
     /// ### ERC20Forwarder ###

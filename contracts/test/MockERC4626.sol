@@ -1,0 +1,98 @@
+// SPDX-License-Identifier: Apache-2.0
+pragma solidity 0.8.19;
+
+import { ERC20 } from "solmate/tokens/ERC20.sol";
+import { ERC4626 } from "solmate/mixins/ERC4626.sol";
+import { FixedPointMath } from "../src/libraries/FixedPointMath.sol";
+import { ERC20Mintable } from "./ERC20Mintable.sol";
+
+/// @author DELV
+/// @title MockERC4626
+/// @notice This mock yield source will accrue interest at a specified rate
+///         Every stateful interaction will accrue interest, so the interest
+///         accrual will approximate continuous compounding as the contract
+///         is called more frequently.
+/// @custom:disclaimer The language used in this code is for coding convenience
+///                    only, and is not intended to, and does not, have any
+///                    particular legal or regulatory significance.
+contract MockERC4626 is ERC4626 {
+    using FixedPointMath for uint256;
+
+    uint256 internal _rate;
+    uint256 internal _lastUpdated;
+
+    constructor(
+        ERC20Mintable _asset,
+        string memory _name,
+        string memory _symbol,
+        uint256 _initialRate
+    ) ERC4626(ERC20(address(_asset)), _name, _symbol) {
+        _rate = _initialRate;
+        _lastUpdated = block.timestamp;
+    }
+
+    /// Overrides ///
+
+    function deposit(
+        uint256 _assets,
+        address _receiver
+    ) public override returns (uint256) {
+        _accrue();
+        return super.deposit(_assets, _receiver);
+    }
+
+    function mint(
+        uint256 _shares,
+        address _receiver
+    ) public override returns (uint256) {
+        _accrue();
+        return super.mint(_shares, _receiver);
+    }
+
+    function withdraw(
+        uint256 _assets,
+        address _receiver,
+        address _owner
+    ) public override returns (uint256) {
+        _accrue();
+        return super.withdraw(_assets, _receiver, _owner);
+    }
+
+    function redeem(
+        uint256 _shares,
+        address _receiver,
+        address _owner
+    ) public override returns (uint256) {
+        _accrue();
+        return super.redeem(_shares, _receiver, _owner);
+    }
+
+    function totalAssets() public view override returns (uint256) {
+        return asset.balanceOf(address(this)) + _getAccruedInterest();
+    }
+
+    /// Mock ///
+
+    function setRate(uint256 _rate_) external {
+        _accrue();
+        _rate = _rate_;
+    }
+
+    function getRate() external view returns (uint256) {
+        return _rate;
+    }
+
+    function _accrue() internal {
+        ERC20Mintable(address(asset)).mint(_getAccruedInterest());
+        _lastUpdated = block.timestamp;
+    }
+
+    function _getAccruedInterest() internal view returns (uint256) {
+        // base_balance = base_balance * (1 + r * t)
+        uint256 timeElapsed = (block.timestamp - _lastUpdated).divDown(
+            365 days
+        );
+        return
+            asset.balanceOf(address(this)).mulDown(_rate.mulDown(timeElapsed));
+    }
+}

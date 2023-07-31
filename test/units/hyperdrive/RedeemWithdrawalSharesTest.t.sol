@@ -269,7 +269,10 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
         (uint256 baseProceeds, uint256 sharesRedeemed) = redeemWithdrawalShares(
             alice,
             withdrawalShares,
-            expectedSharePrice
+            WithdrawalOverrides({
+                asUnderlying: true,
+                minSlippage: expectedSharePrice
+            })
         );
         assertApproxEqAbs(
             baseProceeds,

@@ -16,8 +16,8 @@ COPY ./test/ ./test/
 COPY ./foundry.toml ./foundry.toml
 
 # Copy the script used to run the migrations and set its permissions.
-COPY ./run_migrations.sh ./run_migrations.sh
-RUN chmod a+x ./run_migrations.sh
+COPY ./migrate.sh ./migrate.sh
+RUN chmod a+x ./migrate.sh
 
 # Install the dependencies and compile the contracts.
 RUN forge install && forge build
@@ -33,6 +33,6 @@ ENV RPC_URL=http://localhost:8545
 # the post-migrations state.
 RUN anvil --dump-state ./data & \
     ANVIL="$!" && \ 
-    ./run_migrations.sh && \
+    ./migrate.sh && \
     kill $ANVIL && \
     sleep 1s # HACK(jalextowle): Ensure that "./data" is written before exiting.

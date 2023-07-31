@@ -335,7 +335,7 @@ contract ExtremeInputs is HyperdriveTest {
                 contribution,
                 longAmount,
                 shortAmount,
-                1
+                10
             );
             _updateLiquidity__scenario__maxShort(
                 minimumShareReserves,
@@ -343,7 +343,7 @@ contract ExtremeInputs is HyperdriveTest {
                 contribution,
                 longAmount,
                 shortAmount,
-                1
+                10
             );
         }
     }
@@ -452,7 +452,7 @@ contract ExtremeInputs is HyperdriveTest {
             advanceTime(POSITION_DURATION.mulDown(0.99e18), 0);
 
             // Celine opens a max long.
-            openLong(celine, hyperdrive.calculateMaxLong().mulDown(0.9e18));
+            openLong(celine, hyperdrive.calculateMaxLong(15).mulDown(0.9e18));
 
             // The rest of the term passes.
             advanceTime(POSITION_DURATION.mulDown(0.1e18), 0);

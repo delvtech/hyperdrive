@@ -14,7 +14,7 @@
 
 pragma solidity 0.8.19;
 
-import "test/3rdPartyLibs/BalancerErrors.sol";
+import { BalancerErrors, _require } from "test/3rdPartyLibs/BalancerErrors.sol";
 
 /* solhint-disable */
 

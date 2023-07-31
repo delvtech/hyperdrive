@@ -36,6 +36,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
     )
         external
         payable
+        nonReentrant
         isNotPaused
         returns (uint256 maturityTime, uint256 traderDeposit)
     {
@@ -134,7 +135,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         uint256 _minOutput,
         address _destination,
         bool _asUnderlying
-    ) external returns (uint256) {
+    ) external nonReentrant returns (uint256) {
         if (_bondAmount == 0) {
             revert IHyperdrive.ZeroAmount();
         }
@@ -277,14 +278,16 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // by the amount of bonds that were shorted. We don't need to add the
         // margin or pre-paid interest to the reserves because of the way that
         // the close short accounting works.
-        _marketState.shareReserves -= _shareReservesDelta.toUint128();
+        uint128 shareReserves_ = _marketState.shareReserves -
+            _shareReservesDelta.toUint128();
+        _marketState.shareReserves = shareReserves_;
         _marketState.bondReserves += _bondAmount.toUint128();
         _marketState.shortsOutstanding += _bondAmount.toUint128();
 
         // Since the share reserves are reduced, we need to verify that the base
         // reserves are greater than or equal to the amount of longs outstanding.
         if (
-            _sharePrice.mulDown(_marketState.shareReserves) <
+            shareReserves_ <
             uint256(_marketState.longsOutstanding).divDown(_sharePrice) +
                 _minimumShareReserves
         ) {
@@ -308,12 +311,13 @@ abstract contract HyperdriveShort is HyperdriveLP {
         uint256 _maturityTime,
         uint256 _sharePrice
     ) internal {
+        uint128 shortsOutstanding_ = _marketState.shortsOutstanding;
         // Update the short average maturity time.
         _marketState.shortAverageMaturityTime = uint256(
             _marketState.shortAverageMaturityTime
         )
             .updateWeightedAverage(
-                _marketState.shortsOutstanding,
+                shortsOutstanding_,
                 _maturityTime * 1e18, // scale up to fixed point scale
                 _bondAmount,
                 false
@@ -339,16 +343,24 @@ abstract contract HyperdriveShort is HyperdriveLP {
             // Remove a proportional amount of the checkpoints base volume from
             // the aggregates.
             uint256 checkpointTime = _maturityTime - _positionDuration;
-            uint128 proportionalBaseVolume = uint256(
-                _checkpoints[checkpointTime].shortBaseVolume
-            ).mulDown(_bondAmount.divDown(checkpointAmount)).toUint128();
+            uint128 checkpointShortBaseVolume = _checkpoints[checkpointTime]
+                .shortBaseVolume;
+            IHyperdrive.Checkpoint storage checkpoint = _checkpoints[
+                checkpointTime
+            ];
+            uint128 proportionalBaseVolume = uint256(checkpointShortBaseVolume)
+                .mulDown(_bondAmount.divDown(checkpointAmount))
+                .toUint128();
             _marketState.shortBaseVolume -= proportionalBaseVolume;
-            _checkpoints[checkpointTime]
-                .shortBaseVolume -= proportionalBaseVolume;
+            checkpoint.shortBaseVolume =
+                checkpointShortBaseVolume -
+                proportionalBaseVolume;
         }
 
         // Decrease the amount of shorts outstanding.
-        _marketState.shortsOutstanding -= _bondAmount.toUint128();
+        _marketState.shortsOutstanding =
+            shortsOutstanding_ -
+            _bondAmount.toUint128();
 
         // Apply the updates from the curve trade to the reserves.
         _marketState.shareReserves += _shareReservesDelta.toUint128();
@@ -437,13 +449,13 @@ abstract contract HyperdriveShort is HyperdriveLP {
             _sharePrice
         );
 
-        // Remove the curve fee from the amount of shares to remove from the shareReserves.
-        // We do this bc the shareReservesDelta represents how many shares to remove
-        // from the shareReserves.  Making the shareReservesDelta smaller pays out the
-        // totalCurveFee to the LPs.
-        // The shareReservesDelta and the totalCurveFee are both in terms of shares
-        // shares -= shares
-        shareReservesDelta -= totalCurveFee;
+        // ShareReservesDelta is the number of shares to remove from the shareReserves and
+        // since the totalCurveFee includes the totalGovernanceFee it needs to be added back
+        // to so that it is removed from the shareReserves. The shareReservesDelta,
+        // totalCurveFee and totalGovernanceFee are all in terms of shares:
+
+        // shares -= shares - shares
+        shareReservesDelta -= totalCurveFee - totalGovernanceFee;
         return (shareReservesDelta, totalGovernanceFee);
     }
 
