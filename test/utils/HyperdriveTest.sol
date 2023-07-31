@@ -584,7 +584,7 @@ contract HyperdriveTest is BaseTest {
                 trader,
                 overrides.asUnderlying
             );
-            baseToken.burn(overrides.depositAmount - baseAmount);
+            baseToken.burn(bondAmount - baseAmount);
         }
 
         return (maturityTime, baseAmount);
