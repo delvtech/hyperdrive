@@ -546,8 +546,8 @@ contract CloseLongTest is HyperdriveTest {
         IHyperdrive.MarketState memory maxFeeState = hyperdrive
             .getMarketState();
 
-        // Since the fees are subtracted from reserves and accounted for
-        // seperately, so this will be true
+        // The fees are subtracted from reserves and accounted for
+        // separately, so this will be true.
         assertEq(zeroFeeState.shareReserves, maxFeeState.shareReserves);
 
         uint256 govFees = hyperdrive.getUncollectedGovernanceFees();
