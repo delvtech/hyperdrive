@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import "forge-std/console.sol";
+
 import { stdError } from "forge-std/StdError.sol";
 import { VmSafe } from "forge-std/Vm.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
@@ -13,6 +16,7 @@ import { Lib } from "../../utils/Lib.sol";
 
 contract CloseLongTest is HyperdriveTest {
     using FixedPointMath for uint256;
+    using HyperdriveUtils for *;
     using Lib for *;
 
     function setUp() public override {
@@ -23,11 +27,10 @@ contract CloseLongTest is HyperdriveTest {
     }
 
     function test_close_long_failure_zero_amount() external {
-        uint256 apr = 0.05e18;
-
         // Initialize the pool with a large amount of capital.
+        uint256 fixedRate = 0.05e18;
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Open a long position.
         uint256 baseAmount = 10e18;
@@ -41,11 +44,10 @@ contract CloseLongTest is HyperdriveTest {
     }
 
     function test_close_long_failure_invalid_amount() external {
-        uint256 apr = 0.05e18;
-
         // Initialize the pool with a large amount of capital.
+        uint256 fixedRate = 0.05e18;
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Open a long position.
         uint256 baseAmount = 10e18;
@@ -59,11 +61,10 @@ contract CloseLongTest is HyperdriveTest {
     }
 
     function test_close_long_failure_zero_maturity() external {
-        uint256 apr = 0.05e18;
-
         // Initialize the pool with a large amount of capital.
+        uint256 fixedRate = 0.05e18;
         uint256 contribution = 500_000_000e18;
-        uint256 lpShares = initialize(alice, apr, contribution);
+        uint256 lpShares = initialize(alice, fixedRate, contribution);
 
         // Open a long position.
         uint256 baseAmount = 30e18;
@@ -77,11 +78,10 @@ contract CloseLongTest is HyperdriveTest {
     }
 
     function test_close_long_failure_invalid_timestamp() external {
-        uint256 apr = 0.05e18;
-
         // Initialize the pool with a large amount of capital.
+        uint256 fixedRate = 0.05e18;
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Open a long position.
         uint256 baseAmount = 10e18;
@@ -95,11 +95,10 @@ contract CloseLongTest is HyperdriveTest {
     }
 
     function test_close_long_immediately_with_regular_amount() external {
-        uint256 apr = 0.05e18;
-
         // Initialize the pool with a large amount of capital.
+        uint256 fixedRate = 0.05e18;
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Open a long position.
         uint256 basePaid = 10e18;
@@ -131,11 +130,10 @@ contract CloseLongTest is HyperdriveTest {
     }
 
     function test_close_long_immediately_with_small_amount() external {
-        uint256 apr = 0.05e18;
-
         // Initialize the pool with a large amount of capital.
+        uint256 fixedRate = 0.05e18;
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Open a long position.
         uint256 basePaid = .01e18;
@@ -169,11 +167,10 @@ contract CloseLongTest is HyperdriveTest {
     // This stress tests the aggregate accounting by making the bond amount of
     // the second trade off by 1 wei.
     function test_close_long_dust_amount() external {
-        uint256 apr = 0.05e18;
-
         // Initialize the pool with a large amount of capital.
+        uint256 fixedRate = 0.05e18;
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Open a long position.
         uint256 basePaid = 10_000_000e18;
@@ -202,17 +199,17 @@ contract CloseLongTest is HyperdriveTest {
 
     function test_close_long_halfway_through_term() external {
         // Initialize the market.
-        uint apr = 0.05e18;
+        uint fixedRate = 0.05e18;
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Bob opens a large long.
         uint256 basePaid = 10e18;
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
 
-        // Most of the term passes. The pool accrues interest at the current apr.
+        // Most of the term passes. The variable rate equals the fixed rate.
         uint256 timeDelta = 0.5e18;
-        advanceTime(POSITION_DURATION.mulDown(timeDelta), int256(apr));
+        advanceTime(POSITION_DURATION.mulDown(timeDelta), int256(fixedRate));
 
         // Get the reserves before closing the long.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
@@ -228,7 +225,7 @@ contract CloseLongTest is HyperdriveTest {
         uint256 checkpointDistance = block.timestamp -
             HyperdriveUtils.latestCheckpoint(hyperdrive);
 
-        // Ensure that the realized APR is approximately equal to the pool APR.
+        // Ensure that the realized rate is approximately equal to the spot rate.
         assertApproxEqAbs(
             HyperdriveUtils.calculateAPRFromRealizedPrice(
                 basePaid,
@@ -237,7 +234,7 @@ contract CloseLongTest is HyperdriveTest {
                     timeDelta -
                     checkpointDistance.divDown(POSITION_DURATION)
             ),
-            apr,
+            fixedRate,
             1e10
         );
 
@@ -254,11 +251,10 @@ contract CloseLongTest is HyperdriveTest {
     }
 
     function test_close_long_redeem() external {
-        uint256 apr = 0.05e18;
-
         // Initialize the pool with a large amount of capital.
+        uint256 fixedRate = 0.05e18;
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Open a long position.
         uint256 basePaid = 10e18;
@@ -266,7 +262,7 @@ contract CloseLongTest is HyperdriveTest {
 
         // Term passes. The pool accrues interest at the current apr.
         uint256 timeDelta = 1e18;
-        advanceTime(POSITION_DURATION.mulDown(timeDelta), int256(apr));
+        advanceTime(POSITION_DURATION.mulDown(timeDelta), int256(fixedRate));
 
         // Get the reserves before closing the long.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
@@ -294,11 +290,10 @@ contract CloseLongTest is HyperdriveTest {
     }
 
     function test_close_long_redeem_negative_interest() external {
-        uint256 fixedAPR = 0.05e18;
-
         // Initialize the pool with a large amount of capital.
+        uint256 fixedRate = 0.05e18;
         uint256 contribution = 500_000_000e18;
-        initialize(alice, fixedAPR, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Open a long position.
         uint256 basePaid = 10e18;
@@ -351,11 +346,10 @@ contract CloseLongTest is HyperdriveTest {
     }
 
     function test_close_long_half_term_negative_interest() external {
-        uint256 fixedAPR = 0.05e18;
-
         // Initialize the pool with a large amount of capital.
+        uint256 fixedRate = 0.05e18;
         uint256 contribution = 500_000_000e18;
-        initialize(alice, fixedAPR, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Open a long position.
         uint256 basePaid = 10e18;
@@ -430,11 +424,10 @@ contract CloseLongTest is HyperdriveTest {
     }
 
     function test_close_long_negative_interest_at_close() external {
-        uint256 fixedAPR = 0.05e18;
-
         // Initialize the pool with a large amount of capital.
+        uint256 fixedRate = 0.05e18;
         uint256 contribution = 500_000_000e18;
-        initialize(alice, fixedAPR, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Open a long position.
         uint256 basePaid = 10e18;
@@ -488,6 +481,64 @@ contract CloseLongTest is HyperdriveTest {
             maturityTime,
             true
         );
+    }
+
+    function test_close_long_after_matured_long() external {
+        // Initialize the pool with a large amount of capital.
+        uint256 fixedRate = 0.05e18;
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, fixedRate, contribution);
+
+        // A large long is opened and held until maturity. This should decrease
+        // the share adjustment by the short amount.
+        (, uint256 longAmount) = openShort(
+            celine,
+            hyperdrive.calculateMaxLong() / 2
+        );
+        advanceTime(hyperdrive.getPoolConfig().positionDuration, 0);
+        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+        assertEq(hyperdrive.getPoolInfo().shareAdjustment, -int256(longAmount));
+
+        // Bob opens a small long. Celine's short will be closed when the
+        // checkpoint is minted, which will increase the share adjustment.
+        uint256 basePaid = 1_000_000e18;
+        (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
+
+        // Celine opens a max short. This will create the worst possible
+        // position for Bob to close his long.
+        openShort(celine, hyperdrive.calculateMaxShort());
+
+        // Bob is able to close his long.
+        closeLong(bob, maturityTime, bondAmount);
+    }
+
+    // Test that the close long function works correctly after a matured short
+    // is closed.
+    function test_close_long_after_matured_short() external {
+        // Initialize the pool with a large amount of capital.
+        uint256 fixedRate = 0.05e18;
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, fixedRate, contribution);
+
+        // A large short is opened and held until maturity. This should increase
+        // the share adjustment by the short amount.
+        uint256 shortAmount = hyperdrive.calculateMaxShort() / 2;
+        openShort(celine, shortAmount);
+        advanceTime(hyperdrive.getPoolConfig().positionDuration, 0);
+        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+        assertEq(hyperdrive.getPoolInfo().shareAdjustment, int256(shortAmount));
+
+        // Bob opens a small long. Celine's short will be closed when the
+        // checkpoint is minted, which will increase the share adjustment.
+        uint256 basePaid = 1_000_000e18;
+        (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
+
+        // Celine opens a max short. This will create the worst possible
+        // position for Bob to close his long.
+        openShort(celine, hyperdrive.calculateMaxShort());
+
+        // Bob is able to close his long.
+        closeLong(bob, maturityTime, bondAmount);
     }
 
     function verifyCloseLong(

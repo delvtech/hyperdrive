@@ -1,6 +1,9 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import "forge-std/console.sol";
+
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { FixedPointMath } from "./FixedPointMath.sol";
 import { YieldSpaceMath } from "./YieldSpaceMath.sol";
@@ -169,7 +172,7 @@ library HyperdriveMath {
         uint256 _initialSharePrice
     )
         internal
-        pure
+        view
         returns (
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
@@ -182,13 +185,16 @@ library HyperdriveMath {
         // (our result is given in shares, so we divide the one-to-one
         // redemption by the share price) and the newly minted bonds are
         // traded on a YieldSpace curve configured to timeRemaining = 1.
+        console.log("calculateCloseLong: 1");
         shareProceeds = _amountIn.mulDivDown(
             FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
             _sharePrice
         );
+        console.log("calculateCloseLong: 2");
         if (_normalizedTimeRemaining > 0) {
             // Calculate the curved part of the trade.
             bondReservesDelta = _amountIn.mulDown(_normalizedTimeRemaining);
+            console.log("calculateCloseLong: 3");
 
             // (time remaining)/(term length) is always 1 so we just use _timeStretch
             shareReservesDelta = YieldSpaceMath.calculateSharesOutGivenBondsIn(
@@ -199,7 +205,9 @@ library HyperdriveMath {
                 _sharePrice,
                 _initialSharePrice
             );
+            console.log("calculateCloseLong: 4");
             shareProceeds += shareReservesDelta;
+            console.log("calculateCloseLong: 5");
         }
 
         // If there's net negative interest over the period, the result of close long
@@ -207,14 +215,17 @@ library HyperdriveMath {
         // interest to the long since it's difficult or impossible to attribute
         // the negative interest to the short in practice.
         if (_openSharePrice > _closeSharePrice) {
+            console.log("calculateCloseLong: 6");
             shareProceeds = shareProceeds.mulDivDown(
                 _closeSharePrice,
                 _openSharePrice
             );
+            console.log("calculateCloseLong: 7");
             shareReservesDelta = shareReservesDelta.mulDivDown(
                 _closeSharePrice,
                 _openSharePrice
             );
+            console.log("calculateCloseLong: 8");
         }
     }
 
@@ -350,7 +361,10 @@ library HyperdriveMath {
             _params.initialSharePrice
         );
         if (
-            _params.shareReserves + dz >=
+            calculateEffectiveShareReserves(
+                _params.shareReserves + dz,
+                _params.shareAdjustment
+            ) >=
             (_params.longsOutstanding + dy).divDown(_params.sharePrice) +
                 _params.minimumShareReserves
         ) {
@@ -361,20 +375,23 @@ library HyperdriveMath {
 
         // To make an initial guess for the iterative approximation, we consider
         // the solvency check to be the error that we want to reduce. The amount
-        // the long buffer exceeds the share reserves is given by
-        // (y_l + dy) / c - (z + dz). Since the error could be large, we'll use
-        // the realized price of the trade instead of the spot price to
+        // the long buffer exceeds the effective share reserves is given by
+        // (y_l + dy) / c - ((z + dz) - zeta). Since the error could be large,
+        // we'll use the realized price of the trade instead of the spot price to
         // approximate the change in trade output. This gives us dy = c * 1/p * dz.
         // Substituting this into error equation and setting the error equal to
         // zero allows us to solve for the initial guess as:
         //
-        // (y_l + c * 1/p * dz) / c + z_min - (z + dz) = 0
+        // (y_l + c * 1/p * dz) / c + z_min - ((z + dz) - zeta) = 0
         //              =>
-        // (1/p - 1) * dz = z - y_l/c - z_min
+        // (1/p - 1) * dz = (z - zeta) - y_l/c - z_min
         //              =>
-        // dz = (z - y_l/c - z_min) * (p / (p - 1))
+        // dz = (z - zeta - y_l/c - z_min) * (p / (p - 1))
         uint256 p = _params.sharePrice.mulDivDown(dz, dy);
-        dz = (_params.shareReserves -
+        dz = (HyperdriveMath.calculateEffectiveShareReserves(
+            _params.shareReserves,
+            _params.shareAdjustment
+        ) -
             _params.longsOutstanding.divDown(_params.sharePrice) -
             _params.minimumShareReserves).mulDivDown(
                 p,
@@ -397,7 +414,12 @@ library HyperdriveMath {
         for (uint256 i = 0; i < _maxIterations; i++) {
             // If the approximation error is greater than zero and the solution
             // is the largest we've found so far, then we update our result.
-            int256 approximationError = int256((_params.shareReserves + dz)) -
+            int256 approximationError = int256(
+                HyperdriveMath.calculateEffectiveShareReserves(
+                    _params.shareReserves + dz,
+                    _params.shareAdjustment
+                )
+            ) -
                 int256(
                     (_params.longsOutstanding + dy).divDown(_params.sharePrice)
                 ) -
@@ -421,16 +443,16 @@ library HyperdriveMath {
             // error equation and setting the error equation equal to zero
             // allows us to solve for the trade size update:
             //
-            // (y_l + dy + c * (1/p) * dz') / c + z_min - (z + dz + dz') = 0
+            // (y_l + dy + c * (1/p) * dz') / c + z_min - ((z + dz + dz') - zeta) = 0
             //                  =>
-            // (1/p - 1) * dz' = (z + dz) - (y_l + dy) / c - z_min
+            // (1/p - 1) * dz' = (z + dz) - zeta - (y_l + dy) / c - z_min
             //                  =>
-            // dz' = ((z + dz) - (y_l + dy) / c - z_min) * (p / (p - 1)).
+            // dz' = ((z + dz) - zeta - (y_l + dy) / c - z_min) * (p / (p - 1)).
             p = calculateSpotPrice(
                 calculateEffectiveShareReserves(
-                    _params.shareReserves,
+                    _params.shareReserves + dz,
                     _params.shareAdjustment
-                ) + dz,
+                ),
                 _params.bondReserves - dy,
                 _params.initialSharePrice,
                 _params.timeStretch
@@ -480,13 +502,14 @@ library HyperdriveMath {
     function calculateMaxShort(
         MaxTradeParams memory _params
     ) internal pure returns (uint256) {
-        // The only constraint on the maximum short is that the share reserves
-        // don't go negative and satisfy the solvency requirements. Thus, we can
-        // set z = y_l/c + z_min and solve for the maximum short directly as:
+        // The only constraint on the maximum short is that the effecitve share
+        // reserves don't go negative and satisfy the solvency requirements.
+        // Thus, we can set z - zeta = y_l/c + z_min and solve for the maximum
+        // short directly as:
         //
-        // k = (c / mu) * (mu * ((y_l / c + z_min) - zeta)) ** (1 - tau) + y ** (1 - tau)
+        // k = (c / mu) * (mu * (y_l / c + z_min)) ** (1 - tau) + y ** (1 - tau)
         //                         =>
-        // y = (k - (c / mu) * (mu * ((y_l / c + z_min) - zeta)) ** (1 - tau)) ** (1 / (1 - tau)).
+        // y = (k - (c / mu) * (mu * (y_l / c + z_min)) ** (1 - tau)) ** (1 / (1 - tau)).
         uint256 t = FixedPointMath.ONE_18 - _params.timeStretch;
         uint256 priceFactor = _params.sharePrice.divDown(
             _params.initialSharePrice
@@ -501,15 +524,9 @@ library HyperdriveMath {
             t,
             _params.bondReserves
         );
-        uint256 innerFactor = uint256(
-            int256(
-                _params.initialSharePrice.mulDown(
-                    _params.longsOutstanding.divDown(_params.sharePrice)
-                )
-            ) +
-                int256(_params.minimumShareReserves) -
-                _params.shareAdjustment
-        ).pow(t);
+        uint256 innerFactor = (_params.initialSharePrice.mulDown(
+            _params.longsOutstanding.divDown(_params.sharePrice)
+        ) + _params.minimumShareReserves).pow(t);
         uint256 optimalBondReserves = (k - priceFactor.mulDown(innerFactor))
             .pow(FixedPointMath.ONE_18.divDown(t));
 

@@ -275,11 +275,13 @@ abstract contract HyperdriveLong is HyperdriveLP {
         longsOutstanding_ += _bondProceeds.toUint128();
         _marketState.longsOutstanding = longsOutstanding_;
 
-        // Since the base buffer may have increased relative to the base
-        // reserves and the bond reserves decreased, we must ensure that the
-        // base reserves are greater than the longsOutstanding.
+        // Since the share reserves are reduced, we need to verify that the
+        // effective base reserves are greater than or equal to the amount of
+        // longs outstanding plus the minimum base reserves. We check the
+        // effective share reserves rather than the share reserves because
+        // this is what is required for all of the open shorts to be closed.
         if (
-            _marketState.shareReserves <
+            _effectiveShareReserves() <
             uint256(longsOutstanding_).divDown(_sharePrice) +
                 _minimumShareReserves
         ) {
@@ -519,14 +521,12 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // Since we calculate the amount of shares received given bonds in, we
         // subtract the fee from the share deltas so that the trader receives
         // less shares.
-        uint256 spotPrice = _marketState.bondReserves > 0
-            ? HyperdriveMath.calculateSpotPrice(
-                _effectiveShareReserves(),
-                _marketState.bondReserves,
-                _initialSharePrice,
-                _timeStretch
-            )
-            : FixedPointMath.ONE_18;
+        uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
+            _effectiveShareReserves(),
+            _marketState.bondReserves,
+            _initialSharePrice,
+            _timeStretch
+        );
 
         // Record an oracle update
         recordPrice(spotPrice);

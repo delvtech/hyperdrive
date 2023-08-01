@@ -205,14 +205,6 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             );
         }
 
-        apr = HyperdriveMath.calculateAPRFromReserves(
-            _effectiveShareReserves(),
-            _marketState.bondReserves,
-            _initialSharePrice,
-            _positionDuration,
-            _timeStretch
-        );
-
         // Mint LP shares to the supplier.
         _mint(AssetId._LP_ASSET_ID, _destination, lpShares);
 
@@ -445,9 +437,6 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             .toUint128();
     }
 
-    // FIXME: Evaluate whether or not anything needs to change on account of the
-    //        effective share reserves.
-    //
     /// @dev Removes liquidity from the pool and calculates the amount of
     ///      withdrawal shares that should be minted.
     /// @param _shares The amount of shares to remove.
