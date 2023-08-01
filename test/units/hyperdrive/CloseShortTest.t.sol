@@ -449,7 +449,7 @@ contract CloseShortTest is HyperdriveTest {
         // Initialize the pool with a large amount of capital.
         initialize(alice, apr, contribution);
 
-        // 2. Open and then close a Long
+        // 2. Open and then close a short
         (uint256 maturityTime, uint256 bondAmount) = openShort(
             bob,
             10e18,
