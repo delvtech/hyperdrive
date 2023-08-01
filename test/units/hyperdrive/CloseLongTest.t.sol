@@ -537,7 +537,7 @@ contract CloseLongTest is HyperdriveTest {
         deploy(address(deployer), config);
         initialize(alice, fixedRate, contribution);
 
-        // 5. Open and close a Long
+        // 5. Open and close a Long advancing it to maturity 
         (maturityTime, bondAmount) = openLong(bob, 10e18, depositOverrides);
         advanceTime(POSITION_DURATION, int256(fixedRate));
         closeLong(bob, maturityTime, bondAmount, withdrawalOverrides);
@@ -561,7 +561,7 @@ contract CloseLongTest is HyperdriveTest {
         deploy(address(deployer), config);
         initialize(alice, fixedRate, contribution);
 
-        // 8. Open and close another Long
+        // 8. Open and close another Long at maturity advancing the time
         (maturityTime, bondAmount) = openLong(bob, 10e18, depositOverrides);
         advanceTime(POSITION_DURATION, int256(fixedRate));
         closeLong(bob, maturityTime, bondAmount, withdrawalOverrides);
