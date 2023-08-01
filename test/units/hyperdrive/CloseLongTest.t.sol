@@ -491,7 +491,7 @@ contract CloseLongTest is HyperdriveTest {
     }
 
     function test_long_fees_collect_on_close() external {
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
         uint256 contribution = 500_000_000e18;
 
         WithdrawalOverrides memory withdrawalOverrides = WithdrawalOverrides({
@@ -507,10 +507,10 @@ contract CloseLongTest is HyperdriveTest {
         });
 
         // 1. Deploy a pool with zero fees
-        IHyperdrive.PoolConfig memory config = testConfig(apr);
+        IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
         deploy(address(deployer), config);
         // Initialize the pool with a large amount of capital.
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // 2. Open and then close a Long
         (uint256 maturityTime, uint256 bondAmount) = openLong(
@@ -518,7 +518,7 @@ contract CloseLongTest is HyperdriveTest {
             10e18,
             depositOverrides
         );
-        advanceTime(POSITION_DURATION, int256(apr));
+        advanceTime(POSITION_DURATION, int256(fixedRate));
         closeLong(bob, maturityTime, bondAmount, withdrawalOverrides);
 
         // 3. Record Share Reserves
@@ -528,18 +528,18 @@ contract CloseLongTest is HyperdriveTest {
         // 4. deploy a pool with 100% curve fees and 100% gov fees (this is nice bc
         // it ensures that all the fees are credited to governance and thus subtracted
         // from the shareReserves
-        config = testConfig(apr);
+        config = testConfig(fixedRate);
         config.fees = IHyperdrive.Fees({
             curve: 0,
             flat: 1e18,
             governance: 1e18
         });
         deploy(address(deployer), config);
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // 5. Open and close a Long
         (maturityTime, bondAmount) = openLong(bob, 10e18, depositOverrides);
-        advanceTime(POSITION_DURATION, int256(apr));
+        advanceTime(POSITION_DURATION, int256(fixedRate));
         closeLong(bob, maturityTime, bondAmount, withdrawalOverrides);
 
         // 6. Record Share Reserves
@@ -555,15 +555,15 @@ contract CloseLongTest is HyperdriveTest {
         assert(govFees > 1e5);
 
         // 7. deploy a pool with 100% curve fees and 0% gov fees
-        config = testConfig(apr);
+        config = testConfig(fixedRate);
         config.fees = IHyperdrive.Fees({ curve: 0, flat: 1e18, governance: 0 });
         // Deploy and initialize the new pool
         deploy(address(deployer), config);
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // 8. Open and close another Long
         (maturityTime, bondAmount) = openLong(bob, 10e18, depositOverrides);
-        advanceTime(POSITION_DURATION, int256(apr));
+        advanceTime(POSITION_DURATION, int256(fixedRate));
         closeLong(bob, maturityTime, bondAmount, withdrawalOverrides);
 
         // 9. Record Share Reserves
