@@ -438,10 +438,7 @@ contract CloseShortTest is HyperdriveTest {
         initialize(alice, fixedRate, contribution);
 
         // 2. Open and then close a short
-        (uint256 maturityTime, uint256 baseAmount) = openShort(
-            bob,
-            10e18
-        );
+        (uint256 maturityTime, uint256 baseAmount) = openShort(bob, 10e18);
         advanceTime(POSITION_DURATION, variableRate);
         closeShort(bob, maturityTime, baseAmount);
 
