@@ -431,18 +431,6 @@ contract CloseShortTest is HyperdriveTest {
         int256 variableRate = -0.05e18;
         uint256 contribution = 500_000_000e18;
 
-        WithdrawalOverrides memory withdrawalOverrides = WithdrawalOverrides({
-            asUnderlying: false,
-            minSlippage: 0
-        });
-
-        DepositOverrides memory depositOverrides = DepositOverrides({
-            asUnderlying: false,
-            depositAmount: 10e18,
-            minSlippage: 0,
-            maxSlippage: type(uint256).max
-        });
-
         // 1. Deploy a pool with zero fees
         IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
         deploy(address(deployer), config);
@@ -450,13 +438,12 @@ contract CloseShortTest is HyperdriveTest {
         initialize(alice, fixedRate, contribution);
 
         // 2. Open and then close a short
-        (uint256 maturityTime, uint256 bondAmount) = openShort(
+        (uint256 maturityTime, uint256 baseAmount) = openShort(
             bob,
-            10e18,
-            depositOverrides
+            10e18
         );
         advanceTime(POSITION_DURATION, variableRate);
-        closeShort(bob, maturityTime, bondAmount, withdrawalOverrides);
+        closeShort(bob, maturityTime, baseAmount);
 
         // 3. Record Share Reserves
         IHyperdrive.MarketState memory zeroFeeState = hyperdrive
@@ -475,9 +462,9 @@ contract CloseShortTest is HyperdriveTest {
         initialize(alice, fixedRate, contribution);
 
         // 5. Open and close a short at maturity, advancing the time
-        (maturityTime, bondAmount) = openShort(bob, 10e18, depositOverrides);
+        (maturityTime, baseAmount) = openShort(bob, 10e18);
         advanceTime(POSITION_DURATION, variableRate);
-        closeShort(bob, maturityTime, bondAmount, withdrawalOverrides);
+        closeShort(bob, maturityTime, baseAmount);
 
         // 6. Record Share Reserves
         IHyperdrive.MarketState memory maxFeeState = hyperdrive
@@ -495,9 +482,9 @@ contract CloseShortTest is HyperdriveTest {
         initialize(alice, fixedRate, contribution);
 
         // 8. Open and close another short at maturity as well, advancing the time
-        (maturityTime, bondAmount) = openShort(bob, 10e18, depositOverrides);
+        (maturityTime, baseAmount) = openShort(bob, 10e18);
         advanceTime(POSITION_DURATION, variableRate);
-        closeShort(bob, maturityTime, bondAmount, withdrawalOverrides);
+        closeShort(bob, maturityTime, baseAmount);
 
         // 9. Record Share Reserves
         IHyperdrive.MarketState memory maxFlatFeeState = hyperdrive

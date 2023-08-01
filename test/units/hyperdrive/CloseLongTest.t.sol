@@ -494,18 +494,6 @@ contract CloseLongTest is HyperdriveTest {
         uint256 fixedRate = 0.05e18;
         uint256 contribution = 500_000_000e18;
 
-        WithdrawalOverrides memory withdrawalOverrides = WithdrawalOverrides({
-            asUnderlying: false,
-            minSlippage: 0
-        });
-
-        DepositOverrides memory depositOverrides = DepositOverrides({
-            asUnderlying: false,
-            depositAmount: 10e18,
-            minSlippage: 0,
-            maxSlippage: type(uint256).max
-        });
-
         // 1. Deploy a pool with zero fees
         IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
         deploy(address(deployer), config);
@@ -515,11 +503,10 @@ contract CloseLongTest is HyperdriveTest {
         // 2. Open and then close a Long
         (uint256 maturityTime, uint256 bondAmount) = openLong(
             bob,
-            10e18,
-            depositOverrides
+            10e18
         );
         advanceTime(POSITION_DURATION, int256(fixedRate));
-        closeLong(bob, maturityTime, bondAmount, withdrawalOverrides);
+        closeLong(bob, maturityTime, bondAmount);
 
         // 3. Record Share Reserves
         IHyperdrive.MarketState memory zeroFeeState = hyperdrive
@@ -538,9 +525,9 @@ contract CloseLongTest is HyperdriveTest {
         initialize(alice, fixedRate, contribution);
 
         // 5. Open and close a Long advancing it to maturity 
-        (maturityTime, bondAmount) = openLong(bob, 10e18, depositOverrides);
+        (maturityTime, bondAmount) = openLong(bob, 10e18);
         advanceTime(POSITION_DURATION, int256(fixedRate));
-        closeLong(bob, maturityTime, bondAmount, withdrawalOverrides);
+        closeLong(bob, maturityTime, bondAmount);
 
         // 6. Record Share Reserves
         IHyperdrive.MarketState memory maxFeeState = hyperdrive
@@ -558,9 +545,9 @@ contract CloseLongTest is HyperdriveTest {
         initialize(alice, fixedRate, contribution);
 
         // 8. Open and close another Long at maturity advancing the time
-        (maturityTime, bondAmount) = openLong(bob, 10e18, depositOverrides);
+        (maturityTime, bondAmount) = openLong(bob, 10e18);
         advanceTime(POSITION_DURATION, int256(fixedRate));
-        closeLong(bob, maturityTime, bondAmount, withdrawalOverrides);
+        closeLong(bob, maturityTime, bondAmount);
 
         // 9. Record Share Reserves
         IHyperdrive.MarketState memory maxFlatFeeState = hyperdrive
