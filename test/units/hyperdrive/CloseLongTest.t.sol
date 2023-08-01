@@ -490,7 +490,7 @@ contract CloseLongTest is HyperdriveTest {
         );
     }
 
-    function test_long_fees_collect_on_close() external {
+    function test_long_fees_collect_on_close_at_maturity() external {
         uint256 fixedRate = 0.05e18;
         uint256 contribution = 500_000_000e18;
 
