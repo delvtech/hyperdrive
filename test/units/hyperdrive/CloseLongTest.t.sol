@@ -546,10 +546,6 @@ contract CloseLongTest is HyperdriveTest {
         IHyperdrive.MarketState memory maxFeeState = hyperdrive
             .getMarketState();
 
-        // The fees are subtracted from reserves and accounted for
-        // separately, so this will be true.
-        assertEq(zeroFeeState.shareReserves, maxFeeState.shareReserves);
-
         uint256 govFees = hyperdrive.getUncollectedGovernanceFees();
         // Governance fees collected are non-zero
         assert(govFees > 1e5);
@@ -570,8 +566,10 @@ contract CloseLongTest is HyperdriveTest {
         IHyperdrive.MarketState memory maxFlatFeeState = hyperdrive
             .getMarketState();
 
+        // The fees are subtracted from reserves and accounted for
+        // separately, so this will be true.
+        assertEq(zeroFeeState.shareReserves, maxFeeState.shareReserves);
         assertGt(maxFlatFeeState.shareReserves, zeroFeeState.shareReserves);
-        assertGt(maxFlatFeeState.shareReserves, maxFeeState.shareReserves);
     }
 
     function verifyCloseLong(
