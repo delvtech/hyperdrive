@@ -3,8 +3,8 @@ default: help
 PATCH         = applyHarness.patch
 CONTRACTS_DIR = ../contracts
 MUNGED_DIR    = ./munged
-AaveHD_origin = ../contracts/src/instances/AaveHyperdrive.sol
-AaveHD_munged = ./munged/AaveHyperdrive.sol
+ERC4626_origin = ../contracts/src/instances/ERC4626Hyperdrive.sol
+ERC4626_munged = ./munged/ERC4626Hyperdrive.sol
 HD_origin = ../contracts/src/Hyperdrive.sol
 HD_munged = ./munged/Hyperdrive.sol
 HDLP_origin = ../contracts/src/HyperdriveLP.sol
@@ -25,7 +25,7 @@ help:
 	@echo "  make record: record a new patch file capturing the differences between $(CONTRACTS_DIR) and $(MUNGED_DIR)"
 
 munge:
-	cp $(AaveHD_origin) $(MUNGED_DIR)
+	cp $(ERC4626_origin) $(MUNGED_DIR)
 	cp $(HD_origin) $(MUNGED_DIR)
 	cp $(HDLP_origin) $(MUNGED_DIR)
 	cp $(HDShort_origin) $(MUNGED_DIR)
@@ -35,7 +35,7 @@ munge:
 	patch -d $(MUNGED_DIR) < $(PATCH)
 
 record:
-	diff -burN $(AaveHD_origin) $(AaveHD_munged) | sed 's+\$(AaveHD_origin)/++g' | sed 's+$(AaveHD_munged)++g' > $(PATCH)
+	diff -burN $(ERC4626_origin) $(ERC4626_munged) | sed 's+\$(ERC4626_origin)/++g' | sed 's+$(ERC4626_munged)++g' > $(PATCH)
 	diff -burN $(HD_origin) $(HD_munged) | sed 's+\$(HD_origin)/++g' | sed 's+$(HD_munged)++g' >> $(PATCH)
 	diff -burN $(HDLP_origin) $(HDLP_munged) | sed 's+\$(HDLP_origin)/++g' | sed 's+$(HDLP_munged)++g' >> $(PATCH)
 	diff -burN $(HDShort_origin) $(HDShort_munged) | sed 's+\$(HDShort_origin)/++g' | sed 's+$(HDShort_munged)++g' >> $(PATCH)

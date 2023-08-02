@@ -114,7 +114,8 @@ rule openLongPreservesOutstandingLongs(uint256 baseAmount) {
 
     require mulUpWad(sharePrice1, bondReserves1) >= assert_uint256(longsOutstanding1);
 
-    uint256 bondsReceived =
+    uint256 maturityTime; uint256 bondProceeds;
+    maturityTime, bondProceeds = 
         openLong(e, baseAmount, minOutput, destination, asUnderlying);
 
     IHyperdrive.MarketState postState = marketState();
@@ -177,9 +178,7 @@ invariant LongAverageMaturityTimeIsBounded(env e)
     (stateLongs() != 0 => 
         AvgMTimeLongs() >= e.block.timestamp * ONE18() &&
         AvgMTimeLongs() <= ONE18()*(e.block.timestamp + positionDuration()))
-    filtered {
-        f->isOpenLong(f)
-    }
+    filtered {f -> isOpenLong(f)}
     {
         preserved with (env eP) {
             require e.block.timestamp == eP.block.timestamp;
@@ -197,9 +196,7 @@ invariant ShortAverageMaturityTimeIsBounded(env e)
     (stateShorts() != 0 => 
         AvgMTimeShorts() >= e.block.timestamp * ONE18() &&
         AvgMTimeShorts() <= ONE18()*(e.block.timestamp + positionDuration()))
-    filtered {
-        f->isOpenLong(f)
-    }
+    filtered {f -> isOpenLong(f)}
     {
         preserved with (env eP) {
             require e.block.timestamp == eP.block.timestamp;

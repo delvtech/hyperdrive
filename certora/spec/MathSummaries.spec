@@ -52,7 +52,7 @@ methods {
     
     /// @dev Calculates the present value LPs capital in the pool.
     /// @notice Replacement of original HyperdriveMath function with Mock.
-    //function _._calculatePresentValue(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256) internal => NONDET; 
+    //function HyperdriveMath.calculatePresentValue(HyperdriveMath.PresentValueParams memory params) internal returns (uint256) => CVLCalculatePresentValue(params);
     function _._calculatePresentValue(
         uint256 z, uint256 y, uint256 c, uint256 mu, uint256 ts,
         uint256 ol, uint256 tavg_L, uint256 os, uint256 tavg_S, uint256 vol) internal => 
@@ -157,8 +157,8 @@ function CVLCalculatePresentValue(
         uint256 longAverageTimeRemaining,
         uint256 shortsOutstanding,
         uint256 shortAverageTimeRemaining,
-        uint256 shortBaseVolume
-    ) returns uint256 
+        uint256 shortBaseVolume)
+    returns uint256
 {
     mathint z = to_mathint(shareReserves);
     mathint y = to_mathint(bondReserves);
@@ -189,7 +189,7 @@ function CVLCalculatePresentValue(
         shareReservesDelta = NegativeNetCurveBranch(z,y,netCurveTrade,ts,c,mu);
     }
 
-    /// Need to verify this
+    /// @Note: unverified assumption
     require abs(shareReservesDelta) <= z;
 
     return require_uint256(z + netFlatTrade + shareReservesDelta);

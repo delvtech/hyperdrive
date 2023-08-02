@@ -1,22 +1,6 @@
-import "./AaveHyperdriveSetup.spec";
+import "./LidoHyperdriveSetup.spec";
 
-/// Checks the balance difference after transfering aTokens.
-/// Due to rounding errors of index divison and multiplication, the difference
-/// is bounded by index + 1/RAY
-/// @notice [VERIFIED]
-rule aTokenTransferBalanceTest(uint256 amount, address recipient) {
-    env e;
-    require e.msg.sender != recipient;
-
-    uint256 assetsBefore = aToken.balanceOf(e, recipient);
-        aToken.transfer(e, recipient, amount);
-    uint256 assetsAfter = aToken.balanceOf(e, recipient);
-    uint256 index = getPoolIndex(e.block.timestamp);
-
-    assert to_mathint(assetsAfter) >= assetsBefore + amount;
-    assert to_mathint(assetsAfter) <= assetsBefore + amount + index/RAY() + 1;
-}
-
+use rule sanity;
 
 /// No action can change the share price for two different checkpoints at the same time.
 /// @notice [VERIFIED]

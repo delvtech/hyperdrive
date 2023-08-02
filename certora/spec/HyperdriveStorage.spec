@@ -1,7 +1,4 @@
 /// Methods block of the HyperdriveStorageGetters methods.
-/// Note that the Hyperdrive instance name (e.g. AaveHyperdrive) needs to be modified
-/// based on the contract being verified.
-/// This change applies to the prefix of the struct.
 methods {
     /// MultiToken Storage
     function factory() external returns (address) envfree;

@@ -8,31 +8,14 @@ import { FixedPointMath } from  "../../contracts/src/libraries/FixedPointMath.so
 abstract contract HyperdrivePresentValue is HyperdriveStorage {
     using FixedPointMath for uint256;
 
-    function getPresentValue(uint256 _sharePrice) external view returns (uint256) {
-        
-        HyperdriveMath.PresentValueParams memory params = HyperdriveMath
-            .PresentValueParams({
-                shareReserves: _marketState.shareReserves,
-                bondReserves: _marketState.bondReserves,
-                sharePrice: _sharePrice,
-                initialSharePrice: _initialSharePrice,
-                minimumShareReserves: _minimumShareReserves,
-                timeStretch: _timeStretch,
-                longsOutstanding: _marketState.longsOutstanding,
-                longAverageTimeRemaining: calculateTimeRemaining(
-                    uint256(_marketState.longAverageMaturityTime).divUp(
-                        1e36
-                    ) // scale to seconds
-                ),
-                shortsOutstanding: _marketState.shortsOutstanding,
-                shortAverageTimeRemaining: calculateTimeRemaining(
-                    uint256(_marketState.shortAverageMaturityTime).divUp(
-                        1e36
-                    ) // scale to seconds
-                ),
-                shortBaseVolume: _marketState.shortBaseVolume
-            });
-        return HyperdriveMath.calculatePresentValue(params);
+    function getPresentValueParams(
+        uint256 _sharePrice
+    )
+        external
+        view
+        returns (HyperdriveMath.PresentValueParams memory presentValue)
+    {
+        return _getPresentValueParams(_sharePrice);
     }
 
     function calculateTimeRemaining(
