@@ -368,7 +368,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
                 closeSharePrice;
             assertApproxEqAbs(
                 governanceFeesAfterCloseLong,
-                expectedGovernanceFees * 2,
+                expectedGovernanceFees,
                 10 wei
             );
         }

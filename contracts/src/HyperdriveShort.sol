@@ -180,13 +180,13 @@ abstract contract HyperdriveShort is HyperdriveLP {
             }
         }
 
-        // Attribute the governance fees.
-        _governanceFeesAccrued += totalGovernanceFee;
-
         // If the position hasn't matured, apply the accounting updates that
         // result from closing the short to the reserves and pay out the
         // withdrawal pool if necessary.
         if (block.timestamp < _maturityTime) {
+            // Attribute the governance fees.
+            _governanceFeesAccrued += totalGovernanceFee;
+
             _applyCloseShort(
                 _bondAmount,
                 bondReservesDelta,

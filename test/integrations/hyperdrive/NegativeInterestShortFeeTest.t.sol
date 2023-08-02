@@ -322,7 +322,7 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
             uint256 expectedGovernanceFees = 0;
             assertEq(governanceFeesAfterOpenShort, expectedGovernanceFees);
         }
-
+        
         // Term matures and accrues interest
         advanceTime(POSITION_DURATION, variableInterest);
 
@@ -352,7 +352,7 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
                 .1e18,
                 1e18
             );
-            assertEq(governanceFeesAfterCloseShort, expectedFees * 2);
+            assertEq(governanceFeesAfterCloseShort, expectedFees);
         }
     }
 
