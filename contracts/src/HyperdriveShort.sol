@@ -454,8 +454,10 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // to so that it is removed from the shareReserves. The shareReservesDelta,
         // totalCurveFee and totalGovernanceFee are all in terms of shares:
 
+        uint256 flatFee = shareReservesDelta.mulDown(_flatFee);
+
         // shares -= shares - shares
-        shareReservesDelta -= totalCurveFee - totalGovernanceFee;
+        shareReservesDelta -= (totalCurveFee + flatFee) - totalGovernanceFee;
         return (shareReservesDelta, totalGovernanceFee);
     }
 
