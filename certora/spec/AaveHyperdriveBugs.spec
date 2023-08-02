@@ -21,7 +21,6 @@ methods {
 /// the latest run (violated): https://prover.certora.com/output/3106/54815437684849fda7d6da4673b96233/?anonymousKey=6b11bfb50c9903a9a863e2280985f1bf1040f93b
 invariant SharePriceAlwaysGreaterThanInitial(env e)
     sharePrice(e) >= initialSharePrice()
-    filtered{f -> isCloseLong(f)}
     {
         preserved with (env eP) {
             require eP.block.timestamp == e.block.timestamp;

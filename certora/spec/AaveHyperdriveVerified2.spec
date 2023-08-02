@@ -25,7 +25,8 @@ rule openLongReallyOpensLong(env e) {
     IHyperdrive.MarketState preState = marketState();
     mathint longsOutstanding1 = preState.longsOutstanding;
 
-    uint256 bondsReceived =
+    uint256 maturityTime; uint256 bondProceeds;
+    maturityTime, bondProceeds = 
         openLong(e, baseAmount, minOutput, destination, asUnderlying);
 
     require(bondsReceived < 1329227995784915872903807060280344576); // 2^120
@@ -34,5 +35,5 @@ rule openLongReallyOpensLong(env e) {
     mathint longsOutstanding2 = postState.longsOutstanding;
 
     assert longsOutstanding2 >= longsOutstanding1;
-    assert longsOutstanding1 + bondsReceived == longsOutstanding2;
+    assert longsOutstanding1 + bondProceeds == longsOutstanding2;
 }

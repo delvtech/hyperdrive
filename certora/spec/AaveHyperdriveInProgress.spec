@@ -178,7 +178,6 @@ invariant LongAverageMaturityTimeIsBounded(env e)
     (stateLongs() != 0 => 
         AvgMTimeLongs() >= e.block.timestamp * ONE18() &&
         AvgMTimeLongs() <= ONE18()*(e.block.timestamp + positionDuration()))
-    filtered {f -> isOpenLong(f)}
     {
         preserved with (env eP) {
             require e.block.timestamp == eP.block.timestamp;
@@ -196,7 +195,6 @@ invariant ShortAverageMaturityTimeIsBounded(env e)
     (stateShorts() != 0 => 
         AvgMTimeShorts() >= e.block.timestamp * ONE18() &&
         AvgMTimeShorts() <= ONE18()*(e.block.timestamp + positionDuration()))
-    filtered {f -> isOpenLong(f)}
     {
         preserved with (env eP) {
             require e.block.timestamp == eP.block.timestamp;
@@ -206,26 +204,22 @@ invariant ShortAverageMaturityTimeIsBounded(env e)
     }
 
 
-rule SharePriceCannotDecreaseAfterOperation(method f)
-    filtered{f -> isCloseLong(f)} {
+rule SharePriceCannotDecreaseAfterOperation(method f) {
     env e;
     calldataarg args;
     uint256 sharePriceBefore = sharePrice(e);
-    // require sharePriceBefore >= 2 * 10^18; // To get better counterexample
         f(e, args);
     uint256 sharePriceAfter = sharePrice(e);
 
     require aToken.balanceOf(e, currentContract) != 0; // non-zero shares
     require totalShares() != 0; // non-zero assets
     assert sharePriceAfter >= sharePriceBefore;
-    // assert 5 * sharePriceAfter >= 3 * sharePriceBefore;
 }
 
 /// There should always be more aTokens (assets) than number of shares
 /// otherwise, the share price will decrease (or less than 1).
 invariant aTokenBalanceGEToShares(env e)
     totalShares() <= aToken.balanceOf(e, currentContract)
-    filtered{f -> isCloseLong(f)}
     {
         preserved with (env eP) {
             require eP.block.timestamp == e.block.timestamp;
@@ -241,7 +235,6 @@ invariant aTokenBalanceGEToShares(env e)
 /// There are always enough shares to cover all long positions
 invariant ShareReservesCoverLongs(env e)
     mulDownWad(require_uint256(stateShareReserves()), sharePrice(e)) >= require_uint256(stateLongs())
-    filtered{f -> isOpenShort(f)}
     {
         preserved with (env eP) {
             require e.block.timestamp == eP.block.timestamp;
@@ -262,7 +255,7 @@ invariant TotalSharesGreaterThanLongs(env e)
 
 
 /// If there are no shares in the pool, then there are only shorts in the pool (no longs)
-/// Probably Unreal Violation:
+/// Probably unreal violation:
 /// https://prover.certora.com/output/40577/c002ed40599e448a8391975ff4ba94db/?anonymousKey=0b24b9373c24264c61a22188b6863615e903e13f
 /// When closeShort called, it induced 
 /// pricePerShare  ........ 10^18 + 5 -> ?
