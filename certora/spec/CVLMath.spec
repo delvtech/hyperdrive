@@ -91,17 +91,16 @@ function mulDivDownAbstract(uint256 x, uint256 y, uint256 z) returns uint256 {
 }
 
 function mulDivDownAbstractPlus(uint256 x, uint256 y, uint256 z) returns uint256 {
+    havoc res;
     require z != 0;
-    uint256 res1; // alex
-    uint256 xy = require_uint256(x*y);
-    res1  = require_uint256(xy / z);
-    return res1; 
+    uint256 xy = require_uint256(x * y);
+    uint256 fz = require_uint256(res * z);
+    require xy >= fz;
+    require res * z + to_mathint(z) > to_mathint(xy);
+    return res; 
 }
 
 function mulDivUpAbstractPlus(uint256 x, uint256 y, uint256 z) returns uint256 {
-    if(x == 0 || y == 0) return 0;
-    if(x == z) return y;
-    if(y == z) return x; 
     havoc res;
     require z != 0;
     uint256 xy = require_uint256(x * y);
