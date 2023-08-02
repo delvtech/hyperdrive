@@ -576,7 +576,7 @@ contract HyperdriveTest is BaseTest {
                 overrides.asUnderlying
             );
         } else {
-            baseToken.mint(bondAmount);
+            baseToken.mint(overrides.depositAmount);
             baseToken.approve(address(hyperdrive), bondAmount);
             (maturityTime, baseAmount) = hyperdrive.openShort(
                 bondAmount,

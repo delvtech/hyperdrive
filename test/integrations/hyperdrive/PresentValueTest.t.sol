@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import "forge-std/console.sol";
-import { Lib } from "test/utils/Lib.sol";
-
+import { console } from "forge-std/console.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { IHyperdrive, HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol";
+import { IHyperdrive, HyperdriveTest, HyperdriveUtils } from "test/utils/HyperdriveTest.sol";
+import { Lib } from "test/utils/Lib.sol";
 
 contract PresentValueTest is HyperdriveTest {
     using Lib for *;

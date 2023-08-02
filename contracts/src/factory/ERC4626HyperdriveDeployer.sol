@@ -2,9 +2,9 @@
 pragma solidity 0.8.19;
 
 import { ERC4626Hyperdrive } from "../instances/ERC4626Hyperdrive.sol";
+import { IERC4626 } from "../interfaces/IERC4626.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
-import { IERC4626 } from "../interfaces/IERC4626.sol";
 
 /// @author DELV
 /// @title ERC4626HyperdriveFactory

@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
-import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../utils/HyperdriveUtils.sol";
-import { MockHyperdriveFactory } from "test/mocks/MockHyperdriveFactory.sol";
-import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
+import { MockHyperdriveFactory } from "../mocks/MockHyperdriveFactory.sol";
 
 contract MockHyperdriveFactoryTest is HyperdriveTest {
     function test_hyperdrive_factory_fees() external {
