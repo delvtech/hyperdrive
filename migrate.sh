@@ -1,9 +1,6 @@
 #!/bin/sh
 set -ex
 
-# Sleep for a few seconds to allow the Ethereum service to start up.
-sleep 2
-
 # Create an artifacts directory if it doesn't already exist.
 mkdir -p ./artifacts
 

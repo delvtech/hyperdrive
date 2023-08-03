@@ -32,3 +32,6 @@ __pycache__/
 
 # pytest
 .pytest_cache
+
+# The generated reproduction test.
+test/Generated.t.sol
