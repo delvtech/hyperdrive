@@ -448,7 +448,6 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         if (_marketState.longsOutstanding > 0) {
             shareProceeds -= uint256(_marketState.longsOutstanding).divDown(
                 _sharePrice
-                // _marketState.longOpenSharePrice
             );
         }
         shareProceeds = shareProceeds.mulDivDown(_shares, _totalActiveLpSupply);
