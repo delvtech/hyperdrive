@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import { ReentrancyGuard } from "solmate/utils/ReentrancyGuard.sol";
 import { IERC20 } from "./interfaces/IERC20.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
-import { Errors } from "./libraries/Errors.sol";
+import { FixedPointMath } from "./libraries/FixedPointMath.sol";
+import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { MultiTokenStorage } from "./token/MultiTokenStorage.sol";
 
 /// @author DELV
@@ -12,27 +14,35 @@ import { MultiTokenStorage } from "./token/MultiTokenStorage.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract HyperdriveStorage is MultiTokenStorage {
+abstract contract HyperdriveStorage is ReentrancyGuard, MultiTokenStorage {
+    using FixedPointMath for uint256;
+
     /// Tokens ///
 
-    // @notice The base asset.
+    /// @notice The base asset.
     IERC20 internal immutable _baseToken;
 
     /// Time ///
 
-    // @notice The amount of seconds between share price checkpoints.
+    /// @notice The amount of seconds between share price checkpoints.
     uint256 internal immutable _checkpointDuration;
 
-    // @notice The amount of seconds that elapse before a bond can be redeemed.
+    /// @notice The amount of seconds that elapse before a bond can be redeemed.
     uint256 internal immutable _positionDuration;
 
-    // @notice A parameter that decreases slippage around a target rate.
+    /// @notice A parameter that decreases slippage around a target rate.
     uint256 internal immutable _timeStretch;
 
     /// Market State ///
 
-    // @notice The share price at the time the pool was created.
+    /// @notice The share price at the time the pool was created.
     uint256 internal immutable _initialSharePrice;
+
+    /// @notice The minimum amount of share reserves that must be maintained at
+    ///         all times. This is used to enforce practical limits on the share
+    ///         reserves to avoid numerical issues that can occur if the share
+    ///         reserves become very small or equal to zero.
+    uint256 internal immutable _minimumShareReserves;
 
     /// @notice The state of the market. This includes the reserves, buffers,
     ///         and other data used to price trades and maintain solvency.
@@ -52,38 +62,39 @@ abstract contract HyperdriveStorage is MultiTokenStorage {
     ///         allows us to avoid poking in any period that has LP or trading
     ///         activity. The checkpoints contain the starting share price from
     ///         the checkpoint as well as aggregate volume values.
-    mapping(uint256 => IHyperdrive.Checkpoint) internal _checkpoints;
+    mapping(uint256 checkpointNumber => IHyperdrive.Checkpoint checkpoint)
+        internal _checkpoints;
 
     /// @notice Addresses approved in this mapping can pause all deposits into
     ///         the contract and other non essential functionality.
-    mapping(address => bool) internal _pausers;
+    mapping(address user => bool isPauser) internal _pausers;
 
     // Governance fees that haven't been collected yet denominated in shares.
     uint256 internal _governanceFeesAccrued;
 
-    // The address that can pause the contract
+    // The address that can pause the contract.
     address internal _governance;
 
-    /// The address which collects governance fees
+    /// The address which collects governance fees.
     address internal immutable _feeCollector;
 
     /// TWAP ///
 
-    /// @notice The amount of time between oracle data sample updates
+    /// @notice The amount of time between oracle data sample updates.
     uint256 internal immutable _updateGap;
 
-    /// @notice A struct to hold packed oracle entries
+    /// @notice A struct to hold packed oracle entries.
     struct OracleData {
-        // The timestamp this data was added at
+        // The timestamp this data was added at.
         uint32 timestamp;
-        // The running sun of all previous data entries weighted by time
+        // The running sun of all previous data entries weighted by time.
         uint224 data;
     }
 
-    /// @notice This buffer contains the timestamps and data recorded in the oracle
+    /// @notice This buffer contains the timestamps and data recorded in the oracle.
     OracleData[] internal _buffer;
 
-    /// @notice The struct holding the head and last timestamp
+    /// @notice The struct holding the head and last timestamp.
     IHyperdrive.OracleState internal _oracle;
 
     /// @notice Initializes Hyperdrive's storage.
@@ -92,17 +103,29 @@ abstract contract HyperdriveStorage is MultiTokenStorage {
         // Initialize the base token address.
         _baseToken = _config.baseToken;
 
+        // Initialize the minimum share reserves. The minimum share reserves
+        // defines the amount of shares that will be reserved to ensure that
+        // the share reserves are never empty. We will also burn LP shares equal
+        // to the minimum share reserves upon initialization to ensure that the
+        // total supply of active LP tokens is always greater than zero. We
+        // don't allow a value less than 1e3 to avoid numerical issues that
+        // occur with small amounts of shares.
+        if (_config.minimumShareReserves < 1e3) {
+            revert IHyperdrive.InvalidMinimumShareReserves();
+        }
+        _minimumShareReserves = _config.minimumShareReserves;
+
         // Initialize the time configurations. There must be at least one
         // checkpoint per term to avoid having a position duration of zero.
         if (_config.checkpointDuration == 0) {
-            revert Errors.InvalidCheckpointDuration();
+            revert IHyperdrive.InvalidCheckpointDuration();
         }
         _checkpointDuration = _config.checkpointDuration;
         if (
             _config.positionDuration < _config.checkpointDuration ||
             _config.positionDuration % _config.checkpointDuration != 0
         ) {
-            revert Errors.InvalidPositionDuration();
+            revert IHyperdrive.InvalidPositionDuration();
         }
         _positionDuration = _config.positionDuration;
         _timeStretch = _config.timeStretch;
@@ -115,7 +138,7 @@ abstract contract HyperdriveStorage is MultiTokenStorage {
             _config.fees.flat > 1e18 ||
             _config.fees.governance > 1e18
         ) {
-            revert Errors.InvalidFeeAmounts();
+            revert IHyperdrive.InvalidFeeAmounts();
         }
         _curveFee = _config.fees.curve;
         _flatFee = _config.fees.flat;
@@ -123,5 +146,76 @@ abstract contract HyperdriveStorage is MultiTokenStorage {
 
         // Initialize the oracle.
         _updateGap = _config.updateGap;
+    }
+
+    /// Helpers ///
+
+    /// @dev Calculates the normalized time remaining of a position.
+    /// @param _maturityTime The maturity time of the position.
+    /// @return timeRemaining The normalized time remaining (in [0, 1]).
+    function _calculateTimeRemaining(
+        uint256 _maturityTime
+    ) internal view returns (uint256 timeRemaining) {
+        uint256 latestCheckpoint = _latestCheckpoint();
+        timeRemaining = _maturityTime > latestCheckpoint
+            ? _maturityTime - latestCheckpoint
+            : 0;
+        timeRemaining = (timeRemaining).divDown(_positionDuration);
+    }
+
+    /// @dev Calculates the normalized time remaining of a position when the
+    ///      maturity time is scaled up 18 decimals.
+    /// @param _maturityTime The maturity time of the position.
+    function _calculateTimeRemainingScaled(
+        uint256 _maturityTime
+    ) internal view returns (uint256 timeRemaining) {
+        uint256 latestCheckpoint = _latestCheckpoint() * FixedPointMath.ONE_18;
+        timeRemaining = _maturityTime > latestCheckpoint
+            ? _maturityTime - latestCheckpoint
+            : 0;
+        timeRemaining = (timeRemaining).divDown(
+            _positionDuration * FixedPointMath.ONE_18
+        );
+    }
+
+    /// @dev Gets the most recent checkpoint time.
+    /// @return latestCheckpoint The latest checkpoint.
+    function _latestCheckpoint()
+        internal
+        view
+        returns (uint256 latestCheckpoint)
+    {
+        latestCheckpoint =
+            block.timestamp -
+            (block.timestamp % _checkpointDuration);
+    }
+
+    /// @dev Gets the present value parameters from the current state.
+    /// @param _sharePrice The current share price.
+    /// @return presentValue The present value parameters.
+    function _getPresentValueParams(
+        uint256 _sharePrice
+    )
+        internal
+        view
+        returns (HyperdriveMath.PresentValueParams memory presentValue)
+    {
+        presentValue = HyperdriveMath.PresentValueParams({
+            shareReserves: _marketState.shareReserves,
+            bondReserves: _marketState.bondReserves,
+            sharePrice: _sharePrice,
+            initialSharePrice: _initialSharePrice,
+            minimumShareReserves: _minimumShareReserves,
+            timeStretch: _timeStretch,
+            longsOutstanding: _marketState.longsOutstanding,
+            longAverageTimeRemaining: _calculateTimeRemainingScaled(
+                _marketState.longAverageMaturityTime
+            ),
+            shortsOutstanding: _marketState.shortsOutstanding,
+            shortAverageTimeRemaining: _calculateTimeRemainingScaled(
+                _marketState.shortAverageMaturityTime
+            ),
+            shortBaseVolume: _marketState.shortBaseVolume
+        });
     }
 }

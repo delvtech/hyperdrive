@@ -134,6 +134,7 @@ contract YieldSpaceMathTest is Test {
     ) external {
         MockYieldSpaceMath yieldSpaceMath = new MockYieldSpaceMath();
 
+        uint256 minimumShareReserves = 1e5;
         fixedRate = fixedRate.normalizeToRange(0.01e18, 1e18);
         initialSharePrice = initialSharePrice.normalizeToRange(0.8e18, 5e18);
         sharePrice = sharePrice.normalizeToRange(initialSharePrice, 5e18);
@@ -160,20 +161,24 @@ contract YieldSpaceMathTest is Test {
                         365 days,
                         timeStretch
                     );
-                tradeSize = tradeSize.normalizeToRange(
-                    10 ** j,
-                    HyperdriveMath
-                        .calculateMaxLong(
-                            shareReserves,
-                            bondReserves,
-                            0,
-                            timeStretch,
-                            sharePrice,
-                            initialSharePrice,
-                            15
-                        )
-                        .baseAmount
-                );
+                {
+                    (uint256 maxBasePaid, ) = HyperdriveMath.calculateMaxLong(
+                        HyperdriveMath.MaxTradeParams({
+                            shareReserves: shareReserves,
+                            bondReserves: bondReserves,
+                            longsOutstanding: 0,
+                            timeStretch: timeStretch,
+                            sharePrice: sharePrice,
+                            initialSharePrice: initialSharePrice,
+                            minimumShareReserves: minimumShareReserves
+                        }),
+                        15
+                    );
+                    tradeSize = tradeSize.normalizeToRange(
+                        10 ** j,
+                        maxBasePaid
+                    );
+                }
                 uint256 result = yieldSpaceMath.calculateSharesInGivenBondsOut(
                     shareReserves,
                     bondReserves,
@@ -247,7 +252,6 @@ contract YieldSpaceMathTest is Test {
                 shareReserves + maxDz,
                 bondReserves - maxDy,
                 initialSharePrice,
-                FixedPointMath.ONE_18,
                 timeStretch
             ),
             1e18,

@@ -4,15 +4,14 @@ pragma solidity 0.8.19;
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
-import { CombinatorialTest } from "test/utils/CombinatorialTest.sol";
+import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { AssetId } from "contracts/src/libraries/AssetId.sol";
+import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { MockMultiToken } from "contracts/test/MockMultiToken.sol";
 import { MockBondWrapper } from "contracts/test/MockBondWrapper.sol";
-import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
-import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { Errors } from "contracts/src/libraries/Errors.sol";
-import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { CombinatorialTest } from "test/utils/CombinatorialTest.sol";
 
 contract __MockHyperDrive__ {
     uint256 __closeLongReturnValue__;
@@ -227,7 +226,7 @@ contract BondWrapper_close is CombinatorialTest {
             __fail_error = stdError.arithmeticError;
         } else if (unbackedPosition) {
             __fail_error = abi.encodeWithSelector(
-                Errors.InsufficientPrice.selector
+                IHyperdrive.InsufficientPrice.selector
             );
         } else if (userWrappedBondUnderflow) {
             __fail_error = stdError.arithmeticError;

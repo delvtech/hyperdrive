@@ -2,10 +2,10 @@
 pragma solidity 0.8.19;
 
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { AssetId } from "contracts/src/libraries/AssetId.sol";
 
 library HyperdriveUtils {
     using HyperdriveUtils for *;
@@ -41,8 +41,7 @@ library HyperdriveUtils {
     }
 
     function calculateSpotPrice(
-        IHyperdrive _hyperdrive,
-        uint256 _normalizedTimeRemaining
+        IHyperdrive _hyperdrive
     ) internal view returns (uint256) {
         IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
         IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
@@ -51,15 +50,8 @@ library HyperdriveUtils {
                 poolInfo.shareReserves,
                 poolInfo.bondReserves,
                 poolConfig.initialSharePrice,
-                _normalizedTimeRemaining,
                 poolConfig.timeStretch
             );
-    }
-
-    function calculateSpotPrice(
-        IHyperdrive _hyperdrive
-    ) internal view returns (uint256) {
-        return _hyperdrive.calculateSpotPrice(FixedPointMath.ONE_18);
     }
 
     function calculateAPRFromReserves(
@@ -87,6 +79,10 @@ library HyperdriveUtils {
         // rate = (1 - p) / (p * t) = (1 - dx / dy) * (dx / dy * t)
         //       =>
         // apr = (dy - dx) / (dx * t)
+        require(
+            timeRemaining <= 1e18 && timeRemaining > 0,
+            "Expecting NormalizedTimeRemaining"
+        );
         return
             (bondAmount.sub(baseAmount)).divDown(
                 baseAmount.mulDown(timeRemaining)
@@ -95,8 +91,7 @@ library HyperdriveUtils {
 
     /// @dev Calculates the maximum amount of longs that can be opened.
     /// @param _hyperdrive A Hyperdrive instance.
-    /// @param _maxIterations The maximum number of iterations of the
-    ///        approximation.
+    /// @param _maxIterations The maximum number of iterations to use.
     /// @return baseAmount The cost of buying the maximum amount of longs.
     function calculateMaxLong(
         IHyperdrive _hyperdrive,
@@ -104,18 +99,19 @@ library HyperdriveUtils {
     ) internal view returns (uint256 baseAmount) {
         IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
         IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
-        return
-            HyperdriveMath
-                .calculateMaxLong(
-                    poolInfo.shareReserves,
-                    poolInfo.bondReserves,
-                    poolInfo.longsOutstanding,
-                    poolConfig.timeStretch,
-                    poolInfo.sharePrice,
-                    poolConfig.initialSharePrice,
-                    _maxIterations
-                )
-                .baseAmount;
+        (baseAmount, ) = HyperdriveMath.calculateMaxLong(
+            HyperdriveMath.MaxTradeParams({
+                shareReserves: poolInfo.shareReserves,
+                bondReserves: poolInfo.bondReserves,
+                longsOutstanding: poolInfo.longsOutstanding,
+                timeStretch: poolConfig.timeStretch,
+                sharePrice: poolInfo.sharePrice,
+                initialSharePrice: poolConfig.initialSharePrice,
+                minimumShareReserves: poolConfig.minimumShareReserves
+            }),
+            _maxIterations
+        );
+        return baseAmount;
     }
 
     /// @dev Calculates the maximum amount of longs that can be opened.
@@ -137,12 +133,15 @@ library HyperdriveUtils {
         IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
         return
             HyperdriveMath.calculateMaxShort(
-                poolInfo.shareReserves,
-                poolInfo.bondReserves,
-                poolInfo.longsOutstanding,
-                poolConfig.timeStretch,
-                poolInfo.sharePrice,
-                poolConfig.initialSharePrice
+                HyperdriveMath.MaxTradeParams({
+                    shareReserves: poolInfo.shareReserves,
+                    bondReserves: poolInfo.bondReserves,
+                    longsOutstanding: poolInfo.longsOutstanding,
+                    timeStretch: poolConfig.timeStretch,
+                    sharePrice: poolInfo.sharePrice,
+                    initialSharePrice: poolConfig.initialSharePrice,
+                    minimumShareReserves: poolConfig.minimumShareReserves
+                })
             );
     }
 
@@ -241,7 +240,6 @@ library HyperdriveUtils {
             poolInfo.shareReserves,
             poolInfo.bondReserves,
             poolConfig.initialSharePrice,
-            timeRemaining,
             poolConfig.timeStretch
         );
 
@@ -286,6 +284,7 @@ library HyperdriveUtils {
                         bondReserves: poolInfo.bondReserves,
                         sharePrice: poolInfo.sharePrice,
                         initialSharePrice: poolConfig.initialSharePrice,
+                        minimumShareReserves: poolConfig.minimumShareReserves,
                         timeStretch: poolConfig.timeStretch,
                         longsOutstanding: poolInfo.longsOutstanding,
                         longAverageTimeRemaining: calculateTimeRemaining(
@@ -307,13 +306,199 @@ library HyperdriveUtils {
                 .mulDown(poolInfo.sharePrice);
     }
 
-    function totalLpSupply(
+    function lpSharePrice(
         IHyperdrive hyperdrive
     ) internal view returns (uint256) {
-        IHyperdrive.PoolInfo memory info = hyperdrive.getPoolInfo();
+        return hyperdrive.presentValue().divDown(hyperdrive.lpTotalSupply());
+    }
+
+    function lpTotalSupply(
+        IHyperdrive hyperdrive
+    ) internal view returns (uint256) {
         return
-            info.lpTotalSupply +
+            hyperdrive.totalSupply(AssetId._LP_ASSET_ID) +
             hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID) -
-            info.withdrawalSharesReadyToWithdraw;
+            hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw;
+    }
+
+    function decodeError(
+        bytes memory _error
+    ) internal pure returns (string memory) {
+        // All of the Hyperdrive errors have a selector.
+        if (_error.length < 4) {
+            revert("Invalid error");
+        }
+
+        // Convert the selector to the correct error message.
+        bytes4 selector;
+        assembly {
+            selector := mload(add(_error, 0x20))
+        }
+        return selector.decodeError();
+    }
+
+    function decodeError(
+        bytes4 _selector
+    ) internal pure returns (string memory) {
+        // Convert the selector to the correct error message.
+        if (_selector == IHyperdrive.BaseBufferExceedsShareReserves.selector) {
+            return "BaseBufferExceedsShareReserves";
+        }
+        if (_selector == IHyperdrive.BelowMinimumContribution.selector) {
+            return "BelowMinimumContribution";
+        }
+        if (_selector == IHyperdrive.BelowMinimumShareReserves.selector) {
+            return "BelowMinimumShareReserves";
+        }
+        if (_selector == IHyperdrive.InvalidApr.selector) {
+            return "InvalidApr";
+        }
+        if (_selector == IHyperdrive.InvalidBaseToken.selector) {
+            return "InvalidBaseToken";
+        }
+        if (_selector == IHyperdrive.InvalidCheckpointTime.selector) {
+            return "InvalidCheckpointTime";
+        }
+        if (_selector == IHyperdrive.InvalidCheckpointDuration.selector) {
+            return "InvalidCheckpointDuration";
+        }
+        if (_selector == IHyperdrive.InvalidInitialSharePrice.selector) {
+            return "InvalidInitialSharePrice";
+        }
+        if (_selector == IHyperdrive.InvalidMaturityTime.selector) {
+            return "InvalidMaturityTime";
+        }
+        if (_selector == IHyperdrive.InvalidMinimumShareReserves.selector) {
+            return "InvalidMinimumShareReserves";
+        }
+        if (_selector == IHyperdrive.InvalidPositionDuration.selector) {
+            return "InvalidPositionDuration";
+        }
+        if (_selector == IHyperdrive.InvalidShareReserves.selector) {
+            return "InvalidShareReserves";
+        }
+        if (_selector == IHyperdrive.InvalidFeeAmounts.selector) {
+            return "InvalidFeeAmounts";
+        }
+        if (_selector == IHyperdrive.NegativeInterest.selector) {
+            return "NegativeInterest";
+        }
+        if (_selector == IHyperdrive.OutputLimit.selector) {
+            return "OutputLimit";
+        }
+        if (_selector == IHyperdrive.Paused.selector) {
+            return "Paused";
+        }
+        if (_selector == IHyperdrive.PoolAlreadyInitialized.selector) {
+            return "PoolAlreadyInitialized";
+        }
+        if (_selector == IHyperdrive.TransferFailed.selector) {
+            return "TransferFailed";
+        }
+        if (_selector == IHyperdrive.UnexpectedAssetId.selector) {
+            return "UnexpectedAssetId";
+        }
+        if (_selector == IHyperdrive.UnexpectedSender.selector) {
+            return "UnexpectedSender";
+        }
+        if (_selector == IHyperdrive.UnsupportedToken.selector) {
+            return "UnsupportedToken";
+        }
+        if (_selector == IHyperdrive.ApprovalFailed.selector) {
+            return "ApprovalFailed";
+        }
+        if (_selector == IHyperdrive.ZeroAmount.selector) {
+            return "ZeroAmount";
+        }
+        if (_selector == IHyperdrive.ZeroLpTotalSupply.selector) {
+            return "ZeroLpTotalSupply";
+        }
+        if (_selector == IHyperdrive.NoAssetsToWithdraw.selector) {
+            return "NoAssetsToWithdraw";
+        }
+        if (_selector == IHyperdrive.NotPayable.selector) {
+            return "NotPayable";
+        }
+        if (_selector == IHyperdrive.QueryOutOfRange.selector) {
+            return "QueryOutOfRange";
+        }
+        if (_selector == IHyperdrive.ReturnData.selector) {
+            return "ReturnData";
+        }
+        if (_selector == IHyperdrive.CallFailed.selector) {
+            return "CallFailed";
+        }
+        if (_selector == IHyperdrive.UnexpectedSuccess.selector) {
+            return "UnexpectedSuccess";
+        }
+        if (_selector == IHyperdrive.Unauthorized.selector) {
+            return "Unauthorized";
+        }
+        if (_selector == IHyperdrive.InvalidContribution.selector) {
+            return "InvalidContribution";
+        }
+        if (_selector == IHyperdrive.InvalidToken.selector) {
+            return "InvalidToken";
+        }
+        if (_selector == IHyperdrive.MaxFeeTooHigh.selector) {
+            return "MaxFeeTooHigh";
+        }
+        if (_selector == IHyperdrive.FeeTooHigh.selector) {
+            return "FeeTooHigh";
+        }
+        if (_selector == IHyperdrive.NonPayableInitialization.selector) {
+            return "NonPayableInitialization";
+        }
+        if (_selector == IHyperdrive.BatchInputLengthMismatch.selector) {
+            return "BatchInputLengthMismatch";
+        }
+        if (_selector == IHyperdrive.ExpiredDeadline.selector) {
+            return "ExpiredDeadline";
+        }
+        if (_selector == IHyperdrive.ExpiredDeadline.selector) {
+            return "InvalidSignature";
+        }
+        if (_selector == IHyperdrive.InvalidERC20Bridge.selector) {
+            return "InvalidERC20Bridge";
+        }
+        if (_selector == IHyperdrive.RestrictedZeroAddress.selector) {
+            return "RestrictedZeroAddress";
+        }
+        if (_selector == IHyperdrive.AlreadyClosed.selector) {
+            return "AlreadyClosed";
+        }
+        if (_selector == IHyperdrive.BondMatured.selector) {
+            return "BondMatured";
+        }
+        if (_selector == IHyperdrive.BondNotMatured.selector) {
+            return "BondNotMatured";
+        }
+        if (_selector == IHyperdrive.InsufficientPrice.selector) {
+            return "InsufficientPrice";
+        }
+        if (_selector == IHyperdrive.MintPercentTooHigh.selector) {
+            return "MintPercentTooHigh";
+        }
+        if (_selector == IHyperdrive.InvalidTimestamp.selector) {
+            return "InvalidTimestamp";
+        }
+        if (_selector == IHyperdrive.FixedPointMath_AddOverflow.selector) {
+            return "FixedPointMath_AddOverflow";
+        }
+        if (_selector == IHyperdrive.FixedPointMath_SubOverflow.selector) {
+            return "FixedPointMath_SubOverflow";
+        }
+        if (_selector == IHyperdrive.FixedPointMath_InvalidExponent.selector) {
+            return "FixedPointMath_InvalidExponent";
+        }
+        if (
+            _selector == IHyperdrive.FixedPointMath_NegativeOrZeroInput.selector
+        ) {
+            return "FixedPointMath_NegativeOrZeroInput";
+        }
+        if (_selector == IHyperdrive.FixedPointMath_NegativeInput.selector) {
+            return "FixedPointMath_NegativeInput";
+        }
+        revert("Unknown selector");
     }
 }

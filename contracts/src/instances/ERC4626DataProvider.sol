@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { IERC4626 } from "../interfaces/IERC4626.sol";
 import { HyperdriveDataProvider } from "../HyperdriveDataProvider.sol";
-import { FixedPointMath } from "../libraries/FixedPointMath.sol";
-import { Errors } from "../libraries/Errors.sol";
+import { IERC4626 } from "../interfaces/IERC4626.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { MultiTokenDataProvider } from "../token/MultiTokenDataProvider.sol";
 
 /// @author DELV
@@ -19,6 +18,10 @@ contract ERC4626DataProvider is MultiTokenDataProvider, HyperdriveDataProvider {
 
     // The deployed pool
     IERC4626 internal immutable _pool;
+
+    /// @dev A mapping from addresses to their status as a sweep target. This
+    ///      mapping does not change after construction.
+    mapping(address target => bool canSweep) internal _isSweepable;
 
     /// @notice Initializes the data provider.
     /// @param _linkerCodeHash_ The hash of the erc20 linker contract deploy code
@@ -40,16 +43,14 @@ contract ERC4626DataProvider is MultiTokenDataProvider, HyperdriveDataProvider {
 
     /// @notice Loads the share price from the yield source.
     /// @return sharePrice The current share price.
-    ///@dev must remain consistent with the impl inside of the HyperdriveInstance
+    /// @dev must remain consistent with the impl inside of the HyperdriveInstance
     function _pricePerShare()
         internal
         view
         override
         returns (uint256 sharePrice)
     {
-        uint256 shareEstimate = _pool.convertToShares(FixedPointMath.ONE_18);
-        sharePrice = shareEstimate.divDown(FixedPointMath.ONE_18);
-        return (sharePrice);
+        sharePrice = _pool.convertToAssets(FixedPointMath.ONE_18);
     }
 
     /// Getters ///
@@ -58,5 +59,11 @@ contract ERC4626DataProvider is MultiTokenDataProvider, HyperdriveDataProvider {
     /// @return The 4626 pool.
     function pool() external view returns (IERC4626) {
         _revert(abi.encode(_pool));
+    }
+
+    /// @notice Gets the sweepable status of a target.
+    /// @param _target The target address.
+    function isSweepable(address _target) external view returns (bool) {
+        _revert(abi.encode(_isSweepable[_target]));
     }
 }

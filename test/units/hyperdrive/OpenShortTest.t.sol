@@ -2,11 +2,11 @@
 pragma solidity 0.8.19;
 
 import { VmSafe } from "forge-std/Vm.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
+import { HyperdriveTest, HyperdriveUtils, IERC20, MockHyperdrive, MockHyperdriveDataProvider } from "../../utils/HyperdriveTest.sol";
 import { Lib } from "../../utils/Lib.sol";
 
 contract OpenShortTest is HyperdriveTest {
@@ -31,8 +31,22 @@ contract OpenShortTest is HyperdriveTest {
         // Attempt to short zero bonds. This should fail.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(Errors.ZeroAmount.selector);
+        vm.expectRevert(IHyperdrive.ZeroAmount.selector);
         hyperdrive.openShort(0, type(uint256).max, bob, true);
+    }
+
+    function test_open_short_failure_not_payable() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Attempt to open short. This should fail.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        vm.expectRevert(IHyperdrive.NotPayable.selector);
+        hyperdrive.openShort{ value: 1 }(1, type(uint256).max, bob, true);
     }
 
     function test_open_short_failure_pause() external {
@@ -46,7 +60,7 @@ contract OpenShortTest is HyperdriveTest {
         vm.stopPrank();
         pause(true);
         vm.startPrank(bob);
-        vm.expectRevert(Errors.Paused.selector);
+        vm.expectRevert(IHyperdrive.Paused.selector);
         hyperdrive.openShort(0, type(uint256).max, bob, true);
         vm.stopPrank();
         pause(false);
@@ -65,7 +79,7 @@ contract OpenShortTest is HyperdriveTest {
         uint256 shortAmount = hyperdrive.getPoolInfo().shareReserves;
         baseToken.mint(shortAmount);
         baseToken.approve(address(hyperdrive), shortAmount);
-        vm.expectRevert(Errors.FixedPointMath_SubOverflow.selector);
+        vm.expectRevert(IHyperdrive.FixedPointMath_SubOverflow.selector);
         hyperdrive.openShort(shortAmount * 2, type(uint256).max, bob, true);
     }
 
@@ -138,7 +152,7 @@ contract OpenShortTest is HyperdriveTest {
         vm.startPrank(bob);
         baseToken.mint(overlyLargeShort);
         baseToken.approve(address(hyperdrive), overlyLargeShort);
-        vm.expectRevert(Errors.BaseBufferExceedsShareReserves.selector);
+        vm.expectRevert(IHyperdrive.BaseBufferExceedsShareReserves.selector);
         hyperdrive.openShort(overlyLargeShort, type(uint256).max, bob, true);
     }
 
@@ -158,11 +172,76 @@ contract OpenShortTest is HyperdriveTest {
         uint256 longAmount = (hyperdrive.calculateMaxLong() * 50) / 100;
         openLong(bob, longAmount);
 
-        //vm.expectRevert(Errors.NegativeInterest.selector);
+        //vm.expectRevert(IHyperdrive.NegativeInterest.selector);
 
         uint256 baseAmount = (hyperdrive.calculateMaxShort() * 100) / 100;
         openShort(bob, baseAmount);
         //I think we could trigger this with big short, open long, and short?
+    }
+
+    function test_governance_fees_excluded_share_reserves() public {
+        uint256 apr = 0.05e18;
+        uint256 contribution = 500_000_000e18;
+
+        // 1. Deploy a pool with zero fees
+        IHyperdrive.PoolConfig memory config = testConfig(apr);
+        deploy(address(deployer), config);
+        // Initialize the pool with a large amount of capital.
+        initialize(alice, apr, contribution);
+
+        // 2. Open a short
+        uint256 bondAmount = (hyperdrive.calculateMaxShort() * 90) / 100;
+        openShort(bob, bondAmount);
+
+        // 3. Record Share Reserves
+        IHyperdrive.MarketState memory zeroFeeState = hyperdrive
+            .getMarketState();
+
+        // 4. deploy a pool with 100% curve fees and 100% gov fees (this is nice bc
+        // it ensures that all the fees are credited to governance and thus subtracted
+        // from the shareReserves
+        config = testConfig(apr);
+        config.fees = IHyperdrive.Fees({
+            curve: 1e18,
+            flat: 1e18,
+            governance: 1e18
+        });
+        deploy(address(deployer), config);
+        initialize(alice, apr, contribution);
+
+        // 5. Open a Short
+        bondAmount = (hyperdrive.calculateMaxShort() * 90) / 100;
+        openShort(bob, bondAmount);
+
+        // 6. Record Share Reserves
+        IHyperdrive.MarketState memory maxFeeState = hyperdrive
+            .getMarketState();
+
+        // Since the fees are subtracted from reserves and accounted for
+        // seperately, so this will be true
+        assertEq(zeroFeeState.shareReserves, maxFeeState.shareReserves);
+
+        uint256 govFees = hyperdrive.getUncollectedGovernanceFees();
+        // Governance fees collected are non-zero
+        assert(govFees > 1e5);
+
+        // 7. deploy a pool with 100% curve fees and 0% gov fees
+        config = testConfig(apr);
+        config.fees = IHyperdrive.Fees({ curve: 1e18, flat: 0, governance: 0 });
+        // Deploy and initialize the new pool
+        deploy(address(deployer), config);
+        initialize(alice, apr, contribution);
+
+        // 8. Open a Short
+        bondAmount = (hyperdrive.calculateMaxShort() * 90) / 100;
+        openShort(bob, bondAmount);
+
+        // 9. Record Share Reserves
+        IHyperdrive.MarketState memory maxCurveFeeState = hyperdrive
+            .getMarketState();
+
+        // shareReserves should be greater here because there is no Gov being deducted
+        assertGe(maxCurveFeeState.shareReserves, maxFeeState.shareReserves);
     }
 
     function verifyOpenShort(

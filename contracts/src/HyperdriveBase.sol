@@ -5,7 +5,6 @@ import { HyperdriveStorage } from "./HyperdriveStorage.sol";
 import { IERC20 } from "./interfaces/IERC20.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { AssetId } from "./libraries/AssetId.sol";
-import { Errors } from "./libraries/Errors.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { SafeCast } from "./libraries/SafeCast.sol";
@@ -107,7 +106,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     ///         transferred to Hyperdrive instances that don't accept ether.
     function _checkMessageValue() internal view virtual {
         if (msg.value != 0) {
-            revert Errors.NotPayable();
+            revert IHyperdrive.NotPayable();
         }
     }
 
@@ -145,31 +144,38 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
 
     /// Pause ///
 
+    event PauserUpdated(address indexed newPauser);
+
     ///@notice Allows governance to set the ability of an address to pause deposits
     ///@param who The address to change
     ///@param status The new pauser status
     function setPauser(address who, bool status) external {
-        if (msg.sender != _governance) revert Errors.Unauthorized();
+        if (msg.sender != _governance) revert IHyperdrive.Unauthorized();
         _pausers[who] = status;
+        emit PauserUpdated(who);
     }
+
+    event GovernanceUpdated(address indexed newGovernance);
 
     ///@notice Allows governance to change governance
     ///@param who The new governance address
     function setGovernance(address who) external {
-        if (msg.sender != _governance) revert Errors.Unauthorized();
+        if (msg.sender != _governance) revert IHyperdrive.Unauthorized();
         _governance = who;
+
+        emit GovernanceUpdated(who);
     }
 
     ///@notice Allows an authorized address to pause this contract
     ///@param status True to pause all deposits and false to unpause them
     function pause(bool status) external {
-        if (!_pausers[msg.sender]) revert Errors.Unauthorized();
+        if (!_pausers[msg.sender]) revert IHyperdrive.Unauthorized();
         _marketState.isPaused = status;
     }
 
     ///@notice Blocks a function execution if the contract is paused
     modifier isNotPaused() {
-        if (_marketState.isPaused) revert Errors.Paused();
+        if (_marketState.isPaused) revert IHyperdrive.Paused();
         _;
     }
 
@@ -193,15 +199,15 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     /// @return proceeds The amount of base collected.
     function collectGovernanceFee(
         bool asUnderlying
-    ) external returns (uint256 proceeds) {
+    ) external nonReentrant returns (uint256 proceeds) {
         // Must have been granted a role
         if (
             !_pausers[msg.sender] &&
             msg.sender != _feeCollector &&
             msg.sender != _governance
-        ) revert Errors.Unauthorized();
+        ) revert IHyperdrive.Unauthorized();
         uint256 governanceFeesAccrued = _governanceFeesAccrued;
-        _governanceFeesAccrued = 0;
+        delete _governanceFeesAccrued;
         proceeds = _withdraw(
             governanceFeesAccrued,
             _feeCollector,
@@ -211,56 +217,14 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
 
     /// Helpers ///
 
-    /// @dev Calculates the normalized time remaining of a position.
-    /// @param _maturityTime The maturity time of the position.
-    /// @return timeRemaining The normalized time remaining (in [0, 1]).
-    function _calculateTimeRemaining(
-        uint256 _maturityTime
-    ) internal view returns (uint256 timeRemaining) {
-        uint256 latestCheckpoint = _latestCheckpoint();
-        timeRemaining = _maturityTime > latestCheckpoint
-            ? _maturityTime - latestCheckpoint
-            : 0;
-        timeRemaining = (timeRemaining).divDown(_positionDuration);
-    }
-
-    /// @dev Calculates the normalized time remaining of a position when the
-    ///      maturity time is scaled up 18 decimals.
-    /// @param _maturityTime The maturity time of the position.
-    function _calculateTimeRemainingScaled(
-        uint256 _maturityTime
-    ) internal view returns (uint256 timeRemaining) {
-        uint256 latestCheckpoint = _latestCheckpoint() * FixedPointMath.ONE_18;
-        timeRemaining = _maturityTime > latestCheckpoint
-            ? _maturityTime - latestCheckpoint
-            : 0;
-        timeRemaining = (timeRemaining).divDown(
-            _positionDuration * FixedPointMath.ONE_18
-        );
-    }
-
-    /// @dev Gets the most recent checkpoint time.
-    /// @return latestCheckpoint The latest checkpoint.
-    function _latestCheckpoint()
-        internal
-        view
-        returns (uint256 latestCheckpoint)
-    {
-        latestCheckpoint =
-            block.timestamp -
-            (block.timestamp % _checkpointDuration);
-    }
-
-    /// @dev Calculates the fees for the flat and curve portion of hyperdrive calcOutGivenIn
-    /// @param _amountIn The given amount in, either in terms of shares or bonds.
-    /// @param _amountOut The amount of the asset that is received before fees.
-    /// @param _spotPrice The price without slippage of bonds in terms of shares.
-    /// @param _sharePrice The current price of shares in terms of base.
+    /// @dev Calculates the fees that go to the LPs and governance.
+    /// @param _amountIn Amount in shares.
+    /// @param _spotPrice The price without slippage of bonds in terms of base (base/bonds).
+    /// @param _sharePrice The current price of shares in terms of base (base/shares).
     /// @return totalCurveFee The total curve fee. The fee is in terms of bonds.
-    /// @return governanceCurveFee The curve fee that goes to governance. The fee is in terms of bonds.
+    /// @return governanceCurveFee The curve fee that goes to governance. The fee is in terms of base.
     function _calculateFeesOutGivenSharesIn(
         uint256 _amountIn,
-        uint256 _amountOut,
         uint256 _spotPrice,
         uint256 _sharePrice
     )
@@ -268,26 +232,41 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
         view
         returns (uint256 totalCurveFee, uint256 governanceCurveFee)
     {
-        // curve fee = ((1 / p) - 1) * phi_curve * c * d_z
-        totalCurveFee = (FixedPointMath.ONE_18.divDown(_spotPrice)).sub(
-            FixedPointMath.ONE_18
-        );
-        totalCurveFee = totalCurveFee
+        // Fixed Rate (r) = (value at maturity - purchase price)/(purchase price)
+        //                = (1-p)/p
+        //                = ((1 / p) - 1)
+        //                = the return on investment at maturity of a bond purchased at price p
+        //
+        // Another way to think about it:
+        // p (spot price) tells us how many base a bond is worth -> p = base/bonds
+        // 1/p tells us how many bonds a base is worth -> 1/p = bonds/base
+        // 1/p - 1 tells us how many additional bonds we get for each base -> (1/p - 1) = additional bonds/base
+        // the curve fee is taken from the additional bonds the user gets for each base
+        // total curve fee = ((1 / p) - 1) * phi_curve * c * dz
+        //                 = r * phi_curve * base/shares * shares
+        //                 = bonds/base * phi_curve * base
+        //                 = bonds * phi_curve
+        totalCurveFee = (FixedPointMath.ONE_18.divDown(_spotPrice))
+            .sub(FixedPointMath.ONE_18)
             .mulDown(_curveFee)
             .mulDown(_sharePrice)
             .mulDown(_amountIn);
-        // governanceCurveFee = d_z * (curve_fee / d_y) * c * phi_gov
-        governanceCurveFee = _amountIn
-            .mulDivDown(totalCurveFee, _amountOut)
-            .mulDown(_sharePrice)
-            .mulDown(_governanceFee);
+
+        // We need the governance fee in terms of base, so we multiply
+        // the total curve fee by the spot price (base/bonds):
+        // governanceCurveFee = total_curve_fee * p * phi_gov
+        //                    = bonds * base/bonds * phi_gov
+        //                    = base * phi_gov
+        governanceCurveFee = totalCurveFee.mulDown(_spotPrice).mulDown(
+            _governanceFee
+        );
     }
 
-    /// @dev Calculates the fees for the flat and curve portion of hyperdrive calcOutGivenIn
-    /// @param _amountIn The given amount in, either in terms of shares or bonds.
+    /// @dev Calculates the fees that go to the LPs and governance.
+    /// @param _amountIn Amount in terms of bonds.
     /// @param _normalizedTimeRemaining The normalized amount of time until maturity.
-    /// @param _spotPrice The price without slippage of bonds in terms of shares.
-    /// @param _sharePrice The current price of shares in terms of base.
+    /// @param _spotPrice The price without slippage of bonds in terms of base (base/bonds).
+    /// @param _sharePrice The current price of shares in terms of base (base/shares).
     /// @return totalCurveFee The curve fee. The fee is in terms of shares.
     /// @return totalFlatFee The flat fee. The fee is in terms of shares.
     /// @return totalGovernanceFee The total fee that goes to governance. The fee is in terms of shares.
@@ -305,29 +284,53 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
             uint256 totalGovernanceFee
         )
     {
-        // 'bond' in
-        // curve fee = ((1 - p) * phi_curve * d_y * t) / c
+        // p (spot price) tells us how many base a bond is worth -> p = base/bonds
+        // 1 - p tells us how many additional base a bond is worth at maturity -> (1 - p) = additional base/bonds
+
+        // The curve fee is taken from the additional base the user gets for each bond at maturity
+        // total curve fee = ((1 - p) * phi_curve * d_y * t)/c
+        //                 = (base/bonds * phi_curve * bonds * t) / (base/shares)
+        //                 = (base/bonds * phi_curve * bonds * t) * (shares/base)
+        //                 = (base * phi_curve * t) * (shares/base)
+        //                 = phi_curve * t * shares
         uint256 _pricePart = (FixedPointMath.ONE_18.sub(_spotPrice));
         totalCurveFee = _pricePart
             .mulDown(_curveFee)
             .mulDown(_amountIn)
             .mulDivDown(_normalizedTimeRemaining, _sharePrice);
-        // calculate the curve portion of the governance fee
+
+        // Calculate the curve portion of the governance fee
+        // governanceCurveFee = total_curve_fee * phi_gov
+        //                    = shares * phi_gov
         totalGovernanceFee = totalCurveFee.mulDown(_governanceFee);
+
+        // The flat portion of the fee is taken from the matured bonds.
+        // Since a matured bond is worth 1 base, it is appropriate to consider
+        // d_y in units of base.
         // flat fee = (d_y * (1 - t) * phi_flat) / c
+        //          = (base * (1 - t) * phi_flat) / (base/shares)
+        //          = (base * (1 - t) * phi_flat) * (shares/base)
+        //          = shares * (1 - t) * phi_flat
         uint256 flat = _amountIn.mulDivDown(
             FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
             _sharePrice
         );
         totalFlatFee = (flat.mulDown(_flatFee));
+
+        // Calculate the flat portion of the governance fee
+        // governanceFlatFee = total_flat_fee * phi_gov
+        //                   = shares * phi_gov
+        //
+        // The totalGovernanceFee is the sum of the curve and flat governance fees
+        // totalGovernanceFee = governanceCurveFee + governanceFlatFee
         totalGovernanceFee += totalFlatFee.mulDown(_governanceFee);
     }
 
-    /// @dev Calculates the fees for the curve portion of hyperdrive calcInGivenOut
-    /// @param _amountOut The given amount out.
+    /// @dev Calculates the fees that go to the LPs and governance.
+    /// @param _amountOut Amount in terms of bonds.
     /// @param _normalizedTimeRemaining The normalized amount of time until maturity.
-    /// @param _spotPrice The price without slippage of bonds in terms of shares.
-    /// @param _sharePrice The current price of shares in terms of base.
+    /// @param _spotPrice The price without slippage of bonds in terms of base (base/bonds).
+    /// @param _sharePrice The current price of shares in terms of base (base/shares).
     /// @return totalCurveFee The total curve fee. Fee is in terms of shares.
     /// @return totalFlatFee The total flat fee.  Fee is in terms of shares.
     /// @return governanceCurveFee The curve fee that goes to governance.  Fee is in terms of shares.
@@ -347,22 +350,42 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
             uint256 governanceFlatFee
         )
     {
-        // bonds out
-        // curve fee = ((1 - p) * d_y * t * phi_curve)/c
+        // p (spot price) tells us how many base a bond is worth -> p = base/bonds
+        // 1 - p tells us how many additional base a bond is worth at maturity -> (1 - p) = additional base/bonds
+
+        // The curve fee is taken from the additional base the user gets for each bond at maturity
+        // total curve fee = ((1 - p) * phi_curve * d_y * t)/c
+        //                 = (base/bonds * phi_curve * bonds * t) / (base/shares)
+        //                 = (base/bonds * phi_curve * bonds * t) * (shares/base)
+        //                 = (base * phi_curve * t) * (shares/base)
+        //                 = phi_curve * t * shares
         totalCurveFee = FixedPointMath.ONE_18.sub(_spotPrice);
         totalCurveFee = totalCurveFee
             .mulDown(_curveFee)
             .mulDown(_amountOut)
             .mulDivDown(_normalizedTimeRemaining, _sharePrice);
-        // calculate the curve portion of the governance fee
+
+        // Calculate the curve portion of the governance fee
+        // governanceCurveFee = total_curve_fee * phi_gov
+        //                    = shares * phi_gov
         governanceCurveFee = totalCurveFee.mulDown(_governanceFee);
-        // flat fee = (d_y * (1 - t) * phi_flat)/c
+
+        // The flat portion of the fee is taken from the matured bonds.
+        // Since a matured bond is worth 1 base, it is appropriate to consider
+        // d_y in units of base.
+        // flat fee = (d_y * (1 - t) * phi_flat) / c
+        //          = (base * (1 - t) * phi_flat) / (base/shares)
+        //          = (base * (1 - t) * phi_flat) * (shares/base)
+        //          = shares * (1 - t) * phi_flat
         uint256 flat = _amountOut.mulDivDown(
             FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
             _sharePrice
         );
         totalFlatFee = (flat.mulDown(_flatFee));
-        // calculate the flat portion of the governance fee
+
+        // Calculate the flat portion of the governance fee
+        // governanceFlatFee = total_flat_fee * phi_gov
+        //                   = shares * phi_gov
         governanceFlatFee = totalFlatFee.mulDown(_governanceFee);
     }
 }

@@ -3,8 +3,8 @@ pragma solidity 0.8.19;
 
 import { IERC20 } from "../interfaces/IERC20.sol";
 import { IForwarderFactory } from "../interfaces/IForwarderFactory.sol";
+import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IMultiToken } from "../interfaces/IMultiToken.sol";
-import { Errors } from "../libraries/Errors.sol";
 
 /// @author DELV
 /// @title ERC20Forwarder
@@ -24,7 +24,7 @@ contract ERC20Forwarder is IERC20 {
     // The ID for this contract's 'ERC20' as a sub token of the main token
     uint256 public immutable tokenId;
     // A mapping to track the permit signature nonces
-    mapping(address => uint256) public nonces;
+    mapping(address user => uint256 nonce) public nonces;
     // EIP712
     bytes32 public immutable DOMAIN_SEPARATOR; // solhint-disable-line var-name-mixedcase
     bytes32 public constant PERMIT_TYPEHASH =
@@ -194,10 +194,11 @@ contract ERC20Forwarder is IERC20 {
         bytes32 s
     ) external {
         // Require that the signature is not expired
-        if (block.timestamp > deadline) revert Errors.ExpiredDeadline();
+        if (block.timestamp > deadline) revert IHyperdrive.ExpiredDeadline();
         // Require that the owner is not zero
-        if (owner == address(0)) revert Errors.RestrictedZeroAddress();
+        if (owner == address(0)) revert IHyperdrive.RestrictedZeroAddress();
 
+        uint256 nonce = nonces[owner];
         bytes32 structHash = keccak256(
             abi.encodePacked(
                 "\x19\x01",
@@ -208,7 +209,7 @@ contract ERC20Forwarder is IERC20 {
                         owner,
                         spender,
                         value,
-                        nonces[owner],
+                        nonce,
                         deadline
                     )
                 )
@@ -217,10 +218,10 @@ contract ERC20Forwarder is IERC20 {
 
         // Check that the signature is valid
         address signer = ecrecover(structHash, v, r, s);
-        if (signer != owner) revert Errors.InvalidSignature();
+        if (signer != owner) revert IHyperdrive.InvalidSignature();
 
         // Increment the signature nonce
-        nonces[owner]++;
+        nonces[owner] = nonce + 1;
         // Set the approval to the new value
         token.setApprovalBridge(tokenId, spender, value, owner);
         emit Approval(owner, spender, value);

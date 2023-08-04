@@ -2,9 +2,8 @@
 pragma solidity 0.8.19;
 
 import { HyperdriveBase } from "./HyperdriveBase.sol";
-import { Errors } from "./libraries/Errors.sol";
-import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
+import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 
 /// @author DELV
 /// @title HyperdriveTWAP
@@ -30,8 +29,9 @@ abstract contract HyperdriveTWAP is HyperdriveBase {
         }
 
         // Load the current data from storage
-        uint256 previousTime = uint256(_oracle.lastTimestamp);
-        uint256 previousSum = uint256(_buffer[head].data);
+        OracleData storage headData = _buffer[head];
+        uint256 previousTime = uint256(headData.timestamp);
+        uint256 previousSum = uint256(headData.data);
 
         // Calculate sum
         uint256 delta = block.timestamp - previousTime;

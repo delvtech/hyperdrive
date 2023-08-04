@@ -4,12 +4,13 @@ pragma solidity 0.8.19;
 import { ERC20PresetMinterPauser } from "openzeppelin-contracts/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
 import { Hyperdrive } from "contracts/src/Hyperdrive.sol";
 import { HyperdriveDataProvider } from "contracts/src/HyperdriveDataProvider.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
-import { Errors } from "contracts/src/libraries/Errors.sol";
 import { MultiTokenDataProvider } from "contracts/src/token/MultiTokenDataProvider.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
+import { ETH } from "test/utils/Constants.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
-import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 
 interface IMockHyperdrive {
     function accrue(uint256 time, int256 apr) external;
@@ -100,6 +101,16 @@ contract MockHyperdrive is Hyperdrive {
 
     /// Mocks ///
 
+    function setMarketState(
+        IHyperdrive.MarketState memory _marketState_
+    ) external {
+        _marketState = _marketState_;
+    }
+
+    function setTotalShares(uint256 _totalShares) external {
+        totalShares = _totalShares;
+    }
+
     // Accrues compounded interest for a given number of seconds and readjusts
     // share price to reflect such compounding
     function accrue(uint256 time, int256 apr) external {
@@ -141,7 +152,6 @@ contract MockHyperdrive is Hyperdrive {
 
     function calculateFeesOutGivenSharesIn(
         uint256 _amountIn,
-        uint256 _amountOut,
         uint256 _spotPrice,
         uint256 sharePrice
     )
@@ -151,7 +161,6 @@ contract MockHyperdrive is Hyperdrive {
     {
         (totalCurveFee, governanceCurveFee) = _calculateFeesOutGivenSharesIn(
             _amountIn,
-            _amountOut,
             _spotPrice,
             sharePrice
         );
@@ -222,8 +231,7 @@ contract MockHyperdrive is Hyperdrive {
     // Calls Hyperdrive._calculateOpenLong
     function calculateOpenLong(
         uint256 _shareAmount,
-        uint256 _sharePrice,
-        uint256 _timeRemaining
+        uint256 _sharePrice
     )
         external
         returns (
@@ -233,7 +241,7 @@ contract MockHyperdrive is Hyperdrive {
             uint256 totalGovernanceFee
         )
     {
-        return _calculateOpenLong(_shareAmount, _sharePrice, _timeRemaining);
+        return _calculateOpenLong(_shareAmount, _sharePrice);
     }
 
     function calculateTimeRemaining(
@@ -259,22 +267,50 @@ contract MockHyperdrive is Hyperdrive {
 
     /// Overrides ///
 
+    // This overrides checkMessageValue to serve the dual purpose of making
+    // ETH yield source instances to be payable and non-ETH yield
+    // source instances non-payable.
+    function _checkMessageValue() internal view override {
+        if (address(_baseToken) != ETH && msg.value > 0) {
+            revert IHyperdrive.NotPayable();
+        }
+    }
+
     function _deposit(
         uint256 amount,
         bool
     ) internal override returns (uint256, uint256) {
-        uint256 assets = _baseToken.balanceOf(address(this));
-        bool success = _baseToken.transferFrom(
-            msg.sender,
-            address(this),
-            amount
-        );
-        if (!success) {
-            revert Errors.TransferFailed();
+        // Transfer the specified amount of funds from the trader. If the trader
+        // overpaid, we return the excess amount.
+        uint256 assets;
+        bool success = true;
+        if (address(_baseToken) == ETH) {
+            assets = address(this).balance;
+            if (msg.value < amount) {
+                revert IHyperdrive.TransferFailed();
+            }
+            if (msg.value > amount) {
+                (success, ) = payable(msg.sender).call{
+                    value: msg.value - amount
+                }("");
+            }
+        } else {
+            assets = _baseToken.balanceOf(address(this));
+            success = _baseToken.transferFrom(
+                msg.sender,
+                address(this),
+                amount
+            );
         }
+        if (!success) {
+            revert IHyperdrive.TransferFailed();
+        }
+
+        // Increase the total shares and return with the amount of shares minted
+        // and the current share price.
         if (totalShares == 0) {
-            totalShares = amount;
-            return (amount, FixedPointMath.ONE_18);
+            totalShares = amount.divDown(_initialSharePrice);
+            return (amount, _initialSharePrice);
         } else {
             uint256 newShares = totalShares.mulDivDown(amount, assets);
             totalShares += newShares;
@@ -287,16 +323,35 @@ contract MockHyperdrive is Hyperdrive {
         address destination,
         bool
     ) internal override returns (uint256 withdrawValue) {
-        uint256 assets = _baseToken.balanceOf(address(this));
+        // If the shares to withdraw is greater than the total shares, we clamp
+        // to the total shares.
         shares = shares > totalShares ? totalShares : shares;
+
+        // Get the total amount of assets held in the pool.
+        uint256 assets;
+        if (address(_baseToken) == ETH) {
+            assets = address(this).balance;
+        } else {
+            assets = _baseToken.balanceOf(address(this));
+        }
+
+        // Calculate the base proceeds.
         withdrawValue = totalShares != 0
             ? shares.mulDown(assets.divDown(totalShares))
             : 0;
-        bool success = _baseToken.transfer(destination, withdrawValue);
-        if (!success) {
-            revert Errors.TransferFailed();
-        }
+
+        // Transfer the base proceeds to the destination and burn the shares.
         totalShares -= shares;
+        bool success;
+        if (address(_baseToken) == ETH) {
+            (success, ) = payable(destination).call{ value: withdrawValue }("");
+        } else {
+            success = _baseToken.transfer(destination, withdrawValue);
+        }
+        if (!success) {
+            revert IHyperdrive.TransferFailed();
+        }
+
         return withdrawValue;
     }
 
@@ -306,9 +361,17 @@ contract MockHyperdrive is Hyperdrive {
         override
         returns (uint256 sharePrice)
     {
-        uint256 assets = _baseToken.balanceOf(address(this));
+        // Get the total amount of base held in Hyperdrive.
+        uint256 assets;
+        if (address(_baseToken) == ETH) {
+            assets = address(this).balance;
+        } else {
+            assets = _baseToken.balanceOf(address(this));
+        }
+
+        // The share price is the total amount of base divided by the total
+        // amount of shares.
         sharePrice = totalShares != 0 ? assets.divDown(totalShares) : 0;
-        return sharePrice;
     }
 }
 

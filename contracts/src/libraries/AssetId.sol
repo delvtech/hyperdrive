@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { Errors } from "./Errors.sol";
 import { FixedPointMath } from "./FixedPointMath.sol";
+import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 
 /// @author DELV
 /// @title Hyperdrive
@@ -39,7 +39,7 @@ library AssetId {
             _timestamp >
             0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
         ) {
-            revert Errors.InvalidTimestamp();
+            revert IHyperdrive.InvalidTimestamp();
         }
         assembly ("memory-safe") {
             id := or(shl(0xf8, _prefix), _timestamp)

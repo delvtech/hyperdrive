@@ -1,16 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import "forge-std/console2.sol";
-import "forge-std/Vm.sol";
-
+import { console2 } from "forge-std/console2.sol";
 import { Test } from "forge-std/Test.sol";
+import { Vm } from "forge-std/Vm.sol";
 import { ERC20PresetFixedSupply } from "openzeppelin-contracts/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import { Address } from "openzeppelin-contracts/contracts/utils/Address.sol";
 import { Hyperdrive } from "contracts/src/Hyperdrive.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
-import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 
 contract BaseTest is Test {
@@ -41,6 +40,8 @@ contract BaseTest is Test {
     string MAINNET_RPC_URL = vm.envString("MAINNET_RPC_URL");
     string GOERLI_RPC_URL = vm.envString("GOERLI_RPC_URL");
 
+    bool isForked;
+
     constructor() {
         mainnetForkId = vm.createFork(MAINNET_RPC_URL);
         goerliForkId = vm.createFork(GOERLI_RPC_URL);
@@ -65,6 +66,7 @@ contract BaseTest is Test {
     modifier __mainnet_fork(uint256 blockNumber) {
         vm.selectFork(mainnetForkId);
         vm.rollFork(blockNumber);
+        isForked = true;
 
         _;
     }
@@ -72,6 +74,7 @@ contract BaseTest is Test {
     modifier __goerli_fork(uint256 blockNumber) {
         vm.selectFork(goerliForkId);
         vm.rollFork(blockNumber);
+        isForked = true;
 
         _;
     }

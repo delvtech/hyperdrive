@@ -2,15 +2,14 @@
 pragma solidity 0.8.19;
 
 import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import { SafeCast } from "./libraries/SafeCast.sol";
 import { HyperdriveBase } from "./HyperdriveBase.sol";
 import { HyperdriveLong } from "./HyperdriveLong.sol";
 import { HyperdriveShort } from "./HyperdriveShort.sol";
+import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { AssetId } from "./libraries/AssetId.sol";
-import { Errors } from "./libraries/Errors.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
-import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
+import { SafeCast } from "./libraries/SafeCast.sol";
 
 /// @author DELV
 /// @title Hyperdrive
@@ -56,7 +55,7 @@ abstract contract Hyperdrive is
             _checkpointTime % _checkpointDuration != 0 ||
             latestCheckpoint < _checkpointTime
         ) {
-            revert Errors.InvalidCheckpointTime();
+            revert IHyperdrive.InvalidCheckpointTime();
         }
 
         // If the checkpoint time is the latest checkpoint, we use the current
@@ -91,15 +90,15 @@ abstract contract Hyperdrive is
         uint256 _sharePrice
     ) internal override returns (uint256 openSharePrice) {
         // Return early if the checkpoint has already been updated.
-        if (
-            _checkpoints[_checkpointTime].sharePrice != 0 ||
-            _checkpointTime > block.timestamp
-        ) {
+        IHyperdrive.Checkpoint storage checkpoint_ = _checkpoints[
+            _checkpointTime
+        ];
+        if (checkpoint_.sharePrice != 0 || _checkpointTime > block.timestamp) {
             return _checkpoints[_checkpointTime].sharePrice;
         }
 
         // Create the share price checkpoint.
-        _checkpoints[_checkpointTime].sharePrice = _sharePrice.toUint128();
+        checkpoint_.sharePrice = _sharePrice.toUint128();
 
         // Pay out the long withdrawal pool for longs that have matured.
         uint256 maturedLongsAmount = _totalSupply[
@@ -131,6 +130,6 @@ abstract contract Hyperdrive is
             );
         }
 
-        return _checkpoints[_checkpointTime].sharePrice;
+        return checkpoint_.sharePrice;
     }
 }

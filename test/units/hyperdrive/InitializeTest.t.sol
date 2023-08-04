@@ -2,8 +2,8 @@
 pragma solidity 0.8.19;
 
 import { VmSafe } from "forge-std/Vm.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { Errors } from "contracts/src/libraries/Errors.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol";
@@ -36,8 +36,21 @@ contract InitializeTest is HyperdriveTest {
         vm.startPrank(bob);
         baseToken.mint(contribution);
         baseToken.approve(address(hyperdrive), contribution);
-        vm.expectRevert(Errors.PoolAlreadyInitialized.selector);
+        vm.expectRevert(IHyperdrive.PoolAlreadyInitialized.selector);
         hyperdrive.initialize(contribution, apr, bob, true);
+    }
+
+    function test_initialize_failure_not_payable() external {
+        uint256 apr = 0.5e18;
+        uint256 contribution = 1000.0e18;
+
+        // Attempt to initialize the pool. This should fail.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        baseToken.mint(contribution);
+        baseToken.approve(address(hyperdrive), contribution);
+        vm.expectRevert(IHyperdrive.NotPayable.selector);
+        hyperdrive.initialize{ value: 1 }(contribution, apr, bob, true);
     }
 
     // TODO: This should ultimately be a fuzz test that fuzzes over the initial
@@ -59,7 +72,19 @@ contract InitializeTest is HyperdriveTest {
         // received the correct amount of LP shares.
         assertEq(baseToken.balanceOf(alice), 0);
         assertEq(baseToken.balanceOf(address(hyperdrive)), contribution);
-        assertEq(lpShares, hyperdrive.getPoolInfo().shareReserves);
+        assertEq(
+            lpShares,
+            hyperdrive.getPoolInfo().shareReserves - 2 * MINIMUM_SHARE_RESERVES
+        );
+
+        // Ensure that the total supply of LP shares and Alice's balance of LP
+        // shares are correct.
+        assertEq(
+            lpShares,
+            hyperdrive.totalSupply(AssetId._LP_ASSET_ID) -
+                MINIMUM_SHARE_RESERVES
+        );
+        assertEq(lpShares, hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice));
     }
 
     function verifyInitializeEvent(

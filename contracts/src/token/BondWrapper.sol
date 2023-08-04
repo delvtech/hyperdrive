@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ERC20 } from "solmate/tokens/ERC20.sol";
-import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
+import { IERC20 } from "../interfaces/IERC20.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { AssetId } from "../libraries/AssetId.sol";
-import { Errors } from "../libraries/Errors.sol";
 
 /// @author DELV
 /// @title BondWrapper
@@ -14,6 +14,8 @@ import { Errors } from "../libraries/Errors.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract BondWrapper is ERC20 {
+    using SafeERC20 for IERC20;
+
     // The multitoken of the bond
     IHyperdrive public immutable hyperdrive;
     // The underlying token from the bond
@@ -22,7 +24,8 @@ contract BondWrapper is ERC20 {
     uint256 public immutable mintPercent;
 
     // Store the user deposits as a mapping from user address -> asset id -> amount
-    mapping(address => mapping(uint256 => uint256)) public deposits;
+    mapping(address user => mapping(uint256 assetId => uint256 amount))
+        public deposits;
 
     /// @notice Constructs the contract and initializes the variables.
     /// @param _hyperdrive The hyperdrive contract.
@@ -37,8 +40,8 @@ contract BondWrapper is ERC20 {
         string memory name_,
         string memory symbol_
     ) ERC20(name_, symbol_, 18) {
-        if (_mintPercent >= 10000) {
-            revert Errors.MintPercentTooHigh();
+        if (_mintPercent >= 10_000) {
+            revert IHyperdrive.MintPercentTooHigh();
         }
 
         // By setting these addresses to the max uint256, attempting to execute
@@ -66,7 +69,7 @@ contract BondWrapper is ERC20 {
         address destination
     ) external {
         // Must not be matured
-        if (maturityTime <= block.timestamp) revert Errors.BondMatured();
+        if (maturityTime <= block.timestamp) revert IHyperdrive.BondMatured();
 
         // Encode the asset ID
         uint256 assetId = AssetId.encodeAssetId(
@@ -78,7 +81,7 @@ contract BondWrapper is ERC20 {
         hyperdrive.transferFrom(assetId, msg.sender, address(this), amount);
 
         // Mint them the tokens for their deposit
-        uint256 mintAmount = (amount * mintPercent) / 10000;
+        uint256 mintAmount = (amount * mintPercent) / 10_000;
         _mint(destination, mintAmount);
 
         // Add this to the deposited amount
@@ -128,9 +131,10 @@ contract BondWrapper is ERC20 {
 
         // Close the user position
         // We require that this won't make the position unbacked
-        uint256 mintedFromBonds = (amount * mintPercent) / 10000;
+        uint256 mintedFromBonds = (amount * mintPercent) / 10_000;
 
-        if (receivedAmount < mintedFromBonds) revert Errors.InsufficientPrice();
+        if (receivedAmount < mintedFromBonds)
+            revert IHyperdrive.InsufficientPrice();
 
         // The user gets at least the interest implied from
         uint256 userFunds = receivedAmount - mintedFromBonds;
@@ -142,11 +146,10 @@ contract BondWrapper is ERC20 {
         }
 
         // The user has to get at least what they expect.
-        if (userFunds < minOutput) revert Errors.OutputLimit();
+        if (userFunds < minOutput) revert IHyperdrive.OutputLimit();
 
         // Transfer the released funds to the user
-        bool success = token.transfer(destination, userFunds);
-        if (!success) revert Errors.TransferFailed();
+        token.safeTransfer(destination, userFunds);
     }
 
     /// @notice Sells all assets from the contract if they are matured, has no affect if
@@ -154,7 +157,7 @@ contract BondWrapper is ERC20 {
     /// @param maturityTime The maturity time of the asset to sell
     function sweep(uint256 maturityTime) public {
         // Require only sweeping after maturity
-        if (maturityTime > block.timestamp) revert Errors.BondNotMatured();
+        if (maturityTime > block.timestamp) revert IHyperdrive.BondNotMatured();
         // Load the balance of this contract
         uint256 assetId = AssetId.encodeAssetId(
             AssetId.AssetIdPrefix.Long,
@@ -163,6 +166,7 @@ contract BondWrapper is ERC20 {
         uint256 balance = hyperdrive.balanceOf(assetId, address(this));
         // Only close if we have something to close
         if (balance != 0) {
+            // Since we're closing the entire position, the output can be ignored.
             hyperdrive.closeLong(
                 maturityTime,
                 balance,
@@ -180,8 +184,7 @@ contract BondWrapper is ERC20 {
         _burn(msg.sender, amount);
 
         // Transfer the released funds to the user
-        bool success = token.transfer(msg.sender, amount);
-        if (!success) revert Errors.TransferFailed();
+        token.safeTransfer(msg.sender, amount);
     }
 
     /// @notice Calls both force close and redeem to enable easy liquidation of a user account

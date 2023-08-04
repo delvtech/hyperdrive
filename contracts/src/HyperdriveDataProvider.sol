@@ -4,8 +4,8 @@ pragma solidity 0.8.19;
 import { HyperdriveStorage } from "./HyperdriveStorage.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { AssetId } from "./libraries/AssetId.sol";
-import { Errors } from "./libraries/Errors.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
+import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { MultiTokenDataProvider } from "./token/MultiTokenDataProvider.sol";
 
 /// @author DELV
@@ -68,6 +68,7 @@ abstract contract HyperdriveDataProvider is
                 IHyperdrive.PoolConfig({
                     baseToken: _baseToken,
                     initialSharePrice: _initialSharePrice,
+                    minimumShareReserves: _minimumShareReserves,
                     positionDuration: _positionDuration,
                     checkpointDuration: _checkpointDuration,
                     timeStretch: _timeStretch,
@@ -85,20 +86,44 @@ abstract contract HyperdriveDataProvider is
     ///         important to evaluate potential trades.
     /// @return The PoolInfo struct.
     function getPoolInfo() external view returns (IHyperdrive.PoolInfo memory) {
+        uint256 sharePrice = _pricePerShare();
+        uint256 lpTotalSupply = _totalSupply[AssetId._LP_ASSET_ID] +
+            _totalSupply[AssetId._WITHDRAWAL_SHARE_ASSET_ID] -
+            _withdrawPool.readyToWithdraw;
+        uint256 presentValue = HyperdriveMath
+            .calculatePresentValue(_getPresentValueParams(sharePrice))
+            .mulDown(sharePrice);
         IHyperdrive.PoolInfo memory poolInfo = IHyperdrive.PoolInfo({
             shareReserves: _marketState.shareReserves,
             bondReserves: _marketState.bondReserves,
-            lpTotalSupply: _totalSupply[AssetId._LP_ASSET_ID],
-            sharePrice: _pricePerShare(),
+            sharePrice: sharePrice,
             longsOutstanding: _marketState.longsOutstanding,
             longAverageMaturityTime: _marketState.longAverageMaturityTime,
             shortsOutstanding: _marketState.shortsOutstanding,
             shortAverageMaturityTime: _marketState.shortAverageMaturityTime,
             shortBaseVolume: _marketState.shortBaseVolume,
+            lpTotalSupply: lpTotalSupply,
+            lpSharePrice: lpTotalSupply == 0
+                ? 0
+                : presentValue.divDown(lpTotalSupply),
             withdrawalSharesReadyToWithdraw: _withdrawPool.readyToWithdraw,
             withdrawalSharesProceeds: _withdrawPool.proceeds
         });
         _revert(abi.encode(poolInfo));
+    }
+
+    /// @notice Gets info about the fees presently accrued by the pool
+    /// @return Governance fees denominated in shares yet to be collected
+    function getUncollectedGovernanceFees() external view returns (uint256) {
+        _revert(abi.encode(_governanceFeesAccrued));
+    }
+
+    function getMarketState()
+        external
+        view
+        returns (IHyperdrive.MarketState memory)
+    {
+        _revert(abi.encode(_marketState));
     }
 
     /// @notice Allows plugin data libs to provide getters or other complex
@@ -143,8 +168,9 @@ abstract contract HyperdriveDataProvider is
         while (currentIndex != head) {
             // If the timestamp of the current index has older data than the target
             // this is the newest data which is older than the target so we break
-            if (uint256(_buffer[currentIndex].timestamp) <= targetTime) {
-                oldData = _buffer[currentIndex];
+            OracleData storage currentDataCache = _buffer[currentIndex];
+            if (uint256(currentDataCache.timestamp) <= targetTime) {
+                oldData = currentDataCache;
                 break;
             }
             currentIndex = currentIndex == 0
@@ -152,7 +178,7 @@ abstract contract HyperdriveDataProvider is
                 : currentIndex - 1;
         }
 
-        if (oldData.timestamp == 0) revert Errors.QueryOutOfRange();
+        if (oldData.timestamp == 0) revert IHyperdrive.QueryOutOfRange();
 
         // To get twap in period we take the increase in the sum then divide by
         // the amount of time passed

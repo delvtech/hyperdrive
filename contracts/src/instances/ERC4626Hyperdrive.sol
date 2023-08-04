@@ -1,18 +1,29 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { IERC4626 } from "../interfaces/IERC4626.sol";
+import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import { Hyperdrive } from "../Hyperdrive.sol";
-import { FixedPointMath } from "../libraries/FixedPointMath.sol";
-import { Errors } from "../libraries/Errors.sol";
 import { IERC20 } from "../interfaces/IERC20.sol";
+import { IERC4626 } from "../interfaces/IERC4626.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 
+/// @author DELV
+/// @title ERC4626Hyperdrive
+/// @notice An instance of Hyperdrive that utilizes ERC4626 vaults as a yield source.
+/// @custom:disclaimer The language used in this code is for coding convenience
+///                    only, and is not intended to, and does not, have any
+///                    particular legal or regulatory significance.
 contract ERC4626Hyperdrive is Hyperdrive {
     using FixedPointMath for uint256;
+    using SafeERC20 for IERC20;
 
-    // The yield source contract for this hyperdrive
+    /// @dev The yield source contract for this hyperdrive
     IERC4626 internal immutable pool;
+
+    /// @dev A mapping from addresses to their status as a sweep target. This
+    ///      mapping does not change after construction.
+    mapping(address target => bool canSweep) internal isSweepable;
 
     /// @notice Initializes a Hyperdrive pool.
     /// @param _config The configuration of the Hyperdrive pool.
@@ -22,33 +33,51 @@ contract ERC4626Hyperdrive is Hyperdrive {
     /// @param _linkerFactory The factory which is used to deploy the ERC20
     ///        linker contracts.
     /// @param _pool The ERC4626 compatible yield source
+    /// @param _targets The addresses that can be swept by governance. This
+    ///        allows governance to collect rewards derived from incentive
+    ///        programs while also preventing edge cases where `sweep` is used
+    ///        to access the pool or base tokens.
     constructor(
         IHyperdrive.PoolConfig memory _config,
         address _dataProvider,
         bytes32 _linkerCodeHash,
         address _linkerFactory,
-        IERC4626 _pool
+        IERC4626 _pool,
+        address[] memory _targets
     ) Hyperdrive(_config, _dataProvider, _linkerCodeHash, _linkerFactory) {
+        // Initialize the pool immutable.
+        pool = _pool;
+
         // Ensure that the Hyperdrive pool was configured properly.
         // WARN - 4626 implementations should be checked that if they use an asset
         //        with decimals less than 18 that the preview deposit is scale
         //        invariant. EG - because this line uses a very large query to load
         //        price for USDC if the price per share changes based on size of deposit
         //        then this line will read an incorrect and possibly dangerous price.
-        uint256 shareEstimate = _pool.convertToShares(FixedPointMath.ONE_18);
-        if (
-            _config.initialSharePrice !=
-            FixedPointMath.ONE_18.divDown(shareEstimate)
-        ) {
-            revert Errors.InvalidInitialSharePrice();
+        if (_config.initialSharePrice != _pricePerShare()) {
+            revert IHyperdrive.InvalidInitialSharePrice();
         }
         if (address(_config.baseToken) != _pool.asset()) {
-            revert Errors.InvalidBaseToken();
+            revert IHyperdrive.InvalidBaseToken();
         }
 
         // Set immutables and prepare for deposits by setting immutables
-        pool = _pool;
-        _config.baseToken.approve(address(pool), type(uint256).max);
+        if (!_config.baseToken.approve(address(pool), type(uint256).max)) {
+            revert IHyperdrive.ApprovalFailed();
+        }
+
+        // Set the sweep targets. The base and pool tokens can't be set as
+        // sweep targets to prevent governance from rugging the pool.
+        for (uint256 i = 0; i < _targets.length; i++) {
+            address target = _targets[i];
+            if (
+                address(target) == address(pool) ||
+                address(target) == address(_baseToken)
+            ) {
+                revert IHyperdrive.UnsupportedToken();
+            }
+            isSweepable[target] = true;
+        }
     }
 
     /// Yield Source ///
@@ -65,14 +94,7 @@ contract ERC4626Hyperdrive is Hyperdrive {
     ) internal override returns (uint256 sharesMinted, uint256 sharePrice) {
         if (asUnderlying) {
             // Transfer from user
-            bool success = _baseToken.transferFrom(
-                msg.sender,
-                address(this),
-                amount
-            );
-            if (!success) {
-                revert Errors.TransferFailed();
-            }
+            _baseToken.safeTransferFrom(msg.sender, address(this), amount);
             // Supply for the user
             sharesMinted = pool.deposit(amount, address(this));
             sharePrice = _pricePerShare();
@@ -83,14 +105,11 @@ contract ERC4626Hyperdrive is Hyperdrive {
             //        then this can create bugs.
             uint256 converted = pool.convertToShares(amount);
             // Transfer erc4626 shares from the user
-            bool success = IERC20(address(pool)).transferFrom(
+            IERC20(address(pool)).safeTransferFrom(
                 msg.sender,
                 address(this),
                 converted
             );
-            if (!success) {
-                revert Errors.TransferFailed();
-            }
             sharesMinted = converted;
             sharePrice = _pricePerShare();
         }
@@ -112,10 +131,7 @@ contract ERC4626Hyperdrive is Hyperdrive {
             amountWithdrawn = pool.redeem(shares, destination, address(this));
         } else {
             // Transfer erc4626 shares to the user
-            bool success = IERC20(address(pool)).transfer(destination, shares);
-            if (!success) {
-                revert Errors.TransferFailed();
-            }
+            IERC20(address(pool)).safeTransfer(destination, shares);
             // Now we calculate the price per share
             uint256 estimated = pool.convertToAssets(shares);
             amountWithdrawn = estimated;
@@ -124,33 +140,34 @@ contract ERC4626Hyperdrive is Hyperdrive {
 
     /// @notice Loads the share price from the yield source.
     /// @return The current share price.
-    ///@dev must remain consistent with the impl inside of the DataProvider
+    /// @dev must remain consistent with the impl inside of the DataProvider
     function _pricePerShare() internal view override returns (uint256) {
-        uint256 shareEstimate = pool.convertToShares(FixedPointMath.ONE_18);
-        return (FixedPointMath.ONE_18.divDown(shareEstimate));
+        return pool.convertToAssets(FixedPointMath.ONE_18);
     }
 
-    /// @notice Some yield sources [eg Morpho] pay rewards directly to this contract
-    ///         but we can't handle distributing them internally so we sweep to the
-    ///         fee collector address to then redistribute to users
-    /// @param token The ERC20 we want to call
-    /// @dev WARNING - This sweep only checks that the token is not equal to the base or yield source
-    ///                if another token is expected to have a balance on this contract it is unsafe.
-    ///                ANY TOKENS IN THIS CONTRACT BESIDES YIELD SOURCE SHARES OR BASE TOKEN CAN BE STOLEN.
-    /// @dev WARNING - It is unlikely but possible that there is a selector overlap with 'transferFrom'. Any
-    ///                integrating contracts should be checked for that, as it may result in an unexpected call
-    ///                from this address.
-    function sweep(IERC20 token) external {
-        // Only governance address can call
+    /// @notice Some yield sources [eg Morpho] pay rewards directly to this
+    ///         contract but we can't handle distributing them internally so we
+    ///         sweep to the fee collector address to then redistribute to users.
+    /// @dev WARNING: The entire balance of any of the sweep targets can be
+    ///      swept by governance. If these sweep targets provide access to the
+    ///      base or pool token, then governance has the ability to rug the pool.
+    /// @dev WARNING: It is unlikely but possible that there is a selector
+    ///      overlap with 'transferFrom'. Any integrating contracts should be
+    ///      checked for that, as it may result in an unexpected call from this
+    ///      address.
+    /// @param _target The token to sweep.
+    function sweep(IERC20 _target) external {
+        // Ensure that the sender is the fee collector or a pauser.
         if (msg.sender != _feeCollector && !_pausers[msg.sender])
-            revert Errors.Unauthorized();
-        // Cannot rug the yield source or base token
-        if (
-            address(token) == address(pool) ||
-            address(token) == address(_baseToken)
-        ) revert Errors.UnsupportedToken();
-        // Transfer to the fee collector
-        uint256 balance = token.balanceOf(address(this));
-        token.transfer(_feeCollector, balance);
+            revert IHyperdrive.Unauthorized();
+
+        // Ensure that thet target can be swept by governance.
+        if (!isSweepable[address(_target)]) {
+            revert IHyperdrive.UnsupportedToken();
+        }
+
+        // Transfer the entire balance of the sweep target to the fee collector.
+        uint256 balance = _target.balanceOf(address(this));
+        _target.safeTransfer(_feeCollector, balance);
     }
 }
