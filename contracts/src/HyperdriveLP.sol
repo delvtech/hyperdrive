@@ -186,10 +186,12 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         _mint(AssetId._LP_ASSET_ID, _destination, lpShares);
 
         // Distribute the excess idle to the withdrawal pool.
-        _rebalanceWithdrawalPool(sharePrice);
+        _distributeExcessIdle(sharePrice);
 
         // Emit an AddLiquidity event.
         emit AddLiquidity(_destination, lpShares, _contribution);
+
+        return lpShares;
     }
 
     /// @notice Allows an LP to burn shares and withdraw from the pool.
@@ -230,7 +232,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // Distribute the excess idle to the withdrawal pool prior to removing
         // liquidity from the pool. This prevents us from needing to backtrack
         // from the backend of the calculation.
-        _rebalanceWithdrawalPool(sharePrice);
+        _distributeExcessIdle(sharePrice);
 
         // Burn the LP shares.
         uint256 totalActiveLpSupply = _totalSupply[AssetId._LP_ASSET_ID];
@@ -302,6 +304,11 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // Perform a checkpoint.
         uint256 sharePrice = _pricePerShare();
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
+
+        // Distribute the excess idle to the withdrawal pool prior to removing
+        // liquidity from the pool. This prevents us from needing to backtrack
+        // from the backend of the calculation.
+        _distributeExcessIdle(sharePrice);
 
         // Clamp the shares to the total amount of shares ready for withdrawal
         // to avoid unnecessary reverts. We exit early if the user has no shares
@@ -462,7 +469,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
     /// @dev If the idle capital in the pool is worth more than the active LP
     ///      supply, then we pay out the withdrawal pool with the excess idle.
     /// @param _sharePrice The current share price.
-    function _rebalanceWithdrawalPool(uint256 _sharePrice) internal {
+    function _distributeExcessIdle(uint256 _sharePrice) internal {
         // Calculate the value of the active LP shares as:
         //
         // activeLpValue = l_a * (PV / l).

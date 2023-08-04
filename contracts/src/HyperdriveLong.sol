@@ -274,9 +274,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
             revert IHyperdrive.BaseBufferExceedsShareReserves();
         }
 
-        // Rebalance the withdrawal pool so that withdrawal shares benefit from
-        // the increase in the pool's idle funds after the long was opened.
-        _rebalanceWithdrawalPool(_sharePrice);
+        // Distribute the excess idle to the withdrawal pool.
+        _distributeExcessIdle(_sharePrice);
     }
 
     /// @dev Applies the trading deltas from a closed long to the reserves and
@@ -337,9 +336,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // Remove the flat part of the trade from the pool's liquidity.
         _updateLiquidity(-int256(_shareProceeds - _shareReservesDelta));
 
-        // Rebalance the withdrawal pool so that withdrawal shares benefit from
-        // the increase in the pool's idle funds after the long was closed.
-        _rebalanceWithdrawalPool(_sharePrice);
+        // Distribute the excess idle to the withdrawal pool.
+        _distributeExcessIdle(_sharePrice);
     }
 
     /// @dev Calculate the pool reserve and trader deltas that result from
