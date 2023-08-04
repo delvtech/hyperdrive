@@ -226,7 +226,11 @@ contract RemoveLiquidityTest is HyperdriveTest {
             HyperdriveUtils.presentValue(hyperdrive),
             lpTotalSupplyBefore
         );
-        assertEq(testCase.initialLpBaseProceeds, expectedBaseProceeds);
+        assertApproxEqAbs(
+            testCase.initialLpBaseProceeds,
+            expectedBaseProceeds,
+            1
+        );
         (uint256 contributionPlusInterest, ) = HyperdriveUtils
             .calculateCompoundInterest(
                 testCase.contribution,

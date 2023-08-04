@@ -576,6 +576,31 @@ library HyperdriveMath {
         return _params.shareReserves - _params.minimumShareReserves;
     }
 
+    /// @dev Calculates the idle capital in the pool. This is the capital that
+    ///     is not backing any longs or shorts and can be withdrawn by LPs
+    ///     instantaneously.
+    /// @param _shareReserves The share reserves in the pool.
+    /// @param _longsOutstanding The longs outstanding in the pool.
+    /// @param _sharePrice The current share price.
+    /// @param _minimumShareReserves The minimum share reserves in the pool.
+    /// @return The idle capital in the pool.
+    function calculateIdle(
+        uint256 _shareReserves,
+        uint256 _longsOutstanding,
+        uint256 _sharePrice,
+        uint256 _minimumShareReserves
+    ) internal pure returns (uint256) {
+        // The idle capital is calculated by removing the capital backing the
+        // longs and the minimum share reserves from the share reserves. This
+        // is given by the formula:
+        //
+        // idle = z - y_l / c - z_min
+        return
+            _shareReserves -
+            _longsOutstanding.divUp(_sharePrice) -
+            _minimumShareReserves;
+    }
+
     /// @dev Calculates the proceeds in shares of closing a short position. This
     ///      takes into account the trading profits, the interest that was
     ///      earned by the short, and the amount of margin that was released

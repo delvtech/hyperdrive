@@ -375,16 +375,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
 
         // Rebalance the withdrawal pool so that withdrawal shares benefit from
         // the increase in the pool's idle funds after the short was closed.
-        //
-        // NOTE: updateLiquidity` won't update the reserves if they are empty,
-        // so if a short is closed after all of the LPs have removed their
-        // liquidity, `flat` can be positive but the share reserves will be zero.
-        // To ensure that we pay out the withdrawal pool, we have a special case
-        // for this scenario.
-        _rebalanceWithdrawalPool(
-            _marketState.shareReserves > 0 ? _marketState.shareReserves : flat,
-            _sharePrice
-        );
+        _rebalanceWithdrawalPool(_sharePrice);
     }
 
     /// @dev Calculate the pool reserve and trader deltas that result from

@@ -422,35 +422,24 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             params
         );
 
-        // TODO: Update this documentation once we've made the update to how
-        // idle capital is paid out to the withdrawal pool.
+        // FIXME: If we pay back the pool's idle capital, then we can remove
+        //        the backtracking logic and update this documentation.
         //
         // A portion of Hyperdrive's capital may be "idle" capital that isn't
         // being used to ensure that open positions are fully collateralized.
-        // To calculate the amount of idle liquidity in the system, we remove
-        // the amount of shares required for longs to be solvent and the minimum
-        // share reserves from the share reserves. When we are calculating the
-        // shares required for long solvency, we use the average opening share
-        // price of longs to avoid double counting the variable rate interest
-        // accrued on long positions. Since the capital that LPs provide for
-        // shorts are removed from the share reserves when the short is opened,
-        // we don't need to account for them in the idle calculation. Thus, we
-        // can calculate the idle capital as:
-        //
-        // idle = (z - z_min - (y_l / c_0))
-        //
         // The LP is given their share of the idle capital in the pool. We
         // assume that the active LPs are the only LPs entitled to the pool's
         // idle capital, so the LP's proceeds are calculated as:
         //
         // proceeds = idle * (dl / l_a)
-        shareProceeds = _marketState.shareReserves - _minimumShareReserves;
-        if (_marketState.longsOutstanding > 0) {
-            shareProceeds -= uint256(_marketState.longsOutstanding).divDown(
-                _sharePrice
-            );
-        }
-        shareProceeds = shareProceeds.mulDivDown(_shares, _totalActiveLpSupply);
+        shareProceeds = HyperdriveMath
+            .calculateIdle(
+                _marketState.shareReserves,
+                _marketState.longsOutstanding,
+                _sharePrice,
+                _minimumShareReserves
+            )
+            .mulDivDown(_shares, _totalActiveLpSupply);
         _updateLiquidity(-int256(shareProceeds));
         params.shareReserves = _marketState.shareReserves;
         params.bondReserves = _marketState.bondReserves;
@@ -489,27 +478,8 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
 
     /// @dev If the idle capital in the pool is worth more than the active LP
     ///      supply, then we pay out the withdrawal pool with the excess idle.
-    /// @param _shareReserves The current share reserves. This parameter is
-    ///        needed because it's possible for the share reserves to be zero
-    ///        after all of the shorts are closed even though value should be
-    ///        returned to the withdrawal pool.
     /// @param _sharePrice The current share price.
-    function _rebalanceWithdrawalPool(
-        uint256 _shareReserves,
-        uint256 _sharePrice
-    ) internal {
-        // FIXME: Create a new function that calculates the pool's idle.
-        //
-        // Calculate the amount of idle capital in the pool as:
-        //
-        // idle = z - (y_l / c_0) - z_min
-        uint256 longsOutstanding = _marketState.longsOutstanding;
-        uint256 idle = _shareReserves - _minimumShareReserves;
-        if (longsOutstanding > 0) {
-            // FIXME: Should we do divUp?
-            idle -= uint256(longsOutstanding).divUp(_sharePrice);
-        }
-
+    function _rebalanceWithdrawalPool(uint256 _sharePrice) internal {
         // Calculate the value of the active LP shares as:
         //
         // activeLpValue = l_a * (PV / l).
@@ -529,6 +499,12 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // If the value of the active LP shares is less than the idle capital,
         // we pay out the excess idle to the withdrawal pool.
         uint256 withdrawalProceeds = 0;
+        uint256 idle = HyperdriveMath.calculateIdle(
+            _marketState.shareReserves,
+            _marketState.longsOutstanding,
+            _sharePrice,
+            _minimumShareReserves
+        );
         if (idle > activeLpValue) {
             withdrawalProceeds = idle - activeLpValue;
         }

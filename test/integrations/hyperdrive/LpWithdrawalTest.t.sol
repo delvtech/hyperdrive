@@ -811,16 +811,7 @@ contract LpWithdrawalTest is HyperdriveTest {
             // discount on the withdrawal shares because she is increasing the
             // pool's slippage by removing liquidity, which increases the
             // present value.
-            //
-            // FIXME: Use a helper function to access the pool's idle.
-            uint256 idle = (hyperdrive.getPoolInfo().shareReserves -
-                hyperdrive.getPoolInfo().longsOutstanding.divDown(
-                    hyperdrive.getPoolInfo().sharePrice
-                ) -
-                hyperdrive.getPoolConfig().minimumShareReserves).mulDown(
-                    hyperdrive.getPoolInfo().sharePrice
-                );
-            uint256 expectedProceeds = idle.mulDivDown(
+            uint256 expectedProceeds = hyperdrive.idle().mulDivDown(
                 aliceLpShares,
                 hyperdrive.totalSupply(AssetId._LP_ASSET_ID)
             );
@@ -934,19 +925,12 @@ contract LpWithdrawalTest is HyperdriveTest {
         // Alice removes her liquidity.
         uint256 aliceWithdrawalShares;
         {
-            // FIXME: We should be using a helper to calculate idle.
-            //
             // We expect Alice to receive half of the idle funds in the pool and
             // withdrawal shares that are worth more than the amount of her
             // capital that remains in the pool. She gets a discount on the
             // withdrawal shares because she is increasing the pool's slippage
             // by removing liquidity, which increases the present value.
-            uint256 idle = hyperdrive.getPoolInfo().shareReserves -
-                hyperdrive.getPoolInfo().longsOutstanding.divDown(
-                    hyperdrive.getPoolInfo().sharePrice
-                ) -
-                hyperdrive.getPoolConfig().minimumShareReserves;
-            uint256 expectedProceeds = idle.mulDivDown(
+            uint256 expectedProceeds = hyperdrive.idle().mulDivDown(
                 aliceLpShares,
                 hyperdrive.totalSupply(AssetId._LP_ASSET_ID)
             );
@@ -1052,16 +1036,12 @@ contract LpWithdrawalTest is HyperdriveTest {
         // Alice removes her liquidity.
         uint256 aliceWithdrawalShares;
         {
-            //FIXME: We should be using a helper to calculate idle.
-            //
             // We expect Alice to receive half of the idle funds in the pool and
             // withdrawal shares that are worth more than the amount of her
             // capital that remains in the pool. She gets a discount on the
             // withdrawal shares because she is increasing the pool's slippage
             // by removing liquidity, which increases the present value.
-            uint256 idle = hyperdrive.getPoolInfo().shareReserves -
-                hyperdrive.getPoolConfig().minimumShareReserves;
-            uint256 expectedProceeds = idle.mulDivDown(
+            uint256 expectedProceeds = hyperdrive.idle().mulDivDown(
                 aliceLpShares,
                 hyperdrive.totalSupply(AssetId._LP_ASSET_ID)
             );

@@ -335,7 +335,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
 
         // Rebalance the withdrawal pool so that withdrawal shares benefit from
         // the increase in the pool's idle funds after the long was closed.
-        _rebalanceWithdrawalPool(_marketState.shareReserves, _sharePrice);
+        _rebalanceWithdrawalPool(_sharePrice);
     }
 
     /// @dev Calculate the pool reserve and trader deltas that result from

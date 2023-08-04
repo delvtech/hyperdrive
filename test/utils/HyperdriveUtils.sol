@@ -271,6 +271,19 @@ library HyperdriveUtils {
                 .mulDown(poolInfo.sharePrice);
     }
 
+    function idle(IHyperdrive hyperdrive) internal view returns (uint256) {
+        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
+        return
+            HyperdriveMath
+                .calculateIdle(
+                    poolInfo.shareReserves,
+                    poolInfo.longsOutstanding,
+                    poolInfo.sharePrice,
+                    hyperdrive.getPoolConfig().minimumShareReserves
+                )
+                .mulDown(poolInfo.sharePrice);
+    }
+
     function presentValue(
         IHyperdrive hyperdrive
     ) internal view returns (uint256) {
