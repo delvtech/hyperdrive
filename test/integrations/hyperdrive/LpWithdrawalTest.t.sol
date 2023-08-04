@@ -848,7 +848,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         // that the actual value should be extremely close to the expected value.
         uint256 expectedWithdrawalProceeds = aliceWithdrawalShares.mulDivDown(
             hyperdrive.presentValue(),
-            hyperdrive.totalLpSupply()
+            hyperdrive.lpTotalSupply()
         );
 
         // Celine closes her long.
@@ -957,7 +957,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         // that the actual value should be extremely close to the expected value.
         uint256 expectedWithdrawalProceeds = aliceWithdrawalShares.mulDivDown(
             hyperdrive.presentValue(),
-            hyperdrive.totalLpSupply()
+            hyperdrive.lpTotalSupply()
         );
 
         // Celine closes her long.
@@ -1067,7 +1067,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         // that the actual value should be extremely close to the expected value.
         uint256 expectedWithdrawalProceeds = aliceWithdrawalShares.mulDivDown(
             hyperdrive.presentValue(),
-            hyperdrive.totalLpSupply()
+            hyperdrive.lpTotalSupply()
         );
 
         // Celine closes her short.

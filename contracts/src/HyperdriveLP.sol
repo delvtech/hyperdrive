@@ -520,22 +520,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         ] - _withdrawPool.readyToWithdraw;
         uint256 totalLpSupply = activeLpSupply + withdrawalSharesOutstanding;
         uint256 presentValue = HyperdriveMath.calculatePresentValue(
-            HyperdriveMath.PresentValueParams({
-                shareReserves: _shareReserves,
-                bondReserves: _marketState.bondReserves,
-                sharePrice: _sharePrice,
-                initialSharePrice: _initialSharePrice,
-                timeStretch: _timeStretch,
-                longsOutstanding: _marketState.longsOutstanding,
-                longAverageTimeRemaining: _calculateTimeRemainingScaled(
-                    _marketState.longAverageMaturityTime
-                ),
-                shortsOutstanding: _marketState.shortsOutstanding,
-                shortAverageTimeRemaining: _calculateTimeRemainingScaled(
-                    _marketState.shortAverageMaturityTime
-                ),
-                shortBaseVolume: _marketState.shortBaseVolume
-            })
+            _getPresentValueParams(_sharePrice)
         );
         uint256 activeLpValue = activeLpSupply.mulDivDown(
             presentValue,
