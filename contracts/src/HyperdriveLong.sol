@@ -307,6 +307,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
             )
             .toUint128();
 
+        // FIXME: We should get rid of this variable entirely.
+        //
         // Update the global long open share price.
         _marketState.longOpenSharePrice = uint256(
             _marketState.longOpenSharePrice

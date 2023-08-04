@@ -209,23 +209,29 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
         // Bob closes his long.
         uint256 longBaseProceeds = closeLong(bob, maturityTime, longAmount);
 
-        // Get the base balances before the trade.
+        // Get the base balances before Alice redeems her withdrawal shares.
         uint256 aliceBaseBalanceBefore = baseToken.balanceOf(alice);
         uint256 hyperdriveBaseBalanceBefore = baseToken.balanceOf(
             address(hyperdrive)
         );
 
-        // Alice redeems her withdrawal shares.
-        uint256 expectedBaseProceeds = longAmount - longBaseProceeds;
-        uint256 expectedSharesRedeemed = expectedBaseProceeds.divDown(
-            hyperdrive.lpSharePrice()
-        );
+        // Alice redeems her withdrawal shares. All of her withdrawal shares
+        // should have been closed at the lp share price. This should be
+        // slightly higher than the amount of margin returned to LPs when the
+        // long was closed because of the LP tokens burned to address zero.
+        // Address zero still had some idle liquidity after Alice removed her
+        // liquidity, which retained its value during the term.
         (uint256 baseProceeds, uint256 sharesRedeemed) = redeemWithdrawalShares(
             alice,
             withdrawalShares
         );
-        assertEq(baseProceeds, expectedBaseProceeds);
-        assertApproxEqAbs(sharesRedeemed, expectedSharesRedeemed, 1e8);
+        assertGt(baseProceeds, longAmount - longBaseProceeds);
+        assertApproxEqAbs(
+            baseProceeds,
+            hyperdrive.lpSharePrice().mulDown(withdrawalShares),
+            1e7
+        );
+        assertEq(sharesRedeemed, withdrawalShares);
 
         // Ensure that a `RedeemWithdrawalShares` event was emitted.
         verifyRedeemWithdrawalSharesEvent(alice, sharesRedeemed, baseProceeds);

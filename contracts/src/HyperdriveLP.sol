@@ -499,16 +499,16 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         uint256 _shareReserves,
         uint256 _sharePrice
     ) internal {
+        // FIXME: Create a new function that calculates the pool's idle.
+        //
         // Calculate the amount of idle capital in the pool as:
         //
-        // idle = z - (y_l / c_0)
+        // idle = z - (y_l / c_0) - z_min
         uint256 longsOutstanding = _marketState.longsOutstanding;
-        uint256 idle = _shareReserves;
+        uint256 idle = _shareReserves - _minimumShareReserves;
         if (longsOutstanding > 0) {
-            idle -= uint256(longsOutstanding).divDown(
-                _sharePrice
-                // _marketState.longOpenSharePrice
-            );
+            // FIXME: Should we do divUp?
+            idle -= uint256(longsOutstanding).divUp(_sharePrice);
         }
 
         // Calculate the value of the active LP shares as:
