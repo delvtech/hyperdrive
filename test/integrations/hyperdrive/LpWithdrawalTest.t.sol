@@ -759,11 +759,6 @@ contract LpWithdrawalTest is HyperdriveTest {
         int256 variableRate,
         uint256 basePaid
     ) public {
-        // contribution = 0;
-        // fixedRate = 0;
-        // variableRate = 2004;
-        // basePaid = 0;
-
         // Deploy and initialize the pool so that we can calculate the bounds
         // for the `basePaid` parameter.
         contribution = contribution.normalizeToRange(1000e18, 500_000_000e18);
@@ -810,22 +805,32 @@ contract LpWithdrawalTest is HyperdriveTest {
         // Alice removes her liquidity.
         uint256 aliceWithdrawalShares;
         {
-            // We expect Alice to receive half of the idle funds in the pool and
-            // withdrawal shares that are worth more than the amount of her
-            // capital that remains in the pool. She gets a discount on the
-            // withdrawal shares because she is increasing the pool's slippage
-            // by removing liquidity, which increases the present value.
+            // We expect Alice to receive a proportional amount of the idle
+            // funds in the pool and withdrawal shares that are worth more than
+            // the amount of her capital that remains in the pool. She gets a
+            // discount on the withdrawal shares because she is increasing the
+            // pool's slippage by removing liquidity, which increases the
+            // present value.
+            //
+            // FIXME: Use a helper function to access the pool's idle.
             uint256 idle = (hyperdrive.getPoolInfo().shareReserves -
                 hyperdrive.getPoolInfo().longsOutstanding.divDown(
                     hyperdrive.getPoolInfo().sharePrice
-                )).mulDown(hyperdrive.getPoolInfo().sharePrice);
+                ) -
+                hyperdrive.getPoolConfig().minimumShareReserves).mulDown(
+                    hyperdrive.getPoolInfo().sharePrice
+                );
+            uint256 expectedProceeds = idle.mulDivDown(
+                aliceLpShares,
+                hyperdrive.totalSupply(AssetId._LP_ASSET_ID)
+            );
             uint256 lpSharePrice = hyperdrive.lpSharePrice();
             uint256 aliceLpProceeds;
             (aliceLpProceeds, aliceWithdrawalShares) = removeLiquidity(
                 alice,
                 aliceLpShares
             );
-            assertApproxEqAbs(aliceLpProceeds, idle / 2, 10);
+            assertApproxEqAbs(aliceLpProceeds, expectedProceeds, 10);
             uint256 alicePresentValue = aliceLpShares.mulDown(lpSharePrice);
             assertGe(
                 aliceWithdrawalShares.mulDown(lpSharePrice),
@@ -875,14 +880,15 @@ contract LpWithdrawalTest is HyperdriveTest {
         }
 
         // Bob removes his liquidity for all of the pool's remaining capital.
-        uint256 expectedLpProceeds = baseToken.balanceOf(address(hyperdrive));
+        uint256 expectedLpProceeds = bobLpShares.mulDown(
+            hyperdrive.lpSharePrice()
+        );
         (uint256 bobLpProceeds, uint256 bobWithdrawalShares) = removeLiquidity(
             bob,
             bobLpShares
         );
-        // FIXME: Why do we need this tolerance?
-        assertApproxEqAbs(bobLpProceeds, expectedLpProceeds, 1e11);
-        assertEq(bobWithdrawalShares, 0);
+        assertApproxEqAbs(bobLpProceeds, expectedLpProceeds, 1e9);
+        assertApproxEqAbs(bobWithdrawalShares, 0, 10);
     }
 
     function test_lp_withdrawal_two_lps_long_redemption(
@@ -919,6 +925,7 @@ contract LpWithdrawalTest is HyperdriveTest {
 
         // Alice and Bob add liquidity to the pool.
         uint256 aliceLpShares = initialize(alice, fixedRate, contribution);
+        contribution -= 2 * hyperdrive.getPoolConfig().minimumShareReserves;
         uint256 bobLpShares = addLiquidity(bob, contribution);
 
         // Celine opens a long.
@@ -927,6 +934,8 @@ contract LpWithdrawalTest is HyperdriveTest {
         // Alice removes her liquidity.
         uint256 aliceWithdrawalShares;
         {
+            // FIXME: We should be using a helper to calculate idle.
+            //
             // We expect Alice to receive half of the idle funds in the pool and
             // withdrawal shares that are worth more than the amount of her
             // capital that remains in the pool. She gets a discount on the
@@ -935,17 +944,23 @@ contract LpWithdrawalTest is HyperdriveTest {
             uint256 idle = hyperdrive.getPoolInfo().shareReserves -
                 hyperdrive.getPoolInfo().longsOutstanding.divDown(
                     hyperdrive.getPoolInfo().sharePrice
-                );
+                ) -
+                hyperdrive.getPoolConfig().minimumShareReserves;
+            uint256 expectedProceeds = idle.mulDivDown(
+                aliceLpShares,
+                hyperdrive.totalSupply(AssetId._LP_ASSET_ID)
+            );
             uint256 aliceLpProceeds;
             (aliceLpProceeds, aliceWithdrawalShares) = removeLiquidity(
                 alice,
                 aliceLpShares
             );
-            uint256 lpSharePrice = hyperdrive.lpSharePrice();
-            assertEq(aliceLpProceeds, idle / 2);
+            assertEq(aliceLpProceeds, expectedProceeds);
             assertGe(
-                aliceWithdrawalShares.mulDown(lpSharePrice),
-                contribution > idle / 2 ? (contribution - idle / 2) : 0
+                aliceLpProceeds +
+                    aliceWithdrawalShares.mulDown(hyperdrive.lpSharePrice()) +
+                    1e7,
+                contribution
             );
         }
 
@@ -983,13 +998,15 @@ contract LpWithdrawalTest is HyperdriveTest {
         }
 
         // Bob removes his liquidity for all of the pool's remaining capital.
-        uint256 expectedLpProceeds = baseToken.balanceOf(address(hyperdrive));
+        uint256 expectedLpProceeds = bobLpShares.mulDown(
+            hyperdrive.lpSharePrice()
+        );
         (uint256 bobLpProceeds, uint256 bobWithdrawalShares) = removeLiquidity(
             bob,
             bobLpShares
         );
-        assertApproxEqAbs(bobLpProceeds, expectedLpProceeds, 1);
-        assertEq(bobWithdrawalShares, 0);
+        assertApproxEqAbs(bobLpProceeds, expectedLpProceeds, 1e9);
+        assertApproxEqAbs(bobWithdrawalShares, 0, 10);
     }
 
     function test_lp_withdrawal_two_lps_short_redemption(
@@ -1026,6 +1043,7 @@ contract LpWithdrawalTest is HyperdriveTest {
 
         // Alice and Bob add liquidity to the pool.
         uint256 aliceLpShares = initialize(alice, fixedRate, contribution);
+        contribution -= 2 * hyperdrive.getPoolConfig().minimumShareReserves;
         uint256 bobLpShares = addLiquidity(bob, contribution);
 
         // Celine opens a short.
@@ -1034,28 +1052,35 @@ contract LpWithdrawalTest is HyperdriveTest {
         // Alice removes her liquidity.
         uint256 aliceWithdrawalShares;
         {
+            //FIXME: We should be using a helper to calculate idle.
             //
             // We expect Alice to receive half of the idle funds in the pool and
             // withdrawal shares that are worth more than the amount of her
             // capital that remains in the pool. She gets a discount on the
             // withdrawal shares because she is increasing the pool's slippage
             // by removing liquidity, which increases the present value.
-            uint256 idle = hyperdrive.getPoolInfo().shareReserves;
+            uint256 idle = hyperdrive.getPoolInfo().shareReserves -
+                hyperdrive.getPoolConfig().minimumShareReserves;
+            uint256 expectedProceeds = idle.mulDivDown(
+                aliceLpShares,
+                hyperdrive.totalSupply(AssetId._LP_ASSET_ID)
+            );
             uint256 aliceLpProceeds;
             (aliceLpProceeds, aliceWithdrawalShares) = removeLiquidity(
                 alice,
                 aliceLpShares
             );
-            uint256 lpSharePrice = hyperdrive.lpSharePrice();
-            assertEq(aliceLpProceeds, idle / 2);
+            assertEq(aliceLpProceeds, expectedProceeds);
             // TODO: The tolerance of this assertion is needed because removing
             // liquidity can result in a situation in which the short can't be
             // fully closed. If this occurs, then the portion of the short that
             // can't be closed against the curve is marked to the short base
             // volume.
             assertGe(
-                aliceWithdrawalShares.mulDown(lpSharePrice),
-                (contribution > idle / 2 ? (contribution - idle / 2) : 0) - 1e13
+                aliceLpProceeds +
+                    aliceWithdrawalShares.mulDown(hyperdrive.lpSharePrice()) +
+                    1e13,
+                contribution
             );
         }
 
@@ -1097,13 +1122,15 @@ contract LpWithdrawalTest is HyperdriveTest {
         }
 
         // Bob removes his liquidity for all of the pool's remaining capital.
-        uint256 expectedLpProceeds = baseToken.balanceOf(address(hyperdrive));
+        uint256 expectedLpProceeds = bobLpShares.mulDown(
+            hyperdrive.lpSharePrice()
+        );
         (uint256 bobLpProceeds, uint256 bobWithdrawalShares) = removeLiquidity(
             bob,
             bobLpShares
         );
-        assertApproxEqAbs(bobLpProceeds, expectedLpProceeds, 1);
-        assertEq(bobWithdrawalShares, 0);
+        assertApproxEqAbs(bobLpProceeds, expectedLpProceeds, 1e9);
+        assertApproxEqAbs(bobWithdrawalShares, 0, 10);
     }
 
     function test_lp_withdrawal_three_lps(
