@@ -182,30 +182,11 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             );
         }
 
-        // By maintaining the ratio of present value to total LP shares, we may
-        // end up increasing the idle that is available to withdraw by other
-        // LPs. In this case, we pay out the proportional amount to the
-        // withdrawal pool so that the withdrawal shares receive a corresponding
-        // bump in their "idle" capital.
-        uint256 currentValue = lpShares.mulDivDown(
-            endingPresentValue,
-            lpTotalSupply + lpShares
-        );
-        if (withdrawalSharesOutstanding > 0 && shares > currentValue) {
-            uint256 withdrawalPoolProceeds = (shares - currentValue).mulDivDown(
-                withdrawalSharesOutstanding,
-                lpTotalSupply
-            );
-            _compensateWithdrawalPool(
-                withdrawalPoolProceeds,
-                endingPresentValue,
-                lpTotalSupply + lpShares,
-                withdrawalSharesOutstanding
-            );
-        }
-
         // Mint LP shares to the supplier.
         _mint(AssetId._LP_ASSET_ID, _destination, lpShares);
+
+        // Distribute the excess idle to the withdrawal pool.
+        _rebalanceWithdrawalPool(sharePrice);
 
         // Emit an AddLiquidity event.
         emit AddLiquidity(_destination, lpShares, _contribution);
@@ -245,6 +226,11 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // Perform a checkpoint.
         uint256 sharePrice = _pricePerShare();
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
+
+        // Distribute the excess idle to the withdrawal pool prior to removing
+        // liquidity from the pool. This prevents us from needing to backtrack
+        // from the backend of the calculation.
+        _rebalanceWithdrawalPool(sharePrice);
 
         // Burn the LP shares.
         uint256 totalActiveLpSupply = _totalSupply[AssetId._LP_ASSET_ID];
@@ -415,23 +401,17 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         uint256 _totalActiveLpSupply,
         uint256 _withdrawalSharesOutstanding
     ) internal returns (uint256 shareProceeds, uint256) {
-        // Calculate the starting present value of the pool.
+        // The LP is given their share of the idle capital in the pool. Since we
+        // distributed the excess idle to the withdrawal pool, we assume that
+        // the active LPs are the only LPs entitled to the pool's
+        // idle capital. The LP's proceeds are calculated as:
+        //
+        // proceeds = idle * (dl / l_a)
         HyperdriveMath.PresentValueParams
             memory params = _getPresentValueParams(_sharePrice);
         uint256 startingPresentValue = HyperdriveMath.calculatePresentValue(
             params
         );
-
-        // FIXME: If we pay back the pool's idle capital, then we can remove
-        //        the backtracking logic and update this documentation.
-        //
-        // A portion of Hyperdrive's capital may be "idle" capital that isn't
-        // being used to ensure that open positions are fully collateralized.
-        // The LP is given their share of the idle capital in the pool. We
-        // assume that the active LPs are the only LPs entitled to the pool's
-        // idle capital, so the LP's proceeds are calculated as:
-        //
-        // proceeds = idle * (dl / l_a)
         shareProceeds = HyperdriveMath
             .calculateIdle(
                 _marketState.shareReserves,
@@ -447,6 +427,9 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             params
         );
 
+        // FIXME: Do we still need backtracking? We should be able to determine
+        // this by fuzzing with the invariant that PV_a >= idle.
+        //
         // Calculate the amount of withdrawal shares that should be minted. We
         // solve for this value by solving the present value equation as
         // follows:
