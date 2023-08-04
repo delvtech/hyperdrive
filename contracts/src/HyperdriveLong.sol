@@ -344,7 +344,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 _shareProceeds,
                 longSharePrice_,
                 _sharePrice,
-                _sharePrice
+                _sharePrice,
+                0
             );
             _applyWithdrawalProceeds(
                 withdrawalProceeds,

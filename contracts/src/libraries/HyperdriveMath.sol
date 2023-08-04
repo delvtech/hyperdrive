@@ -596,13 +596,15 @@ library HyperdriveMath {
     /// @param _openSharePrice The share price at the short's open.
     /// @param _closeSharePrice The share price at the short's close.
     /// @param _sharePrice The current share price.
+    /// @param _flatFee The flat fee currently within the pool
     /// @return shareProceeds The short proceeds in shares.
     function calculateShortProceeds(
         uint256 _bondAmount,
         uint256 _shareAmount,
         uint256 _openSharePrice,
         uint256 _closeSharePrice,
-        uint256 _sharePrice
+        uint256 _sharePrice,
+        uint256 _flatFee
     ) internal pure returns (uint256 shareProceeds) {
         // If the interest is more negative than the trading profits and margin
         // released, than the short proceeds are marked to zero. Otherwise, we
@@ -613,6 +615,8 @@ library HyperdriveMath {
             // We round up here do avoid overestimating the share proceeds.
             _openSharePrice.mulUp(_sharePrice)
         );
+        bondFactor += _bondAmount.mulDown(_flatFee);
+
         if (bondFactor > _shareAmount) {
             // proceeds = (c1 / c0 * c) * dy - dz
             shareProceeds = bondFactor - _shareAmount;

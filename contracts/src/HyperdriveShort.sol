@@ -83,7 +83,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 shareReservesDelta,
                 openSharePrice,
                 sharePrice,
-                sharePrice
+                sharePrice,
+                _flatFee
             )
             .mulDown(sharePrice);
         if (_maxDeposit < traderDeposit) revert IHyperdrive.OutputLimit();
@@ -210,7 +211,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
             sharePayment,
             openSharePrice,
             closeSharePrice,
-            sharePrice
+            sharePrice,
+            0
         );
         uint256 baseProceeds = _withdraw(
             shortProceeds,
@@ -454,10 +456,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // to so that it is removed from the shareReserves. The shareReservesDelta,
         // totalCurveFee and totalGovernanceFee are all in terms of shares:
 
-        uint256 flatFee = shareReservesDelta.mulDown(_flatFee);
-
         // shares -= shares - shares
-        shareReservesDelta -= (totalCurveFee + flatFee) - totalGovernanceFee;
+        shareReservesDelta -= totalCurveFee - totalGovernanceFee;
         return (shareReservesDelta, totalGovernanceFee);
     }
 

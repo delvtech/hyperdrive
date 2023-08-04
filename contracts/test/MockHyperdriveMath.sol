@@ -174,7 +174,8 @@ contract MockHyperdriveMath {
             _shareAmount,
             _openSharePrice,
             _closeSharePrice,
-            _sharePrice
+            _sharePrice,
+            0
         );
         return result;
     }
