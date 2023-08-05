@@ -6,11 +6,12 @@ use crate::generated::{
     ihyperdrive::{Fees, IHyperdrive, PoolConfig},
     mock4626::Mock4626,
 };
+use ethers::signers::Signer;
 use ethers::{
     core::utils::Anvil,
     middleware::SignerMiddleware,
     providers::{Http, Provider},
-    signers::{LocalWallet, Signer},
+    signers::LocalWallet,
     types::{Address, H256, U256},
     utils::{parse_units, AnvilInstance},
 };
@@ -19,7 +20,8 @@ use std::{convert::TryFrom, sync::Arc, time::Duration};
 
 pub struct Hyperdrive {
     pub hyperdrive: IHyperdrive<SignerMiddleware<Provider<Http>, LocalWallet>>,
-    pub client: Arc<SignerMiddleware<Provider<Http>, LocalWallet>>,
+    pub base: ERC20Mintable<SignerMiddleware<Provider<Http>, LocalWallet>>,
+    pub accounts: Vec<Arc<SignerMiddleware<Provider<Http>, LocalWallet>>>,
     _anvil: AnvilInstance, // NOTE: Drop this when Hyperdrive is dropped.
 }
 
@@ -28,20 +30,26 @@ impl Hyperdrive {
     pub async fn new() -> Result<Self> {
         // Deploy an anvil instance and set up a wallet and provider.
         let anvil = Anvil::new().spawn();
-        let wallet: LocalWallet = anvil.keys()[0].clone().into();
         let provider =
             Provider::<Http>::try_from(anvil.endpoint())?.interval(Duration::from_millis(10u64));
-        let client = Arc::new(SignerMiddleware::new(
-            provider,
-            wallet.with_chain_id(anvil.chain_id()),
-        ));
+        let wallets: Vec<LocalWallet> = anvil.keys().iter().map(|k| k.clone().into()).collect();
+        let accounts = wallets
+            .iter()
+            .map(|w| {
+                Arc::new(SignerMiddleware::new(
+                    provider.clone(),
+                    w.clone().with_chain_id(anvil.chain_id()),
+                ))
+            })
+            .collect::<Vec<_>>();
+        let client = accounts[0].clone();
 
         // Deploy the base token and vault.
-        let base_token = ERC20Mintable::deploy(client.clone(), ())?.send().await?;
+        let base = ERC20Mintable::deploy(client.clone(), ())?.send().await?;
         let pool = Mock4626::deploy(
             client.clone(),
             (
-                base_token.address(),
+                base.address(),
                 "Mock ERC4626 Vault".to_string(),
                 "MOCK".to_string(),
             ),
@@ -51,7 +59,7 @@ impl Hyperdrive {
 
         // Deploy the Hyperdrive instance.
         let config = PoolConfig {
-            base_token: base_token.address(),
+            base_token: base.address(),
             initial_share_price: parse_units("1", 18)?.into(),
             minimum_share_reserves: parse_units("10", 18)?.into(),
             position_duration: U256::from(60 * 60 * 24 * 365), // 1 year
@@ -95,7 +103,8 @@ impl Hyperdrive {
 
         Ok(Hyperdrive {
             hyperdrive: IHyperdrive::new(erc4626_hyperdrive.address(), client.clone()),
-            client,
+            base,
+            accounts,
             _anvil: anvil,
         })
     }
@@ -116,7 +125,8 @@ mod tests {
     async fn test_deploy() -> Result<()> {
         let deployment = Hyperdrive::new().await?;
         let hyperdrive = &deployment.hyperdrive;
-        let alice = deployment.client.clone();
+        let base = &deployment.base;
+        let alice = deployment.accounts.first().unwrap();
 
         // Verify that the Hyperdrive address is non-zero.
         assert_ne!(hyperdrive.address(), Address::zero());
@@ -127,15 +137,8 @@ mod tests {
 
         // Mint some base and approve the Hyperdrive instance.
         let contribution = U256::from(parse_units("1_000_000", 18)?);
-        let base_token = ERC20Mintable::new(
-            hyperdrive.base_token().call().await?,
-            deployment.client.clone(),
-        );
-        base_token.mint(contribution).send().await?;
-        base_token
-            .approve(hyperdrive.address(), U256::MAX)
-            .send()
-            .await?;
+        base.mint(contribution).send().await?;
+        base.approve(hyperdrive.address(), U256::MAX).send().await?;
 
         // Initialize the pool.
         let rate = U256::from(parse_units("0.05", 18)?);
