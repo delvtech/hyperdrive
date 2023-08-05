@@ -35,3 +35,8 @@ __pycache__/
 
 # The generated reproduction test.
 test/Generated.t.sol
+
+# Rust
+target/
+!crates/test-utils/src/generated/mod.rs
+crates/test-utils/src/generated/
