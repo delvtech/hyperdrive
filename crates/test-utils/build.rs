@@ -42,6 +42,16 @@ fn main() -> Result<()> {
             "mock4626.rs",
             "Mock4626",
         ),
+        (
+            "../../out/MockFixedPointMath.sol/MockFixedPointMath.json",
+            "mock_fixed_point_math.rs",
+            "MockFixedPointMath",
+        ),
+        (
+            "../../out/MockYieldSpaceMath.sol/MockYieldSpaceMath.json",
+            "mock_yield_space_math.rs",
+            "MockYieldSpaceMath",
+        ),
     ];
     for (source, target, name) in abi_sources {
         let target_file = generated.join(target);

@@ -1,4 +1,3 @@
-use crate::fixed_point::FixedPoint;
 use crate::generated::{
     erc20_mintable::ERC20Mintable,
     erc4626_data_provider::ERC4626DataProvider,
@@ -16,6 +15,7 @@ use ethers::{
     utils::{parse_units, AnvilInstance},
 };
 use eyre::Result;
+use fixed_point::FixedPoint;
 use std::{convert::TryFrom, sync::Arc, time::Duration};
 
 pub struct Hyperdrive {

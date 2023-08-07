@@ -1,9 +1,7 @@
 [package]
-name = "test-utils"
+name = "fixed-point"
 version = "0.1.0"
 edition = "2021"
-
-build = "build.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -14,10 +12,6 @@ eyre = "0.6.8"
 rand = "0.8.5"
 tokio = { version = "1", features = ["full"] }
 
-fixed-point = { version = "0.1", path = "../fixed-point" }
+[dev-dependencies]
 
-[build-dependencies]
-
-ethers = "2.0"
-ethers-solc = "2.0"
-eyre = "0.6.8"
+test-utils = { version = "0.1", path = "../test-utils" }

@@ -1,6 +1,8 @@
 [workspace]
 
 members = [
+    "crates/fixed-point",
+    "crates/hyperdrive-math",
     "crates/test-utils",
     "test/rust",
 ]
