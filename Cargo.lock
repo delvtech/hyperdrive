@@ -1064,6 +1064,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "fixed-point"
+version = "0.1.0"
+dependencies = [
+ "ethers",
+ "eyre",
+ "rand",
+ "tokio",
+]
+
+[[package]]
 name = "fixedbitset"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1433,6 +1443,31 @@ dependencies = [
  "rustls",
  "tokio",
  "tokio-rustls",
+]
+
+[[package]]
+name = "hyperdrive-math"
+version = "0.1.0"
+dependencies = [
+ "ethers",
+ "eyre",
+ "fixed-point",
+ "hyperdrive-wrappers",
+ "rand",
+ "tokio",
+]
+
+[[package]]
+name = "hyperdrive-wrappers"
+version = "0.1.0"
+dependencies = [
+ "ethers",
+ "ethers-solc",
+ "eyre",
+ "fixed-point",
+ "heck",
+ "rand",
+ "tokio",
 ]
 
 [[package]]
@@ -2817,6 +2852,8 @@ dependencies = [
  "ethers",
  "ethers-solc",
  "eyre",
+ "fixed-point",
+ "hyperdrive-wrappers",
  "rand",
  "tokio",
 ]

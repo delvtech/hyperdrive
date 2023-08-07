@@ -38,5 +38,4 @@ test/Generated.t.sol
 
 # Rust
 target/
-!crates/test-utils/src/generated/mod.rs
-crates/test-utils/src/generated/
+crates/hyperdrive-wrappers/src/wrappers/

@@ -1,36 +1,29 @@
-use ethers::types::{Address, U256};
+use ethers::types::U256;
 use ethers::utils::parse_units;
 use eyre::Result;
-use std::collections::BTreeMap;
+use test_utils::agent::Agent;
 use test_utils::hyperdrive::Hyperdrive;
 
 #[tokio::test]
 async fn test_invariant() -> Result<()> {
     let deployment = Hyperdrive::new().await?;
-    let alice = deployment.accounts[0].clone();
-    let hyperdrive = &deployment.hyperdrive;
-    let base = &deployment.base;
-    let config = hyperdrive.get_pool_config().call().await?;
+    let mut alice = Agent::new(deployment.clone(), deployment.accounts[0].address());
+    let mut bob = Agent::new(deployment.clone(), deployment.accounts[1].address());
 
-    // Mint some base and approve the Hyperdrive instance.
+    // Fund Alice and Bob's accounts.
     let contribution = U256::from(parse_units("500_000_000", 18)?);
-    base.mint(contribution).send().await?;
-    base.approve(hyperdrive.address(), U256::MAX).send().await?;
+    alice.fund(contribution).await?;
+    bob.fund(contribution).await?;
 
     // Initialize the pool.
     let rate = U256::from(parse_units("0.05", 18)?);
-    hyperdrive
-        .initialize(contribution, rate, alice.address(), true)
-        .send()
-        .await?;
-    let lp_shares = hyperdrive
-        .balance_of(U256::zero(), alice.address())
-        .call()
-        .await?;
-    assert_eq!(
-        lp_shares,
-        contribution - config.minimum_share_reserves * U256::from(2)
-    );
+    alice.initialize(rate, contribution).await?;
+
+    // Bob opens a long position.
+    let long_amount = U256::from(parse_units("100_000_000", 18)?);
+    bob.open_long(long_amount).await?;
+
+    println!("bob={:?}", bob);
 
     // FIXME: For a basic invariant test, we need to be able to randomly open
     // and close trades with different private keys.
