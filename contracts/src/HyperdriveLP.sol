@@ -487,7 +487,9 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         );
 
         // If the value of the active LP shares is less than the idle capital,
-        // we pay out the excess idle to the withdrawal pool.
+        // we pay out the excess idle to the withdrawal pool. In the case that
+        // the pool's present value is zero, all of the withdrawal shares are
+        // paid out.
         uint256 withdrawalProceeds = 0;
         uint256 idle = HyperdriveMath.calculateIdle(
             _marketState.shareReserves,
@@ -498,12 +500,14 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         if (idle > activeLpValue) {
             withdrawalProceeds = idle - activeLpValue;
         }
-        _compensateWithdrawalPool(
-            withdrawalProceeds,
-            presentValue,
-            totalLpSupply,
-            withdrawalSharesOutstanding
-        );
+        if (withdrawalProceeds > 0 || presentValue == 0) {
+            _compensateWithdrawalPool(
+                withdrawalProceeds,
+                presentValue,
+                totalLpSupply,
+                withdrawalSharesOutstanding
+            );
+        }
     }
 
     /// @dev Pays out the maximum amount of withdrawal shares given a specified

@@ -56,7 +56,7 @@ contract AddLiquidityTest is HyperdriveTest {
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
 
-        // Ensure that non-pauser can't pause the pool.
+        // Ensure that liquidity cannot be added when the pool is paused.
         vm.stopPrank();
         pause(true);
         vm.startPrank(bob);
