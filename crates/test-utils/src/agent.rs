@@ -1,10 +1,12 @@
-use crate::{generated::ihyperdrive::IHyperdriveEvents, hyperdrive::Hyperdrive};
+use crate::hyperdrive::Hyperdrive;
 use ethers::{
     prelude::EthLogDecode,
     types::{Address, U256},
 };
 use eyre::Result;
+use hyperdrive_wrappers::wrappers::ihyperdrive::IHyperdriveEvents;
 use std::collections::BTreeMap;
+use std::fmt;
 
 #[derive(Default)]
 struct Wallet {
@@ -21,6 +23,21 @@ pub struct Agent {
     wallet: Wallet,
 }
 
+impl fmt::Debug for Agent {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Agent")
+            .field("address", &self.address)
+            .field("base", &self.wallet.base)
+            .field("lp_shares", &self.wallet.lp_shares)
+            .field("withdrawal_shares", &self.wallet.withdrawal_shares)
+            .field("longs", &self.wallet.longs)
+            .field("shorts", &self.wallet.shorts)
+            .finish()
+    }
+}
+
+// FIXME: There should be a cleaner way of creating the agent than this.
+//
 // TODO: This has the barebones logic required for integration and fuzz tests;
 // however, we'll need the max trade calculations to be able to fuzz with sane
 // trade limits.
@@ -112,14 +129,17 @@ impl Agent {
         // If the wallet has a sufficient balance of longs, update the long
         // balance. Otherwise, return an error.
         let long_balance = self.wallet.longs.entry(maturity_time).or_default();
-        if *long_balance < bond_amount {
+        if *long_balance > bond_amount {
+            *long_balance -= bond_amount;
+        } else if *long_balance == bond_amount {
+            self.wallet.longs.remove(&maturity_time);
+        } else {
             return Err(eyre::eyre!(
                 "insufficient long balance to close long: {} < {}",
                 long_balance,
                 bond_amount
             ));
         }
-        *long_balance -= bond_amount;
 
         // Close the long and increase the wallet's base balance.
         let log = {
@@ -195,14 +215,17 @@ impl Agent {
         // If the wallet has a sufficient balance of shorts, update the short
         // balance. Otherwise, return an error.
         let short_balance = self.wallet.shorts.entry(maturity_time).or_default();
-        if *short_balance < bond_amount {
+        if *short_balance > bond_amount {
+            *short_balance -= bond_amount;
+        } else if *short_balance == bond_amount {
+            self.wallet.shorts.remove(&maturity_time);
+        } else {
             return Err(eyre::eyre!(
                 "insufficient short balance to close short: {} < {}",
                 short_balance,
                 bond_amount
             ));
         }
-        *short_balance -= bond_amount;
 
         // Close the long and increase the wallet's base balance.
         let log = {
@@ -237,6 +260,48 @@ impl Agent {
 
     /// LPs ///
 
+    pub async fn initialize(&mut self, rate: U256, contribution: U256) -> Result<()> {
+        // Ensure that the agent has a sufficient base balance to initialize the pool.
+        if self.wallet.base < contribution {
+            return Err(eyre::eyre!(
+                "insufficient base balance to initialize: {} < {}",
+                self.wallet.base,
+                contribution
+            ));
+        }
+        self.wallet.base -= contribution;
+
+        // Initialize the pool and record the LP shares that were received in the wallet.
+        let log = {
+            let tx = self
+                .hyperdrive
+                .hyperdrive
+                .initialize(contribution, rate, self.address, true)
+                .from(self.address);
+            let logs = tx
+                .send()
+                .await?
+                .await?
+                .unwrap()
+                .logs
+                .into_iter()
+                .filter_map(|log| {
+                    if let Ok(IHyperdriveEvents::InitializeFilter(log)) =
+                        IHyperdriveEvents::decode_log(&log.into())
+                    {
+                        Some(log)
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<_>>();
+            logs[0].clone()
+        };
+        self.wallet.lp_shares = log.lp_amount;
+
+        Ok(())
+    }
+
     pub async fn add_liquidity(&mut self, contribution: U256) -> Result<()> {
         // Ensure that the agent has a sufficient base balance to add liquidity.
         if self.wallet.base < contribution {
@@ -246,8 +311,6 @@ impl Agent {
                 contribution
             ));
         }
-
-        // Decrease the wallet's base balance.
         self.wallet.base -= contribution;
 
         // Add liquidity and record the LP shares that were received in the wallet.
@@ -368,5 +431,27 @@ impl Agent {
         self.wallet.withdrawal_shares -= log.withdrawal_share_amount;
 
         Ok(())
+    }
+
+    /// Getters ///
+
+    fn base(&self) -> U256 {
+        self.wallet.base
+    }
+
+    fn lp_shares(&self) -> U256 {
+        self.wallet.lp_shares
+    }
+
+    fn withdrawal_shares(&self) -> U256 {
+        self.wallet.withdrawal_shares
+    }
+
+    fn longs(&self) -> &BTreeMap<U256, U256> {
+        &self.wallet.longs
+    }
+
+    fn shorts(&self) -> &BTreeMap<U256, U256> {
+        &self.wallet.shorts
     }
 }

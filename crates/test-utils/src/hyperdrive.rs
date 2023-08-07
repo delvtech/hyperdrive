@@ -1,11 +1,3 @@
-use crate::fixed_point::FixedPoint;
-use crate::generated::{
-    erc20_mintable::ERC20Mintable,
-    erc4626_data_provider::ERC4626DataProvider,
-    erc4626_hyperdrive::ERC4626Hyperdrive,
-    ihyperdrive::{Fees, IHyperdrive, PoolConfig},
-    mock4626::Mock4626,
-};
 use ethers::signers::Signer;
 use ethers::{
     core::utils::Anvil,
@@ -16,13 +8,22 @@ use ethers::{
     utils::{parse_units, AnvilInstance},
 };
 use eyre::Result;
+use fixed_point::FixedPoint;
+use hyperdrive_wrappers::wrappers::{
+    erc20_mintable::ERC20Mintable,
+    erc4626_data_provider::ERC4626DataProvider,
+    erc4626_hyperdrive::ERC4626Hyperdrive,
+    ihyperdrive::{Fees, IHyperdrive, PoolConfig},
+    mock4626::Mock4626,
+};
 use std::{convert::TryFrom, sync::Arc, time::Duration};
 
+#[derive(Clone)]
 pub struct Hyperdrive {
     pub hyperdrive: IHyperdrive<SignerMiddleware<Provider<Http>, LocalWallet>>,
     pub base: ERC20Mintable<SignerMiddleware<Provider<Http>, LocalWallet>>,
     pub accounts: Vec<Arc<SignerMiddleware<Provider<Http>, LocalWallet>>>,
-    _anvil: AnvilInstance, // NOTE: Drop this when Hyperdrive is dropped.
+    _anvil: Arc<AnvilInstance>, // NOTE: Drop this when Hyperdrive is dropped.
 }
 
 impl Hyperdrive {
@@ -105,7 +106,7 @@ impl Hyperdrive {
             hyperdrive: IHyperdrive::new(erc4626_hyperdrive.address(), client.clone()),
             base,
             accounts,
-            _anvil: anvil,
+            _anvil: Arc::new(anvil),
         })
     }
 
