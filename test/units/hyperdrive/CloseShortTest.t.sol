@@ -459,10 +459,15 @@ contract CloseShortTest is HyperdriveTest {
         initialize(alice, fixedRate, contribution);
 
         // 5. Open and close a short at maturity, advancing the time
-        (maturityTime, baseAmount) = openShort(bob, 10e18);
+        (maturityTime, baseAmount) = openShort(bob, 10e18, DepositOverrides({
+            asUnderlying: false,
+            depositAmount: 10e18 * 2,
+            minSlippage: 0,
+            maxSlippage: type(uint128).max
+            
+        }));
         advanceTime(POSITION_DURATION, variableRate);
-        closeShort(bob, maturityTime, baseAmount);
-
+        closeShort(bob, maturityTime, baseAmount - 10e18); // Account for flatFee
         // 6. Record Share Reserves
         IHyperdrive.MarketState memory maxFeeState = hyperdrive
             .getMarketState();
@@ -479,9 +484,14 @@ contract CloseShortTest is HyperdriveTest {
         initialize(alice, fixedRate, contribution);
 
         // 8. Open and close another short at maturity as well, advancing the time
-        (maturityTime, baseAmount) = openShort(bob, 10e18);
+        (maturityTime, baseAmount) = openShort(bob, 10e18, DepositOverrides({
+            asUnderlying: false,
+            depositAmount: 10e18 * 2,
+            minSlippage: 0,
+            maxSlippage: type(uint128).max
+        }));
         advanceTime(POSITION_DURATION, variableRate);
-        closeShort(bob, maturityTime, baseAmount);
+        closeShort(bob, maturityTime, baseAmount - 10e18);
 
         // 9. Record Share Reserves
         IHyperdrive.MarketState memory maxFlatFeeState = hyperdrive
@@ -490,7 +500,7 @@ contract CloseShortTest is HyperdriveTest {
         // Since the fees are subtracted from reserves and accounted for
         // seperately, this will be true
         assertEq(zeroFeeState.shareReserves, maxFeeState.shareReserves);
-        assertGt(maxFlatFeeState.shareReserves, maxFeeState.shareReserves);
+        assertGt(maxFlatFeeState.shareReserves, maxFeeState.shareReserves); 
     }
 
     function verifyCloseShort(

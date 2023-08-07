@@ -213,7 +213,7 @@ contract OpenShortTest is HyperdriveTest {
         bondAmount = (hyperdrive.calculateMaxShort() * 90) / 100;
         DepositOverrides memory depositOverrides = DepositOverrides({
             asUnderlying: false,
-            depositAmount: bondAmount,
+            depositAmount: bondAmount * 2,
             minSlippage: 0,
             maxSlippage: type(uint128).max
         });

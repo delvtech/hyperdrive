@@ -8,6 +8,7 @@ import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { ETH } from "test/utils/Constants.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { Lib } from "test/utils/Lib.sol";
+import { console } from "forge-std/console.sol";
 
 contract ReentrancyTester {
     using Lib for *;
@@ -316,7 +317,7 @@ contract ReentrancyTest is HyperdriveTest {
             // ETH receiver will receive a refund.
             DepositOverrides({
                 asUnderlying: true,
-                depositAmount: BOND_AMOUNT,
+                depositAmount: BOND_AMOUNT * 2,
                 minSlippage: 0,
                 maxSlippage: type(uint256).max
             })
@@ -327,7 +328,14 @@ contract ReentrancyTest is HyperdriveTest {
     function _reenter_closeShort(address _trader, bytes memory _data) internal {
         // Initialize the pool and open a short.
         initialize(_trader, FIXED_RATE, CONTRIBUTION);
-        (uint256 maturityTime, ) = openShort(_trader, BOND_AMOUNT);
+        (uint256 maturityTime, ) = openShort(_trader, BOND_AMOUNT,
+            DepositOverrides({
+                asUnderlying: true,
+                depositAmount: BOND_AMOUNT * 2,
+                minSlippage: 0,
+                maxSlippage: type(uint256).max
+            })
+        );
 
         // Set up the reentrant call.
         tester.setTarget(address(hyperdrive));

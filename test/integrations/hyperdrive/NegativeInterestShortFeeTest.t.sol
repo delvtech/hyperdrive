@@ -311,7 +311,12 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
         uint256 calculatedSpotPrice = HyperdriveUtils.calculateSpotPrice(
             hyperdrive
         );
-        (uint256 maturityTime, ) = openShort(bob, shortAmount);
+        (uint256 maturityTime, ) = openShort(bob, shortAmount, DepositOverrides({
+            asUnderlying: true,
+            depositAmount: shortAmount * 2,
+            minSlippage: 0,
+            maxSlippage: type(uint256).max
+        }));
 
         // Fees are going to be 0 because this test uses 0% curve fee
         {
@@ -499,7 +504,12 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
         uint256 calculatedSpotPrice = HyperdriveUtils.calculateSpotPrice(
             hyperdrive
         );
-        (uint256 maturityTime, ) = openShort(bob, shortAmount);
+        (uint256 maturityTime, ) = openShort(bob, shortAmount, DepositOverrides({
+            asUnderlying: true,
+            depositAmount: shortAmount * 2,
+            minSlippage: 0,
+            maxSlippage: type(uint256).max
+        }));
 
         // Get the fees accrued from opening the short.
         uint256 governanceFeesAfterOpenShort = IMockHyperdrive(

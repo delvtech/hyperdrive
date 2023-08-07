@@ -576,12 +576,8 @@ contract HyperdriveTest is BaseTest {
                 overrides.asUnderlying
             );
         } else {
-            uint256 mintAmount = overrides.depositAmount;
-            if (overrides.maxSlippage > bondAmount) {
-                mintAmount = overrides.maxSlippage;
-            }
-            baseToken.mint(mintAmount);
-            baseToken.approve(address(hyperdrive), mintAmount);
+            baseToken.mint(overrides.depositAmount);
+            baseToken.approve(address(hyperdrive), overrides.maxSlippage);
             (maturityTime, baseAmount) = hyperdrive.openShort(
                 bondAmount,
                 overrides.maxSlippage, // max base payment
