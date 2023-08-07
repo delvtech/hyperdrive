@@ -1,6 +1,7 @@
-use ethers::types::U256;
+use ethers::types::{Address, U256};
 use ethers::utils::parse_units;
 use eyre::Result;
+use std::collections::BTreeMap;
 use test_utils::hyperdrive::Hyperdrive;
 
 #[tokio::test]
