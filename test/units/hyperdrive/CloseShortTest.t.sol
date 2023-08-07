@@ -503,6 +503,8 @@ contract CloseShortTest is HyperdriveTest {
         assertGt(maxFlatFeeState.shareReserves, maxFeeState.shareReserves); 
     }
 
+    function test_governance_fees_collected_at_maturity() external {}
+
     function verifyCloseShort(
         IHyperdrive.PoolInfo memory poolInfoBefore,
         uint256 bobBaseBalanceBefore,
