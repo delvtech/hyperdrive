@@ -1341,7 +1341,8 @@ contract HyperdriveMathTest is HyperdriveTest {
         // proceeds = ((margin + interest) / share_price) = (0 + 1 * 0.05) / 1.05 + (1 * 0.5)
         assertApproxEqAbs(
             shortProceeds,
-            (bondAmount.mulDown(0.05e18)).divDown(sharePrice) + (bondAmount.mulDown(flatFee)),
+            (bondAmount.mulDown(0.05e18)).divDown(sharePrice) +
+                (bondAmount.mulDown(flatFee)),
             1
         );
 
@@ -1363,7 +1364,8 @@ contract HyperdriveMathTest is HyperdriveTest {
         // proceeds = ()(margin + interest) / share_price) + (bondAmount * flatFee) = ((0.05 + 1.05 * 0.05) / 1.05) + (1 * 0.25)
         assertApproxEqAbs(
             shortProceeds,
-            (0.05e18 + bondAmount.mulDown(0.05e18)).divDown(sharePrice) + (bondAmount.mulDown(flatFee)),
+            (0.05e18 + bondAmount.mulDown(0.05e18)).divDown(sharePrice) +
+                (bondAmount.mulDown(flatFee)),
             1
         );
     }
