@@ -53,17 +53,21 @@ impl State {
         Self { z, y, c, mu }
     }
 
+    pub fn get_spot_price(&self, t: FixedPoint) -> FixedPoint {
+        ((self.mu * self.z) / self.y).pow(t)
+    }
+
     pub fn get_out_for_in(&self, in_: Asset, t: FixedPoint) -> FixedPoint {
         match in_ {
-            Asset::Shares(in_) => self.get_shares_out_for_bonds_in(in_, t),
-            Asset::Bonds(in_) => self.get_bonds_out_for_shares_in(in_, t),
+            Asset::Shares(in_) => self.get_bonds_out_for_shares_in(in_, t),
+            Asset::Bonds(in_) => self.get_shares_out_for_bonds_in(in_, t),
         }
     }
 
     pub fn get_in_for_out(&self, out: Asset, t: FixedPoint) -> FixedPoint {
         match out {
-            Asset::Shares(out) => self.get_shares_in_for_bonds_out(out, t),
-            Asset::Bonds(out) => self.get_bonds_in_for_shares_out(out, t),
+            Asset::Shares(out) => self.get_bonds_in_for_shares_out(out, t),
+            Asset::Bonds(out) => self.get_shares_in_for_bonds_out(out, t),
         }
     }
 
@@ -170,10 +174,10 @@ mod tests {
             let ts = rng.gen_range(FixedPoint::zero()..FixedPoint::one());
             let expected = match in_ {
                 Asset::Shares(in_) => {
-                    panic::catch_unwind(|| state.get_shares_out_for_bonds_in(in_, ts))
+                    panic::catch_unwind(|| state.get_bonds_out_for_shares_in(in_, ts))
                 }
                 Asset::Bonds(in_) => {
-                    panic::catch_unwind(|| state.get_bonds_out_for_shares_in(in_, ts))
+                    panic::catch_unwind(|| state.get_shares_out_for_bonds_in(in_, ts))
                 }
             };
             let actual = panic::catch_unwind(|| state.get_out_for_in(in_, ts));
@@ -193,10 +197,10 @@ mod tests {
             let ts = rng.gen_range(FixedPoint::zero()..FixedPoint::one());
             let expected = match out {
                 Asset::Shares(out) => {
-                    panic::catch_unwind(|| state.get_shares_in_for_bonds_out(out, ts))
+                    panic::catch_unwind(|| state.get_bonds_in_for_shares_out(out, ts))
                 }
                 Asset::Bonds(out) => {
-                    panic::catch_unwind(|| state.get_bonds_in_for_shares_out(out, ts))
+                    panic::catch_unwind(|| state.get_shares_in_for_bonds_out(out, ts))
                 }
             };
             let actual = panic::catch_unwind(|| state.get_in_for_out(out, ts));
