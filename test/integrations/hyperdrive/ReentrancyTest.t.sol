@@ -316,6 +316,7 @@ contract ReentrancyTest is HyperdriveTest {
             // ETH receiver will receive a refund.
             DepositOverrides({
                 asUnderlying: true,
+                // NOTE: Roughly double deposit amount needed to cover 100% flat fee
                 depositAmount: BOND_AMOUNT * 2,
                 minSlippage: 0,
                 maxSlippage: type(uint256).max
@@ -332,6 +333,7 @@ contract ReentrancyTest is HyperdriveTest {
             BOND_AMOUNT,
             DepositOverrides({
                 asUnderlying: true,
+                // NOTE: Roughly double deposit amount needed to cover 100% flat fee
                 depositAmount: BOND_AMOUNT * 2,
                 minSlippage: 0,
                 maxSlippage: type(uint256).max
