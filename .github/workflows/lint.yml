@@ -37,7 +37,14 @@ jobs:
         with:
           version: nightly
 
-      - name: lint
+      - name: lint contracts
         uses: borales/actions-yarn@v4
         with:
           cmd: lint
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: lint rust
+        run: cargo check
