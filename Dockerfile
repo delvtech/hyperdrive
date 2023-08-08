@@ -33,6 +33,7 @@ ENV RPC_URL=http://localhost:8545
 # the post-migrations state.
 RUN anvil --dump-state ./data & \
     ANVIL="$!" && \ 
+    sleep 2 && \
     ./migrate.sh && \
     kill $ANVIL && \
     sleep 1s # HACK(jalextowle): Ensure that "./data" is written before exiting.
