@@ -8,7 +8,6 @@ import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { ETH } from "test/utils/Constants.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { Lib } from "test/utils/Lib.sol";
-import { console } from "forge-std/console.sol";
 
 contract ReentrancyTester {
     using Lib for *;
