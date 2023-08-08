@@ -113,7 +113,7 @@ impl Hyperdrive {
     fn get_time_stretch(mut rate: FixedPoint) -> FixedPoint {
         rate = (U256::from(rate) * uint256!(100)).into();
         let time_stretch = fixed!(5.24592e18) / (fixed!(0.04665e18) * rate);
-        return fixed!(1e18) / time_stretch;
+        fixed!(1e18) / time_stretch
     }
 }
 

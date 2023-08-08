@@ -88,7 +88,7 @@ impl Agent {
         }
 
         // Decrease the wallet's base balance.
-        self.wallet.base -= base_paid.into();
+        self.wallet.base -= base_paid;
 
         // Open the long and record the trade in the wallet.
         let log = {
