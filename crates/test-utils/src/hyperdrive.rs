@@ -13,7 +13,7 @@ use hyperdrive_wrappers::wrappers::{
     erc20_mintable::ERC20Mintable,
     erc4626_data_provider::ERC4626DataProvider,
     erc4626_hyperdrive::ERC4626Hyperdrive,
-    ihyperdrive::{Fees, IHyperdrive, PoolConfig},
+    i_hyperdrive::{Fees, IHyperdrive, PoolConfig},
     mock4626::Mock4626,
 };
 use std::{convert::TryFrom, sync::Arc, time::Duration};

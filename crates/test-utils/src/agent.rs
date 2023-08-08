@@ -4,7 +4,7 @@ use ethers::{
     types::{Address, U256},
 };
 use eyre::Result;
-use hyperdrive_wrappers::wrappers::ihyperdrive::IHyperdriveEvents;
+use hyperdrive_wrappers::wrappers::i_hyperdrive::IHyperdriveEvents;
 use std::collections::BTreeMap;
 use std::fmt;
 

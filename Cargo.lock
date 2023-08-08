@@ -1069,6 +1069,7 @@ version = "0.1.0"
 dependencies = [
  "ethers",
  "eyre",
+ "hyperdrive-wrappers",
  "rand",
  "tokio",
 ]

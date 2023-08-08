@@ -11,3 +11,7 @@ ethers = "2.0"
 eyre = "0.6.8"
 rand = "0.8.5"
 tokio = { version = "1", features = ["full"] }
+
+[dev-dependencies]
+
+hyperdrive-wrappers = { version = "0.1", path = "../hyperdrive-wrappers" }

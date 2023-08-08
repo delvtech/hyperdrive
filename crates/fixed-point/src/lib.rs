@@ -432,7 +432,6 @@ impl UniformSampler for UniformFixedPoint {
 mod tests {
     use super::*;
     use ethers::{
-        contract::abigen,
         core::utils::Anvil,
         middleware::SignerMiddleware,
         providers::{Http, Provider},
@@ -440,15 +439,9 @@ mod tests {
         utils::AnvilInstance,
     };
     use eyre::Result;
+    use hyperdrive_wrappers::wrappers::mock_fixed_point_math::MockFixedPointMath;
     use rand::{thread_rng, Rng};
     use std::{convert::TryFrom, panic, sync::Arc, time::Duration};
-
-    // FIXME: Ideally, we'd compile the contracts at this point so that we're
-    // always testing against the most up to date contracts.
-    abigen!(
-        MockFixedPointMath,
-        "../../hyperdrive/out/MockFixedPointMath.sol/MockFixedPointMath.json",
-    );
 
     const FUZZ_RUNS: usize = 10_000;
 

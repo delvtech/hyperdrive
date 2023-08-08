@@ -130,7 +130,6 @@ impl State {
 mod tests {
     use super::*;
     use ethers::{
-        contract::abigen,
         core::utils::Anvil,
         middleware::SignerMiddleware,
         providers::{Http, Provider},
