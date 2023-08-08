@@ -73,8 +73,8 @@ impl State {
         // simplifies YieldSpace to k = ((c / mu) + 1) * y ** (1 - tau), and
         // gives us the maximum bond reserves of y' = (k / ((c / mu) + 1)) ** (1 / (1 - tau))
         // and the maximum share reserves of z' = y/mu.
-        let optimal_y = (self.k(t) / (self.c / self.mu + FixedPoint::one()))
-            .pow(FixedPoint::one() / (FixedPoint::one() - t));
+        let optimal_y =
+            (self.k(t) / (self.c / self.mu + fixed!(1e18))).pow(fixed!(1e18) / (fixed!(1e18) - t));
         let optimal_z = optimal_y / self.mu;
 
         // The optimal trade sizes are given by dz = z' - z and dy = y - y'.
@@ -82,38 +82,37 @@ impl State {
     }
 
     pub fn k(&self, t: FixedPoint) -> FixedPoint {
-        (self.c / self.mu) * (self.mu * self.z).pow(FixedPoint::one() - t)
-            + self.y.pow(FixedPoint::one() - t)
+        (self.c / self.mu) * (self.mu * self.z).pow(fixed!(1e18) - t) + self.y.pow(fixed!(1e18) - t)
     }
 
     fn get_bonds_out_for_shares_in(&self, in_: FixedPoint, t: FixedPoint) -> FixedPoint {
-        let z = (self.c / self.mu) * (self.mu * (self.z + in_)).pow(FixedPoint::one() - t);
-        let y = (self.k(t) - z).pow(FixedPoint::one().div_up(FixedPoint::one() - t));
+        let z = (self.c / self.mu) * (self.mu * (self.z + in_)).pow(fixed!(1e18) - t);
+        let y = (self.k(t) - z).pow(fixed!(1e18).div_up(fixed!(1e18) - t));
         self.y - y
     }
 
     fn get_shares_out_for_bonds_in(&self, in_: FixedPoint, t: FixedPoint) -> FixedPoint {
-        let y = (self.y + in_).pow(FixedPoint::one() - t);
+        let y = (self.y + in_).pow(fixed!(1e18) - t);
         let mut z = (self.k(t) - y) / (self.c / self.mu);
-        z = z.pow(FixedPoint::one().div_up(FixedPoint::one() - t));
+        z = z.pow(fixed!(1e18).div_up(fixed!(1e18) - t));
         z /= self.mu;
         if self.z > z {
             self.z - z
         } else {
-            FixedPoint::zero()
+            fixed!(0)
         }
     }
 
     fn get_bonds_in_for_shares_out(&self, out: FixedPoint, t: FixedPoint) -> FixedPoint {
-        let z = (self.c / self.mu) * (self.mu * (self.z - out)).pow(FixedPoint::one() - t);
-        let y = (self.k(t) - z).pow(FixedPoint::one().div_up(FixedPoint::one() - t));
+        let z = (self.c / self.mu) * (self.mu * (self.z - out)).pow(fixed!(1e18) - t);
+        let y = (self.k(t) - z).pow(fixed!(1e18).div_up(fixed!(1e18) - t));
         y - self.y
     }
 
     fn get_shares_in_for_bonds_out(&self, out: FixedPoint, t: FixedPoint) -> FixedPoint {
-        let y = (self.y - out).pow(FixedPoint::one() - t);
+        let y = (self.y - out).pow(fixed!(1e18) - t);
         let mut z = (self.k(t) - y) / (self.c / self.mu);
-        z = z.pow(FixedPoint::one().div_up(FixedPoint::one() - t));
+        z = z.pow(fixed!(1e18).div_up(fixed!(1e18) - t));
         z /= self.mu;
         z - self.z
     }
@@ -166,7 +165,7 @@ mod tests {
         for _ in 0..FUZZ_RUNS {
             let state = rng.gen::<State>();
             let in_ = rng.gen::<Asset>();
-            let ts = rng.gen_range(FixedPoint::zero()..FixedPoint::one());
+            let ts = rng.gen_range(fixed!(0)..fixed!(1e18));
             let expected = match in_ {
                 Asset::Shares(in_) => {
                     panic::catch_unwind(|| state.get_bonds_out_for_shares_in(in_, ts))
@@ -189,7 +188,7 @@ mod tests {
         for _ in 0..FUZZ_RUNS {
             let state = rng.gen::<State>();
             let out = rng.gen::<Asset>();
-            let ts = rng.gen_range(FixedPoint::zero()..FixedPoint::one());
+            let ts = rng.gen_range(fixed!(0)..fixed!(1e18));
             let expected = match out {
                 Asset::Shares(out) => {
                     panic::catch_unwind(|| state.get_bonds_in_for_shares_out(out, ts))
@@ -214,14 +213,14 @@ mod tests {
         let mut rng = thread_rng();
         for _ in 0..FUZZ_RUNS {
             let state = rng.gen::<State>();
-            let ts = rng.gen_range(FixedPoint::zero()..FixedPoint::one());
+            let ts = rng.gen_range(fixed!(0)..fixed!(1e18));
             let actual = panic::catch_unwind(|| state.get_max_buy(ts));
             match runner
                 .mock
                 .calculate_max_buy(
                     state.z.into(),
                     state.y.into(),
-                    (FixedPoint::one() - ts).into(),
+                    (fixed!(1e18) - ts).into(),
                     state.c.into(),
                     state.mu.into(),
                 )
@@ -251,7 +250,7 @@ mod tests {
         for _ in 0..FUZZ_RUNS {
             let state = rng.gen::<State>();
             let in_ = rng.gen::<FixedPoint>();
-            let ts = rng.gen_range(FixedPoint::zero()..FixedPoint::one());
+            let ts = rng.gen_range(fixed!(0)..fixed!(1e18));
             let actual = panic::catch_unwind(|| state.get_bonds_out_for_shares_in(in_, ts));
             match runner
                 .mock
@@ -259,7 +258,7 @@ mod tests {
                     state.z.into(),
                     state.y.into(),
                     in_.into(),
-                    (FixedPoint::one() - ts).into(),
+                    (fixed!(1e18) - ts).into(),
                     state.c.into(),
                     state.mu.into(),
                 )
@@ -285,7 +284,7 @@ mod tests {
         for _ in 0..FUZZ_RUNS {
             let state = rng.gen::<State>();
             let out = rng.gen::<FixedPoint>();
-            let ts = rng.gen_range(FixedPoint::zero()..FixedPoint::one());
+            let ts = rng.gen_range(fixed!(0)..fixed!(1e18));
             let actual = panic::catch_unwind(|| state.get_bonds_in_for_shares_out(out, ts));
             match runner
                 .mock
@@ -293,7 +292,7 @@ mod tests {
                     state.z.into(),
                     state.y.into(),
                     out.into(),
-                    (FixedPoint::one() - ts).into(),
+                    (fixed!(1e18) - ts).into(),
                     state.c.into(),
                     state.mu.into(),
                 )
@@ -319,7 +318,7 @@ mod tests {
         for _ in 0..FUZZ_RUNS {
             let state = rng.gen::<State>();
             let in_ = rng.gen::<FixedPoint>();
-            let ts = rng.gen_range(FixedPoint::zero()..FixedPoint::one());
+            let ts = rng.gen_range(fixed!(0)..fixed!(1e18));
             let actual = panic::catch_unwind(|| state.get_shares_out_for_bonds_in(in_, ts));
             match runner
                 .mock
@@ -327,7 +326,7 @@ mod tests {
                     state.z.into(),
                     state.y.into(),
                     in_.into(),
-                    (FixedPoint::one() - ts).into(),
+                    (fixed!(1e18) - ts).into(),
                     state.c.into(),
                     state.mu.into(),
                 )
@@ -355,7 +354,7 @@ mod tests {
         for _ in 0..FUZZ_RUNS {
             let state = rng.gen::<State>();
             let out = rng.gen::<FixedPoint>();
-            let ts = rng.gen_range(FixedPoint::zero()..FixedPoint::one());
+            let ts = rng.gen_range(fixed!(0)..fixed!(1e18));
             let actual = panic::catch_unwind(|| state.get_shares_in_for_bonds_out(out, ts));
             match runner
                 .mock
@@ -363,7 +362,7 @@ mod tests {
                     state.z.into(),
                     state.y.into(),
                     out.into(),
-                    (FixedPoint::one() - ts).into(),
+                    (fixed!(1e18) - ts).into(),
                     state.c.into(),
                     state.mu.into(),
                 )
@@ -388,7 +387,7 @@ mod tests {
         let mut rng = thread_rng();
         for _ in 0..FUZZ_RUNS {
             let state = rng.gen::<State>();
-            let ts = rng.gen_range(FixedPoint::zero()..FixedPoint::one());
+            let ts = rng.gen_range(fixed!(0)..fixed!(1e18));
             let actual = panic::catch_unwind(|| state.k(ts));
             match runner
                 .mock
@@ -396,7 +395,7 @@ mod tests {
                     (state.c / state.mu).into(),
                     state.mu.into(),
                     state.z.into(),
-                    (FixedPoint::one() - ts).into(),
+                    (fixed!(1e18) - ts).into(),
                     state.y.into(),
                 )
                 .call()

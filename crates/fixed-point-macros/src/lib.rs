@@ -1,7 +1,14 @@
-extern crate proc_macro;
-use proc_macro::TokenStream;
+// TODO: These macros can be improved in two important ways:
+//
+// 1. Support non-decimal number formats. It would be convenient to support
+//    hexadecimal and binary numbers since Rust has similar problems with those
+//    number types.
+// 2. Support expressions. Ideally, we would execute any expressions at compile
+//    time, so we could instantiate a fixed point number to represent
+//    60 * 60 * 24 seconds (for example).
 
 use ethers::types::{I256, U256};
+use proc_macro::TokenStream;
 use quote::quote;
 use syn::{
     parse::{Parse, ParseStream},
@@ -13,6 +20,7 @@ struct Number {
 }
 
 impl Parse for Number {
+    /// This parser uses the LitFloat and LitInt parsers to clean the input.
     fn parse(input: ParseStream) -> Result<Self> {
         let digits = if input.peek(LitFloat) {
             input.parse::<LitFloat>()?.base10_digits().to_string()
@@ -107,36 +115,21 @@ impl Number {
 
 #[proc_macro]
 pub fn int256(input: TokenStream) -> TokenStream {
-    // Clean the input so that it is in the form ${x}.${y}e${p} where .${y} and
-    // e${p} are optional if ${y} and ${p} are 0.
     let result = parse_macro_input!(input as Number);
     let result: [u8; 32] = result.to_i256().into_raw().into();
-
-    // Convert the cleaned input into a raw [u8; 32] array and generate the
-    // final code.
-    quote!(I256::from_raw(U256::from([ #(#result),* ]))).into()
+    quote!(ethers::types::I256::from_raw(ethers::types::U256::from([ #(#result),* ]))).into()
 }
 
 #[proc_macro]
 pub fn uint256(input: TokenStream) -> TokenStream {
-    // Clean the input so that it is in the form ${x}.${y}e${p} where .${y} and
-    // e${p} are optional if ${y} and ${p} are 0.
     let result = parse_macro_input!(input as Number);
     let result: [u8; 32] = result.to_u256().into();
-
-    // Convert the cleaned input into a raw [u8; 32] array and generate the
-    // final code.
-    quote!(U256::from([ #(#result),* ])).into()
+    quote!(ethers::types::U256::from([ #(#result),* ])).into()
 }
 
 #[proc_macro]
 pub fn fixed(input: TokenStream) -> TokenStream {
-    // Clean the input so that it is in the form ${x}.${y}e${p} where .${y} and
-    // e${p} are optional if ${y} and ${p} are 0.
     let result = parse_macro_input!(input as Number);
     let result: [u8; 32] = result.to_u256().into();
-
-    // Convert the cleaned input into a raw [u8; 32] array and generate the
-    // final code.
-    quote!(FixedPoint::from(U256::from([ #(#result),* ]))).into()
+    quote!(FixedPoint::from([ #(#result),* ])).into()
 }

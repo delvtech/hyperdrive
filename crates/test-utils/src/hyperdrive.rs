@@ -5,10 +5,11 @@ use ethers::{
     providers::{Http, Provider},
     signers::LocalWallet,
     types::{Address, H256, U256},
-    utils::{parse_units, AnvilInstance},
+    utils::AnvilInstance,
 };
 use eyre::Result;
 use fixed_point::FixedPoint;
+use fixed_point_macros::{fixed, uint256};
 use hyperdrive_wrappers::wrappers::{
     erc20_mintable::ERC20Mintable,
     erc4626_data_provider::ERC4626DataProvider,
@@ -61,20 +62,19 @@ impl Hyperdrive {
         // Deploy the Hyperdrive instance.
         let config = PoolConfig {
             base_token: base.address(),
-            initial_share_price: parse_units("1", 18)?.into(),
-            minimum_share_reserves: parse_units("10", 18)?.into(),
+            initial_share_price: uint256!(1e18),
+            minimum_share_reserves: uint256!(10e18),
             position_duration: U256::from(60 * 60 * 24 * 365), // 1 year
             checkpoint_duration: U256::from(60 * 60 * 24),     // 1 day
-            time_stretch: Hyperdrive::get_time_stretch(parse_units("0.05", 18).unwrap().into())
-                .into(), // time stretch for 5% rate
+            time_stretch: Hyperdrive::get_time_stretch(fixed!(0.05e18)).into(), // time stretch for 5% rate
             governance: client.address(),
             fee_collector: client.address(),
             fees: Fees {
-                curve: parse_units("0.05", 18)?.into(),
-                flat: parse_units("0.0005", 18)?.into(),
-                governance: parse_units("0.15", 18)?.into(),
+                curve: uint256!(0.05e18),
+                flat: uint256!(0.0005e18),
+                governance: uint256!(0.15e18),
             },
-            oracle_size: U256::from(10),
+            oracle_size: uint256!(10),
             update_gap: U256::from(60 * 60), // 1 hour,
         };
         let data_provider = ERC4626DataProvider::deploy(
@@ -111,10 +111,9 @@ impl Hyperdrive {
     }
 
     fn get_time_stretch(mut rate: FixedPoint) -> FixedPoint {
-        rate = (U256::from(rate) * U256::from(100)).into();
-        let time_stretch = FixedPoint::from(parse_units("5.24592", 18).unwrap())
-            / (FixedPoint::from(parse_units("0.04665", 18).unwrap()) * rate);
-        return FixedPoint::one() / time_stretch;
+        rate = (U256::from(rate) * uint256!(100)).into();
+        let time_stretch = fixed!(5.24592e18) / (fixed!(0.04665e18) * rate);
+        return fixed!(1e18) / time_stretch;
     }
 }
 
@@ -137,12 +136,12 @@ mod tests {
         assert_ne!(config, PoolConfig::default());
 
         // Mint some base and approve the Hyperdrive instance.
-        let contribution = U256::from(parse_units("1_000_000", 18)?);
+        let contribution = uint256!(1_000_000e18);
         base.mint(contribution).send().await?;
         base.approve(hyperdrive.address(), U256::MAX).send().await?;
 
         // Initialize the pool.
-        let rate = U256::from(parse_units("0.05", 18)?);
+        let rate = uint256!(0.05e18);
         hyperdrive
             .initialize(contribution, rate, alice.address(), true)
             .send()

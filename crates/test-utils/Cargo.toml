@@ -10,6 +10,7 @@ edition = "2021"
 ethers = "2.0"
 eyre = "0.6.8"
 fixed-point = { path = "../fixed-point" }
+fixed-point-macros = { path = "../fixed-point-macros" }
 hyperdrive-wrappers = { path = "../hyperdrive-wrappers" }
 rand = "0.8.5"
 tokio = { version = "1", features = ["full"] }

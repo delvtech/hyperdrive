@@ -2864,6 +2864,7 @@ dependencies = [
  "ethers",
  "eyre",
  "fixed-point",
+ "fixed-point-macros",
  "hyperdrive-wrappers",
  "rand",
  "tokio",
@@ -2875,6 +2876,8 @@ version = "0.1.0"
 dependencies = [
  "ethers",
  "eyre",
+ "fixed-point",
+ "fixed-point-macros",
  "rand",
  "test-utils",
  "tokio",

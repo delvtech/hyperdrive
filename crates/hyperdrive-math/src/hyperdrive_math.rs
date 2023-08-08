@@ -1,8 +1,7 @@
 use crate::yield_space::{Asset, State as YieldSpaceState};
 use ethers::types::{Address, I256, U256};
-use ethers::utils::parse_units;
 use fixed_point::FixedPoint;
-use fixed_point_macros::{fixed, uint256};
+use fixed_point_macros::{fixed, int256, uint256};
 use hyperdrive_wrappers::wrappers::i_hyperdrive::{Fees, PoolConfig, PoolInfo};
 use rand::distributions::{Distribution, Standard};
 use rand::Rng;
@@ -73,22 +72,10 @@ impl Distribution<State> for Standard {
                     .gen_range(fixed!(1_000e18)..=fixed!(100_000_000e18))
                     .into(),
                 // TODO: This should be calculated based on the other values.
-                lp_share_price: rng
-                    .gen_range(
-                        FixedPoint::from(parse_units("0.01", 18).unwrap())
-                            ..=FixedPoint::from(parse_units("5", 18).unwrap()),
-                    )
-                    .into(),
-                withdrawal_shares_proceeds: rng
-                    .gen_range(
-                        FixedPoint::zero()..=FixedPoint::from(parse_units("100_000", 18).unwrap()),
-                    )
-                    .into(),
+                lp_share_price: rng.gen_range(fixed!(0.01e18)..=fixed!(5e18)).into(),
+                withdrawal_shares_proceeds: rng.gen_range(fixed!(0)..=fixed!(100_000e18)).into(),
                 withdrawal_shares_ready_to_withdraw: rng
-                    .gen_range(
-                        FixedPoint::from(parse_units("1_000", 18).unwrap())
-                            ..=FixedPoint::from(parse_units("100_000_000", 18).unwrap()),
-                    )
+                    .gen_range(fixed!(1_000e18)..=fixed!(100_000_000e18))
                     .into(),
             },
         }
@@ -108,12 +95,12 @@ impl State {
         let annualized_time = FixedPoint::from(self.config.position_duration)
             / FixedPoint::from(U256::from(60 * 60 * 24 * 365));
         let spot_price = self.get_spot_price();
-        (FixedPoint::one() - spot_price) / (spot_price * annualized_time)
+        (fixed!(1e18) - spot_price) / (spot_price * annualized_time)
     }
 
     pub fn get_max_long(&self, max_iterations: usize) -> (FixedPoint, FixedPoint) {
-        let mut base_amount = FixedPoint::zero();
-        let mut bond_amount = FixedPoint::zero();
+        let mut base_amount = fixed!(0);
+        let mut bond_amount = fixed!(0);
 
         // We first solve for the maximum buy that is possible on the YieldSpace
         // curve. This will give us an upper bound on our maximum buy by giving
@@ -150,7 +137,7 @@ impl State {
         dz = (self.share_reserves()
             - self.longs_outstanding() / self.share_price()
             - self.minimum_share_reserves())
-        .mul_div_down(p, FixedPoint::one() - p);
+        .mul_div_down(p, fixed!(1e18) - p);
         dy = YieldSpaceState::from(self)
             .get_out_for_in(Asset::Shares(dz), self.config.time_stretch.into());
 
@@ -159,10 +146,10 @@ impl State {
         for _ in 0..max_iterations {
             // If the approximation error is greater than zero and the solution
             // is the largest we've found so far, then we update our result.
-            let approximation_error = I256::from_raw((self.share_reserves() + dz).into())
-                - I256::from_raw(((self.longs_outstanding() + dy) / self.share_price()).into())
-                - I256::from_raw(self.minimum_share_reserves().into());
-            if approximation_error > I256::zero() && dz * self.share_price() > base_amount {
+            let approximation_error = I256::from(self.share_reserves() + dz)
+                - I256::from((self.longs_outstanding() + dy) / self.share_price())
+                - I256::from(self.minimum_share_reserves());
+            if approximation_error > int256!(0) && dz * self.share_price() > base_amount {
                 base_amount = dz * self.share_price();
                 bond_amount = dy;
             }
@@ -190,22 +177,22 @@ impl State {
                 self.config.initial_share_price.into(),
             )
             .get_spot_price(self.config.time_stretch.into());
-            if p >= FixedPoint::one() {
+            if p >= fixed!(1e18) {
                 // If the spot price is greater than one and the error is
                 // positive,
                 break;
             }
-            if approximation_error < I256::zero() {
+            if approximation_error < int256!(0) {
                 let delta = FixedPoint::from((-approximation_error).into_raw())
-                    .mul_div_down(p, FixedPoint::one() - p);
+                    .mul_div_down(p, fixed!(1e18) - p);
                 if dz > delta {
                     dz -= delta;
                 } else {
-                    dz = FixedPoint::zero();
+                    dz = fixed!(0);
                 }
             } else {
                 dz += FixedPoint::from(approximation_error.into_raw())
-                    .mul_div_down(p, FixedPoint::one() - p);
+                    .mul_div_down(p, fixed!(1e18) - p);
             }
             dy = YieldSpaceState::from(self)
                 .get_out_for_in(Asset::Shares(dz), self.config.time_stretch.into());
@@ -222,14 +209,14 @@ impl State {
         // k = (c / mu) * (mu * (y_l / c + z_min)) ** (1 - tau) + y ** (1 - tau)
         //                         =>
         // y = (k - (c / mu) * (mu * (y_l / c + z_min)) ** (1 - tau)) ** (1 / (1 - tau)).
-        let t = FixedPoint::one() - FixedPoint::from(self.config.time_stretch);
+        let t = fixed!(1e18) - FixedPoint::from(self.config.time_stretch);
         let price_factor = self.share_price() / self.initial_share_price();
         let k = YieldSpaceState::from(self).k(self.config.time_stretch.into());
         let inner_factor = (self.initial_share_price()
             * (self.longs_outstanding() / self.share_price())
             + self.minimum_share_reserves())
         .pow(t);
-        let optimal_bond_reserves = (k - price_factor * inner_factor).pow(FixedPoint::one() / t);
+        let optimal_bond_reserves = (k - price_factor * inner_factor).pow(fixed!(1e18) / t);
 
         return optimal_bond_reserves - self.bond_reserves();
     }

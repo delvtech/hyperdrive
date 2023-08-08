@@ -1,23 +1,22 @@
 use ethers::types::{I256, U256};
-use ethers::utils::ParseUnits;
 use fixed_point_macros::{fixed, int256, uint256};
 use rand::distributions::uniform::{SampleBorrow, SampleUniform, UniformSampler};
 use rand::distributions::{Distribution, Standard};
 use rand::Rng;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Shr, Sub, SubAssign};
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
+#[derive(Debug, Default, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 pub struct FixedPoint(U256);
-
-impl From<ParseUnits> for FixedPoint {
-    fn from(p: ParseUnits) -> FixedPoint {
-        FixedPoint(p.into())
-    }
-}
 
 impl From<I256> for FixedPoint {
     fn from(i: I256) -> FixedPoint {
         i.into_raw().into()
+    }
+}
+
+impl From<[u8; 32]> for FixedPoint {
+    fn from(bytes: [u8; 32]) -> FixedPoint {
+        U256::from(bytes).into()
     }
 }
 
@@ -113,16 +112,6 @@ impl DivAssign for FixedPoint {
 
 /// This impl is a direct port of Solidity's FixedPointMath library.
 impl FixedPoint {
-    // TODO: Remove
-    pub fn zero() -> FixedPoint {
-        fixed!(0)
-    }
-
-    // TODO: Remove
-    pub fn one() -> FixedPoint {
-        fixed!(1e18)
-    }
-
     pub fn add(self, other: FixedPoint) -> FixedPoint {
         FixedPoint(self.0 + other.0)
     }
@@ -141,30 +130,30 @@ impl FixedPoint {
     }
 
     pub fn mul_down(self, other: FixedPoint) -> FixedPoint {
-        self.mul_div_down(other, Self::one())
+        self.mul_div_down(other, fixed!(1e18))
     }
 
     pub fn mul_up(self, other: FixedPoint) -> FixedPoint {
-        self.mul_div_up(other, Self::one())
+        self.mul_div_up(other, fixed!(1e18))
     }
 
     pub fn div_down(self, other: FixedPoint) -> FixedPoint {
-        self.mul_div_down(Self::one(), other)
+        self.mul_div_down(fixed!(1e18), other)
     }
 
     pub fn div_up(self, other: FixedPoint) -> FixedPoint {
-        self.mul_div_up(Self::one(), other)
+        self.mul_div_up(fixed!(1e18), other)
     }
 
     pub fn pow(self, y: FixedPoint) -> FixedPoint {
         // If the exponent is 0, return 1.
-        if y == Self::zero() {
-            return Self::one();
+        if y == fixed!(0) {
+            return fixed!(1e18);
         }
 
         // If the base is 0, return 0.
-        if self == Self::zero() {
-            return Self::zero();
+        if self == fixed!(0) {
+            return fixed!(0);
         }
 
         // Using properties of logarithms we calculate x^y:
@@ -176,7 +165,7 @@ impl FixedPoint {
         // Any overflow for x will be caught in _ln() in the initial bounds check
         let lnx: I256 = Self::ln(I256::from(self));
         let mut ylnx: I256 = y_int256.wrapping_mul(lnx);
-        ylnx = ylnx.wrapping_div(I256::from(Self::one()));
+        ylnx = ylnx.wrapping_div(int256!(1e18));
 
         // Calculate exp(y * ln(x)) to get x^y
         Self::exp(ylnx).into()
@@ -431,7 +420,6 @@ mod tests {
         utils::AnvilInstance,
     };
     use eyre::Result;
-    use fixed_point_macros::uint256;
     use hyperdrive_wrappers::wrappers::mock_fixed_point_math::MockFixedPointMath;
     use rand::{thread_rng, Rng};
     use std::{convert::TryFrom, panic, sync::Arc, time::Duration};
@@ -671,13 +659,11 @@ mod tests {
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
         for _ in 0..FUZZ_RUNS {
-            let x: FixedPoint = rng.gen_range(FixedPoint::zero()..=FixedPoint::one());
-            let y: FixedPoint = rng.gen_range(FixedPoint::zero()..=FixedPoint::one());
+            let x: FixedPoint = rng.gen_range(fixed!(0)..=fixed!(1e18));
+            let y: FixedPoint = rng.gen_range(fixed!(0)..=fixed!(1e18));
             let actual = panic::catch_unwind(|| x.pow(y));
             match runner.mock.pow(x.into(), y.into()).call().await {
                 Ok(expected) => {
-                    println!("x: {:?}", x);
-                    println!("y: {:?}", y);
                     assert_eq!(actual.unwrap(), FixedPoint::from(expected));
                 }
                 Err(_) => {
@@ -717,7 +703,7 @@ mod tests {
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
         for _ in 0..FUZZ_RUNS {
-            let x: I256 = I256::from_raw(rng.gen_range(FixedPoint::zero()..=FixedPoint::one()).0);
+            let x: I256 = rng.gen_range(fixed!(0)..=fixed!(1e18)).into();
             let actual = panic::catch_unwind(|| FixedPoint::ln(x));
             match runner.mock.ln(x).call().await {
                 Ok(expected) => assert_eq!(actual.unwrap(), expected),
@@ -737,7 +723,7 @@ mod tests {
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
         for _ in 0..FUZZ_RUNS {
-            let x: I256 = I256::from_raw(rng.gen::<FixedPoint>().0);
+            let x: I256 = rng.gen::<FixedPoint>().into();
             let actual = panic::catch_unwind(|| FixedPoint::exp(x));
             match runner.mock.exp(x).call().await {
                 Ok(expected) => assert_eq!(actual.unwrap(), expected),
@@ -757,7 +743,7 @@ mod tests {
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
         for _ in 0..FUZZ_RUNS {
-            let x: I256 = I256::from_raw(rng.gen_range(FixedPoint::zero()..=FixedPoint::one()).0);
+            let x: I256 = rng.gen_range(fixed!(0)..=fixed!(1e18)).into();
             let actual = panic::catch_unwind(|| FixedPoint::ln(x));
             match runner.mock.ln(x).call().await {
                 Ok(expected) => assert_eq!(actual.unwrap(), expected),
@@ -777,7 +763,7 @@ mod tests {
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
         for _ in 0..FUZZ_RUNS {
-            let x: I256 = I256::from_raw(rng.gen::<FixedPoint>().0);
+            let x: I256 = rng.gen::<FixedPoint>().into();
             let actual = panic::catch_unwind(|| FixedPoint::ln(x));
             match runner.mock.ln(x).call().await {
                 Ok(expected) => assert_eq!(actual.unwrap(), expected),

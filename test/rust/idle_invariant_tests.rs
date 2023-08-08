@@ -1,6 +1,6 @@
-use ethers::types::U256;
-use ethers::utils::parse_units;
 use eyre::Result;
+use fixed_point::FixedPoint;
+use fixed_point_macros::fixed;
 use test_utils::agent::Agent;
 use test_utils::hyperdrive::Hyperdrive;
 
@@ -11,16 +11,16 @@ async fn test_invariant() -> Result<()> {
     let mut bob = Agent::new(deployment.clone(), deployment.accounts[1].address());
 
     // Fund Alice and Bob's accounts.
-    let contribution = U256::from(parse_units("500_000_000", 18)?);
+    let contribution = fixed!(500_000_000e18);
     alice.fund(contribution).await?;
     bob.fund(contribution).await?;
 
     // Initialize the pool.
-    let rate = U256::from(parse_units("0.05", 18)?);
+    let rate = fixed!(0.05e18);
     alice.initialize(rate, contribution).await?;
 
     // Bob opens a long position.
-    let long_amount = U256::from(parse_units("100_000_000", 18)?);
+    let long_amount = fixed!(100_000_000e18);
     bob.open_long(long_amount).await?;
 
     println!("bob={:?}", bob);
