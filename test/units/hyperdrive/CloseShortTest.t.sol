@@ -459,13 +459,16 @@ contract CloseShortTest is HyperdriveTest {
         initialize(alice, fixedRate, contribution);
 
         // 5. Open and close a short at maturity, advancing the time
-        (maturityTime, baseAmount) = openShort(bob, 10e18, DepositOverrides({
-            asUnderlying: false,
-            depositAmount: 10e18 * 2,
-            minSlippage: 0,
-            maxSlippage: type(uint128).max
-            
-        }));
+        (maturityTime, baseAmount) = openShort(
+            bob,
+            10e18,
+            DepositOverrides({
+                asUnderlying: false,
+                depositAmount: 10e18 * 2,
+                minSlippage: 0,
+                maxSlippage: type(uint128).max
+            })
+        );
         advanceTime(POSITION_DURATION, variableRate);
         closeShort(bob, maturityTime, baseAmount - 10e18); // Account for flatFee
         // 6. Record Share Reserves
@@ -484,12 +487,16 @@ contract CloseShortTest is HyperdriveTest {
         initialize(alice, fixedRate, contribution);
 
         // 8. Open and close another short at maturity as well, advancing the time
-        (maturityTime, baseAmount) = openShort(bob, 10e18, DepositOverrides({
-            asUnderlying: false,
-            depositAmount: 10e18 * 2,
-            minSlippage: 0,
-            maxSlippage: type(uint128).max
-        }));
+        (maturityTime, baseAmount) = openShort(
+            bob,
+            10e18,
+            DepositOverrides({
+                asUnderlying: false,
+                depositAmount: 10e18 * 2,
+                minSlippage: 0,
+                maxSlippage: type(uint128).max
+            })
+        );
         advanceTime(POSITION_DURATION, variableRate);
         closeShort(bob, maturityTime, baseAmount - 10e18);
 
@@ -500,10 +507,73 @@ contract CloseShortTest is HyperdriveTest {
         // Since the fees are subtracted from reserves and accounted for
         // seperately, this will be true
         assertEq(zeroFeeState.shareReserves, maxFeeState.shareReserves);
-        assertGt(maxFlatFeeState.shareReserves, maxFeeState.shareReserves); 
+        assertGt(maxFlatFeeState.shareReserves, maxFeeState.shareReserves);
     }
 
-    function test_governance_fees_collected_at_maturity() external {}
+    function test_governance_fees_collected_at_maturity() external {
+        uint256 fixedRate = 0.05e18;
+        int256 variableRate = -0.05e18;
+        uint256 contribution = 500_000_000e18;
+        uint256 maturityTime;
+
+        // Initialize a pool with no flat fee as a baseline
+        IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
+        config.fees = IHyperdrive.Fees({ curve: 0, flat: 0, governance: 0 });
+        deploy(address(deployer), config);
+        initialize(alice, fixedRate, contribution);
+
+        // Open a short and note the deposit paid
+        uint256 deposit0;
+        (maturityTime, deposit0) = openShort(
+            bob,
+            10e18,
+            DepositOverrides({
+                asUnderlying: false,
+                depositAmount: 10e18 * 2,
+                minSlippage: 0,
+                maxSlippage: type(uint128).max
+            })
+        );
+        advanceTime(POSITION_DURATION, variableRate);
+
+        // Close the short with yield, so flat fee is fully paid
+        closeShort(bob, maturityTime, deposit0);
+
+        // Record Share Reserves
+        IHyperdrive.MarketState memory noFlatFee = hyperdrive.getMarketState();
+
+        // Configure a pool with a 100% flatFee
+        config = testConfig(fixedRate);
+        config.fees = IHyperdrive.Fees({ curve: 0, flat: 1e18, governance: 0 });
+        // Deploy and initialize the new pool
+        deploy(address(deployer), config);
+        initialize(alice, fixedRate, contribution);
+
+        // Open a short and note the deposit
+        uint256 deposit1;
+        (maturityTime, deposit1) = openShort(
+            bob,
+            10e18,
+            DepositOverrides({
+                asUnderlying: false,
+                depositAmount: 10e18 * 2,
+                minSlippage: 0,
+                maxSlippage: type(uint128).max
+            })
+        );
+        advanceTime(POSITION_DURATION, variableRate);
+
+        // Close the short with yield, so flat fee is fully paid
+        closeShort(bob, maturityTime, deposit1 - 10e18);
+
+        IHyperdrive.MarketState memory maxFlatFeeState = hyperdrive
+            .getMarketState();
+
+        // deposit0 should be lower as it does not have a 100% flatFee added on top
+        assertLt(deposit0, deposit1);
+        // Share reserves should be greater in the max fee state for accruing more in fees
+        assertGt(maxFlatFeeState.shareReserves, noFlatFee.shareReserves);
+    }
 
     function verifyCloseShort(
         IHyperdrive.PoolInfo memory poolInfoBefore,

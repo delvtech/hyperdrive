@@ -328,7 +328,9 @@ contract ReentrancyTest is HyperdriveTest {
     function _reenter_closeShort(address _trader, bytes memory _data) internal {
         // Initialize the pool and open a short.
         initialize(_trader, FIXED_RATE, CONTRIBUTION);
-        (uint256 maturityTime, ) = openShort(_trader, BOND_AMOUNT,
+        (uint256 maturityTime, ) = openShort(
+            _trader,
+            BOND_AMOUNT,
             DepositOverrides({
                 asUnderlying: true,
                 depositAmount: BOND_AMOUNT * 2,

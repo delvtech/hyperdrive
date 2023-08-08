@@ -311,12 +311,16 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
         uint256 calculatedSpotPrice = HyperdriveUtils.calculateSpotPrice(
             hyperdrive
         );
-        (uint256 maturityTime, ) = openShort(bob, shortAmount, DepositOverrides({
-            asUnderlying: true,
-            depositAmount: shortAmount * 2,
-            minSlippage: 0,
-            maxSlippage: type(uint256).max
-        }));
+        (uint256 maturityTime, ) = openShort(
+            bob,
+            shortAmount,
+            DepositOverrides({
+                asUnderlying: true,
+                depositAmount: shortAmount * 2,
+                minSlippage: 0,
+                maxSlippage: type(uint256).max
+            })
+        );
 
         // Fees are going to be 0 because this test uses 0% curve fee
         {
@@ -327,7 +331,7 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
             uint256 expectedGovernanceFees = 0;
             assertEq(governanceFeesAfterOpenShort, expectedGovernanceFees);
         }
-        
+
         // Term matures and accrues interest
         advanceTime(POSITION_DURATION, variableInterest);
 
@@ -504,12 +508,16 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
         uint256 calculatedSpotPrice = HyperdriveUtils.calculateSpotPrice(
             hyperdrive
         );
-        (uint256 maturityTime, ) = openShort(bob, shortAmount, DepositOverrides({
-            asUnderlying: true,
-            depositAmount: shortAmount * 2,
-            minSlippage: 0,
-            maxSlippage: type(uint256).max
-        }));
+        (uint256 maturityTime, ) = openShort(
+            bob,
+            shortAmount,
+            DepositOverrides({
+                asUnderlying: true,
+                depositAmount: shortAmount * 2,
+                minSlippage: 0,
+                maxSlippage: type(uint256).max
+            })
+        );
 
         // Get the fees accrued from opening the short.
         uint256 governanceFeesAfterOpenShort = IMockHyperdrive(
