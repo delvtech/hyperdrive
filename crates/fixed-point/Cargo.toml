@@ -11,6 +11,7 @@ ethers = "2.0.8"
 eyre = "0.6.8"
 rand = "0.8.5"
 tokio = { version = "1", features = ["full"] }
+fixed-point-macros = { version = "0.1", path = "../fixed-point-macros" }
 
 [dev-dependencies]
 

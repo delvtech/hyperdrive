@@ -1,4 +1,5 @@
 use fixed_point::FixedPoint;
+use fixed_point_macros::fixed;
 use rand::distributions::{Distribution, Standard};
 use rand::Rng;
 
@@ -32,16 +33,10 @@ impl Distribution<State> for Standard {
     // sampler that is more restrictive like this.
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> State {
         State {
-            z: rng
-                .gen_range(FixedPoint::zero()..=FixedPoint::from(1_000_000_000 * 10_u128.pow(18))),
-            y: rng
-                .gen_range(FixedPoint::zero()..=FixedPoint::from(1_000_000_000 * 10_u128.pow(18))),
-            c: rng.gen_range(
-                FixedPoint::from(10_u128.pow(18) / 2)..=FixedPoint::from(5 * 10_u128.pow(18)),
-            ),
-            mu: rng.gen_range(
-                FixedPoint::from(10_u128.pow(18) / 2)..=FixedPoint::from(5 * 10_u128.pow(18)),
-            ),
+            z: rng.gen_range(fixed!(0)..=fixed!(1_000_000_000e18)),
+            y: rng.gen_range(fixed!(0)..=fixed!(1_000_000_000e18)),
+            c: rng.gen_range(fixed!(0.5e18)..=fixed!(5e18)),
+            mu: rng.gen_range(fixed!(0.5e18)..=fixed!(5e18)),
         }
     }
 }

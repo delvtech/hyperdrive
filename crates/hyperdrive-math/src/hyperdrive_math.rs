@@ -2,6 +2,7 @@ use crate::yield_space::{Asset, State as YieldSpaceState};
 use ethers::types::{Address, I256, U256};
 use ethers::utils::parse_units;
 use fixed_point::FixedPoint;
+use fixed_point_macros::{fixed, uint256};
 use hyperdrive_wrappers::wrappers::i_hyperdrive::{Fees, PoolConfig, PoolInfo};
 use rand::distributions::{Distribution, Standard};
 use rand::Rng;
@@ -33,28 +34,13 @@ impl Distribution<State> for Standard {
                 governance: Address::zero(),
                 fee_collector: Address::zero(),
                 fees: Fees {
-                    curve: FixedPoint::zero().into(),
-                    flat: FixedPoint::zero().into(),
-                    governance: FixedPoint::zero().into(),
+                    curve: uint256!(0),
+                    flat: uint256!(0),
+                    governance: uint256!(0),
                 },
-                initial_share_price: rng
-                    .gen_range(
-                        FixedPoint::from(parse_units("0.5", 18).unwrap())
-                            ..=FixedPoint::from(parse_units("2.5", 18).unwrap()),
-                    )
-                    .into(),
-                minimum_share_reserves: rng
-                    .gen_range(
-                        FixedPoint::from(parse_units("0.1", 18).unwrap())
-                            ..=FixedPoint::from(parse_units("10", 18).unwrap()),
-                    )
-                    .into(),
-                time_stretch: rng
-                    .gen_range(
-                        FixedPoint::from(parse_units("0.005", 18).unwrap())
-                            ..=FixedPoint::from(parse_units("0.5", 18).unwrap()),
-                    )
-                    .into(),
+                initial_share_price: rng.gen_range(fixed!(0.5e18)..=fixed!(2.5e18)).into(),
+                minimum_share_reserves: rng.gen_range(fixed!(0.1e18)..=fixed!(1e18)).into(),
+                time_stretch: rng.gen_range(fixed!(0.005e18)..=fixed!(0.5e18)).into(),
                 position_duration: rng
                     .gen_range(
                         FixedPoint::from(60 * 60 * 24 * 91)..=FixedPoint::from(60 * 60 * 24 * 365),
@@ -63,54 +49,28 @@ impl Distribution<State> for Standard {
                 checkpoint_duration: rng
                     .gen_range(FixedPoint::from(60 * 60)..=FixedPoint::from(60 * 60 * 24))
                     .into(),
-                oracle_size: FixedPoint::zero().into(),
-                update_gap: FixedPoint::zero().into(),
+                oracle_size: fixed!(0).into(),
+                update_gap: fixed!(0).into(),
             },
             info: PoolInfo {
                 share_reserves: rng
-                    .gen_range(
-                        FixedPoint::from(parse_units("1_000", 18).unwrap())
-                            ..=FixedPoint::from(parse_units("100_000_000", 18).unwrap()),
-                    )
+                    .gen_range(fixed!(1_000e18)..=fixed!(100_000_000e18))
                     .into(),
                 bond_reserves: rng
-                    .gen_range(
-                        FixedPoint::from(parse_units("1_000", 18).unwrap())
-                            ..=FixedPoint::from(parse_units("100_000_000", 18).unwrap()),
-                    )
+                    .gen_range(fixed!(1_000e18)..=fixed!(100_000_000e18))
                     .into(),
-                share_price: rng
-                    .gen_range(
-                        FixedPoint::from(parse_units("0.5", 18).unwrap())
-                            ..=FixedPoint::from(parse_units("2.5", 18).unwrap()),
-                    )
-                    .into(),
-                longs_outstanding: rng
-                    .gen_range(
-                        FixedPoint::zero()..=FixedPoint::from(parse_units("100_000", 18).unwrap()),
-                    )
-                    .into(),
-                shorts_outstanding: rng
-                    .gen_range(
-                        FixedPoint::zero()..=FixedPoint::from(parse_units("100_000", 18).unwrap()),
-                    )
-                    .into(),
+                share_price: rng.gen_range(fixed!(0.5e18)..=fixed!(2.5e18)).into(),
+                longs_outstanding: rng.gen_range(fixed!(0)..=fixed!(100_000e18)).into(),
+                shorts_outstanding: rng.gen_range(fixed!(0)..=fixed!(100_000e18)).into(),
                 long_average_maturity_time: rng
-                    .gen_range(FixedPoint::zero()..=FixedPoint::from(60 * 60 * 24 * 365))
+                    .gen_range(fixed!(0)..=FixedPoint::from(60 * 60 * 24 * 365))
                     .into(),
                 short_average_maturity_time: rng
-                    .gen_range(FixedPoint::zero()..=FixedPoint::from(60 * 60 * 24 * 365))
+                    .gen_range(fixed!(0)..=FixedPoint::from(60 * 60 * 24 * 365))
                     .into(),
-                short_base_volume: rng
-                    .gen_range(
-                        FixedPoint::zero()..=FixedPoint::from(parse_units("100_000", 18).unwrap()),
-                    )
-                    .into(),
+                short_base_volume: rng.gen_range(fixed!(0)..=fixed!(100_000e18)).into(),
                 lp_total_supply: rng
-                    .gen_range(
-                        FixedPoint::from(parse_units("1_000", 18).unwrap())
-                            ..=FixedPoint::from(parse_units("100_000_000", 18).unwrap()),
-                    )
+                    .gen_range(fixed!(1_000e18)..=fixed!(100_000_000e18))
                     .into(),
                 // TODO: This should be calculated based on the other values.
                 lp_share_price: rng

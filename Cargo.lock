@@ -1069,9 +1069,19 @@ version = "0.1.0"
 dependencies = [
  "ethers",
  "eyre",
+ "fixed-point-macros",
  "hyperdrive-wrappers",
  "rand",
  "tokio",
+]
+
+[[package]]
+name = "fixed-point-macros"
+version = "0.1.0"
+dependencies = [
+ "ethers",
+ "quote",
+ "syn 2.0.28",
 ]
 
 [[package]]
@@ -1453,6 +1463,7 @@ dependencies = [
  "ethers",
  "eyre",
  "fixed-point",
+ "fixed-point-macros",
  "hyperdrive-wrappers",
  "rand",
  "tokio",

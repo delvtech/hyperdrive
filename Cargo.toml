@@ -2,6 +2,7 @@
 
 members = [
     "crates/fixed-point",
+    "crates/fixed-point-macros",
     "crates/hyperdrive-math",
     "crates/hyperdrive-wrappers",
     "crates/test-utils",

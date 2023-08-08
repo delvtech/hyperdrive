@@ -12,4 +12,5 @@ rand = "0.8.5"
 tokio = { version = "1", features = ["full"] }
 
 fixed-point = { version = "0.1.0", path = "../fixed-point" }
+fixed-point-macros = { version = "0.1.0", path = "../fixed-point-macros" }
 hyperdrive-wrappers = { version = "0.1.0", path = "../hyperdrive-wrappers" }
