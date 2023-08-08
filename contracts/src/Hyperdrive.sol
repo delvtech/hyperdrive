@@ -138,7 +138,7 @@ abstract contract Hyperdrive is
             // Add accrued governance fees to the totalGovernanceFeesAccrued in terms of shares
             _governanceFeesAccrued += govFee;
 
-            // Reduce shareProceeds by the flatFeeCharged, and less the govFee from the amount as it doesn't count
+            // Increase shareProceeds by the flatFeeCharged, and less the govFee from the amount as it doesn't count
             // towards reserves. shareProceeds will only be used to update reserves, so its fine to take fees here.
             shareProceeds += flatFee - govFee;
 
