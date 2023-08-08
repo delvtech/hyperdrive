@@ -435,23 +435,23 @@ impl Agent {
 
     /// Getters ///
 
-    fn base(&self) -> U256 {
+    pub fn base(&self) -> U256 {
         self.wallet.base
     }
 
-    fn lp_shares(&self) -> U256 {
+    pub fn lp_shares(&self) -> U256 {
         self.wallet.lp_shares
     }
 
-    fn withdrawal_shares(&self) -> U256 {
+    pub fn withdrawal_shares(&self) -> U256 {
         self.wallet.withdrawal_shares
     }
 
-    fn longs(&self) -> &BTreeMap<U256, U256> {
+    pub fn longs(&self) -> &BTreeMap<U256, U256> {
         &self.wallet.longs
     }
 
-    fn shorts(&self) -> &BTreeMap<U256, U256> {
+    pub fn shorts(&self) -> &BTreeMap<U256, U256> {
         &self.wallet.shorts
     }
 }

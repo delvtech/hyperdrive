@@ -9,7 +9,7 @@ build = "build.rs"
 
 [dependencies]
 
-ethers = "2.0"
+ethers = "2.0.8"
 eyre = "0.6.8"
 fixed-point = { path = "../fixed-point" }
 rand = "0.8.5"
@@ -17,7 +17,7 @@ tokio = { version = "1", features = ["full"] }
 
 [build-dependencies]
 
-ethers = "2.0"
-ethers-solc = "2.0"
+ethers = "2.0.8"
+ethers-solc = "2.0.8"
 eyre = "0.6.8"
-heck = "0.4"
+heck = "0.4.1"

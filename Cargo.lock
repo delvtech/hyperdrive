@@ -2851,7 +2851,6 @@ name = "test-utils"
 version = "0.1.0"
 dependencies = [
  "ethers",
- "ethers-solc",
  "eyre",
  "fixed-point",
  "hyperdrive-wrappers",
