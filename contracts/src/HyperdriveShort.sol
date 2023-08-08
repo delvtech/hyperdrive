@@ -212,7 +212,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             openSharePrice,
             closeSharePrice,
             sharePrice,
-            0
+            _flatFee
         );
         uint256 baseProceeds = _withdraw(
             shortProceeds,
