@@ -167,7 +167,8 @@ contract MockHyperdriveMath {
         uint256 _shareAmount,
         uint256 _openSharePrice,
         uint256 _closeSharePrice,
-        uint256 _sharePrice
+        uint256 _sharePrice,
+        uint256 _flatFee
     ) external pure returns (uint256) {
         uint256 result = HyperdriveMath.calculateShortProceeds(
             _bondAmount,
@@ -175,7 +176,7 @@ contract MockHyperdriveMath {
             _openSharePrice,
             _closeSharePrice,
             _sharePrice,
-            0
+            _flatFee
         );
         return result;
     }
