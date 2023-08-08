@@ -49,6 +49,10 @@ impl Distribution<State> for Standard {
 // TODO: Document all of the math in this library. Since this is our
 // reference implementation, we should strive to make it as clear as possible.
 impl State {
+    pub fn new(z: FixedPoint, y: FixedPoint, c: FixedPoint, mu: FixedPoint) -> Self {
+        Self { z, y, c, mu }
+    }
+
     pub fn get_out_for_in(&self, in_: Asset, t: FixedPoint) -> FixedPoint {
         match in_ {
             Asset::Shares(in_) => self.get_shares_out_for_bonds_in(in_, t),
@@ -76,6 +80,11 @@ impl State {
 
         // The optimal trade sizes are given by dz = z' - z and dy = y - y'.
         return (optimal_z - self.z, self.y - optimal_y);
+    }
+
+    pub fn k(&self, t: FixedPoint) -> FixedPoint {
+        (self.c / self.mu) * (self.mu * self.z).pow(FixedPoint::one() - t)
+            + self.y.pow(FixedPoint::one() - t)
     }
 
     // FIXME: Implement this once we have the `fixed!()` macro.
@@ -117,11 +126,6 @@ impl State {
         z = z.pow(FixedPoint::one().div_up(FixedPoint::one() - t));
         z /= self.mu;
         z - self.z
-    }
-
-    fn k(&self, t: FixedPoint) -> FixedPoint {
-        (self.c / self.mu) * (self.mu * self.z).pow(FixedPoint::one() - t)
-            + self.y.pow(FixedPoint::one() - t)
     }
 }
 
