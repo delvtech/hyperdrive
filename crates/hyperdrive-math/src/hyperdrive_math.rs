@@ -1,10 +1,10 @@
 use crate::yield_space::State as YieldSpaceState;
 use ethers::types::{Address, U256};
 use fixed_point::FixedPoint;
+use hyperdrive_wrappers::wrappers::i_hyperdrive::{Fees, PoolConfig, PoolInfo};
+use hyperdrive_wrappers::wrappers::mock_hyperdrive_math::MaxTradeParams;
 use rand::distributions::{Distribution, Standard};
 use rand::Rng;
-use test_utils::generated::ihyperdrive::{Fees, PoolConfig, PoolInfo};
-use test_utils::generated::mock_hyperdrive_math::MaxTradeParams;
 
 #[derive(Debug)]
 struct State {
@@ -23,6 +23,8 @@ impl From<&State> for YieldSpaceState {
     }
 }
 
+// FIXME: This should sample over reasonable values. These values are clearly
+// wrong.
 impl Distribution<State> for Standard {
     // TODO: It may be better for this to be a uniform sampler and have a test
     // sampler that is more restrictive like this.
@@ -207,7 +209,7 @@ impl State {
         // y = (k - (c / mu) * (mu * (y_l / c + z_min)) ** (1 - tau)) ** (1 / (1 - tau)).
         let t = FixedPoint::one() - FixedPoint::from(self.config.time_stretch);
         let price_factor = self.share_price() / self.initial_share_price();
-        let k = YieldSpaceState::from(self).k(t);
+        let k = YieldSpaceState::from(self).k(self.config.time_stretch.into());
         let inner_factor = (self.initial_share_price()
             * (self.longs_outstanding() / self.share_price())
             + self.minimum_share_reserves())
@@ -229,9 +231,9 @@ mod tests {
         utils::AnvilInstance,
     };
     use eyre::Result;
+    use hyperdrive_wrappers::wrappers::mock_hyperdrive_math::MockHyperdriveMath;
     use rand::{thread_rng, Rng};
     use std::{convert::TryFrom, panic, sync::Arc, time::Duration};
-    use test_utils::generated::mock_hyperdrive_math::MockHyperdriveMath;
 
     const FUZZ_RUNS: usize = 10_000;
 

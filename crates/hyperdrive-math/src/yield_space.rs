@@ -87,15 +87,6 @@ impl State {
             + self.y.pow(FixedPoint::one() - t)
     }
 
-    // FIXME: Implement this once we have the `fixed!()` macro.
-    //
-    // pub fn get_time_stretch(&self, rate: FixedPoint) -> FixedPoint {
-    //     uint256 timeStretch = uint256(5.24592e18).divDown(
-    //         uint256(0.04665e18).mulDown(apr * 100)
-    //     );
-    //     return FixedPointMath.ONE_18.divDown(timeStretch);
-    // }
-
     fn get_bonds_out_for_shares_in(&self, in_: FixedPoint, t: FixedPoint) -> FixedPoint {
         let z = (self.c / self.mu) * (self.mu * (self.z + in_)).pow(FixedPoint::one() - t);
         let y = (self.k(t) - z).pow(FixedPoint::one().div_up(FixedPoint::one() - t));
@@ -129,7 +120,6 @@ impl State {
     }
 }
 
-// FIXME: We need tests for
 #[cfg(test)]
 mod tests {
     use super::*;
