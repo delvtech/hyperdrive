@@ -37,3 +37,28 @@ rule openLongReallyOpensLong(env e) {
     assert longsOutstanding2 >= longsOutstanding1;
     assert longsOutstanding1 + bondProceeds == longsOutstanding2;
 }
+
+rule openLongIncreasesOutstanding {
+    env e;
+    uint256 baseAmount;
+    uint256 minOutput;
+    address destination;
+    bool asUnderlying;
+
+    setHyperdrivePoolParams();
+
+    uint256 latestCP = require_uint256(e.block.timestamp -
+            (e.block.timestamp % checkpointDuration()));
+
+    require checkPointSharePrice(latestCP) != 0;
+
+    mathint longsOutstanding1 = stateLongs();
+
+    uint256 maturityTime; uint256 bondProceeds;
+    maturityTime, bondProceeds = 
+        openLong(e, baseAmount, minOutput, destination, asUnderlying);
+
+    mathint longsOutstanding2 = stateLongs();
+
+    assert longsOutstanding1 + bondProceeds == longsOutstanding2;
+}

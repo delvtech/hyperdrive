@@ -1,0 +1,4 @@
+/// Save diff:
+diff -burN certora/munged/HyperdriveLP.sol certora/mutations/mutation1/HyperdriveLP.sol | sed 's+\certora/munged/HyperdriveLP.sol/++g' | sed 's+certora/mutations/mutation1/HyperdriveLP.sol++g' > certora/mutations/mutation1/mutationPatch.patch
+/// Mutate munge
+cp certora/mutations/mutation1/HyperdriveLP.sol ./certora/munged/
