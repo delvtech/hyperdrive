@@ -1,7 +1,5 @@
 import "./LidoHyperdriveSetup.spec";
 
-//use rule sanity;
-
 /// No action can change the share price for two different checkpoints at the same time.
 /// @notice [VERIFIED]
 rule sharePriceChangesForOnlyOneCheckPoint(method f) {
@@ -19,7 +17,6 @@ rule sharePriceChangesForOnlyOneCheckPoint(method f) {
     assert (sharePriceA1 != sharePriceA2 && sharePriceB1 != sharePriceB2)
         => _checkpointA == _checkpointB;
 }
-
 
 /// For every checkpoint, if the share price has been set, it cannot be set again.
 /// @notice [VERIFIED]

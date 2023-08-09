@@ -1,11 +1,11 @@
---- certora/munged/HyperdriveLong.sol	2023-08-09 15:31:37.095406271 -0300
-+++ 	2023-08-09 14:45:41.285630293 -0300
-@@ -100,7 +100,7 @@
-         // Mint the bonds to the trader with an ID of the maturity time.
+--- certora/munged/HyperdriveShort.sol	2023-08-09 15:52:04.455311814 -0300
++++ 	2023-08-09 17:00:25.305013618 -0300
+@@ -104,7 +104,7 @@
+         // current share price and the maturity time of the shorts.
          uint256 assetId = AssetId.encodeAssetId(
-             AssetId.AssetIdPrefix.Long,
+             AssetId.AssetIdPrefix.Short,
 -            maturityTime
-+            latestCheckpoint
++            _latestCheckpoint()
          );
-         _mint(assetId, _destination, bondProceeds);
+         _mint(assetId, _destination, _bondAmount);
  
