@@ -296,16 +296,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
 
         // decrease the exposure by the short deposit amount
         _exposure -= int128((_bondAmount - baseVolume).toUint128());
-
-        // // Since the share reserves are reduced, we need to verify that the base
-        // // reserves are greater than or equal to the amount of longs outstanding.
-        // if (
-        //     shareReserves_ <
-        //     uint256(_marketState.longsOutstanding).divDown(_sharePrice) +
-        //         _minimumShareReserves
-        // ) {
-        //     revert IHyperdrive.BaseBufferExceedsShareReserves();
-        // }
     }
 
     /// @dev Applies the trading deltas from a closed short to the reserves and
