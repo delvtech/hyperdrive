@@ -13,7 +13,9 @@ fn get_artifacts(artifacts_path: &Path) -> Result<Vec<(String, String)>> {
         if path.is_file() {
             let source = path.clone().into_os_string().into_string().unwrap();
             let name = String::from(path.file_stem().unwrap().to_str().unwrap());
-            if name.ends_with("Deployer") {
+
+            // Skip some contracts that cause Rust compiler errors.
+            if name.eq("console") || name.eq("safeconsole") || name.ends_with("Deployer") {
                 // TODO: The Deployer contracts have a `deploy()` function that
                 // conflicts with ethers-rs `deploy()` function. We should
                 // update the deployer interface when we update the factory.
