@@ -232,9 +232,7 @@ mod tests {
                     assert_eq!(actual_dz, FixedPoint::from(expected_dz));
                     assert_eq!(actual_dy, FixedPoint::from(expected_dy));
                 }
-                Err(_) => {
-                    let _ = actual.unwrap_err();
-                }
+                Err(_) => assert!(actual.is_err()),
             }
         }
 
@@ -266,9 +264,7 @@ mod tests {
                 .await
             {
                 Ok(expected) => assert_eq!(actual.unwrap(), FixedPoint::from(expected)),
-                Err(_) => {
-                    let _ = actual.unwrap_err();
-                }
+                Err(_) => assert!(actual.is_err()),
             }
         }
 
@@ -300,9 +296,7 @@ mod tests {
                 .await
             {
                 Ok(expected) => assert_eq!(actual.unwrap(), FixedPoint::from(expected)),
-                Err(_) => {
-                    let _ = actual.unwrap_err();
-                }
+                Err(_) => assert!(actual.is_err()),
             }
         }
 
@@ -336,9 +330,7 @@ mod tests {
                 Ok(expected) => {
                     assert_eq!(actual.unwrap(), FixedPoint::from(expected));
                 }
-                Err(_) => {
-                    let _ = actual.unwrap_err();
-                }
+                Err(_) => assert!(actual.is_err()),
             }
         }
 
@@ -370,9 +362,7 @@ mod tests {
                 .await
             {
                 Ok(expected) => assert_eq!(actual.unwrap(), FixedPoint::from(expected)),
-                Err(_) => {
-                    let _ = actual.unwrap_err();
-                }
+                Err(_) => assert!(actual.is_err()),
             }
         }
 
@@ -402,9 +392,7 @@ mod tests {
                 .await
             {
                 Ok(expected) => assert_eq!(actual.unwrap(), FixedPoint::from(expected)),
-                Err(_) => {
-                    let _ = actual.unwrap_err();
-                }
+                Err(_) => assert!(actual.is_err()),
             }
         }
 

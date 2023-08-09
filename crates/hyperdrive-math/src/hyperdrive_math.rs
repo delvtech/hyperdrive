@@ -321,9 +321,7 @@ mod tests {
                     assert_eq!(actual_base_amount, FixedPoint::from(expected_base_amount));
                     assert_eq!(actual_bond_amount, FixedPoint::from(expected_bond_amount));
                 }
-                Err(_) => {
-                    let _ = actual.unwrap_err();
-                }
+                Err(_) => assert!(actual.is_err()),
             }
         }
 
@@ -356,9 +354,7 @@ mod tests {
                 Ok(expected) => {
                     assert_eq!(actual.unwrap(), FixedPoint::from(expected));
                 }
-                Err(_) => {
-                    let _ = actual.unwrap_err();
-                }
+                Err(_) => assert!(actual.is_err()),
             }
         }
 

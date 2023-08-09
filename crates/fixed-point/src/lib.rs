@@ -452,9 +452,7 @@ mod tests {
             let actual = panic::catch_unwind(|| a + b);
             match runner.mock.add(a.into(), b.into()).call().await {
                 Ok(expected) => assert_eq!(actual.unwrap(), FixedPoint::from(expected)),
-                Err(_) => {
-                    let _ = actual.unwrap_err();
-                }
+                Err(_) => assert!(actual.is_err()),
             }
         }
 
@@ -473,9 +471,7 @@ mod tests {
             let actual = panic::catch_unwind(|| a - b);
             match runner.mock.sub(a.into(), b.into()).call().await {
                 Ok(expected) => assert_eq!(actual.unwrap(), FixedPoint::from(expected)),
-                Err(_) => {
-                    let _ = actual.unwrap_err();
-                }
+                Err(_) => assert!(actual.is_err()),
             }
         }
 
@@ -506,9 +502,7 @@ mod tests {
                 .await
             {
                 Ok(expected) => assert_eq!(actual.unwrap(), FixedPoint::from(expected)),
-                Err(_) => {
-                    let _ = actual.unwrap_err();
-                }
+                Err(_) => assert!(actual.is_err()),
             }
         }
 
@@ -539,9 +533,7 @@ mod tests {
                 .await
             {
                 Ok(expected) => assert_eq!(actual.unwrap(), FixedPoint::from(expected)),
-                Err(_) => {
-                    let _ = actual.unwrap_err();
-                }
+                Err(_) => assert!(actual.is_err()),
             }
         }
 
@@ -560,9 +552,7 @@ mod tests {
             let actual = panic::catch_unwind(|| a * b);
             match runner.mock.mul_down(a.into(), b.into()).call().await {
                 Ok(expected) => assert_eq!(actual.unwrap(), FixedPoint::from(expected)),
-                Err(_) => {
-                    let _ = actual.unwrap_err();
-                }
+                Err(_) => assert!(actual.is_err()),
             }
         }
 
@@ -581,9 +571,7 @@ mod tests {
             let actual = panic::catch_unwind(|| a.mul_up(b));
             match runner.mock.mul_up(a.into(), b.into()).call().await {
                 Ok(expected) => assert_eq!(actual.unwrap(), FixedPoint::from(expected)),
-                Err(_) => {
-                    let _ = actual.unwrap_err();
-                }
+                Err(_) => assert!(actual.is_err()),
             }
         }
 
@@ -608,9 +596,7 @@ mod tests {
             let actual = panic::catch_unwind(|| a / b);
             match runner.mock.div_down(a.into(), b.into()).call().await {
                 Ok(expected) => assert_eq!(actual.unwrap(), FixedPoint::from(expected)),
-                Err(_) => {
-                    let _ = actual.unwrap_err();
-                }
+                Err(_) => assert!(actual.is_err()),
             }
         }
 
@@ -635,9 +621,7 @@ mod tests {
             let actual = panic::catch_unwind(|| a.div_up(b));
             match runner.mock.div_up(a.into(), b.into()).call().await {
                 Ok(expected) => assert_eq!(actual.unwrap(), FixedPoint::from(expected)),
-                Err(_) => {
-                    let _ = actual.unwrap_err();
-                }
+                Err(_) => assert!(actual.is_err()),
             }
         }
 
@@ -658,9 +642,7 @@ mod tests {
                 Ok(expected) => {
                     assert_eq!(actual.unwrap(), FixedPoint::from(expected));
                 }
-                Err(_) => {
-                    let _ = actual.unwrap_err();
-                }
+                Err(_) => assert!(actual.is_err()),
             }
         }
 
@@ -679,9 +661,7 @@ mod tests {
             let actual = panic::catch_unwind(|| x.pow(y));
             match runner.mock.pow(x.into(), y.into()).call().await {
                 Ok(expected) => assert_eq!(actual.unwrap(), FixedPoint::from(expected)),
-                Err(_) => {
-                    let _ = actual.unwrap_err();
-                }
+                Err(_) => assert!(actual.is_err()),
             }
         }
 
@@ -699,9 +679,7 @@ mod tests {
             let actual = panic::catch_unwind(|| FixedPoint::ln(x));
             match runner.mock.ln(x).call().await {
                 Ok(expected) => assert_eq!(actual.unwrap(), expected),
-                Err(_) => {
-                    let _ = actual.unwrap_err();
-                }
+                Err(_) => assert!(actual.is_err()),
             }
         }
 
@@ -719,9 +697,7 @@ mod tests {
             let actual = panic::catch_unwind(|| FixedPoint::exp(x));
             match runner.mock.exp(x).call().await {
                 Ok(expected) => assert_eq!(actual.unwrap(), expected),
-                Err(_) => {
-                    let _ = actual.unwrap_err();
-                }
+                Err(_) => assert!(actual.is_err()),
             }
         }
 
@@ -739,9 +715,7 @@ mod tests {
             let actual = panic::catch_unwind(|| FixedPoint::ln(x));
             match runner.mock.ln(x).call().await {
                 Ok(expected) => assert_eq!(actual.unwrap(), expected),
-                Err(_) => {
-                    let _ = actual.unwrap_err();
-                }
+                Err(_) => assert!(actual.is_err()),
             }
         }
 
@@ -759,9 +733,7 @@ mod tests {
             let actual = panic::catch_unwind(|| FixedPoint::ln(x));
             match runner.mock.ln(x).call().await {
                 Ok(expected) => assert_eq!(actual.unwrap(), expected),
-                Err(_) => {
-                    let _ = actual.unwrap_err();
-                }
+                Err(_) => assert!(actual.is_err()),
             }
         }
 

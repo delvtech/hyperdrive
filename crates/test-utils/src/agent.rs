@@ -21,7 +21,7 @@ struct Wallet {
 
 pub struct Agent {
     address: Address,
-    hyperdrive: Hyperdrive,
+    deployment: Hyperdrive,
     wallet: Wallet,
 }
 
@@ -44,17 +44,17 @@ impl fmt::Debug for Agent {
 // however, we'll need the max trade calculations to be able to fuzz with sane
 // trade limits.
 impl Agent {
-    pub fn new(hyperdrive: Hyperdrive, address: Address) -> Self {
+    pub fn new(deployment: Hyperdrive, address: Address) -> Self {
         Self {
             address,
-            hyperdrive,
+            deployment,
             wallet: Wallet::default(),
         }
     }
 
     pub async fn fund(&mut self, amount: FixedPoint) -> Result<()> {
         // Mint some base tokens.
-        self.hyperdrive
+        self.deployment
             .base
             .mint(amount.into())
             .from(self.address)
@@ -62,9 +62,9 @@ impl Agent {
             .await?;
 
         // Approve hyperdrive to spend the base tokens.
-        self.hyperdrive
+        self.deployment
             .base
-            .approve(self.hyperdrive.hyperdrive.address(), amount.into())
+            .approve(self.deployment.hyperdrive.address(), amount.into())
             .from(self.address)
             .send()
             .await?;
@@ -93,7 +93,7 @@ impl Agent {
         // Open the long and record the trade in the wallet.
         let log = {
             let tx = self
-                .hyperdrive
+                .deployment
                 .hyperdrive
                 .open_long(base_paid.into(), base_paid.into(), self.address, true)
                 .from(self.address);
@@ -148,7 +148,7 @@ impl Agent {
         // Close the long and increase the wallet's base balance.
         let log = {
             let tx = self
-                .hyperdrive
+                .deployment
                 .hyperdrive
                 .close_long(
                     maturity_time.into(),
@@ -190,7 +190,7 @@ impl Agent {
         // Open the short and record the trade in the wallet.
         let log = {
             let tx = self
-                .hyperdrive
+                .deployment
                 .hyperdrive
                 .open_short(bond_amount.into(), bond_amount.into(), self.address, true)
                 .from(self.address);
@@ -248,7 +248,7 @@ impl Agent {
         // Close the long and increase the wallet's base balance.
         let log = {
             let tx = self
-                .hyperdrive
+                .deployment
                 .hyperdrive
                 .close_short(
                     maturity_time.into(),
@@ -298,7 +298,7 @@ impl Agent {
         // Initialize the pool and record the LP shares that were received in the wallet.
         let log = {
             let tx = self
-                .hyperdrive
+                .deployment
                 .hyperdrive
                 .initialize(contribution.into(), rate.into(), self.address, true)
                 .from(self.address);
@@ -340,7 +340,7 @@ impl Agent {
         // Add liquidity and record the LP shares that were received in the wallet.
         let log = {
             let tx = self
-                .hyperdrive
+                .deployment
                 .hyperdrive
                 .add_liquidity(
                     contribution.into(),
@@ -391,7 +391,7 @@ impl Agent {
         // received.
         let log = {
             let tx = self
-                .hyperdrive
+                .deployment
                 .hyperdrive
                 .remove_liquidity(shares.into(), uint256!(0), self.address, true)
                 .from(self.address);
@@ -434,7 +434,7 @@ impl Agent {
         // shares that were redeemed.
         let log = {
             let tx = self
-                .hyperdrive
+                .deployment
                 .hyperdrive
                 .redeem_withdrawal_shares(shares.into(), uint256!(0), self.address, true)
                 .from(self.address);

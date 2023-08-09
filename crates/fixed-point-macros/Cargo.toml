@@ -15,3 +15,7 @@ proc-macro = true
 ethers = "2.0.8"
 syn = "2.0"
 quote = "1.0"
+
+[dev-dependencies]
+
+fixed-point = { path = "../fixed-point" }
