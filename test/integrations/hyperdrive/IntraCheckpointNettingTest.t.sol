@@ -30,11 +30,15 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         variableInterest = variableInterest.normalizeToRange(-.5e18, .5e18);
         timeElapsed = timeElapsed.normalizeToRange(0, POSITION_DURATION);
         tradeSize = tradeSize.normalizeToRange(1e18, 50_000_000e18);
-        open_close_long(initialSharePrice, variableInterest, timeElapsed, tradeSize);
+        open_close_long(
+            initialSharePrice,
+            variableInterest,
+            timeElapsed,
+            tradeSize
+        );
     }
 
     function test_netting_open_close_long() external {
-
         // This tests the following scenario:
         // - initial_share_price = 1
         // - positive interest causes the share price to go to up
@@ -46,7 +50,12 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             int256 variableInterest = 0.05e18;
             uint256 timeElapsed = 0 days;
             uint256 tradeSize = 1_000_000e18;
-            open_close_long(initialSharePrice, variableInterest, timeElapsed, tradeSize);
+            open_close_long(
+                initialSharePrice,
+                variableInterest,
+                timeElapsed,
+                tradeSize
+            );
         }
         vm.revertTo(snapshotId);
 
@@ -59,9 +68,14 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         {
             uint256 initialSharePrice = 1e18;
             int256 variableInterest = 0.05e18;
-            uint256 timeElapsed = POSITION_DURATION/2;
+            uint256 timeElapsed = POSITION_DURATION / 2;
             uint256 tradeSize = 1_000_000e18;
-            open_close_long(initialSharePrice, variableInterest, timeElapsed, tradeSize);
+            open_close_long(
+                initialSharePrice,
+                variableInterest,
+                timeElapsed,
+                tradeSize
+            );
         }
         vm.revertTo(snapshotId);
 
@@ -76,7 +90,12 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             int256 variableInterest = 0.05e18;
             uint256 timeElapsed = POSITION_DURATION;
             uint256 tradeSize = 1_000_000e18;
-            open_close_long(initialSharePrice, variableInterest, timeElapsed, tradeSize);
+            open_close_long(
+                initialSharePrice,
+                variableInterest,
+                timeElapsed,
+                tradeSize
+            );
         }
         vm.revertTo(snapshotId);
     }
@@ -98,7 +117,10 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
 
         // open a long
         uint256 basePaidLong = tradeSize;
-        (uint256 maturityTimeLong, uint256 bondAmount) = openLong(bob, basePaidLong);
+        (uint256 maturityTimeLong, uint256 bondAmount) = openLong(
+            bob,
+            basePaidLong
+        );
 
         // fast forward time and accrue interest
         advanceTime(timeElapsed, variableInterest);
@@ -107,9 +129,10 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         closeLong(bob, maturityTimeLong, bondAmount);
 
         // exposure should be 0
-        int256 exposure = MockHyperdrive(address(hyperdrive)).getCurrentExposure();
+        int256 exposure = MockHyperdrive(address(hyperdrive))
+            .getCurrentExposure();
         assertLe(exposure, 0);
-        assertApproxEqAbs(exposure,0, 1e18);
+        assertApproxEqAbs(exposure, 0, 1e18);
     }
 
     function test_netting_open_close_short_fuzz(
@@ -127,11 +150,15 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         variableInterest = variableInterest.normalizeToRange(-.5e18, .5e18);
         timeElapsed = timeElapsed.normalizeToRange(0, POSITION_DURATION);
         tradeSize = tradeSize.normalizeToRange(1e18, 50_000_000e18);
-        open_close_short(initialSharePrice, variableInterest, timeElapsed, tradeSize);
+        open_close_short(
+            initialSharePrice,
+            variableInterest,
+            timeElapsed,
+            tradeSize
+        );
     }
 
     function test_netting_open_close_short() external {
-
         // This tests the following scenario:
         // - initial_share_price = 1
         // - positive interest causes the share price to go to up
@@ -143,7 +170,12 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             int256 variableInterest = 0.05e18;
             uint256 timeElapsed = 0;
             uint256 tradeSize = 1_000_000e18;
-            open_close_short(initialSharePrice, variableInterest, timeElapsed, tradeSize);
+            open_close_short(
+                initialSharePrice,
+                variableInterest,
+                timeElapsed,
+                tradeSize
+            );
         }
         vm.revertTo(snapshotId);
 
@@ -156,9 +188,14 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         {
             uint256 initialSharePrice = 1e18;
             int256 variableInterest = 0.05e18;
-            uint256 timeElapsed = POSITION_DURATION/2;
+            uint256 timeElapsed = POSITION_DURATION / 2;
             uint256 tradeSize = 1_000_000e18;
-            open_close_short(initialSharePrice, variableInterest, timeElapsed, tradeSize);
+            open_close_short(
+                initialSharePrice,
+                variableInterest,
+                timeElapsed,
+                tradeSize
+            );
         }
         vm.revertTo(snapshotId);
 
@@ -173,7 +210,12 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             int256 variableInterest = 0.05e18;
             uint256 timeElapsed = POSITION_DURATION;
             uint256 tradeSize = 1_000_000e18;
-            open_close_short(initialSharePrice, variableInterest, timeElapsed, tradeSize);
+            open_close_short(
+                initialSharePrice,
+                variableInterest,
+                timeElapsed,
+                tradeSize
+            );
         }
         vm.revertTo(snapshotId);
     }
@@ -204,7 +246,8 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         closeShort(bob, maturityTimeShort, shortAmount);
 
         // exposure should be 0
-        int256 exposure = MockHyperdrive(address(hyperdrive)).getCurrentExposure();
+        int256 exposure = MockHyperdrive(address(hyperdrive))
+            .getCurrentExposure();
         assertLe(exposure, 0);
         assertApproxEqAbs(exposure, 0, 1e5);
     }
@@ -224,11 +267,15 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         variableInterest = variableInterest.normalizeToRange(-.5e18, .5e18);
         timeElapsed = timeElapsed.normalizeToRange(0, POSITION_DURATION);
         tradeSize = tradeSize.normalizeToRange(1e18, 50_000_000e18);
-        open_close_long_short(initialSharePrice, variableInterest, timeElapsed, tradeSize);
+        open_close_long_short(
+            initialSharePrice,
+            variableInterest,
+            timeElapsed,
+            tradeSize
+        );
     }
 
     function test_netting_open_close_long_short() external {
-
         // This tests the following scenario:
         // - initial_share_price = 1
         // - positive interest causes the share price to go to up
@@ -240,7 +287,12 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             int256 variableInterest = 0.05e18;
             uint256 timeElapsed = 0;
             uint256 tradeSize = 1_000_000e18;
-            open_close_long_short(initialSharePrice, variableInterest, timeElapsed, tradeSize);
+            open_close_long_short(
+                initialSharePrice,
+                variableInterest,
+                timeElapsed,
+                tradeSize
+            );
         }
         vm.revertTo(snapshotId);
 
@@ -253,9 +305,14 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         {
             uint256 initialSharePrice = 1e18;
             int256 variableInterest = 0.05e18;
-            uint256 timeElapsed = POSITION_DURATION/2;
+            uint256 timeElapsed = POSITION_DURATION / 2;
             uint256 tradeSize = 1_000_000e18;
-            open_close_long_short(initialSharePrice, variableInterest, timeElapsed, tradeSize);
+            open_close_long_short(
+                initialSharePrice,
+                variableInterest,
+                timeElapsed,
+                tradeSize
+            );
         }
         vm.revertTo(snapshotId);
 
@@ -270,7 +327,12 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             int256 variableInterest = 0.05e18;
             uint256 timeElapsed = POSITION_DURATION;
             uint256 tradeSize = 1_000_000e18;
-            open_close_long_short(initialSharePrice, variableInterest, timeElapsed, tradeSize);
+            open_close_long_short(
+                initialSharePrice,
+                variableInterest,
+                timeElapsed,
+                tradeSize
+            );
         }
         vm.revertTo(snapshotId);
     }
@@ -292,7 +354,10 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
 
         // open a long position.
         uint256 basePaidLong = tradeSize;
-        (uint256 maturityTimeLong, uint256 bondAmount) = openLong(bob, basePaidLong);
+        (uint256 maturityTimeLong, uint256 bondAmount) = openLong(
+            bob,
+            basePaidLong
+        );
 
         // open a short position.
         uint256 shortAmount = tradeSize;
@@ -308,9 +373,9 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         closeLong(bob, maturityTimeLong, bondAmount);
 
         // exposure should be 0
-        int256 exposure = MockHyperdrive(address(hyperdrive)).getCurrentExposure();
+        int256 exposure = MockHyperdrive(address(hyperdrive))
+            .getCurrentExposure();
         assertLe(exposure, 0);
-        assertApproxEqAbs(exposure,0, 1e12);
+        assertApproxEqAbs(exposure, 0, 1e12);
     }
-
 }

@@ -68,7 +68,7 @@ contract ExtremeInputs is HyperdriveTest {
 
         // Open short with max base amount
         uint256 aprBefore = hyperdrive.calculateAPRFromReserves();
-        (,uint256 baseAmountShort) = openShort(bob, bondAmount);
+        (, uint256 baseAmountShort) = openShort(bob, bondAmount);
         uint256 aprAfter = hyperdrive.calculateAPRFromReserves();
 
         // Ensure the share reserves are approximately equal to the minimum

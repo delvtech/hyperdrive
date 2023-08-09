@@ -43,7 +43,6 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         uint256 holdTime,
         int256 variableRate
     ) external {
-
         // Normalize the fuzzed variables.
         initialize(alice, 0.02e18, 500_000_000e6);
         basePaid = basePaid.normalizeToRange(
@@ -92,9 +91,9 @@ contract NonstandardDecimalsTest is HyperdriveTest {
                 longAmount,
                 HyperdriveUtils.calculateTimeRemaining(hyperdrive, maturityTime)
             );
-            
+
             // The term passes.
-            // TODO: There seems to be an issue when the variable rate is too high. 
+            // TODO: There seems to be an issue when the variable rate is too high.
             // share price starts at 1 and ends at 7.38 when variable rate is 2e18
             advanceTime(holdTime, variableRate);
 

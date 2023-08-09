@@ -138,7 +138,7 @@ abstract contract Hyperdrive is
     }
 
     // this method calculates the most up to date global exposure value
-    function _getCurrentExposure() internal override view returns (int256) {
+    function _getCurrentExposure() internal view override returns (int256) {
         return _exposure;
     }
 }

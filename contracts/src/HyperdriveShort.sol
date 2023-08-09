@@ -56,10 +56,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // checkpoint, they will receive this backdated interest back at closing.
         uint256 sharePrice = _pricePerShare();
         uint256 latestCheckpoint = _latestCheckpoint();
-        uint256 openSharePrice = _applyCheckpoint(
-            latestCheckpoint,
-            sharePrice
-        );
+        uint256 openSharePrice = _applyCheckpoint(latestCheckpoint, sharePrice);
 
         // Calculate the pool and user deltas using the trading function. We
         // backdate the bonds sold to the beginning of the checkpoint.
@@ -266,9 +263,11 @@ abstract contract HyperdriveShort is HyperdriveLP {
             .toUint128();
 
         // Update the base volume of short positions.
-        uint128 baseVolume =  _shareReservesDelta.mulDown(_openSharePrice).toUint128();
+        uint128 baseVolume = _shareReservesDelta
+            .mulDown(_openSharePrice)
+            .toUint128();
         _marketState.shortBaseVolume += baseVolume;
-        _checkpoints[_latestCheckpoint()].shortBaseVolume += baseVolume;    
+        _checkpoints[_latestCheckpoint()].shortBaseVolume += baseVolume;
 
         // Apply the trading deltas to the reserves and increase the bond buffer
         // by the amount of bonds that were shorted. We don't need to add the
@@ -279,16 +278,25 @@ abstract contract HyperdriveShort is HyperdriveLP {
         _marketState.shareReserves = shareReserves_;
         _marketState.bondReserves += _bondAmount.toUint128();
         _marketState.shortsOutstanding += _bondAmount.toUint128();
-        
-        if( int256((uint256(_marketState.shareReserves).mulDivDown(_sharePrice,1e18))) - _exposure <  int256(_minimumShareReserves.mulDivDown(_sharePrice,1e18))) {
 
+        if (
+            int256(
+                (
+                    uint256(_marketState.shareReserves).mulDivDown(
+                        _sharePrice,
+                        1e18
+                    )
+                )
+            ) -
+                _exposure <
+            int256(_minimumShareReserves.mulDivDown(_sharePrice, 1e18))
+        ) {
             revert IHyperdrive.BaseBufferExceedsShareReserves();
         }
 
         // decrease the exposure by the short deposit amount
         _exposure -= int128((_bondAmount - baseVolume).toUint128());
 
-        
         // // Since the share reserves are reduced, we need to verify that the base
         // // reserves are greater than or equal to the amount of longs outstanding.
         // if (
@@ -360,7 +368,9 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 checkpointShortBaseVolume -
                 proportionalBaseVolume;
             // Increase the exposure by the short deposit amount
-            _exposure += int128((_bondAmount-proportionalBaseVolume).toUint128());
+            _exposure += int128(
+                (_bondAmount - proportionalBaseVolume).toUint128()
+            );
         }
 
         // Decrease the amount of shorts outstanding.

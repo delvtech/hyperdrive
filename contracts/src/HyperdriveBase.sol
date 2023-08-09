@@ -142,7 +142,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
         virtual
         returns (uint256 sharePrice);
 
-    function _getCurrentExposure() internal virtual view returns (int256);
+    function _getCurrentExposure() internal view virtual returns (int256);
 
     /// Pause ///
 

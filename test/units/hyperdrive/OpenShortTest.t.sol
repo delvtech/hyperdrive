@@ -147,7 +147,8 @@ contract OpenShortTest is HyperdriveTest {
         openLong(bob, bondAmount);
 
         // Initialize a large short to eat through the buffer of capital
-        uint256 overlyLargeShort = hyperdrive.calculateMaxShort()*2.1e18/1e18;
+        uint256 overlyLargeShort = (hyperdrive.calculateMaxShort() * 2.1e18) /
+            1e18;
 
         // Open the Short.
         vm.stopPrank();
