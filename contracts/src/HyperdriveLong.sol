@@ -8,6 +8,9 @@ import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { SafeCast } from "./libraries/SafeCast.sol";
 
+import { Lib } from "../../test/utils/Lib.sol";
+import "forge-std/console2.sol";
+
 /// @author DELV
 /// @title HyperdriveLong
 /// @notice Implements the long accounting for Hyperdrive.
@@ -17,6 +20,7 @@ import { SafeCast } from "./libraries/SafeCast.sol";
 abstract contract HyperdriveLong is HyperdriveLP {
     using FixedPointMath for uint256;
     using SafeCast for uint256;
+    using Lib for *;
 
     /// @notice Opens a long position.
     /// @param _baseAmount The amount of base to use when trading.
@@ -263,16 +267,24 @@ abstract contract HyperdriveLong is HyperdriveLP {
         longsOutstanding_ += _bondProceeds.toUint128();
         _marketState.longsOutstanding = longsOutstanding_;
 
+        // increase the exposure by the amount the LPs must reserve to cover the long.
+        checkpoint.longExposure += (_bondReservesDelta - _shareReservesDelta.mulDivDown(_sharePrice,1e18)).toUint128();
+        _exposure += int128(checkpoint.longExposure);
+        
+        if( int256((uint256(_marketState.shareReserves) - _minimumShareReserves).mulDivDown(_sharePrice,1e18)) < _exposure ) {
+
+            revert IHyperdrive.BaseBufferExceedsShareReserves();
+        }
         // Since the base buffer may have increased relative to the base
         // reserves and the bond reserves decreased, we must ensure that the
         // base reserves are greater than the longsOutstanding.
-        if (
-            _marketState.shareReserves <
-            uint256(longsOutstanding_).divDown(_sharePrice) +
-                _minimumShareReserves
-        ) {
-            revert IHyperdrive.BaseBufferExceedsShareReserves();
-        }
+        // if (
+        //     _marketState.shareReserves <
+        //     uint256(longsOutstanding_).divDown(_sharePrice) +
+        //         _minimumShareReserves
+        // ) {
+        //     revert IHyperdrive.BaseBufferExceedsShareReserves();
+        // }
     }
 
     /// @dev Applies the trading deltas from a closed long to the reserves and
@@ -292,8 +304,9 @@ abstract contract HyperdriveLong is HyperdriveLP {
         uint256 _sharePrice
     ) internal {
         uint128 longsOutstanding_ = _marketState.longsOutstanding;
+        uint256 checkpointTime = _maturityTime - _positionDuration;
         uint128 longSharePrice_ = _checkpoints[
-            _maturityTime - _positionDuration
+            checkpointTime
         ].longSharePrice;
         // Update the long average maturity time.
         _marketState.longAverageMaturityTime = uint256(
@@ -318,6 +331,19 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 false
             )
             .toUint128();
+
+
+        uint256 ratioTimeRemaining = FixedPointMath.ONE_18 - (block.timestamp - checkpointTime).mulDivDown(1e18, _positionDuration);
+        uint128 longExposureBefore = _checkpoints[checkpointTime].longExposure;
+        // Reduce the exposure by the amount of bonds that matured (flat)
+        _checkpoints[checkpointTime].longExposure = uint256(_checkpoints[checkpointTime].longExposure).mulDivDown(ratioTimeRemaining,1e18).toUint128();
+        // Reduce the exposure by the amount of bonds sold back to the pool (curve)
+        if(_checkpoints[checkpointTime].longExposure > _bondReservesDelta - _shareReservesDelta.mulDivDown(_sharePrice,1e18)){
+            _checkpoints[checkpointTime].longExposure -= (_bondReservesDelta - _shareReservesDelta.mulDivDown(_sharePrice,1e18)).toUint128();
+        } else {
+            _checkpoints[checkpointTime].longExposure = 0;
+        }
+        _exposure -= int128(longExposureBefore - _checkpoints[checkpointTime].longExposure);
 
         // Reduce the amount of outstanding longs.
         _marketState.longsOutstanding =

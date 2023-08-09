@@ -99,6 +99,7 @@ library HyperdriveUtils {
     ) internal view returns (uint256 baseAmount) {
         IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
         IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
+        IHyperdrive.Checkpoint memory checkpoint = _hyperdrive.getCheckpoint(_hyperdrive.latestCheckpoint());
         (baseAmount, ) = HyperdriveMath.calculateMaxLong(
             HyperdriveMath.MaxTradeParams({
                 shareReserves: poolInfo.shareReserves,

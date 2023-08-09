@@ -11,6 +11,9 @@ import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { SafeCast } from "./libraries/SafeCast.sol";
 
+import { Lib } from "../../test/utils/Lib.sol";
+import "forge-std/console2.sol";
+
 /// @author DELV
 /// @title Hyperdrive
 /// @notice A fixed-rate AMM that mints bonds on demand for longs and shorts.
@@ -24,6 +27,7 @@ abstract contract Hyperdrive is
 {
     using FixedPointMath for uint256;
     using SafeCast for uint256;
+    using Lib for *;
 
     /// @notice Initializes a Hyperdrive pool.
     /// @param _config The configuration of the Hyperdrive pool.
@@ -105,6 +109,8 @@ abstract contract Hyperdrive is
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _checkpointTime)
         ];
         if (maturedLongsAmount > 0) {
+            // uint256 startTime = _checkpointTime - _positionDuration;
+            // uint128 longExposureBefore = _checkpoints[startTime].longExposure;
             _applyCloseLong(
                 maturedLongsAmount,
                 0,
@@ -113,6 +119,10 @@ abstract contract Hyperdrive is
                 _checkpointTime,
                 _sharePrice
             );
+            // console2.log("longExposureBefore", longExposureBefore);
+            // console2.log("longExposureAfter", _checkpoints[startTime].longExposure);
+            // console2.log("longExposure change",int128(longExposureBefore - _checkpoints[startTime].longExposure));
+            // _exposure += int128(longExposureBefore - _checkpoints[startTime].longExposure);
         }
 
         // Pay out the short withdrawal pool for shorts that have matured.
@@ -120,6 +130,8 @@ abstract contract Hyperdrive is
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _checkpointTime)
         ];
         if (maturedShortsAmount > 0) {
+            // uint256 startTime = _checkpointTime - _positionDuration;
+            // uint128 shortDepositsBefore = _checkpoints[startTime].shortDeposits;
             _applyCloseShort(
                 maturedShortsAmount,
                 0,
@@ -128,8 +140,14 @@ abstract contract Hyperdrive is
                 _checkpointTime,
                 _sharePrice
             );
+            // _exposure += int128(shortDepositsBefore - _checkpoints[startTime].shortDeposits);
         }
 
         return checkpoint_.sharePrice;
+    }
+
+    // this method calculates the most up to date global exposure value
+    function _getCurrentExposure() internal override view returns (int256) {
+        return _exposure;
     }
 }

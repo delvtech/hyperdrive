@@ -9,6 +9,9 @@ import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { SafeCast } from "./libraries/SafeCast.sol";
 import { YieldSpaceMath } from "./libraries/YieldSpaceMath.sol";
 
+import { Lib } from "../../test/utils/Lib.sol";
+import "forge-std/console2.sol";
+
 /// @author DELV
 /// @title HyperdriveShort
 /// @notice Implements the short accounting for Hyperdrive.
@@ -18,6 +21,7 @@ import { YieldSpaceMath } from "./libraries/YieldSpaceMath.sol";
 abstract contract HyperdriveShort is HyperdriveLP {
     using FixedPointMath for uint256;
     using SafeCast for uint256;
+    using Lib for *;
 
     /// @notice Opens a short position.
     /// @param _bondAmount The amount of bonds to short.
@@ -51,14 +55,15 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // Since the short will receive interest from the beginning of the
         // checkpoint, they will receive this backdated interest back at closing.
         uint256 sharePrice = _pricePerShare();
+        uint256 latestCheckpoint = _latestCheckpoint();
         uint256 openSharePrice = _applyCheckpoint(
-            _latestCheckpoint(),
+            latestCheckpoint,
             sharePrice
         );
 
         // Calculate the pool and user deltas using the trading function. We
         // backdate the bonds sold to the beginning of the checkpoint.
-        maturityTime = _latestCheckpoint() + _positionDuration;
+        maturityTime = latestCheckpoint + _positionDuration;
         uint256 timeRemaining = _calculateTimeRemaining(maturityTime);
         uint256 shareReservesDelta;
         {
@@ -95,7 +100,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
             shareReservesDelta,
             sharePrice,
             openSharePrice,
-            timeRemaining,
             maturityTime
         );
 
@@ -242,13 +246,11 @@ abstract contract HyperdriveShort is HyperdriveLP {
     /// @param _sharePrice The share price.
     /// @param _openSharePrice The current checkpoint's share price.
     /// @param _maturityTime The maturity time of the long.
-    /// @param _timeRemaining The time remaining until maturity.
     function _applyOpenShort(
         uint256 _bondAmount,
         uint256 _shareReservesDelta,
         uint256 _sharePrice,
         uint256 _openSharePrice,
-        uint256 _timeRemaining,
         uint256 _maturityTime
     ) internal {
         // Update the average maturity time of long positions.
@@ -264,15 +266,9 @@ abstract contract HyperdriveShort is HyperdriveLP {
             .toUint128();
 
         // Update the base volume of short positions.
-        uint128 baseVolume = HyperdriveMath
-            .calculateBaseVolume(
-                _shareReservesDelta.mulDown(_openSharePrice),
-                _bondAmount,
-                _timeRemaining
-            )
-            .toUint128();
+        uint128 baseVolume =  _shareReservesDelta.mulDown(_openSharePrice).toUint128();
         _marketState.shortBaseVolume += baseVolume;
-        _checkpoints[_latestCheckpoint()].shortBaseVolume += baseVolume;
+        _checkpoints[_latestCheckpoint()].shortBaseVolume += baseVolume;    
 
         // Apply the trading deltas to the reserves and increase the bond buffer
         // by the amount of bonds that were shorted. We don't need to add the
@@ -284,15 +280,24 @@ abstract contract HyperdriveShort is HyperdriveLP {
         _marketState.bondReserves += _bondAmount.toUint128();
         _marketState.shortsOutstanding += _bondAmount.toUint128();
 
-        // Since the share reserves are reduced, we need to verify that the base
-        // reserves are greater than or equal to the amount of longs outstanding.
-        if (
-            shareReserves_ <
-            uint256(_marketState.longsOutstanding).divDown(_sharePrice) +
-                _minimumShareReserves
-        ) {
+        if( int256((uint256(_marketState.shareReserves) - _minimumShareReserves).mulDivDown(_sharePrice,1e18)) < _exposure ) {
+
             revert IHyperdrive.BaseBufferExceedsShareReserves();
         }
+
+        // decrease the exposure by the short deposit amount
+        _exposure -= int128((_bondAmount - baseVolume).toUint128());
+
+        
+        // // Since the share reserves are reduced, we need to verify that the base
+        // // reserves are greater than or equal to the amount of longs outstanding.
+        // if (
+        //     shareReserves_ <
+        //     uint256(_marketState.longsOutstanding).divDown(_sharePrice) +
+        //         _minimumShareReserves
+        // ) {
+        //     revert IHyperdrive.BaseBufferExceedsShareReserves();
+        // }
     }
 
     /// @dev Applies the trading deltas from a closed short to the reserves and
@@ -330,31 +335,32 @@ abstract contract HyperdriveShort is HyperdriveLP {
             // being closed. If the shorts are closed before maturity, we add the
             // amount of shorts being closed since the total supply is decreased
             // when burning the short tokens.
-            uint256 checkpointAmount = _totalSupply[
+            uint256 checkpointShorts = _totalSupply[
                 AssetId.encodeAssetId(
                     AssetId.AssetIdPrefix.Short,
                     _maturityTime
                 )
             ];
             if (block.timestamp < _maturityTime) {
-                checkpointAmount += _bondAmount;
+                checkpointShorts += _bondAmount;
             }
 
             // Remove a proportional amount of the checkpoints base volume from
             // the aggregates.
             uint256 checkpointTime = _maturityTime - _positionDuration;
-            uint128 checkpointShortBaseVolume = _checkpoints[checkpointTime]
-                .shortBaseVolume;
             IHyperdrive.Checkpoint storage checkpoint = _checkpoints[
                 checkpointTime
             ];
+            uint128 checkpointShortBaseVolume = checkpoint.shortBaseVolume;
             uint128 proportionalBaseVolume = uint256(checkpointShortBaseVolume)
-                .mulDown(_bondAmount.divDown(checkpointAmount))
+                .mulDown(_bondAmount.divDown(checkpointShorts))
                 .toUint128();
             _marketState.shortBaseVolume -= proportionalBaseVolume;
             checkpoint.shortBaseVolume =
                 checkpointShortBaseVolume -
                 proportionalBaseVolume;
+            // Increase the exposure by the short deposit amount
+            _exposure += int128((_bondAmount-proportionalBaseVolume).toUint128());
         }
 
         // Decrease the amount of shorts outstanding.

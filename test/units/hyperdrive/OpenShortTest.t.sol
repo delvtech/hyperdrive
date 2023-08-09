@@ -9,6 +9,8 @@ import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { HyperdriveTest, HyperdriveUtils, IERC20, MockHyperdrive, MockHyperdriveDataProvider } from "../../utils/HyperdriveTest.sol";
 import { Lib } from "../../utils/Lib.sol";
 
+import "forge-std/console2.sol";
+
 contract OpenShortTest is HyperdriveTest {
     using FixedPointMath for uint256;
     using Lib for *;
@@ -145,7 +147,7 @@ contract OpenShortTest is HyperdriveTest {
         openLong(bob, bondAmount);
 
         // Initialize a large short to eat through the buffer of capital
-        uint256 overlyLargeShort = 500608690308195651844553347;
+        uint256 overlyLargeShort = hyperdrive.calculateMaxShort()*2.1e18/1e18;
 
         // Open the Short.
         vm.stopPrank();

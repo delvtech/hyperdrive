@@ -8,6 +8,8 @@ import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol";
 import { Lib } from "../../utils/Lib.sol";
 
+import "forge-std/console2.sol";
+
 contract ExtremeInputs is HyperdriveTest {
     using FixedPointMath for uint256;
     using HyperdriveUtils for IHyperdrive;
@@ -46,6 +48,77 @@ contract ExtremeInputs is HyperdriveTest {
             HyperdriveMath.calculateAPRFromReserves(
                 poolInfoAfter.shareReserves,
                 poolInfoBefore.bondReserves - bondAmount,
+                INITIAL_SHARE_PRICE,
+                POSITION_DURATION,
+                hyperdrive.getPoolConfig().timeStretch
+            ),
+            5
+        );
+    }
+
+    function test_max_open_short_open_long() external {
+        // Initialize the pools with a large amount of capital.
+        initialize(alice, 0.05e18, 500_000_000e18);
+
+        // Calculate amount of base
+        IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
+
+        // Max amount of bonds to short
+        uint256 bondAmount = hyperdrive.calculateMaxShort();
+
+        // Open short with max base amount
+        uint256 aprBefore = hyperdrive.calculateAPRFromReserves();
+        (,uint256 baseAmountShort) = openShort(bob, bondAmount);
+        uint256 aprAfter = hyperdrive.calculateAPRFromReserves();
+
+        // Ensure the share reserves are approximately equal to the minimum
+        // share reserves and that the apr increased.
+        IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
+        assertApproxEqAbs(
+            poolInfoAfter.shareReserves,
+            hyperdrive.getPoolConfig().minimumShareReserves,
+            1e10,
+            "shareReserves should be the minimum share reserves"
+        );
+        assertGt(aprAfter, aprBefore);
+
+        // Ensure that the bond reserves were updated to have the correct APR.
+        // Due to the way that the flat part of the trade is applied, the bond
+        // reserve updates may not exactly correspond to the amount of bonds
+        // transferred; however, the pool's APR should be identical to the APR
+        // that the bond amount transfer implies.
+        assertApproxEqAbs(
+            hyperdrive.calculateAPRFromReserves(),
+            HyperdriveMath.calculateAPRFromReserves(
+                poolInfoAfter.shareReserves,
+                poolInfoBefore.bondReserves + bondAmount,
+                INITIAL_SHARE_PRICE,
+                POSITION_DURATION,
+                hyperdrive.getPoolConfig().timeStretch
+            ),
+            5
+        );
+
+        // Calculate amount of base
+        poolInfoBefore = hyperdrive.getPoolInfo();
+
+        // Max base amount
+        uint256 baseAmountLong = hyperdrive.calculateMaxLong();
+
+        // Open long with max base amount
+        (, uint256 bondAmountLong) = openLong(bob, baseAmountLong);
+        poolInfoAfter = hyperdrive.getPoolInfo();
+
+        // Ensure that the bond reserves were updated to have the correct APR.
+        // Due to the way that the flat part of the trade is applied, the bond
+        // reserve updates may not exactly correspond to the amount of bonds
+        // transferred; however, the pool's APR should be identical to the APR
+        // that the bond amount transfer implies.
+        assertApproxEqAbs(
+            hyperdrive.calculateAPRFromReserves(),
+            HyperdriveMath.calculateAPRFromReserves(
+                poolInfoAfter.shareReserves,
+                poolInfoBefore.bondReserves - bondAmountLong,
                 INITIAL_SHARE_PRICE,
                 POSITION_DURATION,
                 hyperdrive.getPoolConfig().timeStretch

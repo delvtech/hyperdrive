@@ -650,34 +650,4 @@ library HyperdriveMath {
             );
         }
     }
-
-    /// @dev Calculates the base volume of an open trade given the base amount,
-    ///      the bond amount, and the time remaining. Since the base amount
-    ///      takes into account backdating, we can't use this as our base
-    ///      volume. Since we linearly interpolate between the base volume
-    ///      and the bond amount as the time remaining goes from 1 to 0, the
-    ///      base volume is can be determined as follows:
-    ///
-    ///      baseAmount = t * baseVolume + (1 - t) * bondAmount
-    ///                               =>
-    ///      baseVolume = (baseAmount - (1 - t) * bondAmount) / t
-    /// @param _baseAmount The base exchanged in the open trade.
-    /// @param _bondAmount The bonds exchanged in the open trade.
-    /// @param _timeRemaining The time remaining in the position.
-    /// @return baseVolume The calculated base volume.
-    function calculateBaseVolume(
-        uint256 _baseAmount,
-        uint256 _bondAmount,
-        uint256 _timeRemaining
-    ) internal pure returns (uint256 baseVolume) {
-        // If the time remaining is 0, the position has already matured and
-        // doesn't have an impact on LP's ability to withdraw. This is a
-        // pathological case that should never arise.
-        if (_timeRemaining == 0) return 0;
-        baseVolume = (
-            _baseAmount.sub(
-                (FixedPointMath.ONE_18.sub(_timeRemaining)).mulDown(_bondAmount)
-            )
-        ).divDown(_timeRemaining);
-    }
 }

@@ -44,6 +44,9 @@ abstract contract HyperdriveStorage is ReentrancyGuard, MultiTokenStorage {
     ///         reserves become very small or equal to zero.
     uint256 internal immutable _minimumShareReserves;
 
+    /// @dev Global LP exposure as of the latest checkpoint.
+    int256 internal _exposure;
+
     /// @notice The state of the market. This includes the reserves, buffers,
     ///         and other data used to price trades and maintain solvency.
     IHyperdrive.MarketState internal _marketState;
