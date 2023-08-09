@@ -26,3 +26,6 @@ jobs:
 
       - name: lint clippy
         run: cargo clippy
+
+      - name: fmt check
+        run: cargo fmt --check
