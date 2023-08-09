@@ -18,6 +18,12 @@ jobs:
           submodules: recursive
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      # NOTE: This is needed to ensure that hyperdrive-wrappers builds correctly.
+      - name: install foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
