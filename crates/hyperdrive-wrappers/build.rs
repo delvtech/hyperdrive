@@ -36,7 +36,7 @@ fn main() -> Result<()> {
     println!("cargo:rerun-if-changed=../../test/");
 
     // Compile the contracts.
-    Command::new("forge").args(&["build"]).status()?;
+    Command::new("forge").args(["build"]).status()?;
 
     // If there is an existing `wrappers` module, remove it. Then prepare to
     // re-write these files.

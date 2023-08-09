@@ -78,7 +78,7 @@ impl State {
         let optimal_z = optimal_y / self.mu;
 
         // The optimal trade sizes are given by dz = z' - z and dy = y - y'.
-        return (optimal_z - self.z, self.y - optimal_y);
+        (optimal_z - self.z, self.y - optimal_y)
     }
 
     pub fn k(&self, t: FixedPoint) -> FixedPoint {

@@ -112,14 +112,6 @@ impl DivAssign for FixedPoint {
 
 /// This impl is a direct port of Solidity's FixedPointMath library.
 impl FixedPoint {
-    pub fn add(self, other: FixedPoint) -> FixedPoint {
-        FixedPoint(self.0 + other.0)
-    }
-
-    pub fn sub(self, other: FixedPoint) -> FixedPoint {
-        FixedPoint(self.0 - other.0)
-    }
-
     pub fn mul_div_down(self, other: FixedPoint, divisor: FixedPoint) -> FixedPoint {
         FixedPoint((self.0 * other.0) / divisor.0)
     }
@@ -380,7 +372,7 @@ impl UniformSampler for UniformFixedPoint {
     {
         let low = *low_b.borrow();
         let high = *high_b.borrow();
-        if !(low < high) {
+        if low >= high {
             panic!("UniformFixedPoint::new called with invalid range");
         }
         UniformFixedPoint { low, high }
@@ -394,7 +386,7 @@ impl UniformSampler for UniformFixedPoint {
     {
         let low = *low_b.borrow();
         let high = *high_b.borrow();
-        if !(low <= high) {
+        if low > high {
             panic!("UniformFixedPoint::new called with invalid range");
         }
         UniformFixedPoint::new(low, high + FixedPoint::from(1))
@@ -405,7 +397,7 @@ impl UniformSampler for UniformFixedPoint {
         let value = rng.gen::<FixedPoint>();
         let size: FixedPoint = self.high - self.low;
         let narrowed = FixedPoint::from(value.0 % size.0);
-        return narrowed + self.low;
+        narrowed + self.low
     }
 }
 

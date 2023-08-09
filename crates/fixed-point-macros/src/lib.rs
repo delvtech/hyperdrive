@@ -44,7 +44,7 @@ impl Number {
         let mut exponent = 0;
         let mut decimals = 0;
         for digit in self.digits.chars() {
-            if digit.is_digit(10) {
+            if digit.is_ascii_digit() {
                 let d = digit.to_digit(10).unwrap();
                 if !found_e {
                     mantissa = mantissa * 10 + d;
@@ -83,7 +83,7 @@ impl Number {
         let mut exponent = U256::zero();
         let mut decimals = 0;
         for digit in self.digits.chars() {
-            if digit.is_digit(10) {
+            if digit.is_ascii_digit() {
                 let d = digit.to_digit(10).unwrap();
                 if !found_e {
                     mantissa = mantissa * 10 + d;
@@ -109,7 +109,7 @@ impl Number {
         if exponent < decimals {
             panic!("uint256!: exponent is too small");
         }
-        mantissa * U256::from(10).pow(exponent - U256::from(decimals))
+        mantissa * U256::from(10).pow(exponent - decimals)
     }
 }
 

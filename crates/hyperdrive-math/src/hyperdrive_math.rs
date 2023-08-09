@@ -218,7 +218,7 @@ impl State {
         .pow(t);
         let optimal_bond_reserves = (k - price_factor * inner_factor).pow(fixed!(1e18) / t);
 
-        return optimal_bond_reserves - self.bond_reserves();
+        optimal_bond_reserves - self.bond_reserves()
     }
 
     /// Getters ///
