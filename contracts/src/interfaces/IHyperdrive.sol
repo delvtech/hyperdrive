@@ -196,6 +196,7 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
     /// ##################
     /// ### Hyperdrive ###
     /// ##################
+    error ApprovalFailed();
     error BaseBufferExceedsShareReserves();
     error BelowMinimumContribution();
     error BelowMinimumShareReserves();
@@ -210,18 +211,18 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
     error InvalidShareReserves();
     error InvalidFeeAmounts();
     error NegativeInterest();
+    error NoAssetsToWithdraw();
+    error NotPayable();
     error OutputLimit();
     error Paused();
     error PoolAlreadyInitialized();
+    error ShareReservesDeltaExceedsBondReservesDelta();
     error TransferFailed();
     error UnexpectedAssetId();
     error UnexpectedSender();
     error UnsupportedToken();
-    error ApprovalFailed();
     error ZeroAmount();
     error ZeroLpTotalSupply();
-    error NoAssetsToWithdraw();
-    error NotPayable();
 
     /// ############
     /// ### TWAP ###

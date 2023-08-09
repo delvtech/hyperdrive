@@ -109,8 +109,6 @@ abstract contract Hyperdrive is
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _checkpointTime)
         ];
         if (maturedLongsAmount > 0) {
-            // uint256 startTime = _checkpointTime - _positionDuration;
-            // uint128 longExposureBefore = _checkpoints[startTime].longExposure;
             _applyCloseLong(
                 maturedLongsAmount,
                 0,
@@ -119,10 +117,6 @@ abstract contract Hyperdrive is
                 _checkpointTime,
                 _sharePrice
             );
-            // console2.log("longExposureBefore", longExposureBefore);
-            // console2.log("longExposureAfter", _checkpoints[startTime].longExposure);
-            // console2.log("longExposure change",int128(longExposureBefore - _checkpoints[startTime].longExposure));
-            // _exposure += int128(longExposureBefore - _checkpoints[startTime].longExposure);
         }
 
         // Pay out the short withdrawal pool for shorts that have matured.
@@ -130,8 +124,6 @@ abstract contract Hyperdrive is
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _checkpointTime)
         ];
         if (maturedShortsAmount > 0) {
-            // uint256 startTime = _checkpointTime - _positionDuration;
-            // uint128 shortDepositsBefore = _checkpoints[startTime].shortDeposits;
             _applyCloseShort(
                 maturedShortsAmount,
                 0,
@@ -140,7 +132,6 @@ abstract contract Hyperdrive is
                 _checkpointTime,
                 _sharePrice
             );
-            // _exposure += int128(shortDepositsBefore - _checkpoints[startTime].shortDeposits);
         }
 
         return checkpoint_.sharePrice;

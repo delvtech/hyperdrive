@@ -267,24 +267,23 @@ abstract contract HyperdriveLong is HyperdriveLP {
         longsOutstanding_ += _bondProceeds.toUint128();
         _marketState.longsOutstanding = longsOutstanding_;
 
+        // This seems to occur when input is small and APY is high
+        // NOTE: I have only seen this in applyCloseLong
+        // TODO: i am not 100% sure what the correct fix is
+        //  do we disallow small inputs or set them equal or ?
+        if(_bondReservesDelta < _shareReservesDelta.mulDivDown(_sharePrice,1e18)) {
+            revert IHyperdrive.ShareReservesDeltaExceedsBondReservesDelta();
+        }
+
         // increase the exposure by the amount the LPs must reserve to cover the long.
         checkpoint.longExposure += (_bondReservesDelta - _shareReservesDelta.mulDivDown(_sharePrice,1e18)).toUint128();
         _exposure += int128(checkpoint.longExposure);
-        
-        if( int256((uint256(_marketState.shareReserves) - _minimumShareReserves).mulDivDown(_sharePrice,1e18)) < _exposure ) {
+
+        // solvency check
+        if(int256((uint256(_marketState.shareReserves).mulDivDown(_sharePrice,1e18))) - _exposure <  int256(_minimumShareReserves.mulDivDown(_sharePrice,1e18))) {
 
             revert IHyperdrive.BaseBufferExceedsShareReserves();
         }
-        // Since the base buffer may have increased relative to the base
-        // reserves and the bond reserves decreased, we must ensure that the
-        // base reserves are greater than the longsOutstanding.
-        // if (
-        //     _marketState.shareReserves <
-        //     uint256(longsOutstanding_).divDown(_sharePrice) +
-        //         _minimumShareReserves
-        // ) {
-        //     revert IHyperdrive.BaseBufferExceedsShareReserves();
-        // }
     }
 
     /// @dev Applies the trading deltas from a closed long to the reserves and
@@ -331,16 +330,43 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 false
             )
             .toUint128();
-
-
-        uint256 ratioTimeRemaining = FixedPointMath.ONE_18 - (block.timestamp - checkpointTime).mulDivDown(1e18, _positionDuration);
         uint128 longExposureBefore = _checkpoints[checkpointTime].longExposure;
+
         // Reduce the exposure by the amount of bonds that matured (flat)
-        _checkpoints[checkpointTime].longExposure = uint256(_checkpoints[checkpointTime].longExposure).mulDivDown(ratioTimeRemaining,1e18).toUint128();
+        // TODO: Exposure calculations might be better off in a helper function 
+        // also, this might have issues when fees are introduced
+        if(_checkpoints[checkpointTime].longExposure > (_shareProceeds - _shareReservesDelta).mulDivDown(_sharePrice,1e18)){
+            _checkpoints[checkpointTime].longExposure -= (_shareProceeds - _shareReservesDelta).mulDivDown(_sharePrice,1e18).toUint128();
+        } else {
+            _checkpoints[checkpointTime].longExposure = 0;
+        }
+        
+        // This seems to occur when input is small and APY is high
+        // TODO: i am not 100% sure what the correct fix is
+        //  do we disallow small inputs or set them equal or ?
+        if(_bondReservesDelta < _shareReservesDelta.mulDivDown(_sharePrice,1e18)) {
+            revert IHyperdrive.ShareReservesDeltaExceedsBondReservesDelta();
+        }
+
         // Reduce the exposure by the amount of bonds sold back to the pool (curve)
         if(_checkpoints[checkpointTime].longExposure > _bondReservesDelta - _shareReservesDelta.mulDivDown(_sharePrice,1e18)){
+            // TODO: if there is negative interest, this will have to be adjusted as in the calculateCloseLong() helper
             _checkpoints[checkpointTime].longExposure -= (_bondReservesDelta - _shareReservesDelta.mulDivDown(_sharePrice,1e18)).toUint128();
         } else {
+            _checkpoints[checkpointTime].longExposure = 0;
+        }
+
+        // Zero out the long exposure if the longs in the checkpoint
+        // have all been closed/redeemed. This is necessary because
+        // the long exposure is used in the solvency check and there are small numerical errors
+        // that can accumulate
+        uint256 checkpointLongs = _totalSupply[
+                AssetId.encodeAssetId(
+                    AssetId.AssetIdPrefix.Long,
+                    checkpointTime
+                )
+            ];
+        if (checkpointLongs == 0) {
             _checkpoints[checkpointTime].longExposure = 0;
         }
         _exposure -= int128(longExposureBefore - _checkpoints[checkpointTime].longExposure);
@@ -566,7 +592,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // The shareProceeds, totalCurveFee, and totalFlatFee are all in terms of shares
         // shares -= shares + shares
         shareProceeds -= totalCurveFee + totalFlatFee;
-
         return (
             shareReservesDelta,
             bondReservesDelta,
