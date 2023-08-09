@@ -1,4 +1,4 @@
-name: Test
+name: Solidity Test
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
 
 jobs:
   test:
-    name: test
+    name: solidity test
     runs-on: ubuntu-latest
     env:
       GOERLI_RPC_URL: ${{ secrets.GOERLI_RPC_URL }}

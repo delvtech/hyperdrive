@@ -269,7 +269,7 @@ contract BondWrapper_mint is CombinatorialTest {
     function __log(
         string memory prelude,
         TestCase memory testCase
-    ) internal view {
+    ) internal pure {
         console2.log("");
         console2.log("%s Fail :: { TestCase #%s }\n", prelude, testCase.index);
         console2.log("\tmaturityTime           = ", testCase.maturityTime);
