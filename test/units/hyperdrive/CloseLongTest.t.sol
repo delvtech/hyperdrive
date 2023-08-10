@@ -500,7 +500,7 @@ contract CloseLongTest is HyperdriveTest {
         // Initialize the pool with a large amount of capital.
         initialize(alice, fixedRate, contribution);
 
-        // 2. Open and then close a Long
+        // 2. A long is opened and the term passes. The long is closed at maturity.
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, 10e18);
         advanceTime(POSITION_DURATION, int256(fixedRate));
         closeLong(bob, maturityTime, bondAmount);
