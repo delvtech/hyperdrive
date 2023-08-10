@@ -307,13 +307,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         uint256 _maturityTime,
         uint256 _sharePrice
     ) internal {
-        console2.log("bondAmount", _bondAmount.toString(18));
-        console2.log("bondReservesDelta", _bondReservesDelta.toString(18));
-        console2.log("shareProceeds", _shareProceeds.toString(18));
-        console2.log("shareReservesDelta", _shareReservesDelta.toString(18));
-        console2.log("sharePrice", _sharePrice.toString(18));
         uint128 longsOutstanding_ = _marketState.longsOutstanding;
-        console2.log("longsOutstanding_", longsOutstanding_.toString(18));
         uint256 checkpointTime = _maturityTime - _positionDuration;
         uint128 longSharePrice_ = _checkpoints[checkpointTime].longSharePrice;
         // Update the long average maturity time.
@@ -340,7 +334,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
             )
             .toUint128();
         uint128 longExposureBefore = _checkpoints[checkpointTime].longExposure;
-        console2.log("longExposureBefore", longExposureBefore.toString(18));
+
         // Reduce the exposure by the amount of bonds that matured (flat)
         // TODO: Exposure calculations might be better off in a helper function
         // also, this might have issues when fees are introduced
@@ -353,10 +347,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         } else {
             _checkpoints[checkpointTime].longExposure = 0;
         }
-        console2.log(
-            "longExposureAfter",
-            _checkpoints[checkpointTime].longExposure.toString(18)
-        );
+
         // This seems to occur when input is small and APY is high
         // TODO: i am not 100% sure what the correct fix is
         //  do we disallow small inputs or set them equal or ?
@@ -375,10 +366,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         } else {
             _checkpoints[checkpointTime].longExposure = 0;
         }
-        console2.log(
-            "longExposureAfter2",
-            _checkpoints[checkpointTime].longExposure.toString(18)
-        );
+
         // Zero out the long exposure if the longs in the checkpoint
         // have all been closed/redeemed. This is necessary because
         // the long exposure is used in the solvency check and there are small numerical errors
@@ -389,14 +377,10 @@ abstract contract HyperdriveLong is HyperdriveLP {
         if (checkpointLongs == 0) {
             _checkpoints[checkpointTime].longExposure = 0;
         }
-        console2.log(
-            "longExposureAfter3",
-            _checkpoints[checkpointTime].longExposure.toString(18)
-        );
         _exposure -= int128(
             longExposureBefore - _checkpoints[checkpointTime].longExposure
         );
-        console2.log("_exposure", _exposure.toString(18));
+
         // Reduce the amount of outstanding longs.
         _marketState.longsOutstanding =
             longsOutstanding_ -

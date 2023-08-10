@@ -113,6 +113,8 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
         uint128 shortBaseVolume;
         /// @dev The amount lp exposure on longs
         uint128 longExposure;
+        /// @dev The amount of trader deposits corresponding to open short positions.
+        uint128 shortDeposits;
     }
 
     struct WithdrawPool {

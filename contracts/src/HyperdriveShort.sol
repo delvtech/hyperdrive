@@ -94,6 +94,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // Apply the state updates caused by opening the short.
         _applyOpenShort(
             _bondAmount,
+            traderDeposit,
             shareReservesDelta,
             sharePrice,
             openSharePrice,
@@ -239,12 +240,14 @@ abstract contract HyperdriveShort is HyperdriveLP {
     /// @dev Applies an open short to the state. This includes updating the
     ///      reserves and maintaining the reserve invariants.
     /// @param _bondAmount The amount of bonds shorted.
+    /// @param _traderDeposit The amount of base tokens deposited by the trader.
     /// @param _shareReservesDelta The amount of shares paid to the curve.
     /// @param _sharePrice The share price.
     /// @param _openSharePrice The current checkpoint's share price.
     /// @param _maturityTime The maturity time of the long.
     function _applyOpenShort(
         uint256 _bondAmount,
+        uint256 _traderDeposit,
         uint256 _shareReservesDelta,
         uint256 _sharePrice,
         uint256 _openSharePrice,
@@ -267,7 +270,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
             .mulDown(_openSharePrice)
             .toUint128();
         _marketState.shortBaseVolume += baseVolume;
-        _checkpoints[_latestCheckpoint()].shortBaseVolume += baseVolume;
+        uint256 checkpointTime = _latestCheckpoint();
+        _checkpoints[checkpointTime].shortBaseVolume += baseVolume;
 
         // Apply the trading deltas to the reserves and increase the bond buffer
         // by the amount of bonds that were shorted. We don't need to add the
@@ -288,8 +292,10 @@ abstract contract HyperdriveShort is HyperdriveLP {
             revert IHyperdrive.BaseBufferExceedsShareReserves();
         }
 
-        // decrease the exposure by the short deposit amount
-        _exposure -= int128((_bondAmount - baseVolume).toUint128());
+        // Update the checkpoint's short deposits and decrease the exposure
+        _checkpoints[checkpointTime].shortDeposits += _traderDeposit
+            .toUint128();
+        _exposure -= int128(_traderDeposit.toUint128());
     }
 
     /// @dev Applies the trading deltas from a closed short to the reserves and
@@ -351,10 +357,41 @@ abstract contract HyperdriveShort is HyperdriveLP {
             checkpoint.shortBaseVolume =
                 checkpointShortBaseVolume -
                 proportionalBaseVolume;
+
+            // Reduce the shortDeposits by the amount of bonds that matured (flat)
+            // TODO: Might be better off in a helper function
+            uint128 shortDepositsBefore = checkpoint.shortDeposits;
+            if (
+                checkpoint.shortDeposits >
+                (_sharePayment - _shareReservesDelta).mulDown(_sharePrice)
+            ) {
+                _checkpoints[checkpointTime].shortDeposits -= (_sharePayment -
+                    _shareReservesDelta).mulDown(_sharePrice).toUint128();
+            } else {
+                _checkpoints[checkpointTime].shortDeposits = 0;
+            }
+
+            // Reduce the shortDeposit by the amount of bonds sold back to the pool (curve)
+            if (
+                checkpoint.shortDeposits >
+                _bondReservesDelta - _shareReservesDelta.mulDown(_sharePrice)
+            ) {
+                checkpoint.shortDeposits -= (_bondReservesDelta -
+                    _shareReservesDelta.mulDown(_sharePrice)).toUint128();
+            } else {
+                checkpoint.shortDeposits = 0;
+            }
+
+            // Zero out the short deposits if the shorts in the checkpoint
+            // have all been closed/redeemed. This is necessary because
+            // the shortDeposits is used in the solvency check and there are small numerical errors
+            // that can accumulate
+            if (checkpointShorts - _bondAmount == 0) {
+                _checkpoints[checkpointTime].shortDeposits = 0;
+            }
+
             // Increase the exposure by the short deposit amount
-            _exposure += int128(
-                (_bondAmount - proportionalBaseVolume).toUint128()
-            );
+            _exposure += int128(shortDepositsBefore - checkpoint.shortDeposits);
         }
 
         // Decrease the amount of shorts outstanding.
