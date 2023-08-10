@@ -283,9 +283,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
 
         // solvency check
         if (
-            int256((uint256(_marketState.shareReserves).mulDown(_sharePrice))) -
-                _exposure <
-            int256(_minimumShareReserves.mulDown(_sharePrice))
+            int256(_marketState.shareReserves - _minimumShareReserves) <
+            (_exposure * 1e18) / int256(_sharePrice)
         ) {
             revert IHyperdrive.BaseBufferExceedsShareReserves();
         }
