@@ -28,58 +28,61 @@ impl Distribution<State> for Standard {
     // TODO: It may be better for this to be a uniform sampler and have a test
     // sampler that is more restrictive like this.
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> State {
-        State {
-            config: PoolConfig {
-                base_token: Address::zero(),
-                governance: Address::zero(),
-                fee_collector: Address::zero(),
-                fees: Fees {
-                    curve: uint256!(0),
-                    flat: uint256!(0),
-                    governance: uint256!(0),
-                },
-                initial_share_price: rng.gen_range(fixed!(0.5e18)..=fixed!(2.5e18)).into(),
-                minimum_share_reserves: rng.gen_range(fixed!(0.1e18)..=fixed!(1e18)).into(),
-                time_stretch: rng.gen_range(fixed!(0.005e18)..=fixed!(0.5e18)).into(),
-                position_duration: rng
-                    .gen_range(
-                        FixedPoint::from(60 * 60 * 24 * 91)..=FixedPoint::from(60 * 60 * 24 * 365),
-                    )
-                    .into(),
-                checkpoint_duration: rng
-                    .gen_range(FixedPoint::from(60 * 60)..=FixedPoint::from(60 * 60 * 24))
-                    .into(),
-                oracle_size: fixed!(0).into(),
-                update_gap: fixed!(0).into(),
+        let config = PoolConfig {
+            base_token: Address::zero(),
+            governance: Address::zero(),
+            fee_collector: Address::zero(),
+            fees: Fees {
+                curve: uint256!(0),
+                flat: uint256!(0),
+                governance: uint256!(0),
             },
-            info: PoolInfo {
-                share_reserves: rng
-                    .gen_range(fixed!(1_000e18)..=fixed!(100_000_000e18))
-                    .into(),
-                bond_reserves: rng
-                    .gen_range(fixed!(1_000e18)..=fixed!(100_000_000e18))
-                    .into(),
-                share_price: rng.gen_range(fixed!(0.5e18)..=fixed!(2.5e18)).into(),
-                longs_outstanding: rng.gen_range(fixed!(0)..=fixed!(100_000e18)).into(),
-                shorts_outstanding: rng.gen_range(fixed!(0)..=fixed!(100_000e18)).into(),
-                long_average_maturity_time: rng
-                    .gen_range(fixed!(0)..=FixedPoint::from(60 * 60 * 24 * 365))
-                    .into(),
-                short_average_maturity_time: rng
-                    .gen_range(fixed!(0)..=FixedPoint::from(60 * 60 * 24 * 365))
-                    .into(),
-                short_base_volume: rng.gen_range(fixed!(0)..=fixed!(100_000e18)).into(),
-                lp_total_supply: rng
-                    .gen_range(fixed!(1_000e18)..=fixed!(100_000_000e18))
-                    .into(),
-                // TODO: This should be calculated based on the other values.
-                lp_share_price: rng.gen_range(fixed!(0.01e18)..=fixed!(5e18)).into(),
-                withdrawal_shares_proceeds: rng.gen_range(fixed!(0)..=fixed!(100_000e18)).into(),
-                withdrawal_shares_ready_to_withdraw: rng
-                    .gen_range(fixed!(1_000e18)..=fixed!(100_000_000e18))
-                    .into(),
-            },
-        }
+            initial_share_price: rng.gen_range(fixed!(0.5e18)..=fixed!(2.5e18)).into(),
+            minimum_share_reserves: rng.gen_range(fixed!(0.1e18)..=fixed!(1e18)).into(),
+            time_stretch: rng.gen_range(fixed!(0.005e18)..=fixed!(0.5e18)).into(),
+            position_duration: rng
+                .gen_range(
+                    FixedPoint::from(60 * 60 * 24 * 91)..=FixedPoint::from(60 * 60 * 24 * 365),
+                )
+                .into(),
+            checkpoint_duration: rng
+                .gen_range(FixedPoint::from(60 * 60)..=FixedPoint::from(60 * 60 * 24))
+                .into(),
+            oracle_size: fixed!(0).into(),
+            update_gap: fixed!(0).into(),
+        };
+        // We need the spot price to be less than or equal to 1, so we need to
+        // generate the bond reserves so that mu * z <= y
+        let share_reserves = rng.gen_range(fixed!(1_000e18)..=fixed!(100_000_000e18));
+        let info = PoolInfo {
+            share_reserves: share_reserves.into(),
+            bond_reserves: rng
+                .gen_range(
+                    share_reserves * FixedPoint::from(config.initial_share_price)
+                        ..=fixed!(1_000_000_000e18),
+                )
+                .into(),
+            share_price: rng.gen_range(fixed!(0.5e18)..=fixed!(2.5e18)).into(),
+            longs_outstanding: rng.gen_range(fixed!(0)..=fixed!(100_000e18)).into(),
+            shorts_outstanding: rng.gen_range(fixed!(0)..=fixed!(100_000e18)).into(),
+            long_average_maturity_time: rng
+                .gen_range(fixed!(0)..=FixedPoint::from(60 * 60 * 24 * 365))
+                .into(),
+            short_average_maturity_time: rng
+                .gen_range(fixed!(0)..=FixedPoint::from(60 * 60 * 24 * 365))
+                .into(),
+            short_base_volume: rng.gen_range(fixed!(0)..=fixed!(100_000e18)).into(),
+            lp_total_supply: rng
+                .gen_range(fixed!(1_000e18)..=fixed!(100_000_000e18))
+                .into(),
+            // TODO: This should be calculated based on the other values.
+            lp_share_price: rng.gen_range(fixed!(0.01e18)..=fixed!(5e18)).into(),
+            withdrawal_shares_proceeds: rng.gen_range(fixed!(0)..=fixed!(100_000e18)).into(),
+            withdrawal_shares_ready_to_withdraw: rng
+                .gen_range(fixed!(1_000e18)..=fixed!(100_000_000e18))
+                .into(),
+        };
+        State { config, info }
     }
 }
 
@@ -284,7 +287,7 @@ impl State {
         let ts = FixedPoint::from(self.config.time_stretch);
         let k = YieldSpaceState::from(self).k(self.config.time_stretch.into());
         let optimal_share_reserves =
-            self.longs_outstanding() / self.share_price() + self.minimum_share_reserves();
+            (self.longs_outstanding() / self.share_price()) + self.minimum_share_reserves();
         let optimal_bond_reserves = (k
             - (self.share_price() / self.initial_share_price())
                 * (self.initial_share_price() * optimal_share_reserves).pow(fixed!(1e18) - ts))

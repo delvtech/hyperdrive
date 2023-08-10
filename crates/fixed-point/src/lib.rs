@@ -5,6 +5,7 @@ use rand::distributions::{Distribution, Standard};
 use rand::Rng;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Shr, Sub, SubAssign};
 
+// TODO: Implement Debug in such a way that it shows scaled numbers.
 #[derive(Debug, Default, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 pub struct FixedPoint(U256);
 

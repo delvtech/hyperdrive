@@ -4,6 +4,8 @@ use fixed_point_macros::fixed;
 use test_utils::agent::Agent;
 use test_utils::test_chain::TestChain;
 
+// TODO: We should be able to run this in CI.
+#[ignore]
 #[tokio::test]
 async fn test_simple() -> Result<()> {
     let chain = TestChain::new().await?;
@@ -31,7 +33,6 @@ async fn test_simple() -> Result<()> {
 
     // Bob performs 20 random actions.
     for _ in 0..20 {
-        // FIXME: We need to check invariants
         bob.act().await?;
     }
 
