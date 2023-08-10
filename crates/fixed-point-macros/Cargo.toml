@@ -1,0 +1,21 @@
+[package]
+
+name = "fixed-point-macros"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+
+proc-macro = true
+
+[dependencies]
+
+ethers = "2.0.8"
+syn = "2.0"
+quote = "1.0"
+
+[dev-dependencies]
+
+fixed-point = { path = "../fixed-point" }

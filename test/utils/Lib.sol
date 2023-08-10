@@ -147,7 +147,7 @@ library Lib {
     function logArray(
         string memory prelude,
         uint256[] memory array
-    ) internal view {
+    ) internal pure {
         console2.log(prelude, "[");
         for (uint256 i = 0; i < array.length; i++) {
             if (i < array.length - 1) {

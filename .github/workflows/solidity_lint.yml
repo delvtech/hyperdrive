@@ -1,4 +1,4 @@
-name: Lint
+name: Solidity Lint
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
 
 jobs:
   lint:
-    name: lint
+    name: solidity lint
     runs-on: ubuntu-latest
     env:
       GOERLI_RPC_URL: ${{ secrets.GOERLI_RPC_URL }}
@@ -37,7 +37,7 @@ jobs:
         with:
           version: nightly
 
-      - name: lint
+      - name: lint contracts
         uses: borales/actions-yarn@v4
         with:
           cmd: lint
