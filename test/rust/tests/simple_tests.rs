@@ -4,8 +4,6 @@ use fixed_point_macros::fixed;
 use test_utils::agent::Agent;
 use test_utils::test_chain::TestChain;
 
-// TODO: We should ultimately have this run in CI.
-#[ignore]
 #[tokio::test]
 async fn test_simple() -> Result<()> {
     let chain = TestChain::new().await?;

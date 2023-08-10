@@ -10,9 +10,11 @@ use fixed_point::FixedPoint;
 use fixed_point_macros::{fixed, uint256};
 use hyperdrive_addresses::Addresses;
 use hyperdrive_math::hyperdrive_math::State;
-use hyperdrive_wrappers::wrappers::erc20_mintable::ERC20Mintable;
-use hyperdrive_wrappers::wrappers::i_hyperdrive::IHyperdrive;
-use hyperdrive_wrappers::wrappers::i_hyperdrive::IHyperdriveEvents;
+use hyperdrive_math::yield_space::State as YieldSpaceState;
+use hyperdrive_wrappers::wrappers::i_hyperdrive::{
+    IHyperdrive, IHyperdriveEvents, PoolConfig, PoolInfo,
+};
+use hyperdrive_wrappers::wrappers::{erc20_mintable::ERC20Mintable, i_hyperdrive::Checkpoint};
 use rand::{rngs::ThreadRng, thread_rng, Rng};
 use std::cmp::min;
 use std::collections::BTreeMap;
@@ -42,6 +44,7 @@ struct Wallet {
 
 pub struct Agent<M> {
     address: Address,
+    provider: Provider<Http>,
     hyperdrive: IHyperdrive<M>,
     base: ERC20Mintable<M>,
     wallet: Wallet,
@@ -72,11 +75,12 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>> {
     ) -> Result<Self> {
         let chain_id = provider.get_chainid().await?;
         let client = Arc::new(SignerMiddleware::new(
-            provider,
+            provider.clone(),
             signer.with_chain_id(chain_id.low_u32()),
         ));
         Ok(Self {
             address: client.address(),
+            provider,
             hyperdrive: IHyperdrive::new(addresses.hyperdrive, client.clone()),
             base: ERC20Mintable::new(addresses.base, client),
             wallet: Wallet::default(),
@@ -514,7 +518,7 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>> {
                     .gen_range(fixed!(1)..=self.wallet.withdrawal_shares),
             ));
         }
-        let (max_long_base, max_long_bonds) = self.get_max_long(None).await?;
+        let max_long_base = self.get_max_long(None).await?;
         let max_short_bonds = self.get_max_short().await?;
         if max_long_base >= fixed!(1e18) {
             actions
@@ -522,9 +526,10 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>> {
                     fixed!(1e18)..=min(max_long_base, self.wallet.base),
                 )));
         }
+        // TODO: Remove this limitation.
         if max_short_bonds >= fixed!(1e18) {
             actions.push(Action::OpenShort(
-                self.rng.gen_range(fixed!(1e18)..=max_short_bonds),
+                self.rng.gen_range(fixed!(1)..=max_short_bonds),
             ));
         }
         if self.wallet.longs.len() > 0 {
@@ -537,9 +542,8 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>> {
                 .clone();
             actions.push(Action::CloseLong(
                 maturity_time,
-                self.rng.gen_range(
-                    fixed!(1e8)..=min(self.wallet.longs[&maturity_time], max_short_bonds),
-                ),
+                self.rng
+                    .gen_range(fixed!(1e8)..=self.wallet.longs[&maturity_time]),
             ));
         }
         if self.wallet.shorts.len() > 0 {
@@ -552,9 +556,8 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>> {
                 .clone();
             actions.push(Action::CloseShort(
                 maturity_time,
-                self.rng.gen_range(
-                    fixed!(1e8)..=min(self.wallet.shorts[&maturity_time], max_long_bonds),
-                ),
+                self.rng
+                    .gen_range(fixed!(1e8)..=self.wallet.shorts[&maturity_time]),
             ));
         }
 
@@ -607,29 +610,38 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>> {
 
     /// Helpers ///
 
-    // TODO: We need apply additional constraints here. This should only tell
-    // us the maximum long that this account can open.
-    async fn get_max_long(
-        &self,
-        maybe_max_iterations: Option<usize>,
-    ) -> Result<(FixedPoint, FixedPoint)> {
+    /// Gets the max long that can be opened in the current checkpoint.
+    async fn get_max_long(&self, maybe_max_iterations: Option<usize>) -> Result<FixedPoint> {
         let state = State::new(
             self.hyperdrive.get_pool_config().await?,
             self.hyperdrive.get_pool_info().await?,
         );
-        Ok(state.get_max_long(maybe_max_iterations))
+        Ok(state.get_max_long(self.wallet.base, maybe_max_iterations))
     }
 
-    // TODO: We need apply additional constraints here. This should only tell
-    // us the maximum short that this account can open.
+    /// Gets the max short that can be opened in the current checkpoint.
     async fn get_max_short(&self) -> Result<FixedPoint> {
         let state = State::new(
             self.hyperdrive.get_pool_config().await?,
             self.hyperdrive.get_pool_info().await?,
         );
-        Ok(state.get_max_short())
+        let now = self
+            .provider
+            .get_block(self.provider.get_block_number().await?)
+            .await?
+            .unwrap()
+            .timestamp;
+        let Checkpoint {
+            share_price: open_share_price,
+            ..
+        } = self
+            .hyperdrive
+            .get_checkpoint(state.to_checkpoint(now))
+            .await?;
+
+        Ok(state.get_max_short(self.wallet.base, open_share_price.into()))
     }
 
     // TODO: We'll need to implement helpers that give us the maximum trade
-    // for an old checkpoint.
+    // for an older checkpoint. We'll need to use these when closig trades.
 }

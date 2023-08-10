@@ -30,12 +30,9 @@ fn get_artifacts(artifacts_path: &Path) -> Result<Vec<(String, String)>> {
 }
 
 fn main() -> Result<()> {
-    // Re-run this script whenever the build script itself changes.
+    // Re-run this script whenever the build script itself or a contract changes.
     println!("cargo:rerun-if-changed=build.rs");
-
-    // Re-run this script whenever a contract may have changed.
     println!("cargo:rerun-if-changed=../../contracts/");
-    println!("cargo:rerun-if-changed=../../test/");
 
     // Compile the contracts.
     Command::new("forge").args(["build"]).status()?;
