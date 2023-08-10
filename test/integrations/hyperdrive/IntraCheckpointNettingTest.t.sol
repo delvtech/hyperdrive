@@ -15,26 +15,184 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
     using FixedPointMath for uint256;
     using Lib for *;
 
-    function test_netting_open_close_long_fuzz(
+    function test_netting_fuzz(
         uint256 initialSharePrice,
         int256 variableInterest,
         uint256 timeElapsed,
-        uint256 tradeSize
+        uint256 tradeSize,
+        uint256 numTrades
     ) external {
-        // Fuzz inputs
+        // Fuzz inputs Standard Range
         // initialSharePrice [0.5,5]
         // variableInterest [-50,50]
         // timeElapsed [0,365]
-        // tradeSize [1,50_000_000] 10% of the TVL
+        // numTrades [1,10]
+        // tradeSize [1,50_000_000/numTrades] 10% of the TVL
         initialSharePrice = initialSharePrice.normalizeToRange(0.5e18, 5e18);
         variableInterest = variableInterest.normalizeToRange(-.5e18, .5e18);
         timeElapsed = timeElapsed.normalizeToRange(0, POSITION_DURATION);
-        tradeSize = tradeSize.normalizeToRange(1e18, 50_000_000e18);
+        numTrades = tradeSize.normalizeToRange(1, 10);
+        tradeSize = tradeSize.normalizeToRange(1e18, 50_000_000e18 / numTrades);
         open_close_long(
             initialSharePrice,
             variableInterest,
             timeElapsed,
-            tradeSize
+            tradeSize,
+            numTrades
+        );
+        open_close_short(
+            initialSharePrice,
+            variableInterest,
+            timeElapsed,
+            tradeSize,
+            numTrades
+        );
+        open_close_long_short(
+            initialSharePrice,
+            variableInterest,
+            timeElapsed,
+            tradeSize,
+            numTrades
+        );
+
+        // Fuzz inputs Standard Range but limit to 1 trade
+        initialSharePrice = initialSharePrice.normalizeToRange(0.5e18, 5e18);
+        variableInterest = variableInterest.normalizeToRange(-.5e18, .5e18);
+        timeElapsed = timeElapsed.normalizeToRange(0, POSITION_DURATION);
+        numTrades = tradeSize.normalizeToRange(1, 1);
+        tradeSize = tradeSize.normalizeToRange(1e18, 50_000_000e18 / numTrades);
+        open_close_long(
+            initialSharePrice,
+            variableInterest,
+            timeElapsed,
+            tradeSize,
+            numTrades
+        );
+        open_close_short(
+            initialSharePrice,
+            variableInterest,
+            timeElapsed,
+            tradeSize,
+            numTrades
+        );
+        open_close_long_short(
+            initialSharePrice,
+            variableInterest,
+            timeElapsed,
+            tradeSize,
+            numTrades
+        );
+
+        // Fuzz inputs Standard Range, but limit to negative variable interest
+        initialSharePrice = initialSharePrice.normalizeToRange(0.5e18, 5e18);
+        variableInterest = variableInterest.normalizeToRange(-.5e18, 0);
+        timeElapsed = timeElapsed.normalizeToRange(0, POSITION_DURATION);
+        numTrades = tradeSize.normalizeToRange(1, 10);
+        tradeSize = tradeSize.normalizeToRange(1e18, 50_000_000e18 / numTrades);
+        open_close_long(
+            initialSharePrice,
+            variableInterest,
+            timeElapsed,
+            tradeSize,
+            numTrades
+        );
+        open_close_short(
+            initialSharePrice,
+            variableInterest,
+            timeElapsed,
+            tradeSize,
+            numTrades
+        );
+        open_close_long_short(
+            initialSharePrice,
+            variableInterest,
+            timeElapsed,
+            tradeSize,
+            numTrades
+        );
+
+        // Fuzz inputs Standard Range, but limit to negative variable interest with a trade szie of 1
+        initialSharePrice = initialSharePrice.normalizeToRange(0.5e18, 5e18);
+        variableInterest = variableInterest.normalizeToRange(-.5e18, 0);
+        timeElapsed = timeElapsed.normalizeToRange(0, POSITION_DURATION);
+        numTrades = tradeSize.normalizeToRange(1, 1);
+        tradeSize = tradeSize.normalizeToRange(1e18, 50_000_000e18 / numTrades);
+        open_close_long(
+            initialSharePrice,
+            variableInterest,
+            timeElapsed,
+            tradeSize,
+            numTrades
+        );
+        open_close_short(
+            initialSharePrice,
+            variableInterest,
+            timeElapsed,
+            tradeSize,
+            numTrades
+        );
+        open_close_long_short(
+            initialSharePrice,
+            variableInterest,
+            timeElapsed,
+            tradeSize,
+            numTrades
+        );
+
+        // Fuzz inputs Standard Range, but limit to positive variable interest
+        initialSharePrice = initialSharePrice.normalizeToRange(0.5e18, 5e18);
+        variableInterest = variableInterest.normalizeToRange(0, 0.5e18);
+        timeElapsed = timeElapsed.normalizeToRange(0, POSITION_DURATION);
+        numTrades = tradeSize.normalizeToRange(1, 10);
+        tradeSize = tradeSize.normalizeToRange(1e18, 50_000_000e18 / numTrades);
+        open_close_long(
+            initialSharePrice,
+            variableInterest,
+            timeElapsed,
+            tradeSize,
+            numTrades
+        );
+        open_close_short(
+            initialSharePrice,
+            variableInterest,
+            timeElapsed,
+            tradeSize,
+            numTrades
+        );
+        open_close_long_short(
+            initialSharePrice,
+            variableInterest,
+            timeElapsed,
+            tradeSize,
+            numTrades
+        );
+
+        // Fuzz inputs Standard Range, but limit to positive variable interest with a trade size of 1
+        initialSharePrice = initialSharePrice.normalizeToRange(0.5e18, 5e18);
+        variableInterest = variableInterest.normalizeToRange(0, 0.5e18);
+        timeElapsed = timeElapsed.normalizeToRange(0, POSITION_DURATION);
+        numTrades = tradeSize.normalizeToRange(1, 1);
+        tradeSize = tradeSize.normalizeToRange(1e18, 50_000_000e18 / numTrades);
+        open_close_long(
+            initialSharePrice,
+            variableInterest,
+            timeElapsed,
+            tradeSize,
+            numTrades
+        );
+        open_close_short(
+            initialSharePrice,
+            variableInterest,
+            timeElapsed,
+            tradeSize,
+            numTrades
+        );
+        open_close_long_short(
+            initialSharePrice,
+            variableInterest,
+            timeElapsed,
+            tradeSize,
+            numTrades
         );
     }
 
@@ -50,11 +208,13 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             int256 variableInterest = 0.05e18;
             uint256 timeElapsed = 0 days;
             uint256 tradeSize = 1_000_000e18;
+            uint256 numTrades = 1;
             open_close_long(
                 initialSharePrice,
                 variableInterest,
                 timeElapsed,
-                tradeSize
+                tradeSize,
+                numTrades
             );
         }
         vm.revertTo(snapshotId);
@@ -70,11 +230,13 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             int256 variableInterest = 0.05e18;
             uint256 timeElapsed = POSITION_DURATION / 2;
             uint256 tradeSize = 1_000_000e18;
+            uint256 numTrades = 1;
             open_close_long(
                 initialSharePrice,
                 variableInterest,
                 timeElapsed,
-                tradeSize
+                tradeSize,
+                numTrades
             );
         }
         vm.revertTo(snapshotId);
@@ -90,11 +252,13 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             int256 variableInterest = 0.05e18;
             uint256 timeElapsed = POSITION_DURATION;
             uint256 tradeSize = 1_000_000e18;
+            uint256 numTrades = 1;
             open_close_long(
                 initialSharePrice,
                 variableInterest,
                 timeElapsed,
-                tradeSize
+                tradeSize,
+                numTrades
             );
         }
         vm.revertTo(snapshotId);
@@ -104,7 +268,8 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         uint256 initialSharePrice,
         int256 variableInterest,
         uint256 timeElapsed,
-        uint256 tradeSize
+        uint256 tradeSize,
+        uint256 numTrades
     ) internal {
         // Initialize the market
         uint256 apr = 0.05e18;
@@ -116,46 +281,28 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         advanceTime(POSITION_DURATION, variableInterest);
 
         // open a long
-        uint256 basePaidLong = tradeSize;
-        (uint256 maturityTimeLong, uint256 bondAmount) = openLong(
-            bob,
-            basePaidLong
-        );
+        uint256 maturityTimeLong = 0;
+        uint256[] memory bondAmounts = new uint256[](numTrades);
+        for (uint256 i = 0; i < numTrades; i++) {
+            uint256 basePaidLong = tradeSize;
+            uint256 bondAmount = 0;
+            (maturityTimeLong, bondAmount) = openLong(bob, basePaidLong);
+            bondAmounts[i] = bondAmount;
+        }
 
         // fast forward time and accrue interest
         advanceTime(timeElapsed, variableInterest);
 
         // close the long.
-        closeLong(bob, maturityTimeLong, bondAmount);
+        for (uint256 i = 0; i < numTrades; i++) {
+            closeLong(bob, maturityTimeLong, bondAmounts[i]);
+        }
 
         // exposure should be 0
         int256 exposure = MockHyperdrive(address(hyperdrive))
             .getCurrentExposure();
         assertLe(exposure, 0);
         assertApproxEqAbs(exposure, 0, 1e18);
-    }
-
-    function test_netting_open_close_short_fuzz(
-        uint256 initialSharePrice,
-        int256 variableInterest,
-        uint256 timeElapsed,
-        uint256 tradeSize
-    ) external {
-        // Fuzz inputs
-        // initialSharePrice [0.5,5]
-        // variableInterest [-50,50]
-        // timeElapsed [0,365]
-        // tradeSize [1,50_000_000] 10% of the TVL
-        initialSharePrice = initialSharePrice.normalizeToRange(0.5e18, 5e18);
-        variableInterest = variableInterest.normalizeToRange(-.5e18, .5e18);
-        timeElapsed = timeElapsed.normalizeToRange(0, POSITION_DURATION);
-        tradeSize = tradeSize.normalizeToRange(1e18, 50_000_000e18);
-        open_close_short(
-            initialSharePrice,
-            variableInterest,
-            timeElapsed,
-            tradeSize
-        );
     }
 
     function test_netting_open_close_short() external {
@@ -170,11 +317,13 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             int256 variableInterest = 0.05e18;
             uint256 timeElapsed = 0;
             uint256 tradeSize = 1_000_000e18;
+            uint256 numTrades = 1;
             open_close_short(
                 initialSharePrice,
                 variableInterest,
                 timeElapsed,
-                tradeSize
+                tradeSize,
+                numTrades
             );
         }
         vm.revertTo(snapshotId);
@@ -190,11 +339,13 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             int256 variableInterest = 0.05e18;
             uint256 timeElapsed = POSITION_DURATION / 2;
             uint256 tradeSize = 1_000_000e18;
+            uint256 numTrades = 1;
             open_close_short(
                 initialSharePrice,
                 variableInterest,
                 timeElapsed,
-                tradeSize
+                tradeSize,
+                numTrades
             );
         }
         vm.revertTo(snapshotId);
@@ -210,11 +361,13 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             int256 variableInterest = 0.05e18;
             uint256 timeElapsed = POSITION_DURATION;
             uint256 tradeSize = 1_000_000e18;
+            uint256 numTrades = 1;
             open_close_short(
                 initialSharePrice,
                 variableInterest,
                 timeElapsed,
-                tradeSize
+                tradeSize,
+                numTrades
             );
         }
         vm.revertTo(snapshotId);
@@ -224,7 +377,8 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         uint256 initialSharePrice,
         int256 variableInterest,
         uint256 timeElapsed,
-        uint256 tradeSize
+        uint256 tradeSize,
+        uint256 numTrades
     ) internal {
         // Initialize the market
         uint256 apr = 0.05e18;
@@ -237,42 +391,24 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
 
         // open a short
         uint256 shortAmount = tradeSize;
-        (uint256 maturityTimeShort, ) = openShort(bob, shortAmount);
+        uint256 maturityTimeShort = 0;
+        for (uint256 i = 0; i < numTrades; i++) {
+            (maturityTimeShort, ) = openShort(bob, shortAmount);
+        }
 
         // fast forward time and accrue interest
         advanceTime(timeElapsed, variableInterest);
 
         // close the short
-        closeShort(bob, maturityTimeShort, shortAmount);
+        for (uint256 i = 0; i < numTrades; i++) {
+            closeShort(bob, maturityTimeShort, shortAmount);
+        }
 
         // exposure should be 0
         int256 exposure = MockHyperdrive(address(hyperdrive))
             .getCurrentExposure();
         assertLe(exposure, 0);
         assertApproxEqAbs(exposure, 0, 1e5);
-    }
-
-    function test_netting_open_close_long_short_fuzz(
-        uint256 initialSharePrice,
-        int256 variableInterest,
-        uint256 timeElapsed,
-        uint256 tradeSize
-    ) external {
-        // Fuzz inputs
-        // initialSharePrice [0.5,5]
-        // variableInterest [-50,50]
-        // timeElapsed [0,365]
-        // tradeSize [1,50_000_000] 10% of the TVL
-        initialSharePrice = initialSharePrice.normalizeToRange(0.5e18, 5e18);
-        variableInterest = variableInterest.normalizeToRange(-.5e18, .5e18);
-        timeElapsed = timeElapsed.normalizeToRange(0, POSITION_DURATION);
-        tradeSize = tradeSize.normalizeToRange(1e18, 50_000_000e18);
-        open_close_long_short(
-            initialSharePrice,
-            variableInterest,
-            timeElapsed,
-            tradeSize
-        );
     }
 
     function test_netting_open_close_long_short() external {
@@ -287,11 +423,13 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             int256 variableInterest = 0.05e18;
             uint256 timeElapsed = 0;
             uint256 tradeSize = 1_000_000e18;
+            uint256 numTrades = 1;
             open_close_long_short(
                 initialSharePrice,
                 variableInterest,
                 timeElapsed,
-                tradeSize
+                tradeSize,
+                numTrades
             );
         }
         vm.revertTo(snapshotId);
@@ -307,11 +445,13 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             int256 variableInterest = 0.05e18;
             uint256 timeElapsed = POSITION_DURATION / 2;
             uint256 tradeSize = 1_000_000e18;
+            uint256 numTrades = 1;
             open_close_long_short(
                 initialSharePrice,
                 variableInterest,
                 timeElapsed,
-                tradeSize
+                tradeSize,
+                numTrades
             );
         }
         vm.revertTo(snapshotId);
@@ -327,11 +467,13 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             int256 variableInterest = 0.05e18;
             uint256 timeElapsed = POSITION_DURATION;
             uint256 tradeSize = 1_000_000e18;
+            uint256 numTrades = 1;
             open_close_long_short(
                 initialSharePrice,
                 variableInterest,
                 timeElapsed,
-                tradeSize
+                tradeSize,
+                numTrades
             );
         }
         vm.revertTo(snapshotId);
@@ -341,7 +483,8 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         uint256 initialSharePrice,
         int256 variableInterest,
         uint256 timeElapsed,
-        uint256 tradeSize
+        uint256 tradeSize,
+        uint256 numTrades
     ) internal {
         // initialize the market
         uint256 apr = 0.05e18;
@@ -353,24 +496,30 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         advanceTime(POSITION_DURATION, variableInterest);
 
         // open a long position.
-        uint256 basePaidLong = tradeSize;
-        (uint256 maturityTimeLong, uint256 bondAmount) = openLong(
-            bob,
-            basePaidLong
-        );
+        uint256 maturityTimeLong = 0;
+        uint256[] memory bondAmounts = new uint256[](numTrades);
+        for (uint256 i = 0; i < numTrades; i++) {
+            uint256 basePaidLong = tradeSize;
+            uint256 bondAmount = 0;
+            (maturityTimeLong, bondAmount) = openLong(bob, basePaidLong);
+            bondAmounts[i] = bondAmount;
+        }
 
         // open a short position.
         uint256 shortAmount = tradeSize;
-        (uint256 maturityTimeShort, ) = openShort(bob, shortAmount);
+        uint256 maturityTimeShort = 0;
+        for (uint256 i = 0; i < numTrades; i++) {
+            (maturityTimeShort, ) = openShort(bob, shortAmount);
+        }
 
         // fast forward time and accrue interest
         advanceTime(timeElapsed, variableInterest);
 
-        // close the short position.
-        closeShort(bob, maturityTimeShort, shortAmount);
-
         // close the long.
-        closeLong(bob, maturityTimeLong, bondAmount);
+        for (uint256 i = 0; i < numTrades; i++) {
+            closeLong(bob, maturityTimeLong, bondAmounts[i]);
+            closeShort(bob, maturityTimeShort, shortAmount);
+        }
 
         // exposure should be 0
         int256 exposure = MockHyperdrive(address(hyperdrive))
