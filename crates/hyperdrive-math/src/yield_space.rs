@@ -1,5 +1,6 @@
+use ethers::types::U256;
 use fixed_point::FixedPoint;
-use fixed_point_macros::fixed;
+use fixed_point_macros::{fixed, uint256};
 use rand::distributions::{Distribution, Standard};
 use rand::Rng;
 
@@ -115,6 +116,14 @@ impl State {
         z = z.pow(fixed!(1e18).div_up(fixed!(1e18) - t));
         z /= self.mu;
         z - self.z
+    }
+}
+
+impl State {
+    pub fn get_time_stretch(mut rate: FixedPoint) -> FixedPoint {
+        rate = (U256::from(rate) * uint256!(100)).into();
+        let time_stretch = fixed!(5.24592e18) / (fixed!(0.04665e18) * rate);
+        fixed!(1e18) / time_stretch
     }
 }
 

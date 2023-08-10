@@ -11,6 +11,7 @@ ethers = "2.0"
 eyre = "0.6.8"
 fixed-point = { path = "../../crates/fixed-point" }
 fixed-point-macros = { path = "../../crates/fixed-point-macros" }
+hyperdrive-math = { path = "../../crates/hyperdrive-math" }
 rand = "0.8.5"
 tokio = { version = "1", features = ["full"] }
 test-utils = { path = "../../crates/test-utils" }
@@ -18,4 +19,4 @@ test-utils = { path = "../../crates/test-utils" }
 [[test]]
 
 name = "tests"
-path = "tests.rs"
+path = "tests/tests.rs"

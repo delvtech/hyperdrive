@@ -1,3 +1,12 @@
+// TODO: To improve the DevEx further, we need the following utils:
+//
+// 1. [ ] A function that gets the contract addresses from the artifacts server.
+// 2. [ ] A convenient way to get a private key signer.
+//     - This just amounts to figuring out how to do this with the tooling.
+// 3. [ ] A convenient way to get a provider to a node that we want to talk to.
+//     - This looks really easy if we use TryFrom. We can just go straight from
+//       a URL to a provider.
+
 use ethers::signers::Signer;
 use ethers::{
     core::utils::Anvil,
@@ -10,25 +19,25 @@ use ethers::{
 use eyre::Result;
 use fixed_point::FixedPoint;
 use fixed_point_macros::{fixed, uint256};
+use hyperdrive_addresses::Addresses;
+use hyperdrive_math::yield_space::State as YieldSpace;
 use hyperdrive_wrappers::wrappers::{
     erc20_mintable::ERC20Mintable,
     erc4626_data_provider::ERC4626DataProvider,
     erc4626_hyperdrive::ERC4626Hyperdrive,
-    i_hyperdrive::{Fees, IHyperdrive, PoolConfig},
+    i_hyperdrive::{Fees, PoolConfig},
     mock4626::Mock4626,
 };
 use std::{convert::TryFrom, sync::Arc, time::Duration};
 
-#[derive(Clone)]
-pub struct Hyperdrive {
-    pub hyperdrive: IHyperdrive<SignerMiddleware<Provider<Http>, LocalWallet>>,
-    pub base: ERC20Mintable<SignerMiddleware<Provider<Http>, LocalWallet>>,
-    pub accounts: Vec<Arc<SignerMiddleware<Provider<Http>, LocalWallet>>>,
-    _anvil: Arc<AnvilInstance>, // NOTE: Drop this when Hyperdrive is dropped.
+/// A local anvil instance with the Hyperdrive contracts deployed.
+pub struct TestChain {
+    pub provider: Provider<Http>,
+    pub addresses: Addresses,
+    anvil: AnvilInstance,
 }
 
-impl Hyperdrive {
-    /// Creates a new Hyperdrive instance.
+impl TestChain {
     pub async fn new() -> Result<Self> {
         // Deploy an anvil instance and set up a wallet and provider.
         let anvil = Anvil::new().spawn();
@@ -66,7 +75,7 @@ impl Hyperdrive {
             minimum_share_reserves: uint256!(10e18),
             position_duration: U256::from(60 * 60 * 24 * 365), // 1 year
             checkpoint_duration: U256::from(60 * 60 * 24),     // 1 day
-            time_stretch: Hyperdrive::get_time_stretch(fixed!(0.05e18)).into(), // time stretch for 5% rate
+            time_stretch: YieldSpace::get_time_stretch(fixed!(0.05e18)).into(), // time stretch for 5% rate
             governance: client.address(),
             fee_collector: client.address(),
             fees: Fees {
@@ -102,58 +111,76 @@ impl Hyperdrive {
         .send()
         .await?;
 
-        Ok(Hyperdrive {
-            hyperdrive: IHyperdrive::new(erc4626_hyperdrive.address(), client.clone()),
-            base,
-            accounts,
-            _anvil: Arc::new(anvil),
+        Ok(Self {
+            addresses: Addresses {
+                hyperdrive: erc4626_hyperdrive.address(),
+                base: base.address(),
+            },
+            provider,
+            anvil,
         })
     }
 
-    fn get_time_stretch(mut rate: FixedPoint) -> FixedPoint {
-        rate = (U256::from(rate) * uint256!(100)).into();
-        let time_stretch = fixed!(5.24592e18) / (fixed!(0.04665e18) * rate);
-        fixed!(1e18) / time_stretch
+    pub fn accounts(&self) -> Vec<LocalWallet> {
+        self.anvil.keys().iter().map(|k| k.clone().into()).collect()
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ethers::{middleware::SignerMiddleware, signers::Signer};
+    use fixed_point_macros::uint256;
+    use hyperdrive_wrappers::wrappers::erc20_mintable::ERC20Mintable;
+    use hyperdrive_wrappers::wrappers::i_hyperdrive::IHyperdrive;
 
     #[tokio::test]
     async fn test_deploy() -> Result<()> {
-        let deployment = Hyperdrive::new().await?;
-        let hyperdrive = &deployment.hyperdrive;
-        let base = &deployment.base;
-        let alice = deployment.accounts.first().unwrap();
+        let chain = TestChain::new().await?;
+        let signer = chain.accounts()[0]
+            .clone()
+            .with_chain_id(chain.anvil.chain_id());
+        let client = Arc::new(SignerMiddleware::new(chain.provider.clone(), signer));
+        let base = ERC20Mintable::new(chain.addresses.base, client.clone());
+        let hyperdrive = IHyperdrive::new(chain.addresses.hyperdrive, client.clone());
 
-        // Verify that the Hyperdrive address is non-zero.
-        assert_ne!(hyperdrive.address(), Address::zero());
+        // Verify that the addresses are non-zero.
+        assert_ne!(chain.addresses, Addresses::default());
 
-        // Ensure that the pool config isn't equal to the empty config.
+        // Verify that the pool config is correct.
         let config = hyperdrive.get_pool_config().call().await?;
-        assert_ne!(config, PoolConfig::default());
-
-        // Mint some base and approve the Hyperdrive instance.
-        let contribution = uint256!(1_000_000e18);
-        base.mint(contribution).send().await?;
-        base.approve(hyperdrive.address(), U256::MAX).send().await?;
+        assert_eq!(config.base_token, chain.addresses.base);
+        assert_eq!(config.initial_share_price, uint256!(1e18));
+        assert_eq!(config.minimum_share_reserves, uint256!(10e18));
+        assert_eq!(config.position_duration, U256::from(60 * 60 * 24 * 365));
+        assert_eq!(config.checkpoint_duration, U256::from(60 * 60 * 24));
+        assert_eq!(
+            config.time_stretch,
+            YieldSpace::get_time_stretch(fixed!(0.05e18)).into()
+        );
+        assert_eq!(config.governance, client.address());
+        assert_eq!(config.fee_collector, client.address());
+        assert_eq!(
+            config.fees,
+            Fees {
+                curve: uint256!(0.05e18),
+                flat: uint256!(0.0005e18),
+                governance: uint256!(0.15e18),
+            }
+        );
+        assert_eq!(config.oracle_size, uint256!(10));
+        assert_eq!(config.update_gap, U256::from(60 * 60));
 
         // Initialize the pool.
-        let rate = uint256!(0.05e18);
-        hyperdrive
-            .initialize(contribution, rate, alice.address(), true)
+        let contribution = uint256!(100e18);
+        base.mint(contribution).send().await?;
+        base.approve(hyperdrive.address(), contribution)
             .send()
             .await?;
-        let lp_shares = hyperdrive
-            .balance_of(U256::zero(), alice.address())
-            .call()
+        hyperdrive
+            .initialize(contribution, uint256!(0.05e18), client.address(), true)
+            .send()
             .await?;
-        assert_eq!(
-            lp_shares,
-            contribution - config.minimum_share_reserves * U256::from(2)
-        );
 
         Ok(())
     }

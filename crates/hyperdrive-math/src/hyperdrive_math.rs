@@ -98,7 +98,10 @@ impl State {
         (fixed!(1e18) - spot_price) / (spot_price * annualized_time)
     }
 
-    pub fn get_max_long(&self, max_iterations: usize) -> (FixedPoint, FixedPoint) {
+    /// Iteratively calculates the max long that can be opened on the pool.
+    /// The number of iterations can be configured with `max_iterations`, which
+    /// defaults to 7 if it is passed as `None`.
+    pub fn get_max_long(&self, maybe_max_iterations: Option<usize>) -> (FixedPoint, FixedPoint) {
         let mut base_amount = fixed!(0);
         let mut bond_amount = fixed!(0);
 
@@ -143,7 +146,7 @@ impl State {
 
         // Our maximum long will be the largest trade size that doesn't fail
         // the solvency check.
-        for _ in 0..max_iterations {
+        for _ in 0..maybe_max_iterations.unwrap_or(7) {
             // If the approximation error is greater than zero and the solution
             // is the largest we've found so far, then we update our result.
             let approximation_error = I256::from(self.share_reserves() + dz)
@@ -298,7 +301,7 @@ mod tests {
         for _ in 0..FUZZ_RUNS {
             let state = rng.gen::<State>();
             let max_iterations = rng.gen_range(0..=25);
-            let actual = panic::catch_unwind(|| state.get_max_long(max_iterations));
+            let actual = panic::catch_unwind(|| state.get_max_long(Some(max_iterations)));
             match runner
                 .mock
                 .calculate_max_long(

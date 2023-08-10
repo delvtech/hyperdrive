@@ -1458,6 +1458,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "hyperdrive-addresses"
+version = "0.1.0"
+dependencies = [
+ "ethers",
+]
+
+[[package]]
 name = "hyperdrive-math"
 version = "0.1.0"
 dependencies = [
@@ -2866,6 +2873,8 @@ dependencies = [
  "eyre",
  "fixed-point",
  "fixed-point-macros",
+ "hyperdrive-addresses",
+ "hyperdrive-math",
  "hyperdrive-wrappers",
  "rand",
  "tokio",
@@ -2879,6 +2888,7 @@ dependencies = [
  "eyre",
  "fixed-point",
  "fixed-point-macros",
+ "hyperdrive-math",
  "rand",
  "test-utils",
  "tokio",
