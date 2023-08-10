@@ -280,16 +280,9 @@ abstract contract HyperdriveShort is HyperdriveLP {
         _marketState.shortsOutstanding += _bondAmount.toUint128();
 
         if (
-            int256(
-                (
-                    uint256(_marketState.shareReserves).mulDivDown(
-                        _sharePrice,
-                        1e18
-                    )
-                )
-            ) -
+            int256((uint256(_marketState.shareReserves).mulDown(_sharePrice))) -
                 _exposure <
-            int256(_minimumShareReserves.mulDivDown(_sharePrice, 1e18))
+            int256(_minimumShareReserves.mulDown(_sharePrice))
         ) {
             revert IHyperdrive.BaseBufferExceedsShareReserves();
         }
