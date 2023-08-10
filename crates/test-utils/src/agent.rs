@@ -10,10 +10,7 @@ use fixed_point::FixedPoint;
 use fixed_point_macros::{fixed, uint256};
 use hyperdrive_addresses::Addresses;
 use hyperdrive_math::hyperdrive_math::State;
-use hyperdrive_math::yield_space::State as YieldSpaceState;
-use hyperdrive_wrappers::wrappers::i_hyperdrive::{
-    IHyperdrive, IHyperdriveEvents, PoolConfig, PoolInfo,
-};
+use hyperdrive_wrappers::wrappers::i_hyperdrive::{IHyperdrive, IHyperdriveEvents};
 use hyperdrive_wrappers::wrappers::{erc20_mintable::ERC20Mintable, i_hyperdrive::Checkpoint};
 use rand::{rngs::ThreadRng, thread_rng, Rng};
 use std::cmp::min;
@@ -491,14 +488,16 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>> {
         Ok(())
     }
 
-    /// Random ///
+    /// Actions ///
 
+    /// Executes a random action.
     pub async fn act(&mut self) -> Result<()> {
         let action = self.sample_action().await?;
         println!("executing a random action: {:?}", action);
         self.execute_action(action).await
     }
 
+    /// Samples a random action from the action space.
     async fn sample_action(&mut self) -> Result<Action> {
         // Randomly generate a list of actions to sample over.
         let mut actions = vec![Action::Noop];
@@ -565,6 +564,9 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>> {
         Ok(actions[self.rng.gen_range(0..actions.len())])
     }
 
+    /// Executes an actions. This makes some testing workflows easier because
+    /// the tester just needs to generate an array of actions rather than having
+    /// a bespoke sampler that calls functions.
     async fn execute_action(&mut self, action: Action) -> Result<()> {
         match action {
             Action::Noop => (),
@@ -639,7 +641,7 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>> {
             .get_checkpoint(state.to_checkpoint(now))
             .await?;
 
-        Ok(state.get_max_short(self.wallet.base, open_share_price.into()))
+        Ok(state.get_max_short(self.wallet.base, open_share_price.into(), None))
     }
 
     // TODO: We'll need to implement helpers that give us the maximum trade

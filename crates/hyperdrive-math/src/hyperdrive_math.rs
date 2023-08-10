@@ -229,7 +229,12 @@ impl State {
     /// We start by finding the largest possible short (irrespective of budget),
     /// and then we iteratively approach a solution using Newton's method if the
     /// budget isn't satisified.
-    pub fn get_max_short(&self, budget: FixedPoint, open_share_price: FixedPoint) -> FixedPoint {
+    pub fn get_max_short(
+        &self,
+        budget: FixedPoint,
+        open_share_price: FixedPoint,
+        maybe_max_iterations: Option<usize>,
+    ) -> FixedPoint {
         let spot_price = self.get_spot_price();
         let open_share_price = if open_share_price != fixed!(0) {
             open_share_price
@@ -246,8 +251,7 @@ impl State {
         }
 
         // Use Newton's method to iteratively approach a solution.
-        let iterations = 3;
-        for _ in 0..iterations {
+        for _ in 0..maybe_max_iterations.unwrap_or(3) {
             max_short_bonds = max_short_bonds
                 - self.short_deposit(max_short_bonds, spot_price, open_share_price)
                     / self.short_deposit_derivative(max_short_bonds, spot_price, open_share_price);
