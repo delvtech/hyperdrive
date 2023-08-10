@@ -1,18 +1,8 @@
-// TODO: To improve the DevEx further, we need the following utils:
-//
-// 1. [ ] A function that gets the contract addresses from the artifacts server.
-// 2. [ ] A convenient way to get a private key signer.
-//     - This just amounts to figuring out how to do this with the tooling.
-// 3. [ ] A convenient way to get a provider to a node that we want to talk to.
-//     - This looks really easy if we use TryFrom. We can just go straight from
-//       a URL to a provider.
-
-use ethers::signers::Signer;
 use ethers::{
     core::utils::Anvil,
     middleware::SignerMiddleware,
     providers::{Http, Provider},
-    signers::LocalWallet,
+    signers::{LocalWallet, Signer},
     types::{Address, H256, U256},
     utils::AnvilInstance,
 };
@@ -34,6 +24,7 @@ use std::{convert::TryFrom, sync::Arc, time::Duration};
 pub struct TestChain {
     pub provider: Provider<Http>,
     pub addresses: Addresses,
+    pub accounts: Vec<LocalWallet>,
     anvil: AnvilInstance,
 }
 
@@ -116,20 +107,21 @@ impl TestChain {
                 hyperdrive: erc4626_hyperdrive.address(),
                 base: base.address(),
             },
+            accounts: anvil.keys().iter().map(|k| k.clone().into()).collect(),
             provider,
             anvil,
         })
     }
 
-    pub fn accounts(&self) -> Vec<LocalWallet> {
-        self.anvil.keys().iter().map(|k| k.clone().into()).collect()
+    pub fn chain_id(&self) -> u64 {
+        self.anvil.chain_id()
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ethers::{middleware::SignerMiddleware, signers::Signer};
+    use ethers::middleware::SignerMiddleware;
     use fixed_point_macros::uint256;
     use hyperdrive_wrappers::wrappers::erc20_mintable::ERC20Mintable;
     use hyperdrive_wrappers::wrappers::i_hyperdrive::IHyperdrive;
@@ -137,9 +129,7 @@ mod tests {
     #[tokio::test]
     async fn test_deploy() -> Result<()> {
         let chain = TestChain::new().await?;
-        let signer = chain.accounts()[0]
-            .clone()
-            .with_chain_id(chain.anvil.chain_id());
+        let signer = chain.accounts[0].clone().with_chain_id(chain.chain_id());
         let client = Arc::new(SignerMiddleware::new(chain.provider.clone(), signer));
         let base = ERC20Mintable::new(chain.addresses.base, client.clone());
         let hyperdrive = IHyperdrive::new(chain.addresses.hyperdrive, client.clone());

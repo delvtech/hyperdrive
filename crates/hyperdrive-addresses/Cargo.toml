@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 
 ethers = "2.0.8"
+serde = { version = "1.0", features = ["derive"] }

@@ -8,13 +8,13 @@ use test_utils::test_chain::TestChain;
 async fn test_simple() -> Result<()> {
     let chain = TestChain::new().await?;
     let mut alice = Agent::new(
-        chain.accounts()[0].clone(),
+        chain.accounts[0].clone(),
         chain.provider.clone(),
         chain.addresses.clone(),
     )
     .await?;
     let mut bob = Agent::new(
-        chain.accounts()[1].clone(),
+        chain.accounts[1].clone(),
         chain.provider.clone(),
         chain.addresses,
     )

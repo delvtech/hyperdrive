@@ -478,7 +478,8 @@ mod tests {
         let mut rng = thread_rng();
         for _ in 0..FUZZ_RUNS {
             let state = rng.gen::<State>();
-            let actual = panic::catch_unwind(|| state.get_max_short(U256::MAX.into(), fixed!(0)));
+            let actual =
+                panic::catch_unwind(|| state.get_max_short(U256::MAX.into(), fixed!(0), None));
             match runner
                 .mock
                 .calculate_max_short(MaxTradeParams {

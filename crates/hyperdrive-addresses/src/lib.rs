@@ -1,12 +1,12 @@
 // TODO: To make this more fully featured, this crate should ultimately have:
 //
-// 1. [ ] A function that gets the Hyperdrive addresses from an artifacts server.
-// 2. [ ] A function that gets Hyperdrive addresses by chain id. This is what we
+// 1. [ ] A function that gets Hyperdrive addresses by chain id. This is what we
 //        can use in prod.
 
 use ethers::types::Address;
+use serde::{Deserialize, Serialize};
 
-#[derive(Default, Debug, Eq, PartialEq, Clone)]
+#[derive(Clone, Default, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Addresses {
     pub base: Address,
     pub hyperdrive: Address,
