@@ -1,7 +1,7 @@
 """Tests for hyperdrive_math.rs wrappers"""
 from typing import NamedTuple
 
-from hyperdrive_math import State
+from hyperdrive_math import HyperdriveState
 
 
 class Fees(NamedTuple):
@@ -78,13 +78,13 @@ sample_pool_info = PoolInfo(
 
 def test_initialization():
     """test initialization."""
-    state = State(sample_pool_config, sample_pool_info)
+    state = HyperdriveState(sample_pool_config, sample_pool_info)
     assert state is not None, "State initialization failed."
 
 
 def test_get_spot_price():
     """test get_spot_price."""
-    state = State(sample_pool_config, sample_pool_info)
+    state = HyperdriveState(sample_pool_config, sample_pool_info)
     spot_price = state.get_spot_price()
     assert spot_price is not None, "Failed to get spot price."
     assert isinstance(spot_price, str), "Expected spot price to be a string."

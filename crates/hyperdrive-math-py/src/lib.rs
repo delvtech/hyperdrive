@@ -5,9 +5,8 @@ use pyo3::prelude::*;
 use pyo3::PyErr;
 
 use hyperdrive_math::hyperdrive_math::State;
-use hyperdrive_math::yield_space::State as YieldSpaceState;
 
-#[pyclass(name = "State")]
+#[pyclass(name = "HyperdriveState")]
 pub struct PyState {
     pub state: State,
 }
@@ -145,16 +144,15 @@ impl PyState {
     }
 
     pub fn get_spot_price(&self) -> PyResult<String> {
-        let result_fp = YieldSpaceState::from(&self.state)
-            .get_spot_price(self.state.config.time_stretch.into());
-        let result = result_fp.get().to_string();
+        let result_fp = self.state.get_spot_price();
+        let result = U256::from(result_fp).to_string();
         return Ok(result);
     }
 }
 
-/// A Python module implemented in Rust. The name of this function must match
-/// the `lib.name` setting in the `Cargo.toml`, else Python will not be able to
-/// import the module.
+/// A pyO3 wrapper for the hyperdrie_math crate.  The State struct will be exposed with all methods
+/// listed in #[pymethods] decorated impl.  The name of this function must match the `lib.name`
+/// setting in the `Cargo.toml`, else Python will not be able to import the module.
 #[pymodule]
 #[pyo3(name = "hyperdrive_math")]
 fn hyperdrive_math_lib(_py: Python, m: &PyModule) -> PyResult<()> {
