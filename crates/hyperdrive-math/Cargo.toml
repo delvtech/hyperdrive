@@ -7,7 +7,7 @@ edition = "2021"
 [lib]
 
 path = "src/pylib.rs"
-name = "hyperdrive_math_lib"
+name = "hyperdrive_math"
 # "cdylib" is necessary to produce a shared library for Python to import from.
 crate-type = ["cdylib"]
 

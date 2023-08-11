@@ -159,6 +159,7 @@ impl PyState {
 /// the `lib.name` setting in the `Cargo.toml`, else Python will not be able to
 /// import the module.
 #[pymodule]
+#[pyo3(name = "hyperdrive_math")]
 fn hyperdrive_math_lib(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyState>().unwrap();
     Ok(())
