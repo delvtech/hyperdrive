@@ -260,7 +260,20 @@ impl State {
         // Use Newton's method to iteratively approach a solution. We use the
         // short deposit in base minus the budget as our objective function,
         // which will converge to the amount of bonds that need to be shorted
-        // for the short deposit to consume the entire budget.
+        // for the short deposit to consume the entire budget. Using the
+        // notation from the function comments, we can write our objective
+        // function as:
+        //
+        // $$
+        // F(x) = D(x) - B
+        // $$
+        //
+        // Since $B$ is just a constant, $F'(x) = D'(x)$. Given the current guess
+        // of $x_n$, Newton's method gives us an updated guess of $x_{n+1}$:
+        //
+        // $$
+        // x_{n+1} = x_n - \tfrac{F(x_n)}{F'(x_n)} = x_n - \tfrac{D(x_n) - B}{D'(x_n)}
+        // $$
         for _ in 0..maybe_max_iterations.unwrap_or(3) {
             max_short_bonds = max_short_bonds
                 - self.short_deposit(max_short_bonds, spot_price, open_share_price)
@@ -310,12 +323,31 @@ impl State {
 
     /// Gets the amount of base the trader will need to deposit for a short of
     /// a given size.
+    ///
+    /// The short deposit is made up of several components:
+    /// - The long's fixed rate (without considering fees): $\Delta y - c \cdot \Delta
+    /// - The curve fee: $c \cdot (1 - p) \cdot \Delta y$
+    /// - The flat fee: $f \cdot \Delta y$
+    /// - The backpaid short interest: $(c - c_0) \cdot \Delta y$
+    ///
+    /// Putting these components together, we can write out the short deposit
+    /// function as:
+    ///
+    /// $$
+    /// D(x) = \Delta y - (c \cdot P(x) - \phi_{curve} \cdot (1 - p) \cdot \Delta y)
+    ///        + (c - c_0) \cdot \Delta y + \phi_{flat} \cdot \Delta y
+    /// $$
+    ///
+    /// $x$ is the number of bonds being shorted and $P(x)$ is the amount of
+    /// shares the curve says the LPs need to pay the shorts (i.e. the LP
+    /// principal).
     fn short_deposit(
         &self,
         short_amount: FixedPoint,
         spot_price: FixedPoint,
         open_share_price: FixedPoint,
     ) -> FixedPoint {
+        // NOTE: The order of additions and subtractions is important to avoid underflows.
         short_amount
             + (self.share_price() - open_share_price) * short_amount
             + FixedPoint::from(self.config.fees.flat) * short_amount
@@ -326,12 +358,26 @@ impl State {
     /// The derivative of the short deposit function with respect to the short
     /// amount. This allows us to use Newton's method to approximate the maximum
     /// short that a trader can open.
+    ///
+    /// In order to calculate $D'(x), we need to calculate $P'(x)$. This is
+    /// given by:
+    ///
+    /// $$
+    /// P'(x) = \tfrac{1}{c} \cdot (y + x)^{-t_s} \cdot \left(\tfrac{\mu}{c} \cdot (k - (y + x)^{1 - t_s}) \right)^{\tfrac{t_s}{1 - t_s}}
+    /// $$
+    ///
+    /// Using this, calculating $D'(x)$ is straightforward:
+    ///
+    /// $$
+    /// D'(x) = 1 - (c \cdot P'(x) - \phi_{curve} \cdot (1 - p)) + (c - c_0) + \phi_{flat}
+    /// $$
     fn short_deposit_derivative(
         &self,
         short_amount: FixedPoint,
         spot_price: FixedPoint,
         open_share_price: FixedPoint,
     ) -> FixedPoint {
+        // NOTE: The order of additions and subtractions is important to avoid underflows.
         let payment_factor = (fixed!(1e18)
             / (self.bond_reserves() + short_amount).pow(self.time_stretch()))
             * self
@@ -344,9 +390,18 @@ impl State {
             - payment_factor
     }
 
-    /// A helper function used in calculating the short deposit. This corresponds
-    /// to the amount of base that the LP will pay for the shorted bonds before
-    /// fees.
+    /// A helper function used in calculating the short deposit. Gets the amount
+    /// of short principal that the LPs need to pay to back a short before fees
+    /// are taken into consideration.
+    ///
+    /// Let the LP principal that backs $x$ shorts be given by $P(x)$. We can
+    /// solve for this in terms of $x$ using the YieldSpace invariant:
+    ///
+    /// $$
+    /// k = \tfrac{c}{\mu} \cdot (\mu \cdot (z - P(x)))^{1 - t_s} + (y + x)^{1 - t_s} \\
+    /// \implies \\
+    /// P(x) = z - \tfrac{1}{\mu} \cdot (\tfrac{\mu}{c} \cdot (k - (y + x)^{1 - t_s}))^{\tfrac{1}{1 - t_s}}
+    /// $$
     fn short_principal(&self, x: FixedPoint) -> FixedPoint {
         self.share_reserves()
             - (fixed!(1e18) / self.initial_share_price())
@@ -355,8 +410,15 @@ impl State {
                     .pow(fixed!(1e18) / (fixed!(1e18) - self.time_stretch()))
     }
 
-    /// A helper function used in calculating the short deposit. This calculates
-    /// a component of the `short_principal` calculation.
+    /// A helper function used in calculating the short deposit.
+    ///
+    /// This calculates the inner component of the `short_principal` calculation,
+    /// which makes the `short_principal` and `short_deposit_derivative` calculations
+    /// easier. $\theta(x)$ is defined as:
+    ///
+    /// $$
+    /// \theta(x) = \tfrac{\mu}{c} \cdot (k - (y + x)^{1 - t_s})
+    /// $$
     fn theta(&self, short_amount: FixedPoint) -> FixedPoint {
         let k = YieldSpaceState::new(
             self.share_reserves(),
