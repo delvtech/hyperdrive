@@ -189,8 +189,8 @@ contract OpenShortTest is HyperdriveTest {
         // Initialize the pool with a large amount of capital.
         initialize(alice, apr, contribution);
 
-        // 2. Open a short
         uint256 bondAmount = (hyperdrive.calculateMaxShort() * 90) / 100;
+        // 2. Open a short
         openShort(bob, bondAmount);
 
         // 3. Record Share Reserves
@@ -211,7 +211,13 @@ contract OpenShortTest is HyperdriveTest {
 
         // 5. Open a Short
         bondAmount = (hyperdrive.calculateMaxShort() * 90) / 100;
-        openShort(bob, bondAmount);
+        DepositOverrides memory depositOverrides = DepositOverrides({
+            asUnderlying: false,
+            depositAmount: bondAmount * 2,
+            minSlippage: 0,
+            maxSlippage: type(uint128).max
+        });
+        openShort(bob, bondAmount, depositOverrides);
 
         // 6. Record Share Reserves
         IHyperdrive.MarketState memory maxFeeState = hyperdrive

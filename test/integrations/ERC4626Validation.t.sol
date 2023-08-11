@@ -393,10 +393,12 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         vm.startPrank(alice);
         shortAmount = shortAmount.normalizeToRange(
             0.00001e18,
-            Lib.min(
-                HyperdriveUtils.calculateMaxShort(hyperdrive),
-                underlyingToken.balanceOf(alice)
-            )
+            Lib
+                .min(
+                    HyperdriveUtils.calculateMaxShort(hyperdrive),
+                    underlyingToken.balanceOf(alice)
+                )
+                .mulDown(0.95e18)
         );
 
         (uint256 maturityTime, ) = openShortERC4626(alice, shortAmount, true);
