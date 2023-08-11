@@ -269,7 +269,8 @@ library HyperdriveUtils {
                     shareProceeds,
                     openSharePrice,
                     poolInfo.sharePrice,
-                    poolInfo.sharePrice
+                    poolInfo.sharePrice,
+                    0
                 )
                 .mulDown(poolInfo.sharePrice);
     }

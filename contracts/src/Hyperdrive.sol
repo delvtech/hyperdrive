@@ -109,10 +109,21 @@ abstract contract Hyperdrive is
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _checkpointTime)
         ];
         if (maturedLongsAmount > 0) {
+            uint256 shareProceeds = maturedLongsAmount.divDown(_sharePrice);
+            uint256 flatFee = shareProceeds.mulDown(_flatFee);
+            uint256 govFee = flatFee.mulDown(_governanceFee);
+
+            // Add accrued governance fees to the totalGovernanceFeesAccrued in terms of shares
+            _governanceFeesAccrued += govFee;
+
+            // Reduce shareProceeds by the flatFeeCharged, and less the govFee from the amount as it doesn't count
+            // towards reserves. shareProceeds will only be used to update reserves, so its fine to take fees here.
+            shareProceeds -= flatFee - govFee;
+
             _applyCloseLong(
                 maturedLongsAmount,
                 0,
-                maturedLongsAmount.divDown(_sharePrice),
+                shareProceeds,
                 0,
                 _checkpointTime,
                 _sharePrice
@@ -124,10 +135,21 @@ abstract contract Hyperdrive is
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _checkpointTime)
         ];
         if (maturedShortsAmount > 0) {
+            uint256 shareProceeds = maturedShortsAmount.divDown(_sharePrice);
+            uint256 flatFee = shareProceeds.mulDown(_flatFee);
+            uint256 govFee = flatFee.mulDown(_governanceFee);
+
+            // Add accrued governance fees to the totalGovernanceFeesAccrued in terms of shares
+            _governanceFeesAccrued += govFee;
+
+            // Increase shareProceeds by the flatFeeCharged, and less the govFee from the amount as it doesn't count
+            // towards reserves. shareProceeds will only be used to update reserves, so its fine to take fees here.
+            shareProceeds += flatFee - govFee;
+
             _applyCloseShort(
                 maturedShortsAmount,
                 0,
-                maturedShortsAmount.divDown(_sharePrice),
+                shareProceeds,
                 0,
                 _checkpointTime,
                 _sharePrice

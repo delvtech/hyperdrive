@@ -590,7 +590,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
                 );
             assertApproxEqAbs(
                 governanceFeesAfterCloseLong,
-                expectedFlat + expectedCurve,
+                (expectedFlat + expectedCurve),
                 10 wei
             );
         }

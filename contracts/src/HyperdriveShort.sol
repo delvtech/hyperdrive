@@ -85,7 +85,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 shareReservesDelta,
                 openSharePrice,
                 sharePrice,
-                sharePrice
+                sharePrice,
+                _flatFee
             )
             .mulDown(sharePrice);
         if (_maxDeposit < traderDeposit) revert IHyperdrive.OutputLimit();
@@ -182,13 +183,13 @@ abstract contract HyperdriveShort is HyperdriveLP {
             }
         }
 
-        // Attribute the governance fees.
-        _governanceFeesAccrued += totalGovernanceFee;
-
         // If the position hasn't matured, apply the accounting updates that
         // result from closing the short to the reserves and pay out the
         // withdrawal pool if necessary.
         if (block.timestamp < _maturityTime) {
+            // Attribute the governance fees.
+            _governanceFeesAccrued += totalGovernanceFee;
+
             _applyCloseShort(
                 _bondAmount,
                 bondReservesDelta,
@@ -212,7 +213,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
             sharePayment,
             openSharePrice,
             closeSharePrice,
-            sharePrice
+            sharePrice,
+            _flatFee
         );
         uint256 baseProceeds = _withdraw(
             shortProceeds,
