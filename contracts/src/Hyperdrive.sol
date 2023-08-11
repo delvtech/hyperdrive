@@ -104,6 +104,35 @@ abstract contract Hyperdrive is
         // Create the share price checkpoint.
         checkpoint_.sharePrice = _sharePrice.toUint128();
 
+        // Pay out the short withdrawal pool for shorts that have matured.
+        uint256 maturedShortsAmount = _totalSupply[
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _checkpointTime)
+        ];
+        if (maturedShortsAmount > 0) {
+            uint256 shareProceeds = maturedShortsAmount.divDown(_sharePrice);
+            uint256 flatFee = shareProceeds.mulDown(_flatFee);
+            uint256 govFee = flatFee.mulDown(_governanceFee);
+
+            // Add accrued governance fees to the totalGovernanceFeesAccrued in terms of shares
+            _governanceFeesAccrued += govFee;
+
+            // Increase shareProceeds by the flatFeeCharged, and less the govFee from the amount as it doesn't count
+            // towards reserves. shareProceeds will only be used to update reserves, so its fine to take fees here.
+            shareProceeds += flatFee - govFee;
+
+            // Closing out shorts first helps with netting by ensuring the LP funds
+            // that were netted with longs are back in the shareReserves before we
+            // close out the longs.
+            _applyCloseShort(
+                maturedShortsAmount,
+                0,
+                shareProceeds,
+                0,
+                _checkpointTime,
+                _sharePrice
+            );
+        }
+
         // Pay out the long withdrawal pool for longs that have matured.
         uint256 maturedLongsAmount = _totalSupply[
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _checkpointTime)
@@ -122,32 +151,6 @@ abstract contract Hyperdrive is
 
             _applyCloseLong(
                 maturedLongsAmount,
-                0,
-                shareProceeds,
-                0,
-                _checkpointTime,
-                _sharePrice
-            );
-        }
-
-        // Pay out the short withdrawal pool for shorts that have matured.
-        uint256 maturedShortsAmount = _totalSupply[
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _checkpointTime)
-        ];
-        if (maturedShortsAmount > 0) {
-            uint256 shareProceeds = maturedShortsAmount.divDown(_sharePrice);
-            uint256 flatFee = shareProceeds.mulDown(_flatFee);
-            uint256 govFee = flatFee.mulDown(_governanceFee);
-
-            // Add accrued governance fees to the totalGovernanceFeesAccrued in terms of shares
-            _governanceFeesAccrued += govFee;
-
-            // Increase shareProceeds by the flatFeeCharged, and less the govFee from the amount as it doesn't count
-            // towards reserves. shareProceeds will only be used to update reserves, so its fine to take fees here.
-            shareProceeds += flatFee - govFee;
-
-            _applyCloseShort(
-                maturedShortsAmount,
                 0,
                 shareProceeds,
                 0,
