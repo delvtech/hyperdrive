@@ -687,6 +687,17 @@ contract HyperdriveTest is BaseTest {
         vm.warp(block.timestamp + time);
     }
 
+    function advanceTimeWithCheckpoints(
+        uint256 time,
+        int256 apr
+    ) internal virtual {
+        uint256 startTimeElapsed = block.timestamp;
+        while (block.timestamp - startTimeElapsed < time) {
+            advanceTime(CHECKPOINT_DURATION, apr);
+            hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+        }
+    }
+
     function pause(bool paused) internal {
         vm.startPrank(pauser);
         hyperdrive.pause(paused);

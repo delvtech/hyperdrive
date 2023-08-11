@@ -8,6 +8,8 @@ import { AssetId } from "./libraries/AssetId.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { SafeCast } from "./libraries/SafeCast.sol";
+import { Lib } from "../../test/utils/Lib.sol";
+import "forge-std/console2.sol";
 
 /// @author DELV
 /// @title HyperdriveLP
@@ -18,6 +20,7 @@ import { SafeCast } from "./libraries/SafeCast.sol";
 abstract contract HyperdriveLP is HyperdriveTWAP {
     using FixedPointMath for uint256;
     using SafeCast for uint256;
+    using Lib for *;
 
     /// @notice Allows the first LP to initialize the market with a target APR.
     /// @param _contribution The amount of base to supply.
@@ -375,13 +378,12 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
 
         // Update the share reserves by applying the share reserves delta. We
         // ensure that our minimum share reserves invariant is still maintained.
-        uint256 updatedShareReserves = uint256(
-            int256(shareReserves) + _shareReservesDelta
-        );
-        if (updatedShareReserves < _minimumShareReserves) {
+        int256 updatedShareReserves = int256(shareReserves) +
+            _shareReservesDelta;
+        if (updatedShareReserves < int256(_minimumShareReserves)) {
             revert IHyperdrive.InvalidShareReserves();
         }
-        _marketState.shareReserves = updatedShareReserves.toUint128();
+        _marketState.shareReserves = uint256(updatedShareReserves).toUint128();
 
         // We don't want the spot price to change after this liquidity update.
         // The spot price of base in terms of bonds is given by:
@@ -393,7 +395,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // calculate the new bond reserves, which gives us:
         //
         // z_old / y_old = z_new / y_new => y_new = z_new * (y_old / z_old)
-        _marketState.bondReserves = updatedShareReserves
+        _marketState.bondReserves = uint256(updatedShareReserves)
             .mulDivDown(_marketState.bondReserves, shareReserves)
             .toUint128();
     }
