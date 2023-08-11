@@ -13,8 +13,8 @@ use crate::yield_space::{Asset, State as YieldSpaceState};
 
 #[derive(Debug)]
 pub struct State {
-    config: PoolConfig,
-    info: PoolInfo,
+    pub config: PoolConfig,
+    pub info: PoolInfo,
 }
 
 impl From<&State> for YieldSpaceState {

@@ -8,6 +8,7 @@ use pyo3::prelude::*;
 use pyo3::PyErr;
 
 use crate::hyperdrive_math::State;
+use crate::yield_space::State as YieldSpaceState;
 
 #[pyclass(name = "State")]
 pub struct PyState {
@@ -27,11 +28,6 @@ impl From<State> for PyState {
 }
 pub struct PyPoolConfig {
     pub pool_config: PoolConfig,
-}
-impl PyPoolConfig {
-    pub(crate) fn new(pool_config: PoolConfig) -> Self {
-        PyPoolConfig { pool_config }
-    }
 }
 
 // Helper function to extract U256 values from Python object attributes
@@ -151,9 +147,12 @@ impl PyState {
         Ok(PyState::new(hyperdrive_state))
     }
 
-    //pub fn get_spot_price(&self) -> PyResult<FixedPoint> {
-    //    YieldSpaceState::from(self).get_spot_price(self.config.time_stretch.into())
-    //}
+    pub fn get_spot_price(&self) -> PyResult<String> {
+        let result_fp = YieldSpaceState::from(&self.state)
+            .get_spot_price(self.state.config.time_stretch.into());
+        let result = result_fp.get().to_string();
+        return Ok(result);
+    }
 }
 
 /// A Python module implemented in Rust. The name of this function must match
@@ -162,7 +161,5 @@ impl PyState {
 #[pymodule]
 fn hyperdrive_math_lib(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyState>().unwrap();
-    // m.add_wrapped(wrap_pyfunction!(State::get_spot_price))
-    //     .unwrap();
     Ok(())
 }

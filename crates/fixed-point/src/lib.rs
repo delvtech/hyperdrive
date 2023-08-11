@@ -35,6 +35,14 @@ impl fmt::Display for FixedPoint {
     }
 }
 
+/// U256 Access ///
+
+impl FixedPoint {
+    pub fn get(&self) -> U256 {
+        self.0
+    }
+}
+
 /// Conversions ///
 
 impl From<I256> for FixedPoint {
