@@ -253,7 +253,10 @@ impl State {
             return max_short_bonds;
         }
 
-        // Use Newton's method to iteratively approach a solution.
+        // Use Newton's method to iteratively approach a solution. We use the
+        // short deposit in base minus the budget as our objective function,
+        // which will converge to the amount of bonds that need to be shorted
+        // for the short deposit to consume the entire budget.
         for _ in 0..maybe_max_iterations.unwrap_or(3) {
             max_short_bonds = max_short_bonds
                 - self.short_deposit(max_short_bonds, spot_price, open_share_price)
@@ -313,7 +316,7 @@ impl State {
             + (self.share_price() - open_share_price) * short_amount
             + FixedPoint::from(self.config.fees.flat) * short_amount
             + (fixed!(1e18) - spot_price) * FixedPoint::from(self.config.fees.curve) * short_amount
-            - self.share_price() * self.pi(short_amount)
+            - self.share_price() * self.short_principal(short_amount)
     }
 
     /// The derivative of the short deposit function with respect to the short
@@ -340,7 +343,7 @@ impl State {
     /// A helper function used in calculating the short deposit. This corresponds
     /// to the amount of base that the LP will pay for the shorted bonds before
     /// fees.
-    fn pi(&self, x: FixedPoint) -> FixedPoint {
+    fn short_principal(&self, x: FixedPoint) -> FixedPoint {
         self.share_reserves()
             - (fixed!(1e18) / self.initial_share_price())
                 * self
@@ -349,7 +352,7 @@ impl State {
     }
 
     /// A helper function used in calculating the short deposit. This calculates
-    /// a component of the `pi` calculation.
+    /// a component of the `short_principal` calculation.
     fn theta(&self, short_amount: FixedPoint) -> FixedPoint {
         let k = YieldSpaceState::new(
             self.share_reserves(),
