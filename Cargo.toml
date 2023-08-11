@@ -6,6 +6,7 @@ members = [
     "crates/fixed-point-macros",
     "crates/hyperdrive-addresses",
     "crates/hyperdrive-math",
+    "crates/hyperdrive-math-py",
     "crates/hyperdrive-wrappers",
     "crates/test-utils",
     "test/rust",

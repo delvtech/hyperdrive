@@ -4,13 +4,6 @@ name = "hyperdrive-math"
 version = "0.1.0"
 edition = "2021"
 
-[lib]
-
-path = "src/pylib.rs"
-name = "hyperdrive_math"
-# "cdylib" is necessary to produce a shared library for Python to import from.
-crate-type = ["cdylib"]
-
 [dependencies]
 
 # External dependencies
@@ -23,8 +16,3 @@ tokio = { version = "1", features = ["full"] }
 fixed-point = { version = "0.1.0", path = "../fixed-point" }
 fixed-point-macros = { version = "0.1.0", path = "../fixed-point-macros" }
 hyperdrive-wrappers = { version = "0.1.0", path = "../hyperdrive-wrappers" }
-
-[dependencies.pyo3]
-version = "0.19.0"
-# "abi3-py37" tells pyo3 (and maturin) to build using the stable ABI with minimum Python version 3.7
-features = ["abi3-py37"]

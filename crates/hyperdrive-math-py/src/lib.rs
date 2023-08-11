@@ -1,14 +1,11 @@
-mod hyperdrive_math;
-mod yield_space;
-
 use ethers::core::types::{Address, U256};
 use hyperdrive_wrappers::wrappers::i_hyperdrive::{Fees, PoolConfig, PoolInfo};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::PyErr;
 
-use crate::hyperdrive_math::State;
-use crate::yield_space::State as YieldSpaceState;
+use hyperdrive_math::hyperdrive_math::State;
+use hyperdrive_math::yield_space::State as YieldSpaceState;
 
 #[pyclass(name = "State")]
 pub struct PyState {
