@@ -3,20 +3,23 @@ name = "hyperdrive-wrappers"
 version = "0.1.0"
 edition = "2021"
 
+# Builds the Solidity contract wrappers.
 build = "build.rs"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 
+# External dependencies
 ethers = "2.0.8"
 eyre = "0.6.8"
-fixed-point = { path = "../fixed-point" }
 rand = "0.8.5"
 tokio = { version = "1", features = ["full"] }
 
+# Workspace dependencies
+fixed-point = { path = "../fixed-point" }
+
 [build-dependencies]
 
+# External dependencies
 ethers = "2.0.8"
 ethers-solc = "2.0.8"
 eyre = "0.6.8"

@@ -1,10 +1,15 @@
-use crate::yield_space::{Asset, State as YieldSpaceState};
+use std::cmp::min;
+
 use ethers::types::{Address, I256, U256};
 use fixed_point::FixedPoint;
 use fixed_point_macros::{fixed, int256, uint256};
 use hyperdrive_wrappers::wrappers::i_hyperdrive::{Fees, PoolConfig, PoolInfo};
-use rand::distributions::{Distribution, Standard};
-use rand::Rng;
+use rand::{
+    distributions::{Distribution, Standard},
+    Rng,
+};
+
+use crate::yield_space::{Asset, State as YieldSpaceState};
 
 #[derive(Debug)]
 pub struct State {
@@ -27,70 +32,76 @@ impl Distribution<State> for Standard {
     // TODO: It may be better for this to be a uniform sampler and have a test
     // sampler that is more restrictive like this.
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> State {
-        State {
-            config: PoolConfig {
-                base_token: Address::zero(),
-                governance: Address::zero(),
-                fee_collector: Address::zero(),
-                fees: Fees {
-                    curve: uint256!(0),
-                    flat: uint256!(0),
-                    governance: uint256!(0),
-                },
-                initial_share_price: rng.gen_range(fixed!(0.5e18)..=fixed!(2.5e18)).into(),
-                minimum_share_reserves: rng.gen_range(fixed!(0.1e18)..=fixed!(1e18)).into(),
-                time_stretch: rng.gen_range(fixed!(0.005e18)..=fixed!(0.5e18)).into(),
-                position_duration: rng
-                    .gen_range(
-                        FixedPoint::from(60 * 60 * 24 * 91)..=FixedPoint::from(60 * 60 * 24 * 365),
-                    )
-                    .into(),
-                checkpoint_duration: rng
-                    .gen_range(FixedPoint::from(60 * 60)..=FixedPoint::from(60 * 60 * 24))
-                    .into(),
-                oracle_size: fixed!(0).into(),
-                update_gap: fixed!(0).into(),
+        let config = PoolConfig {
+            base_token: Address::zero(),
+            governance: Address::zero(),
+            fee_collector: Address::zero(),
+            fees: Fees {
+                curve: uint256!(0),
+                flat: uint256!(0),
+                governance: uint256!(0),
             },
-            info: PoolInfo {
-                share_reserves: rng
-                    .gen_range(fixed!(1_000e18)..=fixed!(100_000_000e18))
-                    .into(),
-                bond_reserves: rng
-                    .gen_range(fixed!(1_000e18)..=fixed!(100_000_000e18))
-                    .into(),
-                share_price: rng.gen_range(fixed!(0.5e18)..=fixed!(2.5e18)).into(),
-                longs_outstanding: rng.gen_range(fixed!(0)..=fixed!(100_000e18)).into(),
-                shorts_outstanding: rng.gen_range(fixed!(0)..=fixed!(100_000e18)).into(),
-                long_average_maturity_time: rng
-                    .gen_range(fixed!(0)..=FixedPoint::from(60 * 60 * 24 * 365))
-                    .into(),
-                short_average_maturity_time: rng
-                    .gen_range(fixed!(0)..=FixedPoint::from(60 * 60 * 24 * 365))
-                    .into(),
-                short_base_volume: rng.gen_range(fixed!(0)..=fixed!(100_000e18)).into(),
-                lp_total_supply: rng
-                    .gen_range(fixed!(1_000e18)..=fixed!(100_000_000e18))
-                    .into(),
-                // TODO: This should be calculated based on the other values.
-                lp_share_price: rng.gen_range(fixed!(0.01e18)..=fixed!(5e18)).into(),
-                withdrawal_shares_proceeds: rng.gen_range(fixed!(0)..=fixed!(100_000e18)).into(),
-                withdrawal_shares_ready_to_withdraw: rng
-                    .gen_range(fixed!(1_000e18)..=fixed!(100_000_000e18))
-                    .into(),
-            },
-        }
+            initial_share_price: rng.gen_range(fixed!(0.5e18)..=fixed!(2.5e18)).into(),
+            minimum_share_reserves: rng.gen_range(fixed!(0.1e18)..=fixed!(1e18)).into(),
+            time_stretch: rng.gen_range(fixed!(0.005e18)..=fixed!(0.5e18)).into(),
+            position_duration: rng
+                .gen_range(
+                    FixedPoint::from(60 * 60 * 24 * 91)..=FixedPoint::from(60 * 60 * 24 * 365),
+                )
+                .into(),
+            checkpoint_duration: rng
+                .gen_range(FixedPoint::from(60 * 60)..=FixedPoint::from(60 * 60 * 24))
+                .into(),
+            oracle_size: fixed!(0).into(),
+            update_gap: fixed!(0).into(),
+        };
+        // We need the spot price to be less than or equal to 1, so we need to
+        // generate the bond reserves so that mu * z <= y
+        let share_reserves = rng.gen_range(fixed!(1_000e18)..=fixed!(100_000_000e18));
+        let info = PoolInfo {
+            share_reserves: share_reserves.into(),
+            bond_reserves: rng
+                .gen_range(
+                    share_reserves * FixedPoint::from(config.initial_share_price)
+                        ..=fixed!(1_000_000_000e18),
+                )
+                .into(),
+            share_price: rng.gen_range(fixed!(0.5e18)..=fixed!(2.5e18)).into(),
+            longs_outstanding: rng.gen_range(fixed!(0)..=fixed!(100_000e18)).into(),
+            shorts_outstanding: rng.gen_range(fixed!(0)..=fixed!(100_000e18)).into(),
+            long_average_maturity_time: rng
+                .gen_range(fixed!(0)..=FixedPoint::from(60 * 60 * 24 * 365))
+                .into(),
+            short_average_maturity_time: rng
+                .gen_range(fixed!(0)..=FixedPoint::from(60 * 60 * 24 * 365))
+                .into(),
+            short_base_volume: rng.gen_range(fixed!(0)..=fixed!(100_000e18)).into(),
+            lp_total_supply: rng
+                .gen_range(fixed!(1_000e18)..=fixed!(100_000_000e18))
+                .into(),
+            // TODO: This should be calculated based on the other values.
+            lp_share_price: rng.gen_range(fixed!(0.01e18)..=fixed!(5e18)).into(),
+            withdrawal_shares_proceeds: rng.gen_range(fixed!(0)..=fixed!(100_000e18)).into(),
+            withdrawal_shares_ready_to_withdraw: rng
+                .gen_range(fixed!(1_000e18)..=fixed!(100_000_000e18))
+                .into(),
+        };
+        State { config, info }
     }
 }
 
 impl State {
+    /// Creates a new `State` from the given `PoolConfig` and `PoolInfo`.
     pub fn new(config: PoolConfig, info: PoolInfo) -> Self {
         Self { config, info }
     }
 
+    /// Gets the pool's spot price.
     pub fn get_spot_price(&self) -> FixedPoint {
         YieldSpaceState::from(self).get_spot_price(self.config.time_stretch.into())
     }
 
+    /// Gets the pool's spot rate.
     pub fn get_spot_rate(&self) -> FixedPoint {
         let annualized_time = FixedPoint::from(self.config.position_duration)
             / FixedPoint::from(U256::from(60 * 60 * 24 * 365));
@@ -98,7 +109,26 @@ impl State {
         (fixed!(1e18) - spot_price) / (spot_price * annualized_time)
     }
 
-    pub fn get_max_long(&self, max_iterations: usize) -> (FixedPoint, FixedPoint) {
+    /// Gets the max long that can be opened.
+    ///
+    /// Iteratively calculates the max long that can be opened on the pool.
+    /// The number of iterations can be configured with `max_iterations`, which
+    /// defaults to 7 if it is passed as `None`.
+    pub fn get_max_long(
+        &self,
+        budget: FixedPoint,
+        maybe_max_iterations: Option<usize>,
+    ) -> FixedPoint {
+        // Get the maximum long that can be opened.
+        let (max_long_base, ..) = self.max_long(maybe_max_iterations.unwrap_or(7));
+
+        // If the maximum long that can be opened is less than the budget, then
+        // we return the maximum long that can be opened. Otherwise, we return
+        // the budget.
+        min(max_long_base, budget)
+    }
+
+    fn max_long(&self, max_iterations: usize) -> (FixedPoint, FixedPoint) {
         let mut base_amount = fixed!(0);
         let mut bond_amount = fixed!(0);
 
@@ -201,24 +231,204 @@ impl State {
         (base_amount, bond_amount)
     }
 
-    pub fn get_max_short(&self) -> FixedPoint {
-        // The only constraint on the maximum short is that the share reserves
-        // don't go negative and satisfy the solvency requirements. Thus, we can
-        // set z = y_l/c + z_min and solve for the maximum short directly as:
-        //
-        // k = (c / mu) * (mu * (y_l / c + z_min)) ** (1 - tau) + y ** (1 - tau)
-        //                         =>
-        // y = (k - (c / mu) * (mu * (y_l / c + z_min)) ** (1 - tau)) ** (1 / (1 - tau)).
-        let t = fixed!(1e18) - FixedPoint::from(self.config.time_stretch);
-        let price_factor = self.share_price() / self.initial_share_price();
-        let k = YieldSpaceState::from(self).k(self.config.time_stretch.into());
-        let inner_factor = (self.initial_share_price()
-            * (self.longs_outstanding() / self.share_price())
-            + self.minimum_share_reserves())
-        .pow(t);
-        let optimal_bond_reserves = (k - price_factor * inner_factor).pow(fixed!(1e18) / t);
+    /// Gets the max short that can be opened with the given budget.
+    ///
+    /// We start by finding the largest possible short (irrespective of budget),
+    /// and then we iteratively approach a solution using Newton's method if the
+    /// budget isn't satisified.
+    pub fn get_max_short(
+        &self,
+        budget: FixedPoint,
+        open_share_price: FixedPoint,
+        maybe_max_iterations: Option<usize>,
+    ) -> FixedPoint {
+        let spot_price = self.get_spot_price();
+        let open_share_price = if open_share_price != fixed!(0) {
+            open_share_price
+        } else {
+            self.share_price()
+        };
 
-        optimal_bond_reserves - self.bond_reserves()
+        // Assuming the budget is infinite, find the largest possible short that
+        // can be opened. If the short satisfies the budget, this is the max
+        // short amount.
+        let (max_short_base, mut max_short_bonds) = self.max_short(spot_price, open_share_price);
+        if max_short_base <= budget {
+            return max_short_bonds;
+        }
+
+        // Use Newton's method to iteratively approach a solution. We use the
+        // short deposit in base minus the budget as our objective function,
+        // which will converge to the amount of bonds that need to be shorted
+        // for the short deposit to consume the entire budget. Using the
+        // notation from the function comments, we can write our objective
+        // function as:
+        //
+        // $$
+        // F(x) = D(x) - B
+        // $$
+        //
+        // Since $B$ is just a constant, $F'(x) = D'(x)$. Given the current guess
+        // of $x_n$, Newton's method gives us an updated guess of $x_{n+1}$:
+        //
+        // $$
+        // x_{n+1} = x_n - \tfrac{F(x_n)}{F'(x_n)} = x_n - \tfrac{D(x_n) - B}{D'(x_n)}
+        // $$
+        for _ in 0..maybe_max_iterations.unwrap_or(3) {
+            max_short_bonds = max_short_bonds
+                - self.short_deposit(max_short_bonds, spot_price, open_share_price)
+                    / self.short_deposit_derivative(max_short_bonds, spot_price, open_share_price);
+        }
+
+        // Verify that the max short satisfies the budget.
+        if budget < self.short_deposit(max_short_bonds, spot_price, open_share_price) {
+            panic!("max short exceeded budget");
+        }
+
+        max_short_bonds
+    }
+
+    /// Converts a timestamp to the checkpoint timestamp that it corresponds to.
+    pub fn to_checkpoint(&self, time: U256) -> U256 {
+        time - time % self.config.checkpoint_duration
+    }
+
+    /// Gets the maximum short that the pool can support. This doesn't take into
+    /// account a trader's budget.
+    fn max_short(
+        &self,
+        spot_price: FixedPoint,
+        open_share_price: FixedPoint,
+    ) -> (FixedPoint, FixedPoint) {
+        // Get the share and bond reserves after opening the largest possible
+        // short. The minimum share reserves are given by z = y_l/c + z_min, so
+        // we can solve for optimal bond reserves directly using the yield space
+        // invariant.
+        let ts = FixedPoint::from(self.config.time_stretch);
+        let k = YieldSpaceState::from(self).k(self.config.time_stretch.into());
+        let optimal_share_reserves =
+            (self.longs_outstanding() / self.share_price()) + self.minimum_share_reserves();
+        let optimal_bond_reserves = (k
+            - (self.share_price() / self.initial_share_price())
+                * (self.initial_share_price() * optimal_share_reserves).pow(fixed!(1e18) - ts))
+        .pow(fixed!(1e18) / (fixed!(1e18) - ts));
+
+        // The maximum short amount is just given by the difference between the
+        // optimal bond reserves and the current bond reserves.
+        let short_amount = optimal_bond_reserves - self.bond_reserves();
+        let base_amount = self.short_deposit(short_amount, spot_price, open_share_price);
+
+        (base_amount, short_amount)
+    }
+
+    /// Gets the amount of base the trader will need to deposit for a short of
+    /// a given size.
+    ///
+    /// The short deposit is made up of several components:
+    /// - The long's fixed rate (without considering fees): $\Delta y - c \cdot \Delta
+    /// - The curve fee: $c \cdot (1 - p) \cdot \Delta y$
+    /// - The flat fee: $f \cdot \Delta y$
+    /// - The backpaid short interest: $(c - c_0) \cdot \Delta y$
+    ///
+    /// Putting these components together, we can write out the short deposit
+    /// function as:
+    ///
+    /// $$
+    /// D(x) = \Delta y - (c \cdot P(x) - \phi_{curve} \cdot (1 - p) \cdot \Delta y)
+    ///        + (c - c_0) \cdot \Delta y + \phi_{flat} \cdot \Delta y
+    /// $$
+    ///
+    /// $x$ is the number of bonds being shorted and $P(x)$ is the amount of
+    /// shares the curve says the LPs need to pay the shorts (i.e. the LP
+    /// principal).
+    fn short_deposit(
+        &self,
+        short_amount: FixedPoint,
+        spot_price: FixedPoint,
+        open_share_price: FixedPoint,
+    ) -> FixedPoint {
+        // NOTE: The order of additions and subtractions is important to avoid underflows.
+        short_amount
+            + (self.share_price() - open_share_price) * short_amount
+            + FixedPoint::from(self.config.fees.flat) * short_amount
+            + (fixed!(1e18) - spot_price) * FixedPoint::from(self.config.fees.curve) * short_amount
+            - self.share_price() * self.short_principal(short_amount)
+    }
+
+    /// The derivative of the short deposit function with respect to the short
+    /// amount. This allows us to use Newton's method to approximate the maximum
+    /// short that a trader can open.
+    ///
+    /// In order to calculate $D'(x), we need to calculate $P'(x)$. This is
+    /// given by:
+    ///
+    /// $$
+    /// P'(x) = \tfrac{1}{c} \cdot (y + x)^{-t_s} \cdot \left(\tfrac{\mu}{c} \cdot (k - (y + x)^{1 - t_s}) \right)^{\tfrac{t_s}{1 - t_s}}
+    /// $$
+    ///
+    /// Using this, calculating $D'(x)$ is straightforward:
+    ///
+    /// $$
+    /// D'(x) = 1 - (c \cdot P'(x) - \phi_{curve} \cdot (1 - p)) + (c - c_0) + \phi_{flat}
+    /// $$
+    fn short_deposit_derivative(
+        &self,
+        short_amount: FixedPoint,
+        spot_price: FixedPoint,
+        open_share_price: FixedPoint,
+    ) -> FixedPoint {
+        // NOTE: The order of additions and subtractions is important to avoid underflows.
+        let payment_factor = (fixed!(1e18)
+            / (self.bond_reserves() + short_amount).pow(self.time_stretch()))
+            * self
+                .theta(short_amount)
+                .pow(self.time_stretch() / (fixed!(1e18) + self.time_stretch()));
+        fixed!(1e18)
+            + (self.share_price() - open_share_price)
+            + FixedPoint::from(self.config.fees.flat)
+            + (fixed!(1e18) - spot_price) * FixedPoint::from(self.config.fees.curve)
+            - payment_factor
+    }
+
+    /// A helper function used in calculating the short deposit. Gets the amount
+    /// of short principal that the LPs need to pay to back a short before fees
+    /// are taken into consideration.
+    ///
+    /// Let the LP principal that backs $x$ shorts be given by $P(x)$. We can
+    /// solve for this in terms of $x$ using the YieldSpace invariant:
+    ///
+    /// $$
+    /// k = \tfrac{c}{\mu} \cdot (\mu \cdot (z - P(x)))^{1 - t_s} + (y + x)^{1 - t_s} \\
+    /// \implies \\
+    /// P(x) = z - \tfrac{1}{\mu} \cdot (\tfrac{\mu}{c} \cdot (k - (y + x)^{1 - t_s}))^{\tfrac{1}{1 - t_s}}
+    /// $$
+    fn short_principal(&self, x: FixedPoint) -> FixedPoint {
+        self.share_reserves()
+            - (fixed!(1e18) / self.initial_share_price())
+                * self
+                    .theta(x)
+                    .pow(fixed!(1e18) / (fixed!(1e18) - self.time_stretch()))
+    }
+
+    /// A helper function used in calculating the short deposit.
+    ///
+    /// This calculates the inner component of the `short_principal` calculation,
+    /// which makes the `short_principal` and `short_deposit_derivative` calculations
+    /// easier. $\theta(x)$ is defined as:
+    ///
+    /// $$
+    /// \theta(x) = \tfrac{\mu}{c} \cdot (k - (y + x)^{1 - t_s})
+    /// $$
+    fn theta(&self, short_amount: FixedPoint) -> FixedPoint {
+        let k = YieldSpaceState::new(
+            self.share_reserves(),
+            self.bond_reserves(),
+            self.share_price(),
+            self.initial_share_price(),
+        )
+        .k(self.time_stretch());
+        (self.initial_share_price() / self.share_price())
+            * (k - (self.bond_reserves() + short_amount).pow(fixed!(1e18) - self.time_stretch()))
     }
 
     /// Getters ///
@@ -246,22 +456,29 @@ impl State {
     fn longs_outstanding(&self) -> FixedPoint {
         self.info.longs_outstanding.into()
     }
+
+    fn time_stretch(&self) -> FixedPoint {
+        self.config.time_stretch.into()
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use std::{convert::TryFrom, panic, sync::Arc, time::Duration};
+
     use ethers::{
         core::utils::Anvil,
         middleware::SignerMiddleware,
         providers::{Http, Provider},
         signers::{LocalWallet, Signer},
+        types::U256,
         utils::AnvilInstance,
     };
     use eyre::Result;
     use hyperdrive_wrappers::wrappers::mock_hyperdrive_math::{MaxTradeParams, MockHyperdriveMath};
     use rand::{thread_rng, Rng};
-    use std::{convert::TryFrom, panic, sync::Arc, time::Duration};
+
+    use super::*;
 
     const FUZZ_RUNS: usize = 10_000;
 
@@ -298,7 +515,8 @@ mod tests {
         for _ in 0..FUZZ_RUNS {
             let state = rng.gen::<State>();
             let max_iterations = rng.gen_range(0..=25);
-            let actual = panic::catch_unwind(|| state.get_max_long(max_iterations));
+            let actual =
+                panic::catch_unwind(|| state.get_max_long(U256::MAX.into(), Some(max_iterations)));
             match runner
                 .mock
                 .calculate_max_long(
@@ -316,10 +534,8 @@ mod tests {
                 .call()
                 .await
             {
-                Ok((expected_base_amount, expected_bond_amount)) => {
-                    let (actual_base_amount, actual_bond_amount) = actual.unwrap();
-                    assert_eq!(actual_base_amount, FixedPoint::from(expected_base_amount));
-                    assert_eq!(actual_bond_amount, FixedPoint::from(expected_bond_amount));
+                Ok((expected_base_amount, ..)) => {
+                    assert_eq!(actual.unwrap(), FixedPoint::from(expected_base_amount));
                 }
                 Err(_) => assert!(actual.is_err()),
             }
@@ -336,7 +552,8 @@ mod tests {
         let mut rng = thread_rng();
         for _ in 0..FUZZ_RUNS {
             let state = rng.gen::<State>();
-            let actual = panic::catch_unwind(|| state.get_max_short());
+            let actual =
+                panic::catch_unwind(|| state.get_max_short(U256::MAX.into(), fixed!(0), None));
             match runner
                 .mock
                 .calculate_max_short(MaxTradeParams {

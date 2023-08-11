@@ -461,9 +461,13 @@ library HyperdriveMath {
             t,
             _params.bondReserves
         );
-        uint256 innerFactor = (_params.initialSharePrice.mulDown(
-            _params.longsOutstanding.divDown(_params.sharePrice)
-        ) + _params.minimumShareReserves).pow(t);
+        uint256 innerFactor = _params
+            .initialSharePrice
+            .mulDown(
+                _params.longsOutstanding.divDown(_params.sharePrice) +
+                    _params.minimumShareReserves
+            )
+            .pow(t);
         uint256 optimalBondReserves = (k - priceFactor.mulDown(innerFactor))
             .pow(FixedPointMath.ONE_18.divDown(t));
 
