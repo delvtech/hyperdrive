@@ -104,24 +104,6 @@ abstract contract Hyperdrive is
         // Create the share price checkpoint.
         checkpoint_.sharePrice = _sharePrice.toUint128();
 
-        // Pay out the short withdrawal pool for shorts that have matured.
-        uint256 maturedShortsAmount = _totalSupply[
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _checkpointTime)
-        ];
-        if (maturedShortsAmount > 0) {
-            // Closing out shorts first helps with netting by ensuring the LP funds
-            // that were netted with longs are back in the shareReserves before we
-            // close out the longs.
-            _applyCloseShort(
-                maturedShortsAmount,
-                0,
-                maturedShortsAmount.divDown(_sharePrice),
-                0,
-                _checkpointTime,
-                _sharePrice
-            );
-        }
-
         // Pay out the long withdrawal pool for longs that have matured.
         uint256 maturedLongsAmount = _totalSupply[
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _checkpointTime)
@@ -136,6 +118,22 @@ abstract contract Hyperdrive is
                 _sharePrice
             );
         }
+
+        // Pay out the short withdrawal pool for shorts that have matured.
+        uint256 maturedShortsAmount = _totalSupply[
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _checkpointTime)
+        ];
+        if (maturedShortsAmount > 0) {
+            _applyCloseShort(
+                maturedShortsAmount,
+                0,
+                maturedShortsAmount.divDown(_sharePrice),
+                0,
+                _checkpointTime,
+                _sharePrice
+            );
+        }
+
         return checkpoint_.sharePrice;
     }
 
