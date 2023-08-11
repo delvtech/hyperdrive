@@ -1,3 +1,5 @@
+use std::{convert::TryFrom, sync::Arc, time::Duration};
+
 use ethers::{
     core::utils::Anvil,
     middleware::SignerMiddleware,
@@ -18,7 +20,6 @@ use hyperdrive_wrappers::wrappers::{
     i_hyperdrive::{Fees, PoolConfig},
     mock4626::Mock4626,
 };
-use std::{convert::TryFrom, sync::Arc, time::Duration};
 
 /// A local anvil instance with the Hyperdrive contracts deployed.
 pub struct TestChain {
@@ -120,11 +121,11 @@ impl TestChain {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use ethers::middleware::SignerMiddleware;
     use fixed_point_macros::uint256;
-    use hyperdrive_wrappers::wrappers::erc20_mintable::ERC20Mintable;
-    use hyperdrive_wrappers::wrappers::i_hyperdrive::IHyperdrive;
+    use hyperdrive_wrappers::wrappers::{erc20_mintable::ERC20Mintable, i_hyperdrive::IHyperdrive};
+
+    use super::*;
 
     #[tokio::test]
     async fn test_deploy() -> Result<()> {

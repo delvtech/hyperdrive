@@ -1,10 +1,17 @@
+use std::{
+    fmt,
+    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Shr, Sub, SubAssign},
+};
+
 use ethers::types::{I256, U256};
 use fixed_point_macros::{fixed, int256, uint256};
-use rand::distributions::uniform::{SampleBorrow, SampleUniform, UniformSampler};
-use rand::distributions::{Distribution, Standard};
-use rand::Rng;
-use std::fmt;
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Shr, Sub, SubAssign};
+use rand::{
+    distributions::{
+        uniform::{SampleBorrow, SampleUniform, UniformSampler},
+        Distribution, Standard,
+    },
+    Rng,
+};
 
 /// A fixed point wrapper around the `U256` type from ethers-rs.
 ///
@@ -374,7 +381,7 @@ impl FixedPoint {
         let mut digits = 0;
         let mut result = vec![];
         while value > uint256!(0) {
-            if digits == decimals {
+            if digits == decimals && decimals > 0 {
                 result.push('.');
             }
 
@@ -393,7 +400,9 @@ impl FixedPoint {
 
         // Add the decimal point and leading zero.
         if digits == decimals {
-            result.push('.');
+            if decimals > 0 {
+                result.push('.');
+            }
             result.push('0');
         }
 
@@ -460,7 +469,8 @@ impl UniformSampler for UniformFixedPoint {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use std::{convert::TryFrom, panic, sync::Arc, time::Duration};
+
     use ethers::{
         core::utils::Anvil,
         middleware::SignerMiddleware,
@@ -471,7 +481,8 @@ mod tests {
     use eyre::Result;
     use hyperdrive_wrappers::wrappers::mock_fixed_point_math::MockFixedPointMath;
     use rand::{thread_rng, Rng};
-    use std::{convert::TryFrom, panic, sync::Arc, time::Duration};
+
+    use super::*;
 
     const FUZZ_RUNS: usize = 10_000;
 

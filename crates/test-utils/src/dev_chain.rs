@@ -1,3 +1,5 @@
+use std::{convert::TryFrom, time::Duration};
+
 use ethers::{
     providers::{Http, Middleware, Provider},
     signers::{coins_bip39::English, LocalWallet, MnemonicBuilder, Signer},
@@ -5,7 +7,6 @@ use ethers::{
 use eyre::{eyre, Result};
 use fixed_point_macros::uint256;
 use hyperdrive_addresses::Addresses;
-use std::{convert::TryFrom, time::Duration};
 use tokio::time::sleep;
 
 pub const MNEMONIC: &str = "test test test test test test test test test test test test";

@@ -1,11 +1,15 @@
-use crate::yield_space::{Asset, State as YieldSpaceState};
+use std::cmp::min;
+
 use ethers::types::{Address, I256, U256};
 use fixed_point::FixedPoint;
 use fixed_point_macros::{fixed, int256, uint256};
 use hyperdrive_wrappers::wrappers::i_hyperdrive::{Fees, PoolConfig, PoolInfo};
-use rand::distributions::{Distribution, Standard};
-use rand::Rng;
-use std::cmp::min;
+use rand::{
+    distributions::{Distribution, Standard},
+    Rng,
+};
+
+use crate::yield_space::{Asset, State as YieldSpaceState};
 
 #[derive(Debug)]
 pub struct State {
@@ -398,7 +402,8 @@ impl State {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use std::{convert::TryFrom, panic, sync::Arc, time::Duration};
+
     use ethers::{
         core::utils::Anvil,
         middleware::SignerMiddleware,
@@ -410,7 +415,8 @@ mod tests {
     use eyre::Result;
     use hyperdrive_wrappers::wrappers::mock_hyperdrive_math::{MaxTradeParams, MockHyperdriveMath};
     use rand::{thread_rng, Rng};
-    use std::{convert::TryFrom, panic, sync::Arc, time::Duration};
+
+    use super::*;
 
     const FUZZ_RUNS: usize = 10_000;
 

@@ -1,3 +1,5 @@
+use std::{cmp::min, collections::BTreeMap, fmt, sync::Arc};
+
 use ethers::{
     middleware::SignerMiddleware,
     prelude::EthLogDecode,
@@ -10,13 +12,12 @@ use fixed_point::FixedPoint;
 use fixed_point_macros::{fixed, uint256};
 use hyperdrive_addresses::Addresses;
 use hyperdrive_math::hyperdrive_math::State;
-use hyperdrive_wrappers::wrappers::i_hyperdrive::{IHyperdrive, IHyperdriveEvents};
-use hyperdrive_wrappers::wrappers::{erc20_mintable::ERC20Mintable, i_hyperdrive::Checkpoint};
+use hyperdrive_wrappers::wrappers::{
+    erc20_mintable::ERC20Mintable,
+    i_hyperdrive::{Checkpoint, IHyperdrive, IHyperdriveEvents},
+};
 use rand::{rngs::ThreadRng, thread_rng, Rng};
-use std::cmp::min;
-use std::collections::BTreeMap;
-use std::fmt;
-use std::sync::Arc;
+use tracing::{info, instrument};
 
 #[derive(Copy, Clone, Debug)]
 enum Action {
@@ -491,9 +492,10 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>> {
     /// Actions ///
 
     /// Executes a random action.
+    #[instrument(skip(self))]
     pub async fn act(&mut self) -> Result<()> {
         let action = self.sample_action().await?;
-        println!("executing a random action: {:?}", action);
+        info!("executing an action: {:?}", action);
         self.execute_action(action).await
     }
 

@@ -1,8 +1,10 @@
 use ethers::types::U256;
 use fixed_point::FixedPoint;
 use fixed_point_macros::{fixed, uint256};
-use rand::distributions::{Distribution, Standard};
-use rand::Rng;
+use rand::{
+    distributions::{Distribution, Standard},
+    Rng,
+};
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 pub enum Asset {
@@ -129,7 +131,8 @@ impl State {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use std::{convert::TryFrom, panic, sync::Arc, time::Duration};
+
     use ethers::{
         core::utils::Anvil,
         middleware::SignerMiddleware,
@@ -140,7 +143,8 @@ mod tests {
     use eyre::Result;
     use hyperdrive_wrappers::wrappers::mock_yield_space_math::MockYieldSpaceMath;
     use rand::{thread_rng, Rng};
-    use std::{convert::TryFrom, panic, sync::Arc, time::Duration};
+
+    use super::*;
 
     const FUZZ_RUNS: usize = 10_000;
 

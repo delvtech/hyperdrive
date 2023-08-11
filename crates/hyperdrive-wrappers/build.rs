@@ -1,9 +1,8 @@
+use std::{io::Write, path::Path, process::Command};
+
 use ethers::prelude::Abigen;
 use eyre::Result;
 use heck::ToSnakeCase;
-use std::io::Write;
-use std::path::Path;
-use std::process::Command;
 
 fn get_artifacts(artifacts_path: &Path) -> Result<Vec<(String, String)>> {
     let mut artifacts = Vec::new();

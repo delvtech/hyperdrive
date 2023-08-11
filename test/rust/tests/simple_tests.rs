@@ -1,13 +1,16 @@
 use eyre::Result;
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
-use test_utils::agent::Agent;
-use test_utils::test_chain::TestChain;
+use test_utils::{agent::Agent, test_chain::TestChain};
 
 // TODO: We should be able to run this in CI.
 #[ignore]
 #[tokio::test]
 async fn test_simple() -> Result<()> {
+    // Set up the logger.
+    tracing_subscriber::fmt::init();
+
+    // Set up the chain and agents.
     let chain = TestChain::new().await?;
     let mut alice = Agent::new(
         chain.accounts[0].clone(),
