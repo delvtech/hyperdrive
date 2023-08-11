@@ -397,6 +397,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
                 HyperdriveUtils.calculateMaxShort(hyperdrive),
                 underlyingToken.balanceOf(alice)
             )
+            .mulDown(0.95e18)
         );
 
         (uint256 maturityTime, ) = openShortERC4626(alice, shortAmount, true);
