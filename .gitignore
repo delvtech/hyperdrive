@@ -5,6 +5,7 @@ forge-cache/
 broadcast
 .env
 .venv
+.python-version
 
 node_modules/
 yarn-error.log

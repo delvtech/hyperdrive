@@ -1,7 +1,7 @@
 """Tests for hyperdrive_math.rs wrappers"""
 from typing import NamedTuple
 
-from hyperdrive_math import HyperdriveState
+from hyperdrive_math_py import HyperdriveState
 
 
 class Fees(NamedTuple):
