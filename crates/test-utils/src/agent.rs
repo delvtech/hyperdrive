@@ -643,7 +643,7 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>> {
             .get_checkpoint(state.to_checkpoint(now))
             .await?;
 
-        Ok(state.get_max_short(self.wallet.base, open_share_price.into(), None))
+        Ok(state.get_max_short(self.wallet.base, open_share_price.into(), Some(7)))
     }
 
     // TODO: We'll need to implement helpers that give us the maximum trade
