@@ -90,9 +90,11 @@ abstract contract HyperdriveDataProvider is
         uint256 lpTotalSupply = _totalSupply[AssetId._LP_ASSET_ID] +
             _totalSupply[AssetId._WITHDRAWAL_SHARE_ASSET_ID] -
             _withdrawPool.readyToWithdraw;
-        uint256 presentValue = HyperdriveMath
-            .calculatePresentValue(_getPresentValueParams(sharePrice))
-            .mulDown(sharePrice);
+        uint256 presentValue = sharePrice > 0
+            ? HyperdriveMath
+                .calculatePresentValue(_getPresentValueParams(sharePrice))
+                .mulDown(sharePrice)
+            : 0;
         IHyperdrive.PoolInfo memory poolInfo = IHyperdrive.PoolInfo({
             shareReserves: _marketState.shareReserves,
             bondReserves: _marketState.bondReserves,

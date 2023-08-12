@@ -84,6 +84,8 @@ interface IMockHyperdrive {
 
     function latestCheckpoint() external view returns (uint256);
 
+    function updateLiquidity(uint256 shareReservesDelta) external;
+
     function setReserves(uint256 shareReserves, uint256 bondReserves) external;
 
     function getGovernanceFeesAccrued() external view returns (uint256);
@@ -258,6 +260,10 @@ contract MockHyperdrive is Hyperdrive {
 
     function latestCheckpoint() external view returns (uint256 checkpointTime) {
         return _latestCheckpoint();
+    }
+
+    function updateLiquidity(int256 _shareReservesDelta) external {
+        _updateLiquidity(_shareReservesDelta);
     }
 
     function setReserves(uint256 shareReserves, uint256 bondReserves) external {
