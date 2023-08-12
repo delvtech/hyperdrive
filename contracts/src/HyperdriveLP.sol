@@ -375,13 +375,12 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
 
         // Update the share reserves by applying the share reserves delta. We
         // ensure that our minimum share reserves invariant is still maintained.
-        uint256 updatedShareReserves = uint256(
-            int256(shareReserves) + _shareReservesDelta
-        );
-        if (updatedShareReserves < _minimumShareReserves) {
+        int256 updatedShareReserves = int256(shareReserves) +
+            _shareReservesDelta;
+        if (updatedShareReserves < int256(_minimumShareReserves)) {
             revert IHyperdrive.InvalidShareReserves();
         }
-        _marketState.shareReserves = updatedShareReserves.toUint128();
+        _marketState.shareReserves = uint256(updatedShareReserves).toUint128();
 
         // We don't want the spot price to change after this liquidity update.
         // The spot price of base in terms of bonds is given by:
@@ -393,7 +392,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // calculate the new bond reserves, which gives us:
         //
         // z_old / y_old = z_new / y_new => y_new = z_new * (y_old / z_old)
-        _marketState.bondReserves = updatedShareReserves
+        _marketState.bondReserves = uint256(updatedShareReserves)
             .mulDivDown(_marketState.bondReserves, shareReserves)
             .toUint128();
     }
