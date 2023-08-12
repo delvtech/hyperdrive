@@ -54,7 +54,7 @@ contract UpdateLiquidityTest is HyperdriveTest {
         // less than the minimum share reserves.
         _shareReserves = _shareReserves.normalizeToRange(
             1,
-            hyperdrive.getPoolConfig().minimumShareReserves
+            hyperdrive.getPoolConfig().minimumShareReserves - 1
         );
         mockHyperdrive.setReserves(
             uint128(_shareReserves),
@@ -97,7 +97,7 @@ contract UpdateLiquidityTest is HyperdriveTest {
                 int256(_shareReserves) -
                 int256(1)
         );
-        vm.expectRevert();
+        vm.expectRevert(IHyperdrive.InvalidShareReserves.selector);
         mockHyperdrive.updateLiquidity(_shareReservesDelta);
     }
 
