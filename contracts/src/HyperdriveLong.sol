@@ -333,20 +333,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 false
             )
             .toUint128();
-        uint128 longExposureBefore = _checkpoints[checkpointTime].longExposure;
-
-        // Reduce the exposure by the amount of bonds that matured (flat)
-        // TODO: Exposure calculations might be better off in a helper function
-        // also, this might have issues when fees are introduced
-        if (
-            _checkpoints[checkpointTime].longExposure >
-            (_shareProceeds - _shareReservesDelta).mulDown(_sharePrice)
-        ) {
-            _checkpoints[checkpointTime].longExposure -= (_shareProceeds -
-                _shareReservesDelta).mulDown(_sharePrice).toUint128();
-        } else {
-            _checkpoints[checkpointTime].longExposure = 0;
-        }
 
         // This seems to occur when input is small and APY is high
         // TODO: i am not 100% sure what the correct fix is
@@ -355,31 +341,25 @@ abstract contract HyperdriveLong is HyperdriveLP {
             revert IHyperdrive.ShareReservesDeltaExceedsBondReservesDelta();
         }
 
-        // Reduce the exposure by the amount of bonds sold back to the pool (curve)
-        if (
-            _checkpoints[checkpointTime].longExposure >
-            _bondReservesDelta - _shareReservesDelta.mulDown(_sharePrice)
-        ) {
-            // TODO: if there is negative interest, this will have to be adjusted as in the calculateCloseLong() helper
-            _checkpoints[checkpointTime].longExposure -= (_bondReservesDelta -
-                _shareReservesDelta.mulDown(_sharePrice)).toUint128();
-        } else {
-            _checkpoints[checkpointTime].longExposure = 0;
-        }
+        // Calculate the longExposureDelta, update the checkpoint's longExposure and decrease the exposure
+        uint128 longExposureDelta = HyperdriveMath
+            .calculateClosePositionExposure(
+                _checkpoints[checkpointTime].longExposure,
+                _shareReservesDelta.mulDown(_sharePrice),
+                _bondReservesDelta,
+                _shareProceeds.mulDown(_sharePrice),
+                _totalSupply[
+                    AssetId.encodeAssetId(
+                        AssetId.AssetIdPrefix.Long,
+                        checkpointTime
+                    )
+                ]
+            );
 
-        // Zero out the long exposure if the longs in the checkpoint
-        // have all been closed/redeemed. This is necessary because
-        // the long exposure is used in the solvency check and there are small numerical errors
-        // that can accumulate
-        uint256 checkpointLongs = _totalSupply[
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, checkpointTime)
-        ];
-        if (checkpointLongs == 0) {
-            _checkpoints[checkpointTime].longExposure = 0;
-        }
-        _exposure -= int128(
-            longExposureBefore - _checkpoints[checkpointTime].longExposure
-        );
+        // Closing a long reduces the long exposure held in the shareReserves.
+        _checkpoints[checkpointTime].longExposure -= longExposureDelta;
+        // Reducing the long exposure also reduces the total exposure.
+        _exposure -= int128(longExposureDelta);
 
         // Reduce the amount of outstanding longs.
         _marketState.longsOutstanding =

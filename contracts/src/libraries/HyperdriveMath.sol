@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { FixedPointMath } from "./FixedPointMath.sol";
 import { YieldSpaceMath } from "./YieldSpaceMath.sol";
+import { SafeCast } from "./SafeCast.sol";
 
 /// @author DELV
 /// @title Hyperdrive
@@ -13,6 +14,7 @@ import { YieldSpaceMath } from "./YieldSpaceMath.sol";
 ///                    particular legal or regulatory significance.
 library HyperdriveMath {
     using FixedPointMath for uint256;
+    using SafeCast for uint256;
 
     /// @dev Calculates the spot price without slippage of bonds in terms of base.
     /// @param _shareReserves The pool's share reserves.
@@ -283,6 +285,51 @@ library HyperdriveMath {
             );
             sharePayment += shareReservesDelta;
         }
+    }
+
+    /// @dev Calculates the change in exposure after closing a position.
+    /// @param _positionExposure The checkpointed position exposure.
+    /// @param _baseReservesDelta The amount of base that the reserves will change by.
+    /// @param _bondReservesDelta The amount of bonds that the reserves will change by.
+    /// @param _baseUserDelta The amount of base that the user will receive (long) or pay (short).
+    /// @param _checkpointPositions The number of open positions (either long or short) in a checkpoint.
+    /// @return positionExposureDelta The change in exposure after closing a position.
+    function calculateClosePositionExposure(
+        uint256 _positionExposure,
+        uint256 _baseReservesDelta,
+        uint256 _bondReservesDelta,
+        uint256 _baseUserDelta,
+        uint256 _checkpointPositions
+    ) internal pure returns (uint128) {
+        uint256 positionExposureBefore = _positionExposure;
+
+        // Set the positionExposureDelta to the full positionExposure if there are no open positions.
+        if (_checkpointPositions == 0) {
+            // This effectively sets the positionExposure to 0.
+            return positionExposureBefore.toUint128();
+        }
+
+        // Reduce the exposure (long) or assets (short) by the amount of matured positions (flat)
+        if (_positionExposure > _baseUserDelta - _baseReservesDelta) {
+            _positionExposure -= _baseUserDelta - _baseReservesDelta;
+        } else {
+            // If the positionExposure is less than the delta from the flat calculation, then
+            // all the (short or long) positions in the checkpoint are now closed and we
+            // can set the positionExposure to 0.
+            return positionExposureBefore.toUint128();
+        }
+
+        // Reduce the exposure (long) or assets (short) by the unmatured positions (curve)
+        if (_positionExposure > _bondReservesDelta - _baseReservesDelta) {
+            _positionExposure -= _bondReservesDelta - _baseReservesDelta;
+        } else {
+            // If the positionExposure is less than the delta from the curve calculation, then
+            // all the (short or long) positions in the checkpoint are now closed and we
+            // can set the positionExposure to 0.
+            return positionExposureBefore.toUint128();
+        }
+
+        return (positionExposureBefore - _positionExposure).toUint128();
     }
 
     struct MaxTradeParams {

@@ -111,10 +111,10 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
         /// @dev The aggregate amount of base that was committed by LPs to pay
         ///      for the bonds that were sold short in the checkpoint.
         uint128 shortBaseVolume;
-        /// @dev The amount lp exposure on longs
+        /// @dev The amount lp exposure on longs.
         uint128 longExposure;
-        /// @dev The amount of trader deposits corresponding to open short positions.
-        uint128 shortDeposits;
+        /// @dev The amount of lp assets on shorts that come from trader Deposits
+        uint128 shortAssets;
     }
 
     struct WithdrawPool {

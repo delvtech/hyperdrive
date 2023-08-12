@@ -295,8 +295,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         }
 
         // Update the checkpoint's short deposits and decrease the exposure
-        _checkpoints[checkpointTime].shortDeposits += _traderDeposit
-            .toUint128();
+        _checkpoints[checkpointTime].shortAssets += _traderDeposit.toUint128();
         _exposure -= int128(_traderDeposit.toUint128());
     }
 
@@ -328,6 +327,10 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 false
             )
             .toUint128();
+        uint256 checkpointTime = _maturityTime - _positionDuration;
+        IHyperdrive.Checkpoint storage checkpoint = _checkpoints[
+            checkpointTime
+        ];
 
         // Update the base volume aggregates.
         {
@@ -347,10 +350,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
 
             // Remove a proportional amount of the checkpoints base volume from
             // the aggregates.
-            uint256 checkpointTime = _maturityTime - _positionDuration;
-            IHyperdrive.Checkpoint storage checkpoint = _checkpoints[
-                checkpointTime
-            ];
             uint128 checkpointShortBaseVolume = checkpoint.shortBaseVolume;
             uint128 proportionalBaseVolume = uint256(checkpointShortBaseVolume)
                 .mulDown(_bondAmount.divDown(checkpointShorts))
@@ -359,42 +358,26 @@ abstract contract HyperdriveShort is HyperdriveLP {
             checkpoint.shortBaseVolume =
                 checkpointShortBaseVolume -
                 proportionalBaseVolume;
-
-            // Reduce the shortDeposits by the amount of bonds that matured (flat)
-            // TODO: Might be better off in a helper function
-            uint128 shortDepositsBefore = checkpoint.shortDeposits;
-            if (
-                checkpoint.shortDeposits >
-                (_sharePayment - _shareReservesDelta).mulDown(_sharePrice)
-            ) {
-                _checkpoints[checkpointTime].shortDeposits -= (_sharePayment -
-                    _shareReservesDelta).mulDown(_sharePrice).toUint128();
-            } else {
-                _checkpoints[checkpointTime].shortDeposits = 0;
-            }
-
-            // Reduce the shortDeposit by the amount of bonds sold back to the pool (curve)
-            if (
-                checkpoint.shortDeposits >
-                _bondReservesDelta - _shareReservesDelta.mulDown(_sharePrice)
-            ) {
-                checkpoint.shortDeposits -= (_bondReservesDelta -
-                    _shareReservesDelta.mulDown(_sharePrice)).toUint128();
-            } else {
-                checkpoint.shortDeposits = 0;
-            }
-
-            // Zero out the short deposits if the shorts in the checkpoint
-            // have all been closed/redeemed. This is necessary because
-            // the shortDeposits is used in the solvency check and there are small numerical errors
-            // that can accumulate
-            if (checkpointShorts - _bondAmount == 0) {
-                _checkpoints[checkpointTime].shortDeposits = 0;
-            }
-
-            // Increase the exposure by the short deposit amount
-            _exposure += int128(shortDepositsBefore - checkpoint.shortDeposits);
         }
+
+        // Calculate the shortAssetsDelta, update the checkpoint's shortAssets and increase the exposure
+        uint128 shortAssetsDelta = HyperdriveMath
+            .calculateClosePositionExposure(
+                checkpoint.shortAssets,
+                _shareReservesDelta.mulDown(_sharePrice),
+                _bondReservesDelta,
+                _sharePayment.mulDown(_sharePrice),
+                _totalSupply[
+                    AssetId.encodeAssetId(
+                        AssetId.AssetIdPrefix.Short,
+                        _maturityTime
+                    )
+                ]
+            );
+        // Closing a short reduces the assets (trader deposits) not tracked in the shareReserves
+        checkpoint.shortAssets -= shortAssetsDelta;
+        // A reduction in assets increases the exposure
+        _exposure += int128(shortAssetsDelta);
 
         // Decrease the amount of shorts outstanding.
         _marketState.shortsOutstanding =
