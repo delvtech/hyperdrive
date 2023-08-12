@@ -360,7 +360,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 proportionalBaseVolume;
         }
 
-        // Calculate the shortAssetsDelta, update the checkpoint's shortAssets and increase the exposure
+        // Calculate the shortAssetsDelta
         uint128 shortAssetsDelta = HyperdriveMath
             .calculateClosePositionExposure(
                 checkpoint.shortAssets,
@@ -374,8 +374,10 @@ abstract contract HyperdriveShort is HyperdriveLP {
                     )
                 ]
             );
+
         // Closing a short reduces the assets (trader deposits) not tracked in the shareReserves
         checkpoint.shortAssets -= shortAssetsDelta;
+
         // A reduction in assets increases the exposure
         _exposure += int128(shortAssetsDelta);
 

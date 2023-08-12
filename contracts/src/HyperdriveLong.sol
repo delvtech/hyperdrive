@@ -267,14 +267,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
         longsOutstanding_ += _bondProceeds.toUint128();
         _marketState.longsOutstanding = longsOutstanding_;
 
-        // This seems to occur when input is small and APY is high
-        // NOTE: I have only seen this in applyCloseLong
-        // TODO: i am not 100% sure what the correct fix is
-        //  do we disallow small inputs or set them equal or ?
-        if (_bondReservesDelta < _shareReservesDelta.mulDown(_sharePrice)) {
-            revert IHyperdrive.ShareReservesDeltaExceedsBondReservesDelta();
-        }
-
         // increase the exposure by the amount the LPs must reserve to cover the long.
         uint128 longExposureDelta = (_bondReservesDelta -
             _shareReservesDelta.mulDown(_sharePrice)).toUint128();
@@ -310,6 +302,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         uint128 longsOutstanding_ = _marketState.longsOutstanding;
         uint256 checkpointTime = _maturityTime - _positionDuration;
         uint128 longSharePrice_ = _checkpoints[checkpointTime].longSharePrice;
+
         // Update the long average maturity time.
         _marketState.longAverageMaturityTime = uint256(
             _marketState.longAverageMaturityTime
@@ -334,14 +327,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
             )
             .toUint128();
 
-        // This seems to occur when input is small and APY is high
-        // TODO: i am not 100% sure what the correct fix is
-        //  do we disallow small inputs or set them equal or ?
-        if (_bondReservesDelta < _shareReservesDelta.mulDown(_sharePrice)) {
-            revert IHyperdrive.ShareReservesDeltaExceedsBondReservesDelta();
-        }
-
-        // Calculate the longExposureDelta, update the checkpoint's longExposure and decrease the exposure
+        // Calculate the longExposureDelta
         uint128 longExposureDelta = HyperdriveMath
             .calculateClosePositionExposure(
                 _checkpoints[checkpointTime].longExposure,
@@ -358,6 +344,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
 
         // Closing a long reduces the long exposure held in the shareReserves.
         _checkpoints[checkpointTime].longExposure -= longExposureDelta;
+
         // Reducing the long exposure also reduces the total exposure.
         _exposure -= int128(longExposureDelta);
 

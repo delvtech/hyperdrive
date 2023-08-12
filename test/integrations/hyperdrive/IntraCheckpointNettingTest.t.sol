@@ -371,8 +371,8 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             bondAmounts[i] = bondAmount;
         }
 
-        // fast forward time and accrue interest
-        advanceTime(timeElapsed, variableInterest);
+        // fast forward time, create checkpoints and accrue interest
+        advanceTimeWithCheckpoints(timeElapsed, variableInterest);
 
         // close the long.
         for (uint256 i = 0; i < numTrades; i++) {
@@ -476,8 +476,8 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             (maturityTimeShort, ) = openShort(bob, shortAmount);
         }
 
-        // fast forward time and accrue interest
-        advanceTime(timeElapsed, variableInterest);
+        // fast forward time, create checkpoints and accrue interest
+        advanceTimeWithCheckpoints(timeElapsed, variableInterest);
 
         // close the short
         for (uint256 i = 0; i < numTrades; i++) {
