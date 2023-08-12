@@ -1,12 +1,41 @@
+use std::{
+    fmt,
+    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Shr, Sub, SubAssign},
+};
+
 use ethers::types::{I256, U256};
 use fixed_point_macros::{fixed, int256, uint256};
-use rand::distributions::uniform::{SampleBorrow, SampleUniform, UniformSampler};
-use rand::distributions::{Distribution, Standard};
-use rand::Rng;
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Shr, Sub, SubAssign};
+use rand::{
+    distributions::{
+        uniform::{SampleBorrow, SampleUniform, UniformSampler},
+        Distribution, Standard,
+    },
+    Rng,
+};
 
-#[derive(Debug, Default, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
+/// A fixed point wrapper around the `U256` type from ethers-rs.
+///
+/// This fixed point type is a direct port of Solidity's FixedPointMath library.
+/// Each of the functions is fuzz tested against the Solidity implementation to
+/// ensure that the behavior is identical.
+#[derive(Default, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 pub struct FixedPoint(U256);
+
+/// Formatting ///
+
+impl fmt::Debug for FixedPoint {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "FixedPoint({})", self.to_scaled_string(18))
+    }
+}
+
+impl fmt::Display for FixedPoint {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.to_scaled_string(18))
+    }
+}
+
+/// Conversions ///
 
 impl From<I256> for FixedPoint {
     fn from(i: I256) -> FixedPoint {
@@ -49,6 +78,8 @@ impl From<FixedPoint> for I256 {
         I256::from_raw(f.0)
     }
 }
+
+/// Math ///
 
 impl Add for FixedPoint {
     type Output = FixedPoint;
@@ -344,7 +375,42 @@ impl FixedPoint {
 
         r
     }
+
+    fn to_scaled_string(&self, decimals: usize) -> String {
+        let mut value = self.0;
+        let mut digits = 0;
+        let mut result = vec![];
+        while value > uint256!(0) {
+            if digits == decimals && decimals > 0 {
+                result.push('.');
+            }
+
+            result.push(((value % uint256!(10)).low_u32() + 48) as u8 as char);
+            value /= uint256!(10);
+            digits += 1;
+        }
+
+        // Add leading zeros.
+        if digits < decimals {
+            for _ in 0..(decimals - digits) {
+                result.push('0');
+                digits += 1;
+            }
+        }
+
+        // Add the decimal point and leading zero.
+        if digits == decimals {
+            if decimals > 0 {
+                result.push('.');
+            }
+            result.push('0');
+        }
+
+        result.iter().rev().collect()
+    }
 }
+
+/// Sampling ///
 
 impl Distribution<FixedPoint> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> FixedPoint {
@@ -403,7 +469,8 @@ impl UniformSampler for UniformFixedPoint {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use std::{convert::TryFrom, panic, sync::Arc, time::Duration};
+
     use ethers::{
         core::utils::Anvil,
         middleware::SignerMiddleware,
@@ -414,7 +481,8 @@ mod tests {
     use eyre::Result;
     use hyperdrive_wrappers::wrappers::mock_fixed_point_math::MockFixedPointMath;
     use rand::{thread_rng, Rng};
-    use std::{convert::TryFrom, panic, sync::Arc, time::Duration};
+
+    use super::*;
 
     const FUZZ_RUNS: usize = 10_000;
 
@@ -438,6 +506,31 @@ mod tests {
             mock,
             _anvil: anvil,
         })
+    }
+
+    #[test]
+    fn test_fixed_point_fmt() {
+        // fmt::Debug
+        assert_eq!(
+            format!("{:?}", fixed!(1)),
+            "FixedPoint(0.000000000000000001)"
+        );
+        assert_eq!(
+            format!("{:?}", fixed!(1.23456e18)),
+            "FixedPoint(1.234560000000000000)"
+        );
+        assert_eq!(
+            format!("{:?}", fixed!(50_000.234_56e18)),
+            "FixedPoint(50000.234560000000000000)"
+        );
+
+        // fmt::Display
+        assert_eq!(format!("{}", fixed!(1)), "0.000000000000000001");
+        assert_eq!(format!("{}", fixed!(1.23456e18)), "1.234560000000000000");
+        assert_eq!(
+            format!("{}", fixed!(50_000.234_56e18)),
+            "50000.234560000000000000"
+        );
     }
 
     #[tokio::test]

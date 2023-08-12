@@ -1211,12 +1211,14 @@ contract HyperdriveMathTest is HyperdriveTest {
         uint256 openSharePrice = 1e18;
         uint256 closeSharePrice = 1e18;
         uint256 sharePrice = 1e18;
+        uint256 flatFee = 0;
         uint256 shortProceeds = hyperdriveMath.calculateShortProceeds(
             bondAmount,
             shareAmount,
             openSharePrice,
             closeSharePrice,
-            sharePrice
+            sharePrice,
+            flatFee
         );
         // proceeds = (margin + interest) / share_price = (0.05 + 0) / 1
         assertEq(shortProceeds, 0.05e18);
@@ -1227,12 +1229,14 @@ contract HyperdriveMathTest is HyperdriveTest {
         closeSharePrice = 1.05e18;
         sharePrice = 1.05e18;
         shareAmount = uint256(1e18).divDown(sharePrice);
+        flatFee = 0;
         shortProceeds = hyperdriveMath.calculateShortProceeds(
             bondAmount,
             shareAmount,
             openSharePrice,
             closeSharePrice,
-            sharePrice
+            sharePrice,
+            flatFee
         );
         // proceeds = (margin + interest) / share_price = (0.05 + 1.05 * 0.05) / 1.05
         assertApproxEqAbs(
@@ -1247,12 +1251,14 @@ contract HyperdriveMathTest is HyperdriveTest {
         closeSharePrice = 1.05e18;
         sharePrice = 1.05e18;
         shareAmount = uint256(1e18).divDown(sharePrice);
+        flatFee = 0;
         shortProceeds = hyperdriveMath.calculateShortProceeds(
             bondAmount,
             shareAmount,
             openSharePrice,
             closeSharePrice,
-            sharePrice
+            sharePrice,
+            flatFee
         );
         // proceeds = (margin + interest) / share_price = (0 + 1 * 0.05) / 1.05
         assertApproxEqAbs(
@@ -1288,12 +1294,14 @@ contract HyperdriveMathTest is HyperdriveTest {
         closeSharePrice = 0.9e18;
         sharePrice = 0.9e18;
         shareAmount = uint256(1e18).divDown(sharePrice);
+        flatFee = 0;
         shortProceeds = hyperdriveMath.calculateShortProceeds(
             bondAmount,
             shareAmount,
             openSharePrice,
             closeSharePrice,
-            sharePrice
+            sharePrice,
+            flatFee
         );
         assertEq(shortProceeds, 0);
 
@@ -1313,6 +1321,53 @@ contract HyperdriveMathTest is HyperdriveTest {
         //     sharePrice
         // );
         // assertEq(shortProceeds, 0);
+
+        // 5% interest - 0% margin released - 0% interest after close
+        // 50% flatFee applied
+        bondAmount = 1e18;
+        openSharePrice = 1e18;
+        closeSharePrice = 1.05e18;
+        sharePrice = 1.05e18;
+        shareAmount = uint256(1e18).divDown(sharePrice);
+        flatFee = 0.5e18;
+        shortProceeds = hyperdriveMath.calculateShortProceeds(
+            bondAmount,
+            shareAmount,
+            openSharePrice,
+            closeSharePrice,
+            sharePrice,
+            flatFee
+        );
+        // proceeds = ((margin + interest) / share_price) = (0 + 1 * 0.05) / 1.05 + (1 * 0.5)
+        assertApproxEqAbs(
+            shortProceeds,
+            (bondAmount.mulDown(0.05e18)).divDown(sharePrice) +
+                (bondAmount.mulDown(flatFee)),
+            1
+        );
+
+        // 5% interest - 5% margin released - 0% interest after close
+        bondAmount = 1.05e18;
+        openSharePrice = 1e18;
+        closeSharePrice = 1.05e18;
+        sharePrice = 1.05e18;
+        shareAmount = uint256(1e18).divDown(sharePrice);
+        flatFee = 0.25e18;
+        shortProceeds = hyperdriveMath.calculateShortProceeds(
+            bondAmount,
+            shareAmount,
+            openSharePrice,
+            closeSharePrice,
+            sharePrice,
+            flatFee
+        );
+        // proceeds = ()(margin + interest) / share_price) + (bondAmount * flatFee) = ((0.05 + 1.05 * 0.05) / 1.05) + (1 * 0.25)
+        assertApproxEqAbs(
+            shortProceeds,
+            (0.05e18 + bondAmount.mulDown(0.05e18)).divDown(sharePrice) +
+                (bondAmount.mulDown(flatFee)),
+            1
+        );
     }
 
     function test__calculateShortInterest() external {

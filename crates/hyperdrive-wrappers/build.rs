@@ -1,9 +1,8 @@
+use std::{io::Write, path::Path, process::Command};
+
 use ethers::prelude::Abigen;
 use eyre::Result;
 use heck::ToSnakeCase;
-use std::io::Write;
-use std::path::Path;
-use std::process::Command;
 
 fn get_artifacts(artifacts_path: &Path) -> Result<Vec<(String, String)>> {
     let mut artifacts = Vec::new();
@@ -30,12 +29,9 @@ fn get_artifacts(artifacts_path: &Path) -> Result<Vec<(String, String)>> {
 }
 
 fn main() -> Result<()> {
-    // Re-run this script whenever the build script itself changes.
+    // Re-run this script whenever the build script itself or a contract changes.
     println!("cargo:rerun-if-changed=build.rs");
-
-    // Re-run this script whenever a contract may have changed.
     println!("cargo:rerun-if-changed=../../contracts/");
-    println!("cargo:rerun-if-changed=../../test/");
 
     // Compile the contracts.
     Command::new("forge").args(["build"]).status()?;

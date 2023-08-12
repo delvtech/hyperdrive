@@ -157,13 +157,13 @@ abstract contract HyperdriveLong is HyperdriveLP {
             uint256 totalGovernanceFee
         ) = _calculateCloseLong(_bondAmount, sharePrice, _maturityTime);
 
-        // Attribute the governance fee.
-        _governanceFeesAccrued += totalGovernanceFee;
-
         // If the position hasn't matured, apply the accounting updates that
         // result from closing the long to the reserves and pay out the
         // withdrawal pool if necessary.
         if (block.timestamp < _maturityTime) {
+            // Attribute the governance fee.
+            _governanceFeesAccrued += totalGovernanceFee;
+
             _applyCloseLong(
                 _bondAmount,
                 bondReservesDelta,
@@ -344,7 +344,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 _shareProceeds,
                 longSharePrice_,
                 _sharePrice,
-                _sharePrice
+                _sharePrice,
+                0
             );
             _applyWithdrawalProceeds(
                 withdrawalProceeds,

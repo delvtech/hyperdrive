@@ -490,6 +490,72 @@ contract CloseLongTest is HyperdriveTest {
         );
     }
 
+    function test_long_fees_collect_on_close_at_maturity() external {
+        uint256 fixedRate = 0.05e18;
+        uint256 contribution = 500_000_000e18;
+
+        // 1. Deploy a pool with zero fees
+        IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
+        deploy(address(deployer), config);
+        // Initialize the pool with a large amount of capital.
+        initialize(alice, fixedRate, contribution);
+
+        // 2. A long is opened and the term passes. The long is closed at maturity.
+        (uint256 maturityTime, uint256 bondAmount) = openLong(bob, 10e18);
+        advanceTime(POSITION_DURATION, int256(fixedRate));
+        closeLong(bob, maturityTime, bondAmount);
+
+        // 3. Record Share Reserves
+        IHyperdrive.MarketState memory zeroFeeState = hyperdrive
+            .getMarketState();
+
+        // 4. deploy a pool with 100% curve fees and 100% gov fees (this is nice bc
+        // it ensures that all the fees are credited to governance and thus subtracted
+        // from the shareReserves
+        config = testConfig(fixedRate);
+        config.fees = IHyperdrive.Fees({
+            curve: 0,
+            flat: 1e18,
+            governance: 1e18
+        });
+        deploy(address(deployer), config);
+        initialize(alice, fixedRate, contribution);
+
+        // 5. Open and close a Long advancing it to maturity
+        (maturityTime, bondAmount) = openLong(bob, 10e18);
+        advanceTime(POSITION_DURATION, int256(fixedRate));
+        closeLong(bob, maturityTime, bondAmount);
+
+        // 6. Record Share Reserves
+        IHyperdrive.MarketState memory maxFeeState = hyperdrive
+            .getMarketState();
+
+        uint256 govFees = hyperdrive.getUncollectedGovernanceFees();
+        // Governance fees collected are non-zero
+        assert(govFees > 1e5);
+
+        // 7. deploy a pool with 100% curve fees and 0% gov fees
+        config = testConfig(fixedRate);
+        config.fees = IHyperdrive.Fees({ curve: 0, flat: 1e18, governance: 0 });
+        // Deploy and initialize the new pool
+        deploy(address(deployer), config);
+        initialize(alice, fixedRate, contribution);
+
+        // 8. Open and close another Long at maturity advancing the time
+        (maturityTime, bondAmount) = openLong(bob, 10e18);
+        advanceTime(POSITION_DURATION, int256(fixedRate));
+        closeLong(bob, maturityTime, bondAmount);
+
+        // 9. Record Share Reserves
+        IHyperdrive.MarketState memory maxFlatFeeState = hyperdrive
+            .getMarketState();
+
+        // The fees are subtracted from reserves and accounted for
+        // separately, so this will be true.
+        assertEq(zeroFeeState.shareReserves, maxFeeState.shareReserves);
+        assertGt(maxFlatFeeState.shareReserves, zeroFeeState.shareReserves);
+    }
+
     function verifyCloseLong(
         IHyperdrive.PoolInfo memory poolInfoBefore,
         uint256 traderBaseBalanceBefore,
