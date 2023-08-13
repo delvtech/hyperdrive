@@ -90,6 +90,8 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
         ///      positions were opened at the beginning of their respective
         ///      checkpoints.
         uint128 shortBaseVolume;
+        /// @dev The global exposure of the pool due to open positions
+        int128 exposure;
         /// @dev A flag indicating whether or not the pool has been initialized.
         bool isInitialized;
         /// @dev A flag indicating whether or not the pool is paused.
@@ -184,6 +186,8 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
         /// @dev The share price of LP shares. This can be used to mark LP
         ///      shares to market.
         uint256 lpSharePrice;
+        /// @dev The global exposure of the pool due to open positions
+        int256 exposure;
     }
 
     struct OracleState {

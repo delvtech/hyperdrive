@@ -380,9 +380,8 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         }
 
         // exposure should be 0
-        int256 exposure = MockHyperdrive(address(hyperdrive))
-            .getCurrentExposure();
-        assertApproxEqAbs(exposure, 0, 1);
+        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
+        assertApproxEqAbs(poolInfo.exposure, 0, 1);
     }
 
     function test_netting_open_close_short() external {
@@ -485,9 +484,8 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         }
 
         // exposure should be 0
-        int256 exposure = MockHyperdrive(address(hyperdrive))
-            .getCurrentExposure();
-        assertApproxEqAbs(exposure, 0, 1);
+        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
+        assertApproxEqAbs(poolInfo.exposure, 0, 1);
     }
 
     function test_netting_open_close_long_short() external {
@@ -623,9 +621,8 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         }
 
         // exposure should be 0
-        int256 exposure = MockHyperdrive(address(hyperdrive))
-            .getCurrentExposure();
-        assertApproxEqAbs(exposure, 0, 1);
+        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
+        assertApproxEqAbs(poolInfo.exposure, 0, 1);
     }
 
     function open_close_long_short_different_checkpoints(
@@ -678,8 +675,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         }
 
         // exposure should be 0
-        int256 exposure = MockHyperdrive(address(hyperdrive))
-            .getCurrentExposure();
-        assertApproxEqAbs(exposure, 0, 1);
+        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
+        assertApproxEqAbs(poolInfo.exposure, 0, 1);
     }
 }

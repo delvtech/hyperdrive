@@ -9,11 +9,14 @@ import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol";
+import { MockHyperdrive, IMockHyperdrive } from "../../mocks/MockHyperdrive.sol";
+import { SafeCast } from "contracts/src/libraries/SafeCast.sol";
 import { Lib } from "../../utils/Lib.sol";
 
 contract OpenLongTest is HyperdriveTest {
     using FixedPointMath for uint256;
     using HyperdriveUtils for IHyperdrive;
+    using SafeCast for uint256;
     using Lib for *;
 
     function setUp() public override {
@@ -173,30 +176,28 @@ contract OpenLongTest is HyperdriveTest {
         );
     }
 
-    // TODO:  fix this test
-    // function test_LongAvoidsDrainingBufferReserves() external {
-    //     uint256 apr = 0.05e18;
+    function test_LongAvoidsDrainingBufferReserves() external {
+        uint256 apr = 0.05e18;
 
-    //     // Initialize the pool with a large amount of capital.
-    //     uint256 contribution = 500_000_000e18;
-    //     initialize(alice, apr, contribution);
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
 
-    //     // Open up a large short to drain the buffer reserves.
-    //     uint256 bondAmount = hyperdrive.calculateMaxShort();
-    //     openShort(bob, bondAmount);
+        // Initialize a long and set large exposure to eat through capital
+        uint256 longAmount = 1e18;
+        MockHyperdrive(address(hyperdrive)).setExposure(
+            int128(contribution.toUint128())
+        );
 
-    //     // Initialize a large long to eat through the buffer of capital
-    //     uint256 overlyLargeLong = 976625406180945208462181452;
+        // Open the long.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        baseToken.mint(longAmount);
+        baseToken.approve(address(hyperdrive), longAmount);
 
-    //     // Open the long.
-    //     vm.stopPrank();
-    //     vm.startPrank(bob);
-    //     baseToken.mint(overlyLargeLong);
-    //     baseToken.approve(address(hyperdrive), overlyLargeLong);
-
-    //     vm.expectRevert(IHyperdrive.BaseBufferExceedsShareReserves.selector);
-    //     hyperdrive.openLong(overlyLargeLong, 0, bob, true);
-    // }
+        vm.expectRevert(IHyperdrive.BaseBufferExceedsShareReserves.selector);
+        hyperdrive.openLong(longAmount, 0, bob, true);
+    }
 
     function testAvoidsDustAttack(uint256 contribution, uint256 apr) public {
         /*

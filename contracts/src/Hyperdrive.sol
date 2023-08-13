@@ -161,9 +161,4 @@ abstract contract Hyperdrive is
 
         return checkpoint_.sharePrice;
     }
-
-    // this method calculates the most up to date global exposure value
-    function _getCurrentExposure() internal view override returns (int256) {
-        return _exposure;
-    }
 }

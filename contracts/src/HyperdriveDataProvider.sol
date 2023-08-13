@@ -109,7 +109,8 @@ abstract contract HyperdriveDataProvider is
                 ? 0
                 : presentValue.divDown(lpTotalSupply),
             withdrawalSharesReadyToWithdraw: _withdrawPool.readyToWithdraw,
-            withdrawalSharesProceeds: _withdrawPool.proceeds
+            withdrawalSharesProceeds: _withdrawPool.proceeds,
+            exposure: _marketState.exposure
         });
         _revert(abi.encode(poolInfo));
     }

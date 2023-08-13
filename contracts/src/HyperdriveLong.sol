@@ -271,12 +271,12 @@ abstract contract HyperdriveLong is HyperdriveLP {
         uint128 longExposureDelta = (_bondReservesDelta -
             _shareReservesDelta.mulDown(_sharePrice)).toUint128();
         checkpoint.longExposure += longExposureDelta;
-        _exposure += int128(longExposureDelta);
+        _marketState.exposure += int128(longExposureDelta);
 
         // solvency check
         if (
             int256((uint256(_marketState.shareReserves).mulDown(_sharePrice))) -
-                _exposure <
+                _marketState.exposure <
             int256(_minimumShareReserves.mulDown(_sharePrice))
         ) {
             revert IHyperdrive.BaseBufferExceedsShareReserves();
@@ -346,7 +346,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         _checkpoints[checkpointTime].longExposure -= longExposureDelta;
 
         // Reducing the long exposure also reduces the total exposure.
-        _exposure -= int128(longExposureDelta);
+        _marketState.exposure -= int128(longExposureDelta);
 
         // Reduce the amount of outstanding longs.
         _marketState.longsOutstanding =
