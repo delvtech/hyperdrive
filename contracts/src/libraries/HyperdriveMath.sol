@@ -289,16 +289,12 @@ library HyperdriveMath {
 
     /// @dev Calculates the change in exposure after closing a position.
     /// @param _positionExposure The checkpointed position exposure.
-    /// @param _baseReservesDelta The amount of base that the reserves will change by.
-    /// @param _bondReservesDelta The amount of bonds that the reserves will change by.
-    /// @param _baseUserDelta The amount of base that the user will receive (long) or pay (short).
+    /// @param _flatPlusCurveDelta The delta resulting from the closing of open positions.
     /// @param _checkpointPositions The number of open positions (either long or short) in a checkpoint.
     /// @return positionExposureDelta The change in exposure after closing a position.
     function calculateClosePositionExposure(
         uint256 _positionExposure,
-        uint256 _baseReservesDelta,
-        uint256 _bondReservesDelta,
-        uint256 _baseUserDelta,
+        uint256 _flatPlusCurveDelta,
         uint256 _checkpointPositions
     ) internal pure returns (uint128) {
         uint256 positionExposureBefore = _positionExposure;
@@ -310,20 +306,11 @@ library HyperdriveMath {
         }
 
         // Reduce the exposure (long) or assets (short) by the amount of matured positions (flat)
-        if (_positionExposure > _baseUserDelta - _baseReservesDelta) {
-            _positionExposure -= _baseUserDelta - _baseReservesDelta;
+        // and by the unmatured positions (curve)
+        if (_positionExposure > _flatPlusCurveDelta) {
+            _positionExposure -= _flatPlusCurveDelta;
         } else {
-            // If the positionExposure is less than the delta from the flat calculation, then
-            // all the (short or long) positions in the checkpoint are now closed and we
-            // can set the positionExposure to 0.
-            return positionExposureBefore.toUint128();
-        }
-
-        // Reduce the exposure (long) or assets (short) by the unmatured positions (curve)
-        if (_positionExposure > _bondReservesDelta - _baseReservesDelta) {
-            _positionExposure -= _bondReservesDelta - _baseReservesDelta;
-        } else {
-            // If the positionExposure is less than the delta from the curve calculation, then
+            // If the positionExposure is less than the delta from the flat + curve calculation, then
             // all the (short or long) positions in the checkpoint are now closed and we
             // can set the positionExposure to 0.
             return positionExposureBefore.toUint128();

@@ -357,12 +357,14 @@ abstract contract HyperdriveShort is HyperdriveLP {
         }
 
         // Calculate the shortAssetsDelta
+        uint256 flatPlusCurveDelta = _sharePayment.mulDown(_sharePrice) -
+            _shareReservesDelta.mulDown(_sharePrice) +
+            _bondReservesDelta -
+            _shareReservesDelta.mulDown(_sharePrice);
         uint128 shortAssetsDelta = HyperdriveMath
             .calculateClosePositionExposure(
                 checkpoint.shortAssets,
-                _shareReservesDelta.mulDown(_sharePrice),
-                _bondReservesDelta,
-                _sharePayment.mulDown(_sharePrice),
+                flatPlusCurveDelta,
                 _totalSupply[
                     AssetId.encodeAssetId(
                         AssetId.AssetIdPrefix.Short,
