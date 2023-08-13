@@ -1,4 +1,4 @@
-use ethers::core::types::{Address, U256, I256};
+use ethers::core::types::{Address, I256, U256};
 use hyperdrive_wrappers::wrappers::i_hyperdrive::{Fees, PoolConfig, PoolInfo};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
