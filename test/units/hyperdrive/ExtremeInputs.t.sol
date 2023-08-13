@@ -8,8 +8,6 @@ import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol";
 import { Lib } from "../../utils/Lib.sol";
 
-import "forge-std/console2.sol";
-
 contract ExtremeInputs is HyperdriveTest {
     using FixedPointMath for uint256;
     using HyperdriveUtils for IHyperdrive;

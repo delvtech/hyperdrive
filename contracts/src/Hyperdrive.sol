@@ -11,9 +11,6 @@ import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { SafeCast } from "./libraries/SafeCast.sol";
 
-import { Lib } from "../../test/utils/Lib.sol";
-import "forge-std/console2.sol";
-
 /// @author DELV
 /// @title Hyperdrive
 /// @notice A fixed-rate AMM that mints bonds on demand for longs and shorts.
@@ -27,7 +24,6 @@ abstract contract Hyperdrive is
 {
     using FixedPointMath for uint256;
     using SafeCast for uint256;
-    using Lib for *;
 
     /// @notice Initializes a Hyperdrive pool.
     /// @param _config The configuration of the Hyperdrive pool.

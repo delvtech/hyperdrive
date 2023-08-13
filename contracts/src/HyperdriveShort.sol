@@ -9,9 +9,6 @@ import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { SafeCast } from "./libraries/SafeCast.sol";
 import { YieldSpaceMath } from "./libraries/YieldSpaceMath.sol";
 
-import { Lib } from "../../test/utils/Lib.sol";
-import "forge-std/console2.sol";
-
 /// @author DELV
 /// @title HyperdriveShort
 /// @notice Implements the short accounting for Hyperdrive.
@@ -21,7 +18,6 @@ import "forge-std/console2.sol";
 abstract contract HyperdriveShort is HyperdriveLP {
     using FixedPointMath for uint256;
     using SafeCast for uint256;
-    using Lib for *;
 
     /// @notice Opens a short position.
     /// @param _bondAmount The amount of bonds to short.

@@ -527,14 +527,13 @@ contract HyperdriveMathTest is HyperdriveTest {
             uint256 _baseUserDelta = 200e18;
             uint256 _checkpointPositions = 0;
 
-            uint128 delta = HyperdriveMath
-                .calculateClosePositionExposure(
-                    _positionExposure,
-                    _baseReservesDelta,
-                    _bondReservesDelta,
-                    _baseUserDelta,
-                    _checkpointPositions
-                );
+            uint128 delta = HyperdriveMath.calculateClosePositionExposure(
+                _positionExposure,
+                _baseReservesDelta,
+                _bondReservesDelta,
+                _baseUserDelta,
+                _checkpointPositions
+            );
 
             // delta should be equal to _positionExposure bc there are 0 checkpoint positions
             assertEq(delta, 500e18);
@@ -548,18 +547,17 @@ contract HyperdriveMathTest is HyperdriveTest {
             uint256 _baseUserDelta = 200e18;
             uint256 _checkpointPositions = 10e18;
 
-            uint128 delta = HyperdriveMath
-                .calculateClosePositionExposure(
-                    _positionExposure,
-                    _baseReservesDelta,
-                    _bondReservesDelta,
-                    _baseUserDelta,
-                    _checkpointPositions
-                );
+            uint128 delta = HyperdriveMath.calculateClosePositionExposure(
+                _positionExposure,
+                _baseReservesDelta,
+                _bondReservesDelta,
+                _baseUserDelta,
+                _checkpointPositions
+            );
 
             // if 500 > 200 - 10
-            //  _positionExposure -= _baseUserDelta - _baseReservesDelta = 500 - (200 - 10) = 310 
-            // if 290 > 100 - 10 
+            //  _positionExposure -= _baseUserDelta - _baseReservesDelta = 500 - (200 - 10) = 310
+            // if 290 > 100 - 10
             // _positionExposure -= _bondReservesDelta - _baseReservesDelta = 310 - (100 - 10) = 220
             // return 500 - 220 = 280
             assertEq(delta, 280e18);
@@ -573,16 +571,15 @@ contract HyperdriveMathTest is HyperdriveTest {
             uint256 _baseUserDelta = 200e18;
             uint256 _checkpointPositions = 10e18;
 
-            uint128 delta = HyperdriveMath
-                .calculateClosePositionExposure(
-                    _positionExposure,
-                    _baseReservesDelta,
-                    _bondReservesDelta,
-                    _baseUserDelta,
-                    _checkpointPositions
-                );
+            uint128 delta = HyperdriveMath.calculateClosePositionExposure(
+                _positionExposure,
+                _baseReservesDelta,
+                _bondReservesDelta,
+                _baseUserDelta,
+                _checkpointPositions
+            );
 
-            // delta should be equal to _positionExposure bc the position exposure 
+            // delta should be equal to _positionExposure bc the position exposure
             // less than _baseUserDelta - _baseReservesDelta
             assertEq(delta, 1e18);
         }
@@ -595,18 +592,17 @@ contract HyperdriveMathTest is HyperdriveTest {
             uint256 _baseUserDelta = 200e18;
             uint256 _checkpointPositions = 10e18;
 
-            uint128 delta = HyperdriveMath
-                .calculateClosePositionExposure(
-                    _positionExposure,
-                    _baseReservesDelta,
-                    _bondReservesDelta,
-                    _baseUserDelta,
-                    _checkpointPositions
-                );
+            uint128 delta = HyperdriveMath.calculateClosePositionExposure(
+                _positionExposure,
+                _baseReservesDelta,
+                _bondReservesDelta,
+                _baseUserDelta,
+                _checkpointPositions
+            );
 
             // delta should be equal to _baseUserDelta - _baseReservesDelta
             // if 500 > 200 - 10
-            //  _positionExposure -= _baseUserDelta - _baseReservesDelta = 500 - (200 - 10) = 310 
+            //  _positionExposure -= _baseUserDelta - _baseReservesDelta = 500 - (200 - 10) = 310
             // if 290 > 500 - 10 x
             // So positionExposureBefore = 500 is returned
             assertEq(delta, 500e18);
@@ -1589,6 +1585,4 @@ contract HyperdriveMathTest is HyperdriveTest {
         );
         return bondReserves;
     }
-
-
 }
