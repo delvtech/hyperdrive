@@ -297,26 +297,20 @@ library HyperdriveMath {
         uint256 _flatPlusCurveDelta,
         uint256 _checkpointPositions
     ) internal pure returns (uint128) {
-        uint256 positionExposureBefore = _positionExposure;
-
-        // Set the positionExposureDelta to the full positionExposure if there are no open positions.
-        if (_checkpointPositions == 0) {
+        // if there are no open positions, or the positionExposure
+        // is less than the delta from the flat + curve calculation, then
+        // all the (short or long) positions in the checkpoint are now closed and we
+        // can set the positionExposure to 0.
+        if (
+            _checkpointPositions == 0 || _positionExposure < _flatPlusCurveDelta
+        ) {
             // This effectively sets the positionExposure to 0.
-            return positionExposureBefore.toUint128();
+            return _positionExposure.toUint128();
         }
 
         // Reduce the exposure (long) or assets (short) by the amount of matured positions (flat)
         // and by the unmatured positions (curve)
-        if (_positionExposure > _flatPlusCurveDelta) {
-            _positionExposure -= _flatPlusCurveDelta;
-        } else {
-            // If the positionExposure is less than the delta from the flat + curve calculation, then
-            // all the (short or long) positions in the checkpoint are now closed and we
-            // can set the positionExposure to 0.
-            return positionExposureBefore.toUint128();
-        }
-
-        return (positionExposureBefore - _positionExposure).toUint128();
+        return _flatPlusCurveDelta.toUint128();
     }
 
     struct MaxTradeParams {
