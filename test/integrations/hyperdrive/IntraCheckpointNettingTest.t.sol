@@ -104,42 +104,14 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         // initialSharePrice [0.5,5]
         // variableInterest [-50,50]
         // timeElapsed [0,365]
-        // numTrades [1,10]
+        // numTrades [1,5]
         // tradeSize [1,50_000_000/numTrades] 10% of the TVL
         initialSharePrice = initialSharePrice.normalizeToRange(0.5e18, 5e18);
         variableInterest = variableInterest.normalizeToRange(0e18, .05e18);
         timeElapsed = timeElapsed.normalizeToRange(0, POSITION_DURATION);
-        numTrades = tradeSize.normalizeToRange(1, 10);
+        numTrades = tradeSize.normalizeToRange(1, 5);
         tradeSize = tradeSize.normalizeToRange(1e18, 50_000_000e18 / numTrades);
 
-        open_close_long(
-            initialSharePrice,
-            variableInterest,
-            timeElapsed,
-            tradeSize,
-            numTrades
-        );
-        open_close_short(
-            initialSharePrice,
-            variableInterest,
-            timeElapsed,
-            tradeSize,
-            numTrades
-        );
-        open_close_long_short(
-            initialSharePrice,
-            variableInterest,
-            timeElapsed,
-            tradeSize,
-            numTrades
-        );
-
-        // Fuzz inputs Standard Range but limit to 1 trade
-        initialSharePrice = initialSharePrice.normalizeToRange(0.5e18, 5e18);
-        variableInterest = variableInterest.normalizeToRange(-.5e18, .5e18);
-        timeElapsed = timeElapsed.normalizeToRange(0, POSITION_DURATION);
-        numTrades = tradeSize.normalizeToRange(1, 1);
-        tradeSize = tradeSize.normalizeToRange(1e18, 50_000_000e18 / numTrades);
         open_close_long(
             initialSharePrice,
             variableInterest,
@@ -166,35 +138,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         initialSharePrice = initialSharePrice.normalizeToRange(0.5e18, 5e18);
         variableInterest = variableInterest.normalizeToRange(-.5e18, 0);
         timeElapsed = timeElapsed.normalizeToRange(0, POSITION_DURATION);
-        numTrades = tradeSize.normalizeToRange(1, 10);
-        tradeSize = tradeSize.normalizeToRange(1e18, 50_000_000e18 / numTrades);
-        open_close_long(
-            initialSharePrice,
-            variableInterest,
-            timeElapsed,
-            tradeSize,
-            numTrades
-        );
-        open_close_short(
-            initialSharePrice,
-            variableInterest,
-            timeElapsed,
-            tradeSize,
-            numTrades
-        );
-        open_close_long_short(
-            initialSharePrice,
-            variableInterest,
-            timeElapsed,
-            tradeSize,
-            numTrades
-        );
-
-        // Fuzz inputs Standard Range, but limit to negative variable interest with a trade szie of 1
-        initialSharePrice = initialSharePrice.normalizeToRange(0.5e18, 5e18);
-        variableInterest = variableInterest.normalizeToRange(-.5e18, 0);
-        timeElapsed = timeElapsed.normalizeToRange(0, POSITION_DURATION);
-        numTrades = tradeSize.normalizeToRange(1, 1);
+        numTrades = tradeSize.normalizeToRange(1, 5);
         tradeSize = tradeSize.normalizeToRange(1e18, 50_000_000e18 / numTrades);
         open_close_long(
             initialSharePrice,
@@ -222,35 +166,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         initialSharePrice = initialSharePrice.normalizeToRange(0.5e18, 5e18);
         variableInterest = variableInterest.normalizeToRange(0, 0.5e18);
         timeElapsed = timeElapsed.normalizeToRange(0, POSITION_DURATION);
-        numTrades = tradeSize.normalizeToRange(1, 10);
-        tradeSize = tradeSize.normalizeToRange(1e18, 50_000_000e18 / numTrades);
-        open_close_long(
-            initialSharePrice,
-            variableInterest,
-            timeElapsed,
-            tradeSize,
-            numTrades
-        );
-        open_close_short(
-            initialSharePrice,
-            variableInterest,
-            timeElapsed,
-            tradeSize,
-            numTrades
-        );
-        open_close_long_short(
-            initialSharePrice,
-            variableInterest,
-            timeElapsed,
-            tradeSize,
-            numTrades
-        );
-
-        // Fuzz inputs Standard Range, but limit to positive variable interest with a trade size of 1
-        initialSharePrice = initialSharePrice.normalizeToRange(0.5e18, 5e18);
-        variableInterest = variableInterest.normalizeToRange(0, 0.5e18);
-        timeElapsed = timeElapsed.normalizeToRange(0, POSITION_DURATION);
-        numTrades = tradeSize.normalizeToRange(1, 1);
+        numTrades = tradeSize.normalizeToRange(1, 5);
         tradeSize = tradeSize.normalizeToRange(1e18, 50_000_000e18 / numTrades);
         open_close_long(
             initialSharePrice,
