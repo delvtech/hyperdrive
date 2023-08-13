@@ -323,6 +323,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 false
             )
             .toUint128();
+
         uint256 checkpointTime = _maturityTime - _positionDuration;
         IHyperdrive.Checkpoint storage checkpoint = _checkpoints[
             checkpointTime
@@ -356,29 +357,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 proportionalBaseVolume;
         }
 
-        // Calculate the shortAssetsDelta
-        uint256 flatPlusCurveDelta = _sharePayment.mulDown(_sharePrice) -
-            _shareReservesDelta.mulDown(_sharePrice) +
-            _bondReservesDelta -
-            _shareReservesDelta.mulDown(_sharePrice);
-        uint128 shortAssetsDelta = HyperdriveMath
-            .calculateClosePositionExposure(
-                checkpoint.shortAssets,
-                flatPlusCurveDelta,
-                _totalSupply[
-                    AssetId.encodeAssetId(
-                        AssetId.AssetIdPrefix.Short,
-                        _maturityTime
-                    )
-                ]
-            );
-
-        // Closing a short reduces the assets (trader deposits) not tracked in the shareReserves
-        checkpoint.shortAssets -= shortAssetsDelta;
-
-        // A reduction in assets increases the exposure
-        _marketState.exposure += int128(shortAssetsDelta);
-
         // Decrease the amount of shorts outstanding.
         _marketState.shortsOutstanding =
             shortsOutstanding_ -
@@ -393,6 +371,34 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // receive their principal and some fixed interest along with any
         // trading profits that have accrued.
         _updateLiquidity(int256(_sharePayment - _shareReservesDelta));
+
+        // Calculate the shortAssetsDelta
+        {
+            uint256 baseReservesDelta = _shareReservesDelta.mulDown(
+                _sharePrice
+            );
+            uint256 flatPlusCurveDelta = _sharePayment.mulDown(_sharePrice) -
+                baseReservesDelta +
+                _bondReservesDelta -
+                baseReservesDelta;
+            uint128 shortAssetsDelta = HyperdriveMath
+                .calculateClosePositionExposure(
+                    checkpoint.shortAssets,
+                    flatPlusCurveDelta,
+                    _totalSupply[
+                        AssetId.encodeAssetId(
+                            AssetId.AssetIdPrefix.Short,
+                            _maturityTime
+                        )
+                    ]
+                );
+
+            // Closing a short reduces the assets (trader deposits) not tracked in the shareReserves
+            checkpoint.shortAssets -= shortAssetsDelta;
+
+            // A reduction in assets increases the exposure
+            _marketState.exposure += int128(shortAssetsDelta);
+        }
 
         // If there are withdrawal shares outstanding, we pay out the maximum
         // amount of withdrawal shares. The proceeds owed to LPs when a long is

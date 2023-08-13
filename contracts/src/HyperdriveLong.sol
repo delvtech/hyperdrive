@@ -323,29 +323,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
             )
             .toUint128();
 
-        // Calculate the longExposureDelta
-        uint256 flatPlusCurveDelta = _shareProceeds.mulDown(_sharePrice) -
-            _shareReservesDelta.mulDown(_sharePrice) +
-            _bondReservesDelta -
-            _shareReservesDelta.mulDown(_sharePrice);
-        uint128 longExposureDelta = HyperdriveMath
-            .calculateClosePositionExposure(
-                _checkpoints[checkpointTime].longExposure,
-                flatPlusCurveDelta,
-                _totalSupply[
-                    AssetId.encodeAssetId(
-                        AssetId.AssetIdPrefix.Long,
-                        _maturityTime
-                    )
-                ]
-            );
-
-        // Closing a long reduces the long exposure held in the shareReserves.
-        _checkpoints[checkpointTime].longExposure -= longExposureDelta;
-
-        // Reducing the long exposure also reduces the total exposure.
-        _marketState.exposure -= int128(longExposureDelta);
-
         // Reduce the amount of outstanding longs.
         _marketState.longsOutstanding =
             longsOutstanding_ -
@@ -357,6 +334,34 @@ abstract contract HyperdriveLong is HyperdriveLP {
 
         // Remove the flat part of the trade from the pool's liquidity.
         _updateLiquidity(-int256(_shareProceeds - _shareReservesDelta));
+
+        // Calculate the longExposureDelta
+        {
+            uint256 baseReservesDelta = _shareReservesDelta.mulDown(
+                _sharePrice
+            );
+            uint256 flatPlusCurveDelta = _shareProceeds.mulDown(_sharePrice) -
+                baseReservesDelta +
+                _bondReservesDelta -
+                baseReservesDelta;
+            uint128 longExposureDelta = HyperdriveMath
+                .calculateClosePositionExposure(
+                    _checkpoints[checkpointTime].longExposure,
+                    flatPlusCurveDelta,
+                    _totalSupply[
+                        AssetId.encodeAssetId(
+                            AssetId.AssetIdPrefix.Long,
+                            _maturityTime
+                        )
+                    ]
+                );
+
+            // Closing a long reduces the long exposure held in the shareReserves.
+            _checkpoints[checkpointTime].longExposure -= longExposureDelta;
+
+            // Reducing the long exposure also reduces the total exposure.
+            _marketState.exposure -= int128(longExposureDelta);
+        }
 
         // If there are withdrawal shares outstanding, we pay out the maximum
         // amount of withdrawal shares. The proceeds owed to LPs when a long is
