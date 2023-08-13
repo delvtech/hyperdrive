@@ -19,7 +19,7 @@ jobs:
 
       # NOTE: This is needed to ensure that hyperdrive-wrappers builds correctly.
       - name: install foundry
-        uses: foundry-rs/foundry-toolchain@v1
+        uses: foundry-rs/foundry-toolchain@v1.0.10
         with:
           version: nightly
 
