@@ -35,9 +35,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1.0.10
         with:
-          # TODO: We should just use nightly, but downgrading to fix a reversion
-          # in forge coverage.
-          version: nightly-10440422e63aae660104e079dfccd5b0ae5fd720
+          version: nightly
 
       - name: forge version
         run: forge --version
