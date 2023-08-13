@@ -519,6 +519,100 @@ contract HyperdriveMathTest is HyperdriveTest {
     //     );
     // }
 
+    function test__calculateClosePositionExposure() external {
+        {
+            uint256 _positionExposure = 500e18;
+            uint256 _baseReservesDelta = 100e18;
+            uint256 _bondReservesDelta = 100e18;
+            uint256 _baseUserDelta = 200e18;
+            uint256 _checkpointPositions = 0;
+
+            uint128 delta = HyperdriveMath
+                .calculateClosePositionExposure(
+                    _positionExposure,
+                    _baseReservesDelta,
+                    _bondReservesDelta,
+                    _baseUserDelta,
+                    _checkpointPositions
+                );
+
+            // delta should be equal to _positionExposure bc there are 0 checkpoint positions
+            assertEq(delta, 500e18);
+        }
+
+        // Flat + Curve  Test
+        {
+            uint256 _positionExposure = 500e18;
+            uint256 _baseReservesDelta = 10e18;
+            uint256 _bondReservesDelta = 100e18;
+            uint256 _baseUserDelta = 200e18;
+            uint256 _checkpointPositions = 10e18;
+
+            uint128 delta = HyperdriveMath
+                .calculateClosePositionExposure(
+                    _positionExposure,
+                    _baseReservesDelta,
+                    _bondReservesDelta,
+                    _baseUserDelta,
+                    _checkpointPositions
+                );
+
+            // if 500 > 200 - 10
+            //  _positionExposure -= _baseUserDelta - _baseReservesDelta = 500 - (200 - 10) = 310 
+            // if 290 > 100 - 10 
+            // _positionExposure -= _bondReservesDelta - _baseReservesDelta = 310 - (100 - 10) = 220
+            // return 500 - 220 = 280
+            assertEq(delta, 280e18);
+        }
+
+        // Flat Test Return positionExposureBefore
+        {
+            uint256 _positionExposure = 1e18;
+            uint256 _baseReservesDelta = 100e18;
+            uint256 _bondReservesDelta = 100e18;
+            uint256 _baseUserDelta = 200e18;
+            uint256 _checkpointPositions = 10e18;
+
+            uint128 delta = HyperdriveMath
+                .calculateClosePositionExposure(
+                    _positionExposure,
+                    _baseReservesDelta,
+                    _bondReservesDelta,
+                    _baseUserDelta,
+                    _checkpointPositions
+                );
+
+            // delta should be equal to _positionExposure bc the position exposure 
+            // less than _baseUserDelta - _baseReservesDelta
+            assertEq(delta, 1e18);
+        }
+
+        // Curve Test Return positionExposureBefore
+        {
+            uint256 _positionExposure = 500e18;
+            uint256 _baseReservesDelta = 10e18;
+            uint256 _bondReservesDelta = 500e18;
+            uint256 _baseUserDelta = 200e18;
+            uint256 _checkpointPositions = 10e18;
+
+            uint128 delta = HyperdriveMath
+                .calculateClosePositionExposure(
+                    _positionExposure,
+                    _baseReservesDelta,
+                    _bondReservesDelta,
+                    _baseUserDelta,
+                    _checkpointPositions
+                );
+
+            // delta should be equal to _baseUserDelta - _baseReservesDelta
+            // if 500 > 200 - 10
+            //  _positionExposure -= _baseUserDelta - _baseReservesDelta = 500 - (200 - 10) = 310 
+            // if 290 > 500 - 10 x
+            // So positionExposureBefore = 500 is returned
+            assertEq(delta, 500e18);
+        }
+    }
+
     function test__calculateMaxLong__edgeCases() external {
         // This is an edge case where pool has a spot price of 1 at the optimal
         // trade size but the optimal trade size is less than the value that we
@@ -1495,4 +1589,6 @@ contract HyperdriveMathTest is HyperdriveTest {
         );
         return bondReserves;
     }
+
+
 }
