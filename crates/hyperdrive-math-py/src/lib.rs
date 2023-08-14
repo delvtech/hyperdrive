@@ -1,10 +1,7 @@
 use ethers::core::types::{Address, U256};
-use hyperdrive_wrappers::wrappers::i_hyperdrive::{Fees, PoolConfig, PoolInfo};
-use pyo3::exceptions::PyValueError;
-use pyo3::prelude::*;
-use pyo3::PyErr;
-
 use hyperdrive_math::hyperdrive_math::State;
+use hyperdrive_wrappers::wrappers::i_hyperdrive::{Fees, PoolConfig, PoolInfo};
+use pyo3::{exceptions::PyValueError, prelude::*, PyErr};
 
 #[pyclass(name = "HyperdriveState")]
 pub struct PyState {
