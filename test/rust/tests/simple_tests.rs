@@ -16,12 +16,14 @@ async fn test_simple() -> Result<()> {
         chain.accounts[0].clone(),
         chain.provider.clone(),
         chain.addresses.clone(),
+        None,
     )
     .await?;
     let mut bob = Agent::new(
         chain.accounts[1].clone(),
         chain.provider.clone(),
         chain.addresses,
+        None,
     )
     .await?;
 
