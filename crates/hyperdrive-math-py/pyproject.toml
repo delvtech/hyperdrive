@@ -1,5 +1,6 @@
 [project]
 name = "hyperdrive_math_py"
+version = "0.1.0"
 requires-python = ">=3.7"
 classifiers = [
   "Programming Language :: Rust",
@@ -11,8 +12,11 @@ classifiers = [
 features = ["pyo3/extension-module"]
 
 [build-system]
-requires = ["maturin>=1.2,<2.0"]
-build-backend = "maturin"
+requires = ["setuptools", "wheel", "setuptools-rust"]
+build-backend = "setuptools.build_meta"
 
 [tool.pylint]
-extension-pkg-allow-list="hyperdrive_math_py"
+extension-pkg-allow-list="hyperdrive-math-py"
+
+[tool.setuptools.packages.find]
+where = ["python", "src"]

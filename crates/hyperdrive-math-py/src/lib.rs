@@ -8,18 +8,18 @@ use hyperdrive_math::hyperdrive_math::State as State;
 
 #[pyclass(module="hyperdrive_math_py", name="HyperdriveState")]
 pub struct HyperdriveState {
-    pub hyperdrive_state: State,
+    pub state: State,
 }
 
 impl HyperdriveState {
-    pub(crate) fn new(hyperdrive_state: State) -> Self {
-        HyperdriveState { hyperdrive_state }
+    pub(crate) fn new(state: State) -> Self {
+        HyperdriveState { state }
     }
 }
 
 impl From<State> for HyperdriveState {
-    fn from(hyperdrive_state: State) -> Self {
-        HyperdriveState { hyperdrive_state }
+    fn from(state: State) -> Self {
+        HyperdriveState { state }
     }
 }
 
@@ -140,12 +140,12 @@ impl HyperdriveState {
     pub fn __init__(pool_config: &PyAny, pool_info: &PyAny) -> PyResult<Self> {
         let rust_pool_config = PyPoolConfig::extract(pool_config)?.pool_config;
         let rust_pool_info = PyPoolInfo::extract(pool_info)?.pool_info;
-        let hyperdrive_state = State::new(rust_pool_config, rust_pool_info);
-        Ok(HyperdriveState::new(hyperdrive_state))
+        let state = State::new(rust_pool_config, rust_pool_info);
+        Ok(HyperdriveState::new(state))
     }
 
     pub fn get_spot_price(&self) -> PyResult<String> {
-        let result_fp = self.hyperdrive_state.get_spot_price();
+        let result_fp = self.state.get_spot_price();
         let result = U256::from(result_fp).to_string();
         return Ok(result);
     }

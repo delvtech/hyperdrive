@@ -1,5 +1,5 @@
 [package]
-name = "hyperdrive_math_py"
+name = "hyperdrive-math-py"
 version = "0.1.0"
 edition = "2021"
 
