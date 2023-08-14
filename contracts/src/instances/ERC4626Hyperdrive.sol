@@ -145,6 +145,10 @@ contract ERC4626Hyperdrive is Hyperdrive {
         return pool.convertToAssets(FixedPointMath.ONE_18);
     }
 
+    function _getTotalShares() internal view override returns (uint256) {
+        return pool.balanceOf(address(this));
+    }
+
     /// @notice Some yield sources [eg Morpho] pay rewards directly to this
     ///         contract but we can't handle distributing them internally so we
     ///         sweep to the fee collector address to then redistribute to users.

@@ -10,6 +10,10 @@ import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { SafeCast } from "./libraries/SafeCast.sol";
 import { MultiToken } from "./token/MultiToken.sol";
 
+import { Lib } from "../../test/utils/Lib.sol";
+
+import "forge-std/console2.sol";
+
 /// @author DELV
 /// @title HyperdriveBase
 /// @notice The base contract of the Hyperdrive inheritance hierarchy.
@@ -19,6 +23,7 @@ import { MultiToken } from "./token/MultiToken.sol";
 abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     using FixedPointMath for uint256;
     using SafeCast for uint256;
+    using Lib for *;
 
     event Initialize(
         address indexed provider,
@@ -142,6 +147,8 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
         virtual
         returns (uint256 sharePrice);
 
+    function _getTotalShares() internal view virtual returns (uint256);
+
     /// Pause ///
 
     event PauserUpdated(address indexed newPauser);
@@ -216,6 +223,16 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     }
 
     /// Helpers ///
+
+    function _calculateIdleShareReserves() internal view returns (uint256 idleShares) {
+        int256 usedShares = int256(int128(_marketState.longsOutstanding) + _marketState.exposure)*1e18/int256(_pricePerShare());
+        if(int128(_marketState.shareReserves) > usedShares){
+            idleShares = uint256(int256(int128(_marketState.shareReserves)) - usedShares);
+        } else {
+            idleShares = 0;
+        }
+        return idleShares;
+    }
 
     /// @dev Calculates the fees that go to the LPs and governance.
     /// @param _amountIn Amount in shares.

@@ -291,6 +291,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         }
 
         // Update the checkpoint's short deposits and decrease the exposure
+        // NOTE: We could eliminate shortAssets and make the longExposure signed
         _checkpoints[checkpointTime].shortAssets += _traderDeposit.toUint128();
         _marketState.exposure -= int128(_traderDeposit.toUint128());
     }
