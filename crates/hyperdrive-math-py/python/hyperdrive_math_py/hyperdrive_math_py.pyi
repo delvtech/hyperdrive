@@ -33,7 +33,7 @@ class HyperdriveState:
     def get_max_long(self, budget: str, maybe_max_iterations: int) -> str:
         """Gets the max amount of bonds that can be purchased for the given budget.
 
-        Parameters
+        Arguments
         ----------
         budget : str
             The account budget in base for making a long.
@@ -49,8 +49,8 @@ class HyperdriveState:
         self, budget: str, open_share_price: str, maybe_max_iterations: int
     ) -> str:
         """Gets the max amount of bonds that can be shorted for the given budget.
-        Parameters
 
+        Arguments
         ----------
         budget : str
             The account budget in base for making a short.
