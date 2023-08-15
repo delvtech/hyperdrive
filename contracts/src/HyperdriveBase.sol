@@ -10,10 +10,6 @@ import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { SafeCast } from "./libraries/SafeCast.sol";
 import { MultiToken } from "./token/MultiToken.sol";
 
-import { Lib } from "../../test/utils/Lib.sol";
-
-import "forge-std/console2.sol";
-
 /// @author DELV
 /// @title HyperdriveBase
 /// @notice The base contract of the Hyperdrive inheritance hierarchy.
@@ -23,7 +19,6 @@ import "forge-std/console2.sol";
 abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     using FixedPointMath for uint256;
     using SafeCast for uint256;
-    using Lib for *;
 
     event Initialize(
         address indexed provider,
