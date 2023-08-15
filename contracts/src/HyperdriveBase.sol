@@ -147,8 +147,6 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
         virtual
         returns (uint256 sharePrice);
 
-    function _getTotalShares() internal view virtual returns (uint256);
-
     /// Pause ///
 
     event PauserUpdated(address indexed newPauser);
@@ -224,12 +222,24 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
 
     /// Helpers ///
 
-    function _calculateIdleShareReserves() internal view returns (uint256 idleShares) {
-        int256 usedShares = int256(int128(_marketState.longsOutstanding) + _marketState.exposure)*1e18/int256(_pricePerShare());
-        if(int128(_marketState.shareReserves) > usedShares){
-            idleShares = uint256(int256(int128(_marketState.shareReserves)) - usedShares);
-        } else {
-            idleShares = 0;
+    /// @dev Calculates the number of share reserves that are not reserved by open positions
+    /// @param _sharePrice The current share price.
+    function _calculateIdleShareReserves(
+        uint256 _sharePrice
+    ) internal view returns (uint256 idleShares) {
+        // Ensure that we only consider non-negative exposure here to prevent a scenario where
+        // shareReserves < minimumShareReserves in removeLiquidity().
+        uint256 exposure = 0;
+        if (_marketState.exposure > 0) {
+            exposure = uint128(_marketState.exposure);
+        }
+        uint256 usedShares = (1e18 *
+            (uint256(_marketState.longsOutstanding) + exposure)) / _sharePrice;
+        if (_marketState.shareReserves > usedShares + _minimumShareReserves) {
+            idleShares =
+                _marketState.shareReserves -
+                usedShares -
+                _minimumShareReserves;
         }
         return idleShares;
     }

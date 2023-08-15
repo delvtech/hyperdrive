@@ -436,18 +436,20 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // we don't need to account for them in the idle calculation. Thus, we
         // can calculate the idle capital as:
         //
-        // idle = (z - z_min - (y_l / c_0))
+        // idle = (z - z_min - (y_l / c_0) - exposure)
         //
         // The LP is given their share of the idle capital in the pool. We
         // assume that the active LPs are the only LPs entitled to the pool's
         // idle capital, so the LP's proceeds are calculated as:
         //
         // proceeds = idle * (dl / l_a)
-        shareProceeds = _marketState.shareReserves - _minimumShareReserves;
+
         if (_marketState.longsOutstanding > 0) {
-            shareProceeds -= uint256(_marketState.longsOutstanding).divDown(
+            shareProceeds = _calculateIdleShareReserves(
                 _marketState.longOpenSharePrice
             );
+        } else {
+            shareProceeds = _calculateIdleShareReserves(_pricePerShare());
         }
         shareProceeds = shareProceeds.mulDivDown(_shares, _totalActiveLpSupply);
         _updateLiquidity(-int256(shareProceeds));
@@ -456,7 +458,6 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         uint256 endingPresentValue = HyperdriveMath.calculatePresentValue(
             params
         );
-
         // Calculate the amount of withdrawal shares that should be minted. We
         // solve for this value by solving the present value equation as
         // follows:
@@ -482,7 +483,6 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             );
             delete withdrawalShares;
         }
-
         return (shareProceeds, uint256(withdrawalShares));
     }
 
