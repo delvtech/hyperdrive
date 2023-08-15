@@ -6,22 +6,23 @@ use pyo3::PyErr;
 
 use hyperdrive_math::hyperdrive_math::State;
 
-#[pyclass(name = "HyperdriveState")]
-pub struct PyState {
+#[pyclass(module = "hyperdrive_math_py", name = "HyperdriveState")]
+pub struct HyperdriveState {
     pub state: State,
 }
 
-impl PyState {
+impl HyperdriveState {
     pub(crate) fn new(state: State) -> Self {
-        PyState { state }
+        HyperdriveState { state }
     }
 }
 
-impl From<State> for PyState {
+impl From<State> for HyperdriveState {
     fn from(state: State) -> Self {
-        PyState { state }
+        HyperdriveState { state }
     }
 }
+
 pub struct PyPoolConfig {
     pub pool_config: PoolConfig,
 }
@@ -134,13 +135,13 @@ impl FromPyObject<'_> for PyPoolInfo {
 }
 
 #[pymethods]
-impl PyState {
+impl HyperdriveState {
     #[new]
     pub fn __init__(pool_config: &PyAny, pool_info: &PyAny) -> PyResult<Self> {
         let rust_pool_config = PyPoolConfig::extract(pool_config)?.pool_config;
         let rust_pool_info = PyPoolInfo::extract(pool_info)?.pool_info;
-        let hyperdrive_state = State::new(rust_pool_config, rust_pool_info);
-        Ok(PyState::new(hyperdrive_state))
+        let state = State::new(rust_pool_config, rust_pool_info);
+        Ok(HyperdriveState::new(state))
     }
 
     pub fn get_spot_price(&self) -> PyResult<String> {
@@ -150,12 +151,12 @@ impl PyState {
     }
 }
 
-/// A pyO3 wrapper for the hyperdrie_math crate.  The State struct will be exposed with all methods
-/// listed in #[pymethods] decorated impl.  The name of this function must match the `lib.name`
-/// setting in the `Cargo.toml`, else Python will not be able to import the module.
+/// A pyO3 wrapper for the hyperdrie_math crate.
+/// The Hyperdrive State struct will be exposed with the following methods:
+///   - get_spot_price
 #[pymodule]
-#[pyo3(name = "hyperdrive_math")]
-fn hyperdrive_math_lib(_py: Python, m: &PyModule) -> PyResult<()> {
-    m.add_class::<PyState>().unwrap();
+#[pyo3(name = "hyperdrive_math_py")]
+fn hyperdrive_math_py(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
+    m.add_class::<HyperdriveState>()?;
     Ok(())
 }
