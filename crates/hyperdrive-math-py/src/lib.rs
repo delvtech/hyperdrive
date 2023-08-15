@@ -1,4 +1,5 @@
 use ethers::core::types::{Address, U256};
+use fixed_point::FixedPoint;
 use hyperdrive_wrappers::wrappers::i_hyperdrive::{Fees, PoolConfig, PoolInfo};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
@@ -146,6 +147,39 @@ impl HyperdriveState {
 
     pub fn get_spot_price(&self) -> PyResult<String> {
         let result_fp = self.state.get_spot_price();
+        let result = U256::from(result_fp).to_string();
+        return Ok(result);
+    }
+
+    pub fn get_max_long(
+        &self,
+        budget: &str,
+        maybe_max_iterations: Option<usize>,
+    ) -> PyResult<String> {
+        let budget_fp = FixedPoint::from(U256::from_dec_str(budget).map_err(|_| {
+            PyErr::new::<PyValueError, _>("Failed to convert budget string to U256")
+        })?);
+        let result_fp = self.state.get_max_long(budget_fp, maybe_max_iterations);
+        let result = U256::from(result_fp).to_string();
+        return Ok(result);
+    }
+
+    pub fn get_max_short(
+        &self,
+        budget: &str,
+        open_share_price: &str,
+        maybe_max_iterations: Option<usize>,
+    ) -> PyResult<String> {
+        let budget_fp = FixedPoint::from(U256::from_dec_str(budget).map_err(|_| {
+            PyErr::new::<PyValueError, _>("Failed to convert budget string to U256")
+        })?);
+        let open_share_price_fp =
+            FixedPoint::from(U256::from_dec_str(open_share_price).map_err(|_| {
+                PyErr::new::<PyValueError, _>("Failed to convert open_share_price string to U256")
+            })?);
+        let result_fp =
+            self.state
+                .get_max_short(budget_fp, open_share_price_fp, maybe_max_iterations);
         let result = U256::from(result_fp).to_string();
         return Ok(result);
     }
