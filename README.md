@@ -44,7 +44,7 @@ If you want to automatically format the code, run `yarn prettier`.
 The current suggested way of integrating your yield source with hyperdrive is through the [ERC-4626 standard](https://eips.ethereum.org/EIPS/eip-4626) although accomodations can be made if this is not possible. Hyperdrive currently makes use of [Yield Daddy](https://github.com/timeless-fi/yield-daddy) to wrap many existing yield sources into this standard.
 
 ## Python Rust wrapper
-To install the Python package `hyperdrive-math-py`, which wraps the Rust `HyperdriveMath.State` struct, you need to
+To install the Python package `hyperdrive-math-py`, which wraps the Rust `hyperdrive_math::State` struct, you need to:
 - setup a [Python venv](https://docs.python.org/3/library/venv.html) that is running at least `Python 3.7`
 - from inside the environment, run `pip install crates/hyperdrive-math-py`
 - test the installation by running `pytest python/test`

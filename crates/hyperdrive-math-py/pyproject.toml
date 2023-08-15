@@ -8,9 +8,6 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 
-[tool.maturin]
-features = ["pyo3/extension-module"]
-
 [build-system]
 requires = ["setuptools", "wheel", "setuptools-rust"]
 build-backend = "setuptools.build_meta"

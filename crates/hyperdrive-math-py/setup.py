@@ -8,8 +8,7 @@ setup(
     packages=["hyperdrive_math_py"],
     package_dir={"": "python"},
     rust_extensions=[
-        RustExtension("hyperdrive_math_py", binding=Binding.PyO3),
-        RustExtension("hyperdrive_math_py.HyperdriveState", binding=Binding.PyO3),
+        RustExtension("hyperdrive_math_py.hyperdrive_math_py", binding=Binding.PyO3),
     ],
     # rust extensions are not zip safe, just like C-extensions.
     zip_safe=False,

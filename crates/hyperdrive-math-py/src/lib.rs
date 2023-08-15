@@ -4,9 +4,9 @@ use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::PyErr;
 
-use hyperdrive_math::hyperdrive_math::State as State;
+use hyperdrive_math::hyperdrive_math::State;
 
-#[pyclass(module="hyperdrive_math_py", name="HyperdriveState")]
+#[pyclass(module = "hyperdrive_math_py", name = "HyperdriveState")]
 pub struct HyperdriveState {
     pub state: State,
 }
@@ -155,7 +155,7 @@ impl HyperdriveState {
 /// The Hyperdrive State struct will be exposed with the following methods:
 ///   - get_spot_price
 #[pymodule]
-#[pyo3(name="hyperdrive_math_py")]
+#[pyo3(name = "hyperdrive_math_py")]
 fn hyperdrive_math_py(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_class::<HyperdriveState>()?;
     Ok(())

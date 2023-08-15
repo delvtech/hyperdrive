@@ -1,5 +1,6 @@
 """Tests for hyperdrive_math.rs wrappers"""
-from hyperdrive_math_py import Fees, HyperdriveState, PoolConfig, PoolInfo
+from hyperdrive_math_py import HyperdriveState
+from hyperdrive_math_py.types import Fees, PoolConfig, PoolInfo
 
 sample_pool_config = PoolConfig(
     base_token="0x1234567890abcdef1234567890abcdef12345678",
