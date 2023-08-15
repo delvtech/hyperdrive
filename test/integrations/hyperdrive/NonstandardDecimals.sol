@@ -303,22 +303,17 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         }
 
         // Alice removes her liquidity.
+        uint256 estimatedBaseProceeds = calculateBaseLpProceeds(aliceLpShares);
         (
             uint256 aliceBaseProceeds,
             uint256 aliceWithdrawalShares
         ) = removeLiquidity(alice, aliceLpShares);
         uint256 lpMargin = (testParams.longAmount - testParams.longBasePaid) +
             (testParams.shortAmount - testParams.shortBasePaid);
-        assertApproxEqAbs(
+
+        assertEq(
             aliceBaseProceeds,
-            (testParams.contribution.mulDown(2e18) -
-                lpMargin -
-                2 *
-                hyperdrive.getPoolConfig().minimumShareReserves).mulDivDown(
-                    aliceLpShares,
-                    aliceLpShares + bobLpShares
-                ),
-            1e6
+            estimatedBaseProceeds
         );
 
         // Celine adds liquidity.

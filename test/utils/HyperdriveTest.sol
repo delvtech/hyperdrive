@@ -759,6 +759,17 @@ contract HyperdriveTest is BaseTest {
         }
     }
 
+    function calculateBaseLpProceeds(
+        uint256 lpShares
+    ) internal view returns (uint256) {
+        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
+        uint256 shareProceeds = MockHyperdrive(address(hyperdrive)).calculateIdleShareReserves(poolInfo.sharePrice).mulDivDown(
+        lpShares,
+        hyperdrive.totalSupply(AssetId._LP_ASSET_ID)
+        );
+        return shareProceeds.mulDown(poolInfo.sharePrice);
+    }
+
     /// Event Utils ///
 
     event Deployed(
