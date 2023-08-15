@@ -47,7 +47,7 @@ The current suggested way of integrating your yield source with hyperdrive is th
 To install the Python package `hyperdrive-math-py`, which wraps the Rust `hyperdrive_math::State` struct, you need to:
 - setup a [Python venv](https://docs.python.org/3/library/venv.html) that is running at least `Python 3.7`
 - from inside the environment, run `pip install crates/hyperdrive-math-py`
-- test the installation by running `pytest python/test`
+- test the installation by running `pip install --upgrade pytest && pytest python/test`
 
 # Disclaimer
 

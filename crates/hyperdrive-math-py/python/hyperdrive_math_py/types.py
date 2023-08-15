@@ -3,7 +3,7 @@ from typing import NamedTuple
 
 
 class Fees(NamedTuple):
-    """Protocal Fees"""
+    """Protocal Fees."""
 
     curve: str
     flat: str
@@ -11,7 +11,7 @@ class Fees(NamedTuple):
 
 
 class PoolConfig(NamedTuple):
-    """Static configuration for the hyperdrive contract.  Set at deploy time."""
+    """Static configuration for the hyperdrive contract. Set at deploy time."""
 
     base_token: str
     initial_share_price: str
@@ -27,7 +27,7 @@ class PoolConfig(NamedTuple):
 
 
 class PoolInfo(NamedTuple):
-    """Current state information of the hyperdrive contract.  Includes things like reserve levels and share prices."""
+    """Current state information of the hyperdrive contract. Includes things like reserve levels and share prices."""
 
     share_reserves: str
     bond_reserves: str
