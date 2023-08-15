@@ -30,3 +30,37 @@ class HyperdriveState:
         str
             The spot price as a string representation of a solidity uint256 value.
         """
+    def get_max_long(self, budget: str, maybe_max_iterations: int) -> str:
+        """Gets the max amount of bonds that can be purchased for the given budget.
+
+        Parameters
+        ----------
+        budget : str
+            The account budget in base for making a long.
+        maybe_max_iterations : int
+            The number of iterations to use for the Newtonian method.
+
+        Returns
+        -------
+        str
+            The maximum long as a string representation of a solidity uint256 value.
+        """
+    def get_max_short(
+        self, budget: str, open_share_price: str, maybe_max_iterations: int
+    ) -> str:
+        """Gets the max amount of bonds that can be shorted for the given budget.
+        Parameters
+
+        ----------
+        budget : str
+            The account budget in base for making a short.
+        open_share_price : str
+            The share price of underlying vault.
+        maybe_max_iterations : int
+            The number of iterations to use for the Newtonian method.
+
+        Returns
+        -------
+        str
+            The maximum short as a string representation of a solidity uint256 value.
+        """
