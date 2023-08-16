@@ -3,8 +3,8 @@ use std::{convert::TryFrom, sync::Arc, time::Duration};
 use ethers::{
     core::utils::Anvil,
     middleware::SignerMiddleware,
-    providers::{Http, Provider},
-    signers::{LocalWallet, Signer},
+    providers::{Http, Middleware, Provider},
+    signers::{coins_bip39::English, LocalWallet, MnemonicBuilder, Signer},
     types::{Address, H256, U256},
     utils::AnvilInstance,
 };
@@ -21,33 +21,75 @@ use hyperdrive_wrappers::wrappers::{
     mock4626::Mock4626,
 };
 
+use crate::dev_chain::MNEMONIC;
+
 /// A local anvil instance with the Hyperdrive contracts deployed.
 pub struct TestChain {
     pub provider: Provider<Http>,
     pub addresses: Addresses,
     pub accounts: Vec<LocalWallet>,
-    anvil: AnvilInstance,
+    _maybe_anvil: Option<AnvilInstance>,
 }
 
 impl TestChain {
-    pub async fn new() -> Result<Self> {
-        // Deploy an anvil instance and set up a wallet and provider.
-        let anvil = Anvil::new().spawn();
-        let provider =
-            Provider::<Http>::try_from(anvil.endpoint())?.interval(Duration::from_millis(10u64));
-        let wallets: Vec<LocalWallet> = anvil.keys().iter().map(|k| k.clone().into()).collect();
-        let accounts = wallets
-            .iter()
-            .map(|w| {
-                Arc::new(SignerMiddleware::new(
-                    provider.clone(),
-                    w.clone().with_chain_id(anvil.chain_id()),
-                ))
-            })
-            .collect::<Vec<_>>();
-        let client = accounts[0].clone();
+    /// Deploys the Hyperdrive contracts to an anvil nodes and sets up some
+    /// funded accounts.
+    pub async fn new(maybe_ethereum_url: Option<&str>, num_accounts: usize) -> Result<Self> {
+        if num_accounts == 0 {
+            panic!("cannot create a test chain with zero accounts");
+        }
 
+        // If an ethereum url is provided, use it. Otherwise, we spawn an
+        // in-process anvil node.
+        let (provider, _maybe_anvil) = if let Some(ethereum_url) = maybe_ethereum_url {
+            (Provider::<Http>::try_from(ethereum_url)?, None)
+        } else {
+            let anvil = Anvil::new().spawn();
+            (
+                Provider::<Http>::try_from(anvil.endpoint())?
+                    .interval(Duration::from_millis(10u64)),
+                Some(anvil),
+            )
+        };
+
+        // Create a set of accounts using the default mnemonic and fund them
+        // with ether.
+        let mut accounts = vec![];
+        let mut builder = MnemonicBuilder::<English>::default().phrase(MNEMONIC);
+        for i in 0..num_accounts {
+            // Generate the account at the new index using the mnemonic.
+            builder = builder.index(i as u32).unwrap();
+            let account = builder.build()?;
+
+            // Fund the account with some ether and add it to the list of accounts..
+            provider
+                .request("anvil_setBalance", (account.address(), uint256!(1_000e18)))
+                .await?;
+            accounts.push(account);
+        }
+
+        // Deploy the Hyperdrive contracts.
+        let addresses = Self::deploy(provider.clone(), accounts[0].clone()).await?;
+
+        Ok(Self {
+            addresses,
+            accounts,
+            provider,
+            _maybe_anvil,
+        })
+    }
+
+    pub async fn chain_id(&self) -> Result<u64> {
+        let chain_id = self.provider.get_chainid().await?;
+        Ok(chain_id.low_u64())
+    }
+
+    async fn deploy(provider: Provider<Http>, signer: LocalWallet) -> Result<Addresses> {
         // Deploy the base token and vault.
+        let client = Arc::new(SignerMiddleware::new(
+            provider.clone(),
+            signer.with_chain_id(provider.get_chainid().await?.low_u64()),
+        ));
         let base = ERC20Mintable::deploy(client.clone(), ())?.send().await?;
         let pool = Mock4626::deploy(
             client.clone(),
@@ -103,19 +145,10 @@ impl TestChain {
         .send()
         .await?;
 
-        Ok(Self {
-            addresses: Addresses {
-                hyperdrive: erc4626_hyperdrive.address(),
-                base: base.address(),
-            },
-            accounts: anvil.keys().iter().map(|k| k.clone().into()).collect(),
-            provider,
-            anvil,
+        Ok(Addresses {
+            base: base.address(),
+            hyperdrive: erc4626_hyperdrive.address(),
         })
-    }
-
-    pub fn chain_id(&self) -> u64 {
-        self.anvil.chain_id()
     }
 }
 
@@ -129,8 +162,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_deploy() -> Result<()> {
-        let chain = TestChain::new().await?;
-        let signer = chain.accounts[0].clone().with_chain_id(chain.chain_id());
+        let chain = TestChain::new(None, 1).await?;
+        let signer = chain.accounts[0]
+            .clone()
+            .with_chain_id(chain.chain_id().await?);
         let client = Arc::new(SignerMiddleware::new(chain.provider.clone(), signer));
         let base = ERC20Mintable::new(chain.addresses.base, client.clone());
         let hyperdrive = IHyperdrive::new(chain.addresses.hyperdrive, client.clone());

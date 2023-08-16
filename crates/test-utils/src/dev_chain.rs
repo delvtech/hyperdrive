@@ -9,7 +9,8 @@ use fixed_point_macros::uint256;
 use hyperdrive_addresses::Addresses;
 use tokio::time::sleep;
 
-pub const MNEMONIC: &str = "test test test test test test test test test test test test";
+pub const MNEMONIC: &str =
+    "shed present manage school gym spatial sure put tongue dragon left bless share chair element";
 
 const RETRIES: usize = 5;
 const RETRY_TIME: Duration = Duration::from_millis(500);

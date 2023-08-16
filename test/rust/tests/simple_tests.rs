@@ -11,24 +11,26 @@ async fn test_simple() -> Result<()> {
     tracing_subscriber::fmt::init();
 
     // Set up the chain and agents.
-    let chain = TestChain::new().await?;
+    let chain = TestChain::new(None, 2).await?;
     let mut alice = Agent::new(
         chain.accounts[0].clone(),
         chain.provider.clone(),
         chain.addresses.clone(),
+        None,
     )
     .await?;
     let mut bob = Agent::new(
         chain.accounts[1].clone(),
         chain.provider.clone(),
         chain.addresses,
+        None,
     )
     .await?;
 
     // Fund Alice and Bob's accounts.
     let contribution = fixed!(500_000_000e18);
     alice.fund(contribution).await?;
-    bob.fund(fixed!(100_000_000_000e18)).await?;
+    bob.fund(fixed!(500_000_000e18)).await?;
 
     // Initialize the pool.
     let rate = fixed!(0.05e18);

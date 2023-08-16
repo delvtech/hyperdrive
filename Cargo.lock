@@ -3132,6 +3132,7 @@ dependencies = [
  "hyperdrive-math",
  "hyperdrive-wrappers",
  "rand",
+ "rand_chacha",
  "reqwest",
  "tokio",
  "tracing",

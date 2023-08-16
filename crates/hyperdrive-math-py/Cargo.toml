@@ -14,9 +14,9 @@ eyre = "0.6.8"
 rand = "0.8.5"
 tokio = { version = "1", features = ["full"] }
 
-hyperdrive-math = { path = "../hyperdrive-math" }
 fixed-point = { path = "../fixed-point" }
 fixed-point-macros = { path = "../fixed-point-macros" }
+hyperdrive-math = { path = "../hyperdrive-math" }
 hyperdrive-wrappers = { path = "../hyperdrive-wrappers" }
 
 [dependencies.pyo3]

@@ -16,7 +16,8 @@ use hyperdrive_wrappers::wrappers::{
     erc20_mintable::ERC20Mintable,
     i_hyperdrive::{Checkpoint, IHyperdrive, IHyperdriveEvents},
 };
-use rand::{rngs::ThreadRng, thread_rng, Rng};
+use rand::{Rng, SeedableRng};
+use rand_chacha::ChaCha8Rng;
 use tracing::{info, instrument};
 
 #[derive(Copy, Clone, Debug)]
@@ -40,19 +41,30 @@ struct Wallet {
     shorts: BTreeMap<FixedPoint, FixedPoint>,
 }
 
-pub struct Agent<M> {
+/// An agent that interacts with the Hyperdrive protocol and records its
+/// balances of longs, shorts, base, and lp shares (both active and withdrawal
+/// shares).
+pub struct Agent<M, R>
+where
+    R: Rng + SeedableRng,
+{
     address: Address,
     provider: Provider<Http>,
     hyperdrive: IHyperdrive<M>,
     base: ERC20Mintable<M>,
     wallet: Wallet,
-    rng: ThreadRng,
+    rng: R,
+    seed: u64,
 }
 
-impl<M> fmt::Debug for Agent<M> {
+impl<M, R> fmt::Debug for Agent<M, R>
+where
+    R: Rng + SeedableRng,
+{
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Agent")
             .field("address", &self.address)
+            .field("seed", &self.seed)
             .field("base", &self.wallet.base)
             .field("lp_shares", &self.wallet.lp_shares)
             .field("withdrawal_shares", &self.wallet.withdrawal_shares)
@@ -62,27 +74,32 @@ impl<M> fmt::Debug for Agent<M> {
     }
 }
 
-// TODO: This has the barebones logic required for integration and fuzz tests;
-// however, we'll need the max trade calculations to be able to fuzz with sane
-// trade limits.
-impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>> {
+// TODO: This should crash gracefully and would ideally dump the replication
+// information to a file that can be read by the framework to easily debug what
+// happened.
+impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>, ChaCha8Rng> {
+    /// Setup ///
+
     pub async fn new(
         signer: LocalWallet,
         provider: Provider<Http>,
         addresses: Addresses,
+        maybe_seed: Option<u64>,
     ) -> Result<Self> {
         let chain_id = provider.get_chainid().await?;
         let client = Arc::new(SignerMiddleware::new(
             provider.clone(),
             signer.with_chain_id(chain_id.low_u32()),
         ));
+        let seed = maybe_seed.unwrap_or(17);
         Ok(Self {
             address: client.address(),
             provider,
             hyperdrive: IHyperdrive::new(addresses.hyperdrive, client.clone()),
             base: ERC20Mintable::new(addresses.base, client),
             wallet: Wallet::default(),
-            rng: thread_rng(),
+            rng: ChaCha8Rng::seed_from_u64(seed),
+            seed,
         })
     }
 
@@ -161,6 +178,10 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>> {
         maturity_time: FixedPoint,
         bond_amount: FixedPoint,
     ) -> Result<()> {
+        // TODO: It would probably be better for this part of the agent to just
+        // be a dumb wrapper around Hyperdrive. It's going to be useful to test
+        // with inputs that we'd consider invalid.
+        //
         // If the wallet has a sufficient balance of longs, update the long
         // balance. Otherwise, return an error.
         let long_balance = self.wallet.longs.entry(maturity_time).or_default();
@@ -214,8 +235,6 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>> {
 
     /// Shorts ///
 
-    // TODO: There should be reasonable limits on this. If we set a reasonable
-    // max deposit, then this would be simple.
     pub async fn open_short(&mut self, bond_amount: FixedPoint) -> Result<()> {
         // Open the short and record the trade in the wallet.
         let log = {
@@ -641,7 +660,7 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>> {
             .get_checkpoint(state.to_checkpoint(now))
             .await?;
 
-        Ok(state.get_max_short(self.wallet.base, open_share_price.into(), None))
+        Ok(state.get_max_short(self.wallet.base, open_share_price.into(), Some(7)))
     }
 
     // TODO: We'll need to implement helpers that give us the maximum trade
