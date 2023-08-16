@@ -270,8 +270,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         checkpoint.longExposure += longExposureDelta;
         _marketState.longExposure += int128(longExposureDelta);
 
-        // Longs increase the system's exposure because the system needs to set aside
-        // the fixed interest that the longs are owed at maturity.
+        // We need to check solvency because longs increase the system's exposure.
         if (_isSolvent(_sharePrice)) {
             revert IHyperdrive.BaseBufferExceedsShareReserves();
         }
