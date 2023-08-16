@@ -436,7 +436,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // we don't need to account for them in the idle calculation. Thus, we
         // can calculate the idle capital as:
         //
-        // idle = (z - z_min - (y_l / c_0) - exposure)
+        // idle = (z - z_min - (y_l / c_0))
         //
         // The LP is given their share of the idle capital in the pool. We
         // assume that the active LPs are the only LPs entitled to the pool's

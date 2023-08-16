@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-// FIXME
-import "forge-std/console.sol";
-
 import { HyperdriveStorage } from "./HyperdriveStorage.sol";
 import { IERC20 } from "./interfaces/IERC20.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
@@ -225,16 +222,11 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     function _calculateIdleShareReserves(
         uint256 _sharePrice
     ) internal view returns (uint256 idleShares) {
-        // Ensure that we only consider non-negative exposure here to prevent a scenario where
-        // shareReserves < minimumShareReserves in removeLiquidity().
-        uint256 exposure = 0;
-        // if (_marketState.exposure > 0) {
-        //     exposure = uint128(_marketState.exposure);
-        // }
-        console.log("longsOutstanding: %s", _marketState.longsOutstanding);
-        // console.log("exposure: %s", exposure);
-        uint256 usedShares = (1e18 *
-            (uint256(_marketState.longsOutstanding) + exposure)) / _sharePrice;
+        uint256 usedShares;
+        uint256 longsOutstanding = _marketState.longsOutstanding;
+        if (longsOutstanding > 0) {
+            usedShares = longsOutstanding.divDown(_sharePrice);
+        }
         if (_marketState.shareReserves > usedShares + _minimumShareReserves) {
             idleShares =
                 _marketState.shareReserves -

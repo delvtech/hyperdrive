@@ -8,6 +8,7 @@ import { Lib } from "../../utils/Lib.sol";
 
 contract LPFairnessTest is HyperdriveTest {
     using FixedPointMath for uint256;
+    using HyperdriveUtils for *;
     using Lib for *;
 
     function setUp() public override {
@@ -460,7 +461,7 @@ contract LPFairnessTest is HyperdriveTest {
 
         // Bob removes liquidity
         (uint256 withdrawalProceeds, ) = removeLiquidity(bob, bobLpShares);
-        //assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e9);
+        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e9);
 
         // calculate the portion of the pool's base reserves owned by alice.
         baseReserves = (poolValue2 - bondsPurchased).mulDown(aliceLpProportion);
@@ -471,11 +472,11 @@ contract LPFairnessTest is HyperdriveTest {
         );
 
         // calculate alice's expected withdrawal proceeds
-        //expectedWithdrawalProceeds = calculateBaseLpProceeds(aliceLpShares);
+        expectedWithdrawalProceeds = calculateBaseLpProceeds(aliceLpShares);
 
         // Alice removes liquidity
         (withdrawalProceeds, ) = removeLiquidity(alice, aliceLpShares);
-        //assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e9);
+        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e9);
     }
 
     function test_lp_fairness_short_long_lp(
@@ -514,6 +515,7 @@ contract LPFairnessTest is HyperdriveTest {
                 POSITION_DURATION / 2
             );
         }
+
         // Celine opens another long.
         (, uint256 bondsPurchased) = openLong(celine, tradeSizeParam);
 
@@ -534,6 +536,7 @@ contract LPFairnessTest is HyperdriveTest {
 
         // 1/2 term passes.
         advanceTime(POSITION_DURATION / 2, variableRateParam);
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
 
         // Calculate the total short interest.
         (, int256 shortInterest) = HyperdriveUtils.calculateCompoundInterest(
