@@ -263,7 +263,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
         longsOutstanding_ += _bondProceeds.toUint128();
         _marketState.longsOutstanding = longsOutstanding_;
 
-        // increase the exposure by the amount the LPs must reserve to cover the long.
+        // Increase the exposure by the amount the LPs must reserve to cover the long.
+        // This is equal to the amount of fixed interest the long is owed at maturity.
         uint128 longExposureDelta = (_bondReservesDelta -
             _shareReservesDelta.mulDown(_sharePrice)).toUint128();
         checkpoint.longExposure += longExposureDelta;
