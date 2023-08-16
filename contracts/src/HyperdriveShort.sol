@@ -51,14 +51,12 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // Since the short will receive interest from the beginning of the
         // checkpoint, they will receive this backdated interest back at closing.
         uint256 sharePrice = _pricePerShare();
-        uint256 openSharePrice = _applyCheckpoint(
-            _latestCheckpoint(),
-            sharePrice
-        );
+        uint256 latestCheckpoint = _latestCheckpoint();
+        uint256 openSharePrice = _applyCheckpoint(latestCheckpoint, sharePrice);
 
         // Calculate the pool and user deltas using the trading function. We
         // backdate the bonds sold to the beginning of the checkpoint.
-        maturityTime = _latestCheckpoint() + _positionDuration;
+        maturityTime = latestCheckpoint + _positionDuration;
         uint256 timeRemaining = _calculateTimeRemaining(maturityTime);
         uint256 shareReservesDelta;
         {
@@ -93,10 +91,10 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // Apply the state updates caused by opening the short.
         _applyOpenShort(
             _bondAmount,
+            traderDeposit,
             shareReservesDelta,
             sharePrice,
             openSharePrice,
-            timeRemaining,
             maturityTime
         );
 
@@ -240,17 +238,17 @@ abstract contract HyperdriveShort is HyperdriveLP {
     /// @dev Applies an open short to the state. This includes updating the
     ///      reserves and maintaining the reserve invariants.
     /// @param _bondAmount The amount of bonds shorted.
+    /// @param _traderDeposit The amount of base tokens deposited by the trader.
     /// @param _shareReservesDelta The amount of shares paid to the curve.
     /// @param _sharePrice The share price.
     /// @param _openSharePrice The current checkpoint's share price.
     /// @param _maturityTime The maturity time of the long.
-    /// @param _timeRemaining The time remaining until maturity.
     function _applyOpenShort(
         uint256 _bondAmount,
+        uint256 _traderDeposit,
         uint256 _shareReservesDelta,
         uint256 _sharePrice,
         uint256 _openSharePrice,
-        uint256 _timeRemaining,
         uint256 _maturityTime
     ) internal {
         // Update the average maturity time of long positions.
@@ -266,15 +264,12 @@ abstract contract HyperdriveShort is HyperdriveLP {
             .toUint128();
 
         // Update the base volume of short positions.
-        uint128 baseVolume = HyperdriveMath
-            .calculateBaseVolume(
-                _shareReservesDelta.mulDown(_openSharePrice),
-                _bondAmount,
-                _timeRemaining
-            )
+        uint128 baseVolume = _shareReservesDelta
+            .mulDown(_openSharePrice)
             .toUint128();
         _marketState.shortBaseVolume += baseVolume;
-        _checkpoints[_latestCheckpoint()].shortBaseVolume += baseVolume;
+        uint256 checkpointTime = _latestCheckpoint();
+        _checkpoints[checkpointTime].shortBaseVolume += baseVolume;
 
         // Apply the trading deltas to the reserves and increase the bond buffer
         // by the amount of bonds that were shorted. We don't need to add the
@@ -286,15 +281,23 @@ abstract contract HyperdriveShort is HyperdriveLP {
         _marketState.bondReserves += _bondAmount.toUint128();
         _marketState.shortsOutstanding += _bondAmount.toUint128();
 
-        // Since the share reserves are reduced, we need to verify that the base
-        // reserves are greater than or equal to the amount of longs outstanding.
-        if (
-            shareReserves_ <
-            uint256(_marketState.longsOutstanding).divDown(_sharePrice) +
-                _minimumShareReserves
-        ) {
+        // Opening a short decreases the system's exposure because the short's margin can
+        // be used to offset some of the long exposure. Despite this, opening a short decreases
+        // the share reserves, which limits the amount of capital available to back non-netted long
+        // exposure. Since both quantities decrease, we need to check that the system is still
+        // solvent.
+        if (_isSolvent(_sharePrice)) {
             revert IHyperdrive.BaseBufferExceedsShareReserves();
         }
+
+        // Update the checkpoint's short deposits and decrease the long exposure.
+        // The exposure is decreasing because the short deposit is forfeit by shorts
+        // if they hold until maturity, so we can use this deposit to offset the LP's
+        // exposure to longs.
+        // NOTE: Refer to this issue for details on if this should be moved
+        //       https://github.com/delvtech/hyperdrive/issues/558
+        _checkpoints[checkpointTime].shortAssets += _traderDeposit.toUint128();
+        _marketState.longExposure -= int128(_traderDeposit.toUint128());
     }
 
     /// @dev Applies the trading deltas from a closed short to the reserves and
@@ -326,32 +329,32 @@ abstract contract HyperdriveShort is HyperdriveLP {
             )
             .toUint128();
 
+        uint256 checkpointTime = _maturityTime - _positionDuration;
+        IHyperdrive.Checkpoint storage checkpoint = _checkpoints[
+            checkpointTime
+        ];
+
         // Update the base volume aggregates.
         {
             // Get the total supply of shorts in the checkpoint of the shorts
             // being closed. If the shorts are closed before maturity, we add the
             // amount of shorts being closed since the total supply is decreased
             // when burning the short tokens.
-            uint256 checkpointAmount = _totalSupply[
+            uint256 checkpointShorts = _totalSupply[
                 AssetId.encodeAssetId(
                     AssetId.AssetIdPrefix.Short,
                     _maturityTime
                 )
             ];
             if (block.timestamp < _maturityTime) {
-                checkpointAmount += _bondAmount;
+                checkpointShorts += _bondAmount;
             }
 
             // Remove a proportional amount of the checkpoints base volume from
             // the aggregates.
-            uint256 checkpointTime = _maturityTime - _positionDuration;
-            uint128 checkpointShortBaseVolume = _checkpoints[checkpointTime]
-                .shortBaseVolume;
-            IHyperdrive.Checkpoint storage checkpoint = _checkpoints[
-                checkpointTime
-            ];
+            uint128 checkpointShortBaseVolume = checkpoint.shortBaseVolume;
             uint128 proportionalBaseVolume = uint256(checkpointShortBaseVolume)
-                .mulDown(_bondAmount.divDown(checkpointAmount))
+                .mulDown(_bondAmount.divDown(checkpointShorts))
                 .toUint128();
             _marketState.shortBaseVolume -= proportionalBaseVolume;
             checkpoint.shortBaseVolume =
@@ -373,6 +376,29 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // receive their principal and some fixed interest along with any
         // trading profits that have accrued.
         _updateLiquidity(int256(_sharePayment - _shareReservesDelta));
+
+        // Calculate the shortAssetsDelta
+        {
+            uint128 shortAssetsDelta = HyperdriveMath
+                .calculateClosePositionExposure(
+                    checkpoint.shortAssets,
+                    _shareReservesDelta.mulDown(_sharePrice),
+                    _bondReservesDelta,
+                    _sharePayment.mulDown(_sharePrice),
+                    _totalSupply[
+                        AssetId.encodeAssetId(
+                            AssetId.AssetIdPrefix.Short,
+                            _maturityTime
+                        )
+                    ]
+                );
+
+            // Closing a short reduces the assets (trader deposits) not tracked in the shareReserves
+            checkpoint.shortAssets -= shortAssetsDelta;
+
+            // A reduction in assets increases the long exposure
+            _marketState.longExposure += int128(shortAssetsDelta);
+        }
 
         // If there are withdrawal shares outstanding, we pay out the maximum
         // amount of withdrawal shares. The proceeds owed to LPs when a long is

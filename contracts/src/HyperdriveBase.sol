@@ -217,6 +217,35 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
 
     /// Helpers ///
 
+    /// @dev Calculates the number of share reserves that are not reserved by open positions
+    /// @param _sharePrice The current share price.
+    function _calculateIdleShareReserves(
+        uint256 _sharePrice
+    ) internal view returns (uint256 idleShares) {
+        uint256 usedShares;
+        uint256 longsOutstanding = _marketState.longsOutstanding;
+        if (longsOutstanding > 0) {
+            usedShares = longsOutstanding.divDown(_sharePrice);
+        }
+        if (_marketState.shareReserves > usedShares + _minimumShareReserves) {
+            idleShares =
+                _marketState.shareReserves -
+                usedShares -
+                _minimumShareReserves;
+        }
+        return idleShares;
+    }
+
+    /// @dev Check solvency by verifying that the share reserves are greater than the exposure plus the minimum share reserves.
+    /// @param _sharePrice The current share price.
+    /// @return True if the share reserves are greater than the exposure plus the minimum share reserves.
+    function _isSolvent(uint256 _sharePrice) internal view returns (bool) {
+        return
+            int256((uint256(_marketState.shareReserves).mulDown(_sharePrice))) -
+                _marketState.longExposure <
+            int256(_minimumShareReserves.mulDown(_sharePrice));
+    }
+
     /// @dev Calculates the fees that go to the LPs and governance.
     /// @param _amountIn Amount in shares.
     /// @param _spotPrice The price without slippage of bonds in terms of base (base/bonds).

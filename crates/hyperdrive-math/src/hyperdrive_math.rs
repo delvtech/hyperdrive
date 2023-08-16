@@ -66,6 +66,7 @@ impl Distribution<State> for Standard {
                         ..=fixed!(1_000_000_000e18),
                 )
                 .into(),
+            long_exposure: fixed!(0).into(),
             share_price: rng.gen_range(fixed!(0.5e18)..=fixed!(2.5e18)).into(),
             longs_outstanding: rng.gen_range(fixed!(0)..=fixed!(100_000e18)).into(),
             shorts_outstanding: rng.gen_range(fixed!(0)..=fixed!(100_000e18)).into(),

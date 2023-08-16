@@ -9,11 +9,14 @@ import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol";
+import { MockHyperdrive, IMockHyperdrive } from "../../mocks/MockHyperdrive.sol";
+import { SafeCast } from "contracts/src/libraries/SafeCast.sol";
 import { Lib } from "../../utils/Lib.sol";
 
 contract OpenLongTest is HyperdriveTest {
     using FixedPointMath for uint256;
     using HyperdriveUtils for IHyperdrive;
+    using SafeCast for uint256;
     using Lib for *;
 
     function setUp() public override {
@@ -180,21 +183,20 @@ contract OpenLongTest is HyperdriveTest {
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
 
-        // Open up a large short to drain the buffer reserves.
-        uint256 bondAmount = hyperdrive.calculateMaxShort();
-        openShort(bob, bondAmount);
-
-        // Initialize a large long to eat through the buffer of capital
-        uint256 overlyLargeLonge = 976625406180945208462181452;
+        // Initialize a long and set large exposure to eat through capital
+        uint256 longAmount = 1e18;
+        MockHyperdrive(address(hyperdrive)).setLongExposure(
+            int128(contribution.toUint128())
+        );
 
         // Open the long.
         vm.stopPrank();
         vm.startPrank(bob);
-        baseToken.mint(overlyLargeLonge);
-        baseToken.approve(address(hyperdrive), overlyLargeLonge);
+        baseToken.mint(longAmount);
+        baseToken.approve(address(hyperdrive), longAmount);
 
         vm.expectRevert(IHyperdrive.BaseBufferExceedsShareReserves.selector);
-        hyperdrive.openLong(overlyLargeLonge, 0, bob, true);
+        hyperdrive.openLong(longAmount, 0, bob, true);
     }
 
     function testAvoidsDustAttack(uint256 contribution, uint256 apr) public {

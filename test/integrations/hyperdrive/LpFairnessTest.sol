@@ -8,6 +8,7 @@ import { Lib } from "../../utils/Lib.sol";
 
 contract LPFairnessTest is HyperdriveTest {
     using FixedPointMath for uint256;
+    using HyperdriveUtils for *;
     using Lib for *;
 
     function setUp() public override {
@@ -449,8 +450,9 @@ contract LPFairnessTest is HyperdriveTest {
         );
 
         // calculate the expected withdrawal proceeds
-        uint256 expectedWithdrawalProceeds = baseReserves -
-            bondValueWithInterest;
+        uint256 expectedWithdrawalProceeds = calculateBaseLpProceeds(
+            bobLpShares
+        );
 
         // calculate alice's proportion of LP shares
         uint256 aliceLpProportion = aliceLpShares.divDown(
@@ -470,7 +472,7 @@ contract LPFairnessTest is HyperdriveTest {
         );
 
         // calculate alice's expected withdrawal proceeds
-        expectedWithdrawalProceeds = baseReserves - bondValueWithInterest;
+        expectedWithdrawalProceeds = calculateBaseLpProceeds(aliceLpShares);
 
         // Alice removes liquidity
         (withdrawalProceeds, ) = removeLiquidity(alice, aliceLpShares);
@@ -513,6 +515,7 @@ contract LPFairnessTest is HyperdriveTest {
                 POSITION_DURATION / 2
             );
         }
+
         // Celine opens another long.
         (, uint256 bondsPurchased) = openLong(celine, tradeSizeParam);
 
@@ -533,6 +536,7 @@ contract LPFairnessTest is HyperdriveTest {
 
         // 1/2 term passes.
         advanceTime(POSITION_DURATION / 2, variableRateParam);
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
 
         // Calculate the total short interest.
         (, int256 shortInterest) = HyperdriveUtils.calculateCompoundInterest(
@@ -575,10 +579,9 @@ contract LPFairnessTest is HyperdriveTest {
         );
 
         // calculate the expected withdrawal proceeds
-        uint256 expectedWithdrawalProceeds = contributionWithInterest +
-            fixedInterestEarned -
-            variableInterestOwed -
-            fixedInterestOwed;
+        uint256 expectedWithdrawalProceeds = calculateBaseLpProceeds(
+            bobLpShares
+        );
 
         // calculate alice's proportion of LP shares
         uint256 aliceLpProportion = aliceLpShares.divDown(
@@ -606,11 +609,7 @@ contract LPFairnessTest is HyperdriveTest {
         fixedInterestOwed = totalFixedInterestOwed.mulDown(aliceLpProportion);
 
         // calculate the expected withdrawal proceeds
-        expectedWithdrawalProceeds =
-            contributionWithInterest +
-            fixedInterestEarned -
-            variableInterestOwed -
-            fixedInterestOwed;
+        expectedWithdrawalProceeds = calculateBaseLpProceeds(aliceLpShares);
 
         // Alice removes liquidity
         (withdrawalProceeds, ) = removeLiquidity(alice, aliceLpShares);

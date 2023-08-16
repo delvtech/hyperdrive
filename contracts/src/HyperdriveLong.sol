@@ -263,14 +263,15 @@ abstract contract HyperdriveLong is HyperdriveLP {
         longsOutstanding_ += _bondProceeds.toUint128();
         _marketState.longsOutstanding = longsOutstanding_;
 
-        // Since the base buffer may have increased relative to the base
-        // reserves and the bond reserves decreased, we must ensure that the
-        // base reserves are greater than the longsOutstanding.
-        if (
-            _marketState.shareReserves <
-            uint256(longsOutstanding_).divDown(_sharePrice) +
-                _minimumShareReserves
-        ) {
+        // Increase the exposure by the amount the LPs must reserve to cover the long.
+        // This is equal to the amount of fixed interest the long is owed at maturity.
+        uint128 longExposureDelta = (_bondReservesDelta -
+            _shareReservesDelta.mulDown(_sharePrice)).toUint128();
+        checkpoint.longExposure += longExposureDelta;
+        _marketState.longExposure += int128(longExposureDelta);
+
+        // We need to check solvency because longs increase the system's exposure.
+        if (_isSolvent(_sharePrice)) {
             revert IHyperdrive.BaseBufferExceedsShareReserves();
         }
     }
@@ -292,9 +293,9 @@ abstract contract HyperdriveLong is HyperdriveLP {
         uint256 _sharePrice
     ) internal {
         uint128 longsOutstanding_ = _marketState.longsOutstanding;
-        uint128 longSharePrice_ = _checkpoints[
-            _maturityTime - _positionDuration
-        ].longSharePrice;
+        uint256 checkpointTime = _maturityTime - _positionDuration;
+        uint128 longSharePrice_ = _checkpoints[checkpointTime].longSharePrice;
+
         // Update the long average maturity time.
         _marketState.longAverageMaturityTime = uint256(
             _marketState.longAverageMaturityTime
@@ -330,6 +331,29 @@ abstract contract HyperdriveLong is HyperdriveLP {
 
         // Remove the flat part of the trade from the pool's liquidity.
         _updateLiquidity(-int256(_shareProceeds - _shareReservesDelta));
+
+        // Calculate the longExposureDelta
+        {
+            uint128 longExposureDelta = HyperdriveMath
+                .calculateClosePositionExposure(
+                    _checkpoints[checkpointTime].longExposure,
+                    _shareReservesDelta.mulDown(_sharePrice),
+                    _bondReservesDelta,
+                    _shareProceeds.mulDown(_sharePrice),
+                    _totalSupply[
+                        AssetId.encodeAssetId(
+                            AssetId.AssetIdPrefix.Short,
+                            _maturityTime
+                        )
+                    ]
+                );
+
+            // Closing a long reduces the long exposure held in the shareReserves.
+            _checkpoints[checkpointTime].longExposure -= longExposureDelta;
+
+            // Reducing the long exposure also reduces the global long exposure.
+            _marketState.longExposure -= int128(longExposureDelta);
+        }
 
         // If there are withdrawal shares outstanding, we pay out the maximum
         // amount of withdrawal shares. The proceeds owed to LPs when a long is

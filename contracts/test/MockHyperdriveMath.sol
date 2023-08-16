@@ -195,17 +195,4 @@ contract MockHyperdriveMath {
         );
         return result;
     }
-
-    function calculateBaseVolume(
-        uint256 _baseAmount,
-        uint256 _bondAmount,
-        uint256 _timeRemaining
-    ) external pure returns (uint256) {
-        uint256 result = HyperdriveMath.calculateBaseVolume(
-            _baseAmount,
-            _bondAmount,
-            _timeRemaining
-        );
-        return result;
-    }
 }

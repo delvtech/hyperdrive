@@ -687,6 +687,17 @@ contract HyperdriveTest is BaseTest {
         vm.warp(block.timestamp + time);
     }
 
+    function advanceTimeWithCheckpoints(
+        uint256 time,
+        int256 apr
+    ) internal virtual {
+        uint256 startTimeElapsed = block.timestamp;
+        while (block.timestamp - startTimeElapsed < time) {
+            advanceTime(CHECKPOINT_DURATION, apr);
+            hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+        }
+    }
+
     function pause(bool paused) internal {
         vm.startPrank(pauser);
         hyperdrive.pause(paused);
@@ -746,6 +757,16 @@ contract HyperdriveTest is BaseTest {
         } else {
             return 0;
         }
+    }
+
+    function calculateBaseLpProceeds(
+        uint256 lpShares
+    ) internal view returns (uint256) {
+        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
+        uint256 shareProceeds = MockHyperdrive(address(hyperdrive))
+            .calculateIdleShareReserves(poolInfo.sharePrice)
+            .mulDivDown(lpShares, hyperdrive.totalSupply(AssetId._LP_ASSET_ID));
+        return shareProceeds.mulDown(poolInfo.sharePrice);
     }
 
     /// Event Utils ///

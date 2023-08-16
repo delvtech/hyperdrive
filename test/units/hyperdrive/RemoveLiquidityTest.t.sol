@@ -7,6 +7,7 @@ import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
+import { MockHyperdrive } from "../../mocks/MockHyperdrive.sol";
 import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
 import { Lib } from "../../utils/Lib.sol";
 
@@ -187,27 +188,30 @@ contract RemoveLiquidityTest is HyperdriveTest {
         uint256 tolerance
     ) internal {
         // The LPs provided margins for all of the open trades. We can calculate
-        // this margin as the bond amount minus the base that trader's paid for
-        // all of the bonds. This margin is split proportionally amount the
-        // LPs (including the zero address).
+        // this margin starting with the idle calculation:
+        // idle = z * c - l_o - z_min
+        //
+        // when a long is opened idle changes by:
+        // idle = (z + dz) * c - (l_o + dy) - z_min
+        // delta idle = dz * c - dy
+        // new idle = old idle + delta idle (since dy > dz*c idle goes down)
+        //
+        // When a short is opened the share reserves decrease and so does the exposure:
+        // idle = (z*c - (dy - dz*c)) - l_o - z_min
+        // delta idle = dy - dz *c =  - dz * c + dy
+        // new idle = old idle + delta idle (since dy > dz*c idle goes up)
         uint256 margin = (testCase.longAmount - testCase.longBasePaid) +
             (testCase.shortAmount - testCase.shortBasePaid);
-        uint256 initializerMargin = margin.mulDivDown(
-            testCase.initialLpShares,
-            testCase.initialLpShares +
-                hyperdrive.getPoolConfig().minimumShareReserves
-        );
-        uint256 remainingMargin = margin.mulDivDown(
+        uint256 remainingMargin = uint256(margin).mulDivDown(
             hyperdrive.getPoolConfig().minimumShareReserves,
             testCase.initialLpShares +
                 hyperdrive.getPoolConfig().minimumShareReserves
         );
-
         // Read from the state before removing liquidity.
         uint256 fixedRateBefore = hyperdrive.calculateAPRFromReserves();
         uint256 lpTotalSupplyBefore = lpTotalSupply();
         uint256 startingPresentValue = hyperdrive.presentValue();
-        uint256 expectedBaseProceeds = calculateBaseProceeds(
+        uint256 expectedBaseProceeds = calculateBaseLpProceeds(
             testCase.initialLpShares
         );
 
@@ -220,12 +224,6 @@ contract RemoveLiquidityTest is HyperdriveTest {
             testCase.initialLpBaseProceeds,
             testCase.initialLpWithdrawalShares
         ) = removeLiquidity(testCase.initializer, testCase.initialLpShares);
-        uint256 expectedWithdrawalShares = calculateWithdrawalShares(
-            testCase.initialLpShares,
-            startingPresentValue,
-            HyperdriveUtils.presentValue(hyperdrive),
-            lpTotalSupplyBefore
-        );
         assertEq(testCase.initialLpBaseProceeds, expectedBaseProceeds);
         (uint256 contributionPlusInterest, ) = HyperdriveUtils
             .calculateCompoundInterest(
@@ -233,49 +231,59 @@ contract RemoveLiquidityTest is HyperdriveTest {
                 testCase.variableRate,
                 testCase.timeElapsed
             );
-        assertApproxEqAbs(
-            expectedBaseProceeds,
-            contributionPlusInterest - initializerMargin,
-            tolerance
-        );
-        assertEq(baseToken.balanceOf(alice), testCase.initialLpBaseProceeds);
-        assertApproxEqAbs(
-            testCase.initialLpBaseProceeds,
-            expectedBaseProceeds,
-            3e7
-        );
-        assertApproxEqAbs(
-            testCase.initialLpWithdrawalShares,
-            expectedWithdrawalShares,
-            1
-        );
+        {
+            uint256 initializerMargin = uint256(margin).mulDivDown(
+                testCase.initialLpShares,
+                testCase.initialLpShares +
+                    hyperdrive.getPoolConfig().minimumShareReserves
+            );
+            assertApproxEqAbs(
+                expectedBaseProceeds,
+                contributionPlusInterest - initializerMargin,
+                tolerance
+            );
+            assertEq(
+                baseToken.balanceOf(alice),
+                testCase.initialLpBaseProceeds
+            );
+            uint256 expectedWithdrawalShares = calculateWithdrawalShares(
+                testCase.initialLpShares,
+                startingPresentValue,
+                HyperdriveUtils.presentValue(hyperdrive),
+                lpTotalSupplyBefore
+            );
+            assertApproxEqAbs(
+                testCase.initialLpWithdrawalShares,
+                expectedWithdrawalShares,
+                1
+            );
 
-        // Ensure that the correct event was emitted.
-        verifyRemoveLiquidityEvent(
-            testCase.initialLpShares,
-            testCase.initialLpBaseProceeds,
-            testCase.initialLpWithdrawalShares
-        );
+            // Ensure that the correct event was emitted.
+            verifyRemoveLiquidityEvent(
+                testCase.initialLpShares,
+                testCase.initialLpBaseProceeds,
+                testCase.initialLpWithdrawalShares
+            );
 
-        // Ensure that the fixed rate stayed the same after removing liquidity.
-        assertEq(hyperdrive.calculateAPRFromReserves(), fixedRateBefore);
+            // Ensure that the fixed rate stayed the same after removing liquidity.
+            assertEq(hyperdrive.calculateAPRFromReserves(), fixedRateBefore);
 
-        // Ensure that the initializer's shares were burned and that the total
-        // LP supply is just the minimum share reserves.
-        assertEq(hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice), 0);
-        assertEq(
-            hyperdrive.totalSupply(AssetId._LP_ASSET_ID),
-            hyperdrive.getPoolConfig().minimumShareReserves
-        );
+            // Ensure that the initializer's shares were burned and that the total
+            // LP supply is just the minimum share reserves.
+            assertEq(hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice), 0);
+            assertEq(
+                hyperdrive.totalSupply(AssetId._LP_ASSET_ID),
+                hyperdrive.getPoolConfig().minimumShareReserves
+            );
 
-        // Ensure that the initializer receives the right amount of withdrawal
-        // shares.
-        assertApproxEqAbs(
-            hyperdrive.balanceOf(AssetId._WITHDRAWAL_SHARE_ASSET_ID, alice),
-            expectedWithdrawalShares,
-            1
-        );
-
+            // Ensure that the initializer receives the right amount of withdrawal
+            // shares.
+            assertApproxEqAbs(
+                hyperdrive.balanceOf(AssetId._WITHDRAWAL_SHARE_ASSET_ID, alice),
+                expectedWithdrawalShares,
+                1
+            );
+        }
         // Ensure that the pool still has the correct amount of base and shares.
         // The pool should have the full bond amount reserved to pay out the
         // bonds at maturity. Additionally, the pool should have the minimum
@@ -334,22 +342,6 @@ contract RemoveLiquidityTest is HyperdriveTest {
             hyperdrive.presentValue().divDown(
                 lpTotalSupply().mulDown(hyperdrive.getPoolInfo().sharePrice)
             );
-    }
-
-    function calculateBaseProceeds(
-        uint256 _shares
-    ) internal view returns (uint256) {
-        uint256 minimumShareReserves = hyperdrive
-            .getPoolConfig()
-            .minimumShareReserves;
-        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
-        uint256 shareProceeds = (poolInfo.shareReserves -
-            minimumShareReserves -
-            poolInfo.longsOutstanding.divDown(poolInfo.sharePrice)).mulDivDown(
-                _shares,
-                hyperdrive.totalSupply(AssetId._LP_ASSET_ID)
-            );
-        return shareProceeds.mulDown(poolInfo.sharePrice);
     }
 
     function calculateWithdrawalShares(

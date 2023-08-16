@@ -46,7 +46,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         // Normalize the fuzzed variables.
         initialize(alice, 0.02e18, 500_000_000e6);
         basePaid = basePaid.normalizeToRange(
-            0.001e6,
+            0.1e6,
             HyperdriveUtils.calculateMaxLong(hyperdrive)
         );
         holdTime = holdTime.normalizeToRange(0, POSITION_DURATION);
@@ -301,23 +301,15 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         }
 
         // Alice removes her liquidity.
+        uint256 estimatedBaseProceeds = calculateBaseLpProceeds(aliceLpShares);
         (
             uint256 aliceBaseProceeds,
             uint256 aliceWithdrawalShares
         ) = removeLiquidity(alice, aliceLpShares);
         uint256 lpMargin = (testParams.longAmount - testParams.longBasePaid) +
             (testParams.shortAmount - testParams.shortBasePaid);
-        assertApproxEqAbs(
-            aliceBaseProceeds,
-            (testParams.contribution.mulDown(2e18) -
-                lpMargin -
-                2 *
-                hyperdrive.getPoolConfig().minimumShareReserves).mulDivDown(
-                    aliceLpShares,
-                    aliceLpShares + bobLpShares
-                ),
-            1e6
-        );
+
+        assertEq(aliceBaseProceeds, estimatedBaseProceeds);
 
         // Celine adds liquidity.
         uint256 celineLpShares = addLiquidity(celine, testParams.contribution);

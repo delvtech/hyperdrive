@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { FixedPointMath } from "./FixedPointMath.sol";
 import { YieldSpaceMath } from "./YieldSpaceMath.sol";
+import { SafeCast } from "./SafeCast.sol";
 
 /// @author DELV
 /// @title Hyperdrive
@@ -13,6 +14,7 @@ import { YieldSpaceMath } from "./YieldSpaceMath.sol";
 ///                    particular legal or regulatory significance.
 library HyperdriveMath {
     using FixedPointMath for uint256;
+    using SafeCast for uint256;
 
     /// @dev Calculates the spot price without slippage of bonds in terms of base.
     /// @param _shareReserves The pool's share reserves.
@@ -283,6 +285,40 @@ library HyperdriveMath {
             );
             sharePayment += shareReservesDelta;
         }
+    }
+
+    /// @dev Calculates the change in exposure after closing a position.
+    /// @param _positionExposure The checkpointed position exposure.
+    /// @param _baseReservesDelta The amount of base that the reserves will change by.
+    /// @param _bondReservesDelta The amount of bonds that the reserves will change by.
+    /// @param _baseUserDelta The amount of base that the user will receive (long) or pay (short).
+    /// @param _checkpointPositions The number of open positions (either long or short) in a checkpoint.
+    /// @return positionExposureDelta The change in exposure after closing a position.
+    function calculateClosePositionExposure(
+        uint256 _positionExposure,
+        uint256 _baseReservesDelta,
+        uint256 _bondReservesDelta,
+        uint256 _baseUserDelta,
+        uint256 _checkpointPositions
+    ) internal pure returns (uint128) {
+        uint256 flatPlusCurveDelta = _baseUserDelta -
+            _baseReservesDelta +
+            _bondReservesDelta -
+            _baseReservesDelta;
+        // if there are no open positions, or the positionExposure
+        // is less than the delta from the flat + curve calculation, then
+        // all the (short or long) positions in the checkpoint are now closed and we
+        // can set the positionExposure to 0.
+        if (
+            _checkpointPositions == 0 || _positionExposure < flatPlusCurveDelta
+        ) {
+            // This effectively sets the positionExposure to 0.
+            return _positionExposure.toUint128();
+        }
+
+        // Reduce the exposure (long) or assets (short) by the amount of matured positions (flat)
+        // and by the unmatured positions (curve)
+        return flatPlusCurveDelta.toUint128();
     }
 
     struct MaxTradeParams {
@@ -660,35 +696,5 @@ library HyperdriveMath {
                 _openSharePrice.mulUp(_sharePrice)
             );
         }
-    }
-
-    /// @dev Calculates the base volume of an open trade given the base amount,
-    ///      the bond amount, and the time remaining. Since the base amount
-    ///      takes into account backdating, we can't use this as our base
-    ///      volume. Since we linearly interpolate between the base volume
-    ///      and the bond amount as the time remaining goes from 1 to 0, the
-    ///      base volume is can be determined as follows:
-    ///
-    ///      baseAmount = t * baseVolume + (1 - t) * bondAmount
-    ///                               =>
-    ///      baseVolume = (baseAmount - (1 - t) * bondAmount) / t
-    /// @param _baseAmount The base exchanged in the open trade.
-    /// @param _bondAmount The bonds exchanged in the open trade.
-    /// @param _timeRemaining The time remaining in the position.
-    /// @return baseVolume The calculated base volume.
-    function calculateBaseVolume(
-        uint256 _baseAmount,
-        uint256 _bondAmount,
-        uint256 _timeRemaining
-    ) internal pure returns (uint256 baseVolume) {
-        // If the time remaining is 0, the position has already matured and
-        // doesn't have an impact on LP's ability to withdraw. This is a
-        // pathological case that should never arise.
-        if (_timeRemaining == 0) return 0;
-        baseVolume = (
-            _baseAmount.sub(
-                (FixedPointMath.ONE_18.sub(_timeRemaining)).mulDown(_bondAmount)
-            )
-        ).divDown(_timeRemaining);
     }
 }

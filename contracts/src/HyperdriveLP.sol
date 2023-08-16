@@ -443,12 +443,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // idle capital, so the LP's proceeds are calculated as:
         //
         // proceeds = idle * (dl / l_a)
-        shareProceeds = _marketState.shareReserves - _minimumShareReserves;
-        if (_marketState.longsOutstanding > 0) {
-            shareProceeds -= uint256(_marketState.longsOutstanding).divDown(
-                _marketState.longOpenSharePrice
-            );
-        }
+        shareProceeds = _calculateIdleShareReserves(_pricePerShare());
         shareProceeds = shareProceeds.mulDivDown(_shares, _totalActiveLpSupply);
         _updateLiquidity(-int256(shareProceeds));
         params.shareReserves = _marketState.shareReserves;

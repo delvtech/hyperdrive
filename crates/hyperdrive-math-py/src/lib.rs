@@ -1,4 +1,4 @@
-use ethers::core::types::{Address, U256};
+use ethers::core::types::{Address, I256, U256};
 use fixed_point::FixedPoint;
 use hyperdrive_wrappers::wrappers::i_hyperdrive::{Fees, PoolConfig, PoolInfo};
 use pyo3::exceptions::PyValueError;
@@ -33,6 +33,13 @@ fn extract_u256_from_attr(ob: &PyAny, attr: &str) -> PyResult<U256> {
     let value_str: String = ob.getattr(attr)?.extract()?;
     U256::from_dec_str(&value_str)
         .map_err(|e| PyErr::new::<PyValueError, _>(format!("Invalid U256 for {}: {}", attr, e)))
+}
+
+// Helper function to extract I256 values from Python object attributes
+fn extract_i256_from_attr(ob: &PyAny, attr: &str) -> PyResult<I256> {
+    let value_str: String = ob.getattr(attr)?.extract()?;
+    I256::from_dec_str(&value_str)
+        .map_err(|e| PyErr::new::<PyValueError, _>(format!("Invalid I256 for {}: {}", attr, e)))
 }
 
 // Helper function to extract Ethereum Address values from Python object attributes
@@ -115,6 +122,7 @@ impl FromPyObject<'_> for PyPoolInfo {
             extract_u256_from_attr(ob, "withdrawal_shares_ready_to_withdraw")?;
         let withdrawal_shares_proceeds = extract_u256_from_attr(ob, "withdrawal_shares_proceeds")?;
         let lp_share_price = extract_u256_from_attr(ob, "lp_share_price")?;
+        let long_exposure = extract_i256_from_attr(ob, "long_exposure")?;
 
         let pool_info = PoolInfo {
             share_reserves,
@@ -129,6 +137,7 @@ impl FromPyObject<'_> for PyPoolInfo {
             withdrawal_shares_ready_to_withdraw,
             withdrawal_shares_proceeds,
             lp_share_price,
+            long_exposure,
         };
 
         Ok(PyPoolInfo::new(pool_info))

@@ -266,9 +266,23 @@ contract MockHyperdrive is Hyperdrive {
         _updateLiquidity(_shareReservesDelta);
     }
 
+    function calculateIdleShareReserves(
+        uint256 _sharePrice
+    ) external view returns (uint256) {
+        return _calculateIdleShareReserves(_sharePrice);
+    }
+
+    function getTotalShares() external view returns (uint256) {
+        return totalShares;
+    }
+
     function setReserves(uint256 shareReserves, uint256 bondReserves) external {
         _marketState.shareReserves = uint128(shareReserves);
         _marketState.bondReserves = uint128(bondReserves);
+    }
+
+    function setLongExposure(int128 longExposure) external {
+        _marketState.longExposure = longExposure;
     }
 
     /// Overrides ///
@@ -316,7 +330,7 @@ contract MockHyperdrive is Hyperdrive {
         // and the current share price.
         if (totalShares == 0) {
             totalShares = amount.divDown(_initialSharePrice);
-            return (amount, _initialSharePrice);
+            return (totalShares, _initialSharePrice);
         } else {
             uint256 newShares = totalShares.mulDivDown(amount, assets);
             totalShares += newShares;
