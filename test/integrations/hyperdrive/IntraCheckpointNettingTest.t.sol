@@ -115,17 +115,16 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
     }
 
     // This test shows that you can open/close long/shorts with extreme positive interest
-    // until the spot price is greater than one due to interest accrual
     function test_netting_extreme_positive_interest_time_elapsed() external {
         uint256 initialSharePrice = 0.5e18;
         int256 variableInterest = 0.5e18;
         uint256 timeElapsed = 15275477; //176 days bewteen each trade
         uint256 tradeSize = 504168.031667365798150347e18;
-        uint256 numTrades = 100;
+        uint256 numTrades = 1000;
 
         // If you increase numTrades enought it will eventually fail in openLong()
         // due to minOutput > bondProceeds where minOutput = baseAmount from openLong()
-        // TODO: This seems to imply that there is an issue with our SpotPrice > 1 check
+        // TODO:  This needs to be investigated further
         open_close_long_short_different_checkpoints(
             initialSharePrice,
             variableInterest,
@@ -550,7 +549,6 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         uint256[] memory longMaturityTimes = new uint256[](numTrades);
         uint256[] memory shortMaturityTimes = new uint256[](numTrades);
         uint256[] memory bondAmounts = new uint256[](numTrades);
-        uint256 shortAmount = tradeSize;
         for (uint256 i = 0; i < numTrades; i++) {
             uint256 basePaidLong = tradeSize;
             (uint256 maturityTimeLong, uint256 bondAmount) = openLong(
@@ -560,7 +558,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             longMaturityTimes[i] = maturityTimeLong;
             bondAmounts[i] = bondAmount;
 
-            (uint256 maturityTimeShort, ) = openShort(bob, shortAmount);
+            (uint256 maturityTimeShort, ) = openShort(bob, bondAmount);
             shortMaturityTimes[i] = maturityTimeShort;
         }
 
@@ -589,7 +587,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         // close positions
         for (uint256 i = 0; i < numTrades; i++) {
             // close the short positions
-            closeShort(bob, shortMaturityTimes[i], shortAmount);
+            closeShort(bob, shortMaturityTimes[i], bondAmounts[i]);
 
             // close the long positions
             closeLong(bob, longMaturityTimes[i], bondAmounts[i]);
@@ -629,7 +627,6 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         uint256[] memory longMaturityTimes = new uint256[](numTrades);
         uint256[] memory shortMaturityTimes = new uint256[](numTrades);
         uint256[] memory bondAmounts = new uint256[](numTrades);
-        uint256 shortAmount = tradeSize;
         for (uint256 i = 0; i < numTrades; i++) {
             uint256 basePaidLong = tradeSize;
             (uint256 maturityTimeLong, uint256 bondAmount) = openLong(
@@ -642,7 +639,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             // fast forward time, create checkpoints and accrue interest
             advanceTimeWithCheckpoints(timeElapsed, variableInterest);
 
-            (uint256 maturityTimeShort, ) = openShort(bob, shortAmount);
+            (uint256 maturityTimeShort, ) = openShort(bob, bondAmount);
             shortMaturityTimes[i] = maturityTimeShort;
         }
 
@@ -667,7 +664,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
 
         // close the short positions
         for (uint256 i = 0; i < numTrades; i++) {
-            closeShort(bob, shortMaturityTimes[i], shortAmount);
+            closeShort(bob, shortMaturityTimes[i], bondAmounts[i]);
 
             // fast forward time, create checkpoints and accrue interest
             advanceTimeWithCheckpoints(1 days, variableInterest);

@@ -284,13 +284,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // Opening a short decreases the system's exposure because the short's margin can
         // be used to offset some of the long exposure. Despite this, opening a short decreases
         // the share reserves, which limits the amount of capital available to back non-netted long
-        // exposure. We can check solvency by verifying that the share reserves are greater
-        // then the exposure plus the minimum share reserves.
-        if (
-            int256((uint256(_marketState.shareReserves).mulDown(_sharePrice))) -
-                _marketState.longExposure <
-            int256(_minimumShareReserves.mulDown(_sharePrice))
-        ) {
+        // exposure.
+        if (_isSolvent(_sharePrice)) {
             revert IHyperdrive.BaseBufferExceedsShareReserves();
         }
 

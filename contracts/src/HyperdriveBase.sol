@@ -236,6 +236,18 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
         return idleShares;
     }
 
+    /// @dev Check solvency by verifying that the share reserves are greater than the exposure plus the minimum share reserves.
+    /// @param _sharePrice The current share price.
+    /// @return True if the share reserves are greater than the exposure plus the minimum share reserves.
+    function _isSolvent(
+        uint256 _sharePrice
+    ) internal view returns (bool) {
+        return
+            int256((uint256(_marketState.shareReserves).mulDown(_sharePrice))) -
+                _marketState.longExposure <
+            int256(_minimumShareReserves.mulDown(_sharePrice));
+    }
+
     /// @dev Calculates the fees that go to the LPs and governance.
     /// @param _amountIn Amount in shares.
     /// @param _spotPrice The price without slippage of bonds in terms of base (base/bonds).
