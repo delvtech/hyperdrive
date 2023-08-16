@@ -526,14 +526,11 @@ contract HyperdriveMathTest is HyperdriveTest {
             uint256 _bondReservesDelta = 100e18;
             uint256 _baseUserDelta = 200e18;
             uint256 _checkpointPositions = 0;
-
-            uint256 flatPlusCurveDelta = _baseUserDelta -
-                _baseReservesDelta +
-                _bondReservesDelta -
-                _baseReservesDelta;
             uint128 delta = HyperdriveMath.calculateClosePositionExposure(
                 _positionExposure,
-                flatPlusCurveDelta,
+                _baseReservesDelta,
+                _bondReservesDelta,
+                _baseUserDelta,
                 _checkpointPositions
             );
 
@@ -548,14 +545,11 @@ contract HyperdriveMathTest is HyperdriveTest {
             uint256 _bondReservesDelta = 100e18;
             uint256 _baseUserDelta = 200e18;
             uint256 _checkpointPositions = 10e18;
-
-            uint256 flatPlusCurveDelta = _baseUserDelta -
-                _baseReservesDelta +
-                _bondReservesDelta -
-                _baseReservesDelta;
             uint128 delta = HyperdriveMath.calculateClosePositionExposure(
                 _positionExposure,
-                flatPlusCurveDelta,
+                _baseReservesDelta,
+                _bondReservesDelta,
+                _baseUserDelta,
                 _checkpointPositions
             );
 
@@ -574,14 +568,11 @@ contract HyperdriveMathTest is HyperdriveTest {
             uint256 _bondReservesDelta = 100e18;
             uint256 _baseUserDelta = 200e18;
             uint256 _checkpointPositions = 10e18;
-
-            uint256 flatPlusCurveDelta = _baseUserDelta -
-                _baseReservesDelta +
-                _bondReservesDelta -
-                _baseReservesDelta;
             uint128 delta = HyperdriveMath.calculateClosePositionExposure(
                 _positionExposure,
-                flatPlusCurveDelta,
+                _baseReservesDelta,
+                _bondReservesDelta,
+                _baseUserDelta,
                 _checkpointPositions
             );
 
@@ -597,14 +588,11 @@ contract HyperdriveMathTest is HyperdriveTest {
             uint256 _bondReservesDelta = 500e18;
             uint256 _baseUserDelta = 200e18;
             uint256 _checkpointPositions = 10e18;
-
-            uint256 flatPlusCurveDelta = _baseUserDelta -
-                _baseReservesDelta +
-                _bondReservesDelta -
-                _baseReservesDelta;
             uint128 delta = HyperdriveMath.calculateClosePositionExposure(
                 _positionExposure,
-                flatPlusCurveDelta,
+                _baseReservesDelta,
+                _bondReservesDelta,
+                _baseUserDelta,
                 _checkpointPositions
             );
 
