@@ -116,7 +116,6 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
 
     // This test shows that you can open/close long/shorts with extreme positive interest
     // until the spot price is greater than one due to interest accrual
-    // NOTE: This tells us that we need to rethink the spot price > 1 check
     function test_netting_extreme_positive_interest_time_elapsed() external {
         uint256 initialSharePrice = 0.5e18;
         int256 variableInterest = 0.5e18;
