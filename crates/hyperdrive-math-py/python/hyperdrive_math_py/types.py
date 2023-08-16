@@ -41,3 +41,4 @@ class PoolInfo(NamedTuple):
     withdrawal_shares_ready_to_withdraw: str
     withdrawal_shares_proceeds: str
     lp_share_price: str
+    long_exposure: str
