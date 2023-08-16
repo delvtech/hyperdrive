@@ -131,7 +131,7 @@ abstract contract Hyperdrive is
             );
         }
 
-        // Pay out the long withdrawal pool for longs that have matured.
+        // Close out the long positions with a maturity time equal to the latest checkpoint.
         uint256 maturedLongsAmount = _totalSupply[
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _checkpointTime)
         ];
