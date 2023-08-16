@@ -239,9 +239,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     /// @dev Check solvency by verifying that the share reserves are greater than the exposure plus the minimum share reserves.
     /// @param _sharePrice The current share price.
     /// @return True if the share reserves are greater than the exposure plus the minimum share reserves.
-    function _isSolvent(
-        uint256 _sharePrice
-    ) internal view returns (bool) {
+    function _isSolvent(uint256 _sharePrice) internal view returns (bool) {
         return
             int256((uint256(_marketState.shareReserves).mulDown(_sharePrice))) -
                 _marketState.longExposure <

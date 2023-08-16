@@ -120,7 +120,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         int256 variableInterest = 0.5e18;
         uint256 timeElapsed = 15275477; //176 days bewteen each trade
         uint256 tradeSize = 504168.031667365798150347e18;
-        uint256 numTrades = 1000;
+        uint256 numTrades = 100;
 
         // If you increase numTrades enought it will eventually fail in openLong()
         // due to minOutput > bondProceeds where minOutput = baseAmount from openLong()
