@@ -290,7 +290,10 @@ abstract contract HyperdriveShort is HyperdriveLP {
             revert IHyperdrive.BaseBufferExceedsShareReserves();
         }
 
-        // Update the checkpoint's short deposits and decrease the exposure
+        // Update the checkpoint's short deposits and decrease the long exposure.
+        // The exposure is decreasing because the short deposit is forfeit by shorts 
+        // if they hold until maturity, so we can use this deposit to offset the LP's
+        // exposure to longs.
         // NOTE: We could eliminate shortAssets and make the longExposure signed
         _checkpoints[checkpointTime].shortAssets += _traderDeposit.toUint128();
         _marketState.longExposure -= int128(_traderDeposit.toUint128());
