@@ -284,17 +284,18 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // Opening a short decreases the system's exposure because the short's margin can
         // be used to offset some of the long exposure. Despite this, opening a short decreases
         // the share reserves, which limits the amount of capital available to back non-netted long
-        // exposure. Since both quantities decrease, we need to check that the system is still 
+        // exposure. Since both quantities decrease, we need to check that the system is still
         // solvent.
         if (_isSolvent(_sharePrice)) {
             revert IHyperdrive.BaseBufferExceedsShareReserves();
         }
 
         // Update the checkpoint's short deposits and decrease the long exposure.
-        // The exposure is decreasing because the short deposit is forfeit by shorts 
+        // The exposure is decreasing because the short deposit is forfeit by shorts
         // if they hold until maturity, so we can use this deposit to offset the LP's
         // exposure to longs.
-        // NOTE: We could eliminate shortAssets and make the longExposure signed
+        // NOTE: Refer to this issue for details on if this should be moved
+        //       https://github.com/delvtech/hyperdrive/issues/558
         _checkpoints[checkpointTime].shortAssets += _traderDeposit.toUint128();
         _marketState.longExposure -= int128(_traderDeposit.toUint128());
     }
