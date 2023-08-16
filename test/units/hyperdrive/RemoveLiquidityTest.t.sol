@@ -193,24 +193,25 @@ contract RemoveLiquidityTest is HyperdriveTest {
         //
         // when a long is opened idle changes by:
         // idle = (z + dz) * c - (l_o + dy) - (exposure + (dy - dz*c)) - z_min
-        // delta idle = dz *c - dy - (dy - dz*c) = 2*dz*c - 2*dy 
+        // delta idle = dz *c - dy - (dy - dz*c) = 2*dz*c - 2*dy
         // new idle = old idle + delta idle (since dy > dz*c idle goes down)
         // since exposure = dy - dz*c we add it to the margin
         //
         // When a short is opened the share reserves decrease and so does the exposure:
         // idle = (z*c - (dy - dz*c)) - l_o - (exposure - (dy - dz*c)) - z_min
-        // delta idle = dy - dz *c + (dy - dz*c) =  - 2*dz*c + 2*dy 
+        // delta idle = dy - dz *c + (dy - dz*c) =  - 2*dz*c + 2*dy
         // new idle = old idle + delta idle (since dy > dz*c idle goes up)
         // since exposure = dy - dz*c we add it to the margin just like with the longs;
-        // however, if the exposure is net negative we bound it to zero.  
+        // however, if the exposure is net negative we bound it to zero.
         // (see _calculateIdleShareReserves)
 
         uint256 exposure = 0;
-        if( hyperdrive.getPoolInfo().exposure > 0){
+        if (hyperdrive.getPoolInfo().exposure > 0) {
             exposure = uint256(hyperdrive.getPoolInfo().exposure);
         }
         uint256 margin = (testCase.longAmount - testCase.longBasePaid) +
-            (testCase.shortAmount - testCase.shortBasePaid) + exposure;
+            (testCase.shortAmount - testCase.shortBasePaid) +
+            exposure;
         uint256 remainingMargin = uint256(margin).mulDivDown(
             hyperdrive.getPoolConfig().minimumShareReserves,
             testCase.initialLpShares +
@@ -251,7 +252,10 @@ contract RemoveLiquidityTest is HyperdriveTest {
                 contributionPlusInterest - initializerMargin,
                 tolerance
             );
-            assertEq(baseToken.balanceOf(alice), testCase.initialLpBaseProceeds);
+            assertEq(
+                baseToken.balanceOf(alice),
+                testCase.initialLpBaseProceeds
+            );
             uint256 expectedWithdrawalShares = calculateWithdrawalShares(
                 testCase.initialLpShares,
                 startingPresentValue,
@@ -263,7 +267,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
                 expectedWithdrawalShares,
                 1
             );
-        
+
             // Ensure that the correct event was emitted.
             verifyRemoveLiquidityEvent(
                 testCase.initialLpShares,
@@ -302,7 +306,8 @@ contract RemoveLiquidityTest is HyperdriveTest {
             hyperdrive.getPoolConfig().minimumShareReserves -
             remainingMargin.divDown(hyperdrive.getPoolInfo().sharePrice);
         uint256 expectedBaseBalance = testCase.longAmount +
-            testCase.shortAmount  + exposure +
+            testCase.shortAmount +
+            exposure +
             reservedShares.mulDown(hyperdrive.getPoolInfo().sharePrice);
         uint256 expectedShareReserves = reservedShares +
             exposure.divDown(hyperdrive.getPoolInfo().sharePrice) +

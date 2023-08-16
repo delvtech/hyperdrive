@@ -449,7 +449,9 @@ contract LPFairnessTest is HyperdriveTest {
         );
 
         // calculate the expected withdrawal proceeds
-        uint256 expectedWithdrawalProceeds = calculateBaseLpProceeds(bobLpShares);
+        uint256 expectedWithdrawalProceeds = calculateBaseLpProceeds(
+            bobLpShares
+        );
 
         // calculate alice's proportion of LP shares
         uint256 aliceLpProportion = aliceLpShares.divDown(
@@ -574,7 +576,9 @@ contract LPFairnessTest is HyperdriveTest {
         );
 
         // calculate the expected withdrawal proceeds
-        uint256 expectedWithdrawalProceeds = calculateBaseLpProceeds(bobLpShares);
+        uint256 expectedWithdrawalProceeds = calculateBaseLpProceeds(
+            bobLpShares
+        );
 
         // calculate alice's proportion of LP shares
         uint256 aliceLpProportion = aliceLpShares.divDown(
@@ -583,8 +587,7 @@ contract LPFairnessTest is HyperdriveTest {
 
         // Bob removes liquidity
         (uint256 withdrawalProceeds, ) = removeLiquidity(bob, bobLpShares);
-        // TODO: JR ALEX
-        //assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e9);
+        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e9);
 
         // calculate the portion of the pool's value (after interest) that alice contributed.
         contributionWithInterest = uint256(poolValue2 - baseSpent).mulDown(
@@ -607,8 +610,7 @@ contract LPFairnessTest is HyperdriveTest {
 
         // Alice removes liquidity
         (withdrawalProceeds, ) = removeLiquidity(alice, aliceLpShares);
-        // TODO: JR ALEX
-        //assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e9);
+        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e9);
     }
 
     function test_lp_fairness_long_short_lp(

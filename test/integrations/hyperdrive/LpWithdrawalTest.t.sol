@@ -84,11 +84,7 @@ contract LpWithdrawalTest is HyperdriveTest {
             preTradingVariableRate,
             POSITION_DURATION
         );
-        assertApproxEqAbs(
-            baseProceeds,
-            estimatedLpProceeds,
-            10
-        );
+        assertApproxEqAbs(baseProceeds, estimatedLpProceeds, 10);
 
         // Bob closes his long. He will pay quite a bit of slippage on account
         // of the LP's removed liquidity.
@@ -108,18 +104,22 @@ contract LpWithdrawalTest is HyperdriveTest {
             1e9 // TODO: Investigate this bound.
         );
 
-        // TODO: JR ALEX
-
-        // // Ensure approximately all of the base and withdrawal shares has been
-        // // removed from the Hyperdrive instance.
-        // assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1e9); // TODO: Investigate this bound.
-        // // FIXME: Why isn't this zero? Shouldn't the present value be zero after
-        // // the long is closed?
-        // assertApproxEqAbs(
-        //     hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID),
-        //     0,
-        //     1e9 // TODO: Investigate this bound.
-        // );
+        // Ensure the only remaining base is the base from the minimum share
+        // reserves and the LP's present value.
+        assertApproxEqAbs(
+            baseToken.balanceOf(address(hyperdrive)),
+            hyperdrive.getPoolConfig().minimumShareReserves.mulDown(
+                hyperdrive.getPoolInfo().sharePrice
+            ) + hyperdrive.presentValue(),
+            10
+        );
+        // FIXME: Why isn't this zero? Shouldn't the present value be zero after
+        // the long is closed?
+        assertApproxEqAbs(
+            hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID),
+            0,
+            1e9 // TODO: Investigate this bound.
+        );
     }
 
     // TODO: Accrue interest before the test starts as this results in weirder
@@ -406,16 +406,14 @@ contract LpWithdrawalTest is HyperdriveTest {
                     aliceLpShares +
                         hyperdrive.getPoolConfig().minimumShareReserves
                 );
-            uint256 estimatedLpBaseProceeds = calculateBaseLpProceeds(aliceLpShares);
+            uint256 estimatedLpBaseProceeds = calculateBaseLpProceeds(
+                aliceLpShares
+            );
             (aliceBaseProceeds, aliceWithdrawalShares) = removeLiquidity(
                 alice,
                 aliceLpShares
             );
-            assertApproxEqAbs(
-                aliceBaseProceeds,
-                estimatedLpBaseProceeds,
-                1e9
-            );
+            assertApproxEqAbs(aliceBaseProceeds, estimatedLpBaseProceeds, 1e9);
             assertApproxEqAbs(presentValueRatio(), ratio, 1e6);
             ratio = presentValueRatio();
         }
@@ -513,23 +511,22 @@ contract LpWithdrawalTest is HyperdriveTest {
             celine,
             celineWithdrawalShares
         );
-        // TODO: JR ALEX
-        // assertApproxEqAbs(
-        //     aliceRedeemProceeds,
-        //     (aliceRedeemProceeds + celineRedeemProceeds).mulDivDown(
-        //         aliceWithdrawalShares,
-        //         aliceWithdrawalShares + celineWithdrawalShares
-        //     ),
-        //     1e9 // TODO: This bound is too large.
-        // );
-        // assertApproxEqAbs(
-        //     celineRedeemProceeds,
-        //     (aliceRedeemProceeds + celineRedeemProceeds).mulDivDown(
-        //         celineWithdrawalShares,
-        //         aliceWithdrawalShares + celineWithdrawalShares
-        //     ),
-        //     1e9 // TODO: This bound is too large.
-        // );
+        assertApproxEqAbs(
+            aliceRedeemProceeds,
+            (aliceRedeemProceeds + celineRedeemProceeds).mulDivDown(
+                aliceWithdrawalShares,
+                aliceWithdrawalShares + celineWithdrawalShares
+            ),
+            1e9 // TODO: This bound is too large.
+        );
+        assertApproxEqAbs(
+            celineRedeemProceeds,
+            (aliceRedeemProceeds + celineRedeemProceeds).mulDivDown(
+                celineWithdrawalShares,
+                aliceWithdrawalShares + celineWithdrawalShares
+            ),
+            1e9 // TODO: This bound is too large.
+        );
 
         // Ensure that Alice and Celine got back their initial contributions.
         assertGt(
@@ -551,13 +548,12 @@ contract LpWithdrawalTest is HyperdriveTest {
             1e9
         );
 
-        // TODO: JR Alex
         // Ensure that the ending supply of withdrawal shares is close to zero.
-        // assertApproxEqAbs(
-        //     hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID),
-        //     0,
-        //     1e9
-        // );
+        assertApproxEqAbs(
+            hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID),
+            0,
+            1e9
+        );
     }
 
     // FIXME: Add more ratio checks.
@@ -615,11 +611,13 @@ contract LpWithdrawalTest is HyperdriveTest {
         uint256 aliceWithdrawalShares = 0;
         uint256 aliceBaseProceeds = 0;
         {
-            uint256 estimatedBaseLpProceeds = calculateBaseLpProceeds(aliceLpShares);
-            (
-                aliceBaseProceeds,
-                aliceWithdrawalShares
-            ) = removeLiquidity(alice, aliceLpShares);
+            uint256 estimatedBaseLpProceeds = calculateBaseLpProceeds(
+                aliceLpShares
+            );
+            (aliceBaseProceeds, aliceWithdrawalShares) = removeLiquidity(
+                alice,
+                aliceLpShares
+            );
             assertApproxEqAbs(
                 aliceBaseProceeds,
                 estimatedBaseLpProceeds,
@@ -654,13 +652,12 @@ contract LpWithdrawalTest is HyperdriveTest {
                 AssetId._WITHDRAWAL_SHARE_ASSET_ID,
                 alice
             );
-            // TODO JR ALEX - seems to have something to do with PV ratio in slippage payment
-            // assertApproxEqAbs(
-            //     aliceRedeemProceeds,
-            //     (testParams.longAmount - longProceeds) + celineSlippagePayment,
-            //     1e11
-            // );
-            // assertApproxEqAbs(aliceWithdrawalShares, 0, 1e11);
+            assertApproxEqAbs(
+                aliceRedeemProceeds,
+                (testParams.longAmount - longProceeds) + celineSlippagePayment,
+                1e11
+            );
+            assertApproxEqAbs(aliceWithdrawalShares, 0, 1e11);
         }
 
         // Bob opens a short.
@@ -682,18 +679,19 @@ contract LpWithdrawalTest is HyperdriveTest {
         uint256 celineBaseProceeds = 0;
         uint256 celineWithdrawalShares = 0;
         {
-            uint256 estimatedBaseLpProceeds = calculateBaseLpProceeds(celineLpShares);
-            (
+            uint256 estimatedBaseLpProceeds = calculateBaseLpProceeds(
+                celineLpShares
+            );
+            (celineBaseProceeds, celineWithdrawalShares) = removeLiquidity(
+                celine,
+                celineLpShares
+            );
+
+            assertApproxEqAbs(
                 celineBaseProceeds,
-                celineWithdrawalShares
-            ) = removeLiquidity(celine, celineLpShares);
-            
-            // TODO: JR ALEX
-            // assertApproxEqAbs(
-            //     celineBaseProceeds,
-            //     estimatedBaseLpProceeds,
-            //     1e11
-            // );
+                estimatedBaseLpProceeds,
+                1e11
+            );
         }
         // Time passes and interest accrues.
         variableRate = variableRate.normalizeToRange(0, 2e18);
@@ -731,20 +729,19 @@ contract LpWithdrawalTest is HyperdriveTest {
             celineWithdrawalShares
         );
 
-        // TODO: JR ALEX
-        // assertApproxEqAbs(
-        //     aliceRemainingRedeemProceeds + celineRedeemProceeds,
-        //     testParams.shortAmount,
-        //     1e9
-        // );
-        // assertApproxEqAbs(
-        //     aliceRemainingRedeemProceeds,
-        //     testParams.shortAmount.mulDivDown(
-        //         aliceWithdrawalShares,
-        //         aliceWithdrawalShares + celineWithdrawalShares
-        //     ),
-        //     1e9
-        // );
+        assertApproxEqAbs(
+            aliceRemainingRedeemProceeds + celineRedeemProceeds,
+            testParams.shortAmount,
+            1e9
+        );
+        assertApproxEqAbs(
+            aliceRemainingRedeemProceeds,
+            testParams.shortAmount.mulDivDown(
+                aliceWithdrawalShares,
+                aliceWithdrawalShares + celineWithdrawalShares
+            ),
+            1e9
+        );
         assertApproxEqAbs(
             celineRedeemProceeds,
             testParams.shortAmount.mulDivDown(
@@ -760,11 +757,10 @@ contract LpWithdrawalTest is HyperdriveTest {
             aliceBaseProceeds + aliceRedeemProceeds,
             testParams.contribution
         );
-        // TODO: JR ALEX seems to have something to do with PV ratio in slippage payment
-        // assertGt(
-        //     celineBaseProceeds + celineRedeemProceeds,
-        //     testParams.contribution - celineSlippagePayment
-        // );
+        assertGt(
+            celineBaseProceeds + celineRedeemProceeds,
+            testParams.contribution - celineSlippagePayment
+        );
 
         // Ensure that the ending base balance of Hyperdrive is zero.
         assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1e9); // TODO: This bound is too large
@@ -875,10 +871,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         uint256 aliceMargin = ((testParams.longAmount -
             testParams.longBasePaid) +
             (testParams.shortAmount - testParams.shortBasePaid)) / 2;
-        assertEq(
-            aliceBaseProceeds,
-            estimatedLpProceeds
-        );
+        assertEq(aliceBaseProceeds, estimatedLpProceeds);
         assertApproxEqAbs(presentValueRatio(), ratio, 10);
         ratio = presentValueRatio();
 
