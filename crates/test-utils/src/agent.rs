@@ -612,10 +612,8 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>> {
         &self.wallet.shorts
     }
 
-    /// Helpers ///
-
     /// Gets the max long that can be opened in the current checkpoint.
-    async fn get_max_long(&self, maybe_max_iterations: Option<usize>) -> Result<FixedPoint> {
+    pub async fn get_max_long(&self, maybe_max_iterations: Option<usize>) -> Result<FixedPoint> {
         let state = State::new(
             self.hyperdrive.get_pool_config().await?,
             self.hyperdrive.get_pool_info().await?,
@@ -624,7 +622,7 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>> {
     }
 
     /// Gets the max short that can be opened in the current checkpoint.
-    async fn get_max_short(&self) -> Result<FixedPoint> {
+    pub async fn get_max_short(&self) -> Result<FixedPoint> {
         let state = State::new(
             self.hyperdrive.get_pool_config().await?,
             self.hyperdrive.get_pool_info().await?,

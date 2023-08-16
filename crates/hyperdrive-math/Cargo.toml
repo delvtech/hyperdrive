@@ -13,6 +13,11 @@ rand = "0.8.5"
 tokio = { version = "1", features = ["full"] }
 
 # Workspace dependencies
-fixed-point = { version = "0.1.0", path = "../fixed-point" }
-fixed-point-macros = { version = "0.1.0", path = "../fixed-point-macros" }
-hyperdrive-wrappers = { version = "0.1.0", path = "../hyperdrive-wrappers" }
+fixed-point = { path = "../fixed-point" }
+fixed-point-macros = { path = "../fixed-point-macros" }
+hyperdrive-wrappers = { path = "../hyperdrive-wrappers" }
+
+[dev-dependencies]
+
+# Workspace dependencies
+test-utils = { path = "../test-utils" }

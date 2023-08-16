@@ -1519,6 +1519,7 @@ dependencies = [
  "fixed-point-macros",
  "hyperdrive-wrappers",
  "rand",
+ "test-utils",
  "tokio",
 ]
 
