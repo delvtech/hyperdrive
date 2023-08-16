@@ -271,8 +271,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
         _marketState.longExposure += int128(longExposureDelta);
 
         // Longs increase the system's exposure because the system needs to set aside
-        // the fixed interest that the longs are owed at maturity. We can check solvency 
-        // by verifying that the share reserves are greater then the exposure plus the 
+        // the fixed interest that the longs are owed at maturity. We can check solvency
+        // by verifying that the share reserves are greater then the exposure plus the
         // minimum share reserves.
         if (
             int256((uint256(_marketState.shareReserves).mulDown(_sharePrice))) -
