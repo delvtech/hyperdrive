@@ -461,14 +461,14 @@ contract LpWithdrawalTest is HyperdriveTest {
         // term to elapse.
         vm.stopPrank();
         vm.startPrank(bob);
-        //vm.expectRevert(IHyperdrive.FixedPointMath_SubOverflow.selector);
-        // hyperdrive.closeShort(
-        //     testParams.shortMaturityTime,
-        //     testParams.shortAmount,
-        //     0,
-        //     bob,
-        //     true
-        // );
+        vm.expectRevert(IHyperdrive.FixedPointMath_SubOverflow.selector);
+        hyperdrive.closeShort(
+            testParams.shortMaturityTime,
+            testParams.shortAmount,
+            0,
+            bob,
+            true
+        );
 
         // Time passes and interest accrues.
         variableRate = variableRate.normalizeToRange(0, 2e18);
