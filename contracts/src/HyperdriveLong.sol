@@ -337,20 +337,15 @@ abstract contract HyperdriveLong is HyperdriveLP {
 
         // Calculate the longExposureDelta
         {
-            uint256 baseReservesDelta = _shareReservesDelta.mulDown(
-                _sharePrice
-            );
-            uint256 flatPlusCurveDelta = _shareProceeds.mulDown(_sharePrice) -
-                baseReservesDelta +
-                _bondReservesDelta -
-                baseReservesDelta;
             uint128 longExposureDelta = HyperdriveMath
                 .calculateClosePositionExposure(
                     _checkpoints[checkpointTime].longExposure,
-                    flatPlusCurveDelta,
+                    _shareReservesDelta.mulDown(_sharePrice),
+                    _bondReservesDelta,
+                    _shareProceeds.mulDown(_sharePrice),
                     _totalSupply[
                         AssetId.encodeAssetId(
-                            AssetId.AssetIdPrefix.Long,
+                            AssetId.AssetIdPrefix.Short,
                             _maturityTime
                         )
                     ]

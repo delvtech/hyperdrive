@@ -81,10 +81,6 @@ contract ExtremeInputs is HyperdriveTest {
         assertGt(aprAfter, aprBefore);
 
         // Ensure that the bond reserves were updated to have the correct APR.
-        // Due to the way that the flat part of the trade is applied, the bond
-        // reserve updates may not exactly correspond to the amount of bonds
-        // transferred; however, the pool's APR should be identical to the APR
-        // that the bond amount transfer implies.
         assertApproxEqAbs(
             hyperdrive.calculateAPRFromReserves(),
             HyperdriveMath.calculateAPRFromReserves(
@@ -108,10 +104,6 @@ contract ExtremeInputs is HyperdriveTest {
         poolInfoAfter = hyperdrive.getPoolInfo();
 
         // Ensure that the bond reserves were updated to have the correct APR.
-        // Due to the way that the flat part of the trade is applied, the bond
-        // reserve updates may not exactly correspond to the amount of bonds
-        // transferred; however, the pool's APR should be identical to the APR
-        // that the bond amount transfer implies.
         assertApproxEqAbs(
             hyperdrive.calculateAPRFromReserves(),
             HyperdriveMath.calculateAPRFromReserves(
