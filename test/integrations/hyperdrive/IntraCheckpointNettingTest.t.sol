@@ -24,10 +24,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
 
         // open a short
         uint256 shortAmount = 10e18;
-        (uint256 maturityTimeShort, uint256 baseAmountShort) = openShort(
-            bob,
-            shortAmount
-        );
+        (uint256 maturityTimeShort, ) = openShort(bob, shortAmount);
 
         // open a long
         uint256 basePaidLong = 9.5e18;
@@ -38,16 +35,10 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
 
         // open a short
         uint256 shortAmount2 = 5e18;
-        (uint256 maturityTimeShort2, uint256 baseAmountShort2) = openShort(
-            bob,
-            shortAmount2
-        );
+        (uint256 maturityTimeShort2, ) = openShort(bob, shortAmount2);
 
         // remove liquidity
-        (uint256 baseProceeds, uint256 withdrawalShares) = removeLiquidity(
-            alice,
-            aliceLpShares
-        );
+        removeLiquidity(alice, aliceLpShares);
 
         // close the long.
         closeLong(alice, maturityTimeLong, bondAmountLong);
@@ -324,10 +315,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         // NOTE: if there are no shorts, then longs can always be closed before maturity
         // because shorts net with longs there could be enough netted exposure for some longs
         // to not close.
-        (uint256 baseProceeds, uint256 withdrawalShares) = removeLiquidity(
-            alice,
-            aliceLpShares
-        );
+        removeLiquidity(alice, aliceLpShares);
 
         // close the longs
         for (uint256 i = 0; i < numTrades; i++) {
@@ -423,7 +411,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         uint256 apr = 0.05e18;
         deploy(alice, apr, initialSharePrice, 0, 0, 0);
         uint256 contribution = 500_000_000e18;
-        uint256 aliceLpShares = initialize(alice, apr, contribution);
+        initialize(alice, apr, contribution);
 
         // fast forward time and accrue interest
         advanceTime(POSITION_DURATION, variableInterest);

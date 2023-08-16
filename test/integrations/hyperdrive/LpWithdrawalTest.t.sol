@@ -400,12 +400,6 @@ contract LpWithdrawalTest is HyperdriveTest {
         uint256 aliceBaseProceeds;
         uint256 aliceWithdrawalShares;
         {
-            uint256 aliceMargin = (testParams.longAmount -
-                testParams.longBasePaid).mulDivDown(
-                    aliceLpShares,
-                    aliceLpShares +
-                        hyperdrive.getPoolConfig().minimumShareReserves
-                );
             uint256 estimatedLpBaseProceeds = calculateBaseLpProceeds(
                 aliceLpShares
             );

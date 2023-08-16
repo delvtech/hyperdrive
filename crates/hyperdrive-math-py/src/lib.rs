@@ -137,7 +137,7 @@ impl FromPyObject<'_> for PyPoolInfo {
             withdrawal_shares_ready_to_withdraw,
             withdrawal_shares_proceeds,
             lp_share_price,
-            exposure,
+            long_exposure,
         };
 
         Ok(PyPoolInfo::new(pool_info))
