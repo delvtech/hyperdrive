@@ -193,21 +193,15 @@ contract RemoveLiquidityTest is HyperdriveTest {
         //
         // when a long is opened idle changes by:
         // idle = (z + dz) * c - (l_o + dy) - z_min
-        // delta idle = dz *c - dy
+        // delta idle = dz * c - dy
         // new idle = old idle + delta idle (since dy > dz*c idle goes down)
         //
-        // When a short is opened the share reserves decrease:
+        // When a short is opened the share reserves decrease and so does the exposure:
         // idle = (z*c - (dy - dz*c)) - l_o - z_min
-        // delta idle = dy - dz *c =  - dz*c + dy
+        // delta idle = dy - dz *c =  - dz * c + dy
         // new idle = old idle + delta idle (since dy > dz*c idle goes up)
-
-        uint256 longExposure = 0;
-        if (hyperdrive.getPoolInfo().longExposure > 0) {
-            longExposure = uint256(hyperdrive.getPoolInfo().longExposure);
-        }
         uint256 margin = (testCase.longAmount - testCase.longBasePaid) +
-            (testCase.shortAmount - testCase.shortBasePaid) +
-            longExposure;
+            (testCase.shortAmount - testCase.shortBasePaid);
         uint256 remainingMargin = uint256(margin).mulDivDown(
             hyperdrive.getPoolConfig().minimumShareReserves,
             testCase.initialLpShares +
@@ -303,10 +297,8 @@ contract RemoveLiquidityTest is HyperdriveTest {
             remainingMargin.divDown(hyperdrive.getPoolInfo().sharePrice);
         uint256 expectedBaseBalance = testCase.longAmount +
             testCase.shortAmount +
-            longExposure +
             reservedShares.mulDown(hyperdrive.getPoolInfo().sharePrice);
         uint256 expectedShareReserves = reservedShares +
-            longExposure.divDown(hyperdrive.getPoolInfo().sharePrice) +
             testCase.longAmount.divDown(hyperdrive.getPoolInfo().sharePrice);
         assertApproxEqAbs(
             baseToken.balanceOf(address(hyperdrive)),
