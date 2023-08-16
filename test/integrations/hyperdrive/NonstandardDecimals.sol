@@ -309,10 +309,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         uint256 lpMargin = (testParams.longAmount - testParams.longBasePaid) +
             (testParams.shortAmount - testParams.shortBasePaid);
 
-        assertEq(
-            aliceBaseProceeds,
-            estimatedBaseProceeds
-        );
+        assertEq(aliceBaseProceeds, estimatedBaseProceeds);
 
         // Celine adds liquidity.
         uint256 celineLpShares = addLiquidity(celine, testParams.contribution);

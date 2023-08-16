@@ -573,7 +573,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // The shareProceeds, totalCurveFee, and totalFlatFee are all in terms of shares
         // shares -= shares + shares
         shareProceeds -= totalCurveFee + totalFlatFee;
-        
+
         return (
             shareReservesDelta,
             bondReservesDelta,

@@ -100,9 +100,9 @@ abstract contract Hyperdrive is
         // Create the share price checkpoint.
         checkpoint_.sharePrice = _sharePrice.toUint128();
 
-        // Close out the short positions with a maturity time equal to the latest checkpoint. 
-        // This ensures that shorts don't continue to collect free variable interest and 
-        // ensures that LP's can withdraw the proceeds of their side of the trade. 
+        // Close out the short positions with a maturity time equal to the latest checkpoint.
+        // This ensures that shorts don't continue to collect free variable interest and
+        // ensures that LP's can withdraw the proceeds of their side of the trade.
         uint256 maturedShortsAmount = _totalSupply[
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _checkpointTime)
         ];
