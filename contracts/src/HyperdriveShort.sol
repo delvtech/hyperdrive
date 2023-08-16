@@ -281,7 +281,11 @@ abstract contract HyperdriveShort is HyperdriveLP {
         _marketState.bondReserves += _bondAmount.toUint128();
         _marketState.shortsOutstanding += _bondAmount.toUint128();
 
-        // solvency check
+        // Opening a short decreases the system's exposure because the short's margin can
+        // be used to offset some of the long exposure. Despite this, opening a short decreases
+        // the share reserves, which limits the amount of capital available to back unnetted long
+        // exposure. We can check solvency by verifying that the share reserves are greater
+        // then the exposure plus the minimum share reserves.
         if (
             int256((uint256(_marketState.shareReserves).mulDown(_sharePrice))) -
                 _marketState.longExposure <
