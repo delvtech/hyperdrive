@@ -93,8 +93,6 @@ contract NonstandardDecimalsTest is HyperdriveTest {
             );
 
             // The term passes.
-            // TODO: There seems to be an issue when the variable rate is too high.
-            // share price starts at 1 and ends at 7.38 when variable rate is 2e18
             advanceTime(holdTime, variableRate);
 
             // Bob closes the long.

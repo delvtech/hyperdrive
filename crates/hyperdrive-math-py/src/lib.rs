@@ -120,7 +120,7 @@ impl FromPyObject<'_> for PyPoolInfo {
             extract_u256_from_attr(ob, "withdrawal_shares_ready_to_withdraw")?;
         let withdrawal_shares_proceeds = extract_u256_from_attr(ob, "withdrawal_shares_proceeds")?;
         let lp_share_price = extract_u256_from_attr(ob, "lp_share_price")?;
-        let exposure = extract_i256_from_attr(ob, "exposure")?;
+        let long_exposure = extract_i256_from_attr(ob, "exposure")?;
 
         let pool_info = PoolInfo {
             share_reserves,

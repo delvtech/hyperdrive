@@ -61,11 +61,11 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         // close the short
         closeShort(bob, maturityTimeShort, shortAmount);
 
-        //exposure should be 0
+        // longExposure should be 0
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
-        assertApproxEqAbs(poolInfo.exposure, 0, 1);
+        assertApproxEqAbs(poolInfo.longExposure, 0, 1);
 
-        //idle should be equal to shareReserves
+        // idle should be equal to shareReserves
         uint256 expectedShareReserves = MockHyperdrive(address(hyperdrive))
             .calculateIdleShareReserves(hyperdrive.getPoolInfo().sharePrice) +
             hyperdrive.getPoolConfig().minimumShareReserves;
@@ -334,9 +334,9 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             closeLong(bob, maturityTimeLong, bondAmounts[i]);
         }
 
-        // exposure should be 0
+        // longExposure should be 0
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
-        assertApproxEqAbs(poolInfo.exposure, 0, 1);
+        assertApproxEqAbs(poolInfo.longExposure, 0, 1);
         // idle should be equal to shareReserves
         uint256 expectedShareReserves = MockHyperdrive(address(hyperdrive))
             .calculateIdleShareReserves(hyperdrive.getPoolInfo().sharePrice) +
@@ -443,9 +443,9 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             closeShort(bob, maturityTimeShort, shortAmount);
         }
 
-        // exposure should be 0
+        // longExposure should be 0
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
-        assertApproxEqAbs(poolInfo.exposure, 0, 1);
+        assertApproxEqAbs(poolInfo.longExposure, 0, 1);
         // idle should be equal to shareReserves
         uint256 expectedShareReserves = MockHyperdrive(address(hyperdrive))
             .calculateIdleShareReserves(hyperdrive.getPoolInfo().sharePrice) +
@@ -585,7 +585,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
 
         // Ensure all the positions have matured before trying to close them.
         // NOTE: Because they were all opened in the same checkpoint, there
-        // will be a large amount of netted exposure that will conceal
+        // will be a large amount of netted longExposure that will conceal
         // the true idle capital when alice removes her liquidity.  as a result,
         // we need to advance time until all the positions have matured. This is an
         // extreme case and probably won't happen much in practice. This could be tested
@@ -604,16 +604,13 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             // close the short positions
             closeShort(bob, shortMaturityTimes[i], shortAmount);
 
-            // fast forward time, create checkpoints and accrue interest
-            advanceTimeWithCheckpoints(1 days, variableInterest);
-
             // close the long positions
             closeLong(bob, longMaturityTimes[i], bondAmounts[i]);
         }
 
-        // exposure should be 0
+        // longExposure should be 0
         poolInfo = hyperdrive.getPoolInfo();
-        assertApproxEqAbs(poolInfo.exposure, 0, 1);
+        assertApproxEqAbs(poolInfo.longExposure, 0, 1);
 
         // idle should be equal to shareReserves
         uint256 expectedShareReserves = MockHyperdrive(address(hyperdrive)).calculateIdleShareReserves(hyperdrive.getPoolInfo().sharePrice) + hyperdrive.getPoolConfig().minimumShareReserves;
@@ -687,9 +684,9 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             advanceTimeWithCheckpoints(1 days, variableInterest);
         }
 
-        // exposure should be 0
+        // longExposure should be 0
         poolInfo = hyperdrive.getPoolInfo();
-        assertApproxEqAbs(poolInfo.exposure, 0, 1);
+        assertApproxEqAbs(poolInfo.longExposure, 0, 1);
 
         // idle should be equal to shareReserves
         uint256 expectedShareReserves = MockHyperdrive(address(hyperdrive))

@@ -436,7 +436,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // we don't need to account for them in the idle calculation. Thus, we
         // can calculate the idle capital as:
         //
-        // idle = (z - z_min - (y_l / c_0) - exposure)
+        // idle = (z - z_min - (y_l / c_0))
         //
         // The LP is given their share of the idle capital in the pool. We
         // assume that the active LPs are the only LPs entitled to the pool's
@@ -451,6 +451,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         uint256 endingPresentValue = HyperdriveMath.calculatePresentValue(
             params
         );
+
         // Calculate the amount of withdrawal shares that should be minted. We
         // solve for this value by solving the present value equation as
         // follows:
@@ -476,6 +477,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             );
             delete withdrawalShares;
         }
+
         return (shareProceeds, uint256(withdrawalShares));
     }
 

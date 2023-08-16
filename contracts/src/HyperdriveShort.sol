@@ -287,7 +287,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // solvency check
         if (
             int256((uint256(_marketState.shareReserves).mulDown(_sharePrice))) -
-                _marketState.exposure <
+                _marketState.longExposure <
             int256(_minimumShareReserves.mulDown(_sharePrice))
         ) {
             revert IHyperdrive.BaseBufferExceedsShareReserves();
@@ -296,7 +296,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // Update the checkpoint's short deposits and decrease the exposure
         // NOTE: We could eliminate shortAssets and make the longExposure signed
         _checkpoints[checkpointTime].shortAssets += _traderDeposit.toUint128();
-        _marketState.exposure -= int128(_traderDeposit.toUint128());
+        _marketState.longExposure -= int128(_traderDeposit.toUint128());
     }
 
     /// @dev Applies the trading deltas from a closed short to the reserves and
@@ -400,8 +400,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
             // Closing a short reduces the assets (trader deposits) not tracked in the shareReserves
             checkpoint.shortAssets -= shortAssetsDelta;
 
-            // A reduction in assets increases the exposure
-            _marketState.exposure += int128(shortAssetsDelta);
+            // A reduction in assets increases the long exposure
+            _marketState.longExposure += int128(shortAssetsDelta);
         }
 
         // If there are withdrawal shares outstanding, we pay out the maximum

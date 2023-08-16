@@ -281,8 +281,8 @@ contract MockHyperdrive is Hyperdrive {
         _marketState.bondReserves = uint128(bondReserves);
     }
 
-    function setExposure(int128 exposure) external {
-        _marketState.exposure = exposure;
+    function setLongExposure(int128 longExposure) external {
+        _marketState.longExposure = longExposure;
     }
 
     /// Overrides ///
