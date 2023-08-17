@@ -21,9 +21,9 @@ jobs:
         target: [x86_64, aarch64]
         python-version: ['cp310', 'pp39', 'pp310', 'pp311']
         #manylinux: [auto]
-        #include:
-        #  - os: windows
-        #    ls: dir
+        include:
+          - os: windows
+            ls: dir
         #  - os: windows
         #    ls: dir
         #    target: i686
