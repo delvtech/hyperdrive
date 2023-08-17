@@ -49,10 +49,11 @@ To install the Python package `hyperdrive-math-py`, which wraps the Rust `hyperd
 - from inside the environment, run `pip install crates/hyperdrive-math-py`
 - test the installation by running `pip install --upgrade pytest && pytest python/test`
 
-To build the package wheel for deployment, you can navigate to the package folder and use `setup.py`:
+To build the package wheel locally, you can navigate to the package folder and use `setup.py`:
 - `cd crates/hyperdrive-math-py/`
 - `python setup.py bdist_wheel`
-This will make the distribution ready (e.g. a tar.gz file and a .whl file in the dist directory) for deployment.
+This will make the distribution ready (e.g. a tar.gz file and a .whl file in the dist directory) for your platform.
+To build for more platforms, we use [cbuildwheel](https://cibuildwheel.readthedocs.io/en/stable/) in our GitHub CI.
 
 # Disclaimer
 
