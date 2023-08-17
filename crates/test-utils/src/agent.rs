@@ -659,8 +659,19 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>, ChaCha8Rng> {
             .hyperdrive
             .get_checkpoint(state.to_checkpoint(now))
             .await?;
+        let conservative_price = {
+            let base_reserves = FixedPoint::from(state.info.share_price)
+                * (FixedPoint::from(state.info.share_reserves));
+            state.get_spot_price()
+                * (fixed!(1e18) - min(self.wallet.base, base_reserves) / base_reserves)
+        };
 
-        Ok(state.get_max_short(self.wallet.base, open_share_price.into(), Some(7)))
+        Ok(state.get_max_short(
+            self.wallet.base,
+            open_share_price.into(),
+            Some(conservative_price),
+            None,
+        ))
     }
 
     // TODO: We'll need to implement helpers that give us the maximum trade

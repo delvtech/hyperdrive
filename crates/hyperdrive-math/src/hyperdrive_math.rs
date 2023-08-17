@@ -13,8 +13,8 @@ use crate::yield_space::{Asset, State as YieldSpaceState};
 
 #[derive(Debug)]
 pub struct State {
-    config: PoolConfig,
-    info: PoolInfo,
+    pub config: PoolConfig,
+    pub info: PoolInfo,
 }
 
 impl From<&State> for YieldSpaceState {
@@ -108,6 +108,11 @@ impl State {
             / FixedPoint::from(U256::from(60 * 60 * 24 * 365));
         let spot_price = self.get_spot_price();
         (fixed!(1e18) - spot_price) / (spot_price * annualized_time)
+    }
+
+    /// Converts a timestamp to the checkpoint timestamp that it corresponds to.
+    pub fn to_checkpoint(&self, time: U256) -> U256 {
+        time - time % self.config.checkpoint_duration
     }
 
     /// Gets the max long that can be opened.
@@ -232,18 +237,21 @@ impl State {
         (base_amount, bond_amount)
     }
 
-    // FIXME: We need to approach from below. This just amounts to choosing a
-    // better first guess.
-    //
     /// Gets the max short that can be opened with the given budget.
     ///
     /// We start by finding the largest possible short (irrespective of budget),
     /// and then we iteratively approach a solution using Newton's method if the
     /// budget isn't satisified.
+    ///
+    /// The user can provide `maybe_conservative_price`, which is a lower bound
+    /// on the realized price that the short will pay. This is used to help the
+    /// algorithm converge faster in real world situations. If this is `None`,
+    /// then we'll use the theoretical worst case realized price.
     pub fn get_max_short(
         &self,
         budget: FixedPoint,
         open_share_price: FixedPoint,
+        maybe_conservative_price: Option<FixedPoint>,
         maybe_max_iterations: Option<usize>,
     ) -> FixedPoint {
         // If the budget is zero, then we return early.
@@ -269,34 +277,6 @@ impl State {
             return max_short_bonds;
         }
 
-        // FIXME: The best way to improve the convergence time is to provide
-        // a better initial estimate. This will lop off a few iterations.
-        //
-        // FIXME: Our prediction of the short deposit is pretty off. Why?
-        //
-        // Since the max short base is greater than the budget, we need to come
-        // up with an initial guess for Newton's method. We want to approach
-        // from below so that Newton's method will always give a valid short
-        // amount (TODO: prove this).
-        //
-        // We know that the max short's bond amount
-        // is greater than 0 which gives us an absolute lower bound, but we can
-        // do better most of the time. If the fixed rate was infinite, the max
-        // loss for shorts would be 1 per bond since the spot price would be 0.
-        // With this in mind, in the worst possible case, the max short amount
-        // would be equal to the budget. Considering that the budget also needs to cover the fees and back-paid interest, we
-        // subtract these components from the budget to get a better estimate of
-        // the max bond amount. If subtracting these components results in a
-        // negative number, we just 0 as our initial guess.
-        max_short_bonds = {
-            let worst_case_deposit = self.short_deposit(budget, spot_price, open_share_price);
-            if budget < worst_case_deposit {
-                fixed!(0)
-            } else {
-                budget - worst_case_deposit
-            }
-        };
-
         // Use Newton's method to iteratively approach a solution. We use the
         // short deposit in base minus the budget as our objective function,
         // which will converge to the amount of bonds that need to be shorted
@@ -308,17 +288,34 @@ impl State {
         // F(x) = B - D(x)
         // $$
         //
-        // Since $B$ is just a constant, $F'(x) = - D'(x)$. Given the current guess
+        // Since $B$ is just a constant, $F'(x) = -D'(x)$. Given the current guess
         // of $x_n$, Newton's method gives us an updated guess of $x_{n+1}$:
         //
         // $$
         // x_{n+1} = x_n - \tfrac{F(x_n)}{F'(x_n)} = x_n + \tfrac{B - D(x_n)}{D'(x_n)}
         // $$
-        for _ in 0..maybe_max_iterations.unwrap_or(25) {
+        //
+        // The guess that we make is very important in determining how quickly
+        // we converge to the solution.
+        max_short_bonds = self.max_short_guess(
+            budget,
+            spot_price,
+            open_share_price,
+            maybe_conservative_price,
+        );
+        for _ in 0..maybe_max_iterations.unwrap_or(7) {
+            println!(
+                "diff={}",
+                budget - self.short_deposit(max_short_bonds, spot_price, open_share_price)
+            );
             max_short_bonds = max_short_bonds
                 + (budget - self.short_deposit(max_short_bonds, spot_price, open_share_price))
                     / self.short_deposit_derivative(max_short_bonds, spot_price, open_share_price);
         }
+        println!(
+            "diff={}",
+            budget - self.short_deposit(max_short_bonds, spot_price, open_share_price)
+        );
 
         // Verify that the max short satisfies the budget.
         if budget < self.short_deposit(max_short_bonds, spot_price, open_share_price) {
@@ -326,11 +323,6 @@ impl State {
         }
 
         max_short_bonds
-    }
-
-    /// Converts a timestamp to the checkpoint timestamp that it corresponds to.
-    pub fn to_checkpoint(&self, time: U256) -> U256 {
-        time - time % self.config.checkpoint_duration
     }
 
     /// Gets the maximum short that the pool can support. This doesn't take into
@@ -361,6 +353,69 @@ impl State {
         (base_amount, short_amount)
     }
 
+    /// Gets an initial guess for the max short calculation.
+    ///
+    /// The user can specify a conservative price that they know is less than
+    /// the worst-case realized price. This significantly improves the speed of
+    /// convergence of Newton's method.
+    fn max_short_guess(
+        &self,
+        budget: FixedPoint,
+        spot_price: FixedPoint,
+        open_share_price: FixedPoint,
+        maybe_conservative_price: Option<FixedPoint>,
+    ) -> FixedPoint {
+        // If a conservative price is given, we can use it to solve for an
+        // initial guess for what the max short is. If this conservative price
+        // is an overestimate or if a conservative price isn't given, we revert
+        // to using the theoretical worst case scenario as our guess.
+        if let Some(conservative_price) = maybe_conservative_price {
+            // Given our conservative price $p_c$, we can write the short deposit
+            // function as:
+            //
+            // $$
+            // D(x) = \left( \tfrac{c}{c_0} - $p_c$ \right) \cdot x
+            //        + \phi_{flat} \cdot x + \phi_{curve} \cdot (1 - p) \cdot x
+            // $$
+            //
+            // We then solve for $x^*$ such that $D(x^*) = B$, which gives us a
+            // guess of:
+            //
+            // $$
+            // x^* = \tfrac{B}{\tfrac{c}{c_0} - $p_c$ + \phi_{flat} + \phi_{curve} \cdot (1 - p)}
+            // $$
+            //
+            // If the budget can cover the actual short deposit on $x^*$ , we
+            // return it as our guess. Otherwise, we revert to the worst case
+            // scenario.
+            let guess = budget
+                / (self.share_price().div_up(open_share_price)
+                    + self.flat_fee()
+                    + self.curve_fee() * (fixed!(1e18) - spot_price)
+                    - conservative_price);
+            if budget >= self.short_deposit(guess, spot_price, open_share_price) {
+                return guess;
+            }
+        }
+
+        // We know that the max short's bond amount is greater than 0 which
+        // gives us an absolute lower bound, but we can do better most of the
+        // time. If the fixed rate was infinite, the max loss for shorts would
+        // be 1 per bond since the spot price would be 0. With this in mind, the
+        // max short amount would be equal to the budget before we consider the
+        // flat fee, curve fee, and back-paid interest. Considering that the
+        // budget also needs to cover the fees and back-paid interest, we
+        // subtract these components from the budget to get a better estimate of
+        // the max bond amount. If subtracting these components results in a
+        // negative number, we just 0 as our initial guess.
+        let worst_case_deposit = self.short_deposit(budget, spot_price, open_share_price);
+        if budget >= worst_case_deposit {
+            budget - worst_case_deposit
+        } else {
+            fixed!(0)
+        }
+    }
+
     /// Gets the amount of base the trader will need to deposit for a short of
     /// a given size.
     ///
@@ -375,7 +430,9 @@ impl State {
     ///
     /// $$
     /// D(x) = \Delta y - (c \cdot P(x) - \phi_{curve} \cdot (1 - p) \cdot \Delta y)
-    ///        + (c - c_0) \cdot \Delta y + \phi_{flat} \cdot \Delta y
+    ///        + (c - c_0) \cdot \tfrac{\Delta y}{c_0} + \phi_{flat} \cdot \Delta y \\
+    ///      = \tfrac{c}{c_0} \cdot \Delta y - (c \cdot P(x) - \phi_{curve} \cdot (1 - p) \cdot \Delta y)
+    ///        + \phi_{flat} \cdot \Delta y
     /// $$
     ///
     /// $x$ is the number of bonds being shorted and $P(x)$ is the amount of
@@ -388,10 +445,9 @@ impl State {
         open_share_price: FixedPoint,
     ) -> FixedPoint {
         // NOTE: The order of additions and subtractions is important to avoid underflows.
-        short_amount
-            + (self.share_price() - open_share_price) * short_amount
-            + FixedPoint::from(self.config.fees.flat) * short_amount
-            + (fixed!(1e18) - spot_price) * FixedPoint::from(self.config.fees.curve) * short_amount
+        short_amount.mul_div_down(self.share_price(), open_share_price)
+            + self.flat_fee() * short_amount
+            + self.curve_fee() * (fixed!(1e18) - spot_price) * short_amount
             - self.share_price() * self.short_principal(short_amount)
     }
 
@@ -399,17 +455,14 @@ impl State {
     /// amount. This allows us to use Newton's method to approximate the maximum
     /// short that a trader can open.
     ///
-    /// In order to calculate $D'(x), we need to calculate $P'(x)$. This is
-    /// given by:
-    ///
-    /// $$
-    /// P'(x) = \tfrac{1}{c} \cdot (y + x)^{-t_s} \cdot \left(\tfrac{\mu}{c} \cdot (k - (y + x)^{1 - t_s}) \right)^{\tfrac{t_s}{1 - t_s}}
-    /// $$
-    ///
     /// Using this, calculating $D'(x)$ is straightforward:
     ///
     /// $$
-    /// D'(x) = 1 - (c \cdot P'(x) - \phi_{curve} \cdot (1 - p)) + (c - c_0) + \phi_{flat}
+    /// D'(x) = \tfrac{c}{c_0} - (c \cdot P'(x) - \phi_{curve} \cdot (1 - p)) + \phi_{flat}
+    /// $$
+    ///
+    /// $$
+    /// P'(x) = \tfrac{1}{c} \cdot (y + x)^{-t_s} \cdot \left(\tfrac{\mu}{c} \cdot (k - (y + x)^{1 - t_s}) \right)^{\tfrac{t_s}{1 - t_s}}
     /// $$
     fn short_deposit_derivative(
         &self,
@@ -423,10 +476,9 @@ impl State {
             * self
                 .theta(short_amount)
                 .pow(self.time_stretch() / (fixed!(1e18) + self.time_stretch()));
-        fixed!(1e18)
-            + (self.share_price() - open_share_price)
-            + FixedPoint::from(self.config.fees.flat)
-            + (fixed!(1e18) - spot_price) * FixedPoint::from(self.config.fees.curve)
+        (self.share_price() / open_share_price)
+            + self.flat_fee()
+            + self.curve_fee() * (fixed!(1e18) - spot_price)
             - payment_factor
     }
 
@@ -443,11 +495,8 @@ impl State {
     /// P(x) = z - \tfrac{1}{\mu} \cdot (\tfrac{\mu}{c} \cdot (k - (y + x)^{1 - t_s}))^{\tfrac{1}{1 - t_s}}
     /// $$
     fn short_principal(&self, short_amount: FixedPoint) -> FixedPoint {
-        self.share_reserves()
-            - (fixed!(1e18) / self.initial_share_price())
-                * self
-                    .theta(short_amount)
-                    .pow(fixed!(1e18) / (fixed!(1e18) - self.time_stretch()))
+        YieldSpaceState::from(self)
+            .get_out_for_in(Asset::Bonds(short_amount), self.config.time_stretch.into())
     }
 
     /// A helper function used in calculating the short deposit.
@@ -477,8 +526,16 @@ impl State {
         self.info.share_reserves.into()
     }
 
+    fn minimum_share_reserves(&self) -> FixedPoint {
+        self.config.minimum_share_reserves.into()
+    }
+
     fn bond_reserves(&self) -> FixedPoint {
         self.info.bond_reserves.into()
+    }
+
+    fn longs_outstanding(&self) -> FixedPoint {
+        self.info.longs_outstanding.into()
     }
 
     fn share_price(&self) -> FixedPoint {
@@ -489,16 +546,16 @@ impl State {
         self.config.initial_share_price.into()
     }
 
-    fn minimum_share_reserves(&self) -> FixedPoint {
-        self.config.minimum_share_reserves.into()
-    }
-
-    fn longs_outstanding(&self) -> FixedPoint {
-        self.info.longs_outstanding.into()
-    }
-
     fn time_stretch(&self) -> FixedPoint {
         self.config.time_stretch.into()
+    }
+
+    fn flat_fee(&self) -> FixedPoint {
+        self.config.fees.flat.into()
+    }
+
+    fn curve_fee(&self) -> FixedPoint {
+        self.config.fees.curve.into()
     }
 }
 
@@ -599,8 +656,9 @@ mod tests {
         let mut rng = thread_rng();
         for _ in 0..FUZZ_RUNS {
             let state = rng.gen::<State>();
-            let actual =
-                panic::catch_unwind(|| state.get_max_short(U256::MAX.into(), fixed!(0), None));
+            let actual = panic::catch_unwind(|| {
+                state.get_max_short(U256::MAX.into(), fixed!(0), None, None)
+            });
             match runner
                 .mock
                 .calculate_max_short(MaxTradeParams {
@@ -631,15 +689,21 @@ mod tests {
         // is funded with a large amount of capital so that she can initialize
         // the pool. Bob is funded with a small amount of capital so that we
         // can test `get_max_short` when budget is the primary constraint.
-        let chain = TestChain::new().await?;
+        let chain = TestChain::new(Some("http://localhost:8545"), 2).await?;
         let mut alice = Agent::new(
             chain.accounts[0].clone(),
             chain.provider.clone(),
             chain.addresses.clone(),
+            None,
         )
         .await?;
-        let mut bob =
-            Agent::new(chain.accounts[1].clone(), chain.provider, chain.addresses).await?;
+        let mut bob = Agent::new(
+            chain.accounts[1].clone(),
+            chain.provider,
+            chain.addresses,
+            None,
+        )
+        .await?;
 
         // Alice initializes the pool.
         let (fixed_rate, contribution) = (fixed!(0.05e18), fixed!(100_000_000e18));
@@ -647,16 +711,15 @@ mod tests {
         alice.initialize(fixed_rate, contribution).await?;
 
         // Bob opens a max short position.
-        let budget = fixed!(10_000e18);
+        let mut rng = thread_rng();
+        let budget = rng.gen_range(fixed!(10e18)..=fixed!(100_000_000e18));
         bob.fund(budget).await?;
         let max_short = bob.get_max_short().await?;
         println!("max_short: {}", max_short);
         bob.open_short(max_short).await?;
 
         // Verify that essentially all of Bob's budget is consumed.
-        assert_eq!(bob.base(), fixed!(0));
-
-        // FIXME
+        assert!(bob.base() < fixed!(1e18));
 
         Ok(())
     }

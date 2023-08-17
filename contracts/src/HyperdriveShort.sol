@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
+import { Lib } from "test/utils/Lib.sol";
+
 import { HyperdriveLP } from "./HyperdriveLP.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { AssetId } from "./libraries/AssetId.sol";
@@ -16,6 +20,9 @@ import { YieldSpaceMath } from "./libraries/YieldSpaceMath.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveShort is HyperdriveLP {
+    // FIXME
+    using Lib for *;
+
     using FixedPointMath for uint256;
     using SafeCast for uint256;
 
@@ -58,18 +65,13 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // backdate the bonds sold to the beginning of the checkpoint.
         maturityTime = latestCheckpoint + _positionDuration;
         uint256 timeRemaining = _calculateTimeRemaining(maturityTime);
-        uint256 shareReservesDelta;
-        {
-            uint256 totalGovernanceFee;
-            (shareReservesDelta, totalGovernanceFee) = _calculateOpenShort(
-                _bondAmount,
-                sharePrice,
-                timeRemaining
-            );
+        (
+            uint256 shareReservesDelta,
+            uint256 totalGovernanceFee
+        ) = _calculateOpenShort(_bondAmount, sharePrice, timeRemaining);
 
-            // Attribute the governance fees.
-            _governanceFeesAccrued += totalGovernanceFee;
-        }
+        // Attribute the governance fees.
+        _governanceFeesAccrued += totalGovernanceFee;
 
         // Take custody of the trader's deposit and ensure that the trader
         // doesn't pay more than their max deposit. The trader's deposit is
@@ -78,7 +80,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         traderDeposit = HyperdriveMath
             .calculateShortProceeds(
                 _bondAmount,
-                shareReservesDelta,
+                shareReservesDelta - totalGovernanceFee, // FIXME: Explain this.
                 openSharePrice,
                 sharePrice,
                 sharePrice,
@@ -284,7 +286,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // Opening a short decreases the system's exposure because the short's margin can
         // be used to offset some of the long exposure. Despite this, opening a short decreases
         // the share reserves, which limits the amount of capital available to back non-netted long
-        // exposure. Since both quantities decrease, we need to check that the system is still 
+        // exposure. Since both quantities decrease, we need to check that the system is still
         // solvent.
         if (_isSolvent(_sharePrice)) {
             revert IHyperdrive.BaseBufferExceedsShareReserves();
@@ -472,6 +474,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             spotPrice,
             _sharePrice
         );
+        console.log("curve fee = %s", totalCurveFee.toString(18));
 
         // ShareReservesDelta is the number of shares to remove from the shareReserves and
         // since the totalCurveFee includes the totalGovernanceFee it needs to be added back

@@ -25,6 +25,19 @@ pub struct PyPoolConfig {
     pub pool_config: PoolConfig,
 }
 
+// Helper macro that de-duplicates the boilerplate code for converting from
+// decimal strings to FixedPoint values.
+macro_rules! fixed {
+    ($dec_str:ident) => {
+        FixedPoint::from(U256::from_dec_str($dec_str).map_err(|_| {
+            PyErr::new::<PyValueError, _>(format!(
+                "Failed to convert {} to U256",
+                stringify!($dec_str)
+            ))
+        })?)
+    };
+}
+
 // Helper function to extract U256 values from Python object attributes
 fn extract_u256_from_attr(ob: &PyAny, attr: &str) -> PyResult<U256> {
     let value_str: String = ob.getattr(attr)?.extract()?;
@@ -162,9 +175,7 @@ impl HyperdriveState {
         budget: &str,
         maybe_max_iterations: Option<usize>,
     ) -> PyResult<String> {
-        let budget_fp = FixedPoint::from(U256::from_dec_str(budget).map_err(|_| {
-            PyErr::new::<PyValueError, _>("Failed to convert budget string to U256")
-        })?);
+        let budget_fp = fixed!(budget);
         let result_fp = self.state.get_max_long(budget_fp, maybe_max_iterations);
         let result = U256::from(result_fp).to_string();
         return Ok(result);
@@ -174,18 +185,20 @@ impl HyperdriveState {
         &self,
         budget: &str,
         open_share_price: &str,
+        maybe_conservative_price: Option<&str>,
         maybe_max_iterations: Option<usize>,
     ) -> PyResult<String> {
-        let budget_fp = FixedPoint::from(U256::from_dec_str(budget).map_err(|_| {
-            PyErr::new::<PyValueError, _>("Failed to convert budget string to U256")
-        })?);
-        let open_share_price_fp =
-            FixedPoint::from(U256::from_dec_str(open_share_price).map_err(|_| {
-                PyErr::new::<PyValueError, _>("Failed to convert open_share_price string to U256")
-            })?);
-        let result_fp =
-            self.state
-                .get_max_short(budget_fp, open_share_price_fp, maybe_max_iterations);
+        let budget_fp = fixed!(budget);
+        let open_share_price_fp = fixed!(open_share_price);
+        let maybe_conservative_price_fp = maybe_conservative_price
+            .map(|p| -> PyResult<_> { Ok(fixed!(p)) })
+            .transpose()?;
+        let result_fp = self.state.get_max_short(
+            budget_fp,
+            open_share_price_fp,
+            maybe_conservative_price_fp,
+            maybe_max_iterations,
+        );
         let result = U256::from(result_fp).to_string();
         return Ok(result);
     }

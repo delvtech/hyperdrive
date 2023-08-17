@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
+import { Lib } from "test/utils/Lib.sol";
+
 import { HyperdriveStorage } from "./HyperdriveStorage.sol";
 import { IERC20 } from "./interfaces/IERC20.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
@@ -17,6 +21,9 @@ import { MultiToken } from "./token/MultiToken.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
+    // FIXME
+    using Lib for *;
+
     using FixedPointMath for uint256;
     using SafeCast for uint256;
 
@@ -239,9 +246,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     /// @dev Check solvency by verifying that the share reserves are greater than the exposure plus the minimum share reserves.
     /// @param _sharePrice The current share price.
     /// @return True if the share reserves are greater than the exposure plus the minimum share reserves.
-    function _isSolvent(
-        uint256 _sharePrice
-    ) internal view returns (bool) {
+    function _isSolvent(uint256 _sharePrice) internal view returns (bool) {
         return
             int256((uint256(_marketState.shareReserves).mulDown(_sharePrice))) -
                 _marketState.longExposure <
@@ -324,6 +329,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
         //                 = (base/bonds * phi_curve * bonds * t) * (shares/base)
         //                 = (base * phi_curve * t) * (shares/base)
         //                 = phi_curve * t * shares
+        console.log("_spotPrice=%s", _spotPrice.toString(18));
         uint256 _pricePart = (FixedPointMath.ONE_18.sub(_spotPrice));
         totalCurveFee = _pricePart
             .mulDown(_curveFee)

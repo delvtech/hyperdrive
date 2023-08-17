@@ -42,7 +42,10 @@ impl TestChain {
         // If an ethereum url is provided, use it. Otherwise, we spawn an
         // in-process anvil node.
         let (provider, _maybe_anvil) = if let Some(ethereum_url) = maybe_ethereum_url {
-            (Provider::<Http>::try_from(ethereum_url)?, None)
+            (
+                Provider::<Http>::try_from(ethereum_url)?.interval(Duration::from_millis(10u64)),
+                None,
+            )
         } else {
             let anvil = Anvil::new().spawn();
             (
