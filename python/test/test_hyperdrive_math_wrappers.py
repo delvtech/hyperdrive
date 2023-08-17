@@ -31,6 +31,7 @@ sample_pool_info = PoolInfo(
     withdrawal_shares_ready_to_withdraw="0",
     withdrawal_shares_proceeds="0",
     lp_share_price=str(int(1e18)),
+    long_exposure="0",
 )
 
 
