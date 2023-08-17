@@ -12,4 +12,5 @@ setup(
     ],
     # rust extensions are not zip safe, just like C-extensions.
     zip_safe=False,
+    python_requires=">=3.8",
 )
