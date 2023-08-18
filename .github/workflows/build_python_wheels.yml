@@ -1,4 +1,4 @@
-name: Python Build
+name: Python build
 
 on:
   push:
@@ -12,14 +12,15 @@ jobs:
   build_wheels: # credit to https://github.com/samuelcolvin/rtoml/blob/main/.github/workflows/ci.yml
     name: >
       build ${{ matrix.python-version }} on ${{ matrix.os }} (${{ matrix.target }})
-    
-    runs-on: ${{ matrix.os }}
+
+    runs-on: ${{ matrix.os }}-latest
 
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu, macos, windows]
         target: [x86_64, aarch64]
+        python-version: [cp310, pp310]
         manylinux: [auto]
         include:
           # ubuntu
@@ -69,33 +70,55 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
-          architecture: ${{ matrix.python-architecture || 'x64' }}
 
+      - name: set up rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: install python dependencies
+        run: pip install -U setuptools setuptools-rust wheel twine cibuildwheel platformdirs
+
+      # NOTE: This is needed to ensure that hyperdrive-wrappers builds correctly.
+      - name: install foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+    
       - name: build sdist
-        if: ${{ matrix.os == 'ubuntu' && matrix.target == 'x86_64' && matrix.manylinux == 'auto' }}
-        uses: messense/maturin-action@v1
-        with:
-          command: sdist
-          args: --out dist
+        if: matrix.os == 'ubuntu' && matrix.python-version == 'cp310'
+        run: |
+          python -m build --sdist -o wheelhouse crates/hyperdrive-math-py/
 
-      - name: build wheels
-        uses: messense/maturin-action@v1
+      - name: build ${{ matrix.platform || matrix.os }} binaries
+        run: cibuildwheel crates/hyperdrive-math-py/
+        env:
+          CIBW_BUILD: '${{ matrix.python-version }}-*'
+          # rust doesn't seem to be available for musl linux on i686
+          CIBW_SKIP: '*-musllinux_i686'
+          # we build for "alt_arch_name" if it exists, else 'auto'
+          CIBW_ARCHS: ${{ matrix.alt_arch_name || 'auto' }}
+          CIBW_ENVIRONMENT: 'PATH="$HOME/.cargo/bin:$PATH" CARGO_TERM_COLOR="always"'
+          CIBW_ENVIRONMENT_WINDOWS: 'PATH="$UserProfile\.cargo\bin;$PATH"'
+          CIBW_BEFORE_BUILD: rustup show
+          CIBW_BEFORE_BUILD_LINUX: >
+            curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain=stable --profile=minimal -y &&
+            rustup show
+          CIBW_TEST_COMMAND: 'pytest {project}/test'
+          CIBW_TEST_REQUIRES: pytest requests
+          CIBW_TEST_SKIP: '*-macosx_arm64 *-macosx_universal2:arm64'
+          CIBW_BUILD_VERBOSITY: 1
         with:
-          target: ${{ matrix.target }}
-          manylinux: ${{ matrix.manylinux || 'auto' }}
-          args: --release --out dist
+          output-dir: wheelhouse
 
-      - name: build pypy wheels
-        if: ${{ matrix.pypy }}
-        uses: messense/maturin-action@v1
-        with:
-          target: ${{ matrix.target }}
-          manylinux: ${{ matrix.manylinux || 'auto' }}
-          args: --release --out dist --interpreter pypy3.8 pypy3.9 pypy3.10 pypy3.11
+      - run: ${{ matrix.ls || 'ls -lh' }} wheelhouse/
 
-      - run: ${{ matrix.ls || 'ls -lh' }} dist/
+      - run: twine check wheelhouse/*
 
       - uses: actions/upload-artifact@v3
         with:
-          name: pypi_files
-          path: dist
+          name: wheels
+          path: wheelhouse
