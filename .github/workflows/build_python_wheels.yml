@@ -60,6 +60,9 @@ jobs:
           CIBW_MANYLINUX_PYPY_X86_64_IMAGE: manylinux_2_28
           CIBW_MANYLINUX_PYPY_I686_IMAGE: manylinux_2_28
           CIBW_BEFORE_ALL_LINUX: >
+            curl https://ftp.gnu.org/gnu/glibc/glibc-2.29.tar.gz --output glibc-2.29.tar.gz && tar -zxvf glibc-2.29.tar.gz &&
+            cd glibc-2.29 && mkdir glibc-build && cd glibc-build/ && ../configure --prefix=$HOME/glibc-2.29/glibc-build &&
+            make && make install && cd ../.. &&
             curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain=stable --profile=minimal -y &&
             rustup show &&
             curl -L https://foundry.paradigm.xyz | sh &&
