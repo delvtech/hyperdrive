@@ -18,8 +18,14 @@ use rand::{
 /// This fixed point type is a direct port of Solidity's FixedPointMath library.
 /// Each of the functions is fuzz tested against the Solidity implementation to
 /// ensure that the behavior is identical.
-#[derive(Default, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 pub struct FixedPoint(U256);
+
+impl Default for FixedPoint {
+    fn default() -> FixedPoint {
+        fixed!(0)
+    }
+}
 
 /// Formatting ///
 

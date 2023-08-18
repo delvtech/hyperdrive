@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 
 # External dependencies.
+async-trait = "0.1.73"
 ethers = "2.0.8"
 eyre = "0.6.8"
 rand = "0.8.5"

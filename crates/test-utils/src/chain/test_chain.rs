@@ -18,17 +18,32 @@ use hyperdrive_wrappers::wrappers::{
     erc4626_data_provider::ERC4626DataProvider,
     erc4626_hyperdrive::ERC4626Hyperdrive,
     i_hyperdrive::{Fees, PoolConfig},
-    mock4626::Mock4626,
+    mock_erc4626::MockERC4626,
 };
 
-use crate::dev_chain::MNEMONIC;
+use super::{dev_chain::MNEMONIC, Chain};
 
 /// A local anvil instance with the Hyperdrive contracts deployed.
 pub struct TestChain {
-    pub provider: Provider<Http>,
-    pub addresses: Addresses,
-    pub accounts: Vec<LocalWallet>,
+    provider: Provider<Http>,
+    addresses: Addresses,
+    accounts: Vec<LocalWallet>,
     _maybe_anvil: Option<AnvilInstance>,
+}
+
+#[async_trait::async_trait]
+impl Chain<Http> for TestChain {
+    fn provider(&self) -> Provider<Http> {
+        self.provider.clone()
+    }
+
+    fn accounts(&self) -> Vec<LocalWallet> {
+        self.accounts.clone()
+    }
+
+    fn addresses(&self) -> Addresses {
+        self.addresses.clone()
+    }
 }
 
 impl TestChain {
@@ -47,7 +62,11 @@ impl TestChain {
                 None,
             )
         } else {
-            let anvil = Anvil::new().spawn();
+            let anvil = Anvil::new()
+                .arg("--code-size-limit")
+                .arg("120000")
+                .arg("--disable-block-gas-limit")
+                .spawn();
             (
                 Provider::<Http>::try_from(anvil.endpoint())?
                     .interval(Duration::from_millis(10u64)),
@@ -82,11 +101,6 @@ impl TestChain {
         })
     }
 
-    pub async fn chain_id(&self) -> Result<u64> {
-        let chain_id = self.provider.get_chainid().await?;
-        Ok(chain_id.low_u64())
-    }
-
     async fn deploy(provider: Provider<Http>, signer: LocalWallet) -> Result<Addresses> {
         // Deploy the base token and vault.
         let client = Arc::new(SignerMiddleware::new(
@@ -94,12 +108,13 @@ impl TestChain {
             signer.with_chain_id(provider.get_chainid().await?.low_u64()),
         ));
         let base = ERC20Mintable::deploy(client.clone(), ())?.send().await?;
-        let pool = Mock4626::deploy(
+        let pool = MockERC4626::deploy(
             client.clone(),
             (
                 base.address(),
                 "Mock ERC4626 Vault".to_string(),
                 "MOCK".to_string(),
+                uint256!(0.05e18),
             ),
         )?
         .send()
@@ -155,9 +170,45 @@ impl TestChain {
     }
 }
 
+impl TestChain {
+    pub async fn snapshot(&self) -> Result<U256> {
+        let id = self.provider.request("evm_snapshot", ()).await?;
+        Ok(id)
+    }
+
+    pub async fn revert<U>(&self, id: U) -> Result<()>
+    where
+        U: Into<U256>,
+    {
+        self.provider
+            .request::<[U256; 1], bool>("evm_revert", [id.into()])
+            .await?;
+        Ok(())
+    }
+
+    pub async fn increase_time<U>(&self, seconds: U) -> Result<()>
+    where
+        U: Into<U256>,
+    {
+        self.provider
+            .request::<[U256; 1], bool>("evm_increaseTime", [seconds.into()])
+            .await?;
+        Ok(())
+    }
+
+    pub async fn set_balance<U>(&self, address: Address, balance: U) -> Result<()>
+    where
+        U: Into<U256>,
+    {
+        self.provider
+            .request::<(Address, U256), bool>("anvil_setBalance", (address, balance.into()))
+            .await?;
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use ethers::middleware::SignerMiddleware;
     use fixed_point_macros::uint256;
     use hyperdrive_wrappers::wrappers::{erc20_mintable::ERC20Mintable, i_hyperdrive::IHyperdrive};
 
@@ -166,10 +217,7 @@ mod tests {
     #[tokio::test]
     async fn test_deploy() -> Result<()> {
         let chain = TestChain::new(None, 1).await?;
-        let signer = chain.accounts[0]
-            .clone()
-            .with_chain_id(chain.chain_id().await?);
-        let client = Arc::new(SignerMiddleware::new(chain.provider.clone(), signer));
+        let client = chain.client(chain.accounts()[0].clone()).await?;
         let base = ERC20Mintable::new(chain.addresses.base, client.clone());
         let hyperdrive = IHyperdrive::new(chain.addresses.hyperdrive, client.clone());
 

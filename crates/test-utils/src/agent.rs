@@ -4,7 +4,7 @@ use ethers::{
     middleware::SignerMiddleware,
     prelude::EthLogDecode,
     providers::{Http, Middleware, Provider},
-    signers::{LocalWallet, Signer},
+    signers::LocalWallet,
     types::{Address, U256},
 };
 use eyre::Result;
@@ -14,7 +14,9 @@ use hyperdrive_addresses::Addresses;
 use hyperdrive_math::hyperdrive_math::State;
 use hyperdrive_wrappers::wrappers::{
     erc20_mintable::ERC20Mintable,
-    i_hyperdrive::{Checkpoint, IHyperdrive, IHyperdriveEvents},
+    erc4626_data_provider::ERC4626DataProvider,
+    i_hyperdrive::{Checkpoint, IHyperdrive, IHyperdriveEvents, PoolConfig},
+    mock_erc4626::MockERC4626,
 };
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
@@ -33,7 +35,7 @@ enum Action {
 }
 
 #[derive(Default)]
-struct Wallet {
+pub struct Wallet {
     base: FixedPoint,
     lp_shares: FixedPoint,
     withdrawal_shares: FixedPoint,
@@ -41,6 +43,8 @@ struct Wallet {
     shorts: BTreeMap<FixedPoint, FixedPoint>,
 }
 
+// TODO: This agent could be more RPC efficient.
+//
 /// An agent that interacts with the Hyperdrive protocol and records its
 /// balances of longs, shorts, base, and lp shares (both active and withdrawal
 /// shares).
@@ -51,7 +55,9 @@ where
     address: Address,
     provider: Provider<Http>,
     hyperdrive: IHyperdrive<M>,
+    pool: MockERC4626<M>,
     base: ERC20Mintable<M>,
+    config: PoolConfig,
     wallet: Wallet,
     rng: R,
     seed: u64,
@@ -81,47 +87,28 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>, ChaCha8Rng> {
     /// Setup ///
 
     pub async fn new(
-        signer: LocalWallet,
-        provider: Provider<Http>,
+        client: Arc<SignerMiddleware<Provider<Http>, LocalWallet>>,
         addresses: Addresses,
         maybe_seed: Option<u64>,
     ) -> Result<Self> {
-        let chain_id = provider.get_chainid().await?;
-        let client = Arc::new(SignerMiddleware::new(
-            provider.clone(),
-            signer.with_chain_id(chain_id.low_u32()),
-        ));
         let seed = maybe_seed.unwrap_or(17);
+        let pool = ERC4626DataProvider::new(addresses.hyperdrive, client.clone())
+            .pool()
+            .call()
+            .await?;
+        let pool = MockERC4626::new(pool, client.clone());
+        let hyperdrive = IHyperdrive::new(addresses.hyperdrive, client.clone());
         Ok(Self {
             address: client.address(),
-            provider,
-            hyperdrive: IHyperdrive::new(addresses.hyperdrive, client.clone()),
+            provider: client.provider().clone(),
+            hyperdrive: hyperdrive.clone(),
+            pool,
             base: ERC20Mintable::new(addresses.base, client),
+            config: hyperdrive.get_pool_config().call().await?,
             wallet: Wallet::default(),
             rng: ChaCha8Rng::seed_from_u64(seed),
             seed,
         })
-    }
-
-    pub async fn fund(&mut self, amount: FixedPoint) -> Result<()> {
-        // Mint some base tokens.
-        self.base
-            .mint(amount.into())
-            .from(self.address)
-            .send()
-            .await?;
-
-        // Approve hyperdrive to spend the base tokens.
-        self.base
-            .approve(self.hyperdrive.address(), amount.into())
-            .from(self.address)
-            .send()
-            .await?;
-
-        // Increase the base balance in the wallet.
-        self.wallet.base += amount;
-
-        Ok(())
     }
 
     /// Longs ///
@@ -235,12 +222,17 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>, ChaCha8Rng> {
 
     /// Shorts ///
 
-    pub async fn open_short(&mut self, bond_amount: FixedPoint) -> Result<()> {
+    pub async fn open_short(
+        &mut self,
+        bond_amount: FixedPoint,
+        maybe_min_output: Option<FixedPoint>,
+    ) -> Result<()> {
         // Open the short and record the trade in the wallet.
         let log = {
+            let min_output = maybe_min_output.unwrap_or(self.get_short_deposit(bond_amount).await?);
             let tx = self
                 .hyperdrive
-                .open_short(bond_amount.into(), bond_amount.into(), self.address, true)
+                .open_short(bond_amount.into(), min_output.into(), self.address, true)
                 .from(self.address);
             let logs = tx
                 .send()
@@ -508,7 +500,14 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>, ChaCha8Rng> {
         Ok(())
     }
 
-    /// Actions ///
+    /// Checkpoint ///
+
+    pub async fn checkpoint(&mut self, checkpoint: U256) -> Result<()> {
+        self.hyperdrive.checkpoint(checkpoint).send().await?;
+        Ok(())
+    }
+
+    /// Test Utils ///
 
     /// Executes a random action.
     #[instrument(skip(self))]
@@ -600,7 +599,7 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>, ChaCha8Rng> {
             Action::CloseLong(maturity_time, bond_amount) => {
                 self.close_long(maturity_time, bond_amount).await?
             }
-            Action::OpenShort(bond_amount) => self.open_short(bond_amount).await?,
+            Action::OpenShort(bond_amount) => self.open_short(bond_amount, None).await?,
             Action::CloseShort(maturity_time, bond_amount) => {
                 self.close_short(maturity_time, bond_amount).await?
             }
@@ -609,8 +608,54 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>, ChaCha8Rng> {
         Ok(())
     }
 
+    /// Funds the wallet with some base tokens and sets the approval on the
+    /// Hyperdrive contract.
+    pub async fn fund(&mut self, amount: FixedPoint) -> Result<()> {
+        // Mint some base tokens.
+        self.base
+            .mint(amount.into())
+            .from(self.address)
+            .send()
+            .await?;
+
+        // Approve hyperdrive to spend the base tokens.
+        self.base
+            .approve(self.hyperdrive.address(), amount.into())
+            .from(self.address)
+            .send()
+            .await?;
+
+        // Increase the base balance in the wallet.
+        self.wallet.base += amount;
+
+        Ok(())
+    }
+
+    pub async fn advance_time(&self, rate: FixedPoint, duration: FixedPoint) -> Result<()> {
+        self.pool.set_rate(rate.into()).send().await?;
+        self.provider
+            .request::<[U256; 1], u64>("evm_increaseTime", [duration.into()])
+            .await?;
+
+        Ok(())
+    }
+
+    /// Resets the agent's wallet.
+    ///
+    /// This is useful for testing because it makes it easy to use the agent
+    /// across multiple snapshots.
+    pub fn reset(&mut self, wallet: Wallet) {
+        self.wallet = wallet;
+    }
+
     /// Getters ///
 
+    pub fn address(&self) -> Address {
+        self.address
+    }
+
+    // TODO: It may be better to group these into a single getter that returns
+    // the agent's wallet.
     pub fn base(&self) -> FixedPoint {
         self.wallet.base
     }
@@ -631,39 +676,84 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>, ChaCha8Rng> {
         &self.wallet.shorts
     }
 
-    /// Gets the max long that can be opened in the current checkpoint.
-    pub async fn get_max_long(&self, maybe_max_iterations: Option<usize>) -> Result<FixedPoint> {
-        let state = State::new(
-            self.hyperdrive.get_pool_config().await?,
-            self.hyperdrive.get_pool_info().await?,
-        );
-        Ok(state.get_max_long(self.wallet.base, maybe_max_iterations))
+    /// Gets the pool config.
+    pub fn get_config(&self) -> &PoolConfig {
+        &self.config
     }
 
-    /// Gets the max short that can be opened in the current checkpoint.
-    pub async fn get_max_short(&self) -> Result<FixedPoint> {
-        let state = State::new(
-            self.hyperdrive.get_pool_config().await?,
+    /// Gets the current state of the pool.
+    pub async fn get_state(&self) -> Result<State> {
+        Ok(State::new(
+            self.config.clone(),
             self.hyperdrive.get_pool_info().await?,
-        );
-        let now = self
+        ))
+    }
+
+    /// Gets a checkpoint.
+    pub async fn get_checkpoint(&self, id: U256) -> Result<Checkpoint> {
+        Ok(self.hyperdrive.get_checkpoint(id).await?)
+    }
+
+    /// Gets the current timestamp.
+    pub async fn now(&self) -> Result<U256> {
+        Ok(self
             .provider
             .get_block(self.provider.get_block_number().await?)
             .await?
             .unwrap()
-            .timestamp;
+            .timestamp)
+    }
+
+    /// Gets the latest checkpoint.
+    pub async fn latest_checkpoint(&self) -> Result<U256> {
+        Ok(self.get_state().await?.to_checkpoint(self.now().await?))
+    }
+
+    /// Gets the deposit required to short a given amount of bonds with the
+    /// current market state.
+    pub async fn get_short_deposit(&self, short_amount: FixedPoint) -> Result<FixedPoint> {
+        let state = self.get_state().await?;
         let Checkpoint {
             share_price: open_share_price,
             ..
         } = self
             .hyperdrive
-            .get_checkpoint(state.to_checkpoint(now))
+            .get_checkpoint(state.to_checkpoint(self.now().await?))
             .await?;
+        Ok(state.get_short_deposit(
+            short_amount,
+            state.get_spot_price(),
+            open_share_price.into(),
+        ))
+    }
+
+    /// Gets the max long that can be opened in the current checkpoint.
+    pub async fn get_max_long(&self, maybe_max_iterations: Option<usize>) -> Result<FixedPoint> {
+        let state = self.get_state().await?;
+        Ok(state.get_max_long(self.wallet.base, maybe_max_iterations))
+    }
+
+    /// Gets the max short that can be opened in the current checkpoint.
+    pub async fn get_max_short(&self) -> Result<FixedPoint> {
+        let state = self.get_state().await?;
+        let Checkpoint {
+            share_price: open_share_price,
+            ..
+        } = self
+            .hyperdrive
+            .get_checkpoint(state.to_checkpoint(self.now().await?))
+            .await?;
+
+        // We linearly interpolate between the current spot price and the minimum
+        // price that the pool can support. This is a conservative estimate of
+        // the short's realized price.
+        let min_price = state.get_min_price();
         let conservative_price = {
             let base_reserves = FixedPoint::from(state.info.share_price)
                 * (FixedPoint::from(state.info.share_reserves));
-            state.get_spot_price()
-                * (fixed!(1e18) - min(self.wallet.base, base_reserves) / base_reserves)
+            let weight = (min(self.wallet.base, base_reserves) / base_reserves)
+                .pow(fixed!(1e18) - FixedPoint::from(self.config.time_stretch));
+            state.get_spot_price() * (fixed!(1e18) - weight) + min_price * weight
         };
 
         Ok(state.get_max_short(
@@ -677,3 +767,5 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>, ChaCha8Rng> {
     // TODO: We'll need to implement helpers that give us the maximum trade
     // for an older checkpoint. We'll need to use these when closig trades.
 }
+
+impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>, ChaCha8Rng> {}

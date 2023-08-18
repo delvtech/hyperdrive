@@ -1,10 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-// FIXME
-import { console2 as console } from "forge-std/console2.sol";
-import { Lib } from "test/utils/Lib.sol";
-
 import { HyperdriveLP } from "./HyperdriveLP.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { AssetId } from "./libraries/AssetId.sol";
@@ -20,9 +16,6 @@ import { YieldSpaceMath } from "./libraries/YieldSpaceMath.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveShort is HyperdriveLP {
-    // FIXME
-    using Lib for *;
-
     using FixedPointMath for uint256;
     using SafeCast for uint256;
 
@@ -478,7 +471,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
             spotPrice,
             _sharePrice
         );
-        console.log("curve fee = %s", totalCurveFee.toString(18));
 
         // ShareReservesDelta is the number of shares to remove from the shareReserves and
         // since the totalCurveFee includes the totalGovernanceFee it needs to be added back
