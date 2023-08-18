@@ -17,9 +17,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu, macos, windows]
-        target: [x86_64, aarch64]
-        python-version: ['cp310', 'pp39', 'pp310', 'pp311']
+        #os: [ubuntu, macos, windows]
+        os: [ubuntu]
+        #target: [x86_64, aarch64]
+        target: [x86_64]
+        #python-version: ['cp310', 'pp39', 'pp310', 'pp311']
+        python-version: ['pp310']
         #manylinux: [auto]
         include:
           - os: windows
