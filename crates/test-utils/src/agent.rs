@@ -778,5 +778,3 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>, ChaCha8Rng> {
     // TODO: We'll need to implement helpers that give us the maximum trade
     // for an older checkpoint. We'll need to use these when closig trades.
 }
-
-impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>, ChaCha8Rng> {}

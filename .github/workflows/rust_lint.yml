@@ -17,7 +17,6 @@ jobs:
         with:
           submodules: recursive
 
-      # NOTE: This is needed to ensure that hyperdrive-wrappers builds correctly.
       - name: install foundry
         uses: foundry-rs/foundry-toolchain@v1.0.10
         with:
@@ -25,7 +24,7 @@ jobs:
 
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: nightly
 
       - name: lint check
         run: cargo check

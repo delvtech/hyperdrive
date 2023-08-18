@@ -274,7 +274,6 @@ impl State {
         // short amount.
         let (.., mut max_short_bonds) = self.max_short(spot_price, open_share_price);
         if self.get_short_deposit(max_short_bonds, spot_price, open_share_price) <= budget {
-            println!("max short");
             return max_short_bonds;
         }
 
@@ -305,10 +304,6 @@ impl State {
             maybe_conservative_price,
         );
         for _ in 0..maybe_max_iterations.unwrap_or(7) {
-            println!(
-                "error = {}",
-                budget - self.get_short_deposit(max_short_bonds, spot_price, open_share_price)
-            );
             max_short_bonds = max_short_bonds
                 + (budget - self.get_short_deposit(max_short_bonds, spot_price, open_share_price))
                     / self.short_deposit_derivative(max_short_bonds, spot_price, open_share_price);
@@ -471,16 +466,6 @@ impl State {
         spot_price: FixedPoint,
         open_share_price: FixedPoint,
     ) -> FixedPoint {
-        println!("share_price: {}", self.share_price());
-        println!("open_share_price: {}", open_share_price);
-        println!("close_share_price: {}", self.share_price());
-        println!("bond_amount: {}", short_amount);
-        println!(
-            "shareAmount: {}",
-            self.short_principal(short_amount)
-                - self.curve_fee() * (fixed!(1e18) - spot_price) * short_amount
-        );
-        println!("flat_fee: {}", self.flat_fee());
         // NOTE: The order of additions and subtractions is important to avoid underflows.
         short_amount.mul_div_down(self.share_price(), open_share_price)
             + self.flat_fee() * short_amount
