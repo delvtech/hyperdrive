@@ -43,15 +43,10 @@ pub struct Wallet {
     shorts: BTreeMap<FixedPoint, FixedPoint>,
 }
 
-// TODO: This agent could be more RPC efficient.
-//
 /// An agent that interacts with the Hyperdrive protocol and records its
 /// balances of longs, shorts, base, and lp shares (both active and withdrawal
 /// shares).
-pub struct Agent<M, R>
-where
-    R: Rng + SeedableRng,
-{
+pub struct Agent<M, R: Rng + SeedableRng> {
     address: Address,
     provider: Provider<Http>,
     hyperdrive: IHyperdrive<M>,
@@ -63,10 +58,7 @@ where
     seed: u64,
 }
 
-impl<M, R> fmt::Debug for Agent<M, R>
-where
-    R: Rng + SeedableRng,
-{
+impl<M, R: Rng + SeedableRng> fmt::Debug for Agent<M, R> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Agent")
             .field("address", &self.address)

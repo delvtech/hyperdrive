@@ -176,30 +176,21 @@ impl TestChain {
         Ok(id)
     }
 
-    pub async fn revert<U>(&self, id: U) -> Result<()>
-    where
-        U: Into<U256>,
-    {
+    pub async fn revert<U: Into<U256>>(&self, id: U) -> Result<()> {
         self.provider
             .request::<[U256; 1], bool>("evm_revert", [id.into()])
             .await?;
         Ok(())
     }
 
-    pub async fn increase_time<U>(&self, seconds: U) -> Result<()>
-    where
-        U: Into<U256>,
-    {
+    pub async fn increase_time<U: Into<U256>>(&self, seconds: U) -> Result<()> {
         self.provider
             .request::<[U256; 1], bool>("evm_increaseTime", [seconds.into()])
             .await?;
         Ok(())
     }
 
-    pub async fn set_balance<U>(&self, address: Address, balance: U) -> Result<()>
-    where
-        U: Into<U256>,
-    {
+    pub async fn set_balance<U: Into<U256>>(&self, address: Address, balance: U) -> Result<()> {
         self.provider
             .request::<(Address, U256), bool>("anvil_setBalance", (address, balance.into()))
             .await?;
