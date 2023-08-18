@@ -33,6 +33,12 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+      
+      - name: setup cargo
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          arguments: --release --all-features
 
       - name: set up python
         uses: actions/setup-python@v4
