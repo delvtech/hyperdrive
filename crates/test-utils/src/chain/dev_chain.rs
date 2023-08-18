@@ -65,7 +65,7 @@ impl DevChain {
         ))?;
 
         // Generate some accounts from the provided mnemonic.
-        let provider = Provider::try_from(eth_url)?;
+        let provider = Provider::try_from(eth_url)?.interval(Duration::from_millis(10));
         let mut accounts = vec![];
         let mut builder = MnemonicBuilder::<English>::default().phrase(mnemonic);
         for i in 0..num_accounts {

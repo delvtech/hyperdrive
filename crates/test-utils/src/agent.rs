@@ -714,8 +714,6 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>, ChaCha8Rng> {
             .hyperdrive
             .get_checkpoint(state.to_checkpoint(self.now().await?))
             .await?;
-        println!("short_amount: {}", short_amount);
-        println!("open_share_price: {}", open_share_price);
         Ok(state.get_short_deposit(
             short_amount,
             state.get_spot_price(),

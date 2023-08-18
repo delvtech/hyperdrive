@@ -58,7 +58,7 @@ impl TestChain {
         // in-process anvil node.
         let (provider, _maybe_anvil) = if let Some(ethereum_url) = maybe_ethereum_url {
             (
-                Provider::<Http>::try_from(ethereum_url)?.interval(Duration::from_millis(10u64)),
+                Provider::<Http>::try_from(ethereum_url)?.interval(Duration::from_millis(1)),
                 None,
             )
         } else {
@@ -68,8 +68,7 @@ impl TestChain {
                 .arg("--disable-block-gas-limit")
                 .spawn();
             (
-                Provider::<Http>::try_from(anvil.endpoint())?
-                    .interval(Duration::from_millis(10u64)),
+                Provider::<Http>::try_from(anvil.endpoint())?.interval(Duration::from_millis(1)),
                 Some(anvil),
             )
         };
@@ -85,7 +84,10 @@ impl TestChain {
 
             // Fund the account with some ether and add it to the list of accounts..
             provider
-                .request("anvil_setBalance", (account.address(), uint256!(1_000e18)))
+                .request(
+                    "anvil_setBalance",
+                    (account.address(), uint256!(100_000e18)),
+                )
                 .await?;
             accounts.push(account);
         }
