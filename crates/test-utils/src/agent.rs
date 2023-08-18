@@ -225,11 +225,13 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>, ChaCha8Rng> {
     pub async fn open_short(
         &mut self,
         bond_amount: FixedPoint,
-        maybe_min_output: Option<FixedPoint>,
+        maybe_slippage_tolerance: Option<FixedPoint>,
     ) -> Result<()> {
         // Open the short and record the trade in the wallet.
         let log = {
-            let min_output = maybe_min_output.unwrap_or(self.get_short_deposit(bond_amount).await?);
+            let slippage_tolerance = maybe_slippage_tolerance.unwrap_or(fixed!(0.01e18));
+            let min_output =
+                self.get_short_deposit(bond_amount).await? * (fixed!(1e18) + slippage_tolerance);
             let tx = self
                 .hyperdrive
                 .open_short(bond_amount.into(), min_output.into(), self.address, true)
@@ -720,6 +722,8 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>, ChaCha8Rng> {
             .hyperdrive
             .get_checkpoint(state.to_checkpoint(self.now().await?))
             .await?;
+        println!("short_amount: {}", short_amount);
+        println!("open_share_price: {}", open_share_price);
         Ok(state.get_short_deposit(
             short_amount,
             state.get_spot_price(),
@@ -747,13 +751,20 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>, ChaCha8Rng> {
         // We linearly interpolate between the current spot price and the minimum
         // price that the pool can support. This is a conservative estimate of
         // the short's realized price.
-        let min_price = state.get_min_price();
         let conservative_price = {
+            // We estimate the minimum price that short will pay by a
+            // weighted average of the spot price and the minimum possible
+            // spot price the pool can quote. We choose the weights so that this
+            // is an underestimate of the worst case realized price.
+            let spot_price = state.get_spot_price();
+            let min_price = state.get_min_price();
+
+            // Calculate the linear interpolation.
             let base_reserves = FixedPoint::from(state.info.share_price)
                 * (FixedPoint::from(state.info.share_reserves));
             let weight = (min(self.wallet.base, base_reserves) / base_reserves)
                 .pow(fixed!(1e18) - FixedPoint::from(self.config.time_stretch));
-            state.get_spot_price() * (fixed!(1e18) - weight) + min_price * weight
+            spot_price * (fixed!(1e18) - weight) + min_price * weight
         };
 
         Ok(state.get_max_short(

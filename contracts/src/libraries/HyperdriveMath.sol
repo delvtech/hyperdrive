@@ -1,6 +1,10 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
+import { Lib } from "test/utils/Lib.sol";
+
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { FixedPointMath } from "./FixedPointMath.sol";
 import { YieldSpaceMath } from "./YieldSpaceMath.sol";
@@ -13,6 +17,9 @@ import { SafeCast } from "./SafeCast.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 library HyperdriveMath {
+    // FIXME
+    using Lib for *;
+
     using FixedPointMath for uint256;
     using SafeCast for uint256;
 
@@ -646,6 +653,12 @@ library HyperdriveMath {
         uint256 _sharePrice,
         uint256 _flatFee
     ) internal pure returns (uint256 shareProceeds) {
+        console.log("sharePrice: %s", _sharePrice.toString(18));
+        console.log("openSharePrice: %s", _openSharePrice.toString(18));
+        console.log("closeSharePrice: %s", _closeSharePrice.toString(18));
+        console.log("bondAmount: %s", _bondAmount.toString(18));
+        console.log("shareAmount: %s", _shareAmount.toString(18));
+        console.log("flatFee: %s", _flatFee.toString(18));
         // If the interest is more negative than the trading profits and margin
         // released, than the short proceeds are marked to zero. Otherwise, we
         // calculate the proceeds as the sum of the trading proceeds, the

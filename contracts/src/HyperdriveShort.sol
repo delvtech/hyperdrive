@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
+import { Lib } from "test/utils/Lib.sol";
+
 import { HyperdriveLP } from "./HyperdriveLP.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { AssetId } from "./libraries/AssetId.sol";
@@ -16,6 +20,9 @@ import { YieldSpaceMath } from "./libraries/YieldSpaceMath.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveShort is HyperdriveLP {
+    // FIXME
+    using Lib for *;
+
     using FixedPointMath for uint256;
     using SafeCast for uint256;
 
@@ -41,10 +48,12 @@ abstract contract HyperdriveShort is HyperdriveLP {
         returns (uint256 maturityTime, uint256 traderDeposit)
     {
         // Check that the message value and base amount are valid.
+        console.log("openShort: 1");
         _checkMessageValue();
         if (_bondAmount == 0) {
             revert IHyperdrive.ZeroAmount();
         }
+        console.log("openShort: 2");
 
         // Perform a checkpoint and compute the amount of interest the short
         // would have received if they opened at the beginning of the checkpoint.
@@ -53,6 +62,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         uint256 sharePrice = _pricePerShare();
         uint256 latestCheckpoint = _latestCheckpoint();
         uint256 openSharePrice = _applyCheckpoint(latestCheckpoint, sharePrice);
+        console.log("openShort: 3");
 
         // Calculate the pool and user deltas using the trading function. We
         // backdate the bonds sold to the beginning of the checkpoint.
@@ -62,9 +72,11 @@ abstract contract HyperdriveShort is HyperdriveLP {
             uint256 shareReservesDelta,
             uint256 totalGovernanceFee
         ) = _calculateOpenShort(_bondAmount, sharePrice, timeRemaining);
+        console.log("openShort: 4");
 
         // Attribute the governance fees.
         _governanceFeesAccrued += totalGovernanceFee;
+        console.log("openShort: 5");
 
         // Take custody of the trader's deposit and ensure that the trader
         // doesn't pay more than their max deposit. The trader's deposit is
@@ -80,8 +92,13 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 _flatFee
             )
             .mulDown(sharePrice);
+        console.log("openShort: 6");
+        console.log("_maxDeposit: %s", _maxDeposit);
+        console.log("traderDeposit: %s", traderDeposit);
         if (_maxDeposit < traderDeposit) revert IHyperdrive.OutputLimit();
+        console.log("openShort: 7");
         _deposit(traderDeposit, _asUnderlying);
+        console.log("openShort: 8");
 
         // Apply the state updates caused by opening the short.
         _applyOpenShort(
@@ -92,6 +109,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             openSharePrice,
             maturityTime
         );
+        console.log("openShort: 9");
 
         // Mint the short tokens to the trader. The ID is a concatenation of the
         // current share price and the maturity time of the shorts.
@@ -100,6 +118,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             maturityTime
         );
         _mint(assetId, _destination, _bondAmount);
+        console.log("openShort: 10");
 
         // Emit an OpenShort event.
         uint256 bondAmount = _bondAmount; // Avoid stack too deep error.
@@ -110,6 +129,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             traderDeposit,
             bondAmount
         );
+        console.log("openShort: 11");
 
         return (maturityTime, traderDeposit);
     }

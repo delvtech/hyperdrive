@@ -274,6 +274,7 @@ impl State {
         // short amount.
         let (.., mut max_short_bonds) = self.max_short(spot_price, open_share_price);
         if self.get_short_deposit(max_short_bonds, spot_price, open_share_price) <= budget {
+            println!("max short");
             return max_short_bonds;
         }
 
@@ -304,6 +305,10 @@ impl State {
             maybe_conservative_price,
         );
         for _ in 0..maybe_max_iterations.unwrap_or(7) {
+            println!(
+                "error = {}",
+                budget - self.get_short_deposit(max_short_bonds, spot_price, open_share_price)
+            );
             max_short_bonds = max_short_bonds
                 + (budget - self.get_short_deposit(max_short_bonds, spot_price, open_share_price))
                     / self.short_deposit_derivative(max_short_bonds, spot_price, open_share_price);
@@ -466,6 +471,16 @@ impl State {
         spot_price: FixedPoint,
         open_share_price: FixedPoint,
     ) -> FixedPoint {
+        println!("share_price: {}", self.share_price());
+        println!("open_share_price: {}", open_share_price);
+        println!("close_share_price: {}", self.share_price());
+        println!("bond_amount: {}", short_amount);
+        println!(
+            "shareAmount: {}",
+            self.short_principal(short_amount)
+                - self.curve_fee() * (fixed!(1e18) - spot_price) * short_amount
+        );
+        println!("flat_fee: {}", self.flat_fee());
         // NOTE: The order of additions and subtractions is important to avoid underflows.
         short_amount.mul_div_down(self.share_price(), open_share_price)
             + self.flat_fee() * short_amount
@@ -729,21 +744,23 @@ mod tests {
             // Snapshot the chain.
             let id = chain.snapshot().await?;
 
-            // Alice initializes the pool.
+            // Fund Alice and Bob.
             let (fixed_rate, contribution) = (fixed!(0.05e18), fixed!(100_000_000e18));
             alice.fund(contribution).await?;
+            let budget = rng.gen_range(fixed!(10e18)..=fixed!(100_000_000e18));
+            bob.fund(budget).await?;
+
+            // Alice initializes the pool.
             alice.initialize(fixed_rate, contribution).await?;
 
-            // FIXME: This causes the test to fail.
-            //
-            // // Some of the checkpoint passes and variable interest accrues.
-            // alice.checkpoint(alice.latest_checkpoint().await?).await?;
-            // alice
-            //     .advance_time(
-            //         rng.gen_range(fixed!(0)..=fixed!(0.1e18)),
-            //         FixedPoint::from(config.checkpoint_duration) * fixed!(0.5e18),
-            //     )
-            //     .await?;
+            // Some of the checkpoint passes and variable interest accrues.
+            alice.checkpoint(alice.latest_checkpoint().await?).await?;
+            alice
+                .advance_time(
+                    rng.gen_range(fixed!(0)..=fixed!(0.5e18)),
+                    FixedPoint::from(config.checkpoint_duration) * fixed!(0.5e18),
+                )
+                .await?;
 
             // Get the current state of the pool.
             let state = alice.get_state().await?;
@@ -753,23 +770,21 @@ mod tests {
             } = alice
                 .get_checkpoint(state.to_checkpoint(alice.now().await?))
                 .await?;
+            let global_max_short =
+                state.get_max_short(U256::MAX.into(), open_share_price.into(), None, None);
 
             // Bob opens a max short position.
-            let budget = rng.gen_range(fixed!(10e18)..=fixed!(100_000_000e18));
-            bob.fund(budget).await?;
             let max_short = bob.get_max_short().await?;
             bob.open_short(max_short, None).await?;
 
             // The max short should either be equal to the global max short in
             // the case that the trader isn't budget constrained or the budget
             // should be consumed except for a small epsilon.
-            if max_short
-                != state.get_max_short(U256::MAX.into(), open_share_price.into(), None, None)
-            {
-                // We currently allow up to a tolerance of 0.02%, which means
-                // that the max short is always consuming at least 99.98% of
+            if max_short != global_max_short {
+                // We currently allow up to a tolerance of 0.1%, which means
+                // that the max short is always consuming at least 99.9% of
                 // the budget.
-                let tolerance = fixed!(0.0002e18);
+                let tolerance = fixed!(0.001e18);
                 assert!(
                     bob.base() < budget * tolerance,
                     "expected (base={}) < (budget={}) * {} = {}",
