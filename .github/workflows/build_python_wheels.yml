@@ -110,6 +110,7 @@ jobs:
           # rust doesn't seem to be available for musl linux on i686
           CIBW_SKIP: '*-musllinux_i686'
           CIBW_ARCHS: ${{ matrix.target }}
+          CIBW_PLATFORM: ${{ matrix.platform }}'
           CIBW_ENVIRONMENT: 'PATH="$HOME/.cargo/bin:$PATH" CARGO_TERM_COLOR="always"'
           CIBW_ENVIRONMENT_WINDOWS: 'PATH="$UserProfile\.cargo\bin;$PATH"'
           CIBW_BEFORE_BUILD: rustup show
