@@ -13,8 +13,9 @@ jobs:
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-20.04, windows-2019, macos-11]
+        os: [ubuntu-22.04, windows-2019, macos-11]
         python-version: [cp310]
 
     steps:
@@ -34,11 +35,11 @@ jobs:
         with:
           toolchain: stable
       
-      - name: setup cargo
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          arguments: --release --all-features
+      #- name: setup cargo
+      #  uses: actions-rs/cargo@v1
+      #  with:
+      #    command: build
+      #    arguments: --release --all-features
 
       - name: set up python
         uses: actions/setup-python@v4
@@ -52,12 +53,19 @@ jobs:
         uses: pypa/cibuildwheel@v2.15.0
         env:
           CIBW_BUILD: '${{ matrix.python-version }}-*'
-          CIBW_ENVIRONMENT: 'PATH="$HOME/.cargo/bin:$HOME/.foundry/bin:$PATH" CARGO_TERM_COLOR="always"'
-          CIBW_ENVIRONMENT_WINDOWS: 'PATH="$UserProfile\.cargo\bin;$UserProfile\.foundry\bin;$PATH"'
-          CIBW_BEFORE_BUILD: rustup show
-          CIBW_BEFORE_BUILD_LINUX: >
+          CIBW_ENVIRONMENT: 'PATH="$HOME/.cargo/bin:$HOME/.foundry/bin:$HOME/.cargo/env:$PATH" CARGO_TERM_COLOR="always"'
+          CIBW_ENVIRONMENT_WINDOWS: 'PATH="$UserProfile\.cargo\bin;$UserProfile\.foundry\bin;$UserProfile\.cargo\env;$PATH"'
+          CIBW_BEFORE_ALL_LINUX: >
             curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain=stable --profile=minimal -y &&
-            rustup show
+            rustup show &&
+            curl -L https://foundry.paradigm.xyz | sh &&
+            foundryup &&
+            forge build
+          CIBW_BEFORE_ALL_MACOS: >
+            curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain=stable --profile=minimal -y &&
+            rustup show &&
+            curl -L https://foundry.paradigm.xyz | sh &&
+            foundryup
           CIBW_BUILD_VERBOSITY: 1
         with:
           output-dir: wheelhouse
