@@ -10,12 +10,15 @@ on:
 
 jobs:
   build_wheels:
-    name: Build wheels on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    name: Build wheels on ${{ matrix.buildplat[0] }}-${{ matrix.buildplat[1] }}
+    runs-on: ${{ matrix.buildplat[0] }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04, windows-2019, macos-11]
+        buildplat:
+          - [ubuntu-22.04, manylinux_2_28]
+          - [macos-12, macosx_x86_64]
+          - [windows-2019, win_amd64]
         python-version: [cp310]
 
     steps:
@@ -55,10 +58,10 @@ jobs:
           CIBW_BUILD: '${{ matrix.python-version }}-*'
           CIBW_ENVIRONMENT: 'PATH="$HOME/.cargo/bin:$HOME/.foundry/bin:$HOME/.cargo/env:$PATH" CARGO_TERM_COLOR="always"'
           CIBW_ENVIRONMENT_WINDOWS: 'PATH="$UserProfile\.cargo\bin;$UserProfile\.foundry\bin;$UserProfile\.cargo\env;$PATH"'
-          CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
-          CIBW_MANYLINUX_I686_IMAGE: manylinux_2_28
-          CIBW_MANYLINUX_PYPY_X86_64_IMAGE: manylinux_2_28
-          CIBW_MANYLINUX_PYPY_I686_IMAGE: manylinux_2_28
+          CIBW_MANYLINUX_X86_64_IMAGE: ${{ matrix.buildplat[1] }} # specify linux distro
+          CIBW_MANYLINUX_I686_IMAGE: ${{ matrix.buildplat[1] }}
+          CIBW_MANYLINUX_PYPY_X86_64_IMAGE: ${{ matrix.buildplat[1] }}
+          CIBW_MANYLINUX_PYPY_I686_IMAGE: ${{ matrix.buildplat[1] }}
           CIBW_BEFORE_ALL_LINUX: >
             curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain=stable --profile=minimal -y &&
             rustup self update && rustup update && rustup show &&
