@@ -37,12 +37,6 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-      
-      #- name: setup cargo
-      #  uses: actions-rs/cargo@v1
-      #  with:
-      #    command: build
-      #    arguments: --release --all-features
 
       - name: set up python
         uses: actions/setup-python@v4
@@ -55,14 +49,13 @@ jobs:
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.15.0
         env:
-          CIBW_BUILD: ${{ matrix.python-version }}_${{ matrix.buildplat[1] }}
+          CIBW_BUILD: '${{ matrix.python-version }}-*'
+          CIBW_ENVIRONMENT: 'PATH="$HOME/.cargo/bin:$HOME/.foundry/bin:$HOME/.cargo/env:$PATH" CARGO_TERM_COLOR="always"'
+          CIBW_ENVIRONMENT_WINDOWS: 'PATH="$UserProfile\.cargo\bin;$UserProfile\.foundry\bin;$UserProfile\.cargo\env;$PATH"'
           CIBW_MANYLINUX_X86_64_IMAGE: ${{ matrix.buildplat[1] }} # specify linux distro
           CIBW_MANYLINUX_I686_IMAGE: ${{ matrix.buildplat[1] }}
           CIBW_MANYLINUX_PYPY_X86_64_IMAGE: ${{ matrix.buildplat[1] }}
           CIBW_MANYLINUX_PYPY_I686_IMAGE: ${{ matrix.buildplat[1] }}
-          CIBW_ARCHS_LINUX: "x86_64" # don't build for i686
-          CIBW_ENVIRONMENT: 'PATH="$HOME/.cargo/bin:$HOME/.foundry/bin:$HOME/.cargo/env:$PATH" CARGO_TERM_COLOR="always"'
-          CIBW_ENVIRONMENT_WINDOWS: 'PATH="$UserProfile\.cargo\bin;$UserProfile\.foundry\bin;$UserProfile\.cargo\env;$PATH"'
           CIBW_BEFORE_ALL_LINUX: >
             curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain=stable --profile=minimal -y &&
             rustup self update && rustup update && rustup show &&
