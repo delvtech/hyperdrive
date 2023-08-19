@@ -25,6 +25,7 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
+          override: true
 
       - name: lint check
         run: cargo check

@@ -27,6 +27,7 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
+          override: true
 
       - name: test cargo
         run: cargo test

@@ -46,7 +46,7 @@ class HyperdriveState:
             The maximum long as a string representation of a solidity uint256 value.
         """
     def get_max_short(
-        self, budget: str, open_share_price: str, maybe_max_iterations: int
+            self, budget: str, open_share_price: str, maybe_conservative_price: str, maybe_max_iterations: int,
     ) -> str:
         """Gets the max amount of bonds that can be shorted for the given budget.
 
@@ -56,8 +56,11 @@ class HyperdriveState:
             The account budget in base for making a short.
         open_share_price : str
             The share price of underlying vault.
+        maybe_conservative_price : str
+            An optional conservative realized price estimate used to speed up
+            Newton's method.
         maybe_max_iterations : int
-            The number of iterations to use for the Newtonian method.
+            The number of iterations to use for Newton's method.
 
         Returns
         -------

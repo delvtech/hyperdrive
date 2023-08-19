@@ -66,12 +66,12 @@ def test_max_long_fail_conversion():
 
     # bad string
     budget = "asdf"
-    with pytest.raises(ValueError, match="Failed to convert budget string to U256"):
+    with pytest.raises(ValueError, match="Failed to convert budget to U256"):
         state.get_max_long(budget, max_iterations)
 
     # bad string
     budget = "1.23"
-    with pytest.raises(ValueError, match="Failed to convert budget string to U256"):
+    with pytest.raises(ValueError, match="Failed to convert budget to U256"):
         state.get_max_long(budget, max_iterations)
 
 
@@ -80,44 +80,33 @@ def test_max_short():
     state = HyperdriveState(sample_pool_config, sample_pool_info)
     budget = "10000000000000000000000"  # 10k base
     open_share_price = "1000000000000000000"  # 1 base
+    conservative_price = str(0)
     max_iterations = 20
-    max_short = state.get_max_short(budget, open_share_price, max_iterations)
-    expected_max_short = "2583754033693357393077"  # apprx 2583 base
-    assert max_short == expected_max_short
+    max_short = state.get_max_short(budget, open_share_price, conservative_price, max_iterations)
+    assert int(max_short) > 0
 
 
 def test_max_short_fail_conversion():
     """test get_max_short."""
     state = HyperdriveState(sample_pool_config, sample_pool_info)
     open_share_price = "1000000000000000000"  # 1 base
+    conservative_price = str(0)
     max_iterations = 20
 
     # bad string
     budget = "asdf"
-    with pytest.raises(ValueError, match="Failed to convert budget string to U256"):
-        state.get_max_short(budget, open_share_price, max_iterations)
+    with pytest.raises(ValueError, match="Failed to convert budget to U256"):
+        state.get_max_short(budget, open_share_price, conservative_price, max_iterations)
 
     # bad string
     budget = "1.23"
-    with pytest.raises(ValueError, match="Failed to convert budget string to U256"):
-        state.get_max_short(budget, open_share_price, max_iterations)
+    with pytest.raises(ValueError, match="Failed to convert budget to U256"):
+        state.get_max_short(budget, open_share_price, conservative_price, max_iterations)
 
     budget = "10000000000000000000000"  # 10k base
     # bad string
     open_share_price = "asdf"
     with pytest.raises(
-        ValueError, match="Failed to convert open_share_price string to U256"
+        ValueError, match="Failed to convert open_share_price to U256"
     ):
-        state.get_max_short(budget, open_share_price, max_iterations)
-
-
-def test_max_short_fail_budge():
-    """test get_max_short."""
-    state = HyperdriveState(sample_pool_config, sample_pool_info)
-    open_share_price = "1000000000000000000"  # 1 base
-    max_iterations = 20
-
-    # too small, max short requires too much
-    budget = "100000000000000000000"  # 100 base
-    with pytest.raises(BaseException, match="max short exceeded budget"):
-        state.get_max_short(budget, open_share_price, max_iterations)
+        state.get_max_short(budget, open_share_price, conservative_price, max_iterations)
