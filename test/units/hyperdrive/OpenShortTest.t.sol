@@ -252,6 +252,41 @@ contract OpenShortTest is HyperdriveTest {
         assertGe(maxCurveFeeState.shareReserves, maxFeeState.shareReserves);
     }
 
+    // TODO: This test addresses a specific failure case in calculating the
+    // trader deposit. We should refactor the short calculation logic and fully
+    // unit test this, which would remove the need for this test.
+    function test_short_deposit_with_governance_fee() external {
+        uint256 fixedRate = 0.05e18;
+        uint256 contribution = 500_000_000e18;
+
+        // Alice initializes the pool. The pool has a curve fee of 100% and
+        // governance fees of 0%.
+        IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
+        config.fees.curve = 1e18;
+        config.fees.governance = 0;
+        deploy(address(deployer), config);
+        initialize(alice, fixedRate, contribution);
+
+        // Bob opens a short position.
+        uint256 shortAmount = 100_000e18;
+        (, uint256 basePaid) = openShort(bob, shortAmount);
+
+        // Alice initializes the pool. The pool has a curve fee of 100% and
+        // governance fees of 100%.
+        config = testConfig(fixedRate);
+        config.fees.curve = 1e18;
+        config.fees.governance = 1e18;
+        deploy(address(deployer), config);
+        initialize(alice, fixedRate, contribution);
+
+        // Bob opens a short position.
+        (, uint256 basePaid2) = openShort(bob, shortAmount);
+
+        // The governance fee shouldn't effect the short's deposit, so the base
+        // paid should be the same in both cases.
+        assertEq(basePaid, basePaid2);
+    }
+
     function verifyOpenShort(
         IHyperdrive.PoolInfo memory poolInfoBefore,
         uint256 contribution,
