@@ -55,13 +55,9 @@ jobs:
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.15.0
         env:
-          CIBW_BUILD: '${{ matrix.python-version }}-*'
+          CIBW_BUILD: ${{ matrix.python-version }}-${{ matrix.buildplat[1] }}
           CIBW_ENVIRONMENT: 'PATH="$HOME/.cargo/bin:$HOME/.foundry/bin:$HOME/.cargo/env:$PATH" CARGO_TERM_COLOR="always"'
           CIBW_ENVIRONMENT_WINDOWS: 'PATH="$UserProfile\.cargo\bin;$UserProfile\.foundry\bin;$UserProfile\.cargo\env;$PATH"'
-          CIBW_MANYLINUX_X86_64_IMAGE: ${{ matrix.buildplat[1] }} # specify linux distro
-          CIBW_MANYLINUX_I686_IMAGE: ${{ matrix.buildplat[1] }}
-          CIBW_MANYLINUX_PYPY_X86_64_IMAGE: ${{ matrix.buildplat[1] }}
-          CIBW_MANYLINUX_PYPY_I686_IMAGE: ${{ matrix.buildplat[1] }}
           CIBW_BEFORE_ALL_LINUX: >
             curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain=stable --profile=minimal -y &&
             rustup self update && rustup update && rustup show &&
