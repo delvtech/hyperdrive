@@ -17,7 +17,6 @@ yarn-error.log
 .python-version
 .venv
 build/
-dist/
 
 # nix/shell extension - https://direnv.net/
 .direnv
