@@ -282,6 +282,107 @@ contract FixedPointMathTest is Test {
         assertApproxEqAbs(result, expected, 1e5 wei);
     }
 
+    function max(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a > b ? a : b;
+    }
+
+    function min(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a < b ? a : b;
+    }
+
+    function test_updateWeightedAverageExtremes() public {
+        // NOTE: Coverage only works if I initialize the fixture in the test function
+        MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
+
+        uint256 result;
+        uint256 lo = 0.000000001e18;
+        uint256 hi = 100_000_000e18;
+
+        uint256 average = lo;
+        uint256 avgWeight = hi;
+        uint256 delta = lo;
+        uint256 deltaWeight = hi;
+        result = mockFixedPointMath.updateWeightedAverage(
+            average,
+            avgWeight,
+            delta,
+            deltaWeight,
+            true
+        );
+
+        assert(result >= min(average, delta) && result <= max(average, delta));
+
+        average = hi;
+        avgWeight = hi;
+        delta = hi;
+        deltaWeight = hi;
+        result = mockFixedPointMath.updateWeightedAverage(
+            average,
+            avgWeight,
+            delta,
+            deltaWeight,
+            true
+        );
+
+        assert(result >= min(average, delta) && result <= max(average, delta));
+
+        average = lo;
+        avgWeight = lo;
+        delta = lo;
+        deltaWeight = lo;
+        result = mockFixedPointMath.updateWeightedAverage(
+            average,
+            avgWeight,
+            delta,
+            deltaWeight,
+            true
+        );
+
+        assert(result >= min(average, delta) && result <= max(average, delta));
+    
+        average = hi;
+        avgWeight = lo;
+        delta = hi;
+        deltaWeight = lo;
+        result = mockFixedPointMath.updateWeightedAverage(
+            average,
+            avgWeight,
+            delta,
+            deltaWeight,
+            true
+        );
+
+        assert(result >= min(average, delta) && result <= max(average, delta));
+    
+        average = hi;
+        avgWeight = hi;
+        delta = lo;
+        deltaWeight = lo;
+        result = mockFixedPointMath.updateWeightedAverage(
+            average,
+            avgWeight,
+            delta,
+            deltaWeight,
+            true
+        );
+
+        assert(result >= min(average, delta) && result <= max(average, delta));
+
+        average = lo;
+        avgWeight = lo;
+        delta = hi;
+        deltaWeight = hi;
+        result = mockFixedPointMath.updateWeightedAverage(
+            average,
+            avgWeight,
+            delta,
+            deltaWeight,
+            true
+        );
+
+        assert(result >= min(average, delta) && result <= max(average, delta));
+    }
+
     /// @dev This test is to check that the pow function returns 1e18 when the exponent is 0
     function test_differential_fuzz_pow_zero(uint256 x) public {
         x = x.normalizeToRange(0, 2 ** 255);

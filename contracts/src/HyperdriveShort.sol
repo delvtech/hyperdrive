@@ -252,6 +252,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
         uint256 _maturityTime
     ) internal {
         // Update the average maturity time of long positions.
+        // SAFETY: updateWeightedAverage is accepting values expected to be within an OOM for 1e18 and 100M
+        // and has been validated to be safe in these conditions as seen within test_updateWeightedAverageExtremes
         _marketState.shortAverageMaturityTime = uint256(
             _marketState.shortAverageMaturityTime
         )
@@ -318,6 +320,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
     ) internal {
         uint128 shortsOutstanding_ = _marketState.shortsOutstanding;
         // Update the short average maturity time.
+        // SAFETY: updateWeightedAverage is accepting values expected to be within an OOM for 1e18 and 100M
+        // and has been validated to be safe in these conditions as seen within test_updateWeightedAverageExtremes
         _marketState.shortAverageMaturityTime = uint256(
             _marketState.shortAverageMaturityTime
         )
