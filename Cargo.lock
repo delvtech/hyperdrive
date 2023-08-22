@@ -1524,21 +1524,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "hyperdrive-math-py"
-version = "0.1.0"
-dependencies = [
- "ethers",
- "eyre",
- "fixed-point",
- "fixed-point-macros",
- "hyperdrive-math",
- "hyperdrive-wrappers",
- "pyo3",
- "rand",
- "tokio",
-]
-
-[[package]]
 name = "hyperdrive-wrappers"
 version = "0.1.0"
 dependencies = [
