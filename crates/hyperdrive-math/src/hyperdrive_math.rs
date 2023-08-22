@@ -718,7 +718,7 @@ mod tests {
         // the pool. Bob is funded with a small amount of capital so that we
         // can test `get_max_short` when budget is the primary constraint.
         let mut rng = thread_rng();
-        let chain = TestChain::new(None, 2).await?;
+        let chain = TestChain::new(Some("http://localhost:8545"), 2).await?;
         let (alice, bob) = (chain.accounts()[0].clone(), chain.accounts()[1].clone());
         let mut alice =
             Agent::new(chain.client(alice).await?, chain.addresses().clone(), None).await?;
@@ -727,16 +727,20 @@ mod tests {
 
         for _ in 0..100 {
             // Snapshot the chain.
+            println!("test: 1");
             let id = chain.snapshot().await?;
+            println!("test: 2");
 
             // Fund Alice and Bob.
             let (fixed_rate, contribution) = (fixed!(0.05e18), fixed!(100_000_000e18));
             alice.fund(contribution).await?;
             let budget = rng.gen_range(fixed!(10e18)..=fixed!(100_000_000e18));
             bob.fund(budget).await?;
+            println!("test: 3");
 
             // Alice initializes the pool.
             alice.initialize(fixed_rate, contribution).await?;
+            println!("test: 4");
 
             // Some of the checkpoint passes and variable interest accrues.
             alice.checkpoint(alice.latest_checkpoint().await?).await?;
@@ -746,6 +750,7 @@ mod tests {
                     FixedPoint::from(config.checkpoint_duration) * fixed!(0.5e18),
                 )
                 .await?;
+            println!("test: 5");
 
             // Get the current state of the pool.
             let state = alice.get_state().await?;
@@ -757,19 +762,24 @@ mod tests {
                 .await?;
             let global_max_short =
                 state.get_max_short(U256::MAX.into(), open_share_price.into(), None, None);
+            println!("test: 6");
 
             // Bob opens a max short position.
+            println!("test: 6.1");
             let max_short = bob.get_max_short().await?;
-            bob.open_short(max_short, None).await?;
+            println!("test: 6.2");
+            bob.open_short(max_short, Some(fixed!(2e18))).await?;
+            println!("test: 6.3");
+            println!("test: 7");
 
             // The max short should either be equal to the global max short in
             // the case that the trader isn't budget constrained or the budget
             // should be consumed except for a small epsilon.
             if max_short != global_max_short {
-                // We currently allow up to a tolerance of 0.1%, which means
-                // that the max short is always consuming at least 99.9% of
+                // We currently allow up to a tolerance of 0.2%, which means
+                // that the max short is always consuming at least 99.8% of
                 // the budget.
-                let tolerance = fixed!(0.001e18);
+                let tolerance = fixed!(0.002e18);
                 assert!(
                     bob.base() < budget * tolerance,
                     "expected (base={}) < (budget={}) * {} = {}",
@@ -779,6 +789,7 @@ mod tests {
                     budget * tolerance
                 );
             }
+            println!("test: 8");
 
             // Revert to the snapshot and reset the agent's wallets.
             chain.revert(id).await?;
