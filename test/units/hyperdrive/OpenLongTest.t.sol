@@ -339,8 +339,6 @@ contract OpenLongTest is HyperdriveTest {
         uint256 maturityTime,
         uint256 apr
     ) internal {
-        uint256 checkpointTime = maturityTime - POSITION_DURATION;
-
         // Verify that base was transferred from the trader to Hyperdrive.
         assertEq(baseToken.balanceOf(user), 0);
         assertEq(
@@ -400,9 +398,6 @@ contract OpenLongTest is HyperdriveTest {
 
         // TODO: This problem gets much worse as the baseAmount to open a long gets smaller.
         // Figure out a solution to this.
-        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
-            checkpointTime
-        );
         assertApproxEqAbs(
             poolInfoAfter.longAverageMaturityTime,
             maturityTime * 1e18,

@@ -563,8 +563,6 @@ contract CloseLongTest is HyperdriveTest {
         uint256 maturityTime,
         bool wasCheckpointed
     ) internal {
-        uint256 checkpointTime = maturityTime - POSITION_DURATION;
-
         // Ensure that one `CloseLong` event was emitted with the correct
         // arguments.
         {
@@ -611,10 +609,6 @@ contract CloseLongTest is HyperdriveTest {
 
         // Verify that the other states were correct.
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
-
-        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
-            checkpointTime
-        );
         if (wasCheckpointed) {
             assertEq(poolInfoAfter.shareReserves, poolInfoBefore.shareReserves);
             assertEq(

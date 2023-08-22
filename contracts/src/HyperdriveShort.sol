@@ -94,7 +94,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
             traderDeposit,
             shareReservesDelta,
             sharePrice,
-            openSharePrice,
             maturityTime
         );
 
@@ -241,14 +240,12 @@ abstract contract HyperdriveShort is HyperdriveLP {
     /// @param _traderDeposit The amount of base tokens deposited by the trader.
     /// @param _shareReservesDelta The amount of shares paid to the curve.
     /// @param _sharePrice The share price.
-    /// @param _openSharePrice The current checkpoint's share price.
     /// @param _maturityTime The maturity time of the long.
     function _applyOpenShort(
         uint256 _bondAmount,
         uint256 _traderDeposit,
         uint256 _shareReservesDelta,
         uint256 _sharePrice,
-        uint256 _openSharePrice,
         uint256 _maturityTime
     ) internal {
         // Update the average maturity time of long positions.

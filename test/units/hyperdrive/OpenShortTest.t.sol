@@ -261,8 +261,6 @@ contract OpenShortTest is HyperdriveTest {
         uint256 maturityTime,
         uint256 apr
     ) internal {
-        uint256 checkpointTime = maturityTime - POSITION_DURATION;
-
         // Ensure that one `OpenShort` event was emitted with the correct
         // arguments.
         {
@@ -319,9 +317,6 @@ contract OpenShortTest is HyperdriveTest {
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
 
         {
-            IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
-                checkpointTime
-            );
             assertEq(
                 poolInfoAfter.shareReserves,
                 poolInfoBefore.shareReserves -
