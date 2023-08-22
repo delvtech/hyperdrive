@@ -645,8 +645,6 @@ contract CloseLongTest is HyperdriveTest {
             poolInfoBefore.shortsOutstanding
         );
         assertEq(poolInfoAfter.shortAverageMaturityTime, 0);
-        assertEq(poolInfoAfter.shortBaseVolume, 0);
-        assertEq(checkpoint.shortBaseVolume, 0);
 
         // TODO: Figure out how to test this without duplicating the logic.
         //

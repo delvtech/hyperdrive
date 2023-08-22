@@ -413,7 +413,5 @@ contract OpenLongTest is HyperdriveTest {
             poolInfoBefore.shortsOutstanding
         );
         assertEq(poolInfoAfter.shortAverageMaturityTime, 0);
-        assertEq(poolInfoAfter.shortBaseVolume, 0);
-        assertEq(checkpoint.shortBaseVolume, 0);
     }
 }

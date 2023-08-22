@@ -415,7 +415,7 @@ library YieldSpaceMath {
         // We solve for the maximum buy using the constraint that the pool's
         // spot price can never exceed 1. We do this by noting that a spot price
         // of 1, (mu * z) / y ** tau = 1, implies that mu * z = y. This
-        // simplifies YieldSpace to k = ((c / mu) + 1) * y ** (1 - tau), and
+        // simplifies YieldSpace to k = ((c / mu) + 1) * y' ** (1 - tau), and
         // gives us the maximum bond reserves of y' = (k / ((c / mu) + 1)) ** (1 / (1 - tau))
         // and the maximum share reserves of z' = y/mu.
         uint256 cDivMu = c.divDown(mu);
@@ -427,6 +427,40 @@ library YieldSpaceMath {
 
         // The optimal trade sizes are given by dz = z' - z and dy = y - y'.
         return (optimalZ - z, y - optimalY);
+    }
+
+    /// @dev Calculates the maximum amount of bonds that can be sold with the
+    ///      specified reserves.
+    /// @param z Amount of share reserves in the pool
+    /// @param y Amount of bond reserves in the pool
+    /// @param zMin The minimum share reserves.
+    /// @param t Amount of time elapsed since term start
+    /// @param c Conversion rate between base and shares
+    /// @param mu Interest normalization factor for shares
+    /// @return The proceeds in shares of the maximum bond sale.
+    /// @return The maximum amount of bonds that can be sold.
+    function calculateMaxSell(
+        uint256 z,
+        uint256 y,
+        uint256 zMin,
+        uint256 t,
+        uint256 c,
+        uint256 mu
+    ) internal pure returns (uint256, uint256) {
+        // We solve for the maximum sell using the constraint that the pool's
+        // share reserves can never fall below the minimum share reserves zMin.
+        // Substituting z = zMin simplifies YieldSpace to
+        // k = (c / mu) * (mu * (zMin)) ** (1 - tau) + y' ** (1 - tau), and gives
+        // us the maximum bond reserves of
+        // y' = (k - (c / mu) * (mu * (zMin)) ** (1 - tau)) ** (1 / (1 - tau)).
+        uint256 cDivMu = c.divDown(mu);
+        uint256 k = modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
+        uint256 optimalY = (k - cDivMu.mulDown(mu.mulDown(zMin).pow(t))).pow(
+            FixedPointMath.ONE_18.divDown(t)
+        );
+
+        // The optimal trade sizes are given by dz = z - zMin and dy = y' - y.
+        return (z - zMin, optimalY - y);
     }
 
     /// @dev Helper function to derive invariant constant C

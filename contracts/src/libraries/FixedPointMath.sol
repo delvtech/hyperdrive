@@ -338,4 +338,20 @@ library FixedPointMath {
                 .divUp(_totalWeight.sub(_deltaWeight));
         }
     }
+
+    /// @dev Calculates the minimum of two values.
+    /// @param a The first value.
+    /// @param b The second value.
+    /// @return The minimum of the two values.
+    function min(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a > b ? b : a;
+    }
+
+    /// @dev Calculates the maximum of two values.
+    /// @param a The first value.
+    /// @param b The second value.
+    /// @return The maximum of the two values.
+    function max(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a > b ? a : b;
+    }
 }

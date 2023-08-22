@@ -300,8 +300,7 @@ library HyperdriveUtils {
                             uint256(poolInfo.shortAverageMaturityTime).divUp(
                                 1e36
                             )
-                        ),
-                        shortBaseVolume: poolInfo.shortBaseVolume
+                        )
                     })
                 )
                 .mulDown(poolInfo.sharePrice);

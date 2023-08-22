@@ -684,8 +684,6 @@ contract CloseShortTest is HyperdriveTest {
         );
         assertEq(poolInfoAfter.longAverageMaturityTime, 0);
         assertEq(poolInfoAfter.shortAverageMaturityTime, 0);
-        assertEq(poolInfoAfter.shortBaseVolume, 0);
-        assertEq(checkpoint.shortBaseVolume, 0);
 
         // TODO: Figure out how to test for this.
         //

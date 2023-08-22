@@ -342,8 +342,6 @@ contract OpenShortTest is HyperdriveTest {
                 maturityTime * 1e18,
                 1
             );
-            assertEq(poolInfoAfter.shortBaseVolume, baseProceeds);
-            assertEq(checkpoint.shortBaseVolume, baseProceeds);
         }
 
         // Ensure that the bond reserves were updated to have the correct APR.
