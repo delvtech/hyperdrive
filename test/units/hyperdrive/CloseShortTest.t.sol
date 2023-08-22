@@ -409,7 +409,7 @@ contract CloseShortTest is HyperdriveTest {
 
         // Should be near 100% of a loss
         assertApproxEqAbs(
-            basePaid.sub(baseProceeds).divDown(basePaid),
+            (basePaid - baseProceeds).divDown(basePaid),
             1e18,
             1e15 // TODO Large tolerance?
         );

@@ -1017,7 +1017,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                     params.shareReserves,
                     params.bondReserves,
                     params.longsOutstanding,
-                    FixedPointMath.ONE_18.sub(params.timeStretch),
+                    FixedPointMath.ONE_18 - params.timeStretch,
                     params.sharePrice,
                     params.initialSharePrice
                 );
@@ -1064,7 +1064,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                         params.longsOutstanding.mulDown(
                             params.longAverageTimeRemaining
                         ),
-                    FixedPointMath.ONE_18.sub(params.timeStretch),
+                    FixedPointMath.ONE_18 - params.timeStretch,
                     params.sharePrice,
                     params.initialSharePrice
                 );
@@ -1117,7 +1117,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                         params.shortsOutstanding.mulDown(
                             params.shortAverageTimeRemaining
                         ),
-                    FixedPointMath.ONE_18.sub(params.timeStretch),
+                    FixedPointMath.ONE_18 - params.timeStretch,
                     params.sharePrice,
                     params.initialSharePrice
                 );
@@ -1173,7 +1173,7 @@ contract HyperdriveMathTest is HyperdriveTest {
             (, uint256 maxCurveTrade) = YieldSpaceMath.calculateMaxBuy(
                 params.shareReserves,
                 params.bondReserves,
-                FixedPointMath.ONE_18.sub(params.timeStretch),
+                FixedPointMath.ONE_18 - params.timeStretch,
                 params.sharePrice,
                 params.initialSharePrice
             );
@@ -1182,7 +1182,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                     params.shareReserves,
                     params.bondReserves,
                     maxCurveTrade,
-                    FixedPointMath.ONE_18.sub(params.timeStretch),
+                    FixedPointMath.ONE_18 - params.timeStretch,
                     params.sharePrice,
                     params.initialSharePrice
                 );
@@ -1238,7 +1238,7 @@ contract HyperdriveMathTest is HyperdriveTest {
             (, uint256 maxCurveTrade) = YieldSpaceMath.calculateMaxBuy(
                 params.shareReserves,
                 params.bondReserves,
-                FixedPointMath.ONE_18.sub(params.timeStretch),
+                FixedPointMath.ONE_18 - params.timeStretch,
                 params.sharePrice,
                 params.initialSharePrice
             );
@@ -1247,7 +1247,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                     params.shareReserves,
                     params.bondReserves,
                     maxCurveTrade,
-                    FixedPointMath.ONE_18.sub(params.timeStretch),
+                    FixedPointMath.ONE_18 - params.timeStretch,
                     params.sharePrice,
                     params.initialSharePrice
                 );
@@ -1553,7 +1553,7 @@ contract HyperdriveMathTest is HyperdriveTest {
         // 1 / time_stretch in this case.
         uint256 t = _positionDuration.divDown(365 days);
         uint256 tau = FixedPointMath.ONE_18.mulDown(_timeStretch);
-        uint256 interestFactor = FixedPointMath.ONE_18.add(_apr.mulDown(t)).pow(
+        uint256 interestFactor = (FixedPointMath.ONE_18 + _apr.mulDown(t)).pow(
             FixedPointMath.ONE_18.divDown(tau)
         );
 

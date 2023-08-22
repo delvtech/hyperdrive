@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import { stdError } from "forge-std/StdError.sol";
 import { VmSafe } from "forge-std/Vm.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
@@ -79,7 +80,7 @@ contract OpenShortTest is HyperdriveTest {
         uint256 shortAmount = hyperdrive.getPoolInfo().shareReserves;
         baseToken.mint(shortAmount);
         baseToken.approve(address(hyperdrive), shortAmount);
-        vm.expectRevert(IHyperdrive.FixedPointMath_SubOverflow.selector);
+        vm.expectRevert(stdError.arithmeticError);
         hyperdrive.openShort(shortAmount * 2, type(uint256).max, bob, true);
     }
 

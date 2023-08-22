@@ -386,12 +386,11 @@ contract CloseLongTest is HyperdriveTest {
             // All mature bonds are redeemed at the equivalent amount of shares
             // held throughout the duration, losing capital
             uint256 matureBonds = bondAmount.mulDown(
-                FixedPointMath.ONE_18.sub(
+                FixedPointMath.ONE_18 -
                     HyperdriveUtils.calculateTimeRemaining(
                         hyperdrive,
                         maturityTime
                     )
-                )
             );
             uint256 bondsValue = matureBonds;
 
@@ -402,9 +401,8 @@ contract CloseLongTest is HyperdriveTest {
                     poolInfoBefore.shareReserves,
                     poolInfoBefore.bondReserves,
                     immatureBonds,
-                    FixedPointMath.ONE_18.sub(
-                        hyperdrive.getPoolConfig().timeStretch
-                    ),
+                    FixedPointMath.ONE_18 -
+                        hyperdrive.getPoolConfig().timeStretch,
                     poolInfoBefore.sharePrice,
                     initialSharePrice
                 )

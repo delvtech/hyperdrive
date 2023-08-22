@@ -545,8 +545,11 @@ library HyperdriveMath {
             // can't be closed will be stuck until maturity (assuming nothing
             // changes) at which time the longs will receive the bond's face
             // value and the LPs will receive any variable interest that is
-            // collected. Variable interest is accounted for separately, so we
-            // mark the remaining longs to a price of 0.
+            // collected. It turns out that the value that we place on these
+            // stuck longs doesn't have an impact on LP fairness since longs
+            // are only stuck when there is no idle remaining. With this in
+            // mind, we mark the longs to zero for simplicity and to avoid
+            // unnecessary computation.
             (, uint256 maxCurveTrade) = YieldSpaceMath.calculateMaxSell(
                 _params.shareReserves,
                 _params.bondReserves,
@@ -562,7 +565,7 @@ library HyperdriveMath {
                         _params.shareReserves,
                         _params.bondReserves,
                         uint256(netCurveTrade),
-                        FixedPointMath.ONE_18.sub(_params.timeStretch),
+                        FixedPointMath.ONE_18 - _params.timeStretch,
                         _params.sharePrice,
                         _params.initialSharePrice
                     );
@@ -570,8 +573,14 @@ library HyperdriveMath {
         } else if (netCurveTrade < 0) {
             // Close as many shorts as possible on the curve. Any shorts that
             // can't be closed will be stuck until maturity (assuming nothing
-            // changes) at which time the LPs will receive the bond's face value.
-            // With this in mind, we mark the stuck shorts to a price of 1.
+            // changes) at which time the LPs will receive the bond's face
+            // value. If we value the stuck shorts at less than the face value,
+            // LPs that remove liquidity before liquidity will receive a smaller
+            // amount of withdrawal shares than they should. On the other hand,
+            // if we value the stuck shorts at more than the face value, LPs
+            // that remove liquidity before maturity will receive a larger
+            // amount of withdrawal shares than they should. With this in mind,
+            // we value the stuck shorts at exactly the face value.
             netCurveTrade = -netCurveTrade; // Switch to a positive value for convenience.
             (, uint256 maxCurveTrade) = YieldSpaceMath.calculateMaxBuy(
                 _params.shareReserves,
