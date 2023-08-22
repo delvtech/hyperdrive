@@ -40,27 +40,30 @@ jobs:
       - name: forge version
         run: forge --version
 
-      - name: Run coverage
-        run: |
-          forge coverage --report lcov
-          sudo apt-get install lcov
-          lcov --remove lcov.info  -o lcov.info 'test/*' 'script/*'
+    # FIXME: Disabling code coverage until this issue is resolved:
+    # https://github.com/foundry-rs/foundry/issues/5697
+    #
+    #     - name: Run coverage
+    #       run: |
+    #         forge coverage --report lcov
+    #         sudo apt-get install lcov
+    #         lcov --remove lcov.info  -o lcov.info 'test/*' 'script/*'
 
-      - name: Edit lcov.info
-        run: |
-          cat lcov.info | sed '/.*\/test\/.*/,/TN:/d' > tmp.info && mv tmp.info lcov.info
+    #     - name: Edit lcov.info
+    #       run: |
+    #         cat lcov.info | sed '/.*\/test\/.*/,/TN:/d' > tmp.info && mv tmp.info lcov.info
 
-      - name: Coveralls
-        uses: coverallsapp/github-action@v2
-        with:
-          path-to-lcov: "./lcov.info"
-          parallel: true
+    #     - name: Coveralls
+    #       uses: coverallsapp/github-action@v2
+    #       with:
+    #         path-to-lcov: "./lcov.info"
+    #         parallel: true
 
-  finish:
-    needs: coverage
-    runs-on: ubuntu-latest
-    steps:
-      - name: Coveralls Finished
-        uses: coverallsapp/github-action@v2
-        with:
-          parallel-finished: true
+    # finish:
+    #   needs: coverage
+    #   runs-on: ubuntu-latest
+    #   steps:
+    #     - name: Coveralls Finished
+    #       uses: coverallsapp/github-action@v2
+    #       with:
+    #         parallel-finished: true

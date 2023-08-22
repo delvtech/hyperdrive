@@ -386,12 +386,11 @@ contract CloseLongTest is HyperdriveTest {
             // All mature bonds are redeemed at the equivalent amount of shares
             // held throughout the duration, losing capital
             uint256 matureBonds = bondAmount.mulDown(
-                FixedPointMath.ONE_18.sub(
+                FixedPointMath.ONE_18 -
                     HyperdriveUtils.calculateTimeRemaining(
                         hyperdrive,
                         maturityTime
                     )
-                )
             );
             uint256 bondsValue = matureBonds;
 
@@ -402,9 +401,8 @@ contract CloseLongTest is HyperdriveTest {
                     poolInfoBefore.shareReserves,
                     poolInfoBefore.bondReserves,
                     immatureBonds,
-                    FixedPointMath.ONE_18.sub(
-                        hyperdrive.getPoolConfig().timeStretch
-                    ),
+                    FixedPointMath.ONE_18 -
+                        hyperdrive.getPoolConfig().timeStretch,
                     poolInfoBefore.sharePrice,
                     initialSharePrice
                 )
@@ -565,8 +563,6 @@ contract CloseLongTest is HyperdriveTest {
         uint256 maturityTime,
         bool wasCheckpointed
     ) internal {
-        uint256 checkpointTime = maturityTime - POSITION_DURATION;
-
         // Ensure that one `CloseLong` event was emitted with the correct
         // arguments.
         {
@@ -613,10 +609,6 @@ contract CloseLongTest is HyperdriveTest {
 
         // Verify that the other states were correct.
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
-
-        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
-            checkpointTime
-        );
         if (wasCheckpointed) {
             assertEq(poolInfoAfter.shareReserves, poolInfoBefore.shareReserves);
             assertEq(
@@ -645,8 +637,6 @@ contract CloseLongTest is HyperdriveTest {
             poolInfoBefore.shortsOutstanding
         );
         assertEq(poolInfoAfter.shortAverageMaturityTime, 0);
-        assertEq(poolInfoAfter.shortBaseVolume, 0);
-        assertEq(checkpoint.shortBaseVolume, 0);
 
         // TODO: Figure out how to test this without duplicating the logic.
         //

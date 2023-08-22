@@ -94,7 +94,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
             traderDeposit,
             shareReservesDelta,
             sharePrice,
-            openSharePrice,
             maturityTime
         );
 
@@ -241,14 +240,12 @@ abstract contract HyperdriveShort is HyperdriveLP {
     /// @param _traderDeposit The amount of base tokens deposited by the trader.
     /// @param _shareReservesDelta The amount of shares paid to the curve.
     /// @param _sharePrice The share price.
-    /// @param _openSharePrice The current checkpoint's share price.
     /// @param _maturityTime The maturity time of the long.
     function _applyOpenShort(
         uint256 _bondAmount,
         uint256 _traderDeposit,
         uint256 _shareReservesDelta,
         uint256 _sharePrice,
-        uint256 _openSharePrice,
         uint256 _maturityTime
     ) internal {
         // Update the average maturity time of long positions.
@@ -262,14 +259,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 true
             )
             .toUint128();
-
-        // Update the base volume of short positions.
-        uint128 baseVolume = _shareReservesDelta
-            .mulDown(_openSharePrice)
-            .toUint128();
-        _marketState.shortBaseVolume += baseVolume;
-        uint256 checkpointTime = _latestCheckpoint();
-        _checkpoints[checkpointTime].shortBaseVolume += baseVolume;
 
         // Apply the trading deltas to the reserves and increase the bond buffer
         // by the amount of bonds that were shorted. We don't need to add the
@@ -296,7 +285,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // exposure to longs.
         // NOTE: Refer to this issue for details on if this should be moved
         //       https://github.com/delvtech/hyperdrive/issues/558
-        _checkpoints[checkpointTime].shortAssets += _traderDeposit.toUint128();
+        _checkpoints[_latestCheckpoint()].shortAssets += _traderDeposit
+            .toUint128();
         _marketState.longExposure -= int128(_traderDeposit.toUint128());
     }
 
@@ -334,32 +324,15 @@ abstract contract HyperdriveShort is HyperdriveLP {
             checkpointTime
         ];
 
-        // Update the base volume aggregates.
-        {
-            // Get the total supply of shorts in the checkpoint of the shorts
-            // being closed. If the shorts are closed before maturity, we add the
-            // amount of shorts being closed since the total supply is decreased
-            // when burning the short tokens.
-            uint256 checkpointShorts = _totalSupply[
-                AssetId.encodeAssetId(
-                    AssetId.AssetIdPrefix.Short,
-                    _maturityTime
-                )
-            ];
-            if (block.timestamp < _maturityTime) {
-                checkpointShorts += _bondAmount;
-            }
-
-            // Remove a proportional amount of the checkpoints base volume from
-            // the aggregates.
-            uint128 checkpointShortBaseVolume = checkpoint.shortBaseVolume;
-            uint128 proportionalBaseVolume = uint256(checkpointShortBaseVolume)
-                .mulDown(_bondAmount.divDown(checkpointShorts))
-                .toUint128();
-            _marketState.shortBaseVolume -= proportionalBaseVolume;
-            checkpoint.shortBaseVolume =
-                checkpointShortBaseVolume -
-                proportionalBaseVolume;
+        // Get the total supply of shorts in the checkpoint of the shorts
+        // being closed. If the shorts are closed before maturity, we add the
+        // amount of shorts being closed since the total supply is decreased
+        // when burning the short tokens.
+        uint256 checkpointShorts = _totalSupply[
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _maturityTime)
+        ];
+        if (block.timestamp < _maturityTime) {
+            checkpointShorts += _bondAmount;
         }
 
         // Decrease the amount of shorts outstanding.

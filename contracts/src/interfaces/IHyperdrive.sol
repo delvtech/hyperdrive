@@ -69,6 +69,7 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
 
     /// Structs ///
 
+    // TODO: Re-evaluate the order of these fields to optimize gas usage.
     struct MarketState {
         /// @dev The pool's share reserves.
         uint128 shareReserves;
@@ -84,12 +85,6 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
         uint128 longOpenSharePrice;
         /// @dev The average maturity time of outstanding positions.
         uint128 shortAverageMaturityTime;
-        /// @dev The total amount of base that was transferred as a result of
-        ///      opening the outstanding positions. This is an idealized value
-        ///      that reflects the base that would have been transferred if all
-        ///      positions were opened at the beginning of their respective
-        ///      checkpoints.
-        uint128 shortBaseVolume;
         /// @dev The global exposure of the pool due to open longs
         int128 longExposure;
         /// @dev A flag indicating whether or not the pool has been initialized.
@@ -98,6 +93,7 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
         bool isPaused;
     }
 
+    // TODO: Re-evaluate the order of these fields to optimize gas usage.
     struct Checkpoint {
         /// @dev The share price of the first transaction in the checkpoint.
         ///      This is used to track the amount of interest accrued by shorts
@@ -110,9 +106,6 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
         ///      on longs to the withdrawal pool and prevent dust from being
         ///      stuck in the contract.
         uint128 longSharePrice;
-        /// @dev The aggregate amount of base that was committed by LPs to pay
-        ///      for the bonds that were sold short in the checkpoint.
-        uint128 shortBaseVolume;
         /// @dev The amount lp exposure on longs.
         uint128 longExposure;
         /// @dev The amount of lp assets on shorts that come from trader Deposits
@@ -177,8 +170,6 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
         uint256 shortsOutstanding;
         /// @dev The average maturity time of the outstanding shorts.
         uint256 shortAverageMaturityTime;
-        /// @dev The cumulative amount of base paid for outstanding shorts.
-        uint256 shortBaseVolume;
         /// @dev The amount of withdrawal shares that are ready to be redeemed.
         uint256 withdrawalSharesReadyToWithdraw;
         /// @dev The proceeds recovered by the withdrawal pool.
@@ -278,8 +269,6 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
     /// ######################
     /// ### FixedPointMath ###
     /// ######################
-    error FixedPointMath_AddOverflow();
-    error FixedPointMath_SubOverflow();
     error FixedPointMath_InvalidExponent();
     error FixedPointMath_NegativeOrZeroInput();
     error FixedPointMath_NegativeInput();

@@ -76,7 +76,6 @@ impl Distribution<State> for Standard {
             short_average_maturity_time: rng
                 .gen_range(fixed!(0)..=FixedPoint::from(60 * 60 * 24 * 365))
                 .into(),
-            short_base_volume: rng.gen_range(fixed!(0)..=fixed!(100_000e18)).into(),
             lp_total_supply: rng
                 .gen_range(fixed!(1_000e18)..=fixed!(100_000_000e18))
                 .into(),

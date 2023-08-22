@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import { stdError } from "forge-std/StdError.sol";
 import { VmSafe } from "forge-std/Vm.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
@@ -79,7 +80,7 @@ contract OpenShortTest is HyperdriveTest {
         uint256 shortAmount = hyperdrive.getPoolInfo().shareReserves;
         baseToken.mint(shortAmount);
         baseToken.approve(address(hyperdrive), shortAmount);
-        vm.expectRevert(IHyperdrive.FixedPointMath_SubOverflow.selector);
+        vm.expectRevert(stdError.arithmeticError);
         hyperdrive.openShort(shortAmount * 2, type(uint256).max, bob, true);
     }
 
@@ -260,8 +261,6 @@ contract OpenShortTest is HyperdriveTest {
         uint256 maturityTime,
         uint256 apr
     ) internal {
-        uint256 checkpointTime = maturityTime - POSITION_DURATION;
-
         // Ensure that one `OpenShort` event was emitted with the correct
         // arguments.
         {
@@ -318,9 +317,6 @@ contract OpenShortTest is HyperdriveTest {
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
 
         {
-            IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
-                checkpointTime
-            );
             assertEq(
                 poolInfoAfter.shareReserves,
                 poolInfoBefore.shareReserves -
@@ -342,8 +338,6 @@ contract OpenShortTest is HyperdriveTest {
                 maturityTime * 1e18,
                 1
             );
-            assertEq(poolInfoAfter.shortBaseVolume, baseProceeds);
-            assertEq(checkpoint.shortBaseVolume, baseProceeds);
         }
 
         // Ensure that the bond reserves were updated to have the correct APR.

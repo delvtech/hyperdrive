@@ -132,7 +132,7 @@ contract AddLiquidityTest is HyperdriveTest {
         assertEq(baseToken.balanceOf(bob), 0);
         assertEq(
             baseToken.balanceOf(address(hyperdrive)),
-            baseBalanceBefore.add(contribution)
+            baseBalanceBefore + contribution
         );
 
         // Ensure that the new LP receives a similar amount of LP shares as the
