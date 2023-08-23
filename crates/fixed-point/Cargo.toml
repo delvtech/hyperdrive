@@ -18,3 +18,4 @@ fixed-point-macros = { path = "../fixed-point-macros" }
 
 # Workspace dependencies
 hyperdrive-wrappers = { path = "../hyperdrive-wrappers" }
+test-utils = { path = "../test-utils" }

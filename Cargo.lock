@@ -1088,6 +1088,7 @@ dependencies = [
  "fixed-point-macros",
  "hyperdrive-wrappers",
  "rand",
+ "test-utils",
  "tokio",
 ]
 
@@ -1521,6 +1522,7 @@ dependencies = [
  "rand",
  "test-utils",
  "tokio",
+ "tracing-subscriber",
 ]
 
 [[package]]
@@ -3045,6 +3047,7 @@ dependencies = [
  "hyperdrive-addresses",
  "hyperdrive-math",
  "hyperdrive-wrappers",
+ "lazy_static",
  "rand",
  "rand_chacha",
  "reqwest",

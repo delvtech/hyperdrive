@@ -25,7 +25,7 @@ pub struct DevChain {
 }
 
 #[async_trait::async_trait]
-impl Chain<Http> for DevChain {
+impl Chain for DevChain {
     fn provider(&self) -> Provider<Http> {
         self.provider.clone()
     }
@@ -43,7 +43,7 @@ impl DevChain {
     /// Given the ethereum URL and the artifacts URL of a devnet, this creates
     /// a new DevChain instance with a set of funded accounts on the devnet.
     pub async fn new(
-        eth_url: &str,
+        ethereum_url: &str,
         artifacts_url: &str,
         mnemonic: &str,
         num_accounts: usize,
@@ -65,7 +65,7 @@ impl DevChain {
         ))?;
 
         // Generate some accounts from the provided mnemonic.
-        let provider = Provider::try_from(eth_url)?.interval(Duration::from_millis(10));
+        let provider = Provider::try_from(ethereum_url)?.interval(Duration::from_millis(10));
         let mut accounts = vec![];
         let mut builder = MnemonicBuilder::<English>::default().phrase(mnemonic);
         for i in 0..num_accounts {
@@ -81,7 +81,7 @@ impl DevChain {
         }
 
         Ok(Self {
-            provider: Provider::try_from(eth_url)?,
+            provider,
             addresses,
             accounts,
         })

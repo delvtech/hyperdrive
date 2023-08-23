@@ -22,6 +22,7 @@ use hyperdrive_wrappers::wrappers::{
 };
 
 use super::{dev_chain::MNEMONIC, Chain};
+use crate::constants::MAYBE_ETHEREUM_URL;
 
 /// A local anvil instance with the Hyperdrive contracts deployed.
 pub struct TestChain {
@@ -32,7 +33,7 @@ pub struct TestChain {
 }
 
 #[async_trait::async_trait]
-impl Chain<Http> for TestChain {
+impl Chain for TestChain {
     fn provider(&self) -> Provider<Http> {
         self.provider.clone()
     }
@@ -49,14 +50,14 @@ impl Chain<Http> for TestChain {
 impl TestChain {
     /// Deploys the Hyperdrive contracts to an anvil nodes and sets up some
     /// funded accounts.
-    pub async fn new(maybe_ethereum_url: Option<&str>, num_accounts: usize) -> Result<Self> {
+    pub async fn new(num_accounts: usize) -> Result<Self> {
         if num_accounts == 0 {
             panic!("cannot create a test chain with zero accounts");
         }
 
         // If an ethereum url is provided, use it. Otherwise, we spawn an
         // in-process anvil node.
-        let (provider, _maybe_anvil) = if let Some(ethereum_url) = maybe_ethereum_url {
+        let (provider, _maybe_anvil) = if let Some(ethereum_url) = &*MAYBE_ETHEREUM_URL {
             (
                 Provider::<Http>::try_from(ethereum_url)?.interval(Duration::from_millis(1)),
                 None,
@@ -209,7 +210,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_deploy() -> Result<()> {
-        let chain = TestChain::new(None, 1).await?;
+        let chain = TestChain::new(1).await?;
         let client = chain.client(chain.accounts()[0].clone()).await?;
         let base = ERC20Mintable::new(chain.addresses.base, client.clone());
         let hyperdrive = IHyperdrive::new(chain.addresses.hyperdrive, client.clone());

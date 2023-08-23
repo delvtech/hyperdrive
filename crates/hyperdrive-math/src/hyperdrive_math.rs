@@ -464,8 +464,15 @@ impl State {
         &self,
         short_amount: FixedPoint,
         spot_price: FixedPoint,
-        open_share_price: FixedPoint,
+        mut open_share_price: FixedPoint,
     ) -> FixedPoint {
+        // If the open share price hasn't been set, we use the current share
+        // price, since this is what will be set as the checkpoint share price
+        // in the next transaction.
+        if open_share_price == fixed!(0) {
+            open_share_price = self.share_price();
+        }
+
         // NOTE: The order of additions and subtractions is important to avoid underflows.
         short_amount.mul_div_down(self.share_price(), open_share_price)
             + self.flat_fee() * short_amount
@@ -602,11 +609,10 @@ mod tests {
     use test_utils::{
         agent::Agent,
         chain::{Chain, TestChain},
+        constants::{FAST_FUZZ_RUNS, FUZZ_RUNS},
     };
 
     use super::*;
-
-    const FUZZ_RUNS: usize = 10_000;
 
     struct TestRunner {
         mock: MockHyperdriveMath<SignerMiddleware<Provider<Http>, LocalWallet>>,
@@ -638,7 +644,7 @@ mod tests {
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
-        for _ in 0..FUZZ_RUNS {
+        for _ in 0..*FAST_FUZZ_RUNS {
             let state = rng.gen::<State>();
             let max_iterations = rng.gen_range(0..=25);
             let actual =
@@ -682,7 +688,7 @@ mod tests {
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
-        for _ in 0..FUZZ_RUNS {
+        for _ in 0..*FUZZ_RUNS {
             let state = rng.gen::<State>();
             let actual = panic::catch_unwind(|| {
                 state.get_max_short(U256::MAX.into(), fixed!(0), None, None)
@@ -713,44 +719,47 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_max_short() -> Result<()> {
+        // Set up the logger.
+        tracing_subscriber::fmt::init();
+
         // Spawn a test chain and create two agents -- Alice and Bob. Alice
         // is funded with a large amount of capital so that she can initialize
         // the pool. Bob is funded with a small amount of capital so that we
         // can test `get_max_short` when budget is the primary constraint.
         let mut rng = thread_rng();
-        let chain = TestChain::new(Some("http://localhost:8545"), 2).await?;
+        let chain = TestChain::new(2).await?;
         let (alice, bob) = (chain.accounts()[0].clone(), chain.accounts()[1].clone());
         let mut alice =
             Agent::new(chain.client(alice).await?, chain.addresses().clone(), None).await?;
         let mut bob = Agent::new(chain.client(bob).await?, chain.addresses(), None).await?;
         let config = alice.get_config().clone();
 
-        for _ in 0..100 {
+        for _ in 0..*FUZZ_RUNS {
             // Snapshot the chain.
-            println!("test: 1");
             let id = chain.snapshot().await?;
-            println!("test: 2");
 
+            // FIXME: We should fuzz over the starting rate and contribution.
+            //
             // Fund Alice and Bob.
             let (fixed_rate, contribution) = (fixed!(0.05e18), fixed!(100_000_000e18));
             alice.fund(contribution).await?;
             let budget = rng.gen_range(fixed!(10e18)..=fixed!(100_000_000e18));
+            println!("budget = {}", budget);
             bob.fund(budget).await?;
-            println!("test: 3");
 
             // Alice initializes the pool.
             alice.initialize(fixed_rate, contribution).await?;
-            println!("test: 4");
 
             // Some of the checkpoint passes and variable interest accrues.
             alice.checkpoint(alice.latest_checkpoint().await?).await?;
+            let rate = rng.gen_range(fixed!(0)..=fixed!(0.5e18));
+            println!("rate = {}", rate);
             alice
                 .advance_time(
-                    rng.gen_range(fixed!(0)..=fixed!(0.5e18)),
+                    rate,
                     FixedPoint::from(config.checkpoint_duration) * fixed!(0.5e18),
                 )
                 .await?;
-            println!("test: 5");
 
             // Get the current state of the pool.
             let state = alice.get_state().await?;
@@ -762,34 +771,32 @@ mod tests {
                 .await?;
             let global_max_short =
                 state.get_max_short(U256::MAX.into(), open_share_price.into(), None, None);
-            println!("test: 6");
 
-            // Bob opens a max short position.
-            println!("test: 6.1");
-            let max_short = bob.get_max_short().await?;
-            println!("test: 6.2");
-            bob.open_short(max_short, Some(fixed!(2e18))).await?;
-            println!("test: 6.3");
-            println!("test: 7");
+            // Bob opens a max short position. We allow for a very small amount
+            // of slippage to account for interest accrual between the time the
+            // calculation is performed and the transaction is submitted.
+            let slippage_tolerance = fixed!(0.0001e18);
+            let max_short = bob.get_max_short(Some(slippage_tolerance)).await?;
+            println!("short amount = {}", max_short);
+            bob.open_short(max_short, None).await?;
 
             // The max short should either be equal to the global max short in
             // the case that the trader isn't budget constrained or the budget
             // should be consumed except for a small epsilon.
             if max_short != global_max_short {
-                // We currently allow up to a tolerance of 0.2%, which means
-                // that the max short is always consuming at least 99.8% of
+                // We currently allow up to a tolerance of 0.05%, which means
+                // that the max short is always consuming at least 99.95% of
                 // the budget.
-                let tolerance = fixed!(0.002e18);
+                let error_tolerance = fixed!(0.0005e18);
                 assert!(
-                    bob.base() < budget * tolerance,
+                    bob.base() < budget * (fixed!(1e18) - slippage_tolerance) * error_tolerance,
                     "expected (base={}) < (budget={}) * {} = {}",
                     bob.base(),
                     budget,
-                    tolerance,
-                    budget * tolerance
+                    error_tolerance,
+                    budget * error_tolerance
                 );
             }
-            println!("test: 8");
 
             // Revert to the snapshot and reset the agent's wallets.
             chain.revert(id).await?;

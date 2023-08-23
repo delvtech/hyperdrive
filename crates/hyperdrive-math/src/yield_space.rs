@@ -143,10 +143,9 @@ mod tests {
     use eyre::Result;
     use hyperdrive_wrappers::wrappers::mock_yield_space_math::MockYieldSpaceMath;
     use rand::{thread_rng, Rng};
+    use test_utils::constants::FAST_FUZZ_RUNS;
 
     use super::*;
-
-    const FUZZ_RUNS: usize = 10_000;
 
     struct TestRunner {
         mock: MockYieldSpaceMath<SignerMiddleware<Provider<Http>, LocalWallet>>,
@@ -175,7 +174,7 @@ mod tests {
     #[test]
     fn fuzz_get_out_for_in() {
         let mut rng = thread_rng();
-        for _ in 0..FUZZ_RUNS {
+        for _ in 0..*FAST_FUZZ_RUNS {
             let state = rng.gen::<State>();
             let in_ = rng.gen::<Asset>();
             let ts = rng.gen_range(fixed!(0)..fixed!(1e18));
@@ -198,7 +197,7 @@ mod tests {
     #[test]
     fn fuzz_get_in_for_out() {
         let mut rng = thread_rng();
-        for _ in 0..FUZZ_RUNS {
+        for _ in 0..*FAST_FUZZ_RUNS {
             let state = rng.gen::<State>();
             let out = rng.gen::<Asset>();
             let ts = rng.gen_range(fixed!(0)..fixed!(1e18));
@@ -224,7 +223,7 @@ mod tests {
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
-        for _ in 0..FUZZ_RUNS {
+        for _ in 0..*FAST_FUZZ_RUNS {
             let state = rng.gen::<State>();
             let ts = rng.gen_range(fixed!(0)..fixed!(1e18));
             let actual = panic::catch_unwind(|| state.get_max_buy(ts));
@@ -258,7 +257,7 @@ mod tests {
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
-        for _ in 0..FUZZ_RUNS {
+        for _ in 0..*FAST_FUZZ_RUNS {
             let state = rng.gen::<State>();
             let in_ = rng.gen::<FixedPoint>();
             let ts = rng.gen_range(fixed!(0)..fixed!(1e18));
@@ -290,7 +289,7 @@ mod tests {
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
-        for _ in 0..FUZZ_RUNS {
+        for _ in 0..*FAST_FUZZ_RUNS {
             let state = rng.gen::<State>();
             let out = rng.gen::<FixedPoint>();
             let ts = rng.gen_range(fixed!(0)..fixed!(1e18));
@@ -322,7 +321,7 @@ mod tests {
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
-        for _ in 0..FUZZ_RUNS {
+        for _ in 0..*FAST_FUZZ_RUNS {
             let state = rng.gen::<State>();
             let in_ = rng.gen::<FixedPoint>();
             let ts = rng.gen_range(fixed!(0)..fixed!(1e18));
@@ -356,7 +355,7 @@ mod tests {
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
-        for _ in 0..FUZZ_RUNS {
+        for _ in 0..*FAST_FUZZ_RUNS {
             let state = rng.gen::<State>();
             let out = rng.gen::<FixedPoint>();
             let ts = rng.gen_range(fixed!(0)..fixed!(1e18));
@@ -388,7 +387,7 @@ mod tests {
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
-        for _ in 0..FUZZ_RUNS {
+        for _ in 0..*FAST_FUZZ_RUNS {
             let state = rng.gen::<State>();
             let ts = rng.gen_range(fixed!(0)..fixed!(1e18));
             let actual = panic::catch_unwind(|| state.k(ts));

@@ -14,7 +14,7 @@ async fn test_simple() -> Result<()> {
     tracing_subscriber::fmt::init();
 
     // Set up the chain and agents.
-    let chain = TestChain::new(None, 2).await?;
+    let chain = TestChain::new(2).await?;
     let (alice, bob) = (chain.accounts()[0].clone(), chain.accounts()[1].clone());
     let mut alice = Agent::new(chain.client(alice).await?, chain.addresses().clone(), None).await?;
     let mut bob = Agent::new(chain.client(bob).await?, chain.addresses(), None).await?;

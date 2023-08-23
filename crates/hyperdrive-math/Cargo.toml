@@ -19,5 +19,8 @@ hyperdrive-wrappers = { path = "../hyperdrive-wrappers" }
 
 [dev-dependencies]
 
+# External dependencies
+tracing-subscriber = "0.3"
+
 # Workspace dependencies
 test-utils = { path = "../test-utils" }
