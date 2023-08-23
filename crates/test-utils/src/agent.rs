@@ -105,6 +105,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
 
     /// Longs ///
 
+    // FIXME: Make the min output configurable.
     #[instrument(skip(self))]
     pub async fn open_long(&mut self, base_paid: FixedPoint) -> Result<()> {
         // Ensure that the agent has a sufficient base balance to open the long.
