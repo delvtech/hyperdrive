@@ -242,7 +242,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     function _isSolvent(uint256 _sharePrice) internal view returns (bool) {
         return
             int256((uint256(_marketState.shareReserves).mulDown(_sharePrice))) -
-                _marketState.longExposure <
+                _marketState.longExposure >=
             int256(_minimumShareReserves.mulDown(_sharePrice));
     }
 

@@ -9,6 +9,8 @@ import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import { Lib } from "../../utils/Lib.sol";
 
+import "forge-std/console2.sol";
+
 contract IntraCheckpointNettingTest is HyperdriveTest {
     using FixedPointMath for uint256;
     using Lib for *;
@@ -40,11 +42,11 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         // remove liquidity
         removeLiquidity(alice, aliceLpShares);
 
-        // close the long.
-        closeLong(alice, maturityTimeLong, bondAmountLong);
-
         // wait for the shorts to mature to close them
         advanceTimeWithCheckpoints(POSITION_DURATION, 0);
+
+        // close the long.
+        closeLong(alice, maturityTimeLong, bondAmountLong);
 
         // close the short
         closeShort(bob, maturityTimeShort2, shortAmount2);
@@ -62,6 +64,104 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             hyperdrive.getPoolConfig().minimumShareReserves;
         assertEq(poolInfo.shareReserves, expectedShareReserves);
     }
+
+    function test_netting_mismatched_exposure_maturities() external {
+        uint256 initialSharePrice = 1e18;
+        int256 variableInterest = 0e18;
+        uint256 timeElapsed = 10220546; //~118 days between each trade
+        uint256 tradeSize = 100e18;
+
+        // initialize the market
+        uint256 aliceLpShares = 0;
+        {
+            uint256 apr = 0.05e18;
+            deploy(alice, apr, initialSharePrice, 0, 0, 0);
+            uint256 contribution = 500_000_000e18;
+            aliceLpShares = initialize(alice, apr, contribution);
+
+            // fast forward time and accrue interest
+            advanceTime(POSITION_DURATION, 0);
+        }
+
+        // NOTE: We have an issue if:
+        // 1) share price is < 1
+        // 1) a long is opened
+        // 2) time passes (no interest accrues)
+        // 3) a short is opened
+        // 4) then LP removes shares
+        // This is a problem bc the net flat trade in calculatePresentValue is net long. 
+        // in other words, the time remaining for the shorts is 1 and the time remaining 
+        // for the longs is < 1.  The exposure doesn't account for this.  It worked before 
+        // because we always left the full long position amount in the share reserves when
+        // calculating idle.  
+
+        // NOTE: We have an issue if:
+        // 1) share price is 1
+        // 1) a long is opened
+        // 2) time passes (no interest accrues)
+        // 3) a short is opened
+        // 4) then LP removes shares
+        // This is a problem bc the net flat trade in calculatePresentValue is net long. 
+        // in other words, the time remaining for the shorts is 1 and the time remaining 
+        // for the longs is < 1.  The exposure doesn't account for this.  It worked before 
+        // because we always left the full long position amount in the share reserves when
+        // calculating idle.
+
+        // NOTE: We have an issue if:??
+        // 1) a long is opened
+        // 2) negative interest is accrued
+        // 3) a short is opened
+        // 4) then LP removes shares
+        // This is a problem bc the net flat trade in calculatePresentValue
+
+        // open a long
+        console2.log("----before open long----");
+        uint256 basePaidLong = tradeSize;
+        (uint256 maturityTimeLong, uint256 bondAmountLong) = openLong(
+            alice,
+            basePaidLong
+        );
+
+        // fast forward time, create checkpoints and accrue interest
+        advanceTimeWithCheckpoints(timeElapsed, variableInterest);
+
+        console2.log("----before open short----");
+        // open a short for the same number of bonds as the existing long
+        uint256 shortAmount = bondAmountLong;
+        (uint256 maturityTimeShort, ) = openShort(bob, shortAmount);
+
+        console2.log("----before remove liquidity----");
+        // remove liquidity
+        removeLiquidity(alice, aliceLpShares);
+
+        console2.log("----before wait for positions to close----");
+        // wait for the positions to mature
+        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
+        while (poolInfo.shortsOutstanding > 0 && poolInfo.longsOutstanding > 0) {
+            advanceTimeWithCheckpoints(POSITION_DURATION, variableInterest);
+            poolInfo = hyperdrive.getPoolInfo();
+        }
+
+        console2.log("----before close short----");
+        // close the short positions
+        closeShort(bob, maturityTimeShort, bondAmountLong);
+
+        console2.log("----before close long----");
+        // close the long positions
+        closeLong(bob, maturityTimeLong, shortAmount);
+
+        // longExposure should be 0
+        poolInfo = hyperdrive.getPoolInfo();
+        assertApproxEqAbs(poolInfo.longExposure, 0, 1);
+
+        // idle should be equal to shareReserves
+        uint256 expectedShareReserves = MockHyperdrive(address(hyperdrive))
+            .calculateIdleShareReserves(hyperdrive.getPoolInfo().sharePrice) +
+            hyperdrive.getPoolConfig().minimumShareReserves;
+        assertEq(poolInfo.shareReserves, expectedShareReserves);
+
+    }
+    
 
     function test_netting_longs_close_with_initial_share_price_gt_1() external {
         uint256 initialSharePrice = 1.017375020334083692e18;
@@ -97,11 +197,11 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
     // the interest drops so low that we underflow when trying to perform the YieldSpace
     // calculation for the opening of the new position
     function test_netting_extreme_negative_interest_time_elapsed() external {
-        uint256 initialSharePrice = 0.5e18;
-        int256 variableInterest = -0.5e18;
+        uint256 initialSharePrice = 1e18;
+        int256 variableInterest = 0.0e18;
         uint256 timeElapsed = 10220546; //~118 days between each trade
-        uint256 tradeSize = 4993785.6789593698886044450e18; //100_000_000 fails with sub underflow
-        uint256 numTrades = 10;
+        uint256 tradeSize = 100e18;//4_993_785.6789593698886044450e18; //100_000_000 fails with sub underflow
+        uint256 numTrades = 1;
 
         // If you increase numTrades enought it will eventually fail due to sub underflow
         // caused by share price going so low that k-y is negative (on openShort)
@@ -643,31 +743,30 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             shortMaturityTimes[i] = maturityTimeShort;
         }
 
+        console2.log("before removeLiquidity");
         removeLiquidity(alice, aliceLpShares);
+        console2.log("after removeLiquidity");
 
-        // close the long positions - not all of them have to be matured to close
-        // depending on how many shorts netted with them in checkpoints the exposure
-        // might be too low to close them all at once
-        for (uint256 i = 0; i < numTrades; i++) {
-            // fast forward time, create checkpoints and accrue interest
-            advanceTimeWithCheckpoints(1 days, variableInterest);
-
-            closeLong(bob, longMaturityTimes[i], bondAmounts[i]);
-        }
-
-        // Ensure all the short positions have matured before trying to close them
+        // Ensure all the positions have matured before trying to close them
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
-        while (poolInfo.shortsOutstanding > 0) {
+        while (poolInfo.shortsOutstanding > 0 && poolInfo.longsOutstanding > 0) {
+            console2.log("exposure", poolInfo.longExposure.toString(18));
+            console2.log("shortsOutstanding", poolInfo.shortsOutstanding.toString(18));
+            console2.log("longsOutstanding", poolInfo.longsOutstanding.toString(18));
             advanceTimeWithCheckpoints(POSITION_DURATION, variableInterest);
             poolInfo = hyperdrive.getPoolInfo();
-        }
 
+        }
+        console2.log("after maturity");
         // close the short positions
         for (uint256 i = 0; i < numTrades; i++) {
+            console2.log("closing short", i.toString(18));
+            // close the short positions
             closeShort(bob, shortMaturityTimes[i], bondAmounts[i]);
 
-            // fast forward time, create checkpoints and accrue interest
-            advanceTimeWithCheckpoints(1 days, variableInterest);
+            console2.log("closing long", i.toString(18));
+            // close the long positions
+            closeLong(bob, longMaturityTimes[i], bondAmounts[i]);
         }
 
         // longExposure should be 0

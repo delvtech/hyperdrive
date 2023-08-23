@@ -269,7 +269,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // the share reserves, which limits the amount of capital available to back non-netted long
         // exposure. Since both quantities decrease, we need to check that the system is still
         // solvent.
-        if (_isSolvent(_sharePrice)) {
+        if (!_isSolvent(_sharePrice)) {
             revert IHyperdrive.BaseBufferExceedsShareReserves();
         }
 

@@ -271,7 +271,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         _marketState.longExposure += int128(longExposureDelta);
 
         // We need to check solvency because longs increase the system's exposure.
-        if (_isSolvent(_sharePrice)) {
+        if (!_isSolvent(_sharePrice)) {
             revert IHyperdrive.BaseBufferExceedsShareReserves();
         }
     }
