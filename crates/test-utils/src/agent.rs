@@ -505,7 +505,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
     /// Checkpoint ///
 
     #[instrument(skip(self))]
-    pub async fn checkpoint(&mut self, checkpoint: U256) -> Result<()> {
+    pub async fn checkpoint(&self, checkpoint: U256) -> Result<()> {
         self.hyperdrive.checkpoint(checkpoint).send().await?;
         Ok(())
     }
@@ -632,6 +632,8 @@ impl Agent<ChainClient, ChaCha8Rng> {
         Ok(())
     }
 
+    /// Advances the chain's time and changes the pool's variable rate so that
+    /// interest accrues.
     pub async fn advance_time(&self, rate: FixedPoint, duration: FixedPoint) -> Result<()> {
         // Set the new variable rate.
         self.pool.set_rate(rate.into()).send().await?;
@@ -645,6 +647,40 @@ impl Agent<ChainClient, ChaCha8Rng> {
         self.provider
             .request::<_, U256>("evm_mine", None::<()>)
             .await?;
+
+        Ok(())
+    }
+
+    /// Advances the chain's time and changes the pool's variable rate so that
+    /// interest accrues. This function advances time in increments of the
+    /// checkpoint duration and mints every checkpoint that is passed over.
+    pub async fn advance_time_with_checkpoints(
+        &self,
+        rate: FixedPoint,
+        mut duration: FixedPoint,
+    ) -> Result<()> {
+        // Set the new variable rate.
+        self.pool.set_rate(rate.into()).send().await?;
+
+        // Advance time one checkpoint at a time until we've advanced time by
+        // the full duration.
+        let checkpoint_duration = self.get_config().checkpoint_duration.into();
+        while duration > checkpoint_duration {
+            // Advance the chain's time by the checkpoint duration and mint a
+            // new checkpoint.
+            self.provider
+                .request::<[U256; 1], u64>("evm_increaseTime", [checkpoint_duration.into()])
+                .await?;
+            self.checkpoint(self.latest_checkpoint().await?).await?;
+            duration -= checkpoint_duration;
+        }
+
+        // Advance the chain's time by the remaining duration and mint a new
+        // checkpoint.
+        self.provider
+            .request::<[U256; 1], u64>("evm_increaseTime", [duration.into()])
+            .await?;
+        self.checkpoint(self.latest_checkpoint().await?).await?;
 
         Ok(())
     }

@@ -68,7 +68,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 _bondAmount,
                 sharePrice,
                 openSharePrice,
-                FixedPointMath.ONE_18 // shorts are opened with a time remaining
+                FixedPointMath.ONE_18 // shorts are opened with a time remaining of 1
             );
 
             // Attribute the governance fees.
