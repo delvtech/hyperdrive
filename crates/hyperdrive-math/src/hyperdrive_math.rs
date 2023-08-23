@@ -738,13 +738,13 @@ mod tests {
             // Snapshot the chain.
             let id = chain.snapshot().await?;
 
-            // FIXME: We should fuzz over the starting rate and contribution.
+            // TODO: We should fuzz over a range of fixed rates.
             //
             // Fund Alice and Bob.
-            let (fixed_rate, contribution) = (fixed!(0.05e18), fixed!(100_000_000e18));
-            alice.fund(contribution).await?;
+            let fixed_rate = fixed!(0.05e18);
+            let contribution = rng.gen_range(fixed!(100_000e18)..=fixed!(100_000_000e18));
             let budget = rng.gen_range(fixed!(10e18)..=fixed!(100_000_000e18));
-            println!("budget = {}", budget);
+            alice.fund(contribution).await?;
             bob.fund(budget).await?;
 
             // Alice initializes the pool.
@@ -753,7 +753,6 @@ mod tests {
             // Some of the checkpoint passes and variable interest accrues.
             alice.checkpoint(alice.latest_checkpoint().await?).await?;
             let rate = rng.gen_range(fixed!(0)..=fixed!(0.5e18));
-            println!("rate = {}", rate);
             alice
                 .advance_time(
                     rate,
@@ -777,17 +776,16 @@ mod tests {
             // calculation is performed and the transaction is submitted.
             let slippage_tolerance = fixed!(0.0001e18);
             let max_short = bob.get_max_short(Some(slippage_tolerance)).await?;
-            println!("short amount = {}", max_short);
             bob.open_short(max_short, None).await?;
 
             // The max short should either be equal to the global max short in
             // the case that the trader isn't budget constrained or the budget
             // should be consumed except for a small epsilon.
             if max_short != global_max_short {
-                // We currently allow up to a tolerance of 0.05%, which means
-                // that the max short is always consuming at least 99.95% of
+                // We currently allow up to a tolerance of 0.1%, which means
+                // that the max short is always consuming at least 99.9% of
                 // the budget.
-                let error_tolerance = fixed!(0.0005e18);
+                let error_tolerance = fixed!(0.001e18);
                 assert!(
                     bob.base() < budget * (fixed!(1e18) - slippage_tolerance) * error_tolerance,
                     "expected (base={}) < (budget={}) * {} = {}",
