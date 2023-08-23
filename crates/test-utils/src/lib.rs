@@ -1,5 +1,5 @@
 #![feature(async_fn_in_trait)]
-#[allow(clippy::comparison_chain)]
+#![allow(clippy::comparison_chain)]
 #[macro_use]
 extern crate lazy_static;
 

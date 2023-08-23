@@ -554,28 +554,26 @@ impl Agent<ChainClient, ChaCha8Rng> {
                 self.rng.gen_range(fixed!(1)..=max_short_bonds),
             ));
         }
-        if self.wallet.longs.len() > 0 {
-            let maturity_time = self
+        if !self.wallet.longs.is_empty() {
+            let maturity_time = *self
                 .wallet
                 .longs
                 .keys()
                 .nth(self.rng.gen_range(0..self.wallet.longs.keys().len()))
-                .unwrap()
-                .clone();
+                .unwrap();
             actions.push(Action::CloseLong(
                 maturity_time,
                 self.rng
                     .gen_range(fixed!(1e8)..=self.wallet.longs[&maturity_time]),
             ));
         }
-        if self.wallet.shorts.len() > 0 {
-            let maturity_time = self
+        if !self.wallet.shorts.is_empty() {
+            let maturity_time = *self
                 .wallet
                 .shorts
                 .keys()
                 .nth(self.rng.gen_range(0..self.wallet.shorts.keys().len()))
-                .unwrap()
-                .clone();
+                .unwrap();
             actions.push(Action::CloseShort(
                 maturity_time,
                 self.rng

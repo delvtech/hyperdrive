@@ -382,7 +382,7 @@ impl FixedPoint {
         r
     }
 
-    fn to_scaled_string(&self, decimals: usize) -> String {
+    fn to_scaled_string(self, decimals: usize) -> String {
         let mut value = self.0;
         let mut digits = 0;
         let mut result = vec![];
@@ -398,10 +398,8 @@ impl FixedPoint {
 
         // Add leading zeros.
         if digits < decimals {
-            for _ in 0..(decimals - digits) {
-                result.push('0');
-                digits += 1;
-            }
+            result.resize(result.len() + decimals - digits, '0');
+            digits += decimals - digits;
         }
 
         // Add the decimal point and leading zero.
