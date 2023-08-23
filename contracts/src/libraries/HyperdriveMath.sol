@@ -5,6 +5,8 @@ import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { FixedPointMath } from "./FixedPointMath.sol";
 import { YieldSpaceMath } from "./YieldSpaceMath.sol";
 import { SafeCast } from "./SafeCast.sol";
+import { Lib } from "../../../test/utils/Lib.sol";
+import "forge-std/console2.sol";
 
 /// @author DELV
 /// @title Hyperdrive

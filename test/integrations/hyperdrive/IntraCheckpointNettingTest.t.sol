@@ -388,6 +388,9 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         uint256 expectedShareReserves = MockHyperdrive(address(hyperdrive))
             .calculateIdleShareReserves(hyperdrive.getPoolInfo().sharePrice) +
             hyperdrive.getPoolConfig().minimumShareReserves;
+
+        console2.log("expectedShareReserves", expectedShareReserves.toString(18));
+        console2.log("shareReserves: %s", hyperdrive.getPoolInfo().shareReserves.toString(18));
         assertEq(poolInfo.shareReserves, expectedShareReserves);
     }
 

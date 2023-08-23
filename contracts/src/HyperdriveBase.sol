@@ -10,6 +10,9 @@ import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { SafeCast } from "./libraries/SafeCast.sol";
 import { MultiToken } from "./token/MultiToken.sol";
 
+import { Lib } from "../../test/utils/Lib.sol";
+import "forge-std/console2.sol";
+
 /// @author DELV
 /// @title HyperdriveBase
 /// @notice The base contract of the Hyperdrive inheritance hierarchy.
@@ -258,6 +261,21 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
                 _minimumShareReserves;
         }
         return idleShares;
+    }
+
+    function _calculateCurrentLongExposure() internal view returns (int256) {
+        uint256 _latestCheckpoint = _latestCheckpoint();
+        console2.log("in _calculateCurrentLongExposure(), longExposure", _checkpoints[_latestCheckpoint].longExposure.toString(18));
+        console2.log("in _calculateCurrentLongExposure(), shortAssets", _checkpoints[_latestCheckpoint].shortAssets.toString(18));
+        console2.log("in _calculateCurrentLongExposure(), _marketState.longExposure", _marketState.longExposure.toString(18));
+        int256 _totalLongExposure = int256(int128(_checkpoints[_latestCheckpoint].longExposure) - int128(_checkpoints[_latestCheckpoint].shortAssets)).max(0);
+        console2.log("in _calculateCurrentLongExposure(), _totalLongExposure", _totalLongExposure.toString(18));
+        return _marketState.longExposure + _totalLongExposure;
+    }
+
+    function _updateLongExposure() internal {
+        uint256 _previousCheckpoint = _latestCheckpoint() - _checkpointDuration;
+        _marketState.longExposure += int128(_checkpoints[_previousCheckpoint].longExposure) - int128(_checkpoints[_previousCheckpoint].shortAssets);
     }
 
     /// @dev Check solvency by verifying that the share reserves are greater than the exposure plus the minimum share reserves.

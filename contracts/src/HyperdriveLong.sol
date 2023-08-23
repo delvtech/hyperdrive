@@ -8,6 +8,9 @@ import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { SafeCast } from "./libraries/SafeCast.sol";
 
+import { Lib } from "../../test/utils/Lib.sol";
+import "forge-std/console2.sol";
+
 /// @author DELV
 /// @title HyperdriveLong
 /// @notice Implements the long accounting for Hyperdrive.
