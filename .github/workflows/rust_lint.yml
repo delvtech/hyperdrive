@@ -26,6 +26,7 @@ jobs:
         with:
           toolchain: nightly
           override: true
+          components: clippy
 
       - name: lint check
         run: cargo check

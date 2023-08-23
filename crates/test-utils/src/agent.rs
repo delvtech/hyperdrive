@@ -622,25 +622,11 @@ impl Agent<ChainClient, ChaCha8Rng> {
             .await?;
 
         // Approve hyperdrive to spend the base tokens.
-        match self
-            .base
+        self.base
             .approve(self.hyperdrive.address(), amount.into())
             .from(self.address)
             .send()
-            .await
-        {
-            Ok(_) => (),
-            Err(e) => {
-                if e.to_string().contains("intrinsic  gas too high") {
-                    println!("got here");
-                    self.base
-                        .approve(self.hyperdrive.address(), amount.into())
-                        .from(self.address)
-                        .send()
-                        .await?;
-                }
-            }
-        }
+            .await?;
 
         // Increase the base balance in the wallet.
         self.wallet.base += amount;
