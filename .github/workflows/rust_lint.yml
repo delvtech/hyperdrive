@@ -26,7 +26,7 @@ jobs:
         with:
           toolchain: nightly
           override: true
-          components: clippy
+          components: rustfmt, clippy
 
       - name: lint check
         run: cargo check
