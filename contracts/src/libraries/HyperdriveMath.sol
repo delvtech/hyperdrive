@@ -668,9 +668,10 @@ library HyperdriveMath {
             _openSharePrice.mulUp(_sharePrice)
         );
 
-        // We increase the bondFactor by the flatfee amount, because the trader has provided
-        // the flatFee as margin, and so it must be returned to them if its not charged.
-        bondFactor += _bondAmount.mulDown(_flatFee);
+        // We increase the bondFactor by the flat fee amount, because the trader
+        // has provided the flat fee as margin, and so it must be returned to
+        // them if it's not charged.
+        bondFactor += _bondAmount.mulDivDown(_flatFee, _sharePrice);
 
         if (bondFactor > _shareAmount) {
             // proceeds = (c1 / c0 * c) * dy - dz

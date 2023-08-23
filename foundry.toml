@@ -33,7 +33,7 @@ fs_permissions = [
 deny_warnings = true
 # optimizer settings
 optimizer = true
-optimizer_runs = 500
+optimizer_runs = 200
 # Enable via-ir
 via_ir = true
 # Enable gas-reporting for all contracts

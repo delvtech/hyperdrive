@@ -18,8 +18,14 @@ use rand::{
 /// This fixed point type is a direct port of Solidity's FixedPointMath library.
 /// Each of the functions is fuzz tested against the Solidity implementation to
 /// ensure that the behavior is identical.
-#[derive(Default, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 pub struct FixedPoint(U256);
+
+impl Default for FixedPoint {
+    fn default() -> FixedPoint {
+        fixed!(0)
+    }
+}
 
 /// Formatting ///
 
@@ -376,7 +382,7 @@ impl FixedPoint {
         r
     }
 
-    fn to_scaled_string(&self, decimals: usize) -> String {
+    fn to_scaled_string(self, decimals: usize) -> String {
         let mut value = self.0;
         let mut digits = 0;
         let mut result = vec![];
@@ -392,10 +398,8 @@ impl FixedPoint {
 
         // Add leading zeros.
         if digits < decimals {
-            for _ in 0..(decimals - digits) {
-                result.push('0');
-                digits += 1;
-            }
+            result.resize(result.len() + decimals - digits, '0');
+            digits += decimals - digits;
         }
 
         // Add the decimal point and leading zero.
@@ -481,10 +485,9 @@ mod tests {
     use eyre::Result;
     use hyperdrive_wrappers::wrappers::mock_fixed_point_math::MockFixedPointMath;
     use rand::{thread_rng, Rng};
+    use test_utils::constants::FAST_FUZZ_RUNS;
 
     use super::*;
-
-    const FUZZ_RUNS: usize = 10_000;
 
     struct TestRunner {
         mock: MockFixedPointMath<SignerMiddleware<Provider<Http>, LocalWallet>>,
@@ -576,7 +579,7 @@ mod tests {
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
-        for _ in 0..FUZZ_RUNS {
+        for _ in 0..*FAST_FUZZ_RUNS {
             let a: FixedPoint = rng.gen();
             let b: FixedPoint = rng.gen();
             let c: FixedPoint = rng.gen();
@@ -601,7 +604,7 @@ mod tests {
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
-        for _ in 0..FUZZ_RUNS {
+        for _ in 0..*FAST_FUZZ_RUNS {
             let a: FixedPoint = rng.gen();
             let b: FixedPoint = rng.gen();
             let actual = panic::catch_unwind(|| a * b);
@@ -620,7 +623,7 @@ mod tests {
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
-        for _ in 0..FUZZ_RUNS {
+        for _ in 0..*FAST_FUZZ_RUNS {
             let a: FixedPoint = rng.gen();
             let b: FixedPoint = rng.gen();
             let actual = panic::catch_unwind(|| a.mul_up(b));
@@ -645,7 +648,7 @@ mod tests {
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
-        for _ in 0..FUZZ_RUNS {
+        for _ in 0..*FAST_FUZZ_RUNS {
             let a: FixedPoint = rng.gen();
             let b: FixedPoint = rng.gen();
             let actual = panic::catch_unwind(|| a / b);
@@ -670,7 +673,7 @@ mod tests {
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
-        for _ in 0..FUZZ_RUNS {
+        for _ in 0..*FAST_FUZZ_RUNS {
             let a: FixedPoint = rng.gen();
             let b: FixedPoint = rng.gen();
             let actual = panic::catch_unwind(|| a.div_up(b));
@@ -689,7 +692,7 @@ mod tests {
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
-        for _ in 0..FUZZ_RUNS {
+        for _ in 0..*FAST_FUZZ_RUNS {
             let x: FixedPoint = rng.gen_range(fixed!(0)..=fixed!(1e18));
             let y: FixedPoint = rng.gen_range(fixed!(0)..=fixed!(1e18));
             let actual = panic::catch_unwind(|| x.pow(y));
@@ -710,7 +713,7 @@ mod tests {
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
-        for _ in 0..FUZZ_RUNS {
+        for _ in 0..*FAST_FUZZ_RUNS {
             let x: FixedPoint = rng.gen();
             let y: FixedPoint = rng.gen();
             let actual = panic::catch_unwind(|| x.pow(y));
@@ -729,7 +732,7 @@ mod tests {
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
-        for _ in 0..FUZZ_RUNS {
+        for _ in 0..*FAST_FUZZ_RUNS {
             let x: I256 = rng.gen_range(fixed!(0)..=fixed!(1e18)).into();
             let actual = panic::catch_unwind(|| FixedPoint::ln(x));
             match runner.mock.ln(x).call().await {
@@ -747,7 +750,7 @@ mod tests {
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
-        for _ in 0..FUZZ_RUNS {
+        for _ in 0..*FAST_FUZZ_RUNS {
             let x: I256 = rng.gen::<FixedPoint>().into();
             let actual = panic::catch_unwind(|| FixedPoint::exp(x));
             match runner.mock.exp(x).call().await {
@@ -765,7 +768,7 @@ mod tests {
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
-        for _ in 0..FUZZ_RUNS {
+        for _ in 0..*FAST_FUZZ_RUNS {
             let x: I256 = rng.gen_range(fixed!(0)..=fixed!(1e18)).into();
             let actual = panic::catch_unwind(|| FixedPoint::ln(x));
             match runner.mock.ln(x).call().await {
@@ -783,7 +786,7 @@ mod tests {
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
-        for _ in 0..FUZZ_RUNS {
+        for _ in 0..*FAST_FUZZ_RUNS {
             let x: I256 = rng.gen::<FixedPoint>().into();
             let actual = panic::catch_unwind(|| FixedPoint::ln(x));
             match runner.mock.ln(x).call().await {
