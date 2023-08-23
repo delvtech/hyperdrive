@@ -283,7 +283,7 @@ contract OpenShortTest is HyperdriveTest {
         // Bob opens a short position.
         (, uint256 basePaid2) = openShort(bob, shortAmount);
 
-        // The governance fee shouldn't effect the short's deposit, so the base
+        // The governance fee shouldn't affect the short's deposit, so the base
         // paid should be the same in both cases.
         assertEq(basePaid, basePaid2);
     }
