@@ -103,7 +103,6 @@ abstract contract HyperdriveDataProvider is
             longAverageMaturityTime: _marketState.longAverageMaturityTime,
             shortsOutstanding: _marketState.shortsOutstanding,
             shortAverageMaturityTime: _marketState.shortAverageMaturityTime,
-            shortBaseVolume: _marketState.shortBaseVolume,
             lpTotalSupply: lpTotalSupply,
             lpSharePrice: lpTotalSupply == 0
                 ? 0

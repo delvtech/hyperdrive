@@ -538,44 +538,6 @@ mod tests {
         );
     }
 
-    #[tokio::test]
-    async fn fuzz_add() -> Result<()> {
-        let runner = setup().await?;
-
-        // Fuzz the rust and solidity implementations against each other.
-        let mut rng = thread_rng();
-        for _ in 0..*FAST_FUZZ_RUNS {
-            let a: FixedPoint = rng.gen();
-            let b: FixedPoint = rng.gen();
-            let actual = panic::catch_unwind(|| a + b);
-            match runner.mock.add(a.into(), b.into()).call().await {
-                Ok(expected) => assert_eq!(actual.unwrap(), FixedPoint::from(expected)),
-                Err(_) => assert!(actual.is_err()),
-            }
-        }
-
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn fuzz_sub() -> Result<()> {
-        let runner = setup().await?;
-
-        // Fuzz the rust and solidity implementations against each other.
-        let mut rng = thread_rng();
-        for _ in 0..*FAST_FUZZ_RUNS {
-            let a: FixedPoint = rng.gen();
-            let b: FixedPoint = rng.gen();
-            let actual = panic::catch_unwind(|| a - b);
-            match runner.mock.sub(a.into(), b.into()).call().await {
-                Ok(expected) => assert_eq!(actual.unwrap(), FixedPoint::from(expected)),
-                Err(_) => assert!(actual.is_err()),
-            }
-        }
-
-        Ok(())
-    }
-
     #[test]
     fn test_mul_div_down_failure() {
         // Ensure that division by zero fails.

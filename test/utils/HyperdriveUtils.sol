@@ -84,7 +84,7 @@ library HyperdriveUtils {
             "Expecting NormalizedTimeRemaining"
         );
         return
-            (bondAmount.sub(baseAmount)).divDown(
+            (bondAmount - baseAmount).divDown(
                 baseAmount.mulDown(timeRemaining)
             );
     }
@@ -244,15 +244,13 @@ library HyperdriveUtils {
         );
 
         // Calculate and attribute fees
-        uint256 curveFee = FixedPointMath
-            .ONE_18
-            .sub(spotPrice)
+        uint256 curveFee = (FixedPointMath.ONE_18 - spotPrice)
             .mulDown(poolConfig.fees.curve)
             .mulDown(_bondAmount)
             .mulDivDown(timeRemaining, poolInfo.sharePrice);
         uint256 flatFee = (
             _bondAmount.mulDivDown(
-                FixedPointMath.ONE_18.sub(timeRemaining),
+                FixedPointMath.ONE_18 - timeRemaining,
                 poolInfo.sharePrice
             )
         ).mulDown(poolConfig.fees.flat);
@@ -300,8 +298,7 @@ library HyperdriveUtils {
                             uint256(poolInfo.shortAverageMaturityTime).divUp(
                                 1e36
                             )
-                        ),
-                        shortBaseVolume: poolInfo.shortBaseVolume
+                        )
                     })
                 )
                 .mulDown(poolInfo.sharePrice);
@@ -482,12 +479,6 @@ library HyperdriveUtils {
         }
         if (_selector == IHyperdrive.InvalidTimestamp.selector) {
             return "InvalidTimestamp";
-        }
-        if (_selector == IHyperdrive.FixedPointMath_AddOverflow.selector) {
-            return "FixedPointMath_AddOverflow";
-        }
-        if (_selector == IHyperdrive.FixedPointMath_SubOverflow.selector) {
-            return "FixedPointMath_SubOverflow";
         }
         if (_selector == IHyperdrive.FixedPointMath_InvalidExponent.selector) {
             return "FixedPointMath_InvalidExponent";

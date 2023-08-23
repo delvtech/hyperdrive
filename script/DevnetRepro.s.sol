@@ -95,7 +95,6 @@ contract DevnetRepro is Script {
         vm.writeLine(REPRO_PATH, string.concat(string.concat("            longAverageMaturityTime: ", vm.toString(info.longAverageMaturityTime)), ","));
         vm.writeLine(REPRO_PATH, string.concat(string.concat("            shortAverageMaturityTime: ", vm.toString(info.shortAverageMaturityTime)), ","));
         vm.writeLine(REPRO_PATH, "            longOpenSharePrice: 0,");
-        vm.writeLine(REPRO_PATH, "            shortBaseVolume: 0,");
         vm.writeLine(REPRO_PATH, "            isInitialized: true,");
         vm.writeLine(REPRO_PATH, "            isPaused: false");
         vm.writeLine(REPRO_PATH, "        });");
