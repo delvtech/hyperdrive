@@ -12,7 +12,7 @@ library SafeCast {
     }
 
     function toInt128(int256 x) internal pure returns (int128 y) {
-        require(x < 1 << 128);
+        require(x >= type(int128).min && x <= type(int128).max);
 
         y = int128(x);
     }
