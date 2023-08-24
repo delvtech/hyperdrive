@@ -263,7 +263,7 @@ contract FixedPointMathTest is Test {
 
         uint256 result;
         uint256 lo = 0;
-        uint256 hi = 10e18;
+        uint256 hi = 10_000_000e18;
 
         uint256 average = hi;
         uint256 avgWeight = hi;

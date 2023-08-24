@@ -249,7 +249,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
             )
             .toUint128();
 
-        // SAFETY: updateWeightedAverage is accepting values expected to be within an OOM for 1e18 and 100M
+        // SAFETY: updateWeightedAverage is accepting values expected to be within an OOM for 0 and 10M
         // and has been validated to be safe in these conditions as seen within test_updateWeightedAverageExtremes
         _marketState.longOpenSharePrice = uint256(
             _marketState.longOpenSharePrice
@@ -303,6 +303,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
         uint128 longSharePrice_ = _checkpoints[checkpointTime].longSharePrice;
 
         // Update the long average maturity time.
+        // SAFETY: updateWeightedAverage has been confirmed safe within this range
+        // and since maturityTime is scaled up here so it is safe
         _marketState.longAverageMaturityTime = uint256(
             _marketState.longAverageMaturityTime
         )
@@ -315,7 +317,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
             .toUint128();
 
         // Update the global long open share price.
-        // SAFETY: updateWeightedAverage is accepting values expected to be within an OOM for 1e18 and 100M
+        // SAFETY: updateWeightedAverage is accepting values expected to be within an OOM for 0e18 and 10e18M
         // and has been validated to be safe in these conditions as seen within test_updateWeightedAverageExtremes
         _marketState.longOpenSharePrice = uint256(
             _marketState.longOpenSharePrice
