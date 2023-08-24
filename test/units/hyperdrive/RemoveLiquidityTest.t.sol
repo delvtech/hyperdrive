@@ -189,15 +189,15 @@ contract RemoveLiquidityTest is HyperdriveTest {
     ) internal {
         // The LPs provided margins for all of the open trades. We can calculate
         // this margin starting with the idle calculation:
-        // idle = z * c - l_o - z_min
+        // idle = z * c - l_e - z_min
         //
         // when a long is opened idle changes by:
-        // idle = (z + dz) * c - (l_o + dy) - z_min
+        // idle = (z + dz) * c - (l_e + dy) - z_min
         // delta idle = dz * c - dy
         // new idle = old idle + delta idle (since dy > dz*c idle goes down)
         //
         // When a short is opened the share reserves decrease and so does the exposure:
-        // idle = (z*c - (dy - dz*c)) - l_o - z_min
+        // idle = (z*c - (dy - dz*c)) - l_e - z_min
         // delta idle = dy - dz *c =  - dz * c + dy
         // new idle = old idle + delta idle (since dy > dz*c idle goes up)
         uint256 margin = (testCase.longAmount - testCase.longBasePaid) +
@@ -237,6 +237,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
                 testCase.initialLpShares +
                     hyperdrive.getPoolConfig().minimumShareReserves
             );
+            // fails
             assertApproxEqAbs(
                 expectedBaseProceeds,
                 contributionPlusInterest - initializerMargin,
@@ -300,11 +301,13 @@ contract RemoveLiquidityTest is HyperdriveTest {
             reservedShares.mulDown(hyperdrive.getPoolInfo().sharePrice);
         uint256 expectedShareReserves = reservedShares +
             testCase.longAmount.divDown(hyperdrive.getPoolInfo().sharePrice);
+        //fails
         assertApproxEqAbs(
             baseToken.balanceOf(address(hyperdrive)),
             expectedBaseBalance,
             tolerance
         );
+        //fails
         assertApproxEqAbs(
             hyperdrive.getPoolInfo().shareReserves,
             expectedShareReserves,

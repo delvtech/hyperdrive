@@ -86,7 +86,7 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
         /// @dev The average maturity time of outstanding positions.
         uint128 shortAverageMaturityTime;
         /// @dev The global exposure of the pool due to open longs
-        int128 longExposure;
+        uint128 longExposure;
         /// @dev A flag indicating whether or not the pool has been initialized.
         bool isInitialized;
         /// @dev A flag indicating whether or not the pool is paused.
@@ -178,7 +178,7 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
         ///      shares to market.
         uint256 lpSharePrice;
         /// @dev The global exposure of the pool due to open positions
-        int256 longExposure;
+        uint256 longExposure;
     }
 
     struct OracleState {

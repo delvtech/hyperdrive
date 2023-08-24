@@ -18,7 +18,9 @@ import { MultiToken } from "./token/MultiToken.sol";
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     using FixedPointMath for uint256;
+    using FixedPointMath for int256;
     using SafeCast for uint256;
+    using SafeCast for int256;
 
     event Initialize(
         address indexed provider,
@@ -217,20 +219,36 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
 
     /// Helpers ///
 
+    /// @dev Updates the global long exposure.
+    /// @param _before The long exposure before the update.
+    /// @param _after The long exposure after the update.
+    function _updateLongExposure(int256 _before, int256 _after) internal {
+        // LongExposure is decreasing
+        if(_before > _after && _before >= 0){
+            int256 delta = int256(_before - _after.max(0));
+            // Since the longExposure can't be negative, we need to make sure we don't underflow
+            _marketState.longExposure -= uint128(delta.min(int128(_marketState.longExposure)).toInt128());
+        }
+        // LongExposure is increasing 
+        else if (_after > _before) {
+            if( _before >= 0 ){
+                _marketState.longExposure += uint128(_after.toInt128() - _before.toInt128());
+            } else {
+                _marketState.longExposure += uint128(_after.max(0).toInt128());
+            }
+        }
+    }
+
     /// @dev Calculates the number of share reserves that are not reserved by open positions
     /// @param _sharePrice The current share price.
     function _calculateIdleShareReserves(
         uint256 _sharePrice
     ) internal view returns (uint256 idleShares) {
-        uint256 usedShares;
-        uint256 longsOutstanding = _marketState.longsOutstanding;
-        if (longsOutstanding > 0) {
-            usedShares = longsOutstanding.divDown(_sharePrice);
-        }
-        if (_marketState.shareReserves > usedShares + _minimumShareReserves) {
+        uint256 longExposure = uint256(_marketState.longExposure).divDown(_sharePrice);
+        if (_marketState.shareReserves > longExposure + _minimumShareReserves) {
             idleShares =
                 _marketState.shareReserves -
-                usedShares -
+                longExposure -
                 _minimumShareReserves;
         }
         return idleShares;
@@ -241,8 +259,8 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     /// @return True if the share reserves are greater than the exposure plus the minimum share reserves.
     function _isSolvent(uint256 _sharePrice) internal view returns (bool) {
         return
-            int256((uint256(_marketState.shareReserves).mulDown(_sharePrice))) -
-                _marketState.longExposure >=
+            (int256((uint256(_marketState.shareReserves).mulDown(_sharePrice))) -
+                int128(_marketState.longExposure)).max(0) >=
             int256(_minimumShareReserves.mulDown(_sharePrice));
     }
 

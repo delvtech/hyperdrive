@@ -17,6 +17,7 @@ import { YieldSpaceMath } from "./libraries/YieldSpaceMath.sol";
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveShort is HyperdriveLP {
     using FixedPointMath for uint256;
+    using FixedPointMath for int256;
     using SafeCast for uint256;
 
     /// @notice Opens a short position.
@@ -274,14 +275,14 @@ abstract contract HyperdriveShort is HyperdriveLP {
         }
 
         // Update the checkpoint's short deposits and decrease the long exposure.
-        // The exposure is decreasing because the short deposit is forfeit by shorts
-        // if they hold until maturity, so we can use this deposit to offset the LP's
-        // exposure to longs.
         // NOTE: Refer to this issue for details on if this should be moved
         //       https://github.com/delvtech/hyperdrive/issues/558
-        _checkpoints[_latestCheckpoint()].shortAssets += _traderDeposit
-            .toUint128();
-        _marketState.longExposure -= int128(_traderDeposit.toUint128());
+        uint256 _latestCheckpoint = _latestCheckpoint();
+        int128 checkpointExposureBefore = int128(_checkpoints[_latestCheckpoint].longExposure) - int128(_checkpoints[_latestCheckpoint].shortAssets);
+        uint256 shortAssetsDelta = _traderDeposit + _bondAmount;
+        _checkpoints[_latestCheckpoint].shortAssets += shortAssetsDelta.toUint128();
+        int128 checkpointExposureAfter = int128(_checkpoints[_latestCheckpoint].longExposure) - int128(_checkpoints[_latestCheckpoint].shortAssets);
+        _updateLongExposure(checkpointExposureBefore, checkpointExposureAfter);
     }
 
     /// @dev Applies the trading deltas from a closed short to the reserves and
@@ -300,40 +301,36 @@ abstract contract HyperdriveShort is HyperdriveLP {
         uint256 _maturityTime,
         uint256 _sharePrice
     ) internal {
-        uint128 shortsOutstanding_ = _marketState.shortsOutstanding;
-        // Update the short average maturity time.
-        _marketState.shortAverageMaturityTime = uint256(
-            _marketState.shortAverageMaturityTime
-        )
-            .updateWeightedAverage(
-                shortsOutstanding_,
-                _maturityTime * 1e18, // scale up to fixed point scale
-                _bondAmount,
-                false
+        {
+            uint128 shortsOutstanding_ = _marketState.shortsOutstanding;
+            // Update the short average maturity time.
+            _marketState.shortAverageMaturityTime = uint256(
+                _marketState.shortAverageMaturityTime
             )
-            .toUint128();
+                .updateWeightedAverage(
+                    shortsOutstanding_,
+                    _maturityTime * 1e18, // scale up to fixed point scale
+                    _bondAmount,
+                    false
+                )
+                .toUint128();
 
-        uint256 checkpointTime = _maturityTime - _positionDuration;
-        IHyperdrive.Checkpoint storage checkpoint = _checkpoints[
-            checkpointTime
-        ];
+            // Get the total supply of shorts in the checkpoint of the shorts
+            // being closed. If the shorts are closed before maturity, we add the
+            // amount of shorts being closed since the total supply is decreased
+            // when burning the short tokens.
+            uint256 checkpointShorts = _totalSupply[
+                AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _maturityTime)
+            ];
+            if (block.timestamp < _maturityTime) {
+                checkpointShorts += _bondAmount;
+            }
 
-        // Get the total supply of shorts in the checkpoint of the shorts
-        // being closed. If the shorts are closed before maturity, we add the
-        // amount of shorts being closed since the total supply is decreased
-        // when burning the short tokens.
-        uint256 checkpointShorts = _totalSupply[
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _maturityTime)
-        ];
-        if (block.timestamp < _maturityTime) {
-            checkpointShorts += _bondAmount;
+            // Decrease the amount of shorts outstanding.
+            _marketState.shortsOutstanding =
+                shortsOutstanding_ -
+                _bondAmount.toUint128();
         }
-
-        // Decrease the amount of shorts outstanding.
-        _marketState.shortsOutstanding =
-            shortsOutstanding_ -
-            _bondAmount.toUint128();
-
         // Apply the updates from the curve trade to the reserves.
         _marketState.shareReserves += _shareReservesDelta.toUint128();
         _marketState.bondReserves -= _bondReservesDelta.toUint128();
@@ -346,9 +343,11 @@ abstract contract HyperdriveShort is HyperdriveLP {
 
         // Calculate the shortAssetsDelta
         {
+            uint256 checkpointTime = _maturityTime - _positionDuration;
             uint128 shortAssetsDelta = HyperdriveMath
                 .calculateClosePositionExposure(
-                    checkpoint.shortAssets,
+                     _checkpoints[checkpointTime].shortAssets,
+                    _bondAmount,
                     _shareReservesDelta.mulDown(_sharePrice),
                     _bondReservesDelta,
                     _sharePayment.mulDown(_sharePrice),
@@ -361,10 +360,12 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 );
 
             // Closing a short reduces the assets (trader deposits) not tracked in the shareReserves
-            checkpoint.shortAssets -= shortAssetsDelta;
+            int128 checkpointExposureBefore = int128(_checkpoints[checkpointTime].longExposure) - int128(_checkpoints[checkpointTime].shortAssets);
+            _checkpoints[checkpointTime].shortAssets -= shortAssetsDelta;
+            int128 checkpointExposureAfter = int128(_checkpoints[checkpointTime].longExposure) - int128(_checkpoints[checkpointTime].shortAssets);
 
             // A reduction in assets increases the long exposure
-            _marketState.longExposure += int128(shortAssetsDelta);
+            _updateLongExposure(checkpointExposureBefore, checkpointExposureAfter);            
         }
 
         // If there are withdrawal shares outstanding, we pay out the maximum

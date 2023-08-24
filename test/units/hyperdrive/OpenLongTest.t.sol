@@ -186,7 +186,7 @@ contract OpenLongTest is HyperdriveTest {
         // Initialize a long and set large exposure to eat through capital
         uint256 longAmount = 1e18;
         MockHyperdrive(address(hyperdrive)).setLongExposure(
-            int128(contribution.toUint128())
+            contribution.toUint128()
         );
 
         // Open the long.

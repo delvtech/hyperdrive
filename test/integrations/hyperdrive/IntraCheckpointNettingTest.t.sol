@@ -7,12 +7,12 @@ import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { MockHyperdrive, IMockHyperdrive } from "../../mocks/MockHyperdrive.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
+import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Lib } from "../../utils/Lib.sol";
-
-import "forge-std/console2.sol";
 
 contract IntraCheckpointNettingTest is HyperdriveTest {
     using FixedPointMath for uint256;
+    using HyperdriveUtils for *;
     using Lib for *;
 
     function test_netting_basic_example() external {
@@ -115,26 +115,22 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         // This is a problem bc the net flat trade in calculatePresentValue
 
         // open a long
-        console2.log("----before open long----");
         uint256 basePaidLong = tradeSize;
         (uint256 maturityTimeLong, uint256 bondAmountLong) = openLong(
-            alice,
+            bob,
             basePaidLong
         );
 
         // fast forward time, create checkpoints and accrue interest
         advanceTimeWithCheckpoints(timeElapsed, variableInterest);
 
-        console2.log("----before open short----");
         // open a short for the same number of bonds as the existing long
         uint256 shortAmount = bondAmountLong;
         (uint256 maturityTimeShort, ) = openShort(bob, shortAmount);
 
-        console2.log("----before remove liquidity----");
         // remove liquidity
-        removeLiquidity(alice, aliceLpShares);
+        ( , uint256 withdrawalShares) = removeLiquidity(alice, aliceLpShares);
 
-        console2.log("----before wait for positions to close----");
         // wait for the positions to mature
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
         while (poolInfo.shortsOutstanding > 0 && poolInfo.longsOutstanding > 0) {
@@ -142,23 +138,25 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             poolInfo = hyperdrive.getPoolInfo();
         }
 
-        console2.log("----before close short----");
         // close the short positions
-        closeShort(bob, maturityTimeShort, bondAmountLong);
+        closeShort(bob, maturityTimeShort, shortAmount);
 
-        console2.log("----before close long----");
         // close the long positions
-        closeLong(bob, maturityTimeLong, shortAmount);
+        closeLong(bob, maturityTimeLong, bondAmountLong);
 
         // longExposure should be 0
         poolInfo = hyperdrive.getPoolInfo();
         assertApproxEqAbs(poolInfo.longExposure, 0, 1);
 
+        (uint256 baseProceeds, ) = redeemWithdrawalShares(alice, withdrawalShares);
         // idle should be equal to shareReserves
         uint256 expectedShareReserves = MockHyperdrive(address(hyperdrive))
             .calculateIdleShareReserves(hyperdrive.getPoolInfo().sharePrice) +
             hyperdrive.getPoolConfig().minimumShareReserves;
         assertEq(poolInfo.shareReserves, expectedShareReserves);
+        //         uint256 expectedShareReserves = hyperdrive.lpSharePrice().mulDown(hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID)) 
+        // + hyperdrive.lpSharePrice().mulDown(hyperdrive.totalSupply(AssetId._LP_ASSET_ID))
+        // + hyperdrive.getPoolConfig().minimumShareReserves;
 
     }
     
@@ -409,10 +407,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         // fast forward time, create checkpoints and accrue interest
         advanceTimeWithCheckpoints(timeElapsed, variableInterest);
 
-        // remove liquidity -
-        // NOTE: if there are no shorts, then longs can always be closed before maturity
-        // because shorts net with longs there could be enough netted exposure for some longs
-        // to not close.
+        // remove liquidity
         removeLiquidity(alice, aliceLpShares);
 
         // close the longs
@@ -742,29 +737,21 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             (uint256 maturityTimeShort, ) = openShort(bob, bondAmount);
             shortMaturityTimes[i] = maturityTimeShort;
         }
-
-        console2.log("before removeLiquidity");
         removeLiquidity(alice, aliceLpShares);
-        console2.log("after removeLiquidity");
 
         // Ensure all the positions have matured before trying to close them
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
         while (poolInfo.shortsOutstanding > 0 && poolInfo.longsOutstanding > 0) {
-            console2.log("exposure", poolInfo.longExposure.toString(18));
-            console2.log("shortsOutstanding", poolInfo.shortsOutstanding.toString(18));
-            console2.log("longsOutstanding", poolInfo.longsOutstanding.toString(18));
             advanceTimeWithCheckpoints(POSITION_DURATION, variableInterest);
             poolInfo = hyperdrive.getPoolInfo();
 
         }
-        console2.log("after maturity");
+
         // close the short positions
         for (uint256 i = 0; i < numTrades; i++) {
-            console2.log("closing short", i.toString(18));
             // close the short positions
             closeShort(bob, shortMaturityTimes[i], bondAmounts[i]);
 
-            console2.log("closing long", i.toString(18));
             // close the long positions
             closeLong(bob, longMaturityTimes[i], bondAmounts[i]);
         }

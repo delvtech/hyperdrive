@@ -289,6 +289,7 @@ library HyperdriveMath {
 
     /// @dev Calculates the change in exposure after closing a position.
     /// @param _positionExposure The checkpointed position exposure.
+    /// @param _bondProceeds The amount of bonds that the user will receive (long) or pay (short).
     /// @param _baseReservesDelta The amount of base that the reserves will change by.
     /// @param _bondReservesDelta The amount of bonds that the reserves will change by.
     /// @param _baseUserDelta The amount of base that the user will receive (long) or pay (short).
@@ -296,6 +297,7 @@ library HyperdriveMath {
     /// @return positionExposureDelta The change in exposure after closing a position.
     function calculateClosePositionExposure(
         uint256 _positionExposure,
+        uint256 _bondProceeds,
         uint256 _baseReservesDelta,
         uint256 _bondReservesDelta,
         uint256 _baseUserDelta,
@@ -305,12 +307,13 @@ library HyperdriveMath {
             _baseReservesDelta +
             _bondReservesDelta -
             _baseReservesDelta;
+
         // if there are no open positions, or the positionExposure
         // is less than the delta from the flat + curve calculation, then
         // all the (short or long) positions in the checkpoint are now closed and we
         // can set the positionExposure to 0.
         if (
-            _checkpointPositions == 0 || _positionExposure < flatPlusCurveDelta
+            _checkpointPositions == 0 || _positionExposure < flatPlusCurveDelta + _bondProceeds
         ) {
             // This effectively sets the positionExposure to 0.
             return _positionExposure.toUint128();
@@ -318,7 +321,7 @@ library HyperdriveMath {
 
         // Reduce the exposure (long) or assets (short) by the amount of matured positions (flat)
         // and by the unmatured positions (curve)
-        return flatPlusCurveDelta.toUint128();
+        return (flatPlusCurveDelta + _bondProceeds).toUint128();
     }
 
     struct MaxTradeParams {
