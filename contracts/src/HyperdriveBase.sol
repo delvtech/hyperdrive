@@ -224,15 +224,19 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     /// @param _after The long exposure after the update.
     function _updateLongExposure(int256 _before, int256 _after) internal {
         // LongExposure is decreasing
-        if(_before > _after && _before >= 0){
+        if (_before > _after && _before >= 0) {
             int256 delta = int256(_before - _after.max(0));
             // Since the longExposure can't be negative, we need to make sure we don't underflow
-            _marketState.longExposure -= uint128(delta.min(int128(_marketState.longExposure)).toInt128());
+            _marketState.longExposure -= uint128(
+                delta.min(int128(_marketState.longExposure)).toInt128()
+            );
         }
-        // LongExposure is increasing 
+        // LongExposure is increasing
         else if (_after > _before) {
-            if( _before >= 0 ){
-                _marketState.longExposure += uint128(_after.toInt128() - _before.toInt128());
+            if (_before >= 0) {
+                _marketState.longExposure += uint128(
+                    _after.toInt128() - _before.toInt128()
+                );
             } else {
                 _marketState.longExposure += uint128(_after.max(0).toInt128());
             }
@@ -244,7 +248,9 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     function _calculateIdleShareReserves(
         uint256 _sharePrice
     ) internal view returns (uint256 idleShares) {
-        uint256 longExposure = uint256(_marketState.longExposure).divDown(_sharePrice);
+        uint256 longExposure = uint256(_marketState.longExposure).divDown(
+            _sharePrice
+        );
         if (_marketState.shareReserves > longExposure + _minimumShareReserves) {
             idleShares =
                 _marketState.shareReserves -
@@ -259,8 +265,9 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     /// @return True if the share reserves are greater than the exposure plus the minimum share reserves.
     function _isSolvent(uint256 _sharePrice) internal view returns (bool) {
         return
-            (int256((uint256(_marketState.shareReserves).mulDown(_sharePrice))) -
-                int128(_marketState.longExposure)).max(0) >=
+            (int256(
+                (uint256(_marketState.shareReserves).mulDown(_sharePrice))
+            ) - int128(_marketState.longExposure)).max(0) >=
             int256(_minimumShareReserves.mulDown(_sharePrice));
     }
 
