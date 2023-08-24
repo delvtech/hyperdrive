@@ -114,6 +114,21 @@ abstract contract HyperdriveDataProvider is
         _revert(abi.encode(poolInfo));
     }
 
+    function withdrawPool()
+        external
+        view
+        returns (IHyperdrive.WithdrawPool memory)
+    {
+        _revert(
+            abi.encode(
+                IHyperdrive.WithdrawPool({
+                    readyToWithdraw: _withdrawPool.readyToWithdraw,
+                    proceeds: _withdrawPool.proceeds
+                })
+            )
+        );
+    }
+
     /// @notice Gets info about the fees presently accrued by the pool
     /// @return Governance fees denominated in shares yet to be collected
     function getUncollectedGovernanceFees() external view returns (uint256) {
