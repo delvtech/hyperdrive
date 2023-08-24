@@ -9,7 +9,7 @@ import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { SafeCast } from "./libraries/SafeCast.sol";
 
 import { Lib } from "../../test/utils/Lib.sol";
-import "forge-std/console2.sol";
+import { console2 as console } from "forge-std/console2.sol";
 
 /// @author DELV
 /// @title HyperdriveLong
@@ -441,8 +441,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // Record an oracle update
         recordPrice(spotPrice);
 
-        // Calculate the fees charged to the user (totalCurveFee) and the portion of those
-        // fees that are paid to governance (governanceCurveFee).
+        // Calculate the fees charged to the user (totalCurveFee) and the portion
+        // of those fees that are paid to governance (governanceCurveFee).
         (
             uint256 totalCurveFee, // bonds
             uint256 governanceCurveFee // base
@@ -460,13 +460,24 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // The bondReservesDelta represents how many bonds to remove
         // from the bondReserves. This should be the number of bonds the trader
         // receives plus the number of bonds we need to pay to governance.
-        // In other words, we want to keep the totalCurveFee in the bondReserves; however,
-        // since the governanceCurveFee will be paid from the sharesReserves we don't
-        // need it removed from the bondReserves. bondProceeds is in bonds
-        // and governanceCurveFee is in base so we divide it by the spot price
-        // to convert it to bonds:
+        // In other words, we want to keep the totalCurveFee in the bondReserves;
+        // however, since the governanceCurveFee will be paid from the
+        // sharesReserves we don't need it removed from the bondReserves.
+        // bondProceeds is in bonds and governanceCurveFee is in base so we
+        // divide it by the spot price to convert it to bonds:
+        //
         // bonds = bonds + base/(base/bonds)
         // bonds = bonds + bonds
+        console.log("spot price: %s", spotPrice.toString(18));
+        console.log("governance_curve_fee: %s", _governanceFee.toString(18));
+        console.log(
+            "governance curve fee: %s",
+            governanceCurveFee.toString(18)
+        );
+        console.log(
+            "governance curve fee / spot price: %s",
+            governanceCurveFee.divDown(spotPrice).toString(18)
+        );
         bondReservesDelta =
             bondProceeds +
             governanceCurveFee.divDown(spotPrice);

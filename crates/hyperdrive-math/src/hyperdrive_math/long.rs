@@ -26,6 +26,9 @@ impl State {
         min(max_base_amount, budget)
     }
 
+    // FIXME: The issue with this function seems to be that I'm not accounting
+    // for the governance fees correctly.
+    //
     // FIXME: Document this.
     fn max_long(&self, maybe_max_iterations: Option<usize>) -> FixedPoint {
         // FIXME: These are the steps of the computation.
@@ -56,6 +59,7 @@ impl State {
         // 1. [ ] We'll start with a guess of 0, but we'll get smarter later.
         let mut max_base_amount = fixed!(1e18);
         for _ in 0..maybe_max_iterations.unwrap_or(7) {
+            println!("max_base_amount = {}", max_base_amount);
             // FIXME: We need a function that gives us the bond amount for a
             // base amount. This is the result of the yield space calculation
             // minus the curve fee.
@@ -65,6 +69,12 @@ impl State {
                     .unwrap() // FIXME: Make sure this is safe.
                     / self.solvency_derivative(max_base_amount, self.long_amount(max_base_amount));
         }
+
+        println!("long amount = {}", self.long_amount(max_base_amount));
+        println!(
+            "solvency = {:?}",
+            self.solvency(max_base_amount, self.long_amount(max_base_amount))
+        );
 
         max_base_amount
     }
