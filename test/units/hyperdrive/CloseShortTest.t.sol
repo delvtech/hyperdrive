@@ -409,7 +409,7 @@ contract CloseShortTest is HyperdriveTest {
 
         // Should be near 100% of a loss
         assertApproxEqAbs(
-            basePaid.sub(baseProceeds).divDown(basePaid),
+            (basePaid - baseProceeds).divDown(basePaid),
             1e18,
             1e15 // TODO Large tolerance?
         );
@@ -633,9 +633,6 @@ contract CloseShortTest is HyperdriveTest {
 
         // Retrieve the pool info after the trade.
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
-        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
-            maturityTime - POSITION_DURATION
-        );
 
         // Verify that the other state was updated correctly.
         uint256 timeRemaining = HyperdriveUtils.calculateTimeRemaining(
@@ -684,8 +681,6 @@ contract CloseShortTest is HyperdriveTest {
         );
         assertEq(poolInfoAfter.longAverageMaturityTime, 0);
         assertEq(poolInfoAfter.shortAverageMaturityTime, 0);
-        assertEq(poolInfoAfter.shortBaseVolume, 0);
-        assertEq(checkpoint.shortBaseVolume, 0);
 
         // TODO: Figure out how to test for this.
         //

@@ -15,30 +15,6 @@ library FixedPointMath {
     uint256 public constant ONE_18 = 1e18;
     uint256 internal constant MAX_UINT256 = 2 ** 256 - 1;
 
-    /// @dev Credit to Balancer (https://github.com/balancer-labs/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/FixedPoint.sol)
-    /// @param a Fixed point number in 1e18 format.
-    /// @param b Fixed point number in 1e18 format.
-    /// @return Result of a + b.
-    function add(uint256 a, uint256 b) internal pure returns (uint256) {
-        // Fixed Point addition is the same as regular checked addition
-
-        uint256 c = a + b;
-        if (c < a) revert IHyperdrive.FixedPointMath_AddOverflow();
-        return c;
-    }
-
-    /// @dev Credit to Balancer (https://github.com/balancer-labs/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/FixedPoint.sol)
-    /// @param a Fixed point number in 1e18 format.
-    /// @param b Fixed point number in 1e18 format.
-    /// @return Result of a - b.
-    function sub(uint256 a, uint256 b) internal pure returns (uint256) {
-        // Fixed Point addition is the same as regular checked addition
-
-        if (b > a) revert IHyperdrive.FixedPointMath_SubOverflow();
-        uint256 c = a - b;
-        return c;
-    }
-
     /// @dev Credit to Solmate (https://github.com/transmissions11/solmate/blob/main/src/utils/FixedPointMathLib.sol)
     /// @param x Fixed point number in 1e18 format.
     /// @param y Fixed point number in 1e18 format.
@@ -328,14 +304,32 @@ library FixedPointMath {
         bool _isAdding
     ) internal pure returns (uint256 average) {
         if (_isAdding) {
-            average = (_totalWeight.mulDown(_average))
-                .add(_deltaWeight.mulDown(_delta))
-                .divUp(_totalWeight.add(_deltaWeight));
+            average = (_totalWeight.mulDown(_average) +
+                _deltaWeight.mulDown(_delta)).divUp(
+                    _totalWeight + _deltaWeight
+                );
         } else {
             if (_totalWeight == _deltaWeight) return 0;
-            average = (_totalWeight.mulDown(_average))
-                .sub(_deltaWeight.mulDown(_delta))
-                .divUp(_totalWeight.sub(_deltaWeight));
+            average = (_totalWeight.mulDown(_average) -
+                _deltaWeight.mulDown(_delta)).divUp(
+                    _totalWeight - _deltaWeight
+                );
         }
+    }
+
+    /// @dev Calculates the minimum of two values.
+    /// @param a The first value.
+    /// @param b The second value.
+    /// @return The minimum of the two values.
+    function min(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a > b ? b : a;
+    }
+
+    /// @dev Calculates the maximum of two values.
+    /// @param a The first value.
+    /// @param b The second value.
+    /// @return The maximum of the two values.
+    function max(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a > b ? a : b;
     }
 }

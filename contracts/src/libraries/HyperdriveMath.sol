@@ -63,7 +63,7 @@ library HyperdriveMath {
 
         // r = (1 - p) / (p * t)
         return
-            FixedPointMath.ONE_18.sub(spotPrice).divDown(
+            (FixedPointMath.ONE_18 - spotPrice).divDown(
                 spotPrice.mulDown(annualizedTime)
             );
     }
@@ -94,7 +94,7 @@ library HyperdriveMath {
         // mu * z * (1 + apr * t) ** (1 / tau)
         return
             _initialSharePrice.mulDown(_shareReserves).mulDown(
-                FixedPointMath.ONE_18.add(_apr.mulDown(t)).pow(
+                (FixedPointMath.ONE_18 + _apr.mulDown(t)).pow(
                     FixedPointMath.ONE_18.divUp(tau)
                 )
             );
@@ -122,7 +122,7 @@ library HyperdriveMath {
                 _shareReserves,
                 _bondReserves,
                 _shareAmount,
-                FixedPointMath.ONE_18.sub(_timeStretch),
+                FixedPointMath.ONE_18 - _timeStretch,
                 _sharePrice,
                 _initialSharePrice
             );
@@ -169,7 +169,7 @@ library HyperdriveMath {
         // redemption by the share price) and the newly minted bonds are
         // traded on a YieldSpace curve configured to timeRemaining = 1.
         shareProceeds = _amountIn.mulDivDown(
-            FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
+            FixedPointMath.ONE_18 - _normalizedTimeRemaining,
             _sharePrice
         );
         if (_normalizedTimeRemaining > 0) {
@@ -181,7 +181,7 @@ library HyperdriveMath {
                 _shareReserves,
                 _bondReserves,
                 bondReservesDelta,
-                FixedPointMath.ONE_18.sub(_timeStretch),
+                FixedPointMath.ONE_18 - _timeStretch,
                 _sharePrice,
                 _initialSharePrice
             );
@@ -227,7 +227,7 @@ library HyperdriveMath {
                 _shareReserves,
                 _bondReserves,
                 _amountIn,
-                FixedPointMath.ONE_18.sub(_timeStretch),
+                FixedPointMath.ONE_18 - _timeStretch,
                 _sharePrice,
                 _initialSharePrice
             );
@@ -270,7 +270,7 @@ library HyperdriveMath {
         // minted bonds are traded on a YieldSpace curve configured to
         // timeRemaining = 1.
         sharePayment = _amountOut.mulDivDown(
-            FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
+            FixedPointMath.ONE_18 - _normalizedTimeRemaining,
             _sharePrice
         );
         bondReservesDelta = _amountOut.mulDown(_normalizedTimeRemaining);
@@ -279,7 +279,7 @@ library HyperdriveMath {
                 _shareReserves,
                 _bondReserves,
                 bondReservesDelta,
-                FixedPointMath.ONE_18.sub(_timeStretch),
+                FixedPointMath.ONE_18 - _timeStretch,
                 _sharePrice,
                 _initialSharePrice
             );
@@ -522,7 +522,6 @@ library HyperdriveMath {
         uint256 longAverageTimeRemaining;
         uint256 shortsOutstanding;
         uint256 shortAverageTimeRemaining;
-        uint256 shortBaseVolume;
     }
 
     /// @dev Calculates the present value LPs capital in the pool.
@@ -542,29 +541,47 @@ library HyperdriveMath {
                 )
             );
         if (netCurveTrade > 0) {
-            // Apply the curve trade directly to the reserves. Unlike shorts,
-            // the capital that backs longs is accounted for within the share
-            // reserves (the capital backing shorts is taken out of the
-            // reserves). This ensures that even if all the liquidity is
-            // removed, there is always liquidity available for longs to close.
-            _params.shareReserves -= YieldSpaceMath
-                .calculateSharesOutGivenBondsIn(
-                    _params.shareReserves,
-                    _params.bondReserves,
-                    uint256(netCurveTrade),
-                    FixedPointMath.ONE_18.sub(_params.timeStretch),
-                    _params.sharePrice,
-                    _params.initialSharePrice
-                );
+            // Close as many longs as possible on the curve. Any longs that
+            // can't be closed will be stuck until maturity (assuming nothing
+            // changes) at which time the longs will receive the bond's face
+            // value and the LPs will receive any variable interest that is
+            // collected. It turns out that the value that we place on these
+            // stuck longs doesn't have an impact on LP fairness since longs
+            // are only stuck when there is no idle remaining. With this in
+            // mind, we mark the longs to zero for simplicity and to avoid
+            // unnecessary computation.
+            (, uint256 maxCurveTrade) = YieldSpaceMath.calculateMaxSell(
+                _params.shareReserves,
+                _params.bondReserves,
+                _params.minimumShareReserves,
+                FixedPointMath.ONE_18 - _params.timeStretch,
+                _params.sharePrice,
+                _params.initialSharePrice
+            );
+            maxCurveTrade = maxCurveTrade.min(uint256(netCurveTrade)); // netCurveTrade is non-negative, so this is safe.
+            if (maxCurveTrade > 0) {
+                _params.shareReserves -= YieldSpaceMath
+                    .calculateSharesOutGivenBondsIn(
+                        _params.shareReserves,
+                        _params.bondReserves,
+                        uint256(netCurveTrade),
+                        FixedPointMath.ONE_18 - _params.timeStretch,
+                        _params.sharePrice,
+                        _params.initialSharePrice
+                    );
+            }
         } else if (netCurveTrade < 0) {
-            // It's possible that the exchange gets into a state where the
-            // net curve trade can't be applied to the reserves. In particular,
-            // this can happen if all of the liquidity is removed. We first
-            // attempt to trade as much as possible on the curve, and then we
-            // mark the remaining amount to the base volume. We can assume that
-            // the outstanding long amount is zero when we apply the net curve
-            // trade, so the only constraint is that the spot price cannot
-            // exceed 1.
+            // Close as many shorts as possible on the curve. Any shorts that
+            // can't be closed will be stuck until maturity (assuming nothing
+            // changes) at which time the LPs will receive the bond's face
+            // value. If we value the stuck shorts at less than the face value,
+            // LPs that remove liquidity before liquidity will receive a smaller
+            // amount of withdrawal shares than they should. On the other hand,
+            // if we value the stuck shorts at more than the face value, LPs
+            // that remove liquidity before maturity will receive a larger
+            // amount of withdrawal shares than they should. With this in mind,
+            // we value the stuck shorts at exactly the face value.
+            netCurveTrade = -netCurveTrade; // Switch to a positive value for convenience.
             (, uint256 maxCurveTrade) = YieldSpaceMath.calculateMaxBuy(
                 _params.shareReserves,
                 _params.bondReserves,
@@ -572,24 +589,19 @@ library HyperdriveMath {
                 _params.sharePrice,
                 _params.initialSharePrice
             );
-            maxCurveTrade = uint256(-netCurveTrade) <= maxCurveTrade
-                ? uint256(-netCurveTrade)
-                : maxCurveTrade;
+            maxCurveTrade = maxCurveTrade.min(uint256(netCurveTrade)); // netCurveTrade is positive, so this is safe.
             if (maxCurveTrade > 0) {
                 _params.shareReserves += YieldSpaceMath
                     .calculateSharesInGivenBondsOut(
                         _params.shareReserves,
                         _params.bondReserves,
                         maxCurveTrade,
-                        FixedPointMath.ONE_18.sub(_params.timeStretch),
+                        FixedPointMath.ONE_18 - _params.timeStretch,
                         _params.sharePrice,
                         _params.initialSharePrice
                     );
             }
-            _params.shareReserves += _params.shortBaseVolume.mulDivDown(
-                uint256(-netCurveTrade) - maxCurveTrade,
-                _params.shortsOutstanding.mulDown(_params.sharePrice)
-            );
+            _params.shareReserves += uint256(netCurveTrade) - maxCurveTrade;
         }
 
         // Compute the net of the longs and shorts that will be traded flat
@@ -656,9 +668,10 @@ library HyperdriveMath {
             _openSharePrice.mulUp(_sharePrice)
         );
 
-        // We increase the bondFactor by the flatfee amount, because the trader has provided
-        // the flatFee as margin, and so it must be returned to them if its not charged.
-        bondFactor += _bondAmount.mulDown(_flatFee);
+        // We increase the bondFactor by the flat fee amount, because the trader
+        // has provided the flat fee as margin, and so it must be returned to
+        // them if it's not charged.
+        bondFactor += _bondAmount.mulDivDown(_flatFee, _sharePrice);
 
         if (bondFactor > _shareAmount) {
             // proceeds = (c1 / c0 * c) * dy - dz

@@ -1,7 +1,7 @@
 use std::{convert::TryFrom, time::Duration};
 
 use ethers::{
-    providers::{Http, Middleware, Provider},
+    providers::{Http, Provider},
     signers::{coins_bip39::English, LocalWallet, MnemonicBuilder, Signer},
 };
 use eyre::{eyre, Result};
@@ -9,23 +9,41 @@ use fixed_point_macros::uint256;
 use hyperdrive_addresses::Addresses;
 use tokio::time::sleep;
 
-pub const MNEMONIC: &str = "test test test test test test test test test test test test";
+use super::Chain;
+
+pub const MNEMONIC: &str =
+    "shed present manage school gym spatial sure put tongue dragon left bless share chair element";
 
 const RETRIES: usize = 5;
 const RETRY_TIME: Duration = Duration::from_millis(500);
 
 /// A local anvil instance with the Hyperdrive contracts deployed.
 pub struct DevChain {
-    pub provider: Provider<Http>,
-    pub addresses: Addresses,
-    pub accounts: Vec<LocalWallet>,
+    provider: Provider<Http>,
+    addresses: Addresses,
+    accounts: Vec<LocalWallet>,
+}
+
+#[async_trait::async_trait]
+impl Chain for DevChain {
+    fn provider(&self) -> Provider<Http> {
+        self.provider.clone()
+    }
+
+    fn accounts(&self) -> Vec<LocalWallet> {
+        self.accounts.clone()
+    }
+
+    fn addresses(&self) -> Addresses {
+        self.addresses.clone()
+    }
 }
 
 impl DevChain {
     /// Given the ethereum URL and the artifacts URL of a devnet, this creates
     /// a new DevChain instance with a set of funded accounts on the devnet.
     pub async fn new(
-        eth_url: &str,
+        ethereum_url: &str,
         artifacts_url: &str,
         mnemonic: &str,
         num_accounts: usize,
@@ -47,7 +65,7 @@ impl DevChain {
         ))?;
 
         // Generate some accounts from the provided mnemonic.
-        let provider = Provider::try_from(eth_url)?;
+        let provider = Provider::try_from(ethereum_url)?.interval(Duration::from_millis(10));
         let mut accounts = vec![];
         let mut builder = MnemonicBuilder::<English>::default().phrase(mnemonic);
         for i in 0..num_accounts {
@@ -63,17 +81,9 @@ impl DevChain {
         }
 
         Ok(Self {
-            provider: Provider::try_from(eth_url)?,
+            provider,
             addresses,
             accounts,
         })
-    }
-
-    pub async fn chain_id(&self) -> Result<u64> {
-        self.provider
-            .get_chainid()
-            .await
-            .map(|id| id.as_u64())
-            .or(Err(eyre!("couldn't get chain id")))
     }
 }

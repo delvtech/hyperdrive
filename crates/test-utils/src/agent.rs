@@ -1,10 +1,8 @@
 use std::{cmp::min, collections::BTreeMap, fmt, sync::Arc};
 
 use ethers::{
-    middleware::SignerMiddleware,
     prelude::EthLogDecode,
-    providers::{Http, Middleware, Provider},
-    signers::{LocalWallet, Signer},
+    providers::{Http, Middleware, Provider, RetryClient},
     types::{Address, U256},
 };
 use eyre::Result;
@@ -14,10 +12,15 @@ use hyperdrive_addresses::Addresses;
 use hyperdrive_math::hyperdrive_math::State;
 use hyperdrive_wrappers::wrappers::{
     erc20_mintable::ERC20Mintable,
-    i_hyperdrive::{Checkpoint, IHyperdrive, IHyperdriveEvents},
+    erc4626_data_provider::ERC4626DataProvider,
+    i_hyperdrive::{Checkpoint, IHyperdrive, IHyperdriveEvents, PoolConfig},
+    mock_erc4626::MockERC4626,
 };
-use rand::{rngs::ThreadRng, thread_rng, Rng};
+use rand::{Rng, SeedableRng};
+use rand_chacha::ChaCha8Rng;
 use tracing::{info, instrument};
+
+use super::chain::ChainClient;
 
 #[derive(Copy, Clone, Debug)]
 enum Action {
@@ -32,7 +35,7 @@ enum Action {
 }
 
 #[derive(Default)]
-struct Wallet {
+pub struct Wallet {
     base: FixedPoint,
     lp_shares: FixedPoint,
     withdrawal_shares: FixedPoint,
@@ -40,19 +43,26 @@ struct Wallet {
     shorts: BTreeMap<FixedPoint, FixedPoint>,
 }
 
-pub struct Agent<M> {
+/// An agent that interacts with the Hyperdrive protocol and records its
+/// balances of longs, shorts, base, and lp shares (both active and withdrawal
+/// shares).
+pub struct Agent<M, R: Rng + SeedableRng> {
     address: Address,
-    provider: Provider<Http>,
+    provider: Provider<Arc<RetryClient<Http>>>,
     hyperdrive: IHyperdrive<M>,
+    pool: MockERC4626<M>,
     base: ERC20Mintable<M>,
+    config: PoolConfig,
     wallet: Wallet,
-    rng: ThreadRng,
+    rng: R,
+    seed: u64,
 }
 
-impl<M> fmt::Debug for Agent<M> {
+impl<M, R: Rng + SeedableRng> fmt::Debug for Agent<M, R> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Agent")
             .field("address", &self.address)
+            .field("seed", &self.seed)
             .field("base", &self.wallet.base)
             .field("lp_shares", &self.wallet.lp_shares)
             .field("withdrawal_shares", &self.wallet.withdrawal_shares)
@@ -62,53 +72,40 @@ impl<M> fmt::Debug for Agent<M> {
     }
 }
 
-// TODO: This has the barebones logic required for integration and fuzz tests;
-// however, we'll need the max trade calculations to be able to fuzz with sane
-// trade limits.
-impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>> {
+// TODO: This should crash gracefully and would ideally dump the replication
+// information to a file that can be read by the framework to easily debug what
+// happened.
+impl Agent<ChainClient, ChaCha8Rng> {
+    /// Setup ///
+
     pub async fn new(
-        signer: LocalWallet,
-        provider: Provider<Http>,
+        client: Arc<ChainClient>,
         addresses: Addresses,
+        maybe_seed: Option<u64>,
     ) -> Result<Self> {
-        let chain_id = provider.get_chainid().await?;
-        let client = Arc::new(SignerMiddleware::new(
-            provider.clone(),
-            signer.with_chain_id(chain_id.low_u32()),
-        ));
+        let seed = maybe_seed.unwrap_or(17);
+        let pool = ERC4626DataProvider::new(addresses.hyperdrive, client.clone())
+            .pool()
+            .call()
+            .await?;
+        let pool = MockERC4626::new(pool, client.clone());
+        let hyperdrive = IHyperdrive::new(addresses.hyperdrive, client.clone());
         Ok(Self {
             address: client.address(),
-            provider,
-            hyperdrive: IHyperdrive::new(addresses.hyperdrive, client.clone()),
+            provider: client.provider().clone(),
+            hyperdrive: hyperdrive.clone(),
+            pool,
             base: ERC20Mintable::new(addresses.base, client),
+            config: hyperdrive.get_pool_config().call().await?,
             wallet: Wallet::default(),
-            rng: thread_rng(),
+            rng: ChaCha8Rng::seed_from_u64(seed),
+            seed,
         })
-    }
-
-    pub async fn fund(&mut self, amount: FixedPoint) -> Result<()> {
-        // Mint some base tokens.
-        self.base
-            .mint(amount.into())
-            .from(self.address)
-            .send()
-            .await?;
-
-        // Approve hyperdrive to spend the base tokens.
-        self.base
-            .approve(self.hyperdrive.address(), amount.into())
-            .from(self.address)
-            .send()
-            .await?;
-
-        // Increase the base balance in the wallet.
-        self.wallet.base += amount;
-
-        Ok(())
     }
 
     /// Longs ///
 
+    #[instrument(skip(self))]
     pub async fn open_long(&mut self, base_paid: FixedPoint) -> Result<()> {
         // Ensure that the agent has a sufficient base balance to open the long.
         if self.wallet.base < base_paid {
@@ -156,11 +153,16 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>> {
         Ok(())
     }
 
+    #[instrument(skip(self))]
     pub async fn close_long(
         &mut self,
         maturity_time: FixedPoint,
         bond_amount: FixedPoint,
     ) -> Result<()> {
+        // TODO: It would probably be better for this part of the agent to just
+        // be a dumb wrapper around Hyperdrive. It's going to be useful to test
+        // with inputs that we'd consider invalid.
+        //
         // If the wallet has a sufficient balance of longs, update the long
         // balance. Otherwise, return an error.
         let long_balance = self.wallet.longs.entry(maturity_time).or_default();
@@ -214,14 +216,20 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>> {
 
     /// Shorts ///
 
-    // TODO: There should be reasonable limits on this. If we set a reasonable
-    // max deposit, then this would be simple.
-    pub async fn open_short(&mut self, bond_amount: FixedPoint) -> Result<()> {
+    #[instrument(skip(self))]
+    pub async fn open_short(
+        &mut self,
+        bond_amount: FixedPoint,
+        maybe_slippage_tolerance: Option<FixedPoint>,
+    ) -> Result<()> {
         // Open the short and record the trade in the wallet.
         let log = {
+            let slippage_tolerance = maybe_slippage_tolerance.unwrap_or(fixed!(0.01e18));
+            let min_output =
+                self.get_short_deposit(bond_amount).await? * (fixed!(1e18) + slippage_tolerance);
             let tx = self
                 .hyperdrive
-                .open_short(bond_amount.into(), bond_amount.into(), self.address, true)
+                .open_short(bond_amount.into(), min_output.into(), self.address, true)
                 .from(self.address);
             let logs = tx
                 .send()
@@ -254,6 +262,7 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>> {
         Ok(())
     }
 
+    #[instrument(skip(self))]
     pub async fn close_short(
         &mut self,
         maturity_time: FixedPoint,
@@ -312,6 +321,7 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>> {
 
     /// LPs ///
 
+    #[instrument(skip(self))]
     pub async fn initialize(&mut self, rate: FixedPoint, contribution: FixedPoint) -> Result<()> {
         // Ensure that the agent has a sufficient base balance to initialize the pool.
         if self.wallet.base < contribution {
@@ -353,6 +363,7 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>> {
         Ok(())
     }
 
+    #[instrument(skip(self))]
     pub async fn add_liquidity(&mut self, contribution: FixedPoint) -> Result<()> {
         // Ensure that the agent has a sufficient base balance to add liquidity.
         if self.wallet.base < contribution {
@@ -400,6 +411,7 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>> {
         Ok(())
     }
 
+    #[instrument(skip(self))]
     pub async fn remove_liquidity(&mut self, shares: FixedPoint) -> Result<()> {
         // Ensure that the agent has a sufficient balance of LP shares.
         if self.wallet.lp_shares < shares {
@@ -445,6 +457,7 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>> {
         Ok(())
     }
 
+    #[instrument(skip(self))]
     pub async fn redeem_withdrawal_shares(&mut self, shares: FixedPoint) -> Result<()> {
         // Ensure that the agent has a sufficient balance of withdrawal shares.
         if self.wallet.withdrawal_shares < shares {
@@ -489,7 +502,15 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>> {
         Ok(())
     }
 
-    /// Actions ///
+    /// Checkpoint ///
+
+    #[instrument(skip(self))]
+    pub async fn checkpoint(&self, checkpoint: U256) -> Result<()> {
+        self.hyperdrive.checkpoint(checkpoint).send().await?;
+        Ok(())
+    }
+
+    /// Test Utils ///
 
     /// Executes a random action.
     #[instrument(skip(self))]
@@ -520,7 +541,7 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>> {
             ));
         }
         let max_long_base = self.get_max_long(None).await?;
-        let max_short_bonds = self.get_max_short().await?;
+        let max_short_bonds = self.get_max_short(None).await?;
         if max_long_base >= fixed!(1e18) {
             actions
                 .push(Action::OpenLong(self.rng.gen_range(
@@ -533,28 +554,26 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>> {
                 self.rng.gen_range(fixed!(1)..=max_short_bonds),
             ));
         }
-        if self.wallet.longs.len() > 0 {
-            let maturity_time = self
+        if !self.wallet.longs.is_empty() {
+            let maturity_time = *self
                 .wallet
                 .longs
                 .keys()
                 .nth(self.rng.gen_range(0..self.wallet.longs.keys().len()))
-                .unwrap()
-                .clone();
+                .unwrap();
             actions.push(Action::CloseLong(
                 maturity_time,
                 self.rng
                     .gen_range(fixed!(1e8)..=self.wallet.longs[&maturity_time]),
             ));
         }
-        if self.wallet.shorts.len() > 0 {
-            let maturity_time = self
+        if !self.wallet.shorts.is_empty() {
+            let maturity_time = *self
                 .wallet
                 .shorts
                 .keys()
                 .nth(self.rng.gen_range(0..self.wallet.shorts.keys().len()))
-                .unwrap()
-                .clone();
+                .unwrap();
             actions.push(Action::CloseShort(
                 maturity_time,
                 self.rng
@@ -581,7 +600,7 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>> {
             Action::CloseLong(maturity_time, bond_amount) => {
                 self.close_long(maturity_time, bond_amount).await?
             }
-            Action::OpenShort(bond_amount) => self.open_short(bond_amount).await?,
+            Action::OpenShort(bond_amount) => self.open_short(bond_amount, None).await?,
             Action::CloseShort(maturity_time, bond_amount) => {
                 self.close_short(maturity_time, bond_amount).await?
             }
@@ -590,8 +609,98 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>> {
         Ok(())
     }
 
+    /// Funds the wallet with some base tokens and sets the approval on the
+    /// Hyperdrive contract.
+    pub async fn fund(&mut self, amount: FixedPoint) -> Result<()> {
+        // Mint some base tokens.
+        self.base
+            .mint(amount.into())
+            .from(self.address)
+            .send()
+            .await?;
+
+        // Approve hyperdrive to spend the base tokens.
+        self.base
+            .approve(self.hyperdrive.address(), amount.into())
+            .from(self.address)
+            .send()
+            .await?;
+
+        // Increase the base balance in the wallet.
+        self.wallet.base += amount;
+
+        Ok(())
+    }
+
+    /// Advances the chain's time and changes the pool's variable rate so that
+    /// interest accrues.
+    pub async fn advance_time(&self, rate: FixedPoint, duration: FixedPoint) -> Result<()> {
+        // Set the new variable rate.
+        self.pool.set_rate(rate.into()).send().await?;
+
+        // Advance the chain's time and mine a block. Mining a block is
+        // important because client's check the current block time by looking
+        // at the latest block's timestamp.
+        self.provider
+            .request::<[U256; 1], u64>("evm_increaseTime", [duration.into()])
+            .await?;
+        self.provider
+            .request::<_, U256>("evm_mine", None::<()>)
+            .await?;
+
+        Ok(())
+    }
+
+    /// Advances the chain's time and changes the pool's variable rate so that
+    /// interest accrues. This function advances time in increments of the
+    /// checkpoint duration and mints every checkpoint that is passed over.
+    pub async fn advance_time_with_checkpoints(
+        &self,
+        rate: FixedPoint,
+        mut duration: FixedPoint,
+    ) -> Result<()> {
+        // Set the new variable rate.
+        self.pool.set_rate(rate.into()).send().await?;
+
+        // Advance time one checkpoint at a time until we've advanced time by
+        // the full duration.
+        let checkpoint_duration = self.get_config().checkpoint_duration.into();
+        while duration > checkpoint_duration {
+            // Advance the chain's time by the checkpoint duration and mint a
+            // new checkpoint.
+            self.provider
+                .request::<[U256; 1], u64>("evm_increaseTime", [checkpoint_duration.into()])
+                .await?;
+            self.checkpoint(self.latest_checkpoint().await?).await?;
+            duration -= checkpoint_duration;
+        }
+
+        // Advance the chain's time by the remaining duration and mint a new
+        // checkpoint.
+        self.provider
+            .request::<[U256; 1], u64>("evm_increaseTime", [duration.into()])
+            .await?;
+        self.checkpoint(self.latest_checkpoint().await?).await?;
+
+        Ok(())
+    }
+
+    /// Resets the agent's wallet.
+    ///
+    /// This is useful for testing because it makes it easy to use the agent
+    /// across multiple snapshots.
+    pub fn reset(&mut self, wallet: Wallet) {
+        self.wallet = wallet;
+    }
+
     /// Getters ///
 
+    pub fn address(&self) -> Address {
+        self.address
+    }
+
+    // TODO: It may be better to group these into a single getter that returns
+    // the agent's wallet.
     pub fn base(&self) -> FixedPoint {
         self.wallet.base
     }
@@ -612,38 +721,109 @@ impl Agent<SignerMiddleware<Provider<Http>, LocalWallet>> {
         &self.wallet.shorts
     }
 
-    /// Helpers ///
-
-    /// Gets the max long that can be opened in the current checkpoint.
-    async fn get_max_long(&self, maybe_max_iterations: Option<usize>) -> Result<FixedPoint> {
-        let state = State::new(
-            self.hyperdrive.get_pool_config().await?,
-            self.hyperdrive.get_pool_info().await?,
-        );
-        Ok(state.get_max_long(self.wallet.base, maybe_max_iterations))
+    /// Gets the pool config.
+    pub fn get_config(&self) -> &PoolConfig {
+        &self.config
     }
 
-    /// Gets the max short that can be opened in the current checkpoint.
-    async fn get_max_short(&self) -> Result<FixedPoint> {
-        let state = State::new(
-            self.hyperdrive.get_pool_config().await?,
+    /// Gets the current state of the pool.
+    pub async fn get_state(&self) -> Result<State> {
+        Ok(State::new(
+            self.config.clone(),
             self.hyperdrive.get_pool_info().await?,
-        );
-        let now = self
+        ))
+    }
+
+    /// Gets a checkpoint.
+    pub async fn get_checkpoint(&self, id: U256) -> Result<Checkpoint> {
+        Ok(self.hyperdrive.get_checkpoint(id).await?)
+    }
+
+    /// Gets the current timestamp.
+    pub async fn now(&self) -> Result<U256> {
+        Ok(self
             .provider
             .get_block(self.provider.get_block_number().await?)
             .await?
             .unwrap()
-            .timestamp;
+            .timestamp)
+    }
+
+    /// Gets the latest checkpoint.
+    pub async fn latest_checkpoint(&self) -> Result<U256> {
+        Ok(self.get_state().await?.to_checkpoint(self.now().await?))
+    }
+
+    /// Gets the deposit required to short a given amount of bonds with the
+    /// current market state.
+    pub async fn get_short_deposit(&self, short_amount: FixedPoint) -> Result<FixedPoint> {
+        let state = self.get_state().await?;
         let Checkpoint {
             share_price: open_share_price,
             ..
         } = self
             .hyperdrive
-            .get_checkpoint(state.to_checkpoint(now))
+            .get_checkpoint(state.to_checkpoint(self.now().await?))
+            .await?;
+        Ok(state.get_short_deposit(
+            short_amount,
+            state.get_spot_price(),
+            open_share_price.into(),
+        ))
+    }
+
+    /// Gets the max long that can be opened in the current checkpoint.
+    pub async fn get_max_long(&self, maybe_max_iterations: Option<usize>) -> Result<FixedPoint> {
+        let state = self.get_state().await?;
+        Ok(state.get_max_long(self.wallet.base, maybe_max_iterations))
+    }
+
+    /// Gets the max short that can be opened in the current checkpoint.
+    ///
+    /// Since interest can accrue between the time the calculation is made and
+    /// the transaction is submitted, it's convenient to have a slippage
+    /// tolerance to lower the revert rate.
+    pub async fn get_max_short(
+        &self,
+        maybe_slippage_tolerance: Option<FixedPoint>,
+    ) -> Result<FixedPoint> {
+        let budget =
+            self.wallet.base * (fixed!(1e18) - maybe_slippage_tolerance.unwrap_or_default());
+
+        let state = self.get_state().await?;
+        let Checkpoint {
+            share_price: open_share_price,
+            ..
+        } = self
+            .hyperdrive
+            .get_checkpoint(state.to_checkpoint(self.now().await?))
             .await?;
 
-        Ok(state.get_max_short(self.wallet.base, open_share_price.into(), None))
+        // We linearly interpolate between the current spot price and the minimum
+        // price that the pool can support. This is a conservative estimate of
+        // the short's realized price.
+        let conservative_price = {
+            // We estimate the minimum price that short will pay by a
+            // weighted average of the spot price and the minimum possible
+            // spot price the pool can quote. We choose the weights so that this
+            // is an underestimate of the worst case realized price.
+            let spot_price = state.get_spot_price();
+            let min_price = state.get_min_price();
+
+            // Calculate the linear interpolation.
+            let base_reserves = FixedPoint::from(state.info.share_price)
+                * (FixedPoint::from(state.info.share_reserves));
+            let weight = (min(self.wallet.base, base_reserves) / base_reserves)
+                .pow(fixed!(1e18) - FixedPoint::from(self.config.time_stretch));
+            spot_price * (fixed!(1e18) - weight) + min_price * weight
+        };
+
+        Ok(state.get_max_short(
+            budget,
+            open_share_price.into(),
+            Some(conservative_price),
+            None,
+        ))
     }
 
     // TODO: We'll need to implement helpers that give us the maximum trade

@@ -6,16 +6,6 @@ import { FixedPointMath } from "../src/libraries/FixedPointMath.sol";
 contract MockFixedPointMath {
     using FixedPointMath for uint256;
 
-    function add(uint256 a, uint256 b) external pure returns (uint256) {
-        uint256 result = FixedPointMath.add(a, b);
-        return result;
-    }
-
-    function sub(uint256 a, uint256 b) external pure returns (uint256) {
-        uint256 result = FixedPointMath.sub(a, b);
-        return result;
-    }
-
     function mulDivDown(
         uint256 x,
         uint256 y,

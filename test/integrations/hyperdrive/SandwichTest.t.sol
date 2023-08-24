@@ -94,12 +94,12 @@ contract SandwichTest is HyperdriveTest {
                 shortMaturityTime,
                 bondsShorted
             );
-            shortLoss = shortBasePaid.sub(shortBaseReturned);
+            shortLoss = shortBasePaid - shortBaseReturned;
 
             // long profit is the bonds received minus the base paid
             // bc we assume the bonds mature 1:1 to base
-            uint256 longProfit = bondsReceived.sub(basePaid);
-            sandwichProfit = longProfit.sub(shortLoss);
+            uint256 longProfit = bondsReceived - basePaid;
+            sandwichProfit = longProfit - shortLoss;
         }
 
         // Deploy the pool and initialize the market
@@ -114,7 +114,7 @@ contract SandwichTest is HyperdriveTest {
         {
             // open a long.
             uint256 basePaid = tradeSize;
-            basePaid = basePaid.add(shortLoss);
+            basePaid = basePaid + shortLoss;
             (uint256 longMaturityTime, uint256 bondsReceived) = openLong(
                 celine,
                 basePaid
@@ -122,7 +122,7 @@ contract SandwichTest is HyperdriveTest {
             closeLong(celine, longMaturityTime, bondsReceived);
             // profit is the bonds received minus the base paid
             // bc we assume the bonds mature 1:1 to base
-            baselineProfit = bondsReceived.sub(basePaid);
+            baselineProfit = bondsReceived - basePaid;
         }
         assertGe(baselineProfit, sandwichProfit - 10000 gwei);
     }

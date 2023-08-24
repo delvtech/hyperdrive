@@ -777,8 +777,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                     longsOutstanding: 0,
                     longAverageTimeRemaining: 0,
                     shortsOutstanding: 0,
-                    shortAverageTimeRemaining: 0,
-                    shortBaseVolume: 0
+                    shortAverageTimeRemaining: 0
                 });
             uint256 presentValue = hyperdriveMath.calculatePresentValue(params);
             assertEq(
@@ -806,8 +805,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                     longsOutstanding: 10_000_000e18,
                     longAverageTimeRemaining: 1e18,
                     shortsOutstanding: 0,
-                    shortAverageTimeRemaining: 0,
-                    shortBaseVolume: 0
+                    shortAverageTimeRemaining: 0
                 });
             uint256 presentValue = hyperdriveMath.calculatePresentValue(params);
             params.shareReserves -= YieldSpaceMath
@@ -815,7 +813,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                     params.shareReserves,
                     params.bondReserves,
                     params.longsOutstanding,
-                    FixedPointMath.ONE_18.sub(params.timeStretch),
+                    FixedPointMath.ONE_18 - params.timeStretch,
                     params.sharePrice,
                     params.initialSharePrice
                 );
@@ -844,8 +842,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                     longsOutstanding: 10_000_000e18,
                     longAverageTimeRemaining: 0,
                     shortsOutstanding: 0,
-                    shortAverageTimeRemaining: 0,
-                    shortBaseVolume: 0
+                    shortAverageTimeRemaining: 0
                 });
             uint256 presentValue = hyperdriveMath.calculatePresentValue(params);
             params.shareReserves -= params.longsOutstanding.divDown(
@@ -876,8 +873,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                     longsOutstanding: 0,
                     longAverageTimeRemaining: 0,
                     shortsOutstanding: 10_000_000e18,
-                    shortAverageTimeRemaining: 1e18,
-                    shortBaseVolume: 9_500_000e18
+                    shortAverageTimeRemaining: 1e18
                 });
             uint256 presentValue = hyperdriveMath.calculatePresentValue(params);
             params.shareReserves += YieldSpaceMath
@@ -885,7 +881,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                     params.shareReserves,
                     params.bondReserves,
                     params.shortsOutstanding,
-                    FixedPointMath.ONE_18.sub(params.timeStretch),
+                    FixedPointMath.ONE_18 - params.timeStretch,
                     params.sharePrice,
                     params.initialSharePrice
                 );
@@ -914,8 +910,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                     longsOutstanding: 0,
                     longAverageTimeRemaining: 0,
                     shortsOutstanding: 10_000_000e18,
-                    shortAverageTimeRemaining: 0,
-                    shortBaseVolume: 9_500_000e18
+                    shortAverageTimeRemaining: 0
                 });
             uint256 presentValue = hyperdriveMath.calculatePresentValue(params);
             params.shareReserves += params.shortsOutstanding.divDown(
@@ -946,8 +941,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                     longsOutstanding: 10_000_000e18,
                     longAverageTimeRemaining: 0.3e18,
                     shortsOutstanding: 10_000_000e18,
-                    shortAverageTimeRemaining: 0.3e18,
-                    shortBaseVolume: 9_500_000e18
+                    shortAverageTimeRemaining: 0.3e18
                 });
             uint256 presentValue = hyperdriveMath.calculatePresentValue(params);
             assertEq(
@@ -975,8 +969,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                     longsOutstanding: 10_000_000e18,
                     longAverageTimeRemaining: 0,
                     shortsOutstanding: 10_000_000e18,
-                    shortAverageTimeRemaining: 1e18,
-                    shortBaseVolume: 9_500_000e18
+                    shortAverageTimeRemaining: 1e18
                 });
             uint256 presentValue = hyperdriveMath.calculatePresentValue(params);
             params.shareReserves += YieldSpaceMath
@@ -984,7 +977,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                     params.shareReserves,
                     params.bondReserves,
                     params.shortsOutstanding,
-                    FixedPointMath.ONE_18.sub(params.timeStretch),
+                    FixedPointMath.ONE_18 - params.timeStretch,
                     params.sharePrice,
                     params.initialSharePrice
                 );
@@ -1016,8 +1009,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                     longsOutstanding: 10_000_000e18,
                     longAverageTimeRemaining: 1e18,
                     shortsOutstanding: 10_000_000e18,
-                    shortAverageTimeRemaining: 0,
-                    shortBaseVolume: 9_500_000e18
+                    shortAverageTimeRemaining: 0
                 });
             uint256 presentValue = hyperdriveMath.calculatePresentValue(params);
             params.shareReserves -= YieldSpaceMath
@@ -1025,7 +1017,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                     params.shareReserves,
                     params.bondReserves,
                     params.longsOutstanding,
-                    FixedPointMath.ONE_18.sub(params.timeStretch),
+                    FixedPointMath.ONE_18 - params.timeStretch,
                     params.sharePrice,
                     params.initialSharePrice
                 );
@@ -1057,8 +1049,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                     longsOutstanding: 100_000e18,
                     longAverageTimeRemaining: 0.75e18,
                     shortsOutstanding: 10_000_000e18,
-                    shortAverageTimeRemaining: 0.25e18,
-                    shortBaseVolume: 9_500_000e18
+                    shortAverageTimeRemaining: 0.25e18
                 });
             uint256 presentValue = hyperdriveMath.calculatePresentValue(params);
 
@@ -1073,7 +1064,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                         params.longsOutstanding.mulDown(
                             params.longAverageTimeRemaining
                         ),
-                    FixedPointMath.ONE_18.sub(params.timeStretch),
+                    FixedPointMath.ONE_18 - params.timeStretch,
                     params.sharePrice,
                     params.initialSharePrice
                 );
@@ -1111,8 +1102,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                     longsOutstanding: 10_000_000e18,
                     longAverageTimeRemaining: 0.75e18,
                     shortsOutstanding: 100_000e18,
-                    shortAverageTimeRemaining: 0.25e18,
-                    shortBaseVolume: 98_000e18
+                    shortAverageTimeRemaining: 0.25e18
                 });
             uint256 presentValue = hyperdriveMath.calculatePresentValue(params);
 
@@ -1127,7 +1117,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                         params.shortsOutstanding.mulDown(
                             params.shortAverageTimeRemaining
                         ),
-                    FixedPointMath.ONE_18.sub(params.timeStretch),
+                    FixedPointMath.ONE_18 - params.timeStretch,
                     params.sharePrice,
                     params.initialSharePrice
                 );
@@ -1168,8 +1158,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                     longsOutstanding: 100_000e18,
                     longAverageTimeRemaining: 0.75e18,
                     shortsOutstanding: 10_000_000e18,
-                    shortAverageTimeRemaining: 0.25e18,
-                    shortBaseVolume: 9_500_000e18
+                    shortAverageTimeRemaining: 0.25e18
                 });
             uint256 presentValue = hyperdriveMath.calculatePresentValue(params);
 
@@ -1184,7 +1173,7 @@ contract HyperdriveMathTest is HyperdriveTest {
             (, uint256 maxCurveTrade) = YieldSpaceMath.calculateMaxBuy(
                 params.shareReserves,
                 params.bondReserves,
-                FixedPointMath.ONE_18.sub(params.timeStretch),
+                FixedPointMath.ONE_18 - params.timeStretch,
                 params.sharePrice,
                 params.initialSharePrice
             );
@@ -1193,14 +1182,11 @@ contract HyperdriveMathTest is HyperdriveTest {
                     params.shareReserves,
                     params.bondReserves,
                     maxCurveTrade,
-                    FixedPointMath.ONE_18.sub(params.timeStretch),
+                    FixedPointMath.ONE_18 - params.timeStretch,
                     params.sharePrice,
                     params.initialSharePrice
                 );
-            params.shareReserves += params.shortBaseVolume.mulDivDown(
-                netCurveTrade - maxCurveTrade,
-                params.shortsOutstanding.mulDown(params.sharePrice)
-            );
+            params.shareReserves += netCurveTrade - maxCurveTrade;
 
             // Apply the flat part to the reserves.
             params.shareReserves +=
@@ -1237,8 +1223,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                     longsOutstanding: 100_000e18,
                     longAverageTimeRemaining: 0.75e18,
                     shortsOutstanding: 10_000_000e18,
-                    shortAverageTimeRemaining: 0.25e18,
-                    shortBaseVolume: 9_500_000e18
+                    shortAverageTimeRemaining: 0.25e18
                 });
             uint256 presentValue = hyperdriveMath.calculatePresentValue(params);
 
@@ -1253,7 +1238,7 @@ contract HyperdriveMathTest is HyperdriveTest {
             (, uint256 maxCurveTrade) = YieldSpaceMath.calculateMaxBuy(
                 params.shareReserves,
                 params.bondReserves,
-                FixedPointMath.ONE_18.sub(params.timeStretch),
+                FixedPointMath.ONE_18 - params.timeStretch,
                 params.sharePrice,
                 params.initialSharePrice
             );
@@ -1262,14 +1247,11 @@ contract HyperdriveMathTest is HyperdriveTest {
                     params.shareReserves,
                     params.bondReserves,
                     maxCurveTrade,
-                    FixedPointMath.ONE_18.sub(params.timeStretch),
+                    FixedPointMath.ONE_18 - params.timeStretch,
                     params.sharePrice,
                     params.initialSharePrice
                 );
-            params.shareReserves += params.shortBaseVolume.mulDivDown(
-                netCurveTrade - maxCurveTrade,
-                params.shortsOutstanding.mulDown(params.sharePrice)
-            );
+            params.shareReserves += netCurveTrade - maxCurveTrade;
 
             // Apply the flat part to the reserves.
             params.shareReserves +=
@@ -1354,26 +1336,27 @@ contract HyperdriveMathTest is HyperdriveTest {
             1
         );
 
-        // FIXME: This currently fails and needs to be fixed.
-        //
         // 5% interest - 5% margin released - 10% interest after close
-        // bondAmount = 1.05e18;
-        // openSharePrice = 1e18;
-        // closeSharePrice = 1.05e18;
-        // sharePrice = 1.155e18;
-        // shareAmount = uint256(1e18).divDown(sharePrice);
-        // shortProceeds = hyperdriveMath.calculateShortProceeds(
-        //     bondAmount,
-        //     shareAmount,
-        //     openSharePrice,
-        //     closeSharePrice,
-        //     sharePrice
-        // );
-        // // proceeds = (margin + interest) / share_price = (0.05 + 1.05 * 0.05) / 1.155
-        // assertEq(
-        //     shortProceeds,
-        //     (0.05e18 + bondAmount.mulDown(0.05e18)).divDown(sharePrice)
-        // );
+        bondAmount = 1.05e18;
+        openSharePrice = 1e18;
+        closeSharePrice = 1.05e18;
+        sharePrice = 1.155e18;
+        shareAmount = uint256(1e18).divDown(sharePrice);
+        flatFee = 0;
+        shortProceeds = hyperdriveMath.calculateShortProceeds(
+            bondAmount,
+            shareAmount,
+            openSharePrice,
+            closeSharePrice,
+            sharePrice,
+            flatFee
+        );
+        // proceeds = (margin + interest) / share_price = (0.05 + 1.05 * 0.05) / 1.155
+        assertApproxEqAbs(
+            shortProceeds,
+            (0.05e18 + bondAmount.mulDown(0.05e18)).divDown(sharePrice),
+            1
+        );
 
         // -10% interest - 5% margin released - 0% interest after close
         bondAmount = 1.05e18;
@@ -1392,22 +1375,22 @@ contract HyperdriveMathTest is HyperdriveTest {
         );
         assertEq(shortProceeds, 0);
 
-        // FIXME: This currently fails and needs to be fixed.
-        //
         // -10% interest - 5% margin released - 20% interest after close
-        // bondAmount = 1.05e18;
-        // openSharePrice = 1e18;
-        // closeSharePrice = 0.9e18;
-        // sharePrice = 1.08e18;
-        // shareAmount = uint256(1e18).divDown(sharePrice);
-        // shortProceeds = hyperdriveMath.calculateShortProceeds(
-        //     bondAmount,
-        //     shareAmount,
-        //     openSharePrice,
-        //     closeSharePrice,
-        //     sharePrice
-        // );
-        // assertEq(shortProceeds, 0);
+        bondAmount = 1.05e18;
+        openSharePrice = 1e18;
+        closeSharePrice = 0.9e18;
+        sharePrice = 1.08e18;
+        shareAmount = uint256(1e18).divDown(sharePrice);
+        flatFee = 0;
+        shortProceeds = hyperdriveMath.calculateShortProceeds(
+            bondAmount,
+            shareAmount,
+            openSharePrice,
+            closeSharePrice,
+            sharePrice,
+            flatFee
+        );
+        assertEq(shortProceeds, 0);
 
         // 5% interest - 0% margin released - 0% interest after close
         // 50% flatFee applied
@@ -1425,11 +1408,13 @@ contract HyperdriveMathTest is HyperdriveTest {
             sharePrice,
             flatFee
         );
-        // proceeds = ((margin + interest) / share_price) = (0 + 1 * 0.05) / 1.05 + (1 * 0.5)
+        // proceeds = (margin + interest) / share_price
+        //            + (bondAmount * flatFee) / share_price
+        //          = (0 + 1 * 0.05) / 1.05 + (1 * 0.5) / 1.05
         assertApproxEqAbs(
             shortProceeds,
             (bondAmount.mulDown(0.05e18)).divDown(sharePrice) +
-                (bondAmount.mulDown(flatFee)),
+                (bondAmount.mulDivDown(flatFee, sharePrice)),
             1
         );
 
@@ -1448,11 +1433,13 @@ contract HyperdriveMathTest is HyperdriveTest {
             sharePrice,
             flatFee
         );
-        // proceeds = ()(margin + interest) / share_price) + (bondAmount * flatFee) = ((0.05 + 1.05 * 0.05) / 1.05) + (1 * 0.25)
+        // proceeds = (margin + interest) / share_price
+        //            + (bondAmount * flatFee) / share_price
+        //          = ((0.05 + 1.05 * 0.05) / 1.05) + ((1 * 0.25) / 1.05)
         assertApproxEqAbs(
             shortProceeds,
             (0.05e18 + bondAmount.mulDown(0.05e18)).divDown(sharePrice) +
-                (bondAmount.mulDown(flatFee)),
+                bondAmount.mulDivDown(flatFee, sharePrice),
             1
         );
     }
@@ -1571,7 +1558,7 @@ contract HyperdriveMathTest is HyperdriveTest {
         // 1 / time_stretch in this case.
         uint256 t = _positionDuration.divDown(365 days);
         uint256 tau = FixedPointMath.ONE_18.mulDown(_timeStretch);
-        uint256 interestFactor = FixedPointMath.ONE_18.add(_apr.mulDown(t)).pow(
+        uint256 interestFactor = (FixedPointMath.ONE_18 + _apr.mulDown(t)).pow(
             FixedPointMath.ONE_18.divDown(tau)
         );
 
