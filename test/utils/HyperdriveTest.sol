@@ -787,7 +787,7 @@ contract HyperdriveTest is BaseTest {
         );
         uint256 withdrawalSharesOutstanding = hyperdrive.totalSupply(
             AssetId._WITHDRAWAL_SHARE_ASSET_ID
-        ) - hyperdrive.withdrawPool().readyToWithdraw;
+        ) - hyperdrive.getWithdrawPool().readyToWithdraw;
         uint256 totalLpSupply = totalActiveLpSupply +
             withdrawalSharesOutstanding;
         int256 withdrawalShares = int256(

@@ -526,6 +526,36 @@ contract LpWithdrawalTest is HyperdriveTest {
         // );
     }
 
+    // This test WILL FAIL with invalid share reserves on closeLong. You can make it pass in 3 ways:
+    // 1. Make longBasePaid larger
+    // 2. Make shortAmount larger
+    // 3. Change the pool's initial fixed rate to something like 5%. This will
+    // give the pool a smaller timestretch.
+    // These 3 "solutions" create a large enough input s.t. the pow function
+    // used in YieldSpace noise doesn't cause issues
+    function test_lp_withdrawal_long_short_redemption_edge_case() external {
+        uint256 longBasePaid = 14191; // 0.001000000000014191
+        uint256 shortAmount = 19735436564515; // 0.001019735436564515
+        int256 variableRate = 39997134772697; // 0.000039997134772697
+        _test_lp_withdrawal_long_short_redemption(
+            longBasePaid,
+            shortAmount,
+            variableRate
+        );
+    }
+
+    function test_lp_withdrawal_long_short_redemption(
+        uint256 longBasePaid,
+        uint256 shortAmount,
+        int256 variableRate
+    ) external {
+        _test_lp_withdrawal_long_short_redemption(
+            longBasePaid,
+            shortAmount,
+            variableRate
+        );
+    }
+
     // FIXME: Add more ratio checks.
     //
     // FIXME: Update the description.
@@ -534,11 +564,11 @@ contract LpWithdrawalTest is HyperdriveTest {
     // share of the withdrawal pool's profits if Alice has entirely long
     // longExposure, Celine has entirely short exposure, Alice redeems immediately
     // after the long is closed, and Celine redeems after the short is redeemed.
-    function test_lp_withdrawal_long_close_immediate_and_short_redemption(
+    function _test_lp_withdrawal_long_short_redemption(
         uint256 longBasePaid,
         uint256 shortAmount,
         int256 variableRate
-    ) external {
+    ) internal {
         // Set up the test parameters.
         TestLpWithdrawalParams memory testParams = TestLpWithdrawalParams({
             fixedRate: 0.02e18,
@@ -600,7 +630,6 @@ contract LpWithdrawalTest is HyperdriveTest {
         uint256 celineSlippagePayment = testParams.contribution -
             celineLpShares.mulDown(presentValueRatio());
 
-        // Bob closes his long and Alice redeems her withdrawal shares.
         uint256 aliceRedeemProceeds;
         {
             // Redeem Alice's withdrawal shares. Alice should receive the margin
@@ -638,7 +667,6 @@ contract LpWithdrawalTest is HyperdriveTest {
             testParams.shortMaturityTime = shortMaturityTime;
             testParams.shortBasePaid = shortBasePaid;
         }
-
         // Celine removes her liquidity.
         uint256 celineBaseProceeds = 0;
         uint256 celineWithdrawalShares = 0;
@@ -664,6 +692,7 @@ contract LpWithdrawalTest is HyperdriveTest {
 
         // Bob closes his long.
         closeLong(bob, testParams.longMaturityTime, testParams.longAmount);
+
         // Close the short.
         {
             uint256 shortProceeds = closeShort(

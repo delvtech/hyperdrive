@@ -114,7 +114,7 @@ abstract contract HyperdriveDataProvider is
         _revert(abi.encode(poolInfo));
     }
 
-    function withdrawPool()
+    function getWithdrawPool()
         external
         view
         returns (IHyperdrive.WithdrawPool memory)
