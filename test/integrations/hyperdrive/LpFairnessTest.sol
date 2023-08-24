@@ -6,6 +6,8 @@ import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
 import { Lib } from "../../utils/Lib.sol";
 
+import "forge-std/console2.sol";
+
 contract LPFairnessTest is HyperdriveTest {
     using FixedPointMath for uint256;
     using HyperdriveUtils for *;
@@ -398,78 +400,32 @@ contract LPFairnessTest is HyperdriveTest {
 
         // Celine opens a long.
         uint256 baseSpent = 5_000_000e18 - tradeSizeParam;
-        (, uint256 bondsPurchased) = openLong(celine, baseSpent);
+        openLong(celine, baseSpent);
 
         // 1/2 the term passes.
-        advanceTime(POSITION_DURATION / 2, variableRate);
-        (uint256 poolValue, ) = HyperdriveUtils.calculateCompoundInterest(
-            initialLiquidity + baseSpent,
-            variableRate,
-            POSITION_DURATION / 2
-        );
+        advanceTimeWithCheckpoints(POSITION_DURATION / 2, variableRate);
 
         // Celine opens another long.
         uint256 baseSpent2 = tradeSizeParam;
-        (, uint256 bondsPurchased2) = openLong(celine, baseSpent2);
+        openLong(celine, baseSpent2);
 
-        uint256 bobLpShares = 0;
-        uint256 poolValue2 = 0;
-        {
-            // Bob adds liquidity.
-            uint256 contribution = 5_000_000e18;
-            bobLpShares = addLiquidity(bob, contribution);
 
-            // 1/2 the term passes.
-            advanceTime(POSITION_DURATION / 2, variableRate);
+        // Bob adds liquidity.
+        uint256 contribution = 5_000_000e18;
+        uint256 bobLpShares = addLiquidity(bob, contribution);
 
-            // Calculate the value of the pool after interest is accrued.
-            (poolValue2, ) = HyperdriveUtils.calculateCompoundInterest(
-                poolValue + contribution + baseSpent2,
-                variableRate,
-                POSITION_DURATION / 2
-            );
-        }
-        // calculate the value of the outstanding bonds (with interest)
-        (uint256 totalBondValueWithInterest, ) = HyperdriveUtils
-            .calculateCompoundInterest(
-                bondsPurchased2,
-                variableRate,
-                POSITION_DURATION / 2
-            );
-
-        // calculate the portion of the pool's base reserves owned by bob.
-        uint256 baseReserves = (poolValue2 - bondsPurchased).mulDivDown(
-            bobLpShares,
-            hyperdrive.totalSupply(AssetId._LP_ASSET_ID)
-        );
-
-        // calculate bob's share of bonds
-        uint256 bondValueWithInterest = totalBondValueWithInterest.mulDivDown(
-            bobLpShares,
-            hyperdrive.totalSupply(AssetId._LP_ASSET_ID)
-        );
+        // 1/2 the term passes.
+        advanceTimeWithCheckpoints(POSITION_DURATION / 2, variableRate);
+        
 
         // calculate the expected withdrawal proceeds
         uint256 expectedWithdrawalProceeds = calculateBaseLpProceeds(
             bobLpShares
         );
 
-        // calculate alice's proportion of LP shares
-        uint256 aliceLpProportion = aliceLpShares.divDown(
-            hyperdrive.totalSupply(AssetId._LP_ASSET_ID)
-        );
-
         // Bob removes liquidity
         (uint256 withdrawalProceeds, ) = removeLiquidity(bob, bobLpShares);
         assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e9);
-
-        // calculate the portion of the pool's base reserves owned by alice.
-        baseReserves = (poolValue2 - bondsPurchased).mulDown(aliceLpProportion);
-
-        // calculate alice's share of bonds
-        bondValueWithInterest = totalBondValueWithInterest.mulDown(
-            aliceLpProportion
-        );
 
         // calculate alice's expected withdrawal proceeds
         expectedWithdrawalProceeds = calculateBaseLpProceeds(aliceLpShares);
