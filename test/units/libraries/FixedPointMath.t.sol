@@ -308,7 +308,7 @@ contract FixedPointMathTest is Test {
             deltaWeight, // _bondProceeds
             true
         );
-        
+
         assert(result >= min(average, delta) && result <= max(average, delta));
     }
 
@@ -360,7 +360,7 @@ contract FixedPointMathTest is Test {
         );
 
         assert(result >= min(average, delta) && result <= max(average, delta));
-    
+
         average = hi;
         avgWeight = lo;
         delta = hi;
@@ -374,7 +374,7 @@ contract FixedPointMathTest is Test {
         );
 
         assert(result >= min(average, delta) && result <= max(average, delta));
-    
+
         average = hi;
         avgWeight = hi;
         delta = lo;
