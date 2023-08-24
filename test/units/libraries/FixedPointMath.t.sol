@@ -290,8 +290,29 @@ contract FixedPointMathTest is Test {
         return a < b ? a : b;
     }
 
+    function test_updateWeightedAverageUsecase() public {
+        MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
+
+        uint256 result;
+        uint256 lo = 0;
+        uint256 hi = 10e18;
+
+        uint256 average = hi;
+        uint256 avgWeight = hi;
+        uint256 delta = lo;
+        uint256 deltaWeight = lo;
+        result = mockFixedPointMath.updateWeightedAverage(
+            average, // longSharePrice
+            avgWeight, // totalSupply
+            delta, // _shareProceeds
+            deltaWeight, // _bondProceeds
+            true
+        );
+        
+        assert(result >= min(average, delta) && result <= max(average, delta));
+    }
+
     function test_updateWeightedAverageExtremes() public {
-        // NOTE: Coverage only works if I initialize the fixture in the test function
         MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
 
         uint256 result;
