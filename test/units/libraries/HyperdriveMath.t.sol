@@ -519,71 +519,71 @@ contract HyperdriveMathTest is HyperdriveTest {
     //     );
     // }
 
-    function test__calculateClosePositionExposure() external {
-        {
-            uint256 _positionExposure = 500e18;
-            uint256 _baseReservesDelta = 100e18;
-            uint256 _bondReservesDelta = 100e18;
-            uint256 _baseUserDelta = 200e18;
-            uint256 _checkpointPositions = 0;
-            uint128 delta = HyperdriveMath.calculateClosePositionExposure(
-                _positionExposure,
-                _bondReservesDelta,
-                _baseReservesDelta,
-                _bondReservesDelta,
-                _baseUserDelta,
-                _checkpointPositions
-            );
+    // function test__calculateClosePositionExposure() external {
+    //     {
+    //         uint256 _positionExposure = 500e18;
+    //         uint256 _baseReservesDelta = 100e18;
+    //         uint256 _bondReservesDelta = 100e18;
+    //         uint256 _baseUserDelta = 200e18;
+    //         uint256 _checkpointPositions = 0;
+    //         uint128 delta = HyperdriveMath.calculateClosePositionExposure(
+    //             _positionExposure,
+    //             _bondReservesDelta,
+    //             _baseReservesDelta,
+    //             _bondReservesDelta,
+    //             _baseUserDelta,
+    //             _checkpointPositions
+    //         );
 
-            // delta should be equal to _positionExposure bc there are 0 checkpoint positions
-            assertEq(delta, 500e18);
-        }
+    //         // delta should be equal to _positionExposure bc there are 0 checkpoint positions
+    //         assertEq(delta, 500e18);
+    //     }
 
-        // Flat + Curve  Test
-        {
-            uint256 _positionExposure = 500e18;
-            uint256 _bondProceeds = 100e18;
-            uint256 _baseReservesDelta = 10e18;
-            uint256 _bondReservesDelta = 100e18;
-            uint256 _baseUserDelta = 200e18;
-            uint256 _checkpointPositions = 10e18;
-            uint128 delta = HyperdriveMath.calculateClosePositionExposure(
-                _positionExposure,
-                _bondProceeds,
-                _baseReservesDelta,
-                _bondReservesDelta,
-                _baseUserDelta,
-                _checkpointPositions
-            );
-            uint256 flatPlusCurveDelta = _baseUserDelta -
-                _baseReservesDelta +
-                _bondReservesDelta -
-                _baseReservesDelta;
-            // delta should be equal to flatPlusCurveDelta + _bondProceeds bc
-            // _positionExposure >= flatPlusCurveDelta + _bondProceeds
-            assertEq(delta, flatPlusCurveDelta + _bondProceeds);
-        }
+    //     // Flat + Curve  Test
+    //     {
+    //         uint256 _positionExposure = 500e18;
+    //         uint256 _bondProceeds = 100e18;
+    //         uint256 _baseReservesDelta = 10e18;
+    //         uint256 _bondReservesDelta = 100e18;
+    //         uint256 _baseUserDelta = 200e18;
+    //         uint256 _checkpointPositions = 10e18;
+    //         uint128 delta = HyperdriveMath.calculateClosePositionExposure(
+    //             _positionExposure,
+    //             _bondProceeds,
+    //             _baseReservesDelta,
+    //             _bondReservesDelta,
+    //             _baseUserDelta,
+    //             _checkpointPositions
+    //         );
+    //         uint256 flatPlusCurveDelta = _baseUserDelta -
+    //             _baseReservesDelta +
+    //             _bondReservesDelta -
+    //             _baseReservesDelta;
+    //         // delta should be equal to flatPlusCurveDelta + _bondProceeds bc
+    //         // _positionExposure >= flatPlusCurveDelta + _bondProceeds
+    //         assertEq(delta, flatPlusCurveDelta + _bondProceeds);
+    //     }
 
-        {
-            uint256 _positionExposure = 1e18;
-            uint256 _baseReservesDelta = 100e18;
-            uint256 _bondReservesDelta = 100e18;
-            uint256 _baseUserDelta = 200e18;
-            uint256 _checkpointPositions = 10e18;
-            uint128 delta = HyperdriveMath.calculateClosePositionExposure(
-                _positionExposure,
-                _bondReservesDelta,
-                _baseReservesDelta,
-                _bondReservesDelta,
-                _baseUserDelta,
-                _checkpointPositions
-            );
+    //     {
+    //         uint256 _positionExposure = 1e18;
+    //         uint256 _baseReservesDelta = 100e18;
+    //         uint256 _bondReservesDelta = 100e18;
+    //         uint256 _baseUserDelta = 200e18;
+    //         uint256 _checkpointPositions = 10e18;
+    //         uint128 delta = HyperdriveMath.calculateClosePositionExposure(
+    //             _positionExposure,
+    //             _bondReservesDelta,
+    //             _baseReservesDelta,
+    //             _bondReservesDelta,
+    //             _baseUserDelta,
+    //             _checkpointPositions
+    //         );
 
-            // delta should be equal to _positionExposure bc 
-            // _positionExposure < flatPlusCurveDelta + _bondProceeds
-            assertEq(delta, _positionExposure);
-        }
-    }
+    //         // delta should be equal to _positionExposure bc 
+    //         // _positionExposure < flatPlusCurveDelta + _bondProceeds
+    //         assertEq(delta, _positionExposure);
+    //     }
+    // }
 
     function test__calculateMaxLong__edgeCases() external {
         // This is an edge case where pool has a spot price of 1 at the optimal

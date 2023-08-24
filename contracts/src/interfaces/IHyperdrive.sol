@@ -107,9 +107,7 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
         ///      stuck in the contract.
         uint128 longSharePrice;
         /// @dev The amount lp exposure on longs.
-        uint128 longExposure;
-        /// @dev The amount of lp assets on shorts that come from trader Deposits
-        uint128 shortAssets;
+        int128 longExposure;
     }
 
     struct WithdrawPool {

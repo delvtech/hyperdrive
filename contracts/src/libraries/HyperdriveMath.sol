@@ -15,6 +15,7 @@ import { SafeCast } from "./SafeCast.sol";
 library HyperdriveMath {
     using FixedPointMath for uint256;
     using SafeCast for uint256;
+    using SafeCast for int256;
 
     /// @dev Calculates the spot price without slippage of bonds in terms of base.
     /// @param _shareReserves The pool's share reserves.
@@ -296,32 +297,28 @@ library HyperdriveMath {
     /// @param _checkpointPositions The number of open positions (either long or short) in a checkpoint.
     /// @return positionExposureDelta The change in exposure after closing a position.
     function calculateClosePositionExposure(
-        uint256 _positionExposure,
+        int256 _positionExposure,
         uint256 _bondProceeds,
         uint256 _baseReservesDelta,
         uint256 _bondReservesDelta,
         uint256 _baseUserDelta,
         uint256 _checkpointPositions
-    ) internal pure returns (uint128) {
+    ) internal pure returns (int128) {
         uint256 flatPlusCurveDelta = _baseUserDelta -
             _baseReservesDelta +
             _bondReservesDelta -
             _baseReservesDelta;
 
-        // if there are no open positions, or the positionExposure
-        // is less than the delta from the flat + curve calculation, then
-        // all the (short or long) positions in the checkpoint are now closed and we
+        // if there are no open positions, then
         // can set the positionExposure to 0.
-        if (
-            _checkpointPositions == 0 || _positionExposure < flatPlusCurveDelta + _bondProceeds
-        ) {
+        if (_checkpointPositions == 0) {
             // This effectively sets the positionExposure to 0.
-            return _positionExposure.toUint128();
+            return _positionExposure.toInt128();
         }
 
         // Reduce the exposure (long) or assets (short) by the amount of matured positions (flat)
-        // and by the unmatured positions (curve)
-        return (flatPlusCurveDelta + _bondProceeds).toUint128();
+        // and by the unmatured positions (curve) plus the bondProceeds
+        return int128((flatPlusCurveDelta + _bondProceeds).toUint128());
     }
 
     struct MaxTradeParams {

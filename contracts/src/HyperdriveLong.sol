@@ -266,13 +266,11 @@ abstract contract HyperdriveLong is HyperdriveLP {
 
         // Increase the exposure by the amount the LPs must reserve to cover the long.
         // This is equal to the amount of fixed interest the long is owed at maturity.
-        int128 checkpointExposureBefore = int128(checkpoint.longExposure) - int128(checkpoint.shortAssets);
-
+        int128 checkpointExposureBefore = int128(checkpoint.longExposure);
         uint128 longExposureDelta = (_bondReservesDelta -
             _shareReservesDelta.mulDown(_sharePrice) + _bondProceeds).toUint128();
-        checkpoint.longExposure += longExposureDelta;
-        int128 checkpointExposureAfter = int128(checkpoint.longExposure) - int128(checkpoint.shortAssets);
-        _updateLongExposure(checkpointExposureBefore, checkpointExposureAfter);
+        checkpoint.longExposure += int128(longExposureDelta);
+        _updateLongExposure(checkpointExposureBefore, checkpoint.longExposure);
 
         // We need to check solvency because longs increase the system's exposure.
         if (!_isSolvent(_sharePrice)) {
@@ -336,9 +334,9 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // Remove the flat part of the trade from the pool's liquidity.
         _updateLiquidity(-int256(_shareProceeds - _shareReservesDelta));
 
-        // Calculate the longExposureDelta
+        // Calculate the change in longExposure
         {
-            uint128 longExposureDelta = HyperdriveMath
+            int128 longExposureDelta = HyperdriveMath
                 .calculateClosePositionExposure(
                     _checkpoints[checkpointTime].longExposure,
                     _bondAmount,
@@ -354,12 +352,11 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 );
             
             // Closing a long reduces the long exposure held in the shareReserves.
-            int128 checkpointExposureBefore = int128(_checkpoints[checkpointTime].longExposure) - int128(_checkpoints[checkpointTime].shortAssets);
+            int128 checkpointExposureBefore = int128(_checkpoints[checkpointTime].longExposure);
             _checkpoints[checkpointTime].longExposure -= longExposureDelta;
-            int128 checkpointExposureAfter = int128(_checkpoints[checkpointTime].longExposure) - int128(_checkpoints[checkpointTime].shortAssets);
 
             // Reducing the long exposure also reduces the global long exposure.
-            _updateLongExposure(checkpointExposureBefore, checkpointExposureAfter);
+            _updateLongExposure(checkpointExposureBefore, _checkpoints[checkpointTime].longExposure);
         }
 
         // If there are withdrawal shares outstanding, we pay out the maximum
