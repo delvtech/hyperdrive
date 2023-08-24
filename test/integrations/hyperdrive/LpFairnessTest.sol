@@ -48,10 +48,7 @@ contract LPFairnessTest is HyperdriveTest {
 
         // Celine opens a short.
         uint256 bondsShorted = tradeSizeParam;
-        (uint256 maturityTime, ) = openShort(
-            celine,
-            bondsShorted
-        );
+        (uint256 maturityTime, ) = openShort(celine, bondsShorted);
 
         // Bob adds liquidity.
         uint256 contribution = 5_000_000e18;
@@ -61,7 +58,9 @@ contract LPFairnessTest is HyperdriveTest {
         advanceTimeWithCheckpoints(POSITION_DURATION, variableRate);
 
         // calculate the expected withdrawal proceeds
-        uint256 expectedWithdrawalProceeds = calculateBaseLpProceeds(bobLpShares);
+        uint256 expectedWithdrawalProceeds = calculateBaseLpProceeds(
+            bobLpShares
+        );
 
         // Bob removes liquidity
         (uint256 withdrawalProceeds, ) = removeLiquidity(bob, bobLpShares);
@@ -117,7 +116,9 @@ contract LPFairnessTest is HyperdriveTest {
         advanceTimeWithCheckpoints(POSITION_DURATION / 2, variableRate);
 
         // calculate the expected withdrawal proceeds
-        uint256 expectedWithdrawalProceeds = calculateBaseLpProceeds(bobLpShares);
+        uint256 expectedWithdrawalProceeds = calculateBaseLpProceeds(
+            bobLpShares
+        );
 
         // Bob removes liquidity
         (uint256 withdrawalProceeds, ) = removeLiquidity(bob, bobLpShares);
@@ -169,7 +170,9 @@ contract LPFairnessTest is HyperdriveTest {
         advanceTimeWithCheckpoints(POSITION_DURATION, variableRate);
 
         // calculate the expected withdrawal proceeds
-        uint256 expectedWithdrawalProceeds = calculateBaseLpProceeds(bobLpShares);
+        uint256 expectedWithdrawalProceeds = calculateBaseLpProceeds(
+            bobLpShares
+        );
 
         // Ensure that if the new LP withdraws, they get their money back.
         (uint256 withdrawalProceeds, ) = removeLiquidity(bob, bobLpShares);
@@ -220,14 +223,12 @@ contract LPFairnessTest is HyperdriveTest {
         uint256 baseSpent2 = tradeSizeParam;
         openLong(celine, baseSpent2);
 
-
         // Bob adds liquidity.
         uint256 contribution = 5_000_000e18;
         uint256 bobLpShares = addLiquidity(bob, contribution);
 
         // 1/2 the term passes.
         advanceTimeWithCheckpoints(POSITION_DURATION / 2, variableRate);
-        
 
         // calculate the expected withdrawal proceeds
         uint256 expectedWithdrawalProceeds = calculateBaseLpProceeds(
@@ -312,7 +313,7 @@ contract LPFairnessTest is HyperdriveTest {
 
         // variable interest rate earned by the pool
         int256 variableRate = int256(variableRateParam);
-        
+
         // Initialize the pool with capital.
         uint256 initialLiquidity = 5_000_000e18;
         uint256 aliceLpShares = initialize(alice, 0.10e18, initialLiquidity);
@@ -336,13 +337,12 @@ contract LPFairnessTest is HyperdriveTest {
         advanceTimeWithCheckpoints(POSITION_DURATION / 2, variableRate);
 
         // calculate the expected withdrawal proceeds
-        uint256 expectedWithdrawalProceeds = calculateBaseLpProceeds(bobLpShares);
-
-        // Bob removes liquidity
-        (uint256 bobWithdrawalProceeds, ) = removeLiquidity(
-            bob,
+        uint256 expectedWithdrawalProceeds = calculateBaseLpProceeds(
             bobLpShares
         );
+
+        // Bob removes liquidity
+        (uint256 bobWithdrawalProceeds, ) = removeLiquidity(bob, bobLpShares);
         assertApproxEqAbs(
             bobWithdrawalProceeds,
             expectedWithdrawalProceeds,

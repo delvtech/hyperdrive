@@ -83,37 +83,6 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             advanceTime(POSITION_DURATION, 0);
         }
 
-        // NOTE: We have an issue if:
-        // 1) share price is < 1
-        // 1) a long is opened
-        // 2) time passes (no interest accrues)
-        // 3) a short is opened
-        // 4) then LP removes shares
-        // This is a problem bc the net flat trade in calculatePresentValue is net long. 
-        // in other words, the time remaining for the shorts is 1 and the time remaining 
-        // for the longs is < 1.  The exposure doesn't account for this.  It worked before 
-        // because we always left the full long position amount in the share reserves when
-        // calculating idle.  
-
-        // NOTE: We have an issue if:
-        // 1) share price is 1
-        // 1) a long is opened
-        // 2) time passes (no interest accrues)
-        // 3) a short is opened
-        // 4) then LP removes shares
-        // This is a problem bc the net flat trade in calculatePresentValue is net long. 
-        // in other words, the time remaining for the shorts is 1 and the time remaining 
-        // for the longs is < 1.  The exposure doesn't account for this.  It worked before 
-        // because we always left the full long position amount in the share reserves when
-        // calculating idle.
-
-        // NOTE: We have an issue if:??
-        // 1) a long is opened
-        // 2) negative interest is accrued
-        // 3) a short is opened
-        // 4) then LP removes shares
-        // This is a problem bc the net flat trade in calculatePresentValue
-
         // open a long
         uint256 basePaidLong = tradeSize;
         (uint256 maturityTimeLong, uint256 bondAmountLong) = openLong(
@@ -129,11 +98,13 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         (uint256 maturityTimeShort, ) = openShort(bob, shortAmount);
 
         // remove liquidity
-        ( , uint256 withdrawalShares) = removeLiquidity(alice, aliceLpShares);
+        (, uint256 withdrawalShares) = removeLiquidity(alice, aliceLpShares);
 
         // wait for the positions to mature
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
-        while (poolInfo.shortsOutstanding > 0 && poolInfo.longsOutstanding > 0) {
+        while (
+            poolInfo.shortsOutstanding > 0 && poolInfo.longsOutstanding > 0
+        ) {
             advanceTimeWithCheckpoints(POSITION_DURATION, variableInterest);
             poolInfo = hyperdrive.getPoolInfo();
         }
@@ -148,18 +119,13 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         poolInfo = hyperdrive.getPoolInfo();
         assertApproxEqAbs(poolInfo.longExposure, 0, 1);
 
-        (uint256 baseProceeds, ) = redeemWithdrawalShares(alice, withdrawalShares);
+        redeemWithdrawalShares(alice, withdrawalShares);
         // idle should be equal to shareReserves
         uint256 expectedShareReserves = MockHyperdrive(address(hyperdrive))
             .calculateIdleShareReserves(hyperdrive.getPoolInfo().sharePrice) +
             hyperdrive.getPoolConfig().minimumShareReserves;
         assertEq(poolInfo.shareReserves, expectedShareReserves);
-        //         uint256 expectedShareReserves = hyperdrive.lpSharePrice().mulDown(hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID)) 
-        // + hyperdrive.lpSharePrice().mulDown(hyperdrive.totalSupply(AssetId._LP_ASSET_ID))
-        // + hyperdrive.getPoolConfig().minimumShareReserves;
-
     }
-    
 
     function test_netting_longs_close_with_initial_share_price_gt_1() external {
         uint256 initialSharePrice = 1.017375020334083692e18;
@@ -198,7 +164,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         uint256 initialSharePrice = 1e18;
         int256 variableInterest = 0.0e18;
         uint256 timeElapsed = 10220546; //~118 days between each trade
-        uint256 tradeSize = 100e18;//4_993_785.6789593698886044450e18; //100_000_000 fails with sub underflow
+        uint256 tradeSize = 100e18; //4_993_785.6789593698886044450e18; //100_000_000 fails with sub underflow
         uint256 numTrades = 1;
 
         // If you increase numTrades enought it will eventually fail due to sub underflow
@@ -741,10 +707,11 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
 
         // Ensure all the positions have matured before trying to close them
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
-        while (poolInfo.shortsOutstanding > 0 && poolInfo.longsOutstanding > 0) {
+        while (
+            poolInfo.shortsOutstanding > 0 && poolInfo.longsOutstanding > 0
+        ) {
             advanceTimeWithCheckpoints(POSITION_DURATION, variableInterest);
             poolInfo = hyperdrive.getPoolInfo();
-
         }
 
         // close the short positions

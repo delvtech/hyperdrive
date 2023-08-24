@@ -19,6 +19,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
     using FixedPointMath for uint256;
     using FixedPointMath for int256;
     using SafeCast for uint256;
+    using SafeCast for int256;
 
     /// @notice Opens a short position.
     /// @param _bondAmount The amount of bonds to short.
@@ -278,10 +279,17 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // NOTE: Refer to this issue for details on if this should be moved
         //       https://github.com/delvtech/hyperdrive/issues/558
         uint256 _latestCheckpoint = _latestCheckpoint();
-        int128 checkpointExposureBefore = int128(_checkpoints[_latestCheckpoint].longExposure);
+        int128 checkpointExposureBefore = int128(
+            _checkpoints[_latestCheckpoint].longExposure
+        );
         uint256 shortAssetsDelta = _traderDeposit + _bondAmount;
-        _checkpoints[_latestCheckpoint].longExposure -= int128(shortAssetsDelta.toUint128());
-        _updateLongExposure(checkpointExposureBefore, _checkpoints[_latestCheckpoint].longExposure);
+        _checkpoints[_latestCheckpoint].longExposure -= int128(
+            shortAssetsDelta.toUint128()
+        );
+        _updateLongExposure(
+            checkpointExposureBefore,
+            _checkpoints[_latestCheckpoint].longExposure
+        );
     }
 
     /// @dev Applies the trading deltas from a closed short to the reserves and
@@ -319,7 +327,10 @@ abstract contract HyperdriveShort is HyperdriveLP {
             // amount of shorts being closed since the total supply is decreased
             // when burning the short tokens.
             uint256 checkpointShorts = _totalSupply[
-                AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _maturityTime)
+                AssetId.encodeAssetId(
+                    AssetId.AssetIdPrefix.Short,
+                    _maturityTime
+                )
             ];
             if (block.timestamp < _maturityTime) {
                 checkpointShorts += _bondAmount;
@@ -345,7 +356,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             uint256 checkpointTime = _maturityTime - _positionDuration;
             int128 longExposureDelta = HyperdriveMath
                 .calculateClosePositionExposure(
-                     _checkpoints[checkpointTime].longExposure,
+                    _checkpoints[checkpointTime].longExposure,
                     _bondAmount,
                     _shareReservesDelta.mulDown(_sharePrice),
                     _bondReservesDelta,
@@ -356,14 +367,20 @@ abstract contract HyperdriveShort is HyperdriveLP {
                             _maturityTime
                         )
                     ]
-                );
+                )
+                .toInt128();
 
             // Closing a short reduces the assets (trader deposits) not tracked in the shareReserves
-            int128 checkpointExposureBefore = int128(_checkpoints[checkpointTime].longExposure);
+            int128 checkpointExposureBefore = int128(
+                _checkpoints[checkpointTime].longExposure
+            );
             _checkpoints[checkpointTime].longExposure -= longExposureDelta;
 
             // A reduction in assets increases the long exposure
-            _updateLongExposure(checkpointExposureBefore, _checkpoints[checkpointTime].longExposure);            
+            _updateLongExposure(
+                checkpointExposureBefore,
+                _checkpoints[checkpointTime].longExposure
+            );
         }
 
         // If there are withdrawal shares outstanding, we pay out the maximum

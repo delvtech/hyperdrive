@@ -18,6 +18,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
     using FixedPointMath for uint256;
     using FixedPointMath for int256;
     using SafeCast for uint256;
+    using SafeCast for int256;
 
     /// @notice Opens a long position.
     /// @param _baseAmount The amount of base to use when trading.
@@ -268,7 +269,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // This is equal to the amount of fixed interest the long is owed at maturity.
         int128 checkpointExposureBefore = int128(checkpoint.longExposure);
         uint128 longExposureDelta = (_bondReservesDelta -
-            _shareReservesDelta.mulDown(_sharePrice) + _bondProceeds).toUint128();
+            _shareReservesDelta.mulDown(_sharePrice) +
+            _bondProceeds).toUint128();
         checkpoint.longExposure += int128(longExposureDelta);
         _updateLongExposure(checkpointExposureBefore, checkpoint.longExposure);
 
@@ -294,38 +296,40 @@ abstract contract HyperdriveLong is HyperdriveLP {
         uint256 _maturityTime,
         uint256 _sharePrice
     ) internal {
-        uint128 longsOutstanding_ = _marketState.longsOutstanding;
         uint256 checkpointTime = _maturityTime - _positionDuration;
         uint128 longSharePrice_ = _checkpoints[checkpointTime].longSharePrice;
+        {
+            uint128 longsOutstanding_ = _marketState.longsOutstanding;
 
-        // Update the long average maturity time.
-        _marketState.longAverageMaturityTime = uint256(
-            _marketState.longAverageMaturityTime
-        )
-            .updateWeightedAverage(
-                longsOutstanding_,
-                _maturityTime * 1e18, // scale up to fixed point scale
-                _bondAmount,
-                false
+            // Update the long average maturity time.
+            _marketState.longAverageMaturityTime = uint256(
+                _marketState.longAverageMaturityTime
             )
-            .toUint128();
+                .updateWeightedAverage(
+                    longsOutstanding_,
+                    _maturityTime * 1e18, // scale up to fixed point scale
+                    _bondAmount,
+                    false
+                )
+                .toUint128();
 
-        // Update the global long open share price.
-        _marketState.longOpenSharePrice = uint256(
-            _marketState.longOpenSharePrice
-        )
-            .updateWeightedAverage(
-                longsOutstanding_,
-                longSharePrice_,
-                _bondAmount,
-                false
+            // Update the global long open share price.
+            _marketState.longOpenSharePrice = uint256(
+                _marketState.longOpenSharePrice
             )
-            .toUint128();
+                .updateWeightedAverage(
+                    longsOutstanding_,
+                    longSharePrice_,
+                    _bondAmount,
+                    false
+                )
+                .toUint128();
 
-        // Reduce the amount of outstanding longs.
-        _marketState.longsOutstanding =
-            longsOutstanding_ -
-            _bondAmount.toUint128();
+            // Reduce the amount of outstanding longs.
+            _marketState.longsOutstanding =
+                longsOutstanding_ -
+                _bondAmount.toUint128();
+        }
 
         // Apply the updates from the curve trade to the reserves.
         _marketState.shareReserves -= _shareReservesDelta.toUint128();
@@ -345,18 +349,24 @@ abstract contract HyperdriveLong is HyperdriveLP {
                     _shareProceeds.mulDown(_sharePrice),
                     _totalSupply[
                         AssetId.encodeAssetId(
-                            AssetId.AssetIdPrefix.Short,
+                            AssetId.AssetIdPrefix.Long,
                             _maturityTime
                         )
                     ]
-                );
-            
+                )
+                .toInt128();
+
             // Closing a long reduces the long exposure held in the shareReserves.
-            int128 checkpointExposureBefore = int128(_checkpoints[checkpointTime].longExposure);
+            int128 checkpointExposureBefore = int128(
+                _checkpoints[checkpointTime].longExposure
+            );
             _checkpoints[checkpointTime].longExposure -= longExposureDelta;
 
             // Reducing the long exposure also reduces the global long exposure.
-            _updateLongExposure(checkpointExposureBefore, _checkpoints[checkpointTime].longExposure);
+            _updateLongExposure(
+                checkpointExposureBefore,
+                _checkpoints[checkpointTime].longExposure
+            );
         }
 
         // If there are withdrawal shares outstanding, we pay out the maximum

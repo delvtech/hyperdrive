@@ -349,7 +349,6 @@ contract AddLiquidityTest is HyperdriveTest {
         // Close Celine's short.
         closeShort(celine, maturityTime, shortAmount);
 
-
         // Ensure that Alice's withdrawal proceeds are equivalent to what they
         // would have been had Bob not added liquidity.
         (uint256 withdrawalProceeds, ) = removeLiquidity(alice, aliceLpShares);
