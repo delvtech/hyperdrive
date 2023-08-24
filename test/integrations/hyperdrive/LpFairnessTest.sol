@@ -312,150 +312,45 @@ contract LPFairnessTest is HyperdriveTest {
 
         // variable interest rate earned by the pool
         int256 variableRate = int256(variableRateParam);
+        
+        // Initialize the pool with capital.
+        uint256 initialLiquidity = 5_000_000e18;
+        uint256 aliceLpShares = initialize(alice, 0.10e18, initialLiquidity);
 
-        uint256 aliceLpShares = 0;
-        uint256 baseSpent = 0;
-        uint256 poolValue = 0;
-        uint256 bondsPurchased = 0;
-        {
-            // Initialize the pool with capital.
-            uint256 initialLiquidity = 5_000_000e18;
-            aliceLpShares = initialize(alice, 0.10e18, initialLiquidity);
+        // Celine opens a long.
+        uint256 baseSpent = 5_000_000e18 - tradeSizeParam;
+        openLong(celine, baseSpent);
 
-            // Celine opens a long.
-            baseSpent = 5_000_000e18 - tradeSizeParam;
-            (, bondsPurchased) = openLong(celine, baseSpent);
-
-            // 1/2 the term passes.
-            advanceTime(POSITION_DURATION / 2, variableRate);
-            (poolValue, ) = HyperdriveUtils.calculateCompoundInterest(
-                initialLiquidity + baseSpent,
-                variableRate,
-                POSITION_DURATION / 2
-            );
-        }
+        // 1/2 the term passes.
+        advanceTimeWithCheckpoints(POSITION_DURATION / 2, variableRate);
 
         // Celine opens a short.
         uint256 bondsShorted = tradeSizeParam;
-        (, uint256 baseSpent2) = openShort(celine, bondsShorted);
+        openShort(celine, bondsShorted);
 
-        uint256 bobLpShares = 0;
-        uint256 poolValue2 = 0;
+        // Bob adds liquidity.
+        uint256 contribution = 5_000_000e18;
+        uint256 bobLpShares = addLiquidity(bob, contribution);
 
-        {
-            // Bob adds liquidity.
-            uint256 contribution = 5_000_000e18;
-            bobLpShares = addLiquidity(bob, contribution);
+        // 1/2 the term passes.
+        advanceTimeWithCheckpoints(POSITION_DURATION / 2, variableRate);
 
-            // 1/2 the term passes.
-            advanceTime(POSITION_DURATION / 2, variableRate);
+        // calculate the expected withdrawal proceeds
+        uint256 expectedWithdrawalProceeds = calculateBaseLpProceeds(bobLpShares);
 
-            // Calculate the value of the pool after interest is accrued.
-            (poolValue2, ) = HyperdriveUtils.calculateCompoundInterest(
-                poolValue + contribution + baseSpent2,
-                variableRate,
-                POSITION_DURATION / 2
-            );
-        }
-        // Calculate the total short interest.
-        (, int256 shortInterest) = HyperdriveUtils.calculateCompoundInterest(
-            bondsShorted,
-            variableRate,
-            POSITION_DURATION / 2
+        // Bob removes liquidity
+        (uint256 bobWithdrawalProceeds, ) = removeLiquidity(
+            bob,
+            bobLpShares
+        );
+        assertApproxEqAbs(
+            bobWithdrawalProceeds,
+            expectedWithdrawalProceeds,
+            1e9
         );
 
-        uint256 expectedWithdrawalProceeds = 0;
-        {
-            // calculate the portion of the pool's value (after interest) that bob contributed.
-            uint256 contributionWithInterest = (poolValue2 -
-                baseSpent2 -
-                baseSpent).mulDivDown(
-                    bobLpShares,
-                    hyperdrive.totalSupply(AssetId._LP_ASSET_ID)
-                );
-
-            // calculate the portion of the fixed interest that bob earned
-            uint256 fixedInterestEarned = baseSpent2.mulDivDown(
-                bobLpShares,
-                hyperdrive.totalSupply(AssetId._LP_ASSET_ID)
-            );
-
-            // calculate the portion of the variable interest that bob owes
-            uint256 variableInterestOwed = uint256(shortInterest).mulDivDown(
-                bobLpShares,
-                hyperdrive.totalSupply(AssetId._LP_ASSET_ID)
-            );
-
-            // calculate the portion of the fixed interest that bob owes
-            uint256 fixedInterestOwed = (bondsPurchased - baseSpent).mulDivDown(
-                bobLpShares,
-                hyperdrive.totalSupply(AssetId._LP_ASSET_ID)
-            );
-
-            // calculate the expected withdrawal shares base value so they can be removed from the expected proceeds
-            uint256 withdrawalShareBaseValue = bondsShorted.mulDivDown(
-                bobLpShares,
-                hyperdrive.totalSupply(AssetId._LP_ASSET_ID)
-            );
-
-            // calculate the expected withdrawal proceeds
-            expectedWithdrawalProceeds =
-                contributionWithInterest +
-                fixedInterestEarned -
-                variableInterestOwed -
-                fixedInterestOwed -
-                withdrawalShareBaseValue;
-        }
-
-        // calculate alice's proportion of LP shares
-        uint256 aliceLpProportion = aliceLpShares.divDown(
-            hyperdrive.totalSupply(AssetId._LP_ASSET_ID)
-        );
-        {
-            // Bob removes liquidity
-            (uint256 bobWithdrawalProceeds, ) = removeLiquidity(
-                bob,
-                bobLpShares
-            );
-            assertApproxEqAbs(
-                bobWithdrawalProceeds,
-                expectedWithdrawalProceeds,
-                1e9
-            );
-        }
-
-        {
-            // calculate the portion of the pool's value (after interest) that alice contributed.
-            uint256 contributionWithInterest = (poolValue2 -
-                baseSpent2 -
-                baseSpent).mulDown(aliceLpProportion);
-
-            // calculate the portion of the fixed interest that alice earned
-            uint256 fixedInterestEarned = baseSpent2.mulDown(aliceLpProportion);
-
-            // calculate the portion of the variable interest that alice owes
-            uint256 variableInterestOwed = uint256(shortInterest).mulDown(
-                aliceLpProportion
-            );
-
-            // calculate the portion of the fixed interest that alice owes
-            uint256 fixedInterestOwed = (bondsPurchased - baseSpent).mulDown(
-                aliceLpProportion
-            );
-
-            // calculate the expected withdrawal shares base value so they can be removed from the expected proceeds
-            uint256 withdrawalShareBaseValue = bondsShorted.mulDown(
-                aliceLpProportion
-            );
-
-            // calculate the expected withdrawal proceeds
-            expectedWithdrawalProceeds =
-                contributionWithInterest +
-                fixedInterestEarned -
-                variableInterestOwed -
-                fixedInterestOwed -
-                withdrawalShareBaseValue;
-        }
+        // calculate the expected withdrawal proceeds
+        expectedWithdrawalProceeds = calculateBaseLpProceeds(aliceLpShares);
 
         // Ensure that if the new LP withdraws, they get their money back.
         (uint256 aliceWithdrawalProceeds, ) = removeLiquidity(
