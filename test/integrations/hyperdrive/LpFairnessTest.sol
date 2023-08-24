@@ -65,7 +65,7 @@ contract LPFairnessTest is HyperdriveTest {
 
         // Bob removes liquidity
         (uint256 withdrawalProceeds, ) = removeLiquidity(bob, bobLpShares);
-        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e9);
+        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 10);
 
         // Celine closes her short.
         closeShort(celine, maturityTime, bondsShorted);
@@ -75,7 +75,7 @@ contract LPFairnessTest is HyperdriveTest {
 
         // Alice removes liquidity
         (withdrawalProceeds, ) = removeLiquidity(alice, aliceLpShares);
-        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e9);
+        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 10);
     }
 
     function test_lp_fairness_short_short_lp(
@@ -121,14 +121,14 @@ contract LPFairnessTest is HyperdriveTest {
 
         // Bob removes liquidity
         (uint256 withdrawalProceeds, ) = removeLiquidity(bob, bobLpShares);
-        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e9);
+        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 10);
 
         // calculate the expected withdrawal proceeds
         expectedWithdrawalProceeds = calculateBaseLpProceeds(aliceLpShares);
 
         // Alice removes liquidity
         (withdrawalProceeds, ) = removeLiquidity(alice, aliceLpShares);
-        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e9);
+        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 10);
     }
 
     function test_lp_fairness_long_lp(
@@ -173,7 +173,7 @@ contract LPFairnessTest is HyperdriveTest {
 
         // Ensure that if the new LP withdraws, they get their money back.
         (uint256 withdrawalProceeds, ) = removeLiquidity(bob, bobLpShares);
-        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e9);
+        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 10);
 
         // Celine closes her long.
         closeLong(celine, maturityTime, bondsPurchased);
@@ -183,7 +183,7 @@ contract LPFairnessTest is HyperdriveTest {
 
         // Alice removes liquidity
         (withdrawalProceeds, ) = removeLiquidity(alice, aliceLpShares);
-        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e9);
+        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 10);
     }
 
     function test_lp_fairness_long_long_lp(
@@ -236,14 +236,14 @@ contract LPFairnessTest is HyperdriveTest {
 
         // Bob removes liquidity
         (uint256 withdrawalProceeds, ) = removeLiquidity(bob, bobLpShares);
-        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e9);
+        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 10);
 
         // calculate alice's expected withdrawal proceeds
         expectedWithdrawalProceeds = calculateBaseLpProceeds(aliceLpShares);
 
         // Alice removes liquidity
         (withdrawalProceeds, ) = removeLiquidity(alice, aliceLpShares);
-        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e9);
+        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 10);
     }
 
     function test_lp_fairness_short_long_lp(
@@ -287,14 +287,14 @@ contract LPFairnessTest is HyperdriveTest {
 
         // Bob removes liquidity
         (uint256 withdrawalProceeds, ) = removeLiquidity(bob, bobLpShares);
-        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e9);
+        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 10);
 
         // calculate the expected withdrawal proceeds
         expectedWithdrawalProceeds = calculateBaseLpProceeds(aliceLpShares);
 
         // Alice removes liquidity
         (withdrawalProceeds, ) = removeLiquidity(alice, aliceLpShares);
-        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 1e9);
+        assertApproxEqAbs(withdrawalProceeds, expectedWithdrawalProceeds, 10);
     }
 
     function test_lp_fairness_long_short_lp(
@@ -346,7 +346,7 @@ contract LPFairnessTest is HyperdriveTest {
         assertApproxEqAbs(
             bobWithdrawalProceeds,
             expectedWithdrawalProceeds,
-            1e9
+            10
         );
 
         // calculate the expected withdrawal proceeds
@@ -360,7 +360,7 @@ contract LPFairnessTest is HyperdriveTest {
         assertApproxEqAbs(
             aliceWithdrawalProceeds,
             expectedWithdrawalProceeds,
-            1e9
+            10
         );
     }
 }
