@@ -167,7 +167,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
             _applyCloseLong(
                 _bondAmount,
                 bondReservesDelta,
-                shareProceeds,
+                shareProceeds + totalGovernanceFee,
                 shareReservesDelta,
                 _maturityTime,
                 sharePrice

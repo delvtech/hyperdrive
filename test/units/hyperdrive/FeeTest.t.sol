@@ -136,14 +136,13 @@ contract FeeTest is HyperdriveTest {
             .mulDown(flatFee)
             .mulDown(normalizedTimeRemaining);
 
-        // (Share Reserves Without Any Fees bc They All Went to Governance) + (10% Flat X 100% Governance Fees) - (Share Reserves With Flat Fee)
-        uint256 actualFeeSubtractedFromShareReserves = shareReservesNoFees +
-            governanceFees -
-            shareReservesFlatFee;
+        // (Share Reserves Without Any Fees bc They All Went to Governance) + (10% Flat X 100% Governance Fees) - (Share Reserves With Flat Fee) = 0
         assertEq(
-            actualFeeSubtractedFromShareReserves,
-            expectedFeeSubtractedFromShareReserves
+            shareReservesNoFees + governanceFees - shareReservesFlatFee,
+            0
         );
+        assertEq(shareReservesFlatFee - shareReservesNoFees, governanceFees);
+        assertEq(governanceFees, expectedFeeSubtractedFromShareReserves);
     }
 
     function test_collectFees_long() public {
