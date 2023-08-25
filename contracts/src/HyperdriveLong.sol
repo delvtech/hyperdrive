@@ -265,12 +265,14 @@ abstract contract HyperdriveLong is HyperdriveLP {
         longsOutstanding_ += _bondProceeds.toUint128();
         _marketState.longsOutstanding = longsOutstanding_;
 
-        // Increase the exposure by the amount the LPs must reserve to cover the long.
-        // This is equal to the amount of fixed interest the long is owed at maturity.
+        // Increase the exposure by the amount the LPs must reserve to cover the
+        // long. We are overly conservative, so this is equal to the amount of
+        // fixed interest the long is owed at maturity plus the face value of
+        // the long.
         int128 checkpointExposureBefore = int128(checkpoint.longExposure);
-        uint128 longExposureDelta = (_bondReservesDelta -
-            _shareReservesDelta.mulDown(_sharePrice) +
-            _bondProceeds).toUint128();
+        uint128 longExposureDelta = (2 *
+            _bondProceeds -
+            _shareReservesDelta.mulDown(_sharePrice)).toUint128();
         checkpoint.longExposure += int128(longExposureDelta);
         _updateLongExposure(checkpointExposureBefore, checkpoint.longExposure);
 
@@ -438,8 +440,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // Record an oracle update
         recordPrice(spotPrice);
 
-        // Calculate the fees charged to the user (totalCurveFee) and the portion of those
-        // fees that are paid to governance (governanceCurveFee).
+        // Calculate the fees charged to the user (totalCurveFee) and the portion
+        // of those fees that are paid to governance (governanceCurveFee).
         (
             uint256 totalCurveFee, // bonds
             uint256 governanceCurveFee // base
@@ -457,11 +459,12 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // The bondReservesDelta represents how many bonds to remove
         // from the bondReserves. This should be the number of bonds the trader
         // receives plus the number of bonds we need to pay to governance.
-        // In other words, we want to keep the totalCurveFee in the bondReserves; however,
-        // since the governanceCurveFee will be paid from the sharesReserves we don't
-        // need it removed from the bondReserves. bondProceeds is in bonds
-        // and governanceCurveFee is in base so we divide it by the spot price
-        // to convert it to bonds:
+        // In other words, we want to keep the totalCurveFee in the bondReserves;
+        // however, since the governanceCurveFee will be paid from the
+        // sharesReserves we don't need it removed from the bondReserves.
+        // bondProceeds is in bonds and governanceCurveFee is in base so we
+        // divide it by the spot price to convert it to bonds:
+        //
         // bonds = bonds + base/(base/bonds)
         // bonds = bonds + bonds
         bondReservesDelta =
@@ -540,14 +543,12 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // Since we calculate the amount of shares received given bonds in, we
         // subtract the fee from the share deltas so that the trader receives
         // less shares.
-        uint256 spotPrice = _marketState.bondReserves > 0
-            ? HyperdriveMath.calculateSpotPrice(
-                _marketState.shareReserves,
-                _marketState.bondReserves,
-                _initialSharePrice,
-                _timeStretch
-            )
-            : FixedPointMath.ONE_18;
+        uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
+            _marketState.shareReserves,
+            _marketState.bondReserves,
+            _initialSharePrice,
+            _timeStretch
+        );
 
         // Record an oracle update
         recordPrice(spotPrice);
