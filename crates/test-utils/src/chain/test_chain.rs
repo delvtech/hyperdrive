@@ -19,17 +19,21 @@ use hyperdrive_wrappers::wrappers::{
     erc4626_hyperdrive::ERC4626Hyperdrive,
     i_hyperdrive::{Fees, PoolConfig},
     mock_erc4626::MockERC4626,
+    mock_fixed_point_math::MockFixedPointMath,
+    mock_hyperdrive_math::MockHyperdriveMath,
+    mock_yield_space_math::MockYieldSpaceMath,
 };
 
-use super::{dev_chain::MNEMONIC, Chain};
+use super::{dev_chain::MNEMONIC, Chain, ChainClient};
 use crate::constants::MAYBE_ETHEREUM_URL;
 
 /// A local anvil instance with the Hyperdrive contracts deployed.
+#[derive(Clone)]
 pub struct TestChain {
     provider: Provider<Http>,
     addresses: Addresses,
     accounts: Vec<LocalWallet>,
-    _maybe_anvil: Option<AnvilInstance>,
+    _maybe_anvil: Option<Arc<AnvilInstance>>,
 }
 
 #[async_trait::async_trait]
@@ -70,7 +74,7 @@ impl TestChain {
                 .spawn();
             (
                 Provider::<Http>::try_from(anvil.endpoint())?.interval(Duration::from_millis(1)),
-                Some(anvil),
+                Some(Arc::new(anvil)),
             )
         };
 
@@ -198,6 +202,54 @@ impl TestChain {
             .request::<(Address, U256), bool>("anvil_setBalance", (address, balance.into()))
             .await?;
         Ok(())
+    }
+}
+
+pub struct TestChainWithMocks {
+    chain: TestChain,
+    mock_fixed_point_math: MockFixedPointMath<ChainClient>,
+    mock_hyperdrive_math: MockHyperdriveMath<ChainClient>,
+    mock_yield_space_math: MockYieldSpaceMath<ChainClient>,
+}
+
+impl TestChainWithMocks {
+    pub async fn new(num_accounts: usize) -> Result<Self> {
+        let chain = TestChain::new(num_accounts).await?;
+        let client = chain.client(chain.accounts()[0].clone()).await?;
+
+        // Deploy the mock contracts.
+        let mock_fixed_point_math = MockFixedPointMath::deploy(client.clone(), ())?
+            .send()
+            .await?;
+        let mock_hyperdrive_math = MockHyperdriveMath::deploy(client.clone(), ())?
+            .send()
+            .await?;
+        let mock_yield_space_math = MockYieldSpaceMath::deploy(client.clone(), ())?
+            .send()
+            .await?;
+
+        Ok(Self {
+            chain,
+            mock_fixed_point_math,
+            mock_hyperdrive_math,
+            mock_yield_space_math,
+        })
+    }
+
+    pub fn chain(&self) -> TestChain {
+        self.chain.clone()
+    }
+
+    pub fn mock_fixed_point_math(&self) -> MockFixedPointMath<ChainClient> {
+        self.mock_fixed_point_math.clone()
+    }
+
+    pub fn mock_hyperdrive_math(&self) -> MockHyperdriveMath<ChainClient> {
+        self.mock_hyperdrive_math.clone()
+    }
+
+    pub fn mock_yield_space_math(&self) -> MockYieldSpaceMath<ChainClient> {
+        self.mock_yield_space_math.clone()
     }
 }
 

@@ -131,45 +131,13 @@ impl State {
 
 #[cfg(test)]
 mod tests {
-    use std::{convert::TryFrom, panic, sync::Arc, time::Duration};
+    use std::panic;
 
-    use ethers::{
-        core::utils::Anvil,
-        middleware::SignerMiddleware,
-        providers::{Http, Provider},
-        signers::{LocalWallet, Signer},
-        utils::AnvilInstance,
-    };
     use eyre::Result;
-    use hyperdrive_wrappers::wrappers::mock_yield_space_math::MockYieldSpaceMath;
     use rand::{thread_rng, Rng};
-    use test_utils::constants::FAST_FUZZ_RUNS;
+    use test_utils::{chain::TestChainWithMocks, constants::FAST_FUZZ_RUNS};
 
     use super::*;
-
-    struct TestRunner {
-        mock: MockYieldSpaceMath<SignerMiddleware<Provider<Http>, LocalWallet>>,
-        _anvil: AnvilInstance, // NOTE: Avoid dropping this until the end of the test.
-    }
-
-    // FIXME: DRY this up into a test-utils crate.
-    //
-    /// Set up a test blockchain with MockFixedPointMath deployed.
-    async fn setup() -> Result<TestRunner> {
-        let anvil = Anvil::new().spawn();
-        let wallet: LocalWallet = anvil.keys()[0].clone().into();
-        let provider =
-            Provider::<Http>::try_from(anvil.endpoint())?.interval(Duration::from_millis(10u64));
-        let client = Arc::new(SignerMiddleware::new(
-            provider,
-            wallet.with_chain_id(anvil.chain_id()),
-        ));
-        let mock = MockYieldSpaceMath::deploy(client, ())?.send().await?;
-        Ok(TestRunner {
-            mock,
-            _anvil: anvil,
-        })
-    }
 
     #[test]
     fn fuzz_get_out_for_in() {
@@ -219,7 +187,8 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_get_max_buy() -> Result<()> {
-        let runner = setup().await?;
+        let chain = TestChainWithMocks::new(1).await?;
+        let mock = chain.mock_yield_space_math();
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -227,8 +196,7 @@ mod tests {
             let state = rng.gen::<State>();
             let ts = rng.gen_range(fixed!(0)..fixed!(1e18));
             let actual = panic::catch_unwind(|| state.get_max_buy(ts));
-            match runner
-                .mock
+            match mock
                 .calculate_max_buy(
                     state.z.into(),
                     state.y.into(),
@@ -253,7 +221,8 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_get_bonds_out_for_shares_in() -> Result<()> {
-        let runner = setup().await?;
+        let chain = TestChainWithMocks::new(1).await?;
+        let mock = chain.mock_yield_space_math();
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -262,8 +231,7 @@ mod tests {
             let in_ = rng.gen::<FixedPoint>();
             let ts = rng.gen_range(fixed!(0)..fixed!(1e18));
             let actual = panic::catch_unwind(|| state.get_bonds_out_for_shares_in(in_, ts));
-            match runner
-                .mock
+            match mock
                 .calculate_bonds_out_given_shares_in(
                     state.z.into(),
                     state.y.into(),
@@ -285,7 +253,8 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_get_bonds_in_for_shares_out() -> Result<()> {
-        let runner = setup().await?;
+        let chain = TestChainWithMocks::new(1).await?;
+        let mock = chain.mock_yield_space_math();
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -294,8 +263,7 @@ mod tests {
             let out = rng.gen::<FixedPoint>();
             let ts = rng.gen_range(fixed!(0)..fixed!(1e18));
             let actual = panic::catch_unwind(|| state.get_bonds_in_for_shares_out(out, ts));
-            match runner
-                .mock
+            match mock
                 .calculate_bonds_in_given_shares_out(
                     state.z.into(),
                     state.y.into(),
@@ -317,7 +285,8 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_get_shares_out_for_bonds_in() -> Result<()> {
-        let runner = setup().await?;
+        let chain = TestChainWithMocks::new(1).await?;
+        let mock = chain.mock_yield_space_math();
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -326,8 +295,7 @@ mod tests {
             let in_ = rng.gen::<FixedPoint>();
             let ts = rng.gen_range(fixed!(0)..fixed!(1e18));
             let actual = panic::catch_unwind(|| state.get_shares_out_for_bonds_in(in_, ts));
-            match runner
-                .mock
+            match mock
                 .calculate_shares_out_given_bonds_in(
                     state.z.into(),
                     state.y.into(),
@@ -351,7 +319,8 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_get_shares_in_for_bonds_out() -> Result<()> {
-        let runner = setup().await?;
+        let chain = TestChainWithMocks::new(1).await?;
+        let mock = chain.mock_yield_space_math();
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -360,8 +329,7 @@ mod tests {
             let out = rng.gen::<FixedPoint>();
             let ts = rng.gen_range(fixed!(0)..fixed!(1e18));
             let actual = panic::catch_unwind(|| state.get_shares_in_for_bonds_out(out, ts));
-            match runner
-                .mock
+            match mock
                 .calculate_shares_in_given_bonds_out(
                     state.z.into(),
                     state.y.into(),
@@ -383,7 +351,8 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_k() -> Result<()> {
-        let runner = setup().await?;
+        let chain = TestChainWithMocks::new(1).await?;
+        let mock = chain.mock_yield_space_math();
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -391,8 +360,7 @@ mod tests {
             let state = rng.gen::<State>();
             let ts = rng.gen_range(fixed!(0)..fixed!(1e18));
             let actual = panic::catch_unwind(|| state.k(ts));
-            match runner
-                .mock
+            match mock
                 .modified_yield_space_constant(
                     (state.c / state.mu).into(),
                     state.mu.into(),

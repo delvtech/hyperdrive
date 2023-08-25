@@ -255,16 +255,138 @@ impl State {
 
 #[cfg(test)]
 mod tests {
+    use std::panic;
+
+    use ethers::types::U256;
     use eyre::Result;
+    use fixed_point_macros::uint256;
+    use hyperdrive_wrappers::wrappers::{
+        i_hyperdrive::{Fees, PoolConfig, PoolInfo},
+        mock_hyperdrive_math::MaxTradeParams,
+    };
     use rand::{thread_rng, Rng};
     use test_utils::{
         agent::Agent,
-        chain::{Chain, TestChain},
-        constants::FUZZ_RUNS,
+        chain::{Chain, TestChain, TestChainWithMocks},
+        constants::{FAST_FUZZ_RUNS, FUZZ_RUNS},
     };
     use tracing_test::traced_test;
 
     use super::*;
+
+    // FIXME: Remove this test once we identify the problem.
+    #[tokio::test]
+    async fn test_example() -> Result<()> {
+        let chain = TestChainWithMocks::new(1).await?;
+        let mock = chain.mock_hyperdrive_math();
+
+        let state = State {
+            config: PoolConfig {
+                base_token: Default::default(),
+                initial_share_price: uint256!(1938558399179621427),
+                minimum_share_reserves: uint256!(936752836207039628),
+                position_duration: uint256!(21770572),
+                checkpoint_duration: uint256!(72402),
+                time_stretch: uint256!(286398893395310250),
+                governance: Default::default(),
+                fee_collector: Default::default(),
+                fees: Fees {
+                    curve: uint256!(0),
+                    flat: uint256!(0),
+                    governance: uint256!(0),
+                },
+                oracle_size: uint256!(0),
+                update_gap: uint256!(0),
+            },
+            info: PoolInfo {
+                share_reserves: uint256!(79844610288833458471835372),
+                bond_reserves: uint256!(572728778528641556490197658),
+                lp_total_supply: uint256!(17316480480027736377527648),
+                share_price: uint256!(1102811862551556545),
+                longs_outstanding: uint256!(22419723952198233823907),
+                long_average_maturity_time: uint256!(7651278),
+                shorts_outstanding: uint256!(61129166512317169335937),
+                short_average_maturity_time: uint256!(8095978),
+                withdrawal_shares_ready_to_withdraw: uint256!(55163024010414681033371282),
+                withdrawal_shares_proceeds: uint256!(72545690707479613768298),
+                lp_share_price: uint256!(4578721372580489773),
+                long_exposure: uint256!(0),
+            },
+        };
+        let actual = panic::catch_unwind(|| state.get_max_long(U256::MAX.into(), None));
+        match mock
+            .calculate_max_long(
+                MaxTradeParams {
+                    share_reserves: state.info.share_reserves,
+                    bond_reserves: state.info.bond_reserves,
+                    longs_outstanding: state.info.longs_outstanding,
+                    long_exposure: state.info.long_exposure,
+                    time_stretch: state.config.time_stretch,
+                    share_price: state.info.share_price,
+                    initial_share_price: state.config.initial_share_price,
+                    minimum_share_reserves: state.config.minimum_share_reserves,
+                    curve_fee: state.config.fees.curve,
+                    governance_fee: state.config.fees.governance,
+                },
+                uint256!(7),
+            )
+            .call()
+            .await
+        {
+            Ok((expected_base_amount, ..)) => {
+                assert_eq!(actual.unwrap(), FixedPoint::from(expected_base_amount));
+            }
+            Err(_) => assert!(actual.is_err()),
+        }
+
+        Ok(())
+    }
+
+    /// This test differentially fuzzes the `get_max_long` function against the
+    /// Solidity analogue `calculateMaxShort`. `calculateMaxShort` doesn't take
+    /// a trader's budget into account, so it only provides a subset of
+    /// `get_max_short`'s functionality. With this in mind, we provide
+    /// `get_max_short` with a budget of `U256::MAX` to ensure that the two
+    /// functions are equivalent.
+    #[tokio::test]
+    async fn fuzz_get_max_long() -> Result<()> {
+        let chain = TestChainWithMocks::new(1).await?;
+        let mock = chain.mock_hyperdrive_math();
+
+        // Fuzz the rust and solidity implementations against each other.
+        let mut rng = thread_rng();
+        for _ in 0..*FAST_FUZZ_RUNS {
+            let state = rng.gen::<State>();
+            println!("state = {:#?}", state);
+            let actual = panic::catch_unwind(|| state.get_max_long(U256::MAX.into(), None));
+            match mock
+                .calculate_max_long(
+                    MaxTradeParams {
+                        share_reserves: state.info.share_reserves,
+                        bond_reserves: state.info.bond_reserves,
+                        longs_outstanding: state.info.longs_outstanding,
+                        long_exposure: state.info.long_exposure,
+                        time_stretch: state.config.time_stretch,
+                        share_price: state.info.share_price,
+                        initial_share_price: state.config.initial_share_price,
+                        minimum_share_reserves: state.config.minimum_share_reserves,
+                        curve_fee: state.config.fees.curve,
+                        governance_fee: state.config.fees.governance,
+                    },
+                    uint256!(7),
+                )
+                .call()
+                .await
+            {
+                Ok((expected_base_amount, ..)) => {
+                    assert_eq!(actual.unwrap(), FixedPoint::from(expected_base_amount));
+                }
+                Err(_) => assert!(actual.is_err()),
+            }
+        }
+
+        Ok(())
+    }
 
     #[traced_test]
     #[tokio::test]

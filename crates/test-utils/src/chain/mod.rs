@@ -15,7 +15,7 @@ use ethers::{
 };
 use eyre::Result;
 use hyperdrive_addresses::Addresses;
-pub use test_chain::TestChain;
+pub use test_chain::{TestChain, TestChainWithMocks};
 
 /// A retry policy that will retry on rate limit errors, timeout errors, and
 /// "intrinsic gas too high".
