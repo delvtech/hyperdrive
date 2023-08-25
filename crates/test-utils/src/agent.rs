@@ -105,9 +105,12 @@ impl Agent<ChainClient, ChaCha8Rng> {
 
     /// Longs ///
 
-    // FIXME: Make the min output configurable.
     #[instrument(skip(self))]
-    pub async fn open_long(&mut self, base_paid: FixedPoint) -> Result<()> {
+    pub async fn open_long(
+        &mut self,
+        base_paid: FixedPoint,
+        maybe_slippage_tolerance: Option<FixedPoint>,
+    ) -> Result<()> {
         // Ensure that the agent has a sufficient base balance to open the long.
         if self.wallet.base < base_paid {
             return Err(eyre::eyre!(
@@ -122,9 +125,13 @@ impl Agent<ChainClient, ChaCha8Rng> {
 
         // Open the long and record the trade in the wallet.
         let log = {
+            let min_output = {
+                let slippage_tolerance = maybe_slippage_tolerance.unwrap_or(fixed!(0.01e18));
+                self.get_long_amount(base_paid).await? * (fixed!(1e18) - slippage_tolerance)
+            };
             let tx = self
                 .hyperdrive
-                .open_long(base_paid.into(), base_paid.into(), self.address, true)
+                .open_long(base_paid.into(), min_output.into(), self.address, true)
                 .from(self.address);
             let logs = tx
                 .send()
@@ -225,12 +232,13 @@ impl Agent<ChainClient, ChaCha8Rng> {
     ) -> Result<()> {
         // Open the short and record the trade in the wallet.
         let log = {
-            let slippage_tolerance = maybe_slippage_tolerance.unwrap_or(fixed!(0.01e18));
-            let min_output =
-                self.get_short_deposit(bond_amount).await? * (fixed!(1e18) + slippage_tolerance);
+            let max_deposit = {
+                let slippage_tolerance = maybe_slippage_tolerance.unwrap_or(fixed!(0.01e18));
+                self.get_short_deposit(bond_amount).await? * (fixed!(1e18) + slippage_tolerance)
+            };
             let tx = self
                 .hyperdrive
-                .open_short(bond_amount.into(), min_output.into(), self.address, true)
+                .open_short(bond_amount.into(), max_deposit.into(), self.address, true)
                 .from(self.address);
             let logs = tx
                 .send()
@@ -597,7 +605,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
             Action::RedeemWithdrawalShares(withdrawal_shares) => {
                 self.redeem_withdrawal_shares(withdrawal_shares).await?
             }
-            Action::OpenLong(base_paid) => self.open_long(base_paid).await?,
+            Action::OpenLong(base_paid) => self.open_long(base_paid, None).await?,
             Action::CloseLong(maturity_time, bond_amount) => {
                 self.close_long(maturity_time, bond_amount).await?
             }
@@ -753,6 +761,13 @@ impl Agent<ChainClient, ChaCha8Rng> {
     /// Gets the latest checkpoint.
     pub async fn latest_checkpoint(&self) -> Result<U256> {
         Ok(self.get_state().await?.to_checkpoint(self.now().await?))
+    }
+
+    /// Gets the amount of longs that will be opened for a given amount of base
+    /// with the current market state.
+    pub async fn get_long_amount(&self, base_amount: FixedPoint) -> Result<FixedPoint> {
+        let state = self.get_state().await?;
+        Ok(state.get_long_amount(base_amount))
     }
 
     /// Gets the deposit required to short a given amount of bonds with the

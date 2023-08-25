@@ -250,7 +250,6 @@ contract RemoveLiquidityTest is HyperdriveTest {
                 testCase.initialLpShares +
                     hyperdrive.getPoolConfig().minimumShareReserves
             );
-            // fails
             assertApproxEqAbs(
                 expectedBaseProceeds,
                 contributionPlusInterest - marginFactor * initializerMargin,

@@ -14,6 +14,33 @@ impl State {
             - self.minimum_share_reserves()
     }
 
+    /// Gets the long amount that will be opened for a given base amount.
+    ///
+    /// The long amount $y(x)$ that a trader will receive is given by:
+    ///
+    /// $$
+    /// y(x) = y_{*}(x) - c(x)
+    /// $$
+    ///
+    /// Where $y_{*}(x)$ is the amount of long that would be opened if there was
+    /// no curve fee and [$c(x)$](long_curve_fee) is the curve fee. $y_{*}(x)$
+    /// is given by:
+    ///
+    /// $$
+    /// y_{*}(x) = y - \left(
+    ///                k - \tfrac{c}{\mu} \cdot \left(
+    ///                    \mu \cdot \left( z + \tfrac{x}{c}
+    ///                \right) \right)^{1 - t_s}
+    ///            \right)^{\tfrac{1}{1 - t_s}}
+    /// $$
+    pub fn get_long_amount(&self, base_amount: FixedPoint) -> FixedPoint {
+        let long_amount = YieldSpaceState::from(self).get_out_for_in(
+            Asset::Shares(base_amount / self.share_price()),
+            self.time_stretch(),
+        );
+        long_amount - self.long_curve_fee(base_amount)
+    }
+
     /// Gets the max long that can be opened.
     ///
     /// Iteratively calculates the max long that can be opened on the pool.
@@ -148,33 +175,6 @@ impl State {
         .mul_div_down(fixed!(2e18), self.share_price())
     }
 
-    /// Gets the long amount that will be opened for a given base amount.
-    ///
-    /// The long amount $y(x)$ that a trader will receive is given by:
-    ///
-    /// $$
-    /// y(x) = y_{*}(x) - c(x)
-    /// $$
-    ///
-    /// Where $y_{*}(x)$ is the amount of long that would be opened if there was
-    /// no curve fee and [$c(x)$](long_curve_fee) is the curve fee. $y_{*}(x)$
-    /// is given by:
-    ///
-    /// $$
-    /// y_{*}(x) = y - \left(
-    ///                k - \tfrac{c}{\mu} \cdot \left(
-    ///                    \mu \cdot \left( z + \tfrac{x}{c}
-    ///                \right) \right)^{1 - t_s}
-    ///            \right)^{\tfrac{1}{1 - t_s}}
-    /// $$
-    pub fn get_long_amount(&self, base_amount: FixedPoint) -> FixedPoint {
-        let long_amount = YieldSpaceState::from(self).get_out_for_in(
-            Asset::Shares(base_amount / self.share_price()),
-            self.time_stretch(),
-        );
-        long_amount - self.long_curve_fee(base_amount)
-    }
-
     /// Gets the derivative of [long_amount](long_amount) with respect to the
     /// base amount.
     ///
@@ -293,7 +293,7 @@ mod tests {
 
             // Bob opens a max long.
             let max_long = bob.get_max_long(None).await?;
-            bob.open_long(max_long).await?;
+            bob.open_long(max_long, None).await?;
 
             // One of three things should be true after opening the long:
             //
