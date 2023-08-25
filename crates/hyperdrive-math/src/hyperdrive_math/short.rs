@@ -342,6 +342,7 @@ mod tests {
         chain::{Chain, TestChain},
         constants::{FAST_FUZZ_RUNS, FUZZ_RUNS},
     };
+    use tracing_test::traced_test;
 
     use super::*;
 
@@ -410,11 +411,9 @@ mod tests {
         Ok(())
     }
 
+    #[traced_test]
     #[tokio::test]
     async fn test_get_max_short() -> Result<()> {
-        // Set up the logger.
-        tracing_subscriber::fmt::init();
-
         // Spawn a test chain and create two agents -- Alice and Bob. Alice
         // is funded with a large amount of capital so that she can initialize
         // the pool. Bob is funded with a small amount of capital so that we
