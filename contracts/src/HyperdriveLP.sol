@@ -9,9 +9,6 @@ import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { SafeCast } from "./libraries/SafeCast.sol";
 
-import { Lib } from "../../test/utils/Lib.sol";
-import "forge-std/console2.sol";
-
 /// @author DELV
 /// @title HyperdriveLP
 /// @notice Implements the LP accounting for Hyperdrive.
@@ -21,7 +18,6 @@ import "forge-std/console2.sol";
 abstract contract HyperdriveLP is HyperdriveTWAP {
     using FixedPointMath for uint256;
     using SafeCast for uint256;
-    using Lib for *;
 
     /// @notice Allows the first LP to initialize the market with a target APR.
     /// @param _contribution The amount of base to supply.
@@ -424,7 +420,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         uint256 startingPresentValue = HyperdriveMath.calculatePresentValue(
             params
         );
-        console2.log("in _applyRemoveLiquidity, startingPresentValue", startingPresentValue.toString(18));
+
         // TODO: Update this documentation once we've made the update to how
         // idle capital is paid out to the withdrawal pool.
         //
@@ -448,18 +444,13 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         //
         // proceeds = idle * (dl / l_a)
         shareProceeds = _calculateIdleShareReserves(_pricePerShare());
-        console2.log("in _applyRemoveLiquidity, shareProceeds", shareProceeds.toString(18));
         shareProceeds = shareProceeds.mulDivDown(_shares, _totalActiveLpSupply);
-        console2.log("in _applyRemoveLiquidity, shareProceeds2", shareProceeds.toString(18));
         _updateLiquidity(-int256(shareProceeds));
-        console2.log("in _applyRemoveLiquidity, updateLiquidity");
         params.shareReserves = _marketState.shareReserves;
-        console2.log("in _applyRemoveLiquidity, shareReserves", params.shareReserves.toString(18));
         params.bondReserves = _marketState.bondReserves;
         uint256 endingPresentValue = HyperdriveMath.calculatePresentValue(
             params
         );
-        console2.log("in _applyRemoveLiquidity, endingPresentValue", endingPresentValue.toString(18));
 
         // Calculate the amount of withdrawal shares that should be minted. We
         // solve for this value by solving the present value equation as
@@ -486,8 +477,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             );
             delete withdrawalShares;
         }
-        console2.log("in _applyRemoveLiquidity, withdrawalShares", withdrawalShares.toString(18));
-        console2.log("in _applyRemoveLiquidity, shareProceeds", shareProceeds.toString(18));
+
         return (shareProceeds, uint256(withdrawalShares));
     }
 

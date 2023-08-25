@@ -156,7 +156,7 @@ abstract contract Hyperdrive is
                 _sharePrice
             );
         }
-        _updateLongExposure();
+
         return checkpoint_.sharePrice;
     }
 }

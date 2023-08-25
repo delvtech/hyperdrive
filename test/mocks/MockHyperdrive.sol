@@ -272,10 +272,6 @@ contract MockHyperdrive is Hyperdrive {
         return _calculateIdleShareReserves(_sharePrice);
     }
 
-    function calculateCurrentLongExposure() external view returns (int256) {
-        return _calculateCurrentLongExposure();
-    }
-
     function getTotalShares() external view returns (uint256) {
         return totalShares;
     }

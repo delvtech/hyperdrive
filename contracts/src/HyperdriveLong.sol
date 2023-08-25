@@ -8,9 +8,6 @@ import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { SafeCast } from "./libraries/SafeCast.sol";
 
-import { Lib } from "../../test/utils/Lib.sol";
-import { console2 as console } from "forge-std/console2.sol";
-
 /// @author DELV
 /// @title HyperdriveLong
 /// @notice Implements the long accounting for Hyperdrive.
@@ -268,12 +265,14 @@ abstract contract HyperdriveLong is HyperdriveLP {
         longsOutstanding_ += _bondProceeds.toUint128();
         _marketState.longsOutstanding = longsOutstanding_;
 
-        // Increase the exposure by the amount the LPs must reserve to cover the long.
-        // This is equal to the amount of fixed interest the long is owed at maturity.
+        // Increase the exposure by the amount the LPs must reserve to cover the
+        // long. We are overly conservative, so this is equal to the amount of
+        // fixed interest the long is owed at maturity plus the face value of
+        // the long.
         int128 checkpointExposureBefore = int128(checkpoint.longExposure);
-        uint128 longExposureDelta = (_bondReservesDelta -
-            _shareReservesDelta.mulDown(_sharePrice) +
-            _bondProceeds).toUint128();
+        uint128 longExposureDelta = (2 *
+            _bondProceeds -
+            _shareReservesDelta.mulDown(_sharePrice)).toUint128();
         checkpoint.longExposure += int128(longExposureDelta);
         _updateLongExposure(checkpointExposureBefore, checkpoint.longExposure);
 
@@ -468,16 +467,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
         //
         // bonds = bonds + base/(base/bonds)
         // bonds = bonds + bonds
-        console.log("spot price: %s", spotPrice.toString(18));
-        console.log("governance_curve_fee: %s", _governanceFee.toString(18));
-        console.log(
-            "governance curve fee: %s",
-            governanceCurveFee.toString(18)
-        );
-        console.log(
-            "governance curve fee / spot price: %s",
-            governanceCurveFee.divDown(spotPrice).toString(18)
-        );
         bondReservesDelta =
             bondProceeds +
             governanceCurveFee.divDown(spotPrice);

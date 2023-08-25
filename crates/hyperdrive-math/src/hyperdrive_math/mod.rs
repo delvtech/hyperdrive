@@ -152,11 +152,15 @@ impl State {
         self.config.time_stretch.into()
     }
 
+    fn curve_fee(&self) -> FixedPoint {
+        self.config.fees.curve.into()
+    }
+
     fn flat_fee(&self) -> FixedPoint {
         self.config.fees.flat.into()
     }
 
-    fn curve_fee(&self) -> FixedPoint {
-        self.config.fees.curve.into()
+    fn governance_fee(&self) -> FixedPoint {
+        self.config.fees.governance.into()
     }
 }
