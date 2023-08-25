@@ -3,6 +3,8 @@ pragma solidity 0.8.19;
 
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 
+uint256 constant ONE = 1e18;
+
 /// @author DELV
 /// @title FixedPointMath
 /// @notice A fixed-point math library.

@@ -60,6 +60,9 @@ impl State {
         min(max_base_amount, budget)
     }
 
+    // FIXME: Short circuit when the max base amount exceeds the budget. If we
+    // do this, we can just make this the `get_max_long` function.
+    //
     /// Gets the max long that can be opened irrespective of budget.
     ///
     /// We start by calculating the long that brings the pool's spot price to 1.
@@ -83,8 +86,9 @@ impl State {
         // solvency $S(x)$ as our objective function, which will converge to the
         // amount of base that needs to be paid to open the maximum long. The
         // derivative of $S(x)$ is negative (since solvency decreases as more
-        // longs are opened), so we use the negation of the derivative to stay
-        // in the positive domain.
+        // longs are opened). The fixed point library doesn't support negative
+        // numbers, so we use the negation of the derivative to side-step the
+        // issue.
         //
         // Given the current guess of $x_n$, Newton's method gives us an updated
         // guess of $x_{n+1}$:
@@ -113,7 +117,7 @@ impl State {
     /// The pool's solvency is calculated as:
     ///
     /// $$
-    /// s = z - \tfrac{exposure}{c} - z_min
+    /// s = z - \tfrac{exposure}{c} - z_{min}
     /// $$
     ///
     /// When a long is opened, the share reserves $z$ increase by:
@@ -122,7 +126,17 @@ impl State {
     /// \Delta z = \tfrac{x - g(x)}{c}
     /// $$
     ///
-    /// The exposure increases by:
+    /// In the solidity implementation, we calculate the delta in the exposure
+    /// as:
+    ///
+    /// ```
+    /// uint128 longExposureDelta = (2 *
+    ///     _bondProceeds -
+    ///     _shareReservesDelta.mulDown(_sharePrice)).toUint128();
+    /// ```
+    ///
+    /// where `shareReservesDelta = _shareAmount - governanceCurveFee.divDown(_sharePrice)`.
+    /// From this, we can calculate our exposure as:
     ///
     /// $$
     /// \Delta exposure = 2 \cdot y(x) - x + g(x)
