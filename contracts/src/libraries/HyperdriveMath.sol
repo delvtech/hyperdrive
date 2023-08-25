@@ -328,125 +328,209 @@ library HyperdriveMath {
         uint256 governanceFee;
     }
 
-    // // FIXME
-    // function calculateMaxLong(
-    //     MaxTradeParams memory _params
-    // ) internal pure returns (uint256) {
+    // FIXME
+    function calculateMaxLong(
+        MaxTradeParams memory _params,
+        uint256 _maxIterations
+    ) internal pure returns (uint256 maxBaseAmount, uint256 maxBondAmount) {
+        // Get the maximum long that brings the spot price to 1. If the pool is
+        // solvent after opening this long, then we're done.
+        uint256 spotPrice = calculateSpotPrice(
+            _params.shareReserves,
+            _params.bondReserves,
+            _params.initialSharePrice,
+            _params.timeStretch
+        );
+        {
+            uint256 maxShareAmount;
+            (, maxBondAmount) = YieldSpaceMath.calculateMaxBuy(
+                _params.shareReserves,
+                _params.bondReserves,
+                ONE - _params.timeStretch,
+                _params.sharePrice,
+                _params.initialSharePrice
+            );
+            maxBaseAmount = maxShareAmount.mulDown(_params.sharePrice);
+            (, bool isSolvent) = calculateSolvency(
+                _params,
+                maxShareAmount.mulDown(_params.sharePrice),
+                maxBondAmount,
+                spotPrice
+            );
+            if (isSolvent) {
+                return (maxBaseAmount, maxBondAmount);
+            }
+        }
 
-    // }
+        // Use Newton's method to iteratively approach a solution. We use pool's
+        // solvency $S(x)$ as our objective function, which will converge to the
+        // amount of base that needs to be paid to open the maximum long. The
+        // derivative of $S(x)$ is negative (since solvency decreases as more
+        // longs are opened). The fixed point library doesn't support negative
+        // numbers, so we use the negation of the derivative to side-step the
+        // issue.
+        //
+        // Given the current guess of $x_n$, Newton's method gives us an updated
+        // guess of $x_{n+1}$:
+        //
+        // $$
+        // x_{n+1} = x_n - \tfrac{S(x_n)}{S'(x_n)} = x_n + \tfrac{S(x_n)}{-S'(x_n)}
+        // $$
+        //
+        // The guess that we make is very important in determining how quickly
+        // we converge to the solution.
+        maxBaseAmount = ONE;
+        for (uint256 i = 0; i < _maxIterations; i++) {
+            maxBondAmount = calculateLongAmount(
+                _params,
+                maxBaseAmount,
+                spotPrice
+            );
+            (uint256 delta, ) = calculateSolvency(
+                _params,
+                maxBaseAmount,
+                maxBondAmount,
+                spotPrice
+            );
+            maxBaseAmount += delta.divDown(
+                calculateSolvencyDerivative(_params, maxBaseAmount, spotPrice)
+            );
+        }
 
-    // // FIXME
-    // function calculateSolvency(
-    //     MaxTradeParams memory _params,
-    //     uint256 _baseAmount,
-    //     uint256 _bondAmount,
-    //     uint256 _spotPrice
-    // ) internal pure returns (uint256, bool) {
-    //     uint256 governanceFee = calculateLongGovernanceFee(
-    //         _baseAmount,
-    //         _spotPrice,
-    //         _params.curveFee,
-    //         _params.governanceFee
-    //     );
-    //     uint256 shareReserves = _params.shareReserves
-    //         + _baseAmount.divDown(_params.sharePrice)
-    //         - governanceFee.divDown(_params.sharePrice);
-    //     uint256 exposure = _params.longExposure
-    //         + 2 * _bondAmount
-    //         - _baseAmount
-    //         + governanceFee;
-    //     if shareReserves >= exposure.divDown(_params.sharePrice) + _params.minimumShareReserves {
-    //         return (
-    //             shareReserves
-    //                 - exposure.divDown(_params.sharePrice)
-    //                 - _params.minimumShareReserves,
-    //             true
-    //         );
-    //     }
-    //     return ;
-    // }
+        return (maxBaseAmount, maxBondAmount);
+    }
 
-    // // FIXME
-    // function calculateSolvencyDerivative(
-    //     MaxTradeParams memory _params,
-    //     uint256 _baseAmount,
-    //     uint256 _spotPrice
-    // ) internal pure returns (uint256 derivative) {
-    //     derivative = calculateLongAmountDerivative(
-    //         _params,
-    //         _baseAmount,
-    //         _spotPrice
-    //     );
-    //     derivative += _params.governanceFee
-    //         .mulDown(_params.curveFee)
-    //         .mulDown(ONE - _spotPrice);
-    //     derivative -= ONE;
-    //     return derivative.mulDivDown(2e18, _params.sharePrice);
-    // }
+    // FIXME
+    function calculateSolvency(
+        MaxTradeParams memory _params,
+        uint256 _baseAmount,
+        uint256 _bondAmount,
+        uint256 _spotPrice
+    ) internal pure returns (uint256, bool) {
+        uint256 governanceFee = calculateLongGovernanceFee(
+            _baseAmount,
+            _spotPrice,
+            _params.curveFee,
+            _params.governanceFee
+        );
+        uint256 shareReserves = _params.shareReserves +
+            _baseAmount.divDown(_params.sharePrice) -
+            governanceFee.divDown(_params.sharePrice);
+        uint256 exposure = _params.longExposure +
+            2 *
+            _bondAmount -
+            _baseAmount +
+            governanceFee;
+        if (
+            shareReserves >=
+            exposure.divDown(_params.sharePrice) + _params.minimumShareReserves
+        ) {
+            return (
+                shareReserves -
+                    exposure.divDown(_params.sharePrice) -
+                    _params.minimumShareReserves,
+                true
+            );
+        } else {
+            return (0, false);
+        }
+    }
 
-    // // FIXME
-    // function calculateLongAmountDerivative(
-    //     MaxTradeParams memory _params,
-    //     uint256 _baseAmount,
-    //     uint256 _spotPrice
-    // ) internal pure returns (uint256 derivative) {
-    //     uint256 shareAmount = _baseAmount.divDown(_params.sharePrice);
-    //     uint256 inner = _params.initialSharePrice.mulDown(
-    //         _params.shareReserves + shareAmount
-    //     );
-    //     uint256 cDivMu = _params.sharePrice.divDown(_params.initialSharePrice);
-    //     uint256 k = YieldSpaceMath.modifiedYieldSpaceConstant(
-    //         _params.sharePrice.divDown(_params.initialSharePrice),
-    //         _params.initialSharePrice,
-    //         _params.shareReserves,
-    //         ONE - _params.timeStretch,
-    //         _params.bondReserves
-    //     );
-    //     derivative = ONE / inner.pow(_params.timeStretch);
-    //     derivative = derivative.mulDown(
-    //         (k - cDivMu.mulDown(inner.pow(_params.timeStretch))).pow(
-    //             _params.timeStretch.divDown(ONE - _params.timeStretch)
-    //         )
-    //     );
-    //     derivative -= _params.curveFee.mulDown(
-    //         ONE.divDown(_spotPrice) - ONE
-    //     );
-    //     return derivative;
-    // }
+    // FIXME
+    function calculateSolvencyDerivative(
+        MaxTradeParams memory _params,
+        uint256 _baseAmount,
+        uint256 _spotPrice
+    ) internal pure returns (uint256 derivative) {
+        derivative = calculateLongAmountDerivative(
+            _params,
+            _baseAmount,
+            _spotPrice
+        );
+        derivative += _params.governanceFee.mulDown(_params.curveFee).mulDown(
+            ONE - _spotPrice
+        );
+        derivative -= ONE;
+        return derivative.mulDivDown(2e18, _params.sharePrice);
+    }
 
-    // /// @dev Calculates the curve fee c(x) that a long will pay when opening
-    // ///      their position.
-    // /// @param _baseAmount The base amount, x.
-    // /// @param _spotPrice The spot price, p.
-    // /// @param _curveFee The curve fee.
-    // function calculateLongCurveFee(
-    //     uint256 _baseAmount,
-    //     uint256 _spotPrice,
-    //     uint256 _curveFee
-    // ) internal pure returns (uint256) {
-    //     // fee = curveFee * (1/p - 1) * x
-    //     return _curveFee.mulDown(
-    //         ONE.divDown(_spotPrice) - ONE
-    //     ).mulDown(_baseAmount);
-    // }
+    // FIXME
+    function calculateLongAmount(
+        MaxTradeParams memory _params,
+        uint256 _baseAmount,
+        uint256 _spotPrice
+    ) internal pure returns (uint256) {
+        uint256 longAmount = YieldSpaceMath.calculateBondsOutGivenSharesIn(
+            _params.shareReserves,
+            _params.bondReserves,
+            _baseAmount.divDown(_params.sharePrice),
+            ONE - _params.timeStretch,
+            _params.sharePrice,
+            _params.initialSharePrice
+        );
+        return
+            longAmount -
+            calculateLongCurveFee(_baseAmount, _spotPrice, _params.curveFee);
+    }
 
-    // // FIXME: Document this.
-    // function calculateLongGovernanceFee(
-    //     uint256 _baseAmount,
-    //     uint256 _spotPrice,
-    //     uint256 _curveFee,
-    //     uint256 _governanceFee
-    // ) internal pure returns (uint256) {
-    //     // fee = governanceFee * p * c(x)
-    //     return _governanceFee.mulDown(
-    //         _spotPrice).mulDown(
-    //             calculateLongCurveFee(
-    //                 _baseAmount,
-    //                 _spotPrice,
-    //                 _curveFee
-    //             )
-    //     );
-    // }
+    // FIXME
+    function calculateLongAmountDerivative(
+        MaxTradeParams memory _params,
+        uint256 _baseAmount,
+        uint256 _spotPrice
+    ) internal pure returns (uint256 derivative) {
+        uint256 shareAmount = _baseAmount.divDown(_params.sharePrice);
+        uint256 inner = _params.initialSharePrice.mulDown(
+            _params.shareReserves + shareAmount
+        );
+        uint256 cDivMu = _params.sharePrice.divDown(_params.initialSharePrice);
+        uint256 k = YieldSpaceMath.modifiedYieldSpaceConstant(
+            cDivMu,
+            _params.initialSharePrice,
+            _params.shareReserves,
+            ONE - _params.timeStretch,
+            _params.bondReserves
+        );
+        derivative = ONE.divDown(inner.pow(_params.timeStretch));
+        derivative = derivative.mulDown(
+            (k - cDivMu.mulDown(inner.pow(_params.timeStretch))).pow(
+                _params.timeStretch.divDown(ONE - _params.timeStretch)
+            )
+        );
+        derivative -= _params.curveFee.mulDown(ONE.divDown(_spotPrice) - ONE);
+        return derivative;
+    }
+
+    /// @dev Calculates the curve fee c(x) that a long will pay when opening
+    ///      their position.
+    /// @param _baseAmount The base amount, x.
+    /// @param _spotPrice The spot price, p.
+    /// @param _curveFee The curve fee.
+    function calculateLongCurveFee(
+        uint256 _baseAmount,
+        uint256 _spotPrice,
+        uint256 _curveFee
+    ) internal pure returns (uint256) {
+        // fee = curveFee * (1/p - 1) * x
+        return
+            _curveFee.mulDown(ONE.divDown(_spotPrice) - ONE).mulDown(
+                _baseAmount
+            );
+    }
+
+    // FIXME: Document this.
+    function calculateLongGovernanceFee(
+        uint256 _baseAmount,
+        uint256 _spotPrice,
+        uint256 _curveFee,
+        uint256 _governanceFee
+    ) internal pure returns (uint256) {
+        // fee = governanceFee * p * c(x)
+        return
+            _governanceFee.mulDown(_spotPrice).mulDown(
+                calculateLongCurveFee(_baseAmount, _spotPrice, _curveFee)
+            );
+    }
 
     /// @dev Calculates the maximum amount of shares that can be used to open
     ///      shorts.

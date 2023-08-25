@@ -627,10 +627,13 @@ contract HyperdriveMathTest is HyperdriveTest {
                 shareReserves: info.shareReserves,
                 bondReserves: info.bondReserves,
                 longsOutstanding: info.longsOutstanding,
+                longExposure: info.longExposure,
                 timeStretch: config.timeStretch,
                 sharePrice: info.sharePrice,
                 initialSharePrice: config.initialSharePrice,
-                minimumShareReserves: config.minimumShareReserves
+                minimumShareReserves: config.minimumShareReserves,
+                curveFee: config.fees.curve,
+                governanceFee: config.fees.governance
             }),
             maxIterations
         );

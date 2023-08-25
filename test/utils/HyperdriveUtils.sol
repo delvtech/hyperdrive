@@ -104,10 +104,13 @@ library HyperdriveUtils {
                 shareReserves: poolInfo.shareReserves,
                 bondReserves: poolInfo.bondReserves,
                 longsOutstanding: poolInfo.longsOutstanding,
+                longExposure: poolInfo.longExposure,
                 timeStretch: poolConfig.timeStretch,
                 sharePrice: poolInfo.sharePrice,
                 initialSharePrice: poolConfig.initialSharePrice,
-                minimumShareReserves: poolConfig.minimumShareReserves
+                minimumShareReserves: poolConfig.minimumShareReserves,
+                curveFee: poolConfig.fees.curve,
+                governanceFee: poolConfig.fees.governance
             }),
             _maxIterations
         );
@@ -137,10 +140,13 @@ library HyperdriveUtils {
                     shareReserves: poolInfo.shareReserves,
                     bondReserves: poolInfo.bondReserves,
                     longsOutstanding: poolInfo.longsOutstanding,
+                    longExposure: poolInfo.longExposure,
                     timeStretch: poolConfig.timeStretch,
                     sharePrice: poolInfo.sharePrice,
                     initialSharePrice: poolConfig.initialSharePrice,
-                    minimumShareReserves: poolConfig.minimumShareReserves
+                    minimumShareReserves: poolConfig.minimumShareReserves,
+                    curveFee: poolConfig.fees.curve,
+                    governanceFee: poolConfig.fees.governance
                 })
             );
     }

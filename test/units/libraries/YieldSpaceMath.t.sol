@@ -167,10 +167,13 @@ contract YieldSpaceMathTest is Test {
                             shareReserves: shareReserves,
                             bondReserves: bondReserves,
                             longsOutstanding: 0,
+                            longExposure: 0,
                             timeStretch: timeStretch,
                             sharePrice: sharePrice,
                             initialSharePrice: initialSharePrice,
-                            minimumShareReserves: minimumShareReserves
+                            minimumShareReserves: minimumShareReserves,
+                            curveFee: 0,
+                            governanceFee: 0
                         }),
                         15
                     );
