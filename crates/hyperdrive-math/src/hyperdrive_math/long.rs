@@ -99,7 +99,7 @@ impl State {
         //
         // The guess that we make is very important in determining how quickly
         // we converge to the solution.
-        max_base_amount = fixed!(1e18);
+        max_base_amount = self.max_long_guess();
         for _ in 0..maybe_max_iterations.unwrap_or(7) {
             max_base_amount = max_base_amount
                 + self
@@ -109,6 +109,52 @@ impl State {
         }
 
         max_base_amount
+    }
+
+    // FIXME
+    //
+    // FIXME:
+    //
+    // We should be able to come up with a guess based on the current
+    // solvency.
+    //
+    // When we open longs, we are adding 1/p * x - g(x) to the share reserves,
+    // and we also add 2 * 1/p * x - x + g(x) from the exposure.
+    //
+    // With this in mind, we're reducing solvency by:
+    //
+    // 1/p * x - g(x) - (2 * 1/p * x - x + g(x)) = -1/p*x + x - 2*g(x)
+    //
+    // Therefore, we wish to solve for x s.t.
+    //
+    // s_0 - 1/p*x + x - 2*g(x) = 0
+    //
+    // The governance fee is given by:
+    //
+    // g(x) = gov_fee * p * c(x)
+    //      = gov_fee * p * curve_fee * (1/p - 1) * x
+    //      = gov_fee * curve_fee * (1 - p) * x
+    //
+    // Therefore, we can solve for x as follows:
+    //
+    // 0 = s_0 - 1/p * x + x - 2 * gov_fee * curve_fee * (1 - p) * x
+    //
+    // -s_0 = -(1/p + 2 * gov_fee * curve_fee * (1 - p)  - 1) * x
+    //
+    // x = s_0 / (1/p + 2 * gov_fee * curve_fee * (1 - p) - 1)
+    //
+    // We just need a conservative price. Luckily, we can use the current
+    // spot price as a lower bound on the execution price.
+    fn max_long_guess(&self) -> FixedPoint {
+        let spot_price = self.get_spot_price();
+        let estimate_price = spot_price;
+        self.get_solvency()
+            / (fixed!(1e18) / estimate_price
+                + fixed!(2e18)
+                    * self.governance_fee()
+                    * self.curve_fee()
+                    * (fixed!(1e18) - spot_price)
+                - fixed!(1e18))
     }
 
     /// Gets the solvency of the pool $S(x)$ after a long is opened with a base
@@ -357,7 +403,6 @@ mod tests {
         let mut rng = thread_rng();
         for _ in 0..*FAST_FUZZ_RUNS {
             let state = rng.gen::<State>();
-            println!("state = {:#?}", state);
             let actual = panic::catch_unwind(|| state.get_max_long(U256::MAX.into(), None));
             match mock
                 .calculate_max_long(

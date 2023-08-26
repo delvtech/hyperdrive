@@ -1,6 +1,10 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
+import { Lib } from "test/utils/Lib.sol";
+
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { FixedPointMath, ONE } from "./FixedPointMath.sol";
 import { YieldSpaceMath } from "./YieldSpaceMath.sol";
@@ -13,6 +17,9 @@ import { SafeCast } from "./SafeCast.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 library HyperdriveMath {
+    // FIXME
+    using Lib for *;
+
     using FixedPointMath for uint256;
     using SafeCast for uint256;
 
@@ -343,7 +350,7 @@ library HyperdriveMath {
         );
         {
             uint256 maxShareAmount;
-            (, maxBondAmount) = YieldSpaceMath.calculateMaxBuy(
+            (maxShareAmount, maxBondAmount) = YieldSpaceMath.calculateMaxBuy(
                 _params.shareReserves,
                 _params.bondReserves,
                 ONE - _params.timeStretch,
@@ -379,7 +386,7 @@ library HyperdriveMath {
         //
         // The guess that we make is very important in determining how quickly
         // we converge to the solution.
-        maxBaseAmount = ONE;
+        maxBaseAmount = calculateMaxLongGuess(_params, spotPrice);
         for (uint256 i = 0; i < _maxIterations; i++) {
             maxBondAmount = calculateLongAmount(
                 _params,
@@ -398,6 +405,25 @@ library HyperdriveMath {
         }
 
         return (maxBaseAmount, maxBondAmount);
+    }
+
+    function calculateMaxLongGuess(
+        MaxTradeParams memory _params,
+        uint256 _spotPrice
+    ) internal pure returns (uint256) {
+        uint256 estimatePrice = _spotPrice;
+        uint256 guess = _params.shareReserves -
+            _params.longExposure.divDown(_params.sharePrice) -
+            _params.minimumShareReserves;
+        guess = guess.divDown(
+            ONE.divDown(estimatePrice) +
+                uint256(2e18)
+                    .mulDown(_params.governanceFee)
+                    .mulDown(_params.curveFee)
+                    .mulDown(ONE - _spotPrice) -
+                ONE
+        );
+        return guess;
     }
 
     // FIXME
@@ -447,6 +473,7 @@ library HyperdriveMath {
             _baseAmount,
             _spotPrice
         );
+        console.log("long_amount_derivative = %s", derivative.toString(18));
         derivative += _params.governanceFee.mulDown(_params.curveFee).mulDown(
             ONE - _spotPrice
         );
@@ -480,9 +507,11 @@ library HyperdriveMath {
         uint256 _spotPrice
     ) internal pure returns (uint256 derivative) {
         uint256 shareAmount = _baseAmount.divDown(_params.sharePrice);
+        console.log("share_amount = %s", shareAmount.toString(18));
         uint256 inner = _params.initialSharePrice.mulDown(
             _params.shareReserves + shareAmount
         );
+        console.log("inner = %s", inner.toString(18));
         uint256 cDivMu = _params.sharePrice.divDown(_params.initialSharePrice);
         uint256 k = YieldSpaceMath.modifiedYieldSpaceConstant(
             cDivMu,
@@ -492,6 +521,7 @@ library HyperdriveMath {
             _params.bondReserves
         );
         derivative = ONE.divDown(inner.pow(_params.timeStretch));
+        console.log("derivative = %s", derivative.toString(18));
         derivative = derivative.mulDown(
             (k - cDivMu.mulDown(inner.pow(_params.timeStretch))).pow(
                 _params.timeStretch.divDown(ONE - _params.timeStretch)
