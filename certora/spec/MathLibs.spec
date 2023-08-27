@@ -21,7 +21,7 @@ methods {
     function _.mulDivUp(uint256 x, uint256 y, uint256 d) internal => mulDivUpAbstractPlus(x, y, d) expect uint256;
 
     function HDMath.calculateBaseVolume(uint256,uint256,uint256) external returns uint256 envfree;
-    function HDMath.calculateSpotPrice(uint256,uint256,uint256,uint256,uint256) external returns uint256 envfree;
+    function HDMath.calculateSpotPrice(uint256,uint256,uint256,uint256) external returns uint256 envfree;
     function HDMath.calculateAPRFromReserves(uint256,uint256,uint256,uint256,uint256) external returns uint256 envfree;
     //function HDMath.calculateInitialBondReserves(uint256,uint256,uint256,uint256,uint256,uint256) external returns uint256 envfree;
     function HDMath.calculatePresentValue(HyperdriveMath.PresentValueParams) external returns (uint256) envfree;
@@ -29,7 +29,7 @@ methods {
     function HDMath.calculateShortProceeds(uint256,uint256,uint256,uint256,uint256) external returns uint256 envfree;
 
     function HDMath.calculateOpenLong(uint256,uint256,uint256,uint256,uint256,uint256) external returns (uint256) envfree;
-    function HDMath.calculateCloseLong(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256) external returns (uint256, uint256, uint256) envfree;
+    function HDMath.calculateCloseLong(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256) external returns (uint256, uint256, uint256) envfree;
     function HDMath.calculateOpenShort(uint256,uint256,uint256,uint256,uint256,uint256) external returns (uint256) envfree;
     function HDMath.calculateCloseShort(uint256,uint256,uint256,uint256,uint256,uint256,uint256) external returns (uint256, uint256, uint256) envfree;
 
@@ -37,7 +37,11 @@ methods {
     function YSMath.calculateBondsOutGivenSharesIn(uint256,uint256,uint256,uint256,uint256,uint256) external returns uint256 envfree;
     function YSMath.calculateSharesInGivenBondsOut(uint256,uint256,uint256,uint256,uint256,uint256) external returns uint256 envfree;
     function YSMath.calculateSharesOutGivenBondsIn(uint256,uint256,uint256,uint256,uint256,uint256) external returns uint256 envfree;
+    function YSMath.modifiedYieldSpaceConstant(uint256,uint256,uint256,uint256,uint256) external returns uint256 envfree;
 }
+
+/// Latest prover report
+/// https://prover.certora.com/output/41958/eadef93279954c8aa558ed52305dd795/?anonymousKey=cde9b08b3e4518023d7d0841f3a71b9f5deb309c
 
 function YSInvariant(
     uint256 z1,
@@ -78,33 +82,27 @@ function ConvexCurve(
         //return rate1 <= margin && margin <= rate2;
     }
 }
-
-function modifiedYieldSpaceConstant(uint256 cDivMu, uint256 mu, uint256 z, uint256 t, uint256 y)
-    returns mathint {
-    /// k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
-    return mulDownWad(cDivMu, CVLPow(mulDownWad(mu, z), t)) + CVLPow(y, t);
-}
-
+/// Verified
 rule YSConstant_MonotonicZ(uint256 cDivMu, uint256 mu, uint256 z1, uint256 z2, uint256 t, uint256 y) {
     assert z1 < z2 => 
-        modifiedYieldSpaceConstant(cDivMu,mu,z1,t,y) <= modifiedYieldSpaceConstant(cDivMu,mu,z1,t,y);
+        YSMath.modifiedYieldSpaceConstant(cDivMu,mu,z1,t,y) <= YSMath.modifiedYieldSpaceConstant(cDivMu,mu,z2,t,y);
 }
-
+/// Verified
 rule YSConstant_MonotonicY(uint256 cDivMu, uint256 mu, uint256 z, uint256 t, uint256 y1, uint256 y2) {
     assert y1 < y2 => 
-        modifiedYieldSpaceConstant(cDivMu,mu,z,t,y1) <= modifiedYieldSpaceConstant(cDivMu,mu,z,t,y2);
+        YSMath.modifiedYieldSpaceConstant(cDivMu,mu,z,t,y1) <= YSMath.modifiedYieldSpaceConstant(cDivMu,mu,z,t,y2);
 }
-
+/// Verified
 rule mulDownChain(uint256 x, uint256 y, uint256 z) {
     uint256 w = mulDownWad(x, y);
     assert ONE18() * w <= x * y;
     assert ONE18() * ONE18() * mulDownWad(w, z) <= (x * y * z);
 }
-
+/// Verified
 rule mulDivDownEquivalence(uint256 x, uint256 y, uint256 z) {
     assert FPMath.mulDivDown(x,y,z) == mulDivDownAbstractPlus(x,y,z);
 }
-
+/// Verified
 rule mulDivUpEquivalence(uint256 x, uint256 y, uint256 z) {
     assert FPMath.mulDivUp(x,y,z) == mulDivUpAbstractPlus(x,y,z);
 }
@@ -128,7 +126,7 @@ rule errorBoundTest(mathint x, mathint err) {
     mathint y2 = (x * (ONE18() - err));
     assert relativeErrorBound(x * ONE18(), y1, err2) && relativeErrorBound(x * ONE18(), y2, err2);
 }
-
+/// Verified
 rule calculateSpotPriceMonotonicOnShares() {
     uint256 shareReserves1;
     uint256 bondReserves1;
@@ -138,11 +136,11 @@ rule calculateSpotPriceMonotonicOnShares() {
 
     uint256 shareReserves2;
 
-    uint256 spotPrice1 = HDMath.calculateSpotPrice(shareReserves1,bondReserves1,_initialSharePrice1,_timeRemaining1,_timeStretch1);
-    uint256 spotPrice2 = HDMath.calculateSpotPrice(shareReserves2,bondReserves1,_initialSharePrice1,_timeRemaining1,_timeStretch1);
+    uint256 spotPrice1 = HDMath.calculateSpotPrice(shareReserves1,bondReserves1,_initialSharePrice1,_timeStretch1);
+    uint256 spotPrice2 = HDMath.calculateSpotPrice(shareReserves2,bondReserves1,_initialSharePrice1,_timeStretch1);
     assert shareReserves1 <= shareReserves2 => spotPrice1 <= spotPrice2;
 }
-
+/// Verified
 rule calculateSpotPriceMonotonicOnBonds() {
     uint256 shareReserves1;
     uint256 bondReserves1;
@@ -152,18 +150,19 @@ rule calculateSpotPriceMonotonicOnBonds() {
 
     uint256 bondReserves2;
 
-    uint256 spotPrice1 = HDMath.calculateSpotPrice(shareReserves1,bondReserves1,_initialSharePrice1,_timeRemaining1,_timeStretch1);
-    uint256 spotPrice2 = HDMath.calculateSpotPrice(shareReserves1,bondReserves2,_initialSharePrice1,_timeRemaining1,_timeStretch1);
+    uint256 spotPrice1 = HDMath.calculateSpotPrice(shareReserves1,bondReserves1,_initialSharePrice1,_timeStretch1);
+    uint256 spotPrice2 = HDMath.calculateSpotPrice(shareReserves1,bondReserves2,_initialSharePrice1,_timeStretch1);
     assert bondReserves1 <= bondReserves2 => spotPrice1 >= spotPrice2;
 }
 
-/// @notice : in progress
+/// Timeout
 rule calculateCloseLongMonotonicOnBondReserves(env e) {
     uint256 _shareReserves;
     uint256 _bondReserves1;
     uint256 _amountIn;
     uint256 _normalizedTimeRemaining;
     uint256 _timeStretch;
+    uint256 _openSharePrice;
     uint256 _closeSharePrice;
     uint256 _sharePrice;
     uint256 _initialSharePrice;
@@ -176,13 +175,12 @@ rule calculateCloseLongMonotonicOnBondReserves(env e) {
     uint256 shareProceeds1;
     uint256 shareProceeds2;
 
-    storage initState = lastStorage;
     shareReservesDelta1, bondReservesDelta1, shareProceeds1 = HDMath.calculateCloseLong(
-        _shareReserves, _bondReserves1, _amountIn, _normalizedTimeRemaining, _timeStretch, _closeSharePrice, _sharePrice, _initialSharePrice
+        _shareReserves, _bondReserves1, _amountIn, _normalizedTimeRemaining, _timeStretch, _openSharePrice, _closeSharePrice, _sharePrice, _initialSharePrice
     );
     shareReservesDelta2, bondReservesDelta2, shareProceeds2 = HDMath.calculateCloseLong(
-        _shareReserves, _bondReserves2, _amountIn, _normalizedTimeRemaining, _timeStretch, _closeSharePrice, _sharePrice, _initialSharePrice
-    ) at initState;
+        _shareReserves, _bondReserves2, _amountIn, _normalizedTimeRemaining, _timeStretch, _openSharePrice, _closeSharePrice, _sharePrice, _initialSharePrice
+    );
 
     assert _bondReserves1 >= _bondReserves2 => shareProceeds1 >= shareProceeds2;
 }
@@ -212,7 +210,7 @@ rule YSInvariantIntegrity() {
 
     assert relativeErrorBound(k1, k2, 10);
 }
-
+/// Verified
 rule monotonicityBaseVolume(uint256 base1, uint256 base2) {
     uint256 bondAmount;
     uint256 timeRemaining;
@@ -221,7 +219,7 @@ rule monotonicityBaseVolume(uint256 base1, uint256 base2) {
 
     assert _monotonicallyIncreasing(base1, base2, vol1, vol2);
 }
-
+/// Violated
 rule YSInvariantTest1(uint256 z, uint256 y, uint256 dz, uint256 t, uint256 c, uint256 mu) {
     uint256 dy = YSMath.calculateBondsInGivenSharesOut(z,y,dz,t,c,mu);
     uint256 yp = require_uint256(y + dy);
@@ -229,7 +227,7 @@ rule YSInvariantTest1(uint256 z, uint256 y, uint256 dz, uint256 t, uint256 c, ui
     uint256 tp = require_uint256(ONE18() - t);
     assert YSInvariant(z, zp, y, yp, mu, c, tp);
 }
-
+/// Violated
 rule ConvexCurveTest(uint256 z, uint256 y, uint256 dz, uint256 t, uint256 c, uint256 mu) {
     uint256 dy = YSMath.calculateBondsInGivenSharesOut(z,y,dz,t,c,mu);
     require t == 45071688063194104;
@@ -242,7 +240,7 @@ rule ConvexCurveTest(uint256 z, uint256 y, uint256 dz, uint256 t, uint256 c, uin
     uint256 tp = assert_uint256(ONE18() - t);
     assert ConvexCurve(z, zp, y, yp, mu, c, tp);
 }
-
+/// Violated
 rule cannotGetFreeBonds(uint256 z, uint256 y, uint256 dy, uint256 t, uint256 c, uint256 mu) {
 
     require mu >= ONE18();
@@ -254,7 +252,7 @@ rule cannotGetFreeBonds(uint256 z, uint256 y, uint256 dy, uint256 t, uint256 c, 
 
     assert dy !=0 => dz !=0;
 }
-
+/// Violated
 rule cannotGetFreeShares(uint256 z, uint256 y, uint256 dz, uint256 t, uint256 c, uint256 mu) {
     require mu >= ONE18();
     require c >= mu;
@@ -269,6 +267,7 @@ rule cannotGetFreeShares(uint256 z, uint256 y, uint256 dz, uint256 t, uint256 c,
 // ======================================
 //        Hyperdrive Math rules
 //=======================================
+/// Verified
 rule calculateOpenLong_correctBound(
     uint256 shareReserves,
     uint256 bondReserves,
@@ -286,7 +285,7 @@ rule calculateOpenLong_correctBound(
     assert bondReservesDelta <= bondReserves,
         "The bond reserve delta cannot exceed the bond reserves";
 }
-
+/// Timeout
 rule calculateOpenLong_ShareMonotonic(
     uint256 shareReserves,
     uint256 bondReserves,
@@ -309,7 +308,7 @@ rule calculateOpenLong_ShareMonotonic(
     assert bondReservesDelta1 <= bondReservesDelta2,
         "The bond reserves delta should increase with the amount of shares";
 }
-
+/// Violated
 rule calculateOpenLong_BondsMonotonic(
     uint256 shareReserves,
     uint256 bondReserves1,
@@ -334,16 +333,16 @@ rule calculateOpenLong_BondsMonotonic(
         "The bond reserves delta should increase with increasing bonds reserves";
 }
 
-/// @dev Opening and closing a long immediately (with no time elpased between or any other trade),
+/// Opening and closing a long immediately (with no time elpased between or any other trade),
 /// must obey the following conditions:
 /// 1. The difference in shares must be equal to the share proceeds
 /// 2. The amount of bonds returned to the pool is the same number the trader closed with.
+/// Violated (third assert)
 rule openAndCloseLongOnCurve(
     uint256 shareReserves,
     uint256 bondReserves,
     uint256 shareAmount,
     uint256 sharePrice) {
-
     uint256 initialSharePrice = ONE18();
     uint256 timeStretch = 45071688063194104;
     require sharePrice >= initialSharePrice;
@@ -363,7 +362,7 @@ rule openAndCloseLongOnCurve(
     uint256 shareProceeds;
     shareReservesDelta, bondReservesDelta, shareProceeds = HDMath.calculateCloseLong(
         newShares, newBonds, bondDelta1, timeRemaining,
-        timeStretch, sharePrice, sharePrice, initialSharePrice);
+        timeStretch, sharePrice, sharePrice, sharePrice, initialSharePrice);
 
     assert shareReservesDelta == shareProceeds, "The proceeds must be equal to the amount drained from the pool";
     assert bondReservesDelta == bondDelta1, "Trader must pay the exact amount of bonds";
@@ -371,6 +370,7 @@ rule openAndCloseLongOnCurve(
 }
 
 /// Same as openAndCloseLongOnCurve, but only with YS Math.
+/// Violated
 rule BondsOutSharesInAndBack(
     uint256 shareReserves,
     uint256 bondReserves,
@@ -392,7 +392,7 @@ rule BondsOutSharesInAndBack(
 
     assert abs(shareAmount - sharesOut) <= 100, "Trader cannot gain from an immediate round-trip";
 }
-
+/// Violated
 rule moreBondsMorePaymentsForOpenLong(env e) {
     uint256 _bondAmount1;
     uint256 _shareAmount1; // depends on the bond price (need to prove monotonicity of _calculateOpenShort())
@@ -409,7 +409,7 @@ rule moreBondsMorePaymentsForOpenLong(env e) {
 
     assert _bondAmount1 > _bondAmount2 => traderDeposit1 >= traderDeposit2;
 }
-
+/// Verified
 rule calculateBaseVolumeCheck(uint256 base, uint256 bonds, uint256 time) {
     require time <= ONE18() && time != 0;
     uint256 volume = HDMath.calculateBaseVolume(base, bonds, time);
@@ -420,7 +420,7 @@ rule calculateBaseVolumeCheck(uint256 base, uint256 bonds, uint256 time) {
         to_mathint(base) <= max(to_mathint(volume), to_mathint(bonds)) &&
         to_mathint(base) >= min(to_mathint(volume), to_mathint(bonds));
 }
-
+/// Violated
 rule updateWeightedAverageCheck(uint256 avg, uint256 totW, uint256 del, uint256 delW) {
     bool isAdd;
     uint256 avg_new = FPMath.updateWeightedAverage(avg,totW,del,delW,isAdd);
@@ -505,7 +505,7 @@ rule tradingOnCurvePreservesPositiveInterest4(uint256 z, uint256 y, uint256 dy, 
 
     assert R1 <= ONE18() => R2 <= ONE18();
 }
-
+/// Violated
 rule shortProceedsIntegrity(uint256 bondAmount) {
     uint256 openSharePrice;
     uint256 sharePrice;
@@ -530,26 +530,14 @@ rule shortProceedsIntegrity(uint256 bondAmount) {
 
     assert bondAmount !=0 => traderDeposit !=0;
 }
-
-/*
-uint256 shareReserves;
-uint256 bondReserves;
-uint256 sharePrice;
-uint256 initialSharePrice;
-uint256 timeStretch;
-uint256 longsOutstanding;
-uint256 longAverageTimeRemaining;
-uint256 shortsOutstanding;
-uint256 shortAverageTimeRemaining;
-uint256 shortBaseVolume;
-*/
-rule presentValueTimeContinuous() {
+/// Violated (old version)
+rule presentValueIncludesPoolShares() {
     HyperdriveMath.PresentValueParams params;
     uint256 z = params.shareReserves;
     require params.shortsOutstanding == 0;
     require params.longAverageTimeRemaining == 0;
     require params.shortAverageTimeRemaining == 0;
-    uint256 PV1 = HDMath.calculatePresentValue(params);
-    //uint256 PV2 = HDMath.calculatePresentValue(params2);
-    assert PV1 >= z;
+    uint256 PV = HDMath.calculatePresentValue(params);
+    assert PV >= z; /// Old version
+    //assert to_mathint(PV) >= z - params.minimumShareReserves; /// New version
 }

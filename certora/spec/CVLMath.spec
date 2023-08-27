@@ -76,22 +76,19 @@ definition weightedAverage(mathint x, mathint y, mathint z, mathint WA) returns 
     &&
     ((x == 0 || y == 0) => (WA == 0));
         
-ghost uint256 res;
-ghost mathint rem;
-ghost mathint SQRT;
 
 function mulDivDownAbstract(uint256 x, uint256 y, uint256 z) returns uint256 {
     require z !=0;
     uint256 xy = require_uint256(x * y);
-    havoc res;
-    havoc rem; 
-    require z * res + rem == x * y;
+    uint256 res;
+    mathint rem; 
+    require z * res + rem == to_mathint(xy);
     require rem < to_mathint(z);
     return res; 
 }
 
 function mulDivDownAbstractPlus(uint256 x, uint256 y, uint256 z) returns uint256 {
-    havoc res;
+    uint256 res;
     require z != 0;
     uint256 xy = require_uint256(x * y);
     uint256 fz = require_uint256(res * z);
@@ -101,7 +98,7 @@ function mulDivDownAbstractPlus(uint256 x, uint256 y, uint256 z) returns uint256
 }
 
 function mulDivUpAbstractPlus(uint256 x, uint256 y, uint256 z) returns uint256 {
-    havoc res;
+    uint256 res;
     require z != 0;
     uint256 xy = require_uint256(x * y);
     uint256 fz = require_uint256(res * z);
@@ -132,7 +129,7 @@ function divUpWad(uint256 x, uint256 y) returns uint256 {
 
 function discreteQuotientMulDiv(uint256 x, uint256 y, uint256 z) returns uint256 
 {
-    havoc res;
+    uint256 res;
     require z != 0 && noOverFlowMul(x, y);
     // Discrete quotients:
     require( 
@@ -148,7 +145,7 @@ function discreteQuotientMulDiv(uint256 x, uint256 y, uint256 z) returns uint256
 
 function discreteRatioMulDiv(uint256 x, uint256 y, uint256 z) returns uint256 
 {
-    havoc res;
+    uint256 res;
     require z != 0 && noOverFlowMul(x, y);
     // Discrete ratios:
     require( 
@@ -200,14 +197,14 @@ ghost _ghostPow(uint256, uint256) returns uint256 {
         x1 > x2 => _ghostPow(x1, y) >= _ghostPow(x2, y);
     
     /// x^y * x^(1-y) == x -> 0.01% relative error
-    axiom forall uint256 x. forall uint256 y. forall uint256 z. 
+    /*axiom forall uint256 x. forall uint256 y. forall uint256 z. 
         (0 <= y && y <= ONE18() &&  z + y == to_mathint(ONE18())) =>
         relativeErrorBound(_ghostPow(x, y) * _ghostPow(x, z), x * ONE18(), ONE18() / 10000);
     
     /// (x^y)^(1/y) == x -> 1% relative error
     axiom forall uint256 x. forall uint256 y. forall uint256 z. 
         (0 <= y && y <= ONE18() &&  z * y == ONE18()*ONE18() ) =>
-        relativeErrorBound(_ghostPow(_ghostPow(x, y), z), x, ONE18() / 100);
+        relativeErrorBound(_ghostPow(_ghostPow(x, y), z), x, ONE18() / 100);*/
 }
 
 function CVLPow(uint256 x, uint256 y) returns uint256 {
@@ -217,7 +214,7 @@ function CVLPow(uint256 x, uint256 y) returns uint256 {
 }
 
 function CVLSqrt(uint256 x) returns uint256 {
-    havoc SQRT;
+    mathint SQRT;
     require SQRT*SQRT <= to_mathint(x) && (SQRT + 1)*(SQRT + 1) > to_mathint(x);
     return require_uint256(SQRT);
 }
