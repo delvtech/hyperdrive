@@ -41,34 +41,16 @@ impl State {
         long_amount - self.long_curve_fee(base_amount)
     }
 
-    /// Gets the max long that can be opened.
+    /// Gets the max long that can be opened given a budget.
     ///
-    /// Iteratively calculates the max long that can be opened on the pool.
-    /// The number of iterations can be configured with `max_iterations`, which
-    /// defaults to 7 if it is passed as `None`.
+    /// We start by calculating the long that brings the pool's spot price to 1.
+    /// If we are solvent at this point, then we're done. Otherwise, we approach
+    /// the max long iteratively using Newton's method.
     pub fn get_max_long(
         &self,
         budget: FixedPoint,
         maybe_max_iterations: Option<usize>,
     ) -> FixedPoint {
-        // Get the maximum long that can be opened.
-        let max_base_amount = self.max_long(maybe_max_iterations);
-
-        // If the maximum long that can be opened is less than the budget, then
-        // we return the maximum long that can be opened. Otherwise, we return
-        // the budget.
-        min(max_base_amount, budget)
-    }
-
-    // FIXME: Short circuit when the max base amount exceeds the budget. If we
-    // do this, we can just make this the `get_max_long` function.
-    //
-    /// Gets the max long that can be opened irrespective of budget.
-    ///
-    /// We start by calculating the long that brings the pool's spot price to 1.
-    /// If we are solvent at this point, then we're done. Otherwise, we approach
-    /// the max long iteratively using Newton's method.
-    fn max_long(&self, maybe_max_iterations: Option<usize>) -> FixedPoint {
         // Get the maximum long that brings the spot price to 1. If the pool is
         // solvent after opening this long, then we're done.
         let (mut max_base_amount, max_bond_amount) = {
@@ -100,61 +82,83 @@ impl State {
         // The guess that we make is very important in determining how quickly
         // we converge to the solution.
         max_base_amount = self.max_long_guess();
+        let mut solvency = self.solvency(max_base_amount, self.get_long_amount(max_base_amount));
+        if solvency.is_none() {
+            panic!("Initial guess in `get_max_long` is insolvent.");
+        }
         for _ in 0..maybe_max_iterations.unwrap_or(7) {
-            max_base_amount = max_base_amount
-                + self
-                    .solvency(max_base_amount, self.get_long_amount(max_base_amount))
-                    .unwrap()
-                    / self.solvency_derivative(max_base_amount);
+            // If the max base amount exceeds the budget, we know that the
+            // entire budget can be consumed without running into solvency
+            // constraints.
+            if max_base_amount > budget {
+                return budget;
+            }
+
+            // If the pool is solvent after the current guess, we proceed with
+            // Newton's method. As Newton's method approaches the root, it can
+            // cross over to the other side of the root. We truncuate Newton's
+            // method when this happens.
+            //
+            // TODO: It may be better to gracefully handle crossing over the
+            // root by extending the fixed point math library to handle negative
+            // numbers or even just using an if-statement to handle the negative
+            // numbers.
+            if let Some(s) = solvency {
+                max_base_amount = max_base_amount + s / self.solvency_derivative(max_base_amount);
+                solvency = self.solvency(max_base_amount, self.get_long_amount(max_base_amount));
+            } else {
+                break;
+            }
         }
 
         max_base_amount
     }
 
-    // FIXME
-    //
-    // FIXME:
-    //
-    // We should be able to come up with a guess based on the current
-    // solvency.
-    //
-    // When we open longs, we are adding 1/p * x - g(x) to the share reserves,
-    // and we also add 2 * 1/p * x - x + g(x) from the exposure.
-    //
-    // With this in mind, we're reducing solvency by:
-    //
-    // 1/p * x - g(x) - (2 * 1/p * x - x + g(x)) = -1/p*x + x - 2*g(x)
-    //
-    // Therefore, we wish to solve for x s.t.
-    //
-    // s_0 - 1/p*x + x - 2*g(x) = 0
-    //
-    // The governance fee is given by:
-    //
-    // g(x) = gov_fee * p * c(x)
-    //      = gov_fee * p * curve_fee * (1/p - 1) * x
-    //      = gov_fee * curve_fee * (1 - p) * x
-    //
-    // Therefore, we can solve for x as follows:
-    //
-    // 0 = s_0 - 1/p * x + x - 2 * gov_fee * curve_fee * (1 - p) * x
-    //
-    // -s_0 = -(1/p + 2 * gov_fee * curve_fee * (1 - p)  - 1) * x
-    //
-    // x = s_0 / (1/p + 2 * gov_fee * curve_fee * (1 - p) - 1)
-    //
-    // We just need a conservative price. Luckily, we can use the current
-    // spot price as a lower bound on the execution price.
+    /// Gets a starting guess for the iterative process of finding the max long.
+    ///
+    /// To calculate our guess, we assume an unrealistically good realized price
+    /// $p_r$ for closing the long. This allows us to approximate $y(x)$ as
+    /// $y(x) \approx p_r^{-1} \cdot x - c(x)$. Plugging this into our solvency
+    /// function $s(x)$, we can calculate the share reserves and exposure after
+    /// opening a long with $x$ base as:
+    ///
+    /// \begin{aligned}
+    /// z(x) &= z_0 + \tfrac{x - g(x)}{c} - z_{min} \\
+    /// e(x) &= e_0 + 2 \cdot y(x) - x + g(x) \\
+    ///      &= e_0 + 2 \cdot p_r^{-1} \cdot x - 2 \cdot c(x) - x + g(x)
+    /// \end{aligned}
+    ///
+    /// This gives us an approximate ending solvency of:
+    ///
+    /// $$
+    /// s(x) \approx z(x) - \tfrac{e(x)}{c} - z_{min}
+    /// $$
+    ///
+    /// If we let the initial solvency be given by $s_0$, we can solve for $x$
+    /// as:
+    ///
+    /// $$
+    /// x = \frac{2}{c} \cdot \frac{s_0}{
+    ///         p_r^{-1} +
+    ///         \phi_{g} \cdot \phi_{c} \cdot \left( 1 - p \right) -
+    ///         1 -
+    ///         \phi_{c} \cdot \left( p^{-1} - 1 \right)
+    ///     }
+    /// $$
+    ///
+    /// We need to use a conservative estimate for the realized price, so we use
+    /// the spot price $p$ discounted by $90\%$ as our estimate price.
     fn max_long_guess(&self) -> FixedPoint {
-        let spot_price = self.get_spot_price();
+        let spot_price = self.get_spot_price() * fixed!(0.9e18);
         let estimate_price = spot_price;
-        self.get_solvency()
-            / (fixed!(1e18) / estimate_price
-                + fixed!(2e18)
-                    * self.governance_fee()
-                    * self.curve_fee()
-                    * (fixed!(1e18) - spot_price)
-                - fixed!(1e18))
+        let mut guess = self
+            .get_solvency()
+            .mul_div_down(fixed!(2e18), self.share_price());
+        guess /= fixed!(1e18) / estimate_price
+            + self.governance_fee() * self.curve_fee() * (fixed!(1e18) - spot_price)
+            - fixed!(1e18)
+            - self.curve_fee() * (fixed!(1e18) / spot_price - fixed!(1e18));
+        guess
     }
 
     /// Gets the solvency of the pool $S(x)$ after a long is opened with a base
@@ -176,12 +180,12 @@ impl State {
     /// as:
     ///
     /// ```
+    /// shareReservesDelta = _shareAmount - governanceCurveFee.divDown(_sharePrice)
     /// uint128 longExposureDelta = (2 *
     ///     _bondProceeds -
     ///     _shareReservesDelta.mulDown(_sharePrice)).toUint128();
     /// ```
     ///
-    /// where `shareReservesDelta = _shareAmount - governanceCurveFee.divDown(_sharePrice)`.
     /// From this, we can calculate our exposure as:
     ///
     /// $$
@@ -319,74 +323,6 @@ mod tests {
     use tracing_test::traced_test;
 
     use super::*;
-
-    // FIXME: Remove this test once we identify the problem.
-    #[tokio::test]
-    async fn test_example() -> Result<()> {
-        let chain = TestChainWithMocks::new(1).await?;
-        let mock = chain.mock_hyperdrive_math();
-
-        let state = State {
-            config: PoolConfig {
-                base_token: Default::default(),
-                initial_share_price: uint256!(1938558399179621427),
-                minimum_share_reserves: uint256!(936752836207039628),
-                position_duration: uint256!(21770572),
-                checkpoint_duration: uint256!(72402),
-                time_stretch: uint256!(286398893395310250),
-                governance: Default::default(),
-                fee_collector: Default::default(),
-                fees: Fees {
-                    curve: uint256!(0),
-                    flat: uint256!(0),
-                    governance: uint256!(0),
-                },
-                oracle_size: uint256!(0),
-                update_gap: uint256!(0),
-            },
-            info: PoolInfo {
-                share_reserves: uint256!(79844610288833458471835372),
-                bond_reserves: uint256!(572728778528641556490197658),
-                lp_total_supply: uint256!(17316480480027736377527648),
-                share_price: uint256!(1102811862551556545),
-                longs_outstanding: uint256!(22419723952198233823907),
-                long_average_maturity_time: uint256!(7651278),
-                shorts_outstanding: uint256!(61129166512317169335937),
-                short_average_maturity_time: uint256!(8095978),
-                withdrawal_shares_ready_to_withdraw: uint256!(55163024010414681033371282),
-                withdrawal_shares_proceeds: uint256!(72545690707479613768298),
-                lp_share_price: uint256!(4578721372580489773),
-                long_exposure: uint256!(0),
-            },
-        };
-        let actual = panic::catch_unwind(|| state.get_max_long(U256::MAX.into(), None));
-        match mock
-            .calculate_max_long(
-                MaxTradeParams {
-                    share_reserves: state.info.share_reserves,
-                    bond_reserves: state.info.bond_reserves,
-                    longs_outstanding: state.info.longs_outstanding,
-                    long_exposure: state.info.long_exposure,
-                    time_stretch: state.config.time_stretch,
-                    share_price: state.info.share_price,
-                    initial_share_price: state.config.initial_share_price,
-                    minimum_share_reserves: state.config.minimum_share_reserves,
-                    curve_fee: state.config.fees.curve,
-                    governance_fee: state.config.fees.governance,
-                },
-                uint256!(7),
-            )
-            .call()
-            .await
-        {
-            Ok((expected_base_amount, ..)) => {
-                assert_eq!(actual.unwrap(), FixedPoint::from(expected_base_amount));
-            }
-            Err(_) => assert!(actual.is_err()),
-        }
-
-        Ok(())
-    }
 
     /// This test differentially fuzzes the `get_max_long` function against the
     /// Solidity analogue `calculateMaxShort`. `calculateMaxShort` doesn't take

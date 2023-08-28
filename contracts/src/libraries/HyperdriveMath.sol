@@ -1,10 +1,6 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-// FIXME
-import { console2 as console } from "forge-std/console2.sol";
-import { Lib } from "test/utils/Lib.sol";
-
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { FixedPointMath, ONE } from "./FixedPointMath.sol";
 import { YieldSpaceMath } from "./YieldSpaceMath.sol";
@@ -17,9 +13,6 @@ import { SafeCast } from "./SafeCast.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 library HyperdriveMath {
-    // FIXME
-    using Lib for *;
-
     using FixedPointMath for uint256;
     using SafeCast for uint256;
 
@@ -335,7 +328,16 @@ library HyperdriveMath {
         uint256 governanceFee;
     }
 
-    // FIXME
+    /// @dev Gets the max long that can be opened given a budget.
+    ///
+    ///      We start by calculating the long that brings the pool's spot price
+    ///      to 1. If we are solvent at this point, then we're done. Otherwise,
+    ///      we approach the max long iteratively using Newton's method.
+    /// @param _params The parameters for the max long calculation.
+    /// @param _maxIterations The maximum number of iterations to use in the
+    ///                       Newton's method loop.
+    /// @return maxBaseAmount The maximum base amount.
+    /// @return maxBondAmount The maximum bond amount.
     function calculateMaxLong(
         MaxTradeParams memory _params,
         uint256 _maxIterations
@@ -358,13 +360,13 @@ library HyperdriveMath {
                 _params.initialSharePrice
             );
             maxBaseAmount = maxShareAmount.mulDown(_params.sharePrice);
-            (, bool isSolvent) = calculateSolvency(
+            (, bool isSolvent_) = calculateSolvency(
                 _params,
                 maxShareAmount.mulDown(_params.sharePrice),
                 maxBondAmount,
                 spotPrice
             );
-            if (isSolvent) {
+            if (isSolvent_) {
                 return (maxBaseAmount, maxBondAmount);
             }
         }
@@ -387,46 +389,157 @@ library HyperdriveMath {
         // The guess that we make is very important in determining how quickly
         // we converge to the solution.
         maxBaseAmount = calculateMaxLongGuess(_params, spotPrice);
+        (uint256 s, bool isSolvent) = calculateSolvency(
+            _params,
+            maxBaseAmount,
+            maxBondAmount,
+            spotPrice
+        );
+        require(isSolvent, "Initial guess in `calculateMaxLong` is insolvent.");
         for (uint256 i = 0; i < _maxIterations; i++) {
+            // If the pool is solvent after the current guess, we proceed with
+            // Newton's method. As Newton's method approaches the root, it can
+            // cross over to the other side of the root. We truncuate Newton's
+            // method when this happens.
+            //
+            // TODO: It may be better to gracefully handle crossing over the
+            // root by extending the fixed point math library to handle negative
+            // numbers or even just using an if-statement to handle the negative
+            // numbers.
             maxBondAmount = calculateLongAmount(
                 _params,
                 maxBaseAmount,
                 spotPrice
             );
-            (uint256 delta, ) = calculateSolvency(
-                _params,
-                maxBaseAmount,
-                maxBondAmount,
-                spotPrice
-            );
-            maxBaseAmount += delta.divDown(
-                calculateSolvencyDerivative(_params, maxBaseAmount, spotPrice)
-            );
+            if (isSolvent) {
+                maxBaseAmount += s.divDown(
+                    calculateSolvencyDerivative(
+                        _params,
+                        maxBaseAmount,
+                        spotPrice
+                    )
+                );
+                (s, isSolvent) = calculateSolvency(
+                    _params,
+                    maxBaseAmount,
+                    maxBondAmount,
+                    spotPrice
+                );
+            } else {
+                break;
+            }
         }
 
         return (maxBaseAmount, maxBondAmount);
     }
 
+    /// @dev Gets a starting guess for the iterative process of finding the max
+    ///      long.
+    ///
+    ///      To calculate our guess, we assume an unrealistically good realized
+    ///      price $p_r$ for closing the long. This allows us to approximate
+    ///      $y(x)$ as $y(x) \approx p_r^{-1} \cdot x - c(x)$. Plugging this
+    ///      into our solvency function $s(x)$, we can calculate the share
+    ///      reserves and exposure after opening a long with $x$ base as:
+    ///
+    ///      \begin{aligned}
+    ///      z(x) &= z_0 + \tfrac{x - g(x)}{c} - z_{min} \\
+    ///      e(x) &= e_0 + 2 \cdot y(x) - x + g(x) \\
+    ///           &= e_0 + 2 \cdot p_r^{-1} \cdot x - 2 \cdot c(x) - x + g(x)
+    ///      \end{aligned}
+    ///
+    ///      This gives us an approximate ending solvency of:
+    ///
+    ///      $$
+    ///      s(x) \approx z(x) - \tfrac{e(x)}{c} - z_{min}
+    ///      $$
+    ///
+    ///      If we let the initial solvency be given by $s_0$, we can solve for
+    ///      $x$ as:
+    ///
+    ///      $$
+    ///      x = \frac{2}{c} \cdot \frac{s_0}{
+    ///              p_r^{-1} +
+    ///              \phi_{g} \cdot \phi_{c} \cdot \left( 1 - p \right) -
+    ///              1 -
+    ///              \phi_{c} \cdot \left( p^{-1} - 1 \right)
+    ///          }
+    ///      $$
+    ///
+    ///      We need to use a conservative estimate for the realized price, so
+    ///      we use the spot price $p$ discounted by $90\%$ as our estimate price.
+    /// @param _params The max long calculation parameters.
+    /// @param _spotPrice The spot price of the pool.
+    /// @return The starting guess for the iterative process of finding the max
+    ///         long.
     function calculateMaxLongGuess(
         MaxTradeParams memory _params,
         uint256 _spotPrice
     ) internal pure returns (uint256) {
-        uint256 estimatePrice = _spotPrice;
-        uint256 guess = _params.shareReserves -
+        uint256 estimatePrice = _spotPrice.mulDown(0.9e18);
+        uint256 guess = (_params.shareReserves -
             _params.longExposure.divDown(_params.sharePrice) -
-            _params.minimumShareReserves;
+            _params.minimumShareReserves).mulDivDown(2e18, _params.sharePrice);
         guess = guess.divDown(
             ONE.divDown(estimatePrice) +
-                uint256(2e18)
-                    .mulDown(_params.governanceFee)
-                    .mulDown(_params.curveFee)
-                    .mulDown(ONE - _spotPrice) -
-                ONE
+                _params.governanceFee.mulDown(_params.curveFee).mulDown(
+                    ONE - _spotPrice
+                ) -
+                ONE -
+                _params.curveFee.mulDown(ONE.divDown(_spotPrice) - ONE)
         );
         return guess;
     }
 
-    // FIXME
+    /// @dev Gets the solvency of the pool $S(x)$ after a long is opened with a
+    ///      base amount $x$.
+    ///
+    ///      The pool's solvency is calculated as:
+    ///
+    ///      $$
+    ///      s = z - \tfrac{exposure}{c} - z_{min}
+    ///      $$
+    ///
+    ///      When a long is opened, the share reserves $z$ increase by:
+    ///
+    ///      $$
+    ///      \Delta z = \tfrac{x - g(x)}{c}
+    ///      $$
+    ///
+    ///      In the solidity implementation, we calculate the delta in the
+    ///      exposure as:
+    ///
+    ///      ```
+    ///      shareReservesDelta = _shareAmount - governanceCurveFee.divDown(_sharePrice)
+    ///      uint128 longExposureDelta = (2 *
+    ///          _bondProceeds -
+    ///          _shareReservesDelta.mulDown(_sharePrice)).toUint128();
+    ///      ```
+    ///
+    ///      From this, we can calculate our exposure as:
+    ///
+    ///      $$
+    ///      \Delta exposure = 2 \cdot y(x) - x + g(x)
+    ///      $$
+    ///
+    ///      From this, we can calculate $S(x)$ as:
+    ///
+    ///      $$
+    ///      S(x) = \left( z + \Delta z \right) - \left(
+    ///                 \tfrac{exposure + \Delta exposure}{c}
+    ///             \right) - z_{min}
+    ///      $$
+    ///
+    ///      It's possible that the pool is insolvent after opening a long. In
+    ///      this case, we return `false` since the fixed point library can't
+    ///      represent negative numbers.
+    /// @param _params The max long calculation parameters.
+    /// @param _baseAmount The base amount.
+    /// @param _bondAmount The bond amount.
+    /// @param _spotPrice The spot price.
+    /// @return The solvency of the pool.
+    /// @return A flag indicating that the pool is solvent if true and insolvent
+    ///         if false.
     function calculateSolvency(
         MaxTradeParams memory _params,
         uint256 _baseAmount,
@@ -462,7 +575,29 @@ library HyperdriveMath {
         }
     }
 
-    // FIXME
+    /// @dev Gets the negation of the derivative of the pool's solvency with
+    ///      respect to the base amount that the long pays.
+    ///
+    ///      The derivative of the pool's solvency $S(x)$ with respect to the
+    ///      base amount that the long pays is given by:
+    ///
+    ///      $$
+    ///      S'(x) = \tfrac{2}{c} \cdot \left(
+    ///                  1 - y'(x) - \phi_{g} \cdot p \cdot c'(x)
+    ///              \right) \\
+    ///            = \tfrac{2}{c} \cdot \left(
+    ///                  1 - y'(x) - \phi_{g} \cdot \phi_{c} \cdot \left( 1 - p \right)
+    ///              \right)
+    ///      $$
+    ///
+    ///      This derivative is negative since solvency decreases as more longs
+    ///      are opened. We use the negation of the derivative to stay in the
+    ///      positive domain, which allows us to use the fixed point library.
+    /// @param _params The max long calculation parameters.
+    /// @param _baseAmount The base amount.
+    /// @param _spotPrice The spot price.
+    /// @return derivative The negation of the derivative of the pool's solvency
+    ///         w.r.t the base amount.
     function calculateSolvencyDerivative(
         MaxTradeParams memory _params,
         uint256 _baseAmount,
@@ -473,7 +608,6 @@ library HyperdriveMath {
             _baseAmount,
             _spotPrice
         );
-        console.log("long_amount_derivative = %s", derivative.toString(18));
         derivative += _params.governanceFee.mulDown(_params.curveFee).mulDown(
             ONE - _spotPrice
         );
@@ -481,7 +615,29 @@ library HyperdriveMath {
         return derivative.mulDivDown(2e18, _params.sharePrice);
     }
 
-    // FIXME
+    /// @dev Gets the long amount that will be opened for a given base amount.
+    ///
+    ///      The long amount $y(x)$ that a trader will receive is given by:
+    ///
+    ///      $$
+    ///      y(x) = y_{*}(x) - c(x)
+    ///      $$
+    ///
+    ///      Where $y_{*}(x)$ is the amount of long that would be opened if there
+    ///      was no curve fee and [$c(x)$](long_curve_fee) is the curve fee.
+    ///      $y_{*}(x)$ is given by:
+    ///
+    ///      $$
+    ///      y_{*}(x) = y - \left(
+    ///                     k - \tfrac{c}{\mu} \cdot \left(
+    ///                         \mu \cdot \left( z + \tfrac{x}{c}
+    ///                     \right) \right)^{1 - t_s}
+    ///                 \right)^{\tfrac{1}{1 - t_s}}
+    ///      $$
+    /// @param _params The max long calculation parameters.
+    /// @param _baseAmount The base amount.
+    /// @param _spotPrice The spot price.
+    /// @return The long amount.
     function calculateLongAmount(
         MaxTradeParams memory _params,
         uint256 _baseAmount,
@@ -500,18 +656,47 @@ library HyperdriveMath {
             calculateLongCurveFee(_baseAmount, _spotPrice, _params.curveFee);
     }
 
-    // FIXME
+    /// @dev Gets the derivative of [long_amount](long_amount) with respect to
+    ///      the base amount.
+    ///
+    ///      We calculate the derivative of the long amount $y(x)$ as:
+    ///
+    ///      $$
+    ///      y'(x) = y_{*}'(x) - c'(x)
+    ///      $$
+    ///
+    ///      Where $y_{*}'(x)$ is the derivative of $y_{*}(x)$ and $c'(x)$ is the
+    ///      derivative of [$c(x)$](long_curve_fee). $y_{*}'(x)$ is given by:
+    ///
+    ///      $$
+    ///      y_{*}'(x) = \left( \mu \cdot (z + \tfrac{x}{c}) \right)^{-t_s}
+    ///                  \left(
+    ///                      k - \tfrac{c}{\mu} \cdot
+    ///                      \left(
+    ///                          \mu \cdot (z + \tfrac{x}{c}
+    ///                      \right)^{1 - t_s}
+    ///                  \right)^{\tfrac{t_s}{1 - t_s}}
+    ///      $$
+    ///
+    ///      and $c'(x)$ is given by:
+    ///
+    ///      $$
+    ///      c'(x) = \phi_{c} \cdot \left( \tfrac{1}{p} - 1 \right)
+    ///      $$
+    /// @param _params The max long calculation parameters.
+    /// @param _baseAmount The base amount.
+    /// @param _spotPrice The spot price.
+    /// @return derivative The derivative of the long amount w.r.t. the base
+    ///         amount.
     function calculateLongAmountDerivative(
         MaxTradeParams memory _params,
         uint256 _baseAmount,
         uint256 _spotPrice
     ) internal pure returns (uint256 derivative) {
         uint256 shareAmount = _baseAmount.divDown(_params.sharePrice);
-        console.log("share_amount = %s", shareAmount.toString(18));
         uint256 inner = _params.initialSharePrice.mulDown(
             _params.shareReserves + shareAmount
         );
-        console.log("inner = %s", inner.toString(18));
         uint256 cDivMu = _params.sharePrice.divDown(_params.initialSharePrice);
         uint256 k = YieldSpaceMath.modifiedYieldSpaceConstant(
             cDivMu,
@@ -521,7 +706,6 @@ library HyperdriveMath {
             _params.bondReserves
         );
         derivative = ONE.divDown(inner.pow(_params.timeStretch));
-        console.log("derivative = %s", derivative.toString(18));
         derivative = derivative.mulDown(
             (k - cDivMu.mulDown(inner.pow(_params.timeStretch))).pow(
                 _params.timeStretch.divDown(ONE - _params.timeStretch)
@@ -531,11 +715,16 @@ library HyperdriveMath {
         return derivative;
     }
 
-    /// @dev Calculates the curve fee c(x) that a long will pay when opening
-    ///      their position.
-    /// @param _baseAmount The base amount, x.
-    /// @param _spotPrice The spot price, p.
-    /// @param _curveFee The curve fee.
+    /// @dev Gets the curve fee paid by longs for a given base amount.
+    ///
+    ///      The curve fee $c(x)$ paid by longs is given by:
+    ///
+    ///      $$
+    ///      c(x) = \phi_{c} \cdot \left( \tfrac{1}{p} - 1 \right) \cdot x
+    ///      $$
+    /// @param _baseAmount The base amount, $x$.
+    /// @param _spotPrice The spot price, $p$.
+    /// @param _curveFee The curve fee, $\phi_{c}$.
     function calculateLongCurveFee(
         uint256 _baseAmount,
         uint256 _spotPrice,
@@ -548,14 +737,25 @@ library HyperdriveMath {
             );
     }
 
-    // FIXME: Document this.
+    /// @dev Gets the governance fee paid by longs for a given base amount.
+    ///
+    ///      Unlike the [curve fee](long_curve_fee) which is paid in bonds, the
+    ///      governance fee is paid in base. The governance fee $g(x)$ paid by
+    ///      longs is given by:
+    ///
+    ///      $$
+    ///      g(x) = \phi_{g} \cdot p \cdot c(x)
+    ///      $$
+    /// @param _baseAmount The base amount, $x$.
+    /// @param _spotPrice The spot price, $p$.
+    /// @param _curveFee The curve fee, $\phi_{c}$.
+    /// @param _governanceFee The governance fee, $\phi_{g}$.
     function calculateLongGovernanceFee(
         uint256 _baseAmount,
         uint256 _spotPrice,
         uint256 _curveFee,
         uint256 _governanceFee
     ) internal pure returns (uint256) {
-        // fee = governanceFee * p * c(x)
         return
             _governanceFee.mulDown(_spotPrice).mulDown(
                 calculateLongCurveFee(_baseAmount, _spotPrice, _curveFee)
