@@ -1,4 +1,5 @@
 import "./CVLMath.spec";
+//import "./PresentValue.spec";
 
 using MockFixedPointMath as FPMath;
 using MockHyperdriveMath as HDMath;
@@ -38,6 +39,7 @@ methods {
     function YSMath.calculateSharesInGivenBondsOut(uint256,uint256,uint256,uint256,uint256,uint256) external returns uint256 envfree;
     function YSMath.calculateSharesOutGivenBondsIn(uint256,uint256,uint256,uint256,uint256,uint256) external returns uint256 envfree;
     function YSMath.modifiedYieldSpaceConstant(uint256,uint256,uint256,uint256,uint256) external returns uint256 envfree;
+    function YieldSpaceMath.calculateMaxBuy(uint256,uint256,uint256,uint256,uint256) internal returns (uint256, uint256) => NONDET;
 }
 
 /// Latest prover report
@@ -534,10 +536,10 @@ rule shortProceedsIntegrity(uint256 bondAmount) {
 rule presentValueIncludesPoolShares() {
     HyperdriveMath.PresentValueParams params;
     uint256 z = params.shareReserves;
+    require params.longsOutstanding == 0;
     require params.shortsOutstanding == 0;
     require params.longAverageTimeRemaining == 0;
     require params.shortAverageTimeRemaining == 0;
     uint256 PV = HDMath.calculatePresentValue(params);
-    assert PV >= z; /// Old version
-    //assert to_mathint(PV) >= z - params.minimumShareReserves; /// New version
+    assert to_mathint(PV) >= z - params.minimumShareReserves; /// New version
 }

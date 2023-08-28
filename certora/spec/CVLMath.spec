@@ -9,10 +9,10 @@
 definition constRatio(uint256 x, uint256 y, uint256 z,
  uint256 a, uint256 b, uint256 w) 
         returns bool = 
-        ( a * x == b * z && w == require_uint256((b * y) / a )) || 
-        ( b * x == a * z && w == require_uint256((a * y) / b )) ||
-        ( a * y == b * z && w == require_uint256((b * x) / a )) || 
-        ( b * y == a * z && w == require_uint256((a * x) / b ));
+        ( a * x == b * z && to_mathint(w) == (b * y) / a ) || 
+        ( b * x == a * z && to_mathint(w) == (a * y) / b ) ||
+        ( a * y == b * z && to_mathint(w) == (b * x) / a ) || 
+        ( b * y == a * z && to_mathint(w) == (a * x) / b );
 
 // A restriction on the value of w = x * y / z
 // The division quotient between x (or y) and z is an integer q or 1/q.
@@ -45,7 +45,7 @@ definition _monotonicallyIncreasing(uint256 x, uint256 y, uint256 fx, uint256 fy
 definition _monotonicallyDecreasing(uint256 x, uint256 y, uint256 fx, uint256 fy) returns bool = 
     (x > y => fx <= fy);
 
-definition abs(mathint x) returns mathint =
+definition abs(mathint x) returns mathint = 
     x >= 0 ? x : 0 - x;
 
 definition min(mathint x, mathint y) returns mathint = 
@@ -58,9 +58,7 @@ definition max(mathint x, mathint y) returns mathint =
 /// e.g. 10% relative error => err = 1e17
 definition relativeErrorBound(mathint x, mathint y, mathint err) returns bool = 
     (x != 0 
-    ? (x > y 
-        ? (x - y) * ONE18() + abs(x) * err >= 0 && (x - y) * ONE18() <= abs(x) * err
-        : (y - x) * ONE18() + abs(x) * err >= 0 && (y - x) * ONE18() <= abs(x) * err)
+    ? abs(x - y) * ONE18() <= abs(x) * err 
     : abs(y) <= err);
 
 /// Axiom for a weighted average of the form WA = (x * y) / (y + z)
@@ -92,8 +90,9 @@ function mulDivDownAbstractPlus(uint256 x, uint256 y, uint256 z) returns uint256
     require z != 0;
     uint256 xy = require_uint256(x * y);
     uint256 fz = require_uint256(res * z);
+
     require xy >= fz;
-    require res * z + to_mathint(z) > to_mathint(xy);
+    require fz + z > to_mathint(xy);
     return res; 
 }
 
@@ -103,7 +102,7 @@ function mulDivUpAbstractPlus(uint256 x, uint256 y, uint256 z) returns uint256 {
     uint256 xy = require_uint256(x * y);
     uint256 fz = require_uint256(res * z);
     require xy >= fz;
-    require res * z + to_mathint(z) > to_mathint(xy);
+    require fz + z > to_mathint(xy);
     
     if(xy == fz) {
         return res;
@@ -196,15 +195,17 @@ ghost _ghostPow(uint256, uint256) returns uint256 {
     axiom forall uint256 x1. forall uint256 x2. forall uint256 y.
         x1 > x2 => _ghostPow(x1, y) >= _ghostPow(x2, y);
     
+    /* Additional axioms - potentially unsafe
     /// x^y * x^(1-y) == x -> 0.01% relative error
-    /*axiom forall uint256 x. forall uint256 y. forall uint256 z. 
+    axiom forall uint256 x. forall uint256 y. forall uint256 z. 
         (0 <= y && y <= ONE18() &&  z + y == to_mathint(ONE18())) =>
         relativeErrorBound(_ghostPow(x, y) * _ghostPow(x, z), x * ONE18(), ONE18() / 10000);
     
     /// (x^y)^(1/y) == x -> 1% relative error
     axiom forall uint256 x. forall uint256 y. forall uint256 z. 
         (0 <= y && y <= ONE18() &&  z * y == ONE18()*ONE18() ) =>
-        relativeErrorBound(_ghostPow(_ghostPow(x, y), z), x, ONE18() / 100);*/
+        relativeErrorBound(_ghostPow(_ghostPow(x, y), z), x, ONE18() / 100);
+    */
 }
 
 function CVLPow(uint256 x, uint256 y) returns uint256 {
