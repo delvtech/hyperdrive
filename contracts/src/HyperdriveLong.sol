@@ -358,13 +358,11 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 )
                 .toInt128();
 
-            // Closing a long reduces the long exposure held in the shareReserves.
+            // Closing a long reduces the long exposure.
             int128 checkpointExposureBefore = int128(
                 _checkpoints[checkpointTime].longExposure
             );
             _checkpoints[checkpointTime].longExposure -= longExposureDelta;
-
-            // Reducing the long exposure also reduces the global long exposure.
             _updateLongExposure(
                 checkpointExposureBefore,
                 _checkpoints[checkpointTime].longExposure

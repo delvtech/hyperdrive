@@ -370,13 +370,11 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 )
                 .toInt128();
 
-            // Closing a short reduces the assets (trader deposits) not tracked in the shareReserves
+            // Closing a short increases the long exposure
             int128 checkpointExposureBefore = int128(
                 _checkpoints[checkpointTime].longExposure
             );
-            _checkpoints[checkpointTime].longExposure -= longExposureDelta;
-
-            // A reduction in assets increases the long exposure
+            _checkpoints[checkpointTime].longExposure += longExposureDelta;
             _updateLongExposure(
                 checkpointExposureBefore,
                 _checkpoints[checkpointTime].longExposure
