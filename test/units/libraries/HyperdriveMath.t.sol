@@ -520,48 +520,23 @@ contract HyperdriveMathTest is HyperdriveTest {
     // }
 
     function test__calculateClosePositionExposure() external {
-        {
-            int256 _positionExposure = 500e18;
-            uint256 _baseReservesDelta = 100e18;
-            uint256 _bondReservesDelta = 100e18;
-            uint256 _baseUserDelta = 200e18;
-            uint256 _checkpointPositions = 0;
-            int256 delta = HyperdriveMath.calculateClosePositionExposure(
-                _positionExposure,
-                _bondReservesDelta,
-                _baseReservesDelta,
-                _bondReservesDelta,
-                _baseUserDelta,
-                _checkpointPositions
-            );
-
-            // delta should be equal to _positionExposure bc there are 0 checkpoint positions
-            assertEq(delta, _positionExposure);
-        }
-
         // Flat + Curve  Test
         {
-            int256 _positionExposure = 500e18;
             uint256 _bondProceeds = 100e18;
             uint256 _baseReservesDelta = 10e18;
             uint256 _bondReservesDelta = 100e18;
             uint256 _baseUserDelta = 200e18;
-            uint256 _checkpointPositions = 10e18;
-            int256 delta = HyperdriveMath.calculateClosePositionExposure(
-                _positionExposure,
+            uint256 delta = HyperdriveMath.calculateClosePositionExposure(
                 _bondProceeds,
                 _baseReservesDelta,
                 _bondReservesDelta,
-                _baseUserDelta,
-                _checkpointPositions
+                _baseUserDelta
             );
-            int256 flatPlusCurveProceedsDelta = int256(
-                _baseUserDelta -
-                    _baseReservesDelta +
-                    _bondReservesDelta -
-                    _baseReservesDelta +
-                    _bondProceeds
-            );
+            uint256 flatPlusCurveProceedsDelta = _baseUserDelta -
+                _baseReservesDelta +
+                _bondReservesDelta -
+                _baseReservesDelta +
+                _bondProceeds;
             // delta should be equal to flatPlusCurveProceedsDelta bc
             // _positionExposure >= flatPlusCurveDelta + _bondProceeds
             assertEq(delta, flatPlusCurveProceedsDelta);

@@ -350,4 +350,11 @@ library FixedPointMath {
     function max(int256 a, int256 b) internal pure returns (int256) {
         return a > b ? a : b;
     }
+
+    /// @dev Calculates the absolute value of an int256.
+    /// @param a The number.
+    /// @return The absolute value of the number.
+    function abs(int256 a) internal pure returns (uint256) {
+        return a >= 0 ? uint256(a) : uint256(-a);
+    }
 }

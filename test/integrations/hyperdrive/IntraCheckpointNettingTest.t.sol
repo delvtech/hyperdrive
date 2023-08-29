@@ -10,6 +10,8 @@ import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Lib } from "../../utils/Lib.sol";
 
+import "forge-std/console2.sol";
+
 contract IntraCheckpointNettingTest is HyperdriveTest {
     using FixedPointMath for uint256;
     using HyperdriveUtils for *;
@@ -27,6 +29,10 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         // open a short
         uint256 shortAmount = 10e18;
         (uint256 maturityTimeShort, ) = openShort(bob, shortAmount);
+        console2.log(
+            "test: longExposure",
+            hyperdrive.getPoolInfo().longExposure.toString(18)
+        );
 
         // open a long
         uint256 basePaidLong = 9.5e18;
@@ -34,29 +40,57 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             alice,
             basePaidLong
         );
+        console2.log(
+            "test: longExposure",
+            hyperdrive.getPoolInfo().longExposure.toString(18)
+        );
 
         // open a short
         uint256 shortAmount2 = 5e18;
         (uint256 maturityTimeShort2, ) = openShort(bob, shortAmount2);
+        console2.log(
+            "test: longExposure",
+            hyperdrive.getPoolInfo().longExposure.toString(18)
+        );
 
         // remove liquidity
         removeLiquidity(alice, aliceLpShares);
+        console2.log(
+            "test: longExposure",
+            hyperdrive.getPoolInfo().longExposure.toString(18)
+        );
 
         // wait for the shorts to mature to close them
         advanceTimeWithCheckpoints(POSITION_DURATION, 0);
 
         // close the long.
         closeLong(alice, maturityTimeLong, bondAmountLong);
+        console2.log(
+            "test: longExposure",
+            hyperdrive.getPoolInfo().longExposure.toString(18)
+        );
 
         // close the short
         closeShort(bob, maturityTimeShort2, shortAmount2);
+        console2.log(
+            "test: longExposure",
+            hyperdrive.getPoolInfo().longExposure.toString(18)
+        );
 
         // close the short
         closeShort(bob, maturityTimeShort, shortAmount);
+        console2.log(
+            "test: longExposure",
+            hyperdrive.getPoolInfo().longExposure.toString(18)
+        );
 
         // longExposure should be 0
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
         assertApproxEqAbs(poolInfo.longExposure, 0, 1);
+        console2.log(
+            "test: longExposure",
+            hyperdrive.getPoolInfo().longExposure.toString(18)
+        );
 
         // idle should be equal to shareReserves
         uint256 expectedShareReserves = MockHyperdrive(address(hyperdrive))
@@ -448,6 +482,27 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             uint256 timeElapsed = POSITION_DURATION;
             uint256 tradeSize = 1_000_000e18;
             uint256 numTrades = 1;
+            open_close_short(
+                initialSharePrice,
+                variableInterest,
+                timeElapsed,
+                tradeSize,
+                numTrades
+            );
+        }
+        vm.revertTo(snapshotId);
+
+        // This test case was failing in fuzzing. It tests
+        // that when some shorts are closed via checkpoints
+        // and some closed via explicit calls to closeShort,
+        // it nets to zero.
+        snapshotId = vm.snapshot();
+        {
+            uint256 initialSharePrice = 0.5e18;
+            int256 variableInterest = 0.0e18;
+            uint256 timeElapsed = 8640001;
+            uint256 tradeSize = 6283765.441079100693164485e18;
+            uint256 numTrades = 5;
             open_close_short(
                 initialSharePrice,
                 variableInterest,

@@ -9,6 +9,10 @@ import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { SafeCast } from "./libraries/SafeCast.sol";
 import { YieldSpaceMath } from "./libraries/YieldSpaceMath.sol";
 
+import { Lib } from "../../test/utils/Lib.sol";
+
+import "forge-std/console2.sol";
+
 /// @author DELV
 /// @title HyperdriveShort
 /// @notice Implements the short accounting for Hyperdrive.
@@ -20,6 +24,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
     using FixedPointMath for int256;
     using SafeCast for uint256;
     using SafeCast for int256;
+    using Lib for *;
 
     /// @notice Opens a short position.
     /// @param _bondAmount The amount of bonds to short.
@@ -351,48 +356,67 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // trading profits that have accrued.
         _updateLiquidity(int256(_sharePayment - _shareReservesDelta));
 
+        {
+            // If there are withdrawal shares outstanding, we pay out the maximum
+            // amount of withdrawal shares. The proceeds owed to LPs when a long is
+            // closed is equivalent to short proceeds as LPs take the other side of
+            // every trade.
+            uint256 withdrawalSharesOutstanding = _totalSupply[
+                AssetId._WITHDRAWAL_SHARE_ASSET_ID
+            ] - _withdrawPool.readyToWithdraw;
+            if (withdrawalSharesOutstanding > 0) {
+                _applyWithdrawalProceeds(
+                    _sharePayment,
+                    withdrawalSharesOutstanding,
+                    _sharePrice
+                );
+            }
+        }
+
         // Calculate the change in longExposure
         {
             uint256 checkpointTime = _maturityTime - _positionDuration;
-            int128 longExposureDelta = HyperdriveMath
-                .calculateClosePositionExposure(
-                    _checkpoints[checkpointTime].longExposure,
-                    _bondAmount,
-                    _shareReservesDelta.mulDown(_sharePrice),
-                    _bondReservesDelta,
-                    _sharePayment.mulDown(_sharePrice),
+            int128 checkpointExposureBefore = int128(
+                _checkpoints[checkpointTime].longExposure
+            );
+
+            // If this is a checkpoint boundary or all the positions have been closed,
+            // then the long exposure is zero.
+            if (
+                (_bondReservesDelta == 0 && _shareReservesDelta == 0) ||
+                (_totalSupply[
+                    AssetId.encodeAssetId(
+                        AssetId.AssetIdPrefix.Long,
+                        _maturityTime
+                    )
+                ] ==
+                    0 &&
                     _totalSupply[
                         AssetId.encodeAssetId(
                             AssetId.AssetIdPrefix.Short,
                             _maturityTime
                         )
-                    ]
-                )
-                .toInt128();
+                    ] ==
+                    0)
+            ) {
+                _checkpoints[checkpointTime].longExposure = 0;
+            } else {
+                uint128 longExposureDelta = HyperdriveMath
+                    .calculateClosePositionExposure(
+                        _bondAmount,
+                        _shareReservesDelta.mulDown(_sharePrice),
+                        _bondReservesDelta,
+                        _sharePayment.mulDown(_sharePrice)
+                    )
+                    .toUint128();
 
-            // Closing a short increases the long exposure
-            int128 checkpointExposureBefore = int128(
-                _checkpoints[checkpointTime].longExposure
-            );
-            _checkpoints[checkpointTime].longExposure += longExposureDelta;
+                _checkpoints[checkpointTime].longExposure += int128(
+                    longExposureDelta
+                );
+            }
             _updateLongExposure(
                 checkpointExposureBefore,
                 _checkpoints[checkpointTime].longExposure
-            );
-        }
-
-        // If there are withdrawal shares outstanding, we pay out the maximum
-        // amount of withdrawal shares. The proceeds owed to LPs when a long is
-        // closed is equivalent to short proceeds as LPs take the other side of
-        // every trade.
-        uint256 withdrawalSharesOutstanding = _totalSupply[
-            AssetId._WITHDRAWAL_SHARE_ASSET_ID
-        ] - _withdrawPool.readyToWithdraw;
-        if (withdrawalSharesOutstanding > 0) {
-            _applyWithdrawalProceeds(
-                _sharePayment,
-                withdrawalSharesOutstanding,
-                _sharePrice
             );
         }
     }
