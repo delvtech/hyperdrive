@@ -1,5 +1,3 @@
-use std::cmp::min;
-
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
 
@@ -61,7 +59,7 @@ impl State {
             (base_amount, bond_amount)
         };
         if self.solvency(max_base_amount, max_bond_amount).is_some() {
-            return max_base_amount;
+            return max_base_amount.min(budget);
         }
 
         // Use Newton's method to iteratively approach a solution. We use pool's
@@ -90,7 +88,7 @@ impl State {
             // If the max base amount exceeds the budget, we know that the
             // entire budget can be consumed without running into solvency
             // constraints.
-            if max_base_amount > budget {
+            if max_base_amount >= budget {
                 return budget;
             }
 
@@ -153,7 +151,7 @@ impl State {
         let estimate_price = spot_price;
         let mut guess = self
             .get_solvency()
-            .mul_div_down(fixed!(2e18), self.share_price());
+            .mul_div_down(self.share_price(), fixed!(2e18));
         guess /= fixed!(1e18) / estimate_price
             + self.governance_fee() * self.curve_fee() * (fixed!(1e18) - spot_price)
             - fixed!(1e18)
@@ -179,8 +177,8 @@ impl State {
     /// In the solidity implementation, we calculate the delta in the exposure
     /// as:
     ///
-    /// ```
-    /// shareReservesDelta = _shareAmount - governanceCurveFee.divDown(_sharePrice)
+    /// ```solidity
+    /// shareReservesDelta = _shareAmount - governanceCurveFee.divDown(_sharePrice);
     /// uint128 longExposureDelta = (2 *
     ///     _bondProceeds -
     ///     _shareReservesDelta.mulDown(_sharePrice)).toUint128();
@@ -310,10 +308,7 @@ mod tests {
     use ethers::types::U256;
     use eyre::Result;
     use fixed_point_macros::uint256;
-    use hyperdrive_wrappers::wrappers::{
-        i_hyperdrive::{Fees, PoolConfig, PoolInfo},
-        mock_hyperdrive_math::MaxTradeParams,
-    };
+    use hyperdrive_wrappers::wrappers::mock_hyperdrive_math::MaxTradeParams;
     use rand::{thread_rng, Rng};
     use test_utils::{
         agent::Agent,

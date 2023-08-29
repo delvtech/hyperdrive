@@ -389,6 +389,7 @@ library HyperdriveMath {
         // The guess that we make is very important in determining how quickly
         // we converge to the solution.
         maxBaseAmount = calculateMaxLongGuess(_params, spotPrice);
+        maxBondAmount = calculateLongAmount(_params, maxBaseAmount, spotPrice);
         (uint256 s, bool isSolvent) = calculateSolvency(
             _params,
             maxBaseAmount,
@@ -406,11 +407,6 @@ library HyperdriveMath {
             // root by extending the fixed point math library to handle negative
             // numbers or even just using an if-statement to handle the negative
             // numbers.
-            maxBondAmount = calculateLongAmount(
-                _params,
-                maxBaseAmount,
-                spotPrice
-            );
             if (isSolvent) {
                 maxBaseAmount += s.divDown(
                     calculateSolvencyDerivative(
@@ -418,6 +414,11 @@ library HyperdriveMath {
                         maxBaseAmount,
                         spotPrice
                     )
+                );
+                maxBondAmount = calculateLongAmount(
+                    _params,
+                    maxBaseAmount,
+                    spotPrice
                 );
                 (s, isSolvent) = calculateSolvency(
                     _params,
@@ -458,7 +459,7 @@ library HyperdriveMath {
     ///      $x$ as:
     ///
     ///      $$
-    ///      x = \frac{2}{c} \cdot \frac{s_0}{
+    ///      x = \frac{c}{2} \cdot \frac{s_0}{
     ///              p_r^{-1} +
     ///              \phi_{g} \cdot \phi_{c} \cdot \left( 1 - p \right) -
     ///              1 -
@@ -479,7 +480,7 @@ library HyperdriveMath {
         uint256 estimatePrice = _spotPrice.mulDown(0.9e18);
         uint256 guess = (_params.shareReserves -
             _params.longExposure.divDown(_params.sharePrice) -
-            _params.minimumShareReserves).mulDivDown(2e18, _params.sharePrice);
+            _params.minimumShareReserves).mulDivDown(_params.sharePrice, 2e18);
         guess = guess.divDown(
             ONE.divDown(estimatePrice) +
                 _params.governanceFee.mulDown(_params.curveFee).mulDown(
