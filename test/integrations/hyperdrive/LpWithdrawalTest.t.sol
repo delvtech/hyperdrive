@@ -47,7 +47,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         uint256 basePaid,
         int256 preTradingVariableRate
     ) external {
-        uint256 apr = 0.02e18;
+        uint256 apr = 0.05e18;
         uint256 contribution = 500_000_000e18;
         uint256 lpShares = initialize(alice, apr, contribution);
 
@@ -137,7 +137,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         uint256 basePaid,
         int256 variableRate
     ) external {
-        uint256 apr = 0.02e18;
+        uint256 apr = 0.05e18;
         uint256 contribution = 500_000_000e18;
         uint256 lpShares = initialize(alice, apr, contribution);
         contribution -= 2 * hyperdrive.getPoolConfig().minimumShareReserves;
@@ -211,7 +211,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         uint256 shortAmount,
         int256 preTradingVariableRate
     ) external {
-        uint256 apr = 0.02e18;
+        uint256 apr = 0.05e18;
         uint256 contribution = 500_000_000e18;
         uint256 lpShares = initialize(alice, apr, contribution);
 
@@ -274,7 +274,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         uint256 shortAmount,
         int256 variableRate
     ) external {
-        uint256 apr = 0.02e18;
+        uint256 apr = 0.05e18;
         uint256 contribution = 500_000_000e18;
         uint256 lpShares = initialize(alice, apr, contribution);
         contribution -= 2 * hyperdrive.getPoolConfig().minimumShareReserves;
@@ -360,7 +360,7 @@ contract LpWithdrawalTest is HyperdriveTest {
     ) external {
         // Set up the test parameters.
         TestLpWithdrawalParams memory testParams = TestLpWithdrawalParams({
-            fixedRate: 0.02e18,
+            fixedRate: 0.05e18,
             variableRate: 0,
             contribution: 500_000_000e18,
             longAmount: 0,
@@ -571,7 +571,7 @@ contract LpWithdrawalTest is HyperdriveTest {
     ) internal {
         // Set up the test parameters.
         TestLpWithdrawalParams memory testParams = TestLpWithdrawalParams({
-            fixedRate: 0.02e18,
+            fixedRate: 0.05e18,
             variableRate: 0,
             contribution: 500_000_000e18,
             longAmount: 0,
@@ -783,7 +783,7 @@ contract LpWithdrawalTest is HyperdriveTest {
     ) internal {
         // Set up the test parameters.
         TestLpWithdrawalParams memory testParams = TestLpWithdrawalParams({
-            fixedRate: 0.02e18,
+            fixedRate: 0.05e18,
             variableRate: 0,
             contribution: 500_000_000e18,
             longAmount: 0,
