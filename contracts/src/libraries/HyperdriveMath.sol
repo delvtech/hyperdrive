@@ -1,10 +1,6 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-// FIXME
-import { console2 as console } from "forge-std/console2.sol";
-import { Lib } from "test/utils/Lib.sol";
-
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { FixedPointMath, ONE } from "./FixedPointMath.sol";
 import { YieldSpaceMath } from "./YieldSpaceMath.sol";
@@ -17,9 +13,6 @@ import { SafeCast } from "./SafeCast.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 library HyperdriveMath {
-    // FIXME
-    using Lib for *;
-
     using FixedPointMath for uint256;
     using FixedPointMath for int256;
     using SafeCast for uint256;
@@ -441,8 +434,6 @@ library HyperdriveMath {
                     maxBaseAmount,
                     spotPrice
                 );
-                console.log("s = %s", s.toString(18));
-                console.log("calculateMaxLong: 7");
                 (s, isSolvent) = calculateSolvency(
                     _params,
                     _checkpointLongExposure,
@@ -450,19 +441,14 @@ library HyperdriveMath {
                     maxBondAmount,
                     spotPrice
                 );
-                console.log("calculateMaxLong: 8");
             } else {
-                console.log("calculateMaxLong: 9");
                 break;
             }
         }
-        console.log("calculateMaxLong: 10");
 
         return (maxBaseAmount, maxBondAmount);
     }
 
-    // FIXME: Update this based on negative checkpoint long exposure.
-    //
     /// @dev Gets a starting guess for the iterative process of finding the max
     ///      long.
     ///
@@ -501,7 +487,7 @@ library HyperdriveMath {
     ///      $$
     ///
     ///      We need to use a conservative estimate for the realized price, so
-    ///      we use the spot price $p$ discounted by $90\%$ as our estimate price.
+    ///      we use the spot price $p$ as our estimate price.
     /// @param _params The max long calculation parameters.
     /// @param _spotPrice The spot price of the pool.
     /// @return The starting guess for the iterative process of finding the max
@@ -513,10 +499,9 @@ library HyperdriveMath {
     ) internal pure returns (uint256) {
         uint256 estimatePrice = _spotPrice;
         uint256 checkpointExposure = uint256(-_checkpointLongExposure.min(0));
-        uint256 exposure = _params.longExposure;
         uint256 guess = (_params.shareReserves +
             checkpointExposure.divDown(_params.sharePrice) -
-            exposure.divDown(_params.sharePrice) -
+            _params.longExposure.divDown(_params.sharePrice) -
             _params.minimumShareReserves).mulDivDown(_params.sharePrice, 2e18);
         guess = guess.divDown(
             ONE.divDown(estimatePrice) +

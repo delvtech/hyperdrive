@@ -1,5 +1,6 @@
+use ethers::types::I256;
 use fixed_point::FixedPoint;
-use fixed_point_macros::fixed;
+use fixed_point_macros::{fixed, int256};
 
 use super::State;
 use crate::yield_space::{Asset, State as YieldSpaceState};
@@ -31,7 +32,8 @@ impl State {
     ///                \right) \right)^{1 - t_s}
     ///            \right)^{\tfrac{1}{1 - t_s}}
     /// $$
-    pub fn get_long_amount(&self, base_amount: FixedPoint) -> FixedPoint {
+    pub fn get_long_amount<F: Into<FixedPoint>>(&self, base_amount: F) -> FixedPoint {
+        let base_amount = base_amount.into();
         let long_amount = YieldSpaceState::from(self).get_out_for_in(
             Asset::Shares(base_amount / self.share_price()),
             self.time_stretch(),
@@ -44,11 +46,15 @@ impl State {
     /// We start by calculating the long that brings the pool's spot price to 1.
     /// If we are solvent at this point, then we're done. Otherwise, we approach
     /// the max long iteratively using Newton's method.
-    pub fn get_max_long(
+    pub fn get_max_long<F: Into<FixedPoint>, I: Into<I256>>(
         &self,
-        budget: FixedPoint,
+        budget: F,
+        checkpoint_exposure: I,
         maybe_max_iterations: Option<usize>,
     ) -> FixedPoint {
+        let budget = budget.into();
+        let checkpoint_exposure = checkpoint_exposure.into();
+
         // Get the maximum long that brings the spot price to 1. If the pool is
         // solvent after opening this long, then we're done.
         let (mut max_base_amount, max_bond_amount) = {
@@ -58,7 +64,10 @@ impl State {
             bond_amount -= self.long_curve_fee(base_amount);
             (base_amount, bond_amount)
         };
-        if self.solvency(max_base_amount, max_bond_amount).is_some() {
+        if self
+            .solvency(max_base_amount, max_bond_amount, checkpoint_exposure)
+            .is_some()
+        {
             return max_base_amount.min(budget);
         }
 
@@ -79,8 +88,12 @@ impl State {
         //
         // The guess that we make is very important in determining how quickly
         // we converge to the solution.
-        max_base_amount = self.max_long_guess();
-        let mut solvency = self.solvency(max_base_amount, self.get_long_amount(max_base_amount));
+        max_base_amount = self.max_long_guess(checkpoint_exposure);
+        let mut solvency = self.solvency(
+            max_base_amount,
+            self.get_long_amount(max_base_amount),
+            checkpoint_exposure,
+        );
         if solvency.is_none() {
             panic!("Initial guess in `get_max_long` is insolvent.");
         }
@@ -103,7 +116,11 @@ impl State {
             // numbers.
             if let Some(s) = solvency {
                 max_base_amount = max_base_amount + s / self.solvency_derivative(max_base_amount);
-                solvency = self.solvency(max_base_amount, self.get_long_amount(max_base_amount));
+                solvency = self.solvency(
+                    max_base_amount,
+                    self.get_long_amount(max_base_amount),
+                    checkpoint_exposure,
+                );
             } else {
                 break;
             }
@@ -112,31 +129,36 @@ impl State {
         max_base_amount
     }
 
-    /// Gets a starting guess for the iterative process of finding the max long.
+    /// Gets a starting guess for the iterative process of finding the max
+    /// long.
     ///
-    /// To calculate our guess, we assume an unrealistically good realized price
-    /// $p_r$ for closing the long. This allows us to approximate $y(x)$ as
-    /// $y(x) \approx p_r^{-1} \cdot x - c(x)$. Plugging this into our solvency
-    /// function $s(x)$, we can calculate the share reserves and exposure after
-    /// opening a long with $x$ base as:
+    /// To calculate our guess, we assume an unrealistically good realized
+    /// price $p_r$ for closing the long. This allows us to approximate
+    /// $y(x)$ as $y(x) \approx p_r^{-1} \cdot x - c(x)$. Plugging this
+    /// into our solvency function $s(x)$, we can calculate the share
+    /// reserves and exposure after opening a long with $x$ base as:
     ///
     /// \begin{aligned}
     /// z(x) &= z_0 + \tfrac{x - g(x)}{c} - z_{min} \\
-    /// e(x) &= e_0 + 2 \cdot y(x) - x + g(x) \\
-    ///      &= e_0 + 2 \cdot p_r^{-1} \cdot x - 2 \cdot c(x) - x + g(x)
+    /// e(x) &= e_0 + min(exposure_{checkpoint}, 0) + 2 \cdot y(x) - x + g(x) \\
+    ///      &= e_0 + min(exposure_{checkpoint}, 0) + 2 \cdot p_r^{-1} \cdot x -
+    ///             2 \cdot c(x) - x + g(x)
     /// \end{aligned}
     ///
-    /// This gives us an approximate ending solvency of:
+    /// We debit and negative checkpoint exposure from $e_0$ since the
+    /// global exposure doesn't take into account the negative exposure
+    /// from unnetted shorts in the checkpoint. These forumulas allow us
+    /// to calculate the approximate ending solvency of:
     ///
     /// $$
     /// s(x) \approx z(x) - \tfrac{e(x)}{c} - z_{min}
     /// $$
     ///
-    /// If we let the initial solvency be given by $s_0$, we can solve for $x$
-    /// as:
+    /// If we let the initial solvency be given by $s_0$, we can solve for
+    /// $x$ as:
     ///
     /// $$
-    /// x = \frac{2}{c} \cdot \frac{s_0}{
+    /// x = \frac{c}{2} \cdot \frac{s_0 + \tfrac{min(exposure_{checkpoint}, 0)}{c}}{
     ///         p_r^{-1} +
     ///         \phi_{g} \cdot \phi_{c} \cdot \left( 1 - p \right) -
     ///         1 -
@@ -144,14 +166,14 @@ impl State {
     ///     }
     /// $$
     ///
-    /// We need to use a conservative estimate for the realized price, so we use
-    /// the spot price $p$ discounted by $90\%$ as our estimate price.
-    fn max_long_guess(&self) -> FixedPoint {
-        let spot_price = self.get_spot_price() * fixed!(0.9e18);
+    /// We need to use a conservative estimate for the realized price, so
+    /// we use the spot price $p$ as our estimate price.
+    fn max_long_guess(&self, checkpoint_exposure: I256) -> FixedPoint {
+        let spot_price = self.get_spot_price();
         let estimate_price = spot_price;
-        let mut guess = self
-            .get_solvency()
-            .mul_div_down(self.share_price(), fixed!(2e18));
+        let mut guess = self.get_solvency()
+            + FixedPoint::from(-checkpoint_exposure.min(int256!(0))) / self.share_price();
+        guess = guess.mul_div_down(self.share_price(), fixed!(2e18));
         guess /= fixed!(1e18) / estimate_price
             + self.governance_fee() * self.curve_fee() * (fixed!(1e18) - spot_price)
             - fixed!(1e18)
@@ -162,10 +184,12 @@ impl State {
     /// Gets the solvency of the pool $S(x)$ after a long is opened with a base
     /// amount $x$.
     ///
-    /// The pool's solvency is calculated as:
+    /// Since longs can net out with shorts in this checkpoint, we decrease
+    /// the global exposure variable by any negative long exposure we have
+    /// in the checkpoint. The pool's solvency is calculated as:
     ///
     /// $$
-    /// s = z - \tfrac{exposure}{c} - z_{min}
+    /// s = z - \tfrac{exposure + min(exposure_{checkpoint}, 0)}{c} - z_{min}
     /// $$
     ///
     /// When a long is opened, the share reserves $z$ increase by:
@@ -194,21 +218,33 @@ impl State {
     ///
     /// $$
     /// S(x) = \left( z + \Delta z \right) - \left(
-    ///            \tfrac{exposure + \Delta exposure}{c}
+    ///            \tfrac{exposure + min(exposure_{checkpoint}, 0) + \Delta exposure}{c}
     ///        \right) - z_{min}
     /// $$
     ///
     /// It's possible that the pool is insolvent after opening a long. In this
     /// case, we return `None` since the fixed point library can't represent
     /// negative numbers.
-    fn solvency(&self, base_amount: FixedPoint, bond_amount: FixedPoint) -> Option<FixedPoint> {
+    fn solvency(
+        &self,
+        base_amount: FixedPoint,
+        bond_amount: FixedPoint,
+        checkpoint_exposure: I256,
+    ) -> Option<FixedPoint> {
         let governance_fee = self.long_governance_fee(base_amount);
         let share_reserves = self.share_reserves() + base_amount / self.share_price()
             - governance_fee / self.share_price();
         let exposure =
             self.long_exposure() + fixed!(2e18) * bond_amount - base_amount + governance_fee;
-        if share_reserves >= exposure / self.share_price() + self.minimum_share_reserves() {
-            Some(share_reserves - exposure / self.share_price() - self.minimum_share_reserves())
+        let checkpoint_exposure = FixedPoint::from(-checkpoint_exposure.min(int256!(0)));
+        if share_reserves + checkpoint_exposure / self.share_price()
+            >= exposure / self.share_price() + self.minimum_share_reserves()
+        {
+            Some(
+                share_reserves + checkpoint_exposure / self.share_price()
+                    - exposure / self.share_price()
+                    - self.minimum_share_reserves(),
+            )
         } else {
             None
         }
@@ -334,7 +370,17 @@ mod tests {
         let mut rng = thread_rng();
         for _ in 0..*FAST_FUZZ_RUNS {
             let state = rng.gen::<State>();
-            let actual = panic::catch_unwind(|| state.get_max_long(U256::MAX.into(), None));
+            let checkpoint_exposure = {
+                let value = rng.gen_range(fixed!(0e18)..=FixedPoint::from(I256::MAX));
+                let sign = rng.gen::<bool>();
+                if sign {
+                    -I256::from(value)
+                } else {
+                    I256::from(value)
+                }
+            };
+            let actual =
+                panic::catch_unwind(|| state.get_max_long(U256::MAX, checkpoint_exposure, None));
             match mock
                 .calculate_max_long(
                     MaxTradeParams {
@@ -349,6 +395,7 @@ mod tests {
                         curve_fee: state.config.fees.curve,
                         governance_fee: state.config.fees.governance,
                     },
+                    checkpoint_exposure,
                     uint256!(7),
                 )
                 .call()
