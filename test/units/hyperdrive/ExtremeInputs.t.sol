@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
+
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
@@ -59,15 +62,19 @@ contract ExtremeInputs is HyperdriveTest {
         initialize(alice, 0.05e18, 500_000_000e18);
 
         // Calculate amount of base
+        console.log("test_max_open_short_open_long: 1");
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
+        console.log("test_max_open_short_open_long: 2");
 
         // Max amount of bonds to short
         uint256 bondAmount = hyperdrive.calculateMaxShort();
+        console.log("test_max_open_short_open_long: 3");
 
         // Open short with max base amount
         uint256 aprBefore = hyperdrive.calculateAPRFromReserves();
         openShort(bob, bondAmount);
         uint256 aprAfter = hyperdrive.calculateAPRFromReserves();
+        console.log("test_max_open_short_open_long: 4");
 
         // Ensure the share reserves are approximately equal to the minimum
         // share reserves and that the apr increased.
@@ -79,6 +86,7 @@ contract ExtremeInputs is HyperdriveTest {
             "shareReserves should be the minimum share reserves"
         );
         assertGt(aprAfter, aprBefore);
+        console.log("test_max_open_short_open_long: 5");
 
         // Ensure that the bond reserves were updated to have the correct APR.
         assertApproxEqAbs(
@@ -92,16 +100,27 @@ contract ExtremeInputs is HyperdriveTest {
             ),
             5
         );
+        console.log("test_max_open_short_open_long: 6");
 
         // Calculate amount of base
         poolInfoBefore = hyperdrive.getPoolInfo();
+        console.log("test_max_open_short_open_long: 7");
+        console.log(
+            "test_max_open_short_open_long: checkpoint exposure: %s",
+            hyperdrive
+                .getCheckpoint(hyperdrive.latestCheckpoint())
+                .longExposure
+                .toString(18)
+        );
 
         // Max base amount
         uint256 baseAmountLong = hyperdrive.calculateMaxLong();
+        console.log("test_max_open_short_open_long: 8");
 
         // Open long with max base amount
         (, uint256 bondAmountLong) = openLong(bob, baseAmountLong);
         poolInfoAfter = hyperdrive.getPoolInfo();
+        console.log("test_max_open_short_open_long: 9");
 
         // Ensure that the bond reserves were updated to have the correct APR.
         assertApproxEqAbs(
@@ -115,6 +134,7 @@ contract ExtremeInputs is HyperdriveTest {
             ),
             5
         );
+        console.log("test_max_open_short_open_long: 10");
     }
 
     function test_max_open_short() external {

@@ -97,6 +97,9 @@ library HyperdriveUtils {
         IHyperdrive _hyperdrive,
         uint256 _maxIterations
     ) internal view returns (uint256 baseAmount) {
+        IHyperdrive.Checkpoint memory checkpoint = _hyperdrive.getCheckpoint(
+            _hyperdrive.latestCheckpoint()
+        );
         IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
         IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
         (baseAmount, ) = HyperdriveMath.calculateMaxLong(
@@ -112,6 +115,7 @@ library HyperdriveUtils {
                 curveFee: poolConfig.fees.curve,
                 governanceFee: poolConfig.fees.governance
             }),
+            checkpoint.longExposure,
             _maxIterations
         );
         return baseAmount;

@@ -1,6 +1,10 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
+import { Lib } from "test/utils/Lib.sol";
+
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { FixedPointMath, ONE } from "./FixedPointMath.sol";
 import { YieldSpaceMath } from "./YieldSpaceMath.sol";
@@ -13,7 +17,11 @@ import { SafeCast } from "./SafeCast.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 library HyperdriveMath {
+    // FIXME
+    using Lib for *;
+
     using FixedPointMath for uint256;
+    using FixedPointMath for int256;
     using SafeCast for uint256;
 
     /// @dev Calculates the spot price without slippage of bonds in terms of base.
@@ -328,6 +336,12 @@ library HyperdriveMath {
         uint256 governanceFee;
     }
 
+    // FIXME: I don't think that this correctly handles the case where the
+    // checkpoint starts with negative exposure.
+    //
+    // FIXME: Instead of exposure increasing immediately, we should first eat
+    // through the negative checkpoint exposure.
+    //
     /// @dev Gets the max long that can be opened given a budget.
     ///
     ///      We start by calculating the long that brings the pool's spot price
@@ -340,6 +354,7 @@ library HyperdriveMath {
     /// @return maxBondAmount The maximum bond amount.
     function calculateMaxLong(
         MaxTradeParams memory _params,
+        int256 _checkpointLongExposure,
         uint256 _maxIterations
     ) internal pure returns (uint256 maxBaseAmount, uint256 maxBondAmount) {
         // Get the maximum long that brings the spot price to 1. If the pool is
@@ -362,6 +377,7 @@ library HyperdriveMath {
             maxBaseAmount = maxShareAmount.mulDown(_params.sharePrice);
             (, bool isSolvent_) = calculateSolvency(
                 _params,
+                _checkpointLongExposure,
                 maxShareAmount.mulDown(_params.sharePrice),
                 maxBondAmount,
                 spotPrice
@@ -388,10 +404,15 @@ library HyperdriveMath {
         //
         // The guess that we make is very important in determining how quickly
         // we converge to the solution.
-        maxBaseAmount = calculateMaxLongGuess(_params, spotPrice);
+        maxBaseAmount = calculateMaxLongGuess(
+            _params,
+            _checkpointLongExposure,
+            spotPrice
+        );
         maxBondAmount = calculateLongAmount(_params, maxBaseAmount, spotPrice);
         (uint256 s, bool isSolvent) = calculateSolvency(
             _params,
+            _checkpointLongExposure,
             maxBaseAmount,
             maxBondAmount,
             spotPrice
@@ -420,20 +441,28 @@ library HyperdriveMath {
                     maxBaseAmount,
                     spotPrice
                 );
+                console.log("s = %s", s.toString(18));
+                console.log("calculateMaxLong: 7");
                 (s, isSolvent) = calculateSolvency(
                     _params,
+                    _checkpointLongExposure,
                     maxBaseAmount,
                     maxBondAmount,
                     spotPrice
                 );
+                console.log("calculateMaxLong: 8");
             } else {
+                console.log("calculateMaxLong: 9");
                 break;
             }
         }
+        console.log("calculateMaxLong: 10");
 
         return (maxBaseAmount, maxBondAmount);
     }
 
+    // FIXME: Update this based on negative checkpoint long exposure.
+    //
     /// @dev Gets a starting guess for the iterative process of finding the max
     ///      long.
     ///
@@ -445,11 +474,15 @@ library HyperdriveMath {
     ///
     ///      \begin{aligned}
     ///      z(x) &= z_0 + \tfrac{x - g(x)}{c} - z_{min} \\
-    ///      e(x) &= e_0 + 2 \cdot y(x) - x + g(x) \\
-    ///           &= e_0 + 2 \cdot p_r^{-1} \cdot x - 2 \cdot c(x) - x + g(x)
+    ///      e(x) &= e_0 + min(exposure_{c}, 0) + 2 \cdot y(x) - x + g(x) \\
+    ///           &= e_0 + min(exposure_{c}, 0) + 2 \cdot p_r^{-1} \cdot x -
+    ///                  2 \cdot c(x) - x + g(x)
     ///      \end{aligned}
     ///
-    ///      This gives us an approximate ending solvency of:
+    ///      We debit and negative checkpoint exposure from $e_0$ since the
+    ///      global exposure doesn't take into account the negative exposure
+    ///      from unnetted shorts in the checkpoint. These forumulas allow us
+    ///      to calculate the approximate ending solvency of:
     ///
     ///      $$
     ///      s(x) \approx z(x) - \tfrac{e(x)}{c} - z_{min}
@@ -459,7 +492,7 @@ library HyperdriveMath {
     ///      $x$ as:
     ///
     ///      $$
-    ///      x = \frac{c}{2} \cdot \frac{s_0}{
+    ///      x = \frac{c}{2} \cdot \frac{s_0 + min(exposure_{c}, 0)}{
     ///              p_r^{-1} +
     ///              \phi_{g} \cdot \phi_{c} \cdot \left( 1 - p \right) -
     ///              1 -
@@ -475,11 +508,15 @@ library HyperdriveMath {
     ///         long.
     function calculateMaxLongGuess(
         MaxTradeParams memory _params,
+        int256 _checkpointLongExposure,
         uint256 _spotPrice
     ) internal pure returns (uint256) {
-        uint256 estimatePrice = _spotPrice.mulDown(0.9e18);
-        uint256 guess = (_params.shareReserves -
-            _params.longExposure.divDown(_params.sharePrice) -
+        uint256 estimatePrice = _spotPrice;
+        uint256 checkpointExposure = uint256(-_checkpointLongExposure.min(0));
+        uint256 exposure = _params.longExposure;
+        uint256 guess = (_params.shareReserves +
+            checkpointExposure.divDown(_params.sharePrice) -
+            exposure.divDown(_params.sharePrice) -
             _params.minimumShareReserves).mulDivDown(_params.sharePrice, 2e18);
         guess = guess.divDown(
             ONE.divDown(estimatePrice) +
@@ -495,10 +532,12 @@ library HyperdriveMath {
     /// @dev Gets the solvency of the pool $S(x)$ after a long is opened with a
     ///      base amount $x$.
     ///
-    ///      The pool's solvency is calculated as:
+    ///      Since longs can net out with shorts in this checkpoint, we decrease
+    ///      the global exposure variable by any negative long exposure we have
+    ///      in the checkpoint. The pool's solvency is calculated as:
     ///
     ///      $$
-    ///      s = z - \tfrac{exposure}{c} - z_{min}
+    ///      s = z - \tfrac{exposure + min(exposure_{c}, 0)}{c} - z_{min}
     ///      $$
     ///
     ///      When a long is opened, the share reserves $z$ increase by:
@@ -527,7 +566,7 @@ library HyperdriveMath {
     ///
     ///      $$
     ///      S(x) = \left( z + \Delta z \right) - \left(
-    ///                 \tfrac{exposure + \Delta exposure}{c}
+    ///                 \tfrac{exposure + min(exposure_{c}, 0) + \Delta exposure}{c}
     ///             \right) - z_{min}
     ///      $$
     ///
@@ -543,6 +582,7 @@ library HyperdriveMath {
     ///         if false.
     function calculateSolvency(
         MaxTradeParams memory _params,
+        int256 _checkpointLongExposure,
         uint256 _baseAmount,
         uint256 _bondAmount,
         uint256 _spotPrice
@@ -561,12 +601,14 @@ library HyperdriveMath {
             _bondAmount -
             _baseAmount +
             governanceFee;
+        uint256 checkpointExposure = uint256(-_checkpointLongExposure.min(0));
         if (
-            shareReserves >=
+            shareReserves + checkpointExposure.divDown(_params.sharePrice) >=
             exposure.divDown(_params.sharePrice) + _params.minimumShareReserves
         ) {
             return (
-                shareReserves -
+                shareReserves +
+                    checkpointExposure.divDown(_params.sharePrice) -
                     exposure.divDown(_params.sharePrice) -
                     _params.minimumShareReserves,
                 true

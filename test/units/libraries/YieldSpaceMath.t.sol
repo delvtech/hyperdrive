@@ -175,6 +175,7 @@ contract YieldSpaceMathTest is Test {
                             curveFee: 0,
                             governanceFee: 0
                         }),
+                        0,
                         15
                     );
                     tradeSize = tradeSize.normalizeToRange(
