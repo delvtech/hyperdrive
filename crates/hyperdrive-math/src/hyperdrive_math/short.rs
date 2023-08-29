@@ -5,6 +5,37 @@ use super::State;
 use crate::yield_space::{Asset, State as YieldSpaceState};
 
 impl State {
+    /// Gets the minimum price that the pool can support.
+    ///
+    /// YieldSpace intersects the y-axis with a finite slope, so there is a
+    /// minimum price that the pool can support. This is the price at which the
+    /// share reserves are equal to the minimum share reserves.
+    ///
+    /// We can solve for the bond reserves $y_{max}$ implied by the share reserves
+    /// being equal to $z_{min}$ using the current k value:
+    ///
+    /// $$
+    /// k = \tfrac{c}{\mu} \cdot \left( \mu \cdot z_{min} \right)^{1 - t_s} + y_{max}^{1 - t_s} \\
+    /// \implies \\
+    /// y_{max} = \left( k - \tfrac{c}{\mu} \cdot \left( \mu \cdot z_{min} \right)^{1 - t_s} \right)^{\tfrac{1}{1 - t_s}}
+    /// $$
+    ///
+    /// From there, we can calculate the spot price as normal as:
+    ///
+    /// $$
+    /// p = \left( \tfrac{\mu \cdot z_{min}}{y_{max}} \right)^{t_s}
+    /// $$
+    pub fn get_min_price(&self) -> FixedPoint {
+        let k = YieldSpaceState::from(self).k(self.time_stretch());
+        let y_max = (k
+            - (self.share_price() / self.initial_share_price())
+                * (self.initial_share_price() * self.minimum_share_reserves())
+                    .pow(fixed!(1e18) - self.time_stretch()))
+        .pow(fixed!(1e18).div_up(fixed!(1e18) - self.time_stretch()));
+        ((self.initial_share_price() * self.minimum_share_reserves()) / y_max)
+            .pow(self.time_stretch())
+    }
+
     /// Gets the max short that can be opened with the given budget.
     ///
     /// We start by finding the largest possible short (irrespective of budget),
@@ -15,13 +46,17 @@ impl State {
     /// on the realized price that the short will pay. This is used to help the
     /// algorithm converge faster in real world situations. If this is `None`,
     /// then we'll use the theoretical worst case realized price.
-    pub fn get_max_short(
+    pub fn get_max_short<F1: Into<FixedPoint>, F2: Into<FixedPoint>>(
         &self,
-        budget: FixedPoint,
-        open_share_price: FixedPoint,
-        maybe_conservative_price: Option<FixedPoint>,
+        budget: F1,
+        open_share_price: F2,
+        maybe_conservative_price: Option<FixedPoint>, // TODO: Is there a nice way of abstracting the inner type?
         maybe_max_iterations: Option<usize>,
     ) -> FixedPoint {
+        let budget = budget.into();
+        let open_share_price = open_share_price.into();
+        let maybe_conservative_price = maybe_conservative_price.map(|x| x.into());
+
         // If the budget is zero, then we return early.
         if budget == fixed!(0) {
             return fixed!(0);
@@ -83,37 +118,6 @@ impl State {
         }
 
         max_short_bonds
-    }
-
-    /// Gets the minimum price that the pool can support.
-    ///
-    /// YieldSpace intersects the y-axis with a finite slope, so there is a
-    /// minimum price that the pool can support. This is the price at which the
-    /// share reserves are equal to the minimum share reserves.
-    ///
-    /// We can solve for the bond reserves $y_{max}$ implied by the share reserves
-    /// being equal to $z_{min}$ using the current k value:
-    ///
-    /// $$
-    /// k = \tfrac{c}{\mu} \cdot \left( \mu \cdot z_{min} \right)^{1 - t_s} + y_{max}^{1 - t_s} \\
-    /// \implies \\
-    /// y_{max} = \left( k - \tfrac{c}{\mu} \cdot \left( \mu \cdot z_{min} \right)^{1 - t_s} \right)^{\tfrac{1}{1 - t_s}}
-    /// $$
-    ///
-    /// From there, we can calculate the spot price as normal as:
-    ///
-    /// $$
-    /// p = \left( \tfrac{\mu \cdot z_{min}}{y_{max}} \right)^{t_s}
-    /// $$
-    pub fn get_min_price(&self) -> FixedPoint {
-        let k = YieldSpaceState::from(self).k(self.time_stretch());
-        let y_max = (k
-            - (self.share_price() / self.initial_share_price())
-                * (self.initial_share_price() * self.minimum_share_reserves())
-                    .pow(fixed!(1e18) - self.time_stretch()))
-        .pow(fixed!(1e18).div_up(fixed!(1e18) - self.time_stretch()));
-        ((self.initial_share_price() * self.minimum_share_reserves()) / y_max)
-            .pow(self.time_stretch())
     }
 
     /// Gets the maximum short that the pool can support. This doesn't take into
@@ -352,9 +356,8 @@ mod tests {
         let mut rng = thread_rng();
         for _ in 0..*FAST_FUZZ_RUNS {
             let state = rng.gen::<State>();
-            let actual = panic::catch_unwind(|| {
-                state.get_max_short(U256::MAX.into(), fixed!(0), None, None)
-            });
+            let actual =
+                panic::catch_unwind(|| state.get_max_short(U256::MAX, fixed!(0), None, None));
             match chain
                 .mock_hyperdrive_math()
                 .calculate_max_short(MaxTradeParams {
@@ -431,8 +434,7 @@ mod tests {
             } = alice
                 .get_checkpoint(state.to_checkpoint(alice.now().await?))
                 .await?;
-            let global_max_short =
-                state.get_max_short(U256::MAX.into(), open_share_price.into(), None, None);
+            let global_max_short = state.get_max_short(U256::MAX, open_share_price, None, None);
 
             // Bob opens a max short position. We allow for a very small amount
             // of slippage to account for interest accrual between the time the

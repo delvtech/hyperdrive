@@ -54,6 +54,8 @@ pub struct Agent<M, R: Rng + SeedableRng> {
     base: ERC20Mintable<M>,
     config: PoolConfig,
     wallet: Wallet,
+    // TODO: It would probably be better to store an Arc<R> here so that all of
+    // the agents reference the same Rng.
     rng: R,
     seed: u64,
 }
@@ -808,7 +810,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
         maybe_slippage_tolerance: Option<FixedPoint>,
     ) -> Result<FixedPoint> {
         let budget =
-            self.wallet.base * (fixed!(1e18) - maybe_slippage_tolerance.unwrap_or_default());
+            self.wallet.base * (fixed!(1e18) - maybe_slippage_tolerance.unwrap_or(fixed!(0.01e18)));
 
         let state = self.get_state().await?;
         let Checkpoint {
@@ -838,12 +840,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
             spot_price * (fixed!(1e18) - weight) + min_price * weight
         };
 
-        Ok(state.get_max_short(
-            budget,
-            open_share_price.into(),
-            Some(conservative_price),
-            None,
-        ))
+        Ok(state.get_max_short(budget, open_share_price, Some(conservative_price), None))
     }
 
     // TODO: We'll need to implement helpers that give us the maximum trade

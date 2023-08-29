@@ -4,6 +4,11 @@ name = "hyperdrive-math"
 version = "0.1.0"
 edition = "2021"
 
+[[test]]
+
+name = "integration-tests"
+path = "tests/integration_tests.rs"
+
 [dependencies]
 
 # External dependencies
