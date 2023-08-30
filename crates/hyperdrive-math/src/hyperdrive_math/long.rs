@@ -126,7 +126,7 @@ impl State {
                 if maybe_derivative.is_none() {
                     break;
                 }
-                max_base_amount = max_base_amount + s / maybe_derivative.unwrap();
+                max_base_amount += s / maybe_derivative.unwrap();
                 solvency = self.solvency(
                     max_base_amount,
                     self.get_long_amount(max_base_amount),
@@ -279,18 +279,12 @@ impl State {
     /// domain, which allows us to use the fixed point library.
     fn solvency_derivative(&self, base_amount: FixedPoint) -> Option<FixedPoint> {
         let maybe_derivative = self.long_amount_derivative(base_amount);
-        if let Some(derivative) = maybe_derivative {
-            Some(
-                (derivative
-                    + self.governance_fee()
-                        * self.curve_fee()
-                        * (fixed!(1e18) - self.get_spot_price())
-                    - fixed!(1e18))
-                .mul_div_down(fixed!(2e18), self.share_price()),
-            )
-        } else {
-            None
-        }
+        maybe_derivative.map(|derivative| {
+            (derivative
+                + self.governance_fee() * self.curve_fee() * (fixed!(1e18) - self.get_spot_price())
+                - fixed!(1e18))
+            .mul_div_down(fixed!(2e18), self.share_price())
+        })
     }
 
     /// Gets the derivative of [long_amount](long_amount) with respect to the

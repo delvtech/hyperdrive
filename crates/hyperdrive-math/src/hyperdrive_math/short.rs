@@ -55,7 +55,6 @@ impl State {
     ) -> FixedPoint {
         let budget = budget.into();
         let open_share_price = open_share_price.into();
-        let maybe_conservative_price = maybe_conservative_price.map(|x| x.into());
 
         // If the budget is zero, then we return early.
         if budget == fixed!(0) {
