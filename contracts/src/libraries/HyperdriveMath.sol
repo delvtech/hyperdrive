@@ -89,12 +89,11 @@ library HyperdriveMath {
     ) internal pure returns (uint256 bondReserves) {
         // NOTE: Using divDown to convert to fixed point format.
         uint256 t = _positionDuration.divDown(365 days);
-        uint256 tau = FixedPointMath.ONE_18.mulDown(_timeStretch);
         // mu * z * (1 + apr * t) ** (1 / tau)
         return
             _initialSharePrice.mulDown(_shareReserves).mulDown(
                 (FixedPointMath.ONE_18 + _apr.mulDown(t)).pow(
-                    FixedPointMath.ONE_18.divUp(tau)
+                    FixedPointMath.ONE_18.divUp(_timeStretch)
                 )
             );
     }
