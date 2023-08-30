@@ -219,6 +219,60 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
 
     /// Helpers ///
 
+    /// @dev Calculates the checkpoint exposure when a position is closed
+    /// @param _bondAmount The amount of bonds that the user is closing.
+    /// @param _shareReservesDelta The amount of shares that the reserves will change by.
+    /// @param _bondReservesDelta The amount of bonds that the reserves will change by.
+    /// @param _shareUserDelta The amount of shares that the user will receive (long) or pay (short).
+    /// @param _maturityTime The maturity time of the position being closed.
+    /// @param _sharePrice The current share price.
+    /// @param _isLong True if the position being closed is long.
+    function _updateCheckpointLongExposureOnClose(
+        uint256 _bondAmount,
+        uint256 _shareReservesDelta,
+        uint256 _bondReservesDelta,
+        uint256 _shareUserDelta,
+        uint256 _maturityTime,
+        uint256 _sharePrice,
+        bool _isLong
+    ) internal {
+        uint256 checkpointTime = _maturityTime - _positionDuration;
+        uint256 checkpointLongs = _totalSupply[
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _maturityTime)
+        ];
+        uint256 checkpointShorts = _totalSupply[
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _maturityTime)
+        ];
+
+        // If this is a checkpoint boundary or all the positions have been closed,
+        // then the long exposure is zero.
+        if (
+            (_bondReservesDelta == 0 && _shareReservesDelta == 0) ||
+            (checkpointLongs == 0 && checkpointShorts == 0)
+        ) {
+            _checkpoints[checkpointTime].longExposure = 0;
+        } else {
+            // The long exposure delta is flat + curve amount + the bonds the user is closing:
+            // (dz_user*c - dz*c) + (dy - dz*c) + dy_user
+            // = dz_user*c + dy - 2*dz*c + dy_user
+            int128 delta = int128(
+                (_shareUserDelta.mulDown(_sharePrice) +
+                    _bondReservesDelta -
+                    2 *
+                    _shareReservesDelta.mulDown(_sharePrice) +
+                    _bondAmount).toUint128()
+            );
+
+            // If the position being closed is long, then the long exposure decreases
+            // by the delta. If it's short, then the long exposure increases by the delta.
+            if (_isLong) {
+                _checkpoints[checkpointTime].longExposure -= delta;
+            } else {
+                _checkpoints[checkpointTime].longExposure += delta;
+            }
+        }
+    }
+
     /// @dev Updates the global long exposure.
     /// @param _before The long exposure before the update.
     /// @param _after The long exposure after the update.

@@ -283,28 +283,6 @@ library HyperdriveMath {
         }
     }
 
-    /// @dev Calculates the change in exposure after closing a position.
-    /// @param _bondAmount The amount of bonds that the user is closing.
-    /// @param _baseReservesDelta The amount of base that the reserves will change by.
-    /// @param _bondReservesDelta The amount of bonds that the reserves will change by.
-    /// @param _baseUserDelta The amount of base that the user will receive (long) or pay (short).
-    /// @return positionExposureDelta The change in exposure after closing a position.
-    function calculateClosePositionExposure(
-        uint256 _bondAmount,
-        uint256 _baseReservesDelta,
-        uint256 _bondReservesDelta,
-        uint256 _baseUserDelta
-    ) internal pure returns (uint256) {
-        uint256 flatPlusCurveDelta = _baseUserDelta -
-            _baseReservesDelta +
-            _bondReservesDelta -
-            _baseReservesDelta;
-
-        // Reduce the exposure (long) or assets (short) by the amount of matured positions (flat)
-        // and by the unmatured positions (curve) plus the _bondAmount
-        return flatPlusCurveDelta + _bondAmount;
-    }
-
     struct MaxTradeParams {
         uint256 shareReserves;
         uint256 bondReserves;

@@ -368,47 +368,21 @@ abstract contract HyperdriveShort is HyperdriveLP {
             }
         }
 
-        // Calculate the change in longExposure
+        // Update the checkpoint and global longExposure
         {
             uint256 checkpointTime = _maturityTime - _positionDuration;
             int128 checkpointExposureBefore = int128(
                 _checkpoints[checkpointTime].longExposure
             );
-
-            // If this is a checkpoint boundary or all the positions have been closed,
-            // then the long exposure is zero.
-            if (
-                (_bondReservesDelta == 0 && _shareReservesDelta == 0) ||
-                (_totalSupply[
-                    AssetId.encodeAssetId(
-                        AssetId.AssetIdPrefix.Long,
-                        _maturityTime
-                    )
-                ] ==
-                    0 &&
-                    _totalSupply[
-                        AssetId.encodeAssetId(
-                            AssetId.AssetIdPrefix.Short,
-                            _maturityTime
-                        )
-                    ] ==
-                    0)
-            ) {
-                _checkpoints[checkpointTime].longExposure = 0;
-            } else {
-                uint128 longExposureDelta = HyperdriveMath
-                    .calculateClosePositionExposure(
-                        _bondAmount,
-                        _shareReservesDelta.mulDown(_sharePrice),
-                        _bondReservesDelta,
-                        _sharePayment.mulDown(_sharePrice)
-                    )
-                    .toUint128();
-
-                _checkpoints[checkpointTime].longExposure += int128(
-                    longExposureDelta
-                );
-            }
+            _updateCheckpointLongExposureOnClose(
+                _bondAmount,
+                _shareReservesDelta,
+                _bondReservesDelta,
+                _sharePayment,
+                _maturityTime,
+                _sharePrice,
+                false
+            );
             _updateLongExposure(
                 checkpointExposureBefore,
                 _checkpoints[checkpointTime].longExposure

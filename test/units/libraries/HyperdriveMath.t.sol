@@ -519,30 +519,6 @@ contract HyperdriveMathTest is HyperdriveTest {
     //     );
     // }
 
-    function test__calculateClosePositionExposure() external {
-        // Flat + Curve  Test
-        {
-            uint256 _bondProceeds = 100e18;
-            uint256 _baseReservesDelta = 10e18;
-            uint256 _bondReservesDelta = 100e18;
-            uint256 _baseUserDelta = 200e18;
-            uint256 delta = HyperdriveMath.calculateClosePositionExposure(
-                _bondProceeds,
-                _baseReservesDelta,
-                _bondReservesDelta,
-                _baseUserDelta
-            );
-            uint256 flatPlusCurveProceedsDelta = _baseUserDelta -
-                _baseReservesDelta +
-                _bondReservesDelta -
-                _baseReservesDelta +
-                _bondProceeds;
-            // delta should be equal to flatPlusCurveProceedsDelta bc
-            // _positionExposure >= flatPlusCurveDelta + _bondProceeds
-            assertEq(delta, flatPlusCurveProceedsDelta);
-        }
-    }
-
     function test__calculateMaxLong__edgeCases() external {
         // This is an edge case where pool has a spot price of 1 at the optimal
         // trade size but the optimal trade size is less than the value that we
