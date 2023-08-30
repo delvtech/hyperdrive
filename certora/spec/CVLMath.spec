@@ -190,7 +190,7 @@ ghost _ghostPow(uint256, uint256) returns uint256 {
     axiom forall uint256 x. forall uint256 y.
         x >= ONE18() && y > ONE18() => (_ghostPow(x, y) >= x);
     axiom forall uint256 x. forall uint256 y.
-        x >= ONE18() && y <= ONE18() => (_ghostPow(x, y) <= x);
+        x >= ONE18() && y <= ONE18() => (_ghostPow(x, y) >= ONE18() && _ghostPow(x, y) <= x);
     /// x1 > x2 && y > 0 => x1^y > x2^y
     axiom forall uint256 x1. forall uint256 x2. forall uint256 y.
         x1 > x2 => _ghostPow(x1, y) >= _ghostPow(x2, y);

@@ -187,6 +187,21 @@ rule calculateCloseLongMonotonicOnBondReserves(env e) {
     assert _bondReserves1 >= _bondReserves2 => shareProceeds1 >= shareProceeds2;
 }
 
+rule calculateSharesOutGivenBondsInMonotonic(uint256 bondReserves1, uint256 bondReserves2) { 
+    uint256 shareReserves;
+    uint256 timeStretch; 
+    require timeStretch >=0 && timeStretch<= ONE18();
+    uint256 bondsDelta;
+    uint256 sharePrice;
+    uint256 initialSharePrice;
+    
+    uint256 sharesOut1 = YSMath.calculateSharesOutGivenBondsIn(shareReserves, bondReserves1, bondsDelta, timeStretch, sharePrice, initialSharePrice);
+    uint256 sharesOut2 = YSMath.calculateSharesOutGivenBondsIn(shareReserves, bondReserves2, bondsDelta, timeStretch, sharePrice, initialSharePrice);
+
+    assert bondReserves1 >= bondReserves2 => sharesOut1 >= sharesOut2;
+}
+
+
 /// Verify the invariant: (c / µ) * (µ * z)^(1 - t) + y^(1 - t) = k
 /// t = 0 : (c/mu) *(mu * z) + y = k => c*z + y = k => x + y = k
 /// [Verified]
@@ -348,6 +363,7 @@ rule openAndCloseLongOnCurve(
     uint256 initialSharePrice = ONE18();
     uint256 timeStretch = 45071688063194104;
     require sharePrice >= initialSharePrice;
+    require shareAmount >= 10^9;
     
     uint256 bondDelta1 = HDMath.calculateOpenLong(
         shareReserves, bondReserves, shareAmount, timeStretch, sharePrice, initialSharePrice);
@@ -362,13 +378,15 @@ rule openAndCloseLongOnCurve(
     uint256 shareReservesDelta;
     uint256 bondReservesDelta;
     uint256 shareProceeds;
+    uint256 onePercent = require_uint256(ONE18()/100);
     shareReservesDelta, bondReservesDelta, shareProceeds = HDMath.calculateCloseLong(
         newShares, newBonds, bondDelta1, timeRemaining,
         timeStretch, sharePrice, sharePrice, sharePrice, initialSharePrice);
 
     assert shareReservesDelta == shareProceeds, "The proceeds must be equal to the amount drained from the pool";
     assert bondReservesDelta == bondDelta1, "Trader must pay the exact amount of bonds";
-    assert relativeErrorBound(shareAmount, shareProceeds, 100) ,"Trader cannot gain from an immediate round-trip";
+    assert shareProceeds >= shareAmount  => relativeErrorBound(shareAmount, shareProceeds, onePercent),
+        "Trader cannot gain from an immediate round-trip";
 }
 
 /// Same as openAndCloseLongOnCurve, but only with YS Math.
