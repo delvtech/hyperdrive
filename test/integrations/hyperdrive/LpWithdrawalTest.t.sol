@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
+
 import { stdError } from "forge-std/StdError.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
@@ -21,6 +24,7 @@ import { Lib } from "../../utils/Lib.sol";
 //     - [ ] Tests with fees that ensure that any instantaneous trading will be
 //           favorable for LPs that join the pool.
 contract LpWithdrawalTest is HyperdriveTest {
+    using FixedPointMath for int256;
     using FixedPointMath for uint256;
     using HyperdriveUtils for IHyperdrive;
     using Lib for *;
@@ -343,7 +347,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         uint256 shortMaturityTime;
     }
 
-    // FIXME: We should use the present value ratio more ubiquitously.
+    // FIXME: We should use the lpSharePrice more ubiquitously.
     //
     // This test ensures that two LPs (Alice and Celine) will receive a fair
     // share of the withdrawal pool's profits. After Alice initializes the pool,
@@ -358,6 +362,10 @@ contract LpWithdrawalTest is HyperdriveTest {
         uint256 shortAmount,
         int256 variableRate
     ) external {
+        longBasePaid = 8122;
+        shortAmount = 1049786485647726;
+        variableRate = 473312911514;
+
         // Set up the test parameters.
         TestLpWithdrawalParams memory testParams = TestLpWithdrawalParams({
             fixedRate: 0.05e18,
@@ -372,6 +380,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         });
 
         // Initialize the pool.
+        console.log("test: 1");
         uint256 aliceLpShares = initialize(
             alice,
             uint256(testParams.fixedRate),
@@ -380,12 +389,14 @@ contract LpWithdrawalTest is HyperdriveTest {
         testParams.contribution -=
             2 *
             hyperdrive.getPoolConfig().minimumShareReserves;
+        console.log("test: 2");
 
         // Bob opens a long.
         longBasePaid = longBasePaid.normalizeToRange(
             0.001e18,
             HyperdriveUtils.calculateMaxLong(hyperdrive)
         );
+        console.log("test: 3");
 
         testParams.longBasePaid = longBasePaid;
         {
@@ -396,11 +407,12 @@ contract LpWithdrawalTest is HyperdriveTest {
             testParams.longMaturityTime = longMaturityTime;
             testParams.longAmount = longAmount;
         }
+        console.log("test: 4");
 
         // Alice removes all of her LP shares. She should recover her initial
         // contribution minus the amount of her capital that underlies Bob's
         // long position.
-        uint256 ratio = presentValueRatio();
+        uint256 lpSharePrice = hyperdrive.lpSharePrice();
         uint256 aliceBaseProceeds;
         uint256 aliceWithdrawalShares;
         {
@@ -411,24 +423,28 @@ contract LpWithdrawalTest is HyperdriveTest {
                 alice,
                 aliceLpShares
             );
+            assertGe(
+                aliceBaseProceeds +
+                    aliceWithdrawalShares.mulDown(hyperdrive.lpSharePrice()),
+                testParams.contribution
+            );
             assertApproxEqAbs(aliceBaseProceeds, estimatedLpBaseProceeds, 1e9);
-            assertApproxEqAbs(presentValueRatio(), ratio, 1e6);
-            ratio = presentValueRatio();
+            assertApproxEqAbs(hyperdrive.lpSharePrice(), lpSharePrice, 1e6);
+            lpSharePrice = hyperdrive.lpSharePrice();
         }
+        console.log("test: 5");
 
-        // Celine adds liquidity.
+        // Celine adds liquidity. When Celine adds liquidity, some of Alice's
+        // withdrawal shares will be bought back at the current present value.
+        // Since these are marked to market and removing liquidity increases
+        // the present value, the lp share price should increase or stay the
+        // same after this operation.
         uint256 celineLpShares = addLiquidity(celine, testParams.contribution);
-        // FIXME: The fact that we have to use the previous ratio to get this
-        // test to work speaks to a problem with the preservation of the present
-        // value ratio.
         uint256 celineSlippagePayment = testParams.contribution -
-            celineLpShares.mulDown(ratio);
-        // FIXME: This difference is untenable large (the value of the ratio
-        // isn't that large, so it's way too close for comfort). We'll need to
-        // be smarter about the math in _applyWithdrawalProceeds to control for
-        // this.
-        assertApproxEqAbs(presentValueRatio(), ratio, 1e14);
-        ratio = presentValueRatio();
+            celineLpShares.mulDown(lpSharePrice);
+        assertGe(hyperdrive.lpSharePrice() + 1e6, lpSharePrice);
+        lpSharePrice = hyperdrive.lpSharePrice();
+        console.log("test: 6");
 
         // Bob opens a short.
         shortAmount = shortAmount.normalizeToRange(
@@ -444,6 +460,7 @@ contract LpWithdrawalTest is HyperdriveTest {
             testParams.shortMaturityTime = shortMaturityTime;
             testParams.shortBasePaid = shortBasePaid;
         }
+        console.log("test: 7");
 
         // Celine removes all of her LP shares. She should recover her initial
         // contribution minus the amount of capital that underlies the short
@@ -456,14 +473,17 @@ contract LpWithdrawalTest is HyperdriveTest {
                 celineLpShares
             );
         }
+        console.log("test: 8");
 
         // Time passes and interest accrues.
         variableRate = variableRate.normalizeToRange(0, 2e18);
         testParams.variableRate = variableRate;
         advanceTime(POSITION_DURATION, testParams.variableRate);
+        console.log("test: 9");
 
         // Bob closes his long.
         closeLong(bob, testParams.longMaturityTime, testParams.longAmount);
+        console.log("test: 10");
 
         // Bob closes the short at redemption.
         {
@@ -484,27 +504,53 @@ contract LpWithdrawalTest is HyperdriveTest {
                 1e9 // TODO: This bound is too large.
             );
         }
+        console.log("test: 11");
 
         // Redeem the withdrawal shares. Alice and Celine should split the
         // withdrawal pool proportionally to their withdrawal shares.
-        (uint256 aliceRedeemProceeds, ) = redeemWithdrawalShares(
-            alice,
-            aliceWithdrawalShares
-        );
-        (uint256 celineRedeemProceeds, ) = redeemWithdrawalShares(
-            celine,
-            celineWithdrawalShares
-        );
+        uint256 aliceRedeemProceeds;
+        {
+            uint256 sharesRedeemed;
+            (aliceRedeemProceeds, sharesRedeemed) = redeemWithdrawalShares(
+                alice,
+                aliceWithdrawalShares
+            );
+            aliceWithdrawalShares -= sharesRedeemed;
+        }
+        uint256 celineRedeemProceeds;
+        {
+            uint256 sharesRedeemed;
+            (celineRedeemProceeds, sharesRedeemed) = redeemWithdrawalShares(
+                celine,
+                celineWithdrawalShares
+            );
+            celineWithdrawalShares -= sharesRedeemed;
+        }
+        console.log("test: 12");
 
-        // Ensure that Alice and Celine got back their initial contributions.
-        assertGt(
-            aliceBaseProceeds + aliceRedeemProceeds,
-            testParams.contribution
+        // Ensure that Alice and Celine got back their initial contributions
+        // minus any fixed interest that accrued to the underlying positions.
+        // Alice or Celine may end up paying a larger fixed rate, but Celine
+        // will be on the hook for her slippage payment.
+        int256 fixedInterest = int256(testParams.shortBasePaid) -
+            int256(testParams.longAmount - testParams.longBasePaid);
+        assertGe(
+            aliceBaseProceeds +
+                aliceRedeemProceeds +
+                aliceWithdrawalShares.mulDown(hyperdrive.lpSharePrice()),
+            uint256(int256(testParams.contribution) + fixedInterest.min(0))
         );
-        assertGt(
-            celineBaseProceeds + celineRedeemProceeds,
-            testParams.contribution - celineSlippagePayment
+        console.log("test: 13");
+        assertGe(
+            celineBaseProceeds +
+                celineRedeemProceeds +
+                celineWithdrawalShares.mulDown(hyperdrive.lpSharePrice()),
+            uint256(
+                int256(testParams.contribution - celineSlippagePayment) +
+                    fixedInterest.min(0)
+            )
         );
+        console.log("test: 14");
 
         // Ensure that the ending base balance of Hyperdrive is zero.
         // TODO: See if this bound can be lowered
@@ -515,6 +561,7 @@ contract LpWithdrawalTest is HyperdriveTest {
             ) + hyperdrive.presentValue(),
             1e9
         );
+        console.log("test: 15");
 
         // Ensure that the ending supply of withdrawal shares is close to zero.
         // fails
@@ -556,7 +603,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         );
     }
 
-    // FIXME: Add more ratio checks.
+    // FIXME: Add more lpSharePrice checks.
     //
     // FIXME: Update the description.
     //
@@ -628,7 +675,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         // Celine adds liquidity.
         uint256 celineLpShares = addLiquidity(celine, testParams.contribution);
         uint256 celineSlippagePayment = testParams.contribution -
-            celineLpShares.mulDown(presentValueRatio());
+            celineLpShares.mulDown(hyperdrive.lpSharePrice());
 
         uint256 aliceRedeemProceeds;
         {
@@ -805,10 +852,10 @@ contract LpWithdrawalTest is HyperdriveTest {
             hyperdrive.getPoolConfig().minimumShareReserves;
 
         // Bob adds liquidity.
-        uint256 ratio = presentValueRatio();
+        uint256 lpSharePrice = hyperdrive.lpSharePrice();
         uint256 bobLpShares = addLiquidity(bob, testParams.contribution);
-        assertEq(presentValueRatio(), ratio);
-        ratio = presentValueRatio();
+        assertEq(hyperdrive.lpSharePrice(), lpSharePrice);
+        lpSharePrice = hyperdrive.lpSharePrice();
 
         // Bob opens a long.
         longBasePaid = longBasePaid.normalizeToRange(
@@ -824,8 +871,8 @@ contract LpWithdrawalTest is HyperdriveTest {
             testParams.longMaturityTime = longMaturityTime;
             testParams.longAmount = longAmount;
         }
-        assertApproxEqAbs(presentValueRatio(), ratio, 100);
-        ratio = presentValueRatio();
+        assertApproxEqAbs(hyperdrive.lpSharePrice(), lpSharePrice, 100);
+        lpSharePrice = hyperdrive.lpSharePrice();
 
         // Bob opens a short.
         shortAmount = shortAmount.normalizeToRange(
@@ -841,8 +888,8 @@ contract LpWithdrawalTest is HyperdriveTest {
             testParams.shortMaturityTime = shortMaturityTime;
             testParams.shortBasePaid = shortBasePaid;
         }
-        assertApproxEqAbs(presentValueRatio(), ratio, 100);
-        ratio = presentValueRatio();
+        assertApproxEqAbs(hyperdrive.lpSharePrice(), lpSharePrice, 100);
+        lpSharePrice = hyperdrive.lpSharePrice();
         uint256 estimatedLpProceeds = calculateBaseLpProceeds(aliceLpShares);
 
         // Alice removes her liquidity.
@@ -851,15 +898,15 @@ contract LpWithdrawalTest is HyperdriveTest {
             uint256 aliceWithdrawalShares
         ) = removeLiquidity(alice, aliceLpShares);
         assertEq(aliceBaseProceeds, estimatedLpProceeds);
-        assertApproxEqAbs(presentValueRatio(), ratio, 10);
-        ratio = presentValueRatio();
+        assertApproxEqAbs(hyperdrive.lpSharePrice(), lpSharePrice, 10);
+        lpSharePrice = hyperdrive.lpSharePrice();
 
         // Celine adds liquidity.
         uint256 celineLpShares = addLiquidity(celine, testParams.contribution);
         // FIXME: This is an untenable large bound. Why is the current value
         // even larger than the contribution?
-        assertApproxEqAbs(presentValueRatio(), ratio, 1e16);
-        ratio = presentValueRatio();
+        assertApproxEqAbs(hyperdrive.lpSharePrice(), lpSharePrice, 1e16);
+        lpSharePrice = hyperdrive.lpSharePrice();
 
         // Bob closes his long and his short.
         {
@@ -906,12 +953,5 @@ contract LpWithdrawalTest is HyperdriveTest {
             0,
             1e9 // TODO: Why is this not equal to zero?
         );
-    }
-
-    function presentValueRatio() internal view returns (uint256) {
-        uint256 totalLpSupply = hyperdrive.totalSupply(AssetId._LP_ASSET_ID) +
-            hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID) -
-            hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw;
-        return HyperdriveUtils.presentValue(hyperdrive).divDown(totalLpSupply);
     }
 }

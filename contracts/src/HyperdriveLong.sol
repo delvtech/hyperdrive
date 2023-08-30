@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
+import { Lib } from "test/utils/Lib.sol";
+
 import { HyperdriveLP } from "./HyperdriveLP.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { AssetId } from "./libraries/AssetId.sol";
@@ -15,6 +19,9 @@ import { SafeCast } from "./libraries/SafeCast.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveLong is HyperdriveLP {
+    // FIXME
+    using Lib for *;
+
     using FixedPointMath for uint256;
     using FixedPointMath for int256;
     using SafeCast for uint256;
@@ -134,15 +141,18 @@ abstract contract HyperdriveLong is HyperdriveLP {
         address _destination,
         bool _asUnderlying
     ) external nonReentrant returns (uint256) {
+        console.log("closeLong: 1");
         if (_bondAmount == 0) {
             revert IHyperdrive.ZeroAmount();
         }
+        console.log("closeLong: 2");
 
         // Perform a checkpoint at the maturity time. This ensures the long and
         // all of the other positions in the checkpoint are closed. This will
         // have no effect if the maturity time is in the future.
         uint256 sharePrice = _pricePerShare();
         _applyCheckpoint(_maturityTime, sharePrice);
+        console.log("closeLong: 3");
 
         // Burn the longs that are being closed.
         _burn(
@@ -150,6 +160,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
             msg.sender,
             _bondAmount
         );
+        console.log("closeLong: 4");
 
         // Calculate the pool and user deltas using the trading function.
         (
@@ -158,14 +169,17 @@ abstract contract HyperdriveLong is HyperdriveLP {
             uint256 shareProceeds,
             uint256 totalGovernanceFee
         ) = _calculateCloseLong(_bondAmount, sharePrice, _maturityTime);
+        console.log("closeLong: 5");
 
         // If the position hasn't matured, apply the accounting updates that
         // result from closing the long to the reserves and pay out the
         // withdrawal pool if necessary.
         if (block.timestamp < _maturityTime) {
             // Attribute the governance fee.
+            console.log("closeLong: 6");
             _governanceFeesAccrued += totalGovernanceFee;
 
+            console.log("closeLong: 7");
             _applyCloseLong(
                 _bondAmount,
                 bondReservesDelta,
@@ -174,17 +188,21 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 _maturityTime,
                 sharePrice
             );
+            console.log("closeLong: 8");
         }
 
         // Withdraw the profit to the trader.
+        console.log("closeLong: 9");
         uint256 baseProceeds = _withdraw(
             shareProceeds,
             _destination,
             _asUnderlying
         );
+        console.log("closeLong: 10");
 
         // Enforce min user outputs
         if (_minOutput > baseProceeds) revert IHyperdrive.OutputLimit();
+        console.log("closeLong: 11");
 
         // Emit a CloseLong event.
         emit CloseLong(
@@ -298,6 +316,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         uint256 _maturityTime,
         uint256 _sharePrice
     ) internal {
+        console.log("_applyCloseLong: 1");
         {
             uint128 longsOutstanding_ = _marketState.longsOutstanding;
 
@@ -331,13 +350,16 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 longsOutstanding_ -
                 _bondAmount.toUint128();
         }
+        console.log("_applyCloseLong: 2");
 
         // Apply the updates from the curve trade to the reserves.
         _marketState.shareReserves -= _shareReservesDelta.toUint128();
         _marketState.bondReserves += _bondReservesDelta.toUint128();
+        console.log("_applyCloseLong: 3");
 
         // Remove the flat part of the trade from the pool's liquidity.
         _updateLiquidity(-int256(_shareProceeds - _shareReservesDelta));
+        console.log("_applyCloseLong: 4");
 
         {
             // If there are withdrawal shares outstanding, we pay out the maximum
@@ -365,6 +387,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 );
             }
         }
+        console.log("_applyCloseLong: 5");
 
         // Update the checkpoint and global longExposure
         {
@@ -386,6 +409,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 _checkpoints[checkpointTime].longExposure
             );
         }
+        console.log("_applyCloseLong: 6");
     }
 
     /// @dev Calculate the pool reserve and trader deltas that result from

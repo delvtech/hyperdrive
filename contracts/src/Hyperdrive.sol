@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
+import { Lib } from "test/utils/Lib.sol";
+
 import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import { HyperdriveBase } from "./HyperdriveBase.sol";
 import { HyperdriveLong } from "./HyperdriveLong.sol";
@@ -22,6 +26,9 @@ abstract contract Hyperdrive is
     HyperdriveLong,
     HyperdriveShort
 {
+    // FIXME
+    using Lib for *;
+
     using FixedPointMath for uint256;
     using SafeCast for uint256;
 
@@ -103,20 +110,25 @@ abstract contract Hyperdrive is
         // Close out the short positions with a maturity time equal to the latest checkpoint.
         // This ensures that shorts don't continue to collect free variable interest and
         // ensures that LP's can withdraw the proceeds of their side of the trade.
+        console.log("_applyCheckpoint: 1");
         uint256 maturedShortsAmount = _totalSupply[
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _checkpointTime)
         ];
         if (maturedShortsAmount > 0) {
+            console.log("_applyCheckpoint: 3");
             uint256 shareProceeds = maturedShortsAmount.divDown(_sharePrice);
             uint256 flatFee = shareProceeds.mulDown(_flatFee);
             uint256 govFee = flatFee.mulDown(_governanceFee);
+            console.log("_applyCheckpoint: 4");
 
             // Add accrued governance fees to the totalGovernanceFeesAccrued in terms of shares
             _governanceFeesAccrued += govFee;
+            console.log("_applyCheckpoint: 5");
 
             // Increase shareProceeds by the flatFeeCharged, and less the govFee from the amount as it doesn't count
             // towards reserves. shareProceeds will only be used to update reserves, so its fine to take fees here.
             shareProceeds += flatFee - govFee;
+            console.log("_applyCheckpoint: 6");
 
             // Closing out shorts first helps with netting by ensuring the LP funds
             // that were netted with longs are back in the shareReserves before we
@@ -129,6 +141,7 @@ abstract contract Hyperdrive is
                 _checkpointTime,
                 _sharePrice
             );
+            console.log("_applyCheckpoint: 7");
         }
 
         // Close out the long positions with a maturity time equal to the latest checkpoint.
@@ -139,6 +152,7 @@ abstract contract Hyperdrive is
             uint256 shareProceeds = maturedLongsAmount.divDown(_sharePrice);
             uint256 flatFee = shareProceeds.mulDown(_flatFee);
             uint256 govFee = flatFee.mulDown(_governanceFee);
+            console.log("_applyCheckpoint: 8");
 
             // Add accrued governance fees to the totalGovernanceFeesAccrued in terms of shares
             _governanceFeesAccrued += govFee;
@@ -147,6 +161,7 @@ abstract contract Hyperdrive is
             // towards reserves. shareProceeds will only be used to update reserves, so its fine to take fees here.
             shareProceeds -= flatFee - govFee;
 
+            console.log("_applyCheckpoint: 9");
             _applyCloseLong(
                 maturedLongsAmount,
                 0,
@@ -155,7 +170,9 @@ abstract contract Hyperdrive is
                 _checkpointTime,
                 _sharePrice
             );
+            console.log("_applyCheckpoint: 10");
         }
+        console.log("_applyCheckpoint: 11");
 
         return checkpoint_.sharePrice;
     }

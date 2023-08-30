@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
+import { Lib } from "test/utils/Lib.sol";
+
 import { HyperdriveBase } from "./HyperdriveBase.sol";
 import { HyperdriveTWAP } from "./HyperdriveTWAP.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
@@ -16,6 +20,9 @@ import { SafeCast } from "./libraries/SafeCast.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveLP is HyperdriveTWAP {
+    // FIXME
+    using Lib for *;
+
     using FixedPointMath for uint256;
     using SafeCast for uint256;
 
@@ -377,6 +384,10 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // ensure that our minimum share reserves invariant is still maintained.
         int256 updatedShareReserves = int256(shareReserves) +
             _shareReservesDelta;
+        console.log(
+            "updatedShareReserves = %s",
+            updatedShareReserves.toString(18)
+        );
         if (updatedShareReserves < int256(_minimumShareReserves)) {
             revert IHyperdrive.InvalidShareReserves();
         }
