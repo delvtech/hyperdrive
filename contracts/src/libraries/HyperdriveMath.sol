@@ -63,7 +63,7 @@ library HyperdriveMath {
 
         return
             (FixedPointMath.ONE_18 - spotPrice).divDown(
-                spotPrice.mulDivDown(365 days, _positionDuration)
+                spotPrice.mulDivUp(365 days, _positionDuration)
             );
     }
 
