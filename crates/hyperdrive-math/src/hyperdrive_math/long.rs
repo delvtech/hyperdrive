@@ -122,7 +122,11 @@ impl State {
             // numbers or even just using an if-statement to handle the negative
             // numbers.
             if let Some(s) = solvency {
-                max_base_amount = max_base_amount + s / self.solvency_derivative(max_base_amount);
+                let maybe_derivative = self.solvency_derivative(max_base_amount);
+                if maybe_derivative.is_none() {
+                    break;
+                }
+                max_base_amount = max_base_amount + s / maybe_derivative.unwrap();
                 solvency = self.solvency(
                     max_base_amount,
                     self.get_long_amount(max_base_amount),
@@ -273,11 +277,20 @@ impl State {
     /// This derivative is negative since solvency decreases as more longs are
     /// opened. We use the negation of the derivative to stay in the positive
     /// domain, which allows us to use the fixed point library.
-    fn solvency_derivative(&self, base_amount: FixedPoint) -> FixedPoint {
-        (self.long_amount_derivative(base_amount)
-            + self.governance_fee() * self.curve_fee() * (fixed!(1e18) - self.get_spot_price())
-            - fixed!(1e18))
-        .mul_div_down(fixed!(2e18), self.share_price())
+    fn solvency_derivative(&self, base_amount: FixedPoint) -> Option<FixedPoint> {
+        let maybe_derivative = self.long_amount_derivative(base_amount);
+        if let Some(derivative) = maybe_derivative {
+            Some(
+                (derivative
+                    + self.governance_fee()
+                        * self.curve_fee()
+                        * (fixed!(1e18) - self.get_spot_price())
+                    - fixed!(1e18))
+                .mul_div_down(fixed!(2e18), self.share_price()),
+            )
+        } else {
+            None
+        }
     }
 
     /// Gets the derivative of [long_amount](long_amount) with respect to the
@@ -307,16 +320,29 @@ impl State {
     /// $$
     /// c'(x) = \phi_{c} \cdot \left( \tfrac{1}{p} - 1 \right)
     /// $$
-    fn long_amount_derivative(&self, base_amount: FixedPoint) -> FixedPoint {
+    fn long_amount_derivative(&self, base_amount: FixedPoint) -> Option<FixedPoint> {
         let share_amount = base_amount / self.share_price();
         let inner = self.initial_share_price() * (self.share_reserves() + share_amount);
         let mut derivative = fixed!(1e18) / (inner).pow(self.time_stretch());
-        derivative *= (YieldSpaceState::from(self).k(self.time_stretch())
-            - (self.share_price() / self.initial_share_price()) * inner.pow(self.time_stretch()))
-        .pow(self.time_stretch() / (fixed!(1e18) - self.time_stretch()));
+
+        // It's possible that k is slightly larger than the rhs in the inner
+        // calculation. If this happens, we are close to the root, and we short
+        // circuit.
+        let k = YieldSpaceState::from(self).k(self.time_stretch());
+        let rhs =
+            (self.share_price() / self.initial_share_price()) * inner.pow(self.time_stretch());
+        if k < rhs {
+            return None;
+        }
+        derivative *= (k - rhs).pow(
+            self.time_stretch()
+                .div_up(fixed!(1e18) - self.time_stretch()),
+        );
+
+        // Finish computing the derivative.
         derivative -= self.curve_fee() * ((fixed!(1e18) / self.get_spot_price()) - fixed!(1e18));
 
-        derivative
+        Some(derivative)
     }
 
     /// Gets the curve fee paid by longs for a given base amount.

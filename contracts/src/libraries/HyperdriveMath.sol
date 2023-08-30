@@ -421,13 +421,23 @@ library HyperdriveMath {
             // numbers or even just using an if-statement to handle the negative
             // numbers.
             if (isSolvent) {
-                maxBaseAmount += s.divDown(
-                    calculateSolvencyDerivative(
+                // Calculate the derivative of the objective function for
+                // Newton's method. This should only fail near the root.
+                (
+                    uint256 derivative,
+                    bool success
+                ) = calculateSolvencyDerivative(
                         _params,
                         maxBaseAmount,
                         spotPrice
-                    )
-                );
+                    );
+                if (!success) {
+                    break;
+                }
+
+                // Calculate the next step of Newton's method and calculate the
+                // ending solvency.
+                maxBaseAmount += s.divDown(derivative);
                 maxBondAmount = calculateLongAmount(
                     _params,
                     maxBaseAmount,
@@ -625,21 +635,31 @@ library HyperdriveMath {
     /// @param _spotPrice The spot price.
     /// @return derivative The negation of the derivative of the pool's solvency
     ///         w.r.t the base amount.
+    /// @return success A flag indicating whether or not the derivative was
+    ///         successfully calculated.
     function calculateSolvencyDerivative(
         MaxTradeParams memory _params,
         uint256 _baseAmount,
         uint256 _spotPrice
-    ) internal pure returns (uint256 derivative) {
-        derivative = calculateLongAmountDerivative(
+    ) internal pure returns (uint256 derivative, bool success) {
+        // Calculate the derivative of the long amount. This calculation can
+        // fail when we are close to the root. In these cases, we exit early.
+        (derivative, success) = calculateLongAmountDerivative(
             _params,
             _baseAmount,
             _spotPrice
         );
+        if (!success) {
+            return (0, success);
+        }
+
+        // Finish computing the derivative.
         derivative += _params.governanceFee.mulDown(_params.curveFee).mulDown(
             ONE - _spotPrice
         );
         derivative -= ONE;
-        return derivative.mulDivDown(2e18, _params.sharePrice);
+
+        return (derivative.mulDivDown(2e18, _params.sharePrice), success);
     }
 
     /// @dev Gets the long amount that will be opened for a given base amount.
@@ -715,11 +735,14 @@ library HyperdriveMath {
     /// @param _spotPrice The spot price.
     /// @return derivative The derivative of the long amount w.r.t. the base
     ///         amount.
+    /// @return A flag indicating whether or not the derivative was
+    ///         successfully calculated.
     function calculateLongAmountDerivative(
         MaxTradeParams memory _params,
         uint256 _baseAmount,
         uint256 _spotPrice
-    ) internal pure returns (uint256 derivative) {
+    ) internal pure returns (uint256 derivative, bool) {
+        // Compute the first part of the derivative.
         uint256 shareAmount = _baseAmount.divDown(_params.sharePrice);
         uint256 inner = _params.initialSharePrice.mulDown(
             _params.shareReserves + shareAmount
@@ -733,13 +756,22 @@ library HyperdriveMath {
             _params.bondReserves
         );
         derivative = ONE.divDown(inner.pow(_params.timeStretch));
+
+        // It's possible that k is slightly larger than the rhs in the inner
+        // calculation. If this happens, we are close to the root, and we short
+        // circuit.
+        uint256 rhs = cDivMu.mulDown(inner.pow(_params.timeStretch));
+        if (k < rhs) {
+            return (0, false);
+        }
         derivative = derivative.mulDown(
-            (k - cDivMu.mulDown(inner.pow(_params.timeStretch))).pow(
-                _params.timeStretch.divDown(ONE - _params.timeStretch)
-            )
+            (k - rhs).pow(_params.timeStretch.divUp(ONE - _params.timeStretch))
         );
+
+        // Finish computing the derivative.
         derivative -= _params.curveFee.mulDown(ONE.divDown(_spotPrice) - ONE);
-        return derivative;
+
+        return (derivative, true);
     }
 
     /// @dev Gets the curve fee paid by longs for a given base amount.
