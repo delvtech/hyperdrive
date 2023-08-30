@@ -94,7 +94,7 @@ abstract contract Hyperdrive is
             _checkpointTime
         ];
         if (checkpoint_.sharePrice != 0 || _checkpointTime > block.timestamp) {
-            return _checkpoints[_checkpointTime].sharePrice;
+            return checkpoint_.sharePrice;
         }
 
         // Create the share price checkpoint.
@@ -157,6 +157,6 @@ abstract contract Hyperdrive is
             );
         }
 
-        return checkpoint_.sharePrice;
+        return _sharePrice;
     }
 }
