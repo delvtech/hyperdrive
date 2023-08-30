@@ -347,25 +347,28 @@ library HyperdriveMath {
             _params.initialSharePrice,
             _params.timeStretch
         );
+        uint256 absoluteMaxBaseAmount;
+        uint256 absoluteMaxBondAmount;
         {
             uint256 maxShareAmount;
-            (maxShareAmount, maxBondAmount) = YieldSpaceMath.calculateMaxBuy(
-                _params.shareReserves,
-                _params.bondReserves,
-                ONE - _params.timeStretch,
-                _params.sharePrice,
-                _params.initialSharePrice
-            );
-            maxBaseAmount = maxShareAmount.mulDown(_params.sharePrice);
+            (maxShareAmount, absoluteMaxBondAmount) = YieldSpaceMath
+                .calculateMaxBuy(
+                    _params.shareReserves,
+                    _params.bondReserves,
+                    ONE - _params.timeStretch,
+                    _params.sharePrice,
+                    _params.initialSharePrice
+                );
+            absoluteMaxBaseAmount = maxShareAmount.mulDown(_params.sharePrice);
             (, bool isSolvent_) = calculateSolvency(
                 _params,
                 _checkpointLongExposure,
-                maxShareAmount.mulDown(_params.sharePrice),
-                maxBondAmount,
+                absoluteMaxBaseAmount,
+                absoluteMaxBondAmount,
                 spotPrice
             );
             if (isSolvent_) {
-                return (maxBaseAmount, maxBondAmount);
+                return (absoluteMaxBaseAmount, absoluteMaxBondAmount);
             }
         }
 
@@ -401,6 +404,13 @@ library HyperdriveMath {
         );
         require(isSolvent, "Initial guess in `calculateMaxLong` is insolvent.");
         for (uint256 i = 0; i < _maxIterations; i++) {
+            // If the base amount is greater than the absolute max base amount
+            // (based on the spot price), we short circuit and return the
+            // absolute maximum base and bond amounts.
+            if (maxBaseAmount >= absoluteMaxBaseAmount) {
+                return (absoluteMaxBaseAmount, absoluteMaxBondAmount);
+            }
+
             // If the pool is solvent after the current guess, we proceed with
             // Newton's method. As Newton's method approaches the root, it can
             // cross over to the other side of the root. We truncuate Newton's

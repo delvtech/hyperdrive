@@ -57,7 +57,7 @@ impl State {
 
         // Get the maximum long that brings the spot price to 1. If the pool is
         // solvent after opening this long, then we're done.
-        let (mut max_base_amount, max_bond_amount) = {
+        let (absolute_max_base_amount, absolute_max_bond_amount) = {
             let (share_amount, mut bond_amount) =
                 YieldSpaceState::from(self).get_max_buy(self.time_stretch());
             let base_amount = self.share_price() * share_amount;
@@ -65,10 +65,14 @@ impl State {
             (base_amount, bond_amount)
         };
         if self
-            .solvency(max_base_amount, max_bond_amount, checkpoint_exposure)
+            .solvency(
+                absolute_max_base_amount,
+                absolute_max_bond_amount,
+                checkpoint_exposure,
+            )
             .is_some()
         {
-            return max_base_amount.min(budget);
+            return absolute_max_base_amount.min(budget);
         }
 
         // Use Newton's method to iteratively approach a solution. We use pool's
@@ -88,7 +92,7 @@ impl State {
         //
         // The guess that we make is very important in determining how quickly
         // we converge to the solution.
-        max_base_amount = self.max_long_guess(checkpoint_exposure);
+        let mut max_base_amount = self.max_long_guess(checkpoint_exposure);
         let mut solvency = self.solvency(
             max_base_amount,
             self.get_long_amount(max_base_amount),
@@ -101,6 +105,9 @@ impl State {
             // If the max base amount exceeds the budget, we know that the
             // entire budget can be consumed without running into solvency
             // constraints.
+            if max_base_amount >= absolute_max_base_amount {
+                return absolute_max_base_amount;
+            }
             if max_base_amount >= budget {
                 return budget;
             }
