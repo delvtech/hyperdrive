@@ -362,9 +362,6 @@ contract LpWithdrawalTest is HyperdriveTest {
         uint256 shortAmount,
         int256 variableRate
     ) external {
-        longBasePaid = 8122;
-        shortAmount = 1049786485647726;
-        variableRate = 473312911514;
 
         // Set up the test parameters.
         TestLpWithdrawalParams memory testParams = TestLpWithdrawalParams({
@@ -393,7 +390,7 @@ contract LpWithdrawalTest is HyperdriveTest {
 
         // Bob opens a long.
         longBasePaid = longBasePaid.normalizeToRange(
-            0.001e18,
+            0.01e18,
             HyperdriveUtils.calculateMaxLong(hyperdrive)
         );
         console.log("test: 3");
@@ -448,7 +445,7 @@ contract LpWithdrawalTest is HyperdriveTest {
 
         // Bob opens a short.
         shortAmount = shortAmount.normalizeToRange(
-            100 * hyperdrive.getPoolConfig().minimumShareReserves,
+            0.01e18,
             HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
         testParams.shortAmount = shortAmount;
