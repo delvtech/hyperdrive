@@ -274,7 +274,7 @@ contract FeeTest is HyperdriveTest {
                     governanceFeesFromCloseLong
             ) - int256(shareReservesCurveFee),
             0,
-            1
+            1e7
         );
 
         // The difference between the share reserves should be equal to the actual fees
