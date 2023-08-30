@@ -454,21 +454,17 @@ abstract contract HyperdriveLong is HyperdriveLP {
             bondProceeds +
             governanceCurveFee.divDown(spotPrice);
 
+        // Calculate the fees owed to governance in shares. Open longs
+        // are caculated entirely on the curve so the curve fee is the
+        // total governance fee.
+        totalGovernanceFee = governanceCurveFee.divDown(_sharePrice);
+
         // Calculate the number of shares to add to the shareReserves.
-        // shareReservesDelta and totalGovernanceFee denominated in
-        // shares so we divide governanceCurveFee by the share price (base/shares)
-        // to convert it to shares:
-        // shares = shares - base/(base/shares)
+        // shareReservesDelta, _shareAmount and totalGovernanceFee 
+        // are all denominated in shares:
         // shares = shares - shares
         shareReservesDelta =
-            _shareAmount -
-            governanceCurveFee.divDown(_sharePrice);
-
-        // Calculate the fees owed to governance in shares.
-        // totalGovernanceFee is in base and we want it in shares
-        // shares = base/(base/shares)
-        // shares = shares
-        totalGovernanceFee = governanceCurveFee.divDown(_sharePrice);
+            _shareAmount - totalGovernanceFee;
 
         return (
             shareReservesDelta,
