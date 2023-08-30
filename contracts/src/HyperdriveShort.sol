@@ -9,10 +9,6 @@ import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { SafeCast } from "./libraries/SafeCast.sol";
 import { YieldSpaceMath } from "./libraries/YieldSpaceMath.sol";
 
-import { Lib } from "../../test/utils/Lib.sol";
-
-import "forge-std/console2.sol";
-
 /// @author DELV
 /// @title HyperdriveShort
 /// @notice Implements the short accounting for Hyperdrive.
@@ -24,7 +20,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
     using FixedPointMath for int256;
     using SafeCast for uint256;
     using SafeCast for int256;
-    using Lib for *;
 
     /// @notice Opens a short position.
     /// @param _bondAmount The amount of bonds to short.
@@ -271,15 +266,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
         _marketState.bondReserves += _bondAmount.toUint128();
         _marketState.shortsOutstanding += _bondAmount.toUint128();
 
-        // Opening a short decreases the system's exposure because the short's margin can
-        // be used to offset some of the long exposure. Despite this, opening a short decreases
-        // the share reserves, which limits the amount of capital available to back non-netted long
-        // exposure. Since both quantities decrease, we need to check that the system is still
-        // solvent.
-        if (!_isSolvent(_sharePrice)) {
-            revert IHyperdrive.BaseBufferExceedsShareReserves();
-        }
-
         // Update the checkpoint's short deposits and decrease the long exposure.
         // NOTE: Refer to this issue for details on if this should be moved
         //       https://github.com/delvtech/hyperdrive/issues/558
@@ -295,6 +281,15 @@ abstract contract HyperdriveShort is HyperdriveLP {
             checkpointExposureBefore,
             _checkpoints[_latestCheckpoint].longExposure
         );
+
+        // Opening a short decreases the system's exposure because the short's
+        // margin can be used to offset some of the long exposure. Despite this,
+        // opening a short decreases the share reserves, which limits the amount
+        // of capital available to back non-netted long exposure. Since both
+        // quantities decrease, we need to check that the system is still solvent.
+        if (!_isSolvent(_sharePrice)) {
+            revert IHyperdrive.BaseBufferExceedsShareReserves();
+        }
     }
 
     /// @dev Applies the trading deltas from a closed short to the reserves and

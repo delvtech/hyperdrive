@@ -821,6 +821,10 @@ library HyperdriveMath {
             );
     }
 
+    // TODO: This is an overly restrictive max short calculation. We can do
+    // better if we iteratively approximate using solvency as an objective
+    // function.
+    //
     /// @dev Calculates the maximum amount of shares that can be used to open
     ///      shorts.
     /// @param _params Information about the market state and pool configuration
@@ -831,11 +835,11 @@ library HyperdriveMath {
     ) internal pure returns (uint256) {
         // The only constraint on the maximum short is that the share reserves
         // don't go negative and satisfy the solvency requirements. Thus, we can
-        // set z = y_l/c + z_min and solve for the maximum short directly as:
+        // set z = z_min and solve for the maximum short directly as:
         //
-        // k = (c / mu) * (mu * (y_l / c + z_min)) ** (1 - tau) + y ** (1 - tau)
+        // k = (c / mu) * (mu * (y_l/c + z_min)) ** (1 - tau) + y ** (1 - tau)
         //                         =>
-        // y = (k - (c / mu) * (mu * (y_l / c + z_min)) ** (1 - tau)) ** (1 / (1 - tau)).
+        // y = (k - (c / mu) * (mu * (y_l/c + z_min)) ** (1 - tau)) ** (1 / (1 - tau)).
         uint256 t = ONE - _params.timeStretch;
         uint256 priceFactor = _params.sharePrice.divDown(
             _params.initialSharePrice
