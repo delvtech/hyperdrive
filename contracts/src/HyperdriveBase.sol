@@ -251,7 +251,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     /// @param _spotPrice The price without slippage of bonds in terms of base (base/bonds).
     /// @param _sharePrice The current price of shares in terms of base (base/shares).
     /// @return totalCurveFee The total curve fee. The fee is in terms of bonds.
-    /// @return governanceCurveFee The curve fee that goes to governance. The fee is in terms of base.
+    /// @return governanceCurveFee The curve fee that goes to governance. The fee is in terms of bonds.
     function _calculateFeesOutGivenSharesIn(
         uint256 _amountIn,
         uint256 _spotPrice,
@@ -281,14 +281,10 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
             .mulDown(_sharePrice)
             .mulDown(_amountIn);
 
-        // We need the governance fee in terms of base, so we multiply
-        // the total curve fee by the spot price (base/bonds):
+        // We leave the governance fee in terms of bonds:
         // governanceCurveFee = total_curve_fee * p * phi_gov
-        //                    = bonds * base/bonds * phi_gov
-        //                    = base * phi_gov
-        governanceCurveFee = totalCurveFee.mulDown(_spotPrice).mulDown(
-            _governanceFee
-        );
+        //                    = bonds * phi_gov
+        governanceCurveFee = totalCurveFee.mulDown(_governanceFee);
     }
 
     /// @dev Calculates the fees that go to the LPs and governance.

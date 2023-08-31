@@ -428,7 +428,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // fees that are paid to governance (governanceCurveFee).
         (
             uint256 totalCurveFee, // bonds
-            uint256 governanceCurveFee // base
+            uint256 governanceCurveFee // bonds
         ) = _calculateFeesOutGivenSharesIn(
                 _shareAmount,
                 spotPrice,
@@ -445,30 +445,28 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // receives plus the number of bonds we need to pay to governance.
         // In other words, we want to keep the totalCurveFee in the bondReserves; however,
         // since the governanceCurveFee will be paid from the sharesReserves we don't
-        // need it removed from the bondReserves. bondProceeds is in bonds
-        // and governanceCurveFee is in base so we divide it by the spot price
-        // to convert it to bonds:
-        // bonds = bonds + base/(base/bonds)
+        // need it removed from the bondReserves. bondProceeds and governanceCurveFee
+        // are already in bonds so no conversion is needed.
         // bonds = bonds + bonds
-        bondReservesDelta =
-            bondProceeds +
-            governanceCurveFee.divDown(spotPrice);
+        bondReservesDelta = bondProceeds + governanceCurveFee;
+
+        // Calculate the fees owed to governance in shares. Open longs
+        // are calculated entirely on the curve so the curve fee is the
+        // total governance fee. In order to convert it to shares we need to
+        // multiply it by the spot price and divide it by the share price:
+        // shares = (bonds * base/bonds) / (base/shares)
+        // shares = bonds * shares/bonds
+        // shares = shares
+        totalGovernanceFee = governanceCurveFee.mulDivDown(
+            spotPrice,
+            _sharePrice
+        );
 
         // Calculate the number of shares to add to the shareReserves.
-        // shareReservesDelta and totalGovernanceFee denominated in
-        // shares so we divide governanceCurveFee by the share price (base/shares)
-        // to convert it to shares:
-        // shares = shares - base/(base/shares)
+        // shareReservesDelta, _shareAmount and totalGovernanceFee
+        // are all denominated in shares:
         // shares = shares - shares
-        shareReservesDelta =
-            _shareAmount -
-            governanceCurveFee.divDown(_sharePrice);
-
-        // Calculate the fees owed to governance in shares.
-        // totalGovernanceFee is in base and we want it in shares
-        // shares = base/(base/shares)
-        // shares = shares
-        totalGovernanceFee = governanceCurveFee.divDown(_sharePrice);
+        shareReservesDelta = _shareAmount - totalGovernanceFee;
 
         return (
             shareReservesDelta,

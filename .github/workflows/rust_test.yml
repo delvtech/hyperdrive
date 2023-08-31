@@ -11,7 +11,7 @@ on:
 jobs:
   test:
     name: rust test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-m
     steps:
       - uses: actions/checkout@v3
         with:
@@ -30,4 +30,4 @@ jobs:
           override: true
 
       - name: test cargo
-        run: cargo test
+        run: export HYPERDRIVE_FAST_FUZZ_RUNS=100 && export RUSTUP_INIT_SKIP_PATH_CHECK=yes && curl https://sh.rustup.rs -sSf | sh -s -- -y && source $HOME/.cargo/env && rustup default nightly && cargo test
