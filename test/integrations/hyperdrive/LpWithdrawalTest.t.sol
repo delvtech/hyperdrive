@@ -236,10 +236,7 @@ contract LpWithdrawalTest is HyperdriveTest {
 
         // Alice removes all of her LP shares
         uint256 estimatedLpProceeds = calculateBaseLpProceeds(lpShares);
-        (uint256 baseProceeds,) = removeLiquidity(
-            alice,
-            lpShares
-        );
+        (uint256 baseProceeds, ) = removeLiquidity(alice, lpShares);
         assertEq(baseProceeds, estimatedLpProceeds);
     }
 
