@@ -18,7 +18,9 @@ import { MultiToken } from "./token/MultiToken.sol";
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     using FixedPointMath for uint256;
+    using FixedPointMath for int256;
     using SafeCast for uint256;
+    using SafeCast for int256;
 
     event Initialize(
         address indexed provider,
@@ -217,12 +219,118 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
 
     /// Helpers ///
 
+    /// @dev Calculates the checkpoint exposure when a position is closed
+    /// @param _bondAmount The amount of bonds that the user is closing.
+    /// @param _shareReservesDelta The amount of shares that the reserves will change by.
+    /// @param _bondReservesDelta The amount of bonds that the reserves will change by.
+    /// @param _shareUserDelta The amount of shares that the user will receive (long) or pay (short).
+    /// @param _maturityTime The maturity time of the position being closed.
+    /// @param _sharePrice The current share price.
+    /// @param _isLong True if the position being closed is long.
+    function _updateCheckpointLongExposureOnClose(
+        uint256 _bondAmount,
+        uint256 _shareReservesDelta,
+        uint256 _bondReservesDelta,
+        uint256 _shareUserDelta,
+        uint256 _maturityTime,
+        uint256 _sharePrice,
+        bool _isLong
+    ) internal {
+        uint256 checkpointTime = _maturityTime - _positionDuration;
+        uint256 checkpointLongs = _totalSupply[
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _maturityTime)
+        ];
+        uint256 checkpointShorts = _totalSupply[
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _maturityTime)
+        ];
+
+        // If this is a checkpoint boundary or all the positions have been closed,
+        // then the long exposure is zero.
+        if (
+            (_bondReservesDelta == 0 && _shareReservesDelta == 0) ||
+            (checkpointLongs == 0 && checkpointShorts == 0)
+        ) {
+            _checkpoints[checkpointTime].longExposure = 0;
+        } else {
+            // The long exposure delta is flat + curve amount + the bonds the user is closing:
+            // (dz_user*c - dz*c) + (dy - dz*c) + dy_user
+            // = dz_user*c + dy - 2*dz*c + dy_user
+            int128 delta = int128(
+                (_shareUserDelta.mulDown(_sharePrice) +
+                    _bondReservesDelta -
+                    2 *
+                    _shareReservesDelta.mulDown(_sharePrice) +
+                    _bondAmount).toUint128()
+            );
+
+            // If the position being closed is long, then the long exposure decreases
+            // by the delta. If it's short, then the long exposure increases by the delta.
+            if (_isLong) {
+                _checkpoints[checkpointTime].longExposure -= delta;
+            } else {
+                _checkpoints[checkpointTime].longExposure += delta;
+            }
+        }
+    }
+
+    /// @dev Updates the global long exposure.
+    /// @param _before The long exposure before the update.
+    /// @param _after The long exposure after the update.
+    function _updateLongExposure(int256 _before, int256 _after) internal {
+        // LongExposure is decreasing
+        if (_before > _after && _before >= 0) {
+            int256 delta = int256(_before - _after.max(0));
+            // Since the longExposure can't be negative, we need to make sure we don't underflow
+            _marketState.longExposure -= uint128(
+                delta.min(int128(_marketState.longExposure)).toInt128()
+            );
+        }
+        // LongExposure is increasing
+        else if (_after > _before) {
+            if (_before >= 0) {
+                _marketState.longExposure += uint128(
+                    _after.toInt128() - _before.toInt128()
+                );
+            } else {
+                _marketState.longExposure += uint128(_after.max(0).toInt128());
+            }
+        }
+    }
+
+    /// @dev Calculates the number of share reserves that are not reserved by open positions
+    /// @param _sharePrice The current share price.
+    function _calculateIdleShareReserves(
+        uint256 _sharePrice
+    ) internal view returns (uint256 idleShares) {
+        uint256 longExposure = uint256(_marketState.longExposure).divDown(
+            _sharePrice
+        );
+        if (_marketState.shareReserves > longExposure + _minimumShareReserves) {
+            idleShares =
+                _marketState.shareReserves -
+                longExposure -
+                _minimumShareReserves;
+        }
+        return idleShares;
+    }
+
+    /// @dev Check solvency by verifying that the share reserves are greater than the exposure plus the minimum share reserves.
+    /// @param _sharePrice The current share price.
+    /// @return True if the share reserves are greater than the exposure plus the minimum share reserves.
+    function _isSolvent(uint256 _sharePrice) internal view returns (bool) {
+        return
+            (int256(
+                (uint256(_marketState.shareReserves).mulDown(_sharePrice))
+            ) - int128(_marketState.longExposure)).max(0) >=
+            int256(_minimumShareReserves.mulDown(_sharePrice));
+    }
+
     /// @dev Calculates the fees that go to the LPs and governance.
     /// @param _amountIn Amount in shares.
     /// @param _spotPrice The price without slippage of bonds in terms of base (base/bonds).
     /// @param _sharePrice The current price of shares in terms of base (base/shares).
     /// @return totalCurveFee The total curve fee. The fee is in terms of bonds.
-    /// @return governanceCurveFee The curve fee that goes to governance. The fee is in terms of base.
+    /// @return governanceCurveFee The curve fee that goes to governance. The fee is in terms of bonds.
     function _calculateFeesOutGivenSharesIn(
         uint256 _amountIn,
         uint256 _spotPrice,
@@ -246,20 +354,16 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
         //                 = r * phi_curve * base/shares * shares
         //                 = bonds/base * phi_curve * base
         //                 = bonds * phi_curve
-        totalCurveFee = (FixedPointMath.ONE_18.divDown(_spotPrice))
-            .sub(FixedPointMath.ONE_18)
+        totalCurveFee = (FixedPointMath.ONE_18.divDown(_spotPrice) -
+            FixedPointMath.ONE_18)
             .mulDown(_curveFee)
             .mulDown(_sharePrice)
             .mulDown(_amountIn);
 
-        // We need the governance fee in terms of base, so we multiply
-        // the total curve fee by the spot price (base/bonds):
+        // We leave the governance fee in terms of bonds:
         // governanceCurveFee = total_curve_fee * p * phi_gov
-        //                    = bonds * base/bonds * phi_gov
-        //                    = base * phi_gov
-        governanceCurveFee = totalCurveFee.mulDown(_spotPrice).mulDown(
-            _governanceFee
-        );
+        //                    = bonds * phi_gov
+        governanceCurveFee = totalCurveFee.mulDown(_governanceFee);
     }
 
     /// @dev Calculates the fees that go to the LPs and governance.
@@ -293,7 +397,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
         //                 = (base/bonds * phi_curve * bonds * t) * (shares/base)
         //                 = (base * phi_curve * t) * (shares/base)
         //                 = phi_curve * t * shares
-        uint256 _pricePart = (FixedPointMath.ONE_18.sub(_spotPrice));
+        uint256 _pricePart = FixedPointMath.ONE_18 - _spotPrice;
         totalCurveFee = _pricePart
             .mulDown(_curveFee)
             .mulDown(_amountIn)
@@ -312,10 +416,10 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
         //          = (base * (1 - t) * phi_flat) * (shares/base)
         //          = shares * (1 - t) * phi_flat
         uint256 flat = _amountIn.mulDivDown(
-            FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
+            FixedPointMath.ONE_18 - _normalizedTimeRemaining,
             _sharePrice
         );
-        totalFlatFee = (flat.mulDown(_flatFee));
+        totalFlatFee = flat.mulDown(_flatFee);
 
         // Calculate the flat portion of the governance fee
         // governanceFlatFee = total_flat_fee * phi_gov
@@ -359,7 +463,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
         //                 = (base/bonds * phi_curve * bonds * t) * (shares/base)
         //                 = (base * phi_curve * t) * (shares/base)
         //                 = phi_curve * t * shares
-        totalCurveFee = FixedPointMath.ONE_18.sub(_spotPrice);
+        totalCurveFee = FixedPointMath.ONE_18 - _spotPrice;
         totalCurveFee = totalCurveFee
             .mulDown(_curveFee)
             .mulDown(_amountOut)
@@ -378,10 +482,10 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
         //          = (base * (1 - t) * phi_flat) * (shares/base)
         //          = shares * (1 - t) * phi_flat
         uint256 flat = _amountOut.mulDivDown(
-            FixedPointMath.ONE_18.sub(_normalizedTimeRemaining),
+            FixedPointMath.ONE_18 - _normalizedTimeRemaining,
             _sharePrice
         );
-        totalFlatFee = (flat.mulDown(_flatFee));
+        totalFlatFee = flat.mulDown(_flatFee);
 
         // Calculate the flat portion of the governance fee
         // governanceFlatFee = total_flat_fee * phi_gov

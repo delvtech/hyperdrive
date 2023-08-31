@@ -223,8 +223,7 @@ abstract contract HyperdriveStorage is ReentrancyGuard, MultiTokenStorage {
             shortsOutstanding: _marketState.shortsOutstanding,
             shortAverageTimeRemaining: _calculateTimeRemainingScaled(
                 _marketState.shortAverageMaturityTime
-            ),
-            shortBaseVolume: _marketState.shortBaseVolume
+            )
         });
     }
 }

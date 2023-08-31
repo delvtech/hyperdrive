@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import { stdError } from "forge-std/StdError.sol";
 import { VmSafe } from "forge-std/Vm.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
@@ -79,7 +80,7 @@ contract OpenShortTest is HyperdriveTest {
         uint256 shortAmount = hyperdrive.getPoolInfo().shareReserves;
         baseToken.mint(shortAmount);
         baseToken.approve(address(hyperdrive), shortAmount);
-        vm.expectRevert(IHyperdrive.FixedPointMath_SubOverflow.selector);
+        vm.expectRevert(stdError.arithmeticError);
         hyperdrive.openShort(shortAmount * 2, type(uint256).max, bob, true);
     }
 
@@ -133,29 +134,6 @@ contract OpenShortTest is HyperdriveTest {
         );
     }
 
-    function test_ShortAvoidsDrainingBufferReserves() external {
-        uint256 apr = 0.05e18;
-
-        // Initialize the pool with a large amount of capital.
-        uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
-
-        // Open up a large long to init buffer reserves
-        uint256 bondAmount = hyperdrive.calculateMaxLong();
-        openLong(bob, bondAmount);
-
-        // Initialize a large short to eat through the buffer of capital
-        uint256 overlyLargeShort = 500608690308195651844553347;
-
-        // Open the Short.
-        vm.stopPrank();
-        vm.startPrank(bob);
-        baseToken.mint(overlyLargeShort);
-        baseToken.approve(address(hyperdrive), overlyLargeShort);
-        vm.expectRevert(IHyperdrive.BaseBufferExceedsShareReserves.selector);
-        hyperdrive.openShort(overlyLargeShort, type(uint256).max, bob, true);
-    }
-
     function test_RevertsWithNegativeInterestRate() public {
         uint256 apr = 0.05e18;
 
@@ -189,8 +167,8 @@ contract OpenShortTest is HyperdriveTest {
         // Initialize the pool with a large amount of capital.
         initialize(alice, apr, contribution);
 
-        // 2. Open a short
         uint256 bondAmount = (hyperdrive.calculateMaxShort() * 90) / 100;
+        // 2. Open a short
         openShort(bob, bondAmount);
 
         // 3. Record Share Reserves
@@ -211,7 +189,13 @@ contract OpenShortTest is HyperdriveTest {
 
         // 5. Open a Short
         bondAmount = (hyperdrive.calculateMaxShort() * 90) / 100;
-        openShort(bob, bondAmount);
+        DepositOverrides memory depositOverrides = DepositOverrides({
+            asUnderlying: false,
+            depositAmount: bondAmount * 2,
+            minSlippage: 0,
+            maxSlippage: type(uint128).max
+        });
+        openShort(bob, bondAmount, depositOverrides);
 
         // 6. Record Share Reserves
         IHyperdrive.MarketState memory maxFeeState = hyperdrive
@@ -244,6 +228,41 @@ contract OpenShortTest is HyperdriveTest {
         assertGe(maxCurveFeeState.shareReserves, maxFeeState.shareReserves);
     }
 
+    // TODO: This test addresses a specific failure case in calculating the
+    // trader deposit. We should refactor the short calculation logic and fully
+    // unit test this, which would remove the need for this test.
+    function test_short_deposit_with_governance_fee() external {
+        uint256 fixedRate = 0.05e18;
+        uint256 contribution = 500_000_000e18;
+
+        // Alice initializes the pool. The pool has a curve fee of 100% and
+        // governance fees of 0%.
+        IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
+        config.fees.curve = 1e18;
+        config.fees.governance = 0;
+        deploy(address(deployer), config);
+        initialize(alice, fixedRate, contribution);
+
+        // Bob opens a short position.
+        uint256 shortAmount = 100_000e18;
+        (, uint256 basePaid) = openShort(bob, shortAmount);
+
+        // Alice initializes the pool. The pool has a curve fee of 100% and
+        // governance fees of 100%.
+        config = testConfig(fixedRate);
+        config.fees.curve = 1e18;
+        config.fees.governance = 1e18;
+        deploy(address(deployer), config);
+        initialize(alice, fixedRate, contribution);
+
+        // Bob opens a short position.
+        (, uint256 basePaid2) = openShort(bob, shortAmount);
+
+        // The governance fee shouldn't affect the short's deposit, so the base
+        // paid should be the same in both cases.
+        assertEq(basePaid, basePaid2);
+    }
+
     function verifyOpenShort(
         IHyperdrive.PoolInfo memory poolInfoBefore,
         uint256 contribution,
@@ -252,8 +271,6 @@ contract OpenShortTest is HyperdriveTest {
         uint256 maturityTime,
         uint256 apr
     ) internal {
-        uint256 checkpointTime = maturityTime - POSITION_DURATION;
-
         // Ensure that one `OpenShort` event was emitted with the correct
         // arguments.
         {
@@ -310,9 +327,6 @@ contract OpenShortTest is HyperdriveTest {
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
 
         {
-            IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
-                checkpointTime
-            );
             assertEq(
                 poolInfoAfter.shareReserves,
                 poolInfoBefore.shareReserves -
@@ -334,8 +348,6 @@ contract OpenShortTest is HyperdriveTest {
                 maturityTime * 1e18,
                 1
             );
-            assertEq(poolInfoAfter.shortBaseVolume, baseProceeds);
-            assertEq(checkpoint.shortBaseVolume, baseProceeds);
         }
 
         // Ensure that the bond reserves were updated to have the correct APR.

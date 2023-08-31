@@ -1,0 +1,33 @@
+name: Rust Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: rust test
+    runs-on: ubuntu-latest-m
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # NOTE: This is needed to ensure that hyperdrive-wrappers builds correctly.
+      - name: install foundry
+        uses: foundry-rs/foundry-toolchain@v1.0.10
+        with:
+          version: nightly
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+
+      - name: test cargo
+        run: export RUSTUP_INIT_SKIP_PATH_CHECK=yes && curl https://sh.rustup.rs -sSf | sh -s -- -y && source $HOME/.cargo/env && rustup default nightly && cargo test

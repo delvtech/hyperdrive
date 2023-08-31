@@ -376,13 +376,12 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
 
         // Update the share reserves by applying the share reserves delta. We
         // ensure that our minimum share reserves invariant is still maintained.
-        uint256 updatedShareReserves = uint256(
-            int256(shareReserves) + _shareReservesDelta
-        );
-        if (updatedShareReserves < _minimumShareReserves) {
+        int256 updatedShareReserves = int256(shareReserves) +
+            _shareReservesDelta;
+        if (updatedShareReserves < int256(_minimumShareReserves)) {
             revert IHyperdrive.InvalidShareReserves();
         }
-        _marketState.shareReserves = updatedShareReserves.toUint128();
+        _marketState.shareReserves = uint256(updatedShareReserves).toUint128();
 
         // Update the share adjustment by holding the ratio of share reserves
         // to share adjustment proportional. In general, our pricing model cannot
@@ -483,12 +482,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // idle capital, so the LP's proceeds are calculated as:
         //
         // proceeds = idle * (dl / l_a)
-        shareProceeds = _marketState.shareReserves - _minimumShareReserves;
-        if (_marketState.longsOutstanding > 0) {
-            shareProceeds -= uint256(_marketState.longsOutstanding).divDown(
-                _marketState.longOpenSharePrice
-            );
-        }
+        shareProceeds = _calculateIdleShareReserves(_pricePerShare());
         shareProceeds = shareProceeds.mulDivDown(_shares, _totalActiveLpSupply);
         _updateLiquidity(-int256(shareProceeds));
         params.shareReserves = _marketState.shareReserves;

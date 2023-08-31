@@ -1,0 +1,32 @@
+[package]
+
+name = "hyperdrive-math"
+version = "0.1.0"
+edition = "2021"
+
+[[test]]
+
+name = "integration-tests"
+path = "tests/integration_tests.rs"
+
+[dependencies]
+
+# External dependencies
+ethers = "2.0.8"
+eyre = "0.6.8"
+rand = "0.8.5"
+tokio = { version = "1", features = ["full"] }
+
+# Workspace dependencies
+fixed-point = { path = "../fixed-point" }
+fixed-point-macros = { path = "../fixed-point-macros" }
+hyperdrive-wrappers = { path = "../hyperdrive-wrappers" }
+
+[dev-dependencies]
+
+# External dependencies
+tracing = "0.1"
+tracing-test = "0.1"
+
+# Workspace dependencies
+test-utils = { path = "../test-utils" }

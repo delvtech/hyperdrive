@@ -33,9 +33,12 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # if needed
 
       - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
+        uses: foundry-rs/foundry-toolchain@v1.0.10
         with:
           version: nightly
+
+      - name: forge version
+        run: forge --version
 
       - name: Run coverage
         run: |

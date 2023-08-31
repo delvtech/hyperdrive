@@ -380,12 +380,11 @@ contract CloseLongTest is HyperdriveTest {
             // All mature bonds are redeemed at the equivalent amount of shares
             // held throughout the duration, losing capital
             uint256 matureBonds = bondAmount.mulDown(
-                FixedPointMath.ONE_18.sub(
+                FixedPointMath.ONE_18 -
                     HyperdriveUtils.calculateTimeRemaining(
                         hyperdrive,
                         maturityTime
                     )
-                )
             );
             uint256 bondsValue = matureBonds;
 
@@ -396,9 +395,8 @@ contract CloseLongTest is HyperdriveTest {
                     poolInfoBefore.shareReserves,
                     poolInfoBefore.bondReserves,
                     immatureBonds,
-                    FixedPointMath.ONE_18.sub(
-                        hyperdrive.getPoolConfig().timeStretch
-                    ),
+                    FixedPointMath.ONE_18 -
+                        hyperdrive.getPoolConfig().timeStretch,
                     poolInfoBefore.sharePrice,
                     initialSharePrice
                 )
@@ -541,6 +539,72 @@ contract CloseLongTest is HyperdriveTest {
         closeLong(bob, maturityTime, bondAmount);
     }
 
+    function test_long_fees_collect_on_close_at_maturity() external {
+        uint256 fixedRate = 0.05e18;
+        uint256 contribution = 500_000_000e18;
+
+        // 1. Deploy a pool with zero fees
+        IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
+        deploy(address(deployer), config);
+        // Initialize the pool with a large amount of capital.
+        initialize(alice, fixedRate, contribution);
+
+        // 2. A long is opened and the term passes. The long is closed at maturity.
+        (uint256 maturityTime, uint256 bondAmount) = openLong(bob, 10e18);
+        advanceTime(POSITION_DURATION, int256(fixedRate));
+        closeLong(bob, maturityTime, bondAmount);
+
+        // 3. Record Share Reserves
+        IHyperdrive.MarketState memory zeroFeeState = hyperdrive
+            .getMarketState();
+
+        // 4. deploy a pool with 100% curve fees and 100% gov fees (this is nice bc
+        // it ensures that all the fees are credited to governance and thus subtracted
+        // from the shareReserves
+        config = testConfig(fixedRate);
+        config.fees = IHyperdrive.Fees({
+            curve: 0,
+            flat: 1e18,
+            governance: 1e18
+        });
+        deploy(address(deployer), config);
+        initialize(alice, fixedRate, contribution);
+
+        // 5. Open and close a Long advancing it to maturity
+        (maturityTime, bondAmount) = openLong(bob, 10e18);
+        advanceTime(POSITION_DURATION, int256(fixedRate));
+        closeLong(bob, maturityTime, bondAmount);
+
+        // 6. Record Share Reserves
+        IHyperdrive.MarketState memory maxFeeState = hyperdrive
+            .getMarketState();
+
+        uint256 govFees = hyperdrive.getUncollectedGovernanceFees();
+        // Governance fees collected are non-zero
+        assert(govFees > 1e5);
+
+        // 7. deploy a pool with 100% curve fees and 0% gov fees
+        config = testConfig(fixedRate);
+        config.fees = IHyperdrive.Fees({ curve: 0, flat: 1e18, governance: 0 });
+        // Deploy and initialize the new pool
+        deploy(address(deployer), config);
+        initialize(alice, fixedRate, contribution);
+
+        // 8. Open and close another Long at maturity advancing the time
+        (maturityTime, bondAmount) = openLong(bob, 10e18);
+        advanceTime(POSITION_DURATION, int256(fixedRate));
+        closeLong(bob, maturityTime, bondAmount);
+
+        // 9. Record Share Reserves
+        IHyperdrive.MarketState memory maxFlatFeeState = hyperdrive
+            .getMarketState();
+
+        // The fees are subtracted from reserves and accounted for
+        // separately, so this will be true.
+        assertEq(zeroFeeState.shareReserves, maxFeeState.shareReserves);
+        assertGt(maxFlatFeeState.shareReserves, zeroFeeState.shareReserves);
+    }
+
     function verifyCloseLong(
         IHyperdrive.PoolInfo memory poolInfoBefore,
         uint256 traderBaseBalanceBefore,
@@ -550,8 +614,6 @@ contract CloseLongTest is HyperdriveTest {
         uint256 maturityTime,
         bool wasCheckpointed
     ) internal {
-        uint256 checkpointTime = maturityTime - POSITION_DURATION;
-
         // Ensure that one `CloseLong` event was emitted with the correct
         // arguments.
         {
@@ -598,10 +660,6 @@ contract CloseLongTest is HyperdriveTest {
 
         // Verify that the other states were correct.
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
-
-        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
-            checkpointTime
-        );
         if (wasCheckpointed) {
             assertEq(poolInfoAfter.shareReserves, poolInfoBefore.shareReserves);
             assertEq(
@@ -630,8 +688,6 @@ contract CloseLongTest is HyperdriveTest {
             poolInfoBefore.shortsOutstanding
         );
         assertEq(poolInfoAfter.shortAverageMaturityTime, 0);
-        assertEq(poolInfoAfter.shortBaseVolume, 0);
-        assertEq(checkpoint.shortBaseVolume, 0);
 
         // TODO: Figure out how to test this without duplicating the logic.
         //

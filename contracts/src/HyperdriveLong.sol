@@ -16,7 +16,9 @@ import { SafeCast } from "./libraries/SafeCast.sol";
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveLong is HyperdriveLP {
     using FixedPointMath for uint256;
+    using FixedPointMath for int256;
     using SafeCast for uint256;
+    using SafeCast for int256;
 
     /// @notice Opens a long position.
     /// @param _baseAmount The amount of base to use when trading.
@@ -158,17 +160,17 @@ abstract contract HyperdriveLong is HyperdriveLP {
             uint256 totalGovernanceFee
         ) = _calculateCloseLong(_bondAmount, sharePrice, _maturityTime);
 
-        // Attribute the governance fee.
-        _governanceFeesAccrued += totalGovernanceFee;
-
         // If the position hasn't matured, apply the accounting updates that
         // result from closing the long to the reserves and pay out the
         // withdrawal pool if necessary.
         if (block.timestamp < _maturityTime) {
+            // Attribute the governance fee.
+            _governanceFeesAccrued += totalGovernanceFee;
+
             _applyCloseLong(
                 _bondAmount,
                 bondReservesDelta,
-                shareProceeds,
+                shareProceeds + totalGovernanceFee,
                 shareReservesDelta,
                 _maturityTime,
                 sharePrice
@@ -275,16 +277,19 @@ abstract contract HyperdriveLong is HyperdriveLP {
         longsOutstanding_ += _bondProceeds.toUint128();
         _marketState.longsOutstanding = longsOutstanding_;
 
-        // Since the share reserves are reduced, we need to verify that the
-        // effective base reserves are greater than or equal to the amount of
-        // longs outstanding plus the minimum base reserves. We check the
-        // effective share reserves rather than the share reserves because
-        // this is what is required for all of the open shorts to be closed.
-        if (
-            _effectiveShareReserves() <
-            uint256(longsOutstanding_).divDown(_sharePrice) +
-                _minimumShareReserves
-        ) {
+        // Increase the exposure by the amount the LPs must reserve to cover the
+        // long. We are overly conservative, so this is equal to the amount of
+        // fixed interest the long is owed at maturity plus the face value of
+        // the long.
+        int128 checkpointExposureBefore = int128(checkpoint.longExposure);
+        uint128 longExposureDelta = (2 *
+            _bondProceeds -
+            _shareReservesDelta.mulDown(_sharePrice)).toUint128();
+        checkpoint.longExposure += int128(longExposureDelta);
+        _updateLongExposure(checkpointExposureBefore, checkpoint.longExposure);
+
+        // We need to check solvency because longs increase the system's exposure.
+        if (!_isSolvent(_sharePrice)) {
             revert IHyperdrive.BaseBufferExceedsShareReserves();
         }
     }
@@ -305,38 +310,39 @@ abstract contract HyperdriveLong is HyperdriveLP {
         uint256 _maturityTime,
         uint256 _sharePrice
     ) internal {
-        uint128 longsOutstanding_ = _marketState.longsOutstanding;
-        uint128 longSharePrice_ = _checkpoints[
-            _maturityTime - _positionDuration
-        ].longSharePrice;
-        // Update the long average maturity time.
-        _marketState.longAverageMaturityTime = uint256(
-            _marketState.longAverageMaturityTime
-        )
-            .updateWeightedAverage(
-                longsOutstanding_,
-                _maturityTime * 1e18, // scale up to fixed point scale
-                _bondAmount,
-                false
-            )
-            .toUint128();
+        {
+            uint128 longsOutstanding_ = _marketState.longsOutstanding;
 
-        // Update the global long open share price.
-        _marketState.longOpenSharePrice = uint256(
-            _marketState.longOpenSharePrice
-        )
-            .updateWeightedAverage(
-                longsOutstanding_,
-                longSharePrice_,
-                _bondAmount,
-                false
+            // Update the long average maturity time.
+            _marketState.longAverageMaturityTime = uint256(
+                _marketState.longAverageMaturityTime
             )
-            .toUint128();
+                .updateWeightedAverage(
+                    longsOutstanding_,
+                    _maturityTime * 1e18, // scale up to fixed point scale
+                    _bondAmount,
+                    false
+                )
+                .toUint128();
 
-        // Reduce the amount of outstanding longs.
-        _marketState.longsOutstanding =
-            longsOutstanding_ -
-            _bondAmount.toUint128();
+            // Update the global long open share price.
+            _marketState.longOpenSharePrice = uint256(
+                _marketState.longOpenSharePrice
+            )
+                .updateWeightedAverage(
+                    longsOutstanding_,
+                    _checkpoints[_maturityTime - _positionDuration]
+                        .longSharePrice,
+                    _bondAmount,
+                    false
+                )
+                .toUint128();
+
+            // Reduce the amount of outstanding longs.
+            _marketState.longsOutstanding =
+                longsOutstanding_ -
+                _bondAmount.toUint128();
+        }
 
         // Apply the updates from the curve and flat components of the trade to
         // the reserves. The share proceeds are added to the share reserves
@@ -351,25 +357,51 @@ abstract contract HyperdriveLong is HyperdriveLP {
         );
         _marketState.bondReserves += _bondReservesDelta.toUint128();
 
-        // If there are withdrawal shares outstanding, we pay out the maximum
-        // amount of withdrawal shares. The proceeds owed to LPs when a long is
-        // closed is equivalent to short proceeds as LPs take the other side of
-        // every trade.
-        uint256 withdrawalSharesOutstanding = _totalSupply[
-            AssetId._WITHDRAWAL_SHARE_ASSET_ID
-        ] - _withdrawPool.readyToWithdraw;
-        if (withdrawalSharesOutstanding > 0) {
-            uint256 withdrawalProceeds = HyperdriveMath.calculateShortProceeds(
-                _bondAmount,
-                _shareProceeds,
-                longSharePrice_,
-                _sharePrice,
-                _sharePrice
+        {
+            // If there are withdrawal shares outstanding, we pay out the maximum
+            // amount of withdrawal shares. The proceeds owed to LPs when a long is
+            // closed is equivalent to short proceeds as LPs take the other side of
+            // every trade.
+            uint256 withdrawalSharesOutstanding = _totalSupply[
+                AssetId._WITHDRAWAL_SHARE_ASSET_ID
+            ] - _withdrawPool.readyToWithdraw;
+            if (withdrawalSharesOutstanding > 0) {
+                uint256 withdrawalProceeds = HyperdriveMath
+                    .calculateShortProceeds(
+                        _bondAmount,
+                        _shareProceeds,
+                        _checkpoints[_maturityTime - _positionDuration]
+                            .longSharePrice,
+                        _sharePrice,
+                        _sharePrice,
+                        0
+                    );
+                _applyWithdrawalProceeds(
+                    withdrawalProceeds,
+                    withdrawalSharesOutstanding,
+                    _sharePrice
+                );
+            }
+        }
+
+        // Update the checkpoint and global longExposure
+        {
+            uint256 checkpointTime = _maturityTime - _positionDuration;
+            int128 checkpointExposureBefore = int128(
+                _checkpoints[checkpointTime].longExposure
             );
-            _applyWithdrawalProceeds(
-                withdrawalProceeds,
-                withdrawalSharesOutstanding,
-                _sharePrice
+            _updateCheckpointLongExposureOnClose(
+                _bondAmount,
+                _shareReservesDelta,
+                _bondReservesDelta,
+                _shareProceeds,
+                _maturityTime,
+                _sharePrice,
+                true
+            );
+            _updateLongExposure(
+                checkpointExposureBefore,
+                _checkpoints[checkpointTime].longExposure
             );
         }
     }
@@ -419,11 +451,11 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // Record an oracle update
         recordPrice(spotPrice);
 
-        // Calculate the fees charged to the user (totalCurveFee) and the portion of those
-        // fees that are paid to governance (governanceCurveFee).
+        // Calculate the fees charged to the user (totalCurveFee) and the portion
+        // of those fees that are paid to governance (governanceCurveFee).
         (
             uint256 totalCurveFee, // bonds
-            uint256 governanceCurveFee // base
+            uint256 governanceCurveFee // bonds
         ) = _calculateFeesOutGivenSharesIn(
                 _shareAmount,
                 spotPrice,
@@ -436,34 +468,32 @@ abstract contract HyperdriveLong is HyperdriveLP {
 
         // Calculate how many bonds to remove from the bondReserves.
         // The bondReservesDelta represents how many bonds to remove
-        // from the bondReserves. This should be the number of bonds the trader
+        // This should be the number of bonds the trader
         // receives plus the number of bonds we need to pay to governance.
         // In other words, we want to keep the totalCurveFee in the bondReserves; however,
         // since the governanceCurveFee will be paid from the sharesReserves we don't
-        // need it removed from the bondReserves. bondProceeds is in bonds
-        // and governanceCurveFee is in base so we divide it by the spot price
-        // to convert it to bonds:
-        // bonds = bonds + base/(base/bonds)
+        // need it removed from the bondReserves. bondProceeds and governanceCurveFee
+        // are already in bonds so no conversion is needed.
         // bonds = bonds + bonds
-        bondReservesDelta =
-            bondProceeds +
-            governanceCurveFee.divDown(spotPrice);
+        bondReservesDelta = bondProceeds + governanceCurveFee;
+
+        // Calculate the fees owed to governance in shares. Open longs
+        // are calculated entirely on the curve so the curve fee is the
+        // total governance fee. In order to convert it to shares we need to
+        // multiply it by the spot price and divide it by the share price:
+        // shares = (bonds * base/bonds) / (base/shares)
+        // shares = bonds * shares/bonds
+        // shares = shares
+        totalGovernanceFee = governanceCurveFee.mulDivDown(
+            spotPrice,
+            _sharePrice
+        );
 
         // Calculate the number of shares to add to the shareReserves.
-        // shareReservesDelta and totalGovernanceFee denominated in
-        // shares so we divide governanceCurveFee by the share price (base/shares)
-        // to convert it to shares:
-        // shares = shares - base/(base/shares)
+        // shareReservesDelta, _shareAmount and totalGovernanceFee
+        // are all denominated in shares:
         // shares = shares - shares
-        shareReservesDelta =
-            _shareAmount -
-            governanceCurveFee.divDown(_sharePrice);
-
-        // Calculate the fees owed to governance in shares.
-        // totalGovernanceFee is in base and we want it in shares
-        // shares = base/(base/shares)
-        // shares = shares
-        totalGovernanceFee = governanceCurveFee.divDown(_sharePrice);
+        shareReservesDelta = _shareAmount - totalGovernanceFee;
 
         return (
             shareReservesDelta,

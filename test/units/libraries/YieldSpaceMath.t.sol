@@ -168,11 +168,15 @@ contract YieldSpaceMathTest is Test {
                             shareAdjustment: 0, // FIXME: Test non-trivial values for this.
                             bondReserves: bondReserves,
                             longsOutstanding: 0,
+                            longExposure: 0,
                             timeStretch: timeStretch,
                             sharePrice: sharePrice,
                             initialSharePrice: initialSharePrice,
-                            minimumShareReserves: minimumShareReserves
+                            minimumShareReserves: minimumShareReserves,
+                            curveFee: 0,
+                            governanceFee: 0
                         }),
+                        0,
                         15
                     );
                     tradeSize = tradeSize.normalizeToRange(

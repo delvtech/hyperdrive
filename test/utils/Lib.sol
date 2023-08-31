@@ -147,7 +147,7 @@ library Lib {
     function logArray(
         string memory prelude,
         uint256[] memory array
-    ) internal view {
+    ) internal pure {
         console2.log(prelude, "[");
         for (uint256 i = 0; i < array.length; i++) {
             if (i < array.length - 1) {
@@ -188,13 +188,6 @@ library Lib {
         }
 
         return modValue + minimum;
-    }
-
-    /**
-     * @dev Returns the smallest of two numbers.
-     */
-    function min(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a < b ? a : b;
     }
 
     function eq(bytes memory b1, bytes memory b2) public pure returns (bool) {

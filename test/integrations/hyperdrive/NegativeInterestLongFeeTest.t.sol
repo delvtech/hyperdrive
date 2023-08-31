@@ -153,9 +153,9 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
         ).getGovernanceFeesAccrued();
 
         // Calculate the expected fees from opening the long
-        uint256 expectedGovernanceFees = (
-            FixedPointMath.ONE_18.divDown(calculatedSpotPrice)
-        ).sub(FixedPointMath.ONE_18).mulDown(basePaid).mulDivDown(
+        uint256 expectedGovernanceFees = (FixedPointMath.ONE_18.divDown(
+            calculatedSpotPrice
+        ) - FixedPointMath.ONE_18).mulDown(basePaid).mulDivDown(
                 calculatedSpotPrice,
                 sharePrice
             );
@@ -174,9 +174,9 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
         ).getGovernanceFeesAccrued() - governanceFeesAfterOpenLong;
 
         // Calculate the expected fees from closing the long
-        expectedGovernanceFees = (
-            FixedPointMath.ONE_18.divDown(calculatedSpotPrice)
-        ).sub(FixedPointMath.ONE_18).mulDown(basePaid).mulDivDown(
+        expectedGovernanceFees = (FixedPointMath.ONE_18.divDown(
+            calculatedSpotPrice
+        ) - FixedPointMath.ONE_18).mulDown(basePaid).mulDivDown(
                 calculatedSpotPrice,
                 sharePrice
             );
@@ -539,10 +539,9 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
 
         // Calculate the expected accrued fees from opening the long and compare to the actual.
         {
-            uint256 expectedGovernanceFees = (
-                FixedPointMath.ONE_18.divDown(calculatedSpotPrice)
-            )
-                .sub(FixedPointMath.ONE_18)
+            uint256 expectedGovernanceFees = (FixedPointMath.ONE_18.divDown(
+                calculatedSpotPrice
+            ) - FixedPointMath.ONE_18)
                 .mulDown(basePaid)
                 .mulDown(curveFee)
                 .mulDivDown(calculatedSpotPrice, openSharePrice);
@@ -578,19 +577,18 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
             // Calculate the flat and curve fees and compare then to the actual fees
             uint256 expectedFlat = bondAmount
                 .mulDivDown(
-                    FixedPointMath.ONE_18.sub(normalizedTimeRemaining),
+                    FixedPointMath.ONE_18 - normalizedTimeRemaining,
                     closeSharePrice
                 )
                 .mulDown(0.1e18);
-            uint256 expectedCurve = (
-                FixedPointMath.ONE_18.sub(calculatedSpotPrice)
-            ).mulDown(0.1e18).mulDown(bondAmount).mulDivDown(
-                    normalizedTimeRemaining,
-                    closeSharePrice
-                );
+            uint256 expectedCurve = (FixedPointMath.ONE_18 -
+                calculatedSpotPrice)
+                .mulDown(0.1e18)
+                .mulDown(bondAmount)
+                .mulDivDown(normalizedTimeRemaining, closeSharePrice);
             assertApproxEqAbs(
                 governanceFeesAfterCloseLong,
-                expectedFlat + expectedCurve,
+                (expectedFlat + expectedCurve),
                 10 wei
             );
         }

@@ -90,7 +90,7 @@ library HyperdriveUtils {
             "Expecting NormalizedTimeRemaining"
         );
         return
-            (bondAmount.sub(baseAmount)).divDown(
+            (bondAmount - baseAmount).divDown(
                 baseAmount.mulDown(timeRemaining)
             );
     }
@@ -103,6 +103,9 @@ library HyperdriveUtils {
         IHyperdrive _hyperdrive,
         uint256 _maxIterations
     ) internal view returns (uint256 baseAmount) {
+        IHyperdrive.Checkpoint memory checkpoint = _hyperdrive.getCheckpoint(
+            _hyperdrive.latestCheckpoint()
+        );
         IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
         IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
         (baseAmount, ) = HyperdriveMath.calculateMaxLong(
@@ -111,11 +114,15 @@ library HyperdriveUtils {
                 shareAdjustment: poolInfo.shareAdjustment,
                 bondReserves: poolInfo.bondReserves,
                 longsOutstanding: poolInfo.longsOutstanding,
+                longExposure: poolInfo.longExposure,
                 timeStretch: poolConfig.timeStretch,
                 sharePrice: poolInfo.sharePrice,
                 initialSharePrice: poolConfig.initialSharePrice,
-                minimumShareReserves: poolConfig.minimumShareReserves
+                minimumShareReserves: poolConfig.minimumShareReserves,
+                curveFee: poolConfig.fees.curve,
+                governanceFee: poolConfig.fees.governance
             }),
+            checkpoint.longExposure,
             _maxIterations
         );
         return baseAmount;
@@ -145,10 +152,13 @@ library HyperdriveUtils {
                     shareAdjustment: poolInfo.shareAdjustment,
                     bondReserves: poolInfo.bondReserves,
                     longsOutstanding: poolInfo.longsOutstanding,
+                    longExposure: poolInfo.longExposure,
                     timeStretch: poolConfig.timeStretch,
                     sharePrice: poolInfo.sharePrice,
                     initialSharePrice: poolConfig.initialSharePrice,
-                    minimumShareReserves: poolConfig.minimumShareReserves
+                    minimumShareReserves: poolConfig.minimumShareReserves,
+                    curveFee: poolConfig.fees.curve,
+                    governanceFee: poolConfig.fees.governance
                 })
             );
     }
@@ -257,15 +267,13 @@ library HyperdriveUtils {
         );
 
         // Calculate and attribute fees
-        uint256 curveFee = FixedPointMath
-            .ONE_18
-            .sub(spotPrice)
+        uint256 curveFee = (FixedPointMath.ONE_18 - spotPrice)
             .mulDown(poolConfig.fees.curve)
             .mulDown(_bondAmount)
             .mulDivDown(timeRemaining, poolInfo.sharePrice);
         uint256 flatFee = (
             _bondAmount.mulDivDown(
-                FixedPointMath.ONE_18.sub(timeRemaining),
+                FixedPointMath.ONE_18 - timeRemaining,
                 poolInfo.sharePrice
             )
         ).mulDown(poolConfig.fees.flat);
@@ -279,7 +287,8 @@ library HyperdriveUtils {
                     shareProceeds,
                     openSharePrice,
                     poolInfo.sharePrice,
-                    poolInfo.sharePrice
+                    poolInfo.sharePrice,
+                    0
                 )
                 .mulDown(poolInfo.sharePrice);
     }
@@ -313,8 +322,7 @@ library HyperdriveUtils {
                             uint256(poolInfo.shortAverageMaturityTime).divUp(
                                 1e36
                             )
-                        ),
-                        shortBaseVolume: poolInfo.shortBaseVolume
+                        )
                     })
                 )
                 .mulDown(poolInfo.sharePrice);
@@ -333,6 +341,15 @@ library HyperdriveUtils {
             hyperdrive.totalSupply(AssetId._LP_ASSET_ID) +
             hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID) -
             hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw;
+    }
+
+    function solvency(IHyperdrive hyperdrive) internal view returns (int256) {
+        IHyperdrive.PoolConfig memory config = hyperdrive.getPoolConfig();
+        IHyperdrive.PoolInfo memory info = hyperdrive.getPoolInfo();
+        return
+            int256(info.shareReserves) -
+            int256(info.longExposure.divDown(info.sharePrice)) -
+            int256(config.minimumShareReserves);
     }
 
     function decodeError(
@@ -495,12 +512,6 @@ library HyperdriveUtils {
         }
         if (_selector == IHyperdrive.InvalidTimestamp.selector) {
             return "InvalidTimestamp";
-        }
-        if (_selector == IHyperdrive.FixedPointMath_AddOverflow.selector) {
-            return "FixedPointMath_AddOverflow";
-        }
-        if (_selector == IHyperdrive.FixedPointMath_SubOverflow.selector) {
-            return "FixedPointMath_SubOverflow";
         }
         if (_selector == IHyperdrive.FixedPointMath_InvalidExponent.selector) {
             return "FixedPointMath_InvalidExponent";

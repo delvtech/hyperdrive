@@ -1,0 +1,24 @@
+[package]
+name = "test-utils"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+
+# External dependencies.
+async-trait = "0.1.73"
+ethers = "2.0.8"
+eyre = "0.6.8"
+lazy_static = "1.4.0"
+rand = "0.8.5"
+rand_chacha = "0.3.1"
+reqwest = { version = "0.11", features = ["json"] }
+tokio = { version = "1", features = ["full"] }
+tracing = "0.1"
+
+# Workspace dependencies.
+fixed-point = { path = "../fixed-point" }
+fixed-point-macros = { path = "../fixed-point-macros" }
+hyperdrive-addresses = { path = "../hyperdrive-addresses" }
+hyperdrive-math = { path = "../hyperdrive-math" }
+hyperdrive-wrappers = { path = "../hyperdrive-wrappers" }

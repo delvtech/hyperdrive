@@ -135,10 +135,12 @@ contract MockHyperdriveMath {
 
     function calculateMaxLong(
         HyperdriveMath.MaxTradeParams memory _params,
+        int256 _checkpointLongExposure,
         uint256 _maxIterations
     ) external pure returns (uint256, uint256) {
         (uint256 result1, uint256 result2) = HyperdriveMath.calculateMaxLong(
             _params,
+            _checkpointLongExposure,
             _maxIterations
         );
         return (result1, result2);
@@ -176,14 +178,16 @@ contract MockHyperdriveMath {
         uint256 _shareAmount,
         uint256 _openSharePrice,
         uint256 _closeSharePrice,
-        uint256 _sharePrice
+        uint256 _sharePrice,
+        uint256 _flatFee
     ) external pure returns (uint256) {
         uint256 result = HyperdriveMath.calculateShortProceeds(
             _bondAmount,
             _shareAmount,
             _openSharePrice,
             _closeSharePrice,
-            _sharePrice
+            _sharePrice,
+            _flatFee
         );
         return result;
     }
@@ -199,19 +203,6 @@ contract MockHyperdriveMath {
             _openSharePrice,
             _closeSharePrice,
             _sharePrice
-        );
-        return result;
-    }
-
-    function calculateBaseVolume(
-        uint256 _baseAmount,
-        uint256 _bondAmount,
-        uint256 _timeRemaining
-    ) external pure returns (uint256) {
-        uint256 result = HyperdriveMath.calculateBaseVolume(
-            _baseAmount,
-            _bondAmount,
-            _timeRemaining
         );
         return result;
     }

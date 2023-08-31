@@ -90,9 +90,11 @@ abstract contract HyperdriveDataProvider is
         uint256 lpTotalSupply = _totalSupply[AssetId._LP_ASSET_ID] +
             _totalSupply[AssetId._WITHDRAWAL_SHARE_ASSET_ID] -
             _withdrawPool.readyToWithdraw;
-        uint256 presentValue = HyperdriveMath
-            .calculatePresentValue(_getPresentValueParams(sharePrice))
-            .mulDown(sharePrice);
+        uint256 presentValue = sharePrice > 0
+            ? HyperdriveMath
+                .calculatePresentValue(_getPresentValueParams(sharePrice))
+                .mulDown(sharePrice)
+            : 0;
         IHyperdrive.PoolInfo memory poolInfo = IHyperdrive.PoolInfo({
             shareReserves: _marketState.shareReserves,
             shareAdjustment: _marketState.shareAdjustment,
@@ -102,15 +104,30 @@ abstract contract HyperdriveDataProvider is
             longAverageMaturityTime: _marketState.longAverageMaturityTime,
             shortsOutstanding: _marketState.shortsOutstanding,
             shortAverageMaturityTime: _marketState.shortAverageMaturityTime,
-            shortBaseVolume: _marketState.shortBaseVolume,
             lpTotalSupply: lpTotalSupply,
             lpSharePrice: lpTotalSupply == 0
                 ? 0
                 : presentValue.divDown(lpTotalSupply),
             withdrawalSharesReadyToWithdraw: _withdrawPool.readyToWithdraw,
-            withdrawalSharesProceeds: _withdrawPool.proceeds
+            withdrawalSharesProceeds: _withdrawPool.proceeds,
+            longExposure: _marketState.longExposure
         });
         _revert(abi.encode(poolInfo));
+    }
+
+    function getWithdrawPool()
+        external
+        view
+        returns (IHyperdrive.WithdrawPool memory)
+    {
+        _revert(
+            abi.encode(
+                IHyperdrive.WithdrawPool({
+                    readyToWithdraw: _withdrawPool.readyToWithdraw,
+                    proceeds: _withdrawPool.proceeds
+                })
+            )
+        );
     }
 
     /// @notice Gets info about the fees presently accrued by the pool
@@ -186,6 +203,6 @@ abstract contract HyperdriveDataProvider is
         uint256 deltaSum = uint256(currentData.data) - uint256(oldData.data);
         uint256 deltaTime = uint256(currentData.timestamp) -
             uint256(oldData.timestamp);
-        _revert(abi.encode(deltaSum.divDown(deltaTime * 1e18)));
+        _revert(abi.encode(deltaSum / deltaTime));
     }
 }

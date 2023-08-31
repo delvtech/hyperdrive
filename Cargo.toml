@@ -1,0 +1,12 @@
+[workspace]
+
+resolver = "2"
+members = [
+    "crates/fixed-point",
+    "crates/fixed-point-macros",
+    "crates/hyperdrive-addresses",
+    "crates/hyperdrive-math",
+    "crates/hyperdrive-wrappers",
+    "crates/test-utils",
+    "test/rust",
+]

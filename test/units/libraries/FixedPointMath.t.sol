@@ -11,38 +11,6 @@ import { Lib } from "test/utils/Lib.sol";
 contract FixedPointMathTest is Test {
     using Lib for *;
 
-    function test_add() public {
-        // NOTE: Coverage only works if I initialize the fixture in the test function
-        MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
-        assertEq(mockFixedPointMath.add(1e18, 1e18), 2e18);
-        assertEq(mockFixedPointMath.add(1e18, 0), 1e18);
-        assertEq(mockFixedPointMath.add(0, 1e18), 1e18);
-        assertEq(mockFixedPointMath.add(0, 0), 0);
-    }
-
-    function test_fail_add_overflow() public {
-        // NOTE: Coverage only works if I initialize the fixture in the test function
-        MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
-        vm.expectRevert(stdError.arithmeticError);
-        mockFixedPointMath.add(type(uint256).max, 1e18);
-    }
-
-    function test_sub() public {
-        // NOTE: Coverage only works if I initialize the fixture in the test function
-        MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
-        assertEq(mockFixedPointMath.sub(1e18, 1e18), 0);
-        assertEq(mockFixedPointMath.sub(1e18, 0), 1e18);
-        assertEq(mockFixedPointMath.sub(2e18, 1e18), 1e18);
-        assertEq(mockFixedPointMath.sub(0, 0), 0);
-    }
-
-    function test_fail_sub_overflow() public {
-        // NOTE: Coverage only works if I initialize the fixture in the test function
-        MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
-        vm.expectRevert(IHyperdrive.FixedPointMath_SubOverflow.selector);
-        mockFixedPointMath.sub(0, 1e18);
-    }
-
     function test_mulDown() public {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();

@@ -311,7 +311,17 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
         uint256 calculatedSpotPrice = HyperdriveUtils.calculateSpotPrice(
             hyperdrive
         );
-        (uint256 maturityTime, ) = openShort(bob, shortAmount);
+        (uint256 maturityTime, ) = openShort(
+            bob,
+            shortAmount,
+            DepositOverrides({
+                asUnderlying: true,
+                // NOTE: Roughly double deposit amount needed to cover 100% flat fee
+                depositAmount: shortAmount * 2,
+                minSlippage: 0,
+                maxSlippage: type(uint256).max
+            })
+        );
 
         // Fees are going to be 0 because this test uses 0% curve fee
         {
@@ -499,7 +509,17 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
         uint256 calculatedSpotPrice = HyperdriveUtils.calculateSpotPrice(
             hyperdrive
         );
-        (uint256 maturityTime, ) = openShort(bob, shortAmount);
+        (uint256 maturityTime, ) = openShort(
+            bob,
+            shortAmount,
+            DepositOverrides({
+                asUnderlying: true,
+                // NOTE: Roughly double deposit amount needed to cover 100% flat fee
+                depositAmount: shortAmount * 2,
+                minSlippage: 0,
+                maxSlippage: type(uint256).max
+            })
+        );
 
         // Get the fees accrued from opening the short.
         uint256 governanceFeesAfterOpenShort = IMockHyperdrive(
@@ -565,13 +585,13 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
         uint256 flatFee,
         uint256 governanceFee
     ) internal pure returns (uint256) {
-        uint256 totalCurveFee = (FixedPointMath.ONE_18.sub(calculatedSpotPrice))
+        uint256 totalCurveFee = (FixedPointMath.ONE_18 - calculatedSpotPrice)
             .mulDown(curveFee)
             .mulDown(bondAmount)
             .mulDivDown(normalizedTimeRemaining, sharePrice);
         uint256 totalGovernanceFee = totalCurveFee.mulDown(governanceFee);
         uint256 flat = bondAmount.mulDivDown(
-            FixedPointMath.ONE_18.sub(normalizedTimeRemaining),
+            FixedPointMath.ONE_18 - normalizedTimeRemaining,
             sharePrice
         );
         uint256 totalFlatFee = (flat.mulDown(flatFee));
@@ -588,14 +608,14 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
         uint256 flatFee,
         uint256 governanceFee
     ) internal pure returns (uint256) {
-        uint256 totalCurveFee = FixedPointMath.ONE_18.sub(calculatedSpotPrice);
+        uint256 totalCurveFee = FixedPointMath.ONE_18 - calculatedSpotPrice;
         totalCurveFee = totalCurveFee
             .mulDown(curveFee)
             .mulDown(bondAmount)
             .mulDivDown(normalizedTimeRemaining, sharePrice);
         uint256 totalGovernanceFee = totalCurveFee.mulDown(governanceFee);
         uint256 flat = bondAmount.mulDivDown(
-            FixedPointMath.ONE_18.sub(normalizedTimeRemaining),
+            FixedPointMath.ONE_18 - normalizedTimeRemaining,
             sharePrice
         );
         uint256 totalFlatFee = (flat.mulDown(flatFee));
