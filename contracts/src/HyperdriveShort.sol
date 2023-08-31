@@ -322,20 +322,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 )
                 .toUint128();
 
-            // Get the total supply of shorts in the checkpoint of the shorts
-            // being closed. If the shorts are closed before maturity, we add the
-            // amount of shorts being closed since the total supply is decreased
-            // when burning the short tokens.
-            uint256 checkpointShorts = _totalSupply[
-                AssetId.encodeAssetId(
-                    AssetId.AssetIdPrefix.Short,
-                    _maturityTime
-                )
-            ];
-            if (block.timestamp < _maturityTime) {
-                checkpointShorts += _bondAmount;
-            }
-
             // Decrease the amount of shorts outstanding.
             _marketState.shortsOutstanding =
                 shortsOutstanding_ -
