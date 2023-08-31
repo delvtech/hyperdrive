@@ -134,31 +134,6 @@ contract OpenShortTest is HyperdriveTest {
         );
     }
 
-    function test_ShortAvoidsDrainingBufferReserves() external {
-        uint256 apr = 0.05e18;
-
-        // Initialize the pool with a large amount of capital.
-        uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
-
-        // Open up a large long to init buffer reserves
-        uint256 bondAmount = hyperdrive.calculateMaxLong();
-        openLong(bob, bondAmount);
-
-        // Initialize a large short to eat through the buffer of capital
-        uint256 overlyLargeShort = hyperdrive.calculateMaxShort().mulDown(
-            2.1e18
-        );
-
-        // Open the Short.
-        vm.stopPrank();
-        vm.startPrank(bob);
-        baseToken.mint(overlyLargeShort);
-        baseToken.approve(address(hyperdrive), overlyLargeShort);
-        vm.expectRevert(IHyperdrive.BaseBufferExceedsShareReserves.selector);
-        hyperdrive.openShort(overlyLargeShort, type(uint256).max, bob, true);
-    }
-
     function test_RevertsWithNegativeInterestRate() public {
         uint256 apr = 0.05e18;
 

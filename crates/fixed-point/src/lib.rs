@@ -473,43 +473,13 @@ impl UniformSampler for UniformFixedPoint {
 
 #[cfg(test)]
 mod tests {
-    use std::{convert::TryFrom, panic, sync::Arc, time::Duration};
+    use std::panic;
 
-    use ethers::{
-        core::utils::Anvil,
-        middleware::SignerMiddleware,
-        providers::{Http, Provider},
-        signers::{LocalWallet, Signer},
-        utils::AnvilInstance,
-    };
     use eyre::Result;
-    use hyperdrive_wrappers::wrappers::mock_fixed_point_math::MockFixedPointMath;
     use rand::{thread_rng, Rng};
-    use test_utils::constants::FAST_FUZZ_RUNS;
+    use test_utils::{chain::TestChainWithMocks, constants::FAST_FUZZ_RUNS};
 
     use super::*;
-
-    struct TestRunner {
-        mock: MockFixedPointMath<SignerMiddleware<Provider<Http>, LocalWallet>>,
-        _anvil: AnvilInstance, // NOTE: Avoid dropping this until the end of the test.
-    }
-
-    /// Set up a test blockchain with MockFixedPointMath deployed.
-    async fn setup() -> Result<TestRunner> {
-        let anvil = Anvil::new().spawn();
-        let wallet: LocalWallet = anvil.keys()[0].clone().into();
-        let provider =
-            Provider::<Http>::try_from(anvil.endpoint())?.interval(Duration::from_millis(10u64));
-        let client = Arc::new(SignerMiddleware::new(
-            provider,
-            wallet.with_chain_id(anvil.chain_id()),
-        ));
-        let mock = MockFixedPointMath::deploy(client, ())?.send().await?;
-        Ok(TestRunner {
-            mock,
-            _anvil: anvil,
-        })
-    }
 
     #[test]
     fn test_fixed_point_fmt() {
@@ -544,7 +514,8 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_mul_div_down() -> Result<()> {
-        let runner = setup().await?;
+        let chain = TestChainWithMocks::new(1).await?;
+        let mock = chain.mock_fixed_point_math();
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -553,12 +524,7 @@ mod tests {
             let b: FixedPoint = rng.gen();
             let c: FixedPoint = rng.gen();
             let actual = panic::catch_unwind(|| a.mul_div_down(b, c));
-            match runner
-                .mock
-                .mul_div_down(a.into(), b.into(), c.into())
-                .call()
-                .await
-            {
+            match mock.mul_div_down(a.into(), b.into(), c.into()).call().await {
                 Ok(expected) => assert_eq!(actual.unwrap(), FixedPoint::from(expected)),
                 Err(_) => assert!(actual.is_err()),
             }
@@ -575,7 +541,8 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_mul_div_up() -> Result<()> {
-        let runner = setup().await?;
+        let chain = TestChainWithMocks::new(1).await?;
+        let mock = chain.mock_fixed_point_math();
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -584,12 +551,7 @@ mod tests {
             let b: FixedPoint = rng.gen();
             let c: FixedPoint = rng.gen();
             let actual = panic::catch_unwind(|| a.mul_div_up(b, c));
-            match runner
-                .mock
-                .mul_div_up(a.into(), b.into(), c.into())
-                .call()
-                .await
-            {
+            match mock.mul_div_up(a.into(), b.into(), c.into()).call().await {
                 Ok(expected) => assert_eq!(actual.unwrap(), FixedPoint::from(expected)),
                 Err(_) => assert!(actual.is_err()),
             }
@@ -600,7 +562,8 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_mul_down() -> Result<()> {
-        let runner = setup().await?;
+        let chain = TestChainWithMocks::new(1).await?;
+        let mock = chain.mock_fixed_point_math();
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -608,7 +571,7 @@ mod tests {
             let a: FixedPoint = rng.gen();
             let b: FixedPoint = rng.gen();
             let actual = panic::catch_unwind(|| a * b);
-            match runner.mock.mul_down(a.into(), b.into()).call().await {
+            match mock.mul_down(a.into(), b.into()).call().await {
                 Ok(expected) => assert_eq!(actual.unwrap(), FixedPoint::from(expected)),
                 Err(_) => assert!(actual.is_err()),
             }
@@ -619,7 +582,8 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_mul_up() -> Result<()> {
-        let runner = setup().await?;
+        let chain = TestChainWithMocks::new(1).await?;
+        let mock = chain.mock_fixed_point_math();
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -627,7 +591,7 @@ mod tests {
             let a: FixedPoint = rng.gen();
             let b: FixedPoint = rng.gen();
             let actual = panic::catch_unwind(|| a.mul_up(b));
-            match runner.mock.mul_up(a.into(), b.into()).call().await {
+            match mock.mul_up(a.into(), b.into()).call().await {
                 Ok(expected) => assert_eq!(actual.unwrap(), FixedPoint::from(expected)),
                 Err(_) => assert!(actual.is_err()),
             }
@@ -644,7 +608,8 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_div_down() -> Result<()> {
-        let runner = setup().await?;
+        let chain = TestChainWithMocks::new(1).await?;
+        let mock = chain.mock_fixed_point_math();
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -652,7 +617,7 @@ mod tests {
             let a: FixedPoint = rng.gen();
             let b: FixedPoint = rng.gen();
             let actual = panic::catch_unwind(|| a / b);
-            match runner.mock.div_down(a.into(), b.into()).call().await {
+            match mock.div_down(a.into(), b.into()).call().await {
                 Ok(expected) => assert_eq!(actual.unwrap(), FixedPoint::from(expected)),
                 Err(_) => assert!(actual.is_err()),
             }
@@ -669,7 +634,8 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_div_up() -> Result<()> {
-        let runner = setup().await?;
+        let chain = TestChainWithMocks::new(1).await?;
+        let mock = chain.mock_fixed_point_math();
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -677,7 +643,7 @@ mod tests {
             let a: FixedPoint = rng.gen();
             let b: FixedPoint = rng.gen();
             let actual = panic::catch_unwind(|| a.div_up(b));
-            match runner.mock.div_up(a.into(), b.into()).call().await {
+            match mock.div_up(a.into(), b.into()).call().await {
                 Ok(expected) => assert_eq!(actual.unwrap(), FixedPoint::from(expected)),
                 Err(_) => assert!(actual.is_err()),
             }
@@ -688,7 +654,8 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_pow_narrow() -> Result<()> {
-        let runner = setup().await?;
+        let chain = TestChainWithMocks::new(1).await?;
+        let mock = chain.mock_fixed_point_math();
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -696,7 +663,7 @@ mod tests {
             let x: FixedPoint = rng.gen_range(fixed!(0)..=fixed!(1e18));
             let y: FixedPoint = rng.gen_range(fixed!(0)..=fixed!(1e18));
             let actual = panic::catch_unwind(|| x.pow(y));
-            match runner.mock.pow(x.into(), y.into()).call().await {
+            match mock.pow(x.into(), y.into()).call().await {
                 Ok(expected) => {
                     assert_eq!(actual.unwrap(), FixedPoint::from(expected));
                 }
@@ -709,7 +676,8 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_pow() -> Result<()> {
-        let runner = setup().await?;
+        let chain = TestChainWithMocks::new(1).await?;
+        let mock = chain.mock_fixed_point_math();
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
@@ -717,7 +685,7 @@ mod tests {
             let x: FixedPoint = rng.gen();
             let y: FixedPoint = rng.gen();
             let actual = panic::catch_unwind(|| x.pow(y));
-            match runner.mock.pow(x.into(), y.into()).call().await {
+            match mock.pow(x.into(), y.into()).call().await {
                 Ok(expected) => assert_eq!(actual.unwrap(), FixedPoint::from(expected)),
                 Err(_) => assert!(actual.is_err()),
             }
@@ -728,14 +696,15 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_exp_narrow() -> Result<()> {
-        let runner = setup().await?;
+        let chain = TestChainWithMocks::new(1).await?;
+        let mock = chain.mock_fixed_point_math();
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
         for _ in 0..*FAST_FUZZ_RUNS {
             let x: I256 = rng.gen_range(fixed!(0)..=fixed!(1e18)).into();
             let actual = panic::catch_unwind(|| FixedPoint::ln(x));
-            match runner.mock.ln(x).call().await {
+            match mock.ln(x).call().await {
                 Ok(expected) => assert_eq!(actual.unwrap(), expected),
                 Err(_) => assert!(actual.is_err()),
             }
@@ -746,14 +715,15 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_exp() -> Result<()> {
-        let runner = setup().await?;
+        let chain = TestChainWithMocks::new(1).await?;
+        let mock = chain.mock_fixed_point_math();
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
         for _ in 0..*FAST_FUZZ_RUNS {
             let x: I256 = rng.gen::<FixedPoint>().into();
             let actual = panic::catch_unwind(|| FixedPoint::exp(x));
-            match runner.mock.exp(x).call().await {
+            match mock.exp(x).call().await {
                 Ok(expected) => assert_eq!(actual.unwrap(), expected),
                 Err(_) => assert!(actual.is_err()),
             }
@@ -764,14 +734,15 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_ln_narrow() -> Result<()> {
-        let runner = setup().await?;
+        let chain = TestChainWithMocks::new(1).await?;
+        let mock = chain.mock_fixed_point_math();
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
         for _ in 0..*FAST_FUZZ_RUNS {
             let x: I256 = rng.gen_range(fixed!(0)..=fixed!(1e18)).into();
             let actual = panic::catch_unwind(|| FixedPoint::ln(x));
-            match runner.mock.ln(x).call().await {
+            match mock.ln(x).call().await {
                 Ok(expected) => assert_eq!(actual.unwrap(), expected),
                 Err(_) => assert!(actual.is_err()),
             }
@@ -782,14 +753,15 @@ mod tests {
 
     #[tokio::test]
     async fn fuzz_ln() -> Result<()> {
-        let runner = setup().await?;
+        let chain = TestChainWithMocks::new(1).await?;
+        let mock = chain.mock_fixed_point_math();
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
         for _ in 0..*FAST_FUZZ_RUNS {
             let x: I256 = rng.gen::<FixedPoint>().into();
             let actual = panic::catch_unwind(|| FixedPoint::ln(x));
-            match runner.mock.ln(x).call().await {
+            match mock.ln(x).call().await {
                 Ok(expected) => assert_eq!(actual.unwrap(), expected),
                 Err(_) => assert!(actual.is_err()),
             }

@@ -97,6 +97,9 @@ library HyperdriveUtils {
         IHyperdrive _hyperdrive,
         uint256 _maxIterations
     ) internal view returns (uint256 baseAmount) {
+        IHyperdrive.Checkpoint memory checkpoint = _hyperdrive.getCheckpoint(
+            _hyperdrive.latestCheckpoint()
+        );
         IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
         IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
         (baseAmount, ) = HyperdriveMath.calculateMaxLong(
@@ -104,11 +107,15 @@ library HyperdriveUtils {
                 shareReserves: poolInfo.shareReserves,
                 bondReserves: poolInfo.bondReserves,
                 longsOutstanding: poolInfo.longsOutstanding,
+                longExposure: poolInfo.longExposure,
                 timeStretch: poolConfig.timeStretch,
                 sharePrice: poolInfo.sharePrice,
                 initialSharePrice: poolConfig.initialSharePrice,
-                minimumShareReserves: poolConfig.minimumShareReserves
+                minimumShareReserves: poolConfig.minimumShareReserves,
+                curveFee: poolConfig.fees.curve,
+                governanceFee: poolConfig.fees.governance
             }),
+            checkpoint.longExposure,
             _maxIterations
         );
         return baseAmount;
@@ -137,10 +144,13 @@ library HyperdriveUtils {
                     shareReserves: poolInfo.shareReserves,
                     bondReserves: poolInfo.bondReserves,
                     longsOutstanding: poolInfo.longsOutstanding,
+                    longExposure: poolInfo.longExposure,
                     timeStretch: poolConfig.timeStretch,
                     sharePrice: poolInfo.sharePrice,
                     initialSharePrice: poolConfig.initialSharePrice,
-                    minimumShareReserves: poolConfig.minimumShareReserves
+                    minimumShareReserves: poolConfig.minimumShareReserves,
+                    curveFee: poolConfig.fees.curve,
+                    governanceFee: poolConfig.fees.governance
                 })
             );
     }
@@ -317,6 +327,15 @@ library HyperdriveUtils {
             hyperdrive.totalSupply(AssetId._LP_ASSET_ID) +
             hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID) -
             hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw;
+    }
+
+    function solvency(IHyperdrive hyperdrive) internal view returns (int256) {
+        IHyperdrive.PoolConfig memory config = hyperdrive.getPoolConfig();
+        IHyperdrive.PoolInfo memory info = hyperdrive.getPoolInfo();
+        return
+            int256(info.shareReserves) -
+            int256(info.longExposure.divDown(info.sharePrice)) -
+            int256(config.minimumShareReserves);
     }
 
     function decodeError(

@@ -4,6 +4,11 @@ name = "hyperdrive-math"
 version = "0.1.0"
 edition = "2021"
 
+[[test]]
+
+name = "integration-tests"
+path = "tests/integration_tests.rs"
+
 [dependencies]
 
 # External dependencies
@@ -20,7 +25,8 @@ hyperdrive-wrappers = { path = "../hyperdrive-wrappers" }
 [dev-dependencies]
 
 # External dependencies
-tracing-subscriber = "0.3"
+tracing = "0.1"
+tracing-test = "0.1"
 
 # Workspace dependencies
 test-utils = { path = "../test-utils" }

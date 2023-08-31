@@ -1,239 +1,39 @@
-use std::cmp::min;
-
-use ethers::types::{Address, I256, U256};
 use fixed_point::FixedPoint;
-use fixed_point_macros::{fixed, int256, uint256};
-use hyperdrive_wrappers::wrappers::i_hyperdrive::{Fees, PoolConfig, PoolInfo};
-use rand::{
-    distributions::{Distribution, Standard},
-    Rng,
-};
+use fixed_point_macros::fixed;
 
+use super::State;
 use crate::yield_space::{Asset, State as YieldSpaceState};
 
-#[derive(Debug)]
-pub struct State {
-    pub config: PoolConfig,
-    pub info: PoolInfo,
-}
-
-impl From<&State> for YieldSpaceState {
-    fn from(s: &State) -> Self {
-        Self::new(
-            s.info.share_reserves.into(),
-            s.info.bond_reserves.into(),
-            s.info.share_price.into(),
-            s.config.initial_share_price.into(),
-        )
-    }
-}
-
-impl Distribution<State> for Standard {
-    // TODO: It may be better for this to be a uniform sampler and have a test
-    // sampler that is more restrictive like this.
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> State {
-        let config = PoolConfig {
-            base_token: Address::zero(),
-            governance: Address::zero(),
-            fee_collector: Address::zero(),
-            fees: Fees {
-                curve: uint256!(0),
-                flat: uint256!(0),
-                governance: uint256!(0),
-            },
-            initial_share_price: rng.gen_range(fixed!(0.5e18)..=fixed!(2.5e18)).into(),
-            minimum_share_reserves: rng.gen_range(fixed!(0.1e18)..=fixed!(1e18)).into(),
-            time_stretch: rng.gen_range(fixed!(0.005e18)..=fixed!(0.5e18)).into(),
-            position_duration: rng
-                .gen_range(
-                    FixedPoint::from(60 * 60 * 24 * 91)..=FixedPoint::from(60 * 60 * 24 * 365),
-                )
-                .into(),
-            checkpoint_duration: rng
-                .gen_range(FixedPoint::from(60 * 60)..=FixedPoint::from(60 * 60 * 24))
-                .into(),
-            oracle_size: fixed!(0).into(),
-            update_gap: fixed!(0).into(),
-        };
-        // We need the spot price to be less than or equal to 1, so we need to
-        // generate the bond reserves so that mu * z <= y
-        let share_reserves = rng.gen_range(fixed!(1_000e18)..=fixed!(100_000_000e18));
-        let info = PoolInfo {
-            share_reserves: share_reserves.into(),
-            bond_reserves: rng
-                .gen_range(
-                    share_reserves * FixedPoint::from(config.initial_share_price)
-                        ..=fixed!(1_000_000_000e18),
-                )
-                .into(),
-            long_exposure: fixed!(0).into(),
-            share_price: rng.gen_range(fixed!(0.5e18)..=fixed!(2.5e18)).into(),
-            longs_outstanding: rng.gen_range(fixed!(0)..=fixed!(100_000e18)).into(),
-            shorts_outstanding: rng.gen_range(fixed!(0)..=fixed!(100_000e18)).into(),
-            long_average_maturity_time: rng
-                .gen_range(fixed!(0)..=FixedPoint::from(60 * 60 * 24 * 365))
-                .into(),
-            short_average_maturity_time: rng
-                .gen_range(fixed!(0)..=FixedPoint::from(60 * 60 * 24 * 365))
-                .into(),
-            lp_total_supply: rng
-                .gen_range(fixed!(1_000e18)..=fixed!(100_000_000e18))
-                .into(),
-            // TODO: This should be calculated based on the other values.
-            lp_share_price: rng.gen_range(fixed!(0.01e18)..=fixed!(5e18)).into(),
-            withdrawal_shares_proceeds: rng.gen_range(fixed!(0)..=fixed!(100_000e18)).into(),
-            withdrawal_shares_ready_to_withdraw: rng
-                .gen_range(fixed!(1_000e18)..=fixed!(100_000_000e18))
-                .into(),
-        };
-        State { config, info }
-    }
-}
-
 impl State {
-    /// Creates a new `State` from the given `PoolConfig` and `PoolInfo`.
-    pub fn new(config: PoolConfig, info: PoolInfo) -> Self {
-        Self { config, info }
-    }
-
-    /// Gets the pool's spot price.
-    pub fn get_spot_price(&self) -> FixedPoint {
-        YieldSpaceState::from(self).get_spot_price(self.config.time_stretch.into())
-    }
-
-    /// Gets the pool's spot rate.
-    pub fn get_spot_rate(&self) -> FixedPoint {
-        let annualized_time = FixedPoint::from(self.config.position_duration)
-            / FixedPoint::from(U256::from(60 * 60 * 24 * 365));
-        let spot_price = self.get_spot_price();
-        (fixed!(1e18) - spot_price) / (spot_price * annualized_time)
-    }
-
-    /// Converts a timestamp to the checkpoint timestamp that it corresponds to.
-    pub fn to_checkpoint(&self, time: U256) -> U256 {
-        time - time % self.config.checkpoint_duration
-    }
-
-    /// Gets the max long that can be opened.
+    /// Gets the minimum price that the pool can support.
     ///
-    /// Iteratively calculates the max long that can be opened on the pool.
-    /// The number of iterations can be configured with `max_iterations`, which
-    /// defaults to 7 if it is passed as `None`.
-    pub fn get_max_long(
-        &self,
-        budget: FixedPoint,
-        maybe_max_iterations: Option<usize>,
-    ) -> FixedPoint {
-        // Get the maximum long that can be opened.
-        let (max_long_base, ..) = self.max_long(maybe_max_iterations.unwrap_or(7));
-
-        // If the maximum long that can be opened is less than the budget, then
-        // we return the maximum long that can be opened. Otherwise, we return
-        // the budget.
-        min(max_long_base, budget)
-    }
-
-    fn max_long(&self, max_iterations: usize) -> (FixedPoint, FixedPoint) {
-        let mut base_amount = fixed!(0);
-        let mut bond_amount = fixed!(0);
-
-        // We first solve for the maximum buy that is possible on the YieldSpace
-        // curve. This will give us an upper bound on our maximum buy by giving
-        // us the maximum buy that is possible without going into negative
-        // interest territory. Hyperdrive has solvency requirements since it
-        // mints longs on demand. If the maximum buy satisfies our solvency
-        // checks, then we're done. If not, then we need to solve for the
-        // maximum trade size iteratively.
-        let (mut dz, mut dy) =
-            YieldSpaceState::from(self).get_max_buy(self.config.time_stretch.into());
-        if self.share_reserves() + dz
-            >= (self.longs_outstanding() + dy) / self.share_price() + self.minimum_share_reserves()
-        {
-            base_amount = dz * self.share_price();
-            bond_amount = dy;
-            return (base_amount, bond_amount);
-        }
-
-        // To make an initial guess for the iterative approximation, we consider
-        // the solvency check to be the error that we want to reduce. The amount
-        // the long buffer exceeds the share reserves is given by
-        // (y_l + dy) / c - (z + dz). Since the error could be large, we'll use
-        // the realized price of the trade instead of the spot price to
-        // approximate the change in trade output. This gives us dy = c * 1/p * dz.
-        // Substituting this into error equation and setting the error equal to
-        // zero allows us to solve for the initial guess as:
-        //
-        // (y_l + c * 1/p * dz) / c + z_min - (z + dz) = 0
-        //              =>
-        // (1/p - 1) * dz = z - y_l/c - z_min
-        //              =>
-        // dz = (z - y_l/c - z_min) * (p / (p - 1))
-        let mut p = self.share_price().mul_div_down(dz, dy);
-        dz = (self.share_reserves()
-            - self.longs_outstanding() / self.share_price()
-            - self.minimum_share_reserves())
-        .mul_div_down(p, fixed!(1e18) - p);
-        dy = YieldSpaceState::from(self)
-            .get_out_for_in(Asset::Shares(dz), self.config.time_stretch.into());
-
-        // Our maximum long will be the largest trade size that doesn't fail
-        // the solvency check.
-        for _ in 0..max_iterations {
-            // If the approximation error is greater than zero and the solution
-            // is the largest we've found so far, then we update our result.
-            let approximation_error = I256::from(self.share_reserves() + dz)
-                - I256::from((self.longs_outstanding() + dy) / self.share_price())
-                - I256::from(self.minimum_share_reserves());
-            if approximation_error > int256!(0) && dz * self.share_price() > base_amount {
-                base_amount = dz * self.share_price();
-                bond_amount = dy;
-            }
-
-            // Even though YieldSpace isn't linear, we can use a linear
-            // approximation to get closer to the optimal solution. Our guess
-            // should bring us close enough to the optimal point that we can
-            // linearly approximate the change in error using the current spot
-            // price.
-            //
-            // We can approximate the change in the trade output with respect to
-            // trade size as dy' = c * (1/p) * dz'. Substituting this into our
-            // error equation and setting the error equation equal to zero
-            // allows us to solve for the trade size update:
-            //
-            // (y_l + dy + c * (1/p) * dz') / c + z_min - (z + dz + dz') = 0
-            //                  =>
-            // (1/p - 1) * dz' = (z + dz) - (y_l + dy) / c - z_min
-            //                  =>
-            // dz' = ((z + dz) - (y_l + dy) / c - z_min) * (p / (p - 1)).
-            p = YieldSpaceState::new(
-                self.share_reserves() + dz,
-                self.bond_reserves() - dy,
-                self.share_price(),
-                self.config.initial_share_price.into(),
-            )
-            .get_spot_price(self.config.time_stretch.into());
-            if p >= fixed!(1e18) {
-                // If the spot price is greater than one and the error is
-                // positive,
-                break;
-            }
-            if approximation_error < int256!(0) {
-                let delta = FixedPoint::from((-approximation_error).into_raw())
-                    .mul_div_down(p, fixed!(1e18) - p);
-                if dz > delta {
-                    dz -= delta;
-                } else {
-                    dz = fixed!(0);
-                }
-            } else {
-                dz += FixedPoint::from(approximation_error.into_raw())
-                    .mul_div_down(p, fixed!(1e18) - p);
-            }
-            dy = YieldSpaceState::from(self)
-                .get_out_for_in(Asset::Shares(dz), self.config.time_stretch.into());
-        }
-
-        (base_amount, bond_amount)
+    /// YieldSpace intersects the y-axis with a finite slope, so there is a
+    /// minimum price that the pool can support. This is the price at which the
+    /// share reserves are equal to the minimum share reserves.
+    ///
+    /// We can solve for the bond reserves $y_{max}$ implied by the share reserves
+    /// being equal to $z_{min}$ using the current k value:
+    ///
+    /// $$
+    /// k = \tfrac{c}{\mu} \cdot \left( \mu \cdot z_{min} \right)^{1 - t_s} + y_{max}^{1 - t_s} \\
+    /// \implies \\
+    /// y_{max} = \left( k - \tfrac{c}{\mu} \cdot \left( \mu \cdot z_{min} \right)^{1 - t_s} \right)^{\tfrac{1}{1 - t_s}}
+    /// $$
+    ///
+    /// From there, we can calculate the spot price as normal as:
+    ///
+    /// $$
+    /// p = \left( \tfrac{\mu \cdot z_{min}}{y_{max}} \right)^{t_s}
+    /// $$
+    pub fn get_min_price(&self) -> FixedPoint {
+        let k = YieldSpaceState::from(self).k(self.time_stretch());
+        let y_max = (k
+            - (self.share_price() / self.initial_share_price())
+                * (self.initial_share_price() * self.minimum_share_reserves())
+                    .pow(fixed!(1e18) - self.time_stretch()))
+        .pow(fixed!(1e18).div_up(fixed!(1e18) - self.time_stretch()));
+        ((self.initial_share_price() * self.minimum_share_reserves()) / y_max)
+            .pow(self.time_stretch())
     }
 
     /// Gets the max short that can be opened with the given budget.
@@ -246,13 +46,16 @@ impl State {
     /// on the realized price that the short will pay. This is used to help the
     /// algorithm converge faster in real world situations. If this is `None`,
     /// then we'll use the theoretical worst case realized price.
-    pub fn get_max_short(
+    pub fn get_max_short<F1: Into<FixedPoint>, F2: Into<FixedPoint>>(
         &self,
-        budget: FixedPoint,
-        open_share_price: FixedPoint,
-        maybe_conservative_price: Option<FixedPoint>,
+        budget: F1,
+        open_share_price: F2,
+        maybe_conservative_price: Option<FixedPoint>, // TODO: Is there a nice way of abstracting the inner type?
         maybe_max_iterations: Option<usize>,
     ) -> FixedPoint {
+        let budget = budget.into();
+        let open_share_price = open_share_price.into();
+
         // If the budget is zero, then we return early.
         if budget == fixed!(0) {
             return fixed!(0);
@@ -314,36 +117,6 @@ impl State {
         }
 
         max_short_bonds
-    }
-
-    /// Gets the minimum price that the pool can support.
-    ///
-    /// YieldSpace intersects the y-axis with a finite slope, so there is a
-    /// minimum price that the pool can support. This is the price at which the
-    /// share reserves are equal to the minimum share reserves.
-    pub fn get_min_price(&self) -> FixedPoint {
-        // We can solve for the bond reserves $y_{max}$ implied by the share reserves
-        // being equal to $z_{min}$ using the current k value:
-        //
-        // $$
-        // k = \tfrac{c}{\mu} \cdot \left( \mu \cdot z_{min} \right)^{1 - t_s} + y_{max}^{1 - t_s} \\
-        // \implies \\
-        // y_{max} = \left( k - \tfrac{c}{\mu} \cdot \left( \mu \cdot z_{min} \right)^{1 - t_s} \right)^{\tfrac{1}{1 - t_s}}
-        // $$
-        //
-        // From there, we can calculate the spot price as normal as:
-        //
-        // $$
-        // p = \left( \tfrac{\mu \cdot z_{min}}{y_{max}} \right)^{t_s}
-        // $$
-        let k = YieldSpaceState::from(self).k(self.time_stretch());
-        let y_max = (k
-            - (self.share_price() / self.initial_share_price())
-                * (self.initial_share_price() * self.minimum_share_reserves())
-                    .pow(fixed!(1e18) - self.time_stretch()))
-        .pow(fixed!(1e18).div_up(fixed!(1e18) - self.time_stretch()));
-        ((self.initial_share_price() * self.minimum_share_reserves()) / y_max)
-            .pow(self.time_stretch())
     }
 
     /// Gets the maximum short that the pool can support. This doesn't take into
@@ -547,133 +320,26 @@ impl State {
         (self.initial_share_price() / self.share_price())
             * (k - (self.bond_reserves() + short_amount).pow(fixed!(1e18) - self.time_stretch()))
     }
-
-    /// Getters ///
-
-    fn share_reserves(&self) -> FixedPoint {
-        self.info.share_reserves.into()
-    }
-
-    fn minimum_share_reserves(&self) -> FixedPoint {
-        self.config.minimum_share_reserves.into()
-    }
-
-    fn bond_reserves(&self) -> FixedPoint {
-        self.info.bond_reserves.into()
-    }
-
-    fn longs_outstanding(&self) -> FixedPoint {
-        self.info.longs_outstanding.into()
-    }
-
-    fn share_price(&self) -> FixedPoint {
-        self.info.share_price.into()
-    }
-
-    fn initial_share_price(&self) -> FixedPoint {
-        self.config.initial_share_price.into()
-    }
-
-    fn time_stretch(&self) -> FixedPoint {
-        self.config.time_stretch.into()
-    }
-
-    fn flat_fee(&self) -> FixedPoint {
-        self.config.fees.flat.into()
-    }
-
-    fn curve_fee(&self) -> FixedPoint {
-        self.config.fees.curve.into()
-    }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::{convert::TryFrom, panic, sync::Arc, time::Duration};
+    use std::panic;
 
-    use ethers::{
-        core::utils::Anvil,
-        middleware::SignerMiddleware,
-        providers::{Http, Provider},
-        signers::{LocalWallet, Signer},
-        types::U256,
-        utils::AnvilInstance,
-    };
+    use ethers::types::U256;
     use eyre::Result;
     use hyperdrive_wrappers::wrappers::{
-        i_hyperdrive::Checkpoint,
-        mock_hyperdrive_math::{MaxTradeParams, MockHyperdriveMath},
+        i_hyperdrive::Checkpoint, mock_hyperdrive_math::MaxTradeParams,
     };
     use rand::{thread_rng, Rng};
     use test_utils::{
         agent::Agent,
-        chain::{Chain, TestChain},
+        chain::{Chain, TestChain, TestChainWithMocks},
         constants::{FAST_FUZZ_RUNS, FUZZ_RUNS},
     };
+    use tracing_test::traced_test;
 
     use super::*;
-
-    struct TestRunner {
-        mock: MockHyperdriveMath<SignerMiddleware<Provider<Http>, LocalWallet>>,
-        _anvil: AnvilInstance, // NOTE: Avoid dropping this until the end of the test.
-    }
-
-    // FIXME: DRY this up into a test-utils crate.
-    //
-    /// Set up a test blockchain with MockHyperdriveMath deployed.
-    async fn setup() -> Result<TestRunner> {
-        let anvil = Anvil::new().spawn();
-        let wallet: LocalWallet = anvil.keys()[0].clone().into();
-        let provider =
-            Provider::<Http>::try_from(anvil.endpoint())?.interval(Duration::from_millis(10u64));
-        let client = Arc::new(SignerMiddleware::new(
-            provider,
-            wallet.with_chain_id(anvil.chain_id()),
-        ));
-        let mock = MockHyperdriveMath::deploy(client, ())?.send().await?;
-        Ok(TestRunner {
-            mock,
-            _anvil: anvil,
-        })
-    }
-
-    #[tokio::test]
-    async fn fuzz_get_max_long() -> Result<()> {
-        let runner = setup().await?;
-
-        // Fuzz the rust and solidity implementations against each other.
-        let mut rng = thread_rng();
-        for _ in 0..*FAST_FUZZ_RUNS {
-            let state = rng.gen::<State>();
-            let max_iterations = rng.gen_range(0..=25);
-            let actual =
-                panic::catch_unwind(|| state.get_max_long(U256::MAX.into(), Some(max_iterations)));
-            match runner
-                .mock
-                .calculate_max_long(
-                    MaxTradeParams {
-                        share_reserves: state.info.share_reserves,
-                        bond_reserves: state.info.bond_reserves,
-                        longs_outstanding: state.info.longs_outstanding,
-                        time_stretch: state.config.time_stretch,
-                        share_price: state.info.share_price,
-                        initial_share_price: state.config.initial_share_price,
-                        minimum_share_reserves: state.config.minimum_share_reserves,
-                    },
-                    max_iterations.into(),
-                )
-                .call()
-                .await
-            {
-                Ok((expected_base_amount, ..)) => {
-                    assert_eq!(actual.unwrap(), FixedPoint::from(expected_base_amount));
-                }
-                Err(_) => assert!(actual.is_err()),
-            }
-        }
-
-        Ok(())
-    }
 
     /// This test differentially fuzzes the `get_max_long` function against the
     /// Solidity analogue `calculateMaxShort`. `calculateMaxShort` doesn't take
@@ -683,25 +349,27 @@ mod tests {
     /// functions are equivalent.
     #[tokio::test]
     async fn fuzz_get_max_short_no_budget() -> Result<()> {
-        let runner = setup().await?;
+        let chain = TestChainWithMocks::new(1).await?;
 
         // Fuzz the rust and solidity implementations against each other.
         let mut rng = thread_rng();
-        for _ in 0..*FUZZ_RUNS {
+        for _ in 0..*FAST_FUZZ_RUNS {
             let state = rng.gen::<State>();
-            let actual = panic::catch_unwind(|| {
-                state.get_max_short(U256::MAX.into(), fixed!(0), None, None)
-            });
-            match runner
-                .mock
+            let actual =
+                panic::catch_unwind(|| state.get_max_short(U256::MAX, fixed!(0), None, None));
+            match chain
+                .mock_hyperdrive_math()
                 .calculate_max_short(MaxTradeParams {
                     share_reserves: state.info.share_reserves,
                     bond_reserves: state.info.bond_reserves,
                     longs_outstanding: state.info.longs_outstanding,
+                    long_exposure: state.info.long_exposure,
                     time_stretch: state.config.time_stretch,
                     share_price: state.info.share_price,
                     initial_share_price: state.config.initial_share_price,
                     minimum_share_reserves: state.config.minimum_share_reserves,
+                    curve_fee: state.config.fees.curve,
+                    governance_fee: state.config.fees.governance,
                 })
                 .call()
                 .await
@@ -716,11 +384,9 @@ mod tests {
         Ok(())
     }
 
+    #[traced_test]
     #[tokio::test]
     async fn test_get_max_short() -> Result<()> {
-        // Set up the logger.
-        tracing_subscriber::fmt::init();
-
         // Spawn a test chain and create two agents -- Alice and Bob. Alice
         // is funded with a large amount of capital so that she can initialize
         // the pool. Bob is funded with a small amount of capital so that we
@@ -767,8 +433,7 @@ mod tests {
             } = alice
                 .get_checkpoint(state.to_checkpoint(alice.now().await?))
                 .await?;
-            let global_max_short =
-                state.get_max_short(U256::MAX.into(), open_share_price.into(), None, None);
+            let global_max_short = state.get_max_short(U256::MAX, open_share_price, None, None);
 
             // Bob opens a max short position. We allow for a very small amount
             // of slippage to account for interest accrual between the time the

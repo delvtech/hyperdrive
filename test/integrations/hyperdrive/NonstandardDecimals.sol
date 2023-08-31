@@ -11,6 +11,7 @@ import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import { Lib } from "../../utils/Lib.sol";
 
 contract NonstandardDecimalsTest is HyperdriveTest {
+    using FixedPointMath for int256;
     using FixedPointMath for uint256;
     using HyperdriveUtils for IHyperdrive;
     using Lib for *;
@@ -306,8 +307,10 @@ contract NonstandardDecimalsTest is HyperdriveTest {
             uint256 aliceBaseProceeds,
             uint256 aliceWithdrawalShares
         ) = removeLiquidity(alice, aliceLpShares);
-        uint256 lpMargin = (testParams.longAmount - testParams.longBasePaid) +
-            (testParams.shortAmount - testParams.shortBasePaid);
+        uint256 lpMargin = uint256(
+            (int256(testParams.longAmount - testParams.longBasePaid) -
+                int256(testParams.shortBasePaid)).max(0)
+        );
 
         assertEq(aliceBaseProceeds, estimatedBaseProceeds);
 

@@ -190,13 +190,6 @@ library Lib {
         return modValue + minimum;
     }
 
-    /**
-     * @dev Returns the smallest of two numbers.
-     */
-    function min(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a < b ? a : b;
-    }
-
     function eq(bytes memory b1, bytes memory b2) public pure returns (bool) {
         return
             keccak256(abi.encodePacked(b1)) == keccak256(abi.encodePacked(b2));

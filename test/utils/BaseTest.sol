@@ -42,11 +42,6 @@ contract BaseTest is Test {
 
     bool isForked;
 
-    constructor() {
-        mainnetForkId = vm.createFork(MAINNET_RPC_URL);
-        goerliForkId = vm.createFork(GOERLI_RPC_URL);
-    }
-
     function setUp() public virtual {
         alice = createUser("alice");
         bob = createUser("bob");
@@ -64,6 +59,7 @@ contract BaseTest is Test {
     }
 
     modifier __mainnet_fork(uint256 blockNumber) {
+        mainnetForkId = vm.createFork(MAINNET_RPC_URL);
         vm.selectFork(mainnetForkId);
         vm.rollFork(blockNumber);
         isForked = true;
@@ -72,6 +68,7 @@ contract BaseTest is Test {
     }
 
     modifier __goerli_fork(uint256 blockNumber) {
+        goerliForkId = vm.createFork(GOERLI_RPC_URL);
         vm.selectFork(goerliForkId);
         vm.rollFork(blockNumber);
         isForked = true;

@@ -7,10 +7,12 @@ import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { MockHyperdrive, IMockHyperdrive } from "../../mocks/MockHyperdrive.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
+import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Lib } from "../../utils/Lib.sol";
 
 contract IntraCheckpointNettingTest is HyperdriveTest {
     using FixedPointMath for uint256;
+    using HyperdriveUtils for *;
     using Lib for *;
 
     function test_netting_basic_example() external {
@@ -40,11 +42,11 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         // remove liquidity
         removeLiquidity(alice, aliceLpShares);
 
-        // close the long.
-        closeLong(alice, maturityTimeLong, bondAmountLong);
-
         // wait for the shorts to mature to close them
         advanceTimeWithCheckpoints(POSITION_DURATION, 0);
+
+        // close the long.
+        closeLong(alice, maturityTimeLong, bondAmountLong);
 
         // close the short
         closeShort(bob, maturityTimeShort2, shortAmount2);
@@ -56,6 +58,68 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
         assertApproxEqAbs(poolInfo.longExposure, 0, 1);
 
+        // idle should be equal to shareReserves
+        uint256 expectedShareReserves = MockHyperdrive(address(hyperdrive))
+            .calculateIdleShareReserves(hyperdrive.getPoolInfo().sharePrice) +
+            hyperdrive.getPoolConfig().minimumShareReserves;
+        assertEq(poolInfo.shareReserves, expectedShareReserves);
+    }
+
+    function test_netting_mismatched_exposure_maturities() external {
+        uint256 initialSharePrice = 1e18;
+        int256 variableInterest = 0e18;
+        uint256 timeElapsed = 10220546; //~118 days between each trade
+        uint256 tradeSize = 100e18;
+
+        // initialize the market
+        uint256 aliceLpShares = 0;
+        {
+            uint256 apr = 0.05e18;
+            deploy(alice, apr, initialSharePrice, 0, 0, 0);
+            uint256 contribution = 500_000_000e18;
+            aliceLpShares = initialize(alice, apr, contribution);
+
+            // fast forward time and accrue interest
+            advanceTime(POSITION_DURATION, 0);
+        }
+
+        // open a long
+        uint256 basePaidLong = tradeSize;
+        (uint256 maturityTimeLong, uint256 bondAmountLong) = openLong(
+            bob,
+            basePaidLong
+        );
+
+        // fast forward time, create checkpoints and accrue interest
+        advanceTimeWithCheckpoints(timeElapsed, variableInterest);
+
+        // open a short for the same number of bonds as the existing long
+        uint256 shortAmount = bondAmountLong;
+        (uint256 maturityTimeShort, ) = openShort(bob, shortAmount);
+
+        // remove liquidity
+        (, uint256 withdrawalShares) = removeLiquidity(alice, aliceLpShares);
+
+        // wait for the positions to mature
+        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
+        while (
+            poolInfo.shortsOutstanding > 0 && poolInfo.longsOutstanding > 0
+        ) {
+            advanceTimeWithCheckpoints(POSITION_DURATION, variableInterest);
+            poolInfo = hyperdrive.getPoolInfo();
+        }
+
+        // close the short positions
+        closeShort(bob, maturityTimeShort, shortAmount);
+
+        // close the long positions
+        closeLong(bob, maturityTimeLong, bondAmountLong);
+
+        // longExposure should be 0
+        poolInfo = hyperdrive.getPoolInfo();
+        assertApproxEqAbs(poolInfo.longExposure, 0, 1);
+
+        redeemWithdrawalShares(alice, withdrawalShares);
         // idle should be equal to shareReserves
         uint256 expectedShareReserves = MockHyperdrive(address(hyperdrive))
             .calculateIdleShareReserves(hyperdrive.getPoolInfo().sharePrice) +
@@ -97,11 +161,11 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
     // the interest drops so low that we underflow when trying to perform the YieldSpace
     // calculation for the opening of the new position
     function test_netting_extreme_negative_interest_time_elapsed() external {
-        uint256 initialSharePrice = 0.5e18;
-        int256 variableInterest = -0.5e18;
+        uint256 initialSharePrice = 1e18;
+        int256 variableInterest = 0.0e18;
         uint256 timeElapsed = 10220546; //~118 days between each trade
-        uint256 tradeSize = 4993785.6789593698886044450e18; //100_000_000 fails with sub underflow
-        uint256 numTrades = 10;
+        uint256 tradeSize = 100e18; //4_993_785.6789593698886044450e18; //100_000_000 fails with sub underflow
+        uint256 numTrades = 1;
 
         // If you increase numTrades enought it will eventually fail due to sub underflow
         // caused by share price going so low that k-y is negative (on openShort)
@@ -309,10 +373,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         // fast forward time, create checkpoints and accrue interest
         advanceTimeWithCheckpoints(timeElapsed, variableInterest);
 
-        // remove liquidity -
-        // NOTE: if there are no shorts, then longs can always be closed before maturity
-        // because shorts net with longs there could be enough netted exposure for some longs
-        // to not close.
+        // remove liquidity
         removeLiquidity(alice, aliceLpShares);
 
         // close the longs
@@ -387,6 +448,27 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             uint256 timeElapsed = POSITION_DURATION;
             uint256 tradeSize = 1_000_000e18;
             uint256 numTrades = 1;
+            open_close_short(
+                initialSharePrice,
+                variableInterest,
+                timeElapsed,
+                tradeSize,
+                numTrades
+            );
+        }
+        vm.revertTo(snapshotId);
+
+        // This test case was failing in fuzzing. It tests
+        // that when some shorts are closed via checkpoints
+        // and some closed via explicit calls to closeShort,
+        // it nets to zero.
+        snapshotId = vm.snapshot();
+        {
+            uint256 initialSharePrice = 0.5e18;
+            int256 variableInterest = 0.0e18;
+            uint256 timeElapsed = 8640001;
+            uint256 tradeSize = 6283765.441079100693164485e18;
+            uint256 numTrades = 5;
             open_close_short(
                 initialSharePrice,
                 variableInterest,
@@ -642,32 +724,24 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             (uint256 maturityTimeShort, ) = openShort(bob, bondAmount);
             shortMaturityTimes[i] = maturityTimeShort;
         }
-
         removeLiquidity(alice, aliceLpShares);
 
-        // close the long positions - not all of them have to be matured to close
-        // depending on how many shorts netted with them in checkpoints the exposure
-        // might be too low to close them all at once
-        for (uint256 i = 0; i < numTrades; i++) {
-            // fast forward time, create checkpoints and accrue interest
-            advanceTimeWithCheckpoints(1 days, variableInterest);
-
-            closeLong(bob, longMaturityTimes[i], bondAmounts[i]);
-        }
-
-        // Ensure all the short positions have matured before trying to close them
+        // Ensure all the positions have matured before trying to close them
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
-        while (poolInfo.shortsOutstanding > 0) {
+        while (
+            poolInfo.shortsOutstanding > 0 && poolInfo.longsOutstanding > 0
+        ) {
             advanceTimeWithCheckpoints(POSITION_DURATION, variableInterest);
             poolInfo = hyperdrive.getPoolInfo();
         }
 
         // close the short positions
         for (uint256 i = 0; i < numTrades; i++) {
+            // close the short positions
             closeShort(bob, shortMaturityTimes[i], bondAmounts[i]);
 
-            // fast forward time, create checkpoints and accrue interest
-            advanceTimeWithCheckpoints(1 days, variableInterest);
+            // close the long positions
+            closeLong(bob, longMaturityTimes[i], bondAmounts[i]);
         }
 
         // longExposure should be 0

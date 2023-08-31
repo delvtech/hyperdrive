@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
-import { FixedPointMath } from "./FixedPointMath.sol";
+import { FixedPointMath, ONE } from "./FixedPointMath.sol";
 import { YieldSpaceMath } from "./YieldSpaceMath.sol";
 import { SafeCast } from "./SafeCast.sol";
 
@@ -14,6 +14,7 @@ import { SafeCast } from "./SafeCast.sol";
 ///                    particular legal or regulatory significance.
 library HyperdriveMath {
     using FixedPointMath for uint256;
+    using FixedPointMath for int256;
     using SafeCast for uint256;
 
     /// @dev Calculates the spot price without slippage of bonds in terms of base.
@@ -60,9 +61,8 @@ library HyperdriveMath {
             _initialSharePrice,
             _timeStretch
         );
-
         return
-            (FixedPointMath.ONE_18 - spotPrice).divDown(
+            (ONE - spotPrice).divDown(
                 spotPrice.mulDivUp(365 days, _positionDuration)
             );
     }
@@ -89,12 +89,11 @@ library HyperdriveMath {
     ) internal pure returns (uint256 bondReserves) {
         // NOTE: Using divDown to convert to fixed point format.
         uint256 t = _positionDuration.divDown(365 days);
+
         // mu * z * (1 + apr * t) ** (1 / tau)
         return
             _initialSharePrice.mulDown(_shareReserves).mulDown(
-                (FixedPointMath.ONE_18 + _apr.mulDown(t)).pow(
-                    FixedPointMath.ONE_18.divUp(_timeStretch)
-                )
+                (ONE + _apr.mulDown(t)).pow(ONE.divUp(_timeStretch))
             );
     }
 
@@ -120,7 +119,7 @@ library HyperdriveMath {
                 _shareReserves,
                 _bondReserves,
                 _shareAmount,
-                FixedPointMath.ONE_18 - _timeStretch,
+                ONE - _timeStretch,
                 _sharePrice,
                 _initialSharePrice
             );
@@ -167,7 +166,7 @@ library HyperdriveMath {
         // redemption by the share price) and the newly minted bonds are
         // traded on a YieldSpace curve configured to timeRemaining = 1.
         shareProceeds = _amountIn.mulDivDown(
-            FixedPointMath.ONE_18 - _normalizedTimeRemaining,
+            ONE - _normalizedTimeRemaining,
             _sharePrice
         );
         if (_normalizedTimeRemaining > 0) {
@@ -179,7 +178,7 @@ library HyperdriveMath {
                 _shareReserves,
                 _bondReserves,
                 bondReservesDelta,
-                FixedPointMath.ONE_18 - _timeStretch,
+                ONE - _timeStretch,
                 _sharePrice,
                 _initialSharePrice
             );
@@ -225,7 +224,7 @@ library HyperdriveMath {
                 _shareReserves,
                 _bondReserves,
                 _amountIn,
-                FixedPointMath.ONE_18 - _timeStretch,
+                ONE - _timeStretch,
                 _sharePrice,
                 _initialSharePrice
             );
@@ -268,7 +267,7 @@ library HyperdriveMath {
         // minted bonds are traded on a YieldSpace curve configured to
         // timeRemaining = 1.
         sharePayment = _amountOut.mulDivDown(
-            FixedPointMath.ONE_18 - _normalizedTimeRemaining,
+            ONE - _normalizedTimeRemaining,
             _sharePrice
         );
         bondReservesDelta = _amountOut.mulDown(_normalizedTimeRemaining);
@@ -277,7 +276,7 @@ library HyperdriveMath {
                 _shareReserves,
                 _bondReserves,
                 bondReservesDelta,
-                FixedPointMath.ONE_18 - _timeStretch,
+                ONE - _timeStretch,
                 _sharePrice,
                 _initialSharePrice
             );
@@ -285,190 +284,526 @@ library HyperdriveMath {
         }
     }
 
-    /// @dev Calculates the change in exposure after closing a position.
-    /// @param _positionExposure The checkpointed position exposure.
-    /// @param _baseReservesDelta The amount of base that the reserves will change by.
-    /// @param _bondReservesDelta The amount of bonds that the reserves will change by.
-    /// @param _baseUserDelta The amount of base that the user will receive (long) or pay (short).
-    /// @param _checkpointPositions The number of open positions (either long or short) in a checkpoint.
-    /// @return positionExposureDelta The change in exposure after closing a position.
-    function calculateClosePositionExposure(
-        uint256 _positionExposure,
-        uint256 _baseReservesDelta,
-        uint256 _bondReservesDelta,
-        uint256 _baseUserDelta,
-        uint256 _checkpointPositions
-    ) internal pure returns (uint128) {
-        uint256 flatPlusCurveDelta = _baseUserDelta -
-            _baseReservesDelta +
-            _bondReservesDelta -
-            _baseReservesDelta;
-        // if there are no open positions, or the positionExposure
-        // is less than the delta from the flat + curve calculation, then
-        // all the (short or long) positions in the checkpoint are now closed and we
-        // can set the positionExposure to 0.
-        if (
-            _checkpointPositions == 0 || _positionExposure < flatPlusCurveDelta
-        ) {
-            // This effectively sets the positionExposure to 0.
-            return _positionExposure.toUint128();
-        }
-
-        // Reduce the exposure (long) or assets (short) by the amount of matured positions (flat)
-        // and by the unmatured positions (curve)
-        return flatPlusCurveDelta.toUint128();
-    }
-
     struct MaxTradeParams {
         uint256 shareReserves;
         uint256 bondReserves;
         uint256 longsOutstanding;
+        uint256 longExposure;
         uint256 timeStretch;
         uint256 sharePrice;
         uint256 initialSharePrice;
         uint256 minimumShareReserves;
+        uint256 curveFee;
+        uint256 governanceFee;
     }
 
-    /// @dev Calculates the maximum amount of shares a user can spend on buying
-    ///      bonds before the spot crosses above a price of 1.
-    /// @param _params Information about the market state and pool configuration
-    ///        used to compute the maximum trade.
-    /// @param _maxIterations The maximum number of iterations to perform before
-    ///        returning the result.
-    /// @return baseAmount The cost of the maximum long.
-    /// @return bondAmount The maximum amount of longs that can be opened.
+    // FIXME: I don't think that this correctly handles the case where the
+    // checkpoint starts with negative exposure.
+    //
+    // FIXME: Instead of exposure increasing immediately, we should first eat
+    // through the negative checkpoint exposure.
+    //
+    /// @dev Gets the max long that can be opened given a budget.
+    ///
+    ///      We start by calculating the long that brings the pool's spot price
+    ///      to 1. If we are solvent at this point, then we're done. Otherwise,
+    ///      we approach the max long iteratively using Newton's method.
+    /// @param _params The parameters for the max long calculation.
+    /// @param _maxIterations The maximum number of iterations to use in the
+    ///                       Newton's method loop.
+    /// @return maxBaseAmount The maximum base amount.
+    /// @return maxBondAmount The maximum bond amount.
     function calculateMaxLong(
         MaxTradeParams memory _params,
+        int256 _checkpointLongExposure,
         uint256 _maxIterations
-    ) internal pure returns (uint256 baseAmount, uint256 bondAmount) {
-        // We first solve for the maximum buy that is possible on the YieldSpace
-        // curve. This will give us an upper bound on our maximum buy by giving
-        // us the maximum buy that is possible without going into negative
-        // interest territory. Hyperdrive has solvency requirements since it
-        // mints longs on demand. If the maximum buy satisfies our solvency
-        // checks, then we're done. If not, then we need to solve for the
-        // maximum trade size iteratively.
-        (uint256 dz, uint256 dy) = YieldSpaceMath.calculateMaxBuy(
+    ) internal pure returns (uint256 maxBaseAmount, uint256 maxBondAmount) {
+        // Get the maximum long that brings the spot price to 1. If the pool is
+        // solvent after opening this long, then we're done.
+        uint256 spotPrice = calculateSpotPrice(
             _params.shareReserves,
             _params.bondReserves,
-            FixedPointMath.ONE_18 - _params.timeStretch,
-            _params.sharePrice,
-            _params.initialSharePrice
+            _params.initialSharePrice,
+            _params.timeStretch
         );
-        if (
-            _params.shareReserves + dz >=
-            (_params.longsOutstanding + dy).divDown(_params.sharePrice) +
-                _params.minimumShareReserves
-        ) {
-            baseAmount = dz.mulDown(_params.sharePrice);
-            bondAmount = dy;
-            return (baseAmount, bondAmount);
+        uint256 absoluteMaxBaseAmount;
+        uint256 absoluteMaxBondAmount;
+        {
+            uint256 maxShareAmount;
+            (maxShareAmount, absoluteMaxBondAmount) = YieldSpaceMath
+                .calculateMaxBuy(
+                    _params.shareReserves,
+                    _params.bondReserves,
+                    ONE - _params.timeStretch,
+                    _params.sharePrice,
+                    _params.initialSharePrice
+                );
+            absoluteMaxBaseAmount = maxShareAmount.mulDown(_params.sharePrice);
+            (, bool isSolvent_) = calculateSolvency(
+                _params,
+                _checkpointLongExposure,
+                absoluteMaxBaseAmount,
+                absoluteMaxBondAmount,
+                spotPrice
+            );
+            if (isSolvent_) {
+                return (absoluteMaxBaseAmount, absoluteMaxBondAmount);
+            }
         }
 
-        // To make an initial guess for the iterative approximation, we consider
-        // the solvency check to be the error that we want to reduce. The amount
-        // the long buffer exceeds the share reserves is given by
-        // (y_l + dy) / c - (z + dz). Since the error could be large, we'll use
-        // the realized price of the trade instead of the spot price to
-        // approximate the change in trade output. This gives us dy = c * 1/p * dz.
-        // Substituting this into error equation and setting the error equal to
-        // zero allows us to solve for the initial guess as:
+        // Use Newton's method to iteratively approach a solution. We use pool's
+        // solvency $S(x)$ as our objective function, which will converge to the
+        // amount of base that needs to be paid to open the maximum long. The
+        // derivative of $S(x)$ is negative (since solvency decreases as more
+        // longs are opened). The fixed point library doesn't support negative
+        // numbers, so we use the negation of the derivative to side-step the
+        // issue.
         //
-        // (y_l + c * 1/p * dz) / c + z_min - (z + dz) = 0
-        //              =>
-        // (1/p - 1) * dz = z - y_l/c - z_min
-        //              =>
-        // dz = (z - y_l/c - z_min) * (p / (p - 1))
-        uint256 p = _params.sharePrice.mulDivDown(dz, dy);
-        dz = (_params.shareReserves -
-            _params.longsOutstanding.divDown(_params.sharePrice) -
-            _params.minimumShareReserves).mulDivDown(
-                p,
-                FixedPointMath.ONE_18 - p
-            );
-        dy = YieldSpaceMath.calculateBondsOutGivenSharesIn(
-            _params.shareReserves,
-            _params.bondReserves,
-            dz,
-            FixedPointMath.ONE_18 - _params.timeStretch,
-            _params.sharePrice,
-            _params.initialSharePrice
+        // Given the current guess of $x_n$, Newton's method gives us an updated
+        // guess of $x_{n+1}$:
+        //
+        // $$
+        // x_{n+1} = x_n - \tfrac{S(x_n)}{S'(x_n)} = x_n + \tfrac{S(x_n)}{-S'(x_n)}
+        // $$
+        //
+        // The guess that we make is very important in determining how quickly
+        // we converge to the solution.
+        maxBaseAmount = calculateMaxLongGuess(
+            _params,
+            _checkpointLongExposure,
+            spotPrice
         );
-
-        // Our maximum long will be the largest trade size that doesn't fail
-        // the solvency check.
+        maxBondAmount = calculateLongAmount(_params, maxBaseAmount, spotPrice);
+        (uint256 s, bool isSolvent) = calculateSolvency(
+            _params,
+            _checkpointLongExposure,
+            maxBaseAmount,
+            maxBondAmount,
+            spotPrice
+        );
+        require(isSolvent, "Initial guess in `calculateMaxLong` is insolvent.");
         for (uint256 i = 0; i < _maxIterations; i++) {
-            // If the approximation error is greater than zero and the solution
-            // is the largest we've found so far, then we update our result.
-            int256 approximationError = int256((_params.shareReserves + dz)) -
-                int256(
-                    (_params.longsOutstanding + dy).divDown(_params.sharePrice)
-                ) -
-                int256(_params.minimumShareReserves);
-            if (
-                approximationError > 0 &&
-                dz.mulDown(_params.sharePrice) > baseAmount
-            ) {
-                baseAmount = dz.mulDown(_params.sharePrice);
-                bondAmount = dy;
+            // If the base amount is greater than the absolute max base amount
+            // (based on the spot price), we short circuit and return the
+            // absolute maximum base and bond amounts.
+            if (maxBaseAmount >= absoluteMaxBaseAmount) {
+                return (absoluteMaxBaseAmount, absoluteMaxBondAmount);
             }
 
-            // Even though YieldSpace isn't linear, we can use a linear
-            // approximation to get closer to the optimal solution. Our guess
-            // should bring us close enough to the optimal point that we can
-            // linearly approximate the change in error using the current spot
-            // price.
+            // If the pool is solvent after the current guess, we proceed with
+            // Newton's method. As Newton's method approaches the root, it can
+            // cross over to the other side of the root. We truncuate Newton's
+            // method when this happens.
             //
-            // We can approximate the change in the trade output with respect to
-            // trade size as dy' = c * (1/p) * dz'. Substituting this into our
-            // error equation and setting the error equation equal to zero
-            // allows us to solve for the trade size update:
-            //
-            // (y_l + dy + c * (1/p) * dz') / c + z_min - (z + dz + dz') = 0
-            //                  =>
-            // (1/p - 1) * dz' = (z + dz) - (y_l + dy) / c - z_min
-            //                  =>
-            // dz' = ((z + dz) - (y_l + dy) / c - z_min) * (p / (p - 1)).
-            p = calculateSpotPrice(
-                _params.shareReserves + dz,
-                _params.bondReserves - dy,
-                _params.initialSharePrice,
-                _params.timeStretch
-            );
-            if (p >= FixedPointMath.ONE_18) {
-                // If the spot price is greater than one and the error is
-                // positive,
+            // TODO: It may be better to gracefully handle crossing over the
+            // root by extending the fixed point math library to handle negative
+            // numbers or even just using an if-statement to handle the negative
+            // numbers.
+            if (isSolvent) {
+                // Calculate the derivative of the objective function for
+                // Newton's method. This should only fail near the root.
+                (
+                    uint256 derivative,
+                    bool success
+                ) = calculateSolvencyDerivative(
+                        _params,
+                        maxBaseAmount,
+                        spotPrice
+                    );
+                if (!success) {
+                    break;
+                }
+
+                // Calculate the next step of Newton's method and calculate the
+                // ending solvency.
+                maxBaseAmount += s.divDown(derivative);
+                maxBondAmount = calculateLongAmount(
+                    _params,
+                    maxBaseAmount,
+                    spotPrice
+                );
+                (s, isSolvent) = calculateSolvency(
+                    _params,
+                    _checkpointLongExposure,
+                    maxBaseAmount,
+                    maxBondAmount,
+                    spotPrice
+                );
+            } else {
                 break;
             }
-            if (approximationError < 0) {
-                uint256 delta = uint256(-approximationError).mulDivDown(
-                    p,
-                    FixedPointMath.ONE_18 - p
-                );
-                if (dz > delta) {
-                    dz -= delta;
-                } else {
-                    dz = 0;
-                }
-            } else {
-                dz += uint256(approximationError).mulDivDown(
-                    p,
-                    FixedPointMath.ONE_18 - p
-                );
-            }
-            dy = YieldSpaceMath.calculateBondsOutGivenSharesIn(
-                _params.shareReserves,
-                _params.bondReserves,
-                dz,
-                FixedPointMath.ONE_18 - _params.timeStretch,
-                _params.sharePrice,
-                _params.initialSharePrice
-            );
         }
 
-        return (baseAmount, bondAmount);
+        return (maxBaseAmount, maxBondAmount);
     }
 
+    /// @dev Gets a starting guess for the iterative process of finding the max
+    ///      long.
+    ///
+    ///      To calculate our guess, we assume an unrealistically good realized
+    ///      price $p_r$ for closing the long. This allows us to approximate
+    ///      $y(x)$ as $y(x) \approx p_r^{-1} \cdot x - c(x)$. Plugging this
+    ///      into our solvency function $s(x)$, we can calculate the share
+    ///      reserves and exposure after opening a long with $x$ base as:
+    ///
+    ///      \begin{aligned}
+    ///      z(x) &= z_0 + \tfrac{x - g(x)}{c} - z_{min} \\
+    ///      e(x) &= e_0 + min(exposure_{c}, 0) + 2 \cdot y(x) - x + g(x) \\
+    ///           &= e_0 + min(exposure_{c}, 0) + 2 \cdot p_r^{-1} \cdot x -
+    ///                  2 \cdot c(x) - x + g(x)
+    ///      \end{aligned}
+    ///
+    ///      We debit and negative checkpoint exposure from $e_0$ since the
+    ///      global exposure doesn't take into account the negative exposure
+    ///      from unnetted shorts in the checkpoint. These forumulas allow us
+    ///      to calculate the approximate ending solvency of:
+    ///
+    ///      $$
+    ///      s(x) \approx z(x) - \tfrac{e(x)}{c} - z_{min}
+    ///      $$
+    ///
+    ///      If we let the initial solvency be given by $s_0$, we can solve for
+    ///      $x$ as:
+    ///
+    ///      $$
+    ///      x = \frac{c}{2} \cdot \frac{s_0 + min(exposure_{c}, 0)}{
+    ///              p_r^{-1} +
+    ///              \phi_{g} \cdot \phi_{c} \cdot \left( 1 - p \right) -
+    ///              1 -
+    ///              \phi_{c} \cdot \left( p^{-1} - 1 \right)
+    ///          }
+    ///      $$
+    ///
+    ///      We need to use a conservative estimate for the realized price, so
+    ///      we use the spot price $p$ as our estimate price.
+    /// @param _params The max long calculation parameters.
+    /// @param _spotPrice The spot price of the pool.
+    /// @return The starting guess for the iterative process of finding the max
+    ///         long.
+    function calculateMaxLongGuess(
+        MaxTradeParams memory _params,
+        int256 _checkpointLongExposure,
+        uint256 _spotPrice
+    ) internal pure returns (uint256) {
+        uint256 estimatePrice = _spotPrice;
+        uint256 checkpointExposure = uint256(-_checkpointLongExposure.min(0));
+        uint256 guess = (_params.shareReserves +
+            checkpointExposure.divDown(_params.sharePrice) -
+            _params.longExposure.divDown(_params.sharePrice) -
+            _params.minimumShareReserves).mulDivDown(_params.sharePrice, 2e18);
+        guess = guess.divDown(
+            ONE.divDown(estimatePrice) +
+                _params.governanceFee.mulDown(_params.curveFee).mulDown(
+                    ONE - _spotPrice
+                ) -
+                ONE -
+                _params.curveFee.mulDown(ONE.divDown(_spotPrice) - ONE)
+        );
+        return guess;
+    }
+
+    /// @dev Gets the solvency of the pool $S(x)$ after a long is opened with a
+    ///      base amount $x$.
+    ///
+    ///      Since longs can net out with shorts in this checkpoint, we decrease
+    ///      the global exposure variable by any negative long exposure we have
+    ///      in the checkpoint. The pool's solvency is calculated as:
+    ///
+    ///      $$
+    ///      s = z - \tfrac{exposure + min(exposure_{c}, 0)}{c} - z_{min}
+    ///      $$
+    ///
+    ///      When a long is opened, the share reserves $z$ increase by:
+    ///
+    ///      $$
+    ///      \Delta z = \tfrac{x - g(x)}{c}
+    ///      $$
+    ///
+    ///      In the solidity implementation, we calculate the delta in the
+    ///      exposure as:
+    ///
+    ///      ```
+    ///      shareReservesDelta = _shareAmount - governanceCurveFee.divDown(_sharePrice)
+    ///      uint128 longExposureDelta = (2 *
+    ///          _bondProceeds -
+    ///          _shareReservesDelta.mulDown(_sharePrice)).toUint128();
+    ///      ```
+    ///
+    ///      From this, we can calculate our exposure as:
+    ///
+    ///      $$
+    ///      \Delta exposure = 2 \cdot y(x) - x + g(x)
+    ///      $$
+    ///
+    ///      From this, we can calculate $S(x)$ as:
+    ///
+    ///      $$
+    ///      S(x) = \left( z + \Delta z \right) - \left(
+    ///                 \tfrac{exposure + min(exposure_{c}, 0) + \Delta exposure}{c}
+    ///             \right) - z_{min}
+    ///      $$
+    ///
+    ///      It's possible that the pool is insolvent after opening a long. In
+    ///      this case, we return `false` since the fixed point library can't
+    ///      represent negative numbers.
+    /// @param _params The max long calculation parameters.
+    /// @param _baseAmount The base amount.
+    /// @param _bondAmount The bond amount.
+    /// @param _spotPrice The spot price.
+    /// @return The solvency of the pool.
+    /// @return A flag indicating that the pool is solvent if true and insolvent
+    ///         if false.
+    function calculateSolvency(
+        MaxTradeParams memory _params,
+        int256 _checkpointLongExposure,
+        uint256 _baseAmount,
+        uint256 _bondAmount,
+        uint256 _spotPrice
+    ) internal pure returns (uint256, bool) {
+        uint256 governanceFee = calculateLongGovernanceFee(
+            _baseAmount,
+            _spotPrice,
+            _params.curveFee,
+            _params.governanceFee
+        );
+        uint256 shareReserves = _params.shareReserves +
+            _baseAmount.divDown(_params.sharePrice) -
+            governanceFee.divDown(_params.sharePrice);
+        uint256 exposure = _params.longExposure +
+            2 *
+            _bondAmount -
+            _baseAmount +
+            governanceFee;
+        uint256 checkpointExposure = uint256(-_checkpointLongExposure.min(0));
+        if (
+            shareReserves + checkpointExposure.divDown(_params.sharePrice) >=
+            exposure.divDown(_params.sharePrice) + _params.minimumShareReserves
+        ) {
+            return (
+                shareReserves +
+                    checkpointExposure.divDown(_params.sharePrice) -
+                    exposure.divDown(_params.sharePrice) -
+                    _params.minimumShareReserves,
+                true
+            );
+        } else {
+            return (0, false);
+        }
+    }
+
+    /// @dev Gets the negation of the derivative of the pool's solvency with
+    ///      respect to the base amount that the long pays.
+    ///
+    ///      The derivative of the pool's solvency $S(x)$ with respect to the
+    ///      base amount that the long pays is given by:
+    ///
+    ///      $$
+    ///      S'(x) = \tfrac{2}{c} \cdot \left(
+    ///                  1 - y'(x) - \phi_{g} \cdot p \cdot c'(x)
+    ///              \right) \\
+    ///            = \tfrac{2}{c} \cdot \left(
+    ///                  1 - y'(x) - \phi_{g} \cdot \phi_{c} \cdot \left( 1 - p \right)
+    ///              \right)
+    ///      $$
+    ///
+    ///      This derivative is negative since solvency decreases as more longs
+    ///      are opened. We use the negation of the derivative to stay in the
+    ///      positive domain, which allows us to use the fixed point library.
+    /// @param _params The max long calculation parameters.
+    /// @param _baseAmount The base amount.
+    /// @param _spotPrice The spot price.
+    /// @return derivative The negation of the derivative of the pool's solvency
+    ///         w.r.t the base amount.
+    /// @return success A flag indicating whether or not the derivative was
+    ///         successfully calculated.
+    function calculateSolvencyDerivative(
+        MaxTradeParams memory _params,
+        uint256 _baseAmount,
+        uint256 _spotPrice
+    ) internal pure returns (uint256 derivative, bool success) {
+        // Calculate the derivative of the long amount. This calculation can
+        // fail when we are close to the root. In these cases, we exit early.
+        (derivative, success) = calculateLongAmountDerivative(
+            _params,
+            _baseAmount,
+            _spotPrice
+        );
+        if (!success) {
+            return (0, success);
+        }
+
+        // Finish computing the derivative.
+        derivative += _params.governanceFee.mulDown(_params.curveFee).mulDown(
+            ONE - _spotPrice
+        );
+        derivative -= ONE;
+
+        return (derivative.mulDivDown(2e18, _params.sharePrice), success);
+    }
+
+    /// @dev Gets the long amount that will be opened for a given base amount.
+    ///
+    ///      The long amount $y(x)$ that a trader will receive is given by:
+    ///
+    ///      $$
+    ///      y(x) = y_{*}(x) - c(x)
+    ///      $$
+    ///
+    ///      Where $y_{*}(x)$ is the amount of long that would be opened if there
+    ///      was no curve fee and [$c(x)$](long_curve_fee) is the curve fee.
+    ///      $y_{*}(x)$ is given by:
+    ///
+    ///      $$
+    ///      y_{*}(x) = y - \left(
+    ///                     k - \tfrac{c}{\mu} \cdot \left(
+    ///                         \mu \cdot \left( z + \tfrac{x}{c}
+    ///                     \right) \right)^{1 - t_s}
+    ///                 \right)^{\tfrac{1}{1 - t_s}}
+    ///      $$
+    /// @param _params The max long calculation parameters.
+    /// @param _baseAmount The base amount.
+    /// @param _spotPrice The spot price.
+    /// @return The long amount.
+    function calculateLongAmount(
+        MaxTradeParams memory _params,
+        uint256 _baseAmount,
+        uint256 _spotPrice
+    ) internal pure returns (uint256) {
+        uint256 longAmount = YieldSpaceMath.calculateBondsOutGivenSharesIn(
+            _params.shareReserves,
+            _params.bondReserves,
+            _baseAmount.divDown(_params.sharePrice),
+            ONE - _params.timeStretch,
+            _params.sharePrice,
+            _params.initialSharePrice
+        );
+        return
+            longAmount -
+            calculateLongCurveFee(_baseAmount, _spotPrice, _params.curveFee);
+    }
+
+    /// @dev Gets the derivative of [long_amount](long_amount) with respect to
+    ///      the base amount.
+    ///
+    ///      We calculate the derivative of the long amount $y(x)$ as:
+    ///
+    ///      $$
+    ///      y'(x) = y_{*}'(x) - c'(x)
+    ///      $$
+    ///
+    ///      Where $y_{*}'(x)$ is the derivative of $y_{*}(x)$ and $c'(x)$ is the
+    ///      derivative of [$c(x)$](long_curve_fee). $y_{*}'(x)$ is given by:
+    ///
+    ///      $$
+    ///      y_{*}'(x) = \left( \mu \cdot (z + \tfrac{x}{c}) \right)^{-t_s}
+    ///                  \left(
+    ///                      k - \tfrac{c}{\mu} \cdot
+    ///                      \left(
+    ///                          \mu \cdot (z + \tfrac{x}{c}
+    ///                      \right)^{1 - t_s}
+    ///                  \right)^{\tfrac{t_s}{1 - t_s}}
+    ///      $$
+    ///
+    ///      and $c'(x)$ is given by:
+    ///
+    ///      $$
+    ///      c'(x) = \phi_{c} \cdot \left( \tfrac{1}{p} - 1 \right)
+    ///      $$
+    /// @param _params The max long calculation parameters.
+    /// @param _baseAmount The base amount.
+    /// @param _spotPrice The spot price.
+    /// @return derivative The derivative of the long amount w.r.t. the base
+    ///         amount.
+    /// @return A flag indicating whether or not the derivative was
+    ///         successfully calculated.
+    function calculateLongAmountDerivative(
+        MaxTradeParams memory _params,
+        uint256 _baseAmount,
+        uint256 _spotPrice
+    ) internal pure returns (uint256 derivative, bool) {
+        // Compute the first part of the derivative.
+        uint256 shareAmount = _baseAmount.divDown(_params.sharePrice);
+        uint256 inner = _params.initialSharePrice.mulDown(
+            _params.shareReserves + shareAmount
+        );
+        uint256 cDivMu = _params.sharePrice.divDown(_params.initialSharePrice);
+        uint256 k = YieldSpaceMath.modifiedYieldSpaceConstant(
+            cDivMu,
+            _params.initialSharePrice,
+            _params.shareReserves,
+            ONE - _params.timeStretch,
+            _params.bondReserves
+        );
+        derivative = ONE.divDown(inner.pow(_params.timeStretch));
+
+        // It's possible that k is slightly larger than the rhs in the inner
+        // calculation. If this happens, we are close to the root, and we short
+        // circuit.
+        uint256 rhs = cDivMu.mulDown(inner.pow(_params.timeStretch));
+        if (k < rhs) {
+            return (0, false);
+        }
+        derivative = derivative.mulDown(
+            (k - rhs).pow(_params.timeStretch.divUp(ONE - _params.timeStretch))
+        );
+
+        // Finish computing the derivative.
+        derivative -= _params.curveFee.mulDown(ONE.divDown(_spotPrice) - ONE);
+
+        return (derivative, true);
+    }
+
+    /// @dev Gets the curve fee paid by longs for a given base amount.
+    ///
+    ///      The curve fee $c(x)$ paid by longs is given by:
+    ///
+    ///      $$
+    ///      c(x) = \phi_{c} \cdot \left( \tfrac{1}{p} - 1 \right) \cdot x
+    ///      $$
+    /// @param _baseAmount The base amount, $x$.
+    /// @param _spotPrice The spot price, $p$.
+    /// @param _curveFee The curve fee, $\phi_{c}$.
+    function calculateLongCurveFee(
+        uint256 _baseAmount,
+        uint256 _spotPrice,
+        uint256 _curveFee
+    ) internal pure returns (uint256) {
+        // fee = curveFee * (1/p - 1) * x
+        return
+            _curveFee.mulDown(ONE.divDown(_spotPrice) - ONE).mulDown(
+                _baseAmount
+            );
+    }
+
+    /// @dev Gets the governance fee paid by longs for a given base amount.
+    ///
+    ///      Unlike the [curve fee](long_curve_fee) which is paid in bonds, the
+    ///      governance fee is paid in base. The governance fee $g(x)$ paid by
+    ///      longs is given by:
+    ///
+    ///      $$
+    ///      g(x) = \phi_{g} \cdot p \cdot c(x)
+    ///      $$
+    /// @param _baseAmount The base amount, $x$.
+    /// @param _spotPrice The spot price, $p$.
+    /// @param _curveFee The curve fee, $\phi_{c}$.
+    /// @param _governanceFee The governance fee, $\phi_{g}$.
+    function calculateLongGovernanceFee(
+        uint256 _baseAmount,
+        uint256 _spotPrice,
+        uint256 _curveFee,
+        uint256 _governanceFee
+    ) internal pure returns (uint256) {
+        return
+            _governanceFee.mulDown(_spotPrice).mulDown(
+                calculateLongCurveFee(_baseAmount, _spotPrice, _curveFee)
+            );
+    }
+
+    // TODO: This is an overly restrictive max short calculation. We can do
+    // better if we iteratively approximate using solvency as an objective
+    // function.
+    //
     /// @dev Calculates the maximum amount of shares that can be used to open
     ///      shorts.
     /// @param _params Information about the market state and pool configuration
@@ -479,12 +814,12 @@ library HyperdriveMath {
     ) internal pure returns (uint256) {
         // The only constraint on the maximum short is that the share reserves
         // don't go negative and satisfy the solvency requirements. Thus, we can
-        // set z = y_l/c + z_min and solve for the maximum short directly as:
+        // set z = z_min and solve for the maximum short directly as:
         //
-        // k = (c / mu) * (mu * (y_l / c + z_min)) ** (1 - tau) + y ** (1 - tau)
+        // k = (c / mu) * (mu * (y_l/c + z_min)) ** (1 - tau) + y ** (1 - tau)
         //                         =>
-        // y = (k - (c / mu) * (mu * (y_l / c + z_min)) ** (1 - tau)) ** (1 / (1 - tau)).
-        uint256 t = FixedPointMath.ONE_18 - _params.timeStretch;
+        // y = (k - (c / mu) * (mu * (y_l/c + z_min)) ** (1 - tau)) ** (1 / (1 - tau)).
+        uint256 t = ONE - _params.timeStretch;
         uint256 priceFactor = _params.sharePrice.divDown(
             _params.initialSharePrice
         );
@@ -503,7 +838,7 @@ library HyperdriveMath {
             )
             .pow(t);
         uint256 optimalBondReserves = (k - priceFactor.mulDown(innerFactor))
-            .pow(FixedPointMath.ONE_18.divDown(t));
+            .pow(ONE.divDown(t));
 
         // The optimal bond reserves imply a maximum short of dy = y - y0.
         return optimalBondReserves - _params.bondReserves;
@@ -552,7 +887,7 @@ library HyperdriveMath {
                 _params.shareReserves,
                 _params.bondReserves,
                 _params.minimumShareReserves,
-                FixedPointMath.ONE_18 - _params.timeStretch,
+                ONE - _params.timeStretch,
                 _params.sharePrice,
                 _params.initialSharePrice
             );
@@ -563,7 +898,7 @@ library HyperdriveMath {
                         _params.shareReserves,
                         _params.bondReserves,
                         uint256(netCurveTrade),
-                        FixedPointMath.ONE_18 - _params.timeStretch,
+                        ONE - _params.timeStretch,
                         _params.sharePrice,
                         _params.initialSharePrice
                     );
@@ -583,7 +918,7 @@ library HyperdriveMath {
             (, uint256 maxCurveTrade) = YieldSpaceMath.calculateMaxBuy(
                 _params.shareReserves,
                 _params.bondReserves,
-                FixedPointMath.ONE_18 - _params.timeStretch,
+                ONE - _params.timeStretch,
                 _params.sharePrice,
                 _params.initialSharePrice
             );
@@ -594,7 +929,7 @@ library HyperdriveMath {
                         _params.shareReserves,
                         _params.bondReserves,
                         maxCurveTrade,
-                        FixedPointMath.ONE_18 - _params.timeStretch,
+                        ONE - _params.timeStretch,
                         _params.sharePrice,
                         _params.initialSharePrice
                     );
@@ -606,13 +941,13 @@ library HyperdriveMath {
         // and apply this net to the reserves.
         int256 netFlatTrade = int256(
             _params.shortsOutstanding.mulDivDown(
-                FixedPointMath.ONE_18 - _params.shortAverageTimeRemaining,
+                ONE - _params.shortAverageTimeRemaining,
                 _params.sharePrice
             )
         ) -
             int256(
                 _params.longsOutstanding.mulDivDown(
-                    FixedPointMath.ONE_18 - _params.longAverageTimeRemaining,
+                    ONE - _params.longAverageTimeRemaining,
                     _params.sharePrice
                 )
             );

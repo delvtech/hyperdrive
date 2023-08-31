@@ -191,10 +191,13 @@ contract ExtremeInputs is HyperdriveTest {
                 shareReserves: poolInfo.shareReserves,
                 bondReserves: poolInfo.bondReserves,
                 longsOutstanding: poolInfo.longsOutstanding,
+                longExposure: poolInfo.longExposure,
                 timeStretch: poolConfig.timeStretch,
                 sharePrice: poolInfo.sharePrice,
                 initialSharePrice: poolConfig.initialSharePrice,
-                minimumShareReserves: targetReserves
+                minimumShareReserves: targetReserves,
+                curveFee: poolConfig.fees.curve,
+                governanceFee: poolConfig.fees.governance
             })
         );
         baseToken.mint(shortAmount);
@@ -515,7 +518,7 @@ contract ExtremeInputs is HyperdriveTest {
             advanceTime(POSITION_DURATION.mulDown(0.99e18), 0);
 
             // Celine opens a max long.
-            openLong(celine, hyperdrive.calculateMaxLong(15).mulDown(0.9e18));
+            openLong(celine, hyperdrive.calculateMaxLong(7).mulDown(0.9e18));
 
             // The rest of the term passes.
             advanceTime(POSITION_DURATION.mulDown(0.1e18), 0);
