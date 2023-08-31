@@ -93,9 +93,7 @@ library HyperdriveMath {
         // mu * z * (1 + apr * t) ** (1 / tau)
         return
             _initialSharePrice.mulDown(_shareReserves).mulDown(
-                (ONE + _apr.mulDown(t)).pow(
-                    ONE.divUp(_timeStretch)
-                )
+                (ONE + _apr.mulDown(t)).pow(ONE.divUp(_timeStretch))
             );
     }
 
