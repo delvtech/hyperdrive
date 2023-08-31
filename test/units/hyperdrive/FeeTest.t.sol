@@ -419,9 +419,9 @@ contract FeeTest is HyperdriveTest {
         // total curve fee = ((1 / p) - 1) * phi_curve * c * dz
         // ((1/.5)-1) * .1*1*1 = .1
         assertEq(curveFee, .1 ether);
-        // governance curve fee = total curve fee * spot price * phi_gov
-        // .1 * 0.5 * 0.5 = .025
-        assertEq(governanceCurveFee, .025 ether);
+        // governance curve fee = total curve fee * phi_gov
+        // .1 * 0.5 = .05
+        assertEq(governanceCurveFee, .05 ether);
     }
 
     function test_calcFeesOutGivenBondsIn() public {

@@ -50,10 +50,10 @@ library HyperdriveMath {
         uint256 _positionDuration,
         uint256 _timeStretch
     ) internal pure returns (uint256 apr) {
-        // We are interested calculating the fixed APR for the pool. The rate is calculated by
-        // dividing current spot price of the bonds by the position duration time, t.  To get the
-        // annual rate, we scale t up to a year.
-        uint256 annualizedTime = _positionDuration.divDown(365 days);
+        // We are interested calculating the fixed APR for the pool. The annualized rate
+        // is given by the following formula:
+        // r = (1 - p) / (p * t)
+        // where t = 365 / _positionDuration
 
         uint256 spotPrice = calculateSpotPrice(
             _shareReserves,
@@ -61,9 +61,10 @@ library HyperdriveMath {
             _initialSharePrice,
             _timeStretch
         );
-
-        // r = (1 - p) / (p * t)
-        return (ONE - spotPrice).divDown(spotPrice.mulDown(annualizedTime));
+        return
+            (ONE - spotPrice).divDown(
+                spotPrice.mulDivUp(365 days, _positionDuration)
+            );
     }
 
     /// @dev Calculates the initial bond reserves assuming that the initial LP
@@ -88,11 +89,13 @@ library HyperdriveMath {
     ) internal pure returns (uint256 bondReserves) {
         // NOTE: Using divDown to convert to fixed point format.
         uint256 t = _positionDuration.divDown(365 days);
-        uint256 tau = ONE.mulDown(_timeStretch);
+
         // mu * z * (1 + apr * t) ** (1 / tau)
         return
             _initialSharePrice.mulDown(_shareReserves).mulDown(
-                (ONE + _apr.mulDown(t)).pow(ONE.divUp(tau))
+                (ONE + _apr.mulDown(t)).pow(
+                    ONE.divUp(_timeStretch)
+                )
             );
     }
 
