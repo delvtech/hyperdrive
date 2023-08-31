@@ -17,6 +17,7 @@ import { SafeCast } from "./libraries/SafeCast.sol";
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveLP is HyperdriveTWAP {
     using FixedPointMath for uint256;
+    using SafeCast for int256;
     using SafeCast for uint256;
 
     /// @notice Allows the first LP to initialize the market with a target APR.
@@ -394,20 +395,20 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         int256 shareAdjustment = _marketState.shareAdjustment;
         if (shareAdjustment >= 0) {
             updatedShareAdjustment = int256(
-                updatedShareReserves.mulDivDown(
+                uint256(updatedShareReserves).mulDivDown(
                     uint256(shareAdjustment),
                     shareReserves
                 )
             );
         } else {
             updatedShareAdjustment = -int256(
-                updatedShareReserves.mulDivDown(
+                uint256(updatedShareReserves).mulDivDown(
                     uint256(-shareAdjustment),
                     shareReserves
                 )
             );
         }
-        _marketState.shareAdjustment = updatedShareAdjustment;
+        _marketState.shareAdjustment = updatedShareAdjustment.toInt128();
 
         // The liquidity update should hold the spot price invariant. The spot
         // price of base in terms of bonds is given by:
@@ -423,7 +424,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // y_new = (z_new - zeta_new) * (y_old / (z_old - zeta_old))
         _marketState.bondReserves = HyperdriveMath
             .calculateEffectiveShareReserves(
-                updatedShareReserves,
+                uint256(updatedShareReserves),
                 updatedShareAdjustment
             )
             .mulDivDown(

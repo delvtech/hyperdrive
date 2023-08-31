@@ -1,9 +1,6 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-// FIXME
-import "forge-std/console.sol";
-
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { FixedPointMath, ONE } from "./FixedPointMath.sol";
 import { YieldSpaceMath } from "./YieldSpaceMath.sol";
@@ -171,7 +168,7 @@ library HyperdriveMath {
         uint256 _initialSharePrice
     )
         internal
-        view
+        pure
         returns (
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
@@ -184,16 +181,13 @@ library HyperdriveMath {
         // (our result is given in shares, so we divide the one-to-one
         // redemption by the share price) and the newly minted bonds are
         // traded on a YieldSpace curve configured to timeRemaining = 1.
-        console.log("calculateCloseLong: 1");
         shareProceeds = _amountIn.mulDivDown(
             ONE - _normalizedTimeRemaining,
             _sharePrice
         );
-        console.log("calculateCloseLong: 2");
         if (_normalizedTimeRemaining > 0) {
             // Calculate the curved part of the trade.
             bondReservesDelta = _amountIn.mulDown(_normalizedTimeRemaining);
-            console.log("calculateCloseLong: 3");
 
             // (time remaining)/(term length) is always 1 so we just use _timeStretch
             shareReservesDelta = YieldSpaceMath.calculateSharesOutGivenBondsIn(
@@ -204,9 +198,7 @@ library HyperdriveMath {
                 _sharePrice,
                 _initialSharePrice
             );
-            console.log("calculateCloseLong: 4");
             shareProceeds += shareReservesDelta;
-            console.log("calculateCloseLong: 5");
         }
 
         // If there's net negative interest over the period, the result of close long
@@ -214,17 +206,14 @@ library HyperdriveMath {
         // interest to the long since it's difficult or impossible to attribute
         // the negative interest to the short in practice.
         if (_openSharePrice > _closeSharePrice) {
-            console.log("calculateCloseLong: 6");
             shareProceeds = shareProceeds.mulDivDown(
                 _closeSharePrice,
                 _openSharePrice
             );
-            console.log("calculateCloseLong: 7");
             shareReservesDelta = shareReservesDelta.mulDivDown(
                 _closeSharePrice,
                 _openSharePrice
             );
-            console.log("calculateCloseLong: 8");
         }
     }
 
@@ -352,11 +341,12 @@ library HyperdriveMath {
     ) internal pure returns (uint256 maxBaseAmount, uint256 maxBondAmount) {
         // Get the maximum long that brings the spot price to 1. If the pool is
         // solvent after opening this long, then we're done.
+        uint256 effectiveShareReserves = calculateEffectiveShareReserves(
+            _params.shareReserves,
+            _params.shareAdjustment
+        );
         uint256 spotPrice = calculateSpotPrice(
-            calculateEffectiveShareReserves(
-                _params.shareReserves,
-                _params.shareAdjustment
-            ),
+            effectiveShareReserves,
             _params.bondReserves,
             _params.initialSharePrice,
             _params.timeStretch
@@ -367,7 +357,7 @@ library HyperdriveMath {
             uint256 maxShareAmount;
             (maxShareAmount, absoluteMaxBondAmount) = YieldSpaceMath
                 .calculateMaxBuy(
-                    _params.shareReserves,
+                    effectiveShareReserves,
                     _params.bondReserves,
                     ONE - _params.timeStretch,
                     _params.sharePrice,
@@ -408,7 +398,12 @@ library HyperdriveMath {
             _checkpointLongExposure,
             spotPrice
         );
-        maxBondAmount = calculateLongAmount(_params, maxBaseAmount, spotPrice);
+        maxBondAmount = calculateLongAmount(
+            _params,
+            maxBaseAmount,
+            effectiveShareReserves,
+            spotPrice
+        );
         (uint256 s, bool isSolvent) = calculateSolvency(
             _params,
             _checkpointLongExposure,
@@ -443,6 +438,7 @@ library HyperdriveMath {
                 ) = calculateSolvencyDerivative(
                         _params,
                         maxBaseAmount,
+                        effectiveShareReserves,
                         spotPrice
                     );
                 if (!success) {
@@ -455,6 +451,7 @@ library HyperdriveMath {
                 maxBondAmount = calculateLongAmount(
                     _params,
                     maxBaseAmount,
+                    effectiveShareReserves,
                     spotPrice
                 );
                 (s, isSolvent) = calculateSolvency(
@@ -646,6 +643,7 @@ library HyperdriveMath {
     ///      positive domain, which allows us to use the fixed point library.
     /// @param _params The max long calculation parameters.
     /// @param _baseAmount The base amount.
+    /// @param _effectiveShareReserves The effective share reserves.
     /// @param _spotPrice The spot price.
     /// @return derivative The negation of the derivative of the pool's solvency
     ///         w.r.t the base amount.
@@ -654,6 +652,7 @@ library HyperdriveMath {
     function calculateSolvencyDerivative(
         MaxTradeParams memory _params,
         uint256 _baseAmount,
+        uint256 _effectiveShareReserves,
         uint256 _spotPrice
     ) internal pure returns (uint256 derivative, bool success) {
         // Calculate the derivative of the long amount. This calculation can
@@ -661,6 +660,7 @@ library HyperdriveMath {
         (derivative, success) = calculateLongAmountDerivative(
             _params,
             _baseAmount,
+            _effectiveShareReserves,
             _spotPrice
         );
         if (!success) {
@@ -691,21 +691,23 @@ library HyperdriveMath {
     ///      $$
     ///      y_{*}(x) = y - \left(
     ///                     k - \tfrac{c}{\mu} \cdot \left(
-    ///                         \mu \cdot \left( z + \tfrac{x}{c}
+    ///                         \mu \cdot \left( z - \zeta + \tfrac{x}{c}
     ///                     \right) \right)^{1 - t_s}
     ///                 \right)^{\tfrac{1}{1 - t_s}}
     ///      $$
     /// @param _params The max long calculation parameters.
     /// @param _baseAmount The base amount.
+    /// @param _effectiveShareReserves The effective share reserves.
     /// @param _spotPrice The spot price.
     /// @return The long amount.
     function calculateLongAmount(
         MaxTradeParams memory _params,
         uint256 _baseAmount,
+        uint256 _effectiveShareReserves,
         uint256 _spotPrice
     ) internal pure returns (uint256) {
         uint256 longAmount = YieldSpaceMath.calculateBondsOutGivenSharesIn(
-            _params.shareReserves,
+            _effectiveShareReserves,
             _params.bondReserves,
             _baseAmount.divDown(_params.sharePrice),
             ONE - _params.timeStretch,
@@ -730,11 +732,11 @@ library HyperdriveMath {
     ///      derivative of [$c(x)$](long_curve_fee). $y_{*}'(x)$ is given by:
     ///
     ///      $$
-    ///      y_{*}'(x) = \left( \mu \cdot (z + \tfrac{x}{c}) \right)^{-t_s}
+    ///      y_{*}'(x) = \left( \mu \cdot (z - \zeta + \tfrac{x}{c}) \right)^{-t_s}
     ///                  \left(
     ///                      k - \tfrac{c}{\mu} \cdot
     ///                      \left(
-    ///                          \mu \cdot (z + \tfrac{x}{c}
+    ///                          \mu \cdot (z - \zeta + \tfrac{x}{c}
     ///                      \right)^{1 - t_s}
     ///                  \right)^{\tfrac{t_s}{1 - t_s}}
     ///      $$
@@ -754,18 +756,19 @@ library HyperdriveMath {
     function calculateLongAmountDerivative(
         MaxTradeParams memory _params,
         uint256 _baseAmount,
+        uint256 _effectiveShareReserves,
         uint256 _spotPrice
     ) internal pure returns (uint256 derivative, bool) {
         // Compute the first part of the derivative.
         uint256 shareAmount = _baseAmount.divDown(_params.sharePrice);
         uint256 inner = _params.initialSharePrice.mulDown(
-            _params.shareReserves + shareAmount
+            _effectiveShareReserves + shareAmount
         );
         uint256 cDivMu = _params.sharePrice.divDown(_params.initialSharePrice);
         uint256 k = YieldSpaceMath.modifiedYieldSpaceConstant(
             cDivMu,
             _params.initialSharePrice,
-            _params.shareReserves,
+            _effectiveShareReserves,
             ONE - _params.timeStretch,
             _params.bondReserves
         );

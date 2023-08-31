@@ -354,7 +354,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         _marketState.shareReserves -= _shareProceeds.toUint128();
         _marketState.shareAdjustment -= int256(
             _shareProceeds - _shareReservesDelta
-        );
+        ).toInt128();
         _marketState.bondReserves += _bondReservesDelta.toUint128();
 
         {
