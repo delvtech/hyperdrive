@@ -375,6 +375,8 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             revert IHyperdrive.InvalidShareReserves();
         }
 
+        // FIXME: Do we need to ensure that `z - \zeta > minimum share reserves`?
+        //
         // Update the share reserves by applying the share reserves delta. We
         // ensure that our minimum share reserves invariant is still maintained.
         int256 updatedShareReserves = int256(shareReserves) +

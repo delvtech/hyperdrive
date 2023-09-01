@@ -838,9 +838,9 @@ library HyperdriveMath {
             );
     }
 
-    // FIXME: This needs to take the zeta adjustment into account.
+    // FIXME: Analyze this more deeply. What happens when zeta is positive?
     //
-    // TODO: This is an overly restrictive max short calculation. We can do
+    // FIXME: This is an overly restrictive max short calculation. We can do
     // better if we iteratively approximate using solvency as an objective
     // function.
     //
@@ -852,14 +852,14 @@ library HyperdriveMath {
     function calculateMaxShort(
         MaxTradeParams memory _params
     ) internal pure returns (uint256) {
-        // The only constraint on the maximum short is that the effecitve share
+        // The only constraint on the maximum short is that the effective share
         // reserves don't go negative and satisfy the solvency requirements.
         // Thus, we can set z - zeta = y_l/c + z_min and solve for the maximum
         // short directly as:
         //
-        // k = (c / mu) * (mu * (y_l/c + z_min)) ** (1 - tau) + y ** (1 - tau)
+        // k = (c / mu) * (mu * (y_l/c + z_min)) ** (1 - t_s) + y ** (1 - t_s)
         //                         =>
-        // y = (k - (c / mu) * (mu * (y_l/c + z_min)) ** (1 - tau)) ** (1 / (1 - tau)).
+        // y = (k - (c / mu) * (mu * (y_l/c + z_min)) ** (1 - t_s)) ** (1 / (1 - t_s)).
         uint256 t = ONE - _params.timeStretch;
         uint256 priceFactor = _params.sharePrice.divDown(
             _params.initialSharePrice
@@ -874,13 +874,31 @@ library HyperdriveMath {
             t,
             _params.bondReserves
         );
-        uint256 innerFactor = _params
-            .initialSharePrice
-            .mulDown(
-                _params.longsOutstanding.divDown(_params.sharePrice) +
-                    _params.minimumShareReserves
-            )
-            .pow(t);
+        // HACK(jalextowle): We need to be smarter about the maximum short that
+        // can be opened with the zeta adjustment. I'll need to think more
+        // deeply about how changes in zeta effect the tradeable range on the
+        // AMM curve.
+        uint256 innerFactor;
+        if (_params.shareAdjustment >= 0) {
+            innerFactor = _params
+                .initialSharePrice
+                .mulDown(
+                    _params.longsOutstanding.divDown(_params.sharePrice) +
+                        _params.minimumShareReserves
+                )
+                .pow(t);
+        } else {
+            innerFactor = _params
+                .initialSharePrice
+                .mulDown(
+                    calculateEffectiveShareReserves(
+                        _params.longsOutstanding.divDown(_params.sharePrice) +
+                            _params.minimumShareReserves,
+                        _params.shareAdjustment
+                    )
+                )
+                .pow(t);
+        }
         uint256 optimalBondReserves = (k - priceFactor.mulDown(innerFactor))
             .pow(ONE.divDown(t));
 
