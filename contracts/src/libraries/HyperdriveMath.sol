@@ -883,27 +883,22 @@ library HyperdriveMath {
         // can be opened with the zeta adjustment. I'll need to think more
         // deeply about how changes in zeta effect the tradeable range on the
         // AMM curve.
-        uint256 innerFactor;
+        uint256 optimalShareReserves;
         if (_params.shareAdjustment >= 0) {
-            innerFactor = _params
-                .initialSharePrice
-                .mulDown(
-                    _params.longsOutstanding.divDown(_params.sharePrice) +
-                        _params.minimumShareReserves
-                )
-                .pow(t);
+            optimalShareReserves =
+                _params.longsOutstanding.divDown(_params.sharePrice) +
+                _params.minimumShareReserves;
         } else {
-            innerFactor = _params
-                .initialSharePrice
-                .mulDown(
-                    calculateEffectiveShareReserves(
-                        _params.longsOutstanding.divDown(_params.sharePrice) +
-                            _params.minimumShareReserves,
-                        _params.shareAdjustment
-                    )
-                )
-                .pow(t);
+            optimalShareReserves = calculateEffectiveShareReserves(
+                _params.longsOutstanding.divDown(_params.sharePrice) +
+                    _params.minimumShareReserves,
+                _params.shareAdjustment
+            );
         }
+        uint256 innerFactor = _params
+            .initialSharePrice
+            .mulDown(optimalShareReserves)
+            .pow(t);
         uint256 optimalBondReserves = (k - priceFactor.mulDown(innerFactor))
             .pow(ONE.divDown(t));
 

@@ -1,3 +1,4 @@
+use ethers::types::I256;
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
 
@@ -129,13 +130,19 @@ impl State {
         // short. The minimum share reserves are given by z = y_l/c + z_min, so
         // we can solve for optimal bond reserves directly using the yield space
         // invariant.
-        let optimal_share_reserves =
+        let mut optimal_share_reserves =
             (self.longs_outstanding() / self.share_price()) + self.minimum_share_reserves();
-        let optimal_bond_reserves = (self.k()
-            - (self.share_price() / self.initial_share_price())
-                * (self.initial_share_price() * optimal_share_reserves)
-                    .pow(fixed!(1e18) - self.time_stretch()))
-        .pow(fixed!(1e18) / (fixed!(1e18) - self.time_stretch()));
+        let optimal_bond_reserves = {
+            if self.share_adjustment() < I256::zero() {
+                optimal_share_reserves =
+                    FixedPoint::from(I256::from(optimal_share_reserves) - self.share_adjustment());
+            }
+            (self.k()
+                - (self.share_price() / self.initial_share_price())
+                    * (self.initial_share_price() * optimal_share_reserves)
+                        .pow(fixed!(1e18) - self.time_stretch()))
+            .pow(fixed!(1e18) / (fixed!(1e18) - self.time_stretch()))
+        };
 
         // The maximum short amount is just given by the difference between the
         // optimal bond reserves and the current bond reserves.
