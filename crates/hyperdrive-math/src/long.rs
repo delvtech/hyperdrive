@@ -3,7 +3,7 @@ use fixed_point::FixedPoint;
 use fixed_point_macros::{fixed, int256};
 
 use super::State;
-use crate::yield_space::{Asset, State as YieldSpaceState};
+use crate::{Asset, YieldSpace};
 
 impl State {
     /// Gets the pool's solvency.
@@ -34,10 +34,7 @@ impl State {
     /// $$
     pub fn get_long_amount<F: Into<FixedPoint>>(&self, base_amount: F) -> FixedPoint {
         let base_amount = base_amount.into();
-        let long_amount = YieldSpaceState::from(self).get_out_for_in(
-            Asset::Shares(base_amount / self.share_price()),
-            self.time_stretch(),
-        );
+        let long_amount = self.get_out_for_in(Asset::Shares(base_amount / self.share_price()));
         long_amount - self.long_curve_fee(base_amount)
     }
 
@@ -58,8 +55,7 @@ impl State {
         // Get the maximum long that brings the spot price to 1. If the pool is
         // solvent after opening this long, then we're done.
         let (absolute_max_base_amount, absolute_max_bond_amount) = {
-            let (share_amount, mut bond_amount) =
-                YieldSpaceState::from(self).get_max_buy(self.time_stretch());
+            let (share_amount, mut bond_amount) = self.get_max_buy();
             let base_amount = self.share_price() * share_amount;
             bond_amount -= self.long_curve_fee(base_amount);
             (base_amount, bond_amount)
@@ -322,7 +318,7 @@ impl State {
         // It's possible that k is slightly larger than the rhs in the inner
         // calculation. If this happens, we are close to the root, and we short
         // circuit.
-        let k = YieldSpaceState::from(self).k(self.time_stretch());
+        let k = self.k();
         let rhs =
             (self.share_price() / self.initial_share_price()) * inner.pow(self.time_stretch());
         if k < rhs {
@@ -415,6 +411,7 @@ mod tests {
                         bond_reserves: state.info.bond_reserves,
                         longs_outstanding: state.info.longs_outstanding,
                         long_exposure: state.info.long_exposure,
+                        share_adjustment: state.info.share_adjustment,
                         time_stretch: state.config.time_stretch,
                         share_price: state.info.share_price,
                         initial_share_price: state.config.initial_share_price,

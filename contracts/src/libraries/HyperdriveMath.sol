@@ -1117,6 +1117,8 @@ library HyperdriveMath {
         }
     }
 
+    // FIXME: This needs to be a safe cast.
+    //
     /// @dev Calculates the effective share reserves. The effective share
     ///      reserves are the share reserves minus the share adjustment or
     ///      z - zeta. We use the effective share reserves as the z-parameter
@@ -1130,6 +1132,9 @@ library HyperdriveMath {
         uint256 _shareReserves,
         int256 _shareAdjustment
     ) internal pure returns (uint256) {
-        return uint256(int256(_shareReserves) - _shareAdjustment);
+        int256 effectiveShareReserves = int256(_shareReserves) -
+            _shareAdjustment;
+        require(effectiveShareReserves >= 0);
+        return uint256(effectiveShareReserves);
     }
 }

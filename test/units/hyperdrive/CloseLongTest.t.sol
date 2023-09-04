@@ -488,8 +488,8 @@ contract CloseLongTest is HyperdriveTest {
         initialize(alice, fixedRate, contribution);
 
         // A large long is opened and held until maturity. This should decrease
-        // the share adjustment by the short amount.
-        (, uint256 longAmount) = openShort(
+        // the share adjustment by the long amount.
+        (, uint256 longAmount) = openLong(
             celine,
             hyperdrive.calculateMaxLong() / 2
         );
@@ -497,8 +497,7 @@ contract CloseLongTest is HyperdriveTest {
         hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
         assertEq(hyperdrive.getPoolInfo().shareAdjustment, -int256(longAmount));
 
-        // Bob opens a small long. Celine's short will be closed when the
-        // checkpoint is minted, which will increase the share adjustment.
+        // Bob opens a small long.
         uint256 basePaid = 1_000_000e18;
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
 
@@ -526,8 +525,7 @@ contract CloseLongTest is HyperdriveTest {
         hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
         assertEq(hyperdrive.getPoolInfo().shareAdjustment, int256(shortAmount));
 
-        // Bob opens a small long. Celine's short will be closed when the
-        // checkpoint is minted, which will increase the share adjustment.
+        // Bob opens a small long.
         uint256 basePaid = 1_000_000e18;
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
 

@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
+
 import { ERC20PresetFixedSupply } from "openzeppelin-contracts/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
@@ -548,6 +551,20 @@ contract HyperdriveMathTest is HyperdriveTest {
         uint256 initialShortAmount,
         uint256 finalLongAmount
     ) external {
+        fixedRate = 95187733361270802370396817615095288434258496579548917792768;
+        contribution = 274545261543756828835750741;
+        matureShortAmount = 404270442234262706850206441;
+        initialLongAmount = 706751672660565037419889475;
+        initialShortAmount = 423;
+        finalLongAmount = 85905216892067772880;
+
+        // fixedRate = 40447110660346466788486848;
+        // contribution = 1000000100199800222883;
+        // matureShortAmount = 33947310355729726434683792;
+        // initialLongAmount = 2408;
+        // initialShortAmount = 4409;
+        // finalLongAmount = 716;
+
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
 
@@ -689,10 +706,12 @@ contract HyperdriveMathTest is HyperdriveTest {
         // Ensure that opening another long fails.
         vm.stopPrank();
         vm.startPrank(bob);
-        finalLongAmount = finalLongAmount.normalizeToRange(
-            0.01e18,
-            100_000_000e18
-        );
+        // finalLongAmount = finalLongAmount.normalizeToRange(
+        //     1e18,
+        //     100_000_000e18
+        // );
+        finalLongAmount = 1_000_000e18;
+        console.log("finalLongAmount = %s", finalLongAmount.toString(18));
         baseToken.mint(bob, finalLongAmount);
         baseToken.approve(address(hyperdrive), finalLongAmount);
         vm.expectRevert();

@@ -12,7 +12,7 @@ use eyre::Result;
 use fixed_point::FixedPoint;
 use fixed_point_macros::{fixed, uint256};
 use hyperdrive_addresses::Addresses;
-use hyperdrive_math::yield_space::State as YieldSpace;
+use hyperdrive_math::get_time_stretch;
 use hyperdrive_wrappers::wrappers::{
     erc20_mintable::ERC20Mintable,
     erc4626_data_provider::ERC4626DataProvider,
@@ -134,7 +134,7 @@ impl TestChain {
             minimum_share_reserves: uint256!(10e18),
             position_duration: U256::from(60 * 60 * 24 * 365), // 1 year
             checkpoint_duration: U256::from(60 * 60 * 24),     // 1 day
-            time_stretch: YieldSpace::get_time_stretch(fixed!(0.05e18)).into(), // time stretch for 5% rate
+            time_stretch: get_time_stretch(fixed!(0.05e18)).into(), // time stretch for 5% rate
             governance: client.address(),
             fee_collector: client.address(),
             fees: Fees {
@@ -279,7 +279,7 @@ mod tests {
         assert_eq!(config.checkpoint_duration, U256::from(60 * 60 * 24));
         assert_eq!(
             config.time_stretch,
-            YieldSpace::get_time_stretch(fixed!(0.05e18)).into()
+            get_time_stretch(fixed!(0.05e18)).into()
         );
         assert_eq!(config.governance, client.address());
         assert_eq!(config.fee_collector, client.address());

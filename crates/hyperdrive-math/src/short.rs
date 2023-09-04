@@ -2,7 +2,7 @@ use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
 
 use super::State;
-use crate::yield_space::{Asset, State as YieldSpaceState};
+use crate::{Asset, YieldSpace};
 
 impl State {
     /// Gets the minimum price that the pool can support.
@@ -26,8 +26,7 @@ impl State {
     /// p = \left( \tfrac{\mu \cdot z_{min}}{y_{max}} \right)^{t_s}
     /// $$
     pub fn get_min_price(&self) -> FixedPoint {
-        let k = YieldSpaceState::from(self).k(self.time_stretch());
-        let y_max = (k
+        let y_max = (self.k()
             - (self.share_price() / self.initial_share_price())
                 * (self.initial_share_price() * self.minimum_share_reserves())
                     .pow(fixed!(1e18) - self.time_stretch()))
@@ -130,14 +129,13 @@ impl State {
         // short. The minimum share reserves are given by z = y_l/c + z_min, so
         // we can solve for optimal bond reserves directly using the yield space
         // invariant.
-        let ts = FixedPoint::from(self.config.time_stretch);
-        let k = YieldSpaceState::from(self).k(self.config.time_stretch.into());
         let optimal_share_reserves =
             (self.longs_outstanding() / self.share_price()) + self.minimum_share_reserves();
-        let optimal_bond_reserves = (k
+        let optimal_bond_reserves = (self.k()
             - (self.share_price() / self.initial_share_price())
-                * (self.initial_share_price() * optimal_share_reserves).pow(fixed!(1e18) - ts))
-        .pow(fixed!(1e18) / (fixed!(1e18) - ts));
+                * (self.initial_share_price() * optimal_share_reserves)
+                    .pow(fixed!(1e18) - self.time_stretch()))
+        .pow(fixed!(1e18) / (fixed!(1e18) - self.time_stretch()));
 
         // The maximum short amount is just given by the difference between the
         // optimal bond reserves and the current bond reserves.
@@ -296,8 +294,7 @@ impl State {
     /// P(x) = z - \tfrac{1}{\mu} \cdot (\tfrac{\mu}{c} \cdot (k - (y + x)^{1 - t_s}))^{\tfrac{1}{1 - t_s}}
     /// $$
     fn short_principal(&self, short_amount: FixedPoint) -> FixedPoint {
-        YieldSpaceState::from(self)
-            .get_out_for_in(Asset::Bonds(short_amount), self.config.time_stretch.into())
+        self.get_out_for_in(Asset::Bonds(short_amount))
     }
 
     /// A helper function used in calculating the short deposit.
@@ -310,15 +307,9 @@ impl State {
     /// \theta(x) = \tfrac{\mu}{c} \cdot (k - (y + x)^{1 - t_s})
     /// $$
     fn theta(&self, short_amount: FixedPoint) -> FixedPoint {
-        let k = YieldSpaceState::new(
-            self.share_reserves(),
-            self.bond_reserves(),
-            self.share_price(),
-            self.initial_share_price(),
-        )
-        .k(self.time_stretch());
         (self.initial_share_price() / self.share_price())
-            * (k - (self.bond_reserves() + short_amount).pow(fixed!(1e18) - self.time_stretch()))
+            * (self.k()
+                - (self.bond_reserves() + short_amount).pow(fixed!(1e18) - self.time_stretch()))
     }
 }
 
@@ -364,6 +355,7 @@ mod tests {
                     bond_reserves: state.info.bond_reserves,
                     longs_outstanding: state.info.longs_outstanding,
                     long_exposure: state.info.long_exposure,
+                    share_adjustment: state.info.share_adjustment,
                     time_stretch: state.config.time_stretch,
                     share_price: state.info.share_price,
                     initial_share_price: state.config.initial_share_price,
