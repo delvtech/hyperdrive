@@ -125,8 +125,8 @@ impl State {
 
     /// Gets the pool's spot rate.
     pub fn get_spot_rate(&self) -> FixedPoint {
-        let annualized_time = FixedPoint::from(self.config.position_duration)
-            / FixedPoint::from(U256::from(60 * 60 * 24 * 365));
+        let annualized_time =
+            self.position_duration() / FixedPoint::from(U256::from(60 * 60 * 24 * 365));
         let spot_price = self.get_spot_price();
         (fixed!(1e18) - spot_price) / (spot_price * annualized_time)
     }
@@ -136,38 +136,26 @@ impl State {
         time - time % self.config.checkpoint_duration
     }
 
-    /// Getters ///
+    /// Config ///
 
-    fn share_reserves(&self) -> FixedPoint {
-        self.info.share_reserves.into()
+    fn position_duration(&self) -> FixedPoint {
+        self.config.position_duration.into()
     }
 
-    fn minimum_share_reserves(&self) -> FixedPoint {
-        self.config.minimum_share_reserves.into()
+    fn checkpoint_duration(&self) -> FixedPoint {
+        self.config.checkpoint_duration.into()
     }
 
-    fn bond_reserves(&self) -> FixedPoint {
-        self.info.bond_reserves.into()
-    }
-
-    fn longs_outstanding(&self) -> FixedPoint {
-        self.info.longs_outstanding.into()
-    }
-
-    fn long_exposure(&self) -> FixedPoint {
-        self.info.long_exposure.into()
-    }
-
-    fn share_price(&self) -> FixedPoint {
-        self.info.share_price.into()
+    fn time_stretch(&self) -> FixedPoint {
+        self.config.time_stretch.into()
     }
 
     fn initial_share_price(&self) -> FixedPoint {
         self.config.initial_share_price.into()
     }
 
-    fn time_stretch(&self) -> FixedPoint {
-        self.config.time_stretch.into()
+    fn minimum_share_reserves(&self) -> FixedPoint {
+        self.config.minimum_share_reserves.into()
     }
 
     fn curve_fee(&self) -> FixedPoint {
@@ -181,11 +169,45 @@ impl State {
     fn governance_fee(&self) -> FixedPoint {
         self.config.fees.governance.into()
     }
+
+    /// Info ///
+
+    fn share_price(&self) -> FixedPoint {
+        self.info.share_price.into()
+    }
+
+    fn share_reserves(&self) -> FixedPoint {
+        self.info.share_reserves.into()
+    }
+
+    fn effective_share_reserves(&self) -> FixedPoint {
+        self.z()
+    }
+
+    fn bond_reserves(&self) -> FixedPoint {
+        self.info.bond_reserves.into()
+    }
+
+    fn longs_outstanding(&self) -> FixedPoint {
+        self.info.longs_outstanding.into()
+    }
+
+    fn shorts_outstanding(&self) -> FixedPoint {
+        self.info.shorts_outstanding.into()
+    }
+
+    fn long_exposure(&self) -> FixedPoint {
+        self.info.long_exposure.into()
+    }
+
+    fn share_adjustment(&self) -> I256 {
+        self.info.share_adjustment.into()
+    }
 }
 
 impl YieldSpace for State {
     fn z(&self) -> FixedPoint {
-        self.share_reserves()
+        FixedPoint::from(I256::from(self.share_reserves()) - self.share_adjustment())
     }
 
     fn y(&self) -> FixedPoint {

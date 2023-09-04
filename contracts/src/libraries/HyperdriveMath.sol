@@ -364,6 +364,11 @@ library HyperdriveMath {
                     _params.initialSharePrice
                 );
             absoluteMaxBaseAmount = maxShareAmount.mulDown(_params.sharePrice);
+            absoluteMaxBondAmount -= calculateLongCurveFee(
+                absoluteMaxBaseAmount,
+                spotPrice,
+                _params.curveFee
+            );
             (, bool isSolvent_) = calculateSolvency(
                 _params,
                 _checkpointLongExposure,

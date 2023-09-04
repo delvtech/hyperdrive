@@ -178,8 +178,8 @@ impl State {
     fn max_long_guess(&self, checkpoint_exposure: I256) -> FixedPoint {
         let spot_price = self.get_spot_price();
         let estimate_price = spot_price;
-        let mut guess = self.get_solvency()
-            + FixedPoint::from(-checkpoint_exposure.min(int256!(0))) / self.share_price();
+        let checkpoint_exposure = FixedPoint::from(-checkpoint_exposure.min(int256!(0)));
+        let mut guess = self.get_solvency() + checkpoint_exposure / self.share_price();
         guess = guess.mul_div_down(self.share_price(), fixed!(2e18));
         guess /= fixed!(1e18) / estimate_price
             + self.governance_fee() * self.curve_fee() * (fixed!(1e18) - spot_price)
@@ -312,7 +312,7 @@ impl State {
     /// $$
     fn long_amount_derivative(&self, base_amount: FixedPoint) -> Option<FixedPoint> {
         let share_amount = base_amount / self.share_price();
-        let inner = self.initial_share_price() * (self.share_reserves() + share_amount);
+        let inner = self.initial_share_price() * (self.effective_share_reserves() + share_amount);
         let mut derivative = fixed!(1e18) / (inner).pow(self.time_stretch());
 
         // It's possible that k is slightly larger than the rhs in the inner
