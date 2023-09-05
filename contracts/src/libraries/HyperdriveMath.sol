@@ -970,7 +970,7 @@ library HyperdriveMath {
                     .calculateSharesOutGivenBondsIn(
                         _params.shareReserves,
                         _params.bondReserves,
-                        uint256(netCurveTrade),
+                        maxCurveTrade,
                         ONE - _params.timeStretch,
                         _params.sharePrice,
                         _params.initialSharePrice
