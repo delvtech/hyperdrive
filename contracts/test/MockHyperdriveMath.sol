@@ -67,16 +67,7 @@ contract MockHyperdriveMath {
         uint256 _closeSharePrice,
         uint256 _sharePrice,
         uint256 _initialSharePrice
-    )
-        external
-        view
-        returns (
-            // FIXME: pure
-            uint256,
-            uint256,
-            uint256
-        )
-    {
+    ) external pure returns (uint256, uint256, uint256) {
         (uint256 result1, uint256 result2, uint256 result3) = HyperdriveMath
             .calculateCloseLong(
                 _shareReserves,

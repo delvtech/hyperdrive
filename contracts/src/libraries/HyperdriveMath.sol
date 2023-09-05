@@ -136,9 +136,6 @@ library HyperdriveMath {
             );
     }
 
-    // FIXME: We should explain the significance of the effective share reserves
-    //        somewhere.
-    //
     /// @dev Calculates the amount of shares a user will receive when closing a
     ///      long position.
     /// @param _effectiveShareReserves The pool's effective share reserves. The
@@ -318,12 +315,6 @@ library HyperdriveMath {
         uint256 governanceFee;
     }
 
-    // FIXME: This needs to take the zeta adjustment into account.
-    //
-    // TODO: We should only need to calculate the effective share reserves once.
-    //       This will cause a stack too deep issue, so we may need to
-    //       encapsulate some of the computation in a function.
-    //
     /// @dev Gets the max long that can be opened given a budget.
     ///
     ///      We start by calculating the long that brings the pool's spot price
@@ -920,8 +911,6 @@ library HyperdriveMath {
         uint256 shortAverageTimeRemaining;
     }
 
-    // FIXME: This needs to take the zeta adjustment into account.
-    //
     /// @dev Calculates the present value LPs capital in the pool.
     /// @param _params The parameters for the present value calculation.
     /// @return The present value of the pool.
@@ -938,13 +927,9 @@ library HyperdriveMath {
                     _params.shortAverageTimeRemaining
                 )
             );
-        // FIXME: We should use safecasts here and everywhere else.
-        // Otherwise, we need to make sure that we enforce the
-        // invariant that `_params.shareAdjusment` is always less
-        // than `_params.shareReserves`. This should be true, but
-        // we may need to enforce this somewhere in the code.
-        uint256 effectiveShareReserves = uint256(
-            int256(_params.shareReserves) - _params.shareAdjustment
+        uint256 effectiveShareReserves = calculateEffectiveShareReserves(
+            _params.shareReserves,
+            _params.shareAdjustment
         );
         if (netCurveTrade > 0) {
             // Close as many longs as possible on the curve. Any longs that
@@ -968,7 +953,7 @@ library HyperdriveMath {
             if (maxCurveTrade > 0) {
                 _params.shareReserves -= YieldSpaceMath
                     .calculateSharesOutGivenBondsIn(
-                        _params.shareReserves,
+                        effectiveShareReserves,
                         _params.bondReserves,
                         maxCurveTrade,
                         ONE - _params.timeStretch,
@@ -1024,9 +1009,12 @@ library HyperdriveMath {
                     _params.sharePrice
                 )
             );
-        _params.shareReserves = uint256(
-            int256(_params.shareReserves) + netFlatTrade
-        );
+        int256 updatedShareReserves = int256(_params.shareReserves) +
+            netFlatTrade;
+        if (updatedShareReserves < int256(_params.minimumShareReserves)) {
+            revert IHyperdrive.NegativePresentValue();
+        }
+        _params.shareReserves = uint256(updatedShareReserves);
 
         // The present value is the final share reserves minus the minimum share
         // reserves. This ensures that LP withdrawals won't include the minimum
@@ -1117,8 +1105,6 @@ library HyperdriveMath {
         }
     }
 
-    // FIXME: This needs to be a safe cast.
-    //
     /// @dev Calculates the effective share reserves. The effective share
     ///      reserves are the share reserves minus the share adjustment or
     ///      z - zeta. We use the effective share reserves as the z-parameter

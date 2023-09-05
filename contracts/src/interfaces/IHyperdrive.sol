@@ -214,6 +214,7 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
     error InvalidShareReserves();
     error InvalidFeeAmounts();
     error NegativeInterest();
+    error NegativePresentValue();
     error NegativeReserves();
     error NoAssetsToWithdraw();
     error NotPayable();

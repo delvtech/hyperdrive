@@ -731,6 +731,16 @@ contract HyperdriveMathTest is HyperdriveTest {
         uint256 initialShortAmount,
         uint256 finalShortAmount
     ) external {
+        // FIXME: The following case causes this test to fail with an output
+        // limit.
+        //
+        // fixedRate = 499242737251331042;
+        // contribution = 383238727479163837146208449484606976;
+        // matureLongAmount = 12364;
+        // initialLongAmount = 3026694408745229844;
+        // initialShortAmount = 193882152699643256039;
+        // finalShortAmount = 147;
+
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
 
