@@ -682,6 +682,9 @@ impl Agent<ChainClient, ChaCha8Rng> {
             self.provider
                 .request::<[U256; 1], u64>("evm_increaseTime", [checkpoint_duration.into()])
                 .await?;
+            self.provider
+                .request::<_, U256>("evm_mine", None::<()>)
+                .await?;
             self.checkpoint(self.latest_checkpoint().await?).await?;
             duration -= checkpoint_duration;
         }
@@ -690,6 +693,9 @@ impl Agent<ChainClient, ChaCha8Rng> {
         // checkpoint.
         self.provider
             .request::<[U256; 1], u64>("evm_increaseTime", [duration.into()])
+            .await?;
+        self.provider
+            .request::<_, U256>("evm_mine", None::<()>)
             .await?;
         self.checkpoint(self.latest_checkpoint().await?).await?;
 
@@ -732,6 +738,21 @@ impl Agent<ChainClient, ChaCha8Rng> {
         &self.wallet.shorts
     }
 
+    /// Gets the current timestamp.
+    pub async fn now(&self) -> Result<U256> {
+        Ok(self
+            .provider
+            .get_block(self.provider.get_block_number().await?)
+            .await?
+            .unwrap()
+            .timestamp)
+    }
+
+    /// Gets the latest checkpoint.
+    pub async fn latest_checkpoint(&self) -> Result<U256> {
+        Ok(self.get_state().await?.to_checkpoint(self.now().await?))
+    }
+
     /// Gets the pool config.
     pub fn get_config(&self) -> &PoolConfig {
         &self.config
@@ -748,21 +769,6 @@ impl Agent<ChainClient, ChaCha8Rng> {
     /// Gets a checkpoint.
     pub async fn get_checkpoint(&self, id: U256) -> Result<Checkpoint> {
         Ok(self.hyperdrive.get_checkpoint(id).await?)
-    }
-
-    /// Gets the current timestamp.
-    pub async fn now(&self) -> Result<U256> {
-        Ok(self
-            .provider
-            .get_block(self.provider.get_block_number().await?)
-            .await?
-            .unwrap()
-            .timestamp)
-    }
-
-    /// Gets the latest checkpoint.
-    pub async fn latest_checkpoint(&self) -> Result<U256> {
-        Ok(self.get_state().await?.to_checkpoint(self.now().await?))
     }
 
     /// Gets the amount of longs that will be opened for a given amount of base

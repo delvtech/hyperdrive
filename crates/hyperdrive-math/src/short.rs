@@ -119,6 +119,9 @@ impl State {
         max_short_bonds
     }
 
+    // FIXME: This is solvency constrained. Instead of solving this using the
+    // longs outstanding, we need to solve the optimization problem.
+    //
     /// Gets the maximum short that the pool can support. This doesn't take into
     /// account a trader's budget.
     fn max_short(

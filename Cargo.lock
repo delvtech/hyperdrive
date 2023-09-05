@@ -1540,6 +1540,7 @@ dependencies = [
  "fixed-point-macros",
  "hyperdrive-wrappers",
  "rand",
+ "rand_chacha",
  "test-utils",
  "tokio",
  "tracing",

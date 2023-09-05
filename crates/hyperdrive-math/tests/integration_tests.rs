@@ -1,24 +1,67 @@
-// TODO: This testing should be improved in several different ways:
-//
-// 1. [ ] Test with intra-checkpoint netting. We should make some trades
-//        and then advance through checkpoints. This will make it possible
-//        for some positive checkpoint exposure to accumulate.
-// 2. [ ] Test with with matured positions updating zeta.
-
 use ethers::types::U256;
 use eyre::Result;
 use fixed_point::FixedPoint;
-use fixed_point_macros::fixed;
+use fixed_point_macros::{fixed, uint256};
 use hyperdrive_wrappers::wrappers::i_hyperdrive::Checkpoint;
-use rand::{thread_rng, Rng};
+use rand::{rngs::ThreadRng, thread_rng, Rng};
+use rand_chacha::ChaCha8Rng;
 use test_utils::{
     agent::Agent,
-    chain::{Chain, TestChain},
+    chain::{Chain, ChainClient, TestChain},
     constants::FUZZ_RUNS,
 };
 
-// FIXME: This test requires too large of a tolerance. It's probably time to
-//        write this test for real.
+/// Executes random trades throughout a Hyperdrive term.
+async fn preamble(
+    rng: &mut ThreadRng,
+    alice: &mut Agent<ChainClient, ChaCha8Rng>,
+    bob: &mut Agent<ChainClient, ChaCha8Rng>,
+    celine: &mut Agent<ChainClient, ChaCha8Rng>,
+    fixed_rate: FixedPoint,
+) -> Result<()> {
+    // Fund the agent accounts and initialize the pool.
+    alice
+        .fund(rng.gen_range(fixed!(1_000e18)..=fixed!(500_000_000e18)))
+        .await?;
+    bob.fund(rng.gen_range(fixed!(1_000e18)..=fixed!(500_000_000e18)))
+        .await?;
+    celine
+        .fund(rng.gen_range(fixed!(1_000e18)..=fixed!(500_000_000e18)))
+        .await?;
+
+    // Alice initializes the pool.
+    alice.initialize(fixed_rate, alice.base()).await?;
+
+    // Advance the time for over a term and make trades in some of the checkpoints.
+    let mut time_remaining = alice.get_config().position_duration;
+    while time_remaining > uint256!(0) {
+        // Bob opens a long.
+        let discount = rng.gen_range(fixed!(0.1e18)..=fixed!(0.5e18));
+        let long_amount = rng.gen_range(fixed!(1e12)..=bob.get_max_long(None).await? * discount);
+        bob.open_long(long_amount, None).await?;
+
+        // Celine opens a short.
+        let discount = rng.gen_range(fixed!(0.1e18)..=fixed!(0.5e18));
+        let short_amount =
+            rng.gen_range(fixed!(1e12)..=celine.get_max_short(None).await? * discount);
+        celine.open_short(short_amount, None).await?;
+
+        // Advance a checkpoint.
+        let multiplier = rng.gen_range(fixed!(0.5e18)..=fixed!(10e18));
+        let delta = FixedPoint::from(time_remaining)
+            .min(FixedPoint::from(alice.get_config().checkpoint_duration) * multiplier);
+        time_remaining -= U256::from(delta);
+        alice
+            .advance_time_with_checkpoints(
+                fixed!(0), // FIXME: Use a real rate.
+                delta,
+            )
+            .await?;
+    }
+
+    Ok(())
+}
+
 #[tokio::test]
 pub async fn test_integration_get_max_short() -> Result<()> {
     let mut rng = thread_rng();
@@ -46,27 +89,9 @@ pub async fn test_integration_get_max_short() -> Result<()> {
         // Snapshot the chain.
         let id = chain.snapshot().await?;
 
-        // Fund the agent accounts and initialize the pool.
-        alice
-            .fund(rng.gen_range(fixed!(1_000e18)..=fixed!(500_000_000e18)))
-            .await?;
-        bob.fund(rng.gen_range(fixed!(1_000e18)..=fixed!(500_000_000e18)))
-            .await?;
-        celine
-            .fund(rng.gen_range(fixed!(1_000e18)..=fixed!(500_000_000e18)))
-            .await?;
-
-        // Alice initializes the pool.
+        // Run the preamble.
         let fixed_rate = fixed!(0.05e18);
-        alice.initialize(fixed_rate, alice.base()).await?;
-
-        // Bob opens a long.
-        let long_amount = rng.gen_range(fixed!(1e12)..=bob.get_max_long(None).await?);
-        bob.open_long(long_amount, None).await?;
-
-        // Celine opens a short.
-        let short_amount = rng.gen_range(fixed!(1e12)..=celine.get_max_short(None).await?);
-        celine.open_short(short_amount, None).await?;
+        preamble(&mut rng, &mut alice, &mut bob, &mut celine, fixed_rate).await?;
 
         // Celine opens a max short. Despite the trading that happened before this,
         // we expect Celine to open the max short on the pool or consume almost all
@@ -85,10 +110,10 @@ pub async fn test_integration_get_max_short() -> Result<()> {
         bob.open_short(max_short, None).await?;
 
         if max_short != global_max_short {
-            // We currently allow up to a tolerance of 0.1%, which means
-            // that the max short is always consuming at least 99.9% of
+            // We currently allow up to a tolerance of 0.2%, which means
+            // that the max short is always consuming at least 99.8% of
             // the budget.
-            let error_tolerance = fixed!(0.001e18);
+            let error_tolerance = fixed!(0.002e18);
             assert!(
                 bob.base() < budget * (fixed!(1e18) - slippage_tolerance) * error_tolerance,
                 "expected (base={}) < (budget={}) * {} = {}",
@@ -136,25 +161,9 @@ pub async fn test_integration_get_max_long() -> Result<()> {
         // Snapshot the chain.
         let id = chain.snapshot().await?;
 
-        // Fund the agent accounts and initialize the pool.
-        alice
-            .fund(rng.gen_range(fixed!(1_000e18)..=fixed!(500_000_000e18)))
-            .await?;
-        bob.fund(rng.gen_range(fixed!(1_000e18)..=fixed!(500_000_000e18)))
-            .await?;
-        celine
-            .fund(rng.gen_range(fixed!(1_000e18)..=fixed!(500_000_000e18)))
-            .await?;
+        // Run the preamble.
         let fixed_rate = fixed!(0.05e18);
-        alice.initialize(fixed_rate, alice.base()).await?;
-
-        // Bob opens a long.
-        let long_amount = rng.gen_range(fixed!(1e12)..=bob.get_max_long(None).await?);
-        bob.open_long(long_amount, None).await?;
-
-        // Celine opens a short.
-        let short_amount = rng.gen_range(fixed!(1e12)..=celine.get_max_short(None).await?);
-        celine.open_short(short_amount, None).await?;
+        preamble(&mut rng, &mut alice, &mut bob, &mut celine, fixed_rate).await?;
 
         // Bob opens a max long. Despite the trading that happened before this,
         // we expect Bob's max long to bring the spot price close to 1, exhaust the

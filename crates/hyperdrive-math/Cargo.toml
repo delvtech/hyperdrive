@@ -25,6 +25,7 @@ hyperdrive-wrappers = { path = "../hyperdrive-wrappers" }
 [dev-dependencies]
 
 # External dependencies
+rand_chacha = "0.3.1"
 tracing = "0.1"
 tracing-test = "0.1"
 

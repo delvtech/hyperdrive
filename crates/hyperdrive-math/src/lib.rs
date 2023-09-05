@@ -1,3 +1,8 @@
+mod long;
+mod short;
+mod utils;
+mod yield_space;
+
 use ethers::types::{Address, I256, U256};
 use fixed_point::FixedPoint;
 use fixed_point_macros::{fixed, uint256};
@@ -6,17 +11,7 @@ use rand::{
     distributions::{Distribution, Standard},
     Rng,
 };
-
-mod long;
-pub use long::*;
-
-mod short;
-pub use short::*;
-
-mod utils;
 pub use utils::*;
-
-mod yield_space;
 use yield_space::YieldSpace;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]

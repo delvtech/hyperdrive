@@ -548,7 +548,9 @@ contract HyperdriveMathTest is HyperdriveTest {
         uint256 initialShortAmount,
         uint256 finalLongAmount
     ) external {
-        // FIXME
+        // FIXME: The test fails because `calculateMaxLong` returns a value that
+        // is much smaller than the true max in certain edge cases. Here are two
+        // test cases that fail in this way:
         //
         // fixedRate = 95187733361270802370396817615095288434258496579548917792768;
         // contribution = 274545261543756828835750741;
@@ -556,8 +558,6 @@ contract HyperdriveMathTest is HyperdriveTest {
         // initialLongAmount = 706751672660565037419889475;
         // initialShortAmount = 423;
         // finalLongAmount = 85905216892067772880;
-
-        // FIXME
         //
         // fixedRate = 40447110660346466788486848;
         // contribution = 1000000100199800222883;
@@ -673,6 +673,9 @@ contract HyperdriveMathTest is HyperdriveTest {
         );
         openShort(bob, initialShortAmount);
 
+        // TODO: The fact that we need such a large amount of iterations could
+        // indicate a bug in the max long function.
+        //
         // Open the maximum long on Hyperdrive.
         IHyperdrive.PoolInfo memory info = hyperdrive.getPoolInfo();
         IHyperdrive.PoolConfig memory config = hyperdrive.getPoolConfig();

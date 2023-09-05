@@ -92,7 +92,9 @@ contract MockERC4626 is ERC4626 {
         uint256 timeElapsed = (block.timestamp - _lastUpdated).divDown(
             365 days
         );
-        return
-            asset.balanceOf(address(this)).mulDown(_rate.mulDown(timeElapsed));
+        uint256 accrued = asset.balanceOf(address(this)).mulDown(
+            _rate.mulDown(timeElapsed)
+        );
+        return accrued;
     }
 }
