@@ -3,7 +3,7 @@ use eyre::Result;
 use fixed_point::FixedPoint;
 use fixed_point_macros::{fixed, uint256};
 use hyperdrive_wrappers::wrappers::i_hyperdrive::Checkpoint;
-use rand::{rngs::ThreadRng, thread_rng, Rng};
+use rand::{rngs::ThreadRng, thread_rng, Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use test_utils::{
     agent::Agent,
@@ -13,7 +13,7 @@ use test_utils::{
 
 /// Executes random trades throughout a Hyperdrive term.
 async fn preamble(
-    rng: &mut ThreadRng,
+    rng: &mut ChaCha8Rng,
     alice: &mut Agent<ChainClient, ChaCha8Rng>,
     bob: &mut Agent<ChainClient, ChaCha8Rng>,
     celine: &mut Agent<ChainClient, ChaCha8Rng>,
@@ -46,25 +46,38 @@ async fn preamble(
             rng.gen_range(fixed!(1e12)..=celine.get_max_short(None).await? * discount);
         celine.open_short(short_amount, None).await?;
 
-        // Advance a checkpoint.
-        let multiplier = rng.gen_range(fixed!(0.5e18)..=fixed!(10e18));
+        // Advance the time and mint all of the intermediate checkpoints.
+        let multiplier = rng.gen_range(fixed!(5e18)..=fixed!(50e18));
         let delta = FixedPoint::from(time_remaining)
             .min(FixedPoint::from(alice.get_config().checkpoint_duration) * multiplier);
         time_remaining -= U256::from(delta);
         alice
-            .advance_time_with_checkpoints(
+            .advance_time(
                 fixed!(0), // FIXME: Use a real rate.
                 delta,
             )
             .await?;
     }
 
+    // Mint a checkpoint to close any matured positions from the first checkpoint
+    // of trading.
+    alice.checkpoint(alice.latest_checkpoint().await?).await?;
+
     Ok(())
 }
 
 #[tokio::test]
 pub async fn test_integration_get_max_short() -> Result<()> {
-    let mut rng = thread_rng();
+    // Set up a random number generator. We use ChaCha8Rng with a randomly
+    // generated seed, which makes it easy to reproduce test failures given
+    // the seed.
+    let mut rng = {
+        let mut rng = thread_rng();
+        let seed = rng.gen();
+        ChaCha8Rng::seed_from_u64(seed)
+    };
+
+    // Initialize the test chain and agents.
     let chain = TestChain::new(3).await?;
     let mut alice = Agent::new(
         chain.client(chain.accounts()[0].clone()).await?,
@@ -85,7 +98,7 @@ pub async fn test_integration_get_max_short() -> Result<()> {
     )
     .await?;
 
-    for _ in 0..*FUZZ_RUNS {
+    for i in 0..*FUZZ_RUNS {
         // Snapshot the chain.
         let id = chain.snapshot().await?;
 
@@ -99,11 +112,13 @@ pub async fn test_integration_get_max_short() -> Result<()> {
         let state = alice.get_state().await?;
         let Checkpoint {
             share_price: open_share_price,
+            long_exposure: checkpoint_exposure,
             ..
         } = alice
             .get_checkpoint(state.to_checkpoint(alice.now().await?))
             .await?;
-        let global_max_short = state.get_max_short(U256::MAX, open_share_price, None, None);
+        let global_max_short =
+            state.get_max_short(U256::MAX, open_share_price, checkpoint_exposure, None, None);
         let budget = bob.base();
         let slippage_tolerance = fixed!(0.001e18);
         let max_short = bob.get_max_short(Some(slippage_tolerance)).await?;
@@ -136,7 +151,16 @@ pub async fn test_integration_get_max_short() -> Result<()> {
 
 #[tokio::test]
 pub async fn test_integration_get_max_long() -> Result<()> {
-    let mut rng = thread_rng();
+    // Set up a random number generator. We use ChaCha8Rng with a randomly
+    // generated seed, which makes it easy to reproduce test failures given
+    // the seed.
+    let mut rng = {
+        let mut rng = thread_rng();
+        let seed = rng.gen();
+        ChaCha8Rng::seed_from_u64(seed)
+    };
+
+    // Initialize the test chain and agents.
     let chain = TestChain::new(3).await?;
     let mut alice = Agent::new(
         chain.client(chain.accounts()[0].clone()).await?,

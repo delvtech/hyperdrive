@@ -80,11 +80,15 @@ impl Distribution<State> for Standard {
             shorts_outstanding: rng.gen_range(fixed!(0)..=fixed!(100_000e18)).into(),
             long_exposure: rng.gen_range(fixed!(0)..=fixed!(100_000e18)).into(),
             share_adjustment: {
-                let value = rng.gen_range(fixed!(0)..=fixed!(100_000e18));
                 if rng.gen() {
-                    -I256::from(value)
+                    -I256::from(rng.gen_range(fixed!(0)..=fixed!(100_000e18)))
                 } else {
-                    I256::from(value)
+                    // We generate values that satisfy $z - \zeta \geq z_{min}$,
+                    // so $z - z_{min} \geq \zeta$.
+                    I256::from(rng.gen_range(
+                        fixed!(0)
+                            ..(share_reserves - FixedPoint::from(config.minimum_share_reserves)),
+                    ))
                 }
             },
             long_average_maturity_time: rng
@@ -176,7 +180,7 @@ impl State {
     }
 
     fn effective_share_reserves(&self) -> FixedPoint {
-        self.z()
+        get_effective_share_reserves(self.share_reserves(), self.share_adjustment())
     }
 
     fn bond_reserves(&self) -> FixedPoint {
@@ -202,7 +206,7 @@ impl State {
 
 impl YieldSpace for State {
     fn z(&self) -> FixedPoint {
-        FixedPoint::from(I256::from(self.share_reserves()) - self.share_adjustment())
+        self.effective_share_reserves()
     }
 
     fn y(&self) -> FixedPoint {

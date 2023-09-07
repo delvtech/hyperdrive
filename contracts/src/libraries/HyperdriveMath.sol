@@ -834,11 +834,7 @@ library HyperdriveMath {
             );
     }
 
-    // FIXME: Analyze this more deeply. What happens when zeta is positive?
-    //
-    // FIXME: This is an overly restrictive max short calculation. We can do
-    // better if we iteratively approximate using solvency as an objective
-    // function.
+    // FIXME: Port over the Rust implementation of this function.
     //
     /// @dev Calculates the maximum amount of shares that can be used to open
     ///      shorts.

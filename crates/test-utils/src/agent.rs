@@ -821,6 +821,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
         let state = self.get_state().await?;
         let Checkpoint {
             share_price: open_share_price,
+            long_exposure: checkpoint_exposure,
             ..
         } = self
             .hyperdrive
@@ -846,7 +847,13 @@ impl Agent<ChainClient, ChaCha8Rng> {
             spot_price * (fixed!(1e18) - weight) + min_price * weight
         };
 
-        Ok(state.get_max_short(budget, open_share_price, Some(conservative_price), None))
+        Ok(state.get_max_short(
+            budget,
+            open_share_price,
+            checkpoint_exposure,
+            Some(conservative_price),
+            None,
+        ))
     }
 
     // TODO: We'll need to implement helpers that give us the maximum trade

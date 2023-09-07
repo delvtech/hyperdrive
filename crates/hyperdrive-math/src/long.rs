@@ -61,7 +61,7 @@ impl State {
             (base_amount, bond_amount)
         };
         if self
-            .solvency(
+            .solvency_after_long(
                 absolute_max_base_amount,
                 absolute_max_bond_amount,
                 checkpoint_exposure,
@@ -89,45 +89,51 @@ impl State {
         // The guess that we make is very important in determining how quickly
         // we converge to the solution.
         let mut max_base_amount = self.max_long_guess(checkpoint_exposure);
-        let mut solvency = self.solvency(
+        let mut maybe_solvency = self.solvency_after_long(
             max_base_amount,
             self.get_long_amount(max_base_amount),
             checkpoint_exposure,
         );
-        if solvency.is_none() {
+        if maybe_solvency.is_none() {
             panic!("Initial guess in `get_max_long` is insolvent.");
         }
+        let mut solvency = maybe_solvency.unwrap();
         for _ in 0..maybe_max_iterations.unwrap_or(7) {
+            // If the max base amount has exceeded the absolute max, we've gone
+            // too far and the calculation deviated from reality at some point.
+            if max_base_amount > absolute_max_base_amount {
+                panic!("Exceeded absolute max bond amount in `get_max_long`.");
+            }
+
             // If the max base amount exceeds the budget, we know that the
             // entire budget can be consumed without running into solvency
             // constraints.
-            if max_base_amount >= absolute_max_base_amount {
-                return absolute_max_base_amount;
-            }
             if max_base_amount >= budget {
                 return budget;
             }
 
-            // If the pool is solvent after the current guess, we proceed with
-            // Newton's method. As Newton's method approaches the root, it can
-            // cross over to the other side of the root. We truncuate Newton's
-            // method when this happens.
-            //
             // TODO: It may be better to gracefully handle crossing over the
             // root by extending the fixed point math library to handle negative
             // numbers or even just using an if-statement to handle the negative
             // numbers.
-            if let Some(s) = solvency {
-                let maybe_derivative = self.solvency_derivative(max_base_amount);
-                if maybe_derivative.is_none() {
-                    break;
-                }
-                max_base_amount += s / maybe_derivative.unwrap();
-                solvency = self.solvency(
-                    max_base_amount,
-                    self.get_long_amount(max_base_amount),
-                    checkpoint_exposure,
-                );
+            //
+            // Proceed to the next step of Newton's method. Once we have a
+            // candidate solution, we check to see if the pool is solvent if
+            // a long is opened with the candidate amount. If the pool isn't
+            // solvent, then we're done.
+            let maybe_derivative = self.solvency_after_long_derivative(max_base_amount);
+            if maybe_derivative.is_none() {
+                break;
+            }
+            let possible_max_base_amount = max_base_amount + solvency / maybe_derivative.unwrap();
+            maybe_solvency = self.solvency_after_long(
+                possible_max_base_amount,
+                self.get_long_amount(possible_max_base_amount),
+                checkpoint_exposure,
+            );
+            if let Some(s) = maybe_solvency {
+                solvency = s;
+                max_base_amount = possible_max_base_amount;
             } else {
                 break;
             }
@@ -140,13 +146,13 @@ impl State {
     /// long.
     ///
     /// To calculate our guess, we assume an unrealistically good realized
-    /// price $p_r$ for closing the long. This allows us to approximate
+    /// price $p_r$ for opening the long. This allows us to approximate
     /// $y(x)$ as $y(x) \approx p_r^{-1} \cdot x - c(x)$. Plugging this
     /// into our solvency function $s(x)$, we can calculate the share
     /// reserves and exposure after opening a long with $x$ base as:
     ///
     /// \begin{aligned}
-    /// z(x) &= z_0 + \tfrac{x - g(x)}{c} - z_{min} \\
+    /// z(x) &= z_0 + \tfrac{x - g(x)}{c} \\
     /// e(x) &= e_0 + min(exposure_{checkpoint}, 0) + 2 \cdot y(x) - x + g(x) \\
     ///      &= e_0 + min(exposure_{checkpoint}, 0) + 2 \cdot p_r^{-1} \cdot x -
     ///             2 \cdot c(x) - x + g(x)
@@ -232,7 +238,7 @@ impl State {
     /// It's possible that the pool is insolvent after opening a long. In this
     /// case, we return `None` since the fixed point library can't represent
     /// negative numbers.
-    fn solvency(
+    fn solvency_after_long(
         &self,
         base_amount: FixedPoint,
         bond_amount: FixedPoint,
@@ -273,7 +279,7 @@ impl State {
     /// This derivative is negative since solvency decreases as more longs are
     /// opened. We use the negation of the derivative to stay in the positive
     /// domain, which allows us to use the fixed point library.
-    fn solvency_derivative(&self, base_amount: FixedPoint) -> Option<FixedPoint> {
+    fn solvency_after_long_derivative(&self, base_amount: FixedPoint) -> Option<FixedPoint> {
         let maybe_derivative = self.long_amount_derivative(base_amount);
         maybe_derivative.map(|derivative| {
             (derivative
