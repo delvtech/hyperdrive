@@ -380,8 +380,8 @@ impl State {
         checkpoint_exposure: I256,
     ) -> FixedPoint {
         let estimate_price = spot_price;
-        let checkpoint_exposure: FixedPoint =
-            checkpoint_exposure.max(I256::zero()).into() / self.share_price();
+        let checkpoint_exposure =
+            FixedPoint::from(checkpoint_exposure.max(I256::zero())) / self.share_price();
         (self.share_price() * (self.get_solvency() + checkpoint_exposure))
             / (estimate_price - self.curve_fee() * (fixed!(1e18) - spot_price)
                 + self.governance_fee() * self.curve_fee() * (fixed!(1e18) - spot_price))
@@ -598,26 +598,43 @@ mod tests {
         let mut rng = thread_rng();
         for _ in 0..*FAST_FUZZ_RUNS {
             let state = rng.gen::<State>();
-            // TODO: We should test this with non-trivial values for the
-            // checkpoint exposure.
+            let checkpoint_exposure = {
+                let value = rng.gen_range(fixed!(0)..=fixed!(10_000_000e18));
+                if rng.gen() {
+                    -I256::from(value)
+                } else {
+                    I256::from(value)
+                }
+            };
+            let max_iterations = 7;
             let actual = panic::catch_unwind(|| {
-                state.get_max_short(U256::MAX, fixed!(0), I256::zero(), None, None)
+                state.get_max_short(
+                    U256::MAX,
+                    fixed!(0),
+                    checkpoint_exposure,
+                    None,
+                    Some(max_iterations),
+                )
             });
             match chain
                 .mock_hyperdrive_math()
-                .calculate_max_short(MaxTradeParams {
-                    share_reserves: state.info.share_reserves,
-                    bond_reserves: state.info.bond_reserves,
-                    longs_outstanding: state.info.longs_outstanding,
-                    long_exposure: state.info.long_exposure,
-                    share_adjustment: state.info.share_adjustment,
-                    time_stretch: state.config.time_stretch,
-                    share_price: state.info.share_price,
-                    initial_share_price: state.config.initial_share_price,
-                    minimum_share_reserves: state.config.minimum_share_reserves,
-                    curve_fee: state.config.fees.curve,
-                    governance_fee: state.config.fees.governance,
-                })
+                .calculate_max_short(
+                    MaxTradeParams {
+                        share_reserves: state.info.share_reserves,
+                        bond_reserves: state.info.bond_reserves,
+                        longs_outstanding: state.info.longs_outstanding,
+                        long_exposure: state.info.long_exposure,
+                        share_adjustment: state.info.share_adjustment,
+                        time_stretch: state.config.time_stretch,
+                        share_price: state.info.share_price,
+                        initial_share_price: state.config.initial_share_price,
+                        minimum_share_reserves: state.config.minimum_share_reserves,
+                        curve_fee: state.config.fees.curve,
+                        governance_fee: state.config.fees.governance,
+                    },
+                    checkpoint_exposure,
+                    max_iterations.into(),
+                )
                 .call()
                 .await
             {

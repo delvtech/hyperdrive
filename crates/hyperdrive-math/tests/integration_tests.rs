@@ -3,7 +3,7 @@ use eyre::Result;
 use fixed_point::FixedPoint;
 use fixed_point_macros::{fixed, uint256};
 use hyperdrive_wrappers::wrappers::i_hyperdrive::Checkpoint;
-use rand::{rngs::ThreadRng, thread_rng, Rng, SeedableRng};
+use rand::{thread_rng, Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use test_utils::{
     agent::Agent,
@@ -98,7 +98,7 @@ pub async fn test_integration_get_max_short() -> Result<()> {
     )
     .await?;
 
-    for i in 0..*FUZZ_RUNS {
+    for _ in 0..*FUZZ_RUNS {
         // Snapshot the chain.
         let id = chain.snapshot().await?;
 
