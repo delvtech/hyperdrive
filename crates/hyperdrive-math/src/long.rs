@@ -99,10 +99,11 @@ impl State {
         }
         let mut solvency = maybe_solvency.unwrap();
         for _ in 0..maybe_max_iterations.unwrap_or(7) {
-            // If the max base amount has exceeded the absolute max, we've gone
-            // too far and the calculation deviated from reality at some point.
-            if max_base_amount > absolute_max_base_amount {
-                panic!("Exceeded absolute max bond amount in `get_max_long`.");
+            // If the max base amount is equal to or exceeds the absolute max,
+            // we've gone too far and the calculation deviated from reality at
+            // some point.
+            if max_base_amount >= absolute_max_base_amount {
+                panic!("Reached absolute max bond amount in `get_max_long`.");
             }
 
             // If the max base amount exceeds the budget, we know that the

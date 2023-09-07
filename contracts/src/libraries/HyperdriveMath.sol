@@ -360,7 +360,7 @@ library HyperdriveMath {
                 spotPrice,
                 _params.curveFee
             );
-            (, bool isSolvent_) = calculateSolvency(
+            (, bool isSolvent_) = calculateSolvencyAfterLong(
                 _params,
                 _checkpointLongExposure,
                 absoluteMaxBaseAmount,
@@ -400,63 +400,60 @@ library HyperdriveMath {
             effectiveShareReserves,
             spotPrice
         );
-        (uint256 s, bool isSolvent) = calculateSolvency(
+        (uint256 solvency, bool success) = calculateSolvencyAfterLong(
             _params,
             _checkpointLongExposure,
             maxBaseAmount,
             maxBondAmount,
             spotPrice
         );
-        require(isSolvent, "Initial guess in `calculateMaxLong` is insolvent.");
+        require(success, "Initial guess in `calculateMaxLong` is insolvent.");
         for (uint256 i = 0; i < _maxIterations; i++) {
-            // If the base amount is greater than the absolute max base amount
-            // (based on the spot price), we short circuit and return the
-            // absolute maximum base and bond amounts.
-            if (maxBaseAmount >= absoluteMaxBaseAmount) {
-                return (absoluteMaxBaseAmount, absoluteMaxBondAmount);
-            }
+            // If the max base amount is equal to or exceeds the absolute max,
+            // we've gone too far and the calculation deviated from reality at
+            // some point.
+            require(
+                maxBaseAmount < absoluteMaxBaseAmount,
+                "Reached absolute max bond amount in `get_max_long`."
+            );
 
-            // If the pool is solvent after the current guess, we proceed with
-            // Newton's method. As Newton's method approaches the root, it can
-            // cross over to the other side of the root. We truncuate Newton's
-            // method when this happens.
-            //
             // TODO: It may be better to gracefully handle crossing over the
             // root by extending the fixed point math library to handle negative
             // numbers or even just using an if-statement to handle the negative
             // numbers.
-            if (isSolvent) {
-                // Calculate the derivative of the objective function for
-                // Newton's method. This should only fail near the root.
-                (
-                    uint256 derivative,
-                    bool success
-                ) = calculateSolvencyDerivative(
-                        _params,
-                        maxBaseAmount,
-                        effectiveShareReserves,
-                        spotPrice
-                    );
-                if (!success) {
-                    break;
-                }
-
-                // Calculate the next step of Newton's method and calculate the
-                // ending solvency.
-                maxBaseAmount += s.divDown(derivative);
-                maxBondAmount = calculateLongAmount(
-                    _params,
-                    maxBaseAmount,
-                    effectiveShareReserves,
-                    spotPrice
-                );
-                (s, isSolvent) = calculateSolvency(
-                    _params,
-                    _checkpointLongExposure,
-                    maxBaseAmount,
-                    maxBondAmount,
-                    spotPrice
-                );
+            //
+            // Proceed to the next step of Newton's method. Once we have a
+            // candidate solution, we check to see if the pool is solvent if
+            // a long is opened with the candidate amount. If the pool isn't
+            // solvent, then we're done.
+            uint256 derivative;
+            (derivative, success) = calculateSolvencyAfterLongDerivative(
+                _params,
+                maxBaseAmount,
+                effectiveShareReserves,
+                spotPrice
+            );
+            if (!success) {
+                break;
+            }
+            uint256 possibleMaxBaseAmount = maxBaseAmount +
+                solvency.divDown(derivative);
+            uint256 possibleMaxBondAmount = calculateLongAmount(
+                _params,
+                possibleMaxBaseAmount,
+                effectiveShareReserves,
+                spotPrice
+            );
+            (solvency, success) = calculateSolvencyAfterLong(
+                _params,
+                _checkpointLongExposure,
+                possibleMaxBaseAmount,
+                possibleMaxBondAmount,
+                spotPrice
+            );
+            if (success) {
+                maxBaseAmount = possibleMaxBaseAmount;
+                maxBondAmount = possibleMaxBondAmount;
             } else {
                 break;
             }
@@ -581,7 +578,7 @@ library HyperdriveMath {
     /// @return The solvency of the pool.
     /// @return A flag indicating that the pool is solvent if true and insolvent
     ///         if false.
-    function calculateSolvency(
+    function calculateSolvencyAfterLong(
         MaxTradeParams memory _params,
         int256 _checkpointLongExposure,
         uint256 _baseAmount,
@@ -645,7 +642,7 @@ library HyperdriveMath {
     ///         w.r.t the base amount.
     /// @return success A flag indicating whether or not the derivative was
     ///         successfully calculated.
-    function calculateSolvencyDerivative(
+    function calculateSolvencyAfterLongDerivative(
         MaxTradeParams memory _params,
         uint256 _baseAmount,
         uint256 _effectiveShareReserves,
@@ -745,6 +742,7 @@ library HyperdriveMath {
     /// @param _params The max long calculation parameters.
     /// @param _baseAmount The base amount.
     /// @param _spotPrice The spot price.
+    /// @param _effectiveShareReserves The effective share reserves.
     /// @return derivative The derivative of the long amount w.r.t. the base
     ///         amount.
     /// @return A flag indicating whether or not the derivative was
@@ -834,63 +832,429 @@ library HyperdriveMath {
             );
     }
 
-    // FIXME: Port over the Rust implementation of this function.
-    //
-    /// @dev Calculates the maximum amount of shares that can be used to open
-    ///      shorts.
-    /// @param _params Information about the market state and pool configuration
-    ///        used to compute the maximum trade.
+    /// @dev A struct used to hold extra variables in the max short calculation
+    ///      function to avoid stack-too-deep errors.
+    struct MaxShortInternal {
+        uint256 solvency;
+        uint256 derivative;
+        bool success;
+    }
+
+    /// @dev Gets the absolute max short that can be opened without violating
+    ///      the pool's solvency constraints.
+    /// @param _checkpointExposure The long exposure in the current checkpoint.
     /// @return The maximum amount of shares that can be used to open shorts.
     function calculateMaxShort(
-        MaxTradeParams memory _params
+        MaxTradeParams memory _params,
+        int256 _checkpointExposure,
+        uint256 _maxIterations
     ) internal pure returns (uint256) {
-        // The only constraint on the maximum short is that the effective share
-        // reserves don't go negative and satisfy the solvency requirements.
-        // Thus, we can set z - zeta = y_l/c + z_min and solve for the maximum
-        // short directly as:
-        //
-        // k = (c / mu) * (mu * (y_l/c + z_min)) ** (1 - t_s) + y ** (1 - t_s)
-        //                         =>
-        // y = (k - (c / mu) * (mu * (y_l/c + z_min)) ** (1 - t_s)) ** (1 / (1 - t_s)).
-        uint256 t = ONE - _params.timeStretch;
-        uint256 priceFactor = _params.sharePrice.divDown(
-            _params.initialSharePrice
+        // We start by calculating the maximum short that can be opened on the
+        // YieldSpace curve. Both $z \geq z_{min}$ and $z - \zeta \geq z_{min}$
+        // must hold, which allows us to solve directly for the optimal bond
+        // reserves.
+        MaxShortInternal memory internal_;
+        uint256 effectiveShareReserves = calculateEffectiveShareReserves(
+            _params.shareReserves,
+            _params.shareAdjustment
         );
-        uint256 k = YieldSpaceMath.modifiedYieldSpaceConstant(
-            priceFactor,
+        uint256 spotPrice = calculateSpotPrice(
+            effectiveShareReserves,
+            _params.bondReserves,
             _params.initialSharePrice,
-            calculateEffectiveShareReserves(
-                _params.shareReserves,
-                _params.shareAdjustment
-            ),
-            t,
+            _params.timeStretch
+        );
+        uint256 absoluteMaxBondAmount = calculateMaxShortUpperBound(
+            _params,
+            effectiveShareReserves
+        );
+        (internal_.solvency, internal_.success) = calculateSolvencyAfterShort(
+            _params,
+            absoluteMaxBondAmount,
+            effectiveShareReserves,
+            spotPrice,
+            _checkpointExposure
+        );
+        if (internal_.success) {
+            return absoluteMaxBondAmount;
+        }
+
+        // Use Newton's method to iteratively approach a solution. We use pool's
+        // solvency $S(x)$ w.r.t. the amount of bonds shorted $x$ as our
+        // objective function, which will converge to the maximum short amount
+        // when $S(x) = 0$. The derivative of $S(x)$ is negative (since solvency
+        // decreases as more shorts are opened). The fixed point library doesn't
+        // support negative numbers, so we use the negation of the derivative to
+        // side-step the issue.
+        //
+        // Given the current guess of $x_n$, Newton's method gives us an updated
+        // guess of $x_{n+1}$:
+        //
+        // $$
+        // x_{n+1} = x_n - \tfrac{S(x_n)}{S'(x_n)} = x_n + \tfrac{S(x_n)}{-S'(x_n)}
+        // $$
+        //
+        // The guess that we make is very important in determining how quickly
+        // we converge to the solution.
+        uint256 maxBondAmount = calculateMaxShortGuess(
+            _params,
+            spotPrice,
+            _checkpointExposure
+        );
+        (internal_.solvency, internal_.success) = calculateSolvencyAfterShort(
+            _params,
+            maxBondAmount,
+            effectiveShareReserves,
+            spotPrice,
+            _checkpointExposure
+        );
+        require(
+            internal_.success,
+            "Initial guess in `calculateMaxShort` is insolvent"
+        );
+        for (uint256 i = 0; i < _maxIterations; i++) {
+            // If the max bond amount is equal to or exceeds the absolute max,
+            // we've gone too far and something has gone wrong.
+            require(
+                maxBondAmount < absoluteMaxBondAmount,
+                "Reached absolute max bond amount in `calculateMaxShort`."
+            );
+
+            // TODO: It may be better to gracefully handle crossing over the
+            // root by extending the fixed point math library to handle negative
+            // numbers or even just using an if-statement to handle the negative
+            // numbers.
+            //
+            // Proceed to the next step of Newton's method. Once we have a
+            // candidate solution, we check to see if the pool is solvent if
+            // a long is opened with the candidate amount. If the pool isn't
+            // solvent, then we're done.
+            (
+                internal_.derivative,
+                internal_.success
+            ) = calculateSolvencyAfterShortDerivative(
+                _params,
+                maxBondAmount,
+                spotPrice,
+                effectiveShareReserves
+            );
+            if (!internal_.success) {
+                break;
+            }
+            uint256 possibleMaxBondAmount = maxBondAmount +
+                internal_.solvency.divDown(internal_.derivative);
+            (
+                internal_.solvency,
+                internal_.success
+            ) = calculateSolvencyAfterShort(
+                _params,
+                possibleMaxBondAmount,
+                effectiveShareReserves,
+                spotPrice,
+                _checkpointExposure
+            );
+            if (internal_.success) {
+                maxBondAmount = possibleMaxBondAmount;
+            } else {
+                break;
+            }
+        }
+
+        return maxBondAmount;
+    }
+
+    /// @dev Calculates the max short that can be opened on the YieldSpace curve
+    ///      without considering solvency constraints.
+    /// @param _params Information about the market state and pool configuration
+    ///        used to compute the maximum trade.
+    /// @param _effectiveShareReserves The effective share reserves.
+    /// @return The max short YieldSpace can support without considering solvency.
+    function calculateMaxShortUpperBound(
+        MaxTradeParams memory _params,
+        uint256 _effectiveShareReserves
+    ) internal pure returns (uint256) {
+        uint256 k = YieldSpaceMath.modifiedYieldSpaceConstant(
+            _params.sharePrice.divDown(_params.initialSharePrice),
+            _params.initialSharePrice,
+            _effectiveShareReserves,
+            ONE - _params.timeStretch,
             _params.bondReserves
         );
-        // HACK(jalextowle): We need to be smarter about the maximum short that
-        // can be opened with the zeta adjustment. I'll need to think more
-        // deeply about how changes in zeta effect the tradeable range on the
-        // AMM curve.
         uint256 optimalShareReserves;
         if (_params.shareAdjustment >= 0) {
+            // If the share adjustment is greater than zero, then
+            // $z > z - \zeta$, so $z - \zeta \geq z_{min}$ is the
+            // constraint that matters. Our optimal share reserves are given
+            // by $z = \zeta + z_{min}$.
             optimalShareReserves =
-                _params.longsOutstanding.divDown(_params.sharePrice) +
+                uint256(_params.shareAdjustment) +
                 _params.minimumShareReserves;
         } else {
-            optimalShareReserves = calculateEffectiveShareReserves(
-                _params.longsOutstanding.divDown(_params.sharePrice) +
-                    _params.minimumShareReserves,
-                _params.shareAdjustment
-            );
+            // If the share adjustment is less than zero, then
+            // $z - \zeta > z$ as $z \geq z_{min}$ is the salient constraint.
+            // Our optimal share reserves are given by $z = z_{min}$.
+            optimalShareReserves = _params.minimumShareReserves;
         }
-        uint256 innerFactor = _params
-            .initialSharePrice
-            .mulDown(optimalShareReserves)
-            .pow(t);
-        uint256 optimalBondReserves = (k - priceFactor.mulDown(innerFactor))
-            .pow(ONE.divDown(t));
-
-        // The optimal bond reserves imply a maximum short of dy = y - y0.
+        uint256 optimalBondReserves = (k -
+            (_params.sharePrice.divDown(_params.initialSharePrice)).mulDown(
+                _params
+                    .initialSharePrice
+                    .mulDown(
+                        calculateEffectiveShareReserves(
+                            optimalShareReserves,
+                            _params.shareAdjustment
+                        )
+                    )
+                    .pow(ONE - _params.timeStretch)
+            )).pow(ONE.divUp(ONE - _params.timeStretch));
         return optimalBondReserves - _params.bondReserves;
+    }
+
+    /// @dev Gets an initial guess for the absolute max short. This is a
+    ///      conservative guess that will be less than the true absolute max
+    ///      short, which is what we need to start Newton's method.
+    ///
+    ///      To calculate our guess, we assume an unrealistically good realized
+    ///      price $p_r$ for opening the short. This allows us to approximate
+    ///      $P(x) \approx \tfrac{1}{c} \cdot p_r \cdot x$. Plugging this
+    ///      into our solvency function $s(x)$, we get an approximation of our
+    ///      solvency as:
+    ///
+    ///      $$
+    ///      S(x) \approx (z_0 - \tfrac{1}{c} \cdot (
+    ///                       p_r - \phi_{c} \cdot (1 - p) + \phi_{g} \cdot \phi_{c} \cdot (1 - p)
+    ///                   )) - \tfrac{e_0 - max(e_{c}, 0)}{c} - z_{min}
+    ///      $$
+    ///
+    ///      Setting this equal to zero, we can solve for our initial guess:
+    ///
+    ///      $$
+    ///      x = \frac{c \cdot (s_0 + \tfrac{max(e_{c}, 0)}{c})}{
+    ///              p_r - \phi_{c} \cdot (1 - p) + \phi_{g} \cdot \phi_{c} \cdot (1 - p)
+    ///          }
+    ///      $$
+    /// @param _params Information about the market state and pool configuration
+    ///        used to compute the maximum trade.
+    /// @param _spotPrice The spot price.
+    /// @param _checkpointExposure The long exposure from the current checkpoint.
+    /// @return The initial guess for the max short calculation.
+    function calculateMaxShortGuess(
+        MaxTradeParams memory _params,
+        uint256 _spotPrice,
+        int256 _checkpointExposure
+    ) internal pure returns (uint256) {
+        uint256 estimatePrice = _spotPrice;
+        uint256 guess = _params.sharePrice.mulDown(
+            _params.shareReserves +
+                uint256(_checkpointExposure.max(0)).divDown(
+                    _params.sharePrice
+                ) -
+                _params.longExposure.divDown(_params.sharePrice) -
+                _params.minimumShareReserves
+        );
+        return
+            guess.divDown(
+                estimatePrice -
+                    _params.curveFee.mulDown(ONE - _spotPrice) +
+                    _params.governanceFee.mulDown(_params.curveFee).mulDown(
+                        ONE - _spotPrice
+                    )
+            );
+    }
+
+    /// @dev Gets the pool's solvency after opening a short.
+    ///
+    ///      We can express the pool's solvency after opening a short of $x$
+    ///      bonds as:
+    ///
+    ///      $$
+    ///      s(x) = z(x) - \tfrac{e(x)}{c} - z_{min}
+    ///      $$
+    ///
+    ///      where $z(x)$ represents the pool's share reserves after opening the
+    ///      short:
+    ///
+    ///      $$
+    ///      z(x) = z_0 - \left(
+    ///                 P(x) - \left( \tfrac{c(x)}{c} - \tfrac{g(x)}{c} \right)
+    ///             \right)
+    ///      $$
+    ///
+    ///      and $e(x)$ represents the pool's exposure after opening the short:
+    ///
+    ///      $$
+    ///      e(x) = e_0 - min(x + D(x), max(e_{c}, 0))
+    ///      $$
+    ///
+    ///      We simplify our $e(x)$ formula by noting that the max short is only
+    ///      constrained by solvency when $x + D(x) > max(e_{c}, 0)$ since
+    ///      $x + D(x)$ grows faster than
+    ///      $P(x) - \tfrac{\phi_{c}}{c} \cdot \left( 1 - p \right) \cdot x$.
+    ///      With this in mind, $min(x + D(x), max(e_{c}, 0)) = max(e_{c}, 0)$
+    ///      whenever solvency is actually a constraint, so we can write:
+    ///
+    ///      $$
+    ///      e(x) = e_0 - max(e_{c}, 0)
+    ///      $$
+    /// @param _params Information about the market state and pool configuration
+    ///        used to compute the maximum trade.
+    /// @param _shortAmount The short amount.
+    /// @param _effectiveShareReserves The effective share reserves.
+    /// @param _spotPrice The spot price.
+    /// @param _checkpointExposure The long exposure in the current checkpoint.
+    /// @return The pool's solvency after a short is opened.
+    /// @return A flag indicating whether or not the derivative was
+    ///         successfully calculated.
+    function calculateSolvencyAfterShort(
+        MaxTradeParams memory _params,
+        uint256 _shortAmount,
+        uint256 _effectiveShareReserves,
+        uint256 _spotPrice,
+        int256 _checkpointExposure
+    ) internal pure returns (uint256, bool) {
+        uint256 shareReserves = _params.shareReserves -
+            (YieldSpaceMath.calculateSharesOutGivenBondsIn(
+                _effectiveShareReserves,
+                _params.bondReserves,
+                _shortAmount,
+                ONE - _params.timeStretch,
+                _params.sharePrice,
+                _params.initialSharePrice
+            ) -
+                (calculateShortCurveFee(
+                    _shortAmount,
+                    _spotPrice,
+                    _params.curveFee
+                ) -
+                    calculateShortGovernanceFee(
+                        _shortAmount,
+                        _spotPrice,
+                        _params.curveFee,
+                        _params.governanceFee
+                    )).divDown(_params.sharePrice));
+        uint256 exposure = (_params.longExposure -
+            uint256(_checkpointExposure.max(0))).divDown(_params.sharePrice);
+        if (shareReserves >= exposure + _params.minimumShareReserves) {
+            return (
+                shareReserves - exposure - _params.minimumShareReserves,
+                true
+            );
+        } else {
+            return (0, false);
+        }
+    }
+
+    /// @dev Gets the derivative of the pool's solvency w.r.t. the short amount.
+    ///
+    ///      The derivative is calculated as:
+    ///
+    ///      \begin{aligned}
+    ///      s'(x) &= z'(x)
+    ///            &= -(P'(x) - \tfrac{\phi_{c}}{c} \cdot (1 - p))
+    ///            &= -P'(x) + \tfrac{\phi_{c}}{c} \cdot (1 - p)
+    ///      \end{aligned}
+    ///
+    ///      Since solvency decreases as the short amount increases, we negate
+    ///      the derivative. This avoids issues with the fixed point library
+    ///      which doesn't support negative values.
+    /// @return The derivative of the solvency after short function w.r.t. the
+    ///         bond amount.
+    /// @return A flag indicating whether or not the derivative was
+    ///         successfully calculated.
+    function calculateSolvencyAfterShortDerivative(
+        MaxTradeParams memory _params,
+        uint256 _shortAmount,
+        uint256 _spotPrice,
+        uint256 _effectiveShareReserves
+    ) internal pure returns (uint256, bool) {
+        uint256 lhs = calculateShortPrincipalDerivative(
+            _params,
+            _shortAmount,
+            _effectiveShareReserves
+        );
+        uint256 rhs = _params.curveFee.mulDown(ONE - _spotPrice).divDown(
+            _params.sharePrice
+        );
+        if (lhs >= rhs) {
+            return (lhs - rhs, true);
+        } else {
+            return (0, false);
+        }
+    }
+
+    /// @dev Gets the derivative of the short principal $P(x)$ w.r.t. the amount
+    ///      of bonds that are shorted $x$.
+    ///
+    ///      The derivative is calculated as:
+    ///
+    ///      $$
+    ///      P'(x) = \tfrac{1}{c} \cdot (y + x)^{-t_s} \cdot \left(
+    ///                  \tfrac{\mu}{c} \cdot (k - (y + x)^{1 - t_s})
+    ///              \right)^{\tfrac{t_s}{1 - t_s}}
+    ///      $$
+    /// @param _params The max long calculation parameters.
+    /// @param _shortAmount The base amount.
+    /// @param _effectiveShareReserves The effective share reserves.
+    /// @return The derivative of the short principal w.r.t. the bond amount.
+    function calculateShortPrincipalDerivative(
+        MaxTradeParams memory _params,
+        uint256 _shortAmount,
+        uint256 _effectiveShareReserves
+    ) internal pure returns (uint256) {
+        uint256 k = YieldSpaceMath.modifiedYieldSpaceConstant(
+            _params.sharePrice.divDown(_params.initialSharePrice),
+            _params.initialSharePrice,
+            _effectiveShareReserves,
+            ONE - _params.timeStretch,
+            _params.bondReserves
+        );
+        uint256 lhs = ONE.divDown(
+            _params.sharePrice.mulUp(
+                (_params.bondReserves + _shortAmount).pow(_params.timeStretch)
+            )
+        );
+        uint256 rhs = _params
+            .initialSharePrice
+            .divDown(_params.sharePrice)
+            .mulDown(
+                k -
+                    (_params.bondReserves + _shortAmount).pow(
+                        ONE - _params.timeStretch
+                    )
+            )
+            .pow(_params.timeStretch.divUp(ONE - _params.timeStretch));
+        return lhs.mulDown(rhs);
+    }
+
+    /// @dev Gets the curve fee paid by the trader when they open a short.
+    /// @param _bondAmount The bond amount.
+    /// @param _spotPrice The spot price.
+    /// @param _curveFee The curve fee parameter.
+    /// @return The curve fee.
+    function calculateShortCurveFee(
+        uint256 _bondAmount,
+        uint256 _spotPrice,
+        uint256 _curveFee
+    ) internal pure returns (uint256) {
+        return _curveFee.mulDown(ONE - _spotPrice).mulDown(_bondAmount);
+    }
+
+    /// @dev Gets the governance fee paid by the trader when they open a short.
+    /// @param _bondAmount The bond amount.
+    /// @param _spotPrice The spot price.
+    /// @param _curveFee The curve fee parameter.
+    /// @param _governanceFee The governance fee parameter.
+    /// @return The governance fee.
+    function calculateShortGovernanceFee(
+        uint256 _bondAmount,
+        uint256 _spotPrice,
+        uint256 _curveFee,
+        uint256 _governanceFee
+    ) internal pure returns (uint256) {
+        return
+            _governanceFee.mulDown(
+                calculateShortCurveFee(_bondAmount, _spotPrice, _curveFee)
+            );
     }
 
     struct PresentValueParams {

@@ -139,10 +139,15 @@ library HyperdriveUtils {
 
     /// @dev Calculates the maximum amount of shorts that can be opened.
     /// @param _hyperdrive A Hyperdrive instance.
+    /// @param _maxIterations The maximum number of iterations to use.
     /// @return The maximum amount of bonds that can be shorted.
     function calculateMaxShort(
-        IHyperdrive _hyperdrive
+        IHyperdrive _hyperdrive,
+        uint256 _maxIterations
     ) internal view returns (uint256) {
+        IHyperdrive.Checkpoint memory checkpoint = _hyperdrive.getCheckpoint(
+            _hyperdrive.latestCheckpoint()
+        );
         IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
         IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
         return
@@ -159,8 +164,19 @@ library HyperdriveUtils {
                     minimumShareReserves: poolConfig.minimumShareReserves,
                     curveFee: poolConfig.fees.curve,
                     governanceFee: poolConfig.fees.governance
-                })
+                }),
+                checkpoint.longExposure,
+                _maxIterations
             );
+    }
+
+    /// @dev Calculates the maximum amount of shorts that can be opened.
+    /// @param _hyperdrive A Hyperdrive instance.
+    /// @return The maximum amount of bonds that can be shorted.
+    function calculateMaxShort(
+        IHyperdrive _hyperdrive
+    ) internal view returns (uint256) {
+        return calculateMaxShort(_hyperdrive, 7);
     }
 
     /// @dev Calculates the non-compounded interest over a period.

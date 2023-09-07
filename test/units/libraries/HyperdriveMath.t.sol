@@ -845,6 +845,9 @@ contract HyperdriveMathTest is HyperdriveTest {
         openShort(bob, initialShortAmount);
 
         // Open the maximum short on Hyperdrive.
+        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
+            hyperdrive.latestCheckpoint()
+        );
         IHyperdrive.PoolInfo memory info = hyperdrive.getPoolInfo();
         IHyperdrive.PoolConfig memory config = hyperdrive.getPoolConfig();
         uint256 maxShort = hyperdriveMath.calculateMaxShort(
@@ -860,7 +863,9 @@ contract HyperdriveMathTest is HyperdriveTest {
                 minimumShareReserves: config.minimumShareReserves,
                 curveFee: config.fees.curve,
                 governanceFee: config.fees.governance
-            })
+            }),
+            checkpoint.longExposure,
+            7
         );
         (uint256 maturityTime, ) = openShort(bob, maxShort);
 

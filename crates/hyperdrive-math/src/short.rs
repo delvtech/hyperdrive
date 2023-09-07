@@ -301,7 +301,7 @@ impl State {
         //
         // The guess that we make is very important in determining how quickly
         // we converge to the solution.
-        let mut max_bond_amount = self.absolute_max_short_guess(spot_price);
+        let mut max_bond_amount = self.absolute_max_short_guess(spot_price, checkpoint_exposure);
         let mut maybe_solvency = self.solvency_after_short(
             max_bond_amount,
             spot_price,
@@ -313,10 +313,10 @@ impl State {
         }
         let mut solvency = maybe_solvency.unwrap();
         for _ in 0..maybe_max_iterations.unwrap_or(7) {
-            // If the max bond amount exceeds the absolute max, we've gone too
-            // far and something has gone wrong.
+            // If the max bond amount is equal to or exceeds the absolute max,
+            // we've gone too far and something has gone wrong.
             if max_bond_amount >= absolute_max_bond_amount {
-                panic!("Exceeded absolute max bond amount in `max_short`.");
+                panic!("Reached absolute max bond amount in `max_short`.");
             }
 
             // TODO: It may be better to gracefully handle crossing over the
@@ -370,13 +370,19 @@ impl State {
     /// Setting this equal to zero, we can solve for our initial guess:
     ///
     /// $$
-    /// x = \frac{c \cdot s_0}{
+    /// x = \frac{c \cdot (s_0 + \tfrac{max(e_{c}, 0)}{c})}{
     ///         p_r - \phi_{c} \cdot (1 - p) + \phi_{g} \cdot \phi_{c} \cdot (1 - p)
     ///     }
     /// $$
-    fn absolute_max_short_guess(&self, spot_price: FixedPoint) -> FixedPoint {
+    fn absolute_max_short_guess(
+        &self,
+        spot_price: FixedPoint,
+        checkpoint_exposure: I256,
+    ) -> FixedPoint {
         let estimate_price = spot_price;
-        (self.share_price() * self.get_solvency())
+        let checkpoint_exposure: FixedPoint =
+            checkpoint_exposure.max(I256::zero()).into() / self.share_price();
+        (self.share_price() * (self.get_solvency() + checkpoint_exposure))
             / (estimate_price - self.curve_fee() * (fixed!(1e18) - spot_price)
                 + self.governance_fee() * self.curve_fee() * (fixed!(1e18) - spot_price))
     }
@@ -453,10 +459,11 @@ impl State {
         let share_reserves = self.share_reserves()
             - (self.short_principal(short_amount)
                 - (self.short_curve_fee(short_amount, spot_price)
-                    - self.short_governance_fee(short_amount, spot_price)));
+                    - self.short_governance_fee(short_amount, spot_price))
+                    / self.share_price());
         let exposure = {
             let checkpoint_exposure: FixedPoint = checkpoint_exposure.max(I256::zero()).into();
-            self.long_exposure() - checkpoint_exposure
+            (self.long_exposure() - checkpoint_exposure) / self.share_price()
         };
         if share_reserves >= exposure + self.minimum_share_reserves() {
             Some(share_reserves - exposure - self.minimum_share_reserves())
@@ -484,7 +491,7 @@ impl State {
         spot_price: FixedPoint,
     ) -> Option<FixedPoint> {
         let lhs = self.short_principal_derivative(short_amount);
-        let rhs = self.curve_fee() * (fixed!(1e18) - spot_price);
+        let rhs = self.curve_fee() * (fixed!(1e18) - spot_price) / self.share_price();
         if lhs >= rhs {
             Some(lhs - rhs)
         } else {
@@ -521,8 +528,7 @@ impl State {
         let lhs = fixed!(1e18)
             / (self
                 .share_price()
-                .mul_up(self.bond_reserves() + short_amount)
-                .pow(self.time_stretch()));
+                .mul_up((self.bond_reserves() + short_amount).pow(self.time_stretch())));
         let rhs = ((self.initial_share_price() / self.share_price())
             * (self.k()
                 - (self.bond_reserves() + short_amount).pow(fixed!(1e18) - self.time_stretch())))

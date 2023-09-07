@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 // FIXME
-import "forge-std/console.sol";
+import { console2 as console } from "forge-std/console2.sol";
 
 import { stdError } from "forge-std/StdError.sol";
 import { VmSafe } from "forge-std/Vm.sol";
@@ -501,9 +501,9 @@ contract CloseLongTest is HyperdriveTest {
         uint256 basePaid = 1_000_000e18;
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
 
-        // Celine opens a max short. This will create the worst possible
-        // position for Bob to close his long.
-        openShort(celine, hyperdrive.calculateMaxShort());
+        // Celine opens a large short. This will make it harder for Bob to close
+        // his long (however there should be adequate liquidity left).
+        openShort(celine, hyperdrive.calculateMaxShort() / 2);
 
         // Bob is able to close his long.
         closeLong(bob, maturityTime, bondAmount);
@@ -529,9 +529,9 @@ contract CloseLongTest is HyperdriveTest {
         uint256 basePaid = 1_000_000e18;
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
 
-        // Celine opens a max short. This will create the worst possible
-        // position for Bob to close his long.
-        openShort(celine, hyperdrive.calculateMaxShort());
+        // Celine opens a large short. This will make it harder for Bob to close
+        // his long (however there should be adequate liquidity left).
+        openShort(celine, hyperdrive.calculateMaxShort() / 2);
 
         // Bob is able to close his long.
         closeLong(bob, maturityTime, bondAmount);
