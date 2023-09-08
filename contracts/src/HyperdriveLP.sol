@@ -9,7 +9,6 @@ import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { SafeCast } from "./libraries/SafeCast.sol";
 import { Lib } from "../../test/utils/Lib.sol";
-import "forge-std/console2.sol";
 
 /// @author DELV
 /// @title HyperdriveLP
@@ -264,8 +263,6 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             _shares,
             sharePrice,
             totalLpSupply,
-            totalActiveLpSupply,
-            withdrawalSharesOutstanding
         );
 
         // Mint the withdrawal shares to the LP.
@@ -405,17 +402,12 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
     /// @param _shares The amount of shares to remove.
     /// @param _sharePrice The current price of a share.
     /// @param _totalLpSupply The total amount of LP shares.
-    /// @param _totalActiveLpSupply The total amount of active LP shares.
-    /// @param _withdrawalSharesOutstanding The total amount of withdrawal
-    ///        shares outstanding.
     /// @return shareProceeds The share proceeds that will be paid to the LP.
     /// @return The amount of withdrawal shares that should be minted.
     function _applyRemoveLiquidity(
         uint256 _shares,
         uint256 _sharePrice,
-        uint256 _totalLpSupply,
-        uint256 _totalActiveLpSupply,
-        uint256 _withdrawalSharesOutstanding
+        uint256 _totalLpSupply
     ) internal returns (uint256 shareProceeds, uint256) {
         // Calculate the starting present value of the pool.
         HyperdriveMath.PresentValueParams
