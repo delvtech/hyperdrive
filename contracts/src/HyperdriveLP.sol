@@ -439,13 +439,13 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // we don't need to account for them in the idle calculation. Thus, we
         // can calculate the idle capital as:
         //
-        // idle = (z - z_min - (y_l / c_0))
+        // idle = (z - z_min - (l_e / c_0))
         //
         // The LP is given their share of the idle capital in the pool. We
         // assume that the active LPs are the only LPs entitled to the pool's
         // idle capital, so the LP's proceeds are calculated as:
         //
-        // proceeds = idle * (dl / l_a)
+        // proceeds = idle * (dl / l)
         shareProceeds = _calculateIdleShareReserves(_pricePerShare());
         shareProceeds = shareProceeds.mulDivDown(_shares, _totalLpSupply);
         _updateLiquidity(-int256(shareProceeds));
