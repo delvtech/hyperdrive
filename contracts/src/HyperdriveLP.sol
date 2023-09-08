@@ -262,7 +262,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         (shareProceeds, withdrawalShares) = _applyRemoveLiquidity(
             _shares,
             sharePrice,
-            totalLpSupply,
+            totalLpSupply
         );
 
         // Mint the withdrawal shares to the LP.
