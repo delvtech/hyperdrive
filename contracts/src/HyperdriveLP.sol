@@ -8,7 +8,6 @@ import { AssetId } from "./libraries/AssetId.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { SafeCast } from "./libraries/SafeCast.sol";
-import { Lib } from "../../test/utils/Lib.sol";
 
 /// @author DELV
 /// @title HyperdriveLP
@@ -19,7 +18,6 @@ import { Lib } from "../../test/utils/Lib.sol";
 abstract contract HyperdriveLP is HyperdriveTWAP {
     using FixedPointMath for uint256;
     using SafeCast for uint256;
-    using Lib for *;
 
     /// @notice Allows the first LP to initialize the market with a target APR.
     /// @param _contribution The amount of base to supply.
