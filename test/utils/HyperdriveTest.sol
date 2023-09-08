@@ -768,20 +768,7 @@ contract HyperdriveTest is BaseTest {
         // _applyCheckpoint() in removeLiquidity and this will update the state if
         // any positions have matured.
         hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
-        uint256 startingPresentValue = hyperdrive.presentValue();
-        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
-        uint256 shareProceeds = MockHyperdrive(address(hyperdrive))
-            .calculateIdleShareReserves(poolInfo.sharePrice);
-        shareProceeds = shareProceeds.mulDivDown(
-            _shares,
-            hyperdrive.totalSupply(AssetId._LP_ASSET_ID)
-        );
 
-        // This logic is here to determine if backtracking needed to calculate the lp proceeds
-        MockHyperdrive(address(hyperdrive)).updateLiquidity(
-            -int256(shareProceeds)
-        );
-        uint256 endingPresentValue = hyperdrive.presentValue();
         uint256 totalActiveLpSupply = hyperdrive.totalSupply(
             AssetId._LP_ASSET_ID
         );
@@ -790,17 +777,10 @@ contract HyperdriveTest is BaseTest {
         ) - hyperdrive.getWithdrawPool().readyToWithdraw;
         uint256 totalLpSupply = totalActiveLpSupply +
             withdrawalSharesOutstanding;
-        int256 withdrawalShares = int256(
-            totalLpSupply.mulDivDown(endingPresentValue, startingPresentValue)
-        );
-        withdrawalShares -= int256(totalLpSupply) - int256(_shares);
-        if (withdrawalShares < 0) {
-            uint256 overestimatedProceeds = startingPresentValue.mulDivDown(
-                uint256(-withdrawalShares),
-                totalLpSupply
-            );
-            shareProceeds -= overestimatedProceeds;
-        }
+        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
+        uint256 shareProceeds = MockHyperdrive(address(hyperdrive))
+            .calculateIdleShareReserves(poolInfo.sharePrice);
+        shareProceeds = shareProceeds.mulDivDown(_shares, totalLpSupply);
         vm.revertTo(snapshotId);
 
         return shareProceeds.mulDown(poolInfo.sharePrice);

@@ -8,6 +8,8 @@ import { AssetId } from "./libraries/AssetId.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { SafeCast } from "./libraries/SafeCast.sol";
+import { Lib } from "../../test/utils/Lib.sol";
+import "forge-std/console2.sol";
 
 /// @author DELV
 /// @title HyperdriveLP
@@ -18,6 +20,7 @@ import { SafeCast } from "./libraries/SafeCast.sol";
 abstract contract HyperdriveLP is HyperdriveTWAP {
     using FixedPointMath for uint256;
     using SafeCast for uint256;
+    using Lib for *;
 
     /// @notice Allows the first LP to initialize the market with a target APR.
     /// @param _contribution The amount of base to supply.
@@ -444,7 +447,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         //
         // proceeds = idle * (dl / l_a)
         shareProceeds = _calculateIdleShareReserves(_pricePerShare());
-        shareProceeds = shareProceeds.mulDivDown(_shares, _totalActiveLpSupply);
+        shareProceeds = shareProceeds.mulDivDown(_shares, _totalLpSupply);
         _updateLiquidity(-int256(shareProceeds));
         params.shareReserves = _marketState.shareReserves;
         params.bondReserves = _marketState.bondReserves;
@@ -457,28 +460,12 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // follows:
         //
         // PV0 / l0 = PV1 / (l0 - dl + dw) => dw = (PV1 / PV0) * l0 - (l0 - dl)
-        int256 withdrawalShares = int256(
-            _totalLpSupply.mulDivDown(endingPresentValue, startingPresentValue)
+        uint256 withdrawalShares = _totalLpSupply.mulDivDown(
+            endingPresentValue,
+            startingPresentValue
         );
-        withdrawalShares -= int256(_totalLpSupply) - int256(_shares);
-        if (withdrawalShares < 0) {
-            // We backtrack by calculating the amount of the idle that should
-            // be returned to the pool using the original present value ratio.
-            uint256 overestimatedProceeds = startingPresentValue.mulDivDown(
-                uint256(-withdrawalShares),
-                _totalLpSupply
-            );
-            shareProceeds -= overestimatedProceeds;
-            _updateLiquidity(int256(overestimatedProceeds));
-            _applyWithdrawalProceeds(
-                overestimatedProceeds,
-                _withdrawalSharesOutstanding,
-                _sharePrice
-            );
-            delete withdrawalShares;
-        }
-
-        return (shareProceeds, uint256(withdrawalShares));
+        withdrawalShares -= _totalLpSupply - _shares;
+        return (shareProceeds, withdrawalShares);
     }
 
     /// @dev Pays out the maximum amount of withdrawal shares given a specified
