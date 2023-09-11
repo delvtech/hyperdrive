@@ -125,10 +125,6 @@ impl State {
         self.info.share_reserves.into()
     }
 
-    fn minimum_share_reserves(&self) -> FixedPoint {
-        self.config.minimum_share_reserves.into()
-    }
-
     fn minimum_transaction_amount(&self) -> FixedPoint {
         self.config.minimum_transaction_amount.into()
     }

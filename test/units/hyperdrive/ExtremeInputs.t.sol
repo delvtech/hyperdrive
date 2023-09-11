@@ -466,7 +466,7 @@ contract ExtremeInputs is HyperdriveTest {
             // with a wide range of parameters. We should be able to lower this
             // after https://github.com/spearbit-audits/review-element/issues/65
             // is addressed.
-            openLong(celine, hyperdrive.calculateMaxLong(15).mulDown(0.9e18));
+            openLong(celine, hyperdrive.calculateMaxLong(15).mulDown(0.9e18)+minimumTransactionAmount);
 
             // TODO: When we address the issue related to sandwiching large
             // shorts around adding liquidity, we should tighten this bound.
@@ -502,7 +502,7 @@ contract ExtremeInputs is HyperdriveTest {
             advanceTime(POSITION_DURATION.mulDown(0.99e18), 0);
 
             // Celine opens a max long.
-            openLong(celine, hyperdrive.calculateMaxLong(15).mulDown(0.9e18));
+            openLong(celine, hyperdrive.calculateMaxLong(15).mulDown(0.9e18)+minimumTransactionAmount);
 
             // The rest of the term passes.
             advanceTime(POSITION_DURATION.mulDown(0.1e18), 0);
@@ -541,7 +541,7 @@ contract ExtremeInputs is HyperdriveTest {
             advanceTime(POSITION_DURATION.mulDown(0.99e18), 0);
 
             // Celine opens a max long.
-            openLong(celine, hyperdrive.calculateMaxLong(7).mulDown(0.9e18));
+            openLong(celine, hyperdrive.calculateMaxLong(7).mulDown(0.9e18)+minimumTransactionAmount);
 
             // The rest of the term passes.
             advanceTime(POSITION_DURATION.mulDown(0.1e18), 0);
@@ -586,7 +586,7 @@ contract ExtremeInputs is HyperdriveTest {
             initialize(alice, fixedRate, contribution);
 
             // Celine opens a max short.
-            openShort(celine, hyperdrive.calculateMaxShort().mulDown(0.9e18));
+            openShort(celine, hyperdrive.calculateMaxShort().mulDown(0.9e18)+minimumTransactionAmount);
 
             // TODO: When we address the issue related to sandwiching large
             // shorts around adding liquidity, we should tighten this bound.
@@ -622,7 +622,7 @@ contract ExtremeInputs is HyperdriveTest {
             advanceTime(POSITION_DURATION.mulDown(0.99e18), 0);
 
             // Celine opens a max short.
-            openShort(celine, hyperdrive.calculateMaxShort().mulDown(0.9e18));
+            openShort(celine, hyperdrive.calculateMaxShort().mulDown(0.9e18)+minimumTransactionAmount);
 
             // The rest of the term passes.
             advanceTime(POSITION_DURATION.mulDown(0.1e18), 0);
@@ -661,7 +661,7 @@ contract ExtremeInputs is HyperdriveTest {
             advanceTime(POSITION_DURATION.mulDown(0.99e18), 0);
 
             // Celine opens a max short.
-            openShort(celine, hyperdrive.calculateMaxShort().mulDown(0.9e18));
+            openShort(celine, hyperdrive.calculateMaxShort().mulDown(0.9e18)+minimumTransactionAmount);
 
             // The rest of the term passes.
             advanceTime(POSITION_DURATION.mulDown(0.1e18), 0);
