@@ -37,7 +37,7 @@ contract CloseShortTest is HyperdriveTest {
         // Attempt to close zero shorts. This should fail.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(IHyperdrive.ZeroAmount.selector);
+        vm.expectRevert(IHyperdrive.MinimumTransactionAmount.selector);
         hyperdrive.closeShort(maturityTime, 0, 0, bob, true);
     }
 
@@ -74,7 +74,13 @@ contract CloseShortTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(IHyperdrive.InvalidTimestamp.selector);
-        hyperdrive.closeShort(uint256(type(uint248).max) + 1, 1, 0, bob, true);
+        hyperdrive.closeShort(
+            uint256(type(uint248).max) + 1,
+            MINIMUM_TRANSACTION_AMOUNT,
+            0,
+            bob,
+            true
+        );
     }
 
     function test_close_short_failure_negative_interest(
@@ -92,7 +98,7 @@ contract CloseShortTest is HyperdriveTest {
 
         // Bob opens a short.
         initialShortAmount = initialShortAmount.normalizeToRange(
-            0.00001e18,
+            MINIMUM_TRANSACTION_AMOUNT,
             hyperdrive.calculateMaxShort() / 2
         );
         (uint256 maturityTime, ) = openShort(bob, initialShortAmount);
@@ -111,7 +117,7 @@ contract CloseShortTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(bob);
         finalShortAmount = finalShortAmount.normalizeToRange(
-            0.00001e18,
+            MINIMUM_TRANSACTION_AMOUNT,
             initialShortAmount
         );
         vm.expectRevert(IHyperdrive.NegativeInterest.selector);

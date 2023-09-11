@@ -31,7 +31,7 @@ contract AddLiquidityTest is HyperdriveTest {
         // Attempt to add zero base as liquidity. This should fail.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(IHyperdrive.ZeroAmount.selector);
+        vm.expectRevert(IHyperdrive.MinimumTransactionAmount.selector);
         hyperdrive.addLiquidity(0, 0, type(uint256).max, bob, true);
     }
 

@@ -68,6 +68,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             baseToken: dai,
             initialSharePrice: FixedPointMath.ONE_18,
             minimumShareReserves: FixedPointMath.ONE_18,
+            minimumTransactionAmount: 0.001e18,
             positionDuration: 365 days,
             checkpointDuration: 1 days,
             timeStretch: FixedPointMath.ONE_18.divDown(
@@ -161,6 +162,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             baseToken: dai,
             initialSharePrice: FixedPointMath.ONE_18,
             minimumShareReserves: FixedPointMath.ONE_18,
+            minimumTransactionAmount: 0.001e18,
             positionDuration: 365 days,
             checkpointDuration: 1 days,
             timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
@@ -209,6 +211,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             baseToken: dai,
             initialSharePrice: FixedPointMath.ONE_18,
             minimumShareReserves: FixedPointMath.ONE_18,
+            minimumTransactionAmount: 0.001e18,
             positionDuration: 365 days,
             checkpointDuration: 1 days,
             timeStretch: HyperdriveUtils.calculateTimeStretch(apr),

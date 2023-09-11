@@ -171,6 +171,7 @@ contract ExtremeInputs is HyperdriveTest {
         // Deploy the pool with a small minimum share reserves.
         IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
         config.minimumShareReserves = 1e6;
+        config.minimumTransactionAmount = 0.01e6;
         deploy(deployer, config);
 
         // Alice initializes the pool.
@@ -183,7 +184,7 @@ contract ExtremeInputs is HyperdriveTest {
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
         IHyperdrive.PoolConfig memory poolConfig = hyperdrive.getPoolConfig();
         targetReserves = targetReserves.normalizeToRange(
-            0,
+            config.minimumTransactionAmount,
             poolConfig.minimumShareReserves - 1
         );
         uint256 shortAmount = HyperdriveMath.calculateMaxShort(
@@ -215,6 +216,7 @@ contract ExtremeInputs is HyperdriveTest {
         // Test some concrete values with the max long scenario.
         _updateLiquidity__scenario__maxLong(
             10e6,
+            1e6,
             fixedRate,
             100_000_000_000e6,
             5_000_000_000e6,
@@ -223,6 +225,7 @@ contract ExtremeInputs is HyperdriveTest {
         );
         _updateLiquidity__scenario__maxLong(
             1e15,
+            1e6,
             fixedRate,
             200_000_000e18,
             100_000_000e18,
@@ -231,6 +234,7 @@ contract ExtremeInputs is HyperdriveTest {
         );
         _updateLiquidity__scenario__maxLong(
             1e18,
+            1e6,
             fixedRate,
             10_000_000_000e18,
             5_000_000_000e18,
@@ -241,6 +245,7 @@ contract ExtremeInputs is HyperdriveTest {
         // Test some concrete values with the max short scenario.
         _updateLiquidity__scenario__maxShort(
             10e6,
+            1e6,
             fixedRate,
             100_000_000_000e6,
             50_000_000_000e6,
@@ -249,6 +254,7 @@ contract ExtremeInputs is HyperdriveTest {
         );
         _updateLiquidity__scenario__maxShort(
             1e15,
+            1e6,
             fixedRate,
             200_000_000e18,
             100_000_000e18,
@@ -257,6 +263,7 @@ contract ExtremeInputs is HyperdriveTest {
         );
         _updateLiquidity__scenario__maxShort(
             10e18,
+            1e6,
             fixedRate,
             100_000_000_000e18,
             50_000_000_000e18,
@@ -283,6 +290,7 @@ contract ExtremeInputs is HyperdriveTest {
         // supplies up to 100 billion USDC.
         {
             uint256 minimumShareReserves = 10e6;
+            uint256 minimumTransactionAmount = 0.1e6;
 
             // Sample the contribution. We simulate the pool being deployed and
             // initialized so that we can calculate the bounds for the longs and
@@ -293,20 +301,22 @@ contract ExtremeInputs is HyperdriveTest {
             );
             IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
             config.minimumShareReserves = minimumShareReserves;
+            config.minimumTransactionAmount = minimumTransactionAmount;
             deploy(deployer, config);
             initialize(alice, fixedRate, contribution);
             uint256 longAmount = _longAmount.normalizeToRange(
-                1e6,
+                minimumTransactionAmount,
                 hyperdrive.calculateMaxLong(15)
             );
             uint256 shortAmount = _shortAmount.normalizeToRange(
-                1e6,
+                minimumTransactionAmount,
                 hyperdrive.calculateMaxShort()
             );
 
             // Run the scenario tests.
             _updateLiquidity__scenario__maxLong(
                 minimumShareReserves,
+                minimumTransactionAmount,
                 fixedRate,
                 contribution,
                 longAmount,
@@ -315,6 +325,7 @@ contract ExtremeInputs is HyperdriveTest {
             );
             _updateLiquidity__scenario__maxShort(
                 minimumShareReserves,
+                minimumTransactionAmount,
                 fixedRate,
                 contribution,
                 longAmount,
@@ -328,6 +339,7 @@ contract ExtremeInputs is HyperdriveTest {
         // supplies up to 200 million ETH
         {
             uint256 minimumShareReserves = 1e15;
+            uint256 minimumTransactionAmount = .01e15;
 
             // Sample the contribution. We simulate the pool being deployed and
             // initialized so that we can calculate the bounds for the longs and
@@ -338,20 +350,22 @@ contract ExtremeInputs is HyperdriveTest {
             );
             IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
             config.minimumShareReserves = minimumShareReserves;
+            config.minimumTransactionAmount = minimumTransactionAmount;
             deploy(deployer, config);
             initialize(alice, fixedRate, contribution);
             uint256 longAmount = _longAmount.normalizeToRange(
-                0.000_1e18,
+                minimumTransactionAmount,
                 hyperdrive.calculateMaxLong()
             );
             uint256 shortAmount = _shortAmount.normalizeToRange(
-                0.000_1e18,
+                minimumTransactionAmount,
                 hyperdrive.calculateMaxShort()
             );
 
             // Run the scenario tests.
             _updateLiquidity__scenario__maxLong(
                 minimumShareReserves,
+                minimumTransactionAmount,
                 fixedRate,
                 contribution,
                 longAmount,
@@ -360,6 +374,7 @@ contract ExtremeInputs is HyperdriveTest {
             );
             _updateLiquidity__scenario__maxShort(
                 minimumShareReserves,
+                minimumTransactionAmount,
                 fixedRate,
                 contribution,
                 longAmount,
@@ -373,6 +388,7 @@ contract ExtremeInputs is HyperdriveTest {
         // It supports pool total supplies up to 100 billion DAI.
         {
             uint256 minimumShareReserves = 10e18;
+            uint256 minimumTransactionAmount = MINIMUM_TRANSACTION_AMOUNT;
 
             // Sample the contribution. We simulate the pool being deployed and
             // initialized so that we can calculate the bounds for the longs and
@@ -383,20 +399,22 @@ contract ExtremeInputs is HyperdriveTest {
             );
             IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
             config.minimumShareReserves = minimumShareReserves;
+            config.minimumTransactionAmount = minimumTransactionAmount;
             deploy(deployer, config);
             initialize(alice, fixedRate, contribution);
             uint256 longAmount = _longAmount.normalizeToRange(
-                0.000_1e18,
+                minimumTransactionAmount,
                 hyperdrive.calculateMaxLong()
             );
             uint256 shortAmount = _shortAmount.normalizeToRange(
-                0.000_1e18,
+                minimumTransactionAmount,
                 hyperdrive.calculateMaxShort()
             );
 
             // Run the scenario tests.
             _updateLiquidity__scenario__maxLong(
                 minimumShareReserves,
+                minimumTransactionAmount,
                 fixedRate,
                 contribution,
                 longAmount,
@@ -405,6 +423,7 @@ contract ExtremeInputs is HyperdriveTest {
             );
             _updateLiquidity__scenario__maxShort(
                 minimumShareReserves,
+                minimumTransactionAmount,
                 fixedRate,
                 contribution,
                 longAmount,
@@ -420,6 +439,7 @@ contract ExtremeInputs is HyperdriveTest {
     // invalid outputs.
     function _updateLiquidity__scenario__maxLong(
         uint256 minimumShareReserves,
+        uint256 minimumTransactionAmount,
         uint256 fixedRate,
         uint256 contribution,
         uint256 longAmount,
@@ -435,6 +455,7 @@ contract ExtremeInputs is HyperdriveTest {
             // Deploy the pool with the specified minimum share reserves.
             IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
             config.minimumShareReserves = minimumShareReserves;
+            config.minimumTransactionAmount = minimumTransactionAmount;
             deploy(deployer, config);
 
             // Alice initializes the pool.
@@ -461,13 +482,14 @@ contract ExtremeInputs is HyperdriveTest {
         }
 
         // Bob opens a long and holds it for almost the entire term. Before
-        // the long matures, Celine opens a max short. After Bob's position
+        // the long matures, Celine opens a max long. After Bob's position
         // matures, Bob should be able to close his position. This tests the
         // edge case where `z_1 < z_0` and `y_0` is very small.
         {
             // Deploy the pool with the specified minimum share reserves.
             IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
             config.minimumShareReserves = minimumShareReserves;
+            config.minimumTransactionAmount = minimumTransactionAmount;
             deploy(deployer, config);
 
             // Alice initializes the pool.
@@ -499,13 +521,14 @@ contract ExtremeInputs is HyperdriveTest {
         }
 
         // Bob opens a short and holds it for almost the entire term. Before
-        // the short matures, Celine opens a max short. After Bob's position
+        // the short matures, Celine opens a max long. After Bob's position
         // matures, Bob should be able to close his position. This tests the
         // edge case where `z_1 > z_0` and `y_0` is very small.
         {
             // Deploy the pool with the specified minimum share reserves.
             IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
             config.minimumShareReserves = minimumShareReserves;
+            config.minimumTransactionAmount = minimumTransactionAmount;
             deploy(deployer, config);
 
             // Alice initializes the pool.
@@ -542,6 +565,7 @@ contract ExtremeInputs is HyperdriveTest {
     // matures. This is verifying that `z_1 * y_0 / z_0` doesn't overflow.
     function _updateLiquidity__scenario__maxShort(
         uint256 minimumShareReserves,
+        uint256 minimumTransactionAmount,
         uint256 fixedRate,
         uint256 contribution,
         uint256 longAmount,
@@ -555,6 +579,7 @@ contract ExtremeInputs is HyperdriveTest {
             // Deploy the pool with the specified minimum share reserves.
             IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
             config.minimumShareReserves = minimumShareReserves;
+            config.minimumTransactionAmount = minimumTransactionAmount;
             deploy(deployer, config);
 
             // Alice initializes the pool.
@@ -584,6 +609,7 @@ contract ExtremeInputs is HyperdriveTest {
             // Deploy the pool with the specified minimum share reserves.
             IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
             config.minimumShareReserves = minimumShareReserves;
+            config.minimumTransactionAmount = minimumTransactionAmount;
             deploy(deployer, config);
 
             // Alice initializes the pool.
@@ -622,6 +648,7 @@ contract ExtremeInputs is HyperdriveTest {
             // Deploy the pool with the specified minimum share reserves.
             IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
             config.minimumShareReserves = minimumShareReserves;
+            config.minimumTransactionAmount = minimumTransactionAmount;
             deploy(deployer, config);
 
             // Alice initializes the pool.
