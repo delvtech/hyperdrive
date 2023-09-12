@@ -272,17 +272,43 @@ contract ExtremeInputs is HyperdriveTest {
         );
     }
 
+    function test__updateLiquidity__extremeValues__edge__cases() external {
+        // This case was producing a negative interest scenario
+        {
+            uint256 _contribution = 2;
+            uint256 _longAmount = 318204937845433734669313703911115021556041036123016686971127925694678014140;
+            uint256 _shortAmount = 0;
+            _test__updateLiquidity__extremeValues__fuzz(
+                _contribution,
+                _longAmount,
+                _shortAmount
+            );
+        }
+    }
+
+    function test__updateLiquidity__extremeValues__fuzz(
+        uint256 _contribution,
+        uint256 _longAmount,
+        uint256 _shortAmount
+    ) external {
+        _test__updateLiquidity__extremeValues__fuzz(
+            _contribution,
+            _longAmount,
+            _shortAmount
+        );
+    }
+
     // TODO: The `calculateMaxLong` function isn't reliable enough to fuzz over
     // the fixed rate in this test. Once we've updated the `calculateMaxLong`
     // function based on Spearbit's suggestions, we should give generalizing
     // this another try.
     //
     // This test fuzzes scenarios for `_updateLiquidity` with extreme values.
-    function test__updateLiquidity__extremeValues__fuzz(
+    function _test__updateLiquidity__extremeValues__fuzz(
         uint256 _contribution,
         uint256 _longAmount,
         uint256 _shortAmount
-    ) external {
+    ) internal {
         uint256 fixedRate = 0.05e18;
 
         // Validate the safe bounds for a minimum share reserves of 10e6. This
@@ -306,11 +332,11 @@ contract ExtremeInputs is HyperdriveTest {
             initialize(alice, fixedRate, contribution);
             uint256 longAmount = _longAmount.normalizeToRange(
                 minimumTransactionAmount,
-                hyperdrive.calculateMaxLong(15)
+                hyperdrive.calculateMaxLong(15) - minimumTransactionAmount
             );
             uint256 shortAmount = _shortAmount.normalizeToRange(
                 minimumTransactionAmount,
-                hyperdrive.calculateMaxShort()
+                hyperdrive.calculateMaxShort() - minimumTransactionAmount
             );
 
             // Run the scenario tests.
@@ -353,13 +379,16 @@ contract ExtremeInputs is HyperdriveTest {
             config.minimumTransactionAmount = minimumTransactionAmount;
             deploy(deployer, config);
             initialize(alice, fixedRate, contribution);
+
+            // Note: Subtracting the minimum transaction amount from the max long and short so that there is room
+            // for another trade above the minimum transaction amount threshold
             uint256 longAmount = _longAmount.normalizeToRange(
                 minimumTransactionAmount,
-                hyperdrive.calculateMaxLong()
+                hyperdrive.calculateMaxLong() - minimumTransactionAmount
             );
             uint256 shortAmount = _shortAmount.normalizeToRange(
                 minimumTransactionAmount,
-                hyperdrive.calculateMaxShort()
+                hyperdrive.calculateMaxShort() - minimumTransactionAmount
             );
 
             // Run the scenario tests.
@@ -404,11 +433,11 @@ contract ExtremeInputs is HyperdriveTest {
             initialize(alice, fixedRate, contribution);
             uint256 longAmount = _longAmount.normalizeToRange(
                 minimumTransactionAmount,
-                hyperdrive.calculateMaxLong()
+                hyperdrive.calculateMaxLong() - minimumTransactionAmount
             );
             uint256 shortAmount = _shortAmount.normalizeToRange(
                 minimumTransactionAmount,
-                hyperdrive.calculateMaxShort()
+                hyperdrive.calculateMaxShort() - minimumTransactionAmount
             );
 
             // Run the scenario tests.
@@ -466,11 +495,7 @@ contract ExtremeInputs is HyperdriveTest {
             // with a wide range of parameters. We should be able to lower this
             // after https://github.com/spearbit-audits/review-element/issues/65
             // is addressed.
-            openLong(
-                celine,
-                hyperdrive.calculateMaxLong(15).mulDown(0.9e18) +
-                    minimumTransactionAmount
-            );
+            openLong(celine, hyperdrive.calculateMaxLong(15).mulDown(0.9e18));
 
             // TODO: When we address the issue related to sandwiching large
             // shorts around adding liquidity, we should tighten this bound.
@@ -506,11 +531,17 @@ contract ExtremeInputs is HyperdriveTest {
             advanceTime(POSITION_DURATION.mulDown(0.99e18), 0);
 
             // Celine opens a max long.
-            openLong(
-                celine,
-                hyperdrive.calculateMaxLong(15).mulDown(0.9e18) +
-                    minimumTransactionAmount
-            );
+            {
+                uint256 maxLong = hyperdrive.calculateMaxLong(15).mulDown(
+                    0.9e18
+                );
+                if (maxLong < minimumTransactionAmount) {
+                    vm.expectRevert(
+                        IHyperdrive.MinimumTransactionAmount.selector
+                    );
+                }
+                openLong(celine, maxLong);
+            }
 
             // The rest of the term passes.
             advanceTime(POSITION_DURATION.mulDown(0.1e18), 0);
@@ -549,11 +580,17 @@ contract ExtremeInputs is HyperdriveTest {
             advanceTime(POSITION_DURATION.mulDown(0.99e18), 0);
 
             // Celine opens a max long.
-            openLong(
-                celine,
-                hyperdrive.calculateMaxLong(7).mulDown(0.9e18) +
-                    minimumTransactionAmount
-            );
+            {
+                uint256 maxLong = hyperdrive.calculateMaxLong(7).mulDown(
+                    0.9e18
+                );
+                if (maxLong < minimumTransactionAmount) {
+                    vm.expectRevert(
+                        IHyperdrive.MinimumTransactionAmount.selector
+                    );
+                }
+                openLong(celine, maxLong);
+            }
 
             // The rest of the term passes.
             advanceTime(POSITION_DURATION.mulDown(0.1e18), 0);
@@ -598,11 +635,17 @@ contract ExtremeInputs is HyperdriveTest {
             initialize(alice, fixedRate, contribution);
 
             // Celine opens a max short.
-            openShort(
-                celine,
-                hyperdrive.calculateMaxShort().mulDown(0.9e18) +
-                    minimumTransactionAmount
-            );
+            {
+                uint256 maxShort = hyperdrive.calculateMaxShort().mulDown(
+                    0.9e18
+                );
+                if (maxShort < minimumTransactionAmount) {
+                    vm.expectRevert(
+                        IHyperdrive.MinimumTransactionAmount.selector
+                    );
+                }
+                openShort(celine, maxShort);
+            }
 
             // TODO: When we address the issue related to sandwiching large
             // shorts around adding liquidity, we should tighten this bound.
@@ -638,11 +681,17 @@ contract ExtremeInputs is HyperdriveTest {
             advanceTime(POSITION_DURATION.mulDown(0.99e18), 0);
 
             // Celine opens a max short.
-            openShort(
-                celine,
-                hyperdrive.calculateMaxShort().mulDown(0.9e18) +
-                    minimumTransactionAmount
-            );
+            {
+                uint256 maxShort = hyperdrive.calculateMaxShort().mulDown(
+                    0.9e18
+                );
+                if (maxShort < minimumTransactionAmount) {
+                    vm.expectRevert(
+                        IHyperdrive.MinimumTransactionAmount.selector
+                    );
+                }
+                openShort(celine, maxShort);
+            }
 
             // The rest of the term passes.
             advanceTime(POSITION_DURATION.mulDown(0.1e18), 0);
@@ -681,11 +730,17 @@ contract ExtremeInputs is HyperdriveTest {
             advanceTime(POSITION_DURATION.mulDown(0.99e18), 0);
 
             // Celine opens a max short.
-            openShort(
-                celine,
-                hyperdrive.calculateMaxShort().mulDown(0.9e18) +
-                    minimumTransactionAmount
-            );
+            {
+                uint256 maxShort = hyperdrive.calculateMaxShort().mulDown(
+                    0.9e18
+                );
+                if (maxShort < minimumTransactionAmount) {
+                    vm.expectRevert(
+                        IHyperdrive.MinimumTransactionAmount.selector
+                    );
+                }
+                openShort(celine, maxShort);
+            }
 
             // The rest of the term passes.
             advanceTime(POSITION_DURATION.mulDown(0.1e18), 0);
