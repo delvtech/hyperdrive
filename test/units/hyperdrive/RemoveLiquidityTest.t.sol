@@ -154,11 +154,15 @@ contract RemoveLiquidityTest is HyperdriveTest {
         advanceTime(testCase.timeElapsed, testCase.variableRate);
 
         // Bob opens a short.
-        (, testCase.shortBasePaid) = openShort(bob, testCase.shortAmount);
-
+        (uint256 maturityTime, uint256 shortBasePaid) = openShort(bob, testCase.shortAmount);
+        testCase.shortBasePaid = shortBasePaid;
+        
         // Remove the intializer's liquidity and verify that the state was
         // updated correctly.
         _test_remove_liquidity(testCase, false, 3e7); // TODO: Reduce this bound.
+
+        // Bob closes a short.
+        closeShort(bob, maturityTime, testCase.shortAmount);
     }
 
     /// Helpers ///
