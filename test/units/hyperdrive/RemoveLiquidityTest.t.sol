@@ -161,6 +161,9 @@ contract RemoveLiquidityTest is HyperdriveTest {
         // updated correctly.
         _test_remove_liquidity(testCase, false, 3e7); // TODO: Reduce this bound.
 
+        // Advance some more time for good measure
+        advanceTime(POSITION_DURATION, 0);
+
         // Bob closes a short.
         closeShort(bob, maturityTime, testCase.shortAmount);
     }
