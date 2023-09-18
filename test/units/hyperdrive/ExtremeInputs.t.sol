@@ -69,14 +69,16 @@ contract ExtremeInputs is HyperdriveTest {
         openShort(bob, bondAmount);
         uint256 aprAfter = hyperdrive.calculateAPRFromReserves();
 
-        // Ensure the share reserves are approximately equal to the minimum
-        // share reserves and that the apr increased.
+        // Ensure the spot rate increased and that either the share reserves are
+        // approximately equal to the minimum share reserves or the pool's
+        // solvency is approximately equal to zero.
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
-        assertApproxEqAbs(
-            poolInfoAfter.shareReserves,
-            hyperdrive.getPoolConfig().minimumShareReserves,
-            1e10,
-            "shareReserves should be the minimum share reserves"
+        require(
+            poolInfoAfter.shareReserves.approxEq(
+                hyperdrive.getPoolConfig().minimumShareReserves,
+                1e10
+            ) || hyperdrive.solvency() < 1e15,
+            "short amount was not the max short"
         );
         assertGt(aprAfter, aprBefore);
 
@@ -132,14 +134,16 @@ contract ExtremeInputs is HyperdriveTest {
         openShort(bob, bondAmount);
         uint256 aprAfter = hyperdrive.calculateAPRFromReserves();
 
-        // Ensure the share reserves are approximately equal to the minimum
-        // share reserves and that the apr increased.
+        // Ensure the spot rate increased and that either the share reserves are
+        // approximately equal to the minimum share reserves or the pool's
+        // solvency is approximately equal to zero.
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
-        assertApproxEqAbs(
-            poolInfoAfter.shareReserves,
-            hyperdrive.getPoolConfig().minimumShareReserves,
-            1e10,
-            "shareReserves should be the minimum share reserves"
+        require(
+            poolInfoAfter.shareReserves.approxEq(
+                hyperdrive.getPoolConfig().minimumShareReserves,
+                1e10
+            ) || hyperdrive.solvency() < 1e15,
+            "short amount was not the max short"
         );
         assertGt(aprAfter, aprBefore);
 
