@@ -313,27 +313,26 @@ impl State {
         }
         let mut solvency = maybe_solvency.unwrap();
         for _ in 0..maybe_max_iterations.unwrap_or(7) {
-            // If the max bond amount is equal to or exceeds the absolute max,
-            // we've gone too far and something has gone wrong.
-            if max_bond_amount >= absolute_max_bond_amount {
-                panic!("Reached absolute max bond amount in `max_short`.");
-            }
-
             // TODO: It may be better to gracefully handle crossing over the
             // root by extending the fixed point math library to handle negative
             // numbers or even just using an if-statement to handle the negative
             // numbers.
             //
-            // Proceed to the next step of Newton's method. Once we have a
-            // candidate solution, we check to see if the pool is solvent if
-            // a long is opened with the candidate amount. If the pool isn't
-            // solvent, then we're done.
+            // Calculate the next iteration of Newton's method. If the candidate
+            // is larger than the absolute max, we've gone too far and something
+            // has gone wrong.
             let maybe_derivative =
                 self.solvency_after_short_derivative(max_bond_amount, spot_price);
             if maybe_derivative.is_none() {
                 break;
             }
             let possible_max_bond_amount = max_bond_amount + solvency / maybe_derivative.unwrap();
+            if possible_max_bond_amount > absolute_max_bond_amount {
+                break;
+            }
+
+            // If the candidate is insolvent, we've gone too far and can stop
+            // iterating. Otherwise, we update our guess and continue.
             maybe_solvency = self.solvency_after_short(
                 possible_max_bond_amount,
                 spot_price,
@@ -477,9 +476,11 @@ impl State {
     /// The derivative is calculated as:
     ///
     /// \begin{aligned}
-    /// s'(x) &= z'(x)
-    ///       &= -(P'(x) - \tfrac{\phi_{c}}{c} \cdot (1 - p))
-    ///       &= -P'(x) + \tfrac{\phi_{c}}{c} \cdot (1 - p)
+    /// s'(x) &= z'(x) - 0 - 0
+    ///       &= 0 - \left( P'(x) - \frac{(c'(x) - g'(x))}{c} \right)
+    ///       &= -P'(x) + \frac{
+    ///              \phi_{c} \cdot (1 - p) \cdot (1 - \phi_{g})
+    ///          }{c}
     /// \end{aligned}
     ///
     /// Since solvency decreases as the short amount increases, we negate the
@@ -491,7 +492,9 @@ impl State {
         spot_price: FixedPoint,
     ) -> Option<FixedPoint> {
         let lhs = self.short_principal_derivative(short_amount);
-        let rhs = self.curve_fee() * (fixed!(1e18) - spot_price) / self.share_price();
+        let rhs =
+            self.curve_fee() * (fixed!(1e18) - spot_price) * (fixed!(1e18) - self.governance_fee())
+                / self.share_price();
         if lhs >= rhs {
             Some(lhs - rhs)
         } else {

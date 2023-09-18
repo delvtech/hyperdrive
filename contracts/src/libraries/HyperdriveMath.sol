@@ -913,22 +913,14 @@ library HyperdriveMath {
             "Initial guess in `calculateMaxShort` is insolvent"
         );
         for (uint256 i = 0; i < _maxIterations; i++) {
-            // If the max bond amount is equal to or exceeds the absolute max,
-            // we've gone too far and something has gone wrong.
-            require(
-                maxBondAmount < absoluteMaxBondAmount,
-                "Reached absolute max bond amount in `calculateMaxShort`."
-            );
-
             // TODO: It may be better to gracefully handle crossing over the
             // root by extending the fixed point math library to handle negative
             // numbers or even just using an if-statement to handle the negative
             // numbers.
             //
-            // Proceed to the next step of Newton's method. Once we have a
-            // candidate solution, we check to see if the pool is solvent if
-            // a long is opened with the candidate amount. If the pool isn't
-            // solvent, then we're done.
+            // Calculate the next iteration of Newton's method. If the candidate
+            // is larger than the absolute max, we've gone too far and something
+            // has gone wrong.
             (
                 internal_.derivative,
                 internal_.success
@@ -943,6 +935,12 @@ library HyperdriveMath {
             }
             uint256 possibleMaxBondAmount = maxBondAmount +
                 internal_.solvency.divDown(internal_.derivative);
+            if (possibleMaxBondAmount > absoluteMaxBondAmount) {
+                break;
+            }
+
+            // If the candidate is insolvent, we've gone too far and can stop
+            // iterating. Otherwise, we update our guess and continue.
             (
                 internal_.solvency,
                 internal_.success
@@ -1149,9 +1147,11 @@ library HyperdriveMath {
     ///      The derivative is calculated as:
     ///
     ///      \begin{aligned}
-    ///      s'(x) &= z'(x)
-    ///            &= -(P'(x) - \tfrac{\phi_{c}}{c} \cdot (1 - p))
-    ///            &= -P'(x) + \tfrac{\phi_{c}}{c} \cdot (1 - p)
+    ///      s'(x) &= z'(x) - 0 - 0
+    ///            &= 0 - \left( P'(x) - \frac{(c'(x) - g'(x))}{c} \right)
+    ///            &= -P'(x) + \frac{
+    ///                   \phi_{c} \cdot (1 - p) \cdot (1 - \phi_{g})
+    ///               }{c}
     ///      \end{aligned}
     ///
     ///      Since solvency decreases as the short amount increases, we negate
@@ -1172,9 +1172,11 @@ library HyperdriveMath {
             _shortAmount,
             _effectiveShareReserves
         );
-        uint256 rhs = _params.curveFee.mulDown(ONE - _spotPrice).divDown(
-            _params.sharePrice
-        );
+        uint256 rhs = _params
+            .curveFee
+            .mulDown(ONE - _spotPrice)
+            .mulDown(ONE - _params.governanceFee)
+            .divDown(_params.sharePrice);
         if (lhs >= rhs) {
             return (lhs - rhs, true);
         } else {
