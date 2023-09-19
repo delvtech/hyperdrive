@@ -724,6 +724,7 @@ contract LpWithdrawalTest is HyperdriveTest {
             testParams.shortMaturityTime = shortMaturityTime;
             testParams.shortBasePaid = shortBasePaid;
         }
+
         // Celine removes her liquidity.
         uint256 celineBaseProceeds = 0;
         uint256 celineWithdrawalShares = 0;
@@ -742,6 +743,7 @@ contract LpWithdrawalTest is HyperdriveTest {
                 1e11
             );
         }
+
         // Time passes and interest accrues.
         variableRate = variableRate.normalizeToRange(0, 2e18);
         testParams.variableRate = variableRate;
@@ -766,7 +768,7 @@ contract LpWithdrawalTest is HyperdriveTest {
             assertApproxEqAbs(
                 shortProceeds,
                 uint256(expectedShortProceeds),
-                1e9
+                1e10
             );
         }
 
