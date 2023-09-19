@@ -80,7 +80,7 @@ contract OpenShortTest is HyperdriveTest {
         uint256 shortAmount = hyperdrive.getPoolInfo().shareReserves;
         baseToken.mint(shortAmount);
         baseToken.approve(address(hyperdrive), shortAmount);
-        vm.expectRevert(stdError.arithmeticError);
+        vm.expectRevert(IHyperdrive.InvalidTradeSize.selector);
         hyperdrive.openShort(shortAmount * 2, type(uint256).max, bob, true);
     }
 

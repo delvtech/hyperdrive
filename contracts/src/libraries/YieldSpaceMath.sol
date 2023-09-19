@@ -1,6 +1,7 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { FixedPointMath } from "./FixedPointMath.sol";
 import { HyperdriveMath } from "./HyperdriveMath.sol";
 
@@ -152,7 +153,9 @@ library YieldSpaceMath {
             c,
             mu
         );
-        require(success);
+        if (!success) {
+            revert IHyperdrive.InvalidTradeSize();
+        }
     }
 
     /// @dev Calculates the amount of shares a user will receive from the pool
@@ -192,8 +195,8 @@ library YieldSpaceMath {
         // Δz = z - (((c / µ) * (µ * z)^(1 - t) + y^(1 - t) - (y + dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
         if (z > _z) {
             result = z - _z;
-            success = true;
         }
+        success = true;
     }
 
     /// @dev Calculates the maximum amount of bonds that can be purchased with
