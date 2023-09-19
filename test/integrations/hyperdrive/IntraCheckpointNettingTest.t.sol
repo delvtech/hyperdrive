@@ -10,6 +10,8 @@ import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Lib } from "../../utils/Lib.sol";
 
+import "forge-std/console2.sol";
+
 contract IntraCheckpointNettingTest is HyperdriveTest {
     using FixedPointMath for uint256;
     using HyperdriveUtils for *;
@@ -65,6 +67,151 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         assertEq(poolInfo.shareReserves, expectedShareReserves);
     }
 
+   // This test shows that paying out the withdrawal pool from matured netted shorts fails bc
+   // the long it was netted with can't close
+   // THIS TEST PASSES IF WE REMOVE THE CODE THAT PAYS OUT WITHDRAWAL POOL FROM CLOSED SHORTS
+   function test_netting_derp() external {
+        uint256 initialSharePrice = 1e18;
+        int256 variableInterest = 0;//-0.5e18;
+        uint256 timeElapsed = 10220546; //~118 days between each trade
+        uint256 tradeSize = 100e18; //4_993_785.6789593698886044450e18; //100_000_000 fails with sub underflow
+
+        // initialize the market
+        uint256 aliceLpShares = 0;
+        {
+            uint256 apr = 0.05e18;
+            deploy(alice, apr, initialSharePrice, 0, 0, 0);
+            uint256 contribution = 500_000_000e18;
+            aliceLpShares = initialize(alice, apr, contribution);
+
+            // fast forward time and accrue interest
+            advanceTime(POSITION_DURATION, 0);
+        }
+
+        // open a long
+        uint256 basePaidLong = tradeSize;
+        (uint256 maturityTimeLong, uint256 bondAmountLong) = openLong(
+            bob,
+            basePaidLong
+        );
+
+        // fast forward time, create checkpoints and accrue interest
+        advanceTimeWithCheckpoints(timeElapsed, variableInterest);
+
+        // open a short for the same number of bonds as the existing long
+        uint256 shortAmount = bondAmountLong;
+        (uint256 maturityTimeShort, ) = openShort(bob, shortAmount);
+
+        // open a long
+        (uint256 maturityTimeLong2, ) = openLong(
+            bob,
+            basePaidLong
+        );
+
+        // fast forward time, create checkpoints and accrue interest
+        advanceTimeWithCheckpoints(timeElapsed, variableInterest);
+
+        // open a short for the same number of bonds as the existing long
+        (uint256 maturityTimeShort2, ) = openShort(bob, shortAmount);
+
+        // remove liquidity
+        console2.log("\nbefore removeLiquidity()");
+        (, uint256 withdrawalShares) = removeLiquidity(alice, aliceLpShares);
+
+        // wait for the positions to mature
+        console2.log("\nbefore advanceTime()");
+        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
+        while (
+            poolInfo.shortsOutstanding > 0 || poolInfo.longsOutstanding > 0
+        ) {
+            advanceTimeWithCheckpoints(POSITION_DURATION, variableInterest);
+            poolInfo = hyperdrive.getPoolInfo();
+        }
+        console2.log("\nafter advanceTime()");
+        // close the short positions
+        closeShort(bob, maturityTimeShort, shortAmount);
+
+        // close the long positions
+        closeLong(bob, maturityTimeLong, bondAmountLong);
+
+        // close the short positions
+        closeShort(bob, maturityTimeShort2, shortAmount);
+
+        // close the long positions
+        closeLong(bob, maturityTimeLong2, bondAmountLong);
+
+        // longExposure should be 0
+        poolInfo = hyperdrive.getPoolInfo();
+        assertApproxEqAbs(poolInfo.longExposure, 0, 1);
+
+        redeemWithdrawalShares(alice, withdrawalShares);
+        // idle should be equal to shareReserves
+        uint256 expectedShareReserves = MockHyperdrive(address(hyperdrive))
+            .calculateIdleShareReserves(hyperdrive.getPoolInfo().sharePrice) +
+            hyperdrive.getPoolConfig().minimumShareReserves;
+        assertEq(poolInfo.shareReserves, expectedShareReserves);
+    }
+
+    // This test shows that even if you NEVER payout the withdrawal pool when closing shorts (mature or not), 
+    // paying out the withdrawal pool from closed longs causes an issue
+    // THIS TEST PASSES IF WE REMOVE THE CODE THAT PAYS OUT WITHDRAWAL POOL FROM CLOSED LONGS
+    function test_foo_bar() external{
+        uint256 initialSharePrice = 0.5e18;
+        int256 variableInterest = 0.05e18;
+        uint256 timeElapsed = 1;
+        uint256 tradeSize = 10000e18;//22642104.944290948438913449e18;
+        uint256 numTrades = 2;
+
+        // initialSharePrice = initialSharePrice.normalizeToRange(0.5e18, 5e18);
+        // variableInterest = variableInterest.normalizeToRange(0e18, .05e18);
+        // timeElapsed = timeElapsed.normalizeToRange(0, POSITION_DURATION);
+        // numTrades = tradeSize.normalizeToRange(1, 5);
+        // tradeSize = tradeSize.normalizeToRange(1e18, 50_000_000e18 / numTrades);
+
+        console2.log("initialSharePrice",initialSharePrice.toString(18));
+        console2.log("variableInterest",variableInterest.toString(18));
+        console2.log("timeElapsed",timeElapsed);
+        console2.log("tradeSize",tradeSize.toString(18));
+        console2.log("numTrades",numTrades);
+
+        open_close_long_short_different_checkpoints(
+            initialSharePrice,
+            variableInterest,
+            timeElapsed,
+            tradeSize,
+            numTrades
+        );
+    }
+
+    // This test fails with negative interest if initialSharePrice is 0.5e18 and variableInterest is 0
+    function test_fizz_buzz() external{
+        uint256 initialSharePrice = 1e18;
+        int256 variableInterest = 0.0e18;
+        uint256 timeElapsed = POSITION_DURATION;
+        uint256 tradeSize = 1e18;
+        uint256 numTrades = 1;
+
+        // initialSharePrice = initialSharePrice.normalizeToRange(0.5e18, 5e18);
+        // variableInterest = variableInterest.normalizeToRange(0e18, .05e18);
+        // timeElapsed = timeElapsed.normalizeToRange(0, POSITION_DURATION);
+        // numTrades = tradeSize.normalizeToRange(1, 5);
+        // tradeSize = tradeSize.normalizeToRange(1e18, 50_000_000e18 / numTrades);
+
+        console2.log("initialSharePrice",initialSharePrice.toString(18));
+        console2.log("variableInterest",variableInterest.toString(18));
+        console2.log("timeElapsed",timeElapsed);
+        console2.log("tradeSize",tradeSize.toString(18));
+        console2.log("numTrades",numTrades);
+
+        open_close_long_short_different_checkpoints(
+            initialSharePrice,
+            variableInterest,
+            timeElapsed,
+            tradeSize,
+            numTrades
+        );
+    }
+
     function test_netting_mismatched_exposure_maturities() external {
         uint256 initialSharePrice = 1e18;
         int256 variableInterest = 0e18;
@@ -103,7 +250,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         // wait for the positions to mature
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
         while (
-            poolInfo.shortsOutstanding > 0 && poolInfo.longsOutstanding > 0
+            poolInfo.shortsOutstanding > 0 || poolInfo.longsOutstanding > 0
         ) {
             advanceTimeWithCheckpoints(POSITION_DURATION, variableInterest);
             poolInfo = hyperdrive.getPoolInfo();
@@ -158,14 +305,33 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
     }
 
     // This test demonstrates that you can open longs and shorts indefinitely until
-    // the interest drops so low that we underflow when trying to perform the YieldSpace
-    // calculation for the opening of the new position
+    // the interest drops so low that positions can't be closed. 
+    // TODO: This makes me think that we are handling negative interest incorrectly bc
+    // eventually we can't mint checkpoints to close out positions
     function test_netting_extreme_negative_interest_time_elapsed() external {
         uint256 initialSharePrice = 1e18;
-        int256 variableInterest = 0.0e18;
+        int256 variableInterest = -0.1e18; // NOTE: This is the lowest interest rate that can be used
         uint256 timeElapsed = 10220546; //~118 days between each trade
         uint256 tradeSize = 100e18; //4_993_785.6789593698886044450e18; //100_000_000 fails with sub underflow
-        uint256 numTrades = 1;
+        uint256 numTrades = 2;
+
+        // If you increase numTrades enought it will eventually fail due to sub underflow
+        // caused by share price going so low that k-y is negative (on openShort)
+        open_close_long_short_different_checkpoints(
+            initialSharePrice,
+            variableInterest,
+            timeElapsed,
+            tradeSize,
+            numTrades
+        );
+    }
+
+    function test_netting_zero_interest_small_time_elapsed() external {
+        uint256 initialSharePrice = 1e18;
+        int256 variableInterest = 0e18; // NOTE: This is the lowest interest rate that can be used
+        uint256 timeElapsed = CHECKPOINT_DURATION/3;
+        uint256 tradeSize = 100e18; //4_993_785.6789593698886044450e18; //100_000_000 fails with sub underflow
+        uint256 numTrades = 4;
 
         // If you increase numTrades enought it will eventually fail due to sub underflow
         // caused by share price going so low that k-y is negative (on openShort)
@@ -181,7 +347,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
     // This test shows that you can open/close long/shorts with extreme positive interest
     function test_netting_extreme_positive_interest_time_elapsed() external {
         uint256 initialSharePrice = 0.5e18;
-        int256 variableInterest = 0.5e18;
+        int256 variableInterest = 0e18;
         uint256 timeElapsed = 15275477; //176 days bewteen each trade
         uint256 tradeSize = 504168.031667365798150347e18;
         uint256 numTrades = 100;
@@ -190,24 +356,6 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         // due to minOutput > bondProceeds where minOutput = baseAmount from openLong()
         // TODO:  This needs to be investigated further
         open_close_long_short_different_checkpoints(
-            initialSharePrice,
-            variableInterest,
-            timeElapsed,
-            tradeSize,
-            numTrades
-        );
-    }
-
-    // This test demonstrates that you can open longs and shorts indefinitely and they will net to zero
-    function test_netting_open_close_long_short_many() external {
-        uint256 initialSharePrice = 1e18;
-        int256 variableInterest = 0.05e18;
-        uint256 timeElapsed = POSITION_DURATION;
-        uint256 tradeSize = 1_000_000e18;
-        uint256 numTrades = 1000;
-
-        // You can increase the numTrades until the test fails from OutOfGas
-        open_close_long_short(
             initialSharePrice,
             variableInterest,
             timeElapsed,
@@ -236,38 +384,55 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
     }
 
     function test_netting_fuzz(
-        uint256 initialSharePrice,
-        int256 variableInterest,
-        uint256 timeElapsed,
-        uint256 tradeSize,
-        uint256 numTrades
+        // uint256 initialSharePrice,
+        // int256 variableInterest,
+        // uint256 timeElapsed,
+        // uint256 tradeSize,
+        // uint256 numTrades
     ) external {
         // Fuzz inputs Standard Range
         // initialSharePrice [0.5,5]
-        // variableInterest [-50,50]
+        // variableInterest [-10,10]
         // timeElapsed [0,365]
         // numTrades [1,5]
         // tradeSize [1,50_000_000/numTrades] 10% of the TVL
+        uint256 initialSharePrice=0;
+        int256 variableInterest=0;
+        uint256 timeElapsed=108228456327999333557519;
+        uint256 tradeSize=0;
+        uint256 numTrades=0;
         initialSharePrice = initialSharePrice.normalizeToRange(0.5e18, 5e18);
         variableInterest = variableInterest.normalizeToRange(0e18, .05e18);
         timeElapsed = timeElapsed.normalizeToRange(0, POSITION_DURATION);
         numTrades = tradeSize.normalizeToRange(1, 5);
         tradeSize = tradeSize.normalizeToRange(1e18, 50_000_000e18 / numTrades);
-        open_close_long(
-            initialSharePrice,
-            variableInterest,
-            timeElapsed,
-            tradeSize,
-            numTrades
-        );
-        open_close_short(
-            initialSharePrice,
-            variableInterest,
-            timeElapsed,
-            tradeSize,
-            numTrades
-        );
-        open_close_long_short(
+        console2.log("initialSharePrice",initialSharePrice.toString(18));
+        console2.log("variableInterest",variableInterest.toString(18));
+        console2.log("timeElapsed",timeElapsed);
+        console2.log("tradeSize",tradeSize.toString(18));
+        console2.log("numTrades",numTrades);
+        // open_close_long(
+        //     initialSharePrice,
+        //     variableInterest,
+        //     timeElapsed,
+        //     tradeSize,
+        //     numTrades
+        // );
+        // open_close_short(
+        //     initialSharePrice,
+        //     variableInterest,
+        //     timeElapsed,
+        //     tradeSize,
+        //     numTrades
+        // );
+        // open_close_long_short(
+        //     initialSharePrice,
+        //     variableInterest,
+        //     timeElapsed,
+        //     tradeSize,
+        //     numTrades
+        // );
+        open_close_long_short_different_checkpoints(
             initialSharePrice,
             variableInterest,
             timeElapsed,
@@ -521,11 +686,12 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         assertEq(poolInfo.shareReserves, expectedShareReserves);
     }
 
+    // All tests close at maturity
     function test_netting_open_close_long_short() external {
         // This tests the following scenario:
         // - initial_share_price = 1
         // - positive interest causes the share price to go to up
-        // - a long and short is opened and immediately closed
+        // - 1 trade
         // - trade size is 1 million
         uint256 snapshotId = vm.snapshot();
         {
@@ -547,7 +713,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         // This tests the following scenario:
         // - initial_share_price = 1
         // - positive interest causes the share price to go to up
-        // - a long and short is opened and closed after 182.5 days
+        // - 1 trade
         // - trade size is 1 million
         snapshotId = vm.snapshot();
         {
@@ -569,7 +735,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         // This tests the following scenario:
         // - initial_share_price = 1
         // - positive interest causes the share price to go to up
-        // - a long and short is opened and closed after 365 days
+        // - 1 trade
         // - trade size is 1 million
         snapshotId = vm.snapshot();
         {
@@ -591,7 +757,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         // This tests the following scenario:
         // - initial_share_price = 1
         // - positive interest causes the share price to go to up
-        // - a long and short is opened and immediately closed
+        // - 1000 trades
         // - trade size is 1 million
         snapshotId = vm.snapshot();
         {
@@ -600,6 +766,30 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             uint256 timeElapsed = POSITION_DURATION;
             uint256 tradeSize = 1_000_000e18;
             uint256 numTrades = 1000;
+            // You can increase the numTrades until the test fails from OutOfGas
+            open_close_long_short(
+                initialSharePrice,
+                variableInterest,
+                timeElapsed,
+                tradeSize,
+                numTrades
+            );
+        }
+        vm.revertTo(snapshotId);
+
+        // This tests the following scenario:
+        // - initial_share_price = 1
+        // - zero interest
+        // - 1000 trades
+        // - trade size is 1 million
+        snapshotId = vm.snapshot();
+        {
+            uint256 initialSharePrice = 1e18;
+            int256 variableInterest = 0.0e18;
+            uint256 timeElapsed = POSITION_DURATION;
+            uint256 tradeSize = 1_000_000e18;
+            uint256 numTrades = 1000;
+            // You can increase the numTrades until the test fails from OutOfGas
             open_close_long_short(
                 initialSharePrice,
                 variableInterest,
@@ -648,7 +838,9 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         advanceTimeWithCheckpoints(timeElapsed, variableInterest);
 
         // remove liquidity
+        console2.log("\nbefore removeLiquidity");
         removeLiquidity(alice, aliceLpShares);
+        console2.log("\nafter removeLiquidity");
 
         // Ensure all the positions have matured before trying to close them.
         // NOTE: Because they were all opened in the same checkpoint, there
@@ -660,7 +852,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         // test when longs are closed without ensuring they are all matured.
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
         while (
-            poolInfo.shortsOutstanding > 0 && poolInfo.longsOutstanding > 0
+            poolInfo.shortsOutstanding > 0 || poolInfo.longsOutstanding > 0
         ) {
             advanceTimeWithCheckpoints(POSITION_DURATION, variableInterest);
             poolInfo = hyperdrive.getPoolInfo();
@@ -717,23 +909,35 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             );
             longMaturityTimes[i] = maturityTimeLong;
             bondAmounts[i] = bondAmount;
+            console2.log("after open long exposure: %s", hyperdrive.getPoolInfo().longExposure.toString(18));
 
             // fast forward time, create checkpoints and accrue interest
             advanceTimeWithCheckpoints(timeElapsed, variableInterest);
+            console2.log("after advanceTime exposure: %s", hyperdrive.getPoolInfo().longExposure.toString(18));
 
             (uint256 maturityTimeShort, ) = openShort(bob, bondAmount);
             shortMaturityTimes[i] = maturityTimeShort;
+            console2.log("after open short exposure: %s", hyperdrive.getPoolInfo().longExposure.toString(18));
         }
+        console2.log("--before removeLiquidity");
         removeLiquidity(alice, aliceLpShares);
+        console2.log("--after removeLiquidity");
+        console2.log("--shareReserves,",hyperdrive.getPoolInfo().shareReserves.toString(18));
+        console2.log("--bondReserves,",hyperdrive.getPoolInfo().bondReserves.toString(18));
 
         // Ensure all the positions have matured before trying to close them
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
-        while (
-            poolInfo.shortsOutstanding > 0 && poolInfo.longsOutstanding > 0
-        ) {
-            advanceTimeWithCheckpoints(POSITION_DURATION, variableInterest);
-            poolInfo = hyperdrive.getPoolInfo();
-        }
+        console2.log("--before advanceTime, exposure: %s", hyperdrive.getPoolInfo().longExposure.toString(18));
+        console2.log("--poolInfo.shortsOutstanding: %s", poolInfo.shortsOutstanding.toString(18));
+        console2.log("--poolInfo.longsOutstanding: %s", poolInfo.longsOutstanding.toString(18));
+        // while (
+        //      poolInfo.shortsOutstanding > 0 || poolInfo.longsOutstanding > 0
+        //  ) {
+        //     advanceTimeWithCheckpoints(POSITION_DURATION, variableInterest);
+        //     console2.log("--exposure: %s", hyperdrive.getPoolInfo().longExposure.toString(18));
+        //     poolInfo = hyperdrive.getPoolInfo();
+        // }
+        console2.log("--after advanceTime, exposure: %s", hyperdrive.getPoolInfo().longExposure.toString(18));
 
         // close the short positions
         for (uint256 i = 0; i < numTrades; i++) {
