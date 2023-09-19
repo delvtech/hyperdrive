@@ -414,7 +414,7 @@ contract ExtremeInputs is HyperdriveTest {
             );
         }
 
-        // Validate the safe bounds for a minimum share reserves of 1e18 and
+        // Validate the safe bounds for a minimum share reserves of 10e18 and
         // a minimum transaction amount of 0.001e18 This
         // is a suitable default for DAI pools and pools with other stablecoins.
         // It supports pool total supplies up to 100 billion DAI.
