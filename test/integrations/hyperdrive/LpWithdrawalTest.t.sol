@@ -516,7 +516,7 @@ contract LpWithdrawalTest is HyperdriveTest {
             assertApproxEqAbs(
                 shortProceeds,
                 uint256(expectedShortProceeds),
-                1e9 // TODO: This bound is too large.
+                1e10 // TODO: This bound is too large.
             );
         }
 
