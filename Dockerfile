@@ -31,7 +31,7 @@ ENV RPC_URL=http://localhost:8545
 # node and dump the state into the "./data" directory. At runtime, the consumer
 # can start anvil with the "--load-state ./data" flag to start up anvil with 
 # the post-migrations state.
-RUN anvil --dump-state ./data & \
+RUN anvil --dump-state ./data --code-size-limit 9999999999 & \
     ANVIL="$!" && \ 
     sleep 2 && \
     ./migrate.sh && \
