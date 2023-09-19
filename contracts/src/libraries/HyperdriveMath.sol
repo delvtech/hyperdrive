@@ -1110,15 +1110,24 @@ library HyperdriveMath {
         uint256 _spotPrice,
         int256 _checkpointExposure
     ) internal pure returns (uint256, bool) {
-        uint256 shareReserves = _params.shareReserves -
-            (YieldSpaceMath.calculateSharesOutGivenBondsIn(
+        // Calculate the bond amount using the safe variant. If this fails, we
+        // know that the short is not possible.
+        (uint256 bondAmount, bool success) = YieldSpaceMath
+            .calculateSharesOutGivenBondsInSafe(
                 _effectiveShareReserves,
                 _params.bondReserves,
                 _shortAmount,
                 ONE - _params.timeStretch,
                 _params.sharePrice,
                 _params.initialSharePrice
-            ) -
+            );
+        if (!success) {
+            return (0, false);
+        }
+
+        // Calculate the pool's solvency after opening the short.
+        uint256 shareReserves = _params.shareReserves -
+            (bondAmount -
                 (calculateShortCurveFee(
                     _shortAmount,
                     _spotPrice,

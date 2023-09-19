@@ -125,8 +125,9 @@ library YieldSpaceMath {
         return _z - z;
     }
 
-    /// Calculates the amount of shares a user will receive from the pool by
-    /// providing a specified amount of bonds
+    /// @dev Calculates the amount of shares a user will receive from the pool
+    ///      by providing a specified amount of bonds. This function reverts if
+    ///      an integer overflow or underflow occurs.
     /// @param z Amount of share reserves in the pool
     /// @param y Amount of bond reserves in the pool
     /// @param dy Amount of bonds user wants to provide
@@ -142,12 +143,46 @@ library YieldSpaceMath {
         uint256 c,
         uint256 mu
     ) internal pure returns (uint256 result) {
+        bool success;
+        (result, success) = calculateSharesOutGivenBondsInSafe(
+            z,
+            y,
+            dy,
+            t,
+            c,
+            mu
+        );
+        require(success);
+    }
+
+    /// @dev Calculates the amount of shares a user will receive from the pool
+    ///      by providing a specified amount of bonds. This function returns a
+    ///      success flag instead of reverting.
+    /// @param z Amount of share reserves in the pool
+    /// @param y Amount of bond reserves in the pool
+    /// @param dy Amount of bonds user wants to provide
+    /// @param t Amount of time elapsed since term start
+    /// @param c Conversion rate between base and shares
+    /// @param mu Interest normalization factor for shares
+    /// @return result The amount of shares the user will receive
+    /// @return success A flag indicating whether or not the calculation succeeded.
+    function calculateSharesOutGivenBondsInSafe(
+        uint256 z,
+        uint256 y,
+        uint256 dy,
+        uint256 t,
+        uint256 c,
+        uint256 mu
+    ) internal pure returns (uint256 result, bool success) {
         // c/µ
         uint256 cDivMu = c.divDown(mu);
         // (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
         uint256 k = modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
         // (y + dy)^(1 - t)
         y = (y + dy).pow(t);
+        if (k < y) {
+            return (0, false);
+        }
         // (((µ * z)^(1 - t) + y^(1 - t) - (y + dy)^(1 - t)) / (c / µ))^(1 / (1 - t)))
         uint256 _z = (k - y).divDown(cDivMu).pow(
             FixedPointMath.ONE_18.divUp(t)
@@ -157,6 +192,7 @@ library YieldSpaceMath {
         // Δz = z - (((c / µ) * (µ * z)^(1 - t) + y^(1 - t) - (y + dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
         if (z > _z) {
             result = z - _z;
+            success = true;
         }
     }
 
