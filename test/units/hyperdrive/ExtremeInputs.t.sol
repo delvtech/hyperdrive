@@ -311,7 +311,8 @@ contract ExtremeInputs is HyperdriveTest {
     ) internal {
         uint256 fixedRate = 0.05e18;
 
-        // Validate the safe bounds for a minimum share reserves of 10e6. This
+        // Validate the safe bounds for a minimum share reserves of 10e6 and
+        // a minimum transaction amount of 0.1e6. This
         // is a suitable default for USDC pools that supports pool total
         // supplies up to 100 billion USDC.
         {
@@ -360,7 +361,8 @@ contract ExtremeInputs is HyperdriveTest {
             );
         }
 
-        // Validate the safe bounds for a minimum share reserves of 1e15. This
+        // Validate the safe bounds for a minimum share reserves of 1e15 and
+        // a minimum transaction amount of 0.01e15. This
         // is a suitable default for ETH pools that supports pool total
         // supplies up to 200 million ETH
         {
@@ -412,7 +414,8 @@ contract ExtremeInputs is HyperdriveTest {
             );
         }
 
-        // Validate the safe bounds for a minimum share reserves of 1e18. This
+        // Validate the safe bounds for a minimum share reserves of 1e18 and
+        // a minimum transaction amount of 0.001e18 This
         // is a suitable default for DAI pools and pools with other stablecoins.
         // It supports pool total supplies up to 100 billion DAI.
         {
@@ -525,7 +528,11 @@ contract ExtremeInputs is HyperdriveTest {
             initialize(alice, fixedRate, contribution);
 
             // Bob opens a long.
-            (uint256 maturityTime0, ) = openLong(bob, longAmount);
+            (uint256 maturityTime0, uint256 bondAmount) = openLong(
+                bob,
+                longAmount
+            );
+            assertGt(bondAmount, 0);
 
             // Most of the term passes.
             advanceTime(POSITION_DURATION.mulDown(0.99e18), 0);
@@ -574,7 +581,11 @@ contract ExtremeInputs is HyperdriveTest {
             initialize(alice, fixedRate, contribution);
 
             // Bob opens a short.
-            (uint256 maturityTime0, ) = openShort(bob, shortAmount);
+            (uint256 maturityTime0, uint256 baseAmount) = openShort(
+                bob,
+                shortAmount
+            );
+            assertGt(baseAmount, 0);
 
             // Most of the term passes.
             advanceTime(POSITION_DURATION.mulDown(0.99e18), 0);
@@ -675,7 +686,11 @@ contract ExtremeInputs is HyperdriveTest {
             initialize(alice, fixedRate, contribution);
 
             // Bob opens a long.
-            (uint256 maturityTime0, ) = openLong(bob, longAmount);
+            (uint256 maturityTime0, uint256 bondAmount) = openLong(
+                bob,
+                longAmount
+            );
+            assertGt(bondAmount, 0);
 
             // Most of the term passes.
             advanceTime(POSITION_DURATION.mulDown(0.99e18), 0);
@@ -724,7 +739,11 @@ contract ExtremeInputs is HyperdriveTest {
             initialize(alice, fixedRate, contribution);
 
             // Bob opens a short.
-            (uint256 maturityTime0, ) = openShort(bob, shortAmount);
+            (uint256 maturityTime0, uint256 baseAmount) = openShort(
+                bob,
+                shortAmount
+            );
+            assertGt(baseAmount, 0);
 
             // Most of the term passes.
             advanceTime(POSITION_DURATION.mulDown(0.99e18), 0);
