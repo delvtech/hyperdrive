@@ -565,6 +565,13 @@ contract HyperdriveMathTest is HyperdriveTest {
         // initialLongAmount = 2408;
         // initialShortAmount = 4409;
         // finalLongAmount = 716;
+        //
+        // fixedRate = 1486212869514722966945685826564370172409849245152497106963537;
+        // contribution = 57888977230398984174467159314340982252571682397232772249480382115078839458849;
+        // matureShortAmount = 257210808856623097111820656;
+        // initialLongAmount = 5090175671719722242113751673954380;
+        // initialShortAmount = 0;
+        // finalLongAmount = 0;
 
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();

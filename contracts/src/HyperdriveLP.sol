@@ -463,6 +463,8 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             params
         );
 
+        // FIXME: This documentation is quite out of date.
+        //
         // TODO: Update this documentation once we've made the update to how
         // idle capital is paid out to the withdrawal pool.
         //
