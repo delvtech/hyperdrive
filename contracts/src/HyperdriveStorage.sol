@@ -44,6 +44,9 @@ abstract contract HyperdriveStorage is ReentrancyGuard, MultiTokenStorage {
     ///         reserves become very small or equal to zero.
     uint256 internal immutable _minimumShareReserves;
 
+    /// @notice The minimum amount of tokens that a position can be opened/closed with.
+    uint256 internal immutable _minimumTransactionAmount;
+
     /// @notice The state of the market. This includes the reserves, buffers,
     ///         and other data used to price trades and maintain solvency.
     IHyperdrive.MarketState internal _marketState;
@@ -114,6 +117,8 @@ abstract contract HyperdriveStorage is ReentrancyGuard, MultiTokenStorage {
             revert IHyperdrive.InvalidMinimumShareReserves();
         }
         _minimumShareReserves = _config.minimumShareReserves;
+
+        _minimumTransactionAmount = _config.minimumTransactionAmount;
 
         // Initialize the time configurations. There must be at least one
         // checkpoint per term to avoid having a position duration of zero.

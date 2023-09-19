@@ -30,8 +30,8 @@ contract LPFairnessTest is HyperdriveTest {
 
         // ensure a feasible trade size
         tradeSizeParam = tradeSizeParam.normalizeToRange(
-            0.00001e18,
-            5_000_000e18 - 0.000001e18
+            MINIMUM_TRANSACTION_AMOUNT,
+            5_000_000e18 - MINIMUM_TRANSACTION_AMOUNT
         );
 
         // variable interest rate earned by the pool
@@ -84,8 +84,8 @@ contract LPFairnessTest is HyperdriveTest {
 
         // ensure a feasible trade size
         tradeSizeParam = tradeSizeParam.normalizeToRange(
-            0.00001e18,
-            5_000_000e18 - 0.000001e18
+            MINIMUM_TRANSACTION_AMOUNT,
+            5_000_000e18 - MINIMUM_TRANSACTION_AMOUNT
         );
 
         // variable interest rate earned by the pool
@@ -139,8 +139,8 @@ contract LPFairnessTest is HyperdriveTest {
 
         // ensure a feasible trade size
         tradeSizeParam = tradeSizeParam.normalizeToRange(
-            0.00001e18,
-            5_000_000e18 - 0.000001e18
+            MINIMUM_TRANSACTION_AMOUNT,
+            5_000_000e18 - MINIMUM_TRANSACTION_AMOUNT
         );
 
         // variable interest rate earned by the pool
@@ -196,8 +196,8 @@ contract LPFairnessTest is HyperdriveTest {
 
         // ensure a feasible trade size
         tradeSizeParam = tradeSizeParam.normalizeToRange(
-            0.00001e18,
-            5_000_000e18 - 0.000001e18
+            MINIMUM_TRANSACTION_AMOUNT,
+            5_000_000e18 - MINIMUM_TRANSACTION_AMOUNT
         );
 
         // variable interest rate earned by the pool
@@ -254,8 +254,8 @@ contract LPFairnessTest is HyperdriveTest {
 
         // ensure a feasible trade size
         tradeSizeParam = tradeSizeParam.normalizeToRange(
-            0.00001e18,
-            5_000_000e18 - 0.000001e18
+            MINIMUM_TRANSACTION_AMOUNT,
+            5_000_000e18 - MINIMUM_TRANSACTION_AMOUNT
         );
 
         // Initialize the pool with capital.
@@ -305,8 +305,8 @@ contract LPFairnessTest is HyperdriveTest {
 
         // ensure a feasible trade size
         tradeSizeParam = tradeSizeParam.normalizeToRange(
-            0.00001e18,
-            5_000_000e18 - 0.000001e18
+            MINIMUM_TRANSACTION_AMOUNT,
+            5_000_000e18 - MINIMUM_TRANSACTION_AMOUNT
         );
 
         // variable interest rate earned by the pool

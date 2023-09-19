@@ -181,7 +181,7 @@ contract RoundTripTest is HyperdriveTest {
         initialize(alice, apr, contribution);
 
         basePaid = basePaid.normalizeToRange(
-            1e14,
+            MINIMUM_TRANSACTION_AMOUNT,
             HyperdriveUtils.calculateMaxLong(hyperdrive)
         );
 

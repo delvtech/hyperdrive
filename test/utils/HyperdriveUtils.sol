@@ -424,8 +424,8 @@ library HyperdriveUtils {
         if (_selector == IHyperdrive.ApprovalFailed.selector) {
             return "ApprovalFailed";
         }
-        if (_selector == IHyperdrive.ZeroAmount.selector) {
-            return "ZeroAmount";
+        if (_selector == IHyperdrive.MinimumTransactionAmount.selector) {
+            return "MinimumTransactionAmount";
         }
         if (_selector == IHyperdrive.ZeroLpTotalSupply.selector) {
             return "ZeroLpTotalSupply";
