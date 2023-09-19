@@ -36,7 +36,7 @@ contract OpenLongTest is HyperdriveTest {
         // Attempt to purchase bonds with zero base. This should fail.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(IHyperdrive.ZeroAmount.selector);
+        vm.expectRevert(IHyperdrive.MinimumTransactionAmount.selector);
         hyperdrive.openLong(0, 0, bob, true);
     }
 
@@ -216,13 +216,14 @@ contract OpenLongTest is HyperdriveTest {
         // smaller than the contribution.
         IHyperdrive.PoolConfig memory config = testConfig(apr);
         config.minimumShareReserves = 1e6;
+        config.minimumTransactionAmount = 1e6;
         deploy(deployer, config);
 
         initialize(alice, apr, contribution);
 
         advanceTime(POSITION_DURATION, int256(apr));
 
-        openLong(bob, 1 wei);
+        openLong(bob, config.minimumTransactionAmount);
 
         IHyperdrive.PoolInfo memory info = hyperdrive.getPoolInfo();
         uint256 averageMaturityTimeBefore = info.longAverageMaturityTime;

@@ -133,6 +133,8 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
         uint256 initialSharePrice;
         /// @dev The minimum share reserves.
         uint256 minimumShareReserves;
+        /// @dev The minimum amount of tokens that a position can be opened/closed with.
+        uint256 minimumTransactionAmount;
         /// @dev The duration of a position prior to maturity.
         uint256 positionDuration;
         /// @dev The duration of a checkpoint.
@@ -216,7 +218,7 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
     error UnexpectedAssetId();
     error UnexpectedSender();
     error UnsupportedToken();
-    error ZeroAmount();
+    error MinimumTransactionAmount();
     error ZeroLpTotalSupply();
 
     /// ############

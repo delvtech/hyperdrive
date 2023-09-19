@@ -43,8 +43,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
     {
         // Check that the message value and base amount are valid.
         _checkMessageValue();
-        if (_baseAmount == 0) {
-            revert IHyperdrive.ZeroAmount();
+        if (_baseAmount < _minimumTransactionAmount) {
+            revert IHyperdrive.MinimumTransactionAmount();
         }
 
         // Deposit the user's base.
@@ -134,8 +134,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
         address _destination,
         bool _asUnderlying
     ) external nonReentrant returns (uint256) {
-        if (_bondAmount == 0) {
-            revert IHyperdrive.ZeroAmount();
+        if (_bondAmount < _minimumTransactionAmount) {
+            revert IHyperdrive.MinimumTransactionAmount();
         }
 
         // Perform a checkpoint at the maturity time. This ensures the long and
