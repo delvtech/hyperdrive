@@ -321,6 +321,7 @@ library HyperdriveMath {
     ///      to 1. If we are solvent at this point, then we're done. Otherwise,
     ///      we approach the max long iteratively using Newton's method.
     /// @param _params The parameters for the max long calculation.
+    /// @param _checkpointLongExposure The long exposure in the checkpoint.
     /// @param _maxIterations The maximum number of iterations to use in the
     ///                       Newton's method loop.
     /// @return maxBaseAmount The maximum base amount.
@@ -391,6 +392,7 @@ library HyperdriveMath {
         // we converge to the solution.
         maxBaseAmount = calculateMaxLongGuess(
             _params,
+            absoluteMaxBaseAmount,
             _checkpointLongExposure,
             spotPrice
         );
@@ -462,14 +464,63 @@ library HyperdriveMath {
         return (maxBaseAmount, maxBondAmount);
     }
 
-    /// @dev Gets a starting guess for the iterative process of finding the max
-    ///      long.
+    /// @dev Calculates an initial guess of the max long that can be opened.
+    ///      This is a reasonable estimate that is guaranteed to be less than
+    ///      the true max long. We use this to get a reasonable starting point
+    ///      for Newton's method.
+    /// @param _params The max long calculation parameters.
+    /// @param _absoluteMaxBaseAmount The absolute max base amount that can be
+    ///        used to open a long.
+    /// @param _checkpointLongExposure The long exposure in the checkpoint.
+    /// @param _spotPrice The spot price of the pool.
+    /// @return A conservative estimate of the max long that the pool can open.
+    function calculateMaxLongGuess(
+        MaxTradeParams memory _params,
+        uint256 _absoluteMaxBaseAmount,
+        int256 _checkpointLongExposure,
+        uint256 _spotPrice
+    ) internal pure returns (uint256) {
+        // Get an initial estimate of the max long by using the spot price as
+        // our conservative price.
+        uint256 guess = calculateMaxLongEstimate(
+            _params,
+            _checkpointLongExposure,
+            _spotPrice,
+            _spotPrice
+        );
+
+        // We know that the spot price is 1 when the absolute max base amount is
+        // used to open a long. We also know that our spot price isn't a great
+        // estimate (conservative or otherwise) of the realized price that the
+        // max long will pay, so we calculate a better estimate of the realized
+        // price by interpolating between the spot price and 1 depending on how
+        // large the estimate is.
+        uint256 t = guess
+            .divDown(_absoluteMaxBaseAmount)
+            .pow(ONE.divUp(ONE - _params.timeStretch))
+            .mulDown(0.8e18);
+        uint256 estimateSpotPrice = _spotPrice.mulDown(ONE - t) +
+            ONE.mulDown(t);
+
+        // Recalculate our intial guess using the bootstrapped conservative
+        // estimate of the realized price.
+        guess = calculateMaxLongEstimate(
+            _params,
+            _checkpointLongExposure,
+            _spotPrice,
+            estimateSpotPrice
+        );
+
+        return guess;
+    }
+
+    /// @dev Estimates the max long based on the pool's current solvency and a
+    ///      conservative price estimate, $p_r$.
     ///
-    ///      To calculate our guess, we assume an unrealistically good realized
-    ///      price $p_r$ for closing the long. This allows us to approximate
-    ///      $y(x)$ as $y(x) \approx p_r^{-1} \cdot x - c(x)$. Plugging this
-    ///      into our solvency function $s(x)$, we can calculate the share
-    ///      reserves and exposure after opening a long with $x$ base as:
+    ///      We can use our estimate price $p_r$ to approximate $y(x)$ as
+    ///      $y(x) \approx p_r^{-1} \cdot x - c(x)$. Plugging this into our
+    ///      solvency function $s(x)$, we can calculate the share reserves and
+    ///      exposure after opening a long with $x$ base as:
     ///
     ///      \begin{aligned}
     ///      z(x) &= z_0 + \tfrac{x - g(x)}{c} - z_{min} \\
@@ -498,33 +549,31 @@ library HyperdriveMath {
     ///              \phi_{c} \cdot \left( p^{-1} - 1 \right)
     ///          }
     ///      $$
-    ///
-    ///      We need to use a conservative estimate for the realized price, so
-    ///      we use the spot price $p$ as our estimate price.
     /// @param _params The max long calculation parameters.
+    /// @param _checkpointLongExposure The long exposure in the checkpoint.
     /// @param _spotPrice The spot price of the pool.
-    /// @return The starting guess for the iterative process of finding the max
-    ///         long.
-    function calculateMaxLongGuess(
+    /// @param _estimatePrice The estimated realized price the max long will pay.
+    /// @return A conservative estimate of the max long that the pool can open.
+    function calculateMaxLongEstimate(
         MaxTradeParams memory _params,
         int256 _checkpointLongExposure,
-        uint256 _spotPrice
+        uint256 _spotPrice,
+        uint256 _estimatePrice
     ) internal pure returns (uint256) {
-        uint256 estimatePrice = _spotPrice;
         uint256 checkpointExposure = uint256(-_checkpointLongExposure.min(0));
-        uint256 guess = (_params.shareReserves +
+        uint256 estimate = (_params.shareReserves +
             checkpointExposure.divDown(_params.sharePrice) -
             _params.longExposure.divDown(_params.sharePrice) -
             _params.minimumShareReserves).mulDivDown(_params.sharePrice, 2e18);
-        guess = guess.divDown(
-            ONE.divDown(estimatePrice) +
+        estimate = estimate.divDown(
+            ONE.divDown(_estimatePrice) +
                 _params.governanceFee.mulDown(_params.curveFee).mulDown(
                     ONE - _spotPrice
                 ) -
                 ONE -
                 _params.curveFee.mulDown(ONE.divDown(_spotPrice) - ONE)
         );
-        return guess;
+        return estimate;
     }
 
     /// @dev Gets the solvency of the pool $S(x)$ after a long is opened with a
@@ -572,6 +621,7 @@ library HyperdriveMath {
     ///      this case, we return `false` since the fixed point library can't
     ///      represent negative numbers.
     /// @param _params The max long calculation parameters.
+    /// @param _checkpointLongExposure The long exposure in the checkpoint.
     /// @param _baseAmount The base amount.
     /// @param _bondAmount The bond amount.
     /// @param _spotPrice The spot price.
