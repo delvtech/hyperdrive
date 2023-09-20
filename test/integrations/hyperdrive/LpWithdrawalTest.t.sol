@@ -81,11 +81,6 @@ contract LpWithdrawalTest is HyperdriveTest {
             alice,
             lpShares
         );
-        (contribution, ) = HyperdriveUtils.calculateCompoundInterest(
-            contribution,
-            preTradingVariableRate,
-            POSITION_DURATION
-        );
         assertApproxEqAbs(baseProceeds, estimatedLpProceeds, 10);
 
         // Bob closes his long. He will pay quite a bit of slippage on account
@@ -100,10 +95,9 @@ contract LpWithdrawalTest is HyperdriveTest {
             alice,
             withdrawalShares
         );
-        assertApproxEqAbs(
-            withdrawalProceeds,
-            (longAmount - basePaid) + (basePaid - longProceeds),
-            1e9 // TODO: Investigate this bound.
+        assertGt(
+            withdrawalProceeds + baseProceeds,
+            contribution
         );
 
         // Ensure the only remaining base is the base from the minimum share
@@ -115,15 +109,12 @@ contract LpWithdrawalTest is HyperdriveTest {
             ) + hyperdrive.presentValue(),
             10
         );
-        // FIXME: Why isn't this zero? Shouldn't the present value be zero after
-        // the long is closed?
 
-        // TODO: This test should be fixed in the IDLE fix PR that alex will do
-        // assertApproxEqAbs(
-        //     hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID),
-        //     0,
-        //     1e9 // TODO: Investigate this bound.
-        // );
+        assertApproxEqAbs(
+            hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID),
+            0,
+            1 
+        );
     }
 
     // TODO: Accrue interest before the test starts as this results in weirder

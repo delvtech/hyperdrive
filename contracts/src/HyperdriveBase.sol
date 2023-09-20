@@ -244,11 +244,18 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _maturityTime)
         ];
 
-        // If this is a checkpoint boundary or all the positions have been closed,
-        // then the long exposure is zero.
-        if (
-            (_bondReservesDelta == 0 && _shareReservesDelta == 0) ||
-            (checkpointLongs == 0 && checkpointShorts == 0)
+        bool isCheckpointBoundary =  _bondReservesDelta == 0 && _shareReservesDelta == 0;
+
+
+        // We can zero out long exposure when:
+        // - it is a long and a checkpoint boundary bc we know all the positions
+        //   have been closed out. Remember, applyCloseLong() closes out shorts,
+        //   then longs.
+        // - it is a short and a checkpoint boundary and there are no longs to close out
+        // - it is not a checkpoint boundary, but there are no more open positions
+        if ( _isLong && isCheckpointBoundary
+            || !_isLong && isCheckpointBoundary && checkpointLongs == 0
+            || checkpointLongs == 0 && checkpointShorts == 0
         ) {
             _checkpoints[checkpointTime].longExposure = 0;
         } else {
