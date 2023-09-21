@@ -367,16 +367,14 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             return;
         }
 
-        // Ensure that the share reserves are greater than the minimum share
-        // reserves. This invariant should never break. If it breaks, all
-        // activity should cease.
+        // Ensure that the share reserves are greater than or equal to the
+        // minimum share reserves. This invariant should never break. If it
+        // breaks, all activity should cease.
         uint256 shareReserves = _marketState.shareReserves;
         if (shareReserves < _minimumShareReserves) {
             revert IHyperdrive.InvalidShareReserves();
         }
 
-        // FIXME: Do we need to ensure that `z - \zeta > minimum share reserves`?
-        //
         // Update the share reserves by applying the share reserves delta. We
         // ensure that our minimum share reserves invariant is still maintained.
         int256 updatedShareReserves = int256(shareReserves) +
@@ -422,7 +420,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // to calculate the updated bond reserves as:
         //
         // (z_old - zeta_old) / y_old = (z_new - zeta_new) / y_new
-        // =>
+        //                          =>
         // y_new = (z_new - zeta_new) * (y_old / (z_old - zeta_old))
         _marketState.bondReserves = HyperdriveMath
             .calculateEffectiveShareReserves(
