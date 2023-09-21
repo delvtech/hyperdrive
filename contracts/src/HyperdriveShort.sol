@@ -44,8 +44,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
     {
         // Check that the message value and base amount are valid.
         _checkMessageValue();
-        if (_bondAmount == 0) {
-            revert IHyperdrive.ZeroAmount();
+        if (_bondAmount < _minimumTransactionAmount) {
+            revert IHyperdrive.MinimumTransactionAmount();
         }
 
         // Perform a checkpoint and compute the amount of interest the short
@@ -141,8 +141,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
         address _destination,
         bool _asUnderlying
     ) external nonReentrant returns (uint256) {
-        if (_bondAmount == 0) {
-            revert IHyperdrive.ZeroAmount();
+        if (_bondAmount < _minimumTransactionAmount) {
+            revert IHyperdrive.MinimumTransactionAmount();
         }
 
         // Perform a checkpoint.

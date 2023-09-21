@@ -119,8 +119,8 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
     ) external payable nonReentrant isNotPaused returns (uint256 lpShares) {
         // Check that the message value and base amount are valid.
         _checkMessageValue();
-        if (_contribution == 0) {
-            revert IHyperdrive.ZeroAmount();
+        if (_contribution < _minimumTransactionAmount) {
+            revert IHyperdrive.MinimumTransactionAmount();
         }
 
         // Enforce the slippage guard.
@@ -240,8 +240,8 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         nonReentrant
         returns (uint256 baseProceeds, uint256 withdrawalShares)
     {
-        if (_shares == 0) {
-            revert IHyperdrive.ZeroAmount();
+        if (_shares < _minimumTransactionAmount) {
+            revert IHyperdrive.MinimumTransactionAmount();
         }
 
         // Perform a checkpoint.

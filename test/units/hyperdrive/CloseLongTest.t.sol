@@ -36,7 +36,7 @@ contract CloseLongTest is HyperdriveTest {
         // Attempt to close zero longs. This should fail.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(IHyperdrive.ZeroAmount.selector);
+        vm.expectRevert(IHyperdrive.MinimumTransactionAmount.selector);
         hyperdrive.closeLong(maturityTime, 0, 0, bob, true);
     }
 
@@ -88,7 +88,13 @@ contract CloseLongTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(IHyperdrive.InvalidTimestamp.selector);
-        hyperdrive.closeLong(uint256(type(uint248).max) + 1, 1, 0, bob, true);
+        hyperdrive.closeLong(
+            uint256(type(uint248).max) + 1,
+            MINIMUM_TRANSACTION_AMOUNT,
+            0,
+            bob,
+            true
+        );
     }
 
     function test_close_long_immediately_with_regular_amount() external {

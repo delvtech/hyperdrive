@@ -198,7 +198,7 @@ contract RoundTripTest is HyperdriveTest {
 
         // Open a long position.
         basePaid = basePaid.normalizeToRange(
-            1e14,
+            MINIMUM_TRANSACTION_AMOUNT,
             hyperdrive.calculateMaxLong()
         );
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);

@@ -645,12 +645,12 @@ contract HyperdriveMathTest is HyperdriveTest {
         // Open a long and a short. This sets the long buffer to a non-trivial
         // value which stress tests the max long function.
         initialLongAmount = initialLongAmount.normalizeToRange(
-            0.0001e18,
+            MINIMUM_TRANSACTION_AMOUNT,
             hyperdrive.calculateMaxLong() / 2
         );
         openLong(bob, initialLongAmount);
         initialShortAmount = initialShortAmount.normalizeToRange(
-            0.0001e18,
+            MINIMUM_TRANSACTION_AMOUNT,
             hyperdrive.calculateMaxShort() / 2
         );
         openShort(bob, initialShortAmount);
@@ -697,8 +697,10 @@ contract HyperdriveMathTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(bob);
         finalLongAmount = finalLongAmount.normalizeToRange(
-            maxLong.mulDown(0.1e18),
-            maxLong.mulDown(1000e18)
+            maxLong.mulDown(0.1e18).max(MINIMUM_TRANSACTION_AMOUNT),
+            maxLong.mulDown(1000e18).max(
+                MINIMUM_TRANSACTION_AMOUNT.mulDown(10e18)
+            )
         );
         baseToken.mint(bob, finalLongAmount);
         baseToken.approve(address(hyperdrive), finalLongAmount);
@@ -820,12 +822,12 @@ contract HyperdriveMathTest is HyperdriveTest {
         // Open a long. This sets the long buffer to a non-trivial value which
         // stress tests the max long function.
         initialLongAmount = initialLongAmount.normalizeToRange(
-            0.001e18,
+            MINIMUM_TRANSACTION_AMOUNT,
             hyperdrive.calculateMaxLong() / 2
         );
         openLong(bob, initialLongAmount);
         initialShortAmount = initialShortAmount.normalizeToRange(
-            0.0001e18,
+            MINIMUM_TRANSACTION_AMOUNT,
             hyperdrive.calculateMaxShort() / 2
         );
         openShort(bob, initialShortAmount);
@@ -859,7 +861,7 @@ contract HyperdriveMathTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(bob);
         finalShortAmount = finalShortAmount.normalizeToRange(
-            0.00001e18,
+            MINIMUM_TRANSACTION_AMOUNT,
             100_000_000e18
         );
         baseToken.mint(bob, finalShortAmount);

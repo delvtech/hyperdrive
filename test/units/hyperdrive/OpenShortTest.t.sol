@@ -32,7 +32,7 @@ contract OpenShortTest is HyperdriveTest {
         // Attempt to short zero bonds. This should fail.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(IHyperdrive.ZeroAmount.selector);
+        vm.expectRevert(IHyperdrive.MinimumTransactionAmount.selector);
         hyperdrive.openShort(0, type(uint256).max, bob, true);
     }
 

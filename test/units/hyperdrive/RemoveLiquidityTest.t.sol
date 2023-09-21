@@ -35,7 +35,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
         // Alice attempts to remove 0 lp shares.
         vm.stopPrank();
         vm.startPrank(alice);
-        vm.expectRevert(IHyperdrive.ZeroAmount.selector);
+        vm.expectRevert(IHyperdrive.MinimumTransactionAmount.selector);
         hyperdrive.removeLiquidity(0, 0, alice, false);
     }
 

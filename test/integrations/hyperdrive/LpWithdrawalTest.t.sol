@@ -68,7 +68,7 @@ contract LpWithdrawalTest is HyperdriveTest {
 
         // Bob opens a large long.
         basePaid = basePaid.normalizeToRange(
-            0.001e18,
+            MINIMUM_TRANSACTION_AMOUNT,
             HyperdriveUtils.calculateMaxLong(hyperdrive)
         );
         (uint256 maturityTime, uint256 longAmount) = openLong(bob, basePaid);
@@ -145,7 +145,7 @@ contract LpWithdrawalTest is HyperdriveTest {
 
         // Bob opens a max long.
         basePaid = basePaid.normalizeToRange(
-            0.001e18,
+            MINIMUM_TRANSACTION_AMOUNT,
             HyperdriveUtils.calculateMaxLong(hyperdrive)
         );
         (uint256 maturityTime, uint256 longAmount) = openLong(bob, basePaid);
@@ -261,11 +261,11 @@ contract LpWithdrawalTest is HyperdriveTest {
 
         // Bob opens a large short.
         vm.assume(
-            shortAmount >= 0.001e18 &&
+            shortAmount >= MINIMUM_TRANSACTION_AMOUNT &&
                 shortAmount <= HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
         shortAmount = shortAmount.normalizeToRange(
-            0.001e18,
+            MINIMUM_TRANSACTION_AMOUNT,
             HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
         (uint256 maturityTime, uint256 basePaid) = openShort(bob, shortAmount);
@@ -314,7 +314,7 @@ contract LpWithdrawalTest is HyperdriveTest {
 
         // Bob opens a large short.
         shortAmount = shortAmount.normalizeToRange(
-            0.001e18,
+            MINIMUM_TRANSACTION_AMOUNT,
             HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
         (uint256 maturityTime, uint256 basePaid) = openShort(bob, shortAmount);
@@ -416,7 +416,7 @@ contract LpWithdrawalTest is HyperdriveTest {
 
         // Bob opens a long.
         longBasePaid = longBasePaid.normalizeToRange(
-            0.01e18,
+            MINIMUM_TRANSACTION_AMOUNT,
             HyperdriveUtils.calculateMaxLong(hyperdrive)
         );
 
@@ -467,7 +467,7 @@ contract LpWithdrawalTest is HyperdriveTest {
 
         // Bob opens a short.
         shortAmount = shortAmount.normalizeToRange(
-            0.01e18,
+            MINIMUM_TRANSACTION_AMOUNT,
             HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
         testParams.shortAmount = shortAmount;
@@ -651,7 +651,7 @@ contract LpWithdrawalTest is HyperdriveTest {
 
         // Bob opens a long.
         longBasePaid = longBasePaid.normalizeToRange(
-            0.001e18,
+            MINIMUM_TRANSACTION_AMOUNT,
             HyperdriveUtils.calculateMaxLong(hyperdrive)
         );
         testParams.longBasePaid = longBasePaid;
@@ -712,7 +712,7 @@ contract LpWithdrawalTest is HyperdriveTest {
 
         // Bob opens a short.
         shortAmount = shortAmount.normalizeToRange(
-            0.001e18,
+            MINIMUM_TRANSACTION_AMOUNT,
             HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
         testParams.shortAmount = shortAmount;
@@ -897,7 +897,7 @@ contract LpWithdrawalTest is HyperdriveTest {
 
         // Bob opens a long.
         longBasePaid = longBasePaid.normalizeToRange(
-            0.001e18,
+            MINIMUM_TRANSACTION_AMOUNT,
             hyperdrive.calculateMaxLong()
         );
         testParams.longBasePaid = longBasePaid;
@@ -914,7 +914,7 @@ contract LpWithdrawalTest is HyperdriveTest {
 
         // Bob opens a short.
         shortAmount = shortAmount.normalizeToRange(
-            0.001e18,
+            MINIMUM_TRANSACTION_AMOUNT,
             hyperdrive.calculateMaxShort()
         );
         testParams.shortAmount = shortAmount;

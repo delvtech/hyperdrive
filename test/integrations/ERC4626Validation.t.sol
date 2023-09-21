@@ -141,7 +141,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         vm.startPrank(alice);
 
         basePaid = basePaid.normalizeToRange(
-            0.00001e18,
+            MINIMUM_TRANSACTION_AMOUNT,
             HyperdriveUtils.calculateMaxLong(hyperdrive).min(
                 underlyingToken.balanceOf(alice)
             )
@@ -164,7 +164,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
     function test_OpenLongWithShares(uint256 basePaid) external {
         vm.startPrank(alice);
         basePaid = basePaid.normalizeToRange(
-            0.01e18,
+            MINIMUM_TRANSACTION_AMOUNT,
             HyperdriveUtils.calculateMaxLong(hyperdrive).min(
                 underlyingToken.balanceOf(alice)
             )
@@ -202,7 +202,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         vm.startPrank(alice);
         // Alice opens a long.
         basePaid = basePaid.normalizeToRange(
-            0.01e18,
+            MINIMUM_TRANSACTION_AMOUNT,
             HyperdriveUtils.calculateMaxLong(hyperdrive).min(
                 underlyingToken.balanceOf(alice)
             )
@@ -246,7 +246,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         vm.startPrank(alice);
         // Alice opens a long.
         basePaid = basePaid.normalizeToRange(
-            0.01e18,
+            MINIMUM_TRANSACTION_AMOUNT,
             HyperdriveUtils.calculateMaxLong(hyperdrive).min(
                 underlyingToken.balanceOf(alice)
             )
@@ -293,7 +293,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         vm.startPrank(alice);
         uint256 shortAmount = 0.001e18;
         shortAmount = shortAmount.normalizeToRange(
-            0.01e18,
+            MINIMUM_TRANSACTION_AMOUNT,
             HyperdriveUtils.calculateMaxShort(hyperdrive).min(
                 underlyingToken.balanceOf(alice)
             )
@@ -337,7 +337,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
     function test_OpenShortWithShares(uint256 shortAmount) external {
         vm.startPrank(alice);
         shortAmount = shortAmount.normalizeToRange(
-            0.01e18,
+            MINIMUM_TRANSACTION_AMOUNT,
             HyperdriveUtils.calculateMaxShort(hyperdrive).min(
                 underlyingToken.balanceOf(alice)
             )
@@ -385,7 +385,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
     ) external {
         vm.startPrank(alice);
         shortAmount = shortAmount.normalizeToRange(
-            0.01e18,
+            MINIMUM_TRANSACTION_AMOUNT,
             HyperdriveUtils
                 .calculateMaxShort(hyperdrive)
                 .min(underlyingToken.balanceOf(alice))
@@ -432,7 +432,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
     ) external {
         vm.startPrank(alice);
         shortAmount = shortAmount.normalizeToRange(
-            0.01e18,
+            MINIMUM_TRANSACTION_AMOUNT,
             HyperdriveUtils
                 .calculateMaxShort(hyperdrive)
                 .min(underlyingToken.balanceOf(alice))

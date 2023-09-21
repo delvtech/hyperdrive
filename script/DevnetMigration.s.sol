@@ -88,6 +88,7 @@ contract DevnetMigration is Script {
                 baseToken: IERC20(address(baseToken)),
                 initialSharePrice: 1e18,
                 minimumShareReserves: 10e18,
+                minimumTransactionAmount: 0.001e18,
                 positionDuration: 1 weeks,
                 checkpointDuration: 1 hours,
                 timeStretch: 0.05e18.calculateTimeStretch(),

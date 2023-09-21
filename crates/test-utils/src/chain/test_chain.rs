@@ -132,6 +132,7 @@ impl TestChain {
             base_token: base.address(),
             initial_share_price: uint256!(1e18),
             minimum_share_reserves: uint256!(10e18),
+            minimum_transaction_amount: uint256!(0.001e18),
             position_duration: U256::from(60 * 60 * 24 * 365), // 1 year
             checkpoint_duration: U256::from(60 * 60 * 24),     // 1 day
             time_stretch: get_time_stretch(fixed!(0.05e18)).into(), // time stretch for 5% rate
