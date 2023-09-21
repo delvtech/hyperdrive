@@ -524,7 +524,7 @@ contract HyperdriveMathTest is HyperdriveTest {
         // Open a long position that will be held for an entire term. This will
         // decrease the value of the share adjustment to a non-trivial value.
         matureLongAmount = matureLongAmount.normalizeToRange(
-            0.0001e18,
+            MINIMUM_TRANSACTION_AMOUNT,
             hyperdrive.calculateMaxLong() / 2
         );
         openLong(alice, matureLongAmount);
@@ -562,7 +562,7 @@ contract HyperdriveMathTest is HyperdriveTest {
         // Open a short position that will be held for an entire term. This will
         // increase the value of the share adjustment to a non-trivial value.
         matureShortAmount = matureShortAmount.normalizeToRange(
-            0.0001e18,
+            MINIMUM_TRANSACTION_AMOUNT,
             hyperdrive.calculateMaxShort() / 2
         );
         openShort(alice, matureShortAmount);
@@ -740,7 +740,7 @@ contract HyperdriveMathTest is HyperdriveTest {
         // Open a long position that will be held for an entire term. This will
         // increase the value of the share adjustment to a non-trivial value.
         matureLongAmount = matureLongAmount.normalizeToRange(
-            0.0001e18,
+            MINIMUM_TRANSACTION_AMOUNT,
             hyperdrive.calculateMaxLong() / 2
         );
         openLong(alice, matureLongAmount);
@@ -774,7 +774,7 @@ contract HyperdriveMathTest is HyperdriveTest {
         // Open a short position that will be held for an entire term. This will
         // increase the value of the share adjustment to a non-trivial value.
         matureShortAmount = matureShortAmount.normalizeToRange(
-            0.0001e18,
+            MINIMUM_TRANSACTION_AMOUNT,
             hyperdrive.calculateMaxShort() / 2
         );
         openShort(alice, matureShortAmount);

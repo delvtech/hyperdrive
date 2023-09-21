@@ -1,10 +1,6 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-// FIXME
-import { console2 as console } from "forge-std/console2.sol";
-import { Lib } from "test/utils/Lib.sol";
-
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { FixedPointMath, ONE } from "./FixedPointMath.sol";
 import { YieldSpaceMath } from "./YieldSpaceMath.sol";
@@ -17,9 +13,6 @@ import { SafeCast } from "./SafeCast.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 library HyperdriveMath {
-    // FIXME
-    using Lib for *;
-
     using FixedPointMath for uint256;
     using FixedPointMath for int256;
     using SafeCast for uint256;
@@ -338,9 +331,6 @@ library HyperdriveMath {
         int256 _checkpointLongExposure,
         uint256 _maxIterations
     ) internal pure returns (uint256 maxBaseAmount, uint256 maxBondAmount) {
-        console.log("curve fee = %s", _params.curveFee);
-        console.log("governance fee = %s", _params.governanceFee);
-
         // Get the maximum long that brings the spot price to 1. If the pool is
         // solvent after opening this long, then we're done.
         uint256 effectiveShareReserves = calculateEffectiveShareReserves(
@@ -379,7 +369,6 @@ library HyperdriveMath {
                 spotPrice
             );
             if (isSolvent_) {
-                console.log("calculateMaxLong: 1");
                 return (absoluteMaxBaseAmount, absoluteMaxBondAmount);
             }
         }
@@ -420,7 +409,6 @@ library HyperdriveMath {
             maxBondAmount,
             spotPrice
         );
-        console.log("calculateMaxLong: solvency = %s", solvency.toString(18));
         require(success, "Initial guess in `calculateMaxLong` is insolvent.");
         for (uint256 i = 0; i < _maxIterations; i++) {
             // If the max base amount is equal to or exceeds the absolute max,
@@ -464,10 +452,6 @@ library HyperdriveMath {
                 possibleMaxBaseAmount,
                 possibleMaxBondAmount,
                 spotPrice
-            );
-            console.log(
-                "calculateMaxLong: solvency = %s",
-                solvency.toString(18)
             );
             if (success) {
                 maxBaseAmount = possibleMaxBaseAmount;
