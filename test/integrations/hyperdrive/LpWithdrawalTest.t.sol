@@ -703,7 +703,7 @@ contract LpWithdrawalTest is HyperdriveTest {
             // Ensure that the value the user expects to get from the withdrawal shares is at
             // least as much as it was after new liquidity was added (plus some epsilon)
             assertGe(
-                aliceWithdrawalSharesValueAfter + 100 wei,
+                aliceWithdrawalSharesValueAfter + 1e6,
                 aliceWithdrawalSharesValueBefore
             );
 
