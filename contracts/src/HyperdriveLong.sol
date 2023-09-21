@@ -8,9 +8,6 @@ import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { SafeCast } from "./libraries/SafeCast.sol";
 
-import { Lib } from "../../test/utils/Lib.sol";
-import "forge-std/console2.sol";
-
 /// @author DELV
 /// @title HyperdriveLong
 /// @notice Implements the long accounting for Hyperdrive.
@@ -22,7 +19,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
     using FixedPointMath for int256;
     using SafeCast for uint256;
     using SafeCast for int256;
-    using Lib for *;
 
     /// @notice Opens a long position.
     /// @param _baseAmount The amount of base to use when trading.
@@ -346,14 +342,13 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // Remove the flat part of the trade from the pool's liquidity.
         _updateLiquidity(-int256(_shareProceeds - _shareReservesDelta));
         uint256 idle = _calculateIdleShareReserves(_sharePrice);
-        console2.log("in applyCloseLong, idle before update exposure", idle.toString(18));
+
         // Update the checkpoint and global longExposure
         {
             uint256 checkpointTime = _maturityTime - _positionDuration;
             int128 checkpointExposureBefore = int128(
                 _checkpoints[checkpointTime].longExposure
             );
-            console2.log("in applyCloseLong, checkpointExposureBefore", checkpointExposureBefore.toString(18));
             _updateCheckpointLongExposureOnClose(
                 _bondAmount,
                 _shareReservesDelta,
@@ -363,18 +358,13 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 _sharePrice,
                 true
             );
-            console2.log("in applyCloseLong, _checkpoints[checkpointTime].longExposure", _checkpoints[checkpointTime].longExposure.toString(18));
-            console2.log("in applyCloseLong, global longExposure before", _marketState.longExposure.toString(18));
             _updateLongExposure(
                 checkpointExposureBefore,
                 _checkpoints[checkpointTime].longExposure
             );
-             console2.log("in applyCloseLong, global longExposure after", _marketState.longExposure.toString(18));
-
         }
         idle = _calculateIdleShareReserves(_sharePrice);
-        console2.log("in applyCloseLong, idle after update exposure", idle.toString(18));
-        
+
         // Distribute the excess idle to the withdrawal pool.
         _distributeExcessIdle(_sharePrice);
     }

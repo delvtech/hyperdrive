@@ -10,8 +10,6 @@ import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { Lib } from "../../utils/Lib.sol";
 
-import "forge-std/console2.sol";
-
 contract IntraCheckpointNettingTest is HyperdriveTest {
     using FixedPointMath for uint256;
     using HyperdriveUtils for *;
@@ -69,10 +67,10 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
 
     // This test was designed to show that a netted long and short can be closed at
     // maturity even if all liquidity is removed. This test would fail before we added the logic:
-    // - to properly zero out exposure on checkpoint boundaries 
-    // - payout the withdrawal pool only when the idle capital is 
+    // - to properly zero out exposure on checkpoint boundaries
+    // - payout the withdrawal pool only when the idle capital is
     //   worth more than the active LP supply
-   function test_netting_long_short_close_at_maturity() external {
+    function test_netting_long_short_close_at_maturity() external {
         uint256 initialSharePrice = 1e18;
         int256 variableInterest = 0;
         uint256 timeElapsed = 10220546; //~118 days between each trade
@@ -105,10 +103,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         (uint256 maturityTimeShort, ) = openShort(bob, shortAmount);
 
         // open a long
-        (uint256 maturityTimeLong2, ) = openLong(
-            bob,
-            basePaidLong
-        );
+        (uint256 maturityTimeLong2, ) = openLong(bob, basePaidLong);
 
         // fast forward time, create checkpoints and accrue interest
         advanceTimeWithCheckpoints(timeElapsed, variableInterest);
@@ -245,7 +240,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
     }
 
     // This test demonstrates that you can open longs and shorts indefinitely until
-    // the interest drops so low that positions can't be closed. 
+    // the interest drops so low that positions can't be closed.
     function test_netting_extreme_negative_interest_time_elapsed() external {
         uint256 initialSharePrice = 1e18;
         int256 variableInterest = -0.1e18; // NOTE: This is the lowest interest rate that can be used
@@ -267,7 +262,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
     function test_netting_zero_interest_small_time_elapsed() external {
         uint256 initialSharePrice = 1e18;
         int256 variableInterest = 0e18;
-        uint256 timeElapsed = CHECKPOINT_DURATION/3;
+        uint256 timeElapsed = CHECKPOINT_DURATION / 3;
         uint256 tradeSize = 100e18; //100_000_000 fails with sub underflow
         uint256 numTrades = 100;
 
@@ -768,13 +763,6 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         removeLiquidity(alice, aliceLpShares);
 
         // Ensure all the positions have matured before trying to close them.
-        // NOTE: Because they were all opened in the same checkpoint, there
-        // will be a large amount of netted longExposure that will conceal
-        // the true idle capital when alice removes her liquidity.  as a result,
-        // we need to advance time until all the positions have matured. This is an
-        // extreme case and probably won't happen much in practice. This could be tested
-        // more bc it seems to work fine with the test_netting_open_close_long_short_many()
-        // test when longs are closed without ensuring they are all matured.
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
         while (
             poolInfo.shortsOutstanding > 0 || poolInfo.longsOutstanding > 0
@@ -846,8 +834,8 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         // Ensure all the positions have matured before trying to close them
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
         while (
-             poolInfo.shortsOutstanding > 0 || poolInfo.longsOutstanding > 0
-         ) {
+            poolInfo.shortsOutstanding > 0 || poolInfo.longsOutstanding > 0
+        ) {
             advanceTimeWithCheckpoints(POSITION_DURATION, variableInterest);
             poolInfo = hyperdrive.getPoolInfo();
         }
