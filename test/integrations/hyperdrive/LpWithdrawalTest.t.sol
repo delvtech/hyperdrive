@@ -379,12 +379,11 @@ contract LpWithdrawalTest is HyperdriveTest {
     // We want to verify that Alice and Celine collectively receive all of the
     // the trading profits and that Celine is responsible for paying for the
     // increased slippage.
-    function test_lp_withdrawal_long_and_short_maturity()
-        external
-    uint256 longBasePaid,
-    uint256 shortAmount,
-    int256 variableRate
-    {
+    function test_lp_withdrawal_long_and_short_maturity(
+        uint256 longBasePaid,
+        uint256 shortAmount,
+        int256 variableRate
+    ) external {
         // Set up the test parameters.
         TestLpWithdrawalParams memory testParams = TestLpWithdrawalParams({
             fixedRate: 0.05e18,
