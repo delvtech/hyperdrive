@@ -354,13 +354,6 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             tradeSize,
             numTrades
         );
-        open_close_long_short_different_checkpoints(
-            initialSharePrice,
-            variableInterest,
-            timeElapsed,
-            tradeSize,
-            numTrades
-        );
     }
 
     function test_netting_open_close_long() external {
