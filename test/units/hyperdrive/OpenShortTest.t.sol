@@ -332,8 +332,12 @@ contract OpenShortTest is HyperdriveTest {
                 poolInfoBefore.shareReserves -
                     baseProceeds.divDown(poolInfoBefore.sharePrice)
             );
-            assertEq(poolInfoAfter.lpTotalSupply, poolInfoBefore.lpTotalSupply);
             assertEq(poolInfoAfter.sharePrice, poolInfoBefore.sharePrice);
+            assertEq(
+                poolInfoAfter.shareAdjustment,
+                poolInfoBefore.shareAdjustment
+            );
+            assertEq(poolInfoAfter.lpTotalSupply, poolInfoBefore.lpTotalSupply);
             assertEq(
                 poolInfoAfter.longsOutstanding,
                 poolInfoBefore.longsOutstanding

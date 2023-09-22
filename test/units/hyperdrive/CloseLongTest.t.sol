@@ -5,7 +5,7 @@ import { stdError } from "forge-std/StdError.sol";
 import { VmSafe } from "forge-std/Vm.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { MockHyperdrive } from "../../mocks/MockHyperdrive.sol";
@@ -649,8 +649,6 @@ contract CloseLongTest is HyperdriveTest {
             hyperdriveBaseBalanceBefore - baseProceeds
         );
 
-        // Ensure that the base transfers were correct.
-
         // Verify that all of Bob's bonds were burned.
         assertEq(
             hyperdrive.balanceOf(
@@ -665,6 +663,10 @@ contract CloseLongTest is HyperdriveTest {
         if (wasCheckpointed) {
             assertEq(poolInfoAfter.shareReserves, poolInfoBefore.shareReserves);
             assertEq(
+                poolInfoAfter.shareAdjustment,
+                poolInfoBefore.shareAdjustment
+            );
+            assertEq(
                 poolInfoAfter.longsOutstanding,
                 poolInfoBefore.longsOutstanding
             );
@@ -677,6 +679,15 @@ contract CloseLongTest is HyperdriveTest {
                 // 0.00000001 off or 1 wei
                 poolInfoAfter.shareReserves.mulDown(100000000000) + 1
             );
+            // TODO: Uncomment this and verify that this works correctly when
+            // #584 is fixed.
+            //
+            // uint256 timeElapsed = ONE - hyperdrive.calculateTimeRemaining(maturityTime);
+            // uint256 delta = bondAmount.mulDivDown(timeElapsed, poolInfoAfter.sharePrice);
+            // if (poolInfoAfter.sharePrice < hyperdrive.getPoolConfig().initialSharePrice) {
+            //     delta = delta.mulDivDown(poolInfoAfter.sharePrice, hyperdrive.getPoolConfig().initialSharePrice);
+            // }
+            // assertEq(poolInfoAfter.shareAdjustment, poolInfoBefore.shareAdjustment - int256(delta));
             assertEq(
                 poolInfoAfter.longsOutstanding,
                 poolInfoBefore.longsOutstanding - bondAmount
@@ -690,27 +701,5 @@ contract CloseLongTest is HyperdriveTest {
             poolInfoBefore.shortsOutstanding
         );
         assertEq(poolInfoAfter.shortAverageMaturityTime, 0);
-
-        // TODO: Figure out how to test this without duplicating the logic.
-        //
-        // Ensure that the bond reserves were updated to have the correct APR.
-        // Due to the way that the flat part of the trade is applied, the bond
-        // reserve updates may not exactly correspond to the amount of bonds
-        // transferred; however, the pool's APR should be identical to the APR
-        // that the bond amount transfer implies. The adjustment should be equal
-        // to timeRemaining * bondAmount.
-        // uint256 timeRemaining = calculateTimeRemaining(maturityTime);
-        // assertApproxEqAbs(
-        //     calculateAPRFromReserves(),
-        //     HyperdriveMath.calculateAPRFromReserves(
-        //         poolInfoAfter.shareReserves,
-        //         poolInfoBefore.bondReserves + timeRemaining.mulDown(bondAmount),
-        //         poolInfoAfter.lpTotalSupply,
-        //         INITIAL_SHARE_PRICE,
-        //         POSITION_DURATION,
-        //         hyperdrive.timeStretch()
-        //     ),
-        //     5
-        // );
     }
 }

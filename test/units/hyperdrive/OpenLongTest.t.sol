@@ -372,8 +372,9 @@ contract OpenLongTest is HyperdriveTest {
             poolInfoBefore.shareReserves +
                 baseAmount.divDown(poolInfoBefore.sharePrice)
         );
-        assertEq(poolInfoAfter.lpTotalSupply, poolInfoBefore.lpTotalSupply);
         assertEq(poolInfoAfter.sharePrice, poolInfoBefore.sharePrice);
+        assertEq(poolInfoAfter.shareAdjustment, poolInfoBefore.shareAdjustment);
+        assertEq(poolInfoAfter.lpTotalSupply, poolInfoBefore.lpTotalSupply);
         assertApproxEqAbs(
             poolInfoAfter.longsOutstanding,
             poolInfoBefore.longsOutstanding + bondAmount,
