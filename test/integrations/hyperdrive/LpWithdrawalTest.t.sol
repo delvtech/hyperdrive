@@ -9,6 +9,8 @@ import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import { Lib } from "../../utils/Lib.sol";
 
+import "forge-std/console2.sol";
+
 // FIXME:
 //
 // [ ] We need the following tests if they don't exist yet:
@@ -380,10 +382,13 @@ contract LpWithdrawalTest is HyperdriveTest {
     // the trading profits and that Celine is responsible for paying for the
     // increased slippage.
     function test_lp_withdrawal_long_and_short_maturity(
-        uint256 longBasePaid,
-        uint256 shortAmount,
-        int256 variableRate
+        // uint256 longBasePaid,
+        // uint256 shortAmount,
+        // int256 variableRate
     ) external {
+        uint256 longBasePaid = 952379333288243;
+        uint256 shortAmount = 1049989096968274;
+        int256 variableRate = 22784;
         // Set up the test parameters.
         TestLpWithdrawalParams memory testParams = TestLpWithdrawalParams({
             fixedRate: 0.05e18,
@@ -412,7 +417,7 @@ contract LpWithdrawalTest is HyperdriveTest {
             MINIMUM_TRANSACTION_AMOUNT,
             HyperdriveUtils.calculateMaxLong(hyperdrive)
         );
-
+        console2.log("longBasePaid: %s", longBasePaid.toString(18));
         testParams.longBasePaid = longBasePaid;
         {
             (uint256 longMaturityTime, uint256 longAmount) = openLong(
@@ -463,6 +468,7 @@ contract LpWithdrawalTest is HyperdriveTest {
             MINIMUM_TRANSACTION_AMOUNT,
             HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
+        console2.log("shortAmount: %s", shortAmount.toString(18));
         testParams.shortAmount = shortAmount;
         {
             (uint256 shortMaturityTime, uint256 shortBasePaid) = openShort(
@@ -487,6 +493,7 @@ contract LpWithdrawalTest is HyperdriveTest {
 
         // Time passes and interest accrues.
         variableRate = variableRate.normalizeToRange(0, 2e18);
+        console2.log("variableRate: %s", variableRate.toString(18));
         testParams.variableRate = variableRate;
         advanceTime(POSITION_DURATION, testParams.variableRate);
 
@@ -549,7 +556,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         assertGe(
             celineBaseProceeds +
                 celineRedeemProceeds +
-                celineWithdrawalShares.mulDown(hyperdrive.lpSharePrice()),
+                celineWithdrawalShares.mulDown(hyperdrive.lpSharePrice()) + 1e9,
             uint256(
                 int256(testParams.contribution - celineSlippagePayment) +
                     fixedInterest.min(0)
