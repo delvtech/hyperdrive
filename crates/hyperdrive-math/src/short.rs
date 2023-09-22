@@ -1,6 +1,6 @@
 use ethers::types::I256;
 use fixed_point::FixedPoint;
-use fixed_point_macros::{fixed, int256};
+use fixed_point_macros::fixed;
 
 use super::State;
 use crate::{get_effective_share_reserves, Asset, YieldSpace};
@@ -63,7 +63,7 @@ impl State {
         short_amount: FixedPoint,
         spot_price: FixedPoint,
         mut open_share_price: FixedPoint,
-    ) -> FixedPoint {
+    ) -> Option<FixedPoint> {
         // If the open share price hasn't been set, we use the current share
         // price, since this is what will be set as the checkpoint share price
         // in the next transaction.
@@ -72,10 +72,16 @@ impl State {
         }
 
         // NOTE: The order of additions and subtractions is important to avoid underflows.
-        short_amount.mul_div_down(self.share_price(), open_share_price)
-            + self.flat_fee() * short_amount
-            + self.curve_fee() * (fixed!(1e18) - spot_price) * short_amount
-            - self.share_price() * self.short_principal(short_amount)
+        let principal = match self.short_principal(short_amount) {
+            Some(p) => p,
+            None => return None,
+        };
+        Some(
+            short_amount.mul_div_down(self.share_price(), open_share_price)
+                + self.flat_fee() * short_amount
+                + self.curve_fee() * (fixed!(1e18) - spot_price) * short_amount
+                - self.share_price() * principal,
+        )
     }
 
     // TODO: Make it clear to the consumer that the maximum number of iterations
@@ -127,7 +133,11 @@ impl State {
             checkpoint_exposure,
             maybe_max_iterations,
         );
-        if self.get_short_deposit(max_bond_amount, spot_price, open_share_price) <= budget {
+        let deposit = match self.get_short_deposit(max_bond_amount, spot_price, open_share_price) {
+            Some(d) => d,
+            None => return max_bond_amount,
+        };
+        if deposit <= budget {
             return max_bond_amount;
         }
 
@@ -158,13 +168,21 @@ impl State {
             maybe_conservative_price,
         );
         for _ in 0..maybe_max_iterations.unwrap_or(7) {
-            max_bond_amount += (budget
-                - self.get_short_deposit(max_bond_amount, spot_price, open_share_price))
+            let deposit =
+                match self.get_short_deposit(max_bond_amount, spot_price, open_share_price) {
+                    Some(d) => d,
+                    None => return max_bond_amount,
+                };
+            max_bond_amount += (budget - deposit)
                 / self.short_deposit_derivative(max_bond_amount, spot_price, open_share_price);
         }
 
         // Verify that the max short satisfies the budget.
-        if budget < self.get_short_deposit(max_bond_amount, spot_price, open_share_price) {
+        if budget
+            < self
+                .get_short_deposit(max_bond_amount, spot_price, open_share_price)
+                .unwrap()
+        {
             panic!("max short exceeded budget");
         }
 
@@ -211,8 +229,10 @@ impl State {
                     + self.flat_fee()
                     + self.curve_fee() * (fixed!(1e18) - spot_price)
                     - conservative_price);
-            if budget >= self.get_short_deposit(guess, spot_price, open_share_price) {
-                return guess;
+            if let Some(deposit) = self.get_short_deposit(guess, spot_price, open_share_price) {
+                if budget >= deposit {
+                    return guess;
+                }
             }
         }
 
@@ -226,7 +246,11 @@ impl State {
         // subtract these components from the budget to get a better estimate of
         // the max bond amount. If subtracting these components results in a
         // negative number, we just 0 as our initial guess.
-        let worst_case_deposit = self.get_short_deposit(budget, spot_price, open_share_price);
+        let worst_case_deposit = match self.get_short_deposit(budget, spot_price, open_share_price)
+        {
+            Some(d) => d,
+            None => return fixed!(0),
+        };
         if budget >= worst_case_deposit {
             budget - worst_case_deposit
         } else {
@@ -243,26 +267,19 @@ impl State {
         checkpoint_exposure: I256,
         maybe_max_iterations: Option<usize>,
     ) -> FixedPoint {
-        // TODO: We need to enforce these properties in the Solidity
-        // implementation and test them.
-        //
         // We start by calculating the maximum short that can be opened on the
-        // YieldSpace curve. Both $z \geq z_{min}$ and $z - \zeta \geq z_{min}$
-        // must hold, which allows us to solve directly for the optimal bond
-        // reserves.
+        // YieldSpace curve.
         let absolute_max_bond_amount = {
-            let optimal_share_reserves = if self.share_adjustment() >= int256!(0) {
-                // If the share adjustment is greater than zero, then
-                // $z > z - \zeta$, so $z - \zeta \geq z_{min}$ is the
-                // constraint that matters. Our optimal share reserves are given
-                // by $z = \zeta + z_{min}$.
-                FixedPoint::from(self.share_adjustment()) + self.minimum_share_reserves()
-            } else {
-                // If the share adjustment is less than zero, then
-                // $z - \zeta > z$ as $z \geq z_{min}$ is the salient constraint.
-                // Our optimal share reserves are given by $z = z_{min}$.
-                self.minimum_share_reserves()
-            };
+            // We have the twin constraints that $z \geq z_{min}$ and
+            // $z - \zeta \geq 0$. Combining these together, we can calculate the
+            // optimal share reserves as $z_{optimal} = max(z_{min}, \zeta)$. We
+            // run into problems when we get too close to $z - \zeta = 0$, so we
+            // add a small adjustment to the optimal share reserves to ensure that
+            // we don't run into any issues.
+            let optimal_share_reserves = self.minimum_share_reserves().max(FixedPoint::from(
+                (self.share_adjustment() + I256::from(self.minimum_share_reserves()))
+                    .max(I256::zero()),
+            ));
             let optimal_effective_share_reserves =
                 get_effective_share_reserves(optimal_share_reserves, self.share_adjustment());
             let optimal_bond_reserves = (self.k()
@@ -455,8 +472,13 @@ impl State {
         open_share_price: FixedPoint,
         checkpoint_exposure: I256,
     ) -> Option<FixedPoint> {
+        let principal = if let Some(p) = self.short_principal(short_amount) {
+            p
+        } else {
+            return None;
+        };
         let share_reserves = self.share_reserves()
-            - (self.short_principal(short_amount)
+            - (principal
                 - (self.short_curve_fee(short_amount, spot_price)
                     - self.short_governance_fee(short_amount, spot_price))
                     / self.share_price());
@@ -513,8 +535,8 @@ impl State {
     /// \implies \\
     /// P(x) = z - \tfrac{1}{\mu} \cdot (\tfrac{\mu}{c} \cdot (k - (y + x)^{1 - t_s}))^{\tfrac{1}{1 - t_s}}
     /// $$
-    fn short_principal(&self, short_amount: FixedPoint) -> FixedPoint {
-        self.get_out_for_in(Asset::Bonds(short_amount))
+    fn short_principal(&self, short_amount: FixedPoint) -> Option<FixedPoint> {
+        self.get_out_for_in_safe(Asset::Bonds(short_amount))
     }
 
     /// Gets the derivative of the short principal $P(x)$ w.r.t. the amount of

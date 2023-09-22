@@ -1021,14 +1021,6 @@ library HyperdriveMath {
         MaxTradeParams memory _params,
         uint256 _effectiveShareReserves
     ) internal pure returns (uint256) {
-        uint256 k = YieldSpaceMath.modifiedYieldSpaceConstant(
-            _params.sharePrice.divDown(_params.initialSharePrice),
-            _params.initialSharePrice,
-            _effectiveShareReserves,
-            ONE - _params.timeStretch,
-            _params.bondReserves
-        );
-
         // We have the twin constraints that $z \geq z_{min}$ and
         // $z - \zeta \geq 0$. Combining these together, we can calculate the
         // optimal share reserves as $z_{optimal} = max(z_{min}, \zeta)$. We
@@ -1056,6 +1048,13 @@ library HyperdriveMath {
         //                   \right)^{1 - t_s}
         //               \right)^{\tfrac{1}{1 - t_s}}
         // $$
+        uint256 k = YieldSpaceMath.modifiedYieldSpaceConstant(
+            _params.sharePrice.divDown(_params.initialSharePrice),
+            _params.initialSharePrice,
+            _effectiveShareReserves,
+            ONE - _params.timeStretch,
+            _params.bondReserves
+        );
         uint256 optimalBondReserves = (k -
             (_params.sharePrice.divDown(_params.initialSharePrice)).mulDown(
                 _params

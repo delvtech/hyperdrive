@@ -88,7 +88,8 @@ impl State {
         //
         // The guess that we make is very important in determining how quickly
         // we converge to the solution.
-        let mut max_base_amount = self.max_long_guess(checkpoint_exposure);
+        let mut max_base_amount =
+            self.max_long_guess(absolute_max_base_amount, checkpoint_exposure);
         let mut maybe_solvency = self.solvency_after_long(
             max_base_amount,
             self.get_long_amount(max_base_amount),
@@ -143,19 +144,48 @@ impl State {
         max_base_amount
     }
 
-    /// Gets a starting guess for the iterative process of finding the max
-    /// long.
+    /// Gets an initial guess of the max long that can be opened. This is a
+    /// reasonable estimate that is guaranteed to be less than the true max
+    /// long. We use this to get a reasonable starting point for Newton's
+    /// method.
+    fn max_long_guess(
+        &self,
+        absolute_max_base_amount: FixedPoint,
+        checkpoint_exposure: I256,
+    ) -> FixedPoint {
+        // Get an initial estimate of the max long by using the spot price as
+        // our conservative price.
+        let spot_price = self.get_spot_price();
+        let guess = self.max_long_estimate(spot_price, spot_price, checkpoint_exposure);
+
+        // We know that the spot price is 1 when the absolute max base amount is
+        // used to open a long. We also know that our spot price isn't a great
+        // estimate (conservative or otherwise) of the realized price that the
+        // max long will pay, so we calculate a better estimate of the realized
+        // price by interpolating between the spot price and 1 depending on how
+        // large the estimate is.
+        let t = (guess / absolute_max_base_amount)
+            .pow(fixed!(1e18).div_up(fixed!(1e18) - self.time_stretch()))
+            * fixed!(0.8e18);
+        let estimate_price = spot_price * (fixed!(1e18) - t) + fixed!(1e18) * t;
+
+        // Recalculate our intial guess using the bootstrapped conservative
+        // estimate of the realized price.
+        self.max_long_estimate(estimate_price, spot_price, checkpoint_exposure)
+    }
+
+    /// Estimates the max long based on the pool's current solvency and a
+    /// conservative price estimate, $p_r$.
     ///
-    /// To calculate our guess, we assume an unrealistically good realized
-    /// price $p_r$ for opening the long. This allows us to approximate
-    /// $y(x)$ as $y(x) \approx p_r^{-1} \cdot x - c(x)$. Plugging this
-    /// into our solvency function $s(x)$, we can calculate the share
-    /// reserves and exposure after opening a long with $x$ base as:
+    /// We can use our estimate price $p_r$ to approximate $y(x)$ as
+    /// $y(x) \approx p_r^{-1} \cdot x - c(x)$. Plugging this into our
+    /// solvency function $s(x)$, we can calculate the share reserves and
+    /// exposure after opening a long with $x$ base as:
     ///
     /// \begin{aligned}
-    /// z(x) &= z_0 + \tfrac{x - g(x)}{c} \\
-    /// e(x) &= e_0 + min(exposure_{checkpoint}, 0) + 2 \cdot y(x) - x + g(x) \\
-    ///      &= e_0 + min(exposure_{checkpoint}, 0) + 2 \cdot p_r^{-1} \cdot x -
+    /// z(x) &= z_0 + \tfrac{x - g(x)}{c} - z_{min} \\
+    /// e(x) &= e_0 + min(exposure_{c}, 0) + 2 \cdot y(x) - x + g(x) \\
+    ///      &= e_0 + min(exposure_{c}, 0) + 2 \cdot p_r^{-1} \cdot x -
     ///             2 \cdot c(x) - x + g(x)
     /// \end{aligned}
     ///
@@ -172,27 +202,27 @@ impl State {
     /// $x$ as:
     ///
     /// $$
-    /// x = \frac{c}{2} \cdot \frac{s_0 + \tfrac{min(exposure_{checkpoint}, 0)}{c}}{
+    /// x = \frac{c}{2} \cdot \frac{s_0 + min(exposure_{c}, 0)}{
     ///         p_r^{-1} +
     ///         \phi_{g} \cdot \phi_{c} \cdot \left( 1 - p \right) -
     ///         1 -
     ///         \phi_{c} \cdot \left( p^{-1} - 1 \right)
     ///     }
     /// $$
-    ///
-    /// We need to use a conservative estimate for the realized price, so
-    /// we use the spot price $p$ as our estimate price.
-    fn max_long_guess(&self, checkpoint_exposure: I256) -> FixedPoint {
-        let spot_price = self.get_spot_price();
-        let estimate_price = spot_price;
+    fn max_long_estimate(
+        &self,
+        estimate_price: FixedPoint,
+        spot_price: FixedPoint,
+        checkpoint_exposure: I256,
+    ) -> FixedPoint {
         let checkpoint_exposure = FixedPoint::from(-checkpoint_exposure.min(int256!(0)));
-        let mut guess = self.get_solvency() + checkpoint_exposure / self.share_price();
-        guess = guess.mul_div_down(self.share_price(), fixed!(2e18));
-        guess /= fixed!(1e18) / estimate_price
+        let mut estimate = self.get_solvency() + checkpoint_exposure / self.share_price();
+        estimate = estimate.mul_div_down(self.share_price(), fixed!(2e18));
+        estimate /= fixed!(1e18) / estimate_price
             + self.governance_fee() * self.curve_fee() * (fixed!(1e18) - spot_price)
             - fixed!(1e18)
             - self.curve_fee() * (fixed!(1e18) / spot_price - fixed!(1e18));
-        guess
+        estimate
     }
 
     /// Gets the solvency of the pool $S(x)$ after a long is opened with a base

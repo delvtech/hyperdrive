@@ -29,6 +29,14 @@ pub trait YieldSpace {
         }
     }
 
+    fn get_out_for_in_safe(&self, in_: Asset) -> Option<FixedPoint> {
+        match in_ {
+            // TODO: Make this safer as needed.
+            Asset::Shares(in_) => Some(self.get_bonds_out_for_shares_in(in_, private::Seal)),
+            Asset::Bonds(in_) => self.get_shares_out_for_bonds_in_safe(in_, private::Seal),
+        }
+    }
+
     fn get_in_for_out(&self, out: Asset) -> FixedPoint {
         match out {
             Asset::Shares(out) => self.get_bonds_in_for_shares_out(out, private::Seal),
@@ -65,15 +73,26 @@ pub trait YieldSpace {
         self.y() - y
     }
 
-    fn get_shares_out_for_bonds_in(&self, in_: FixedPoint, _: private::Seal) -> FixedPoint {
+    fn get_shares_out_for_bonds_in(&self, in_: FixedPoint, seal: private::Seal) -> FixedPoint {
+        self.get_shares_out_for_bonds_in_safe(in_, seal).unwrap()
+    }
+
+    fn get_shares_out_for_bonds_in_safe(
+        &self,
+        in_: FixedPoint,
+        _: private::Seal,
+    ) -> Option<FixedPoint> {
         let y = (self.y() + in_).pow(fixed!(1e18) - self.t());
+        if self.k() < y {
+            return None;
+        }
         let mut z = (self.k() - y) / (self.c() / self.mu());
         z = z.pow(fixed!(1e18).div_up(fixed!(1e18) - self.t()));
         z /= self.mu();
         if self.z() > z {
-            self.z() - z
+            Some(self.z() - z)
         } else {
-            fixed!(0)
+            Some(fixed!(0))
         }
     }
 
