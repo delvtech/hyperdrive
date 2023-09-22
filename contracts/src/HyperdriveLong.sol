@@ -341,7 +341,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
 
         // Remove the flat part of the trade from the pool's liquidity.
         _updateLiquidity(-int256(_shareProceeds - _shareReservesDelta));
-        uint256 idle = _calculateIdleShareReserves(_sharePrice);
 
         // Update the checkpoint and global longExposure
         {
@@ -363,7 +362,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 _checkpoints[checkpointTime].longExposure
             );
         }
-        idle = _calculateIdleShareReserves(_sharePrice);
 
         // Distribute the excess idle to the withdrawal pool.
         _distributeExcessIdle(_sharePrice);

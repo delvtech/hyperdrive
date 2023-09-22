@@ -339,7 +339,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // receive their principal and some fixed interest along with any
         // trading profits that have accrued.
         _updateLiquidity(int256(_sharePayment - _shareReservesDelta));
-        uint256 idle = _calculateIdleShareReserves(_sharePrice);
 
         // Update the checkpoint and global longExposure
         {
@@ -361,7 +360,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 _checkpoints[checkpointTime].longExposure
             );
         }
-        idle = _calculateIdleShareReserves(_sharePrice);
 
         // Distribute the excess idle to the withdrawal pool.
         _distributeExcessIdle(_sharePrice);
