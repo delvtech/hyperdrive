@@ -93,17 +93,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
             maturityTime
         );
 
-        // FIXME: Test this.
-        //
-        // The share reserves are decreased in this operation, so we need to
-        // ensure that the effective share reserves are non-negative.
-        if (
-            int256(uint256(_marketState.shareReserves)) <
-            _marketState.shareAdjustment
-        ) {
-            revert IHyperdrive.NegativeReserves();
-        }
-
         // Mint the short tokens to the trader. The ID is a concatenation of the
         // current share price and the maturity time of the shorts.
         uint256 assetId = AssetId.encodeAssetId(
@@ -268,6 +257,18 @@ abstract contract HyperdriveShort is HyperdriveLP {
         _marketState.shareReserves = shareReserves_;
         _marketState.bondReserves += _bondAmount.toUint128();
         _marketState.shortsOutstanding += _bondAmount.toUint128();
+
+        // TODO: We're not sure what causes this check to fail.
+        //
+        // The share reserves are decreased in this operation and the share
+        // adjustment doesn't always decrease by the same amount, so we need to
+        // ensure that the effective share reserves are non-negative.
+        if (
+            int256(uint256(_marketState.shareReserves)) <
+            _marketState.shareAdjustment
+        ) {
+            revert IHyperdrive.NegativeReserves();
+        }
 
         // Update the checkpoint's short deposits and decrease the long exposure.
         // NOTE: Refer to this issue for details on if this should be moved

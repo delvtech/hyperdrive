@@ -177,17 +177,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
             );
         }
 
-        // FIXME: Test this.
-        //
-        // The share reserves are decreased in this operation, so we need to
-        // ensure that the effective share reserves are non-negative.
-        if (
-            int256(uint256(_marketState.shareReserves)) <
-            _marketState.shareAdjustment
-        ) {
-            revert IHyperdrive.NegativeReserves();
-        }
-
         // Withdraw the profit to the trader.
         uint256 baseProceeds = _withdraw(
             shareProceeds,
@@ -356,6 +345,18 @@ abstract contract HyperdriveLong is HyperdriveLP {
             _shareProceeds - _shareReservesDelta
         ).toInt128();
         _marketState.bondReserves += _bondReservesDelta.toUint128();
+
+        // TODO: We're not sure what causes this check to fail.
+        //
+        // The share reserves are decreased in this operation and the share
+        // adjustment doesn't always decrease by the same amount, so we need to
+        // ensure that the effective share reserves are non-negative.
+        if (
+            int256(uint256(_marketState.shareReserves)) <
+            _marketState.shareAdjustment
+        ) {
+            revert IHyperdrive.NegativeReserves();
+        }
 
         {
             // If there are withdrawal shares outstanding, we pay out the maximum
