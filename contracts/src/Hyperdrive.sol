@@ -106,6 +106,9 @@ abstract contract Hyperdrive is
         uint256 maturedShortsAmount = _totalSupply[
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _checkpointTime)
         ];
+        uint256 maturedLongsAmount = _totalSupply[
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _checkpointTime)
+        ];
         if (maturedShortsAmount > 0) {
             uint256 shareProceeds = maturedShortsAmount.divDown(_sharePrice);
             uint256 flatFee = shareProceeds.mulDown(_flatFee);
@@ -126,15 +129,32 @@ abstract contract Hyperdrive is
                 0,
                 shareProceeds,
                 0,
-                _checkpointTime,
-                _sharePrice
+                _checkpointTime
             );
+
+            // Update the checkpoint and global longExposure
+            uint256 maturityTime = _checkpointTime - _positionDuration;
+            int128 checkpointExposureBefore = int128(
+                _checkpoints[maturityTime].longExposure
+            );
+            if (maturedLongsAmount == 0) {
+                _checkpoints[maturityTime].longExposure = 0;
+            } else {
+                _checkpoints[maturityTime].longExposure += int128(
+                    (shareProceeds.mulDown(_sharePrice) + maturedShortsAmount)
+                        .toUint128()
+                );
+            }
+            _updateLongExposure(
+                checkpointExposureBefore,
+                _checkpoints[maturityTime].longExposure
+            );
+
+            // Distribute the excess idle to the withdrawal pool.
+            _distributeExcessIdle(_sharePrice);
         }
 
         // Close out the long positions with a maturity time equal to the latest checkpoint.
-        uint256 maturedLongsAmount = _totalSupply[
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _checkpointTime)
-        ];
         if (maturedLongsAmount > 0) {
             uint256 shareProceeds = maturedLongsAmount.divDown(_sharePrice);
             uint256 flatFee = shareProceeds.mulDown(_flatFee);
@@ -152,9 +172,22 @@ abstract contract Hyperdrive is
                 0,
                 shareProceeds,
                 0,
-                _checkpointTime,
-                _sharePrice
+                _checkpointTime
             );
+
+            // Update the checkpoint and global longExposure
+            uint256 maturityTime = _checkpointTime - _positionDuration;
+            int128 checkpointExposureBefore = int128(
+                _checkpoints[maturityTime].longExposure
+            );
+            _checkpoints[maturityTime].longExposure = 0;
+            _updateLongExposure(
+                checkpointExposureBefore,
+                _checkpoints[maturityTime].longExposure
+            );
+
+            // Distribute the excess idle to the withdrawal pool.
+            _distributeExcessIdle(_sharePrice);
         }
 
         return _sharePrice;

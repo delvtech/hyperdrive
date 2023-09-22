@@ -255,6 +255,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         uint256 longBasePaid,
         uint256 shortAmount
     ) external {
+        uint256 minimumTransactionAmount = 0.1e6;
         // Set up the test parameters.
         TestLpWithdrawalParams memory testParams = TestLpWithdrawalParams({
             fixedRate: 0.02e18,
@@ -280,8 +281,9 @@ contract NonstandardDecimalsTest is HyperdriveTest {
 
         // Bob opens a long.
         longBasePaid = longBasePaid.normalizeToRange(
-            0.1e6,
-            HyperdriveUtils.calculateMaxLong(hyperdrive)
+            minimumTransactionAmount,
+            HyperdriveUtils.calculateMaxLong(hyperdrive) -
+                minimumTransactionAmount
         );
         testParams.longBasePaid = longBasePaid;
         {
@@ -295,8 +297,9 @@ contract NonstandardDecimalsTest is HyperdriveTest {
 
         // Bob opens a short.
         shortAmount = shortAmount.normalizeToRange(
-            1e6, // TODO: We should be able to use a lower tolerance like 0.1e6.
-            HyperdriveUtils.calculateMaxShort(hyperdrive)
+            minimumTransactionAmount,
+            HyperdriveUtils.calculateMaxShort(hyperdrive) -
+                minimumTransactionAmount
         );
         testParams.shortAmount = shortAmount;
         {
