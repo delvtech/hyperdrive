@@ -98,6 +98,32 @@ contract CloseLongTest is HyperdriveTest {
         );
     }
 
+    function test_close_long_failure_invalid_share_reserves() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a small amount of capital.
+        uint256 minimumShareReserves = hyperdrive
+            .getPoolConfig()
+            .minimumShareReserves;
+        uint256 contribution = 2 * minimumShareReserves;
+        initialize(alice, apr, contribution);
+
+        // Open a long position.
+        uint256 baseAmount = minimumShareReserves;
+        (uint256 maturityTime, uint256 longAmount) = openLong(bob, baseAmount);
+
+        // Open a short position.
+        uint256 shortAmount = 2 * minimumShareReserves;
+        openShort(bob, shortAmount);
+
+        // Attempt to open a long that would bring the share reserves below the
+        // minimum share reserves. This should fail.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        vm.expectRevert(IHyperdrive.InvalidShareReserves.selector);
+        hyperdrive.closeLong(maturityTime, longAmount, 0, bob, true);
+    }
+
     function test_close_long_immediately_with_regular_amount() external {
         // Initialize the pool with a large amount of capital.
         uint256 fixedRate = 0.05e18;
