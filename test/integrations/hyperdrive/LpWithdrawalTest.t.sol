@@ -381,11 +381,12 @@ contract LpWithdrawalTest is HyperdriveTest {
     // We want to verify that Alice and Celine collectively receive all of the
     // the trading profits and that Celine is responsible for paying for the
     // increased slippage.
-    function test_lp_withdrawal_long_and_short_maturity(
-        // uint256 longBasePaid,
-        // uint256 shortAmount,
-        // int256 variableRate
-    ) external {
+    function test_lp_withdrawal_long_and_short_maturity()
+        external
+    // uint256 longBasePaid,
+    // uint256 shortAmount,
+    // int256 variableRate
+    {
         uint256 longBasePaid = 952379333288243;
         uint256 shortAmount = 1049989096968274;
         int256 variableRate = 22784;
@@ -556,7 +557,8 @@ contract LpWithdrawalTest is HyperdriveTest {
         assertGe(
             celineBaseProceeds +
                 celineRedeemProceeds +
-                celineWithdrawalShares.mulDown(hyperdrive.lpSharePrice()) + 1e9,
+                celineWithdrawalShares.mulDown(hyperdrive.lpSharePrice()) +
+                1e9,
             uint256(
                 int256(testParams.contribution - celineSlippagePayment) +
                     fixedInterest.min(0)
