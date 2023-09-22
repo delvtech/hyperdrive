@@ -1028,21 +1028,34 @@ library HyperdriveMath {
             ONE - _params.timeStretch,
             _params.bondReserves
         );
-        uint256 optimalShareReserves;
-        if (_params.shareAdjustment >= 0) {
-            // If the share adjustment is greater than zero, then
-            // $z > z - \zeta$, so $z - \zeta \geq z_{min}$ is the
-            // constraint that matters. Our optimal share reserves are given
-            // by $z = \zeta + z_{min}$.
-            optimalShareReserves =
-                uint256(_params.shareAdjustment) +
-                _params.minimumShareReserves;
-        } else {
-            // If the share adjustment is less than zero, then
-            // $z - \zeta > z$ as $z \geq z_{min}$ is the salient constraint.
-            // Our optimal share reserves are given by $z = z_{min}$.
-            optimalShareReserves = _params.minimumShareReserves;
-        }
+
+        // We have the twin constraints that $z \geq z_{min}$ and
+        // $z - \zeta \geq 0$. Combining these together, we can calculate the
+        // optimal share reserves as $z_{optimal} = max(z_{min}, \zeta)$. We
+        // run into problems when we get too close to $z - \zeta = 0$, so we
+        // add a small adjustment to the optimal share reserves to ensure that
+        // we don't run into any issues.
+        uint256 optimalShareReserves = uint256(
+            int256(_params.minimumShareReserves).max(
+                _params.shareAdjustment + int256(_params.minimumShareReserves)
+            )
+        );
+
+        // We calculate the optimal bond reserves by solving for the bond
+        // reserves that is implied by the optimal share reserves. We can do
+        // this as follows:
+        //
+        // $$
+        // k = \tfrac{c}{\mu} \cdot \left(
+        //          \mu \cdot \left( z_{optimal} - \zeta \right)
+        //      \right)^{1 - t_s} + y_{optimal}^{1 - t_s} \\
+        // \implies \\
+        // y_{optimal} = \left(
+        //                   k - \tfrac{c}{\mu} \cdot \left(
+        //                       \mu \cdot \left( z_{optimal} - \zeta \right)
+        //                   \right)^{1 - t_s}
+        //               \right)^{\tfrac{1}{1 - t_s}}
+        // $$
         uint256 optimalBondReserves = (k -
             (_params.sharePrice.divDown(_params.initialSharePrice)).mulDown(
                 _params
@@ -1055,6 +1068,7 @@ library HyperdriveMath {
                     )
                     .pow(ONE - _params.timeStretch)
             )).pow(ONE.divUp(ONE - _params.timeStretch));
+
         return optimalBondReserves - _params.bondReserves;
     }
 
@@ -1071,7 +1085,7 @@ library HyperdriveMath {
     ///      $$
     ///      S(x) \approx (z_0 - \tfrac{1}{c} \cdot (
     ///                       p_r - \phi_{c} \cdot (1 - p) + \phi_{g} \cdot \phi_{c} \cdot (1 - p)
-    ///                   )) - \tfrac{e_0 - max(e_{c}, 0)}{c} - z_{min}
+    ///                   ) \cdot x) - \tfrac{e_0 - max(e_{c}, 0)}{c} - z_{min}
     ///      $$
     ///
     ///      Setting this equal to zero, we can solve for our initial guess:
