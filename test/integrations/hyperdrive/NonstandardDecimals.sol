@@ -255,8 +255,10 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         uint256 longBasePaid,
         uint256 shortAmount
     ) external {
-        uint256 minimumTransactionAmount = hyperdrive.getPoolConfig().minimumTransactionAmount;
-        
+        uint256 minimumTransactionAmount = hyperdrive
+            .getPoolConfig()
+            .minimumTransactionAmount;
+
         // Set up the test parameters.
         TestLpWithdrawalParams memory testParams = TestLpWithdrawalParams({
             fixedRate: 0.02e18,

@@ -180,12 +180,12 @@ abstract contract HyperdriveShort is HyperdriveLP {
         if (block.timestamp < _maturityTime) {
             // Attribute the governance fees.
             _governanceFeesAccrued += totalGovernanceFee;
-            uint256 sharePaymentMinusFees = sharePayment - totalGovernanceFee;
+            uint256 sharePaymentWithoutFees = sharePayment - totalGovernanceFee;
             uint256 maturityTime_ = _maturityTime; // Avoid stack too deep error.
             _applyCloseShort(
                 _bondAmount,
                 bondReservesDelta,
-                sharePaymentMinusFees,
+                sharePaymentWithoutFees,
                 shareReservesDelta,
                 maturityTime_
             );
@@ -199,7 +199,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 _bondAmount,
                 shareReservesDelta,
                 bondReservesDelta,
-                sharePaymentMinusFees,
+                sharePaymentWithoutFees,
                 maturityTime_,
                 sharePrice,
                 false
