@@ -29,7 +29,7 @@ contract LpWithdrawalTest is HyperdriveTest {
     function setUp() public override {
         super.setUp();
 
-        // TODO: DERP We should use the default once we implement the feature that
+        // TODO: We should use the default once we implement the feature that
         // pays out excess idle.
         //
         // Deploy Hyperdrive with a small minimum share reserves so that it is
@@ -571,7 +571,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID),
             0,
-            1e9
+            1 wei
         );
     }
 
@@ -670,7 +670,7 @@ contract LpWithdrawalTest is HyperdriveTest {
             assertApproxEqAbs(
                 aliceBaseProceeds,
                 estimatedBaseLpProceeds,
-                1e9 // TODO: Try to shrink this bound.
+                1 wei
             );
         }
         uint256 celineLpShares;
@@ -823,7 +823,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID),
             0,
-            1e9
+            1 wei
         );
     }
 
