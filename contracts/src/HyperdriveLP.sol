@@ -303,8 +303,8 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         uint256 sharePrice = _pricePerShare();
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
 
-        // Distribute the excess idle to the withdrawal pool prior to removing
-        // liquidity from the pool.
+        // Distribute the excess idle to the withdrawal pool prior to redeeming
+        // the withdrawal shares.
         _distributeExcessIdle(sharePrice);
 
         // Clamp the shares to the total amount of shares ready for withdrawal
