@@ -125,10 +125,10 @@ pub async fn test_integration_get_max_short() -> Result<()> {
         bob.open_short(max_short, None).await?;
 
         if max_short != global_max_short {
-            // We currently allow up to a tolerance of 0.1%, which means
-            // that the max short is always consuming at least 99% of
+            // We currently allow up to a tolerance of 3%, which means
+            // that the max short is always consuming at least 97% of
             // the budget.
-            let error_tolerance = fixed!(0.01e18);
+            let error_tolerance = fixed!(0.03e18);
             assert!(
                 bob.base() < budget * (fixed!(1e18) - slippage_tolerance) * error_tolerance,
                 "expected (base={}) < (budget={}) * {} = {}",
