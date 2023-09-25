@@ -15,7 +15,6 @@ path = "tests/integration_tests.rs"
 ethers = "2.0.8"
 eyre = "0.6.8"
 rand = "0.8.5"
-tokio = { version = "1", features = ["full"] }
 
 # Workspace dependencies
 fixed-point = { path = "../fixed-point" }
@@ -26,6 +25,7 @@ hyperdrive-wrappers = { path = "../hyperdrive-wrappers" }
 
 # External dependencies
 rand_chacha = "0.3.1"
+tokio = { version = "1", features = ["full"] }
 tracing = "0.1"
 tracing-test = "0.1"
 
