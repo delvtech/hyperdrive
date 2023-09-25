@@ -9,8 +9,6 @@ import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import { Lib } from "../../utils/Lib.sol";
 
-import "forge-std/console2.sol";
-
 // FIXME:
 //
 // [ ] We need the following tests if they don't exist yet:
@@ -31,7 +29,7 @@ contract LpWithdrawalTest is HyperdriveTest {
     function setUp() public override {
         super.setUp();
 
-        // TODO: DERP We should use the default once we implement the feature that
+        // TODO: We should use the default once we implement the feature that
         // pays out excess idle.
         //
         // Deploy Hyperdrive with a small minimum share reserves so that it is
@@ -381,15 +379,11 @@ contract LpWithdrawalTest is HyperdriveTest {
     // We want to verify that Alice and Celine collectively receive all of the
     // the trading profits and that Celine is responsible for paying for the
     // increased slippage.
-    function test_lp_withdrawal_long_and_short_maturity()
-        external
-    // uint256 longBasePaid,
-    // uint256 shortAmount,
-    // int256 variableRate
-    {
-        uint256 longBasePaid = 952379333288243;
-        uint256 shortAmount = 1049989096968274;
-        int256 variableRate = 22784;
+    function test_lp_withdrawal_long_and_short_maturity(
+        uint256 longBasePaid,
+        uint256 shortAmount,
+        int256 variableRate
+    ) external {
         // Set up the test parameters.
         TestLpWithdrawalParams memory testParams = TestLpWithdrawalParams({
             fixedRate: 0.05e18,
@@ -418,7 +412,6 @@ contract LpWithdrawalTest is HyperdriveTest {
             MINIMUM_TRANSACTION_AMOUNT,
             HyperdriveUtils.calculateMaxLong(hyperdrive)
         );
-        console2.log("longBasePaid: %s", longBasePaid.toString(18));
         testParams.longBasePaid = longBasePaid;
         {
             (uint256 longMaturityTime, uint256 longAmount) = openLong(
@@ -469,7 +462,6 @@ contract LpWithdrawalTest is HyperdriveTest {
             MINIMUM_TRANSACTION_AMOUNT,
             HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
-        console2.log("shortAmount: %s", shortAmount.toString(18));
         testParams.shortAmount = shortAmount;
         {
             (uint256 shortMaturityTime, uint256 shortBasePaid) = openShort(
@@ -494,7 +486,6 @@ contract LpWithdrawalTest is HyperdriveTest {
 
         // Time passes and interest accrues.
         variableRate = variableRate.normalizeToRange(0, 2e18);
-        console2.log("variableRate: %s", variableRate.toString(18));
         testParams.variableRate = variableRate;
         advanceTime(POSITION_DURATION, testParams.variableRate);
 
@@ -580,7 +571,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID),
             0,
-            1e9
+            1 wei
         );
     }
 
@@ -679,7 +670,7 @@ contract LpWithdrawalTest is HyperdriveTest {
             assertApproxEqAbs(
                 aliceBaseProceeds,
                 estimatedBaseLpProceeds,
-                1e9 // TODO: Try to shrink this bound.
+                1 wei
             );
         }
         uint256 celineLpShares;
@@ -832,7 +823,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         assertApproxEqAbs(
             hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID),
             0,
-            1e9
+            1 wei
         );
     }
 
