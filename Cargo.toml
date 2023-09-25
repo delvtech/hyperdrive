@@ -7,6 +7,7 @@ members = [
     "crates/hyperdrive-addresses",
     "crates/hyperdrive-math",
     "crates/hyperdrive-wrappers",
+    "crates/hyperwasm",
     "crates/test-utils",
     "test/rust",
 ]
