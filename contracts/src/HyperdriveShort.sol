@@ -180,15 +180,37 @@ abstract contract HyperdriveShort is HyperdriveLP {
         if (block.timestamp < _maturityTime) {
             // Attribute the governance fees.
             _governanceFeesAccrued += totalGovernanceFee;
-
+            uint256 sharePaymentWithoutFees = sharePayment - totalGovernanceFee;
+            uint256 maturityTime_ = _maturityTime; // Avoid stack too deep error.
             _applyCloseShort(
                 _bondAmount,
                 bondReservesDelta,
-                sharePayment - totalGovernanceFee,
+                sharePaymentWithoutFees,
                 shareReservesDelta,
-                _maturityTime,
-                sharePrice
+                maturityTime_
             );
+
+            // Update the checkpoint and global longExposure
+            uint256 checkpointTime = maturityTime_ - _positionDuration;
+            int128 checkpointExposureBefore = int128(
+                _checkpoints[checkpointTime].longExposure
+            );
+            _updateCheckpointLongExposureOnClose(
+                _bondAmount,
+                shareReservesDelta,
+                bondReservesDelta,
+                sharePaymentWithoutFees,
+                maturityTime_,
+                sharePrice,
+                false
+            );
+            _updateLongExposure(
+                checkpointExposureBefore,
+                _checkpoints[checkpointTime].longExposure
+            );
+
+            // Distribute the excess idle to the withdrawal pool.
+            _distributeExcessIdle(sharePrice);
         }
 
         // Withdraw the profit to the trader. This includes the proceeds from
@@ -302,14 +324,12 @@ abstract contract HyperdriveShort is HyperdriveLP {
     /// @param _sharePayment The payment in shares required to close the short.
     /// @param _shareReservesDelta The amount of bonds paid to the curve.
     /// @param _maturityTime The maturity time of the short.
-    /// @param _sharePrice The current share price
     function _applyCloseShort(
         uint256 _bondAmount,
         uint256 _bondReservesDelta,
         uint256 _sharePayment,
         uint256 _shareReservesDelta,
-        uint256 _maturityTime,
-        uint256 _sharePrice
+        uint256 _maturityTime
     ) internal {
         {
             uint128 shortsOutstanding_ = _marketState.shortsOutstanding;
@@ -339,30 +359,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // receive their principal and some fixed interest along with any
         // trading profits that have accrued.
         _updateLiquidity(int256(_sharePayment - _shareReservesDelta));
-
-        // Update the checkpoint and global longExposure
-        {
-            uint256 checkpointTime = _maturityTime - _positionDuration;
-            int128 checkpointExposureBefore = int128(
-                _checkpoints[checkpointTime].longExposure
-            );
-            _updateCheckpointLongExposureOnClose(
-                _bondAmount,
-                _shareReservesDelta,
-                _bondReservesDelta,
-                _sharePayment,
-                _maturityTime,
-                _sharePrice,
-                false
-            );
-            _updateLongExposure(
-                checkpointExposureBefore,
-                _checkpoints[checkpointTime].longExposure
-            );
-        }
-
-        // Distribute the excess idle to the withdrawal pool.
-        _distributeExcessIdle(_sharePrice);
     }
 
     /// @dev Calculate the pool reserve and trader deltas that result from
