@@ -17,13 +17,7 @@ library HyperdriveMath {
     using FixedPointMath for int256;
     using SafeCast for uint256;
 
-    /// @dev Calculates the spot price of bonds in terms of base. This is given
-    ///      by:
-    ///
-    ///      \begin{align}
-    ///      p &= \left( \tfrac{y}{\mu \cdot (z - \zeta)} \right)^{-t_s} \\
-    ///        &= \left( \tfrac{\mu \cdot (z - \zeta)}{y} \right)^{t_s}
-    ///      \end{align}
+    /// @dev Calculates the spot price of bonds in terms of base.
     /// @param _effectiveShareReserves The pool's effective share reserves. The
     ///        effective share reserves are a modified version of the share
     ///        reserves used when pricing trades.
@@ -37,6 +31,8 @@ library HyperdriveMath {
         uint256 _initialSharePrice,
         uint256 _timeStretch
     ) internal pure returns (uint256 spotPrice) {
+        // p = (y / (mu * (z - zeta))) ** -t_s
+        //   = ((mu * (z - zeta)) / y) ** t_s
         spotPrice = _initialSharePrice
             .mulDivDown(_effectiveShareReserves, _bondReserves)
             .pow(_timeStretch);

@@ -84,8 +84,8 @@ impl Distribution<State> for Standard {
                 if rng.gen() {
                     -I256::from(rng.gen_range(fixed!(0)..=fixed!(100_000e18)))
                 } else {
-                    // We generate values that satisfy $z - \zeta \geq z_{min}$,
-                    // so $z - z_{min} \geq \zeta$.
+                    // We generate values that satisfy `z - zeta >= z_min`,
+                    // so `z - z_min >= zeta`.
                     I256::from(rng.gen_range(
                         fixed!(0)
                             ..(share_reserves - FixedPoint::from(config.minimum_share_reserves)),

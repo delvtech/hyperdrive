@@ -6,21 +6,8 @@
         "node": "^18"
     },
     "scripts": {
-        "build:prod": "FOUNDRY_PROFILE=production forge build",
-        "build:test": "FOUNDRY_PROFILE=production forge test --gas-report",
-        "build": "forge build",
-        "clean": "forge clean",
-        "lint": "yarn solhint && yarn style-check && yarn spell-check && yarn warnings-check && yarn code-size-check",
-        "prettier": "npx prettier --write .",
-        "test": "forge test -vvv",
-        "solhint": "npx solhint -f table contracts/src/*.sol contracts/src/**/*.sol",
-        "code-size-check": "FOUNDRY_PROFILE=production forge build && python python/contract_size.py out",
-        "spell-check": "npx cspell ./**/**/**.sol --gitignore",
-        "style-check": "npx prettier --check .",
-        "warnings-check": "FOUNDRY_PROFILE=production forge build --deny-warnings --force --skip test",
         "postinstall": "patch-package --patch-dir .patches",
-        "configure-husky": "npx husky install && npx husky add .husky/pre-commit \"npx --no-install lint-staged\"",
-        "testnet": "forge script migrations/MockHyperdrive.s.sol:MockHyperdriveScript --rpc-url http://localhost:8545 --broadcast  -vvvv"
+        "configure-husky": "npx husky install && npx husky add .husky/pre-commit \"npx --no-install lint-staged\""
     },
     "_moduleAliases": {
         "test": "./test"
@@ -35,7 +22,6 @@
             "pre-commit": "lint-staged"
         }
     },
-    "author": "",
     "license": "Apache-2.0",
     "devDependencies": {
         "coveralls": "^3.1.1",
