@@ -12,6 +12,7 @@ import { Lib } from "../../utils/Lib.sol";
 
 contract RoundTripTest is HyperdriveTest {
     using FixedPointMath for uint256;
+    using HyperdriveUtils for *;
     using Lib for *;
 
     function test_long_round_trip_immediately_at_checkpoint() external {
@@ -165,6 +166,12 @@ contract RoundTripTest is HyperdriveTest {
         assertEq(poolInfoAfter.bondReserves, poolInfoBefore.bondReserves);
     }
 
+    // TODO: The following case causes this test to fail. This will be addressed
+    // in a follow-up PR.
+    //
+    // uint256 apr = 115792089237316195423570985008687907853269984665640564039457583990320674062335;
+    // uint256 timeStretchApr = 886936259672610464646559504023817532562726574141720139630650341263;
+    // uint256 basePaid = 65723876150308947051900890891865009457038319412461;
     function test_long_multiblock_round_trip_end_of_checkpoint(
         uint256 apr,
         uint256 timeStretchApr,
@@ -180,11 +187,6 @@ contract RoundTripTest is HyperdriveTest {
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
 
-        basePaid = basePaid.normalizeToRange(
-            MINIMUM_TRANSACTION_AMOUNT,
-            HyperdriveUtils.calculateMaxLong(hyperdrive)
-        );
-
         // Get the poolInfo before opening the long.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
 
@@ -192,6 +194,10 @@ contract RoundTripTest is HyperdriveTest {
         advanceTime(CHECKPOINT_DURATION - 1, 0);
 
         // Open a long position.
+        basePaid = basePaid.normalizeToRange(
+            MINIMUM_TRANSACTION_AMOUNT,
+            hyperdrive.calculateMaxLong()
+        );
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
 
         // fast forward time to the end of the checkpoint

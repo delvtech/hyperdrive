@@ -8,6 +8,7 @@ import { Lib } from "../../utils/Lib.sol";
 
 contract SandwichTest is HyperdriveTest {
     using FixedPointMath for uint256;
+    using HyperdriveUtils for *;
     using Lib for *;
 
     function test_sandwich_trades(uint8 _apr, uint64 _timeDelta) external {
@@ -125,6 +126,59 @@ contract SandwichTest is HyperdriveTest {
             baselineProfit = bondsReceived - basePaid;
         }
         assertGe(baselineProfit, sandwichProfit - 10000 gwei);
+    }
+
+    function test_sandwich_short_trade(
+        uint256 fixedRate,
+        uint256 contribution,
+        uint256 tradeAmount,
+        uint256 sandwichAmount
+    ) external {
+        IHyperdrive.PoolConfig memory config = testConfig(0.05e18);
+        deploy(alice, config);
+        // FIXME: We can calculate the max rate that a given instantiation of
+        // YieldSpace can support. We should use this in tests like this as it
+        // would allow us to fuzz over the entire range.
+        fixedRate = fixedRate.normalizeToRange(0.001e18, 1e18);
+        contribution = contribution.normalizeToRange(1_000e18, 500_000_000e18);
+        uint256 lpShares = initialize(alice, fixedRate, contribution);
+        contribution -= 2 * config.minimumShareReserves;
+
+        // Bob opens a short.
+        tradeAmount = tradeAmount.normalizeToRange(
+            1e18,
+            hyperdrive.calculateMaxShort().mulDown(0.9e18)
+        );
+        openShort(bob, tradeAmount);
+
+        // Most of the term passes and no interest accrues.
+        advanceTime(POSITION_DURATION - 12 seconds, 0);
+
+        // Celine opens a short to sandwich the closing of Bob's short.
+        sandwichAmount = sandwichAmount.normalizeToRange(
+            1e18,
+            hyperdrive.calculateMaxShort()
+        );
+        (uint256 maturityTime, uint256 shortPayment) = openShort(
+            celine,
+            sandwichAmount
+        );
+
+        // The rest of the term passes and no interest accrues.
+        advanceTime(12 seconds, 0);
+
+        // Celine closes her short. Her short should have been unprofitable.
+        uint256 shortProceeds = closeShort(
+            celine,
+            maturityTime,
+            sandwichAmount
+        );
+        assertLt(shortProceeds, shortPayment);
+
+        // Alice removes her liquidity. She should receive at least as much as
+        // as she put in.
+        (uint256 withdrawalProceeds, ) = removeLiquidity(alice, lpShares);
+        assertGe(withdrawalProceeds, contribution);
     }
 
     // TODO: Use the normalize function to improve this test.

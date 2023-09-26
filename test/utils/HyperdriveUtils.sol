@@ -4,8 +4,8 @@ pragma solidity 0.8.19;
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
-import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
+import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 
 library HyperdriveUtils {
     using HyperdriveUtils for *;
@@ -47,7 +47,10 @@ library HyperdriveUtils {
         IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
         return
             HyperdriveMath.calculateSpotPrice(
-                poolInfo.shareReserves,
+                HyperdriveMath.calculateEffectiveShareReserves(
+                    poolInfo.shareReserves,
+                    poolInfo.shareAdjustment
+                ),
                 poolInfo.bondReserves,
                 poolConfig.initialSharePrice,
                 poolConfig.timeStretch
@@ -61,7 +64,10 @@ library HyperdriveUtils {
         IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
         return
             HyperdriveMath.calculateAPRFromReserves(
-                poolInfo.shareReserves,
+                HyperdriveMath.calculateEffectiveShareReserves(
+                    poolInfo.shareReserves,
+                    poolInfo.shareAdjustment
+                ),
                 poolInfo.bondReserves,
                 poolConfig.initialSharePrice,
                 poolConfig.positionDuration,
@@ -105,6 +111,7 @@ library HyperdriveUtils {
         (baseAmount, ) = HyperdriveMath.calculateMaxLong(
             HyperdriveMath.MaxTradeParams({
                 shareReserves: poolInfo.shareReserves,
+                shareAdjustment: poolInfo.shareAdjustment,
                 bondReserves: poolInfo.bondReserves,
                 longsOutstanding: poolInfo.longsOutstanding,
                 longExposure: poolInfo.longExposure,
@@ -132,16 +139,22 @@ library HyperdriveUtils {
 
     /// @dev Calculates the maximum amount of shorts that can be opened.
     /// @param _hyperdrive A Hyperdrive instance.
+    /// @param _maxIterations The maximum number of iterations to use.
     /// @return The maximum amount of bonds that can be shorted.
     function calculateMaxShort(
-        IHyperdrive _hyperdrive
+        IHyperdrive _hyperdrive,
+        uint256 _maxIterations
     ) internal view returns (uint256) {
+        IHyperdrive.Checkpoint memory checkpoint = _hyperdrive.getCheckpoint(
+            _hyperdrive.latestCheckpoint()
+        );
         IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
         IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
         return
             HyperdriveMath.calculateMaxShort(
                 HyperdriveMath.MaxTradeParams({
                     shareReserves: poolInfo.shareReserves,
+                    shareAdjustment: poolInfo.shareAdjustment,
                     bondReserves: poolInfo.bondReserves,
                     longsOutstanding: poolInfo.longsOutstanding,
                     longExposure: poolInfo.longExposure,
@@ -151,8 +164,19 @@ library HyperdriveUtils {
                     minimumShareReserves: poolConfig.minimumShareReserves,
                     curveFee: poolConfig.fees.curve,
                     governanceFee: poolConfig.fees.governance
-                })
+                }),
+                checkpoint.longExposure,
+                _maxIterations
             );
+    }
+
+    /// @dev Calculates the maximum amount of shorts that can be opened.
+    /// @param _hyperdrive A Hyperdrive instance.
+    /// @return The maximum amount of bonds that can be shorted.
+    function calculateMaxShort(
+        IHyperdrive _hyperdrive
+    ) internal view returns (uint256) {
+        return calculateMaxShort(_hyperdrive, 7);
     }
 
     /// @dev Calculates the non-compounded interest over a period.
@@ -236,8 +260,13 @@ library HyperdriveUtils {
         }
 
         // Calculate the openShort trade
+        uint256 effectiveShareReserves = HyperdriveMath
+            .calculateEffectiveShareReserves(
+                poolInfo.shareReserves,
+                poolInfo.shareAdjustment
+            );
         uint256 shareProceeds = HyperdriveMath.calculateOpenShort(
-            poolInfo.shareReserves,
+            effectiveShareReserves,
             poolInfo.bondReserves,
             _bondAmount,
             poolConfig.timeStretch,
@@ -247,7 +276,7 @@ library HyperdriveUtils {
 
         // Price without slippage of bonds in terms of shares
         uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
-            poolInfo.shareReserves,
+            effectiveShareReserves,
             poolInfo.bondReserves,
             poolConfig.initialSharePrice,
             poolConfig.timeStretch
@@ -290,6 +319,7 @@ library HyperdriveUtils {
                 .calculatePresentValue(
                     HyperdriveMath.PresentValueParams({
                         shareReserves: poolInfo.shareReserves,
+                        shareAdjustment: poolInfo.shareAdjustment,
                         bondReserves: poolInfo.bondReserves,
                         sharePrice: poolInfo.sharePrice,
                         initialSharePrice: poolConfig.initialSharePrice,

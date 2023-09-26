@@ -79,12 +79,16 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
         uint128 longsOutstanding;
         /// @dev The amount of shorts that are still open.
         uint128 shortsOutstanding;
-        /// @dev The average maturity time of outstanding positions.
+        /// @dev The average maturity time of outstanding long positions.
         uint128 longAverageMaturityTime;
         /// @dev The average open share price of longs.
         uint128 longOpenSharePrice;
-        /// @dev The average maturity time of outstanding positions.
+        /// @dev The average maturity time of outstanding short positions.
         uint128 shortAverageMaturityTime;
+        /// FIXME: We need to think about this in the context of storage packing.
+        /// @dev The net amount of shares that have been added and removed from
+        ///      the share reserves due to flat updates.
+        int128 shareAdjustment;
         /// @dev The global exposure of the pool due to open longs
         uint128 longExposure;
         /// @dev A flag indicating whether or not the pool has been initialized.
@@ -156,6 +160,10 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
     struct PoolInfo {
         /// @dev The reserves of shares held by the pool.
         uint256 shareReserves;
+        /// @dev The adjustment applied to the share reserves when pricing
+        ///      bonds. This is used to ensure that the pricing mechanism is
+        ///      held invariant under flat updates for security reasons.
+        int256 shareAdjustment;
         /// @dev The reserves of bonds held by the pool.
         uint256 bondReserves;
         /// @dev The total supply of LP shares.
@@ -208,6 +216,7 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
     error InvalidShareReserves();
     error InvalidFeeAmounts();
     error NegativeInterest();
+    error NegativePresentValue();
     error NoAssetsToWithdraw();
     error NotPayable();
     error OutputLimit();
@@ -272,4 +281,9 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
     error FixedPointMath_InvalidExponent();
     error FixedPointMath_NegativeOrZeroInput();
     error FixedPointMath_NegativeInput();
+
+    /// ######################
+    /// ### YieldSpaceMath ###
+    /// ######################
+    error InvalidTradeSize();
 }

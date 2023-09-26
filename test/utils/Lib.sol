@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import { console2 } from "forge-std/console2.sol";
+import { stdMath } from "forge-std/StdMath.sol";
 import { Vm, VmSafe } from "forge-std/Vm.sol";
 
 library Lib {
@@ -188,6 +189,24 @@ library Lib {
         }
 
         return modValue + minimum;
+    }
+
+    function approxEq(
+        uint256 a,
+        uint256 b,
+        uint256 tolerance
+    ) internal pure returns (bool) {
+        uint256 delta = stdMath.delta(a, b);
+        return delta <= tolerance;
+    }
+
+    function approxEq(
+        int256 a,
+        int256 b,
+        uint256 tolerance
+    ) internal pure returns (bool) {
+        uint256 delta = stdMath.delta(a, b);
+        return delta <= tolerance;
     }
 
     function eq(bytes memory b1, bytes memory b2) public pure returns (bool) {

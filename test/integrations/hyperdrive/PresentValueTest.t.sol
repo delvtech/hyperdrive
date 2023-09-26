@@ -9,8 +9,9 @@ import { IHyperdrive, HyperdriveTest, HyperdriveUtils } from "test/utils/Hyperdr
 import { Lib } from "test/utils/Lib.sol";
 
 contract PresentValueTest is HyperdriveTest {
-    using Lib for *;
     using FixedPointMath for *;
+    using HyperdriveUtils for *;
+    using Lib for *;
 
     bytes32 internal _seed;
 
@@ -488,7 +489,7 @@ contract PresentValueTest is HyperdriveTest {
         uint256 nextPresentValue;
 
         // Execute a series of random open trades. We ensure that the present
-        // value does not decrease.
+        // value stays the same.
         Trade[] memory trades = randomOpenTrades();
         for (uint256 i = 0; i < trades.length; i++) {
             executeTrade(trades[i]);
@@ -521,6 +522,228 @@ contract PresentValueTest is HyperdriveTest {
             assertGe(nextPresentValue, currentPresentValue);
             currentPresentValue = nextPresentValue;
         }
+    }
+
+    function test_present_value(bytes32 __seed) external {
+        // TODO: This tolerance is WAY too large.
+        uint256 tolerance = 1_000_000e18;
+
+        // Set the seed.
+        _seed = __seed;
+
+        // Initialize the pool.
+        initialize(alice, 0.02e18, 500_000_000e18);
+
+        // Execute a series of random open trades. We ensure that the present
+        // value stays within a given tolerance.
+        uint256 nextPresentValue;
+        uint256 currentPresentValue = HyperdriveUtils.presentValue(hyperdrive);
+        uint256 maturityTime0 = hyperdrive.maturityTimeFromLatestCheckpoint();
+        Trade[] memory trades0 = randomOpenTrades();
+        for (uint256 i = 0; i < trades0.length; i++) {
+            executeTrade(trades0[i]);
+            nextPresentValue = HyperdriveUtils.presentValue(hyperdrive);
+            assertApproxEqAbs(nextPresentValue, currentPresentValue, tolerance);
+            currentPresentValue = nextPresentValue;
+        }
+
+        // Time passes and interest accrues.
+        {
+            uint256 timeDelta = uint256(seed()).normalizeToRange(
+                CHECKPOINT_DURATION,
+                POSITION_DURATION.mulDown(0.99e18)
+            );
+            int256 variableRate = int256(uint256(seed())).normalizeToRange(
+                -0.1e18,
+                2e18
+            );
+            advanceTime(timeDelta, variableRate);
+        }
+
+        // Execute a series of random open trades. We ensure that the present
+        // value stays within a given tolerance.
+        currentPresentValue = HyperdriveUtils.presentValue(hyperdrive);
+        uint256 maturityTime1 = hyperdrive.maturityTimeFromLatestCheckpoint();
+        Trade[] memory trades1 = randomOpenTrades();
+        for (uint256 i = 0; i < trades1.length; i++) {
+            executeTrade(trades1[i]);
+            nextPresentValue = HyperdriveUtils.presentValue(hyperdrive);
+            assertApproxEqAbs(nextPresentValue, currentPresentValue, tolerance);
+            currentPresentValue = nextPresentValue;
+        }
+
+        // Construct a set of close trades.
+        Trade[] memory closeTrades;
+        {
+            Trade[] memory closeTrades0 = randomCloseTrades(
+                maturityTime0,
+                hyperdrive.balanceOf(
+                    AssetId.encodeAssetId(
+                        AssetId.AssetIdPrefix.Long,
+                        maturityTime0
+                    ),
+                    alice
+                ),
+                maturityTime0,
+                hyperdrive.balanceOf(
+                    AssetId.encodeAssetId(
+                        AssetId.AssetIdPrefix.Short,
+                        maturityTime0
+                    ),
+                    alice
+                )
+            );
+            Trade[] memory closeTrades1 = randomCloseTrades(
+                maturityTime1,
+                hyperdrive.balanceOf(
+                    AssetId.encodeAssetId(
+                        AssetId.AssetIdPrefix.Long,
+                        maturityTime1
+                    ),
+                    alice
+                ),
+                maturityTime1,
+                hyperdrive.balanceOf(
+                    AssetId.encodeAssetId(
+                        AssetId.AssetIdPrefix.Short,
+                        maturityTime1
+                    ),
+                    alice
+                )
+            );
+            closeTrades = combineTrades(closeTrades0, closeTrades1);
+        }
+
+        // Execute a series of random close trades. We ensure that the present
+        // value stays within a given tolerance.
+        currentPresentValue = HyperdriveUtils.presentValue(hyperdrive);
+        for (uint256 i = 0; i < closeTrades.length; i++) {
+            executeTrade(closeTrades[i]);
+            nextPresentValue = HyperdriveUtils.presentValue(hyperdrive);
+            assertApproxEqAbs(nextPresentValue, currentPresentValue, tolerance);
+            currentPresentValue = nextPresentValue;
+        }
+    }
+
+    function test_path_independence(bytes32 __seed) external {
+        // Set the seed.
+        _seed = __seed;
+
+        // Initialize the pool.
+        initialize(alice, 0.02e18, 500_000_000e18);
+
+        // Execute a series of random open trades.
+        uint256 maturityTime0 = hyperdrive.maturityTimeFromLatestCheckpoint();
+        Trade[] memory trades0 = randomOpenTrades();
+        for (uint256 i = 0; i < trades0.length; i++) {
+            executeTrade(trades0[i]);
+        }
+
+        // Time passes and interest accrues.
+        {
+            uint256 timeDelta = uint256(seed()).normalizeToRange(
+                CHECKPOINT_DURATION,
+                POSITION_DURATION.mulDown(0.99e18)
+            );
+            int256 variableRate = int256(uint256(seed())).normalizeToRange(
+                0,
+                1e18
+            );
+            advanceTime(timeDelta, variableRate);
+        }
+
+        // Execute a series of random open trades.
+        uint256 maturityTime1 = hyperdrive.maturityTimeFromLatestCheckpoint();
+        Trade[] memory trades1 = randomOpenTrades();
+        for (uint256 i = 0; i < trades1.length; i++) {
+            executeTrade(trades1[i]);
+        }
+
+        // Close all of the positions in a random order and record the ending
+        // pool info.
+        IHyperdrive.PoolInfo memory info0;
+        Trade[] memory closeTrades;
+        {
+            uint256 snapshotId = vm.snapshot();
+
+            // Construct a set of close trades.
+            {
+                Trade[] memory closeTrades0 = randomCloseTrades(
+                    maturityTime0,
+                    hyperdrive.balanceOf(
+                        AssetId.encodeAssetId(
+                            AssetId.AssetIdPrefix.Long,
+                            maturityTime0
+                        ),
+                        alice
+                    ),
+                    maturityTime0,
+                    hyperdrive.balanceOf(
+                        AssetId.encodeAssetId(
+                            AssetId.AssetIdPrefix.Short,
+                            maturityTime0
+                        ),
+                        alice
+                    )
+                );
+                Trade[] memory closeTrades1 = randomCloseTrades(
+                    maturityTime1,
+                    hyperdrive.balanceOf(
+                        AssetId.encodeAssetId(
+                            AssetId.AssetIdPrefix.Long,
+                            maturityTime1
+                        ),
+                        alice
+                    ),
+                    maturityTime1,
+                    hyperdrive.balanceOf(
+                        AssetId.encodeAssetId(
+                            AssetId.AssetIdPrefix.Short,
+                            maturityTime1
+                        ),
+                        alice
+                    )
+                );
+                closeTrades = combineTrades(closeTrades0, closeTrades1);
+            }
+
+            // Execute a series of random close trades. We ensure that the present
+            // value stays within a given tolerance.
+            for (uint256 i = 0; i < closeTrades.length; i++) {
+                executeTrade(closeTrades[i]);
+            }
+
+            // Record the ending pool info.
+            info0 = hyperdrive.getPoolInfo();
+
+            vm.revertTo(snapshotId);
+        }
+
+        // Advance the seed a few times to ensure different trades in the next
+        // round.
+        for (uint256 i = 0; i < 5; i++) {
+            seed();
+        }
+
+        // Close all of the positions in a different random order and record the
+        // ending pool info.
+        IHyperdrive.PoolInfo memory info1;
+        {
+            // Reorder the trades used in the last round and execute them.
+            closeTrades = reorderTrades(closeTrades);
+            for (uint256 i = 0; i < closeTrades.length; i++) {
+                executeTrade(closeTrades[i]);
+            }
+
+            // Record the ending pool info.
+            info1 = hyperdrive.getPoolInfo();
+        }
+
+        // Ensure that the reserves are approximately the same across the two
+        // rounds of trading.
+        assertApproxEqAbs(info0.shareReserves, info1.shareReserves, 1e12);
+        assertApproxEqAbs(info0.bondReserves, info1.bondReserves, 1e12);
+        assertApproxEqAbs(info0.shareAdjustment, info1.shareAdjustment, 1e12);
     }
 
     /// Random Trading ///
@@ -600,6 +823,43 @@ contract PresentValueTest is HyperdriveTest {
         }
 
         return trades;
+    }
+
+    function reorderTrades(
+        Trade[] memory source
+    ) internal returns (Trade[] memory result) {
+        result = new Trade[](source.length);
+        for (uint256 i = 0; i < result.length; i++) {
+            // Sample a random index and copy from the source array to the new
+            // array.
+            uint256 sourceLength = source.length - i;
+            uint256 idx = uint256(seed()).normalizeToRange(0, sourceLength - 1);
+            result[i] = source[idx];
+
+            // Move the last element of the source array to the sampled index.
+            source[idx] = source[sourceLength - 1];
+        }
+    }
+
+    function combineTrades(
+        Trade[] memory a,
+        Trade[] memory b
+    ) internal returns (Trade[] memory result) {
+        result = new Trade[](a.length + b.length);
+
+        uint256 aIdx = 0;
+        uint256 bIdx = 0;
+        for (uint256 i = 0; i < result.length; i++) {
+            if (aIdx >= a.length) {
+                result[i] = b[bIdx++];
+            } else if (bIdx >= b.length) {
+                result[i] = a[aIdx++];
+            } else if (uint256(seed()) % 2 == 0) {
+                result[i] = a[aIdx++];
+            } else {
+                result[i] = b[bIdx++];
+            }
+        }
     }
 
     function seed() internal returns (bytes32 seed_) {

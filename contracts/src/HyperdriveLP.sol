@@ -17,6 +17,7 @@ import { SafeCast } from "./libraries/SafeCast.sol";
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveLP is HyperdriveTWAP {
     using FixedPointMath for uint256;
+    using SafeCast for int256;
     using SafeCast for uint256;
 
     /// @notice Allows the first LP to initialize the market with a target APR.
@@ -124,7 +125,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
 
         // Enforce the slippage guard.
         uint256 apr = HyperdriveMath.calculateAPRFromReserves(
-            _marketState.shareReserves,
+            _effectiveShareReserves(),
             _marketState.bondReserves,
             _initialSharePrice,
             _positionDuration,
@@ -167,6 +168,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             // present value.
             _updateLiquidity(int256(shares));
             params.shareReserves = _marketState.shareReserves;
+            params.shareAdjustment = _marketState.shareAdjustment;
             params.bondReserves = _marketState.bondReserves;
             endingPresentValue = HyperdriveMath.calculatePresentValue(params);
 
@@ -365,9 +367,9 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             return;
         }
 
-        // Ensure that the share reserves are greater than the minimum share
-        // reserves. This invariant should never break. If it breaks, all
-        // activity should cease.
+        // Ensure that the share reserves are greater than or equal to the
+        // minimum share reserves. This invariant should never break. If it
+        // breaks, all activity should cease.
         uint256 shareReserves = _marketState.shareReserves;
         if (shareReserves < _minimumShareReserves) {
             revert IHyperdrive.InvalidShareReserves();
@@ -382,18 +384,56 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         }
         _marketState.shareReserves = uint256(updatedShareReserves).toUint128();
 
-        // We don't want the spot price to change after this liquidity update.
-        // The spot price of base in terms of bonds is given by:
+        // Update the share adjustment by holding the ratio of share reserves
+        // to share adjustment proportional. In general, our pricing model cannot
+        // support negative values for the z coordinate, so this is important as
+        // it ensures that if z - zeta starts as a positive value, it ends as a
+        // positive value. With this in mind, we update the share adjustment as:
         //
-        // p = (mu * z / y) ** tau
+        // zeta_old / z_old = zeta_new / z_new => zeta_new = zeta_old * (z_new / z_old)
+        int256 updatedShareAdjustment;
+        int256 shareAdjustment = _marketState.shareAdjustment;
+        if (shareAdjustment >= 0) {
+            updatedShareAdjustment = int256(
+                uint256(updatedShareReserves).mulDivDown(
+                    uint256(shareAdjustment),
+                    shareReserves
+                )
+            );
+        } else {
+            updatedShareAdjustment = -int256(
+                uint256(updatedShareReserves).mulDivDown(
+                    uint256(-shareAdjustment),
+                    shareReserves
+                )
+            );
+        }
+        _marketState.shareAdjustment = updatedShareAdjustment.toInt128();
+
+        // The liquidity update should hold the spot price invariant. The spot
+        // price of base in terms of bonds is given by:
         //
-        // From this formula, if we hold the ratio of share to bond reserves
-        // constant, then the spot price will not change. We can use this to
-        // calculate the new bond reserves, which gives us:
+        // p = (mu * (z - zeta) / y) ** tau
         //
-        // z_old / y_old = z_new / y_new => y_new = z_new * (y_old / z_old)
-        _marketState.bondReserves = uint256(updatedShareReserves)
-            .mulDivDown(_marketState.bondReserves, shareReserves)
+        // This formula implies that holding the ratio of share reserves to bond
+        // reserves constant will hold the spot price constant. This allows us
+        // to calculate the updated bond reserves as:
+        //
+        // (z_old - zeta_old) / y_old = (z_new - zeta_new) / y_new
+        //                          =>
+        // y_new = (z_new - zeta_new) * (y_old / (z_old - zeta_old))
+        _marketState.bondReserves = HyperdriveMath
+            .calculateEffectiveShareReserves(
+                uint256(updatedShareReserves),
+                updatedShareAdjustment
+            )
+            .mulDivDown(
+                _marketState.bondReserves,
+                HyperdriveMath.calculateEffectiveShareReserves(
+                    shareReserves,
+                    shareAdjustment
+                )
+            )
             .toUint128();
     }
 
@@ -447,6 +487,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         shareProceeds = shareProceeds.mulDivDown(_shares, _totalActiveLpSupply);
         _updateLiquidity(-int256(shareProceeds));
         params.shareReserves = _marketState.shareReserves;
+        params.shareAdjustment = _marketState.shareAdjustment;
         params.bondReserves = _marketState.bondReserves;
         uint256 endingPresentValue = HyperdriveMath.calculatePresentValue(
             params

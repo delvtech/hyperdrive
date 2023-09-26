@@ -1,15 +1,15 @@
-use std::{cmp::min, collections::BTreeMap, fmt, sync::Arc};
+use std::{cmp::min, collections::BTreeMap, fmt, sync::Arc, time::Duration};
 
 use ethers::{
     prelude::EthLogDecode,
     providers::{Http, Middleware, Provider, RetryClient},
     types::{Address, U256},
 };
-use eyre::Result;
+use eyre::{eyre, Result};
 use fixed_point::FixedPoint;
 use fixed_point_macros::{fixed, uint256};
 use hyperdrive_addresses::Addresses;
-use hyperdrive_math::hyperdrive_math::State;
+use hyperdrive_math::State;
 use hyperdrive_wrappers::wrappers::{
     erc20_mintable::ERC20Mintable,
     erc4626_data_provider::ERC4626DataProvider,
@@ -18,6 +18,7 @@ use hyperdrive_wrappers::wrappers::{
 };
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
+use tokio::time::sleep;
 use tracing::{info, instrument};
 
 use super::chain::ChainClient;
@@ -630,6 +631,11 @@ impl Agent<ChainClient, ChaCha8Rng> {
             .send()
             .await?;
 
+        // HACK: Sleep for a few ms to give anvil some time to catch up. We
+        // shouldn't need this, but anvil gets stuck in timeout loops when
+        // these calls are made in quick succession with retries.
+        sleep(Duration::from_millis(50)).await;
+
         // Approve hyperdrive to spend the base tokens.
         self.base
             .approve(self.hyperdrive.address(), amount.into())
@@ -682,6 +688,9 @@ impl Agent<ChainClient, ChaCha8Rng> {
             self.provider
                 .request::<[U256; 1], u64>("evm_increaseTime", [checkpoint_duration.into()])
                 .await?;
+            self.provider
+                .request::<_, U256>("evm_mine", None::<()>)
+                .await?;
             self.checkpoint(self.latest_checkpoint().await?).await?;
             duration -= checkpoint_duration;
         }
@@ -690,6 +699,9 @@ impl Agent<ChainClient, ChaCha8Rng> {
         // checkpoint.
         self.provider
             .request::<[U256; 1], u64>("evm_increaseTime", [duration.into()])
+            .await?;
+        self.provider
+            .request::<_, U256>("evm_mine", None::<()>)
             .await?;
         self.checkpoint(self.latest_checkpoint().await?).await?;
 
@@ -732,6 +744,21 @@ impl Agent<ChainClient, ChaCha8Rng> {
         &self.wallet.shorts
     }
 
+    /// Gets the current timestamp.
+    pub async fn now(&self) -> Result<U256> {
+        Ok(self
+            .provider
+            .get_block(self.provider.get_block_number().await?)
+            .await?
+            .unwrap()
+            .timestamp)
+    }
+
+    /// Gets the latest checkpoint.
+    pub async fn latest_checkpoint(&self) -> Result<U256> {
+        Ok(self.get_state().await?.to_checkpoint(self.now().await?))
+    }
+
     /// Gets the pool config.
     pub fn get_config(&self) -> &PoolConfig {
         &self.config
@@ -748,21 +775,6 @@ impl Agent<ChainClient, ChaCha8Rng> {
     /// Gets a checkpoint.
     pub async fn get_checkpoint(&self, id: U256) -> Result<Checkpoint> {
         Ok(self.hyperdrive.get_checkpoint(id).await?)
-    }
-
-    /// Gets the current timestamp.
-    pub async fn now(&self) -> Result<U256> {
-        Ok(self
-            .provider
-            .get_block(self.provider.get_block_number().await?)
-            .await?
-            .unwrap()
-            .timestamp)
-    }
-
-    /// Gets the latest checkpoint.
-    pub async fn latest_checkpoint(&self) -> Result<U256> {
-        Ok(self.get_state().await?.to_checkpoint(self.now().await?))
     }
 
     /// Gets the amount of longs that will be opened for a given amount of base
@@ -783,11 +795,13 @@ impl Agent<ChainClient, ChaCha8Rng> {
             .hyperdrive
             .get_checkpoint(state.to_checkpoint(self.now().await?))
             .await?;
-        Ok(state.get_short_deposit(
-            short_amount,
-            state.get_spot_price(),
-            open_share_price.into(),
-        ))
+        Ok(state
+            .get_short_deposit(
+                short_amount,
+                state.get_spot_price(),
+                open_share_price.into(),
+            )
+            .ok_or(eyre!("invalid short amount"))?)
     }
 
     /// Gets the max long that can be opened in the current checkpoint.
@@ -815,6 +829,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
         let state = self.get_state().await?;
         let Checkpoint {
             share_price: open_share_price,
+            long_exposure: checkpoint_exposure,
             ..
         } = self
             .hyperdrive
@@ -840,7 +855,13 @@ impl Agent<ChainClient, ChaCha8Rng> {
             spot_price * (fixed!(1e18) - weight) + min_price * weight
         };
 
-        Ok(state.get_max_short(budget, open_share_price, Some(conservative_price), None))
+        Ok(state.get_max_short(
+            budget,
+            open_share_price,
+            checkpoint_exposure,
+            Some(conservative_price),
+            None,
+        ))
     }
 
     // TODO: We'll need to implement helpers that give us the maximum trade

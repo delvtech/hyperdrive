@@ -3,7 +3,7 @@ use fixed_point::FixedPoint;
 use fixed_point_macros::{fixed, int256};
 
 use super::State;
-use crate::yield_space::{Asset, State as YieldSpaceState};
+use crate::{Asset, YieldSpace};
 
 impl State {
     /// Gets the pool's solvency.
@@ -34,10 +34,7 @@ impl State {
     /// $$
     pub fn get_long_amount<F: Into<FixedPoint>>(&self, base_amount: F) -> FixedPoint {
         let base_amount = base_amount.into();
-        let long_amount = YieldSpaceState::from(self).get_out_for_in(
-            Asset::Shares(base_amount / self.share_price()),
-            self.time_stretch(),
-        );
+        let long_amount = self.get_out_for_in(Asset::Shares(base_amount / self.share_price()));
         long_amount - self.long_curve_fee(base_amount)
     }
 
@@ -58,14 +55,13 @@ impl State {
         // Get the maximum long that brings the spot price to 1. If the pool is
         // solvent after opening this long, then we're done.
         let (absolute_max_base_amount, absolute_max_bond_amount) = {
-            let (share_amount, mut bond_amount) =
-                YieldSpaceState::from(self).get_max_buy(self.time_stretch());
+            let (share_amount, mut bond_amount) = self.get_max_buy();
             let base_amount = self.share_price() * share_amount;
             bond_amount -= self.long_curve_fee(base_amount);
             (base_amount, bond_amount)
         };
         if self
-            .solvency(
+            .solvency_after_long(
                 absolute_max_base_amount,
                 absolute_max_bond_amount,
                 checkpoint_exposure,
@@ -92,46 +88,54 @@ impl State {
         //
         // The guess that we make is very important in determining how quickly
         // we converge to the solution.
-        let mut max_base_amount = self.max_long_guess(checkpoint_exposure);
-        let mut solvency = self.solvency(
+        let mut max_base_amount =
+            self.max_long_guess(absolute_max_base_amount, checkpoint_exposure);
+        let mut maybe_solvency = self.solvency_after_long(
             max_base_amount,
             self.get_long_amount(max_base_amount),
             checkpoint_exposure,
         );
-        if solvency.is_none() {
+        if maybe_solvency.is_none() {
             panic!("Initial guess in `get_max_long` is insolvent.");
         }
+        let mut solvency = maybe_solvency.unwrap();
         for _ in 0..maybe_max_iterations.unwrap_or(7) {
+            // If the max base amount is equal to or exceeds the absolute max,
+            // we've gone too far and the calculation deviated from reality at
+            // some point.
+            if max_base_amount >= absolute_max_base_amount {
+                panic!("Reached absolute max bond amount in `get_max_long`.");
+            }
+
             // If the max base amount exceeds the budget, we know that the
             // entire budget can be consumed without running into solvency
             // constraints.
-            if max_base_amount >= absolute_max_base_amount {
-                return absolute_max_base_amount;
-            }
             if max_base_amount >= budget {
                 return budget;
             }
 
-            // If the pool is solvent after the current guess, we proceed with
-            // Newton's method. As Newton's method approaches the root, it can
-            // cross over to the other side of the root. We truncuate Newton's
-            // method when this happens.
-            //
             // TODO: It may be better to gracefully handle crossing over the
             // root by extending the fixed point math library to handle negative
             // numbers or even just using an if-statement to handle the negative
             // numbers.
-            if let Some(s) = solvency {
-                let maybe_derivative = self.solvency_derivative(max_base_amount);
-                if maybe_derivative.is_none() {
-                    break;
-                }
-                max_base_amount += s / maybe_derivative.unwrap();
-                solvency = self.solvency(
-                    max_base_amount,
-                    self.get_long_amount(max_base_amount),
-                    checkpoint_exposure,
-                );
+            //
+            // Proceed to the next step of Newton's method. Once we have a
+            // candidate solution, we check to see if the pool is solvent if
+            // a long is opened with the candidate amount. If the pool isn't
+            // solvent, then we're done.
+            let maybe_derivative = self.solvency_after_long_derivative(max_base_amount);
+            if maybe_derivative.is_none() {
+                break;
+            }
+            let possible_max_base_amount = max_base_amount + solvency / maybe_derivative.unwrap();
+            maybe_solvency = self.solvency_after_long(
+                possible_max_base_amount,
+                self.get_long_amount(possible_max_base_amount),
+                checkpoint_exposure,
+            );
+            if let Some(s) = maybe_solvency {
+                solvency = s;
+                max_base_amount = possible_max_base_amount;
             } else {
                 break;
             }
@@ -140,19 +144,48 @@ impl State {
         max_base_amount
     }
 
-    /// Gets a starting guess for the iterative process of finding the max
-    /// long.
+    /// Gets an initial guess of the max long that can be opened. This is a
+    /// reasonable estimate that is guaranteed to be less than the true max
+    /// long. We use this to get a reasonable starting point for Newton's
+    /// method.
+    fn max_long_guess(
+        &self,
+        absolute_max_base_amount: FixedPoint,
+        checkpoint_exposure: I256,
+    ) -> FixedPoint {
+        // Get an initial estimate of the max long by using the spot price as
+        // our conservative price.
+        let spot_price = self.get_spot_price();
+        let guess = self.max_long_estimate(spot_price, spot_price, checkpoint_exposure);
+
+        // We know that the spot price is 1 when the absolute max base amount is
+        // used to open a long. We also know that our spot price isn't a great
+        // estimate (conservative or otherwise) of the realized price that the
+        // max long will pay, so we calculate a better estimate of the realized
+        // price by interpolating between the spot price and 1 depending on how
+        // large the estimate is.
+        let t = (guess / absolute_max_base_amount)
+            .pow(fixed!(1e18).div_up(fixed!(1e18) - self.time_stretch()))
+            * fixed!(0.8e18);
+        let estimate_price = spot_price * (fixed!(1e18) - t) + fixed!(1e18) * t;
+
+        // Recalculate our intial guess using the bootstrapped conservative
+        // estimate of the realized price.
+        self.max_long_estimate(estimate_price, spot_price, checkpoint_exposure)
+    }
+
+    /// Estimates the max long based on the pool's current solvency and a
+    /// conservative price estimate, $p_r$.
     ///
-    /// To calculate our guess, we assume an unrealistically good realized
-    /// price $p_r$ for closing the long. This allows us to approximate
-    /// $y(x)$ as $y(x) \approx p_r^{-1} \cdot x - c(x)$. Plugging this
-    /// into our solvency function $s(x)$, we can calculate the share
-    /// reserves and exposure after opening a long with $x$ base as:
+    /// We can use our estimate price $p_r$ to approximate $y(x)$ as
+    /// $y(x) \approx p_r^{-1} \cdot x - c(x)$. Plugging this into our
+    /// solvency function $s(x)$, we can calculate the share reserves and
+    /// exposure after opening a long with $x$ base as:
     ///
     /// \begin{aligned}
     /// z(x) &= z_0 + \tfrac{x - g(x)}{c} - z_{min} \\
-    /// e(x) &= e_0 + min(exposure_{checkpoint}, 0) + 2 \cdot y(x) - x + g(x) \\
-    ///      &= e_0 + min(exposure_{checkpoint}, 0) + 2 \cdot p_r^{-1} \cdot x -
+    /// e(x) &= e_0 + min(exposure_{c}, 0) + 2 \cdot y(x) - x + g(x) \\
+    ///      &= e_0 + min(exposure_{c}, 0) + 2 \cdot p_r^{-1} \cdot x -
     ///             2 \cdot c(x) - x + g(x)
     /// \end{aligned}
     ///
@@ -169,27 +202,27 @@ impl State {
     /// $x$ as:
     ///
     /// $$
-    /// x = \frac{c}{2} \cdot \frac{s_0 + \tfrac{min(exposure_{checkpoint}, 0)}{c}}{
+    /// x = \frac{c}{2} \cdot \frac{s_0 + min(exposure_{c}, 0)}{
     ///         p_r^{-1} +
     ///         \phi_{g} \cdot \phi_{c} \cdot \left( 1 - p \right) -
     ///         1 -
     ///         \phi_{c} \cdot \left( p^{-1} - 1 \right)
     ///     }
     /// $$
-    ///
-    /// We need to use a conservative estimate for the realized price, so
-    /// we use the spot price $p$ as our estimate price.
-    fn max_long_guess(&self, checkpoint_exposure: I256) -> FixedPoint {
-        let spot_price = self.get_spot_price();
-        let estimate_price = spot_price;
-        let mut guess = self.get_solvency()
-            + FixedPoint::from(-checkpoint_exposure.min(int256!(0))) / self.share_price();
-        guess = guess.mul_div_down(self.share_price(), fixed!(2e18));
-        guess /= fixed!(1e18) / estimate_price
+    fn max_long_estimate(
+        &self,
+        estimate_price: FixedPoint,
+        spot_price: FixedPoint,
+        checkpoint_exposure: I256,
+    ) -> FixedPoint {
+        let checkpoint_exposure = FixedPoint::from(-checkpoint_exposure.min(int256!(0)));
+        let mut estimate = self.get_solvency() + checkpoint_exposure / self.share_price();
+        estimate = estimate.mul_div_down(self.share_price(), fixed!(2e18));
+        estimate /= fixed!(1e18) / estimate_price
             + self.governance_fee() * self.curve_fee() * (fixed!(1e18) - spot_price)
             - fixed!(1e18)
             - self.curve_fee() * (fixed!(1e18) / spot_price - fixed!(1e18));
-        guess
+        estimate
     }
 
     /// Gets the solvency of the pool $S(x)$ after a long is opened with a base
@@ -236,7 +269,7 @@ impl State {
     /// It's possible that the pool is insolvent after opening a long. In this
     /// case, we return `None` since the fixed point library can't represent
     /// negative numbers.
-    fn solvency(
+    fn solvency_after_long(
         &self,
         base_amount: FixedPoint,
         bond_amount: FixedPoint,
@@ -277,7 +310,7 @@ impl State {
     /// This derivative is negative since solvency decreases as more longs are
     /// opened. We use the negation of the derivative to stay in the positive
     /// domain, which allows us to use the fixed point library.
-    fn solvency_derivative(&self, base_amount: FixedPoint) -> Option<FixedPoint> {
+    fn solvency_after_long_derivative(&self, base_amount: FixedPoint) -> Option<FixedPoint> {
         let maybe_derivative = self.long_amount_derivative(base_amount);
         maybe_derivative.map(|derivative| {
             (derivative
@@ -316,13 +349,13 @@ impl State {
     /// $$
     fn long_amount_derivative(&self, base_amount: FixedPoint) -> Option<FixedPoint> {
         let share_amount = base_amount / self.share_price();
-        let inner = self.initial_share_price() * (self.share_reserves() + share_amount);
+        let inner = self.initial_share_price() * (self.effective_share_reserves() + share_amount);
         let mut derivative = fixed!(1e18) / (inner).pow(self.time_stretch());
 
         // It's possible that k is slightly larger than the rhs in the inner
         // calculation. If this happens, we are close to the root, and we short
         // circuit.
-        let k = YieldSpaceState::from(self).k(self.time_stretch());
+        let k = self.k();
         let rhs =
             (self.share_price() / self.initial_share_price()) * inner.pow(self.time_stretch());
         if k < rhs {
@@ -415,6 +448,7 @@ mod tests {
                         bond_reserves: state.info.bond_reserves,
                         longs_outstanding: state.info.longs_outstanding,
                         long_exposure: state.info.long_exposure,
+                        share_adjustment: state.info.share_adjustment,
                         time_stretch: state.config.time_stretch,
                         share_price: state.info.share_price,
                         initial_share_price: state.config.initial_share_price,

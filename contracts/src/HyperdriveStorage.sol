@@ -195,6 +195,17 @@ abstract contract HyperdriveStorage is ReentrancyGuard, MultiTokenStorage {
             (block.timestamp % _checkpointDuration);
     }
 
+    /// @dev Gets the effective share reserves.
+    /// @return The effective share reserves. This is the share reserves used
+    ///         by the YieldSpace pricing model.
+    function _effectiveShareReserves() internal view returns (uint256) {
+        return
+            HyperdriveMath.calculateEffectiveShareReserves(
+                _marketState.shareReserves,
+                _marketState.shareAdjustment
+            );
+    }
+
     /// @dev Gets the present value parameters from the current state.
     /// @param _sharePrice The current share price.
     /// @return presentValue The present value parameters.
@@ -207,6 +218,7 @@ abstract contract HyperdriveStorage is ReentrancyGuard, MultiTokenStorage {
     {
         presentValue = HyperdriveMath.PresentValueParams({
             shareReserves: _marketState.shareReserves,
+            shareAdjustment: _marketState.shareAdjustment,
             bondReserves: _marketState.bondReserves,
             sharePrice: _sharePrice,
             initialSharePrice: _initialSharePrice,
