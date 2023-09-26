@@ -143,6 +143,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
             _bondAmount
         );
 
+        // FIXME: This needs to handle negative interest.
+        //
         // Calculate the pool and user deltas using the trading function.
         (
             uint256 shareReservesDelta,
@@ -462,6 +464,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
         return (traderDeposit, shareReservesDelta, totalGovernanceFee);
     }
 
+    // FIXME: This should account for negative interest.
+    //
     /// @dev Calculate the pool reserve and trader deltas that result from
     ///      closing a short. This calculation includes trading fees.
     /// @param _bondAmount The amount of bonds being purchased to close the short.

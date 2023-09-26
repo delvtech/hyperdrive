@@ -451,6 +451,64 @@ contract CloseLongTest is HyperdriveTest {
         );
     }
 
+    // This test ensures that the reserves are updated correctly when longs are
+    // closed at maturity with negative interest.
+    function test_close_long_negative_interest_at_maturity() external {
+        // Initialize the pool with a large amount of capital.
+        uint256 fixedRate = 0.05e18;
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, fixedRate, contribution);
+
+        // Open a long position.
+        uint256 basePaid = 10e18;
+        (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
+
+        // The term passes and the pool accrues negative interest.
+        int256 apr = -0.25e18;
+        advanceTime(POSITION_DURATION, apr);
+
+        // Get the reserves and base balances before closing the long.
+        IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
+        uint256 bobBaseBalanceBefore = baseToken.balanceOf(bob);
+        uint256 hyperdriveBaseBalanceBefore = baseToken.balanceOf(
+            address(hyperdrive)
+        );
+
+        // Bob redeems the bonds. Ensure that the return value matches the
+        // amount of base transferred to Bob.
+        uint256 baseProceeds = closeLong(bob, maturityTime, bondAmount);
+        uint256 closeSharePrice = hyperdrive.getPoolInfo().sharePrice;
+
+        // Bond holders take a proportional haircut on any negative interest
+        // that accrues.
+        uint256 bondValue = bondAmount
+            .divDown(hyperdrive.getPoolConfig().initialSharePrice)
+            .mulDown(closeSharePrice);
+
+        // Calculate the value of the bonds compounded at the negative APR.
+        (uint256 bondFaceValue, ) = HyperdriveUtils.calculateCompoundInterest(
+            bondAmount,
+            apr,
+            POSITION_DURATION
+        );
+
+        assertApproxEqAbs(baseProceeds, bondValue, 6);
+        assertApproxEqAbs(bondValue, bondFaceValue, 5);
+
+        // Verify that the close long updates were correct.
+        verifyCloseLong(
+            poolInfoBefore,
+            bobBaseBalanceBefore,
+            hyperdriveBaseBalanceBefore,
+            baseProceeds,
+            bondAmount,
+            maturityTime,
+            false
+        );
+    }
+
+    // This test ensures that waiting to close your longs won't avoid negative
+    // interest that occurred while the long was open.
     function test_close_long_negative_interest_at_close() external {
         // Initialize the pool with a large amount of capital.
         uint256 fixedRate = 0.05e18;
@@ -709,19 +767,27 @@ contract CloseLongTest is HyperdriveTest {
                 poolInfoAfter.shareReserves,
                 poolInfoBefore.shareReserves -
                     baseProceeds.divDown(poolInfoBefore.sharePrice),
-                // TODO: This is a huge error bar.
-                // 0.00000001 off or 1 wei
-                poolInfoAfter.shareReserves.mulDown(100000000000) + 1
+                10
             );
-            // TODO: Uncomment this and verify that this works correctly when
-            // #584 is fixed.
-            //
-            // uint256 timeElapsed = ONE - hyperdrive.calculateTimeRemaining(maturityTime);
-            // uint256 delta = bondAmount.mulDivDown(timeElapsed, poolInfoAfter.sharePrice);
-            // if (poolInfoAfter.sharePrice < hyperdrive.getPoolConfig().initialSharePrice) {
-            //     delta = delta.mulDivDown(poolInfoAfter.sharePrice, hyperdrive.getPoolConfig().initialSharePrice);
-            // }
-            // assertEq(poolInfoAfter.shareAdjustment, poolInfoBefore.shareAdjustment - int256(delta));
+            uint256 timeElapsed = ONE -
+                hyperdrive.calculateTimeRemaining(maturityTime);
+            uint256 shareAdjustmentDelta = bondAmount.mulDivDown(
+                timeElapsed,
+                poolInfoAfter.sharePrice
+            );
+            if (
+                poolInfoAfter.sharePrice <
+                hyperdrive.getPoolConfig().initialSharePrice
+            ) {
+                shareAdjustmentDelta = shareAdjustmentDelta.mulDivDown(
+                    poolInfoAfter.sharePrice,
+                    hyperdrive.getPoolConfig().initialSharePrice
+                );
+            }
+            assertEq(
+                poolInfoAfter.shareAdjustment,
+                poolInfoBefore.shareAdjustment - int256(shareAdjustmentDelta)
+            );
             assertEq(
                 poolInfoAfter.longsOutstanding,
                 poolInfoBefore.longsOutstanding - bondAmount

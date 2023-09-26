@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
+
 import { stdError } from "forge-std/StdError.sol";
 import { VmSafe } from "forge-std/Vm.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
@@ -659,11 +662,10 @@ contract CloseShortTest is HyperdriveTest {
             // TODO: Re-evaluate this. This is obviously correct; however, it may
             // be better to use HyperdriveMath or find an approximation so that we
             // aren't repeating ourselves.
-            uint256 expectedShareReserves = poolInfoBefore.shareReserves +
-                bondAmount.mulDivDown(
-                    FixedPointMath.ONE_18 - timeRemaining,
-                    poolInfoBefore.sharePrice
-                ) +
+            uint256 shareReservesDelta = bondAmount.mulDivDown(
+                FixedPointMath.ONE_18 - timeRemaining,
+                poolInfoBefore.sharePrice
+            ) +
                 YieldSpaceMath.calculateSharesInGivenBondsOut(
                     poolInfoBefore.shareReserves,
                     poolInfoBefore.bondReserves,
@@ -673,25 +675,43 @@ contract CloseShortTest is HyperdriveTest {
                     poolInfoBefore.sharePrice,
                     hyperdrive.getPoolConfig().initialSharePrice
                 );
+            uint256 timeElapsed = ONE -
+                hyperdrive.calculateTimeRemaining(maturityTime);
+            uint256 shareAdjustmentDelta = bondAmount.mulDivDown(
+                timeElapsed,
+                poolInfoAfter.sharePrice
+            );
+            if (
+                poolInfoAfter.sharePrice <
+                hyperdrive.getPoolConfig().initialSharePrice
+            ) {
+                shareReservesDelta = shareReservesDelta.mulDivDown(
+                    poolInfoAfter.sharePrice,
+                    hyperdrive.getPoolConfig().initialSharePrice
+                );
+                shareAdjustmentDelta = shareAdjustmentDelta.mulDivDown(
+                    poolInfoAfter.sharePrice,
+                    hyperdrive.getPoolConfig().initialSharePrice
+                );
+            }
+            console.log("test: 1");
             assertApproxEqAbs(
                 poolInfoAfter.shareReserves,
-                expectedShareReserves,
-                1e10
+                poolInfoBefore.shareReserves + shareReservesDelta,
+                1e10 // FIXME: Can this be lowered?
             );
+            console.log("test: 2");
+            assertEq(
+                poolInfoAfter.shareAdjustment,
+                poolInfoBefore.shareAdjustment + int256(shareAdjustmentDelta)
+            );
+            console.log("test: 3");
             assertEq(
                 poolInfoAfter.shortsOutstanding,
                 poolInfoBefore.shortsOutstanding - bondAmount
             );
+            console.log("test: 4");
         }
-        // TODO: Uncomment this and verify that this works correctly when
-        // #584 is fixed.
-        //
-        // uint256 timeElapsed = ONE - hyperdrive.calculateTimeRemaining(maturityTime);
-        // uint256 delta = bondAmount.mulDivDown(timeElapsed, poolInfoAfter.sharePrice);
-        // if (poolInfoAfter.sharePrice < hyperdrive.getPoolConfig().initialSharePrice) {
-        //     delta = 0;
-        // }
-        // assertEq(poolInfoAfter.shareAdjustment, poolInfoBefore.shareAdjustment + int256(delta));
         assertEq(poolInfoAfter.lpTotalSupply, poolInfoBefore.lpTotalSupply);
         assertEq(
             poolInfoAfter.longsOutstanding,
@@ -699,28 +719,5 @@ contract CloseShortTest is HyperdriveTest {
         );
         assertEq(poolInfoAfter.longAverageMaturityTime, 0);
         assertEq(poolInfoAfter.shortAverageMaturityTime, 0);
-
-        // TODO: Figure out how to test for this.
-        //
-        // Ensure that the bond reserves were updated to have the correct APR.
-        // Due to the way that the flat part of the trade is applied, the bond
-        // reserve updates may not exactly correspond to the amount of bonds
-        // transferred; however, the pool's APR should be identical to the APR
-        // that the bond amount transfer implies. The bond adjustment should be
-        // equal to timeRemaining * bondAmount because the bond update decays as
-        // the term progresses.
-        // uint256 timeRemaining = calculateTimeRemaining(maturityTime);
-        // assertApproxEqAbs(
-        //     calculateAPRFromReserves(),
-        //     HyperdriveMath.calculateAPRFromReserves(
-        //         poolInfoAfter.shareReserves,
-        //         poolInfoBefore.bondReserves - timeRemaining.mulDown(bondAmount),
-        //         poolInfoAfter.lpTotalSupply,
-        //         INITIAL_SHARE_PRICE,
-        //         POSITION_DURATION,
-        //         hyperdrive.timeStretch()
-        //     ),
-        //     5
-        // );
     }
 }
