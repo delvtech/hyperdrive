@@ -12,5 +12,4 @@ lazy_static! {
 
     // The amount of fuzz runs that fast fuzz tests use.
     pub static ref FAST_FUZZ_RUNS: u64 = env::var("HYPERDRIVE_FAST_FUZZ_RUNS").ok().map(|s| s.parse().unwrap()).unwrap_or(10_000);
-
 }

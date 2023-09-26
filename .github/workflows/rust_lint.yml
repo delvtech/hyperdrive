@@ -28,11 +28,5 @@ jobs:
           override: true
           components: rustfmt, clippy
 
-      - name: lint check
-        run: cargo check
-
-      - name: lint clippy
-        run: cargo clippy
-
-      - name: fmt check
-        run: cargo fmt --check
+      - name: lint
+        run: make lint-rust

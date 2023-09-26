@@ -31,7 +31,5 @@ jobs:
         with:
           version: nightly
 
-      - name: lint contracts
-        uses: borales/actions-yarn@v4
-        with:
-          cmd: lint
+      - name: lint
+        run: make lint-sol

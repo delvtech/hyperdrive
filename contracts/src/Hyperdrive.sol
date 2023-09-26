@@ -106,9 +106,6 @@ abstract contract Hyperdrive is
         uint256 maturedShortsAmount = _totalSupply[
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _checkpointTime)
         ];
-        uint256 maturedLongsAmount = _totalSupply[
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _checkpointTime)
-        ];
         bool positionsClosed;
         if (maturedShortsAmount > 0) {
             uint256 shareProceeds = maturedShortsAmount.divDown(_sharePrice);
@@ -136,6 +133,9 @@ abstract contract Hyperdrive is
         }
 
         // Close out the long positions with a maturity time equal to the latest checkpoint.
+        uint256 maturedLongsAmount = _totalSupply[
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _checkpointTime)
+        ];
         if (maturedLongsAmount > 0) {
             uint256 shareProceeds = maturedLongsAmount.divDown(_sharePrice);
             uint256 flatFee = shareProceeds.mulDown(_flatFee);
@@ -147,7 +147,6 @@ abstract contract Hyperdrive is
             // Reduce shareProceeds by the flatFeeCharged, and less the govFee from the amount as it doesn't count
             // towards reserves. shareProceeds will only be used to update reserves, so its fine to take fees here.
             shareProceeds -= flatFee - govFee;
-
             _applyCloseLong(
                 maturedLongsAmount,
                 0,
@@ -158,8 +157,8 @@ abstract contract Hyperdrive is
             positionsClosed = true;
         }
 
+        // Update the checkpoint and global longExposure
         if (positionsClosed) {
-            // Update the checkpoint and global longExposure
             uint256 maturityTime = _checkpointTime - _positionDuration;
             int128 checkpointExposureBefore = int128(
                 _checkpoints[maturityTime].longExposure

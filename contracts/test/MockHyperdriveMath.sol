@@ -138,9 +138,16 @@ contract MockHyperdriveMath {
     }
 
     function calculateMaxShort(
-        HyperdriveMath.MaxTradeParams memory _params
+        HyperdriveMath.MaxTradeParams memory _params,
+        int256 _checkpointExposure,
+        uint256 _maxIterations
     ) external pure returns (uint256) {
-        return HyperdriveMath.calculateMaxShort(_params);
+        return
+            HyperdriveMath.calculateMaxShort(
+                _params,
+                _checkpointExposure,
+                _maxIterations
+            );
     }
 
     function calculateSpotPrice(

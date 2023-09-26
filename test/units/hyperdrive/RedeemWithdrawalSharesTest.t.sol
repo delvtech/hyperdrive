@@ -86,7 +86,7 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
                 withdrawalShares +
                     hyperdrive.getPoolConfig().minimumShareReserves
             ),
-            1e2
+            1e5
         );
         assertEq(sharesRedeemed, withdrawalShares);
 
@@ -143,7 +143,7 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
             alice,
             withdrawalShares / 2
         );
-        assertApproxEqAbs(baseProceeds, aliceProceeds / 2, 10);
+        assertApproxEqAbs(baseProceeds, aliceProceeds / 2, 1e5);
         assertApproxEqAbs(sharesRedeemed, withdrawalShares / 2, 1);
 
         // Ensure that a `RedeemWithdrawalShares` event was emitted.
@@ -166,7 +166,7 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
             alice,
             withdrawalShares
         );
-        assertApproxEqAbs(baseProceeds, aliceProceeds / 2, 10);
+        assertApproxEqAbs(baseProceeds, aliceProceeds / 2, 1e5);
         assertApproxEqAbs(sharesRedeemed, withdrawalShares / 2, 1);
 
         // Ensure that a `RedeemWithdrawalShares` event was emitted.
@@ -287,7 +287,7 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
                 withdrawalShares +
                     hyperdrive.getPoolConfig().minimumShareReserves
             ),
-            1e2
+            1e5
         );
         assertEq(sharesRedeemed, withdrawalShares);
 

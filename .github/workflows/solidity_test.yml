@@ -40,5 +40,5 @@ jobs:
         with:
           version: nightly
 
-      - name: test forge
-        run: FOUNDRY_FUZZ_RUNS=10000 forge test -vvv
+      - name: test
+        run: FOUNDRY_FUZZ_RUNS=10000 make test-sol

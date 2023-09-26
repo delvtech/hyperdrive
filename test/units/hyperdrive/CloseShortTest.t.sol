@@ -5,7 +5,7 @@ import { stdError } from "forge-std/StdError.sol";
 import { VmSafe } from "forge-std/Vm.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol";
@@ -645,9 +645,12 @@ contract CloseShortTest is HyperdriveTest {
             hyperdrive,
             maturityTime
         );
-
         if (wasCheckpointed) {
             assertEq(poolInfoAfter.shareReserves, poolInfoBefore.shareReserves);
+            assertEq(
+                poolInfoAfter.shareAdjustment,
+                poolInfoBefore.shareAdjustment
+            );
             assertEq(
                 poolInfoAfter.shortsOutstanding,
                 poolInfoBefore.shortsOutstanding
@@ -680,6 +683,15 @@ contract CloseShortTest is HyperdriveTest {
                 poolInfoBefore.shortsOutstanding - bondAmount
             );
         }
+        // TODO: Uncomment this and verify that this works correctly when
+        // #584 is fixed.
+        //
+        // uint256 timeElapsed = ONE - hyperdrive.calculateTimeRemaining(maturityTime);
+        // uint256 delta = bondAmount.mulDivDown(timeElapsed, poolInfoAfter.sharePrice);
+        // if (poolInfoAfter.sharePrice < hyperdrive.getPoolConfig().initialSharePrice) {
+        //     delta = 0;
+        // }
+        // assertEq(poolInfoAfter.shareAdjustment, poolInfoBefore.shareAdjustment + int256(delta));
         assertEq(poolInfoAfter.lpTotalSupply, poolInfoBefore.lpTotalSupply);
         assertEq(
             poolInfoAfter.longsOutstanding,

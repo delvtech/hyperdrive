@@ -45,6 +45,7 @@ impl fmt::Display for FixedPoint {
 
 impl From<I256> for FixedPoint {
     fn from(i: I256) -> FixedPoint {
+        assert!(i >= int256!(0), "FixedPoint cannot be negative");
         i.into_raw().into()
     }
 }

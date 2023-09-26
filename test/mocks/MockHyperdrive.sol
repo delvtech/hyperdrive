@@ -276,9 +276,9 @@ contract MockHyperdrive is Hyperdrive {
         return totalShares;
     }
 
-    function setReserves(uint256 shareReserves, uint256 bondReserves) external {
-        _marketState.shareReserves = uint128(shareReserves);
-        _marketState.bondReserves = uint128(bondReserves);
+    function setReserves(uint128 shareReserves, uint128 bondReserves) external {
+        _marketState.shareReserves = shareReserves;
+        _marketState.bondReserves = bondReserves;
     }
 
     function setLongExposure(uint128 longExposure) external {

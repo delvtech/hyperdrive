@@ -69,14 +69,16 @@ contract ExtremeInputs is HyperdriveTest {
         openShort(bob, bondAmount);
         uint256 aprAfter = hyperdrive.calculateAPRFromReserves();
 
-        // Ensure the share reserves are approximately equal to the minimum
-        // share reserves and that the apr increased.
+        // Ensure the spot rate increased and that either the share reserves are
+        // approximately equal to the minimum share reserves or the pool's
+        // solvency is approximately equal to zero.
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
-        assertApproxEqAbs(
-            poolInfoAfter.shareReserves,
-            hyperdrive.getPoolConfig().minimumShareReserves,
-            1e10,
-            "shareReserves should be the minimum share reserves"
+        require(
+            poolInfoAfter.shareReserves.approxEq(
+                hyperdrive.getPoolConfig().minimumShareReserves,
+                1e10
+            ) || hyperdrive.solvency() < 1e15,
+            "short amount was not the max short"
         );
         assertGt(aprAfter, aprBefore);
 
@@ -132,14 +134,16 @@ contract ExtremeInputs is HyperdriveTest {
         openShort(bob, bondAmount);
         uint256 aprAfter = hyperdrive.calculateAPRFromReserves();
 
-        // Ensure the share reserves are approximately equal to the minimum
-        // share reserves and that the apr increased.
+        // Ensure the spot rate increased and that either the share reserves are
+        // approximately equal to the minimum share reserves or the pool's
+        // solvency is approximately equal to zero.
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
-        assertApproxEqAbs(
-            poolInfoAfter.shareReserves,
-            hyperdrive.getPoolConfig().minimumShareReserves,
-            1e10,
-            "shareReserves should be the minimum share reserves"
+        require(
+            poolInfoAfter.shareReserves.approxEq(
+                hyperdrive.getPoolConfig().minimumShareReserves,
+                1e10
+            ) || hyperdrive.solvency() < 1e15,
+            "short amount was not the max short"
         );
         assertGt(aprAfter, aprBefore);
 
@@ -181,6 +185,9 @@ contract ExtremeInputs is HyperdriveTest {
         // Bob attempts to short exactly the maximum amount of bonds needed for
         // the share reserves to be equal to zero. This should fail because the
         // share reserves fall below the minimum share reserves.
+        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
+            hyperdrive.latestCheckpoint()
+        );
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
         IHyperdrive.PoolConfig memory poolConfig = hyperdrive.getPoolConfig();
         targetReserves = targetReserves.normalizeToRange(
@@ -190,6 +197,7 @@ contract ExtremeInputs is HyperdriveTest {
         uint256 shortAmount = HyperdriveMath.calculateMaxShort(
             HyperdriveMath.MaxTradeParams({
                 shareReserves: poolInfo.shareReserves,
+                shareAdjustment: poolInfo.shareAdjustment,
                 bondReserves: poolInfo.bondReserves,
                 longsOutstanding: poolInfo.longsOutstanding,
                 longExposure: poolInfo.longExposure,
@@ -199,7 +207,9 @@ contract ExtremeInputs is HyperdriveTest {
                 minimumShareReserves: targetReserves,
                 curveFee: poolConfig.fees.curve,
                 governanceFee: poolConfig.fees.governance
-            })
+            }),
+            checkpoint.longExposure,
+            7
         );
         baseToken.mint(shortAmount);
         baseToken.approve(address(hyperdrive), shortAmount);

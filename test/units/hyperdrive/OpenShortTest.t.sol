@@ -80,7 +80,7 @@ contract OpenShortTest is HyperdriveTest {
         uint256 shortAmount = hyperdrive.getPoolInfo().shareReserves;
         baseToken.mint(shortAmount);
         baseToken.approve(address(hyperdrive), shortAmount);
-        vm.expectRevert(stdError.arithmeticError);
+        vm.expectRevert(IHyperdrive.InvalidTradeSize.selector);
         hyperdrive.openShort(shortAmount * 2, type(uint256).max, bob, true);
     }
 
@@ -332,8 +332,12 @@ contract OpenShortTest is HyperdriveTest {
                 poolInfoBefore.shareReserves -
                     baseProceeds.divDown(poolInfoBefore.sharePrice)
             );
-            assertEq(poolInfoAfter.lpTotalSupply, poolInfoBefore.lpTotalSupply);
             assertEq(poolInfoAfter.sharePrice, poolInfoBefore.sharePrice);
+            assertEq(
+                poolInfoAfter.shareAdjustment,
+                poolInfoBefore.shareAdjustment
+            );
+            assertEq(poolInfoAfter.lpTotalSupply, poolInfoBefore.lpTotalSupply);
             assertEq(
                 poolInfoAfter.longsOutstanding,
                 poolInfoBefore.longsOutstanding
