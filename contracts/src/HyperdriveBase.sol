@@ -244,12 +244,8 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _maturityTime)
         ];
 
-        // If this is a checkpoint boundary or all the positions have been closed,
-        // then the long exposure is zero.
-        if (
-            (_bondReservesDelta == 0 && _shareReservesDelta == 0) ||
-            (checkpointLongs == 0 && checkpointShorts == 0)
-        ) {
+        // We can zero out long exposure when there are no more open positions
+        if (checkpointLongs == 0 && checkpointShorts == 0) {
             _checkpoints[checkpointTime].longExposure = 0;
         } else {
             // The long exposure delta is flat + curve amount + the bonds the user is closing:
@@ -277,7 +273,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     /// @param _before The long exposure before the update.
     /// @param _after The long exposure after the update.
     function _updateLongExposure(int256 _before, int256 _after) internal {
-        // LongExposure is decreasing
+        // LongExposure is decreasing (OpenShort/CloseLong)
         if (_before > _after && _before >= 0) {
             int256 delta = int256(_before - _after.max(0));
             // Since the longExposure can't be negative, we need to make sure we don't underflow
@@ -285,7 +281,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
                 delta.min(int128(_marketState.longExposure)).toInt128()
             );
         }
-        // LongExposure is increasing
+        // LongExposure is increasing (OpenLong/CloseShort)
         else if (_after > _before) {
             if (_before >= 0) {
                 _marketState.longExposure += uint128(

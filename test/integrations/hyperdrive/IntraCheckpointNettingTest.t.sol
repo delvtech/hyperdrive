@@ -65,6 +65,88 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         assertEq(poolInfo.shareReserves, expectedShareReserves);
     }
 
+    // This test was designed to show that a netted long and short can be closed at
+    // maturity even if all liquidity is removed. This test would fail before we added the logic:
+    // - to properly zero out exposure on checkpoint boundaries
+    // - payout the withdrawal pool only when the idle capital is
+    //   worth more than the active LP supply
+    function test_netting_long_short_close_at_maturity() external {
+        uint256 initialSharePrice = 1e18;
+        int256 variableInterest = 0;
+        uint256 timeElapsed = 10220546; //~118 days between each trade
+        uint256 tradeSize = 100e18;
+
+        // initialize the market
+        uint256 aliceLpShares = 0;
+        {
+            uint256 apr = 0.05e18;
+            deploy(alice, apr, initialSharePrice, 0, 0, 0);
+            uint256 contribution = 500_000_000e18;
+            aliceLpShares = initialize(alice, apr, contribution);
+
+            // fast forward time and accrue interest
+            advanceTime(POSITION_DURATION, 0);
+        }
+
+        // open a long
+        uint256 basePaidLong = tradeSize;
+        (uint256 maturityTimeLong, uint256 bondAmountLong) = openLong(
+            bob,
+            basePaidLong
+        );
+
+        // fast forward time, create checkpoints and accrue interest
+        advanceTimeWithCheckpoints(timeElapsed, variableInterest);
+
+        // open a short for the same number of bonds as the existing long
+        uint256 shortAmount = bondAmountLong;
+        (uint256 maturityTimeShort, ) = openShort(bob, shortAmount);
+
+        // open a long
+        (uint256 maturityTimeLong2, ) = openLong(bob, basePaidLong);
+
+        // fast forward time, create checkpoints and accrue interest
+        advanceTimeWithCheckpoints(timeElapsed, variableInterest);
+
+        // open a short for the same number of bonds as the existing long
+        (uint256 maturityTimeShort2, ) = openShort(bob, shortAmount);
+
+        // remove liquidity
+        (, uint256 withdrawalShares) = removeLiquidity(alice, aliceLpShares);
+
+        // wait for the positions to mature
+        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
+        while (
+            poolInfo.shortsOutstanding > 0 || poolInfo.longsOutstanding > 0
+        ) {
+            advanceTimeWithCheckpoints(POSITION_DURATION, variableInterest);
+            poolInfo = hyperdrive.getPoolInfo();
+        }
+
+        // close the short positions
+        closeShort(bob, maturityTimeShort, shortAmount);
+
+        // close the long positions
+        closeLong(bob, maturityTimeLong, bondAmountLong);
+
+        // close the short positions
+        closeShort(bob, maturityTimeShort2, shortAmount);
+
+        // close the long positions
+        closeLong(bob, maturityTimeLong2, bondAmountLong);
+
+        // longExposure should be 0
+        poolInfo = hyperdrive.getPoolInfo();
+        assertApproxEqAbs(poolInfo.longExposure, 0, 1);
+
+        redeemWithdrawalShares(alice, withdrawalShares);
+        // idle should be equal to shareReserves
+        uint256 expectedShareReserves = MockHyperdrive(address(hyperdrive))
+            .calculateIdleShareReserves(hyperdrive.getPoolInfo().sharePrice) +
+            hyperdrive.getPoolConfig().minimumShareReserves;
+        assertEq(poolInfo.shareReserves, expectedShareReserves);
+    }
+
     function test_netting_mismatched_exposure_maturities() external {
         uint256 initialSharePrice = 1e18;
         int256 variableInterest = 0e18;
@@ -103,7 +185,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         // wait for the positions to mature
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
         while (
-            poolInfo.shortsOutstanding > 0 && poolInfo.longsOutstanding > 0
+            poolInfo.shortsOutstanding > 0 || poolInfo.longsOutstanding > 0
         ) {
             advanceTimeWithCheckpoints(POSITION_DURATION, variableInterest);
             poolInfo = hyperdrive.getPoolInfo();
@@ -158,16 +240,33 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
     }
 
     // This test demonstrates that you can open longs and shorts indefinitely until
-    // the interest drops so low that we underflow when trying to perform the YieldSpace
-    // calculation for the opening of the new position
+    // the interest drops so low that positions can't be closed.
     function test_netting_extreme_negative_interest_time_elapsed() external {
         uint256 initialSharePrice = 1e18;
-        int256 variableInterest = 0.0e18;
+        int256 variableInterest = -0.1e18; // NOTE: This is the lowest interest rate that can be used
         uint256 timeElapsed = 10220546; //~118 days between each trade
-        uint256 tradeSize = 100e18; //4_993_785.6789593698886044450e18; //100_000_000 fails with sub underflow
-        uint256 numTrades = 1;
+        uint256 tradeSize = 100e18;
+        uint256 numTrades = 2;
 
-        // If you increase numTrades enought it will eventually fail due to sub underflow
+        // If you increase numTrades enough it will eventually fail due to sub underflow
+        // caused by share price going so low that k-y is negative (on openShort)
+        open_close_long_short_different_checkpoints(
+            initialSharePrice,
+            variableInterest,
+            timeElapsed,
+            tradeSize,
+            numTrades
+        );
+    }
+
+    function test_netting_zero_interest_small_time_elapsed() external {
+        uint256 initialSharePrice = 1e18;
+        int256 variableInterest = 0e18;
+        uint256 timeElapsed = CHECKPOINT_DURATION / 3;
+        uint256 tradeSize = 100e18; //100_000_000 fails with sub underflow
+        uint256 numTrades = 100;
+
+        // If you increase trade size enough it will eventually fail due to sub underflow
         // caused by share price going so low that k-y is negative (on openShort)
         open_close_long_short_different_checkpoints(
             initialSharePrice,
@@ -188,26 +287,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
 
         // If you increase numTrades enought it will eventually fail in openLong()
         // due to minOutput > bondProceeds where minOutput = baseAmount from openLong()
-        // TODO:  This needs to be investigated further
         open_close_long_short_different_checkpoints(
-            initialSharePrice,
-            variableInterest,
-            timeElapsed,
-            tradeSize,
-            numTrades
-        );
-    }
-
-    // This test demonstrates that you can open longs and shorts indefinitely and they will net to zero
-    function test_netting_open_close_long_short_many() external {
-        uint256 initialSharePrice = 1e18;
-        int256 variableInterest = 0.05e18;
-        uint256 timeElapsed = POSITION_DURATION;
-        uint256 tradeSize = 1_000_000e18;
-        uint256 numTrades = 1000;
-
-        // You can increase the numTrades until the test fails from OutOfGas
-        open_close_long_short(
             initialSharePrice,
             variableInterest,
             timeElapsed,
@@ -244,12 +324,12 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
     ) external {
         // Fuzz inputs Standard Range
         // initialSharePrice [0.5,5]
-        // variableInterest [-50,50]
+        // variableInterest [0,50]
         // timeElapsed [0,365]
         // numTrades [1,5]
         // tradeSize [1,50_000_000/numTrades] 10% of the TVL
         initialSharePrice = initialSharePrice.normalizeToRange(0.5e18, 5e18);
-        variableInterest = variableInterest.normalizeToRange(0e18, .05e18);
+        variableInterest = variableInterest.normalizeToRange(0e18, .5e18);
         timeElapsed = timeElapsed.normalizeToRange(0, POSITION_DURATION);
         numTrades = tradeSize.normalizeToRange(1, 5);
         tradeSize = tradeSize.normalizeToRange(1e18, 50_000_000e18 / numTrades);
@@ -521,11 +601,12 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         assertEq(poolInfo.shareReserves, expectedShareReserves);
     }
 
+    // All tests close at maturity
     function test_netting_open_close_long_short() external {
         // This tests the following scenario:
         // - initial_share_price = 1
         // - positive interest causes the share price to go to up
-        // - a long and short is opened and immediately closed
+        // - 1 trade
         // - trade size is 1 million
         uint256 snapshotId = vm.snapshot();
         {
@@ -547,7 +628,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         // This tests the following scenario:
         // - initial_share_price = 1
         // - positive interest causes the share price to go to up
-        // - a long and short is opened and closed after 182.5 days
+        // - 1 trade
         // - trade size is 1 million
         snapshotId = vm.snapshot();
         {
@@ -569,7 +650,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         // This tests the following scenario:
         // - initial_share_price = 1
         // - positive interest causes the share price to go to up
-        // - a long and short is opened and closed after 365 days
+        // - 1 trade
         // - trade size is 1 million
         snapshotId = vm.snapshot();
         {
@@ -591,7 +672,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         // This tests the following scenario:
         // - initial_share_price = 1
         // - positive interest causes the share price to go to up
-        // - a long and short is opened and immediately closed
+        // - 1000 trades
         // - trade size is 1 million
         snapshotId = vm.snapshot();
         {
@@ -600,6 +681,30 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
             uint256 timeElapsed = POSITION_DURATION;
             uint256 tradeSize = 1_000_000e18;
             uint256 numTrades = 1000;
+            // You can increase the numTrades until the test fails from OutOfGas
+            open_close_long_short(
+                initialSharePrice,
+                variableInterest,
+                timeElapsed,
+                tradeSize,
+                numTrades
+            );
+        }
+        vm.revertTo(snapshotId);
+
+        // This tests the following scenario:
+        // - initial_share_price = 1
+        // - zero interest
+        // - 1000 trades
+        // - trade size is 1 million
+        snapshotId = vm.snapshot();
+        {
+            uint256 initialSharePrice = 1e18;
+            int256 variableInterest = 0.0e18;
+            uint256 timeElapsed = POSITION_DURATION;
+            uint256 tradeSize = 1_000_000e18;
+            uint256 numTrades = 1000;
+            // You can increase the numTrades until the test fails from OutOfGas
             open_close_long_short(
                 initialSharePrice,
                 variableInterest,
@@ -651,16 +756,9 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         removeLiquidity(alice, aliceLpShares);
 
         // Ensure all the positions have matured before trying to close them.
-        // NOTE: Because they were all opened in the same checkpoint, there
-        // will be a large amount of netted longExposure that will conceal
-        // the true idle capital when alice removes her liquidity.  as a result,
-        // we need to advance time until all the positions have matured. This is an
-        // extreme case and probably won't happen much in practice. This could be tested
-        // more bc it seems to work fine with the test_netting_open_close_long_short_many()
-        // test when longs are closed without ensuring they are all matured.
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
         while (
-            poolInfo.shortsOutstanding > 0 && poolInfo.longsOutstanding > 0
+            poolInfo.shortsOutstanding > 0 || poolInfo.longsOutstanding > 0
         ) {
             advanceTimeWithCheckpoints(POSITION_DURATION, variableInterest);
             poolInfo = hyperdrive.getPoolInfo();
@@ -729,7 +827,7 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         // Ensure all the positions have matured before trying to close them
         IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
         while (
-            poolInfo.shortsOutstanding > 0 && poolInfo.longsOutstanding > 0
+            poolInfo.shortsOutstanding > 0 || poolInfo.longsOutstanding > 0
         ) {
             advanceTimeWithCheckpoints(POSITION_DURATION, variableInterest);
             poolInfo = hyperdrive.getPoolInfo();

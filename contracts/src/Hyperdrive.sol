@@ -106,6 +106,7 @@ abstract contract Hyperdrive is
         uint256 maturedShortsAmount = _totalSupply[
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _checkpointTime)
         ];
+        bool positionsClosed;
         if (maturedShortsAmount > 0) {
             uint256 shareProceeds = maturedShortsAmount.divDown(_sharePrice);
             uint256 flatFee = shareProceeds.mulDown(_flatFee);
@@ -126,9 +127,9 @@ abstract contract Hyperdrive is
                 0,
                 shareProceeds,
                 0,
-                _checkpointTime,
-                _sharePrice
+                _checkpointTime
             );
+            positionsClosed = true;
         }
 
         // Close out the long positions with a maturity time equal to the latest checkpoint.
@@ -146,15 +147,30 @@ abstract contract Hyperdrive is
             // Reduce shareProceeds by the flatFeeCharged, and less the govFee from the amount as it doesn't count
             // towards reserves. shareProceeds will only be used to update reserves, so its fine to take fees here.
             shareProceeds -= flatFee - govFee;
-
             _applyCloseLong(
                 maturedLongsAmount,
                 0,
                 shareProceeds,
                 0,
-                _checkpointTime,
-                _sharePrice
+                _checkpointTime
             );
+            positionsClosed = true;
+        }
+
+        // Update the checkpoint and global longExposure
+        if (positionsClosed) {
+            uint256 maturityTime = _checkpointTime - _positionDuration;
+            int128 checkpointExposureBefore = int128(
+                _checkpoints[maturityTime].longExposure
+            );
+            _checkpoints[maturityTime].longExposure = 0;
+            _updateLongExposure(
+                checkpointExposureBefore,
+                _checkpoints[maturityTime].longExposure
+            );
+
+            // Distribute the excess idle to the withdrawal pool.
+            _distributeExcessIdle(_sharePrice);
         }
 
         return _sharePrice;

@@ -166,15 +166,37 @@ abstract contract HyperdriveLong is HyperdriveLP {
         if (block.timestamp < _maturityTime) {
             // Attribute the governance fee.
             _governanceFeesAccrued += totalGovernanceFee;
-
+            uint256 shareProceedsWithFees = shareProceeds + totalGovernanceFee;
+            uint256 maturityTime = _maturityTime; // Avoid stack too deep error.
             _applyCloseLong(
                 _bondAmount,
                 bondReservesDelta,
-                shareProceeds + totalGovernanceFee,
+                shareProceedsWithFees,
                 shareReservesDelta,
-                _maturityTime,
-                sharePrice
+                maturityTime
             );
+
+            // Update the checkpoint and global longExposure
+            uint256 checkpointTime = maturityTime - _positionDuration;
+            int128 checkpointExposureBefore = int128(
+                _checkpoints[checkpointTime].longExposure
+            );
+            _updateCheckpointLongExposureOnClose(
+                _bondAmount,
+                shareReservesDelta,
+                bondReservesDelta,
+                shareProceedsWithFees,
+                maturityTime,
+                sharePrice,
+                true
+            );
+            _updateLongExposure(
+                checkpointExposureBefore,
+                _checkpoints[checkpointTime].longExposure
+            );
+
+            // Distribute the excess idle to the withdrawal pool.
+            _distributeExcessIdle(sharePrice);
         }
 
         // Withdraw the profit to the trader.
@@ -281,6 +303,9 @@ abstract contract HyperdriveLong is HyperdriveLP {
         if (!_isSolvent(_sharePrice)) {
             revert IHyperdrive.BaseBufferExceedsShareReserves();
         }
+
+        // Distribute the excess idle to the withdrawal pool.
+        _distributeExcessIdle(_sharePrice);
     }
 
     /// @dev Applies the trading deltas from a closed long to the reserves and
@@ -290,14 +315,12 @@ abstract contract HyperdriveLong is HyperdriveLP {
     /// @param _shareProceeds The proceeds received from closing the long.
     /// @param _shareReservesDelta The shares paid by the curve.
     /// @param _maturityTime The maturity time of the long.
-    /// @param _sharePrice The current price of shares
     function _applyCloseLong(
         uint256 _bondAmount,
         uint256 _bondReservesDelta,
         uint256 _shareProceeds,
         uint256 _shareReservesDelta,
-        uint256 _maturityTime,
-        uint256 _sharePrice
+        uint256 _maturityTime
     ) internal {
         {
             uint128 longsOutstanding_ = _marketState.longsOutstanding;
@@ -346,12 +369,12 @@ abstract contract HyperdriveLong is HyperdriveLP {
         ).toInt128();
         _marketState.bondReserves += _bondReservesDelta.toUint128();
 
-        // TODO: We're not sure what causes the $z \geq \zeta$ check to fail.
+        // TODO: We're not sure what causes the z >= zeta check to fail.
         // It may be unnecessary, but that needs to be proven before we can
         // remove it.
         //
         // The share reserves are decreased in this operation, so we need to
-        // verify that our invariants that $z \geq z_{min}$ and $z \geq \zeta$
+        // verify that our invariants that z >= z_min and z >= zeta
         // are satisfied.
         if (
             uint256(_marketState.shareReserves) < _minimumShareReserves ||
@@ -359,54 +382,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
             _marketState.shareAdjustment
         ) {
             revert IHyperdrive.InvalidShareReserves();
-        }
-
-        {
-            // If there are withdrawal shares outstanding, we pay out the maximum
-            // amount of withdrawal shares. The proceeds owed to LPs when a long is
-            // closed is equivalent to short proceeds as LPs take the other side of
-            // every trade.
-            uint256 withdrawalSharesOutstanding = _totalSupply[
-                AssetId._WITHDRAWAL_SHARE_ASSET_ID
-            ] - _withdrawPool.readyToWithdraw;
-            if (withdrawalSharesOutstanding > 0) {
-                uint256 withdrawalProceeds = HyperdriveMath
-                    .calculateShortProceeds(
-                        _bondAmount,
-                        _shareProceeds,
-                        _checkpoints[_maturityTime - _positionDuration]
-                            .longSharePrice,
-                        _sharePrice,
-                        _sharePrice,
-                        0
-                    );
-                _applyWithdrawalProceeds(
-                    withdrawalProceeds,
-                    withdrawalSharesOutstanding,
-                    _sharePrice
-                );
-            }
-        }
-
-        // Update the checkpoint and global longExposure
-        {
-            uint256 checkpointTime = _maturityTime - _positionDuration;
-            int128 checkpointExposureBefore = int128(
-                _checkpoints[checkpointTime].longExposure
-            );
-            _updateCheckpointLongExposureOnClose(
-                _bondAmount,
-                _shareReservesDelta,
-                _bondReservesDelta,
-                _shareProceeds,
-                _maturityTime,
-                _sharePrice,
-                true
-            );
-            _updateLongExposure(
-                checkpointExposureBefore,
-                _checkpoints[checkpointTime].longExposure
-            );
         }
     }
 
