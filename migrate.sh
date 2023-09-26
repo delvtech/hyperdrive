@@ -9,6 +9,7 @@ forge script script/DevnetMigration.s.sol:DevnetMigration \
    --sender "${ETH_FROM}" \
    --private-key "${PRIVATE_KEY}" \
    --rpc-url "${RPC_URL}" \
+   --code-size-limit 9999999999 \
    --slow \
    --broadcast
 
