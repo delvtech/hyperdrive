@@ -1,18 +1,29 @@
-// import { get_max_long } from "hyperwasm";
+import hyperwasm from "hyperwasm";
 
 const ZERO_ADDRESS = "0x".padEnd(42, "0");
 const MAX_U256 = BigInt("0x".padEnd(66, "F")).toString();
 
 async function main() {
-  const { get_max_long } = await import("hyperwasm");
+  // console.log('hyperwasm', await hyperwasm())
+  // const { get_max_long } = await hyperwasm();
+  const { foo } = await hyperwasm();
+  console.log("foo", foo);
 
-  const maxLong = get_max_long(
-    JSON.stringify(randState()),
-    MAX_U256,
-    randScaled(0, 1000000000).toString()
-  );
+  const result = await foo("Hello");
 
-  console.log("max long:", maxLong.toString());
+  console.log("result", result);
+
+  console.log("typeof result", typeof result);
+
+  // console.log('state passed in', state)
+
+  // const maxLong = get_max_long(
+  //   state,
+  //   budget,
+  //   randScaled(0, 1_000_000_000).toString()
+  // );
+
+  // console.log("max long:", maxLong);
 }
 
 main();
