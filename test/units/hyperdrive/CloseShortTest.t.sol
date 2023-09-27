@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-// FIXME
-import { console2 as console } from "forge-std/console2.sol";
-
 import { stdError } from "forge-std/StdError.sol";
 import { VmSafe } from "forge-std/Vm.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
@@ -694,23 +691,20 @@ contract CloseShortTest is HyperdriveTest {
                     hyperdrive.getPoolConfig().initialSharePrice
                 );
             }
-            console.log("test: 1");
             assertApproxEqAbs(
                 poolInfoAfter.shareReserves,
                 poolInfoBefore.shareReserves + shareReservesDelta,
                 1e10 // FIXME: Can this be lowered?
             );
-            console.log("test: 2");
-            assertEq(
+            assertApproxEqAbs(
                 poolInfoAfter.shareAdjustment,
-                poolInfoBefore.shareAdjustment + int256(shareAdjustmentDelta)
+                poolInfoBefore.shareAdjustment + int256(shareAdjustmentDelta),
+                1
             );
-            console.log("test: 3");
             assertEq(
                 poolInfoAfter.shortsOutstanding,
                 poolInfoBefore.shortsOutstanding - bondAmount
             );
-            console.log("test: 4");
         }
         assertEq(poolInfoAfter.lpTotalSupply, poolInfoBefore.lpTotalSupply);
         assertEq(

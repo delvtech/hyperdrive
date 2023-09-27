@@ -103,7 +103,9 @@ abstract contract Hyperdrive is
         // Close out all of the short positions that matured at the beginning of
         // this checkpoint. This ensures that shorts don't continue to collect
         // free variable interest and that LP's can withdraw the proceeds of
-        // their side of the trade.
+        // their side of the trade. Closing out shorts first helps with netting
+        // by ensuring the LP funds that were netted with longs are back in the
+        // shareReserves before we close out the longs.
         uint256 openSharePrice = _checkpoints[
             _checkpointTime - _positionDuration
         ].sharePrice;
@@ -112,38 +114,16 @@ abstract contract Hyperdrive is
         ];
         bool positionsClosed;
         if (maturedShortsAmount > 0) {
-            // FIXME: DRY up this accounting.
-            //
-            // When a short matures, the LPs receives base equal to the bond
-            // amount minus the flat fee. Most of the flat fee is paid to the
-            // reserves; however, a portion of the flat fee is paid to
-            // governance. If negative interest accrued over the period, the
-            // LPs take a proportional "haircut" to their proceeds. With this in
-            // mind, the share reserves should increase by the amount of newly
-            // matured longs divided by the share price, plus the flat fee, and
-            // minus the governance fee (since this doesn't go to the reserves).
-            // If negative interest accrues, we discount the share proceeds by
-            // the negative interest that accrued.
-            uint256 shareProceeds = maturedShortsAmount.divDown(_sharePrice);
-            uint256 flatFee = shareProceeds.mulDown(_flatFee);
-            uint256 govFee = flatFee.mulDown(_governanceFee);
-            shareProceeds += flatFee - govFee;
-            if (_sharePrice < openSharePrice) {
-                // FIXME: We may be scaling in the wrong place. Should fees be
-                // scaled like this? We should do the same thing here that we
-                // do elsewhere.
-                shareProceeds = shareProceeds.mulDivDown(
+            (
+                uint256 shareProceeds,
+                uint256 governanceFee
+            ) = _calculateMaturedProceeds(
+                    maturedShortsAmount,
                     _sharePrice,
-                    openSharePrice
+                    openSharePrice,
+                    false
                 );
-            }
-
-            // Update the governance fees accrued in terms of shares.
-            _governanceFeesAccrued += govFee;
-
-            // Closing out shorts first helps with netting by ensuring the LP
-            // funds that were netted with longs are back in the shareReserves
-            // before we close out the longs.
+            _governanceFeesAccrued += governanceFee;
             _applyCloseShort(
                 maturedShortsAmount,
                 0,
@@ -160,36 +140,16 @@ abstract contract Hyperdrive is
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _checkpointTime)
         ];
         if (maturedLongsAmount > 0) {
-            // FIXME: DRY up this accounting.
-            //
-            // When a long matures, the long holder receives base equal to the
-            // bond amount minus the flat fee. Most of the flat fee is paid to
-            // the reserves; however, a portion of the flat fee is paid to
-            // governance. If negative interest accrued over the period, the
-            // long holder takes a proportional "haircut" to their proceeds.
-            // With this in mind, the share reserves should decrease by the
-            // amount of newly matured longs divided by the share price, minus
-            // the flat fee, and plus the governance fee (since this doesn't go
-            // to the reserves). If negative interest accrues, we discount the
-            // share proceeds by the negative interest that accrued.
-            uint256 shareProceeds = maturedLongsAmount.divDown(_sharePrice);
-            uint256 flatFee = shareProceeds.mulDown(_flatFee);
-            uint256 govFee = flatFee.mulDown(_governanceFee);
-            shareProceeds -= flatFee - govFee;
-            if (_sharePrice < openSharePrice) {
-                // FIXME: We may be scaling in the wrong place. Should fees be
-                // scaled like this? We should do the same thing here that we
-                // do elsewhere.
-                shareProceeds = shareProceeds.mulDivDown(
+            (
+                uint256 shareProceeds,
+                uint256 governanceFee
+            ) = _calculateMaturedProceeds(
+                    maturedLongsAmount,
                     _sharePrice,
-                    openSharePrice
+                    openSharePrice,
+                    true
                 );
-            }
-
-            // Update the governance fees accrued in terms of shares.
-            _governanceFeesAccrued += govFee;
-
-            // Close out the longs.
+            _governanceFeesAccrued += governanceFee;
             _applyCloseLong(
                 maturedLongsAmount,
                 0,
@@ -217,5 +177,61 @@ abstract contract Hyperdrive is
         }
 
         return _sharePrice;
+    }
+
+    /// @dev Calculates the proceeds of the long holders of a given position at
+    ///      maturity. The long holders will be the LPs if the position is a
+    ///      short.
+    /// @param _bondAmount The bond amount of the position.
+    /// @param _sharePrice The current share price.
+    /// @param _openSharePrice The share price at the beginning of the
+    ///        position's checkpoint.
+    /// @param _isLong A flag indicating whether or not the position is a long.
+    /// @return shareProceeds The proceeds of the long holders in shares.
+    /// @param governanceFee The fee paid to governance in shares.
+    function _calculateMaturedProceeds(
+        uint256 _bondAmount,
+        uint256 _sharePrice,
+        uint256 _openSharePrice,
+        bool _isLong
+    ) internal view returns (uint256 shareProceeds, uint256 governanceFee) {
+        // Calculate the share proceeds, flat fee, and governance fee. Since the
+        // position is closed at maturity, the share proceeds are equal to the
+        // bond amount divided by the share price.
+        shareProceeds = _bondAmount.divDown(_sharePrice);
+        uint256 flatFee = shareProceeds.mulDown(_flatFee);
+        governanceFee = flatFee.mulDown(_governanceFee);
+
+        // If the position is a long, the share proceeds are removed from the
+        // share reserves. The proceeds are decreased by the flat fee because
+        // the trader pays the flat fee. Most of the flat fee is paid to the
+        // reserves; however, a portion of the flat fee is paid to governance.
+        // With this in mind, we also increase the share proceeds by the
+        // governance fee.
+        if (_isLong) {
+            shareProceeds -= flatFee - governanceFee;
+        }
+        // If the position is a short, the share proceeds are added to the share
+        // reserves. The proceeds are increased by the flat fee because the pool
+        // receives the flat fee. Most of the flat fee is paid to the reserves;
+        // however, a portion of the flat fee is paid to governance. With this
+        // in mind, we also decrease the share proceeds by the governance fee.
+        else {
+            shareProceeds += flatFee - governanceFee;
+        }
+
+        // If negative interest accrued over the period, the proceeds and
+        // governance fee are given a "haircut" proportional to the negative
+        // interest that accrued.
+        if (_sharePrice < _openSharePrice) {
+            shareProceeds = shareProceeds.mulDivDown(
+                _sharePrice,
+                _openSharePrice
+            );
+            governanceFee = governanceFee.mulDivDown(
+                _sharePrice,
+                _openSharePrice
+            );
+        }
     }
 }

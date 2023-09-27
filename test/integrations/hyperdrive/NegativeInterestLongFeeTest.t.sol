@@ -349,13 +349,6 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
         // Term matures and accrues interest
         advanceTime(POSITION_DURATION, variableInterest);
 
-        // Record the closeSharePrice after interest accrual.
-        (uint256 closeSharePrice, ) = HyperdriveUtils.calculateCompoundInterest(
-            openSharePrice,
-            variableInterest,
-            POSITION_DURATION
-        );
-
         // Close the long.
         closeLong(bob, maturityTime, bondAmount);
         {
@@ -363,9 +356,12 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
             uint256 governanceFeesAfterCloseLong = IMockHyperdrive(
                 address(hyperdrive)
             ).getGovernanceFeesAccrued();
-            // Calculate the expected accrued fees from closing the long
+            // Calculate the expected accrued fees from closing the long. We
+            // use the open share price instead of the close share price because
+            // negative interest results in the governance fee being scaled by
+            // `sharePrice / openSharePrice`.
             uint256 expectedGovernanceFees = (bondAmount * flatFee) /
-                closeSharePrice;
+                openSharePrice;
             assertApproxEqAbs(
                 governanceFeesAfterCloseLong,
                 expectedGovernanceFees,
