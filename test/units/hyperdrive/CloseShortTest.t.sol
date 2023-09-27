@@ -694,7 +694,7 @@ contract CloseShortTest is HyperdriveTest {
             assertApproxEqAbs(
                 poolInfoAfter.shareReserves,
                 poolInfoBefore.shareReserves + shareReservesDelta,
-                1e10 // FIXME: Can this be lowered?
+                1e10
             );
             assertApproxEqAbs(
                 poolInfoAfter.shareAdjustment,

@@ -152,8 +152,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
             _bondAmount
         );
 
-        // FIXME: This needs to scale fees correctly.
-        //
         // Calculate the pool and user deltas using the trading function.
         (
             uint256 shareReservesDelta,
