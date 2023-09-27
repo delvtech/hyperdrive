@@ -481,8 +481,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
         )
     {
         // Calculate the effect that closing the short should have on the pool's
-        // reserves as well as the amount of shares the trader needs to pay to
-        // purchase the shorted bonds at the market price.
+        // reserves as well as the amount of shares the trader pays to buy the
+        // bonds that they shorted back at the market price.
         {
             // Calculate the effect that closing the short should have on the
             // pool's reserves as well as the amount of shares the trader needs

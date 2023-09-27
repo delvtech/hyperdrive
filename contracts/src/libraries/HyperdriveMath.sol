@@ -146,8 +146,6 @@ library HyperdriveMath {
     /// @param _normalizedTimeRemaining The normalized time remaining of the
     ///        position.
     /// @param _timeStretch The time stretch parameter.
-    /// @param _openSharePrice The share price at open.
-    /// @param _closeSharePrice The share price at close.
     /// @param _sharePrice The share price.
     /// @param _initialSharePrice The share price when the pool was deployed.
     /// @return shareReservesDelta The shares paid by the reserves in the trade.
@@ -159,8 +157,6 @@ library HyperdriveMath {
         uint256 _amountIn,
         uint256 _normalizedTimeRemaining,
         uint256 _timeStretch,
-        uint256 _openSharePrice,
-        uint256 _closeSharePrice,
         uint256 _sharePrice,
         uint256 _initialSharePrice
     )
@@ -196,21 +192,6 @@ library HyperdriveMath {
                 _initialSharePrice
             );
             shareProceeds += shareReservesDelta;
-        }
-
-        // If there's net negative interest over the period, the result of close long
-        // is adjusted down by the rate of negative interest. We always attribute negative
-        // interest to the long since it's difficult or impossible to attribute
-        // the negative interest to the short in practice.
-        if (_openSharePrice > _closeSharePrice) {
-            shareProceeds = shareProceeds.mulDivDown(
-                _closeSharePrice,
-                _openSharePrice
-            );
-            shareReservesDelta = shareReservesDelta.mulDivDown(
-                _closeSharePrice,
-                _openSharePrice
-            );
         }
     }
 

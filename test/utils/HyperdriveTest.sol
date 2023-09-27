@@ -723,11 +723,15 @@ contract HyperdriveTest is BaseTest {
             bondAmount,
             normalizedTimeRemaining,
             poolConfig.timeStretch,
-            openSharePrice,
-            closeSharePrice,
             poolInfo.sharePrice,
             poolConfig.initialSharePrice
         );
+        if (closeSharePrice < openSharePrice) {
+            shareProceeds = shareProceeds.mulDivDown(
+                closeSharePrice,
+                openSharePrice
+            );
+        }
         return shareProceeds.mulDivDown(poolInfo.sharePrice, 1e18);
     }
 

@@ -261,8 +261,6 @@ contract HyperdriveMathTest is HyperdriveTest {
                 normalizedTimeRemaining,
                 timeStretch,
                 1 ether,
-                1 ether,
-                1 ether,
                 1 ether
             );
         // verify that the poolBondDelta equals the amountIn/2
@@ -306,8 +304,6 @@ contract HyperdriveMathTest is HyperdriveTest {
                 normalizedTimeRemaining,
                 timeStretch,
                 1 ether,
-                1 ether,
-                1 ether,
                 1 ether
             );
         // verify that the curve part is zero
@@ -315,74 +311,6 @@ contract HyperdriveMathTest is HyperdriveTest {
         assertEq(bondReservesDelta, 0);
         // verify that the flat part is the amountIn * sharePrice (sharePrice = 1)
         assertEq(shareProceeds, amountIn);
-    }
-
-    function test__calculateCloseLongAtMaturityNegativeInterest() external {
-        // NOTE: Coverage only works if I initialize the fixture in the test function
-        MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
-
-        // Test closing the long at maturity that was opened at 1% APR, no
-        // backdating. Negative interest accrued over the period and the share
-        // price didn't change after closing.
-        uint256 shareReserves = 550_000_000 ether;
-        uint256 bondReserves = 2 *
-            453_456_134.637519001960754395 ether +
-            shareReserves;
-        uint256 normalizedTimeRemaining = 0;
-        uint256 timeStretch = FixedPointMath.ONE_18.divDown(
-            110.93438508425959e18
-        );
-        uint256 amountIn = 503_926_401.456553339958190918 ether -
-            453_456_134.637519001960754395 ether;
-        (
-            uint256 shareReservesDelta,
-            uint256 bondReservesDelta,
-            uint256 shareProceeds
-        ) = hyperdriveMath.calculateCloseLong(
-                shareReserves,
-                bondReserves,
-                amountIn,
-                normalizedTimeRemaining,
-                timeStretch,
-                1 ether,
-                0.8 ether,
-                0.8 ether,
-                1 ether
-            );
-        // verify that the curve part is zero
-        assertEq(shareReservesDelta, 0);
-        assertEq(bondReservesDelta, 0);
-        // verify that the flat part is the amountIn * (closeSharePrice / sharePrice)
-        assertApproxEqAbs(
-            shareProceeds,
-            amountIn.mulDown(0.8 ether).divDown(0.8 ether),
-            1
-        );
-
-        // Test closing the long at maturity that was opened at 1% APR, no
-        // backdating. Negative interest accrued over the period and the share
-        // price increased after.
-        (shareReservesDelta, bondReservesDelta, shareProceeds) = hyperdriveMath
-            .calculateCloseLong(
-                shareReserves,
-                bondReserves,
-                amountIn,
-                normalizedTimeRemaining,
-                timeStretch,
-                1 ether,
-                0.8 ether,
-                1.2 ether,
-                1 ether
-            );
-        // verify that the curve part is zero
-        assertEq(shareReservesDelta, 0);
-        assertEq(bondReservesDelta, 0);
-        // verify that the flat part is the amountIn * (closeSharePrice / sharePrice)
-        assertApproxEqAbs(
-            shareProceeds,
-            amountIn.mulUp(0.8 ether).divDown(1.2 ether),
-            1
-        );
     }
 
     function test__calculateOpenShort() external {

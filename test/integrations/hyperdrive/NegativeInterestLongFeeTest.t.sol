@@ -551,13 +551,6 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
         // 1/2 term matures and accrues interest
         advanceTime(POSITION_DURATION / 2, variableInterest);
 
-        // Record the closeSharePrice after interest accrual.
-        (uint256 closeSharePrice, ) = HyperdriveUtils.calculateCompoundInterest(
-            openSharePrice,
-            variableInterest,
-            POSITION_DURATION / 2
-        );
-
         // Close the long.
         closeLong(bob, maturityTime, bondAmount);
 
@@ -574,14 +567,14 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
             uint256 expectedFlat = bondAmount
                 .mulDivDown(
                     FixedPointMath.ONE_18 - normalizedTimeRemaining,
-                    closeSharePrice
+                    openSharePrice
                 )
                 .mulDown(0.1e18);
             uint256 expectedCurve = (FixedPointMath.ONE_18 -
                 calculatedSpotPrice)
                 .mulDown(0.1e18)
                 .mulDown(bondAmount)
-                .mulDivDown(normalizedTimeRemaining, closeSharePrice);
+                .mulDivDown(normalizedTimeRemaining, openSharePrice);
             assertApproxEqAbs(
                 governanceFeesAfterCloseLong,
                 (expectedFlat + expectedCurve),
