@@ -7,7 +7,6 @@ import { AssetId } from "./libraries/AssetId.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { SafeCast } from "./libraries/SafeCast.sol";
-import { YieldSpaceMath } from "./libraries/YieldSpaceMath.sol";
 
 /// @author DELV
 /// @title HyperdriveShort
