@@ -410,7 +410,7 @@ library HyperdriveMath {
             spotPrice
         );
         require(success, "Initial guess in `calculateMaxLong` is insolvent.");
-        for (uint256 i = 0; i < _maxIterations; i++) {
+        for (uint256 i = 0; i < _maxIterations; ++i) {
             // If the max base amount is equal to or exceeds the absolute max,
             // we've gone too far and the calculation deviated from reality at
             // some point.
@@ -962,7 +962,7 @@ library HyperdriveMath {
             internal_.success,
             "Initial guess in `calculateMaxShort` is insolvent"
         );
-        for (uint256 i = 0; i < _maxIterations; i++) {
+        for (uint256 i = 0; i < _maxIterations; ++i) {
             // TODO: It may be better to gracefully handle crossing over the
             // root by extending the fixed point math library to handle negative
             // numbers or even just using an if-statement to handle the negative

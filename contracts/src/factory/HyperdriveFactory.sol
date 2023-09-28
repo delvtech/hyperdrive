@@ -48,7 +48,7 @@ abstract contract HyperdriveFactory {
     address public governance;
 
     /// @notice The number of times the factory's deployer has been updated.
-    uint256 public versionCounter;
+    uint256 public versionCounter = 1;
 
     /// @notice A mapping from deployed Hyperdrive instances to the version
     ///         of the deployer that deployed them.
@@ -137,7 +137,6 @@ abstract contract HyperdriveFactory {
         hyperdriveGovernance = _factoryConfig.hyperdriveGovernance;
         feeCollector = _factoryConfig.feeCollector;
         _defaultPausers = _factoryConfig.defaultPausers;
-        versionCounter = 1;
         hyperdriveDeployer = _deployer;
         linkerFactory = _linkerFactory;
         linkerCodeHash = _linkerCodeHash;
@@ -159,7 +158,7 @@ abstract contract HyperdriveFactory {
         hyperdriveDeployer = newDeployer;
 
         // Increment the version number.
-        versionCounter++;
+        unchecked {++versionCounter;}
 
         emit ImplementationUpdated(address(newDeployer));
     }
@@ -260,18 +259,20 @@ abstract contract HyperdriveFactory {
         _config.feeCollector = feeCollector;
         _config.governance = address(this);
         _config.fees = fees;
+        bytes32 _linkerCodeHash = linkerCodeHash; 
+        address _linkerFactory = linkerFactory;
         address dataProvider = deployDataProvider(
             _config,
             _extraData,
-            linkerCodeHash,
-            linkerFactory
+            _linkerCodeHash,
+            _linkerFactory
         );
         IHyperdrive hyperdrive = IHyperdrive(
             hyperdriveDeployer.deploy(
                 _config,
                 dataProvider,
-                linkerCodeHash,
-                linkerFactory,
+                _linkerCodeHash,
+                _linkerFactory,
                 _extraData
             )
         );
@@ -281,8 +282,8 @@ abstract contract HyperdriveFactory {
             versionCounter,
             address(hyperdrive),
             _config,
-            linkerFactory,
-            linkerCodeHash,
+            _linkerFactory,
+            _linkerCodeHash,
             _extraData
         );
 
@@ -301,8 +302,9 @@ abstract contract HyperdriveFactory {
 
         // Set the default pausers and transfer the governance status to the
         // hyperdrive governance address.
-        for (uint256 i = 0; i < _defaultPausers.length; i++) {
+        for (uint256 i = 0; i < _defaultPausers.length; ) {
             hyperdrive.setPauser(_defaultPausers[i], true);
+            unchecked {++i;}
         }
         hyperdrive.setGovernance(hyperdriveGovernance);
 
