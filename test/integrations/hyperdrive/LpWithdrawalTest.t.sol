@@ -9,8 +9,6 @@ import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import { Lib } from "../../utils/Lib.sol";
 
-import "forge-std/console2.sol";
-
 // FIXME:
 //
 // [ ] We need the following tests if they don't exist yet:
