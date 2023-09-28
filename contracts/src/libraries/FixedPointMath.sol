@@ -219,7 +219,7 @@ library FixedPointMath {
         unchecked {
             // Intentionally allowing ln(0) to pass bc the function will return 0
             // to pow() so that pow(0,1)=0 without a branch
-            if (x < 0) revert IHyperdrive.FixedPointMath_NegativeInput();
+            if (x <= 0) revert IHyperdrive.FixedPointMath_InvalidInput();
 
             // We want to convert x from 10**18 fixed point to 2**96 fixed point.
             // We do this by multiplying by 2**96 / 10**18. But since

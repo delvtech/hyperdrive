@@ -279,6 +279,7 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
     /// ### FixedPointMath ###
     /// ######################
     error FixedPointMath_InvalidExponent();
+    error FixedPointMath_InvalidInput();
     error FixedPointMath_NegativeOrZeroInput();
     error FixedPointMath_NegativeInput();
 
