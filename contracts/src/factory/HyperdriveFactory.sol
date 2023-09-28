@@ -259,18 +259,20 @@ abstract contract HyperdriveFactory {
         _config.feeCollector = feeCollector;
         _config.governance = address(this);
         _config.fees = fees;
+        bytes32 _linkerCodeHash = linkerCodeHash; 
+        address _linkerFactory = linkerFactory;
         address dataProvider = deployDataProvider(
             _config,
             _extraData,
-            linkerCodeHash,
-            linkerFactory
+            _linkerCodeHash,
+            _linkerFactory
         );
         IHyperdrive hyperdrive = IHyperdrive(
             hyperdriveDeployer.deploy(
                 _config,
                 dataProvider,
-                linkerCodeHash,
-                linkerFactory,
+                _linkerCodeHash,
+                _linkerFactory,
                 _extraData
             )
         );
@@ -280,8 +282,8 @@ abstract contract HyperdriveFactory {
             versionCounter,
             address(hyperdrive),
             _config,
-            linkerFactory,
-            linkerCodeHash,
+            _linkerFactory,
+            _linkerCodeHash,
             _extraData
         );
 
