@@ -839,7 +839,9 @@ contract LpWithdrawalTest is HyperdriveTest {
         );
     }
 
-    function test_single_lp_withdrawal_long_short_redemption_edge_case() external {
+    function test_single_lp_withdrawal_long_short_redemption_edge_case()
+        external
+    {
         uint256 longBasePaid = 4107; //0.001000000000004107
         uint256 shortAmount = 49890332890205; //0.001049890332890205
         _test_single_lp_withdrawal_long_short_redemption(
@@ -858,8 +860,8 @@ contract LpWithdrawalTest is HyperdriveTest {
         );
     }
 
-    // This test is designed to find cases where the longs are insolvent after the LP removes funds 
-    // and the short is closed. This will only pass if the long exposure is calculated to account for 
+    // This test is designed to find cases where the longs are insolvent after the LP removes funds
+    // and the short is closed. This will only pass if the long exposure is calculated to account for
     // where the cases where the shorts deposit is larger than the long's fixed rate, but the short is
     // shorting less bonds than the long is longing.
     function _test_single_lp_withdrawal_long_short_redemption(
@@ -890,16 +892,17 @@ contract LpWithdrawalTest is HyperdriveTest {
             hyperdrive.getPoolConfig().minimumShareReserves;
 
         shortAmount = shortAmount.normalizeToRange(
-            MINIMUM_TRANSACTION_AMOUNT*2,
+            MINIMUM_TRANSACTION_AMOUNT * 2,
             HyperdriveUtils.calculateMaxShort(hyperdrive)
         );
-        (uint256 shortWithInterest,) = HyperdriveUtils
-                .calculateInterest(
-                    shortAmount,
-                    testParams.fixedRate,
-                    POSITION_DURATION
+        (uint256 shortWithInterest, ) = HyperdriveUtils.calculateInterest(
+            shortAmount,
+            testParams.fixedRate,
+            POSITION_DURATION
         );
-        uint256 longLowerBound = shortAmount.mulDown(shortAmount.divDown(shortWithInterest));
+        uint256 longLowerBound = shortAmount.mulDown(
+            shortAmount.divDown(shortWithInterest)
+        );
         longBasePaid = longBasePaid.normalizeToRange(
             longLowerBound,
             shortAmount
