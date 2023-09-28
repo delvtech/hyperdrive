@@ -43,7 +43,7 @@ abstract contract HyperdriveTWAP is HyperdriveBase {
         }
 
         // if the sum overflows we reset the sum to the previous sum
-        if(sum - price * delta != previousSum) {
+        if (sum - price * delta != previousSum) {
             sum = previousSum;
         }
 
