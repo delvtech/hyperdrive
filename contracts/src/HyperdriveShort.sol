@@ -173,7 +173,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
             // Attribute the governance fees.
             _governanceFeesAccrued += totalGovernanceFee;
             uint256 sharePaymentWithoutFees = sharePayment - totalGovernanceFee;
-            uint256 maturityTime_ = _maturityTime; // Avoid stack too deep error.
 
             // Update the pool's state to account for the short being closed.
             _applyCloseShort(
@@ -185,7 +184,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             );
 
             // Update the checkpoint and global longExposure
-            uint256 checkpointTime = maturityTime_ - _positionDuration;
+            uint256 checkpointTime = maturityTime - _positionDuration;
             int128 checkpointExposureBefore = int128(
                 _checkpoints[checkpointTime].longExposure
             );
@@ -194,7 +193,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 shareReservesDelta,
                 bondReservesDelta,
                 sharePaymentWithoutFees,
-                maturityTime_,
+                maturityTime,
                 sharePrice,
                 false
             );
