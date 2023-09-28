@@ -172,13 +172,12 @@ abstract contract HyperdriveShort is HyperdriveLP {
         if (block.timestamp < maturityTime) {
             // Attribute the governance fees.
             _governanceFeesAccrued += totalGovernanceFee;
-            uint256 sharePaymentWithoutFees = sharePayment - totalGovernanceFee;
 
             // Update the pool's state to account for the short being closed.
             _applyCloseShort(
                 _bondAmount,
                 bondReservesDelta,
-                sharePaymentWithoutFees,
+                sharePayment,
                 shareReservesDelta,
                 maturityTime
             );
@@ -192,7 +191,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 _bondAmount,
                 shareReservesDelta,
                 bondReservesDelta,
-                sharePaymentWithoutFees,
+                sharePayment,
                 maturityTime,
                 sharePrice,
                 false
@@ -568,7 +567,9 @@ abstract contract HyperdriveShort is HyperdriveLP {
             // before scaling the share payment for negative interest. Shorts
             // are responsible for paying for 100% of the negative interest, so
             // they aren't benefited when the payment to LPs is decreased due to
-            // negative interest.
+            // negative interest. Similarly, the governance fee is included in
+            // the share payment. The LPs don't receive the governance fee, but
+            // the short is responsible for paying it.
             shareProceeds = HyperdriveMath.calculateShortProceeds(
                 _bondAmount,
                 sharePayment,
@@ -597,5 +598,10 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 );
             }
         }
+
+        // The governance fee isn't included in the share payment that is added
+        // to the share reserves. We remove it here to simplify the accounting
+        // updates.
+        sharePayment -= totalGovernanceFee;
     }
 }
