@@ -48,7 +48,7 @@ abstract contract HyperdriveFactory {
     address public governance;
 
     /// @notice The number of times the factory's deployer has been updated.
-    uint256 public versionCounter;
+    uint256 public versionCounter = 1;
 
     /// @notice A mapping from deployed Hyperdrive instances to the version
     ///         of the deployer that deployed them.
@@ -137,7 +137,6 @@ abstract contract HyperdriveFactory {
         hyperdriveGovernance = _factoryConfig.hyperdriveGovernance;
         feeCollector = _factoryConfig.feeCollector;
         _defaultPausers = _factoryConfig.defaultPausers;
-        versionCounter = 1;
         hyperdriveDeployer = _deployer;
         linkerFactory = _linkerFactory;
         linkerCodeHash = _linkerCodeHash;
