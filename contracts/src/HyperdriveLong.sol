@@ -154,24 +154,24 @@ abstract contract HyperdriveLong is HyperdriveLP {
 
         // Calculate the pool and user deltas using the trading function.
         (
+            uint256 sharePayment,
+            uint256 shareProceeds,
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
-            uint256 shareProceeds,
             uint256 totalGovernanceFee
         ) = _calculateCloseLong(_bondAmount, sharePrice, _maturityTime);
 
         // If the position hasn't matured, apply the accounting updates that
         // result from closing the long to the reserves and pay out the
         // withdrawal pool if necessary.
+        uint256 maturityTime = _maturityTime; // Avoid stack too deep error.
         if (block.timestamp < _maturityTime) {
             // Attribute the governance fee.
             _governanceFeesAccrued += totalGovernanceFee;
-            uint256 shareProceedsWithFees = shareProceeds + totalGovernanceFee;
-            uint256 maturityTime = _maturityTime; // Avoid stack too deep error.
             _applyCloseLong(
                 _bondAmount,
                 bondReservesDelta,
-                shareProceedsWithFees,
+                sharePayment,
                 shareReservesDelta,
                 maturityTime
             );
@@ -185,7 +185,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 _bondAmount,
                 shareReservesDelta,
                 bondReservesDelta,
-                shareProceedsWithFees,
+                sharePayment,
                 maturityTime,
                 sharePrice,
                 true
@@ -210,12 +210,13 @@ abstract contract HyperdriveLong is HyperdriveLP {
         if (_minOutput > baseProceeds) revert IHyperdrive.OutputLimit();
 
         // Emit a CloseLong event.
+        uint256 bondAmount = _bondAmount; // Avoid stack too deep error.
         emit CloseLong(
             _destination,
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _maturityTime),
-            _maturityTime,
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
+            maturityTime,
             baseProceeds,
-            _bondAmount
+            bondAmount
         );
 
         return (baseProceeds);
@@ -491,9 +492,11 @@ abstract contract HyperdriveLong is HyperdriveLP {
     /// @param _bondAmount The amount of bonds being purchased to close the short.
     /// @param _sharePrice The current share price.
     /// @param _maturityTime The maturity time of the short position.
+    /// @return sharePayment The payment in shares that the LPs need to make to
+    ///         ensure the trader and governance receive their proceeds.
+    /// @return shareProceeds The proceeds in shares of selling the bonds.
     /// @return shareReservesDelta The change in the share reserves.
     /// @return bondReservesDelta The change in the bond reserves.
-    /// @return shareProceeds The proceeds in shares of selling the bonds.
     /// @return totalGovernanceFee The governance fee in shares.
     function _calculateCloseLong(
         uint256 _bondAmount,
@@ -502,9 +505,10 @@ abstract contract HyperdriveLong is HyperdriveLP {
     )
         internal
         returns (
+            uint256 sharePayment,
+            uint256 shareProceeds,
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
-            uint256 shareProceeds,
             uint256 totalGovernanceFee
         )
     {
@@ -598,5 +602,12 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 );
             }
         }
+
+        // We applied the full curve and flat fees to the share proceeds, which
+        // reduce the trader's proceeds. To calculate the payment that is
+        // applied to the share reserves (and is effectively paid by the LPs),
+        // we need to add governance's portion of these fees to the share
+        // proceeds.
+        sharePayment = shareProceeds + totalGovernanceFee;
     }
 }
