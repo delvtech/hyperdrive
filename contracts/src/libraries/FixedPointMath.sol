@@ -218,8 +218,6 @@ library FixedPointMath {
     // Reverts if x is negative, but we allow ln(0)=0
     function _ln(int256 x) private pure returns (int256 r) {
         unchecked {
-            // Intentionally allowing ln(0) to pass bc the function will return 0
-            // to pow() so that pow(0,1)=0 without a branch
             if (x <= 0) revert IHyperdrive.FixedPointMath_InvalidInput();
 
             // We want to convert x from 10**18 fixed point to 2**96 fixed point.
