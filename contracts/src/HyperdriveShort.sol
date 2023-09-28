@@ -145,7 +145,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             uint256 sharePayment,
             uint256 shareProceeds,
             uint256 shareReservesDelta,
-            uint256 shareAdjustmentDelta,
+            int256 shareAdjustmentDelta,
             uint256 bondReservesDelta,
             uint256 totalGovernanceFee
         ) = _calculateCloseShort(_bondAmount, sharePrice, _maturityTime);
@@ -321,7 +321,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         uint256 _bondAmount,
         uint256 _bondReservesDelta,
         uint256 _shareReservesDelta,
-        uint256 _shareAdjustmentDelta,
+        int256 _shareAdjustmentDelta,
         uint256 _maturityTime
     ) internal {
         {
@@ -346,8 +346,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
 
         // Update the reserves and the share adjustment.
         _marketState.shareReserves += _shareReservesDelta.toUint128();
-        _marketState.shareAdjustment += int256(_shareAdjustmentDelta)
-            .toInt128();
+        _marketState.shareAdjustment += _shareAdjustmentDelta.toInt128();
         _marketState.bondReserves -= _bondReservesDelta.toUint128();
     }
 
@@ -465,12 +464,13 @@ abstract contract HyperdriveShort is HyperdriveLP {
     )
         internal
         returns (
+            // FIXME: This should arguably be called the share reserves delta.
             uint256 sharePayment,
             uint256 shareProceeds,
             // FIXME: The name of this should change. This doesn't capture the
             // change in share reserves, so this name is inherently confusing.
             uint256 shareReservesDelta,
-            uint256 shareAdjustmentDelta,
+            int256 shareAdjustmentDelta,
             uint256 bondReservesDelta,
             uint256 totalGovernanceFee
         )
@@ -573,15 +573,35 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 _flatFee
             );
 
+            // The governance fee isn't included in the share payment that is
+            // added to the share reserves. We remove it here to simplify the
+            // accounting updates.
+            sharePayment -= totalGovernanceFee;
+
             // The share payment, share reserves delta, and total governance fee
             // need to be scaled down in proportion to the negative interest.
             // This results in the pool receiving a lower payment, which
             // reflects the fact that negative interest is attributed to longs.
+            //
+            // In order for our AMM invariant to be maintained, the effective
+            // share reserves need to be adjusted by the same amount as the
+            // share reserves delta calculated with YieldSpace including fees.
+            // We increase the share reserves by `min(c_1 / c_0, 1) * sharePayment`
+            // and the share adjustment by the `shareAdjustmentDelta`. We can
+            // solve these equations simultaneously to find the share adjustment
+            // delta as:
+            //
+            // shareAdjustmentDelta = min(c_1 / c_0, 1) * sharePayment -
+            //                        shareReservesDelta
             if (closeSharePrice < openSharePrice) {
                 sharePayment = sharePayment.mulDivDown(
                     closeSharePrice,
                     openSharePrice
                 );
+                // NOTE: Using unscaled `shareReservesDelta`.
+                shareAdjustmentDelta =
+                    int256(sharePayment) -
+                    int256(shareReservesDelta);
                 shareReservesDelta = shareReservesDelta.mulDivDown(
                     closeSharePrice,
                     openSharePrice
@@ -590,24 +610,11 @@ abstract contract HyperdriveShort is HyperdriveLP {
                     closeSharePrice,
                     openSharePrice
                 );
+            } else {
+                shareAdjustmentDelta =
+                    int256(sharePayment) -
+                    int256(shareReservesDelta);
             }
-        }
-
-        // The governance fee isn't included in the share payment that is added
-        // to the share reserves. We remove it here to simplify the accounting
-        // updates.
-        sharePayment -= totalGovernanceFee;
-
-        // FIXME: We should calculate the share adjustment here. There is a
-        // component of the share adjustment needed for negative interest on the
-        // curve and another for flat updates.
-        {
-            // FIXME: We should calculate the part of the share adjustment that
-            // is due to negative interest on the curve here.
-
-            // FIXME: We should calculate the part of the share adjustment that
-            // is due to the flat here.
-            shareAdjustmentDelta = sharePayment - shareReservesDelta;
         }
     }
 }

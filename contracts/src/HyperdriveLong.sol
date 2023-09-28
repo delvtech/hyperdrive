@@ -157,7 +157,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
             uint256 sharePayment,
             uint256 shareProceeds,
             uint256 shareReservesDelta,
-            uint256 shareAdjustmentDelta,
+            int256 shareAdjustmentDelta,
             uint256 bondReservesDelta,
             uint256 totalGovernanceFee
         ) = _calculateCloseLong(_bondAmount, sharePrice, _maturityTime);
@@ -173,7 +173,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 _bondAmount,
                 bondReservesDelta,
                 sharePayment,
-                shareReservesDelta,
+                shareAdjustmentDelta,
                 maturityTime
             );
 
@@ -313,15 +313,15 @@ abstract contract HyperdriveLong is HyperdriveLP {
     /// @dev Applies the trading deltas from a closed long to the reserves and
     ///      the withdrawal pool.
     /// @param _bondAmount The amount of longs that were closed.
-    /// @param _bondReservesDelta The bonds paid to the curve.
-    /// @param _shareProceeds The proceeds received from closing the long.
-    /// @param _shareReservesDelta The shares paid by the curve.
+    /// @param _bondReservesDelta The bonds to add to the reserves.
+    /// @param _shareReservesDelta The shares to remove from the reserves.
+    /// @param _shareAdjustmentDelta The amount to decrease the share adjustment.
     /// @param _maturityTime The maturity time of the long.
     function _applyCloseLong(
         uint256 _bondAmount,
         uint256 _bondReservesDelta,
-        uint256 _shareProceeds,
         uint256 _shareReservesDelta,
+        int256 _shareAdjustmentDelta,
         uint256 _maturityTime
     ) internal {
         {
@@ -365,10 +365,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // share adjustment is increased by the flat component of the share
         // reserves update so that we can translate the curve to hold the
         // pricing invariant under the flat update.
-        _marketState.shareReserves -= _shareProceeds.toUint128();
-        _marketState.shareAdjustment -= int256(
-            _shareProceeds - _shareReservesDelta
-        ).toInt128();
+        _marketState.shareReserves -= _shareReservesDelta.toUint128();
+        _marketState.shareAdjustment -= _shareAdjustmentDelta.toInt128();
         _marketState.bondReserves += _bondReservesDelta.toUint128();
 
         // TODO: We're not sure what causes the z >= zeta check to fail.
@@ -484,9 +482,9 @@ abstract contract HyperdriveLong is HyperdriveLP {
         );
     }
 
-    // FIXME: We should calculate the share adjustment here. There is a
-    // component of the share adjustment needed for negative interest on the
-    // curve and another for flat updates.
+    // FIXME: We should rename `sharePayment` to `shareReservesDelta`. We can
+    // come up with a good name for the current `shareReservesDelta` which
+    // refers to the amount of shares that are paid on the curve.
     //
     /// @dev Calculate the pool reserve and trader deltas that result from
     ///      closing a long. This calculation includes trading fees.
@@ -510,7 +508,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
             uint256 sharePayment,
             uint256 shareProceeds,
             uint256 shareReservesDelta,
-            uint256 shareAdjustmentDelta,
+            int256 shareAdjustmentDelta,
             uint256 bondReservesDelta,
             uint256 totalGovernanceFee
         )
@@ -575,6 +573,13 @@ abstract contract HyperdriveLong is HyperdriveLP {
             // the pool, so we debit them from the trader's share proceeds
             // (shares).
             shareProceeds -= totalCurveFee + totalFlatFee;
+
+            // We applied the full curve and flat fees to the share proceeds, which
+            // reduce the trader's proceeds. To calculate the payment that is
+            // applied to the share reserves (and is effectively paid by the LPs),
+            // we need to add governance's portion of these fees to the share
+            // proceeds.
+            sharePayment = shareProceeds + totalGovernanceFee;
         }
 
         // If negative interest accrued over the term, we scale the share
@@ -583,6 +588,16 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // the margin that shorts provide. This leaves us with no choice but to
         // attribute the negative interest to longs. Along with scaling the
         // share proceeds, we also scale the fee amounts.
+        //
+        // In order for our AMM invariant to be maintained, the effective share
+        // reserves need to be adjusted by the same amount as the share reserves
+        // delta calculated with YieldSpace including fees. We reduce the share
+        // reserves by `min(c_1 / c_0, 1) * sharePayment` and the share
+        // adjustment by the `shareAdjustmentDelta`. We can solve these equations
+        // simultaneously to find the share adjustment delta as:
+        //
+        // shareAdjustmentDelta = min(c_1 / c_0, 1) * sharePayment -
+        //                        shareReservesDelta
         {
             uint256 openSharePrice = _checkpoints[
                 _maturityTime - _positionDuration
@@ -591,10 +606,18 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 ? _sharePrice
                 : _checkpoints[_maturityTime].sharePrice;
             if (closeSharePrice < openSharePrice) {
+                sharePayment = sharePayment.mulDivDown(
+                    closeSharePrice,
+                    openSharePrice
+                );
                 shareProceeds = shareProceeds.mulDivDown(
                     closeSharePrice,
                     openSharePrice
                 );
+                // NOTE: Using unscaled `shareReservesDelta`.
+                shareAdjustmentDelta =
+                    int256(sharePayment) -
+                    int256(shareReservesDelta);
                 shareReservesDelta = shareReservesDelta.mulDivDown(
                     closeSharePrice,
                     openSharePrice
@@ -603,14 +626,11 @@ abstract contract HyperdriveLong is HyperdriveLP {
                     closeSharePrice,
                     openSharePrice
                 );
+            } else {
+                shareAdjustmentDelta =
+                    int256(sharePayment) -
+                    int256(shareReservesDelta);
             }
         }
-
-        // We applied the full curve and flat fees to the share proceeds, which
-        // reduce the trader's proceeds. To calculate the payment that is
-        // applied to the share reserves (and is effectively paid by the LPs),
-        // we need to add governance's portion of these fees to the share
-        // proceeds.
-        sharePayment = shareProceeds + totalGovernanceFee;
     }
 }

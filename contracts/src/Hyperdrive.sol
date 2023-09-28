@@ -128,7 +128,7 @@ abstract contract Hyperdrive is
                 maturedShortsAmount,
                 0,
                 shareProceeds,
-                shareProceeds,
+                int256(shareProceeds), // keep the effective share reserves constant
                 _checkpointTime
             );
             positionsClosed = true;
@@ -154,7 +154,7 @@ abstract contract Hyperdrive is
                 maturedLongsAmount,
                 0,
                 shareProceeds,
-                0,
+                int256(shareProceeds), // keep the effective share reserves constant
                 _checkpointTime
             );
             positionsClosed = true;
