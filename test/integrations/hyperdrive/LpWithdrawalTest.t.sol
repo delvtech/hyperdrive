@@ -9,6 +9,8 @@ import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import { Lib } from "../../utils/Lib.sol";
 
+import "forge-std/console2.sol";
+
 // FIXME:
 //
 // [ ] We need the following tests if they don't exist yet:
@@ -575,22 +577,31 @@ contract LpWithdrawalTest is HyperdriveTest {
         );
     }
 
-    // This test WILL FAIL with invalid share reserves on closeLong. You can make it pass in 3 ways:
-    // 1. Make longBasePaid larger
-    // 2. Make shortAmount larger
-    // 3. Change the pool's initial fixed rate to something like 5%. This will
-    // give the pool a smaller timestretch.
-    // These 3 "solutions" create a large enough input s.t. the pow function
-    // used in YieldSpace noise doesn't cause issues
     function test_lp_withdrawal_long_short_redemption_edge_case() external {
-        uint256 longBasePaid = 14191; // 0.001000000000014191
-        uint256 shortAmount = 19735436564515; // 0.001019735436564515
-        int256 variableRate = 39997134772697; // 0.000039997134772697
-        _test_lp_withdrawal_long_short_redemption(
-            longBasePaid,
-            shortAmount,
-            variableRate
-        );
+        uint256 snapshotId = vm.snapshot();
+        {
+            uint256 longBasePaid = 14191; // 0.001000000000014191
+            uint256 shortAmount = 19735436564515; // 0.001019735436564515
+            int256 variableRate = 39997134772697; // 0.000039997134772697
+            _test_lp_withdrawal_long_short_redemption(
+                longBasePaid,
+                shortAmount,
+                variableRate
+            );
+        }
+        vm.revertTo(snapshotId);
+        snapshotId = vm.snapshot();
+        {
+            uint256 longBasePaid = 4107; //0.001000000000004107
+            uint256 shortAmount = 49890332890205; //0.001049890332890205
+            int256 variableRate = 1051037269400789; //0.001051037269400789
+            _test_lp_withdrawal_long_short_redemption(
+                longBasePaid,
+                shortAmount,
+                variableRate
+            );
+        }
+        vm.revertTo(snapshotId);
     }
 
     function test_lp_withdrawal_long_short_redemption(
@@ -740,7 +751,6 @@ contract LpWithdrawalTest is HyperdriveTest {
                 celine,
                 celineLpShares
             );
-
             assertApproxEqAbs(
                 celineBaseProceeds,
                 estimatedBaseLpProceeds,
@@ -819,6 +829,162 @@ contract LpWithdrawalTest is HyperdriveTest {
                     fixedInterest.min(0)
             )
         );
+
+        // Ensure that the ending base balance of Hyperdrive about zero.
+        assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1e9); // TODO: This bound is too large
+        assertApproxEqAbs(
+            hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID),
+            0,
+            1 wei
+        );
+    }
+
+    function test_single_lp_withdrawal_long_short_redemption_edge_case() external {
+        uint256 longBasePaid = 4107; //0.001000000000004107
+        uint256 shortAmount = 49890332890205; //0.001049890332890205
+        _test_single_lp_withdrawal_long_short_redemption(
+            longBasePaid,
+            shortAmount
+        );
+    }
+
+    function test_single_lp_withdrawal_long_short_redemption(
+        uint256 longBasePaid,
+        uint256 shortAmount
+    ) external {
+        _test_single_lp_withdrawal_long_short_redemption(
+            longBasePaid,
+            shortAmount
+        );
+    }
+
+    // This test is designed to find cases where the longs are insolvent after the LP removes funds 
+    // and the short is closed. This will only pass if the long exposure is calculated to account for 
+    // where the cases where the shorts deposit is larger than the long's fixed rate, but the short is
+    // shorting less bonds than the long is longing.
+    function _test_single_lp_withdrawal_long_short_redemption(
+        uint256 longBasePaid,
+        uint256 shortAmount
+    ) internal {
+        // Set up the test parameters.
+        TestLpWithdrawalParams memory testParams = TestLpWithdrawalParams({
+            fixedRate: 0.05e18,
+            variableRate: 0,
+            contribution: 500_000_000e18,
+            longAmount: 0,
+            longBasePaid: 0,
+            longMaturityTime: 0,
+            shortAmount: 0,
+            shortBasePaid: 0,
+            shortMaturityTime: 0
+        });
+
+        // Initialize the pool.
+        uint256 aliceLpShares = initialize(
+            alice,
+            uint256(testParams.fixedRate),
+            testParams.contribution
+        );
+        testParams.contribution -=
+            2 *
+            hyperdrive.getPoolConfig().minimumShareReserves;
+
+        shortAmount = shortAmount.normalizeToRange(
+            MINIMUM_TRANSACTION_AMOUNT*2,
+            HyperdriveUtils.calculateMaxShort(hyperdrive)
+        );
+        (uint256 shortWithInterest,) = HyperdriveUtils
+                .calculateInterest(
+                    shortAmount,
+                    testParams.fixedRate,
+                    POSITION_DURATION
+        );
+        uint256 longLowerBound = shortAmount.mulDown(shortAmount.divDown(shortWithInterest));
+        longBasePaid = longBasePaid.normalizeToRange(
+            longLowerBound,
+            shortAmount
+        );
+        longBasePaid = longBasePaid.min(
+            HyperdriveUtils.calculateMaxLong(hyperdrive)
+        );
+
+        // Bob opens a long.
+        testParams.longBasePaid = longBasePaid;
+        {
+            (uint256 longMaturityTime, uint256 longAmount) = openLong(
+                bob,
+                testParams.longBasePaid
+            );
+            testParams.longMaturityTime = longMaturityTime;
+            testParams.longAmount = longAmount;
+        }
+
+        // Bob opens a short.
+        testParams.shortAmount = shortAmount;
+        {
+            (uint256 shortMaturityTime, uint256 shortBasePaid) = openShort(
+                bob,
+                testParams.shortAmount
+            );
+            testParams.shortMaturityTime = shortMaturityTime;
+            testParams.shortBasePaid = shortBasePaid;
+        }
+
+        // Alice removes her liquidity.
+        uint256 aliceWithdrawalShares = 0;
+        uint256 aliceBaseProceeds = 0;
+        {
+            uint256 estimatedBaseLpProceeds = calculateBaseLpProceeds(
+                aliceLpShares
+            );
+            (aliceBaseProceeds, aliceWithdrawalShares) = removeLiquidity(
+                alice,
+                aliceLpShares
+            );
+            assertApproxEqAbs(
+                aliceBaseProceeds,
+                estimatedBaseLpProceeds,
+                1 wei
+            );
+        }
+
+        // Time passes and no interest accrues.
+        advanceTime(POSITION_DURATION, 0);
+
+        // Bob closes his long.
+        closeLong(bob, testParams.longMaturityTime, testParams.longAmount);
+
+        // Close the short.
+        {
+            uint256 shortProceeds = closeShort(
+                bob,
+                testParams.shortMaturityTime,
+                testParams.shortAmount
+            );
+            (, int256 expectedShortProceeds) = HyperdriveUtils
+                .calculateCompoundInterest(
+                    testParams.shortAmount,
+                    testParams.variableRate,
+                    POSITION_DURATION
+                );
+            assertApproxEqAbs(
+                shortProceeds,
+                uint256(expectedShortProceeds),
+                1e10
+            );
+        }
+
+        // Redeem the withdrawal shares. Alice and Celine will split the face
+        // value of the short in the proportion of their withdrawal shares.
+        uint256 aliceRemainingRedeemProceeds;
+        {
+            uint256 sharesRedeemed;
+            (
+                aliceRemainingRedeemProceeds,
+                sharesRedeemed
+            ) = redeemWithdrawalShares(alice, aliceWithdrawalShares);
+            aliceWithdrawalShares -= sharesRedeemed;
+        }
 
         // Ensure that the ending base balance of Hyperdrive about zero.
         assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1e9); // TODO: This bound is too large
