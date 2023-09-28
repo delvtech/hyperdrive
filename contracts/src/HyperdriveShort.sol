@@ -87,7 +87,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // Apply the state updates caused by opening the short.
         _applyOpenShort(
             _bondAmount,
-            traderDeposit,
             shareReservesDelta,
             sharePrice,
             maturityTime
@@ -247,13 +246,11 @@ abstract contract HyperdriveShort is HyperdriveLP {
     /// @dev Applies an open short to the state. This includes updating the
     ///      reserves and maintaining the reserve invariants.
     /// @param _bondAmount The amount of bonds shorted.
-    /// @param _traderDeposit The amount of base tokens deposited by the trader.
     /// @param _shareReservesDelta The amount of shares paid to the curve.
     /// @param _sharePrice The share price.
     /// @param _maturityTime The maturity time of the long.
     function _applyOpenShort(
         uint256 _bondAmount,
-        uint256 _traderDeposit,
         uint256 _shareReservesDelta,
         uint256 _sharePrice,
         uint256 _maturityTime
@@ -297,15 +294,12 @@ abstract contract HyperdriveShort is HyperdriveLP {
         }
 
         // Update the checkpoint's short deposits and decrease the long exposure.
-        // NOTE: Refer to this issue for details on if this should be moved
-        //       https://github.com/delvtech/hyperdrive/issues/558
         uint256 _latestCheckpoint = _latestCheckpoint();
         int128 checkpointExposureBefore = int128(
             _checkpoints[_latestCheckpoint].longExposure
         );
-        uint256 shortAssetsDelta = _traderDeposit + _bondAmount;
         _checkpoints[_latestCheckpoint].longExposure -= int128(
-            shortAssetsDelta.toUint128()
+            _bondAmount.toUint128()
         );
         _updateLongExposure(
             checkpointExposureBefore,
