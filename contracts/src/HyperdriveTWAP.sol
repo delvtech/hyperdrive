@@ -42,11 +42,6 @@ abstract contract HyperdriveTWAP is HyperdriveBase {
             sum = price * delta + previousSum;
         }
 
-        // if the sum overflows we reset the sum to the previous sum
-        if (sum - price * delta != previousSum) {
-            sum = previousSum;
-        }
-
         // If we are updating first we calculate the index to update
         uint256 toUpdate = (uint256(head) + 1) % _buffer.length;
         // Now we update the slot with this data
