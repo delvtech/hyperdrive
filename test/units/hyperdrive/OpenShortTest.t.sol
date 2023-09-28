@@ -84,6 +84,31 @@ contract OpenShortTest is HyperdriveTest {
         hyperdrive.openShort(shortAmount * 2, type(uint256).max, 0, bob, true);
     }
 
+    function test_open_short_failure_minimum_share_price() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Attempt to open a long when the share price is lower than the minimum
+        // share price.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        uint256 bondAmount = 10e18;
+        baseToken.mint(bondAmount);
+        baseToken.approve(address(hyperdrive), bondAmount);
+        uint256 minSharePrice = 2 * hyperdrive.getPoolInfo().sharePrice;
+        vm.expectRevert(IHyperdrive.MinimumSharePrice.selector);
+        hyperdrive.openShort(
+            bondAmount,
+            type(uint256).max,
+            minSharePrice,
+            bob,
+            true
+        );
+    }
+
     function test_open_short() external {
         uint256 apr = 0.05e18;
 
