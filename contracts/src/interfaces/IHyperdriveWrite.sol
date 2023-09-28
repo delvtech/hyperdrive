@@ -42,6 +42,7 @@ interface IHyperdriveWrite is IMultiTokenWrite {
     function openLong(
         uint256 _baseAmount,
         uint256 _minOutput,
+        uint256 _minSharePrice,
         address _destination,
         bool _asUnderlying
     ) external payable returns (uint256 maturityTime, uint256 bondProceeds);
@@ -57,6 +58,7 @@ interface IHyperdriveWrite is IMultiTokenWrite {
     function openShort(
         uint256 _bondAmount,
         uint256 _maxDeposit,
+        uint256 _minSharePrice,
         address _destination,
         bool _asUnderlying
     ) external payable returns (uint256 maturityTime, uint256 traderDeposit);

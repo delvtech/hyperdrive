@@ -37,7 +37,7 @@ contract OpenLongTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(IHyperdrive.MinimumTransactionAmount.selector);
-        hyperdrive.openLong(0, 0, bob, true);
+        hyperdrive.openLong(0, 0, 0, bob, true);
     }
 
     function test_open_long_failure_not_payable() external {
@@ -51,7 +51,7 @@ contract OpenLongTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(IHyperdrive.NotPayable.selector);
-        hyperdrive.openLong{ value: 1 }(1, 0, bob, true);
+        hyperdrive.openLong{ value: 1 }(1, 0, 0, bob, true);
     }
 
     function test_open_long_failure_pause() external {
@@ -66,7 +66,7 @@ contract OpenLongTest is HyperdriveTest {
         pause(true);
         vm.startPrank(bob);
         vm.expectRevert(IHyperdrive.Paused.selector);
-        hyperdrive.openLong(0, 0, bob, true);
+        hyperdrive.openLong(0, 0, 0, bob, true);
         vm.stopPrank();
         pause(false);
     }
@@ -90,7 +90,7 @@ contract OpenLongTest is HyperdriveTest {
         baseToken.mint(bob, basePaid);
         baseToken.approve(address(hyperdrive), basePaid);
         vm.expectRevert(IHyperdrive.NegativeInterest.selector);
-        hyperdrive.openLong(basePaid, 0, bob, true);
+        hyperdrive.openLong(basePaid, 0, 0, bob, true);
 
         // Ensure that the max long results in spot price very close to 1 to
         // make sure that the negative interest failure was appropriate.
@@ -123,7 +123,31 @@ contract OpenLongTest is HyperdriveTest {
         baseToken.mint(baseAmount);
         baseToken.approve(address(hyperdrive), baseAmount);
         vm.expectRevert(IHyperdrive.NegativeInterest.selector);
-        hyperdrive.openLong(baseAmount, 0, bob, true);
+        hyperdrive.openLong(baseAmount, 0, 0, bob, true);
+    }
+
+    function test_open_long_failure_minimum_share_price() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Attempt to open a long when the share price is lower than the minimum
+        // share price.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        uint256 baseAmount = 10e18;
+        baseToken.mint(baseAmount);
+        baseToken.approve(address(hyperdrive), baseAmount);
+        vm.expectRevert(IHyperdrive.MinimumSharePrice.selector);
+        hyperdrive.openLong(
+            baseAmount,
+            0,
+            2 * hyperdrive.getPoolInfo().sharePrice,
+            bob,
+            true
+        );
     }
 
     function test_open_long() external {
@@ -196,7 +220,7 @@ contract OpenLongTest is HyperdriveTest {
         baseToken.approve(address(hyperdrive), longAmount);
 
         vm.expectRevert(IHyperdrive.BaseBufferExceedsShareReserves.selector);
-        hyperdrive.openLong(longAmount, 0, bob, true);
+        hyperdrive.openLong(longAmount, 0, 0, bob, true);
     }
 
     function testAvoidsDustAttack(uint256 contribution, uint256 apr) public {

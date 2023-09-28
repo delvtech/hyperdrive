@@ -133,7 +133,7 @@ contract ReentrancyTest is HyperdriveTest {
         );
         data[4] = abi.encodeCall(
             hyperdrive.openLong,
-            (BASE_PAID, 0, _trader, true)
+            (BASE_PAID, 0, 0, _trader, true)
         );
         data[5] = abi.encodeCall(
             hyperdrive.closeLong,
@@ -141,7 +141,7 @@ contract ReentrancyTest is HyperdriveTest {
         );
         data[6] = abi.encodeCall(
             hyperdrive.openShort,
-            (BOND_AMOUNT, type(uint256).max, _trader, true)
+            (BOND_AMOUNT, type(uint256).max, 0, _trader, true)
         );
         data[7] = abi.encodeCall(
             hyperdrive.closeShort,
@@ -187,6 +187,7 @@ contract ReentrancyTest is HyperdriveTest {
             DepositOverrides({
                 asUnderlying: true,
                 depositAmount: CONTRIBUTION + 1,
+                minSharePrice: 0,
                 minSlippage: 0,
                 maxSlippage: type(uint256).max
             })
@@ -214,6 +215,7 @@ contract ReentrancyTest is HyperdriveTest {
             DepositOverrides({
                 asUnderlying: true,
                 depositAmount: CONTRIBUTION + 1,
+                minSharePrice: 0,
                 minSlippage: 0,
                 maxSlippage: type(uint256).max
             })
@@ -279,6 +281,7 @@ contract ReentrancyTest is HyperdriveTest {
             DepositOverrides({
                 asUnderlying: true,
                 depositAmount: BASE_PAID + 1,
+                minSharePrice: 0,
                 minSlippage: 0,
                 maxSlippage: type(uint256).max
             })
@@ -318,6 +321,7 @@ contract ReentrancyTest is HyperdriveTest {
                 asUnderlying: true,
                 // NOTE: Roughly double deposit amount needed to cover 100% flat fee
                 depositAmount: BOND_AMOUNT * 2,
+                minSharePrice: 0,
                 minSlippage: 0,
                 maxSlippage: type(uint256).max
             })
@@ -335,6 +339,7 @@ contract ReentrancyTest is HyperdriveTest {
                 asUnderlying: true,
                 // NOTE: Roughly double deposit amount needed to cover 100% flat fee
                 depositAmount: BOND_AMOUNT * 2,
+                minSharePrice: 0,
                 minSlippage: 0,
                 maxSlippage: type(uint256).max
             })
