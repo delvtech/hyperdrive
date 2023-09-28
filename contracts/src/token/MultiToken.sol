@@ -261,8 +261,9 @@ contract MultiToken is DataProvider, MultiTokenStorage, IMultiTokenWrite {
             revert IHyperdrive.BatchInputLengthMismatch();
 
         // Call internal transfer for each asset
-        for (uint256 i = 0; i < ids.length; ++i) {
+        for (uint256 i = 0; i < ids.length; ) {
             _transferFrom(ids[i], from, to, values[i], msg.sender);
+            unchecked {++i;}
         }
     }
 
