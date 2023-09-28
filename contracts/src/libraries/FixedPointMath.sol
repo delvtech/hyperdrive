@@ -158,6 +158,7 @@ library FixedPointMath {
             // Reduce range of x to (-½ ln 2, ½ ln 2) * 2**96 by factoring out powers
             // of two such that exp(x) = exp(x') * 2**k, where k is an integer.
             // Solving this gives k = round(x / log(2)) and x' = x - k * log(2).
+            // Note: 54916777467707473351141471128 = 2^96 ln(2).
             int256 k = ((x << 96) / 54916777467707473351141471128 + 2 ** 95) >>
                 96;
             x = x - k * 54916777467707473351141471128;

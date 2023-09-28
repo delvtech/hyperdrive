@@ -47,7 +47,7 @@ contract ForwarderFactory is IForwarderFactory {
         // Deploy using create2 with that salt
         ERC20Forwarder deployed = new ERC20Forwarder{ salt: salt }();
         // As a consistency check we check that this is in the right address
-        if(!(address(deployed) == getForwarder(token, tokenId))){
+        if (!(address(deployed) == getForwarder(token, tokenId))) {
             revert IHyperdrive.InvalidForwarderAddress();
         }
         // Reset the transient state
