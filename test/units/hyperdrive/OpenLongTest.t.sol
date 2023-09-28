@@ -140,14 +140,9 @@ contract OpenLongTest is HyperdriveTest {
         uint256 baseAmount = 10e18;
         baseToken.mint(baseAmount);
         baseToken.approve(address(hyperdrive), baseAmount);
+        uint256 minSharePrice = 2 * hyperdrive.getPoolInfo().sharePrice;
         vm.expectRevert(IHyperdrive.MinimumSharePrice.selector);
-        hyperdrive.openLong(
-            baseAmount,
-            0,
-            2 * hyperdrive.getPoolInfo().sharePrice,
-            bob,
-            true
-        );
+        hyperdrive.openLong(baseAmount, 0, minSharePrice, bob, true);
     }
 
     function test_open_long() external {

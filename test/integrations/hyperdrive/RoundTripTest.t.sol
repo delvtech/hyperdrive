@@ -181,14 +181,33 @@ contract RoundTripTest is HyperdriveTest {
     function test_long_multiblock_round_trip_end_of_checkpoint_edge_cases()
         external
     {
-        uint256 apr = 115792089237316195423570985008687907853269984665640564039457583990320674062335;
-        uint256 timeStretchApr = 886936259672610464646559504023817532562726574141720139630650341263;
-        uint256 basePaid = 65723876150308947051900890891865009457038319412461;
-        _test_long_multiblock_round_trip_end_of_checkpoint(
-            apr,
-            timeStretchApr,
-            basePaid
-        );
+        uint256 snapshotId = vm.snapshot();
+        {
+            uint256 apr = 115792089237316195423570985008687907853269984665640564039457583990320674062335;
+            uint256 timeStretchApr = 886936259672610464646559504023817532562726574141720139630650341263;
+            uint256 basePaid = 65723876150308947051900890891865009457038319412461;
+            _test_long_multiblock_round_trip_end_of_checkpoint(
+                apr,
+                timeStretchApr,
+                basePaid
+            );
+        }
+        vm.revertTo(snapshotId);
+
+        // TODO: This test fails because the calculateMaxLong seems to be misbehaving.
+        //       See issue #595
+        // snapshotId = vm.snapshot();
+        // {
+        //     uint256 apr = 63203229717248733662763783222570;
+        //     uint256 timeStretchApr = 3408059979187494427077136;
+        //     uint256 basePaid = 57669888194155013968076316270639259357724635816572534634741412969387347636732;
+        //     _test_long_multiblock_round_trip_end_of_checkpoint(
+        //         apr,
+        //         timeStretchApr,
+        //         basePaid
+        //     );
+        // }
+        // vm.revertTo(snapshotId);
 
         // TODO: This test fails because the calculateMaxLong seems to be misbehaving.
         //       See issue #595
