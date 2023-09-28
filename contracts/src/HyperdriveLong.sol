@@ -23,6 +23,9 @@ abstract contract HyperdriveLong is HyperdriveLP {
     /// @notice Opens a long position.
     /// @param _baseAmount The amount of base to use when trading.
     /// @param _minOutput The minium number of bonds to receive.
+    /// @param _minSharePrice The minium share price at which to open the long.
+    ///        This allows traders to protect themselves from opening a long in
+    ///        a checkpoint where negative interest has accrued.
     /// @param _destination The address which will receive the bonds
     /// @param _asUnderlying A flag indicating whether the sender will pay in
     ///        base or using another currency. Implementations choose which
@@ -32,6 +35,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
     function openLong(
         uint256 _baseAmount,
         uint256 _minOutput,
+        uint256 _minSharePrice,
         address _destination,
         bool _asUnderlying
     )
@@ -52,6 +56,9 @@ abstract contract HyperdriveLong is HyperdriveLP {
             _baseAmount,
             _asUnderlying
         );
+        if (sharePrice < _minSharePrice) {
+            revert IHyperdrive.MinimumSharePrice();
+        }
 
         // Perform a checkpoint.
         uint256 latestCheckpoint = _latestCheckpoint();

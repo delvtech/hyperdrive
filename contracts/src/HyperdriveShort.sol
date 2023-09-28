@@ -23,6 +23,9 @@ abstract contract HyperdriveShort is HyperdriveLP {
     /// @notice Opens a short position.
     /// @param _bondAmount The amount of bonds to short.
     /// @param _maxDeposit The most the user expects to deposit for this trade
+    /// @param _minSharePrice The minium share price at which to open the long.
+    ///        This allows traders to protect themselves from opening a long in
+    ///        a checkpoint where negative interest has accrued.
     /// @param _destination The address which gets credited with share tokens
     /// @param _asUnderlying A flag indicating whether the sender will pay in
     ///        base or using another currency. Implementations choose which
@@ -32,6 +35,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
     function openShort(
         uint256 _bondAmount,
         uint256 _maxDeposit,
+        uint256 _minSharePrice,
         address _destination,
         bool _asUnderlying
     )
@@ -52,6 +56,9 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // Since the short will receive interest from the beginning of the
         // checkpoint, they will receive this backdated interest back at closing.
         uint256 sharePrice = _pricePerShare();
+        if (sharePrice < _minSharePrice) {
+            revert IHyperdrive.MinimumSharePrice();
+        }
         uint256 latestCheckpoint = _latestCheckpoint();
         uint256 openSharePrice = _applyCheckpoint(latestCheckpoint, sharePrice);
 
