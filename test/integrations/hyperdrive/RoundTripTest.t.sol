@@ -166,17 +166,47 @@ contract RoundTripTest is HyperdriveTest {
         assertEq(poolInfoAfter.bondReserves, poolInfoBefore.bondReserves);
     }
 
-    // TODO: The following case causes this test to fail. This will be addressed
-    // in a follow-up PR.
-    //
-    // uint256 apr = 115792089237316195423570985008687907853269984665640564039457583990320674062335;
-    // uint256 timeStretchApr = 886936259672610464646559504023817532562726574141720139630650341263;
-    // uint256 basePaid = 65723876150308947051900890891865009457038319412461;
     function test_long_multiblock_round_trip_end_of_checkpoint(
         uint256 apr,
         uint256 timeStretchApr,
         uint256 basePaid
     ) external {
+        _test_long_multiblock_round_trip_end_of_checkpoint(
+            apr,
+            timeStretchApr,
+            basePaid
+        );
+    }
+
+    function test_long_multiblock_round_trip_end_of_checkpoint_edge_cases()
+        external
+    {
+        uint256 apr = 115792089237316195423570985008687907853269984665640564039457583990320674062335;
+        uint256 timeStretchApr = 886936259672610464646559504023817532562726574141720139630650341263;
+        uint256 basePaid = 65723876150308947051900890891865009457038319412461;
+        _test_long_multiblock_round_trip_end_of_checkpoint(
+            apr,
+            timeStretchApr,
+            basePaid
+        );
+
+        // TODO: This test fails because the calculateMaxLong seems to be misbehaving.
+        //       See issue #595
+        // uint256 apr = 115792089237316195423570985008687907853269984665640564039457583996916939587517; // 0.172756074408646686
+        // uint256 timeStretchApr = 41280540007823693914881174596677236629628473357578130920607715; // 0.059510057259928604
+        // uint256 basePaid = 3512909646876087064266547833688149281604992599057120012676367392282791491; // 3_942_239_358.711925131571174045
+        // _test_long_multiblock_round_trip_end_of_checkpoint(
+        //     apr,
+        //     timeStretchApr,
+        //     basePaid
+        // );
+    }
+
+    function _test_long_multiblock_round_trip_end_of_checkpoint(
+        uint256 apr,
+        uint256 timeStretchApr,
+        uint256 basePaid
+    ) internal {
         apr = apr.normalizeToRange(0.001e18, .4e18);
         timeStretchApr = timeStretchApr.normalizeToRange(0.05e18, 0.4e18);
 

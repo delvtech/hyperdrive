@@ -294,8 +294,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
         }
 
         // Update the checkpoint's short deposits and decrease the long exposure.
-        // NOTE: Refer to this issue for details on if this should be moved
-        //       https://github.com/delvtech/hyperdrive/issues/558
         uint256 _latestCheckpoint = _latestCheckpoint();
         int128 checkpointExposureBefore = int128(
             _checkpoints[_latestCheckpoint].longExposure
