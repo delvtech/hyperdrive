@@ -263,7 +263,9 @@ contract MultiToken is DataProvider, MultiTokenStorage, IMultiTokenWrite {
         // Call internal transfer for each asset
         for (uint256 i = 0; i < ids.length; ) {
             _transferFrom(ids[i], from, to, values[i], msg.sender);
-            unchecked {++i;}
+            unchecked {
+                ++i;
+            }
         }
     }
 
