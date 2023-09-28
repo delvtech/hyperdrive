@@ -128,7 +128,7 @@ abstract contract Hyperdrive is
                 maturedShortsAmount,
                 0,
                 shareProceeds,
-                0,
+                shareProceeds,
                 _checkpointTime
             );
             positionsClosed = true;
@@ -188,7 +188,7 @@ abstract contract Hyperdrive is
     ///        position's checkpoint.
     /// @param _isLong A flag indicating whether or not the position is a long.
     /// @return shareProceeds The proceeds of the long holders in shares.
-    /// @param governanceFee The fee paid to governance in shares.
+    /// @return governanceFee The fee paid to governance in shares.
     function _calculateMaturedProceeds(
         uint256 _bondAmount,
         uint256 _sharePrice,

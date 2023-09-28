@@ -157,6 +157,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
             uint256 sharePayment,
             uint256 shareProceeds,
             uint256 shareReservesDelta,
+            uint256 shareAdjustmentDelta,
             uint256 bondReservesDelta,
             uint256 totalGovernanceFee
         ) = _calculateCloseLong(_bondAmount, sharePrice, _maturityTime);
@@ -496,6 +497,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
     ///         ensure the trader and governance receive their proceeds.
     /// @return shareProceeds The proceeds in shares of selling the bonds.
     /// @return shareReservesDelta The change in the share reserves.
+    /// @return shareAdjustmentDelta The change in the share adjustment.
     /// @return bondReservesDelta The change in the bond reserves.
     /// @return totalGovernanceFee The governance fee in shares.
     function _calculateCloseLong(
@@ -508,6 +510,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
             uint256 sharePayment,
             uint256 shareProceeds,
             uint256 shareReservesDelta,
+            uint256 shareAdjustmentDelta,
             uint256 bondReservesDelta,
             uint256 totalGovernanceFee
         )
