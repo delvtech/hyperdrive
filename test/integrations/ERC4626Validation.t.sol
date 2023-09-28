@@ -430,6 +430,19 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         uint256 shortAmount,
         int256 variableRate
     ) external {
+        _test_CloseShortWithShares(shortAmount, variableRate);
+    }
+
+    function test_CloseShortWithShares_EdgeCases() external {
+        uint256 shortAmount = 8300396556459030614636;
+        int256 variableRate = 7399321782946468277;
+        _test_CloseShortWithShares(shortAmount, variableRate);
+    }
+
+    function _test_CloseShortWithShares(
+        uint256 shortAmount,
+        int256 variableRate
+    ) internal {
         vm.startPrank(alice);
         shortAmount = shortAmount.normalizeToRange(
             MINIMUM_TRANSACTION_AMOUNT,
