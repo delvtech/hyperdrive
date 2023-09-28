@@ -261,6 +261,11 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
     error InvalidERC20Bridge();
     error RestrictedZeroAddress();
 
+    /// #############################
+    /// ### ERC20ForwarderFactory ###
+    /// #############################
+    error InvalidForwarderAddress();
+
     /// #####################
     /// ### BondWrapper ###
     /// #####################
@@ -287,4 +292,10 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
     /// ### YieldSpaceMath ###
     /// ######################
     error InvalidTradeSize();
+
+    /// ######################
+    /// ### SafeCast ###
+    /// ######################
+    error UnsafeCastToUint128();
+    error UnsafeCastToInt128();
 }
