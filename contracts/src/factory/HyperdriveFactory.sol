@@ -159,7 +159,7 @@ abstract contract HyperdriveFactory {
         hyperdriveDeployer = newDeployer;
 
         // Increment the version number.
-        versionCounter++;
+        ++versionCounter;
 
         emit ImplementationUpdated(address(newDeployer));
     }
@@ -301,7 +301,7 @@ abstract contract HyperdriveFactory {
 
         // Set the default pausers and transfer the governance status to the
         // hyperdrive governance address.
-        for (uint256 i = 0; i < _defaultPausers.length; i++) {
+        for (uint256 i = 0; i < _defaultPausers.length; ++i) {
             hyperdrive.setPauser(_defaultPausers[i], true);
         }
         hyperdrive.setGovernance(hyperdriveGovernance);
