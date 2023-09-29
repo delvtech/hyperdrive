@@ -369,6 +369,43 @@ contract LpWithdrawalTest is HyperdriveTest {
         uint256 shortMaturityTime;
     }
 
+    function test_lp_withdrawal_long_and_short_maturity(
+        uint256 longBasePaid,
+        uint256 shortAmount,
+        int256 variableRate
+    ) external {
+        _test_lp_withdrawal_long_and_short_maturity(
+            longBasePaid,
+            shortAmount,
+            variableRate
+        );
+    }
+
+    function test_lp_withdrawal_long_and_short_maturity_edge_cases() external {
+        uint256 snapshotId = vm.snapshot();
+        {
+            uint256 longBasePaid = 4510; // 0.001000000000004510
+            uint256 shortAmount = 49890332890205; // 0.001049890332890205
+            int256 variableRate = 2381976568446569244243622252022378995313; // 0.633967799094373787
+            _test_lp_withdrawal_long_and_short_maturity(
+                longBasePaid,
+                shortAmount,
+                variableRate
+            );
+        }
+        vm.revertTo(snapshotId);
+        {
+            uint256 longBasePaid = 952379451834619; // 0.001952379451834619
+            uint256 shortAmount = 1049989096786962; // 0.002049989096786962
+            int256 variableRate = 31603980; // 0.000000000031603980
+            _test_lp_withdrawal_long_and_short_maturity(
+                longBasePaid,
+                shortAmount,
+                variableRate
+            );
+        }
+    }
+
     // FIXME: We should use the lpSharePrice more ubiquitously.
     //
     // This test ensures that two LPs (Alice and Celine) will receive a fair
@@ -379,11 +416,11 @@ contract LpWithdrawalTest is HyperdriveTest {
     // We want to verify that Alice and Celine collectively receive all of the
     // the trading profits and that Celine is responsible for paying for the
     // increased slippage.
-    function test_lp_withdrawal_long_and_short_maturity(
+    function _test_lp_withdrawal_long_and_short_maturity(
         uint256 longBasePaid,
         uint256 shortAmount,
         int256 variableRate
-    ) external {
+    ) internal {
         // Set up the test parameters.
         TestLpWithdrawalParams memory testParams = TestLpWithdrawalParams({
             fixedRate: 0.05e18,
@@ -593,6 +630,18 @@ contract LpWithdrawalTest is HyperdriveTest {
             uint256 longBasePaid = 4107; //0.001000000000004107
             uint256 shortAmount = 49890332890205; //0.001049890332890205
             int256 variableRate = 1051037269400789; //0.001051037269400789
+            _test_lp_withdrawal_long_short_redemption(
+                longBasePaid,
+                shortAmount,
+                variableRate
+            );
+        }
+        vm.revertTo(snapshotId);
+        snapshotId = vm.snapshot();
+        {
+            uint256 longBasePaid = 47622440666488;
+            uint256 shortAmount = 99991360285271; 
+            int256 variableRate = 25629;
             _test_lp_withdrawal_long_short_redemption(
                 longBasePaid,
                 shortAmount,
