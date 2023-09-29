@@ -134,7 +134,13 @@ impl Agent<ChainClient, ChaCha8Rng> {
             };
             let tx = self
                 .hyperdrive
-                .open_long(base_paid.into(), min_output.into(), self.address, true)
+                .open_long(
+                    base_paid.into(),
+                    min_output.into(),
+                    fixed!(0).into(), // TODO: This is fine for testing, but not prod.
+                    self.address,
+                    true,
+                )
                 .from(self.address);
             let logs = tx
                 .send()
@@ -241,7 +247,13 @@ impl Agent<ChainClient, ChaCha8Rng> {
             };
             let tx = self
                 .hyperdrive
-                .open_short(bond_amount.into(), max_deposit.into(), self.address, true)
+                .open_short(
+                    bond_amount.into(),
+                    max_deposit.into(),
+                    fixed!(0).into(), // TODO: This is fine for testing, but not prod.
+                    self.address,
+                    true,
+                )
                 .from(self.address);
             let logs = tx
                 .send()
