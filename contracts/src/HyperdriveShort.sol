@@ -587,44 +587,25 @@ abstract contract HyperdriveShort is HyperdriveLP {
             // accounting updates.
             shareReservesDelta -= totalGovernanceFee;
 
-            // The share reserves delta, share curve proceeds, and total
-            // governance fee need to be scaled down in proportion to the
-            // negative interest. This results in the pool receiving a lower
-            // payment, which reflects the fact that negative interest is
-            // attributed to longs.
-            //
-            // In order for our AMM invariant to be maintained, the effective
-            // share reserves need to be adjusted by the same amount as the
-            // share reserves delta calculated with YieldSpace including fees.
-            // We increase the share reserves by
-            // `min(c_1 / c_0, 1) * shareReservesDelta` and the share adjustment
-            // by the `shareAdjustmentDelta`. We can solve these equations
-            // simultaneously to find the share adjustment delta as:
-            //
-            // shareAdjustmentDelta = min(c_1 / c_0, 1) * shareReservesDelta -
-            //                        shareCurveProceeds
-            if (closeSharePrice < openSharePrice) {
-                shareReservesDelta = shareReservesDelta.mulDivDown(
-                    closeSharePrice,
-                    openSharePrice
-                );
-                // NOTE: Using unscaled `shareCurveProceeds`.
-                shareAdjustmentDelta =
-                    int256(shareReservesDelta) -
-                    int256(shareCurveProceeds);
-                shareCurveProceeds = shareCurveProceeds.mulDivDown(
-                    closeSharePrice,
-                    openSharePrice
-                );
-                totalGovernanceFee = totalGovernanceFee.mulDivDown(
-                    closeSharePrice,
-                    openSharePrice
-                );
-            } else {
-                shareAdjustmentDelta =
-                    int256(shareReservesDelta) -
-                    int256(shareCurveProceeds);
-            }
+            // Adjust the computed proceeds and delta for negative interest.
+            // We also compute the share adjustment delta at this step to ensure
+            // that we don't break our AMM invariant when we account for negative
+            // interest and flat adjustments.
+            (
+                shareProceeds,
+                shareReservesDelta,
+                shareCurveProceeds,
+                shareAdjustmentDelta,
+                totalGovernanceFee
+            ) = HyperdriveMath.calculateNegativeInterestOnClose(
+                shareProceeds,
+                shareReservesDelta,
+                shareCurveProceeds,
+                totalGovernanceFee,
+                openSharePrice,
+                closeSharePrice,
+                false
+            );
         }
     }
 }

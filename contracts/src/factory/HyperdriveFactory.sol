@@ -158,7 +158,9 @@ abstract contract HyperdriveFactory {
         hyperdriveDeployer = newDeployer;
 
         // Increment the version number.
-        unchecked {++versionCounter;}
+        unchecked {
+            ++versionCounter;
+        }
 
         emit ImplementationUpdated(address(newDeployer));
     }
@@ -259,7 +261,7 @@ abstract contract HyperdriveFactory {
         _config.feeCollector = feeCollector;
         _config.governance = address(this);
         _config.fees = fees;
-        bytes32 _linkerCodeHash = linkerCodeHash; 
+        bytes32 _linkerCodeHash = linkerCodeHash;
         address _linkerFactory = linkerFactory;
         address dataProvider = deployDataProvider(
             _config,
@@ -304,7 +306,9 @@ abstract contract HyperdriveFactory {
         // hyperdrive governance address.
         for (uint256 i = 0; i < _defaultPausers.length; ) {
             hyperdrive.setPauser(_defaultPausers[i], true);
-            unchecked {++i;}
+            unchecked {
+                ++i;
+            }
         }
         hyperdrive.setGovernance(hyperdriveGovernance);
 

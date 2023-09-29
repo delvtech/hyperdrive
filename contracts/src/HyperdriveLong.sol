@@ -548,61 +548,32 @@ abstract contract HyperdriveLong is HyperdriveLP {
             shareReservesDelta = shareProceeds + totalGovernanceFee;
         }
 
-        // If negative interest accrued over the term, we scale the share
-        // proceeds by the negative interest amount. Shorts should be
-        // responsible for negative interest, but negative interest can exceed
-        // the margin that shorts provide. This leaves us with no choice but to
-        // attribute the negative interest to longs. Along with scaling the
-        // share proceeds, we also scale the fee amounts.
-        //
-        // In order for our AMM invariant to be maintained, the effective share
-        // reserves need to be adjusted by the same amount as the share reserves
-        // delta calculated with YieldSpace including fees. We reduce the share
-        // reserves by `min(c_1 / c_0, 1) * shareReservesDelta` and the share
-        // adjustment by the `shareAdjustmentDelta`. We can solve these equations
-        // simultaneously to find the share adjustment delta as:
-        //
-        // shareAdjustmentDelta = min(c_1 / c_0, 1) * sharePayment -
-        //                        shareReservesDelta
-        {
-            // NOTE: We use the share price from the beginning of the checkpoint
-            // as the open share price. This means that a trader that opens a
-            // long in a checkpoint that has negative interest accrued will be
-            // penalized for the negative interest when they try to close their
-            // position. The `_minSharePrice` parameter allows traders to
-            // protect themselves from this edge case.
-            uint256 openSharePrice = _checkpoints[
-                _maturityTime - _positionDuration
-            ].sharePrice;
-            uint256 closeSharePrice = block.timestamp < _maturityTime
+        // Adjust the computed proceeds and delta for negative interest.
+        // We also compute the share adjustment delta at this step to ensure
+        // that we don't break our AMM invariant when we account for negative
+        // interest and flat adjustments.
+        (
+            shareProceeds,
+            shareReservesDelta,
+            shareCurvePayment,
+            shareAdjustmentDelta,
+            totalGovernanceFee
+        ) = HyperdriveMath.calculateNegativeInterestOnClose(
+            shareProceeds,
+            shareReservesDelta,
+            shareCurvePayment,
+            totalGovernanceFee,
+            // NOTE: We use the share price from the beginning of the
+            // checkpoint as the open share price. This means that a trader
+            // that opens a long in a checkpoint that has negative interest
+            // accrued will be penalized for the negative interest when they
+            // try to close their position. The `_minSharePrice` parameter
+            // allows traders to protect themselves from this edge case.
+            _checkpoints[_maturityTime - _positionDuration].sharePrice, // open share price
+            block.timestamp < _maturityTime
                 ? _sharePrice
-                : _checkpoints[_maturityTime].sharePrice;
-            if (closeSharePrice < openSharePrice) {
-                shareReservesDelta = shareReservesDelta.mulDivDown(
-                    closeSharePrice,
-                    openSharePrice
-                );
-                shareProceeds = shareProceeds.mulDivDown(
-                    closeSharePrice,
-                    openSharePrice
-                );
-                // NOTE: Using unscaled `shareReservesDelta`.
-                shareAdjustmentDelta =
-                    int256(shareReservesDelta) -
-                    int256(shareCurvePayment);
-                shareCurvePayment = shareCurvePayment.mulDivDown(
-                    closeSharePrice,
-                    openSharePrice
-                );
-                totalGovernanceFee = totalGovernanceFee.mulDivDown(
-                    closeSharePrice,
-                    openSharePrice
-                );
-            } else {
-                shareAdjustmentDelta =
-                    int256(shareReservesDelta) -
-                    int256(shareCurvePayment);
-            }
-        }
+                : _checkpoints[_maturityTime].sharePrice, // close share price
+            true
+        );
     }
 }
