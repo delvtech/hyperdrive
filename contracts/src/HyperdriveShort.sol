@@ -503,18 +503,13 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 _initialSharePrice
             );
 
-            // Calculate the fees charged on the curve and flat parts of the
-            // trade. Since we calculate the amount of shares paid given bonds
-            // out, we add the fee from the share deltas so that the trader pays
-            // less shares.
+            // Record an oracle update
             uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
                 _effectiveShareReserves(),
                 _marketState.bondReserves,
                 _initialSharePrice,
                 _timeStretch
             );
-
-            // Record an oracle update
             recordPrice(spotPrice);
 
             // Calculate the fees charged to the user (totalCurveFee and
