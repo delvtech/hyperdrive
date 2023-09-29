@@ -237,38 +237,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn fuzz_get_bonds_in_for_shares_out() -> Result<()> {
-        let chain = TestChainWithMocks::new(1).await?;
-        let mock = chain.mock_yield_space_math();
-
-        // Fuzz the rust and solidity implementations against each other.
-        let mut rng = thread_rng();
-        for _ in 0..*FAST_FUZZ_RUNS {
-            let state = rng.gen::<State>();
-            let out = rng.gen::<FixedPoint>();
-            let actual =
-                panic::catch_unwind(|| state.get_bonds_in_for_shares_out(out, private::Seal));
-            match mock
-                .calculate_bonds_in_given_shares_out(
-                    state.z().into(),
-                    state.y().into(),
-                    out.into(),
-                    (fixed!(1e18) - state.t()).into(),
-                    state.c().into(),
-                    state.mu().into(),
-                )
-                .call()
-                .await
-            {
-                Ok(expected) => assert_eq!(actual.unwrap(), FixedPoint::from(expected)),
-                Err(_) => assert!(actual.is_err()),
-            }
-        }
-
-        Ok(())
-    }
-
-    #[tokio::test]
     async fn fuzz_get_shares_out_for_bonds_in() -> Result<()> {
         let chain = TestChainWithMocks::new(1).await?;
         let mock = chain.mock_yield_space_math();

@@ -31,37 +31,6 @@ import { HyperdriveMath } from "./HyperdriveMath.sol";
 library YieldSpaceMath {
     using FixedPointMath for uint256;
 
-    /// Calculates the amount of bonds a user must provide the pool to receive
-    /// a specified amount of shares
-    /// @param z Amount of share reserves in the pool
-    /// @param y Amount of bond reserves in the pool
-    /// @param dz Amount of shares user wants to receive
-    /// @param t Amount of time elapsed since term start
-    /// @param c Conversion rate between base and shares
-    /// @param mu Interest normalization factor for shares
-    /// @return The amount of bonds the user will pay
-    function calculateBondsInGivenSharesOut(
-        uint256 z,
-        uint256 y,
-        uint256 dz,
-        uint256 t,
-        uint256 c,
-        uint256 mu
-    ) internal pure returns (uint256) {
-        // c/µ
-        uint256 cDivMu = c.divDown(mu);
-        // (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
-        uint256 k = modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
-        // (µ * (z - dz))^(1 - t)
-        z = mu.mulDown(z - dz).pow(t);
-        // (c / µ) * (µ * (z - dz))^(1 - t)
-        z = cDivMu.mulDown(z);
-        // ((c / µ) * (µ * z)^(1 - t) + y^(1 - t) - (c / µ) * (µ * (z - dz))^(1 - t))^(1 / (1 - t)))
-        uint256 _y = (k - z).pow(FixedPointMath.ONE_18.divUp(t));
-        // Δy = ((c / µ) * (µ * z)^(1 - t) + y^(1 - t) - (c / µ) * (µ * (z - dz))^(1 - t))^(1 / (1 - t))) - y
-        return _y - y;
-    }
-
     /// Calculates the amount of bonds a user will receive from the pool by
     /// providing a specified amount of shares
     /// @param z Amount of share reserves in the pool

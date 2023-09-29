@@ -129,6 +129,10 @@ contract MultiToken is DataProvider, MultiTokenStorage, IMultiTokenWrite {
         uint256 amount,
         address caller
     ) internal {
+        // Checks for inconsistent addresses
+        if (from == address(0) || to == address(0))
+            revert IHyperdrive.RestrictedZeroAddress();
+
         // If ethereum transaction sender is calling no need for further validation
         if (caller != from) {
             // Or if the transaction sender can access all user assets, no need for
