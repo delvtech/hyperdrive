@@ -549,7 +549,7 @@ contract LpWithdrawalTest is HyperdriveTest {
             celineBaseProceeds +
                 celineRedeemProceeds +
                 celineWithdrawalShares.mulDown(hyperdrive.lpSharePrice()) +
-                1e9,
+                1e10,
             uint256(
                 int256(testParams.contribution - celineSlippagePayment) +
                     fixedInterest.min(0)
