@@ -129,6 +129,10 @@ contract MultiToken is DataProvider, MultiTokenStorage, IMultiTokenWrite {
         uint256 amount,
         address caller
     ) internal {
+        // Checks for inconsistent addresses
+        if (from == address(0) || to == address(0))
+            revert IHyperdrive.RestrictedZeroAddress();
+
         // If ethereum transaction sender is calling no need for further validation
         if (caller != from) {
             // Or if the transaction sender can access all user assets, no need for
@@ -261,8 +265,11 @@ contract MultiToken is DataProvider, MultiTokenStorage, IMultiTokenWrite {
             revert IHyperdrive.BatchInputLengthMismatch();
 
         // Call internal transfer for each asset
-        for (uint256 i = 0; i < ids.length; i++) {
+        for (uint256 i = 0; i < ids.length; ) {
             _transferFrom(ids[i], from, to, values[i], msg.sender);
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -315,7 +322,7 @@ contract MultiToken is DataProvider, MultiTokenStorage, IMultiTokenWrite {
         if (signer != owner) revert IHyperdrive.InvalidSignature();
 
         // Increment the signature nonce
-        _nonces[owner]++;
+        ++_nonces[owner];
         // set the state
         _isApprovedForAll[owner][spender] = _approved;
         // Emit an event to track approval

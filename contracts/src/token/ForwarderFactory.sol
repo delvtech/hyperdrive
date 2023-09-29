@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IForwarderFactory } from "../interfaces/IForwarderFactory.sol";
 import { IMultiToken } from "../interfaces/IMultiToken.sol";
 import { ERC20Forwarder } from "./ERC20Forwarder.sol";
@@ -46,7 +47,9 @@ contract ForwarderFactory is IForwarderFactory {
         // Deploy using create2 with that salt
         ERC20Forwarder deployed = new ERC20Forwarder{ salt: salt }();
         // As a consistency check we check that this is in the right address
-        require(address(deployed) == getForwarder(token, tokenId));
+        if (!(address(deployed) == getForwarder(token, tokenId))) {
+            revert IHyperdrive.InvalidForwarderAddress();
+        }
         // Reset the transient state
         _token = IMultiToken(address(1));
         _tokenId = 1;

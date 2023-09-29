@@ -158,6 +158,7 @@ library FixedPointMath {
             // Reduce range of x to (-½ ln 2, ½ ln 2) * 2**96 by factoring out powers
             // of two such that exp(x) = exp(x') * 2**k, where k is an integer.
             // Solving this gives k = round(x / log(2)) and x' = x - k * log(2).
+            // Note: 54916777467707473351141471128 = 2^96 ln(2).
             int256 k = ((x << 96) / 54916777467707473351141471128 + 2 ** 95) >>
                 96;
             x = x - k * 54916777467707473351141471128;
@@ -217,9 +218,7 @@ library FixedPointMath {
     // Reverts if x is negative, but we allow ln(0)=0
     function _ln(int256 x) private pure returns (int256 r) {
         unchecked {
-            // Intentionally allowing ln(0) to pass bc the function will return 0
-            // to pow() so that pow(0,1)=0 without a branch
-            if (x < 0) revert IHyperdrive.FixedPointMath_NegativeInput();
+            if (x <= 0) revert IHyperdrive.FixedPointMath_InvalidInput();
 
             // We want to convert x from 10**18 fixed point to 2**96 fixed point.
             // We do this by multiplying by 2**96 / 10**18. But since
