@@ -322,6 +322,7 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
                 asUnderlying: true,
                 // NOTE: Roughly double deposit amount needed to cover 100% flat fee
                 depositAmount: shortAmount * 2,
+                minSharePrice: 0,
                 minSlippage: 0,
                 maxSlippage: type(uint256).max
             })
@@ -521,6 +522,7 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
                 asUnderlying: true,
                 // NOTE: Roughly double deposit amount needed to cover 100% flat fee
                 depositAmount: shortAmount * 2,
+                minSharePrice: 0,
                 minSlippage: 0,
                 maxSlippage: type(uint256).max
             })

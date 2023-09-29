@@ -33,7 +33,7 @@ contract OpenShortTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(IHyperdrive.MinimumTransactionAmount.selector);
-        hyperdrive.openShort(0, type(uint256).max, bob, true);
+        hyperdrive.openShort(0, type(uint256).max, 0, bob, true);
     }
 
     function test_open_short_failure_not_payable() external {
@@ -47,7 +47,7 @@ contract OpenShortTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(IHyperdrive.NotPayable.selector);
-        hyperdrive.openShort{ value: 1 }(1, type(uint256).max, bob, true);
+        hyperdrive.openShort{ value: 1 }(1, type(uint256).max, 0, bob, true);
     }
 
     function test_open_short_failure_pause() external {
@@ -62,7 +62,7 @@ contract OpenShortTest is HyperdriveTest {
         pause(true);
         vm.startPrank(bob);
         vm.expectRevert(IHyperdrive.Paused.selector);
-        hyperdrive.openShort(0, type(uint256).max, bob, true);
+        hyperdrive.openShort(0, type(uint256).max, 0, bob, true);
         vm.stopPrank();
         pause(false);
     }
@@ -81,7 +81,32 @@ contract OpenShortTest is HyperdriveTest {
         baseToken.mint(shortAmount);
         baseToken.approve(address(hyperdrive), shortAmount);
         vm.expectRevert(IHyperdrive.InvalidTradeSize.selector);
-        hyperdrive.openShort(shortAmount * 2, type(uint256).max, bob, true);
+        hyperdrive.openShort(shortAmount * 2, type(uint256).max, 0, bob, true);
+    }
+
+    function test_open_short_failure_minimum_share_price() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Attempt to open a long when the share price is lower than the minimum
+        // share price.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        uint256 bondAmount = 10e18;
+        baseToken.mint(bondAmount);
+        baseToken.approve(address(hyperdrive), bondAmount);
+        uint256 minSharePrice = 2 * hyperdrive.getPoolInfo().sharePrice;
+        vm.expectRevert(IHyperdrive.MinimumSharePrice.selector);
+        hyperdrive.openShort(
+            bondAmount,
+            type(uint256).max,
+            minSharePrice,
+            bob,
+            true
+        );
     }
 
     function test_open_short() external {
@@ -192,6 +217,7 @@ contract OpenShortTest is HyperdriveTest {
         DepositOverrides memory depositOverrides = DepositOverrides({
             asUnderlying: false,
             depositAmount: bondAmount * 2,
+            minSharePrice: 0,
             minSlippage: 0,
             maxSlippage: type(uint128).max
         });
