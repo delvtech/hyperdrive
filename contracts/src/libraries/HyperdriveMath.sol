@@ -236,8 +236,8 @@ library HyperdriveMath {
     /// @param _timeStretch The time stretch parameter.
     /// @param _sharePrice The share price.
     /// @param _initialSharePrice The initial share price.
-    /// @return shareReservesDelta The shares paid to the reserves in the trade.
-    /// @return bondReservesDelta The bonds paid by the reserves in the trade.
+    /// @return shareCurveProceeds The shares paid to the reserves in the trade.
+    /// @return bondCurvePayment The bonds paid by the reserves in the trade.
     /// @return sharePayment The shares that the user must pay.
     function calculateCloseShort(
         uint256 _effectiveShareReserves,
@@ -251,8 +251,8 @@ library HyperdriveMath {
         internal
         pure
         returns (
-            uint256 shareReservesDelta,
-            uint256 bondReservesDelta,
+            uint256 shareCurveProceeds,
+            uint256 bondCurvePayment,
             uint256 sharePayment
         )
     {
@@ -268,17 +268,17 @@ library HyperdriveMath {
             ONE - _normalizedTimeRemaining,
             _sharePrice
         );
-        bondReservesDelta = _amountOut.mulDown(_normalizedTimeRemaining);
-        if (bondReservesDelta > 0) {
-            shareReservesDelta = YieldSpaceMath.calculateSharesInGivenBondsOut(
+        bondCurvePayment = _amountOut.mulDown(_normalizedTimeRemaining);
+        if (bondCurvePayment > 0) {
+            shareCurveProceeds = YieldSpaceMath.calculateSharesInGivenBondsOut(
                 _effectiveShareReserves,
                 _bondReserves,
-                bondReservesDelta,
+                bondCurvePayment,
                 ONE - _timeStretch,
                 _sharePrice,
                 _initialSharePrice
             );
-            sharePayment += shareReservesDelta;
+            sharePayment += shareCurveProceeds;
         }
     }
 

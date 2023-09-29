@@ -223,12 +223,6 @@ contract CloseLongTest is HyperdriveTest {
             hyperdrive.getPoolInfo().longAverageMaturityTime,
             maturityTime * 1e18
         );
-
-        // Ensure that the average open share price was updated correctly.
-        assertEq(
-            hyperdrive.getCheckpoint(block.timestamp).longSharePrice,
-            hyperdrive.getPoolInfo().sharePrice
-        );
     }
 
     function test_close_long_halfway_through_term() external {
