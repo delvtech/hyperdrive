@@ -164,7 +164,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
             uint256 bondReservesDelta,
             uint256 shareProceeds,
             uint256 shareReservesDelta,
-            uint256 shareCurvePayment,
+            uint256 shareCurveDelta,
             int256 shareAdjustmentDelta,
             uint256 totalGovernanceFee
         ) = _calculateCloseLong(_bondAmount, sharePrice, _maturityTime);
@@ -191,7 +191,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
             );
             _updateCheckpointLongExposureOnClose(
                 _bondAmount,
-                shareCurvePayment,
+                shareCurveDelta,
                 bondReservesDelta,
                 shareReservesDelta,
                 maturityTime,
@@ -460,7 +460,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
     /// @return bondReservesDelta The bonds added to the reserves.
     /// @return shareProceeds The proceeds in shares of selling the bonds.
     /// @return shareReservesDelta The shares removed from the reserves.
-    /// @return shareCurvePayment The curve portion of the payment that LPs need
+    /// @return shareCurveDelta The curve portion of the payment that LPs need
     ///         to make to the trader in shares.
     /// @return shareAdjustmentDelta The change in the share adjustment.
     /// @return totalGovernanceFee The governance fee in shares.
@@ -474,7 +474,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
             uint256 bondReservesDelta,
             uint256 shareProceeds,
             uint256 shareReservesDelta,
-            uint256 shareCurvePayment,
+            uint256 shareCurveDelta,
             int256 shareAdjustmentDelta,
             uint256 totalGovernanceFee
         )
@@ -491,19 +491,16 @@ abstract contract HyperdriveLong is HyperdriveLP {
             // to ensure that opening/closing a position doesn't result in
             // immediate profit.
             uint256 timeRemaining = _calculateTimeRemaining(_maturityTime);
-            (
-                shareCurvePayment,
-                bondReservesDelta,
-                shareProceeds
-            ) = HyperdriveMath.calculateCloseLong(
-                _effectiveShareReserves(),
-                _marketState.bondReserves,
-                _bondAmount,
-                timeRemaining,
-                _timeStretch,
-                _sharePrice,
-                _initialSharePrice
-            );
+            (shareCurveDelta, bondReservesDelta, shareProceeds) = HyperdriveMath
+                .calculateCloseLong(
+                    _effectiveShareReserves(),
+                    _marketState.bondReserves,
+                    _bondAmount,
+                    timeRemaining,
+                    _timeStretch,
+                    _sharePrice,
+                    _initialSharePrice
+                );
 
             // Record an oracle update.
             uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
@@ -531,9 +528,9 @@ abstract contract HyperdriveLong is HyperdriveLP {
             );
 
             // The curve fee (shares) is paid to the LPs, so we subtract it from
-            // the share curve payment (shares) to prevent it from being debited
+            // the share curve delta (shares) to prevent it from being debited
             // from the reserves when the state is updated.
-            shareCurvePayment -= totalCurveFee;
+            shareCurveDelta -= totalCurveFee;
 
             // The trader pays the curve fee (shares) and flat fee (shares) to
             // the pool, so we debit them from the trader's share proceeds
@@ -555,13 +552,13 @@ abstract contract HyperdriveLong is HyperdriveLP {
         (
             shareProceeds,
             shareReservesDelta,
-            shareCurvePayment,
+            shareCurveDelta,
             shareAdjustmentDelta,
             totalGovernanceFee
         ) = HyperdriveMath.calculateNegativeInterestOnClose(
             shareProceeds,
             shareReservesDelta,
-            shareCurvePayment,
+            shareCurveDelta,
             totalGovernanceFee,
             // NOTE: We use the share price from the beginning of the
             // checkpoint as the open share price. This means that a trader

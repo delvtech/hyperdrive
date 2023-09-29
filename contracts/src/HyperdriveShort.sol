@@ -158,7 +158,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             uint256 bondReservesDelta,
             uint256 shareProceeds,
             uint256 shareReservesDelta,
-            uint256 shareCurveProceeds,
+            uint256 shareCurveDelta,
             int256 shareAdjustmentDelta,
             uint256 totalGovernanceFee
         ) = _calculateCloseShort(_bondAmount, sharePrice, _maturityTime);
@@ -170,7 +170,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // condition of mu * (z - zeta) > y.
         if (
             _initialSharePrice.mulDown(
-                _effectiveShareReserves() + shareCurveProceeds
+                _effectiveShareReserves() + shareCurveDelta
             ) > _marketState.bondReserves - bondReservesDelta
         ) {
             revert IHyperdrive.NegativeInterest();
@@ -202,7 +202,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             );
             _updateCheckpointLongExposureOnClose(
                 bondAmount,
-                shareCurveProceeds,
+                shareCurveDelta,
                 bondReservesDelta,
                 shareReservesDelta,
                 maturityTime,
@@ -464,7 +464,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
     /// @return bondReservesDelta The change in the bond reserves.
     /// @return shareProceeds The proceeds in shares of closing the short.
     /// @return shareReservesDelta The shares added to the reserves.
-    /// @return shareCurveProceeds The The curve portion of the proceeds that
+    /// @return shareCurveDelta The The curve portion of the proceeds that
     ///         LPs receive from the trader in shares.
     /// @return shareAdjustmentDelta The change in the share adjustment.
     /// @return totalGovernanceFee The governance fee in shares.
@@ -478,7 +478,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             uint256 bondReservesDelta,
             uint256 shareProceeds,
             uint256 shareReservesDelta,
-            uint256 shareCurveProceeds,
+            uint256 shareCurveDelta,
             int256 shareAdjustmentDelta,
             uint256 totalGovernanceFee
         )
@@ -496,7 +496,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             // immediate profit.
             uint256 timeRemaining = _calculateTimeRemaining(_maturityTime);
             (
-                shareCurveProceeds,
+                shareCurveDelta,
                 bondReservesDelta,
                 shareReservesDelta
             ) = HyperdriveMath.calculateCloseShort(
@@ -541,12 +541,12 @@ abstract contract HyperdriveShort is HyperdriveLP {
             // that the LPs are credited with the fee the trader paid on the
             // curve trade minus the portion of the curve fee that was paid to
             // governance.
-            // shareCurveProceeds, totalGovernanceFee and governanceCurveFee
+            // shareCurveDelta, totalGovernanceFee and governanceCurveFee
             // are all denominated in shares so we just need to subtract out
-            // the governanceCurveFees from the shareCurveProceeds since that
+            // the governanceCurveFees from the shareCurveDelta since that
             // fee isn't reserved for the LPs
             // shares += shares - shares
-            shareCurveProceeds += totalCurveFee - governanceCurveFee;
+            shareCurveDelta += totalCurveFee - governanceCurveFee;
 
             // Calculate the shareReservesDelta that the user must make to close
             // out the short. We add the totalCurveFee (shares) and totalFlatFee
@@ -594,13 +594,13 @@ abstract contract HyperdriveShort is HyperdriveLP {
             (
                 shareProceeds,
                 shareReservesDelta,
-                shareCurveProceeds,
+                shareCurveDelta,
                 shareAdjustmentDelta,
                 totalGovernanceFee
             ) = HyperdriveMath.calculateNegativeInterestOnClose(
                 shareProceeds,
                 shareReservesDelta,
-                shareCurveProceeds,
+                shareCurveDelta,
                 totalGovernanceFee,
                 openSharePrice,
                 closeSharePrice,

@@ -148,7 +148,7 @@ library HyperdriveMath {
     /// @param _timeStretch The time stretch parameter.
     /// @param _sharePrice The share price.
     /// @param _initialSharePrice The share price when the pool was deployed.
-    /// @return shareCurvePayment The shares paid by the reserves in the trade.
+    /// @return shareCurveDelta The shares paid by the reserves in the trade.
     /// @return bondCurveProceeds The bonds paid to the reserves in the trade.
     /// @return shareProceeds The shares that the user will receive.
     function calculateCloseLong(
@@ -163,7 +163,7 @@ library HyperdriveMath {
         internal
         pure
         returns (
-            uint256 shareCurvePayment,
+            uint256 shareCurveDelta,
             uint256 bondCurveProceeds,
             uint256 shareProceeds
         )
@@ -183,7 +183,7 @@ library HyperdriveMath {
             bondCurveProceeds = _amountIn.mulDown(_normalizedTimeRemaining);
 
             // (time remaining)/(term length) is always 1 so we just use _timeStretch
-            shareCurvePayment = YieldSpaceMath.calculateSharesOutGivenBondsIn(
+            shareCurveDelta = YieldSpaceMath.calculateSharesOutGivenBondsIn(
                 _effectiveShareReserves,
                 _bondReserves,
                 bondCurveProceeds,
@@ -191,7 +191,7 @@ library HyperdriveMath {
                 _sharePrice,
                 _initialSharePrice
             );
-            shareProceeds += shareCurvePayment;
+            shareProceeds += shareCurveDelta;
         }
     }
 
@@ -236,7 +236,7 @@ library HyperdriveMath {
     /// @param _timeStretch The time stretch parameter.
     /// @param _sharePrice The share price.
     /// @param _initialSharePrice The initial share price.
-    /// @return shareCurveProceeds The shares paid to the reserves in the trade.
+    /// @return shareCurveDelta The shares paid to the reserves in the trade.
     /// @return bondCurvePayment The bonds paid by the reserves in the trade.
     /// @return sharePayment The shares that the user must pay.
     function calculateCloseShort(
@@ -251,7 +251,7 @@ library HyperdriveMath {
         internal
         pure
         returns (
-            uint256 shareCurveProceeds,
+            uint256 shareCurveDelta,
             uint256 bondCurvePayment,
             uint256 sharePayment
         )
@@ -270,7 +270,7 @@ library HyperdriveMath {
         );
         bondCurvePayment = _amountOut.mulDown(_normalizedTimeRemaining);
         if (bondCurvePayment > 0) {
-            shareCurveProceeds = YieldSpaceMath.calculateSharesInGivenBondsOut(
+            shareCurveDelta = YieldSpaceMath.calculateSharesInGivenBondsOut(
                 _effectiveShareReserves,
                 _bondReserves,
                 bondCurvePayment,
@@ -278,7 +278,7 @@ library HyperdriveMath {
                 _sharePrice,
                 _initialSharePrice
             );
-            sharePayment += shareCurveProceeds;
+            sharePayment += shareCurveDelta;
         }
     }
 
@@ -320,22 +320,20 @@ library HyperdriveMath {
         uint256 _closeSharePrice,
         bool _isLong
     ) internal pure returns (uint256, uint256, uint256, int256, uint256) {
-        // The share reserves delta, share curve proceeds, and total
-        // governance fee need to be scaled down in proportion to the
-        // negative interest. This results in the pool receiving a lower
-        // payment, which reflects the fact that negative interest is
-        // attributed to longs.
+        // The share reserves delta, share curve delta, and total governance fee
+        // need to be scaled down in proportion to the negative interest. This
+        // results in the pool receiving a lower payment, which reflects the
+        // fact that negative interest is attributed to longs.
         //
-        // In order for our AMM invariant to be maintained, the effective
-        // share reserves need to be adjusted by the same amount as the
-        // share reserves delta calculated with YieldSpace including fees.
-        // We increase the share reserves by
-        // `min(c_1 / c_0, 1) * shareReservesDelta` and the share adjustment
-        // by the `shareAdjustmentDelta`. We can solve these equations
-        // simultaneously to find the share adjustment delta as:
+        // In order for our AMM invariant to be maintained, the effective share
+        // reserves need to be adjusted by the same amount as the share reserves
+        // delta calculated with YieldSpace including fees. We increase the
+        // share reserves by `min(c_1 / c_0, 1) * shareReservesDelta` and the
+        // share adjustment by the `shareAdjustmentDelta`. We can solve these
+        // equations simultaneously to find the share adjustment delta as:
         //
         // shareAdjustmentDelta = min(c_1 / c_0, 1) * shareReservesDelta -
-        //                        shareCurveProceeds
+        //                        shareCurveDelta
         int256 shareAdjustmentDelta;
         if (_closeSharePrice < _openSharePrice) {
             // TODO: It may be better to scale here considering that the current
