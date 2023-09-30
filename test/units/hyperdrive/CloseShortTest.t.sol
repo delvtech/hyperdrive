@@ -764,6 +764,11 @@ contract CloseShortTest is HyperdriveTest {
                 ),
                 1e10
             );
+            assertApproxEqAbs(
+                poolInfoAfter.shareAdjustment,
+                poolInfoBefore.shareAdjustment + int256(shareAdjustmentDelta),
+                1
+            );
             assertEq(
                 poolInfoAfter.shortsOutstanding,
                 testCase.poolInfoBefore.shortsOutstanding - testCase.bondAmount

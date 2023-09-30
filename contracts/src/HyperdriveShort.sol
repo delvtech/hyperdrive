@@ -231,7 +231,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
         if (baseProceeds < _minOutput) revert IHyperdrive.OutputLimit();
 
         // Emit a CloseShort event.
-        // uint256 bondAmount = _bondAmount; // Avoid stack too deep error.
         emit CloseShort(
             _destination,
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, maturityTime),
@@ -455,6 +454,10 @@ abstract contract HyperdriveShort is HyperdriveLP {
         return (traderDeposit, shareReservesDelta, totalGovernanceFee);
     }
 
+    // FIXME: We should calculate the share adjustment here. There is a
+    // component of the share adjustment needed for negative interest on the
+    // curve and another for flat updates.
+    //
     /// @dev Calculate the pool reserve and trader deltas that result from
     ///      closing a short. This calculation includes trading fees.
     /// @param _bondAmount The amount of bonds being purchased to close the
@@ -541,6 +544,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             // that the LPs are credited with the fee the trader paid on the
             // curve trade minus the portion of the curve fee that was paid to
             // governance.
+            //
             // shareCurveDelta, totalGovernanceFee and governanceCurveFee
             // are all denominated in shares so we just need to subtract out
             // the governanceCurveFees from the shareCurveDelta since that
