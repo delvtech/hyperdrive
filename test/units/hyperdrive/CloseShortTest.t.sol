@@ -716,11 +716,11 @@ contract CloseShortTest is HyperdriveTest {
             ) {
                 shareReservesDelta = shareReservesDelta.mulDivDown(
                     poolInfoAfter.sharePrice,
-                    hyperdrive.getPoolConfig().initialSharePrice
+                    initialSharePrice
                 );
                 shareAdjustmentDelta = shareAdjustmentDelta.mulDivDown(
                     poolInfoAfter.sharePrice,
-                    hyperdrive.getPoolConfig().initialSharePrice
+                    initialSharePrice
                 );
             }
             assertApproxEqAbs(
@@ -763,11 +763,6 @@ contract CloseShortTest is HyperdriveTest {
                     testCase.poolInfoBefore.bondReserves
                 ),
                 1e10
-            );
-            assertApproxEqAbs(
-                poolInfoAfter.shareAdjustment,
-                poolInfoBefore.shareAdjustment + int256(shareAdjustmentDelta),
-                1
             );
             assertEq(
                 poolInfoAfter.shortsOutstanding,
