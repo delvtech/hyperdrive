@@ -23,6 +23,9 @@ abstract contract HyperdriveLong is HyperdriveLP {
     /// @notice Opens a long position.
     /// @param _baseAmount The amount of base to use when trading.
     /// @param _minOutput The minium number of bonds to receive.
+    /// @param _minSharePrice The minium share price at which to open the long.
+    ///        This allows traders to protect themselves from opening a long in
+    ///        a checkpoint where negative interest has accrued.
     /// @param _destination The address which will receive the bonds
     /// @param _asUnderlying A flag indicating whether the sender will pay in
     ///        base or using another currency. Implementations choose which
@@ -32,6 +35,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
     function openLong(
         uint256 _baseAmount,
         uint256 _minOutput,
+        uint256 _minSharePrice,
         address _destination,
         bool _asUnderlying
     )
@@ -52,6 +56,9 @@ abstract contract HyperdriveLong is HyperdriveLP {
             _baseAmount,
             _asUnderlying
         );
+        if (sharePrice < _minSharePrice) {
+            revert IHyperdrive.MinimumSharePrice();
+        }
 
         // Perform a checkpoint.
         uint256 latestCheckpoint = _latestCheckpoint();
@@ -154,24 +161,24 @@ abstract contract HyperdriveLong is HyperdriveLP {
 
         // Calculate the pool and user deltas using the trading function.
         (
+            uint256 sharePayment,
+            uint256 shareProceeds,
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
-            uint256 shareProceeds,
             uint256 totalGovernanceFee
         ) = _calculateCloseLong(_bondAmount, sharePrice, _maturityTime);
 
         // If the position hasn't matured, apply the accounting updates that
         // result from closing the long to the reserves and pay out the
         // withdrawal pool if necessary.
+        uint256 maturityTime = _maturityTime; // Avoid stack too deep error.
         if (block.timestamp < _maturityTime) {
             // Attribute the governance fee.
             _governanceFeesAccrued += totalGovernanceFee;
-            uint256 shareProceedsWithFees = shareProceeds + totalGovernanceFee;
-            uint256 maturityTime = _maturityTime; // Avoid stack too deep error.
             _applyCloseLong(
                 _bondAmount,
                 bondReservesDelta,
-                shareProceedsWithFees,
+                sharePayment,
                 shareReservesDelta,
                 maturityTime
             );
@@ -185,7 +192,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
                 _bondAmount,
                 shareReservesDelta,
                 bondReservesDelta,
-                shareProceedsWithFees,
+                sharePayment,
                 maturityTime,
                 sharePrice,
                 true
@@ -210,12 +217,13 @@ abstract contract HyperdriveLong is HyperdriveLP {
         if (_minOutput > baseProceeds) revert IHyperdrive.OutputLimit();
 
         // Emit a CloseLong event.
+        uint256 bondAmount = _bondAmount; // Avoid stack too deep error.
         emit CloseLong(
             _destination,
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _maturityTime),
-            _maturityTime,
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
+            maturityTime,
             baseProceeds,
-            _bondAmount
+            bondAmount
         );
 
         return (baseProceeds);
@@ -482,14 +490,20 @@ abstract contract HyperdriveLong is HyperdriveLP {
         );
     }
 
+    // FIXME: We should calculate the share adjustment here. There is a
+    // component of the share adjustment needed for negative interest on the
+    // curve and another for flat updates.
+    //
     /// @dev Calculate the pool reserve and trader deltas that result from
     ///      closing a long. This calculation includes trading fees.
     /// @param _bondAmount The amount of bonds being purchased to close the short.
     /// @param _sharePrice The current share price.
     /// @param _maturityTime The maturity time of the short position.
+    /// @return sharePayment The payment in shares that the LPs need to make to
+    ///         ensure the trader and governance receive their proceeds.
+    /// @return shareProceeds The proceeds in shares of selling the bonds.
     /// @return shareReservesDelta The change in the share reserves.
     /// @return bondReservesDelta The change in the bond reserves.
-    /// @return shareProceeds The proceeds in shares of selling the bonds.
     /// @return totalGovernanceFee The governance fee in shares.
     function _calculateCloseLong(
         uint256 _bondAmount,
@@ -498,81 +512,109 @@ abstract contract HyperdriveLong is HyperdriveLP {
     )
         internal
         returns (
+            uint256 sharePayment,
+            uint256 shareProceeds,
             uint256 shareReservesDelta,
             uint256 bondReservesDelta,
-            uint256 shareProceeds,
             uint256 totalGovernanceFee
         )
     {
         // Calculate the effect that closing the long should have on the pool's
         // reserves as well as the amount of shares the trader receives for
-        // selling the bonds at the market price.
-        // NOTE: We calculate the time remaining from the latest checkpoint to ensure that
-        // opening/closing a position doesn't result in immediate profit.
-        uint256 timeRemaining = _calculateTimeRemaining(_maturityTime);
-        uint256 closeSharePrice = block.timestamp < _maturityTime
-            ? _sharePrice
-            : _checkpoints[_maturityTime].sharePrice;
-        (shareReservesDelta, bondReservesDelta, shareProceeds) = HyperdriveMath
-            .calculateCloseLong(
+        // selling their bonds.
+        {
+            // Calculate the effect that closing the long should have on the
+            // pool's reserves as well as the amount of shares the trader
+            // receives for selling the bonds at the market price.
+            //
+            // NOTE: We calculate the time remaining from the latest checkpoint
+            // to ensure that opening/closing a position doesn't result in
+            // immediate profit.
+            uint256 timeRemaining = _calculateTimeRemaining(_maturityTime);
+            (
+                shareReservesDelta,
+                bondReservesDelta,
+                shareProceeds
+            ) = HyperdriveMath.calculateCloseLong(
                 _effectiveShareReserves(),
                 _marketState.bondReserves,
                 _bondAmount,
                 timeRemaining,
                 _timeStretch,
-                _checkpoints[_maturityTime - _positionDuration].longSharePrice,
-                closeSharePrice,
                 _sharePrice,
                 _initialSharePrice
             );
 
-        // Calculate the fees charged on the curve and flat parts of the trade.
-        // Since we calculate the amount of shares received given bonds in, we
-        // subtract the fee from the share deltas so that the trader receives
-        // less shares.
-        uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
-            _effectiveShareReserves(),
-            _marketState.bondReserves,
-            _initialSharePrice,
-            _timeStretch
-        );
+            // Record an oracle update.
+            uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
+                _effectiveShareReserves(),
+                _marketState.bondReserves,
+                _initialSharePrice,
+                _timeStretch
+            );
+            recordPrice(spotPrice);
 
-        // Record an oracle update
-        recordPrice(spotPrice);
+            // Calculate the fees that should be paid by the trader. The trader
+            // pays a fee on the curve and flat parts of the trade. Most of the
+            // fees go the LPs, but a portion goes to governance.
+            uint256 totalCurveFee;
+            uint256 totalFlatFee;
+            (
+                totalCurveFee, // shares
+                totalFlatFee, // shares
+                totalGovernanceFee // shares
+            ) = _calculateFeesOutGivenBondsIn(
+                _bondAmount,
+                timeRemaining,
+                spotPrice,
+                _sharePrice
+            );
 
-        // Calculate the fees charged to the user (totalCurveFe, totalFlatFee) and the portion of those
-        // fees that are paid to governance (governanceCurveFee).
-        uint256 totalCurveFee;
-        uint256 totalFlatFee;
-        (
-            totalCurveFee, // shares
-            totalFlatFee, // shares
-            totalGovernanceFee // shares
-        ) = _calculateFeesOutGivenBondsIn(
-            _bondAmount,
-            timeRemaining,
-            spotPrice,
-            _sharePrice
-        );
+            // The curve fee (shares) is paid to the LPs, so we subtract it from
+            // the share reserves delta (shares) to prevent it from being
+            // debited from the reserves when the state is updated.
+            shareReservesDelta -= totalCurveFee;
 
-        // Calculate the number of shares to remove from the shareReserves.
-        // We do this bc the shareReservesDelta represents how many shares to remove
-        // from the shareReserves.  Making the shareReservesDelta smaller pays out the
-        // totalCurveFee to the LPs.
-        // The shareReservesDelta and the totalCurveFee are both in terms of shares
-        // shares -= shares
-        shareReservesDelta -= totalCurveFee;
+            // The trader pays the curve fee (shares) and flat fee (shares) to
+            // the pool, so we debit them from the trader's share proceeds
+            // (shares).
+            shareProceeds -= totalCurveFee + totalFlatFee;
+        }
 
-        // Calculate the number of shares the trader receives.
-        // The shareProceeds, totalCurveFee, and totalFlatFee are all in terms of shares
-        // shares -= shares + shares
-        shareProceeds -= totalCurveFee + totalFlatFee;
+        // If negative interest accrued over the term, we scale the share
+        // proceeds by the negative interest amount. Shorts should be
+        // responsible for negative interest, but negative interest can exceed
+        // the margin that shorts provide. This leaves us with no choice but to
+        // attribute the negative interest to longs. Along with scaling the
+        // share proceeds, we also scale the fee amounts.
+        {
+            uint256 openSharePrice = _checkpoints[
+                _maturityTime - _positionDuration
+            ].longSharePrice;
+            uint256 closeSharePrice = block.timestamp < _maturityTime
+                ? _sharePrice
+                : _checkpoints[_maturityTime].sharePrice;
+            if (closeSharePrice < openSharePrice) {
+                shareProceeds = shareProceeds.mulDivDown(
+                    closeSharePrice,
+                    openSharePrice
+                );
+                shareReservesDelta = shareReservesDelta.mulDivDown(
+                    closeSharePrice,
+                    openSharePrice
+                );
+                totalGovernanceFee = totalGovernanceFee.mulDivDown(
+                    closeSharePrice,
+                    openSharePrice
+                );
+            }
+        }
 
-        return (
-            shareReservesDelta,
-            bondReservesDelta,
-            shareProceeds,
-            totalGovernanceFee
-        );
+        // We applied the full curve and flat fees to the share proceeds, which
+        // reduce the trader's proceeds. To calculate the payment that is
+        // applied to the share reserves (and is effectively paid by the LPs),
+        // we need to add governance's portion of these fees to the share
+        // proceeds.
+        sharePayment = shareProceeds + totalGovernanceFee;
     }
 }

@@ -42,6 +42,7 @@ contract DevnetSmokeTest is Script {
             (, uint256 basePaid) = HYPERDRIVE.openShort(
                 bondAmount,
                 type(uint256).max,
+                0,
                 msg.sender,
                 true
             );
@@ -52,7 +53,7 @@ contract DevnetSmokeTest is Script {
             uint256 basePaid = 300_000e18;
             BASE.mint(msg.sender, basePaid);
             BASE.approve(address(HYPERDRIVE), basePaid);
-            HYPERDRIVE.openLong(basePaid, 0, msg.sender, true);
+            HYPERDRIVE.openLong(basePaid, 0, 0, msg.sender, true);
         }
 
         console.log("Ending pool info:");
@@ -69,6 +70,7 @@ contract DevnetSmokeTest is Script {
         BASE.approve(address(HYPERDRIVE), 10_000e18);
         (uint256 maturityTime, uint256 bondAmount) = HYPERDRIVE.openLong(
             10_000e18,
+            0,
             0,
             msg.sender,
             true
@@ -134,6 +136,7 @@ contract DevnetSmokeTest is Script {
         (uint256 maturityTime, uint256 bondAmount) = HYPERDRIVE.openShort(
             10_000e18,
             type(uint256).max,
+            0,
             msg.sender,
             true
         );

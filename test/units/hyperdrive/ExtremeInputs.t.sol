@@ -214,7 +214,7 @@ contract ExtremeInputs is HyperdriveTest {
         baseToken.mint(shortAmount);
         baseToken.approve(address(hyperdrive), shortAmount);
         vm.expectRevert(IHyperdrive.BaseBufferExceedsShareReserves.selector);
-        hyperdrive.openShort(shortAmount, type(uint256).max, bob, true);
+        hyperdrive.openShort(shortAmount, type(uint256).max, 0, bob, true);
     }
 
     // This test stresses the edge cases of the `_updateLiquidity` function

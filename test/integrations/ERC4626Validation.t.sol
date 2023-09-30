@@ -510,6 +510,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             (maturityTime, bondAmount) = hyperdrive.openLong(
                 baseAmount,
                 0,
+                0,
                 trader,
                 asUnderlying
             );
@@ -517,6 +518,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             token.approve(address(hyperdrive), baseAmount);
             (maturityTime, bondAmount) = hyperdrive.openLong(
                 baseAmount,
+                0,
                 0,
                 trader,
                 asUnderlying
@@ -539,6 +541,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             (maturityTime, baseAmount) = hyperdrive.openShort(
                 bondAmount,
                 type(uint256).max,
+                0,
                 trader,
                 asUnderlying
             );
@@ -547,6 +550,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             (maturityTime, baseAmount) = hyperdrive.openShort(
                 bondAmount,
                 type(uint256).max,
+                0,
                 trader,
                 asUnderlying
             );

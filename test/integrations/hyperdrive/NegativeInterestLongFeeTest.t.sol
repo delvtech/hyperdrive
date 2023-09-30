@@ -139,6 +139,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
             DepositOverrides({
                 asUnderlying: true,
                 depositAmount: basePaid,
+                minSharePrice: 0,
                 minSlippage: 0, // TODO: This should never go below the base amount. Investigate this.
                 maxSlippage: type(uint256).max
             })
@@ -331,6 +332,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
             DepositOverrides({
                 asUnderlying: true,
                 depositAmount: basePaid,
+                minSharePrice: 0,
                 minSlippage: 0, // TODO: This should never go below the base amount. Investigate this.
                 maxSlippage: type(uint256).max
             })
@@ -349,13 +351,6 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
         // Term matures and accrues interest
         advanceTime(POSITION_DURATION, variableInterest);
 
-        // Record the closeSharePrice after interest accrual.
-        (uint256 closeSharePrice, ) = HyperdriveUtils.calculateCompoundInterest(
-            openSharePrice,
-            variableInterest,
-            POSITION_DURATION
-        );
-
         // Close the long.
         closeLong(bob, maturityTime, bondAmount);
         {
@@ -363,9 +358,14 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
             uint256 governanceFeesAfterCloseLong = IMockHyperdrive(
                 address(hyperdrive)
             ).getGovernanceFeesAccrued();
-            // Calculate the expected accrued fees from closing the long
+            // Calculate the expected accrued fees from closing the long. Let
+            // `g` be the governance fee in base. Normally, `g / c` gives the
+            // governance fee in shares, but negative interest accrued over the
+            // period, so we scale the governance fee by `c / c_0` where `c_0`
+            // is the share price at the beginning of the checkpoint. This gives
+            // us a governance fee of `(c / c_0) * (g / c)  = g / c_0`.
             uint256 expectedGovernanceFees = (bondAmount * flatFee) /
-                closeSharePrice;
+                openSharePrice;
             assertApproxEqAbs(
                 governanceFeesAfterCloseLong,
                 expectedGovernanceFees,
@@ -524,6 +524,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
             DepositOverrides({
                 asUnderlying: true,
                 depositAmount: basePaid,
+                minSharePrice: 0,
                 minSlippage: 0, // TODO: This should never go below the base amount. Investigate this.
                 maxSlippage: type(uint256).max
             })
@@ -555,13 +556,6 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
         // 1/2 term matures and accrues interest
         advanceTime(POSITION_DURATION / 2, variableInterest);
 
-        // Record the closeSharePrice after interest accrual.
-        (uint256 closeSharePrice, ) = HyperdriveUtils.calculateCompoundInterest(
-            openSharePrice,
-            variableInterest,
-            POSITION_DURATION / 2
-        );
-
         // Close the long.
         closeLong(bob, maturityTime, bondAmount);
 
@@ -578,14 +572,14 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
             uint256 expectedFlat = bondAmount
                 .mulDivDown(
                     FixedPointMath.ONE_18 - normalizedTimeRemaining,
-                    closeSharePrice
+                    openSharePrice
                 )
                 .mulDown(0.1e18);
             uint256 expectedCurve = (FixedPointMath.ONE_18 -
                 calculatedSpotPrice)
                 .mulDown(0.1e18)
                 .mulDown(bondAmount)
-                .mulDivDown(normalizedTimeRemaining, closeSharePrice);
+                .mulDivDown(normalizedTimeRemaining, openSharePrice);
             assertApproxEqAbs(
                 governanceFeesAfterCloseLong,
                 (expectedFlat + expectedCurve),

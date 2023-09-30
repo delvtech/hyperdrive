@@ -167,6 +167,7 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
             HyperdriveUtils.calculateTimeRemaining(hyperdrive, maturityTime),
             calculatedSpotPrice,
             sharePrice,
+            sharePrice,
             1e18,
             0,
             1e18
@@ -296,6 +297,9 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
         // fast forward time and accrue interest
         advanceTime(POSITION_DURATION, preTradeVariableInterest);
 
+        // Record the openSharePrice after interest accrual.
+        uint256 openSharePrice = hyperdrive.getPoolInfo().sharePrice;
+
         // Ensure that the governance initially has zero balance
         uint256 governanceBalanceBefore = baseToken.balanceOf(feeCollector);
         assertEq(governanceBalanceBefore, 0);
@@ -318,6 +322,7 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
                 asUnderlying: true,
                 // NOTE: Roughly double deposit amount needed to cover 100% flat fee
                 depositAmount: shortAmount * 2,
+                minSharePrice: 0,
                 minSlippage: 0,
                 maxSlippage: type(uint256).max
             })
@@ -358,6 +363,7 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
                 ),
                 calculatedSpotPrice,
                 closeSharePrice,
+                openSharePrice,
                 0,
                 .1e18,
                 1e18
@@ -516,6 +522,7 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
                 asUnderlying: true,
                 // NOTE: Roughly double deposit amount needed to cover 100% flat fee
                 depositAmount: shortAmount * 2,
+                minSharePrice: 0,
                 minSlippage: 0,
                 maxSlippage: type(uint256).max
             })
@@ -568,6 +575,7 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
                 ),
                 calculatedSpotPrice,
                 closeSharePrice,
+                openSharePrice,
                 .1e18,
                 .1e18,
                 1e18
@@ -604,6 +612,7 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
         uint256 normalizedTimeRemaining,
         uint256 calculatedSpotPrice,
         uint256 sharePrice,
+        uint256 openSharePrice,
         uint256 curveFee,
         uint256 flatFee,
         uint256 governanceFee
@@ -620,6 +629,6 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
         );
         uint256 totalFlatFee = (flat.mulDown(flatFee));
         totalGovernanceFee += totalFlatFee.mulDown(governanceFee);
-        return totalGovernanceFee;
+        return totalGovernanceFee.mulDivDown(sharePrice, openSharePrice);
     }
 }

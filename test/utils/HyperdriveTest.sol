@@ -175,6 +175,9 @@ contract HyperdriveTest is BaseTest {
         // transferred into the YieldSource, which allows us to test ETH
         // reentrancy.
         uint256 depositAmount;
+        // The minimum share price that will be accepted. It may not be used by
+        // some actions.
+        uint256 minSharePrice;
         // This is the slippage parameter that defines a lower bound on the
         // quantity being measured. It may not be used by some actions.
         uint256 minSlippage;
@@ -239,6 +242,7 @@ contract HyperdriveTest is BaseTest {
                 DepositOverrides({
                     asUnderlying: true,
                     depositAmount: contribution,
+                    minSharePrice: 0, // unused
                     minSlippage: 0, // unused
                     maxSlippage: type(uint256).max // unused
                 })
@@ -259,6 +263,7 @@ contract HyperdriveTest is BaseTest {
                 DepositOverrides({
                     asUnderlying: asUnderlying,
                     depositAmount: contribution,
+                    minSharePrice: 0, // unused
                     minSlippage: 0, // unused
                     maxSlippage: type(uint256).max // unused
                 })
@@ -311,6 +316,7 @@ contract HyperdriveTest is BaseTest {
                 DepositOverrides({
                     asUnderlying: true,
                     depositAmount: contribution,
+                    minSharePrice: 0, // unused
                     minSlippage: 0, // min spot rate of 0
                     maxSlippage: type(uint256).max // max spot rate of uint256 max
                 })
@@ -329,6 +335,7 @@ contract HyperdriveTest is BaseTest {
                 DepositOverrides({
                     asUnderlying: asUnderlying,
                     depositAmount: contribution,
+                    minSharePrice: 0, // unused
                     minSlippage: 0, // min spot rate of 0
                     maxSlippage: type(uint256).max // max spot rate of uint256 max
                 })
@@ -450,6 +457,7 @@ contract HyperdriveTest is BaseTest {
                 hyperdrive.openLong{ value: overrides.depositAmount }(
                     baseAmount,
                     overrides.minSlippage, // min bond proceeds
+                    overrides.minSharePrice,
                     trader,
                     overrides.asUnderlying
                 );
@@ -460,6 +468,7 @@ contract HyperdriveTest is BaseTest {
                 hyperdrive.openLong(
                     baseAmount,
                     overrides.minSlippage, // min bond proceeds
+                    overrides.minSharePrice,
                     trader,
                     overrides.asUnderlying
                 );
@@ -477,6 +486,7 @@ contract HyperdriveTest is BaseTest {
                 DepositOverrides({
                     asUnderlying: true,
                     depositAmount: baseAmount,
+                    minSharePrice: 0, // min share price of 0
                     minSlippage: baseAmount, // min bond proceeds of baseAmount
                     maxSlippage: type(uint256).max // unused
                 })
@@ -495,6 +505,7 @@ contract HyperdriveTest is BaseTest {
                 DepositOverrides({
                     asUnderlying: asUnderlying,
                     depositAmount: baseAmount,
+                    minSharePrice: 0, // min share price of 0
                     minSlippage: baseAmount, // min bond proceeds of baseAmount
                     maxSlippage: type(uint256).max // unused
                 })
@@ -577,6 +588,7 @@ contract HyperdriveTest is BaseTest {
             }(
                 bondAmount,
                 overrides.maxSlippage, // max base payment
+                overrides.minSharePrice,
                 trader,
                 overrides.asUnderlying
             );
@@ -586,6 +598,7 @@ contract HyperdriveTest is BaseTest {
             (maturityTime, baseAmount) = hyperdrive.openShort(
                 bondAmount,
                 overrides.maxSlippage, // max base payment
+                overrides.minSharePrice,
                 trader,
                 overrides.asUnderlying
             );
@@ -606,6 +619,7 @@ contract HyperdriveTest is BaseTest {
                 DepositOverrides({
                     asUnderlying: true,
                     depositAmount: bondAmount,
+                    minSharePrice: 0, // min share price of 0
                     minSlippage: 0, // unused
                     maxSlippage: bondAmount // max base payment of bondAmount
                 })
@@ -624,6 +638,7 @@ contract HyperdriveTest is BaseTest {
                 DepositOverrides({
                     asUnderlying: asUnderlying,
                     depositAmount: bondAmount,
+                    minSharePrice: 0, // min share price of 0
                     minSlippage: 0, // unused
                     maxSlippage: bondAmount // max base payment of bondAmount
                 })
@@ -723,11 +738,15 @@ contract HyperdriveTest is BaseTest {
             bondAmount,
             normalizedTimeRemaining,
             poolConfig.timeStretch,
-            openSharePrice,
-            closeSharePrice,
             poolInfo.sharePrice,
             poolConfig.initialSharePrice
         );
+        if (closeSharePrice < openSharePrice) {
+            shareProceeds = shareProceeds.mulDivDown(
+                closeSharePrice,
+                openSharePrice
+            );
+        }
         return shareProceeds.mulDivDown(poolInfo.sharePrice, 1e18);
     }
 
