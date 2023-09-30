@@ -149,7 +149,7 @@ library HyperdriveMath {
     /// @param _sharePrice The share price.
     /// @param _initialSharePrice The share price when the pool was deployed.
     /// @return shareCurveDelta The shares paid by the reserves in the trade.
-    /// @return bondCurveProceeds The bonds paid to the reserves in the trade.
+    /// @return bondCurveDelta The bonds paid to the reserves in the trade.
     /// @return shareProceeds The shares that the user will receive.
     function calculateCloseLong(
         uint256 _effectiveShareReserves,
@@ -164,7 +164,7 @@ library HyperdriveMath {
         pure
         returns (
             uint256 shareCurveDelta,
-            uint256 bondCurveProceeds,
+            uint256 bondCurveDelta,
             uint256 shareProceeds
         )
     {
@@ -180,13 +180,13 @@ library HyperdriveMath {
         );
         if (_normalizedTimeRemaining > 0) {
             // Calculate the curved part of the trade.
-            bondCurveProceeds = _amountIn.mulDown(_normalizedTimeRemaining);
+            bondCurveDelta = _amountIn.mulDown(_normalizedTimeRemaining);
 
             // (time remaining)/(term length) is always 1 so we just use _timeStretch
             shareCurveDelta = YieldSpaceMath.calculateSharesOutGivenBondsIn(
                 _effectiveShareReserves,
                 _bondReserves,
-                bondCurveProceeds,
+                bondCurveDelta,
                 ONE - _timeStretch,
                 _sharePrice,
                 _initialSharePrice
@@ -237,7 +237,7 @@ library HyperdriveMath {
     /// @param _sharePrice The share price.
     /// @param _initialSharePrice The initial share price.
     /// @return shareCurveDelta The shares paid to the reserves in the trade.
-    /// @return bondCurvePayment The bonds paid by the reserves in the trade.
+    /// @return bondCurveDelta The bonds paid by the reserves in the trade.
     /// @return sharePayment The shares that the user must pay.
     function calculateCloseShort(
         uint256 _effectiveShareReserves,
@@ -252,7 +252,7 @@ library HyperdriveMath {
         pure
         returns (
             uint256 shareCurveDelta,
-            uint256 bondCurvePayment,
+            uint256 bondCurveDelta,
             uint256 sharePayment
         )
     {
@@ -268,12 +268,12 @@ library HyperdriveMath {
             ONE - _normalizedTimeRemaining,
             _sharePrice
         );
-        bondCurvePayment = _amountOut.mulDown(_normalizedTimeRemaining);
-        if (bondCurvePayment > 0) {
+        bondCurveDelta = _amountOut.mulDown(_normalizedTimeRemaining);
+        if (bondCurveDelta > 0) {
             shareCurveDelta = YieldSpaceMath.calculateSharesInGivenBondsOut(
                 _effectiveShareReserves,
                 _bondReserves,
-                bondCurvePayment,
+                bondCurveDelta,
                 ONE - _timeStretch,
                 _sharePrice,
                 _initialSharePrice
