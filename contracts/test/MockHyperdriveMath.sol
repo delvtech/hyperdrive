@@ -4,14 +4,14 @@ pragma solidity 0.8.19;
 import { HyperdriveMath } from "../src/libraries/HyperdriveMath.sol";
 
 contract MockHyperdriveMath {
-    function calculateAPRFromReserves(
+    function calculateSpotRate(
         uint256 _shareReserves,
         uint256 _bondReserves,
         uint256 _initialSharePrice,
         uint256 _positionDuration,
         uint256 _timeStretch
     ) external pure returns (uint256) {
-        uint256 result = HyperdriveMath.calculateAPRFromReserves(
+        uint256 result = HyperdriveMath.calculateSpotRate(
             _shareReserves,
             _bondReserves,
             _initialSharePrice,
@@ -24,14 +24,14 @@ contract MockHyperdriveMath {
     function calculateInitialBondReserves(
         uint256 _shareReserves,
         uint256 _initialSharePrice,
-        uint256 _apr,
+        uint256 _spotRate,
         uint256 _positionDuration,
         uint256 _timeStretch
     ) external pure returns (uint256) {
         uint256 result = HyperdriveMath.calculateInitialBondReserves(
             _shareReserves,
             _initialSharePrice,
-            _apr,
+            _spotRate,
             _positionDuration,
             _timeStretch
         );

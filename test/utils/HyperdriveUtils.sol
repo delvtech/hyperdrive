@@ -12,11 +12,11 @@ library HyperdriveUtils {
     using FixedPointMath for uint256;
 
     function latestCheckpoint(
-        IHyperdrive hyperdrive
+        IHyperdrive _hyperdrive
     ) internal view returns (uint256) {
         return
             block.timestamp -
-            (block.timestamp % hyperdrive.getPoolConfig().checkpointDuration);
+            (block.timestamp % _hyperdrive.getPoolConfig().checkpointDuration);
     }
 
     function calculateTimeRemaining(
@@ -57,13 +57,13 @@ library HyperdriveUtils {
             );
     }
 
-    function calculateAPRFromReserves(
+    function calculateSpotRate(
         IHyperdrive _hyperdrive
     ) internal view returns (uint256) {
         IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
         IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
         return
-            HyperdriveMath.calculateAPRFromReserves(
+            HyperdriveMath.calculateSpotRate(
                 HyperdriveMath.calculateEffectiveShareReserves(
                     poolInfo.shareReserves,
                     poolInfo.shareAdjustment
@@ -75,23 +75,23 @@ library HyperdriveUtils {
             );
     }
 
-    function calculateAPRFromRealizedPrice(
-        uint256 baseAmount,
-        uint256 bondAmount,
-        uint256 timeRemaining
+    function calculateRateFromRealizedPrice(
+        uint256 _baseAmount,
+        uint256 _bondAmount,
+        uint256 _timeRemaining
     ) internal pure returns (uint256) {
         // price = dx / dy
         //       =>
         // rate = (1 - p) / (p * t) = (1 - dx / dy) * (dx / dy * t)
         //       =>
-        // apr = (dy - dx) / (dx * t)
+        // rate = (dy - dx) / (dx * t)
         require(
-            timeRemaining <= 1e18 && timeRemaining > 0,
+            _timeRemaining <= 1e18 && _timeRemaining > 0,
             "Expecting NormalizedTimeRemaining"
         );
         return
-            (bondAmount - baseAmount).divDown(
-                baseAmount.mulDown(timeRemaining)
+            (_bondAmount - _baseAmount).divDown(
+                _baseAmount.mulDown(_timeRemaining)
             );
     }
 
@@ -181,21 +181,21 @@ library HyperdriveUtils {
 
     /// @dev Calculates the non-compounded interest over a period.
     /// @param _principal The principal amount that will accrue interest.
-    /// @param _apr Annual percentage rate
+    /// @param _rate The interest rate.
     /// @param _time Amount of time in seconds over which interest accrues.
     /// @return totalAmount The total amount of capital after interest accrues.
     /// @return interest The interest that accrued.
     function calculateInterest(
         uint256 _principal,
-        int256 _apr,
+        int256 _rate,
         uint256 _time
     ) internal pure returns (uint256 totalAmount, int256 interest) {
         // Adjust time to a fraction of a year
         uint256 normalizedTime = _time.divDown(365 days);
-        interest = _apr >= 0
-            ? int256(_principal.mulDown(uint256(_apr).mulDown(normalizedTime)))
+        interest = _rate >= 0
+            ? int256(_principal.mulDown(uint256(_rate).mulDown(normalizedTime)))
             : -int256(
-                _principal.mulDown(uint256(-_apr).mulDown(normalizedTime))
+                _principal.mulDown(uint256(-_rate).mulDown(normalizedTime))
             );
         totalAmount = uint256(int256(_principal) + interest);
         return (totalAmount, interest);
@@ -203,27 +203,29 @@ library HyperdriveUtils {
 
     /// @dev Calculates principal + compounded rate of interest over a period
     ///      principal * e ^ (rate * time)
-    /// @param _principal The initial amount interest will be accrued on
-    /// @param _apr Annual percentage rate
+    /// @param _principal The principal amount.
+    /// @param _rate The interest rate.
     /// @param _time Number of seconds compounding will occur for
     /// @return totalAmount The total amount of capital after interest accrues.
     /// @return interest The interest that accrued.
     function calculateCompoundInterest(
         uint256 _principal,
-        int256 _apr,
+        int256 _rate,
         uint256 _time
     ) internal pure returns (uint256 totalAmount, int256 interest) {
         // Adjust time to a fraction of a year
         uint256 normalizedTime = _time.divDown(365 days);
-        uint256 rt = uint256(_apr < 0 ? -_apr : _apr).mulDown(normalizedTime);
+        uint256 rt = uint256(_rate < 0 ? -_rate : _rate).mulDown(
+            normalizedTime
+        );
 
-        if (_apr > 0) {
+        if (_rate > 0) {
             totalAmount = _principal.mulDown(
                 uint256(FixedPointMath.exp(int256(rt)))
             );
             interest = int256(totalAmount - _principal);
             return (totalAmount, interest);
-        } else if (_apr < 0) {
+        } else if (_rate < 0) {
             // NOTE: Might not be the correct calculation for negatively
             // continuously compounded interest
             totalAmount = _principal.divDown(
@@ -235,85 +237,20 @@ library HyperdriveUtils {
         return (_principal, 0);
     }
 
-    function calculateTimeStretch(uint256 apr) internal pure returns (uint256) {
+    function calculateTimeStretch(
+        uint256 _rate
+    ) internal pure returns (uint256) {
         uint256 timeStretch = uint256(5.24592e18).divDown(
-            uint256(0.04665e18).mulDown(apr * 100)
+            uint256(0.04665e18).mulDown(_rate * 100)
         );
         return FixedPointMath.ONE_18.divDown(timeStretch);
     }
 
-    // FIXME: This should be removed.
-    function calculateOpenShortDeposit(
-        IHyperdrive _hyperdrive,
-        uint256 _bondAmount
+    function presentValue(
+        IHyperdrive _hyperdrive
     ) internal view returns (uint256) {
-        // Retrieve hyperdrive pool state
         IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
         IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
-        uint256 openSharePrice;
-        uint256 timeRemaining;
-        {
-            uint256 checkpoint = latestCheckpoint(_hyperdrive);
-            uint256 maturityTime = checkpoint + poolConfig.positionDuration;
-            timeRemaining = calculateTimeRemaining(_hyperdrive, maturityTime);
-            openSharePrice = _hyperdrive.getCheckpoint(checkpoint).sharePrice;
-        }
-
-        // Calculate the openShort trade
-        uint256 effectiveShareReserves = HyperdriveMath
-            .calculateEffectiveShareReserves(
-                poolInfo.shareReserves,
-                poolInfo.shareAdjustment
-            );
-        uint256 shareProceeds = HyperdriveMath.calculateOpenShort(
-            effectiveShareReserves,
-            poolInfo.bondReserves,
-            _bondAmount,
-            poolConfig.timeStretch,
-            poolInfo.sharePrice,
-            poolConfig.initialSharePrice
-        );
-
-        // Price without slippage of bonds in terms of shares
-        uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
-            effectiveShareReserves,
-            poolInfo.bondReserves,
-            poolConfig.initialSharePrice,
-            poolConfig.timeStretch
-        );
-
-        // Calculate and attribute fees
-        uint256 curveFee = (FixedPointMath.ONE_18 - spotPrice)
-            .mulDown(poolConfig.fees.curve)
-            .mulDown(_bondAmount)
-            .mulDivDown(timeRemaining, poolInfo.sharePrice);
-        uint256 flatFee = (
-            _bondAmount.mulDivDown(
-                FixedPointMath.ONE_18 - timeRemaining,
-                poolInfo.sharePrice
-            )
-        ).mulDown(poolConfig.fees.flat);
-        shareProceeds -= curveFee + flatFee;
-
-        // Return the proceeds of the short
-        return
-            HyperdriveMath
-                .calculateShortProceeds(
-                    _bondAmount,
-                    shareProceeds,
-                    openSharePrice,
-                    poolInfo.sharePrice,
-                    poolInfo.sharePrice,
-                    0
-                )
-                .mulDown(poolInfo.sharePrice);
-    }
-
-    function presentValue(
-        IHyperdrive hyperdrive
-    ) internal view returns (uint256) {
-        IHyperdrive.PoolConfig memory poolConfig = hyperdrive.getPoolConfig();
-        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
         return
             HyperdriveMath
                 .calculatePresentValue(
@@ -327,14 +264,14 @@ library HyperdriveUtils {
                         timeStretch: poolConfig.timeStretch,
                         longsOutstanding: poolInfo.longsOutstanding,
                         longAverageTimeRemaining: calculateTimeRemaining(
-                            hyperdrive,
+                            _hyperdrive,
                             uint256(poolInfo.longAverageMaturityTime).divUp(
                                 1e36
                             )
                         ),
                         shortsOutstanding: poolInfo.shortsOutstanding,
                         shortAverageTimeRemaining: calculateTimeRemaining(
-                            hyperdrive,
+                            _hyperdrive,
                             uint256(poolInfo.shortAverageMaturityTime).divUp(
                                 1e36
                             )
@@ -345,23 +282,23 @@ library HyperdriveUtils {
     }
 
     function lpSharePrice(
-        IHyperdrive hyperdrive
+        IHyperdrive _hyperdrive
     ) internal view returns (uint256) {
-        return hyperdrive.presentValue().divDown(hyperdrive.lpTotalSupply());
+        return _hyperdrive.presentValue().divDown(_hyperdrive.lpTotalSupply());
     }
 
     function lpTotalSupply(
-        IHyperdrive hyperdrive
+        IHyperdrive _hyperdrive
     ) internal view returns (uint256) {
         return
-            hyperdrive.totalSupply(AssetId._LP_ASSET_ID) +
-            hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID) -
-            hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw;
+            _hyperdrive.totalSupply(AssetId._LP_ASSET_ID) +
+            _hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID) -
+            _hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw;
     }
 
-    function solvency(IHyperdrive hyperdrive) internal view returns (int256) {
-        IHyperdrive.PoolConfig memory config = hyperdrive.getPoolConfig();
-        IHyperdrive.PoolInfo memory info = hyperdrive.getPoolInfo();
+    function solvency(IHyperdrive _hyperdrive) internal view returns (int256) {
+        IHyperdrive.PoolConfig memory config = _hyperdrive.getPoolConfig();
+        IHyperdrive.PoolInfo memory info = _hyperdrive.getPoolInfo();
         return
             int256(info.shareReserves) -
             int256(info.longExposure.divDown(info.sharePrice)) -
@@ -397,9 +334,6 @@ library HyperdriveUtils {
         if (_selector == IHyperdrive.BelowMinimumShareReserves.selector) {
             return "BelowMinimumShareReserves";
         }
-        if (_selector == IHyperdrive.InvalidApr.selector) {
-            return "InvalidApr";
-        }
         if (_selector == IHyperdrive.InvalidBaseToken.selector) {
             return "InvalidBaseToken";
         }
@@ -408,6 +342,9 @@ library HyperdriveUtils {
         }
         if (_selector == IHyperdrive.InvalidCheckpointDuration.selector) {
             return "InvalidCheckpointDuration";
+        }
+        if (_selector == IHyperdrive.InvalidFeeAmounts.selector) {
+            return "InvalidFeeAmounts";
         }
         if (_selector == IHyperdrive.InvalidInitialSharePrice.selector) {
             return "InvalidInitialSharePrice";
@@ -424,8 +361,8 @@ library HyperdriveUtils {
         if (_selector == IHyperdrive.InvalidShareReserves.selector) {
             return "InvalidShareReserves";
         }
-        if (_selector == IHyperdrive.InvalidFeeAmounts.selector) {
-            return "InvalidFeeAmounts";
+        if (_selector == IHyperdrive.InvalidSpotRate.selector) {
+            return "InvalidSpotRate";
         }
         if (_selector == IHyperdrive.NegativeInterest.selector) {
             return "NegativeInterest";

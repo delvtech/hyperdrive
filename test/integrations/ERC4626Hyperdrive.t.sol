@@ -156,7 +156,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
 
     function test_erc4626_testDeploy() external {
         vm.startPrank(alice);
-        uint256 apr = 0.01e18; // 1% apr
+        uint256 fixedRate = 0.01e18; // 1% fixed rate
         uint256 contribution = 2_500e18;
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: dai,
@@ -165,7 +165,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             minimumTransactionAmount: 0.001e18,
             positionDuration: 365 days,
             checkpointDuration: 1 days,
-            timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
+            timeStretch: HyperdriveUtils.calculateTimeStretch(fixedRate),
             governance: alice,
             feeCollector: bob,
             fees: IHyperdrive.Fees(0, 0, 0),
@@ -177,7 +177,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             config,
             new bytes32[](0),
             contribution,
-            apr
+            fixedRate
         );
 
         // The initial price per share is one so the LP shares will initially
@@ -194,7 +194,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             factory,
             alice,
             contribution,
-            apr,
+            fixedRate,
             config.minimumShareReserves,
             new bytes32[](0),
             0
@@ -205,7 +205,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         // This test makes sure that the ERC4626DataProvider function returns
         // the correct share price.
         vm.startPrank(alice);
-        uint256 apr = 0.01e18; // 1% apr
+        uint256 fixedRate = 0.01e18; // 1% fixed rate
         uint256 contribution = 2_500e18;
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: dai,
@@ -214,7 +214,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             minimumTransactionAmount: 0.001e18,
             positionDuration: 365 days,
             checkpointDuration: 1 days,
-            timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
+            timeStretch: HyperdriveUtils.calculateTimeStretch(fixedRate),
             governance: alice,
             feeCollector: bob,
             fees: IHyperdrive.Fees(0, 0, 0),
@@ -226,7 +226,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             config,
             new bytes32[](0),
             contribution,
-            apr
+            fixedRate
         );
 
         // Ensure the share price is 1 after initialization.

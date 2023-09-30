@@ -6,8 +6,9 @@ import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol";
-import { Lib } from "../../utils/Lib.sol";
+import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
+import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
+import { Lib } from "test/utils/Lib.sol";
 
 contract AddLiquidityTest is HyperdriveTest {
     using FixedPointMath for uint256;
@@ -22,11 +23,11 @@ contract AddLiquidityTest is HyperdriveTest {
     }
 
     function test_add_liquidity_failure_zero_amount() external {
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Attempt to add zero base as liquidity. This should fail.
         vm.stopPrank();
@@ -36,11 +37,11 @@ contract AddLiquidityTest is HyperdriveTest {
     }
 
     function test_add_liquidity_failure_not_payable() external {
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Attempt to add zero base as liquidity. This should fail.
         vm.stopPrank();
@@ -50,11 +51,11 @@ contract AddLiquidityTest is HyperdriveTest {
     }
 
     function test_add_liquidity_failure_pause() external {
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Attempt to add zero base as liquidity. This should fail.
         vm.stopPrank();
@@ -66,32 +67,32 @@ contract AddLiquidityTest is HyperdriveTest {
         pause(false);
     }
 
-    function test_add_liquidity_failure_invalid_apr() external {
-        uint256 apr = 0.05e18;
+    function test_add_liquidity_failure_invalid_spot_rate() external {
+        uint256 fixedRate = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
-        // Attempt to add liquidity with a minimum APR that is too high.
+        // Attempt to add liquidity with a minimum spot rate that is too high.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(IHyperdrive.InvalidApr.selector);
+        vm.expectRevert(IHyperdrive.InvalidSpotRate.selector);
         hyperdrive.addLiquidity(10e18, 0.06e18, type(uint256).max, bob, true);
 
-        // Attempt to add liquidity with a maximum APR that is too low.
+        // Attempt to add liquidity with a maximum spot rate that is too low.
         vm.stopPrank();
         vm.startPrank(bob);
-        vm.expectRevert(IHyperdrive.InvalidApr.selector);
+        vm.expectRevert(IHyperdrive.InvalidSpotRate.selector);
         hyperdrive.addLiquidity(10e18, 0, 0.04e18, bob, true);
     }
 
     function test_add_liquidity_failure_zero_lp_total_supply() external {
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
-        uint256 lpShares = initialize(alice, apr, contribution);
+        uint256 lpShares = initialize(alice, fixedRate, contribution);
 
         // Bob opens a long.
         (uint256 maturityTime, uint256 longAmount) = openLong(bob, 10e18);
@@ -112,11 +113,11 @@ contract AddLiquidityTest is HyperdriveTest {
     }
 
     function test_add_liquidity_identical_lp_shares() external {
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
         uint256 lpSupplyBefore = hyperdrive.totalSupply(AssetId._LP_ASSET_ID);
         uint256 lpBalanceBefore = hyperdrive.balanceOf(
             AssetId._LP_ASSET_ID,
@@ -153,17 +154,18 @@ contract AddLiquidityTest is HyperdriveTest {
             lpSupplyBefore + hyperdrive.getPoolConfig().minimumShareReserves
         );
 
-        // Ensure the pool APR is still approximately equal to the target APR.
-        uint256 poolApr = HyperdriveUtils.calculateAPRFromReserves(hyperdrive);
-        assertApproxEqAbs(poolApr, apr, 1);
+        // Ensure the pool's spot rate is still approximately equal to the
+        // target rate.
+        uint256 spotRate = hyperdrive.calculateSpotRate();
+        assertApproxEqAbs(spotRate, fixedRate, 1);
     }
 
     function test_add_liquidity_with_long_at_open() external {
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
-        uint256 aliceLpShares = initialize(alice, apr, contribution);
+        uint256 aliceLpShares = initialize(alice, fixedRate, contribution);
 
         // Celine opens a long.
         uint256 basePaid = 50_000_000e18;
@@ -212,11 +214,11 @@ contract AddLiquidityTest is HyperdriveTest {
     }
 
     function test_add_liquidity_with_short_at_open() external {
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
-        uint256 aliceLpShares = initialize(alice, apr, contribution);
+        uint256 aliceLpShares = initialize(alice, fixedRate, contribution);
 
         // Celine opens a short.
         uint256 shortAmount = 50_000_000e18;
@@ -267,11 +269,11 @@ contract AddLiquidityTest is HyperdriveTest {
     }
 
     function test_add_liquidity_with_long_at_maturity() external {
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
-        uint256 aliceLpShares = initialize(alice, apr, contribution);
+        uint256 aliceLpShares = initialize(alice, fixedRate, contribution);
 
         // Celine opens a long.
         uint256 basePaid = 50_000_000e18;
@@ -318,11 +320,11 @@ contract AddLiquidityTest is HyperdriveTest {
     }
 
     function test_add_liquidity_with_short_at_maturity() external {
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
-        uint256 aliceLpShares = initialize(alice, apr, contribution);
+        uint256 aliceLpShares = initialize(alice, fixedRate, contribution);
 
         // Celine opens a short.
         uint256 shortAmount = 50_000_000e18;
@@ -373,7 +375,7 @@ contract AddLiquidityTest is HyperdriveTest {
         uint256 contribution
     ) internal returns (uint256 lpShares) {
         // Get the state before adding liquidity.
-        uint256 spotRate = HyperdriveUtils.calculateAPRFromReserves(hyperdrive);
+        uint256 spotRate = hyperdrive.calculateSpotRate();
         uint256 lpSupply = hyperdrive.totalSupply(AssetId._LP_ASSET_ID);
         uint256 lpBalance = hyperdrive.balanceOf(AssetId._LP_ASSET_ID, lp);
         uint256 baseBalance = baseToken.balanceOf(address(hyperdrive));
@@ -401,10 +403,7 @@ contract AddLiquidityTest is HyperdriveTest {
         );
 
         // Ensure the spot rate and the LP share price haven't changed.
-        assertEq(
-            HyperdriveUtils.calculateAPRFromReserves(hyperdrive),
-            spotRate
-        );
+        assertEq(hyperdrive.calculateSpotRate(), spotRate);
         assertEq(hyperdrive.lpSharePrice(), lpSharePrice);
 
         return lpShares;

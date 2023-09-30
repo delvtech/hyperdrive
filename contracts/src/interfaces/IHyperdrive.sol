@@ -13,7 +13,7 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
         address indexed provider,
         uint256 lpAmount,
         uint256 baseAmount,
-        uint256 apr
+        uint256 spotRate
     );
 
     event AddLiquidity(
@@ -207,16 +207,16 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
     error BaseBufferExceedsShareReserves();
     error BelowMinimumContribution();
     error BelowMinimumShareReserves();
-    error InvalidApr();
     error InvalidBaseToken();
     error InvalidCheckpointTime();
     error InvalidCheckpointDuration();
+    error InvalidFeeAmounts();
     error InvalidInitialSharePrice();
     error InvalidMaturityTime();
     error InvalidMinimumShareReserves();
     error InvalidPositionDuration();
     error InvalidShareReserves();
-    error InvalidFeeAmounts();
+    error InvalidSpotRate();
     error NegativeInterest();
     error NegativePresentValue();
     error NoAssetsToWithdraw();

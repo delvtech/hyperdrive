@@ -12,15 +12,15 @@ interface IHyperdriveWrite is IMultiTokenWrite {
 
     function initialize(
         uint256 _contribution,
-        uint256 _apr,
+        uint256 _spotRate,
         address _destination,
         bool _asUnderlying
     ) external payable returns (uint256 lpShares);
 
     function addLiquidity(
         uint256 _contribution,
-        uint256 _minApr,
-        uint256 _maxApr,
+        uint256 _minSpotRate,
+        uint256 _maxSpotRate,
         address _destination,
         bool _asUnderlying
     ) external payable returns (uint256 lpShares);

@@ -8,8 +8,9 @@ import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
-import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol";
-import { Lib } from "../../utils/Lib.sol";
+import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
+import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
+import { Lib } from "test/utils/Lib.sol";
 
 contract CloseShortTest is HyperdriveTest {
     using FixedPointMath for uint256;
@@ -24,11 +25,11 @@ contract CloseShortTest is HyperdriveTest {
     }
 
     function test_close_short_failure_zero_amount() external {
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Open a short.
         uint256 bondAmount = 10e18;
@@ -42,11 +43,11 @@ contract CloseShortTest is HyperdriveTest {
     }
 
     function test_close_short_failure_invalid_amount() external {
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Open a short.
         uint256 bondAmount = 10e18;
@@ -60,11 +61,11 @@ contract CloseShortTest is HyperdriveTest {
     }
 
     function test_close_short_failure_invalid_timestamp() external {
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Open a short.
         uint256 bondAmount = 10e18;
@@ -125,11 +126,11 @@ contract CloseShortTest is HyperdriveTest {
     }
 
     function test_close_short_immediately_with_regular_amount() external {
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Purchase some bonds.
         uint256 bondAmount = 10e18;
@@ -161,11 +162,11 @@ contract CloseShortTest is HyperdriveTest {
     }
 
     function test_close_short_immediately_with_small_amount() external {
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Short some bonds.
         uint256 bondAmount = .1e18;
@@ -199,11 +200,11 @@ contract CloseShortTest is HyperdriveTest {
     // This stress tests the aggregate accounting by making the bond amount of
     // the second trade is off by 1 wei.
     function test_close_short_dust_amount() external {
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Open a short position.
         uint256 shortAmount = 10_000_000e18;
@@ -227,11 +228,11 @@ contract CloseShortTest is HyperdriveTest {
     function test_close_short_redeem_at_maturity_zero_variable_interest()
         external
     {
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Short some bonds.
         uint256 bondAmount = 10e18;
@@ -266,11 +267,11 @@ contract CloseShortTest is HyperdriveTest {
     }
 
     function test_close_short_redeem_negative_interest() external {
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Short some bonds.
         uint256 bondAmount = 10e18;
@@ -305,11 +306,11 @@ contract CloseShortTest is HyperdriveTest {
     }
 
     function test_close_short_redeem_negative_interest_half_term() external {
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Short some bonds.
         uint256 bondAmount = 10e18;
@@ -344,11 +345,11 @@ contract CloseShortTest is HyperdriveTest {
     }
 
     function test_close_short_negative_interest_at_close() external {
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Short some bonds.
         uint256 bondAmount = 10e18;
@@ -358,7 +359,7 @@ contract CloseShortTest is HyperdriveTest {
         advanceTime(POSITION_DURATION, -0.2e18);
 
         // A checkpoint is created to lock in the close price.
-        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
 
         // Another term passes and positive interest accrues.
         advanceTime(POSITION_DURATION, 0.5e18);
@@ -389,11 +390,11 @@ contract CloseShortTest is HyperdriveTest {
     }
 
     function test_close_short_max_loss() external {
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Short some bonds.
         uint256 bondAmount = 1000e18;
@@ -645,10 +646,7 @@ contract CloseShortTest is HyperdriveTest {
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
 
         // Verify that the other state was updated correctly.
-        uint256 timeRemaining = HyperdriveUtils.calculateTimeRemaining(
-            hyperdrive,
-            maturityTime
-        );
+        uint256 timeRemaining = hyperdrive.calculateTimeRemaining(maturityTime);
         if (wasCheckpointed) {
             assertEq(poolInfoAfter.shareReserves, poolInfoBefore.shareReserves);
             assertEq(

@@ -46,7 +46,7 @@ contract HyperdriveTest is BaseTest {
             governance: 0
         });
         // Instantiate Hyperdrive.
-        uint256 apr = 0.05e18;
+        uint256 timeStretchRate = 0.05e18;
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: IERC20(address(baseToken)),
             initialSharePrice: INITIAL_SHARE_PRICE,
@@ -54,7 +54,7 @@ contract HyperdriveTest is BaseTest {
             minimumTransactionAmount: MINIMUM_TRANSACTION_AMOUNT,
             positionDuration: POSITION_DURATION,
             checkpointDuration: CHECKPOINT_DURATION,
-            timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
+            timeStretch: HyperdriveUtils.calculateTimeStretch(timeStretchRate),
             governance: governance,
             feeCollector: feeCollector,
             fees: fees,
@@ -92,14 +92,14 @@ contract HyperdriveTest is BaseTest {
 
     function deploy(
         address deployer,
-        uint256 apr,
+        uint256 fixedRate,
         uint256 curveFee,
         uint256 flatFee,
         uint256 governanceFee
     ) internal {
         deploy(
             deployer,
-            apr,
+            fixedRate,
             INITIAL_SHARE_PRICE,
             curveFee,
             flatFee,
@@ -109,7 +109,7 @@ contract HyperdriveTest is BaseTest {
 
     function deploy(
         address deployer,
-        uint256 apr,
+        uint256 timeStretchRate,
         uint256 initialSharePrice,
         uint256 curveFee,
         uint256 flatFee,
@@ -127,7 +127,7 @@ contract HyperdriveTest is BaseTest {
             minimumTransactionAmount: MINIMUM_TRANSACTION_AMOUNT,
             positionDuration: POSITION_DURATION,
             checkpointDuration: CHECKPOINT_DURATION,
-            timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
+            timeStretch: HyperdriveUtils.calculateTimeStretch(timeStretchRate),
             governance: governance,
             feeCollector: feeCollector,
             fees: fees,
@@ -138,7 +138,7 @@ contract HyperdriveTest is BaseTest {
     }
 
     function testConfig(
-        uint256 fixedRate
+        uint256 timeStretchRate
     ) internal view returns (IHyperdrive.PoolConfig memory) {
         IHyperdrive.Fees memory fees = IHyperdrive.Fees({
             curve: 0,
@@ -153,7 +153,9 @@ contract HyperdriveTest is BaseTest {
                 minimumTransactionAmount: MINIMUM_TRANSACTION_AMOUNT,
                 positionDuration: POSITION_DURATION,
                 checkpointDuration: CHECKPOINT_DURATION,
-                timeStretch: HyperdriveUtils.calculateTimeStretch(fixedRate),
+                timeStretch: HyperdriveUtils.calculateTimeStretch(
+                    timeStretchRate
+                ),
                 governance: governance,
                 feeCollector: feeCollector,
                 fees: fees,
@@ -197,7 +199,7 @@ contract HyperdriveTest is BaseTest {
 
     function initialize(
         address lp,
-        uint256 apr,
+        uint256 fixedRate,
         uint256 contribution,
         DepositOverrides memory overrides
     ) internal returns (uint256 lpShares) {
@@ -212,7 +214,7 @@ contract HyperdriveTest is BaseTest {
             return
                 hyperdrive.initialize{ value: overrides.depositAmount }(
                     contribution,
-                    apr,
+                    fixedRate,
                     lp,
                     overrides.asUnderlying
                 );
@@ -222,7 +224,7 @@ contract HyperdriveTest is BaseTest {
             return
                 hyperdrive.initialize(
                     contribution,
-                    apr,
+                    fixedRate,
                     lp,
                     overrides.asUnderlying
                 );
@@ -231,13 +233,13 @@ contract HyperdriveTest is BaseTest {
 
     function initialize(
         address lp,
-        uint256 apr,
+        uint256 fixedRate,
         uint256 contribution
     ) internal returns (uint256 lpShares) {
         return
             initialize(
                 lp,
-                apr,
+                fixedRate,
                 contribution,
                 DepositOverrides({
                     asUnderlying: true,
@@ -251,14 +253,14 @@ contract HyperdriveTest is BaseTest {
 
     function initialize(
         address lp,
-        uint256 apr,
+        uint256 fixedRate,
         uint256 contribution,
         bool asUnderlying
     ) internal returns (uint256 lpShares) {
         return
             initialize(
                 lp,
-                apr,
+                fixedRate,
                 contribution,
                 DepositOverrides({
                     asUnderlying: asUnderlying,
@@ -702,18 +704,18 @@ contract HyperdriveTest is BaseTest {
 
     /// Utils ///
 
-    function advanceTime(uint256 time, int256 apr) internal virtual {
-        MockHyperdrive(address(hyperdrive)).accrue(time, apr);
+    function advanceTime(uint256 time, int256 fixedRate) internal virtual {
+        MockHyperdrive(address(hyperdrive)).accrue(time, fixedRate);
         vm.warp(block.timestamp + time);
     }
 
     function advanceTimeWithCheckpoints(
         uint256 time,
-        int256 apr
+        int256 fixedRate
     ) internal virtual {
         uint256 startTimeElapsed = block.timestamp;
         while (block.timestamp - startTimeElapsed < time) {
-            advanceTime(CHECKPOINT_DURATION, apr);
+            advanceTime(CHECKPOINT_DURATION, fixedRate);
             hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
         }
     }
@@ -844,7 +846,7 @@ contract HyperdriveTest is BaseTest {
         address indexed provider,
         uint256 lpAmount,
         uint256 baseAmount,
-        uint256 apr
+        uint256 fixedRate
     );
 
     event AddLiquidity(
@@ -902,7 +904,7 @@ contract HyperdriveTest is BaseTest {
         HyperdriveFactory factory,
         address deployer,
         uint256 contribution,
-        uint256 apr,
+        uint256 fixedRate,
         uint256 minimumShareReserves,
         bytes32[] memory expectedExtraData,
         uint256 tolerance
@@ -979,7 +981,7 @@ contract HyperdriveTest is BaseTest {
                 tolerance
             );
             assertEq(eventBaseAmount, contribution);
-            assertEq(eventApr, apr);
+            assertEq(eventApr, fixedRate);
         }
     }
 }

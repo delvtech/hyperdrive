@@ -13,7 +13,7 @@ import { ETH } from "test/utils/Constants.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 
 interface IMockHyperdrive {
-    function accrue(uint256 time, int256 apr) external;
+    function accrue(uint256 time, int256 rate) external;
 
     function calculateFeesOutGivenSharesIn(
         uint256 _amountIn,
@@ -115,10 +115,10 @@ contract MockHyperdrive is Hyperdrive {
 
     // Accrues compounded interest for a given number of seconds and readjusts
     // share price to reflect such compounding
-    function accrue(uint256 time, int256 apr) external {
+    function accrue(uint256 time, int256 rate) external {
         (, int256 interest) = HyperdriveUtils.calculateCompoundInterest(
             _baseToken.balanceOf(address(this)),
-            apr,
+            rate,
             time
         );
 

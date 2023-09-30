@@ -93,10 +93,10 @@ contract VariableInterestLongTest is HyperdriveTest {
         int256 variableInterest
     ) internal {
         // Initialize the market
-        uint256 apr = 0.05e18;
-        deploy(alice, apr, initialSharePrice, 0, 0, 0);
+        uint256 fixedRate = 0.05e18;
+        deploy(alice, fixedRate, initialSharePrice, 0, 0, 0);
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // fast forward time and accrue interest
         advanceTime(POSITION_DURATION, variableInterest);
@@ -247,10 +247,10 @@ contract VariableInterestLongTest is HyperdriveTest {
         int256 variableInterest
     ) internal {
         // Initialize the market
-        uint256 apr = 0.05e18;
-        deploy(alice, apr, initialSharePrice, 0, 0, 0);
+        uint256 fixedRate = 0.05e18;
+        deploy(alice, fixedRate, initialSharePrice, 0, 0, 0);
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // fast forward time and accrue negative interest
         advanceTime(POSITION_DURATION, preTradeVariableInterest);
@@ -413,10 +413,10 @@ contract VariableInterestLongTest is HyperdriveTest {
         int256 variableInterest
     ) internal {
         // Initialize the market
-        uint256 apr = 0.05e18;
-        deploy(alice, apr, initialSharePrice, 0, 0, 0);
+        uint256 fixedRate = 0.05e18;
+        deploy(alice, fixedRate, initialSharePrice, 0, 0, 0);
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // fast forward time and accrue negative interest
         advanceTime(POSITION_DURATION, preTradeVariableInterest);

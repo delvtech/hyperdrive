@@ -15,13 +15,11 @@ contract FeeTest is HyperdriveTest {
     using Lib for *;
 
     function test_governanceFeeAccrual() public {
-        uint256 apr = 0.05e18;
-        // Initialize the pool with a large amount of capital.
-        uint256 contribution = 500_000_000e18;
-
         // Deploy and initialize a new pool with fees.
-        deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18);
-        initialize(alice, apr, contribution);
+        uint256 fixedRate = 0.05e18;
+        uint256 contribution = 500_000_000e18;
+        deploy(alice, fixedRate, 0.1e18, 0.1e18, 0.5e18);
+        initialize(alice, fixedRate, contribution);
 
         // Open a long, record the accrued fees x share price
         uint256 baseAmount = 10e18;
@@ -32,8 +30,8 @@ contract FeeTest is HyperdriveTest {
                 hyperdrive.getPoolInfo().sharePrice
             );
 
-        // Time passes and the pool accrues interest at the current apr.
-        advanceTime(POSITION_DURATION.mulDown(0.5e18), int256(apr));
+        // Time passes and the pool accrues interest at the current fixed rate.
+        advanceTime(POSITION_DURATION.mulDown(0.5e18), int256(fixedRate));
 
         // Collect fees and test that the fees received in the governance address have earned interest.
         vm.stopPrank();
@@ -57,17 +55,17 @@ contract FeeTest is HyperdriveTest {
         uint256 bondsPurchased = 0;
         // Initialize the market with 10% flat fee and 100% governance fee
         {
-            uint256 apr = 0.01e18;
+            uint256 fixedRate = 0.01e18;
             deploy(
                 alice,
-                apr,
+                fixedRate,
                 initialSharePrice,
                 curveFee,
                 flatFee,
                 governanceFee
             );
             uint256 contribution = 500_000_000e18;
-            initialize(alice, apr, contribution);
+            initialize(alice, fixedRate, contribution);
 
             // Open a long position.
             uint256 basePaid = 100_000e18;
@@ -105,10 +103,10 @@ contract FeeTest is HyperdriveTest {
         // Initialize the market with 10% flat fee and 0% governance fee
         uint256 shareReservesFlatFee = 0;
         {
-            uint256 apr = 0.01e18;
-            deploy(alice, apr, initialSharePrice, curveFee, flatFee, 0);
+            uint256 fixedRate = 0.01e18;
+            deploy(alice, fixedRate, initialSharePrice, curveFee, flatFee, 0);
             uint256 contribution = 500_000_000e18;
-            initialize(alice, apr, contribution);
+            initialize(alice, fixedRate, contribution);
 
             // Open a long position.
             uint256 basePaid = 100_000e18;
@@ -162,17 +160,17 @@ contract FeeTest is HyperdriveTest {
         uint256 spotPrice = 0;
         // Initialize the market with 10% curve fee and 100% governance fee
         {
-            uint256 apr = 0.01e18;
+            uint256 fixedRate = 0.01e18;
             deploy(
                 alice,
-                apr,
+                fixedRate,
                 initialSharePrice,
                 curveFee,
                 flatFee,
                 governanceFee
             );
             uint256 contribution = 500_000_000e18;
-            initialize(alice, apr, contribution);
+            initialize(alice, fixedRate, contribution);
 
             // Open a long position.
             uint256 basePaid = .01e18;
@@ -231,10 +229,10 @@ contract FeeTest is HyperdriveTest {
         // Initialize the market with 10% curve fee and 0% governance fee
         uint256 shareReservesCurveFee = 0;
         {
-            uint256 apr = 0.01e18;
-            deploy(alice, apr, initialSharePrice, curveFee, flatFee, 0);
+            uint256 fixedRate = 0.01e18;
+            deploy(alice, fixedRate, initialSharePrice, curveFee, flatFee, 0);
             uint256 contribution = 500_000_000e18;
-            initialize(alice, apr, contribution);
+            initialize(alice, fixedRate, contribution);
 
             // Open a long position.
             uint256 basePaid = .01e18;
@@ -290,13 +288,11 @@ contract FeeTest is HyperdriveTest {
     }
 
     function test_collectFees_long() public {
-        uint256 apr = 0.05e18;
-        // Initialize the pool with a large amount of capital.
-        uint256 contribution = 500_000_000e18;
-
         // Deploy and initialize a new pool with fees.
-        deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18);
-        initialize(alice, apr, contribution);
+        uint256 fixedRate = 0.05e18;
+        uint256 contribution = 500_000_000e18;
+        deploy(alice, fixedRate, 0.1e18, 0.1e18, 0.5e18);
+        initialize(alice, fixedRate, contribution);
 
         // Ensure that the governance initially has zero balance
         uint256 governanceBalanceBefore = baseToken.balanceOf(feeCollector);
@@ -318,8 +314,9 @@ contract FeeTest is HyperdriveTest {
         ).getGovernanceFeesAccrued();
         assertGt(governanceFeesAfterOpenLong, governanceFeesBeforeOpenLong);
 
-        // Most of the term passes. The pool accrues interest at the current apr.
-        advanceTime(POSITION_DURATION.mulDown(0.5e18), int256(apr));
+        // Most of the term passes. The pool accrues interest at the current
+        // fixed rate.
+        advanceTime(POSITION_DURATION.mulDown(0.5e18), int256(fixedRate));
 
         // Bob closes his long close to maturity.
         closeLong(bob, maturityTime, bondAmount);
@@ -347,13 +344,11 @@ contract FeeTest is HyperdriveTest {
     }
 
     function test_collectFees_short() public {
-        uint256 apr = 0.05e18;
-        // Initialize the pool with a large amount of capital.
-        uint256 contribution = 500_000_000e18;
-
         // Deploy and initialize a new pool with fees.
-        deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18);
-        initialize(alice, apr, contribution);
+        uint256 fixedRate = 0.05e18;
+        uint256 contribution = 500_000_000e18;
+        deploy(alice, fixedRate, 0.1e18, 0.1e18, 0.5e18);
+        initialize(alice, fixedRate, contribution);
 
         // Ensure that the governance initially has zero balance
         uint256 governanceBalanceBefore = baseToken.balanceOf(governance);
@@ -375,8 +370,9 @@ contract FeeTest is HyperdriveTest {
         ).getGovernanceFeesAccrued();
         assertGt(governanceFeesAfterOpenShort, governanceFeesBeforeOpenShort);
 
-        // Most of the term passes. The pool accrues interest at the current apr.
-        advanceTime(POSITION_DURATION.mulDown(0.5e18), int256(apr));
+        // Most of the term passes. The pool accrues interest at the current
+        // fixed rate.
+        advanceTime(POSITION_DURATION.mulDown(0.5e18), int256(fixedRate));
 
         // Redeem the bonds.
         closeShort(bob, maturityTime, bondAmount);
@@ -406,85 +402,82 @@ contract FeeTest is HyperdriveTest {
     }
 
     function test_calculateOpenLongFees() public {
-        uint256 apr = 0.05e18;
-        // Initialize the pool with a large amount of capital.
-        uint256 contribution = 500_000_000e18;
         // Deploy and initialize a new pool with fees.
-        deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18);
-        initialize(alice, apr, contribution);
+        uint256 fixedRate = 0.05e18;
+        uint256 contribution = 500_000_000e18;
+        deploy(alice, fixedRate, 0.1e18, 0.1e18, 0.5e18);
+        initialize(alice, fixedRate, contribution);
 
         (uint256 curveFee, uint256 governanceCurveFee) = MockHyperdrive(
             address(hyperdrive)
         ).calculateFeesOutGivenSharesIn(
-                1 ether, // amountIn
-                0.5 ether, // spotPrice
-                1 ether //sharePrice
+                1e18, // amountIn
+                0.5e18, // spotPrice
+                1e18 //sharePrice
             );
         // total curve fee = ((1 / p) - 1) * phi_curve * c * dz
-        // ((1/.5)-1) * .1*1*1 = .1
-        assertEq(curveFee, .1 ether);
+        // ((1/0.5)-1) * 0.1*1*1 = 0.1
+        assertEq(curveFee, 0.1e18);
         // governance curve fee = total curve fee * phi_gov
-        // .1 * 0.5 = .05
-        assertEq(governanceCurveFee, .05 ether);
+        // 0.1 * 0.5 = 0.05
+        assertEq(governanceCurveFee, 0.05e18);
     }
 
     function test_calcFeesOutGivenBondsIn() public {
-        uint256 apr = 0.05e18;
-        // Initialize the pool with a large amount of capital.
-        uint256 contribution = 500_000_000e18;
         // Deploy and initialize a new pool with fees.
-        deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18);
-        initialize(alice, apr, contribution);
+        uint256 fixedRate = 0.05e18;
+        uint256 contribution = 500_000_000e18;
+        deploy(alice, fixedRate, 0.1e18, 0.1e18, 0.5e18);
+        initialize(alice, fixedRate, contribution);
         (
             uint256 totalCurveFee,
             uint256 totalFlatFee,
             uint256 totalGovernanceFee
         ) = MockHyperdrive(address(hyperdrive)).calculateFeesOutGivenBondsIn(
-                1 ether, // amountIn
-                1 ether, // timeRemaining
-                0.9 ether, // spotPrice
-                1 ether // sharePrice
+                1e18, // amountIn
+                1e18, // timeRemaining
+                0.9e18, // spotPrice
+                1e18 // sharePrice
             );
         // curve fee = ((1 - p) * phi_curve * d_y * t) / c
-        // ((1-.9)*.1*1*1)/1 = .01
-        assertEq(totalCurveFee + totalFlatFee, .01 ether);
+        // ((1-0.9)*0.1*1*1)/1 = 0.01
+        assertEq(totalCurveFee + totalFlatFee, 0.01e18);
 
-        assertEq(totalGovernanceFee, .005 ether);
+        assertEq(totalGovernanceFee, 0.005e18);
 
         (totalCurveFee, totalFlatFee, totalGovernanceFee) = MockHyperdrive(
             address(hyperdrive)
         ).calculateFeesOutGivenBondsIn(
-                1 ether, // amountIn
+                1e18, // amountIn
                 0, // timeRemaining
-                0.9 ether, // spotPrice
-                1 ether // sharePrice
+                0.9e18, // spotPrice
+                1e18 // sharePrice
             );
-        assertEq(totalCurveFee + totalFlatFee, 0.1 ether);
-        assertEq(totalGovernanceFee, 0.05 ether);
+        assertEq(totalCurveFee + totalFlatFee, 0.1e18);
+        assertEq(totalGovernanceFee, 0.05e18);
     }
 
     function test_calcFeesInGivenBondsOut() public {
-        uint256 apr = 0.05e18;
-        // Initialize the pool with a large amount of capital.
-        uint256 contribution = 500_000_000e18;
         // Deploy and initialize a new pool with fees.
-        deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18);
-        initialize(alice, apr, contribution);
+        uint256 fixedRate = 0.05e18;
+        uint256 contribution = 500_000_000e18;
+        deploy(alice, fixedRate, 0.1e18, 0.1e18, 0.5e18);
+        initialize(alice, fixedRate, contribution);
         (
             uint256 curveFee,
             uint256 flatFee,
             uint256 governanceCurveFee,
             uint256 governanceFlatFee
         ) = MockHyperdrive(address(hyperdrive)).calculateFeesInGivenBondsOut(
-                1 ether, // amountOut
-                1 ether, // timeRemaining
-                0.9 ether, // spotPrice
-                1 ether // sharePrice
+                1e18, // amountOut
+                1e18, // timeRemaining
+                0.9e18, // spotPrice
+                1e18 // sharePrice
             );
-        assertEq(curveFee, .01 ether);
-        assertEq(flatFee, 0 ether);
-        assertEq(governanceCurveFee, .005 ether);
-        assertEq(governanceFlatFee, 0 ether);
+        assertEq(curveFee, 0.01e18);
+        assertEq(flatFee, 0e18);
+        assertEq(governanceCurveFee, 0.005e18);
+        assertEq(governanceFlatFee, 0e18);
 
         (
             curveFee,
@@ -492,14 +485,14 @@ contract FeeTest is HyperdriveTest {
             governanceCurveFee,
             governanceFlatFee
         ) = MockHyperdrive(address(hyperdrive)).calculateFeesInGivenBondsOut(
-            1 ether, // amountOut
+            1e18, // amountOut
             0, // timeRemaining
-            0.9 ether, // spotPrice
-            1 ether // sharePrice
+            0.9e18, // spotPrice
+            1e18 // sharePrice
         );
-        assertEq(curveFee, 0 ether);
-        assertEq(flatFee, 0.1 ether);
-        assertEq(governanceCurveFee, 0 ether);
-        assertEq(governanceFlatFee, 0.05 ether);
+        assertEq(curveFee, 0e18);
+        assertEq(flatFee, 0.1e18);
+        assertEq(governanceCurveFee, 0e18);
+        assertEq(governanceFlatFee, 0.05e18);
     }
 }

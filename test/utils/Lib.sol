@@ -5,6 +5,7 @@ import { console2 } from "forge-std/console2.sol";
 import { stdMath } from "forge-std/StdMath.sol";
 import { Vm, VmSafe } from "forge-std/Vm.sol";
 
+// FIXME: Renaming this TestUtils would be cleaner IMO.
 library Lib {
     /// @dev Filters an array of longs for events that match the provided
     ///      selector.

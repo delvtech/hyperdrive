@@ -48,20 +48,20 @@ contract LpWithdrawalTest is HyperdriveTest {
         uint256 basePaid,
         int256 preTradingVariableRate
     ) external {
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
         uint256 contribution = 500_000_000e18;
-        uint256 lpShares = initialize(alice, apr, contribution);
+        uint256 lpShares = initialize(alice, fixedRate, contribution);
 
-        // TODO: We run into subtraction underflows when the pre trading APR is
-        // negative because the spot price goes above 1. We should investigate
-        // this further. The specific error is caused by a spot price that is 1
-        // or 2 wei greater than 1e18:
+        // TODO: We run into subtraction underflows when the pre trading
+        // variable rate is negative because the spot price goes above 1. We
+        // should investigate this further. The specific error is caused by a
+        // spot price that is 1 or 2 wei greater than 1e18:
         //
         // FAIL. Reason: FixedPointMath_SubOverflow() Counterexample: calldata=0xeb03bc3c00000000000000000000000000000000000000000056210439729b8099325834fffffffffffffffffffffffffffffffffffffffffffffffff923591560ca3e4c, args=[104123536507311086290229300, -494453585727570356]]
         //
         // Accrue interest before the trading period.
         preTradingVariableRate = preTradingVariableRate.normalizeToRange(
-            0e18,
+            0,
             1e18
         );
         advanceTime(POSITION_DURATION, preTradingVariableRate);
@@ -126,9 +126,9 @@ contract LpWithdrawalTest is HyperdriveTest {
         uint256 basePaid,
         int256 variableRate
     ) external {
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
         uint256 contribution = 500_000_000e18;
-        uint256 lpShares = initialize(alice, apr, contribution);
+        uint256 lpShares = initialize(alice, fixedRate, contribution);
         contribution -= 2 * hyperdrive.getPoolConfig().minimumShareReserves;
 
         // Bob opens a max long.
@@ -208,9 +208,9 @@ contract LpWithdrawalTest is HyperdriveTest {
     // The LPs should be able to remove their liqudity without an
     // arithmetic underflow.
     function test_lp_withdrawal_too_many_longs() external {
-        uint256 apr = 0.10e18;
+        uint256 fixedRate = 0.10e18;
         uint256 contribution = 1e18;
-        uint256 lpShares = initialize(alice, apr, contribution);
+        uint256 lpShares = initialize(alice, fixedRate, contribution);
         contribution -= 2 * hyperdrive.getPoolConfig().minimumShareReserves;
 
         // Celine adds liquidity.
@@ -237,13 +237,13 @@ contract LpWithdrawalTest is HyperdriveTest {
         uint256 shortAmount,
         int256 preTradingVariableRate
     ) external {
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
         uint256 contribution = 500_000_000e18;
-        uint256 lpShares = initialize(alice, apr, contribution);
+        uint256 lpShares = initialize(alice, fixedRate, contribution);
 
-        // TODO: We run into subtraction underflows when the pre trading APR is
-        // negative because the spot price goes above 1. We should investigate
-        // this further.
+        // TODO: We run into subtraction underflows when the pre trading
+        // variable rate is negative because the spot price goes above 1. We
+        // should investigate this further.
         //
         // Accrue interest before the trading period.
         preTradingVariableRate = preTradingVariableRate.normalizeToRange(
@@ -300,9 +300,9 @@ contract LpWithdrawalTest is HyperdriveTest {
         uint256 shortAmount,
         int256 variableRate
     ) external {
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
         uint256 contribution = 500_000_000e18;
-        uint256 lpShares = initialize(alice, apr, contribution);
+        uint256 lpShares = initialize(alice, fixedRate, contribution);
         contribution -= 2 * hyperdrive.getPoolConfig().minimumShareReserves;
 
         // Bob opens a large short.
@@ -640,7 +640,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         snapshotId = vm.snapshot();
         {
             uint256 longBasePaid = 47622440666488;
-            uint256 shortAmount = 99991360285271; 
+            uint256 shortAmount = 99991360285271;
             int256 variableRate = 25629;
             _test_lp_withdrawal_long_short_redemption(
                 longBasePaid,

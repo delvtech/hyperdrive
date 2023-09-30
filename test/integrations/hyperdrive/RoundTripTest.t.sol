@@ -16,11 +16,11 @@ contract RoundTripTest is HyperdriveTest {
     using Lib for *;
 
     function test_long_round_trip_immediately_at_checkpoint() external {
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
 
         // Initialize the pool with capital.
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Get the poolInfo before opening the long.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
@@ -44,11 +44,11 @@ contract RoundTripTest is HyperdriveTest {
     function test_long_round_trip_immediately_halfway_thru_checkpoint()
         external
     {
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
 
         // Initialize the pool with capital.
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Get the poolInfo before opening the long.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
@@ -73,11 +73,11 @@ contract RoundTripTest is HyperdriveTest {
     }
 
     function test_short_round_trip_immediately_at_checkpoint() external {
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
 
         // Initialize the pool with capital.
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Get the poolInfo before opening the short.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
@@ -101,11 +101,11 @@ contract RoundTripTest is HyperdriveTest {
     function test_short_round_trip_immediately_halfway_thru_checkpoint()
         external
     {
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
 
         // Initialize the pool with capital.
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Get the poolInfo before opening the short.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
@@ -131,14 +131,14 @@ contract RoundTripTest is HyperdriveTest {
     }
 
     function test_sandwiched_long_round_trip() external {
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
         // Deploy the pool and initialize the market
         {
-            uint256 timeStretchApr = 0.05e18;
-            deploy(alice, timeStretchApr, 0, 0, 0);
+            uint256 timeStretchRate = 0.05e18;
+            deploy(alice, timeStretchRate, 0, 0, 0);
         }
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
 
@@ -167,13 +167,13 @@ contract RoundTripTest is HyperdriveTest {
     }
 
     function test_long_multiblock_round_trip_end_of_checkpoint(
-        uint256 apr,
-        uint256 timeStretchApr,
+        uint256 fixedRate,
+        uint256 timeStretchRate,
         uint256 basePaid
     ) external {
         _test_long_multiblock_round_trip_end_of_checkpoint(
-            apr,
-            timeStretchApr,
+            fixedRate,
+            timeStretchRate,
             basePaid
         );
     }
@@ -183,12 +183,12 @@ contract RoundTripTest is HyperdriveTest {
     {
         uint256 snapshotId = vm.snapshot();
         {
-            uint256 apr = 115792089237316195423570985008687907853269984665640564039457583990320674062335;
-            uint256 timeStretchApr = 886936259672610464646559504023817532562726574141720139630650341263;
+            uint256 fixedRate = 115792089237316195423570985008687907853269984665640564039457583990320674062335;
+            uint256 timeStretchRate = 886936259672610464646559504023817532562726574141720139630650341263;
             uint256 basePaid = 65723876150308947051900890891865009457038319412461;
             _test_long_multiblock_round_trip_end_of_checkpoint(
-                apr,
-                timeStretchApr,
+                fixedRate,
+                timeStretchRate,
                 basePaid
             );
         }
@@ -198,12 +198,12 @@ contract RoundTripTest is HyperdriveTest {
         //       See issue #595
         // snapshotId = vm.snapshot();
         // {
-        //     uint256 apr = 63203229717248733662763783222570;
-        //     uint256 timeStretchApr = 3408059979187494427077136;
+        //     uint256 fixedRate = 63203229717248733662763783222570;
+        //     uint256 timeStretchRate = 3408059979187494427077136;
         //     uint256 basePaid = 57669888194155013968076316270639259357724635816572534634741412969387347636732;
         //     _test_long_multiblock_round_trip_end_of_checkpoint(
-        //         apr,
-        //         timeStretchApr,
+        //         fixedRate,
+        //         timeStretchRate,
         //         basePaid
         //     );
         // }
@@ -211,30 +211,30 @@ contract RoundTripTest is HyperdriveTest {
 
         // TODO: This test fails because the calculateMaxLong seems to be misbehaving.
         //       See issue #595
-        // uint256 apr = 115792089237316195423570985008687907853269984665640564039457583996916939587517; // 0.172756074408646686
-        // uint256 timeStretchApr = 41280540007823693914881174596677236629628473357578130920607715; // 0.059510057259928604
+        // uint256 fixedRate = 115792089237316195423570985008687907853269984665640564039457583996916939587517; // 0.172756074408646686
+        // uint256 timeStretchRate = 41280540007823693914881174596677236629628473357578130920607715; // 0.059510057259928604
         // uint256 basePaid = 3512909646876087064266547833688149281604992599057120012676367392282791491; // 3_942_239_358.711925131571174045
         // _test_long_multiblock_round_trip_end_of_checkpoint(
-        //     apr,
-        //     timeStretchApr,
+        //     fixedRate,
+        //     timeStretchRate,
         //     basePaid
         // );
     }
 
     function _test_long_multiblock_round_trip_end_of_checkpoint(
-        uint256 apr,
-        uint256 timeStretchApr,
+        uint256 fixedRate,
+        uint256 timeStretchRate,
         uint256 basePaid
     ) internal {
-        apr = apr.normalizeToRange(0.001e18, .4e18);
-        timeStretchApr = timeStretchApr.normalizeToRange(0.05e18, 0.4e18);
+        fixedRate = fixedRate.normalizeToRange(0.001e18, .4e18);
+        timeStretchRate = timeStretchRate.normalizeToRange(0.05e18, 0.4e18);
 
         // Deploy the pool and initialize the market
-        uint256 curveFee = 0.05e18; // 5% of APR
+        uint256 curveFee = 0.05e18; // 5% of fixed rate
         uint256 flatFee = 0.0005e18; // 5 bps
-        deploy(alice, timeStretchApr, curveFee, flatFee, .015e18);
+        deploy(alice, timeStretchRate, curveFee, flatFee, .015e18);
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Get the poolInfo before opening the long.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();

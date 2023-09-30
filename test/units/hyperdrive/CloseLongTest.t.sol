@@ -8,9 +8,10 @@ import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
-import { MockHyperdrive } from "../../mocks/MockHyperdrive.sol";
-import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol";
-import { Lib } from "../../utils/Lib.sol";
+import { MockHyperdrive } from "test/mocks/MockHyperdrive.sol";
+import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
+import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
+import { Lib } from "test/utils/Lib.sol";
 
 contract CloseLongTest is HyperdriveTest {
     using FixedPointMath for uint256;
@@ -99,14 +100,14 @@ contract CloseLongTest is HyperdriveTest {
     }
 
     function test_close_long_failure_invalid_share_reserves() external {
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
 
         // Initialize the pool with a small amount of capital.
         uint256 minimumShareReserves = hyperdrive
             .getPoolConfig()
             .minimumShareReserves;
         uint256 contribution = 2 * minimumShareReserves;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Open a long position.
         uint256 baseAmount = minimumShareReserves;
@@ -253,11 +254,11 @@ contract CloseLongTest is HyperdriveTest {
 
         // calculate the amount of time that passed since the last checkpoint
         uint256 checkpointDistance = block.timestamp -
-            HyperdriveUtils.latestCheckpoint(hyperdrive);
+            hyperdrive.latestCheckpoint();
 
         // Ensure that the realized rate is approximately equal to the spot rate.
         assertApproxEqAbs(
-            HyperdriveUtils.calculateAPRFromRealizedPrice(
+            HyperdriveUtils.calculateRateFromRealizedPrice(
                 basePaid,
                 baseProceeds,
                 FixedPointMath.ONE_18 -
@@ -290,7 +291,7 @@ contract CloseLongTest is HyperdriveTest {
         uint256 basePaid = 10e18;
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
 
-        // Term passes. The pool accrues interest at the current apr.
+        // Term passes. The pool accrues interest at the current fixed rate.
         uint256 timeDelta = 1e18;
         advanceTime(POSITION_DURATION.mulDown(timeDelta), int256(fixedRate));
 
@@ -329,10 +330,10 @@ contract CloseLongTest is HyperdriveTest {
         uint256 basePaid = 10e18;
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
 
-        // Term passes. The pool accrues interest at the current apr.
+        // Term passes. The pool accrues negative interest.
         uint256 timeAdvanced = POSITION_DURATION;
-        int256 apr = -0.3e18;
-        advanceTime(timeAdvanced, apr);
+        int256 variableRate = -0.3e18;
+        advanceTime(timeAdvanced, variableRate);
 
         // Get the reserves before closing the long.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
@@ -347,7 +348,7 @@ contract CloseLongTest is HyperdriveTest {
         // Account the negative interest with the bondAmount as principal
         (uint256 bondFaceValue, ) = HyperdriveUtils.calculateCompoundInterest(
             bondAmount,
-            apr,
+            variableRate,
             timeAdvanced
         );
 
@@ -387,8 +388,8 @@ contract CloseLongTest is HyperdriveTest {
 
         // Term passes. The pool accrues negative interest.
         uint256 timeAdvanced = POSITION_DURATION.mulDown(0.5e18);
-        int256 apr = -0.25e18;
-        advanceTime(timeAdvanced, apr);
+        int256 variableRate = -0.25e18;
+        advanceTime(timeAdvanced, variableRate);
 
         // Get the reserves before closing the long.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
@@ -411,10 +412,7 @@ contract CloseLongTest is HyperdriveTest {
             // held throughout the duration, losing capital
             uint256 matureBonds = bondAmount.mulDown(
                 FixedPointMath.ONE_18 -
-                    HyperdriveUtils.calculateTimeRemaining(
-                        hyperdrive,
-                        maturityTime
-                    )
+                    hyperdrive.calculateTimeRemaining(maturityTime)
             );
             uint256 bondsValue = matureBonds;
 
@@ -464,8 +462,8 @@ contract CloseLongTest is HyperdriveTest {
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
 
         // The term passes and the pool accrues negative interest.
-        int256 apr = -0.25e18;
-        advanceTime(POSITION_DURATION, apr);
+        int256 variableRate = -0.25e18;
+        advanceTime(POSITION_DURATION, variableRate);
 
         // Get the reserves and base balances before closing the long.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
@@ -485,10 +483,10 @@ contract CloseLongTest is HyperdriveTest {
             .divDown(hyperdrive.getPoolConfig().initialSharePrice)
             .mulDown(closeSharePrice);
 
-        // Calculate the value of the bonds compounded at the negative APR.
+        // Calculate the value of the bonds compounded at the negative rate.
         (uint256 bondFaceValue, ) = HyperdriveUtils.calculateCompoundInterest(
             bondAmount,
-            apr,
+            variableRate,
             POSITION_DURATION
         );
 
@@ -520,11 +518,11 @@ contract CloseLongTest is HyperdriveTest {
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, basePaid);
 
         // The term passes and the pool accrues negative interest.
-        int256 apr = -0.25e18;
-        advanceTime(POSITION_DURATION, apr);
+        int256 variableRate = -0.25e18;
+        advanceTime(POSITION_DURATION, variableRate);
 
         // A checkpoint is created to lock in the close price.
-        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
         uint256 closeSharePrice = hyperdrive.getPoolInfo().sharePrice;
 
         // Another term passes and a large amount of positive interest accrues.
@@ -547,10 +545,10 @@ contract CloseLongTest is HyperdriveTest {
             .divDown(hyperdrive.getPoolConfig().initialSharePrice)
             .mulDown(closeSharePrice);
 
-        // Calculate the value of the bonds compounded at the negative APR.
+        // Calculate the value of the bonds compounded at the negative rate.
         (uint256 bondFaceValue, ) = HyperdriveUtils.calculateCompoundInterest(
             bondAmount,
-            apr,
+            variableRate,
             POSITION_DURATION
         );
 
@@ -583,7 +581,7 @@ contract CloseLongTest is HyperdriveTest {
             hyperdrive.calculateMaxLong() / 2
         );
         advanceTime(hyperdrive.getPoolConfig().positionDuration, 0);
-        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
         assertEq(
             hyperdrive.getPoolInfo().shareAdjustment,
             shareAdjustmentBefore - int256(longAmount)
@@ -615,7 +613,7 @@ contract CloseLongTest is HyperdriveTest {
         uint256 shortAmount = hyperdrive.calculateMaxShort() / 2;
         openShort(celine, shortAmount);
         advanceTime(hyperdrive.getPoolConfig().positionDuration, 0);
-        hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
         assertEq(
             hyperdrive.getPoolInfo().shareAdjustment,
             shareAdjustmentBefore + int256(shortAmount)

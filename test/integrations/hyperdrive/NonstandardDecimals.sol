@@ -28,16 +28,16 @@ contract NonstandardDecimalsTest is HyperdriveTest {
     }
 
     function test_nonstandard_decimals_initialize(
-        uint256 apr,
+        uint256 fixedRate,
         uint256 contribution
     ) external {
         // Normalize the fuzzed variables.
-        apr = apr.normalizeToRange(0.001e18, 2e18);
+        fixedRate = fixedRate.normalizeToRange(0.001e18, 2e18);
         contribution = contribution.normalizeToRange(2e6, 1_000_000_000e6);
 
-        // Initialize the pool and ensure that the APR is correct.
-        initialize(alice, apr, contribution);
-        assertApproxEqAbs(hyperdrive.calculateAPRFromReserves(), apr, 1e12);
+        // Initialize the pool and ensure that the spot rate is correct.
+        initialize(alice, fixedRate, contribution);
+        assertApproxEqAbs(hyperdrive.calculateSpotRate(), fixedRate, 1e12);
     }
 
     function test_nonstandard_decimals_long(
@@ -90,7 +90,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
                 bob,
                 basePaid
             );
-            uint256 fixedRate = HyperdriveUtils.calculateAPRFromRealizedPrice(
+            uint256 fixedRate = HyperdriveUtils.calculateRateFromRealizedPrice(
                 basePaid,
                 longAmount,
                 HyperdriveUtils.calculateTimeRemaining(hyperdrive, maturityTime)
@@ -186,7 +186,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
                 shortAmount
             );
             uint256 lpBasePaid = shortAmount - basePaid;
-            uint256 fixedRate = HyperdriveUtils.calculateAPRFromRealizedPrice(
+            uint256 fixedRate = HyperdriveUtils.calculateRateFromRealizedPrice(
                 lpBasePaid,
                 shortAmount,
                 HyperdriveUtils.calculateTimeRemaining(hyperdrive, maturityTime)

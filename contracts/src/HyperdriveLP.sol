@@ -20,9 +20,10 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
     using SafeCast for int256;
     using SafeCast for uint256;
 
-    /// @notice Allows the first LP to initialize the market with a target APR.
+    /// @notice Initialize the market with an initial contribution and a target
+    ///         spot rate.
     /// @param _contribution The amount of base to supply.
-    /// @param _apr The target APR.
+    /// @param _spotRate The target spot rate.
     /// @param _destination The destination of the LP shares.
     /// @param _asUnderlying If true the user is charged in underlying if false
     ///                      the contract transfers in yield source directly.
@@ -30,7 +31,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
     /// @return lpShares The initial number of LP shares created.
     function initialize(
         uint256 _contribution,
-        uint256 _apr,
+        uint256 _spotRate,
         address _destination,
         bool _asUnderlying
     ) external payable nonReentrant returns (uint256 lpShares) {
@@ -73,13 +74,13 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         _marketState.isInitialized = true;
 
         // Update the reserves. The bond reserves are calculated so that the
-        // pool is initialized with the target APR.
+        // pool is initialized with the target spot rate.
         _marketState.shareReserves = shares.toUint128();
         _marketState.bondReserves = HyperdriveMath
             .calculateInitialBondReserves(
                 shares,
                 _initialSharePrice,
-                _apr,
+                _spotRate,
                 _positionDuration,
                 _timeStretch
             )
@@ -96,15 +97,15 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         _mint(AssetId._LP_ASSET_ID, _destination, lpShares);
 
         // Emit an Initialize event.
-        emit Initialize(_destination, lpShares, _contribution, _apr);
+        emit Initialize(_destination, lpShares, _contribution, _spotRate);
 
         return lpShares;
     }
 
     /// @notice Allows LPs to supply liquidity for LP shares.
     /// @param _contribution The amount of base to supply.
-    /// @param _minApr The minimum APR at which the LP is willing to supply.
-    /// @param _maxApr The maximum APR at which the LP is willing to supply.
+    /// @param _minSpotRate The minimum spot rate at which to provide liquidity.
+    /// @param _maxSpotRate The maximum spot rate at which to provide liquidity.
     /// @param _destination The address which will hold the LP shares
     /// @param _asUnderlying If true the user is charged in underlying if false
     ///                      the contract transfers in yield source directly.
@@ -112,8 +113,8 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
     /// @return lpShares The number of LP tokens created
     function addLiquidity(
         uint256 _contribution,
-        uint256 _minApr,
-        uint256 _maxApr,
+        uint256 _minSpotRate,
+        uint256 _maxSpotRate,
         address _destination,
         bool _asUnderlying
     ) external payable nonReentrant isNotPaused returns (uint256 lpShares) {
@@ -124,14 +125,15 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         }
 
         // Enforce the slippage guard.
-        uint256 apr = HyperdriveMath.calculateAPRFromReserves(
+        uint256 spotRate = HyperdriveMath.calculateSpotRate(
             _effectiveShareReserves(),
             _marketState.bondReserves,
             _initialSharePrice,
             _positionDuration,
             _timeStretch
         );
-        if (apr < _minApr || apr > _maxApr) revert IHyperdrive.InvalidApr();
+        if (spotRate < _minSpotRate || spotRate > _maxSpotRate)
+            revert IHyperdrive.InvalidSpotRate();
 
         // Deposit for the user, this call also transfers from them
         (uint256 shares, uint256 sharePrice) = _deposit(

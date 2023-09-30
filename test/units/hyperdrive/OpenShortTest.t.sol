@@ -7,13 +7,14 @@ import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { HyperdriveTest, HyperdriveUtils, IERC20, MockHyperdrive, MockHyperdriveDataProvider } from "../../utils/HyperdriveTest.sol";
-import { Lib } from "../../utils/Lib.sol";
+import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
+import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
+import { Lib } from "test/utils/Lib.sol";
 
 contract OpenShortTest is HyperdriveTest {
     using FixedPointMath for uint256;
+    using HyperdriveUtils for *;
     using Lib for *;
-    using HyperdriveUtils for IHyperdrive;
 
     function setUp() public override {
         super.setUp();
@@ -23,11 +24,10 @@ contract OpenShortTest is HyperdriveTest {
     }
 
     function test_open_short_failure_zero_amount() external {
-        uint256 apr = 0.05e18;
-
         // Initialize the pool with a large amount of capital.
+        uint256 fixedRate = 0.05e18;
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Attempt to short zero bonds. This should fail.
         vm.stopPrank();
@@ -37,11 +37,10 @@ contract OpenShortTest is HyperdriveTest {
     }
 
     function test_open_short_failure_not_payable() external {
-        uint256 apr = 0.05e18;
-
         // Initialize the pool with a large amount of capital.
+        uint256 fixedRate = 0.05e18;
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Attempt to open short. This should fail.
         vm.stopPrank();
@@ -51,11 +50,10 @@ contract OpenShortTest is HyperdriveTest {
     }
 
     function test_open_short_failure_pause() external {
-        uint256 apr = 0.05e18;
-
         // Initialize the pool with a large amount of capital.
+        uint256 fixedRate = 0.05e18;
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Attempt to add zero base as liquidity. This should fail.
         vm.stopPrank();
@@ -68,11 +66,10 @@ contract OpenShortTest is HyperdriveTest {
     }
 
     function test_open_short_failure_extreme_amount() external {
-        uint256 apr = 0.05e18;
-
         // Initialize the pool with a large amount of capital.
+        uint256 fixedRate = 0.05e18;
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Attempt to short an extreme amount of bonds. This should fail.
         vm.stopPrank();
@@ -85,11 +82,10 @@ contract OpenShortTest is HyperdriveTest {
     }
 
     function test_open_short_failure_minimum_share_price() external {
-        uint256 apr = 0.05e18;
-
         // Initialize the pool with a large amount of capital.
+        uint256 fixedRate = 0.05e18;
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Attempt to open a long when the share price is lower than the minimum
         // share price.
@@ -110,11 +106,10 @@ contract OpenShortTest is HyperdriveTest {
     }
 
     function test_open_short() external {
-        uint256 apr = 0.05e18;
-
         // Initialize the pool with a large amount of capital.
+        uint256 fixedRate = 0.05e18;
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Get the reserves before opening the short.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
@@ -130,22 +125,21 @@ contract OpenShortTest is HyperdriveTest {
             basePaid,
             shortAmount,
             maturityTime,
-            apr
+            fixedRate
         );
     }
 
     function test_open_short_with_small_amount() external {
-        uint256 apr = 0.05e18;
-
         // Initialize the pool with a large amount of capital.
+        uint256 fixedRate = 0.05e18;
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Get the reserves before opening the short.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
 
         // Short a small amount of bonds.
-        uint256 shortAmount = .1e18;
+        uint256 shortAmount = 0.1e18;
         (uint256 maturityTime, uint256 basePaid) = openShort(bob, shortAmount);
 
         // Verify the open short updates occurred correctly.
@@ -155,42 +149,19 @@ contract OpenShortTest is HyperdriveTest {
             basePaid,
             shortAmount,
             maturityTime,
-            apr
+            fixedRate
         );
     }
 
-    function test_RevertsWithNegativeInterestRate() public {
-        uint256 apr = 0.05e18;
-
-        // Initialize the pool with a large amount of capital.
-        uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
-
-        vm.stopPrank();
-        vm.startPrank(bob);
-
-        uint256 bondAmount = (hyperdrive.calculateMaxShort() * 90) / 100;
-        openShort(bob, bondAmount);
-
-        uint256 longAmount = (hyperdrive.calculateMaxLong() * 50) / 100;
-        openLong(bob, longAmount);
-
-        //vm.expectRevert(IHyperdrive.NegativeInterest.selector);
-
-        uint256 baseAmount = (hyperdrive.calculateMaxShort() * 100) / 100;
-        openShort(bob, baseAmount);
-        //I think we could trigger this with big short, open long, and short?
-    }
-
     function test_governance_fees_excluded_share_reserves() public {
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
         uint256 contribution = 500_000_000e18;
 
         // 1. Deploy a pool with zero fees
-        IHyperdrive.PoolConfig memory config = testConfig(apr);
+        IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
         deploy(address(deployer), config);
         // Initialize the pool with a large amount of capital.
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         uint256 bondAmount = (hyperdrive.calculateMaxShort() * 90) / 100;
         // 2. Open a short
@@ -203,14 +174,14 @@ contract OpenShortTest is HyperdriveTest {
         // 4. deploy a pool with 100% curve fees and 100% gov fees (this is nice bc
         // it ensures that all the fees are credited to governance and thus subtracted
         // from the shareReserves
-        config = testConfig(apr);
+        config = testConfig(fixedRate);
         config.fees = IHyperdrive.Fees({
             curve: 1e18,
             flat: 1e18,
             governance: 1e18
         });
         deploy(address(deployer), config);
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // 5. Open a Short
         bondAmount = (hyperdrive.calculateMaxShort() * 90) / 100;
@@ -236,11 +207,11 @@ contract OpenShortTest is HyperdriveTest {
         assert(govFees > 1e5);
 
         // 7. deploy a pool with 100% curve fees and 0% gov fees
-        config = testConfig(apr);
+        config = testConfig(fixedRate);
         config.fees = IHyperdrive.Fees({ curve: 1e18, flat: 0, governance: 0 });
         // Deploy and initialize the new pool
         deploy(address(deployer), config);
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // 8. Open a Short
         bondAmount = (hyperdrive.calculateMaxShort() * 90) / 100;
@@ -295,7 +266,7 @@ contract OpenShortTest is HyperdriveTest {
         uint256 basePaid,
         uint256 shortAmount,
         uint256 maturityTime,
-        uint256 apr
+        uint256 fixedRate
     ) internal {
         // Ensure that one `OpenShort` event was emitted with the correct
         // arguments.
@@ -341,12 +312,13 @@ contract OpenShortTest is HyperdriveTest {
         // APR.
         uint256 baseProceeds = shortAmount - basePaid;
         {
-            uint256 realizedApr = HyperdriveUtils.calculateAPRFromRealizedPrice(
-                baseProceeds,
-                shortAmount,
-                FixedPointMath.ONE_18
-            );
-            assertLt(apr, realizedApr);
+            uint256 realizedApr = HyperdriveUtils
+                .calculateRateFromRealizedPrice(
+                    baseProceeds,
+                    shortAmount,
+                    FixedPointMath.ONE_18
+                );
+            assertLt(fixedRate, realizedApr);
         }
 
         // Verify that the reserves were updated correctly.
@@ -380,14 +352,14 @@ contract OpenShortTest is HyperdriveTest {
             );
         }
 
-        // Ensure that the bond reserves were updated to have the correct APR.
-        // Due to the way that the flat part of the trade is applied, the bond
-        // reserve updates may not exactly correspond to the amount of bonds
-        // transferred; however, the pool's APR should be identical to the APR
-        // that the bond amount transfer implies.
+        // Ensure that the bond reserves were updated to have the correct spot
+        // rate. Due to the way that the flat part of the trade is applied, the
+        // bond reserve updates may not exactly correspond to the amount of
+        // bonds transferred; however, the pool's APR should be identical to the
+        // spot rate that the bond amount transfer implies.
         assertApproxEqAbs(
-            HyperdriveUtils.calculateAPRFromReserves(hyperdrive),
-            HyperdriveMath.calculateAPRFromReserves(
+            hyperdrive.calculateSpotRate(),
+            HyperdriveMath.calculateSpotRate(
                 poolInfoAfter.shareReserves,
                 poolInfoBefore.bondReserves + shortAmount,
                 INITIAL_SHARE_PRICE,

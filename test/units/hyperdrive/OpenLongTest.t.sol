@@ -7,11 +7,12 @@ import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
-import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol";
-import { MockHyperdrive, IMockHyperdrive } from "../../mocks/MockHyperdrive.sol";
 import { SafeCast } from "contracts/src/libraries/SafeCast.sol";
-import { Lib } from "../../utils/Lib.sol";
+import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
+import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
+import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
+import { MockHyperdrive, IMockHyperdrive } from "test/mocks/MockHyperdrive.sol";
+import { Lib } from "test/utils/Lib.sol";
 
 contract OpenLongTest is HyperdriveTest {
     using FixedPointMath for uint256;
@@ -27,11 +28,11 @@ contract OpenLongTest is HyperdriveTest {
     }
 
     function test_open_long_failure_zero_amount() external {
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Attempt to purchase bonds with zero base. This should fail.
         vm.stopPrank();
@@ -41,11 +42,11 @@ contract OpenLongTest is HyperdriveTest {
     }
 
     function test_open_long_failure_not_payable() external {
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Attempt to open long. This should fail.
         vm.stopPrank();
@@ -55,11 +56,11 @@ contract OpenLongTest is HyperdriveTest {
     }
 
     function test_open_long_failure_pause() external {
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Attempt to add zero base as liquidity. This should fail.
         vm.stopPrank();
@@ -110,11 +111,11 @@ contract OpenLongTest is HyperdriveTest {
     }
 
     function test_open_long_failure_extreme_amount() external {
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Attempt to purchase more bonds than exist. This should fail.
         vm.stopPrank();
@@ -127,11 +128,11 @@ contract OpenLongTest is HyperdriveTest {
     }
 
     function test_open_long_failure_minimum_share_price() external {
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Attempt to open a long when the share price is lower than the minimum
         // share price.
@@ -146,11 +147,11 @@ contract OpenLongTest is HyperdriveTest {
     }
 
     function test_open_long() external {
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
 
         // Initialize the pools with a large amount of capital.
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Get the reserves before opening the long.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
@@ -166,16 +167,16 @@ contract OpenLongTest is HyperdriveTest {
             baseAmount,
             bondAmount,
             maturityTime,
-            apr
+            fixedRate
         );
     }
 
     function test_open_long_with_small_amount() external {
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Get the reserves before opening the long.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
@@ -191,16 +192,16 @@ contract OpenLongTest is HyperdriveTest {
             baseAmount,
             bondAmount,
             maturityTime,
-            apr
+            fixedRate
         );
     }
 
     function test_LongAvoidsDrainingBufferReserves() external {
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
 
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Initialize a long and set large exposure to eat through capital
         uint256 longAmount = 1e18;
@@ -218,13 +219,16 @@ contract OpenLongTest is HyperdriveTest {
         hyperdrive.openLong(longAmount, 0, 0, bob, true);
     }
 
-    function testAvoidsDustAttack(uint256 contribution, uint256 apr) public {
-        /*
-            - Tests an edge case in updateWeightedAverage where The function output is not bounded by the average and the delta.
-            This test ensures that this never occurs by attempting to induce a wild variation in avgPrice, and ensures that they remain relatively consistent.
-        */
-        // Apr between 0.5e18 and 0.25e18
-        apr = apr.normalizeToRange(0.05e18, 0.25e18);
+    // Tests an edge case in updateWeightedAverage where The function output is
+    // not bounded by the average and the delta. This test ensures that this
+    // never occurs by attempting to induce a wild variation in avgPrice, and
+    // ensures that they remain relatively consistent.
+    function testAvoidsDustAttack(
+        uint256 contribution,
+        uint256 fixedRate
+    ) public {
+        // Fixed rate between 0.05e18 and 0.25e18
+        fixedRate = fixedRate.normalizeToRange(0.05e18, 0.25e18);
         // Initialize the pool with a large amount of capital.
         contribution = contribution.normalizeToRange(
             100_000_000e6,
@@ -233,14 +237,14 @@ contract OpenLongTest is HyperdriveTest {
 
         // Deploy the pool with a minimum share reserves that is significantly
         // smaller than the contribution.
-        IHyperdrive.PoolConfig memory config = testConfig(apr);
+        IHyperdrive.PoolConfig memory config = testConfig(fixedRate);
         config.minimumShareReserves = 1e6;
         config.minimumTransactionAmount = 1e6;
         deploy(deployer, config);
 
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
-        advanceTime(POSITION_DURATION, int256(apr));
+        advanceTime(POSITION_DURATION, int256(fixedRate));
 
         openLong(bob, config.minimumTransactionAmount);
 
@@ -272,7 +276,7 @@ contract OpenLongTest is HyperdriveTest {
         uint256 baseAmount,
         uint256 bondAmount,
         uint256 maturityTime,
-        uint256 apr
+        uint256 fixedRate
     ) internal {
         // Ensure that one `OpenLong` event was emitted with the correct
         // arguments.
@@ -305,12 +309,12 @@ contract OpenLongTest is HyperdriveTest {
             baseAmount,
             bondAmount,
             maturityTime,
-            apr
+            fixedRate
         );
 
         // Deploy and initialize a new pool with fees.
-        deploy(alice, apr, 0.1e18, 0.1e18, 0);
-        initialize(alice, apr, contribution);
+        deploy(alice, fixedRate, 0.1e18, 0.1e18, 0);
+        initialize(alice, fixedRate, contribution);
 
         // Open a long with fees.
         IHyperdrive.PoolInfo memory poolInfoBeforeWithFees = hyperdrive
@@ -324,7 +328,7 @@ contract OpenLongTest is HyperdriveTest {
             baseAmount,
             bondAmountWithFees,
             maturityTime,
-            apr
+            fixedRate
         );
 
         // let's manually check that the fees are collected appropriately
@@ -357,7 +361,7 @@ contract OpenLongTest is HyperdriveTest {
         uint256 baseAmount,
         uint256 bondAmount,
         uint256 maturityTime,
-        uint256 apr
+        uint256 fixedRate
     ) internal {
         // Verify that base was transferred from the trader to Hyperdrive.
         assertEq(baseToken.balanceOf(user), 0);
@@ -375,13 +379,13 @@ contract OpenLongTest is HyperdriveTest {
             bondAmount
         );
 
-        // Verify that opening a long doesn't make the APR go up.
-        uint256 realizedApr = HyperdriveUtils.calculateAPRFromRealizedPrice(
+        // Verify that the trader's realized rate is greater than the fixed rate.
+        uint256 realizedRate = HyperdriveUtils.calculateRateFromRealizedPrice(
             baseAmount,
             bondAmount,
             FixedPointMath.ONE_18
         );
-        assertGt(apr, realizedApr);
+        assertGt(fixedRate, realizedRate);
 
         // Ensure that the state changes to the share reserves were applied
         // correctly and that the other pieces of state were left untouched.
@@ -400,14 +404,14 @@ contract OpenLongTest is HyperdriveTest {
             10
         );
 
-        // Ensure that the bond reserves were updated to have the correct APR.
-        // Due to the way that the flat part of the trade is applied, the bond
-        // reserve updates may not exactly correspond to the amount of bonds
-        // transferred; however, the pool's APR should be identical to the APR
-        // that the bond amount transfer implies.
+        // Ensure that the bond reserves were updated to have the correct spot
+        // rate. Due to the way that the flat part of the trade is applied, the
+        // bond reserve updates may not exactly correspond to the amount of
+        // bonds transferred; however, the pool's spot rate should be identical
+        // to the spot rate that the bond amount transfer implies.
         assertApproxEqAbs(
-            HyperdriveUtils.calculateAPRFromReserves(hyperdrive),
-            HyperdriveMath.calculateAPRFromReserves(
+            hyperdrive.calculateSpotRate(),
+            HyperdriveMath.calculateSpotRate(
                 poolInfoAfter.shareReserves,
                 poolInfoBefore.bondReserves - bondAmount,
                 INITIAL_SHARE_PRICE,

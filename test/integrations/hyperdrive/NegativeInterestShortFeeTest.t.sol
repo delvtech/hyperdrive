@@ -104,10 +104,17 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
         uint256 governanceFee
     ) internal {
         // Initialize the market
-        uint256 apr = 0.05e18;
-        deploy(alice, apr, initialSharePrice, curveFee, flatFee, governanceFee);
+        uint256 fixedRate = 0.05e18;
+        deploy(
+            alice,
+            fixedRate,
+            initialSharePrice,
+            curveFee,
+            flatFee,
+            governanceFee
+        );
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // fast forward time and accrue interest
         advanceTime(POSITION_DURATION, variableInterest);
@@ -289,10 +296,17 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
         uint256 governanceFee
     ) internal {
         // Initialize the market
-        uint256 apr = 0.05e18;
-        deploy(alice, apr, initialSharePrice, curveFee, flatFee, governanceFee);
+        uint256 fixedRate = 0.05e18;
+        deploy(
+            alice,
+            fixedRate,
+            initialSharePrice,
+            curveFee,
+            flatFee,
+            governanceFee
+        );
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // fast forward time and accrue interest
         advanceTime(POSITION_DURATION, preTradeVariableInterest);
@@ -488,10 +502,17 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
         uint256 governanceFee
     ) internal {
         // Initialize the market
-        uint256 apr = 0.05e18;
-        deploy(alice, apr, initialSharePrice, curveFee, flatFee, governanceFee);
+        uint256 fixedRate = 0.05e18;
+        deploy(
+            alice,
+            fixedRate,
+            initialSharePrice,
+            curveFee,
+            flatFee,
+            governanceFee
+        );
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // fast forward time and accrue interest
         advanceTime(POSITION_DURATION, preTradeVariableInterest);

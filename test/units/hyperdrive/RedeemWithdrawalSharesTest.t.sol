@@ -6,12 +6,13 @@ import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol";
-import { Lib } from "../../utils/Lib.sol";
+import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
+import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
+import { Lib } from "test/utils/Lib.sol";
 
 contract RedeemWithdrawalSharesTest is HyperdriveTest {
     using FixedPointMath for uint256;
-    using HyperdriveUtils for IHyperdrive;
+    using HyperdriveUtils for *;
     using Lib for *;
 
     function setUp() public override {
@@ -26,7 +27,7 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
         uint256 lpShares = initialize(alice, 0.02e18, 500_000_000e18);
 
         // Bob opens a large short.
-        uint256 shortAmount = HyperdriveUtils.calculateMaxShort(hyperdrive);
+        uint256 shortAmount = hyperdrive.calculateMaxShort();
         (uint256 maturityTime, ) = openShort(bob, shortAmount);
 
         // Alice removes her liquidity.
@@ -56,7 +57,7 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
         uint256 lpShares = initialize(alice, 0.02e18, 500_000_000e18);
 
         // Bob opens a large short.
-        uint256 shortAmount = HyperdriveUtils.calculateMaxShort(hyperdrive);
+        uint256 shortAmount = hyperdrive.calculateMaxShort();
         (uint256 maturityTime, ) = openShort(bob, shortAmount);
 
         // Alice removes her liquidity.
@@ -114,7 +115,7 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
         uint256 lpShares = initialize(alice, 0.02e18, 500_000_000e18);
 
         // Bob opens a large short.
-        uint256 shortAmount = HyperdriveUtils.calculateMaxShort(hyperdrive);
+        uint256 shortAmount = hyperdrive.calculateMaxShort();
         (uint256 maturityTime, ) = openShort(bob, shortAmount);
 
         // Alice removes her liquidity.
@@ -196,7 +197,7 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
         uint256 fixedRate = 0.02e18;
         uint256 lpShares = initialize(alice, fixedRate, contribution);
         // Bob opens a large long.
-        uint256 basePaidLong = HyperdriveUtils.calculateMaxLong(hyperdrive);
+        uint256 basePaidLong = hyperdrive.calculateMaxLong();
         (uint256 maturityTime, uint256 longAmount) = openLong(
             bob,
             basePaidLong
@@ -252,7 +253,7 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
         uint256 lpShares = initialize(alice, 0.02e18, 500_000_000e18);
 
         // Bob opens a large short.
-        uint256 shortAmount = HyperdriveUtils.calculateMaxShort(hyperdrive);
+        uint256 shortAmount = hyperdrive.calculateMaxShort();
         (uint256 maturityTime, ) = openShort(bob, shortAmount);
 
         // Alice removes her liquidity.

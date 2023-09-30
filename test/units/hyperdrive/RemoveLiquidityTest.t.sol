@@ -7,13 +7,13 @@ import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { MockHyperdrive } from "../../mocks/MockHyperdrive.sol";
-import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
-import { Lib } from "../../utils/Lib.sol";
+import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
+import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
+import { Lib } from "test/utils/Lib.sol";
 
 contract RemoveLiquidityTest is HyperdriveTest {
     using FixedPointMath for uint256;
-    using HyperdriveUtils for IHyperdrive;
+    using HyperdriveUtils for *;
     using Lib for *;
 
     function setUp() public override {
@@ -26,11 +26,10 @@ contract RemoveLiquidityTest is HyperdriveTest {
     /// Unit Tests ///
 
     function test_remove_liquidity_fail_zero_amount() external {
-        uint256 apr = 0.05e18;
-
         // Initialize the pool with a large amount of capital.
+        uint256 fixedRate = 0.05e18;
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Alice attempts to remove 0 lp shares.
         vm.stopPrank();
@@ -40,11 +39,10 @@ contract RemoveLiquidityTest is HyperdriveTest {
     }
 
     function test_remove_liquidity_fail_insufficient_shares() external {
-        uint256 apr = 0.05e18;
-
         // Initialize the pool with a large amount of capital.
+        uint256 fixedRate = 0.05e18;
         uint256 contribution = 500_000_000e18;
-        uint256 lpShares = initialize(alice, apr, contribution);
+        uint256 lpShares = initialize(alice, fixedRate, contribution);
 
         // Alice attempts to remove 0 lp shares.
         vm.stopPrank();
@@ -221,7 +219,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
         );
 
         // Read from the state before removing liquidity.
-        uint256 fixedRateBefore = hyperdrive.calculateAPRFromReserves();
+        uint256 fixedRateBefore = hyperdrive.calculateSpotRate();
         uint256 lpTotalSupplyBefore = lpTotalSupply();
         uint256 startingPresentValue = hyperdrive.presentValue();
         uint256 expectedBaseProceeds = calculateBaseLpProceeds(
@@ -279,7 +277,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
             );
 
             // Ensure that the fixed rate stayed the same after removing liquidity.
-            assertEq(hyperdrive.calculateAPRFromReserves(), fixedRateBefore);
+            assertEq(hyperdrive.calculateSpotRate(), fixedRateBefore);
 
             // Ensure that the initializer's shares were burned and that the total
             // LP supply is just the minimum share reserves.

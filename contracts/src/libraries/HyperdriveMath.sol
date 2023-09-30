@@ -17,7 +17,7 @@ library HyperdriveMath {
     using FixedPointMath for int256;
     using SafeCast for uint256;
 
-    /// @dev Calculates the spot price of bonds in terms of base.
+    /// @dev Calculates the pool's spot price of bonds in terms of base.
     /// @param _effectiveShareReserves The pool's effective share reserves. The
     ///        effective share reserves are a modified version of the share
     ///        reserves used when pricing trades.
@@ -38,9 +38,7 @@ library HyperdriveMath {
             .pow(_timeStretch);
     }
 
-    // FIXME: Rename this to calculateSpotRate.
-    //
-    /// @dev Calculates the APR from the pool's reserves.
+    /// @dev Calculates the pool's spot rate.
     /// @param _effectiveShareReserves The pool's effective share reserves. The
     ///        effective share reserves are a modified version of the share
     ///        reserves used when pricing trades.
@@ -48,29 +46,29 @@ library HyperdriveMath {
     /// @param _initialSharePrice The pool's initial share price.
     /// @param _positionDuration The amount of time until maturity in seconds.
     /// @param _timeStretch The time stretch parameter.
-    /// @return apr The pool's APR.
-    function calculateAPRFromReserves(
+    /// @return spotRate The pool's spot rate.
+    function calculateSpotRate(
         uint256 _effectiveShareReserves,
         uint256 _bondReserves,
         uint256 _initialSharePrice,
         uint256 _positionDuration,
         uint256 _timeStretch
-    ) internal pure returns (uint256 apr) {
-        // We are interested calculating the fixed APR for the pool. The annualized rate
-        // is given by the following formula:
+    ) internal pure returns (uint256 spotRate) {
+        // We are interested calculating the fixed rate (APR) for the pool. The
+        // annualized rate is given by the following formula:
+        //
         // r = (1 - p) / (p * t)
+        //
         // where t = 365 / _positionDuration
-
         uint256 spotPrice = calculateSpotPrice(
             _effectiveShareReserves,
             _bondReserves,
             _initialSharePrice,
             _timeStretch
         );
-        return
-            (ONE - spotPrice).divDown(
-                spotPrice.mulDivUp(365 days, _positionDuration)
-            );
+        spotRate = (ONE - spotPrice).divDown(
+            spotPrice.mulDivUp(365 days, _positionDuration)
+        );
     }
 
     /// @dev Calculates the initial bond reserves assuming that the initial LP
@@ -83,25 +81,25 @@ library HyperdriveMath {
     ///        effective share reserves are a modified version of the share
     ///        reserves used when pricing trades.
     /// @param _initialSharePrice The pool's initial share price.
-    /// @param _apr The pool's APR.
+    /// @param _spotRate The pool's spot rate.
     /// @param _positionDuration The amount of time until maturity in seconds.
     /// @param _timeStretch The time stretch parameter.
     /// @return bondReserves The bond reserves (without adjustment) that make
-    ///         the pool have a specified APR.
+    ///         the pool have a specified spot rate.
     function calculateInitialBondReserves(
         uint256 _effectiveShareReserves,
         uint256 _initialSharePrice,
-        uint256 _apr,
+        uint256 _spotRate,
         uint256 _positionDuration,
         uint256 _timeStretch
     ) internal pure returns (uint256 bondReserves) {
         // NOTE: Using divDown to convert to fixed point format.
         uint256 t = _positionDuration.divDown(365 days);
 
-        // mu * (z - zeta) * (1 + apr * t) ** (1 / tau)
+        // mu * (z - zeta) * (1 + r * t) ** (1 / tau)
         return
             _initialSharePrice.mulDown(_effectiveShareReserves).mulDown(
-                (ONE + _apr.mulDown(t)).pow(ONE.divUp(_timeStretch))
+                (ONE + _spotRate.mulDown(t)).pow(ONE.divUp(_timeStretch))
             );
     }
 

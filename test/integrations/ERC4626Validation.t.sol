@@ -313,7 +313,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         (, uint256 basePaid) = openShortERC4626(alice, shortAmount, true);
 
         // Ensure that the amount of base paid by the short is reasonable.
-        uint256 realizedRate = HyperdriveUtils.calculateAPRFromRealizedPrice(
+        uint256 realizedRate = HyperdriveUtils.calculateRateFromRealizedPrice(
             shortAmount - basePaid,
             shortAmount,
             1e18
@@ -361,7 +361,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
 
         // Ensure we did actually paid a non-Zero amount of base
         assertGt(basePaid, 0);
-        uint256 realizedRate = HyperdriveUtils.calculateAPRFromRealizedPrice(
+        uint256 realizedRate = HyperdriveUtils.calculateRateFromRealizedPrice(
             shortAmount - basePaid,
             shortAmount,
             1e18

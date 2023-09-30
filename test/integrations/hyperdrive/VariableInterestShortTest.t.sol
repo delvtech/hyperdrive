@@ -13,17 +13,18 @@ contract VariableInterestShortTest is HyperdriveTest {
     using Lib for *;
 
     function test_negative_interest_short_complete_loss(
-        int64 preTradingVariableRate,
-        int64 postTradingApr
+        int256 preTradingVariableRate,
+        int256 postTradingVariableRate
     ) external {
         // Initialize the market.
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Interest accrues for a term.
-        vm.assume(
-            preTradingVariableRate >= -0.9e18 && preTradingVariableRate <= 1e18
+        preTradingVariableRate = preTradingVariableRate.normalizeToRange(
+            -0.9e18,
+            1e18
         );
         advanceTime(POSITION_DURATION, preTradingVariableRate);
 
@@ -38,8 +39,11 @@ contract VariableInterestShortTest is HyperdriveTest {
         hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
 
         // Interest accrues for a term.
-        vm.assume(postTradingApr >= -1e18 && postTradingApr <= 1e18);
-        advanceTime(POSITION_DURATION, postTradingApr);
+        postTradingVariableRate = postTradingVariableRate.normalizeToRange(
+            -1e18,
+            1e18
+        );
+        advanceTime(POSITION_DURATION, postTradingVariableRate);
 
         // Bob closes the short. He should receive nothing on account of the
         // negative interest.
@@ -48,18 +52,18 @@ contract VariableInterestShortTest is HyperdriveTest {
     }
 
     function test_negative_interest_short_trading_profits(
-        int64 preTradingVariableRate
+        int256 preTradingVariableRate
     ) external {
-        // Initialize the market with a very low APR.
-        uint256 apr = 0.01e18;
+        // Initialize the market with a very low fixed rate.
+        uint256 fixedRate = 0.01e18;
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Interest accrues for a term.
-        vm.assume(
-            preTradingVariableRate >= -0.5e18 && preTradingVariableRate <= 1e18
+        preTradingVariableRate = preTradingVariableRate.normalizeToRange(
+            -0.5e18,
+            1e18
         );
-
         advanceTime(POSITION_DURATION, preTradingVariableRate);
 
         // Bob opens a short.
@@ -169,10 +173,10 @@ contract VariableInterestShortTest is HyperdriveTest {
         int256 variableInterest
     ) internal {
         // Initialize the market
-        uint256 apr = 0.05e18;
-        deploy(alice, apr, initialSharePrice, 0, 0, 0);
+        uint256 fixedRate = 0.05e18;
+        deploy(alice, fixedRate, initialSharePrice, 0, 0, 0);
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // fast forward time and accrue interest
         advanceTime(POSITION_DURATION, variableInterest);
@@ -329,10 +333,10 @@ contract VariableInterestShortTest is HyperdriveTest {
         int256 variableInterest
     ) internal returns (uint256) {
         // Initialize the market
-        uint256 apr = 0.05e18;
-        deploy(alice, apr, initialSharePrice, 0, 0, 0);
+        uint256 fixedRate = 0.05e18;
+        deploy(alice, fixedRate, initialSharePrice, 0, 0, 0);
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // fast forward time and accrue interest
         advanceTime(POSITION_DURATION, preTradeVariableInterest);
@@ -492,10 +496,10 @@ contract VariableInterestShortTest is HyperdriveTest {
         int256 variableInterest
     ) internal {
         // Initialize the market
-        uint256 apr = 0.05e18;
-        deploy(alice, apr, initialSharePrice, 0, 0, 0);
+        uint256 fixedRate = 0.05e18;
+        deploy(alice, fixedRate, initialSharePrice, 0, 0, 0);
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // fast forward time and accrue negative interest
         advanceTime(POSITION_DURATION, preTradeVariableInterest);

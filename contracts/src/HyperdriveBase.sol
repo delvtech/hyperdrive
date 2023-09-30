@@ -26,7 +26,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
         address indexed provider,
         uint256 lpAmount,
         uint256 baseAmount,
-        uint256 apr
+        uint256 spotRate
     );
 
     event AddLiquidity(

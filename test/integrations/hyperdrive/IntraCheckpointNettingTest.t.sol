@@ -19,10 +19,10 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         uint256 initialSharePrice = 1e18;
 
         // Initialize the market
-        uint256 apr = 0.05e18;
-        deploy(alice, apr, initialSharePrice, 0, 0, 0);
+        uint256 fixedRate = 0.05e18;
+        deploy(alice, fixedRate, initialSharePrice, 0, 0, 0);
         uint256 contribution = 100e18;
-        uint256 aliceLpShares = initialize(alice, apr, contribution);
+        uint256 aliceLpShares = initialize(alice, fixedRate, contribution);
 
         // open a short
         uint256 shortAmount = 10e18;
@@ -79,10 +79,10 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         // initialize the market
         uint256 aliceLpShares = 0;
         {
-            uint256 apr = 0.05e18;
-            deploy(alice, apr, initialSharePrice, 0, 0, 0);
+            uint256 fixedRate = 0.05e18;
+            deploy(alice, fixedRate, initialSharePrice, 0, 0, 0);
             uint256 contribution = 500_000_000e18;
-            aliceLpShares = initialize(alice, apr, contribution);
+            aliceLpShares = initialize(alice, fixedRate, contribution);
 
             // fast forward time and accrue interest
             advanceTime(POSITION_DURATION, 0);
@@ -156,10 +156,10 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         // initialize the market
         uint256 aliceLpShares = 0;
         {
-            uint256 apr = 0.05e18;
-            deploy(alice, apr, initialSharePrice, 0, 0, 0);
+            uint256 fixedRate = 0.05e18;
+            deploy(alice, fixedRate, initialSharePrice, 0, 0, 0);
             uint256 contribution = 500_000_000e18;
-            aliceLpShares = initialize(alice, apr, contribution);
+            aliceLpShares = initialize(alice, fixedRate, contribution);
 
             // fast forward time and accrue interest
             advanceTime(POSITION_DURATION, 0);
@@ -432,10 +432,10 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         uint256 numTrades
     ) internal {
         // Initialize the market
-        uint256 apr = 0.05e18;
-        deploy(alice, apr, initialSharePrice, 0, 0, 0);
+        uint256 fixedRate = 0.05e18;
+        deploy(alice, fixedRate, initialSharePrice, 0, 0, 0);
         uint256 contribution = 500_000_000e18;
-        uint256 aliceLpShares = initialize(alice, apr, contribution);
+        uint256 aliceLpShares = initialize(alice, fixedRate, contribution);
 
         // fast forward time and accrue interest
         advanceTime(POSITION_DURATION, variableInterest);
@@ -568,10 +568,10 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         uint256 numTrades
     ) internal {
         // Initialize the market
-        uint256 apr = 0.05e18;
-        deploy(alice, apr, initialSharePrice, 0, 0, 0);
+        uint256 fixedRate = 0.05e18;
+        deploy(alice, fixedRate, initialSharePrice, 0, 0, 0);
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // fast forward time and accrue interest
         advanceTime(POSITION_DURATION, variableInterest);
@@ -724,10 +724,10 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         uint256 numTrades
     ) internal {
         // initialize the market
-        uint256 apr = 0.05e18;
-        deploy(alice, apr, initialSharePrice, 0, 0, 0);
+        uint256 fixedRate = 0.05e18;
+        deploy(alice, fixedRate, initialSharePrice, 0, 0, 0);
         uint256 contribution = 500_000_000e18;
-        uint256 aliceLpShares = initialize(alice, apr, contribution);
+        uint256 aliceLpShares = initialize(alice, fixedRate, contribution);
 
         // fast forward time and accrue interest
         advanceTime(POSITION_DURATION, variableInterest);
@@ -794,10 +794,10 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         // initialize the market
         uint256 aliceLpShares = 0;
         {
-            uint256 apr = 0.05e18;
-            deploy(alice, apr, initialSharePrice, 0, 0, 0);
+            uint256 fixedRate = 0.05e18;
+            deploy(alice, fixedRate, initialSharePrice, 0, 0, 0);
             uint256 contribution = 500_000_000e18;
-            aliceLpShares = initialize(alice, apr, contribution);
+            aliceLpShares = initialize(alice, fixedRate, contribution);
 
             // fast forward time and accrue interest
             advanceTime(POSITION_DURATION, variableInterest);

@@ -14,10 +14,10 @@ contract TWAPTest is HyperdriveTest {
     using FixedPointMath for uint256;
 
     function test_oracle_write_long() external {
-        uint256 apr = 0.05e18;
         // Initialize the pool with a large amount of capital.
+        uint256 fixedRate = 0.05e18;
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Open long
         uint256 baseAmount = 10e18;
@@ -45,7 +45,7 @@ contract TWAPTest is HyperdriveTest {
         assertEq(lastTimestamp, currentTimestamp);
 
         // Advance time
-        advanceTime(UPDATE_GAP, int256(apr));
+        advanceTime(UPDATE_GAP, int256(fixedRate));
 
         // Should record a new timestamp
         currentTimestamp = block.timestamp;
@@ -63,7 +63,7 @@ contract TWAPTest is HyperdriveTest {
         assertEq(lastTimestamp, currentTimestamp);
 
         // Should advance oracle on close timestamp after time
-        advanceTime(UPDATE_GAP, int256(apr));
+        advanceTime(UPDATE_GAP, int256(fixedRate));
         currentTimestamp = block.timestamp;
         closeLong(bob, maturityTimeSecond, bondAmountSecond);
         (head, lastTimestamp) = MockHyperdrive(address(hyperdrive))
@@ -73,10 +73,10 @@ contract TWAPTest is HyperdriveTest {
     }
 
     function test_oracle_write_short() external {
-        uint256 apr = 0.05e18;
         // Initialize the pool with a large amount of capital.
+        uint256 fixedRate = 0.05e18;
         uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Open long
         uint256 baseAmount = 10e18;
@@ -104,7 +104,7 @@ contract TWAPTest is HyperdriveTest {
         assertEq(lastTimestamp, currentTimestamp);
 
         // Advance time
-        advanceTime(UPDATE_GAP, int256(apr));
+        advanceTime(UPDATE_GAP, int256(fixedRate));
 
         // Should record a new timestamp
         currentTimestamp = block.timestamp;
@@ -122,7 +122,7 @@ contract TWAPTest is HyperdriveTest {
         assertEq(lastTimestamp, currentTimestamp);
 
         // Should advance oracle on close timestamp after time
-        advanceTime(UPDATE_GAP, int256(apr));
+        advanceTime(UPDATE_GAP, int256(fixedRate));
         currentTimestamp = block.timestamp;
         closeShort(bob, maturityTimeSecond, bondAmountSecond);
         (head, lastTimestamp) = MockHyperdrive(address(hyperdrive))
@@ -132,10 +132,10 @@ contract TWAPTest is HyperdriveTest {
     }
 
     function recordTwelveDataPoints() internal {
-        uint256 apr = 0.05e18;
+        uint256 fixedRate = 0.05e18;
         for (uint256 i = 1; i <= 12; i++) {
             MockHyperdrive(address(hyperdrive)).recordOracle(i * 1e18);
-            advanceTime(UPDATE_GAP, int256(apr));
+            advanceTime(UPDATE_GAP, int256(fixedRate));
         }
     }
 
