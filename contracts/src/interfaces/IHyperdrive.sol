@@ -214,7 +214,6 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
     error OutputLimit();
     error Paused();
     error PoolAlreadyInitialized();
-    error ShareReservesDeltaExceedsBondReservesDelta();
     error TransferFailed();
     error UnexpectedAssetId();
     error UnexpectedSender();

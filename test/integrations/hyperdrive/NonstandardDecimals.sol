@@ -10,6 +10,8 @@ import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import { Lib } from "../../utils/Lib.sol";
 
+import "forge-std/console2.sol";
+
 contract NonstandardDecimalsTest is HyperdriveTest {
     using FixedPointMath for int256;
     using FixedPointMath for uint256;
@@ -250,11 +252,24 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         uint256 shortMaturityTime;
     }
 
-    // TODO: This test should be re-written to avoid such large tolerances.
     function test_nonstandard_decimals_lp(
         uint256 longBasePaid,
         uint256 shortAmount
     ) external {
+        _test_nonstandard_decimals_lp(longBasePaid, shortAmount);
+    }
+
+    function test_nonstandard_decimals_lp_edge_cases() external {
+        uint256 longBasePaid = 2141061247565828640207640148726033314; // 279_000_050.816564
+        uint256 shortAmount = 0; // 0.100000
+        _test_nonstandard_decimals_lp(longBasePaid, shortAmount);
+    }
+
+    // TODO: This test should be re-written to avoid such large tolerances.
+    function _test_nonstandard_decimals_lp(
+        uint256 longBasePaid,
+        uint256 shortAmount
+    ) internal {
         uint256 minimumTransactionAmount = hyperdrive
             .getPoolConfig()
             .minimumTransactionAmount;
@@ -288,6 +303,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
             HyperdriveUtils.calculateMaxLong(hyperdrive) -
                 minimumTransactionAmount
         );
+        console2.log("longBasePaid", longBasePaid.toString(6));
         testParams.longBasePaid = longBasePaid;
         {
             (uint256 longMaturityTime, uint256 longAmount) = openLong(
@@ -304,6 +320,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
             HyperdriveUtils.calculateMaxShort(hyperdrive) -
                 minimumTransactionAmount
         );
+        console2.log("shortAmount", shortAmount.toString(6));
         testParams.shortAmount = shortAmount;
         {
             (uint256 shortMaturityTime, uint256 shortBasePaid) = openShort(
@@ -313,7 +330,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
             testParams.shortMaturityTime = shortMaturityTime;
             testParams.shortBasePaid = shortBasePaid;
         }
-
+        console2.log("after openShort", shortAmount.toString(6));
         // Alice removes her liquidity.
         uint256 estimatedBaseProceeds = calculateBaseLpProceeds(aliceLpShares);
         (
