@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { console } from "forge-std/console.sol";
+import { console2 as console } from "forge-std/console2.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
@@ -524,6 +524,9 @@ contract PresentValueTest is HyperdriveTest {
         }
     }
 
+    // TODO: It would be better to bound all of the intermediate present values
+    // to the starting present value instead of bounding to the previous present
+    // value.
     function test_present_value(bytes32 __seed) external {
         // TODO: This tolerance is WAY too large.
         uint256 tolerance = 1_000_000e18;
@@ -652,7 +655,6 @@ contract PresentValueTest is HyperdriveTest {
                 -0.2e18,
                 1e18
             );
-            console.log("variable rate = %s", variableRate.toString(18));
             advanceTime(timeDelta, variableRate);
         }
 
@@ -743,11 +745,121 @@ contract PresentValueTest is HyperdriveTest {
             info1 = hyperdrive.getPoolInfo();
         }
 
-        // Ensure that the reserves are approximately the same across the two
-        // rounds of trading.
-        assertApproxEqAbs(info0.shareReserves, info1.shareReserves, 1e12);
+        // TODO: What are the implications on the present value of this path
+        // dependence?
+        //
+        // Ensure that the ending YieldSpace coordinates are approximately
+        // equal. The ending share reserves and share adjustment may not match
+        // because the negative interest component of the share adjustment is
+        // path dependent.
+        assertApproxEqAbs(
+            HyperdriveMath.calculateEffectiveShareReserves(
+                info0.shareReserves,
+                info0.shareAdjustment
+            ),
+            HyperdriveMath.calculateEffectiveShareReserves(
+                info1.shareReserves,
+                info1.shareAdjustment
+            ),
+            1e12
+        );
         assertApproxEqAbs(info0.bondReserves, info1.bondReserves, 1e12);
-        assertApproxEqAbs(info0.shareAdjustment, info1.shareAdjustment, 1e12);
+    }
+
+    function test_k_invariance(bytes32 __seed) external {
+        uint256 tolerance = 1e12;
+
+        // Set the seed.
+        _seed = __seed;
+
+        // Initialize the pool.
+        initialize(alice, 0.02e18, 500_000_000e18);
+
+        // Accrues positive interest for a period.
+        advanceTime(hyperdrive.getPoolConfig().positionDuration, 1e18);
+
+        // Execute a series of random open trades. We ensure that k remains
+        // invariant throughout the trading.
+        uint256 k = hyperdrive.k();
+        uint256 maturityTime0 = hyperdrive.maturityTimeFromLatestCheckpoint();
+        Trade[] memory trades0 = randomOpenTrades();
+        for (uint256 i = 0; i < trades0.length; i++) {
+            executeTrade(trades0[i]);
+            assertApproxEqAbs(hyperdrive.k(), k, tolerance);
+            k = hyperdrive.k();
+        }
+
+        // Time passes and interest accrues.
+        {
+            uint256 timeDelta = uint256(seed()).normalizeToRange(
+                CHECKPOINT_DURATION,
+                POSITION_DURATION.mulDown(0.99e18)
+            );
+            int256 variableRate = int256(uint256(seed())).normalizeToRange(
+                -0.2e18,
+                1e18
+            );
+            advanceTime(timeDelta, variableRate);
+        }
+
+        // Execute a series of random open trades. We ensure that k remains
+        // invariant throughout the trading.
+        k = hyperdrive.k();
+        uint256 maturityTime1 = hyperdrive.maturityTimeFromLatestCheckpoint();
+        Trade[] memory trades1 = randomOpenTrades();
+        for (uint256 i = 0; i < trades1.length; i++) {
+            executeTrade(trades1[i]);
+            assertApproxEqAbs(hyperdrive.k(), k, tolerance);
+            k = hyperdrive.k();
+        }
+
+        // Close all of the positions in a random order and verify that k is
+        // invariant throughout the trading.
+        Trade[] memory closeTrades;
+        {
+            Trade[] memory closeTrades0 = randomCloseTrades(
+                maturityTime0,
+                hyperdrive.balanceOf(
+                    AssetId.encodeAssetId(
+                        AssetId.AssetIdPrefix.Long,
+                        maturityTime0
+                    ),
+                    alice
+                ),
+                maturityTime0,
+                hyperdrive.balanceOf(
+                    AssetId.encodeAssetId(
+                        AssetId.AssetIdPrefix.Short,
+                        maturityTime0
+                    ),
+                    alice
+                )
+            );
+            Trade[] memory closeTrades1 = randomCloseTrades(
+                maturityTime1,
+                hyperdrive.balanceOf(
+                    AssetId.encodeAssetId(
+                        AssetId.AssetIdPrefix.Long,
+                        maturityTime1
+                    ),
+                    alice
+                ),
+                maturityTime1,
+                hyperdrive.balanceOf(
+                    AssetId.encodeAssetId(
+                        AssetId.AssetIdPrefix.Short,
+                        maturityTime1
+                    ),
+                    alice
+                )
+            );
+            closeTrades = combineTrades(closeTrades0, closeTrades1);
+        }
+        for (uint256 i = 0; i < closeTrades.length; i++) {
+            executeTrade(closeTrades[i]);
+            assertApproxEqAbs(hyperdrive.k(), k, tolerance);
+            k = hyperdrive.k();
+        }
     }
 
     /// Random Trading ///
