@@ -22,12 +22,12 @@ contract InitializeTest is HyperdriveTest {
     }
 
     function test_initialize_failure() external {
-        uint256 apr = 0.5e18;
+        uint256 fixedRate = 0.5e18;
         uint256 contribution = 1000.0e18;
 
         // Initialize the pool with Alice.
-        uint256 lpShares = initialize(alice, apr, contribution);
-        verifyInitializeEvent(alice, lpShares, contribution, apr);
+        uint256 lpShares = initialize(alice, fixedRate, contribution);
+        verifyInitializeEvent(alice, lpShares, contribution, fixedRate);
 
         // Alice removes all of her liquidity.
         removeLiquidity(alice, lpShares);
@@ -38,11 +38,11 @@ contract InitializeTest is HyperdriveTest {
         baseToken.mint(contribution);
         baseToken.approve(address(hyperdrive), contribution);
         vm.expectRevert(IHyperdrive.PoolAlreadyInitialized.selector);
-        hyperdrive.initialize(contribution, apr, bob, true);
+        hyperdrive.initialize(contribution, fixedRate, bob, true);
     }
 
     function test_initialize_failure_not_payable() external {
-        uint256 apr = 0.5e18;
+        uint256 fixedRate = 0.5e18;
         uint256 contribution = 1000.0e18;
 
         // Attempt to initialize the pool. This should fail.
@@ -51,7 +51,7 @@ contract InitializeTest is HyperdriveTest {
         baseToken.mint(contribution);
         baseToken.approve(address(hyperdrive), contribution);
         vm.expectRevert(IHyperdrive.NotPayable.selector);
-        hyperdrive.initialize{ value: 1 }(contribution, apr, bob, true);
+        hyperdrive.initialize{ value: 1 }(contribution, fixedRate, bob, true);
     }
 
     function test_initialize_success(
@@ -79,9 +79,10 @@ contract InitializeTest is HyperdriveTest {
         uint256 lpShares = initialize(alice, targetRate, contribution);
         verifyInitializeEvent(alice, lpShares, contribution, targetRate);
 
-        // Ensure that the pool's APR is approximately equal to the target APR.
+        // Ensure that the pool's spot rate is approximately equal to the target
+        // spot rate.
         uint256 spotRate = hyperdrive.calculateAPRFromReserves();
-        assertApproxEqAbs(spotRate, targetRate, 1e9); // 9 decimals of precision
+        assertApproxEqAbs(spotRate, targetRate, 1e10); // 8 decimals of precision
 
         // Ensure that Alice's base balance has been depleted and that Alice
         // received the correct amount of LP shares.
@@ -106,7 +107,7 @@ contract InitializeTest is HyperdriveTest {
         address provider,
         uint256 expectedLpShares,
         uint256 expectedBaseAmount,
-        uint256 expectedApr
+        uint256 expectedSpotRate
     ) internal {
         VmSafe.Log[] memory logs = vm.getRecordedLogs().filterLogs(
             Initialize.selector
@@ -114,12 +115,12 @@ contract InitializeTest is HyperdriveTest {
         assertEq(logs.length, 1);
         VmSafe.Log memory log = logs[0];
         assertEq(address(uint160(uint256(log.topics[1]))), provider);
-        (uint256 lpShares, uint256 baseAmount, uint256 apr) = abi.decode(
+        (uint256 lpShares, uint256 baseAmount, uint256 spotRate) = abi.decode(
             log.data,
             (uint256, uint256, uint256)
         );
         assertEq(lpShares, expectedLpShares);
         assertEq(baseAmount, expectedBaseAmount);
-        assertEq(apr, expectedApr);
+        assertEq(spotRate, expectedSpotRate);
     }
 }

@@ -74,7 +74,7 @@ contract HyperdriveTest is BaseTest {
         // tests are using a sufficiently recent block that this won't be an
         // issue.
         if (!isForked) {
-            vm.warp(POSITION_DURATION * 10);
+            vm.warp(POSITION_DURATION * 3);
         }
     }
 
