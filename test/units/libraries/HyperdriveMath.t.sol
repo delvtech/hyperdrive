@@ -46,6 +46,7 @@ contract HyperdriveMathTest is HyperdriveTest {
     function test__calcAPRFromReserves() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
+
         // equal reserves should make 0% APR
         assertEq(
             hyperdriveMath.calculateAPRFromReserves(
@@ -69,6 +70,19 @@ contract HyperdriveMathTest is HyperdriveTest {
             ),
             0.10 ether, // 10% APR
             2 wei // calculation rounds up 2 wei for some reason
+        );
+
+        // target a 10% APR with a 6 month term
+        assertApproxEqAbs(
+            hyperdriveMath.calculateAPRFromReserves(
+                1 ether, // shareReserves
+                1.05 ether, // bondReserves
+                1 ether, // initialSharePrice
+                182.5 days, // positionDuration
+                1 ether // timeStretch
+            ),
+            0.10 ether, // 10% APR
+            4 wei // calculation rounds up 2 wei for some reason
         );
     }
 

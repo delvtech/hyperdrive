@@ -59,8 +59,7 @@ library HyperdriveMath {
         // We are interested calculating the fixed APR for the pool. The annualized rate
         // is given by the following formula:
         // r = (1 - p) / (p * t)
-        // where t = 365 / _positionDuration
-
+        // where t = _positionDuration / 365
         uint256 spotPrice = calculateSpotPrice(
             _effectiveShareReserves,
             _bondReserves,
@@ -69,7 +68,7 @@ library HyperdriveMath {
         );
         return
             (ONE - spotPrice).divDown(
-                spotPrice.mulDivUp(365 days, _positionDuration)
+                spotPrice.mulDivUp(_positionDuration, 365 days)
             );
     }
 
