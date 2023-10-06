@@ -77,6 +77,7 @@ contract FeeTest is HyperdriveTest {
                 DepositOverrides({
                     asUnderlying: true,
                     depositAmount: basePaid,
+                    minSharePrice: 0,
                     minSlippage: 0,
                     maxSlippage: type(uint256).max
                 })
@@ -117,6 +118,7 @@ contract FeeTest is HyperdriveTest {
                 DepositOverrides({
                     asUnderlying: true,
                     depositAmount: basePaid,
+                    minSharePrice: 0,
                     minSlippage: 0,
                     maxSlippage: type(uint256).max
                 })
@@ -180,6 +182,7 @@ contract FeeTest is HyperdriveTest {
                 DepositOverrides({
                     asUnderlying: true,
                     depositAmount: basePaid,
+                    minSharePrice: 0,
                     minSlippage: 0,
                     maxSlippage: type(uint256).max
                 })
@@ -241,6 +244,7 @@ contract FeeTest is HyperdriveTest {
                 DepositOverrides({
                     asUnderlying: true,
                     depositAmount: basePaid,
+                    minSharePrice: 0,
                     minSlippage: 0,
                     maxSlippage: type(uint256).max
                 })

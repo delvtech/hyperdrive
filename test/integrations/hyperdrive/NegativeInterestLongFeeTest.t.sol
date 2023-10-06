@@ -139,6 +139,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
             DepositOverrides({
                 asUnderlying: true,
                 depositAmount: basePaid,
+                minSharePrice: 0,
                 minSlippage: 0, // TODO: This should never go below the base amount. Investigate this.
                 maxSlippage: type(uint256).max
             })
@@ -331,6 +332,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
             DepositOverrides({
                 asUnderlying: true,
                 depositAmount: basePaid,
+                minSharePrice: 0,
                 minSlippage: 0, // TODO: This should never go below the base amount. Investigate this.
                 maxSlippage: type(uint256).max
             })
@@ -522,6 +524,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
             DepositOverrides({
                 asUnderlying: true,
                 depositAmount: basePaid,
+                minSharePrice: 0,
                 minSlippage: 0, // TODO: This should never go below the base amount. Investigate this.
                 maxSlippage: type(uint256).max
             })

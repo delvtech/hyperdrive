@@ -37,7 +37,7 @@ contract OpenLongTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(IHyperdrive.MinimumTransactionAmount.selector);
-        hyperdrive.openLong(0, 0, bob, true);
+        hyperdrive.openLong(0, 0, 0, bob, true);
     }
 
     function test_open_long_failure_not_payable() external {
@@ -51,7 +51,7 @@ contract OpenLongTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(IHyperdrive.NotPayable.selector);
-        hyperdrive.openLong{ value: 1 }(1, 0, bob, true);
+        hyperdrive.openLong{ value: 1 }(1, 0, 0, bob, true);
     }
 
     function test_open_long_failure_pause() external {
@@ -66,7 +66,7 @@ contract OpenLongTest is HyperdriveTest {
         pause(true);
         vm.startPrank(bob);
         vm.expectRevert(IHyperdrive.Paused.selector);
-        hyperdrive.openLong(0, 0, bob, true);
+        hyperdrive.openLong(0, 0, 0, bob, true);
         vm.stopPrank();
         pause(false);
     }
@@ -90,7 +90,7 @@ contract OpenLongTest is HyperdriveTest {
         baseToken.mint(bob, basePaid);
         baseToken.approve(address(hyperdrive), basePaid);
         vm.expectRevert(IHyperdrive.NegativeInterest.selector);
-        hyperdrive.openLong(basePaid, 0, bob, true);
+        hyperdrive.openLong(basePaid, 0, 0, bob, true);
 
         // Ensure that the max long results in spot price very close to 1 to
         // make sure that the negative interest failure was appropriate.
@@ -123,7 +123,26 @@ contract OpenLongTest is HyperdriveTest {
         baseToken.mint(baseAmount);
         baseToken.approve(address(hyperdrive), baseAmount);
         vm.expectRevert(IHyperdrive.NegativeInterest.selector);
-        hyperdrive.openLong(baseAmount, 0, bob, true);
+        hyperdrive.openLong(baseAmount, 0, 0, bob, true);
+    }
+
+    function test_open_long_failure_minimum_share_price() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Attempt to open a long when the share price is lower than the minimum
+        // share price.
+        vm.stopPrank();
+        vm.startPrank(bob);
+        uint256 baseAmount = 10e18;
+        baseToken.mint(baseAmount);
+        baseToken.approve(address(hyperdrive), baseAmount);
+        uint256 minSharePrice = 2 * hyperdrive.getPoolInfo().sharePrice;
+        vm.expectRevert(IHyperdrive.MinimumSharePrice.selector);
+        hyperdrive.openLong(baseAmount, 0, minSharePrice, bob, true);
     }
 
     function test_open_long() external {
@@ -196,14 +215,14 @@ contract OpenLongTest is HyperdriveTest {
         baseToken.approve(address(hyperdrive), longAmount);
 
         vm.expectRevert(IHyperdrive.BaseBufferExceedsShareReserves.selector);
-        hyperdrive.openLong(longAmount, 0, bob, true);
+        hyperdrive.openLong(longAmount, 0, 0, bob, true);
     }
 
+    // Tests an edge case in `updateWeightedAverage` where the function output
+    // is not bounded by the average and the delta. This test ensures that this
+    // never occurs by attempting to induce a wild variation in avgPrice, and
+    // ensures that they remain relatively consistent.
     function testAvoidsDustAttack(uint256 contribution, uint256 apr) public {
-        /*
-            - Tests an edge case in updateWeightedAverage where The function output is not bounded by the average and the delta.
-            This test ensures that this never occurs by attempting to induce a wild variation in avgPrice, and ensures that they remain relatively consistent.
-        */
         // Apr between 0.5e18 and 0.25e18
         apr = apr.normalizeToRange(0.05e18, 0.25e18);
         // Initialize the pool with a large amount of capital.
@@ -227,19 +246,12 @@ contract OpenLongTest is HyperdriveTest {
 
         IHyperdrive.PoolInfo memory info = hyperdrive.getPoolInfo();
         uint256 averageMaturityTimeBefore = info.longAverageMaturityTime;
-        uint256 sharePrice = info.sharePrice;
 
         uint256 amt = contribution / 5;
         openLong(bob, amt);
 
-        uint256 longSharePrice = hyperdrive
-            .getCheckpoint(hyperdrive.latestCheckpoint())
-            .longSharePrice;
-
         info = hyperdrive.getPoolInfo();
         uint256 averageMaturityTimeAfter = info.longAverageMaturityTime;
-
-        assertApproxEqAbs(sharePrice, longSharePrice, 1e7);
         assertApproxEqAbs(
             averageMaturityTimeBefore,
             averageMaturityTimeAfter,

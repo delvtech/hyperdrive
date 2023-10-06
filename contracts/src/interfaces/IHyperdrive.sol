@@ -75,41 +75,31 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
         uint128 shareReserves;
         /// @dev The pool's bond reserves.
         uint128 bondReserves;
+        /// @dev The net amount of shares that have been added and removed from
+        ///      the share reserves due to flat updates.
+        int128 shareAdjustment;
+        /// @dev The global exposure of the pool due to open longs
+        uint128 longExposure;
         /// @dev The amount of longs that are still open.
         uint128 longsOutstanding;
         /// @dev The amount of shorts that are still open.
         uint128 shortsOutstanding;
         /// @dev The average maturity time of outstanding long positions.
         uint128 longAverageMaturityTime;
-        /// @dev The average open share price of longs.
-        uint128 longOpenSharePrice;
         /// @dev The average maturity time of outstanding short positions.
         uint128 shortAverageMaturityTime;
-        /// FIXME: We need to think about this in the context of storage packing.
-        /// @dev The net amount of shares that have been added and removed from
-        ///      the share reserves due to flat updates.
-        int128 shareAdjustment;
-        /// @dev The global exposure of the pool due to open longs
-        uint128 longExposure;
         /// @dev A flag indicating whether or not the pool has been initialized.
         bool isInitialized;
         /// @dev A flag indicating whether or not the pool is paused.
         bool isPaused;
     }
 
-    // TODO: Re-evaluate the order of these fields to optimize gas usage.
     struct Checkpoint {
         /// @dev The share price of the first transaction in the checkpoint.
         ///      This is used to track the amount of interest accrued by shorts
         ///      as well as the share price at closing of matured longs and
         ///      shorts.
         uint128 sharePrice;
-        /// @dev The weighted average of the share prices that all of the longs
-        ///      in the checkpoint were opened at. This is used as the opening
-        ///      share price of longs to properly attribute interest collected
-        ///      on longs to the withdrawal pool and prevent dust from being
-        ///      stuck in the contract.
-        uint128 longSharePrice;
         /// @dev The amount lp exposure on longs.
         int128 longExposure;
     }
@@ -196,12 +186,14 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
         uint128 lastTimestamp;
     }
 
-    /// IHyperdrive ///
+    /// Errors ///
 
     /// ##################
     /// ### Hyperdrive ###
     /// ##################
     error ApprovalFailed();
+    // TODO: We should rename this so that it's clear that it pertains to
+    // solvency.
     error BaseBufferExceedsShareReserves();
     error BelowMinimumContribution();
     error BelowMinimumShareReserves();
@@ -227,6 +219,7 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
     error UnexpectedAssetId();
     error UnexpectedSender();
     error UnsupportedToken();
+    error MinimumSharePrice();
     error MinimumTransactionAmount();
     error ZeroLpTotalSupply();
 

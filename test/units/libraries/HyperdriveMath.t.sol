@@ -46,6 +46,7 @@ contract HyperdriveMathTest is HyperdriveTest {
     function test__calcAPRFromReserves() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
+
         // equal reserves should make 0% APR
         assertEq(
             hyperdriveMath.calculateAPRFromReserves(
@@ -69,6 +70,19 @@ contract HyperdriveMathTest is HyperdriveTest {
             ),
             0.10 ether, // 10% APR
             2 wei // calculation rounds up 2 wei for some reason
+        );
+
+        // target a 10% APR with a 6 month term
+        assertApproxEqAbs(
+            hyperdriveMath.calculateAPRFromReserves(
+                1 ether, // shareReserves
+                1.05 ether, // bondReserves
+                1 ether, // initialSharePrice
+                182.5 days, // positionDuration
+                1 ether // timeStretch
+            ),
+            0.10 ether, // 10% APR
+            4 wei // calculation rounds up 2 wei for some reason
         );
     }
 
@@ -430,6 +444,264 @@ contract HyperdriveMathTest is HyperdriveTest {
         assertApproxEqAbs(result, expectedAPR.divDown(100e18), 3e12);
     }
 
+    struct TestCaseInput {
+        uint256 closeSharePrice;
+        uint256 openSharePrice;
+        uint256 shareProceeds;
+        uint256 shareReservesDelta;
+        uint256 shareCurveDelta;
+        uint256 totalGovernanceFee;
+    }
+
+    struct TestCaseOutput {
+        uint256 shareProceeds;
+        uint256 shareReservesDelta;
+        uint256 shareCurveDelta;
+        uint256 totalGovernanceFee;
+        int256 shareAdjustmentDelta;
+    }
+
+    function test__calculateNegativeInterestOnClose() external {
+        // NOTE: Coverage only works if I initialize the fixture in the test function
+        MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
+
+        // interest rate of 0%
+        {
+            TestCaseInput memory input = TestCaseInput({
+                closeSharePrice: 1e18,
+                openSharePrice: 1e18,
+                shareProceeds: 10_000_000e18,
+                shareReservesDelta: 10_000_000e18,
+                shareCurveDelta: 5_000_000e18,
+                totalGovernanceFee: 100_000e18
+            });
+
+            // closing a long
+            TestCaseOutput memory output;
+            (
+                output.shareProceeds,
+                output.shareReservesDelta,
+                output.shareCurveDelta,
+                output.shareAdjustmentDelta,
+                output.totalGovernanceFee
+            ) = hyperdriveMath.calculateNegativeInterestOnClose(
+                input.shareProceeds,
+                input.shareReservesDelta,
+                input.shareCurveDelta,
+                input.totalGovernanceFee,
+                input.openSharePrice,
+                input.closeSharePrice,
+                true
+            );
+            assertEq(output.shareProceeds, input.shareProceeds);
+            assertEq(output.shareReservesDelta, input.shareReservesDelta);
+            assertEq(output.shareCurveDelta, input.shareCurveDelta);
+            assertEq(output.totalGovernanceFee, input.totalGovernanceFee);
+            assertEq(
+                output.shareAdjustmentDelta,
+                int256(input.shareReservesDelta) - int256(input.shareCurveDelta)
+            );
+
+            // closing a short
+            (
+                output.shareProceeds,
+                output.shareReservesDelta,
+                output.shareCurveDelta,
+                output.shareAdjustmentDelta,
+                output.totalGovernanceFee
+            ) = hyperdriveMath.calculateNegativeInterestOnClose(
+                input.shareProceeds,
+                input.shareReservesDelta,
+                input.shareCurveDelta,
+                input.totalGovernanceFee,
+                input.openSharePrice,
+                input.closeSharePrice,
+                false
+            );
+            assertEq(output.shareProceeds, input.shareProceeds);
+            assertEq(output.shareReservesDelta, input.shareReservesDelta);
+            assertEq(output.shareCurveDelta, input.shareCurveDelta);
+            assertEq(output.totalGovernanceFee, input.totalGovernanceFee);
+            assertEq(
+                output.shareAdjustmentDelta,
+                int256(input.shareReservesDelta) - int256(input.shareCurveDelta)
+            );
+        }
+
+        // interest rate of 10%
+        {
+            TestCaseInput memory input = TestCaseInput({
+                closeSharePrice: 1.1e18,
+                openSharePrice: 1e18,
+                shareProceeds: 10_000_000e18,
+                shareReservesDelta: 10_000_000e18,
+                shareCurveDelta: 5_000_000e18,
+                totalGovernanceFee: 100_000e18
+            });
+
+            // closing a long
+            TestCaseOutput memory output;
+            (
+                output.shareProceeds,
+                output.shareReservesDelta,
+                output.shareCurveDelta,
+                output.shareAdjustmentDelta,
+                output.totalGovernanceFee
+            ) = hyperdriveMath.calculateNegativeInterestOnClose(
+                input.shareProceeds,
+                input.shareReservesDelta,
+                input.shareCurveDelta,
+                input.totalGovernanceFee,
+                input.openSharePrice,
+                input.closeSharePrice,
+                true
+            );
+            assertEq(output.shareProceeds, input.shareProceeds);
+            assertEq(output.shareReservesDelta, input.shareReservesDelta);
+            assertEq(output.shareCurveDelta, input.shareCurveDelta);
+            assertEq(output.totalGovernanceFee, input.totalGovernanceFee);
+            assertEq(
+                output.shareAdjustmentDelta,
+                int256(input.shareReservesDelta) - int256(input.shareCurveDelta)
+            );
+
+            // closing a short
+            (
+                output.shareProceeds,
+                output.shareReservesDelta,
+                output.shareCurveDelta,
+                output.shareAdjustmentDelta,
+                output.totalGovernanceFee
+            ) = hyperdriveMath.calculateNegativeInterestOnClose(
+                input.shareProceeds,
+                input.shareReservesDelta,
+                input.shareCurveDelta,
+                input.totalGovernanceFee,
+                input.openSharePrice,
+                input.closeSharePrice,
+                false
+            );
+            assertEq(output.shareProceeds, input.shareProceeds);
+            assertEq(output.shareReservesDelta, input.shareReservesDelta);
+            assertEq(output.shareCurveDelta, input.shareCurveDelta);
+            assertEq(output.totalGovernanceFee, input.totalGovernanceFee);
+            assertEq(
+                output.shareAdjustmentDelta,
+                int256(input.shareReservesDelta) - int256(input.shareCurveDelta)
+            );
+        }
+
+        // interest rate of -10%
+        {
+            TestCaseInput memory input = TestCaseInput({
+                closeSharePrice: 0.9e18,
+                openSharePrice: 1e18,
+                shareProceeds: 10_000_000e18,
+                shareReservesDelta: 10_000_000e18,
+                shareCurveDelta: 5_000_000e18,
+                totalGovernanceFee: 100_000e18
+            });
+
+            // closing a long
+            TestCaseOutput memory output;
+            (
+                output.shareProceeds,
+                output.shareReservesDelta,
+                output.shareCurveDelta,
+                output.shareAdjustmentDelta,
+                output.totalGovernanceFee
+            ) = hyperdriveMath.calculateNegativeInterestOnClose(
+                input.shareProceeds,
+                input.shareReservesDelta,
+                input.shareCurveDelta,
+                input.totalGovernanceFee,
+                input.openSharePrice,
+                input.closeSharePrice,
+                true
+            );
+            assertEq(
+                output.shareProceeds,
+                input.shareProceeds.mulDivDown(
+                    input.closeSharePrice,
+                    input.openSharePrice
+                )
+            );
+            assertEq(
+                output.shareReservesDelta,
+                input.shareReservesDelta.mulDivDown(
+                    input.closeSharePrice,
+                    input.openSharePrice
+                )
+            );
+            assertEq(
+                output.shareCurveDelta,
+                input.shareCurveDelta.mulDivDown(
+                    input.closeSharePrice,
+                    input.openSharePrice
+                )
+            );
+            assertEq(
+                output.totalGovernanceFee,
+                input.totalGovernanceFee.mulDivDown(
+                    input.closeSharePrice,
+                    input.openSharePrice
+                )
+            );
+            assertEq(
+                output.shareAdjustmentDelta,
+                int256(
+                    input.shareReservesDelta.mulDown(input.closeSharePrice)
+                ) - int256(input.shareCurveDelta)
+            );
+
+            // closing a short
+            (
+                output.shareProceeds,
+                output.shareReservesDelta,
+                output.shareCurveDelta,
+                output.shareAdjustmentDelta,
+                output.totalGovernanceFee
+            ) = hyperdriveMath.calculateNegativeInterestOnClose(
+                input.shareProceeds,
+                input.shareReservesDelta,
+                input.shareCurveDelta,
+                input.totalGovernanceFee,
+                input.openSharePrice,
+                input.closeSharePrice,
+                false
+            );
+            // NOTE: share proceeds aren't scaled
+            assertEq(output.shareProceeds, input.shareProceeds);
+            assertEq(
+                output.shareReservesDelta,
+                input.shareReservesDelta.mulDivDown(
+                    input.closeSharePrice,
+                    input.openSharePrice
+                )
+            );
+            assertEq(
+                output.shareCurveDelta,
+                input.shareCurveDelta.mulDivDown(
+                    input.closeSharePrice,
+                    input.openSharePrice
+                )
+            );
+            assertEq(
+                output.totalGovernanceFee,
+                input.totalGovernanceFee.mulDivDown(
+                    input.closeSharePrice,
+                    input.openSharePrice
+                )
+            );
+            assertEq(
+                output.shareAdjustmentDelta,
+                int256(
+                    input.shareReservesDelta.mulDown(input.closeSharePrice)
+                ) - int256(input.shareCurveDelta)
+            );
+        }
+    }
+
     function test__calculateMaxLong__matureLong(
         uint256 fixedRate,
         uint256 contribution,
@@ -633,7 +905,7 @@ contract HyperdriveMathTest is HyperdriveTest {
         baseToken.mint(bob, finalLongAmount);
         baseToken.approve(address(hyperdrive), finalLongAmount);
         vm.expectRevert();
-        hyperdrive.openLong(finalLongAmount, 0, bob, true);
+        hyperdrive.openLong(finalLongAmount, 0, 0, bob, true);
 
         // Ensure that the long can be closed.
         closeLong(bob, maturityTime, longAmount);
@@ -795,7 +1067,7 @@ contract HyperdriveMathTest is HyperdriveTest {
         baseToken.mint(bob, finalShortAmount);
         baseToken.approve(address(hyperdrive), finalShortAmount);
         vm.expectRevert();
-        hyperdrive.openShort(finalShortAmount, 0, bob, true);
+        hyperdrive.openShort(finalShortAmount, 0, 0, bob, true);
 
         // Ensure that the short can be closed.
         closeShort(bob, maturityTime, maxShort);
