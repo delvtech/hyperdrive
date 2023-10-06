@@ -652,7 +652,6 @@ contract PresentValueTest is HyperdriveTest {
                 0,
                 1e18
             );
-            console.log("variable rate = %s", variableRate.toString(18));
             advanceTime(timeDelta, variableRate);
         }
 

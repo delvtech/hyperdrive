@@ -321,7 +321,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
     /// @dev Applies the trading deltas from a closed short to the reserves and
     ///      the withdrawal pool.
     /// @param _bondAmount The amount of shorts that were closed.
-    /// @param _bondReservesDelta The amount of bonds added to the reserves.
+    /// @param _bondReservesDelta The amount of bonds removed from the reserves.
     /// @param _shareReservesDelta The amount of shares added to the reserves.
     /// @param _shareAdjustmentDelta The amount to increase the share adjustment.
     /// @param _maturityTime The maturity time of the short.
