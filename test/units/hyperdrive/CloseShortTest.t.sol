@@ -38,7 +38,7 @@ contract CloseShortTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(IHyperdrive.MinimumTransactionAmount.selector);
-        hyperdrive.closeShort(maturityTime, 0, 0, bob, true);
+        hyperdrive.closeShort(maturityTime, 0, 0, bob, true, new bytes(0));
     }
 
     function test_close_short_failure_invalid_amount() external {
@@ -56,7 +56,14 @@ contract CloseShortTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(stdError.arithmeticError);
-        hyperdrive.closeShort(maturityTime, bondAmount + 1, 0, bob, true);
+        hyperdrive.closeShort(
+            maturityTime,
+            bondAmount + 1,
+            0,
+            bob,
+            true,
+            new bytes(0)
+        );
     }
 
     function test_close_short_failure_invalid_timestamp() external {
@@ -79,7 +86,8 @@ contract CloseShortTest is HyperdriveTest {
             MINIMUM_TRANSACTION_AMOUNT,
             0,
             bob,
-            true
+            true,
+            new bytes(0)
         );
     }
 
@@ -121,7 +129,14 @@ contract CloseShortTest is HyperdriveTest {
             initialShortAmount
         );
         vm.expectRevert(IHyperdrive.NegativeInterest.selector);
-        hyperdrive.closeShort(maturityTime, finalShortAmount, 0, bob, true);
+        hyperdrive.closeShort(
+            maturityTime,
+            finalShortAmount,
+            0,
+            bob,
+            true,
+            new bytes(0)
+        );
     }
 
     function test_close_short_immediately_with_regular_amount() external {
@@ -474,7 +489,8 @@ contract CloseShortTest is HyperdriveTest {
                 depositAmount: 10e18 * 2,
                 minSharePrice: 0,
                 minSlippage: 0,
-                maxSlippage: type(uint128).max
+                maxSlippage: type(uint128).max,
+                extraData: new bytes(0)
             })
         );
         advanceTime(POSITION_DURATION, variableRate);
@@ -504,7 +520,8 @@ contract CloseShortTest is HyperdriveTest {
                 depositAmount: 10e18 * 2,
                 minSharePrice: 0,
                 minSlippage: 0,
-                maxSlippage: type(uint128).max
+                maxSlippage: type(uint128).max,
+                extraData: new bytes(0)
             })
         );
         advanceTime(POSITION_DURATION, variableRate);
@@ -543,7 +560,8 @@ contract CloseShortTest is HyperdriveTest {
                 depositAmount: 10e18 * 2,
                 minSharePrice: 0,
                 minSlippage: 0,
-                maxSlippage: type(uint128).max
+                maxSlippage: type(uint128).max,
+                extraData: new bytes(0)
             })
         );
         advanceTime(POSITION_DURATION, variableRate);
@@ -572,7 +590,8 @@ contract CloseShortTest is HyperdriveTest {
                 depositAmount: 10e18 * 2,
                 minSharePrice: 0,
                 minSlippage: 0,
-                maxSlippage: type(uint128).max
+                maxSlippage: type(uint128).max,
+                extraData: new bytes(0)
             })
         );
         advanceTime(POSITION_DURATION, variableRate);

@@ -30,6 +30,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
     /// @param _asUnderlying A flag indicating whether the sender will pay in
     ///        base or using another currency. Implementations choose which
     ///        currencies they accept.
+    /// @param _extraData The extra data to provide to the yield source.
     /// @return maturityTime The maturity time of the short.
     /// @return traderDeposit The amount the user deposited for this trade.
     function openShort(
@@ -37,7 +38,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
         uint256 _maxDeposit,
         uint256 _minSharePrice,
         address _destination,
-        bool _asUnderlying
+        bool _asUnderlying,
+        bytes memory _extraData
     )
         external
         payable
@@ -88,7 +90,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // equal to the proceeds that they would receive if they closed
         // immediately (without fees).
         if (_maxDeposit < traderDeposit) revert IHyperdrive.OutputLimit();
-        _deposit(traderDeposit, _asUnderlying);
+        _deposit(traderDeposit, _asUnderlying, _extraData);
 
         // Apply the state updates caused by opening the short.
         _applyOpenShort(
@@ -127,13 +129,15 @@ abstract contract HyperdriveShort is HyperdriveLP {
     /// @param _asUnderlying A flag indicating whether the sender will pay in
     ///        base or using another currency. Implementations choose which
     ///        currencies they accept.
+    /// @param _extraData The extra data to provide to the yield source.
     /// @return The amount of base tokens produced by closing this short
     function closeShort(
         uint256 _maturityTime,
         uint256 _bondAmount,
         uint256 _minOutput,
         address _destination,
-        bool _asUnderlying
+        bool _asUnderlying,
+        bytes memory _extraData
     ) external nonReentrant returns (uint256) {
         if (_bondAmount < _minimumTransactionAmount) {
             revert IHyperdrive.MinimumTransactionAmount();
@@ -218,7 +222,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
         uint256 baseProceeds = _withdraw(
             shareProceeds,
             _destination,
-            _asUnderlying
+            _asUnderlying,
+            _extraData
         );
 
         // Enforce the user's minimum output.

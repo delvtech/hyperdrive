@@ -285,7 +285,14 @@ contract LpWithdrawalTest is HyperdriveTest {
         vm.expectRevert(stdError.arithmeticError);
         vm.stopPrank();
         vm.startPrank(bob);
-        hyperdrive.closeShort(maturityTime, shortAmount, 0, bob, true);
+        hyperdrive.closeShort(
+            maturityTime,
+            shortAmount,
+            0,
+            bob,
+            true,
+            new bytes(0)
+        );
     }
 
     // TODO: Accrue interest before the test starts as this results in weirder
@@ -640,7 +647,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         snapshotId = vm.snapshot();
         {
             uint256 longBasePaid = 47622440666488;
-            uint256 shortAmount = 99991360285271; 
+            uint256 shortAmount = 99991360285271;
             int256 variableRate = 25629;
             _test_lp_withdrawal_long_short_redemption(
                 longBasePaid,

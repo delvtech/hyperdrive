@@ -324,7 +324,8 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
                 depositAmount: shortAmount * 2,
                 minSharePrice: 0,
                 minSlippage: 0,
-                maxSlippage: type(uint256).max
+                maxSlippage: type(uint256).max,
+                extraData: new bytes(0)
             })
         );
 
@@ -524,7 +525,8 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
                 depositAmount: shortAmount * 2,
                 minSharePrice: 0,
                 minSlippage: 0,
-                maxSlippage: type(uint256).max
+                maxSlippage: type(uint256).max,
+                extraData: new bytes(0)
             })
         );
 

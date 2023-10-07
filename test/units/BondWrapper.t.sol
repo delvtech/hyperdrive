@@ -145,10 +145,24 @@ contract BondWrapperTest is BaseTest {
         uint256 deposited = bondWrapper.deposits(alice, assetId);
 
         vm.expectRevert(IHyperdrive.OutputLimit.selector);
-        bondWrapper.close(365 days, deposited, true, bob, deposited + 1);
+        bondWrapper.close(
+            365 days,
+            deposited,
+            true,
+            bob,
+            deposited + 1,
+            new bytes(0)
+        );
 
         // Should pass when you get the right amount
-        bondWrapper.close(365 days, deposited, true, bob, deposited);
+        bondWrapper.close(
+            365 days,
+            deposited,
+            true,
+            bob,
+            deposited,
+            new bytes(0)
+        );
     }
 
     function test_SweepAndRedeem() public {
@@ -169,7 +183,7 @@ contract BondWrapperTest is BaseTest {
 
         maturityTimes[0] = 365 days;
 
-        bondWrapper.sweepAndRedeem(maturityTimes, balance);
+        bondWrapper.sweepAndRedeem(maturityTimes, balance, new bytes(0));
 
         balance = bondWrapper.balanceOf(bob);
 

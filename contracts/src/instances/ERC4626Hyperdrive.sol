@@ -82,28 +82,31 @@ contract ERC4626Hyperdrive is Hyperdrive {
 
     /// Yield Source ///
 
+    // FIXME: Clean up comments.
+    //
     /// @notice Transfers amount of 'token' from the user and commits it to the yield source.
-    /// @param amount The amount of token to transfer
-    /// @param asUnderlying If true the yield source will transfer underlying tokens
+    /// @param _amount The amount of token to transfer
+    /// @param _asUnderlying If true the yield source will transfer underlying tokens
     ///                     if false it will transfer the yielding asset directly
     /// @return sharesMinted The shares this deposit creates
     /// @return sharePrice The share price at time of deposit
     function _deposit(
-        uint256 amount,
-        bool asUnderlying
+        uint256 _amount,
+        bool _asUnderlying,
+        bytes memory // unused extra data
     ) internal override returns (uint256 sharesMinted, uint256 sharePrice) {
-        if (asUnderlying) {
+        if (_asUnderlying) {
             // Transfer from user
-            _baseToken.safeTransferFrom(msg.sender, address(this), amount);
+            _baseToken.safeTransferFrom(msg.sender, address(this), _amount);
             // Supply for the user
-            sharesMinted = pool.deposit(amount, address(this));
+            sharesMinted = pool.deposit(_amount, address(this));
             sharePrice = _pricePerShare();
         } else {
             // Calculate the current exchange rate for these
             // WARN - IF an ERC4626 has significant differences between a
             //        price perShare in aggregate vs one for individual users
             //        then this can create bugs.
-            uint256 converted = pool.convertToShares(amount);
+            uint256 converted = pool.convertToShares(_amount);
             // Transfer erc4626 shares from the user
             IERC20(address(pool)).safeTransferFrom(
                 msg.sender,
@@ -115,25 +118,28 @@ contract ERC4626Hyperdrive is Hyperdrive {
         }
     }
 
+    // FIXME: Clean up comments.
+    //
     /// @notice Withdraws shares from the yield source and sends the resulting tokens to the destination
-    /// @param shares The shares to withdraw from the yield source
-    /// @param asUnderlying If true the yield source will transfer underlying tokens
+    /// @param _shares The shares to withdraw from the yield source
+    /// @param _asUnderlying If true the yield source will transfer underlying tokens
     ///                     if false it will transfer the yielding asset directly
-    /// @param destination The address which is where to send the resulting tokens
+    /// @param _destination The address which is where to send the resulting tokens
     /// @return amountWithdrawn the amount of 'token' produced by this withdraw
     function _withdraw(
-        uint256 shares,
-        address destination,
-        bool asUnderlying
+        uint256 _shares,
+        address _destination,
+        bool _asUnderlying,
+        bytes memory // unused extra data
     ) internal override returns (uint256 amountWithdrawn) {
-        if (asUnderlying) {
+        if (_asUnderlying) {
             // In this case we simply withdraw
-            amountWithdrawn = pool.redeem(shares, destination, address(this));
+            amountWithdrawn = pool.redeem(_shares, _destination, address(this));
         } else {
             // Transfer erc4626 shares to the user
-            IERC20(address(pool)).safeTransfer(destination, shares);
+            IERC20(address(pool)).safeTransfer(_destination, _shares);
             // Now we calculate the price per share
-            uint256 estimated = pool.convertToAssets(shares);
+            uint256 estimated = pool.convertToAssets(_shares);
             amountWithdrawn = estimated;
         }
     }

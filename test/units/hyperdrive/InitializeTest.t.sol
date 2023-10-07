@@ -38,7 +38,7 @@ contract InitializeTest is HyperdriveTest {
         baseToken.mint(contribution);
         baseToken.approve(address(hyperdrive), contribution);
         vm.expectRevert(IHyperdrive.PoolAlreadyInitialized.selector);
-        hyperdrive.initialize(contribution, fixedRate, bob, true);
+        hyperdrive.initialize(contribution, fixedRate, bob, true, new bytes(0));
     }
 
     function test_initialize_failure_not_payable() external {
@@ -51,7 +51,13 @@ contract InitializeTest is HyperdriveTest {
         baseToken.mint(contribution);
         baseToken.approve(address(hyperdrive), contribution);
         vm.expectRevert(IHyperdrive.NotPayable.selector);
-        hyperdrive.initialize{ value: 1 }(contribution, fixedRate, bob, true);
+        hyperdrive.initialize{ value: 1 }(
+            contribution,
+            fixedRate,
+            bob,
+            true,
+            new bytes(0)
+        );
     }
 
     function test_initialize_success(

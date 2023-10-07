@@ -141,7 +141,8 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
                 depositAmount: basePaid,
                 minSharePrice: 0,
                 minSlippage: 0, // TODO: This should never go below the base amount. Investigate this.
-                maxSlippage: type(uint256).max
+                maxSlippage: type(uint256).max,
+                extraData: new bytes(0)
             })
         );
         uint256 calculatedSpotPrice = HyperdriveUtils.calculateSpotPrice(
@@ -334,7 +335,8 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
                 depositAmount: basePaid,
                 minSharePrice: 0,
                 minSlippage: 0, // TODO: This should never go below the base amount. Investigate this.
-                maxSlippage: type(uint256).max
+                maxSlippage: type(uint256).max,
+                extraData: new bytes(0)
             })
         );
 
@@ -526,7 +528,8 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
                 depositAmount: basePaid,
                 minSharePrice: 0,
                 minSlippage: 0, // TODO: This should never go below the base amount. Investigate this.
-                maxSlippage: type(uint256).max
+                maxSlippage: type(uint256).max,
+                extraData: new bytes(0)
             })
         );
         uint256 calculatedSpotPrice = HyperdriveUtils.calculateSpotPrice(

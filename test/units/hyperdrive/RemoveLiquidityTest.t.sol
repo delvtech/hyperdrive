@@ -36,7 +36,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(alice);
         vm.expectRevert(IHyperdrive.MinimumTransactionAmount.selector);
-        hyperdrive.removeLiquidity(0, 0, alice, false);
+        hyperdrive.removeLiquidity(0, 0, alice, false, new bytes(0));
     }
 
     function test_remove_liquidity_fail_insufficient_shares() external {
@@ -50,7 +50,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(alice);
         vm.expectRevert(stdError.arithmeticError);
-        hyperdrive.removeLiquidity(lpShares + 1, 0, alice, false);
+        hyperdrive.removeLiquidity(lpShares + 1, 0, alice, false, new bytes(0));
     }
 
     function test_remove_liquidity_no_trades() external {

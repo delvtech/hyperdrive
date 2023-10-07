@@ -117,35 +117,35 @@ contract ReentrancyTest is HyperdriveTest {
         bytes[] memory data = new bytes[](8);
         data[0] = abi.encodeCall(
             hyperdrive.initialize,
-            (CONTRIBUTION, FIXED_RATE, _trader, true)
+            (CONTRIBUTION, FIXED_RATE, _trader, true, new bytes(0))
         );
         data[1] = abi.encodeCall(
             hyperdrive.addLiquidity,
-            (CONTRIBUTION, 0, 1e18, _trader, true)
+            (CONTRIBUTION, 0, 1e18, _trader, true, new bytes(0))
         );
         data[2] = abi.encodeCall(
             hyperdrive.removeLiquidity,
-            (CONTRIBUTION, 0, _trader, true)
+            (CONTRIBUTION, 0, _trader, true, new bytes(0))
         );
         data[3] = abi.encodeCall(
             hyperdrive.redeemWithdrawalShares,
-            (BOND_AMOUNT, 0, _trader, true)
+            (BOND_AMOUNT, 0, _trader, true, new bytes(0))
         );
         data[4] = abi.encodeCall(
             hyperdrive.openLong,
-            (BASE_PAID, 0, 0, _trader, true)
+            (BASE_PAID, 0, 0, _trader, true, new bytes(0))
         );
         data[5] = abi.encodeCall(
             hyperdrive.closeLong,
-            (block.timestamp, BOND_AMOUNT, 0, _trader, true)
+            (block.timestamp, BOND_AMOUNT, 0, _trader, true, new bytes(0))
         );
         data[6] = abi.encodeCall(
             hyperdrive.openShort,
-            (BOND_AMOUNT, type(uint256).max, 0, _trader, true)
+            (BOND_AMOUNT, type(uint256).max, 0, _trader, true, new bytes(0))
         );
         data[7] = abi.encodeCall(
             hyperdrive.closeShort,
-            (block.timestamp, BOND_AMOUNT, 0, _trader, true)
+            (block.timestamp, BOND_AMOUNT, 0, _trader, true, new bytes(0))
         );
 
         return data;
@@ -189,7 +189,8 @@ contract ReentrancyTest is HyperdriveTest {
                 depositAmount: CONTRIBUTION + 1,
                 minSharePrice: 0,
                 minSlippage: 0,
-                maxSlippage: type(uint256).max
+                maxSlippage: type(uint256).max,
+                extraData: new bytes(0)
             })
         );
         assert(tester.isSuccess());
@@ -217,7 +218,8 @@ contract ReentrancyTest is HyperdriveTest {
                 depositAmount: CONTRIBUTION + 1,
                 minSharePrice: 0,
                 minSlippage: 0,
-                maxSlippage: type(uint256).max
+                maxSlippage: type(uint256).max,
+                extraData: new bytes(0)
             })
         );
         assert(tester.isSuccess());
@@ -283,7 +285,8 @@ contract ReentrancyTest is HyperdriveTest {
                 depositAmount: BASE_PAID + 1,
                 minSharePrice: 0,
                 minSlippage: 0,
-                maxSlippage: type(uint256).max
+                maxSlippage: type(uint256).max,
+                extraData: new bytes(0)
             })
         );
         assert(tester.isSuccess());
@@ -323,7 +326,8 @@ contract ReentrancyTest is HyperdriveTest {
                 depositAmount: BOND_AMOUNT * 2,
                 minSharePrice: 0,
                 minSlippage: 0,
-                maxSlippage: type(uint256).max
+                maxSlippage: type(uint256).max,
+                extraData: new bytes(0)
             })
         );
         assert(tester.isSuccess());
@@ -341,7 +345,8 @@ contract ReentrancyTest is HyperdriveTest {
                 depositAmount: BOND_AMOUNT * 2,
                 minSharePrice: 0,
                 minSlippage: 0,
-                maxSlippage: type(uint256).max
+                maxSlippage: type(uint256).max,
+                extraData: new bytes(0)
             })
         );
 

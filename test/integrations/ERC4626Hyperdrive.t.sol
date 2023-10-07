@@ -117,7 +117,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         // Now we try a deposit
         (uint256 sharesMinted, uint256 sharePrice) = mockHyperdrive.deposit(
             1e18,
-            true
+            true,
+            new bytes(0)
         );
         assertEq(sharePrice, 1.5e18);
         // 0.6 repeating
@@ -126,7 +127,11 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
 
         // Now we try to do a deposit from alice's shares
         pool.approve(address(mockHyperdrive), type(uint256).max);
-        (sharesMinted, sharePrice) = mockHyperdrive.deposit(3e18, false);
+        (sharesMinted, sharePrice) = mockHyperdrive.deposit(
+            3e18,
+            false,
+            new bytes(0)
+        );
         assertEq(sharePrice, 1.5e18);
         assertApproxEqAbs(sharesMinted, 2e18, 1);
         assertApproxEqAbs(
@@ -143,13 +148,23 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         pool.transfer(address(mockHyperdrive), 10e18);
         uint256 balanceBefore = dai.balanceOf(alice);
         // test an underlying withdraw
-        uint256 amountWithdrawn = mockHyperdrive.withdraw(2e18, alice, true);
+        uint256 amountWithdrawn = mockHyperdrive.withdraw(
+            2e18,
+            alice,
+            true,
+            new bytes(0)
+        );
         uint256 balanceAfter = dai.balanceOf(alice);
         assertEq(balanceAfter, balanceBefore + 3e18);
         assertEq(amountWithdrawn, 3e18);
 
         // Test a share withdraw
-        amountWithdrawn = mockHyperdrive.withdraw(2e18, alice, false);
+        amountWithdrawn = mockHyperdrive.withdraw(
+            2e18,
+            alice,
+            false,
+            new bytes(0)
+        );
         assertEq(pool.balanceOf(alice), 2e18);
         assertEq(amountWithdrawn, 3e18);
     }

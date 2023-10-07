@@ -44,7 +44,8 @@ contract DevnetSmokeTest is Script {
                 type(uint256).max,
                 0,
                 msg.sender,
-                true
+                true,
+                new bytes(0)
             );
             BASE.burn(msg.sender, bondAmount - basePaid);
         }
@@ -53,7 +54,7 @@ contract DevnetSmokeTest is Script {
             uint256 basePaid = 300_000e18;
             BASE.mint(msg.sender, basePaid);
             BASE.approve(address(HYPERDRIVE), basePaid);
-            HYPERDRIVE.openLong(basePaid, 0, 0, msg.sender, true);
+            HYPERDRIVE.openLong(basePaid, 0, 0, msg.sender, true, new bytes(0));
         }
 
         console.log("Ending pool info:");
@@ -73,7 +74,8 @@ contract DevnetSmokeTest is Script {
             0,
             0,
             msg.sender,
-            true
+            true,
+            new bytes(0)
         );
         console.log(
             "sender=%s: Opened a long position: maturity=%s, amount=%s",
@@ -89,7 +91,8 @@ contract DevnetSmokeTest is Script {
             bondAmount,
             0,
             msg.sender,
-            true
+            true,
+            new bytes(0)
         );
         console.log(
             "sender=%s: Closed the long position: baseProceeds=%s",
@@ -108,7 +111,8 @@ contract DevnetSmokeTest is Script {
             0,
             type(uint256).max,
             msg.sender,
-            true
+            true,
+            new bytes(0)
         );
         console.log(
             "sender=%s: Added liquidity: lpShares=%s",
@@ -119,7 +123,7 @@ contract DevnetSmokeTest is Script {
         // Removing liquidity.
         console.log("sender=%s: Removing liquidity...", msg.sender);
         (uint256 proceeds, uint256 withdrawalShares) = HYPERDRIVE
-            .removeLiquidity(lpShares, 0, msg.sender, true);
+            .removeLiquidity(lpShares, 0, msg.sender, true, new bytes(0));
         console.log(
             "sender=%s: Removed liquidity: proceeds=%s, withdrawalShares=%s",
             msg.sender,
@@ -138,7 +142,8 @@ contract DevnetSmokeTest is Script {
             type(uint256).max,
             0,
             msg.sender,
-            true
+            true,
+            new bytes(0)
         );
         console.log(
             "sender=%s: Opened a short position: maturity=%s, amount=%s",
@@ -154,7 +159,8 @@ contract DevnetSmokeTest is Script {
             bondAmount,
             0,
             msg.sender,
-            true
+            true,
+            new bytes(0)
         );
         console.log(
             "sender=%s: Closed the short position: baseProceeds=%s",

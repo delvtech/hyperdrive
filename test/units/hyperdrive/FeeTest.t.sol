@@ -38,7 +38,10 @@ contract FeeTest is HyperdriveTest {
         // Collect fees and test that the fees received in the governance address have earned interest.
         vm.stopPrank();
         vm.prank(feeCollector);
-        MockHyperdrive(address(hyperdrive)).collectGovernanceFee(true);
+        MockHyperdrive(address(hyperdrive)).collectGovernanceFee(
+            true,
+            new bytes(0)
+        );
         uint256 governanceBalanceAfter = baseToken.balanceOf(feeCollector);
         assertGt(governanceBalanceAfter, governanceFeesAfterOpenLong);
     }
@@ -79,7 +82,8 @@ contract FeeTest is HyperdriveTest {
                     depositAmount: basePaid,
                     minSharePrice: 0,
                     minSlippage: 0,
-                    maxSlippage: type(uint256).max
+                    maxSlippage: type(uint256).max,
+                    extraData: new bytes(0)
                 })
             );
             bondsPurchased = bondAmount;
@@ -120,7 +124,8 @@ contract FeeTest is HyperdriveTest {
                     depositAmount: basePaid,
                     minSharePrice: 0,
                     minSlippage: 0,
-                    maxSlippage: type(uint256).max
+                    maxSlippage: type(uint256).max,
+                    extraData: new bytes(0)
                 })
             );
 
@@ -184,7 +189,8 @@ contract FeeTest is HyperdriveTest {
                     depositAmount: basePaid,
                     minSharePrice: 0,
                     minSlippage: 0,
-                    maxSlippage: type(uint256).max
+                    maxSlippage: type(uint256).max,
+                    extraData: new bytes(0)
                 })
             );
             bondsPurchased = bondAmount;
@@ -246,7 +252,8 @@ contract FeeTest is HyperdriveTest {
                     depositAmount: basePaid,
                     minSharePrice: 0,
                     minSlippage: 0,
-                    maxSlippage: type(uint256).max
+                    maxSlippage: type(uint256).max,
+                    extraData: new bytes(0)
                 })
             );
 
@@ -333,7 +340,10 @@ contract FeeTest is HyperdriveTest {
         // Collect fees to governance address
         vm.stopPrank();
         vm.prank(feeCollector);
-        MockHyperdrive(address(hyperdrive)).collectGovernanceFee(true);
+        MockHyperdrive(address(hyperdrive)).collectGovernanceFee(
+            true,
+            new bytes(0)
+        );
 
         // Ensure that governance fees after collection are zero.
         uint256 governanceFeesAfterCollection = IMockHyperdrive(
@@ -389,10 +399,16 @@ contract FeeTest is HyperdriveTest {
 
         // collect governance fees
         vm.expectRevert(IHyperdrive.Unauthorized.selector);
-        MockHyperdrive(address(hyperdrive)).collectGovernanceFee(true);
+        MockHyperdrive(address(hyperdrive)).collectGovernanceFee(
+            true,
+            new bytes(0)
+        );
         vm.stopPrank();
         vm.prank(governance);
-        MockHyperdrive(address(hyperdrive)).collectGovernanceFee(true);
+        MockHyperdrive(address(hyperdrive)).collectGovernanceFee(
+            true,
+            new bytes(0)
+        );
 
         // Ensure that governance fees after collection are zero.
         uint256 governanceFeesAfterCollection = IMockHyperdrive(

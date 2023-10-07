@@ -116,31 +116,37 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     }
 
     /// @notice Transfers base from the user and commits it to the yield source.
-    /// @param amount The amount of base to deposit.
-    /// @param asUnderlying If true the yield source will transfer underlying tokens
-    ///                     if false it will transfer the yielding asset directly
-    /// @return sharesMinted The shares this deposit creates.
-    /// @return sharePrice The share price at time of deposit.
+    /// @param _amount The amount of base to deposit.
+    /// @param _asUnderlying A flag indicating whether the deposit should be
+    ///        taken in base or in another currency.
+    /// @param _extraData Extra data to provide to the yield source. This extra
+    ///        data may not be used by every yield source.
+    /// @return sharesMinted The shares created by this deposit.
+    /// @return sharePrice The share price.
     function _deposit(
-        uint256 amount,
-        bool asUnderlying
+        uint256 _amount,
+        bool _asUnderlying,
+        bytes memory _extraData
     ) internal virtual returns (uint256 sharesMinted, uint256 sharePrice);
 
     /// @notice Withdraws shares from the yield source and sends the base
     ///         released to the destination.
-    /// @param shares The shares to withdraw from the yield source.
-    /// @param destination The recipient of the withdrawal.
-    /// @param asUnderlying If true the yield source will transfer underlying tokens
-    ///                     if false it will transfer the yielding asset directly
+    /// @param _shares The shares to withdraw from the yield source.
+    /// @param _destination The recipient of the withdrawal.
+    /// @param _asUnderlying A flag indicating whether the withdrawal should be
+    ///        paid out in base or in another currency.
+    /// @param _extraData Extra data to provide to the yield source. This extra
+    ///        data may not be used by every yield source.
     /// @return amountWithdrawn The amount of base released by the withdrawal.
     function _withdraw(
-        uint256 shares,
-        address destination,
-        bool asUnderlying
+        uint256 _shares,
+        address _destination,
+        bool _asUnderlying,
+        bytes memory _extraData
     ) internal virtual returns (uint256 amountWithdrawn);
 
-    ///@notice Loads the share price from the yield source
-    ///@return sharePrice The current share price.
+    /// @notice Loads the share price from the yield source
+    /// @return sharePrice The current share price.
     function _pricePerShare()
         internal
         view
@@ -162,20 +168,20 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
 
     event GovernanceUpdated(address indexed newGovernance);
 
-    ///@notice Allows governance to change governance
-    ///@param who The new governance address
-    function setGovernance(address who) external {
+    /// @notice Allows governance to change governance
+    /// @param _who The new governance address
+    function setGovernance(address _who) external {
         if (msg.sender != _governance) revert IHyperdrive.Unauthorized();
-        _governance = who;
+        _governance = _who;
 
-        emit GovernanceUpdated(who);
+        emit GovernanceUpdated(_who);
     }
 
-    ///@notice Allows an authorized address to pause this contract
-    ///@param status True to pause all deposits and false to unpause them
-    function pause(bool status) external {
+    /// @notice Allows an authorized address to pause this contract
+    /// @param _status True to pause all deposits and false to unpause them
+    function pause(bool _status) external {
         if (!_pausers[msg.sender]) revert IHyperdrive.Unauthorized();
-        _marketState.isPaused = status;
+        _marketState.isPaused = _status;
     }
 
     ///@notice Blocks a function execution if the contract is paused
@@ -200,10 +206,14 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     ) internal virtual returns (uint256 openSharePrice);
 
     /// @notice This function collects the governance fees accrued by the pool.
-    /// @param asUnderlying Indicates if the fees should be paid in underlying or yielding token
+    /// @param _asUnderlying A flag indicating whether the withdrawal should be
+    ///        paid out in base or in another currency.
+    /// @param _extraData Extra data to provide to the yield source. This extra
+    ///        data may not be used by every yield source.
     /// @return proceeds The amount of base collected.
     function collectGovernanceFee(
-        bool asUnderlying
+        bool _asUnderlying,
+        bytes memory _extraData
     ) external nonReentrant returns (uint256 proceeds) {
         // Must have been granted a role
         if (
@@ -216,7 +226,8 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
         proceeds = _withdraw(
             governanceFeesAccrued,
             _feeCollector,
-            asUnderlying
+            _asUnderlying,
+            _extraData
         );
     }
 

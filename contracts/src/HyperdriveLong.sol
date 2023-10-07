@@ -30,6 +30,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
     /// @param _asUnderlying A flag indicating whether the sender will pay in
     ///        base or using another currency. Implementations choose which
     ///        currencies they accept.
+    /// @param _extraData The extra data to provide to the yield source.
     /// @return maturityTime The maturity time of the bonds.
     /// @return bondProceeds The amount of bonds the user received
     function openLong(
@@ -37,7 +38,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
         uint256 _minOutput,
         uint256 _minSharePrice,
         address _destination,
-        bool _asUnderlying
+        bool _asUnderlying,
+        bytes memory _extraData
     )
         external
         payable
@@ -54,7 +56,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // Deposit the user's base.
         (uint256 shares, uint256 sharePrice) = _deposit(
             _baseAmount,
-            _asUnderlying
+            _asUnderlying,
+            _extraData
         );
         if (sharePrice < _minSharePrice) {
             revert IHyperdrive.MinimumSharePrice();
@@ -134,13 +137,15 @@ abstract contract HyperdriveLong is HyperdriveLP {
     /// @param _asUnderlying A flag indicating whether the sender will pay in
     ///        base or using another currency. Implementations choose which
     ///        currencies they accept.
+    /// @param _extraData The extra data to provide to the yield source.
     /// @return The amount of underlying the user receives.
     function closeLong(
         uint256 _maturityTime,
         uint256 _bondAmount,
         uint256 _minOutput,
         address _destination,
-        bool _asUnderlying
+        bool _asUnderlying,
+        bytes memory _extraData
     ) external nonReentrant returns (uint256) {
         if (_bondAmount < _minimumTransactionAmount) {
             revert IHyperdrive.MinimumTransactionAmount();
@@ -210,7 +215,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
         uint256 baseProceeds = _withdraw(
             shareProceeds,
             _destination,
-            _asUnderlying
+            _asUnderlying,
+            _extraData
         );
 
         // Enforce min user outputs

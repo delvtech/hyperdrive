@@ -27,12 +27,14 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
     /// @param _asUnderlying If true the user is charged in underlying if false
     ///                      the contract transfers in yield source directly.
     ///                      Note - for some paths one choice may be disabled or blocked.
+    /// @param _extraData The extra data to provide to the yield source.
     /// @return lpShares The initial number of LP shares created.
     function initialize(
         uint256 _contribution,
         uint256 _apr,
         address _destination,
-        bool _asUnderlying
+        bool _asUnderlying,
+        bytes memory _extraData
     ) external payable nonReentrant returns (uint256 lpShares) {
         // Check that the message value and base amount are valid.
         _checkMessageValue();
@@ -46,7 +48,8 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // their contribution was worth.
         (uint256 shares, uint256 sharePrice) = _deposit(
             _contribution,
-            _asUnderlying
+            _asUnderlying,
+            _extraData
         );
 
         // Ensure that the contribution is large enough to set aside the minimum
@@ -109,13 +112,15 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
     /// @param _asUnderlying If true the user is charged in underlying if false
     ///                      the contract transfers in yield source directly.
     ///                      Note - for some paths one choice may be disabled or blocked.
+    /// @param _extraData The extra data to provide to the yield source.
     /// @return lpShares The number of LP tokens created
     function addLiquidity(
         uint256 _contribution,
         uint256 _minApr,
         uint256 _maxApr,
         address _destination,
-        bool _asUnderlying
+        bool _asUnderlying,
+        bytes memory _extraData
     ) external payable nonReentrant isNotPaused returns (uint256 lpShares) {
         // Check that the message value and base amount are valid.
         _checkMessageValue();
@@ -136,7 +141,8 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         // Deposit for the user, this call also transfers from them
         (uint256 shares, uint256 sharePrice) = _deposit(
             _contribution,
-            _asUnderlying
+            _asUnderlying,
+            _extraData
         );
 
         // Perform a checkpoint.
@@ -204,6 +210,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
     /// @param _asUnderlying If true the user is paid in underlying if false
     ///        the contract transfers in yield source directly.
     ///        Note - for some paths one choice may be disabled or blocked.
+    /// @param _extraData The extra data to provide to the yield source.
     /// @return baseProceeds The base the LP removing liquidity receives. The
     ///         LP receives a proportional amount of the pool's idle capital
     /// @return withdrawalShares The base that the LP receives buys out some of
@@ -215,7 +222,8 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         uint256 _shares,
         uint256 _minOutput,
         address _destination,
-        bool _asUnderlying
+        bool _asUnderlying,
+        bytes memory _extraData
     )
         external
         nonReentrant
@@ -261,7 +269,12 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         );
 
         // Withdraw the shares from the yield source.
-        baseProceeds = _withdraw(shareProceeds, _destination, _asUnderlying);
+        baseProceeds = _withdraw(
+            shareProceeds,
+            _destination,
+            _asUnderlying,
+            _extraData
+        );
 
         // Enforce min user outputs
         if (_minOutput > baseProceeds) revert IHyperdrive.OutputLimit();
@@ -278,6 +291,8 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         return (baseProceeds, withdrawalShares);
     }
 
+    // FIXME: Update all of the `_asUnderlying` comments.
+    //
     /// @notice Redeems withdrawal shares by giving the LP a pro-rata amount of
     ///         the withdrawal pool's proceeds. This function redeems the
     ///         maximum amount of the specified withdrawal shares given the
@@ -289,13 +304,15 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
     /// @param _asUnderlying If true the user is paid in underlying if false
     ///                      the contract transfers in yield source directly.
     ///                      Note - for some paths one choice may be disabled or blocked.
+    /// @param _extraData The extra data to provide to the yield source.
     /// @return baseProceeds The amount of base the LP received.
     /// @return sharesRedeemed The amount of withdrawal shares that were redeemed.
     function redeemWithdrawalShares(
         uint256 _shares,
         uint256 _minOutputPerShare,
         address _destination,
-        bool _asUnderlying
+        bool _asUnderlying,
+        bytes memory _extraData
     )
         external
         nonReentrant
@@ -336,7 +353,12 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         _withdrawPool.proceeds -= shareProceeds.toUint128();
 
         // Withdraw for the user
-        baseProceeds = _withdraw(shareProceeds, _destination, _asUnderlying);
+        baseProceeds = _withdraw(
+            shareProceeds,
+            _destination,
+            _asUnderlying,
+            _extraData
+        );
 
         // Enforce the minimum user output per share.
         if (_minOutputPerShare.mulDown(sharesRedeemed) > baseProceeds)
