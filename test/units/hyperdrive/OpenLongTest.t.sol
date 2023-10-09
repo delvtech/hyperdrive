@@ -225,11 +225,11 @@ contract OpenLongTest is HyperdriveTest {
         hyperdrive.openLong(longAmount, 0, 0, bob, true, new bytes(0));
     }
 
+    // Tests an edge case in `updateWeightedAverage` where the function output
+    // is not bounded by the average and the delta. This test ensures that this
+    // never occurs by attempting to induce a wild variation in avgPrice, and
+    // ensures that they remain relatively consistent.
     function testAvoidsDustAttack(uint256 contribution, uint256 apr) public {
-        /*
-            - Tests an edge case in updateWeightedAverage where The function output is not bounded by the average and the delta.
-            This test ensures that this never occurs by attempting to induce a wild variation in avgPrice, and ensures that they remain relatively consistent.
-        */
         // Apr between 0.5e18 and 0.25e18
         apr = apr.normalizeToRange(0.05e18, 0.25e18);
         // Initialize the pool with a large amount of capital.
@@ -253,19 +253,12 @@ contract OpenLongTest is HyperdriveTest {
 
         IHyperdrive.PoolInfo memory info = hyperdrive.getPoolInfo();
         uint256 averageMaturityTimeBefore = info.longAverageMaturityTime;
-        uint256 sharePrice = info.sharePrice;
 
         uint256 amt = contribution / 5;
         openLong(bob, amt);
 
-        uint256 longSharePrice = hyperdrive
-            .getCheckpoint(hyperdrive.latestCheckpoint())
-            .longSharePrice;
-
         info = hyperdrive.getPoolInfo();
         uint256 averageMaturityTimeAfter = info.longAverageMaturityTime;
-
-        assertApproxEqAbs(sharePrice, longSharePrice, 1e7);
         assertApproxEqAbs(
             averageMaturityTimeBefore,
             averageMaturityTimeAfter,

@@ -221,7 +221,9 @@ contract ERC20Forwarder is IERC20 {
         if (signer != owner) revert IHyperdrive.InvalidSignature();
 
         // Increment the signature nonce
-        unchecked {nonces[owner] = nonce + 1;}
+        unchecked {
+            nonces[owner] = nonce + 1;
+        }
         // Set the approval to the new value
         token.setApprovalBridge(tokenId, spender, value, owner);
         emit Approval(owner, spender, value);

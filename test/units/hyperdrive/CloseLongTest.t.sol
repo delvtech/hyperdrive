@@ -164,13 +164,15 @@ contract CloseLongTest is HyperdriveTest {
 
         // Verify that the close long updates were correct.
         verifyCloseLong(
-            poolInfoBefore,
-            bobBaseBalanceBefore,
-            hyperdriveBaseBalanceBefore,
-            baseProceeds,
-            bondAmount,
-            maturityTime,
-            false
+            TestCase({
+                poolInfoBefore: poolInfoBefore,
+                traderBaseBalanceBefore: bobBaseBalanceBefore,
+                hyperdriveBaseBalanceBefore: hyperdriveBaseBalanceBefore,
+                baseProceeds: baseProceeds,
+                bondAmount: bondAmount,
+                maturityTime: maturityTime,
+                wasCheckpointed: false
+            })
         );
     }
 
@@ -199,13 +201,15 @@ contract CloseLongTest is HyperdriveTest {
 
         // Verify that the close long updates were correct.
         verifyCloseLong(
-            poolInfoBefore,
-            bobBaseBalanceBefore,
-            hyperdriveBaseBalanceBefore,
-            baseProceeds,
-            bondAmount,
-            maturityTime,
-            false
+            TestCase({
+                poolInfoBefore: poolInfoBefore,
+                traderBaseBalanceBefore: bobBaseBalanceBefore,
+                hyperdriveBaseBalanceBefore: hyperdriveBaseBalanceBefore,
+                baseProceeds: baseProceeds,
+                bondAmount: bondAmount,
+                maturityTime: maturityTime,
+                wasCheckpointed: false
+            })
         );
     }
 
@@ -233,12 +237,6 @@ contract CloseLongTest is HyperdriveTest {
         assertEq(
             hyperdrive.getPoolInfo().longAverageMaturityTime,
             maturityTime * 1e18
-        );
-
-        // Ensure that the average open share price was updated correctly.
-        assertEq(
-            hyperdrive.getCheckpoint(block.timestamp).longSharePrice,
-            hyperdrive.getPoolInfo().sharePrice
         );
     }
 
@@ -285,13 +283,15 @@ contract CloseLongTest is HyperdriveTest {
 
         // Verify that the close long updates were correct.
         verifyCloseLong(
-            poolInfoBefore,
-            bobBaseBalanceBefore,
-            hyperdriveBaseBalanceBefore,
-            baseProceeds,
-            bondAmount,
-            maturityTime,
-            false
+            TestCase({
+                poolInfoBefore: poolInfoBefore,
+                traderBaseBalanceBefore: bobBaseBalanceBefore,
+                hyperdriveBaseBalanceBefore: hyperdriveBaseBalanceBefore,
+                baseProceeds: baseProceeds,
+                bondAmount: bondAmount,
+                maturityTime: maturityTime,
+                wasCheckpointed: false
+            })
         );
     }
 
@@ -324,13 +324,15 @@ contract CloseLongTest is HyperdriveTest {
 
         // Verify that the close long updates were correct.
         verifyCloseLong(
-            poolInfoBefore,
-            bobBaseBalanceBefore,
-            hyperdriveBaseBalanceBefore,
-            baseProceeds,
-            bondAmount,
-            maturityTime,
-            false
+            TestCase({
+                poolInfoBefore: poolInfoBefore,
+                traderBaseBalanceBefore: bobBaseBalanceBefore,
+                hyperdriveBaseBalanceBefore: hyperdriveBaseBalanceBefore,
+                baseProceeds: baseProceeds,
+                bondAmount: bondAmount,
+                maturityTime: maturityTime,
+                wasCheckpointed: false
+            })
         );
     }
 
@@ -380,13 +382,15 @@ contract CloseLongTest is HyperdriveTest {
 
         // Verify that the close long updates were correct.
         verifyCloseLong(
-            poolInfoBefore,
-            bobBaseBalanceBefore,
-            hyperdriveBaseBalanceBefore,
-            baseProceeds,
-            bondAmount,
-            maturityTime,
-            false
+            TestCase({
+                poolInfoBefore: poolInfoBefore,
+                traderBaseBalanceBefore: bobBaseBalanceBefore,
+                hyperdriveBaseBalanceBefore: hyperdriveBaseBalanceBefore,
+                baseProceeds: baseProceeds,
+                bondAmount: bondAmount,
+                maturityTime: maturityTime,
+                wasCheckpointed: false
+            })
         );
     }
 
@@ -456,13 +460,15 @@ contract CloseLongTest is HyperdriveTest {
 
         // Verify that the close long updates were correct.
         verifyCloseLong(
-            poolInfoBefore,
-            bobBaseBalanceBefore,
-            hyperdriveBaseBalanceBefore,
-            baseProceeds,
-            bondAmount,
-            maturityTime,
-            false
+            TestCase({
+                poolInfoBefore: poolInfoBefore,
+                traderBaseBalanceBefore: bobBaseBalanceBefore,
+                hyperdriveBaseBalanceBefore: hyperdriveBaseBalanceBefore,
+                baseProceeds: baseProceeds,
+                bondAmount: bondAmount,
+                maturityTime: maturityTime,
+                wasCheckpointed: false
+            })
         );
     }
 
@@ -512,13 +518,15 @@ contract CloseLongTest is HyperdriveTest {
 
         // Verify that the close long updates were correct.
         verifyCloseLong(
-            poolInfoBefore,
-            bobBaseBalanceBefore,
-            hyperdriveBaseBalanceBefore,
-            baseProceeds,
-            bondAmount,
-            maturityTime,
-            false
+            TestCase({
+                poolInfoBefore: poolInfoBefore,
+                traderBaseBalanceBefore: bobBaseBalanceBefore,
+                hyperdriveBaseBalanceBefore: hyperdriveBaseBalanceBefore,
+                baseProceeds: baseProceeds,
+                bondAmount: bondAmount,
+                maturityTime: maturityTime,
+                wasCheckpointed: false
+            })
         );
     }
 
@@ -574,13 +582,15 @@ contract CloseLongTest is HyperdriveTest {
 
         // Verify that the close long updates were correct.
         verifyCloseLong(
-            poolInfoBefore,
-            bobBaseBalanceBefore,
-            hyperdriveBaseBalanceBefore,
-            baseProceeds,
-            bondAmount,
-            maturityTime,
-            true
+            TestCase({
+                poolInfoBefore: poolInfoBefore,
+                traderBaseBalanceBefore: bobBaseBalanceBefore,
+                hyperdriveBaseBalanceBefore: hyperdriveBaseBalanceBefore,
+                baseProceeds: baseProceeds,
+                bondAmount: bondAmount,
+                maturityTime: maturityTime,
+                wasCheckpointed: true
+            })
         );
     }
 
@@ -714,15 +724,17 @@ contract CloseLongTest is HyperdriveTest {
         assertGt(maxFlatFeeState.shareReserves, zeroFeeState.shareReserves);
     }
 
-    function verifyCloseLong(
-        IHyperdrive.PoolInfo memory poolInfoBefore,
-        uint256 traderBaseBalanceBefore,
-        uint256 hyperdriveBaseBalanceBefore,
-        uint256 baseProceeds,
-        uint256 bondAmount,
-        uint256 maturityTime,
-        bool wasCheckpointed
-    ) internal {
+    struct TestCase {
+        IHyperdrive.PoolInfo poolInfoBefore;
+        uint256 traderBaseBalanceBefore;
+        uint256 hyperdriveBaseBalanceBefore;
+        uint256 baseProceeds;
+        uint256 bondAmount;
+        uint256 maturityTime;
+        bool wasCheckpointed;
+    }
+
+    function verifyCloseLong(TestCase memory testCase) internal {
         // Ensure that one `CloseLong` event was emitted with the correct
         // arguments.
         {
@@ -734,32 +746,38 @@ contract CloseLongTest is HyperdriveTest {
             assertEq(address(uint160(uint256(log.topics[1]))), bob);
             assertEq(
                 uint256(log.topics[2]),
-                AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime)
+                AssetId.encodeAssetId(
+                    AssetId.AssetIdPrefix.Long,
+                    testCase.maturityTime
+                )
             );
             (
                 uint256 eventMaturityTime,
                 uint256 eventBaseAmount,
                 uint256 eventBondAmount
             ) = abi.decode(log.data, (uint256, uint256, uint256));
-            assertEq(eventMaturityTime, maturityTime);
-            assertEq(eventBaseAmount, baseProceeds);
-            assertEq(eventBondAmount, bondAmount);
+            assertEq(eventMaturityTime, testCase.maturityTime);
+            assertEq(eventBaseAmount, testCase.baseProceeds);
+            assertEq(eventBondAmount, testCase.bondAmount);
         }
 
         // Ensure that the correct amount of base was transferred.
         assertEq(
             baseToken.balanceOf(bob),
-            traderBaseBalanceBefore + baseProceeds
+            testCase.traderBaseBalanceBefore + testCase.baseProceeds
         );
         assertEq(
             baseToken.balanceOf(address(hyperdrive)),
-            hyperdriveBaseBalanceBefore - baseProceeds
+            testCase.hyperdriveBaseBalanceBefore - testCase.baseProceeds
         );
 
         // Verify that all of Bob's bonds were burned.
         assertEq(
             hyperdrive.balanceOf(
-                AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
+                AssetId.encodeAssetId(
+                    AssetId.AssetIdPrefix.Long,
+                    testCase.maturityTime
+                ),
                 bob
             ),
             0
@@ -767,53 +785,93 @@ contract CloseLongTest is HyperdriveTest {
 
         // Verify that the other states were correct.
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
-        if (wasCheckpointed) {
-            assertEq(poolInfoAfter.shareReserves, poolInfoBefore.shareReserves);
+        if (testCase.wasCheckpointed) {
+            assertEq(
+                poolInfoAfter.shareReserves,
+                testCase.poolInfoBefore.shareReserves
+            );
             assertEq(
                 poolInfoAfter.shareAdjustment,
-                poolInfoBefore.shareAdjustment
+                testCase.poolInfoBefore.shareAdjustment
             );
             assertEq(
                 poolInfoAfter.longsOutstanding,
-                poolInfoBefore.longsOutstanding
+                testCase.poolInfoBefore.longsOutstanding
             );
         } else {
             assertApproxEqAbs(
                 poolInfoAfter.shareReserves,
-                poolInfoBefore.shareReserves -
-                    baseProceeds.divDown(poolInfoBefore.sharePrice),
+                testCase.poolInfoBefore.shareReserves -
+                    testCase.baseProceeds.divDown(
+                        testCase.poolInfoBefore.sharePrice
+                    ),
                 10
-            );
-            uint256 timeElapsed = ONE -
-                hyperdrive.calculateTimeRemaining(maturityTime);
-            uint256 shareAdjustmentDelta = bondAmount.mulDivDown(
-                timeElapsed,
-                poolInfoAfter.sharePrice
-            );
-            if (
-                poolInfoAfter.sharePrice <
-                hyperdrive.getPoolConfig().initialSharePrice
-            ) {
-                shareAdjustmentDelta = shareAdjustmentDelta.mulDivDown(
-                    poolInfoAfter.sharePrice,
-                    hyperdrive.getPoolConfig().initialSharePrice
-                );
-            }
-            assertEq(
-                poolInfoAfter.shareAdjustment,
-                poolInfoBefore.shareAdjustment - int256(shareAdjustmentDelta)
             );
             assertEq(
                 poolInfoAfter.longsOutstanding,
-                poolInfoBefore.longsOutstanding - bondAmount
+                testCase.poolInfoBefore.longsOutstanding - testCase.bondAmount
+            );
+
+            // There are two components of the share adjustment delta. The first
+            // is from negative interest and the second is from the flat update.
+            // Without re-doing the calculation here, we can check that the
+            // share adjustment delta is greater than or equal to the flat update
+            // and verify that k remained invariant.
+            uint256 initialSharePrice = hyperdrive
+                .getPoolConfig()
+                .initialSharePrice;
+            uint256 timeElapsed = ONE -
+                hyperdrive.calculateTimeRemaining(testCase.maturityTime);
+            uint256 shareAdjustmentDelta = testCase.bondAmount.mulDivDown(
+                timeElapsed,
+                poolInfoAfter.sharePrice
+            );
+            if (poolInfoAfter.sharePrice < initialSharePrice) {
+                shareAdjustmentDelta = shareAdjustmentDelta.mulDivDown(
+                    poolInfoAfter.sharePrice,
+                    initialSharePrice
+                );
+            }
+            assertGe(
+                poolInfoAfter.shareAdjustment,
+                testCase.poolInfoBefore.shareAdjustment -
+                    int256(shareAdjustmentDelta)
+            );
+            assertApproxEqAbs(
+                YieldSpaceMath.modifiedYieldSpaceConstant(
+                    poolInfoAfter.sharePrice.divDown(initialSharePrice),
+                    initialSharePrice,
+                    HyperdriveMath.calculateEffectiveShareReserves(
+                        poolInfoAfter.shareReserves,
+                        poolInfoAfter.shareAdjustment
+                    ),
+                    ONE - hyperdrive.getPoolConfig().timeStretch,
+                    poolInfoAfter.bondReserves
+                ),
+                YieldSpaceMath.modifiedYieldSpaceConstant(
+                    testCase.poolInfoBefore.sharePrice.divDown(
+                        initialSharePrice
+                    ),
+                    initialSharePrice,
+                    HyperdriveMath.calculateEffectiveShareReserves(
+                        testCase.poolInfoBefore.shareReserves,
+                        testCase.poolInfoBefore.shareAdjustment
+                    ),
+                    ONE - hyperdrive.getPoolConfig().timeStretch,
+                    testCase.poolInfoBefore.bondReserves
+                ),
+                1e10
             );
         }
-        assertEq(poolInfoAfter.sharePrice, poolInfoBefore.sharePrice);
-        assertEq(poolInfoAfter.lpTotalSupply, poolInfoBefore.lpTotalSupply);
+        assertEq(poolInfoAfter.sharePrice, testCase.poolInfoBefore.sharePrice);
+        assertEq(
+            poolInfoAfter.lpTotalSupply,
+            testCase.poolInfoBefore.lpTotalSupply
+        );
         assertEq(poolInfoAfter.longAverageMaturityTime, 0);
         assertEq(
             poolInfoAfter.shortsOutstanding,
-            poolInfoBefore.shortsOutstanding
+            testCase.poolInfoBefore.shortsOutstanding
         );
         assertEq(poolInfoAfter.shortAverageMaturityTime, 0);
     }
