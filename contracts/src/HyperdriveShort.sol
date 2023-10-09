@@ -158,6 +158,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // Calculate the changes to the reserves and the traders proceeds up
         // front. This will also verify that the calculated values don't break
         // any invariants.
+        uint256 maturityTime = _maturityTime; // Avoid stack too deep error.
         (
             uint256 bondReservesDelta,
             uint256 shareProceeds,
@@ -165,7 +166,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             uint256 shareCurveDelta,
             int256 shareAdjustmentDelta,
             uint256 totalGovernanceFee
-        ) = _calculateCloseShort(_bondAmount, sharePrice, _maturityTime);
+        ) = _calculateCloseShort(_bondAmount, sharePrice, maturityTime);
 
         // If the ending spot price is greater than 1, we are in the negative
         // interest region of the trading function. The spot price is given by
@@ -184,7 +185,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // result from closing the short to the reserves and pay out the
         // withdrawal pool if necessary.
         uint256 bondAmount = _bondAmount; // Avoid stack too deep error.
-        uint256 maturityTime = _maturityTime; // Avoid stack too deep error.
         uint256 sharePrice_ = sharePrice; // Avoid stack too deep error.
         if (block.timestamp < maturityTime) {
             // Attribute the governance fees.
@@ -219,30 +219,42 @@ abstract contract HyperdriveShort is HyperdriveLP {
             );
 
             // Distribute the excess idle to the withdrawal pool.
-            _distributeExcessIdle(sharePrice);
+            _distributeExcessIdle(sharePrice_);
         }
 
         // Withdraw the profit to the trader. This includes the proceeds from
         // the short sale as well as the variable interest that was collected
         // on the face value of the bonds.
+        uint256 minOutput = _minOutput; // Avoid stack too deep error.
+        address destination = _destination; // Avoid stack too deep error.
+        bool asUnderlying = _asUnderlying; // Avoid stack too deep error.
+        bytes memory extraData = _extraData; // Avoid stack too deep error.
         uint256 baseProceeds = _withdraw(
             shareProceeds,
-            _destination,
-            _asUnderlying,
-            _extraData
+            destination,
+            asUnderlying,
+            extraData
         );
 
         // Enforce the user's minimum output.
-        if (baseProceeds < _minOutput) revert IHyperdrive.OutputLimit();
+        if (baseProceeds < minOutput) {
+            revert IHyperdrive.OutputLimit();
+        }
 
         // Emit a CloseShort event.
-        emit CloseShort(
-            _destination,
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, maturityTime),
-            maturityTime,
-            baseProceeds,
-            bondAmount
-        );
+        {
+            uint256 maturityTime_ = maturityTime; // Avoid stack too deep error.
+            emit CloseShort(
+                destination,
+                AssetId.encodeAssetId(
+                    AssetId.AssetIdPrefix.Short,
+                    maturityTime_
+                ),
+                maturityTime_,
+                baseProceeds,
+                bondAmount
+            );
+        }
 
         return baseProceeds;
     }
