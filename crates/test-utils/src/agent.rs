@@ -140,6 +140,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
                     fixed!(0).into(), // TODO: This is fine for testing, but not prod.
                     self.address,
                     true,
+                    [].into(),
                 )
                 .from(self.address);
             let logs = tx
@@ -205,6 +206,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
                     uint256!(0),
                     self.address,
                     true,
+                    [].into(),
                 )
                 .from(self.address);
             let logs = tx
@@ -253,6 +255,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
                     fixed!(0).into(), // TODO: This is fine for testing, but not prod.
                     self.address,
                     true,
+                    [].into(),
                 )
                 .from(self.address);
             let logs = tx
@@ -317,6 +320,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
                     uint256!(0),
                     self.address,
                     true,
+                    [].into(),
                 )
                 .from(self.address);
             let logs = tx
@@ -361,7 +365,13 @@ impl Agent<ChainClient, ChaCha8Rng> {
         let log = {
             let tx = self
                 .hyperdrive
-                .initialize(contribution.into(), rate.into(), self.address, true)
+                .initialize(
+                    contribution.into(),
+                    rate.into(),
+                    self.address,
+                    true,
+                    [].into(),
+                )
                 .from(self.address);
             let logs = tx
                 .send()
@@ -409,6 +419,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
                     U256::MAX,
                     self.address,
                     true,
+                    [].into(),
                 )
                 .from(self.address);
             let logs = tx
@@ -454,7 +465,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
         let log = {
             let tx = self
                 .hyperdrive
-                .remove_liquidity(shares.into(), uint256!(0), self.address, true)
+                .remove_liquidity(shares.into(), uint256!(0), self.address, true, [].into())
                 .from(self.address);
             let logs = tx
                 .send()
@@ -497,7 +508,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
         let log = {
             let tx = self
                 .hyperdrive
-                .redeem_withdrawal_shares(shares.into(), uint256!(0), self.address, true)
+                .redeem_withdrawal_shares(shares.into(), uint256!(0), self.address, true, [].into())
                 .from(self.address);
             let logs = tx
                 .send()

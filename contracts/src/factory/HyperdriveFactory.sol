@@ -241,12 +241,15 @@ abstract contract HyperdriveFactory {
     /// @param _extraData The extra data is used by some factories
     /// @param _contribution Base token to call init with
     /// @param _apr The apr to call init with
+    /// @param _initializeExtraData The extra data for the `initialize` call.
     /// @return The hyperdrive address deployed
     function deployAndInitialize(
         IHyperdrive.PoolConfig memory _config,
+        // TODO: We should use raw bytes instead of bytes32.
         bytes32[] memory _extraData,
         uint256 _contribution,
-        uint256 _apr
+        uint256 _apr,
+        bytes memory _initializeExtraData
     ) public payable virtual returns (IHyperdrive) {
         if (msg.value > 0) {
             revert IHyperdrive.NonPayableInitialization();
@@ -305,7 +308,7 @@ abstract contract HyperdriveFactory {
             _apr,
             msg.sender,
             true,
-            new bytes(0)
+            _initializeExtraData
         );
 
         // Set the default pausers and transfer the governance status to the
