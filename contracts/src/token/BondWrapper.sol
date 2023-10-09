@@ -195,9 +195,11 @@ contract BondWrapper is ERC20 {
         uint256 amount
     ) external {
         // Cycle through each maturity and sweep
-        for (uint256 i = 0; i < maturityTimes.length;) {
+        for (uint256 i = 0; i < maturityTimes.length; ) {
             sweep(maturityTimes[i]);
-            unchecked {++i;}
+            unchecked {
+                ++i;
+            }
         }
         redeem(amount);
     }

@@ -235,6 +235,8 @@ library YieldSpaceMath {
         return (z - zMin, optimalY - y);
     }
 
+    // FIXME: Rename this to k.
+    //
     /// @dev Helper function to derive invariant constant C
     /// @param cDivMu Normalized price of shares in terms of base
     /// @param mu Interest normalization factor for shares

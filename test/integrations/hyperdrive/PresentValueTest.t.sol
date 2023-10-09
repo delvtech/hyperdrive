@@ -632,6 +632,9 @@ contract PresentValueTest is HyperdriveTest {
         // Initialize the pool.
         initialize(alice, 0.02e18, 500_000_000e18);
 
+        // Accrues positive interest for a period.
+        advanceTime(hyperdrive.getPoolConfig().positionDuration, 1e18);
+
         // Execute a series of random open trades.
         uint256 maturityTime0 = hyperdrive.maturityTimeFromLatestCheckpoint();
         Trade[] memory trades0 = randomOpenTrades();

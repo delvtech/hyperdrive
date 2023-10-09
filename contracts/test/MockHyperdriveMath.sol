@@ -5,14 +5,14 @@ import { HyperdriveMath } from "../src/libraries/HyperdriveMath.sol";
 
 contract MockHyperdriveMath {
     function calculateAPRFromReserves(
-        uint256 _shareReserves,
+        uint256 _effectiveShareReserves,
         uint256 _bondReserves,
         uint256 _initialSharePrice,
         uint256 _positionDuration,
         uint256 _timeStretch
     ) external pure returns (uint256) {
         uint256 result = HyperdriveMath.calculateAPRFromReserves(
-            _shareReserves,
+            _effectiveShareReserves,
             _bondReserves,
             _initialSharePrice,
             _positionDuration,
@@ -22,14 +22,14 @@ contract MockHyperdriveMath {
     }
 
     function calculateInitialBondReserves(
-        uint256 _shareReserves,
+        uint256 _effectiveShareReserves,
         uint256 _initialSharePrice,
         uint256 _apr,
         uint256 _positionDuration,
         uint256 _timeStretch
     ) external pure returns (uint256) {
         uint256 result = HyperdriveMath.calculateInitialBondReserves(
-            _shareReserves,
+            _effectiveShareReserves,
             _initialSharePrice,
             _apr,
             _positionDuration,
@@ -39,7 +39,7 @@ contract MockHyperdriveMath {
     }
 
     function calculateOpenLong(
-        uint256 _shareReserves,
+        uint256 _effectiveShareReserves,
         uint256 _bondReserves,
         uint256 _amountIn,
         uint256 _timeStretch,
@@ -47,7 +47,7 @@ contract MockHyperdriveMath {
         uint256 _initialSharePrice
     ) external pure returns (uint256) {
         uint256 result = HyperdriveMath.calculateOpenLong(
-            _shareReserves,
+            _effectiveShareReserves,
             _bondReserves,
             _amountIn,
             _timeStretch,
@@ -58,7 +58,7 @@ contract MockHyperdriveMath {
     }
 
     function calculateCloseLong(
-        uint256 _shareReserves,
+        uint256 _effectiveShareReserves,
         uint256 _bondReserves,
         uint256 _amountIn,
         uint256 _normalizedTimeRemaining,
@@ -68,7 +68,7 @@ contract MockHyperdriveMath {
     ) external pure returns (uint256, uint256, uint256) {
         (uint256 result1, uint256 result2, uint256 result3) = HyperdriveMath
             .calculateCloseLong(
-                _shareReserves,
+                _effectiveShareReserves,
                 _bondReserves,
                 _amountIn,
                 _normalizedTimeRemaining,
@@ -80,7 +80,7 @@ contract MockHyperdriveMath {
     }
 
     function calculateOpenShort(
-        uint256 _shareReserves,
+        uint256 _effectiveShareReserves,
         uint256 _bondReserves,
         uint256 _amountIn,
         uint256 _timeStretch,
@@ -88,7 +88,7 @@ contract MockHyperdriveMath {
         uint256 _initialSharePrice
     ) external pure returns (uint256) {
         uint256 result = HyperdriveMath.calculateOpenShort(
-            _shareReserves,
+            _effectiveShareReserves,
             _bondReserves,
             _amountIn,
             _timeStretch,
@@ -99,7 +99,7 @@ contract MockHyperdriveMath {
     }
 
     function calculateCloseShort(
-        uint256 _shareReserves,
+        uint256 _effectiveShareReserves,
         uint256 _bondReserves,
         uint256 _amountOut,
         uint256 _normalizedTimeRemaining,
@@ -109,7 +109,7 @@ contract MockHyperdriveMath {
     ) external pure returns (uint256, uint256, uint256) {
         (uint256 result1, uint256 result2, uint256 result3) = HyperdriveMath
             .calculateCloseShort(
-                _shareReserves,
+                _effectiveShareReserves,
                 _bondReserves,
                 _amountOut,
                 _normalizedTimeRemaining,
@@ -118,6 +118,48 @@ contract MockHyperdriveMath {
                 _initialSharePrice
             );
         return (result1, result2, result3);
+    }
+
+    struct NegativeInterestOnCloseOutput {
+        uint256 shareProceeds;
+        uint256 shareReservesDelta;
+        uint256 shareCurveDelta;
+        int256 shareAdjustmentDelta;
+        uint256 totalGovernanceFee;
+    }
+
+    function calculateNegativeInterestOnClose(
+        uint256 _shareProceeds,
+        uint256 _shareReservesDelta,
+        uint256 _shareCurveDelta,
+        uint256 _totalGovernanceFee,
+        uint256 _openSharePrice,
+        uint256 _closeSharePrice,
+        bool _isLong
+    ) external pure returns (uint256, uint256, uint256, int256, uint256) {
+        NegativeInterestOnCloseOutput memory output;
+        (
+            output.shareProceeds,
+            output.shareReservesDelta,
+            output.shareCurveDelta,
+            output.shareAdjustmentDelta,
+            output.totalGovernanceFee
+        ) = HyperdriveMath.calculateNegativeInterestOnClose(
+            _shareProceeds,
+            _shareReservesDelta,
+            _shareCurveDelta,
+            _totalGovernanceFee,
+            _openSharePrice,
+            _closeSharePrice,
+            _isLong
+        );
+        return (
+            output.shareProceeds,
+            output.shareReservesDelta,
+            output.shareCurveDelta,
+            output.shareAdjustmentDelta,
+            output.totalGovernanceFee
+        );
     }
 
     function calculateMaxLong(
