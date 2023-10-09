@@ -25,7 +25,8 @@ contract __MockHyperDrive__ is MockMultiToken {
         uint256 indexed _bondAmount,
         uint256 indexed _minOutput,
         address _destination,
-        bool _asUnderlying
+        bool _asUnderlying,
+        bytes _extraData
     );
 
     function closeLong(
@@ -33,14 +34,16 @@ contract __MockHyperDrive__ is MockMultiToken {
         uint256 _bondAmount,
         uint256 _minOutput,
         address _destination,
-        bool _asUnderlying
+        bool _asUnderlying,
+        bytes memory _extraData
     ) external returns (uint256) {
         emit __CloseLong__(
             _maturityTime,
             _bondAmount,
             _minOutput,
             _destination,
-            _asUnderlying
+            _asUnderlying,
+            _extraData
         );
         return __closeLongReturnValue__;
     }
@@ -165,28 +168,38 @@ contract BondWrapperTest is BaseTest {
         );
     }
 
-    function test_SweepAndRedeem() public {
+    function test_sweepAndRedeem() public {
+        // Alice mints some BondWrapper tokens.
         vm.startPrank(alice);
         uint256 balance = bondWrapper.balanceOf(alice);
-
-        assert(balance == 0);
-
+        assertEq(balance, 0);
         bondWrapper.mint(365 days, 1e18, alice);
-
         balance = bondWrapper.balanceOf(bob);
 
+        // 1 year passes.
         vm.warp(365 days);
 
+        // Alice sweeps and redeems all of her BondWrapper tokens.
         uint256[] memory maturityTimes = new uint256[](1);
-
-        // baseToken.mint(address(bondWrapper), type(uint256).max);
-
         maturityTimes[0] = 365 days;
-
-        bondWrapper.sweepAndRedeem(maturityTimes, balance, new bytes(0));
-
+        bondWrapper.sweepAndRedeem(maturityTimes, balance, new bytes[](1));
         balance = bondWrapper.balanceOf(bob);
+        assertEq(balance, 0);
+    }
 
-        assert(balance == 0);
+    function test_sweepAndRedeem_inputLengthMismatch() external {
+        vm.startPrank(alice);
+
+        // maturityTimes.length > extraDatas.length
+        uint256[] memory maturityTimes = new uint256[](2);
+        bytes[] memory extraDatas = new bytes[](1);
+        vm.expectRevert(IHyperdrive.InputLengthMismatch.selector);
+        bondWrapper.sweepAndRedeem(maturityTimes, 10e18, extraDatas);
+
+        // maturityTimes.length < extraDatas.length
+        maturityTimes = new uint256[](1);
+        extraDatas = new bytes[](2);
+        vm.expectRevert(IHyperdrive.InputLengthMismatch.selector);
+        bondWrapper.sweepAndRedeem(maturityTimes, 10e18, extraDatas);
     }
 }

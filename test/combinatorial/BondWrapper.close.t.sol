@@ -23,7 +23,8 @@ contract __MockHyperDrive__ {
         uint256 indexed _bondAmount,
         uint256 indexed _minOutput,
         address _destination,
-        bool _asUnderlying
+        bool _asUnderlying,
+        bytes _extraData
     );
 
     function closeLong(
@@ -31,14 +32,16 @@ contract __MockHyperDrive__ {
         uint256 _bondAmount,
         uint256 _minOutput,
         address _destination,
-        bool _asUnderlying
+        bool _asUnderlying,
+        bytes memory _extraData
     ) external returns (uint256) {
         emit __CloseLong__(
             _maturityTime,
             _bondAmount,
             _minOutput,
             _destination,
-            _asUnderlying
+            _asUnderlying,
+            _extraData
         );
         return __closeLongReturnValue__;
     }
@@ -267,7 +270,8 @@ contract BondWrapper_close is CombinatorialTest {
         uint256 indexed _bondAmount,
         uint256 indexed _minOutput,
         address _destination,
-        bool _asUnderlying
+        bool _asUnderlying,
+        bytes _extraData
     );
 
     event Transfer(address indexed from, address indexed to, uint256 value);
@@ -286,7 +290,8 @@ contract BondWrapper_close is CombinatorialTest {
                 testCase.amount,
                 0,
                 address(bondWrapper),
-                true
+                true,
+                new bytes(0)
             );
         } else {
             emit __CloseLong__(
@@ -294,7 +299,8 @@ contract BondWrapper_close is CombinatorialTest {
                 1,
                 1,
                 address(bondWrapper),
-                true
+                true,
+                new bytes(0)
             );
         }
 

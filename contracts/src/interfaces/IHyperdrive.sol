@@ -276,6 +276,7 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
     error BondMatured();
     error BondNotMatured();
     error InsufficientPrice();
+    error InputLengthMismatch();
     error MintPercentTooHigh();
 
     /// ###############

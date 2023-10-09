@@ -195,14 +195,19 @@ contract BondWrapper is ERC20 {
     /// @notice Calls both force close and redeem to enable easy liquidation of a user account
     /// @param  maturityTimes Maturity times which the caller would like to sweep before redeeming
     /// @param amount The amount of erc20 wrapper to burn.
+    /// @param extraDatas Extra data to pass to the yield source.
     function sweepAndRedeem(
         uint256[] calldata maturityTimes,
         uint256 amount,
-        bytes memory extraData
+        bytes[] memory extraDatas
     ) external {
-        // Cycle through each maturity and sweep
+        if (maturityTimes.length != extraDatas.length) {
+            revert IHyperdrive.InputLengthMismatch();
+        }
+
+        // Cycle through each maturity and sweep.
         for (uint256 i = 0; i < maturityTimes.length; ) {
-            sweep(maturityTimes[i], extraData);
+            sweep(maturityTimes[i], extraDatas[i]);
             unchecked {
                 ++i;
             }
