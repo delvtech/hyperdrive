@@ -524,10 +524,11 @@ contract PresentValueTest is HyperdriveTest {
         }
     }
 
-    // TODO: It would be better to bound all of the intermediate present values
-    // to the starting present value instead of bounding to the previous present
-    // value.
     function test_present_value(bytes32 __seed) external {
+        // TODO: It would be better to bound all of the intermediate present values
+        // to the starting present value instead of bounding to the previous present
+        // value.
+        //
         // TODO: This tolerance is WAY too large.
         uint256 tolerance = 1_000_000e18;
 
@@ -745,9 +746,6 @@ contract PresentValueTest is HyperdriveTest {
             info1 = hyperdrive.getPoolInfo();
         }
 
-        // TODO: What are the implications on the present value of this path
-        // dependence?
-        //
         // Ensure that the ending YieldSpace coordinates are approximately
         // equal. The ending share reserves and share adjustment may not match
         // because the negative interest component of the share adjustment is

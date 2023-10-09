@@ -452,10 +452,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
         );
     }
 
-    // FIXME: We should calculate the share adjustment here. There is a
-    // component of the share adjustment needed for negative interest on the
-    // curve and another for flat updates.
-    //
     /// @dev Calculate the pool reserve and trader deltas that result from
     ///      closing a long. This calculation includes trading fees.
     /// @param _bondAmount The amount of bonds being purchased to close the short.
