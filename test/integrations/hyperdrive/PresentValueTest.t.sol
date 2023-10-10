@@ -653,7 +653,7 @@ contract PresentValueTest is HyperdriveTest {
                 POSITION_DURATION.mulDown(0.99e18)
             );
             int256 variableRate = int256(uint256(seed())).normalizeToRange(
-                0,
+                -0.5e18,
                 1e18
             );
             advanceTime(timeDelta, variableRate);
