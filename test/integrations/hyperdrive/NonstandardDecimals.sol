@@ -10,8 +10,6 @@ import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import { Lib } from "../../utils/Lib.sol";
 
-import "forge-std/console2.sol";
-
 contract NonstandardDecimalsTest is HyperdriveTest {
     using FixedPointMath for int256;
     using FixedPointMath for uint256;
@@ -303,7 +301,6 @@ contract NonstandardDecimalsTest is HyperdriveTest {
             HyperdriveUtils.calculateMaxLong(hyperdrive) -
                 minimumTransactionAmount
         );
-        console2.log("longBasePaid", longBasePaid.toString(6));
         testParams.longBasePaid = longBasePaid;
         {
             (uint256 longMaturityTime, uint256 longAmount) = openLong(
@@ -320,7 +317,6 @@ contract NonstandardDecimalsTest is HyperdriveTest {
             HyperdriveUtils.calculateMaxShort(hyperdrive) -
                 minimumTransactionAmount
         );
-        console2.log("shortAmount", shortAmount.toString(6));
         testParams.shortAmount = shortAmount;
         {
             (uint256 shortMaturityTime, uint256 shortBasePaid) = openShort(
@@ -330,7 +326,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
             testParams.shortMaturityTime = shortMaturityTime;
             testParams.shortBasePaid = shortBasePaid;
         }
-        console2.log("after openShort", shortAmount.toString(6));
+
         // Alice removes her liquidity.
         uint256 estimatedBaseProceeds = calculateBaseLpProceeds(aliceLpShares);
         (
