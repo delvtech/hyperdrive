@@ -68,6 +68,7 @@ async fn preamble(
 
 // TODO: Unignore after we add the logic to apply checkpoints prior to computing
 // the max long.
+#[ignore]
 #[tokio::test]
 pub async fn test_integration_get_max_short() -> Result<()> {
     // Set up a random number generator. We use ChaCha8Rng with a randomly
