@@ -302,7 +302,13 @@ mod tests {
             .send()
             .await?;
         hyperdrive
-            .initialize(contribution, uint256!(0.05e18), client.address(), true)
+            .initialize(
+                contribution,
+                uint256!(0.05e18),
+                client.address(),
+                true,
+                [].into(),
+            )
             .send()
             .await?;
 
