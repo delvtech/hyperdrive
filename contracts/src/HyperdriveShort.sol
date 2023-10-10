@@ -67,12 +67,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
         maturityTime = latestCheckpoint + _positionDuration;
         uint256 shareReservesDelta;
         {
-            // FIXME: After thinking about this a bit, I think that negative
-            // interest makes it possible to open shorts for free. We should
-            // test this edge case as it will cause issues.
-            //
-            // TODO: What happens to the short deposit if the open share price
-            // is greater than the current share price?
             uint256 totalGovernanceFee;
             (
                 traderDeposit,
@@ -436,7 +430,10 @@ abstract contract HyperdriveShort is HyperdriveLP {
 
         // The trader will need to deposit capital to pay for the fixed rate,
         // the curve fee, the flat fee, and any back-paid interest that will be
-        // received back upon closing the trade.
+        // received back upon closing the trade. If negative interest has
+        // accrued during the current checkpoint, we set close share price to
+        // equal the open share price. This ensures that shorts don't benefit
+        // from negative interest that accrued during the current checkpoint.
         traderDeposit = HyperdriveMath
             .calculateShortProceeds(
                 _bondAmount,
@@ -445,7 +442,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
                 // their deposit.
                 shareReservesDelta - totalGovernanceFee,
                 _openSharePrice,
-                _sharePrice,
+                _sharePrice.max(_openSharePrice),
                 _sharePrice,
                 _flatFee
             )

@@ -159,29 +159,6 @@ contract OpenShortTest is HyperdriveTest {
         );
     }
 
-    function test_RevertsWithNegativeInterestRate() public {
-        uint256 apr = 0.05e18;
-
-        // Initialize the pool with a large amount of capital.
-        uint256 contribution = 500_000_000e18;
-        initialize(alice, apr, contribution);
-
-        vm.stopPrank();
-        vm.startPrank(bob);
-
-        uint256 bondAmount = (hyperdrive.calculateMaxShort() * 90) / 100;
-        openShort(bob, bondAmount);
-
-        uint256 longAmount = (hyperdrive.calculateMaxLong() * 50) / 100;
-        openLong(bob, longAmount);
-
-        //vm.expectRevert(IHyperdrive.NegativeInterest.selector);
-
-        uint256 baseAmount = (hyperdrive.calculateMaxShort() * 100) / 100;
-        openShort(bob, baseAmount);
-        //I think we could trigger this with big short, open long, and short?
-    }
-
     function test_governance_fees_excluded_share_reserves() public {
         uint256 apr = 0.05e18;
         uint256 contribution = 500_000_000e18;
@@ -287,6 +264,47 @@ contract OpenShortTest is HyperdriveTest {
         // The governance fee shouldn't affect the short's deposit, so the base
         // paid should be the same in both cases.
         assertEq(basePaid, basePaid2);
+    }
+
+    function test_open_short_after_negative_interest(
+        int256 variableRate
+    ) external {
+        // Alice initializes the pool.
+        uint256 fixedRate = 0.05e18;
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, fixedRate, contribution);
+
+        // Get the deposit amount for a short opened with no negative interest.
+        uint256 expectedBasePaid;
+        uint256 snapshotId = vm.snapshot();
+        uint256 shortAmount = 100_000e18;
+        {
+            hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
+            advanceTime(
+                hyperdrive.getPoolConfig().checkpointDuration.mulDown(0.5e18),
+                0
+            );
+            (, expectedBasePaid) = openShort(bob, shortAmount);
+        }
+        vm.revertTo(snapshotId);
+
+        // Get the deposit amount for a short opened with negative interest.
+        variableRate = variableRate.normalizeToRange(-100e18, 0);
+        uint256 basePaid;
+        {
+            hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
+            advanceTime(
+                hyperdrive.getPoolConfig().checkpointDuration.mulDown(0.5e18),
+                variableRate
+            );
+            (, basePaid) = openShort(bob, shortAmount);
+        }
+
+        // The base paid should be greater than or equal (with a fudge factor)
+        // to the base paid with no negative interest. In theory, we'd like the
+        // deposits to be equal, but the trading calculation changes slightly
+        // with negative interest due to rounding.
+        assertGe(basePaid + 1e9, expectedBasePaid);
     }
 
     function verifyOpenShort(

@@ -335,11 +335,6 @@ library HyperdriveMath {
         //                        shareCurveDelta
         int256 shareAdjustmentDelta;
         if (_closeSharePrice < _openSharePrice) {
-            // TODO: There is still an issue in `openShort` caused by the way
-            // that we account for negative interest in the short deposit. The
-            // fix for the issue may include for negative interest here instead
-            // of in `calculateShortProceeds`.
-            //
             // We only need to scale the proceeds in the case that we're closing
             // a long since `calculateShortProceeds` accounts for negative
             // interest.
