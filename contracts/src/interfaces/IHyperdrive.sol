@@ -123,6 +123,8 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
     struct PoolConfig {
         /// @dev The address of the base token.
         IERC20 baseToken;
+        /// @dev The number of decimals in the base token.
+        uint8 tokenDecimals;
         /// @dev The initial share price.
         uint256 initialSharePrice;
         /// @dev The minimum share reserves.

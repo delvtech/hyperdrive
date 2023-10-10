@@ -49,6 +49,7 @@ contract HyperdriveTest is BaseTest {
         uint256 apr = 0.05e18;
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: IERC20(address(baseToken)),
+            tokenDecimals: IERC20(address(baseToken)).decimals(),
             initialSharePrice: INITIAL_SHARE_PRICE,
             minimumShareReserves: MINIMUM_SHARE_RESERVES,
             minimumTransactionAmount: MINIMUM_TRANSACTION_AMOUNT,
@@ -122,6 +123,7 @@ contract HyperdriveTest is BaseTest {
         });
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: IERC20(address(baseToken)),
+            tokenDecimals: IERC20(address(baseToken)).decimals(),
             initialSharePrice: initialSharePrice,
             minimumShareReserves: MINIMUM_SHARE_RESERVES,
             minimumTransactionAmount: MINIMUM_TRANSACTION_AMOUNT,
@@ -145,9 +147,14 @@ contract HyperdriveTest is BaseTest {
             flat: 0,
             governance: 0
         });
+        uint8 tokenDecimals = 18;
+        if (address(baseToken) != address(ETH)) {
+            tokenDecimals = IERC20(address(baseToken)).decimals();
+        }
         return
             IHyperdrive.PoolConfig({
                 baseToken: IERC20(address(baseToken)),
+                tokenDecimals: tokenDecimals,
                 initialSharePrice: FixedPointMath.ONE_18,
                 minimumShareReserves: MINIMUM_SHARE_RESERVES,
                 minimumTransactionAmount: MINIMUM_TRANSACTION_AMOUNT,

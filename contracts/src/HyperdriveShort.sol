@@ -45,6 +45,12 @@ abstract contract HyperdriveShort is HyperdriveLP {
         isNotPaused
         returns (uint256 maturityTime, uint256 traderDeposit)
     {
+        _bondAmount = HyperdriveMath.normalizeDecimals(
+            _bondAmount,
+            _tokenDecimals,
+            18
+        );
+
         // Check that the message value and base amount are valid.
         _checkMessageValue();
         if (_bondAmount < _minimumTransactionAmount) {
@@ -93,6 +99,17 @@ abstract contract HyperdriveShort is HyperdriveLP {
             maturityTime
         );
 
+        traderDeposit = HyperdriveMath.normalizeDecimals(
+            traderDeposit,
+            18,
+            _tokenDecimals
+        );
+        _bondAmount = HyperdriveMath.normalizeDecimals(
+            _bondAmount,
+            18,
+            _tokenDecimals
+        );
+
         // Mint the short tokens to the trader. The ID is a concatenation of the
         // current share price and the maturity time of the shorts.
         uint256 assetId = AssetId.encodeAssetId(
@@ -130,6 +147,12 @@ abstract contract HyperdriveShort is HyperdriveLP {
         address _destination,
         bool _asUnderlying
     ) external nonReentrant returns (uint256) {
+        _bondAmount = HyperdriveMath.normalizeDecimals(
+            _bondAmount,
+            _tokenDecimals,
+            18
+        );
+
         if (_bondAmount < _minimumTransactionAmount) {
             revert IHyperdrive.MinimumTransactionAmount();
         }
@@ -211,6 +234,17 @@ abstract contract HyperdriveShort is HyperdriveLP {
             // Distribute the excess idle to the withdrawal pool.
             _distributeExcessIdle(sharePrice);
         }
+
+        shareProceeds = HyperdriveMath.normalizeDecimals(
+            shareProceeds,
+            18,
+            _tokenDecimals
+        );
+        _bondAmount = HyperdriveMath.normalizeDecimals(
+            _bondAmount,
+            18,
+            _tokenDecimals
+        );
 
         // Withdraw the profit to the trader. This includes the proceeds from
         // the short sale as well as the variable interest that was collected

@@ -45,6 +45,12 @@ abstract contract HyperdriveLong is HyperdriveLP {
         isNotPaused
         returns (uint256 maturityTime, uint256 bondProceeds)
     {
+        _baseAmount = HyperdriveMath.normalizeDecimals(
+            _baseAmount,
+            _tokenDecimals,
+            18
+        );
+
         // Check that the message value and base amount are valid.
         _checkMessageValue();
         if (_baseAmount < _minimumTransactionAmount) {
@@ -106,6 +112,17 @@ abstract contract HyperdriveLong is HyperdriveLP {
             maturityTime
         );
 
+        uint256 baseAmount = HyperdriveMath.normalizeDecimals(
+            _baseAmount,
+            18,
+            _tokenDecimals
+        );
+        bondProceeds = HyperdriveMath.normalizeDecimals(
+            bondProceeds,
+            18,
+            _tokenDecimals
+        );
+
         // Mint the bonds to the trader with an ID of the maturity time.
         uint256 assetId = AssetId.encodeAssetId(
             AssetId.AssetIdPrefix.Long,
@@ -114,7 +131,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
         _mint(assetId, _destination, bondProceeds);
 
         // Emit an OpenLong event.
-        uint256 baseAmount = _baseAmount; // Avoid stack too deep error.
         emit OpenLong(
             _destination,
             assetId,
@@ -142,6 +158,13 @@ abstract contract HyperdriveLong is HyperdriveLP {
         address _destination,
         bool _asUnderlying
     ) external nonReentrant returns (uint256) {
+        // convert input amount to 18 decimals
+        _bondAmount = HyperdriveMath.normalizeDecimals(
+            _bondAmount,
+            _tokenDecimals,
+            18
+        );
+
         if (_bondAmount < _minimumTransactionAmount) {
             revert IHyperdrive.MinimumTransactionAmount();
         }
@@ -206,6 +229,17 @@ abstract contract HyperdriveLong is HyperdriveLP {
             // Distribute the excess idle to the withdrawal pool.
             _distributeExcessIdle(sharePrice);
         }
+
+        shareProceeds = HyperdriveMath.normalizeDecimals(
+            shareProceeds,
+            18,
+            _tokenDecimals
+        );
+        _bondAmount = HyperdriveMath.normalizeDecimals(
+            _bondAmount,
+            18,
+            _tokenDecimals
+        );
 
         // Withdraw the profit to the trader.
         uint256 baseProceeds = _withdraw(

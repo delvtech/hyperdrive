@@ -640,7 +640,7 @@ contract LpWithdrawalTest is HyperdriveTest {
         snapshotId = vm.snapshot();
         {
             uint256 longBasePaid = 47622440666488;
-            uint256 shortAmount = 99991360285271; 
+            uint256 shortAmount = 99991360285271;
             int256 variableRate = 25629;
             _test_lp_withdrawal_long_short_redemption(
                 longBasePaid,
