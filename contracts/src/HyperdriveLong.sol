@@ -243,7 +243,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
             baseProceeds,
             HyperdriveMath.normalizeDecimals(bondAmount, 18, _tokenDecimals)
         );
-        
+
         return (baseProceeds);
     }
 
