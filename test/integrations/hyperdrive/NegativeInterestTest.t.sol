@@ -43,19 +43,43 @@ contract NegativeInterestTest is HyperdriveTest {
         );
 
         // Alice removes her LP.
+        console.log(
+            "before removeLiquidity: lpSharePrice = %s",
+            hyperdrive.lpSharePrice().toString(18)
+        );
         (
             uint256 aliceBaseProceeds,
             uint256 aliceWithdrawalShares
         ) = removeLiquidity(alice, aliceLpShares);
+        console.log(
+            "after removeLiquidity: lpSharePrice = %s",
+            hyperdrive.lpSharePrice().toString(18)
+        );
 
         // Bob closes his long.
+        console.log(
+            "before closeLong: lpSharePrice = %s",
+            hyperdrive.lpSharePrice().toString(18)
+        );
         closeLong(bob, maturityTime, longAmount);
+        console.log(
+            "after closeLong: lpSharePrice = %s",
+            hyperdrive.lpSharePrice().toString(18)
+        );
 
         // Celine removes her LP.
+        console.log(
+            "before removeLiquidity: lpSharePrice = %s",
+            hyperdrive.lpSharePrice().toString(18)
+        );
         (
             uint256 celineBaseProceeds,
             uint256 celineWithdrawalShares
         ) = removeLiquidity(celine, celineLpShares);
+        console.log(
+            "after removeLiquidity: lpSharePrice = %s",
+            hyperdrive.lpSharePrice().toString(18)
+        );
 
         // Alice and Celine redeem their withdrawal shares.
         {
@@ -110,9 +134,18 @@ contract NegativeInterestTest is HyperdriveTest {
             uint256 aliceBaseProceeds,
             uint256 aliceWithdrawalShares
         ) = removeLiquidity(alice, aliceLpShares);
+        console.log("aliceBaseProceeds = %s", aliceBaseProceeds.toString(18));
 
         // Bob closes his short.
+        console.log(
+            "before closeShort: lpSharePrice = %s",
+            hyperdrive.lpSharePrice().toString(18)
+        );
         closeShort(bob, maturityTime, shortAmount);
+        console.log(
+            "after closeShort: lpSharePrice = %s",
+            hyperdrive.lpSharePrice().toString(18)
+        );
 
         // Celine removes her LP.
         (
@@ -710,22 +743,54 @@ contract NegativeInterestTest is HyperdriveTest {
         );
 
         // Alice removes her LP.
+        console.log(
+            "before removeLiquidity: lpSharePrice = %s",
+            hyperdrive.lpSharePrice().toString(18)
+        );
         (
             testCase.aliceBaseProceeds,
             testCase.aliceWithdrawalShares
         ) = removeLiquidity(alice, testCase.aliceLpShares);
+        console.log(
+            "after removeLiquidity: lpSharePrice = %s",
+            hyperdrive.lpSharePrice().toString(18)
+        );
 
         // Bob closes his second short.
+        console.log(
+            "before closeShort: lpSharePrice = %s",
+            hyperdrive.lpSharePrice().toString(18)
+        );
         closeShort(bob, testCase.maturityTime1, testCase.tradeAmount1);
+        console.log(
+            "after closeShort: lpSharePrice = %s",
+            hyperdrive.lpSharePrice().toString(18)
+        );
 
         // Bob closes his first short.
+        console.log(
+            "before closeShort: lpSharePrice = %s",
+            hyperdrive.lpSharePrice().toString(18)
+        );
         closeShort(bob, testCase.maturityTime0, testCase.tradeAmount0);
+        console.log(
+            "after closeShort: lpSharePrice = %s",
+            hyperdrive.lpSharePrice().toString(18)
+        );
 
         // Celine removes her LP.
+        console.log(
+            "before removeLiquidity: lpSharePrice = %s",
+            hyperdrive.lpSharePrice().toString(18)
+        );
         (
             testCase.celineBaseProceeds,
             testCase.celineWithdrawalShares
         ) = removeLiquidity(celine, testCase.celineLpShares);
+        console.log(
+            "after removeLiquidity: lpSharePrice = %s",
+            hyperdrive.lpSharePrice().toString(18)
+        );
 
         // Alice and Celine redeem their withdrawal shares.
         {
@@ -908,22 +973,54 @@ contract NegativeInterestTest is HyperdriveTest {
         );
 
         // Alice removes her LP.
+        console.log(
+            "before removeLiquidity: lpSharePrice = %s",
+            hyperdrive.lpSharePrice().toString(18)
+        );
         (
             testCase.aliceBaseProceeds,
             testCase.aliceWithdrawalShares
         ) = removeLiquidity(alice, testCase.aliceLpShares);
+        console.log(
+            "after removeLiquidity: lpSharePrice = %s",
+            hyperdrive.lpSharePrice().toString(18)
+        );
 
         // Bob closes his long.
+        console.log(
+            "before closeLong: lpSharePrice = %s",
+            hyperdrive.lpSharePrice().toString(18)
+        );
         closeLong(bob, testCase.maturityTime1, testCase.tradeAmount1);
+        console.log(
+            "after closeLong: lpSharePrice = %s",
+            hyperdrive.lpSharePrice().toString(18)
+        );
 
         // Bob closes his short.
+        console.log(
+            "before closeShort: lpSharePrice = %s",
+            hyperdrive.lpSharePrice().toString(18)
+        );
         closeShort(bob, testCase.maturityTime0, testCase.tradeAmount0);
+        console.log(
+            "after closeShort: lpSharePrice = %s",
+            hyperdrive.lpSharePrice().toString(18)
+        );
 
         // Celine removes her LP.
+        console.log(
+            "before removeLiquidity: lpSharePrice = %s",
+            hyperdrive.lpSharePrice().toString(18)
+        );
         (
             testCase.celineBaseProceeds,
             testCase.celineWithdrawalShares
         ) = removeLiquidity(celine, testCase.celineLpShares);
+        console.log(
+            "after removeLiquidity: lpSharePrice = %s",
+            hyperdrive.lpSharePrice().toString(18)
+        );
 
         // Alice and Celine redeem their withdrawal shares.
         {
