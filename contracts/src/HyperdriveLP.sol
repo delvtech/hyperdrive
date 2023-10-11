@@ -49,6 +49,9 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             _asUnderlying
         );
 
+        // convert to 18 decimals
+        shares = HyperdriveMath.normalizeDecimals(shares, _tokenDecimals, 18);
+
         // Ensure that the contribution is large enough to set aside the minimum
         // share reserves permanently. After initialization, none of the LPs
         // will have a claim on the minimum share reserves, and longs and shorts
@@ -138,6 +141,9 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             _contribution,
             _asUnderlying
         );
+
+        // convert to 18 decimals
+        shares = HyperdriveMath.normalizeDecimals(shares, _tokenDecimals, 18);
 
         // Perform a checkpoint.
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
@@ -261,7 +267,11 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         );
 
         // Withdraw the shares from the yield source.
-        baseProceeds = _withdraw(shareProceeds, _destination, _asUnderlying);
+        baseProceeds = _withdraw(
+            HyperdriveMath.normalizeDecimals(shareProceeds, 18, _tokenDecimals),
+            _destination,
+            _asUnderlying
+        );
 
         // Enforce min user outputs
         if (_minOutput > baseProceeds) revert IHyperdrive.OutputLimit();
@@ -336,7 +346,11 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
         _withdrawPool.proceeds -= shareProceeds.toUint128();
 
         // Withdraw for the user
-        baseProceeds = _withdraw(shareProceeds, _destination, _asUnderlying);
+        baseProceeds = _withdraw(
+            HyperdriveMath.normalizeDecimals(shareProceeds, 18, _tokenDecimals),
+            _destination,
+            _asUnderlying
+        );
 
         // Enforce the minimum user output per share.
         if (_minOutputPerShare.mulDown(sharesRedeemed) > baseProceeds)

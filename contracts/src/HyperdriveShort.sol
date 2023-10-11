@@ -45,12 +45,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
         isNotPaused
         returns (uint256 maturityTime, uint256 traderDeposit)
     {
-        _bondAmount = HyperdriveMath.normalizeDecimals(
-            _bondAmount,
-            _tokenDecimals,
-            18
-        );
-
         // Check that the message value and base amount are valid.
         _checkMessageValue();
         if (_bondAmount < _minimumTransactionAmount) {
@@ -71,6 +65,14 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // Calculate the pool and user deltas using the trading function. We
         // backdate the bonds sold to the beginning of the checkpoint.
         maturityTime = latestCheckpoint + _positionDuration;
+
+        // convert input amount to 18 decimals
+        _bondAmount = HyperdriveMath.normalizeDecimals(
+            _bondAmount,
+            _tokenDecimals,
+            18
+        );
+
         uint256 shareReservesDelta;
         {
             uint256 totalGovernanceFee;
@@ -83,6 +85,13 @@ abstract contract HyperdriveShort is HyperdriveLP {
             // Attribute the governance fees.
             _governanceFeesAccrued += totalGovernanceFee;
         }
+
+        // convert to token decimals
+        traderDeposit = HyperdriveMath.normalizeDecimals(
+            traderDeposit,
+            18,
+            _tokenDecimals
+        );
 
         // Take custody of the trader's deposit and ensure that the trader
         // doesn't pay more than their max deposit. The trader's deposit is
@@ -99,12 +108,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
             maturityTime
         );
 
-        traderDeposit = HyperdriveMath.normalizeDecimals(
-            traderDeposit,
-            18,
-            _tokenDecimals
-        );
-        _bondAmount = HyperdriveMath.normalizeDecimals(
+        // convert to token decimals
+        uint256 bondAmount = HyperdriveMath.normalizeDecimals(
             _bondAmount,
             18,
             _tokenDecimals
@@ -116,10 +121,9 @@ abstract contract HyperdriveShort is HyperdriveLP {
             AssetId.AssetIdPrefix.Short,
             maturityTime
         );
-        _mint(assetId, _destination, _bondAmount);
+        _mint(assetId, _destination, bondAmount);
 
         // Emit an OpenShort event.
-        uint256 bondAmount = _bondAmount; // Avoid stack too deep error.
         emit OpenShort(
             _destination,
             assetId,
@@ -147,12 +151,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
         address _destination,
         bool _asUnderlying
     ) external nonReentrant returns (uint256) {
-        _bondAmount = HyperdriveMath.normalizeDecimals(
-            _bondAmount,
-            _tokenDecimals,
-            18
-        );
-
         if (_bondAmount < _minimumTransactionAmount) {
             revert IHyperdrive.MinimumTransactionAmount();
         }
@@ -166,6 +164,13 @@ abstract contract HyperdriveShort is HyperdriveLP {
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _maturityTime),
             msg.sender,
             _bondAmount
+        );
+
+        // convert input amount to 18 decimals
+        _bondAmount = HyperdriveMath.normalizeDecimals(
+            _bondAmount,
+            _tokenDecimals,
+            18
         );
 
         // Calculate the changes to the reserves and the traders proceeds up
@@ -235,6 +240,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             _distributeExcessIdle(sharePrice);
         }
 
+        // convert to token decimals
         shareProceeds = HyperdriveMath.normalizeDecimals(
             shareProceeds,
             18,

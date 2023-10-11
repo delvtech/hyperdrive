@@ -8,6 +8,7 @@ import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { MockHyperdrive } from "../../mocks/MockHyperdrive.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
+import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { Lib } from "../../utils/Lib.sol";
 
 contract NonstandardDecimalsTest is HyperdriveTest {
@@ -22,8 +23,8 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         // Deploy the pool with a small minimum share reserves since we're
         // using nonstandard decimals in this suite.
         IHyperdrive.PoolConfig memory config = testConfig(0.05e18);
-        config.minimumShareReserves = 1e6;
-        config.minimumTransactionAmount = 0.1e6;
+        config.tokenDecimals = 6;
+        config.minimumTransactionAmount = 0.001e6;
         deploy(deployer, config);
     }
 
@@ -47,10 +48,12 @@ contract NonstandardDecimalsTest is HyperdriveTest {
     ) external {
         // Normalize the fuzzed variables.
         initialize(alice, 0.02e18, 500_000_000e6);
-        basePaid = basePaid.normalizeToRange(
-            0.1e6,
-            HyperdriveUtils.calculateMaxLong(hyperdrive)
+        uint256 maxLong = HyperdriveMath.normalizeDecimals(
+            HyperdriveUtils.calculateMaxLong(hyperdrive),
+            18,
+            6
         );
+        basePaid = basePaid.normalizeToRange(0.001e6, maxLong);
         holdTime = holdTime.normalizeToRange(0, POSITION_DURATION);
         variableRate = variableRate.normalizeToRange(0, 2e18);
 
@@ -59,8 +62,8 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         {
             // Deploy and initialize the pool.
             IHyperdrive.PoolConfig memory config = testConfig(0.02e18);
-            config.minimumShareReserves = 1e6;
-            config.minimumTransactionAmount = 0.1e6;
+            config.tokenDecimals = 6;
+            config.minimumTransactionAmount = 0.001e6;
             deploy(deployer, config);
             initialize(alice, 0.02e18, 500_000_000e6);
 
@@ -80,8 +83,8 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         {
             // Deploy and initialize the pool.
             IHyperdrive.PoolConfig memory config = testConfig(0.02e18);
-            config.minimumShareReserves = 1e6;
-            config.minimumTransactionAmount = 0.1e6;
+            config.tokenDecimals = 6;
+            config.minimumTransactionAmount = 0.001e6;
             deploy(deployer, config);
             initialize(alice, 0.02e18, 500_000_000e6);
 
@@ -114,8 +117,8 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         {
             // Deploy and initialize the pool.
             IHyperdrive.PoolConfig memory config = testConfig(0.02e18);
-            config.minimumShareReserves = 1e6;
-            config.minimumTransactionAmount = 0.1e6;
+            config.tokenDecimals = 6;
+            config.minimumTransactionAmount = 0.001e6;
             deploy(deployer, config);
             initialize(alice, 0.02e18, 500_000_000e6);
 
@@ -141,10 +144,12 @@ contract NonstandardDecimalsTest is HyperdriveTest {
     ) external {
         // Normalize the fuzzed variables.
         initialize(alice, 0.02e18, 500_000_000e6);
-        shortAmount = shortAmount.normalizeToRange(
-            0.1e6,
-            HyperdriveUtils.calculateMaxShort(hyperdrive).mulDown(0.9e18)
+        uint256 maxShort = HyperdriveMath.normalizeDecimals(
+            HyperdriveUtils.calculateMaxShort(hyperdrive).mulDown(0.9e18),
+            18,
+            6
         );
+        shortAmount = shortAmount.normalizeToRange(0.1e6, maxShort);
         holdTime = holdTime.normalizeToRange(0, POSITION_DURATION);
         variableRate = variableRate.normalizeToRange(0, 2e18);
 
@@ -153,8 +158,8 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         {
             // Deploy and initialize the pool.
             IHyperdrive.PoolConfig memory config = testConfig(0.02e18);
-            config.minimumShareReserves = 1e6;
-            config.minimumTransactionAmount = 0.1e6;
+            config.tokenDecimals = 6;
+            config.minimumTransactionAmount = 0.001e6;
             deploy(deployer, config);
             initialize(alice, 0.02e18, 500_000_000e6);
 
@@ -175,8 +180,8 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         {
             // Deploy and initialize the pool.
             IHyperdrive.PoolConfig memory config = testConfig(0.02e18);
-            config.minimumShareReserves = 1e6;
-            config.minimumTransactionAmount = 0.1e6;
+            config.tokenDecimals = 6;
+            config.minimumTransactionAmount = 0.001e6;
             deploy(deployer, config);
             initialize(alice, 0.02e18, 500_000_000e6);
 
@@ -215,8 +220,8 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         {
             // Deploy and initialize the pool.
             IHyperdrive.PoolConfig memory config = testConfig(0.02e18);
-            config.minimumShareReserves = 1e6;
-            config.minimumTransactionAmount = 0.1e6;
+            config.tokenDecimals = 6;
+            config.minimumTransactionAmount = 0.001e6;
             deploy(deployer, config);
             initialize(alice, 0.02e18, 500_000_000e6);
 
@@ -258,9 +263,18 @@ contract NonstandardDecimalsTest is HyperdriveTest {
     }
 
     function test_nonstandard_decimals_lp_edge_cases() external {
-        uint256 longBasePaid = 2141061247565828640207640148726033314; // 279_000_050.816564
-        uint256 shortAmount = 0; // 0.100000
-        _test_nonstandard_decimals_lp(longBasePaid, shortAmount);
+        uint256 snapshotId = vm.snapshot();
+        {
+            uint256 longBasePaid = 2141061247565828640207640148726033314; // 78_250_973.876962
+            uint256 shortAmount = 0; // 0.00100
+            _test_nonstandard_decimals_lp(longBasePaid, shortAmount);
+        }
+        vm.revertTo(snapshotId);
+        {
+            uint256 longBasePaid = 1; // 0.001001
+            uint256 shortAmount = 148459608630430972478345391529005226647846873482005235753473233; // 981_601_295.968357
+            _test_nonstandard_decimals_lp(longBasePaid, shortAmount);
+        }
     }
 
     // TODO: This test should be re-written to avoid such large tolerances.
@@ -296,13 +310,18 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         uint256 bobLpShares = addLiquidity(bob, testParams.contribution);
 
         // Bob opens a long.
-        longBasePaid = longBasePaid.normalizeToRange(
-            minimumTransactionAmount,
-            HyperdriveUtils.calculateMaxLong(hyperdrive) -
-                minimumTransactionAmount
-        );
-        testParams.longBasePaid = longBasePaid;
         {
+            uint256 maxLong = HyperdriveMath.normalizeDecimals(
+                HyperdriveUtils.calculateMaxLong(hyperdrive),
+                18,
+                6
+            );
+            longBasePaid = longBasePaid.normalizeToRange(
+                minimumTransactionAmount,
+                maxLong - minimumTransactionAmount
+            );
+            testParams.longBasePaid = longBasePaid;
+
             (uint256 longMaturityTime, uint256 longAmount) = openLong(
                 bob,
                 testParams.longBasePaid
@@ -312,13 +331,18 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         }
 
         // Bob opens a short.
-        shortAmount = shortAmount.normalizeToRange(
-            minimumTransactionAmount,
-            HyperdriveUtils.calculateMaxShort(hyperdrive) -
-                minimumTransactionAmount
-        );
-        testParams.shortAmount = shortAmount;
         {
+            uint256 maxShort = HyperdriveMath.normalizeDecimals(
+                HyperdriveUtils.calculateMaxShort(hyperdrive),
+                18,
+                6
+            );
+            shortAmount = shortAmount.normalizeToRange(
+                minimumTransactionAmount,
+                maxShort - minimumTransactionAmount
+            );
+            testParams.shortAmount = shortAmount;
+
             (uint256 shortMaturityTime, uint256 shortBasePaid) = openShort(
                 bob,
                 testParams.shortAmount
@@ -328,7 +352,11 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         }
 
         // Alice removes her liquidity.
-        uint256 estimatedBaseProceeds = calculateBaseLpProceeds(aliceLpShares);
+        uint256 estimatedBaseProceeds = HyperdriveMath.normalizeDecimals(
+            calculateBaseLpProceeds(aliceLpShares),
+            18,
+            6
+        );
         (
             uint256 aliceBaseProceeds,
             uint256 aliceWithdrawalShares
@@ -337,7 +365,6 @@ contract NonstandardDecimalsTest is HyperdriveTest {
             (int256(testParams.longAmount - testParams.longBasePaid) -
                 int256(testParams.shortBasePaid)).max(0)
         );
-
         assertEq(aliceBaseProceeds, estimatedBaseProceeds);
 
         // Celine adds liquidity.
@@ -353,7 +380,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
             );
         }
 
-        // Redeem Alice's withdrawal shares. Alice at least the margin released
+        // Redeem Alice's withdrawal shares. Alice gets at least the margin released
         // from Bob's long.
         (uint256 aliceRedeemProceeds, ) = redeemWithdrawalShares(
             alice,
@@ -385,11 +412,12 @@ contract NonstandardDecimalsTest is HyperdriveTest {
             hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID) -
                 hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw,
             0,
-            10e6
+            1 wei
         );
+
         // TODO: There is an edge case where the withdrawal pool doesn't receive
         // all of its portion of the available idle liquidity when a closed
         // position doesn't perform well.
-        // assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1);
+        //assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1);
     }
 }

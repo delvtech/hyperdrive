@@ -45,12 +45,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
         isNotPaused
         returns (uint256 maturityTime, uint256 bondProceeds)
     {
-        _baseAmount = HyperdriveMath.normalizeDecimals(
-            _baseAmount,
-            _tokenDecimals,
-            18
-        );
-
         // Check that the message value and base amount are valid.
         _checkMessageValue();
         if (_baseAmount < _minimumTransactionAmount) {
@@ -62,6 +56,9 @@ abstract contract HyperdriveLong is HyperdriveLP {
             _baseAmount,
             _asUnderlying
         );
+
+        // convert to 18 decimals
+        shares = HyperdriveMath.normalizeDecimals(shares, _tokenDecimals, 18);
         if (sharePrice < _minSharePrice) {
             revert IHyperdrive.MinimumSharePrice();
         }
@@ -112,11 +109,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
             maturityTime
         );
 
-        uint256 baseAmount = HyperdriveMath.normalizeDecimals(
-            _baseAmount,
-            18,
-            _tokenDecimals
-        );
+        // convert to token decimals
         bondProceeds = HyperdriveMath.normalizeDecimals(
             bondProceeds,
             18,
@@ -131,6 +124,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         _mint(assetId, _destination, bondProceeds);
 
         // Emit an OpenLong event.
+        uint256 baseAmount = _baseAmount;
         emit OpenLong(
             _destination,
             assetId,
@@ -138,7 +132,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
             baseAmount,
             bondProceeds
         );
-
         return (maturityTime, bondProceeds);
     }
 
@@ -158,13 +151,6 @@ abstract contract HyperdriveLong is HyperdriveLP {
         address _destination,
         bool _asUnderlying
     ) external nonReentrant returns (uint256) {
-        // convert input amount to 18 decimals
-        _bondAmount = HyperdriveMath.normalizeDecimals(
-            _bondAmount,
-            _tokenDecimals,
-            18
-        );
-
         if (_bondAmount < _minimumTransactionAmount) {
             revert IHyperdrive.MinimumTransactionAmount();
         }
@@ -180,6 +166,13 @@ abstract contract HyperdriveLong is HyperdriveLP {
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _maturityTime),
             msg.sender,
             _bondAmount
+        );
+
+        // convert input amount to 18 decimals
+        _bondAmount = HyperdriveMath.normalizeDecimals(
+            _bondAmount,
+            _tokenDecimals,
+            18
         );
 
         // Calculate the pool and user deltas using the trading function.
@@ -230,20 +223,9 @@ abstract contract HyperdriveLong is HyperdriveLP {
             _distributeExcessIdle(sharePrice);
         }
 
-        shareProceeds = HyperdriveMath.normalizeDecimals(
-            shareProceeds,
-            18,
-            _tokenDecimals
-        );
-        _bondAmount = HyperdriveMath.normalizeDecimals(
-            _bondAmount,
-            18,
-            _tokenDecimals
-        );
-
         // Withdraw the profit to the trader.
         uint256 baseProceeds = _withdraw(
-            shareProceeds,
+            HyperdriveMath.normalizeDecimals(shareProceeds, 18, _tokenDecimals),
             _destination,
             _asUnderlying
         );
@@ -258,9 +240,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
             maturityTime,
             baseProceeds,
-            bondAmount
+            HyperdriveMath.normalizeDecimals(bondAmount, 18, _tokenDecimals)
         );
-
         return (baseProceeds);
     }
 
@@ -281,6 +262,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         uint256 _maturityTime
     ) internal {
         uint128 longsOutstanding_ = _marketState.longsOutstanding;
+
         // Update the average maturity time of long positions.
         _marketState.longAverageMaturityTime = uint256(
             _marketState.longAverageMaturityTime
