@@ -124,7 +124,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         _mint(assetId, _destination, bondProceeds);
 
         // Emit an OpenLong event.
-        uint256 baseAmount = _baseAmount;
+        uint256 baseAmount = _baseAmount; // Avoid stack too deep error.
         emit OpenLong(
             _destination,
             assetId,

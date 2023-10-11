@@ -145,6 +145,7 @@ impl TestChain {
             },
             oracle_size: uint256!(10),
             update_gap: U256::from(60 * 60), // 1 hour,
+            token_decimals: 18,
         };
         let data_provider = ERC4626DataProvider::deploy(
             client.clone(),
