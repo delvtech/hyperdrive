@@ -270,11 +270,25 @@ contract NonstandardDecimalsTest is HyperdriveTest {
             _test_nonstandard_decimals_lp(longBasePaid, shortAmount);
         }
         vm.revertTo(snapshotId);
-        // {
-        //     uint256 longBasePaid = 1; // 0.001001
-        //     uint256 shortAmount = 148459608630430972478345391529005226647846873482005235753473233; // 981_601_295.968357
-        //     _test_nonstandard_decimals_lp(longBasePaid, shortAmount);
-        // }
+        snapshotId = vm.snapshot();
+        {
+            uint256 longBasePaid = 1; // 0.001001
+            uint256 shortAmount = 148459608630430972478345391529005226647846873482005235753473233; // 981_601_295.968357
+            _test_nonstandard_decimals_lp(longBasePaid, shortAmount);
+        }
+        vm.revertTo(snapshotId);
+        snapshotId = vm.snapshot();
+        {
+            uint256 longBasePaid = 24392; // 0.025392
+            uint256 shortAmount = 5578; // 0.006578
+            _test_nonstandard_decimals_lp(longBasePaid, shortAmount);
+        }
+        vm.revertTo(snapshotId);
+        {
+            uint256 longBasePaid = 27201;
+            uint256 shortAmount = 51735872838114005798240350212166451602148334066294109046196838703383171970103;
+            _test_nonstandard_decimals_lp(longBasePaid, shortAmount);
+        }
     }
 
     // TODO: This test should be re-written to avoid such large tolerances.
@@ -285,6 +299,8 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         uint256 minimumTransactionAmount = hyperdrive
             .getPoolConfig()
             .minimumTransactionAmount;
+
+        uint8 tokenDecimals = hyperdrive.getPoolConfig().tokenDecimals;
 
         // Set up the test parameters.
         TestLpWithdrawalParams memory testParams = TestLpWithdrawalParams({
@@ -314,14 +330,13 @@ contract NonstandardDecimalsTest is HyperdriveTest {
             uint256 maxLong = HyperdriveMath.normalizeDecimals(
                 HyperdriveUtils.calculateMaxLong(hyperdrive),
                 18,
-                6
+                tokenDecimals
             );
             longBasePaid = longBasePaid.normalizeToRange(
                 minimumTransactionAmount,
                 maxLong - minimumTransactionAmount
             );
             testParams.longBasePaid = longBasePaid;
-
             (uint256 longMaturityTime, uint256 longAmount) = openLong(
                 bob,
                 testParams.longBasePaid
@@ -335,14 +350,13 @@ contract NonstandardDecimalsTest is HyperdriveTest {
             uint256 maxShort = HyperdriveMath.normalizeDecimals(
                 HyperdriveUtils.calculateMaxShort(hyperdrive),
                 18,
-                6
+                tokenDecimals
             );
             shortAmount = shortAmount.normalizeToRange(
                 minimumTransactionAmount,
                 maxShort - minimumTransactionAmount
             );
             testParams.shortAmount = shortAmount;
-
             (uint256 shortMaturityTime, uint256 shortBasePaid) = openShort(
                 bob,
                 testParams.shortAmount
@@ -355,7 +369,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         uint256 estimatedBaseProceeds = HyperdriveMath.normalizeDecimals(
             calculateBaseLpProceeds(aliceLpShares),
             18,
-            6
+            tokenDecimals
         );
         (
             uint256 aliceBaseProceeds,
@@ -387,7 +401,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
             aliceWithdrawalShares
         );
         assertGe(
-            aliceRedeemProceeds + 1e2,
+            aliceRedeemProceeds,
             lpMargin.mulDivDown(aliceLpShares, aliceLpShares + bobLpShares)
         );
 
@@ -404,8 +418,18 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         ) = removeLiquidity(celine, celineLpShares);
         assertGe(bobBaseProceeds + 1e6, celineBaseProceeds);
         assertGe(bobBaseProceeds + 1e6, testParams.contribution);
-        assertApproxEqAbs(bobWithdrawalShares, 0, 1);
-        assertApproxEqAbs(celineWithdrawalShares, 0, 1);
+        uint256 _minimumTransactionAmount = minimumTransactionAmount;
+        uint8 _tokenDecimals = tokenDecimals;
+        assertApproxEqAbs(
+            bobWithdrawalShares,
+            0,
+            HyperdriveMath.normalizeDecimals(
+                _minimumTransactionAmount,
+                _tokenDecimals,
+                18
+            )
+        );
+        assertApproxEqAbs(celineWithdrawalShares, 0, 1e6);
 
         // Ensure that the ending base balance of Hyperdrive is zero.
         assertApproxEqAbs(

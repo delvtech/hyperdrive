@@ -1635,7 +1635,7 @@ library HyperdriveMath {
     }
 
     /// @dev Takes an 'amount' encoded with 'decimalsBefore' decimals and
-    ///      re encodes it with 'decimalsAfter' decimals
+    ///      re-encodes it with 'decimalsAfter' decimals
     /// @param amount The amount to normalize
     /// @param decimalsBefore The decimal encoding before
     /// @param decimalsAfter The decimal encoding after
