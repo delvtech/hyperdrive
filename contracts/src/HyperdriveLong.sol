@@ -263,9 +263,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
         uint256 _checkpointTime,
         uint256 _maturityTime
     ) internal {
-        uint128 longsOutstanding_ = _marketState.longsOutstanding;
-
         // Update the average maturity time of long positions.
+        uint128 longsOutstanding_ = _marketState.longsOutstanding;
         _marketState.longAverageMaturityTime = uint256(
             _marketState.longAverageMaturityTime
         )
