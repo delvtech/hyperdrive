@@ -5,6 +5,9 @@ import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { FixedPointMath, ONE } from "./FixedPointMath.sol";
 import { YieldSpaceMath } from "./YieldSpaceMath.sol";
 import { SafeCast } from "./SafeCast.sol";
+import { Lib } from "../../../test/utils/Lib.sol";
+
+import "forge-std/console2.sol";
 
 /// @author DELV
 /// @title Hyperdrive
@@ -16,6 +19,7 @@ library HyperdriveMath {
     using FixedPointMath for uint256;
     using FixedPointMath for int256;
     using SafeCast for uint256;
+    using Lib for *;
 
     /// @dev Calculates the spot price of bonds in terms of base.
     /// @param _effectiveShareReserves The pool's effective share reserves. The
@@ -1492,6 +1496,8 @@ library HyperdriveMath {
             );
             maxCurveTrade = maxCurveTrade.min(uint256(netCurveTrade)); // netCurveTrade is positive, so this is safe.
             if (maxCurveTrade > 0) {
+                uint256 shareReserves = _params.shareReserves;
+                console2.log("before shareReserves", shareReserves.toString(18));
                 _params.shareReserves += YieldSpaceMath
                     .calculateSharesInGivenBondsOut(
                         effectiveShareReserves,
@@ -1501,8 +1507,13 @@ library HyperdriveMath {
                         _params.sharePrice,
                         _params.initialSharePrice
                     );
+                console2.log("after shareReserves", _params.shareReserves.toString(18));
+                console2.log("delta shareReserves", (_params.shareReserves - shareReserves).toString(18));
+                console2.log("maxCurveTrade", maxCurveTrade.toString(18));
             }
             _params.shareReserves += uint256(netCurveTrade) - maxCurveTrade;
+            console2.log("uint256(netCurveTrade) - maxCurveTrade",(uint256(netCurveTrade) - maxCurveTrade).toString(18));
+            console2.log("ending shareReserves", _params.shareReserves.toString(18));
         }
 
         // Compute the net of the longs and shorts that will be traded flat and
