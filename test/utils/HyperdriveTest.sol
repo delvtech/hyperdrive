@@ -29,6 +29,10 @@ contract HyperdriveTest is BaseTest {
     uint256 internal constant INITIAL_SHARE_PRICE = FixedPointMath.ONE_18;
     uint256 internal constant MINIMUM_SHARE_RESERVES = FixedPointMath.ONE_18;
     uint256 internal constant MINIMUM_TRANSACTION_AMOUNT = 0.001e18;
+    // FIXME: Update this after more testing. What does this value need to be
+    // in practice? It would be good to add a revert in MockHyperdrive that will
+    // fail if this is triggered if a flag is set.
+    uint256 internal constant NEGATIVE_INTEREST_TOLERANCE = 1e9;
     uint256 internal constant CHECKPOINT_DURATION = 1 days;
     uint256 internal constant POSITION_DURATION = 365 days;
     uint256 internal constant ORACLE_SIZE = 5;
@@ -36,35 +40,15 @@ contract HyperdriveTest is BaseTest {
 
     function setUp() public virtual override {
         super.setUp();
-        vm.startPrank(alice);
 
-        // Instantiate the base token.
+        // Deploy the base token.
+        vm.startPrank(alice);
         baseToken = new ERC20Mintable();
-        IHyperdrive.Fees memory fees = IHyperdrive.Fees({
-            curve: 0,
-            flat: 0,
-            governance: 0
-        });
-        // Instantiate Hyperdrive.
+
+        // Deploy Hyperdrive and set a pauser.
         uint256 apr = 0.05e18;
-        IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
-            baseToken: IERC20(address(baseToken)),
-            initialSharePrice: INITIAL_SHARE_PRICE,
-            minimumShareReserves: MINIMUM_SHARE_RESERVES,
-            minimumTransactionAmount: MINIMUM_TRANSACTION_AMOUNT,
-            positionDuration: POSITION_DURATION,
-            checkpointDuration: CHECKPOINT_DURATION,
-            timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
-            governance: governance,
-            feeCollector: feeCollector,
-            fees: fees,
-            oracleSize: ORACLE_SIZE,
-            updateGap: UPDATE_GAP
-        });
-        address dataProvider = address(new MockHyperdriveDataProvider(config));
-        hyperdrive = IHyperdrive(
-            address(new MockHyperdrive(config, dataProvider))
-        );
+        IHyperdrive.PoolConfig memory config = testConfig(apr);
+        deploy(alice, config);
         vm.stopPrank();
         vm.startPrank(governance);
         hyperdrive.setPauser(pauser, true);
@@ -115,24 +99,12 @@ contract HyperdriveTest is BaseTest {
         uint256 flatFee,
         uint256 governanceFee
     ) internal {
-        IHyperdrive.Fees memory fees = IHyperdrive.Fees({
+        IHyperdrive.PoolConfig memory config = testConfig(apr);
+        config.initialSharePrice = initialSharePrice;
+        config.fees = IHyperdrive.Fees({
             curve: curveFee,
             flat: flatFee,
             governance: governanceFee
-        });
-        IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
-            baseToken: IERC20(address(baseToken)),
-            initialSharePrice: initialSharePrice,
-            minimumShareReserves: MINIMUM_SHARE_RESERVES,
-            minimumTransactionAmount: MINIMUM_TRANSACTION_AMOUNT,
-            positionDuration: POSITION_DURATION,
-            checkpointDuration: CHECKPOINT_DURATION,
-            timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
-            governance: governance,
-            feeCollector: feeCollector,
-            fees: fees,
-            oracleSize: ORACLE_SIZE,
-            updateGap: UPDATE_GAP
         });
         deploy(deployer, config);
     }
@@ -151,6 +123,7 @@ contract HyperdriveTest is BaseTest {
                 initialSharePrice: FixedPointMath.ONE_18,
                 minimumShareReserves: MINIMUM_SHARE_RESERVES,
                 minimumTransactionAmount: MINIMUM_TRANSACTION_AMOUNT,
+                negativeInterestTolerance: NEGATIVE_INTEREST_TOLERANCE,
                 positionDuration: POSITION_DURATION,
                 checkpointDuration: CHECKPOINT_DURATION,
                 timeStretch: HyperdriveUtils.calculateTimeStretch(fixedRate),

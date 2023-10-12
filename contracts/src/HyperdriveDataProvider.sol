@@ -112,7 +112,11 @@ abstract contract HyperdriveDataProvider is
                 : presentValue.divDown(lpTotalSupply),
             withdrawalSharesReadyToWithdraw: _withdrawPool.readyToWithdraw,
             withdrawalSharesProceeds: _withdrawPool.proceeds,
-            longExposure: _marketState.longExposure
+            longExposure: _marketState.longExposure,
+            negativeInterestReferenceSharePrice: _marketState
+                .negativeInterestReferenceSharePrice,
+            negativeInterestReferenceMaturityTime: _marketState
+                .negativeInterestReferenceMaturityTime
         });
         _revert(abi.encode(poolInfo));
     }

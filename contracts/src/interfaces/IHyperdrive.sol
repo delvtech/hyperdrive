@@ -201,6 +201,12 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
         uint256 lpSharePrice;
         /// @dev The global exposure of the pool due to open positions
         uint256 longExposure;
+        /// @dev The reference share price to use when adjusting the present
+        ///      value for negative interest.
+        uint256 negativeInterestReferenceSharePrice;
+        /// @dev The time at which all of the positions that have accrued
+        ///      negative interest will be closed.
+        uint256 negativeInterestReferenceMaturityTime;
     }
 
     /// Errors ///

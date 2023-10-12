@@ -89,6 +89,9 @@ contract DevnetMigration is Script {
                 initialSharePrice: 1e18,
                 minimumShareReserves: 10e18,
                 minimumTransactionAmount: 0.001e18,
+                // FIXME: This is a shot in the dark, and I should update this
+                // value after some more testing.
+                negativeInterestTolerance: 1e9,
                 positionDuration: 1 weeks,
                 checkpointDuration: 1 hours,
                 timeStretch: 0.05e18.calculateTimeStretch(),

@@ -338,7 +338,9 @@ library HyperdriveUtils {
                             uint256(poolInfo.shortAverageMaturityTime).divUp(
                                 1e36
                             )
-                        )
+                        ),
+                        negativeInterestReferenceSharePrice: poolInfo
+                            .negativeInterestReferenceSharePrice
                     })
                 )
                 .mulDown(poolInfo.sharePrice);
