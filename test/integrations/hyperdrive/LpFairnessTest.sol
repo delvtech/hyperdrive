@@ -6,6 +6,8 @@ import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
 import { Lib } from "../../utils/Lib.sol";
 
+import "forge-std/console2.sol";
+
 contract LPFairnessTest is HyperdriveTest {
     using FixedPointMath for uint256;
     using HyperdriveUtils for *;
@@ -19,6 +21,29 @@ contract LPFairnessTest is HyperdriveTest {
         IHyperdrive.PoolConfig memory config = testConfig(0.05e18);
         config.minimumShareReserves = 1e6;
         deploy(deployer, config);
+    }
+
+    function test_foo() external {
+        // fixed interest rate the pool pays the longs
+        uint256 fixedRate = 0.05e18;
+
+        // Initialize the pool with capital.
+        uint256 initialLiquidity = 50_000_000e18;
+        uint256 aliceLpShares = initialize(alice, fixedRate, initialLiquidity);
+
+        // Celine opens a short.
+        uint256 bondsShorted = 50_000_000e18;
+        (uint256 maturityTime, ) = openShort(celine, bondsShorted);
+        
+        // Alice removes liquidity
+        (uint256 withdrawalProceeds, ) = removeLiquidity(alice, aliceLpShares);
+
+        // Bob adds liquidity.
+        uint256 contribution = 500_000e18;
+        console2.log("before add liqudity");
+        uint256 bobLpShares = addLiquidity(bob, contribution);
+        console2.log("after add liqudity");
+
     }
 
     function test_lp_fairness_short_lp(

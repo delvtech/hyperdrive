@@ -8,6 +8,8 @@ import { AssetId } from "./libraries/AssetId.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { SafeCast } from "./libraries/SafeCast.sol";
+import { Lib } from "../../test/utils/Lib.sol";
+import "forge-std/console2.sol";
 
 /// @author DELV
 /// @title HyperdriveLP
@@ -19,6 +21,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
     using FixedPointMath for uint256;
     using SafeCast for int256;
     using SafeCast for uint256;
+    using Lib for *;
 
     /// @notice Allows the first LP to initialize the market with a target APR.
     /// @param _contribution The amount of base to supply.
@@ -163,6 +166,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             uint256 startingPresentValue = HyperdriveMath.calculatePresentValue(
                 params
             );
+            console2.log("startingPresentValue", startingPresentValue.toString(18));
 
             // Add the liquidity to the pool's reserves and calculate the new
             // present value.
@@ -171,6 +175,7 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
             params.shareAdjustment = _marketState.shareAdjustment;
             params.bondReserves = _marketState.bondReserves;
             endingPresentValue = HyperdriveMath.calculatePresentValue(params);
+            console2.log("endingPresentValue", endingPresentValue.toString(18));
 
             // The LP shares minted to the LP is derived by solving for the
             // change in LP shares that preserves the ratio of present value to
