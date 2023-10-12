@@ -199,6 +199,7 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
     error BaseBufferExceedsShareReserves();
     error BelowMinimumContribution();
     error BelowMinimumShareReserves();
+    error DecimalMismatch();
     error InvalidApr();
     error InvalidBaseToken();
     error InvalidCheckpointTime();

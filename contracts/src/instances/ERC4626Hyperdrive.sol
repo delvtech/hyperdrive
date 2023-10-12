@@ -60,6 +60,9 @@ contract ERC4626Hyperdrive is Hyperdrive {
         if (address(_config.baseToken) != _pool.asset()) {
             revert IHyperdrive.InvalidBaseToken();
         }
+        if(_config.baseToken.decimals() != _pool.decimals()) {
+            revert IHyperdrive.DecimalMismatch();
+        }
 
         // Set immutables and prepare for deposits by setting immutables
         if (!_config.baseToken.approve(address(pool), type(uint256).max)) {
