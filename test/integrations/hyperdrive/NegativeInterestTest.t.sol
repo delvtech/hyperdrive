@@ -9,6 +9,8 @@ import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
 
+// FIXME: This should evolve into a test that verifies that we have consistent
+// behavior with "Negative Interest Mode".
 contract NegativeInterestTest is HyperdriveTest {
     using FixedPointMath for *;
     using HyperdriveUtils for *;

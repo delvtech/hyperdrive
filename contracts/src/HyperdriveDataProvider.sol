@@ -70,6 +70,7 @@ abstract contract HyperdriveDataProvider is
                     initialSharePrice: _initialSharePrice,
                     minimumShareReserves: _minimumShareReserves,
                     minimumTransactionAmount: _minimumTransactionAmount,
+                    negativeInterestTolerance: _negativeInterestTolerance,
                     positionDuration: _positionDuration,
                     checkpointDuration: _checkpointDuration,
                     timeStretch: _timeStretch,
@@ -180,17 +181,19 @@ abstract contract HyperdriveDataProvider is
         uint256 lastTimestamp = uint256(_oracle.lastTimestamp);
         uint256 head = uint256(_oracle.head);
 
-        OracleData memory currentData = _buffer[head];
+        IHyperdrive.OracleData memory currentData = _buffer[head];
         uint256 targetTime = uint256(lastTimestamp) - period;
 
         // We search for the greatest timestamp before the last, note this is not
         // an efficient search as we expect the buffer to be small.
         uint256 currentIndex = head == 0 ? _buffer.length - 1 : head - 1;
-        OracleData memory oldData = OracleData(0, 0);
+        IHyperdrive.OracleData memory oldData = IHyperdrive.OracleData(0, 0);
         while (currentIndex != head) {
             // If the timestamp of the current index has older data than the target
             // this is the newest data which is older than the target so we break
-            OracleData storage currentDataCache = _buffer[currentIndex];
+            IHyperdrive.OracleData storage currentDataCache = _buffer[
+                currentIndex
+            ];
             if (uint256(currentDataCache.timestamp) <= targetTime) {
                 oldData = currentDataCache;
                 break;

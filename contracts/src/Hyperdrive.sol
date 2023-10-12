@@ -94,11 +94,27 @@ abstract contract Hyperdrive is
             _checkpointTime
         ];
         if (checkpoint_.sharePrice != 0 || _checkpointTime > block.timestamp) {
+            // Record any negative interest that accrued in this checkpoint.
+            _recordNegativeInterest(
+                _checkpointTime,
+                checkpoint_.sharePrice,
+                _sharePrice,
+                false
+            );
+
             return checkpoint_.sharePrice;
         }
 
-        // Create the share price checkpoint.
+        // Mint this checkpoint and record any negative interest that accrued
+        // since the previous checkpoint.
         checkpoint_.sharePrice = _sharePrice.toUint128();
+        _recordNegativeInterest(
+            _checkpointTime,
+            // FIXME: Explain why it's fine for this to be zero.
+            _checkpoints[_checkpointTime - _checkpointDuration].sharePrice,
+            _sharePrice,
+            true
+        );
 
         // Close out all of the short positions that matured at the beginning of
         // this checkpoint. This ensures that shorts don't continue to collect
@@ -173,10 +189,103 @@ abstract contract Hyperdrive is
             );
 
             // Distribute the excess idle to the withdrawal pool.
+            //
+            // NOTE: It's important that this is done after all of the positions
+            // have been closed because we turn off negative interest mode
+            // before closing the matured positions.
             _distributeExcessIdle(_sharePrice);
         }
 
         return _sharePrice;
+    }
+
+    // FIXME: In order to really test this rigorously, I need to think of all
+    // of the pathological share price paths that would result in this being
+    // updated.
+    //
+    // FIXME: I need to test different kinds of checkpoint gaps to verify that
+    // negative interest will always be recorded.
+    //
+    /// @dev Records any negative interest that has accrued since the previous
+    ///      checkpoint. It's possible for negative interest to be missed if
+    ///      some checkpoints are skipped, but negative interest can always be
+    ///      recorded by minting the current checkpoint and the checkpoint
+    ///      immediately after the last checkpoint before the negative interest.
+    /// @param _checkpointTime The time of the checkpoint that we're evaluating.
+    /// @param _previousCheckpointSharePrice The share price of the previous
+    ///       checkpoint. If we are on a checkpoint boundary, this is the share
+    ///       price of the checkpoint before the checkpoint that we're
+    ///       evaluating. Otherwise, this is the share price of the checkpoint
+    ///       that we're evaluating.
+    /// @param _sharePrice The current share price.
+    /// @param _isCheckpointBoundary A flag indicating whether or not the
+    ///        checkpoint that we're evaluating is being minted or if it has
+    ///        already been minted.
+    function _recordNegativeInterest(
+        uint256 _checkpointTime,
+        uint256 _previousCheckpointSharePrice,
+        uint256 _sharePrice,
+        bool _isCheckpointBoundary
+    ) internal {
+        // If the checkpoint's maturity time is equal to the reference maturity
+        // time, then we've already recorded negative interest in this
+        // checkpoint. The reference share price is the checkpoint's share
+        // price, so we can short-circuit and return early.
+        uint256 maturityTime = _checkpointTime + _positionDuration;
+        uint256 referenceMaturityTime = _marketState
+            .negativeInterestReferenceMaturityTime;
+        if (maturityTime == referenceMaturityTime) {
+            return;
+        }
+
+        // If the share price has fallen below the previous checkpoint share
+        // price, then we need to record negative interest. We only record
+        // negative interest that exceeds a tolerance to avoid triggering
+        // negative interest mode caused by imperceptible rounding errors.
+        uint256 referenceSharePrice = _marketState
+            .negativeInterestReferenceSharePrice;
+        if (
+            _sharePrice + _negativeInterestTolerance <
+            _previousCheckpointSharePrice
+        ) {
+            // The negative interest mode needs to use a lower bound for the
+            // present value to avoid LPs racing to the bottom. With this in
+            // mind we choose the maximum of the previous checkpoint share price
+            // and the reference share price and the maximum of this
+            // checkpoint's maturity time and the reference maturity time.
+            if (_previousCheckpointSharePrice > referenceSharePrice) {
+                _marketState
+                    .negativeInterestReferenceSharePrice = _previousCheckpointSharePrice
+                    .toUint128();
+            }
+            if (maturityTime > referenceMaturityTime) {
+                _marketState
+                    .negativeInterestReferenceMaturityTime = maturityTime
+                    .toUint128();
+            }
+        }
+        // Negative interest hasn't accrued in this checkpoint, so if we are on
+        // a checkpoint boundary, we check to see if we can stop tracking
+        // negative interest from earlier checkpoints. We only do this pruning
+        // on a checkpoint boundary to avoid pathological scenarios with share
+        // price fluctuations between checkpoint boundaries.
+        else if (
+            _marketState.negativeInterestReferenceSharePrice > 0 &&
+            _isCheckpointBoundary
+        ) {
+            // If the current share price is greater than or equal to the
+            // reference share price, then any negative interest that was being
+            // tracked has been resolved. Similarly, if the checkpoint time is
+            // greater than or equal to the reference maturity time, then any
+            // positions that accrued negative interest will be closed.
+            if (
+                _sharePrice >= referenceSharePrice ||
+                _checkpointTime >= referenceMaturityTime
+            ) {
+                delete _marketState.negativeInterestReferenceSharePrice;
+                delete _marketState.negativeInterestReferenceMaturityTime;
+            }
+        }
     }
 
     /// @dev Calculates the proceeds of the long holders of a given position at

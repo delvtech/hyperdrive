@@ -19,35 +19,44 @@ abstract contract HyperdriveStorage is ReentrancyGuard, MultiTokenStorage {
 
     /// Tokens ///
 
-    /// @notice The base asset.
+    /// @dev The base asset.
     IERC20 internal immutable _baseToken;
 
     /// Time ///
 
-    /// @notice The amount of seconds between share price checkpoints.
+    /// @dev The amount of seconds between share price checkpoints.
     uint256 internal immutable _checkpointDuration;
 
-    /// @notice The amount of seconds that elapse before a bond can be redeemed.
+    /// @dev The amount of seconds that elapse before a bond can be redeemed.
     uint256 internal immutable _positionDuration;
 
-    /// @notice A parameter that decreases slippage around a target rate.
+    /// @dev A parameter that decreases slippage around a target rate.
     uint256 internal immutable _timeStretch;
 
     /// Market State ///
 
-    /// @notice The share price at the time the pool was created.
+    /// @dev The share price at the time the pool was created.
     uint256 internal immutable _initialSharePrice;
 
-    /// @notice The minimum amount of share reserves that must be maintained at
-    ///         all times. This is used to enforce practical limits on the share
-    ///         reserves to avoid numerical issues that can occur if the share
-    ///         reserves become very small or equal to zero.
+    /// @dev The minimum amount of share reserves that must be maintained at all
+    ///      times. This is used to enforce practical limits on the share
+    ///      reserves to avoid numerical issues that can occur if the share
+    ///      reserves become very small or equal to zero.
     uint256 internal immutable _minimumShareReserves;
 
-    /// @notice The minimum amount of tokens that a position can be opened/closed with.
+    /// @dev The minimum amount of tokens that a position can be opened/closed with.
     uint256 internal immutable _minimumTransactionAmount;
 
-    /// @notice The state of the market. This includes the reserves, buffers,
+    /// @dev Negative interest that accrues triggers a change to the present
+    ///      value calculation. In cases where significant negative interest
+    ///      accrues, this protects LPs from races to the bottom. Rounding
+    ///      errors can result in imperceptible negative interest that doesn't
+    ///      warrant triggering the negative interest mode. We use this
+    ///      tolerance to avoid triggering the negative interest mode in these
+    ///      cases.
+    uint256 internal immutable _negativeInterestTolerance;
+
+    /// @dev The state of the market. This includes the reserves, buffers,
     ///         and other data used to price trades and maintain solvency.
     IHyperdrive.MarketState internal _marketState;
 
@@ -56,15 +65,17 @@ abstract contract HyperdriveStorage is ReentrancyGuard, MultiTokenStorage {
 
     /// @dev The LP fee applied to the curve portion of a trade.
     uint256 internal immutable _curveFee;
+
     /// @dev The LP fee applied to the flat portion of a trade.
     uint256 internal immutable _flatFee;
+
     /// @dev The portion of the LP fee that goes to governance.
     uint256 internal immutable _governanceFee;
 
-    /// @notice Hyperdrive positions are bucketed into checkpoints, which
-    ///         allows us to avoid poking in any period that has LP or trading
-    ///         activity. The checkpoints contain the starting share price from
-    ///         the checkpoint as well as aggregate volume values.
+    /// @dev Hyperdrive positions are bucketed into checkpoints, which allows us
+    ///      to avoid poking in any period that has LP or trading activity. The
+    ///      checkpoints contain the starting share price from the checkpoint as
+    ///      well as aggregate volume values.
     mapping(uint256 checkpointNumber => IHyperdrive.Checkpoint checkpoint)
         internal _checkpoints;
 
@@ -72,32 +83,24 @@ abstract contract HyperdriveStorage is ReentrancyGuard, MultiTokenStorage {
     ///         the contract and other non essential functionality.
     mapping(address user => bool isPauser) internal _pausers;
 
-    // Governance fees that haven't been collected yet denominated in shares.
+    /// @dev Governance fees that haven't been collected yet denominated in shares.
     uint256 internal _governanceFeesAccrued;
 
-    // The address that can pause the contract.
+    /// @dev The address that can pause the contract.
     address internal _governance;
 
-    /// The address which collects governance fees.
+    /// @dev The address which collects governance fees.
     address internal immutable _feeCollector;
 
     /// TWAP ///
 
-    /// @notice The amount of time between oracle data sample updates.
+    /// @dev The amount of time between oracle data sample updates.
     uint256 internal immutable _updateGap;
 
-    /// @notice A struct to hold packed oracle entries.
-    struct OracleData {
-        // The timestamp this data was added at.
-        uint32 timestamp;
-        // The running sun of all previous data entries weighted by time.
-        uint224 data;
-    }
+    /// @dev This buffer contains the timestamps and data recorded in the oracle.
+    IHyperdrive.OracleData[] internal _buffer;
 
-    /// @notice This buffer contains the timestamps and data recorded in the oracle.
-    OracleData[] internal _buffer;
-
-    /// @notice The struct holding the head and last timestamp.
+    /// @dev The struct holding the head and last timestamp.
     IHyperdrive.OracleState internal _oracle;
 
     /// @notice Initializes Hyperdrive's storage.
@@ -118,7 +121,14 @@ abstract contract HyperdriveStorage is ReentrancyGuard, MultiTokenStorage {
         }
         _minimumShareReserves = _config.minimumShareReserves;
 
+        // Initialize the minimum transaction amount. This is the smallest input
+        // amount that will be accepted in the core functions.
         _minimumTransactionAmount = _config.minimumTransactionAmount;
+
+        // Initialize the negative interest tolerance. This is the amount of
+        // negative interest the system will tolerate before triggering the
+        // negative interest mode.
+        _negativeInterestTolerance = _config.negativeInterestTolerance;
 
         // Initialize the time configurations. There must be at least one
         // checkpoint per term to avoid having a position duration of zero.
@@ -231,7 +241,9 @@ abstract contract HyperdriveStorage is ReentrancyGuard, MultiTokenStorage {
             shortsOutstanding: _marketState.shortsOutstanding,
             shortAverageTimeRemaining: _calculateTimeRemainingScaled(
                 _marketState.shortAverageMaturityTime
-            )
+            ),
+            negativeInterestReferenceSharePrice: _marketState
+                .negativeInterestReferenceSharePrice
         });
     }
 }

@@ -92,6 +92,13 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
         bool isInitialized;
         /// @dev A flag indicating whether or not the pool is paused.
         bool isPaused;
+        // FIXME: Comment this.
+        //
+        // FIXME: Packing.
+        //
+        // FIXME: Add these to PoolInfo.
+        uint128 negativeInterestReferenceSharePrice;
+        uint128 negativeInterestReferenceMaturityTime;
     }
 
     struct Checkpoint {
@@ -109,6 +116,20 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
         uint128 readyToWithdraw;
         /// @dev The proceeds recovered by the withdrawal pool.
         uint128 proceeds;
+    }
+
+    struct OracleData {
+        // @dev The timestamp this data was added at.
+        uint32 timestamp;
+        // @dev The running sun of all previous data entries weighted by time.
+        uint224 data;
+    }
+
+    struct OracleState {
+        /// @dev The pointer to the most recent buffer entry.
+        uint128 head;
+        /// @dev The last timestamp we wrote to the buffer.
+        uint128 lastTimestamp;
     }
 
     struct Fees {
@@ -129,6 +150,9 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
         uint256 minimumShareReserves;
         /// @dev The minimum amount of tokens that a position can be opened/closed with.
         uint256 minimumTransactionAmount;
+        /// @dev The amount of negative interest that should be tolerated before
+        ///      switching on the negative interest mode.
+        uint256 negativeInterestTolerance;
         /// @dev The duration of a position prior to maturity.
         uint256 positionDuration;
         /// @dev The duration of a checkpoint.
@@ -177,13 +201,6 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
         uint256 lpSharePrice;
         /// @dev The global exposure of the pool due to open positions
         uint256 longExposure;
-    }
-
-    struct OracleState {
-        /// @notice The pointer to the most recent buffer entry
-        uint128 head;
-        /// @notice The last timestamp we wrote to the buffer
-        uint128 lastTimestamp;
     }
 
     /// Errors ///

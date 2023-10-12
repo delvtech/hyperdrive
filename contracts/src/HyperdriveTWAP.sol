@@ -29,7 +29,7 @@ abstract contract HyperdriveTWAP is HyperdriveBase {
         }
 
         // Load the current data from storage
-        OracleData storage headData = _buffer[head];
+        IHyperdrive.OracleData storage headData = _buffer[head];
         uint256 previousTime = uint256(headData.timestamp);
         uint256 previousSum = uint256(headData.data);
 
@@ -45,7 +45,10 @@ abstract contract HyperdriveTWAP is HyperdriveBase {
         // If we are updating first we calculate the index to update
         uint256 toUpdate = (uint256(head) + 1) % _buffer.length;
         // Now we update the slot with this data
-        _buffer[toUpdate] = OracleData(uint32(block.timestamp), uint224(sum));
+        _buffer[toUpdate] = IHyperdrive.OracleData(
+            uint32(block.timestamp),
+            uint224(sum)
+        );
         _oracle = IHyperdrive.OracleState(
             uint128(toUpdate),
             uint128(block.timestamp)
