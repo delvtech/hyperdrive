@@ -1648,7 +1648,7 @@ library HyperdriveMath {
         if (decimalsBefore > decimalsAfter) {
             // Then we shift right the amount by the number of decimals
             amount = amount / 10 ** (decimalsBefore - decimalsAfter);
-        } 
+        }
         // If we need to decrease the number
         else if (decimalsBefore < decimalsAfter) {
             // then we shift left by the difference

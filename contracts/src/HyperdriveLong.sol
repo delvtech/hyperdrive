@@ -51,14 +51,13 @@ abstract contract HyperdriveLong is HyperdriveLP {
             revert IHyperdrive.MinimumTransactionAmount();
         }
 
-        // Deposit the user's base.
+        // Deposit the user's base and normalize the shares to
+        // 18 decimals for acounting purposes.
         (uint256 shares, uint256 sharePrice) = _deposit(
             _baseAmount,
             _asUnderlying
         );
-
-        // convert to 18 decimals
-        shares = HyperdriveMath.normalizeDecimals(shares, _tokenDecimals, 18);
+        shares = HyperdriveMath.normalizeDecimals(shares, _baseDecimals, 18);
         if (sharePrice < _minSharePrice) {
             revert IHyperdrive.MinimumSharePrice();
         }
@@ -109,17 +108,17 @@ abstract contract HyperdriveLong is HyperdriveLP {
             maturityTime
         );
 
-        // convert to token decimals
-        bondProceeds = HyperdriveMath.normalizeDecimals(
-            bondProceeds,
-            18,
-            _tokenDecimals
-        );
-
-        // Mint the bonds to the trader with an ID of the maturity time.
+        // Mint the bonds to the trader with an ID of the maturity time. We
+        // convert the bond proceeds to base token decimals for accounting
+        // purposes.
         uint256 assetId = AssetId.encodeAssetId(
             AssetId.AssetIdPrefix.Long,
             maturityTime
+        );
+        bondProceeds = HyperdriveMath.normalizeDecimals(
+            bondProceeds,
+            18,
+            _baseDecimals
         );
         _mint(assetId, _destination, bondProceeds);
 
@@ -169,14 +168,13 @@ abstract contract HyperdriveLong is HyperdriveLP {
             _bondAmount
         );
 
-        // convert input amount to 18 decimals
+        // Calculate the pool and user deltas using the trading function. We
+        // convert the bond amount to 18 decimals for accounting purposes.
         _bondAmount = HyperdriveMath.normalizeDecimals(
             _bondAmount,
-            _tokenDecimals,
+            _baseDecimals,
             18
         );
-
-        // Calculate the pool and user deltas using the trading function.
         (
             uint256 bondReservesDelta,
             uint256 shareProceeds,
@@ -226,7 +224,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
 
         // Withdraw the profit to the trader.
         uint256 baseProceeds = _withdraw(
-            HyperdriveMath.normalizeDecimals(shareProceeds, 18, _tokenDecimals),
+            HyperdriveMath.normalizeDecimals(shareProceeds, 18, _baseDecimals),
             _destination,
             _asUnderlying
         );
@@ -241,7 +239,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
             maturityTime,
             baseProceeds,
-            HyperdriveMath.normalizeDecimals(bondAmount, 18, _tokenDecimals)
+            HyperdriveMath.normalizeDecimals(bondAmount, 18, _baseDecimals)
         );
 
         return (baseProceeds);

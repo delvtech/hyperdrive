@@ -67,7 +67,7 @@ abstract contract HyperdriveDataProvider is
             abi.encode(
                 IHyperdrive.PoolConfig({
                     baseToken: _baseToken,
-                    tokenDecimals: _tokenDecimals,
+                    baseDecimals: _baseDecimals,
                     initialSharePrice: _initialSharePrice,
                     minimumShareReserves: _minimumShareReserves,
                     minimumTransactionAmount: _minimumTransactionAmount,

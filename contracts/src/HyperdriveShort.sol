@@ -45,11 +45,17 @@ abstract contract HyperdriveShort is HyperdriveLP {
         isNotPaused
         returns (uint256 maturityTime, uint256 traderDeposit)
     {
-        // Check that the message value and base amount are valid.
+        // Check that the message value and base amount are valid. We normalize
+        // the bond amount to the 18 decimals for accounting purposes.
         _checkMessageValue();
         if (_bondAmount < _minimumTransactionAmount) {
             revert IHyperdrive.MinimumTransactionAmount();
         }
+        _bondAmount = HyperdriveMath.normalizeDecimals(
+            _bondAmount,
+            _baseDecimals,
+            18
+        );
 
         // Perform a checkpoint and compute the amount of interest the short
         // would have received if they opened at the beginning of the checkpoint.
@@ -66,13 +72,6 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // backdate the bonds sold to the beginning of the checkpoint.
         maturityTime = latestCheckpoint + _positionDuration;
 
-        // convert input amount to 18 decimals
-        _bondAmount = HyperdriveMath.normalizeDecimals(
-            _bondAmount,
-            _tokenDecimals,
-            18
-        );
-
         uint256 shareReservesDelta;
         {
             uint256 totalGovernanceFee;
@@ -86,17 +85,17 @@ abstract contract HyperdriveShort is HyperdriveLP {
             _governanceFeesAccrued += totalGovernanceFee;
         }
 
-        // convert to token decimals
-        traderDeposit = HyperdriveMath.normalizeDecimals(
-            traderDeposit,
-            18,
-            _tokenDecimals
-        );
-
         // Take custody of the trader's deposit and ensure that the trader
         // doesn't pay more than their max deposit. The trader's deposit is
         // equal to the proceeds that they would receive if they closed
-        // immediately (without fees).
+        // immediately (without fees). We convert the calculated trader
+        // deposit amount to the base token's decimals for accounting
+        // purposes.
+        traderDeposit = HyperdriveMath.normalizeDecimals(
+            traderDeposit,
+            18,
+            _baseDecimals
+        );
         if (_maxDeposit < traderDeposit) revert IHyperdrive.OutputLimit();
         _deposit(traderDeposit, _asUnderlying);
 
@@ -108,15 +107,14 @@ abstract contract HyperdriveShort is HyperdriveLP {
             maturityTime
         );
 
-        // convert to token decimals
+        // Mint the short tokens to the trader. The ID is a concatenation of the
+        // current share price and the maturity time of the shorts. We convert
+        // the bond amount back to the base token's decimals for accounting purposes.
         uint256 bondAmount = HyperdriveMath.normalizeDecimals(
             _bondAmount,
             18,
-            _tokenDecimals
+            _baseDecimals
         );
-
-        // Mint the short tokens to the trader. The ID is a concatenation of the
-        // current share price and the maturity time of the shorts.
         uint256 assetId = AssetId.encodeAssetId(
             AssetId.AssetIdPrefix.Short,
             maturityTime
@@ -167,15 +165,16 @@ abstract contract HyperdriveShort is HyperdriveLP {
         );
 
         // convert input amount to 18 decimals
-        _bondAmount = HyperdriveMath.normalizeDecimals(
-            _bondAmount,
-            _tokenDecimals,
-            18
-        );
 
         // Calculate the changes to the reserves and the traders proceeds up
         // front. This will also verify that the calculated values don't break
-        // any invariants.
+        // any invariants. We normalize the bond amount to 18 decimals for
+        // accounting purposes.
+        _bondAmount = HyperdriveMath.normalizeDecimals(
+            _bondAmount,
+            _baseDecimals,
+            18
+        );
         (
             uint256 bondReservesDelta,
             uint256 shareProceeds,
@@ -240,23 +239,11 @@ abstract contract HyperdriveShort is HyperdriveLP {
             _distributeExcessIdle(sharePrice);
         }
 
-        // convert to token decimals
-        shareProceeds = HyperdriveMath.normalizeDecimals(
-            shareProceeds,
-            18,
-            _tokenDecimals
-        );
-        _bondAmount = HyperdriveMath.normalizeDecimals(
-            _bondAmount,
-            18,
-            _tokenDecimals
-        );
-
         // Withdraw the profit to the trader. This includes the proceeds from
         // the short sale as well as the variable interest that was collected
         // on the face value of the bonds.
         uint256 baseProceeds = _withdraw(
-            shareProceeds,
+            HyperdriveMath.normalizeDecimals(shareProceeds, 18, _baseDecimals),
             _destination,
             _asUnderlying
         );
@@ -270,7 +257,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, maturityTime),
             maturityTime,
             baseProceeds,
-            bondAmount
+            HyperdriveMath.normalizeDecimals(bondAmount, 18, _baseDecimals)
         );
 
         return baseProceeds;

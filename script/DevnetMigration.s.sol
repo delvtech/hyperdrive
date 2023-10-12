@@ -86,7 +86,7 @@ contract DevnetMigration is Script {
             baseToken.approve(address(factory), contribution);
             IHyperdrive.PoolConfig memory poolConfig = IHyperdrive.PoolConfig({
                 baseToken: IERC20(address(baseToken)),
-                tokenDecimals: IERC20(address(baseToken)).decimals(),
+                baseDecimals: IERC20(address(baseToken)).decimals(),
                 initialSharePrice: 1e18,
                 minimumShareReserves: 10e18,
                 minimumTransactionAmount: 0.001e18,

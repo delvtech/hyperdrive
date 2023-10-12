@@ -49,7 +49,7 @@ contract HyperdriveTest is BaseTest {
         uint256 apr = 0.05e18;
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: IERC20(address(baseToken)),
-            tokenDecimals: IERC20(address(baseToken)).decimals(),
+            baseDecimals: IERC20(address(baseToken)).decimals(),
             initialSharePrice: INITIAL_SHARE_PRICE,
             minimumShareReserves: MINIMUM_SHARE_RESERVES,
             minimumTransactionAmount: MINIMUM_TRANSACTION_AMOUNT,
@@ -123,7 +123,7 @@ contract HyperdriveTest is BaseTest {
         });
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: IERC20(address(baseToken)),
-            tokenDecimals: IERC20(address(baseToken)).decimals(),
+            baseDecimals: IERC20(address(baseToken)).decimals(),
             initialSharePrice: initialSharePrice,
             minimumShareReserves: MINIMUM_SHARE_RESERVES,
             minimumTransactionAmount: MINIMUM_TRANSACTION_AMOUNT,
@@ -147,14 +147,14 @@ contract HyperdriveTest is BaseTest {
             flat: 0,
             governance: 0
         });
-        uint8 tokenDecimals = 18;
+        uint8 baseDecimals = 18;
         if (address(baseToken) != address(ETH)) {
-            tokenDecimals = IERC20(address(baseToken)).decimals();
+            baseDecimals = IERC20(address(baseToken)).decimals();
         }
         return
             IHyperdrive.PoolConfig({
                 baseToken: IERC20(address(baseToken)),
-                tokenDecimals: tokenDecimals,
+                baseDecimals: baseDecimals,
                 initialSharePrice: FixedPointMath.ONE_18,
                 minimumShareReserves: MINIMUM_SHARE_RESERVES,
                 minimumTransactionAmount: MINIMUM_TRANSACTION_AMOUNT,
@@ -793,11 +793,6 @@ contract HyperdriveTest is BaseTest {
     function calculateBaseLpProceeds(
         uint256 _shares
     ) internal returns (uint256) {
-        uint256 minimumTransactionAmount = hyperdrive
-            .getPoolConfig()
-            .minimumTransactionAmount;
-
-        uint8 tokenDecimals = hyperdrive.getPoolConfig().tokenDecimals;
         uint256 snapshotId = vm.snapshot();
         // We need to explicitly checkpoint here because removeLiquidity will call
         // _applyCheckpoint() in removeLiquidity and this will update the state if
@@ -835,12 +830,6 @@ contract HyperdriveTest is BaseTest {
                 totalLpSupply
             );
             shareProceeds -= overestimatedProceeds;
-        } else if (
-            uint256(withdrawalShares) <
-            minimumTransactionAmount ** (18 - tokenDecimals)
-        ) {
-            // Ensure that we don't mint less than the minimum transaction amount
-            withdrawalShares = 0;
         }
         vm.revertTo(snapshotId);
 
