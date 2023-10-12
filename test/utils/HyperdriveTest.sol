@@ -793,6 +793,11 @@ contract HyperdriveTest is BaseTest {
     function calculateBaseLpProceeds(
         uint256 _shares
     ) internal returns (uint256) {
+        uint256 minimumTransactionAmount = hyperdrive
+            .getPoolConfig()
+            .minimumTransactionAmount;
+
+        uint8 tokenDecimals = hyperdrive.getPoolConfig().tokenDecimals;
         uint256 snapshotId = vm.snapshot();
         // We need to explicitly checkpoint here because removeLiquidity will call
         // _applyCheckpoint() in removeLiquidity and this will update the state if
@@ -830,6 +835,12 @@ contract HyperdriveTest is BaseTest {
                 totalLpSupply
             );
             shareProceeds -= overestimatedProceeds;
+        } else if (
+            uint256(withdrawalShares) <
+            minimumTransactionAmount ** (18 - tokenDecimals)
+        ) {
+            // Ensure that we don't mint less than the minimum transaction amount
+            withdrawalShares = 0;
         }
         vm.revertTo(snapshotId);
 

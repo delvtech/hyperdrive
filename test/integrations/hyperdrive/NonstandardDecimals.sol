@@ -284,9 +284,16 @@ contract NonstandardDecimalsTest is HyperdriveTest {
             _test_nonstandard_decimals_lp(longBasePaid, shortAmount);
         }
         vm.revertTo(snapshotId);
+        snapshotId = vm.snapshot();
         {
             uint256 longBasePaid = 27201;
             uint256 shortAmount = 51735872838114005798240350212166451602148334066294109046196838703383171970103;
+            _test_nonstandard_decimals_lp(longBasePaid, shortAmount);
+        }
+        vm.revertTo(snapshotId);
+        {
+            uint256 longBasePaid = 17953;
+            uint256 shortAmount = 4726;
             _test_nonstandard_decimals_lp(longBasePaid, shortAmount);
         }
     }
@@ -400,10 +407,21 @@ contract NonstandardDecimalsTest is HyperdriveTest {
             alice,
             aliceWithdrawalShares
         );
-        assertGe(
-            aliceRedeemProceeds,
-            lpMargin.mulDivDown(aliceLpShares, aliceLpShares + bobLpShares)
-        );
+        {
+            uint256 estimatedRedeemProceeds = lpMargin.mulDivDown(
+                aliceLpShares,
+                aliceLpShares + bobLpShares
+            );
+            uint256 minimumTransactionAmount_ = minimumTransactionAmount;
+            uint8 tokenDecimals_ = tokenDecimals;
+            if (
+                estimatedRedeemProceeds <
+                minimumTransactionAmount_ ** (18 - tokenDecimals_)
+            ) {
+                estimatedRedeemProceeds = 0;
+            }
+            assertGe(aliceRedeemProceeds, estimatedRedeemProceeds);
+        }
 
         // Bob and Celine remove their liquidity. Bob should receive more base
         // proceeds than Celine since Celine's add liquidity resulted in an
@@ -423,11 +441,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         assertApproxEqAbs(
             bobWithdrawalShares,
             0,
-            HyperdriveMath.normalizeDecimals(
-                _minimumTransactionAmount,
-                _tokenDecimals,
-                18
-            )
+            _minimumTransactionAmount ** (18 - _tokenDecimals)
         );
         assertApproxEqAbs(celineWithdrawalShares, 0, 1e6);
 

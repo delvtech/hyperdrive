@@ -503,6 +503,12 @@ abstract contract HyperdriveLP is HyperdriveTWAP {
                 _sharePrice
             );
             delete withdrawalShares;
+        } else if (
+            uint256(withdrawalShares) <
+            _minimumTransactionAmount ** (18 - _tokenDecimals)
+        ) {
+            // Ensure that we don't mint less than the minimum transaction amount
+            withdrawalShares = 0;
         }
 
         return (shareProceeds, uint256(withdrawalShares));
