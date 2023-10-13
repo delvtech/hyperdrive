@@ -62,7 +62,7 @@ contract UsdcERC4626 is ERC4626ValidationTest {
         USDC(address(underlyingToken)).mint(alice, monies);
         USDC(address(underlyingToken)).mint(bob, monies);
 
-        // Initialize deployer contracts and forwarder
+        // Initialize deployer contracts and forwarder.
         ERC4626HyperdriveDeployer simpleDeployer = new ERC4626HyperdriveDeployer(
                 token
             );
@@ -70,7 +70,7 @@ contract UsdcERC4626 is ERC4626ValidationTest {
         defaults[0] = bob;
         forwarderFactory = new ForwarderFactory();
 
-        // Hyperdrive factory to produce ERC4626 instances for UsdcERC4626
+        // Hyperdrive factory to produce ERC4626 instances for UsdcERC4626.
         factory = new ERC4626HyperdriveFactory(
             HyperdriveFactory.FactoryConfig(
                 alice,
@@ -87,7 +87,7 @@ contract UsdcERC4626 is ERC4626ValidationTest {
             new address[](0)
         );
 
-        // Config changes required to support ERC4626 with the correct initial Share Price
+        // Config changes required to support ERC4626 with the correct initial share price.
         IHyperdrive.PoolConfig memory config = testConfig(FIXED_RATE);
         config.baseToken = underlyingToken;
         config.initialSharePrice = token.convertToAssets(FixedPointMath.ONE_18);
@@ -102,10 +102,10 @@ contract UsdcERC4626 is ERC4626ValidationTest {
         vm.stopPrank();
         vm.startPrank(alice);
 
-        // Set approval to allow initial contribution to factory
+        // Set approval to allow initial contribution to factory.
         underlyingToken.approve(address(factory), type(uint256).max);
 
-        // Deploy and set hyperdrive instance
+        // Deploy and set hyperdrive instance.
         hyperdrive = factory.deployAndInitialize(
             config,
             new bytes32[](0),
@@ -113,7 +113,7 @@ contract UsdcERC4626 is ERC4626ValidationTest {
             FIXED_RATE
         );
 
-        // Setup maximum approvals so transfers don't require further approval
+        // Setup maximum approvals so transfers don't require further approval.
         underlyingToken.approve(address(hyperdrive), type(uint256).max);
         underlyingToken.approve(address(token), type(uint256).max);
         token.approve(address(hyperdrive), type(uint256).max);
