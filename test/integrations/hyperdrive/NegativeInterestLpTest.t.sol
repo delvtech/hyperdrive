@@ -4,17 +4,181 @@ pragma solidity 0.8.19;
 // FIXME
 import { console2 as console } from "forge-std/console2.sol";
 
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
 
+// FIXME: We need to beef up the testing in several directions:
+//
+// 1. Fuzz with random trades (using the framework in the present value tests)
+//    to ensure that the second LP always gets more in negative interest
+//    scenarios.
+// 2. Test checkpointing with gaps.
+//
 // FIXME: This should evolve into a test that verifies that we have consistent
 // behavior with "Negative Interest Mode".
-contract NegativeInterestTest is HyperdriveTest {
+contract NegativeInterestLpTest is HyperdriveTest {
     using FixedPointMath for *;
     using HyperdriveUtils for *;
     using Lib for *;
+
+    function test__negativeInterest__disabledWithinTolerance() external {
+        // Negative interest within a checkpoint.
+        _test__negativeInterest__disabledWithinTolerance(
+            hyperdrive.getPoolConfig().checkpointDuration.mulDown(0.5e18)
+        );
+
+        // Negative interest at the checkpoint boundary.
+        _test__negativeInterest__disabledWithinTolerance(
+            hyperdrive.getPoolConfig().checkpointDuration
+        );
+    }
+
+    function test__negativeInterest__disabledWithinTolerance__fuzz(
+        uint256 _timeDelta
+    ) external {
+        uint256 checkpointDuration = hyperdrive
+            .getPoolConfig()
+            .checkpointDuration;
+        _timeDelta = _timeDelta.normalizeToRange(
+            checkpointDuration.mulDown(0.5e18),
+            checkpointDuration.mulDown(1.99e18)
+        );
+        _test__negativeInterest__disabledWithinTolerance(_timeDelta);
+    }
+
+    // Tests that Hyperdrive ignores negative interest below the specified
+    // tolerance.
+    function _test__negativeInterest__disabledWithinTolerance(
+        uint256 _timeDelta
+    ) internal {
+        // Alice deploys and initializes the pool.
+        uint256 fixedRate = 0.05e18;
+        uint256 contribution = 500_000_000e18;
+        deploy(alice, testConfig(fixedRate));
+        initialize(alice, fixedRate, contribution);
+
+        // A tiny amount of negative interest accrues. If enough time has
+        // elapsed, we will mint a checkpoint.
+        uint256 sharePriceBefore = hyperdrive.getPoolInfo().sharePrice;
+        advanceTime(
+            _timeDelta,
+            -int256(hyperdrive.getPoolConfig().negativeInterestTolerance)
+        );
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
+
+        // If enough time has passed, ensure that a new checkpoint was minted
+        // with negative interest.
+        if (_timeDelta > hyperdrive.getPoolConfig().checkpointDuration) {
+            IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
+                hyperdrive.latestCheckpoint()
+            );
+            assertGt(checkpoint.sharePrice, 0);
+            assertLt(checkpoint.sharePrice, sharePriceBefore);
+        }
+
+        // Ensure that the negative interest reference share price and maturity
+        // time weren't updated.
+        IHyperdrive.PoolInfo memory info = hyperdrive.getPoolInfo();
+        assertEq(info.negativeInterestReferenceSharePrice, 0);
+        assertEq(info.negativeInterestReferenceMaturityTime, 0);
+    }
+
+    function test__negativeInterest__enabledOutsideTolerance() external {
+        // Negative interest within a checkpoint.
+        _test__negativeInterest__enabledOutsideTolerance(
+            hyperdrive.getPoolConfig().checkpointDuration.mulDown(0.5e18)
+        );
+
+        // Negative interest at the checkpoint boundary.
+        _test__negativeInterest__enabledOutsideTolerance(
+            hyperdrive.getPoolConfig().checkpointDuration
+        );
+    }
+
+    function test__negativeInterest__enabledOutsideTolerance__fuzz(
+        uint256 _timeDelta
+    ) external {
+        uint256 checkpointDuration = hyperdrive
+            .getPoolConfig()
+            .checkpointDuration;
+        _timeDelta = _timeDelta.normalizeToRange(
+            checkpointDuration.mulDown(0.5e18),
+            checkpointDuration.mulDown(1.99e18)
+        );
+        _test__negativeInterest__enabledOutsideTolerance(_timeDelta);
+    }
+
+    // Tests that Hyperdrive records negative interest above the tolerance.
+    function _test__negativeInterest__enabledOutsideTolerance(
+        uint256 _timeDelta
+    ) internal {
+        // Alice deploys and initializes the pool.
+        uint256 fixedRate = 0.05e18;
+        uint256 contribution = 500_000_000e18;
+        deploy(alice, testConfig(fixedRate));
+        initialize(alice, fixedRate, contribution);
+
+        // A small amount of negative interest accrues and a checkpoint is minted.
+        uint256 sharePriceBefore = hyperdrive.getPoolInfo().sharePrice;
+        uint256 checkpointTimeBefore = hyperdrive.latestCheckpoint();
+        advanceTime(
+            _timeDelta,
+            -int256(hyperdrive.getPoolConfig().negativeInterestTolerance * 1000)
+        );
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
+
+        // If enough time has passed, ensure that the new checkpoint was minted
+        // with negative interest.
+        if (_timeDelta >= hyperdrive.getPoolConfig().checkpointDuration) {
+            uint256 checkpointTime = hyperdrive.latestCheckpoint();
+            IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
+                checkpointTime
+            );
+            assertGt(checkpoint.sharePrice, 0);
+            assertLt(checkpoint.sharePrice, sharePriceBefore);
+        }
+
+        // Ensure that the negative interest reference share price and maturity
+        // time were updated. The reference share price should be set to the
+        // share price from the starting checkpoint, and the reference maturity
+        // time should be set to the maturity time of the starting checkpoint.
+        IHyperdrive.PoolInfo memory info = hyperdrive.getPoolInfo();
+        assertEq(info.negativeInterestReferenceSharePrice, sharePriceBefore);
+        assertEq(
+            info.negativeInterestReferenceMaturityTime,
+            checkpointTimeBefore + hyperdrive.getPoolConfig().positionDuration
+        );
+    }
+
+    function test__negativeInterest__resetAtMaturity() external {
+        // FIXME
+    }
+
+    // Tests that the negative interest reference share price and maturity time
+    // are reset when a checkpoint is minted at or after the maturity time.
+    function _test__negativeInterest__resetAtMaturity() internal {
+        // FIXME
+    }
+
+    // FIXME: Test that negative interest is reset if a checkpoint share price
+    // is higher than the reference price.
+
+    // FIXME: Test that negative interest won't be reset if the share price goes
+    // above the reference but isn't checkpointed.
+    //
+    // FIXME: As part of this, I should test that the present value isn't effected
+    // by the share price for either long or short positions.
+
+    // FIXME: Test accruing negative interest in several checkpoints. The max
+    // share price and the maximum checkpoint ID should be used as the reference.
+    // We'll need to test accruing negative interest in the past, and we should
+    // test this in different scenarios.
+
+    // FIXME: Test opening random trades and then verifying that the first LP to
+    // withdraw always gets less than the second LP.
 
     // FIXME: Alice gets fucked in this one.
     function test_isolated_long_example() external {
@@ -39,7 +203,7 @@ contract NegativeInterestTest is HyperdriveTest {
         );
 
         // Most of the term passes and negative interest accrues.
-        advanceTime(
+        advanceTimeWithCheckpoints(
             hyperdrive.getPoolConfig().positionDuration.mulDown(0.99e18),
             -0.5e18
         );
@@ -126,7 +290,7 @@ contract NegativeInterestTest is HyperdriveTest {
         (uint256 maturityTime, ) = openShort(bob, shortAmount);
 
         // Most of the term passes and negative interest accrues.
-        advanceTime(
+        advanceTimeWithCheckpoints(
             hyperdrive.getPoolConfig().positionDuration.mulDown(0.99e18),
             -0.5e18
         );
@@ -236,7 +400,10 @@ contract NegativeInterestTest is HyperdriveTest {
         );
 
         // A couple of checkpoints pass and negative interest accrues.
-        advanceTime(hyperdrive.getPoolConfig().checkpointDuration * 2, -0.5e18);
+        advanceTimeWithCheckpoints(
+            hyperdrive.getPoolConfig().checkpointDuration * 2,
+            -0.5e18
+        );
 
         // Bob opens another long position.
         (testCase.maturityTime1, testCase.tradeAmount1) = openLong(
@@ -245,7 +412,7 @@ contract NegativeInterestTest is HyperdriveTest {
         );
 
         // Most of the terms passes and negative interest accrues.
-        advanceTime(
+        advanceTimeWithCheckpoints(
             hyperdrive.getPoolConfig().positionDuration.mulDown(0.99e18) -
                 hyperdrive.getPoolConfig().checkpointDuration *
                 2,
@@ -336,7 +503,10 @@ contract NegativeInterestTest is HyperdriveTest {
         );
 
         // A couple of checkpoints pass and negative interest accrues.
-        advanceTime(hyperdrive.getPoolConfig().checkpointDuration * 2, -0.5e18);
+        advanceTimeWithCheckpoints(
+            hyperdrive.getPoolConfig().checkpointDuration * 2,
+            -0.5e18
+        );
 
         // Bob opens another long position.
         (testCase.maturityTime1, testCase.tradeAmount1) = openLong(
@@ -345,7 +515,7 @@ contract NegativeInterestTest is HyperdriveTest {
         );
 
         // Most of the terms passes and negative interest accrues.
-        advanceTime(
+        advanceTimeWithCheckpoints(
             hyperdrive.getPoolConfig().positionDuration.mulDown(0.99e18) -
                 hyperdrive.getPoolConfig().checkpointDuration *
                 2,
@@ -438,14 +608,17 @@ contract NegativeInterestTest is HyperdriveTest {
         );
 
         // A couple of checkpoints pass and negative interest accrues.
-        advanceTime(hyperdrive.getPoolConfig().checkpointDuration * 2, -0.5e18);
+        advanceTimeWithCheckpoints(
+            hyperdrive.getPoolConfig().checkpointDuration * 2,
+            -0.5e18
+        );
 
         // Bob opens a short position.
         testCase.tradeAmount1 = hyperdrive.calculateMaxShort() / 2;
         (testCase.maturityTime1, ) = openShort(bob, testCase.tradeAmount1);
 
         // Most of the terms passes and negative interest accrues.
-        advanceTime(
+        advanceTimeWithCheckpoints(
             hyperdrive.getPoolConfig().positionDuration.mulDown(0.99e18) -
                 hyperdrive.getPoolConfig().checkpointDuration *
                 2,
@@ -536,14 +709,17 @@ contract NegativeInterestTest is HyperdriveTest {
         );
 
         // A couple of checkpoints pass and negative interest accrues.
-        advanceTime(hyperdrive.getPoolConfig().checkpointDuration * 2, -0.5e18);
+        advanceTimeWithCheckpoints(
+            hyperdrive.getPoolConfig().checkpointDuration * 2,
+            -0.5e18
+        );
 
         // Bob opens a short position.
         testCase.tradeAmount1 = hyperdrive.calculateMaxShort() / 2;
         (testCase.maturityTime1, ) = openShort(bob, testCase.tradeAmount1);
 
         // Most of the terms passes and negative interest accrues.
-        advanceTime(
+        advanceTimeWithCheckpoints(
             hyperdrive.getPoolConfig().positionDuration.mulDown(0.99e18) -
                 hyperdrive.getPoolConfig().checkpointDuration *
                 2,
@@ -634,14 +810,17 @@ contract NegativeInterestTest is HyperdriveTest {
         (testCase.maturityTime0, ) = openShort(bob, testCase.tradeAmount0);
 
         // A couple of checkpoints pass and negative interest accrues.
-        advanceTime(hyperdrive.getPoolConfig().checkpointDuration * 2, -0.5e18);
+        advanceTimeWithCheckpoints(
+            hyperdrive.getPoolConfig().checkpointDuration * 2,
+            -0.5e18
+        );
 
         // Bob opens a short position.
         testCase.tradeAmount1 = hyperdrive.calculateMaxShort() / 2;
         (testCase.maturityTime1, ) = openShort(bob, testCase.tradeAmount1);
 
         // Most of the terms passes and negative interest accrues.
-        advanceTime(
+        advanceTimeWithCheckpoints(
             hyperdrive.getPoolConfig().positionDuration.mulDown(0.99e18) -
                 hyperdrive.getPoolConfig().checkpointDuration *
                 2,
@@ -730,14 +909,17 @@ contract NegativeInterestTest is HyperdriveTest {
         (testCase.maturityTime0, ) = openShort(bob, testCase.tradeAmount0);
 
         // A couple of checkpoints pass and negative interest accrues.
-        advanceTime(hyperdrive.getPoolConfig().checkpointDuration * 2, -0.5e18);
+        advanceTimeWithCheckpoints(
+            hyperdrive.getPoolConfig().checkpointDuration * 2,
+            -0.5e18
+        );
 
         // Bob opens a short position.
         testCase.tradeAmount1 = hyperdrive.calculateMaxShort() / 2;
         (testCase.maturityTime1, ) = openShort(bob, testCase.tradeAmount1);
 
         // Most of the terms passes and negative interest accrues.
-        advanceTime(
+        advanceTimeWithCheckpoints(
             hyperdrive.getPoolConfig().positionDuration.mulDown(0.99e18) -
                 hyperdrive.getPoolConfig().checkpointDuration *
                 2,
@@ -860,7 +1042,10 @@ contract NegativeInterestTest is HyperdriveTest {
         (testCase.maturityTime0, ) = openShort(bob, testCase.tradeAmount0);
 
         // A couple of checkpoints pass and negative interest accrues.
-        advanceTime(hyperdrive.getPoolConfig().checkpointDuration * 2, -0.5e18);
+        advanceTimeWithCheckpoints(
+            hyperdrive.getPoolConfig().checkpointDuration * 2,
+            -0.5e18
+        );
 
         // Bob opens a long position.
         (testCase.maturityTime1, testCase.tradeAmount1) = openLong(
@@ -869,7 +1054,7 @@ contract NegativeInterestTest is HyperdriveTest {
         );
 
         // Most of the terms passes and negative interest accrues.
-        advanceTime(
+        advanceTimeWithCheckpoints(
             hyperdrive.getPoolConfig().positionDuration.mulDown(0.99e18) -
                 hyperdrive.getPoolConfig().checkpointDuration *
                 2,
@@ -958,7 +1143,10 @@ contract NegativeInterestTest is HyperdriveTest {
         (testCase.maturityTime0, ) = openShort(bob, testCase.tradeAmount0);
 
         // A couple of checkpoints pass and negative interest accrues.
-        advanceTime(hyperdrive.getPoolConfig().checkpointDuration * 2, -0.5e18);
+        advanceTimeWithCheckpoints(
+            hyperdrive.getPoolConfig().checkpointDuration * 2,
+            -0.5e18
+        );
 
         // Bob opens a long position.
         (testCase.maturityTime1, testCase.tradeAmount1) = openLong(
@@ -967,7 +1155,7 @@ contract NegativeInterestTest is HyperdriveTest {
         );
 
         // Most of the terms passes and negative interest accrues.
-        advanceTime(
+        advanceTimeWithCheckpoints(
             hyperdrive.getPoolConfig().positionDuration.mulDown(0.99e18) -
                 hyperdrive.getPoolConfig().checkpointDuration *
                 2,

@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
+
 import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import { HyperdriveBase } from "./HyperdriveBase.sol";
 import { HyperdriveLong } from "./HyperdriveLong.sol";
@@ -40,13 +43,10 @@ abstract contract Hyperdrive is
     ) HyperdriveBase(_config, _dataProvider, _linkerCodeHash, _linkerFactory) {} // solhint-disable-line no-empty-blocks
 
     /// @notice Allows anyone to mint a new checkpoint.
+    /// @dev Even if the checkpoint has already been minted, this function will
+    ///      record any negative interest that accrued since the last checkpoint.
     /// @param _checkpointTime The time of the checkpoint to create.
     function checkpoint(uint256 _checkpointTime) public override {
-        // If the checkpoint has already been set, return early.
-        if (_checkpoints[_checkpointTime].sharePrice != 0) {
-            return;
-        }
-
         // If the checkpoint time isn't divisible by the checkpoint duration
         // or is in the future, it's an invalid checkpoint and we should
         // revert.
@@ -94,6 +94,7 @@ abstract contract Hyperdrive is
             _checkpointTime
         ];
         if (checkpoint_.sharePrice != 0 || _checkpointTime > block.timestamp) {
+            console.log("early return");
             // Record any negative interest that accrued in this checkpoint.
             _recordNegativeInterest(
                 _checkpointTime,
@@ -227,11 +228,21 @@ abstract contract Hyperdrive is
         uint256 _sharePrice,
         bool _isCheckpointBoundary
     ) internal {
+        console.log("_isCheckpointBoundary = %s", _isCheckpointBoundary);
+        console.log("_checkpointTime = %s", _checkpointTime);
+
+        // FIXME: This logic doesn't work when the checkpoint duration equals .
+        // the position duration.
+        //
         // If the checkpoint's maturity time is equal to the reference maturity
         // time, then we've already recorded negative interest in this
         // checkpoint. The reference share price is the checkpoint's share
         // price, so we can short-circuit and return early.
         uint256 maturityTime = _checkpointTime + _positionDuration;
+        if (_isCheckpointBoundary) {
+            maturityTime -= _checkpointDuration;
+        }
+        console.log("maturityTime = %s", maturityTime);
         uint256 referenceMaturityTime = _marketState
             .negativeInterestReferenceMaturityTime;
         if (maturityTime == referenceMaturityTime) {
@@ -269,10 +280,7 @@ abstract contract Hyperdrive is
         // negative interest from earlier checkpoints. We only do this pruning
         // on a checkpoint boundary to avoid pathological scenarios with share
         // price fluctuations between checkpoint boundaries.
-        else if (
-            _marketState.negativeInterestReferenceSharePrice > 0 &&
-            _isCheckpointBoundary
-        ) {
+        else if (referenceSharePrice > 0 && _isCheckpointBoundary) {
             // If the current share price is greater than or equal to the
             // reference share price, then any negative interest that was being
             // tracked has been resolved. Similarly, if the checkpoint time is
@@ -280,6 +288,7 @@ abstract contract Hyperdrive is
             // positions that accrued negative interest will be closed.
             if (
                 _sharePrice >= referenceSharePrice ||
+                // FIXME: This check is incompatible with the others.
                 _checkpointTime >= referenceMaturityTime
             ) {
                 delete _marketState.negativeInterestReferenceSharePrice;
