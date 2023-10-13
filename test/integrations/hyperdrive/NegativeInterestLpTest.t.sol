@@ -59,7 +59,7 @@ contract NegativeInterestLpTest is HyperdriveTest {
 
         // If enough time has passed, ensure that a new checkpoint was minted
         // with negative interest.
-        if (_timeDelta > hyperdrive.getPoolConfig().checkpointDuration) {
+        if (_timeDelta >= checkpointDuration) {
             IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
                 hyperdrive.latestCheckpoint()
             );
@@ -107,7 +107,7 @@ contract NegativeInterestLpTest is HyperdriveTest {
 
         // If enough time has passed, ensure that the new checkpoint was minted
         // with negative interest.
-        if (_timeDelta >= hyperdrive.getPoolConfig().checkpointDuration) {
+        if (_timeDelta >= checkpointDuration) {
             uint256 checkpointTime = hyperdrive.latestCheckpoint();
             IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
                 checkpointTime
@@ -305,11 +305,83 @@ contract NegativeInterestLpTest is HyperdriveTest {
         assertEq(info.negativeInterestReferenceMaturityTime, 0);
     }
 
-    // FIXME
-    function test__negativeInterest__largerMaturityTime() external {}
+    // Tests that scenario in which negative interest accrues and is recorded,
+    // and then another checkpoint of negative interest elapses.
+    function test__negativeInterest__subsequentCheckpoints(
+        uint256 _timeDelta
+    ) external {
+        // Alice deploys and initializes the pool.
+        uint256 fixedRate = 0.05e18;
+        uint256 contribution = 500_000_000e18;
+        deploy(alice, testConfig(fixedRate));
+        initialize(alice, fixedRate, contribution);
 
-    // FIXME
-    function test__negativeInterest__largerSharePrice() external {}
+        // Sample a time delta that is less than two checkpoints.
+        uint256 checkpointDuration = hyperdrive
+            .getPoolConfig()
+            .checkpointDuration;
+        _timeDelta = _timeDelta.normalizeToRange(
+            checkpointDuration.mulDown(0.5e18),
+            checkpointDuration.mulDown(1.5e18)
+        );
+
+        // A small amount of negative interest accrues and a checkpoint is minted.
+        uint256 sharePriceBefore = hyperdrive.getPoolInfo().sharePrice;
+        uint256 checkpointTimeBefore = hyperdrive.latestCheckpoint();
+        advanceTime(
+            _timeDelta,
+            -int256(hyperdrive.getPoolConfig().negativeInterestTolerance * 1000)
+        );
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
+
+        // Ensure that the negative interest reference share price and maturity
+        // time were updated. The reference share price should be set to the
+        // share price from the starting checkpoint, and the reference maturity
+        // time should be set to the maturity time of the starting checkpoint.
+        IHyperdrive.PoolInfo memory info0 = hyperdrive.getPoolInfo();
+        assertEq(info0.negativeInterestReferenceSharePrice, sharePriceBefore);
+        assertEq(
+            info0.negativeInterestReferenceMaturityTime,
+            checkpointTimeBefore + hyperdrive.getPoolConfig().positionDuration
+        );
+
+        // Another checkpoint passes with negative interest accruing. Ensure
+        // that the reference share price stays the same. We initially record
+        // negative interest in the starting checkpoint regardless of how much
+        // time elapses. If the time delta was less than a checkpoint, the
+        // reference maturity time won't change because we're still recording
+        // negative interest in the starting checkpoint. If the time delta is
+        // greater than or equal to a checkpoint, the reference maturity time
+        // will be updated to the maturity time of the second checkpoint.
+        advanceTime(
+            checkpointDuration,
+            -int256(hyperdrive.getPoolConfig().negativeInterestTolerance * 1000)
+        );
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
+        IHyperdrive.PoolInfo memory info1 = hyperdrive.getPoolInfo();
+        assertEq(
+            info1.negativeInterestReferenceSharePrice,
+            info0.negativeInterestReferenceSharePrice
+        );
+        if (_timeDelta < checkpointDuration) {
+            assertEq(
+                info1.negativeInterestReferenceMaturityTime,
+                info0.negativeInterestReferenceMaturityTime
+            );
+        } else {
+            assertEq(
+                info1.negativeInterestReferenceMaturityTime,
+                info0.negativeInterestReferenceMaturityTime + checkpointDuration
+            );
+        }
+    }
+
+    // FIXME: Comment this.
+    function test__negativeInterest__largerSharePrice() external {
+        // FIXME
+    }
+
+    // FIXME: Test recovering from a gap.
 
     // FIXME: Test accruing negative interest in several checkpoints. The max
     // share price and the maximum checkpoint ID should be used as the reference.
