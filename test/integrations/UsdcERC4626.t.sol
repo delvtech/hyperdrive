@@ -20,8 +20,6 @@ import { Lib } from "test/utils/Lib.sol";
 import { ERC4626ValidationTest } from "./ERC4626Validation.t.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 
-import "forge-std/console2.sol";
-
 contract USDC is ERC20 {
     constructor() ERC20("usdc", "USDC", 6) {}
 
@@ -47,16 +45,22 @@ contract UsdcERC4626 is ERC4626ValidationTest {
     using Lib for *;
 
     function setUp() public override {
-        console2.log("1");
         super.setUp();
-        console2.log("2");
         vm.startPrank(deployer);
         underlyingToken = IERC20(address(new USDC()));
-        token = IERC4626(address(new Mock4626(ERC20(address(underlyingToken)), "yearn usdc", "yUSDC")));
-        USDC(address(underlyingToken)).mint(deployer, 1_000_000_000e6);
-        USDC(address(underlyingToken)).mint(alice, 1_000_000_000e6);
-        USDC(address(underlyingToken)).mint(bob, 1_000_000_000e6);
-        console2.log("3");
+        token = IERC4626(
+            address(
+                new Mock4626(
+                    ERC20(address(underlyingToken)),
+                    "yearn usdc",
+                    "yUSDC"
+                )
+            )
+        );
+        uint256 monies = 1_000_000_000e6;
+        USDC(address(underlyingToken)).mint(deployer, monies);
+        USDC(address(underlyingToken)).mint(alice, monies);
+        USDC(address(underlyingToken)).mint(bob, monies);
 
         // Initialize deployer contracts and forwarder
         ERC4626HyperdriveDeployer simpleDeployer = new ERC4626HyperdriveDeployer(
@@ -65,7 +69,7 @@ contract UsdcERC4626 is ERC4626ValidationTest {
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
         forwarderFactory = new ForwarderFactory();
-        console2.log("4");
+
         // Hyperdrive factory to produce ERC4626 instances for UsdcERC4626
         factory = new ERC4626HyperdriveFactory(
             HyperdriveFactory.FactoryConfig(
@@ -82,21 +86,25 @@ contract UsdcERC4626 is ERC4626ValidationTest {
             token,
             new address[](0)
         );
-        console2.log("5");
+
         // Config changes required to support ERC4626 with the correct initial Share Price
         IHyperdrive.PoolConfig memory config = testConfig(FIXED_RATE);
         config.baseToken = underlyingToken;
         config.initialSharePrice = token.convertToAssets(FixedPointMath.ONE_18);
-        console2.log("initialSharePrice", config.initialSharePrice.toString(18));
         config.baseDecimals = 6;
-        config.minimumTransactionAmount = 0.001e6;
+        config.minimumTransactionAmount = 1e6;
+        config.minimumShareReserves = HyperdriveMath.normalizeDecimals(
+            config.minimumShareReserves,
+            18,
+            config.baseDecimals
+        );
         uint256 contribution = 7_500e6;
         vm.stopPrank();
         vm.startPrank(alice);
-        console2.log("6");
+
         // Set approval to allow initial contribution to factory
         underlyingToken.approve(address(factory), type(uint256).max);
-        console2.log("6a");
+
         // Deploy and set hyperdrive instance
         hyperdrive = factory.deployAndInitialize(
             config,
@@ -104,7 +112,7 @@ contract UsdcERC4626 is ERC4626ValidationTest {
             contribution,
             FIXED_RATE
         );
-        console2.log("7");
+
         // Setup maximum approvals so transfers don't require further approval
         underlyingToken.approve(address(hyperdrive), type(uint256).max);
         underlyingToken.approve(address(token), type(uint256).max);
@@ -115,8 +123,26 @@ contract UsdcERC4626 is ERC4626ValidationTest {
         vm.recordLogs();
     }
 
-    function advanceTimeWithYield(uint256 timeDelta) public override {
+    function advanceTimeWithYield(
+        uint256 timeDelta,
+        int256 variableRate
+    ) public override {
         vm.warp(block.timestamp + timeDelta);
+        (, int256 interest) = HyperdriveUtils.calculateCompoundInterest(
+            underlyingToken.balanceOf(address(token)),
+            variableRate,
+            timeDelta
+        );
+        if (interest > 0) {
+            USDC(address(underlyingToken)).mint(
+                address(token),
+                uint256(interest)
+            );
+        } else if (interest < 0) {
+            USDC(address(underlyingToken)).burn(
+                address(token),
+                uint256(-interest)
+            );
+        }
     }
-
 }

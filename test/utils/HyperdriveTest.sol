@@ -978,11 +978,18 @@ contract HyperdriveTest is BaseTest {
                 uint256 eventBaseAmount,
                 uint256 eventApr
             ) = abi.decode(log.data, (uint256, uint256, uint256));
+            uint256 _contribution = contribution;
             assertApproxEqAbs(
                 eventLpAmount,
-                contribution.divDown(
-                    hyperdrive.getPoolConfig().initialSharePrice
-                ) - 2 * minimumShareReserves,
+                HyperdriveMath
+                    .normalizeDecimals(
+                        _contribution,
+                        hyperdrive.getPoolConfig().baseDecimals,
+                        18
+                    )
+                    .divDown(hyperdrive.getPoolConfig().initialSharePrice) -
+                    2 *
+                    minimumShareReserves,
                 tolerance
             );
             assertEq(eventBaseAmount, contribution);

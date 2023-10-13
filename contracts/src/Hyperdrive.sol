@@ -11,9 +11,6 @@ import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { SafeCast } from "./libraries/SafeCast.sol";
 
-import { Lib } from "../../test/utils/Lib.sol";
-import "forge-std/console2.sol";
-
 /// @author DELV
 /// @title Hyperdrive
 /// @notice A fixed-rate AMM that mints bonds on demand for longs and shorts.
@@ -27,7 +24,6 @@ abstract contract Hyperdrive is
 {
     using FixedPointMath for uint256;
     using SafeCast for uint256;
-    using Lib for *;
 
     /// @notice Initializes a Hyperdrive pool.
     /// @param _config The configuration of the Hyperdrive pool.
@@ -113,10 +109,16 @@ abstract contract Hyperdrive is
         uint256 openSharePrice = _checkpoints[
             _checkpointTime - _positionDuration
         ].sharePrice;
-        uint256 maturedShortsAmount = _totalSupply[
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _checkpointTime)
-        ];
-        console2.log("maturedShortsAmount", maturedShortsAmount.toString(18));
+        uint256 maturedShortsAmount = HyperdriveMath.normalizeDecimals(
+            _totalSupply[
+                AssetId.encodeAssetId(
+                    AssetId.AssetIdPrefix.Short,
+                    _checkpointTime
+                )
+            ],
+            _baseDecimals,
+            18
+        );
         bool positionsClosed;
         if (maturedShortsAmount > 0) {
             (
@@ -141,10 +143,16 @@ abstract contract Hyperdrive is
 
         // Close out all of the long positions that matured at the beginning of
         // this checkpoint.
-        uint256 maturedLongsAmount = _totalSupply[
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _checkpointTime)
-        ];
-        console2.log("maturedLongsAmount", maturedLongsAmount.toString(18));
+        uint256 maturedLongsAmount = HyperdriveMath.normalizeDecimals(
+            _totalSupply[
+                AssetId.encodeAssetId(
+                    AssetId.AssetIdPrefix.Long,
+                    _checkpointTime
+                )
+            ],
+            _baseDecimals,
+            18
+        );
         if (maturedLongsAmount > 0) {
             (
                 uint256 shareProceeds,
