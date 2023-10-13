@@ -109,11 +109,11 @@ abstract contract Hyperdrive is
         uint256 openSharePrice = _checkpoints[
             _checkpointTime - _positionDuration
         ].sharePrice;
-        uint256 maturedShortsAmount = _totalSupply[
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _checkpointTime)
-        ];
+        uint256 maturedShortsAmount = HyperdriveMath.normalizeDecimals(_totalSupply[
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _checkpointTime)], _baseDecimals, 18);
         bool positionsClosed;
         if (maturedShortsAmount > 0) {
+            console2.log("maturedShortsAmount", maturedShortsAmount);
             (
                 uint256 shareProceeds,
                 uint256 governanceFee
@@ -136,9 +136,9 @@ abstract contract Hyperdrive is
 
         // Close out all of the long positions that matured at the beginning of
         // this checkpoint.
-        uint256 maturedLongsAmount = _totalSupply[
+        uint256 maturedLongsAmount =  HyperdriveMath.normalizeDecimals(_totalSupply[
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _checkpointTime)
-        ];
+        ], _baseDecimals, 18);
         if (maturedLongsAmount > 0) {
             (
                 uint256 shareProceeds,
