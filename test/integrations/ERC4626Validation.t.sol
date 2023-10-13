@@ -361,8 +361,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         );
     }
 
-    function test_OpenShortWithShares() external {
-        uint256 shortAmount = 0;
+    function test_OpenShortWithShares(uint256 shortAmount) external {
         vm.startPrank(alice);
         uint256 maxShort = HyperdriveMath.normalizeDecimals(
             HyperdriveUtils.calculateMaxShort(hyperdrive),
@@ -392,17 +391,6 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
 
         // Ensure we did actually paid a non-Zero amount of base
         assertGt(basePaid, 0);
-
-        // Note this doesn't hold true with non standard decimals For example,
-        // at 5% fixed rate and the minimum transaction amount of 0.001,
-        // with 18 decimals we have:
-        //   shortAmount: 1000000000000000 (0.001e18)
-        //   basePaid:      47619051304917
-        // with 6 decimals we have:
-        //   shortAmount: 1000 (0.001e6)
-        //   basePaid:      47
-        // There is just not enough decimal places of accuracy to make this statement
-        // If we make the minimum transaction amount 1e6, then it works great.
         uint256 realizedRate = HyperdriveUtils.calculateAPRFromRealizedPrice(
             shortAmount - basePaid,
             shortAmount,

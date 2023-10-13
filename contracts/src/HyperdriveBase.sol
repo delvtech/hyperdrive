@@ -240,23 +240,12 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
         bool _isLong
     ) internal {
         uint256 checkpointTime = _maturityTime - _positionDuration;
-        uint256 checkpointLongs = HyperdriveMath.normalizeDecimals(
-            _totalSupply[
-                AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _maturityTime)
-            ],
-            _baseDecimals,
-            18
-        );
-        uint256 checkpointShorts = HyperdriveMath.normalizeDecimals(
-            _totalSupply[
-                AssetId.encodeAssetId(
-                    AssetId.AssetIdPrefix.Short,
-                    _maturityTime
-                )
-            ],
-            _baseDecimals,
-            18
-        );
+        uint256 checkpointLongs = _totalSupply[
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _maturityTime)
+        ];
+        uint256 checkpointShorts = _totalSupply[
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _maturityTime)
+        ];
 
         // We can zero out long exposure when there are no more open positions
         if (checkpointLongs == 0 && checkpointShorts == 0) {
