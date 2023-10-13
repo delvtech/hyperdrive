@@ -107,7 +107,12 @@ abstract contract Hyperdrive is
         checkpoint_.sharePrice = _sharePrice.toUint128();
         _recordNegativeInterest(
             _checkpointTime,
-            // FIXME: Explain why it's fine for this to be zero.
+            // NOTE: This will be zero if the previous checkpoint wasn't minted.
+            // This implies that gaps of more than one checkpoint will result in
+            // negative interest being missed. If this occurs, it is always
+            // possible to go back and mint the checkpoint immediately after the
+            // checkpoint with negative interest to trigger negative interest
+            // mode.
             _checkpoints[_checkpointTime - _checkpointDuration].sharePrice,
             _sharePrice,
             true
@@ -196,13 +201,6 @@ abstract contract Hyperdrive is
         return _sharePrice;
     }
 
-    // FIXME: In order to really test this rigorously, I need to think of all
-    // of the pathological share price paths that would result in this being
-    // updated.
-    //
-    // FIXME: I need to test different kinds of checkpoint gaps to verify that
-    // negative interest will always be recorded.
-    //
     /// @dev Records any negative interest that has accrued since the previous
     ///      checkpoint. It's possible for negative interest to be missed if
     ///      some checkpoints are skipped, but negative interest can always be
@@ -266,7 +264,7 @@ abstract contract Hyperdrive is
             if (maturityTime > referenceMaturityTime) {
                 _marketState
                     .negativeInterestReferenceMaturityTime = maturityTime
-                    .toUint128();
+                    .toUint112();
             }
         }
         // Negative interest hasn't accrued in this checkpoint, so if we are on

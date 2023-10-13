@@ -5,6 +5,7 @@ import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
+import { MockHyperdrive } from "test/mocks/MockHyperdrive.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
@@ -647,7 +648,7 @@ contract NegativeInterestLpTest is HyperdriveTest {
     function test__negativeInterest__earlyWithdrawalsGetLess(
         bytes32 __seed
     ) internal {
-        // FIXME
+        // TODO: This seed causes an arithmetic underflow.
         __seed = 0x17c40277bdcc700449daf4cfc143a45267dfae59698a606c80ce0ca0a4f772d8;
 
         // Set the seed.
@@ -767,9 +768,11 @@ contract NegativeInterestLpTest is HyperdriveTest {
             celineBaseProceeds += celineWithdrawalProceeds;
         }
 
-        // FIXME: Explain the fudge factor.
-        //
-        // Ensure that Alice's base proceeds were less than or equal to Celine's.
+        // Ensure that Alice's base proceeds are less than or equal to Celine's
+        // within a tolerance. Despite our best attempts, we can't guarantee
+        // that Alice's base proceeds will be less than Celine's because of the
+        // fact that the open shorts and longs may have different amounts of
+        // negative interest which can't be accounted for in the present value.
         assertLe(aliceBaseProceeds.mulDown(0.99e18), celineBaseProceeds);
     }
 }

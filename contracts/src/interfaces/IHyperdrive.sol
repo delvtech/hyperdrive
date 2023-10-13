@@ -92,13 +92,16 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
         bool isInitialized;
         /// @dev A flag indicating whether or not the pool is paused.
         bool isPaused;
-        // FIXME: Comment this.
-        //
-        // FIXME: Packing.
-        //
-        // FIXME: Add these to PoolInfo.
+        /// @dev The maturity time when the most recent negative intereset
+        ///      accrual will stop having an effect. This is a uint112 for
+        ///      packing. 112 bits is more than enough room since this is a
+        ///      timestamp.
+        uint112 negativeInterestReferenceMaturityTime;
+        /// @dev The largest share price that was recorded before negative
+        ///      interest accrues. We can use this to bound the impact that
+        ///      closing all of the shorts will have on the reserves in the
+        ///      present value function.
         uint128 negativeInterestReferenceSharePrice;
-        uint128 negativeInterestReferenceMaturityTime;
     }
 
     struct Checkpoint {
@@ -312,6 +315,7 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
     /// ######################
     /// ### SafeCast ###
     /// ######################
+    error UnsafeCastToUint112();
     error UnsafeCastToUint128();
     error UnsafeCastToInt128();
 }
