@@ -1073,8 +1073,6 @@ contract HyperdriveMathTest is HyperdriveTest {
         closeShort(bob, maturityTime, maxShort);
     }
 
-    // FIXME: Add tests cases with the share adjustment and verify that the
-    // changes work properly.
     function test__calculatePresentValue() external {
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockHyperdriveMath hyperdriveMath = new MockHyperdriveMath();
@@ -1631,9 +1629,222 @@ contract HyperdriveMathTest is HyperdriveTest {
             );
         }
 
-        // FIXME: Add test cases for negative interest mode. Longs should be
-        // unaffected, and shorts should be affected if the reference is
-        // greater than the share price.
+        // complicated scenario with non-trivial negative interest reference
+        // share price that is less than the share price
+        {
+            HyperdriveMath.PresentValueParams memory params = HyperdriveMath
+                .PresentValueParams({
+                    shareReserves: 100_000e18,
+                    shareAdjustment: 0,
+                    bondReserves: calculateBondReserves(
+                        100_000e18,
+                        initialSharePrice,
+                        apr,
+                        positionDuration,
+                        timeStretch
+                    ),
+                    sharePrice: 2e18,
+                    initialSharePrice: 1e18,
+                    minimumShareReserves: 1e18,
+                    timeStretch: timeStretch,
+                    longsOutstanding: 100_000e18,
+                    longAverageTimeRemaining: 0.75e18,
+                    shortsOutstanding: 10_000_000e18,
+                    shortAverageTimeRemaining: 0.25e18,
+                    negativeInterestReferenceSharePrice: 1e18
+                });
+            uint256 presentValue = hyperdriveMath.calculatePresentValue(params);
+
+            // Apply as much as possible to the curve and mark the rest of the
+            // curve trade to the short base volume.
+            uint256 netCurveTrade = params.shortsOutstanding.mulDown(
+                params.shortAverageTimeRemaining
+            ) -
+                params.longsOutstanding.mulDown(
+                    params.longAverageTimeRemaining
+                );
+            (, uint256 maxCurveTrade) = YieldSpaceMath.calculateMaxBuy(
+                uint256(int256(params.shareReserves) - params.shareAdjustment),
+                params.bondReserves,
+                FixedPointMath.ONE_18 - params.timeStretch,
+                params.sharePrice,
+                params.initialSharePrice
+            );
+            params.shareReserves += YieldSpaceMath
+                .calculateSharesInGivenBondsOut(
+                    uint256(
+                        int256(params.shareReserves) - params.shareAdjustment
+                    ),
+                    params.bondReserves,
+                    maxCurveTrade,
+                    FixedPointMath.ONE_18 - params.timeStretch,
+                    params.sharePrice,
+                    params.initialSharePrice
+                );
+            params.shareReserves += netCurveTrade - maxCurveTrade;
+
+            // Apply the flat part to the reserves.
+            params.shareReserves +=
+                params.shortsOutstanding.mulDivDown(
+                    1e18 - params.shortAverageTimeRemaining,
+                    params.sharePrice
+                ) -
+                params.longsOutstanding.mulDivDown(
+                    1e18 - params.longAverageTimeRemaining,
+                    params.sharePrice
+                );
+            assertEq(
+                presentValue,
+                params.shareReserves - params.minimumShareReserves
+            );
+        }
+
+        // complicated scenario with non-trivial negative interest reference
+        // share price that is equal to the share price
+        {
+            HyperdriveMath.PresentValueParams memory params = HyperdriveMath
+                .PresentValueParams({
+                    shareReserves: 100_000e18,
+                    shareAdjustment: 0,
+                    bondReserves: calculateBondReserves(
+                        100_000e18,
+                        initialSharePrice,
+                        apr,
+                        positionDuration,
+                        timeStretch
+                    ),
+                    sharePrice: 2e18,
+                    initialSharePrice: 1e18,
+                    minimumShareReserves: 1e18,
+                    timeStretch: timeStretch,
+                    longsOutstanding: 100_000e18,
+                    longAverageTimeRemaining: 0.75e18,
+                    shortsOutstanding: 10_000_000e18,
+                    shortAverageTimeRemaining: 0.25e18,
+                    negativeInterestReferenceSharePrice: 2e18
+                });
+            uint256 presentValue = hyperdriveMath.calculatePresentValue(params);
+
+            // Apply as much as possible to the curve and mark the rest of the
+            // curve trade to the short base volume.
+            uint256 netCurveTrade = params.shortsOutstanding.mulDown(
+                params.shortAverageTimeRemaining
+            ) -
+                params.longsOutstanding.mulDown(
+                    params.longAverageTimeRemaining
+                );
+            (, uint256 maxCurveTrade) = YieldSpaceMath.calculateMaxBuy(
+                uint256(int256(params.shareReserves) - params.shareAdjustment),
+                params.bondReserves,
+                FixedPointMath.ONE_18 - params.timeStretch,
+                params.sharePrice,
+                params.initialSharePrice
+            );
+            params.shareReserves += YieldSpaceMath
+                .calculateSharesInGivenBondsOut(
+                    uint256(
+                        int256(params.shareReserves) - params.shareAdjustment
+                    ),
+                    params.bondReserves,
+                    maxCurveTrade,
+                    FixedPointMath.ONE_18 - params.timeStretch,
+                    params.sharePrice,
+                    params.initialSharePrice
+                );
+            params.shareReserves += netCurveTrade - maxCurveTrade;
+
+            // Apply the flat part to the reserves.
+            params.shareReserves +=
+                params.shortsOutstanding.mulDivDown(
+                    1e18 - params.shortAverageTimeRemaining,
+                    params.sharePrice
+                ) -
+                params.longsOutstanding.mulDivDown(
+                    1e18 - params.longAverageTimeRemaining,
+                    params.sharePrice
+                );
+            assertEq(
+                presentValue,
+                params.shareReserves - params.minimumShareReserves
+            );
+        }
+
+        // complicated scenario with non-trivial negative interest reference
+        // share price that is greater than the share price
+        {
+            HyperdriveMath.PresentValueParams memory params = HyperdriveMath
+                .PresentValueParams({
+                    shareReserves: 100_000e18,
+                    shareAdjustment: 0,
+                    bondReserves: calculateBondReserves(
+                        100_000e18,
+                        initialSharePrice,
+                        apr,
+                        positionDuration,
+                        timeStretch
+                    ),
+                    sharePrice: 2e18,
+                    initialSharePrice: 1e18,
+                    minimumShareReserves: 1e18,
+                    timeStretch: timeStretch,
+                    longsOutstanding: 100_000e18,
+                    longAverageTimeRemaining: 0.75e18,
+                    shortsOutstanding: 10_000_000e18,
+                    shortAverageTimeRemaining: 0.25e18,
+                    negativeInterestReferenceSharePrice: 4e18
+                });
+            uint256 presentValue = hyperdriveMath.calculatePresentValue(params);
+
+            // Apply as much as possible to the curve and mark the rest of the
+            // curve trade to the short base volume.
+            uint256 netCurveTrade = params.shortsOutstanding.mulDown(
+                params.shortAverageTimeRemaining
+            ) -
+                params.longsOutstanding.mulDown(
+                    params.longAverageTimeRemaining
+                );
+            (, uint256 maxCurveTrade) = YieldSpaceMath.calculateMaxBuy(
+                uint256(int256(params.shareReserves) - params.shareAdjustment),
+                params.bondReserves,
+                FixedPointMath.ONE_18 - params.timeStretch,
+                params.sharePrice,
+                params.initialSharePrice
+            );
+            uint256 shareReservesDelta = YieldSpaceMath
+                .calculateSharesInGivenBondsOut(
+                    uint256(
+                        int256(params.shareReserves) - params.shareAdjustment
+                    ),
+                    params.bondReserves,
+                    maxCurveTrade,
+                    FixedPointMath.ONE_18 - params.timeStretch,
+                    params.sharePrice,
+                    params.initialSharePrice
+                );
+            shareReservesDelta += netCurveTrade - maxCurveTrade;
+
+            // Apply the flat part to the share reserves delta.
+            shareReservesDelta +=
+                params.shortsOutstanding.mulDivDown(
+                    1e18 - params.shortAverageTimeRemaining,
+                    params.sharePrice
+                ) -
+                params.longsOutstanding.mulDivDown(
+                    1e18 - params.longAverageTimeRemaining,
+                    params.sharePrice
+                );
+
+            // Apply the share reserves delta to the share reserves after
+            // adjusting for negative interest.
+            params.shareReserves += shareReservesDelta.mulDivDown(
+                params.sharePrice,
+                params.negativeInterestReferenceSharePrice
+            );
+            assertEq(
+                presentValue,
+                params.shareReserves - params.minimumShareReserves
+            );
+        }
     }
 
     function test__calculateShortProceeds() external {
