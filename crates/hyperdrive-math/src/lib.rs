@@ -131,6 +131,21 @@ impl State {
         (fixed!(1e18) - spot_price) / (spot_price * annualized_time)
     }
 
+    /// Get amount out for a given amount in.
+    pub fn get_out_for_in(&self, asset_in: Asset) -> FixedPoint {
+        YieldSpace::get_out_for_in(self, asset_in)
+    }
+
+    /// Get amount out for a given amount in.  Returns status instead of panicking.
+    pub fn get_out_for_in_safe(&self, asset_in: Asset) -> Option<FixedPoint> {
+        YieldSpace::get_out_for_in_safe(self, asset_in)
+    }
+
+    /// Get amount in for a given amount out.
+    pub fn get_in_for_out(&self, asset_out: Asset) -> FixedPoint {
+        YieldSpace::get_in_for_out(self, asset_out)
+    }
+
     /// Converts a timestamp to the checkpoint timestamp that it corresponds to.
     pub fn to_checkpoint(&self, time: U256) -> U256 {
         time - time % self.config.checkpoint_duration
