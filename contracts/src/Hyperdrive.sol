@@ -7,7 +7,7 @@ import { HyperdriveLong } from "./HyperdriveLong.sol";
 import { HyperdriveShort } from "./HyperdriveShort.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { AssetId } from "./libraries/AssetId.sol";
-import { FixedPointMath } from "./libraries/FixedPointMath.sol";
+import { FixedPointMath, ONE } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { SafeCast } from "./libraries/SafeCast.sol";
 
@@ -224,20 +224,22 @@ abstract contract Hyperdrive is
         uint256 _sharePrice,
         bool _isCheckpointBoundary
     ) internal {
-        // FIXME: This logic doesn't work when the checkpoint duration equals .
-        // the position duration.
-        //
-        // If the checkpoint's maturity time is equal to the reference maturity
-        // time, then we've already recorded negative interest in this
-        // checkpoint. The reference share price is the checkpoint's share
-        // price, so we can short-circuit and return early.
+        // If we are recording negative interest on a checkpoint boundary, then
+        // any negative interest that is found will be recorded as occurring in
+        // the previous checkpoint and expiring when positions from the previous
+        // checkpoint mature. Otherwise, the negative interest will be recorded
+        // as occurring in this checkpoint and expiring when positions from this
+        // checkpoint mature.
         uint256 maturityTime = _checkpointTime + _positionDuration;
         if (_isCheckpointBoundary) {
             maturityTime -= _checkpointDuration;
         }
+
+        // If we have already recorded negative interest for this maturity time,
+        // we don't need to do anything.
         uint256 referenceMaturityTime = _marketState
             .negativeInterestReferenceMaturityTime;
-        if (maturityTime == referenceMaturityTime) {
+        if (maturityTime == referenceMaturityTime && !_isCheckpointBoundary) {
             return;
         }
 
@@ -248,7 +250,7 @@ abstract contract Hyperdrive is
         uint256 referenceSharePrice = _marketState
             .negativeInterestReferenceSharePrice;
         if (
-            _sharePrice + _negativeInterestTolerance <
+            _sharePrice.mulDown(ONE + _negativeInterestTolerance) <
             _previousCheckpointSharePrice
         ) {
             // The negative interest mode needs to use a lower bound for the
@@ -280,7 +282,11 @@ abstract contract Hyperdrive is
             // positions that accrued negative interest will be closed.
             if (
                 _sharePrice >= referenceSharePrice ||
-                // FIXME: This check is incompatible with the others.
+                // NOTE: Even though we subtracted the checkpoint duration from
+                // the maturity time (since it is a checkpoint boundary), we use
+                // the unaltered checkpoint time for this check. We don't need
+                // to wait an additional checkpoint to reset old negative
+                // interest.
                 _checkpointTime >= referenceMaturityTime
             ) {
                 delete _marketState.negativeInterestReferenceSharePrice;

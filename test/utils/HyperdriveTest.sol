@@ -29,10 +29,11 @@ contract HyperdriveTest is BaseTest {
     uint256 internal constant INITIAL_SHARE_PRICE = FixedPointMath.ONE_18;
     uint256 internal constant MINIMUM_SHARE_RESERVES = FixedPointMath.ONE_18;
     uint256 internal constant MINIMUM_TRANSACTION_AMOUNT = 0.001e18;
-    // FIXME: Update this after more testing. What does this value need to be
-    // in practice? It would be good to add a revert in MockHyperdrive that will
-    // fail if this is triggered if a flag is set.
-    uint256 internal constant NEGATIVE_INTEREST_TOLERANCE = 1e9;
+    // FIXME: This is 0.0001 bps which seems more than small enough for traders
+    // not to care about false negatives. The question is whether or not it is
+    // ever triggered in normal trading/lping. Rust fuzzing is going to be
+    // needed to answer this question.
+    uint256 internal constant NEGATIVE_INTEREST_TOLERANCE = 1e10;
     uint256 internal constant CHECKPOINT_DURATION = 1 days;
     uint256 internal constant POSITION_DURATION = 365 days;
     uint256 internal constant ORACLE_SIZE = 5;
