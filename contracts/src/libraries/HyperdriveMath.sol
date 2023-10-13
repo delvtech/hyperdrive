@@ -1422,45 +1422,21 @@ library HyperdriveMath {
         uint256 negativeInterestReferenceSharePrice;
     }
 
-    // FIXME: Account for negative interest that has accrued. We can do this
-    // pretty easily by computing the negative interest discount factor and
-    // using the discounted shorts outstanding instead of the shorts outstanding
-    // amount.
-    //
     /// @dev Calculates the present value LPs capital in the pool.
     /// @param _params The parameters for the present value calculation.
     /// @return The present value of the pool.
     function calculatePresentValue(
         PresentValueParams memory _params
     ) internal pure returns (uint256) {
-        // FIXME: Re-work this comment. This is pretty long.
-        //
-        // Discount the shorts outstanding to bound the present value to the
-        // worst case. We discount the shorts outstanding amount since negative
-        // interest can result in the market being net short in practice even
-        // when the amount of shorts outstanding is greater than the amount of
-        // longs outstanding. We only apply negative interest to the short side
-        // of the market since negative interest on the long side results in
-        // the present value being underestimated. This is actually good for LPs
-        // because it avoids a race-to-the-bottom scenario. Discounting the short
-        // side results in underestimating the present value, which means that
-        // we are consistently underestimating the LP's present value when
-        // negative interest accrues.
-        uint256 shortsOutstanding = _params.shortsOutstanding;
-        if (_params.negativeInterestReferenceSharePrice > _params.sharePrice) {
-            shortsOutstanding = shortsOutstanding.mulDivDown(
-                _params.sharePrice,
-                _params.negativeInterestReferenceSharePrice
-            );
-        }
-
         // Compute the net of the longs and shorts that will be traded on the
         // curve and apply this net to the reserves.
         int256 netCurveTrade = int256(
             _params.longsOutstanding.mulDown(_params.longAverageTimeRemaining)
         ) -
             int256(
-                shortsOutstanding.mulDown(_params.shortAverageTimeRemaining)
+                _params.shortsOutstanding.mulDown(
+                    _params.shortAverageTimeRemaining
+                )
             );
         uint256 effectiveShareReserves = calculateEffectiveShareReserves(
             _params.shareReserves,
@@ -1516,8 +1492,9 @@ library HyperdriveMath {
                 _params.initialSharePrice
             );
             maxCurveTrade = maxCurveTrade.min(uint256(netCurveTrade)); // netCurveTrade is positive, so this is safe.
+            uint256 shareReservesDelta = 0;
             if (maxCurveTrade > 0) {
-                _params.shareReserves += YieldSpaceMath
+                shareReservesDelta += YieldSpaceMath
                     .calculateSharesInGivenBondsOut(
                         effectiveShareReserves,
                         _params.bondReserves,
@@ -1527,13 +1504,28 @@ library HyperdriveMath {
                         _params.initialSharePrice
                     );
             }
-            _params.shareReserves += uint256(netCurveTrade) - maxCurveTrade;
+            shareReservesDelta += uint256(netCurveTrade) - maxCurveTrade;
+
+            // To reduce the risk of LPs racing to bottom after negative
+            // interest has accrued, we use a lower bound for the impact that
+            // closing the open shorts will have on the reserves.
+            if (
+                _params.negativeInterestReferenceSharePrice > _params.sharePrice
+            ) {
+                shareReservesDelta = shareReservesDelta.mulDivDown(
+                    _params.sharePrice,
+                    _params.negativeInterestReferenceSharePrice
+                );
+            }
+            _params.shareReserves += shareReservesDelta;
         }
 
         // Compute the net of the longs and shorts that will be traded flat and
-        // apply this net to the reserves.
+        // apply this net to the reserves. To reduce the risk of LPs racing to
+        // bottom after negative interest has accrued, we use a lower bound for
+        // the impact that closing the open shorts will have on the reserves.
         int256 netFlatTrade = int256(
-            shortsOutstanding.mulDivDown(
+            _params.shortsOutstanding.mulDivDown(
                 ONE - _params.shortAverageTimeRemaining,
                 _params.sharePrice
             )
@@ -1544,6 +1536,17 @@ library HyperdriveMath {
                     _params.sharePrice
                 )
             );
+        if (
+            netFlatTrade > 0 &&
+            _params.negativeInterestReferenceSharePrice > _params.sharePrice
+        ) {
+            netFlatTrade = int256(
+                uint256(netFlatTrade).mulDivDown(
+                    _params.sharePrice,
+                    _params.negativeInterestReferenceSharePrice
+                )
+            );
+        }
         int256 updatedShareReserves = int256(_params.shareReserves) +
             netFlatTrade;
         if (updatedShareReserves < int256(_params.minimumShareReserves)) {

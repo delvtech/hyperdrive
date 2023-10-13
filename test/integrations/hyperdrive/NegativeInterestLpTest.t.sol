@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
@@ -432,6 +433,343 @@ contract NegativeInterestLpTest is HyperdriveTest {
         );
     }
 
-    // FIXME: Test opening random trades and then verifying that the first LP to
-    // withdraw always gets less than the second LP.
+    struct TestCase {
+        uint256 fixedRate;
+        uint256 contribution;
+        uint256 aliceLpShares;
+        uint256 aliceBaseProceeds;
+        uint256 aliceWithdrawalShares;
+        uint256 celineLpShares;
+        uint256 celineBaseProceeds;
+        uint256 celineWithdrawalShares;
+        uint256 maturityTime0;
+        uint256 tradeAmount0;
+        uint256 maturityTime1;
+        uint256 tradeAmount1;
+    }
+
+    // Tests a scenario in which negative interest accrues and two LPs remove
+    // liquidity at different times. The first LP should receive less base than
+    // the second. During this scenario, Bob opens two longs at different times
+    // and closes them in between the LP withdrawals
+    function _test__negativeInterest__twoLps__long__long() internal {
+        TestCase memory testCase = TestCase({
+            fixedRate: 0.05e18,
+            contribution: 500_000_000e18,
+            aliceLpShares: 0,
+            aliceBaseProceeds: 0,
+            aliceWithdrawalShares: 0,
+            celineLpShares: 0,
+            celineBaseProceeds: 0,
+            celineWithdrawalShares: 0,
+            maturityTime0: 0,
+            tradeAmount0: 0,
+            maturityTime1: 0,
+            tradeAmount1: 0
+        });
+
+        // Alice initializes the pool.
+        testCase.aliceLpShares = initialize(
+            alice,
+            testCase.fixedRate,
+            testCase.contribution
+        );
+        testCase.contribution -=
+            2 *
+            hyperdrive.getPoolConfig().minimumShareReserves;
+
+        // Celine adds liquidity.
+        testCase.celineLpShares = addLiquidity(celine, testCase.contribution);
+
+        // Bob opens a long position.
+        (testCase.maturityTime0, testCase.tradeAmount0) = openLong(
+            bob,
+            hyperdrive.calculateMaxLong() / 2
+        );
+
+        // A couple of checkpoints pass and negative interest accrues.
+        advanceTimeWithCheckpoints(
+            hyperdrive.getPoolConfig().checkpointDuration * 2,
+            -0.5e18
+        );
+
+        // Bob opens a long position.
+        (testCase.maturityTime1, testCase.tradeAmount1) = openLong(
+            bob,
+            hyperdrive.calculateMaxLong() / 2
+        );
+
+        // Most of the terms passes and negative interest accrues.
+        advanceTime(
+            hyperdrive.getPoolConfig().positionDuration.mulDown(0.99e18) -
+                hyperdrive.getPoolConfig().checkpointDuration *
+                2,
+            -0.3e18
+        );
+
+        // Alice removes her LP.
+        (
+            testCase.aliceBaseProceeds,
+            testCase.aliceWithdrawalShares
+        ) = removeLiquidity(alice, testCase.aliceLpShares);
+
+        // Bob closes his first long.
+        closeLong(bob, testCase.maturityTime0, testCase.tradeAmount0);
+
+        // Bob closes his second long.
+        closeLong(bob, testCase.maturityTime1, testCase.tradeAmount1);
+
+        // Celine removes her LP.
+        (
+            testCase.celineBaseProceeds,
+            testCase.celineWithdrawalShares
+        ) = removeLiquidity(celine, testCase.celineLpShares);
+
+        // Alice and Celine redeem their withdrawal shares.
+        {
+            (
+                uint256 withdrawalProceeds,
+                uint256 sharesRedeemed
+            ) = redeemWithdrawalShares(alice, testCase.aliceWithdrawalShares);
+            testCase.aliceBaseProceeds += withdrawalProceeds;
+            testCase.aliceWithdrawalShares -= sharesRedeemed;
+        }
+        {
+            (
+                uint256 withdrawalProceeds,
+                uint256 sharesRedeemed
+            ) = redeemWithdrawalShares(celine, testCase.celineWithdrawalShares);
+            testCase.celineBaseProceeds += withdrawalProceeds;
+            testCase.celineWithdrawalShares -= sharesRedeemed;
+        }
+
+        // Alice's base proceeds should be less that or equal base to Celine's.
+        assertLe(testCase.aliceBaseProceeds, testCase.celineBaseProceeds);
+    }
+
+    // Tests a scenario in which negative interest accrues and two LPs remove
+    // liquidity at different times. The first LP should receive less base than
+    // the second. During this scenario, Bob opens two shorts at different times
+    // and closes them in between the LP withdrawals
+    function _test__negativeInterest__twoLps__short__short() internal {
+        TestCase memory testCase = TestCase({
+            fixedRate: 0.05e18,
+            contribution: 500_000_000e18,
+            aliceLpShares: 0,
+            aliceBaseProceeds: 0,
+            aliceWithdrawalShares: 0,
+            celineLpShares: 0,
+            celineBaseProceeds: 0,
+            celineWithdrawalShares: 0,
+            maturityTime0: 0,
+            tradeAmount0: 0,
+            maturityTime1: 0,
+            tradeAmount1: 0
+        });
+
+        // Alice initializes the pool.
+        testCase.aliceLpShares = initialize(
+            alice,
+            testCase.fixedRate,
+            testCase.contribution
+        );
+        testCase.contribution -=
+            2 *
+            hyperdrive.getPoolConfig().minimumShareReserves;
+
+        // Celine adds liquidity.
+        testCase.celineLpShares = addLiquidity(celine, testCase.contribution);
+
+        // Bob opens a short position.
+        testCase.tradeAmount0 = hyperdrive.calculateMaxShort() / 2;
+        (testCase.maturityTime0, ) = openShort(bob, testCase.tradeAmount0);
+
+        // A couple of checkpoints pass and negative interest accrues.
+        advanceTimeWithCheckpoints(
+            hyperdrive.getPoolConfig().checkpointDuration * 2,
+            -0.5e18
+        );
+
+        // Bob opens a short position.
+        testCase.tradeAmount1 = hyperdrive.calculateMaxShort() / 2;
+        (testCase.maturityTime1, ) = openShort(bob, testCase.tradeAmount1);
+
+        // Most of the terms passes and negative interest accrues.
+        advanceTime(
+            hyperdrive.getPoolConfig().positionDuration.mulDown(0.99e18) -
+                hyperdrive.getPoolConfig().checkpointDuration *
+                2,
+            -0.3e18
+        );
+
+        // Alice removes her LP.
+        (
+            testCase.aliceBaseProceeds,
+            testCase.aliceWithdrawalShares
+        ) = removeLiquidity(alice, testCase.aliceLpShares);
+
+        // Bob closes his first short.
+        closeShort(bob, testCase.maturityTime0, testCase.tradeAmount0);
+
+        // Bob closes his second short.
+        closeShort(bob, testCase.maturityTime1, testCase.tradeAmount1);
+
+        // Celine removes her LP.
+        (
+            testCase.celineBaseProceeds,
+            testCase.celineWithdrawalShares
+        ) = removeLiquidity(celine, testCase.celineLpShares);
+
+        // Alice and Celine redeem their withdrawal shares.
+        {
+            (
+                uint256 withdrawalProceeds,
+                uint256 sharesRedeemed
+            ) = redeemWithdrawalShares(alice, testCase.aliceWithdrawalShares);
+            testCase.aliceBaseProceeds += withdrawalProceeds;
+            testCase.aliceWithdrawalShares -= sharesRedeemed;
+        }
+        {
+            (
+                uint256 withdrawalProceeds,
+                uint256 sharesRedeemed
+            ) = redeemWithdrawalShares(celine, testCase.celineWithdrawalShares);
+            testCase.celineBaseProceeds += withdrawalProceeds;
+            testCase.celineWithdrawalShares -= sharesRedeemed;
+        }
+
+        // Alice's base proceeds should be less that or equal base to Celine's.
+        assertLe(testCase.aliceBaseProceeds, testCase.celineBaseProceeds);
+    }
+
+    // TODO: This test currently fails on main with the hardcoded seed. Once
+    // that issue is addressed, we should revisit this.
+    function test__negativeInterest__earlyWithdrawalsGetLess(
+        bytes32 __seed
+    ) internal {
+        // FIXME
+        __seed = 0x17c40277bdcc700449daf4cfc143a45267dfae59698a606c80ce0ca0a4f772d8;
+
+        // Set the seed.
+        _seed = __seed;
+
+        // Alice initialize the pool.
+        uint256 fixedRate = 0.05e18;
+        uint256 contribution = 500_000_000e18;
+        uint256 aliceLpShares = initialize(alice, fixedRate, contribution);
+        contribution -= 2 * hyperdrive.getPoolConfig().minimumShareReserves;
+
+        // Celine adds liquidity.
+        uint256 celineLpShares = addLiquidity(celine, contribution);
+
+        // Accrues positive interest for a period. This gives us an interesting
+        // starting share price.
+        advanceTime(hyperdrive.getPoolConfig().positionDuration, 1e18);
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
+
+        // Execute a series of random open trades.
+        uint256 maturityTime0 = hyperdrive.maturityTimeFromLatestCheckpoint();
+        Trade[] memory trades0 = randomOpenTrades();
+        for (uint256 i = 0; i < trades0.length; i++) {
+            executeTrade(trades0[i]);
+        }
+
+        // Time passes and negative interest accrues.
+        {
+            uint256 timeDelta = uint256(seed()).normalizeToRange(
+                CHECKPOINT_DURATION,
+                POSITION_DURATION.mulDown(0.99e18)
+            );
+            int256 variableRate = int256(uint256(seed())).normalizeToRange(
+                -0.5e18,
+                -0.1e18
+            );
+            advanceTimeWithCheckpoints(timeDelta, variableRate);
+        }
+
+        // Execute a series of random open trades.
+        uint256 maturityTime1 = hyperdrive.maturityTimeFromLatestCheckpoint();
+        Trade[] memory trades1 = randomOpenTrades();
+        for (uint256 i = 0; i < trades1.length; i++) {
+            executeTrade(trades1[i]);
+        }
+
+        // Alice removes her liquidity.
+        (
+            uint256 aliceBaseProceeds,
+            uint256 aliceWithdrawalShares
+        ) = removeLiquidity(alice, aliceLpShares);
+
+        // Close all of the positions in a random order.
+        Trade[] memory closeTrades;
+        {
+            Trade[] memory closeTrades0 = randomCloseTrades(
+                maturityTime0,
+                hyperdrive.balanceOf(
+                    AssetId.encodeAssetId(
+                        AssetId.AssetIdPrefix.Long,
+                        maturityTime0
+                    ),
+                    alice
+                ),
+                maturityTime0,
+                hyperdrive.balanceOf(
+                    AssetId.encodeAssetId(
+                        AssetId.AssetIdPrefix.Short,
+                        maturityTime0
+                    ),
+                    alice
+                )
+            );
+            Trade[] memory closeTrades1 = randomCloseTrades(
+                maturityTime1,
+                hyperdrive.balanceOf(
+                    AssetId.encodeAssetId(
+                        AssetId.AssetIdPrefix.Long,
+                        maturityTime1
+                    ),
+                    alice
+                ),
+                maturityTime1,
+                hyperdrive.balanceOf(
+                    AssetId.encodeAssetId(
+                        AssetId.AssetIdPrefix.Short,
+                        maturityTime1
+                    ),
+                    alice
+                )
+            );
+            closeTrades = combineTrades(closeTrades0, closeTrades1);
+        }
+        for (uint256 i = 0; i < closeTrades.length; i++) {
+            executeTrade(closeTrades[i]);
+        }
+
+        // Celine removes her liquidity.
+        (
+            uint256 celineBaseProceeds,
+            uint256 celineWithdrawalShares
+        ) = removeLiquidity(celine, celineLpShares);
+
+        // Alice and Celine redeem their withdrawal shares.
+        {
+            (uint256 aliceWithdrawalProceeds, ) = redeemWithdrawalShares(
+                alice,
+                aliceWithdrawalShares
+            );
+            aliceBaseProceeds += aliceWithdrawalProceeds;
+        }
+        {
+            (uint256 celineWithdrawalProceeds, ) = redeemWithdrawalShares(
+                celine,
+                celineWithdrawalShares
+            );
+            celineBaseProceeds += celineWithdrawalProceeds;
+        }
+
+        // FIXME: Explain the fudge factor.
+        //
+        // Ensure that Alice's base proceeds were less than or equal to Celine's.
+        assertLe(aliceBaseProceeds.mulDown(0.99e18), celineBaseProceeds);
+    }
 }
