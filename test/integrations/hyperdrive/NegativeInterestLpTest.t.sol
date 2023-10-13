@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-// FIXME
-import { console2 as console } from "forge-std/console2.sol";
-
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
@@ -11,15 +8,6 @@ import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
 
-// FIXME: We need to beef up the testing in several directions:
-//
-// 1. Fuzz with random trades (using the framework in the present value tests)
-//    to ensure that the second LP always gets more in negative interest
-//    scenarios.
-// 2. Test checkpointing with gaps.
-//
-// FIXME: This should evolve into a test that verifies that we have consistent
-// behavior with "Negative Interest Mode".
 contract NegativeInterestLpTest is HyperdriveTest {
     using FixedPointMath for *;
     using HyperdriveUtils for *;
@@ -376,19 +364,73 @@ contract NegativeInterestLpTest is HyperdriveTest {
         }
     }
 
-    // FIXME: Comment this.
-    function test__negativeInterest__largerSharePrice() external {
-        // FIXME
+    // Tests a scenario in which negative interest isn't recorded because
+    // several checkpoints are minted. After a checkpoint is minted, negative
+    // interest accrues. Later, the old checkpoints are minted which results
+    // in the original negative interest being recorded.
+    function test__negativeInterest__backfillingGapsWithNegativeInterest(
+        uint256 _timeDelta
+    ) external {
+        // Alice deploys and initializes the pool.
+        uint256 fixedRate = 0.05e18;
+        uint256 contribution = 500_000_000e18;
+        deploy(alice, testConfig(fixedRate));
+        initialize(alice, fixedRate, contribution);
+
+        // Sample a time delta that is greater than two checkpoints.
+        IHyperdrive.PoolConfig memory config = hyperdrive.getPoolConfig();
+        uint256 checkpointDuration = config.checkpointDuration;
+        uint256 positionDuration = config.positionDuration;
+        _timeDelta = _timeDelta.normalizeToRange(
+            checkpointDuration.mulDown(2e18),
+            positionDuration.mulDown(0.5e18)
+        );
+
+        // A small amount of negative interest accrues and a checkpoint is
+        // minted. Since the intermediate checkpoint was skipped, the reference
+        // share price and maturity time shouldn't have been recorded.
+        uint256 originalSharePrice = hyperdrive.getPoolInfo().sharePrice;
+        uint256 originalCheckpointTime = hyperdrive.latestCheckpoint();
+        advanceTime(
+            _timeDelta,
+            -int256(hyperdrive.getPoolConfig().negativeInterestTolerance * 1000)
+        );
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
+        IHyperdrive.PoolInfo memory info0 = hyperdrive.getPoolInfo();
+        assertEq(info0.negativeInterestReferenceSharePrice, 0);
+        assertEq(info0.negativeInterestReferenceMaturityTime, 0);
+
+        // Another checkpoint passes and a small amount of negative interest
+        // accrues. This negative interest should be recorded.
+        uint256 sharePriceBefore = hyperdrive.getPoolInfo().sharePrice;
+        uint256 checkpointTimeBefore = hyperdrive.latestCheckpoint();
+        advanceTime(
+            CHECKPOINT_DURATION,
+            -int256(hyperdrive.getPoolConfig().negativeInterestTolerance * 1000)
+        );
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
+        info0 = hyperdrive.getPoolInfo();
+        assertEq(info0.negativeInterestReferenceSharePrice, sharePriceBefore);
+        assertEq(
+            info0.negativeInterestReferenceMaturityTime,
+            checkpointTimeBefore + positionDuration
+        );
+
+        // We go back and mint a checkpoint immediately after the starting
+        // checkpoint. It will look forward and set it's share price to the
+        // share price of the first checkpoint that has been minted. Negative
+        // interest will be recorded, and since the original share price is
+        // higher than the reference share price, the reference will be updated.
+        // The reference maturity time will remain unchanged because it is
+        // greater than the maturity time of the newly minted checkpoint.
+        hyperdrive.checkpoint(originalCheckpointTime + checkpointDuration);
+        IHyperdrive.PoolInfo memory info1 = hyperdrive.getPoolInfo();
+        assertEq(info1.negativeInterestReferenceSharePrice, originalSharePrice);
+        assertEq(
+            info1.negativeInterestReferenceMaturityTime,
+            info0.negativeInterestReferenceMaturityTime
+        );
     }
-
-    // FIXME: Test recovering from a gap.
-
-    // FIXME: Test accruing negative interest in several checkpoints. The max
-    // share price and the maximum checkpoint ID should be used as the reference.
-    // We'll need to test accruing negative interest in the past, and we should
-    // test this in different scenarios.
-    //
-    // FIXME: Test accruing negative interest with gaps.
 
     // FIXME: Test opening random trades and then verifying that the first LP to
     // withdraw always gets less than the second LP.
