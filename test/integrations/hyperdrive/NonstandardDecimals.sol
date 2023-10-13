@@ -24,7 +24,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         // using nonstandard decimals in this suite.
         IHyperdrive.PoolConfig memory config = testConfig(0.05e18);
         config.baseDecimals = 6;
-        config.minimumTransactionAmount = 0.001e6;
+        config.minimumTransactionAmount = 1e6
         deploy(deployer, config);
     }
 
@@ -63,7 +63,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
             // Deploy and initialize the pool.
             IHyperdrive.PoolConfig memory config = testConfig(0.02e18);
             config.baseDecimals = 6;
-            config.minimumTransactionAmount = 0.001e6;
+            config.minimumTransactionAmount = 1e6
             deploy(deployer, config);
             initialize(alice, 0.02e18, 500_000_000e6);
 
@@ -84,7 +84,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
             // Deploy and initialize the pool.
             IHyperdrive.PoolConfig memory config = testConfig(0.02e18);
             config.baseDecimals = 6;
-            config.minimumTransactionAmount = 0.001e6;
+            config.minimumTransactionAmount = 1e6
             deploy(deployer, config);
             initialize(alice, 0.02e18, 500_000_000e6);
 
@@ -118,7 +118,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
             // Deploy and initialize the pool.
             IHyperdrive.PoolConfig memory config = testConfig(0.02e18);
             config.baseDecimals = 6;
-            config.minimumTransactionAmount = 0.001e6;
+            config.minimumTransactionAmount = 1e6
             deploy(deployer, config);
             initialize(alice, 0.02e18, 500_000_000e6);
 
@@ -159,7 +159,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
             // Deploy and initialize the pool.
             IHyperdrive.PoolConfig memory config = testConfig(0.02e18);
             config.baseDecimals = 6;
-            config.minimumTransactionAmount = 0.001e6;
+            config.minimumTransactionAmount = 1e6
             deploy(deployer, config);
             initialize(alice, 0.02e18, 500_000_000e6);
 
@@ -181,7 +181,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
             // Deploy and initialize the pool.
             IHyperdrive.PoolConfig memory config = testConfig(0.02e18);
             config.baseDecimals = 6;
-            config.minimumTransactionAmount = 0.001e6;
+            config.minimumTransactionAmount = 1e6
             deploy(deployer, config);
             initialize(alice, 0.02e18, 500_000_000e6);
 
@@ -221,7 +221,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
             // Deploy and initialize the pool.
             IHyperdrive.PoolConfig memory config = testConfig(0.02e18);
             config.baseDecimals = 6;
-            config.minimumTransactionAmount = 0.001e6;
+            config.minimumTransactionAmount = 1e6
             deploy(deployer, config);
             initialize(alice, 0.02e18, 500_000_000e6);
 
@@ -298,7 +298,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         // Redeploy the pool so that the edge cases function can call it repeatedly.
         IHyperdrive.PoolConfig memory config = testConfig(0.05e18);
         config.baseDecimals = 6;
-        config.minimumTransactionAmount = 0.001e6;
+        config.minimumTransactionAmount = 1e6
         deploy(deployer, config);
 
         uint256 minimumTransactionAmount = hyperdrive

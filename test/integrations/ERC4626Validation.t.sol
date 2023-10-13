@@ -17,8 +17,6 @@ import { HyperdriveUtils } from "../utils/HyperdriveUtils.sol";
 import { Lib } from "../utils/Lib.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 
-import "forge-std/console2.sol";
-
 abstract contract ERC4626ValidationTest is HyperdriveTest {
     using FixedPointMath for *;
     using Lib for *;
