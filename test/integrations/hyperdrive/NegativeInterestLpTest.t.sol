@@ -24,21 +24,21 @@ contract NegativeInterestLpTest is HyperdriveTest {
     using HyperdriveUtils for *;
     using Lib for *;
 
-    function test__negativeInterest__disabledWithinTolerance() external {
-        // Negative interest within a checkpoint.
-        _test__negativeInterest__disabledWithinTolerance(
-            hyperdrive.getPoolConfig().checkpointDuration.mulDown(0.5e18)
-        );
-
-        // Negative interest at the checkpoint boundary.
-        _test__negativeInterest__disabledWithinTolerance(
-            hyperdrive.getPoolConfig().checkpointDuration
-        );
-    }
-
-    function test__negativeInterest__disabledWithinTolerance__fuzz(
+    // Tests that Hyperdrive ignores negative interest below the specified
+    // tolerance.
+    function test__negativeInterest__disabledWithinTolerance(
         uint256 _timeDelta
     ) external {
+        // Alice deploys and initializes the pool.
+        uint256 fixedRate = 0.05e18;
+        uint256 contribution = 500_000_000e18;
+        deploy(alice, testConfig(fixedRate));
+        initialize(alice, fixedRate, contribution);
+
+        // Sample a time delta that is between 50% and 199% of a checkpoint.
+        // This range is chosen because it includes at most one checkpoint and
+        // won't result in negative interest large enough to be recorded at our
+        // interest rate.
         uint256 checkpointDuration = hyperdrive
             .getPoolConfig()
             .checkpointDuration;
@@ -46,19 +46,6 @@ contract NegativeInterestLpTest is HyperdriveTest {
             checkpointDuration.mulDown(0.5e18),
             checkpointDuration.mulDown(1.99e18)
         );
-        _test__negativeInterest__disabledWithinTolerance(_timeDelta);
-    }
-
-    // Tests that Hyperdrive ignores negative interest below the specified
-    // tolerance.
-    function _test__negativeInterest__disabledWithinTolerance(
-        uint256 _timeDelta
-    ) internal {
-        // Alice deploys and initializes the pool.
-        uint256 fixedRate = 0.05e18;
-        uint256 contribution = 500_000_000e18;
-        deploy(alice, testConfig(fixedRate));
-        initialize(alice, fixedRate, contribution);
 
         // A tiny amount of negative interest accrues. If enough time has
         // elapsed, we will mint a checkpoint.
@@ -86,21 +73,20 @@ contract NegativeInterestLpTest is HyperdriveTest {
         assertEq(info.negativeInterestReferenceMaturityTime, 0);
     }
 
-    function test__negativeInterest__enabledOutsideTolerance() external {
-        // Negative interest within a checkpoint.
-        _test__negativeInterest__enabledOutsideTolerance(
-            hyperdrive.getPoolConfig().checkpointDuration.mulDown(0.5e18)
-        );
-
-        // Negative interest at the checkpoint boundary.
-        _test__negativeInterest__enabledOutsideTolerance(
-            hyperdrive.getPoolConfig().checkpointDuration
-        );
-    }
-
-    function test__negativeInterest__enabledOutsideTolerance__fuzz(
+    // Tests that Hyperdrive records negative interest above the tolerance.
+    function test__negativeInterest__enabledOutsideTolerance(
         uint256 _timeDelta
     ) external {
+        // Alice deploys and initializes the pool.
+        uint256 fixedRate = 0.05e18;
+        uint256 contribution = 500_000_000e18;
+        deploy(alice, testConfig(fixedRate));
+        initialize(alice, fixedRate, contribution);
+
+        // Sample a time delta that is between 50% and 199% of a checkpoint.
+        // This range is chosen because it includes at most one checkpoint and
+        // will result in negative interest large enough to be recorded at our
+        // interest rate.
         uint256 checkpointDuration = hyperdrive
             .getPoolConfig()
             .checkpointDuration;
@@ -108,18 +94,6 @@ contract NegativeInterestLpTest is HyperdriveTest {
             checkpointDuration.mulDown(0.5e18),
             checkpointDuration.mulDown(1.99e18)
         );
-        _test__negativeInterest__enabledOutsideTolerance(_timeDelta);
-    }
-
-    // Tests that Hyperdrive records negative interest above the tolerance.
-    function _test__negativeInterest__enabledOutsideTolerance(
-        uint256 _timeDelta
-    ) internal {
-        // Alice deploys and initializes the pool.
-        uint256 fixedRate = 0.05e18;
-        uint256 contribution = 500_000_000e18;
-        deploy(alice, testConfig(fixedRate));
-        initialize(alice, fixedRate, contribution);
 
         // A small amount of negative interest accrues and a checkpoint is minted.
         uint256 sharePriceBefore = hyperdrive.getPoolInfo().sharePrice;
@@ -153,24 +127,71 @@ contract NegativeInterestLpTest is HyperdriveTest {
         );
     }
 
-    function test__negativeInterest__resetAtMaturity() external {
-        // FIXME
-    }
-
     // Tests that the negative interest reference share price and maturity time
     // are reset when a checkpoint is minted at or after the maturity time.
-    function _test__negativeInterest__resetAtMaturity() internal {
-        // FIXME
-    }
+    function test__negativeInterest__resetAtMaturity(
+        uint256 _timeDelta0,
+        uint256 _timeDelta1
+    ) external {
+        // Alice deploys and initializes the pool.
+        uint256 fixedRate = 0.05e18;
+        uint256 contribution = 500_000_000e18;
+        deploy(alice, testConfig(fixedRate));
+        initialize(alice, fixedRate, contribution);
 
-    // FIXME: Test that negative interest is reset if a checkpoint share price
-    // is higher than the reference price.
+        // Sample two time deltas that add up to at least the position duration.
+        uint256 checkpointDuration = hyperdrive
+            .getPoolConfig()
+            .checkpointDuration;
+        uint256 positionDuration = hyperdrive.getPoolConfig().positionDuration;
+        _timeDelta0 = _timeDelta0.normalizeToRange(
+            checkpointDuration.mulDown(0.5e18),
+            checkpointDuration.mulDown(1.99e18)
+        );
+        _timeDelta1 = _timeDelta1.normalizeToRange(
+            positionDuration - _timeDelta0,
+            2 * positionDuration
+        );
+
+        // A small amount of negative interest accrues and a checkpoint is minted.
+        uint256 sharePriceBefore = hyperdrive.getPoolInfo().sharePrice;
+        uint256 checkpointTimeBefore = hyperdrive.latestCheckpoint();
+        advanceTime(
+            _timeDelta0,
+            -int256(hyperdrive.getPoolConfig().negativeInterestTolerance * 1000)
+        );
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
+
+        // Ensure that the negative interest reference share price and maturity
+        // time were updated. The reference share price should be set to the
+        // share price from the starting checkpoint, and the reference maturity
+        // time should be set to the maturity time of the starting checkpoint.
+        IHyperdrive.PoolInfo memory info = hyperdrive.getPoolInfo();
+        assertEq(info.negativeInterestReferenceSharePrice, sharePriceBefore);
+        assertEq(
+            info.negativeInterestReferenceMaturityTime,
+            checkpointTimeBefore + hyperdrive.getPoolConfig().positionDuration
+        );
+
+        // A long time passes with no interest accrual and a checkpoint is minted.
+        advanceTime(_timeDelta1, 0);
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint());
+
+        // Ensure that the negative interest reference share price and maturity
+        // time were reset.
+        info = hyperdrive.getPoolInfo();
+        assertEq(info.negativeInterestReferenceSharePrice, 0);
+        assertEq(info.negativeInterestReferenceMaturityTime, 0);
+    }
 
     // FIXME: Test that negative interest won't be reset if the share price goes
     // above the reference but isn't checkpointed.
     //
     // FIXME: As part of this, I should test that the present value isn't effected
     // by the share price for either long or short positions.
+
+    // FIXME: Test that negative interest is reset if a checkpoint share price
+    // is higher than the reference price.
 
     // FIXME: Test accruing negative interest in several checkpoints. The max
     // share price and the maximum checkpoint ID should be used as the reference.

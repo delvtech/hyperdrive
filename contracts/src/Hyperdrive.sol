@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-// FIXME
-import { console2 as console } from "forge-std/console2.sol";
-
 import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import { HyperdriveBase } from "./HyperdriveBase.sol";
 import { HyperdriveLong } from "./HyperdriveLong.sol";
@@ -94,7 +91,6 @@ abstract contract Hyperdrive is
             _checkpointTime
         ];
         if (checkpoint_.sharePrice != 0 || _checkpointTime > block.timestamp) {
-            console.log("early return");
             // Record any negative interest that accrued in this checkpoint.
             _recordNegativeInterest(
                 _checkpointTime,
@@ -228,9 +224,6 @@ abstract contract Hyperdrive is
         uint256 _sharePrice,
         bool _isCheckpointBoundary
     ) internal {
-        console.log("_isCheckpointBoundary = %s", _isCheckpointBoundary);
-        console.log("_checkpointTime = %s", _checkpointTime);
-
         // FIXME: This logic doesn't work when the checkpoint duration equals .
         // the position duration.
         //
@@ -242,7 +235,6 @@ abstract contract Hyperdrive is
         if (_isCheckpointBoundary) {
             maturityTime -= _checkpointDuration;
         }
-        console.log("maturityTime = %s", maturityTime);
         uint256 referenceMaturityTime = _marketState
             .negativeInterestReferenceMaturityTime;
         if (maturityTime == referenceMaturityTime) {
