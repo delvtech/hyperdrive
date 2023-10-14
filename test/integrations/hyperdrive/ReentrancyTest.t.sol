@@ -65,6 +65,22 @@ contract ReentrantERC20 is ERC20Mintable, ReentrancyTester {
 
         return true;
     }
+
+    function transferFrom(
+        address from,
+        address to,
+        uint256 amount
+    ) public override returns (bool) {
+        super.transferFrom(from, to, amount);
+
+        // If the target calls this token, make a reentrant call and verify
+        // that it fails with the correct error.
+        if (msg.sender == _target) {
+            _testReentrancy();
+        }
+
+        return true;
+    }
 }
 
 // This test suite validates that Hyperdrive's core functions cannot be reentered.

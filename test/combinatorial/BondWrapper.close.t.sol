@@ -231,7 +231,7 @@ contract BondWrapper_close is CombinatorialTest {
         } else if (userWrappedBondUnderflow) {
             __fail_error = stdError.arithmeticError;
         } else if (baseTokenTransferWillFail) {
-            __fail_error = bytes("ERC20: transfer amount exceeds balance");
+            __fail_error = stdError.arithmeticError;
         }
 
         if (

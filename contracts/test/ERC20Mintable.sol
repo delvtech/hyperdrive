@@ -4,7 +4,6 @@ pragma solidity 0.8.19;
 import { Authority } from "solmate/auth/Auth.sol";
 import { MultiRolesAuthority } from "solmate/auth/authorities/MultiRolesAuthority.sol";
 import { ERC20 } from "solmate/tokens/ERC20.sol";
-import { ERC20Burnable } from "openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
 contract ERC20Mintable is ERC20, MultiRolesAuthority {
     bool internal immutable _isCompetitionMode;
