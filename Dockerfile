@@ -22,7 +22,10 @@ RUN chmod a+x ./migrate.sh
 # Install the dependencies and compile the contracts.
 RUN forge install && forge build
 
-# Load the build-time arguments used in the migration script.
+# Load the environment variables used in the migration script.
+ENV ETH_FROM=0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+ENV PRIVATE_KEY=ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+ENV RPC_URL=http://localhost:8545
 ARG ADMIN
 ARG IS_COMPETITION_MODE
 ARG BASE_TOKEN_NAME
@@ -38,11 +41,6 @@ ARG HYPERDRIVE_CHECKPOINT_DURATION
 ARG HYPERDRIVE_TIME_STRETCH_APR
 ARG HYPERDRIVE_ORACLE_SIZE
 ARG HYPERDRIVE_UPDATE_GAP
-
-# Load the environment variables used in the migration script.
-ENV ETH_FROM=0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
-ENV PRIVATE_KEY=ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-ENV RPC_URL=http://localhost:8545
 
 # Run anvil as a background process. We run the migrations against this anvil 
 # node and dump the state into the "./data" directory. At runtime, the consumer
