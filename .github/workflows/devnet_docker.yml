@@ -1,4 +1,4 @@
-name: Publish the docker images
+name: Publish the devnet image
 
 on:
   workflow_dispatch:
@@ -10,6 +10,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/devnet
 
 jobs:
   push-image:
@@ -45,33 +46,6 @@ jobs:
 
       - name: Build and push the Devnet image
         uses: docker/build-push-action@v4.1.0
-        env:
-          IMAGE_NAME: ${{ github.repository }}/devnet
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-
-      - name: Build and push the Testnet image
-        uses: docker/build-push-action@v4.1.0
-        env:
-          IMAGE_NAME: ${{ github.repository }}/testnet
-          ADMIN: ${{ vars.TESTNET_ADMIN }}
-          IS_COMPETITION_MODE: true
-          BASE_TOKEN_NAME: "stETH"
-          BASE_TOKEN_SYMBOL: "STETH"
-          VAULT_STARTING_RATE: 30000000000000000 # 3% APR
-          HYPERDRIVE_CONTRIBUTION: 50000000000000000000000 # 50,000 ETH
-          HYPERDRIVE_FIXED_RATE: 30000000000000000 # 3% APR
-          HYPERDRIVE_INITIAL_SHARE_PRICE: 1000000000000000000 # 1 base/share
-          HYPERDRIVE_MINIMUM_SHARE_RESERVES: 1000000000000000 # 1e15
-          HYPERDRIVE_MINIMUM_TRANSACTION_AMOUNT: 1000000000000 # 1e12
-          HYPERDRIVE_POSITION_DURATION: 31536000 # 1 year in seconds
-          HYPERDRIVE_CHECKPOINT_DURATION: 86400 # 1 day in seconds
-          HYPERDRIVE_TIME_STRETCH_APR: 20000000000000000 # 2% APR
-          HYPERDRIVE_ORACLE_SIZE: 10 # 10 recorded spot prices
-          HYPERDRIVE_UPDATE_GAP: 3600 # 1 hour in seconds
         with:
           context: .
           push: true
