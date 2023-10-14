@@ -1,25 +1,56 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { ERC20 } from "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
+import { Authority } from "solmate/auth/Auth.sol";
+import { MultiRolesAuthority } from "solmate/auth/authorities/MultiRolesAuthority.sol";
+import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { ERC20Burnable } from "openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
-contract ERC20Mintable is ERC20 {
-    constructor() ERC20("Base", "BASE") {}
+contract ERC20Mintable is ERC20, MultiRolesAuthority {
+    bool internal immutable _isCompetitionMode;
 
-    function mint(uint256 amount) external {
+    constructor(
+        string memory name,
+        string memory symbol,
+        uint8 decimals,
+        address admin,
+        bool isCompetitionMode
+    )
+        ERC20(name, symbol, decimals)
+        MultiRolesAuthority(admin, Authority(address(0)))
+    {
+        _isCompetitionMode = isCompetitionMode;
+    }
+
+    modifier requiresAuthDuringCompetition() {
+        if (_isCompetitionMode) {
+            require(
+                isAuthorized(msg.sender, msg.sig),
+                "ERC20Mintable: not authorized"
+            );
+        }
+        _;
+    }
+
+    function mint(uint256 amount) external requiresAuthDuringCompetition {
         _mint(msg.sender, amount);
     }
 
-    function mint(address destination, uint256 amount) external {
+    function mint(
+        address destination,
+        uint256 amount
+    ) external requiresAuthDuringCompetition {
         _mint(destination, amount);
     }
 
-    function burn(uint256 amount) external {
+    function burn(uint256 amount) external requiresAuthDuringCompetition {
         _burn(msg.sender, amount);
     }
 
-    function burn(address destination, uint256 amount) external {
+    function burn(
+        address destination,
+        uint256 amount
+    ) external requiresAuthDuringCompetition {
         _burn(destination, amount);
     }
 }

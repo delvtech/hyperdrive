@@ -64,7 +64,7 @@ contract BondWrapper_close is CombinatorialTest {
         vm.startPrank(deployer);
 
         hyperdrive = new __MockHyperDrive__();
-        baseToken = new ERC20Mintable();
+        baseToken = new ERC20Mintable("Base", "BASE", 18, address(0), false);
     }
 
     struct TestCase {
