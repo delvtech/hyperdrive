@@ -153,12 +153,13 @@ contract DevnetMigration is Script {
             config.admin,
             config.isCompetitionMode
         );
-        // FIXME: Add an admin and isCompetitionMode.
         MockERC4626 pool = new MockERC4626(
             baseToken,
             config.vaultName,
             config.vaultSymbol,
-            config.vaultStartingRate
+            config.vaultStartingRate,
+            config.admin,
+            config.isCompetitionMode
         );
 
         // Deploy the Hyperdrive factory.

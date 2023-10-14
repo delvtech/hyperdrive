@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import { Authority } from "solmate/auth/Auth.sol";
+import { MultiRolesAuthority } from "solmate/auth/authorities/MultiRolesAuthority.sol";
 import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { ERC4626 } from "solmate/mixins/ERC4626.sol";
 import { FixedPointMath } from "../src/libraries/FixedPointMath.sol";
@@ -15,20 +17,38 @@ import { ERC20Mintable } from "./ERC20Mintable.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract MockERC4626 is ERC4626 {
+contract MockERC4626 is ERC4626, MultiRolesAuthority {
     using FixedPointMath for uint256;
 
     uint256 internal _rate;
     uint256 internal _lastUpdated;
 
+    bool internal immutable _isCompetitionMode;
+
     constructor(
         ERC20Mintable _asset,
         string memory _name,
         string memory _symbol,
-        uint256 _initialRate
-    ) ERC4626(ERC20(address(_asset)), _name, _symbol) {
+        uint256 _initialRate,
+        address _admin,
+        bool _isCompetitionMode_
+    )
+        ERC4626(ERC20(address(_asset)), _name, _symbol)
+        MultiRolesAuthority(_admin, Authority(address(0)))
+    {
         _rate = _initialRate;
         _lastUpdated = block.timestamp;
+        _isCompetitionMode = _isCompetitionMode_;
+    }
+
+    modifier requiresAuthDuringCompetition() {
+        if (_isCompetitionMode) {
+            require(
+                isAuthorized(msg.sender, msg.sig),
+                "MockERC4626: not authorized"
+            );
+        }
+        _;
     }
 
     /// Overrides ///
@@ -73,7 +93,7 @@ contract MockERC4626 is ERC4626 {
 
     /// Mock ///
 
-    function setRate(uint256 _rate_) external {
+    function setRate(uint256 _rate_) external requiresAuthDuringCompetition {
         _accrue();
         _rate = _rate_;
     }
