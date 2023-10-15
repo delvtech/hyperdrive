@@ -150,7 +150,7 @@ contract DevnetMigration is Script {
             config.baseTokenName,
             config.baseTokenSymbol,
             config.baseTokenDecimals,
-            config.admin,
+            msg.sender,
             config.isCompetitionMode
         );
         MockERC4626 pool = new MockERC4626(
@@ -158,7 +158,7 @@ contract DevnetMigration is Script {
             config.vaultName,
             config.vaultSymbol,
             config.vaultStartingRate,
-            config.admin,
+            msg.sender,
             config.isCompetitionMode
         );
 
@@ -236,6 +236,11 @@ contract DevnetMigration is Script {
 
         // Deploy the MockHyperdriveMath contract.
         MockHyperdriveMath mockHyperdriveMath = new MockHyperdriveMath();
+
+        // Transfer ownership of the base token and vault to the admin address
+        // now that we're done minting tokens.
+        baseToken.transferOwnership(config.admin);
+        pool.transferOwnership(config.admin);
 
         vm.stopBroadcast();
 
