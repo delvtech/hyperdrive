@@ -16,7 +16,7 @@ contract ERC20Mintable is ERC20, MultiRolesAuthority {
         bool isCompetitionMode
     )
         ERC20(name, symbol, decimals)
-        MultiRolesAuthority(admin, Authority(address(0)))
+        MultiRolesAuthority(admin, Authority(address(address(this))))
     {
         _isCompetitionMode = isCompetitionMode;
     }

@@ -161,6 +161,19 @@ contract DevnetMigration is Script {
             msg.sender,
             config.isCompetitionMode
         );
+        if (config.isCompetitionMode) {
+            baseToken.setUserRole(address(pool), 1, true);
+            baseToken.setRoleCapability(
+                1,
+                bytes4(keccak256("mint(uint256)")),
+                true
+            );
+            baseToken.setRoleCapability(
+                1,
+                bytes4(keccak256("burn(uint256)")),
+                true
+            );
+        }
 
         // Deploy the Hyperdrive factory.
         ERC4626HyperdriveFactory factory;

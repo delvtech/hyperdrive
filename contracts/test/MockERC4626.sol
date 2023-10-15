@@ -34,7 +34,7 @@ contract MockERC4626 is ERC4626, MultiRolesAuthority {
         bool _isCompetitionMode_
     )
         ERC4626(ERC20(address(_asset)), _name, _symbol)
-        MultiRolesAuthority(_admin, Authority(address(0)))
+        MultiRolesAuthority(_admin, Authority(address(this)))
     {
         _rate = _initialRate;
         _lastUpdated = block.timestamp;

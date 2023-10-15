@@ -4,8 +4,6 @@ on:
   workflow_dispatch:
   push:
     branches:
-      # FIXME: Using this to test the testnet image
-      - "jalextowle/competition/authorization-for-tokens-and-vaults"
       - "main"
     tags:
       - "v*"
