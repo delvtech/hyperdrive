@@ -114,7 +114,18 @@ impl TestChain {
             provider.clone(),
             signer.with_chain_id(provider.get_chainid().await?.low_u64()),
         ));
-        let base = ERC20Mintable::deploy(client.clone(), ())?.send().await?;
+        let base = ERC20Mintable::deploy(
+            client.clone(),
+            (
+                "Base".to_string(),
+                "BASE".to_string(),
+                18_u8,
+                Address::zero(),
+                false,
+            ),
+        )?
+        .send()
+        .await?;
         let pool = MockERC4626::deploy(
             client.clone(),
             (
@@ -122,6 +133,8 @@ impl TestChain {
                 "Mock ERC4626 Vault".to_string(),
                 "MOCK".to_string(),
                 uint256!(0.05e18),
+                Address::zero(),
+                false,
             ),
         )?
         .send()

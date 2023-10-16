@@ -47,12 +47,39 @@ contract ReentrantEthReceiver is ReentrancyTester {
 }
 
 contract ReentrantERC20 is ERC20Mintable, ReentrancyTester {
-    function _afterTokenTransfer(address, address, uint256) internal override {
+    constructor()
+        ERC20Mintable("ReentrantERC20", "REENT", 18, address(0), false)
+    {}
+
+    function transfer(
+        address to,
+        uint256 amount
+    ) public override returns (bool) {
+        super.transfer(to, amount);
+
         // If the target calls this token, make a reentrant call and verify
         // that it fails with the correct error.
         if (msg.sender == _target) {
             _testReentrancy();
         }
+
+        return true;
+    }
+
+    function transferFrom(
+        address from,
+        address to,
+        uint256 amount
+    ) public override returns (bool) {
+        super.transferFrom(from, to, amount);
+
+        // If the target calls this token, make a reentrant call and verify
+        // that it fails with the correct error.
+        if (msg.sender == _target) {
+            _testReentrancy();
+        }
+
+        return true;
     }
 }
 

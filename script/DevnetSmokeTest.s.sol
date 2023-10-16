@@ -31,6 +31,10 @@ contract DevnetSmokeTest is Script {
         // Execute all transactions with the ETH_FROM address.
         vm.startBroadcast(msg.sender);
 
+        console.log("Starting pool config:");
+        _logConfig();
+        console.log("");
+
         console.log("Starting pool info:");
         _logInfo();
         console.log("");
@@ -161,6 +165,38 @@ contract DevnetSmokeTest is Script {
             msg.sender,
             baseProceeds.toString(18)
         );
+    }
+
+    function _logConfig() internal view {
+        IHyperdrive.PoolConfig memory config = HYPERDRIVE.getPoolConfig();
+        console.log(
+            "intialSharePrice: %s",
+            config.initialSharePrice.toString(18)
+        );
+        console.log(
+            "minimumShareReserves: %s",
+            config.minimumShareReserves.toString(18)
+        );
+        console.log(
+            "minimumTransactionAmount: %s",
+            config.minimumTransactionAmount.toString(18)
+        );
+        console.log(
+            "positionDuration: %s",
+            config.positionDuration.toString(18)
+        );
+        console.log(
+            "checkpointDuration: %s",
+            config.checkpointDuration.toString(18)
+        );
+        console.log("timeStretch: %s", config.timeStretch.toString(18));
+        console.log("governance: %s", config.governance);
+        console.log("feeCollector: %s", config.feeCollector);
+        console.log("curve fee: %s", config.fees.curve.toString(18));
+        console.log("flat fee: %s", config.fees.flat.toString(18));
+        console.log("governance fee: %s", config.fees.governance.toString(18));
+        console.log("oracleSize: %s", config.oracleSize.toString(18));
+        console.log("updateGap: %s", config.updateGap.toString(18));
     }
 
     function _logInfo() internal view {
