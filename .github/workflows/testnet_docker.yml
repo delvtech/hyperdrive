@@ -54,8 +54,10 @@ jobs:
           build-args: |
             ADMIN=${{ vars.TESTNET_ADMIN }}
             IS_COMPETITION_MODE=true
-            BASE_TOKEN_NAME="stETH"
-            BASE_TOKEN_SYMBOL="STETH"
+            BASE_TOKEN_NAME="Ether"
+            BASE_TOKEN_SYMBOL="ETH"
+            VAULT_NAME="stETH"
+            VAULT_SYMBOL="STETH"
             VAULT_STARTING_RATE=30000000000000000 # 3% APR
             HYPERDRIVE_CONTRIBUTION=50000000000000000000000 # 50,000 ETH
             HYPERDRIVE_FIXED_RATE=30000000000000000 # 3% APR
