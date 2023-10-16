@@ -33,7 +33,7 @@ contract BondWrapper_mint is CombinatorialTest {
                 )
             )
         );
-        baseToken = new ERC20Mintable();
+        baseToken = new ERC20Mintable("Base", "BASE", 18, address(0), false);
     }
 
     struct TestCase {

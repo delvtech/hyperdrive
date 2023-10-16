@@ -21,7 +21,9 @@ contract UpdateLiquidityTest is HyperdriveTest {
         super.setUp();
 
         IHyperdrive.PoolConfig memory config = testConfig(0.05e18);
-        config.baseToken = IERC20(address(new ERC20Mintable()));
+        config.baseToken = IERC20(
+            address(new ERC20Mintable("Base", "BASE", 18, address(0), false))
+        );
         config.minimumShareReserves = 1e15;
         MockHyperdriveDataProvider dataProvider = new MockHyperdriveDataProvider(
                 config

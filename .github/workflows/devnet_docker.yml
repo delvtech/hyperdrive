@@ -1,4 +1,4 @@
-name: Publish the migrations image
+name: Publish the devnet image
 
 on:
   workflow_dispatch:
@@ -44,7 +44,7 @@ jobs:
             # Add the edge tag to represent the latest commit to main
             type=raw,value=edge,enable={{is_default_branch}}
 
-      - name: Build and push Docker image
+      - name: Build and push the Devnet image
         uses: docker/build-push-action@v4.1.0
         with:
           context: .
