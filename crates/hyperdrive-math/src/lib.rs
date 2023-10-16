@@ -12,7 +12,7 @@ use rand::{
     Rng,
 };
 pub use utils::*;
-use yield_space::YieldSpace;
+pub use yield_space::YieldSpace;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 pub enum Asset {

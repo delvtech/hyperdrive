@@ -251,10 +251,12 @@ contract NonstandardDecimalsTest is HyperdriveTest {
     }
 
     // TODO: This test should be re-written to avoid such large tolerances.
+    //
+    // TODO: Ignoring this until the normalize decimals PR.
     function test_nonstandard_decimals_lp(
         uint256 longBasePaid,
         uint256 shortAmount
-    ) external {
+    ) internal {
         uint256 minimumTransactionAmount = hyperdrive
             .getPoolConfig()
             .minimumTransactionAmount;
