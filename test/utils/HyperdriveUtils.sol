@@ -443,6 +443,9 @@ library HyperdriveUtils {
         if (_selector == IHyperdrive.InvalidFeeAmounts.selector) {
             return "InvalidFeeAmounts";
         }
+        if (_selector == IHyperdrive.InvalidOptions.selector) {
+            return "InvalidOptions";
+        }
         if (_selector == IHyperdrive.NegativeInterest.selector) {
             return "NegativeInterest";
         }

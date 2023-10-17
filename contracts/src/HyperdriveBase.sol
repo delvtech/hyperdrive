@@ -117,32 +117,22 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
 
     /// @notice Transfers base from the user and commits it to the yield source.
     /// @param _amount The amount of base to deposit.
-    /// @param _asUnderlying A flag indicating whether the deposit should be
-    ///        taken in base or in another currency.
-    /// @param _extraData Extra data to provide to the yield source. This extra
-    ///        data may not be used by every yield source.
+    /// @param _options The yield source options for the deposit.
     /// @return sharesMinted The shares created by this deposit.
     /// @return sharePrice The share price.
     function _deposit(
         uint256 _amount,
-        bool _asUnderlying,
-        bytes memory _extraData
+        IHyperdrive.Options memory _options
     ) internal virtual returns (uint256 sharesMinted, uint256 sharePrice);
 
     /// @notice Withdraws shares from the yield source and sends the base
     ///         released to the destination.
     /// @param _shares The shares to withdraw from the yield source.
-    /// @param _destination The recipient of the withdrawal.
-    /// @param _asUnderlying A flag indicating whether the withdrawal should be
-    ///        paid out in base or in another currency.
-    /// @param _extraData Extra data to provide to the yield source. This extra
-    ///        data may not be used by every yield source.
+    /// @param _options The yield source options for the withdrawal.
     /// @return amountWithdrawn The amount of base released by the withdrawal.
     function _withdraw(
         uint256 _shares,
-        address _destination,
-        bool _asUnderlying,
-        bytes memory _extraData
+        IHyperdrive.Options memory _options
     ) internal virtual returns (uint256 amountWithdrawn);
 
     /// @notice Loads the share price from the yield source
@@ -206,15 +196,18 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     ) internal virtual returns (uint256 openSharePrice);
 
     /// @notice This function collects the governance fees accrued by the pool.
-    /// @param _asUnderlying A flag indicating whether the withdrawal should be
-    ///        paid out in base or in another currency.
-    /// @param _extraData Extra data to provide to the yield source. This extra
-    ///        data may not be used by every yield source.
+    /// @param _options The options that configure how the fees are settled.
     /// @return proceeds The amount of base collected.
     function collectGovernanceFee(
-        bool _asUnderlying,
-        bytes memory _extraData
+        IHyperdrive.Options memory _options
     ) external nonReentrant returns (uint256 proceeds) {
+        // The destination option isn't used in this function, and we require
+        // that it is set to the zero address to prevent accidental use.
+        if (_options.destination != address(0)) {
+            revert IHyperdrive.InvalidOptions();
+        }
+        _options.destination = _feeCollector;
+
         // Must have been granted a role
         if (
             !_pausers[msg.sender] &&
@@ -223,12 +216,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
         ) revert IHyperdrive.Unauthorized();
         uint256 governanceFeesAccrued = _governanceFeesAccrued;
         delete _governanceFeesAccrued;
-        proceeds = _withdraw(
-            governanceFeesAccrued,
-            _feeCollector,
-            _asUnderlying,
-            _extraData
-        );
+        proceeds = _withdraw(governanceFeesAccrued, _options);
     }
 
     /// Helpers ///

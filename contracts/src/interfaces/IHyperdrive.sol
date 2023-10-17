@@ -120,6 +120,13 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
         uint256 governance;
     }
 
+    struct OracleState {
+        /// @notice The pointer to the most recent buffer entry
+        uint128 head;
+        /// @notice The last timestamp we wrote to the buffer
+        uint128 lastTimestamp;
+    }
+
     struct PoolConfig {
         /// @dev The address of the base token.
         IERC20 baseToken;
@@ -179,11 +186,14 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
         uint256 longExposure;
     }
 
-    struct OracleState {
-        /// @notice The pointer to the most recent buffer entry
-        uint128 head;
-        /// @notice The last timestamp we wrote to the buffer
-        uint128 lastTimestamp;
+    struct Options {
+        /// @dev The address that receives the proceeds of a trade or LP action.
+        address destination;
+        /// @dev A boolean indicating that the trade or LP action should be
+        ///      settled in base if true and in the yield source shares if false.
+        bool asUnderlying;
+        /// @dev Additional data that is passed to the yield source.
+        bytes data;
     }
 
     /// Errors ///
@@ -207,6 +217,7 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
     error InvalidPositionDuration();
     error InvalidShareReserves();
     error InvalidFeeAmounts();
+    error InvalidOptions();
     error NegativeInterest();
     error NegativePresentValue();
     error NoAssetsToWithdraw();
