@@ -80,7 +80,7 @@ contract BondWrapperTest is BaseTest {
                 )
             )
         );
-        baseToken = new ERC20Mintable();
+        baseToken = new ERC20Mintable("Base", "BASE", 18, address(0), false);
 
         bondWrapper = new MockBondWrapper(
             IHyperdrive(address(hyperdrive)),

@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { FixedPointMath, ONE } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 
@@ -366,6 +366,22 @@ library HyperdriveUtils {
             int256(info.shareReserves) -
             int256(info.longExposure.divDown(info.sharePrice)) -
             int256(config.minimumShareReserves);
+    }
+
+    function k(IHyperdrive hyperdrive) internal view returns (uint256) {
+        IHyperdrive.PoolConfig memory config = hyperdrive.getPoolConfig();
+        IHyperdrive.PoolInfo memory info = hyperdrive.getPoolInfo();
+        return
+            YieldSpaceMath.modifiedYieldSpaceConstant(
+                info.sharePrice.divDown(config.initialSharePrice),
+                config.initialSharePrice,
+                HyperdriveMath.calculateEffectiveShareReserves(
+                    info.shareReserves,
+                    info.shareAdjustment
+                ),
+                ONE - config.timeStretch,
+                info.bondReserves
+            );
     }
 
     function decodeError(

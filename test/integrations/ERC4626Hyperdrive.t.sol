@@ -329,7 +329,13 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         // Ensure that a sweep target that isn't the base token or the pool
         // can be initialized and that the target can be swept successfully.
         vm.startPrank(alice);
-        ERC20Mintable otherToken = new ERC20Mintable();
+        ERC20Mintable otherToken = new ERC20Mintable(
+            "Other",
+            "OTHER",
+            18,
+            address(0),
+            false
+        );
         sweepTargets[0] = address(otherToken);
         factory.updateSweepTargets(sweepTargets);
         mockHyperdrive = MockERC4626Hyperdrive(

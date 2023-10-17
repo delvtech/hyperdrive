@@ -335,10 +335,6 @@ library HyperdriveMath {
         //                        shareCurveDelta
         int256 shareAdjustmentDelta;
         if (_closeSharePrice < _openSharePrice) {
-            // TODO: It may be better to scale here considering that the current
-            // negative interest logic creates dangerous situations in
-            // `openShort`.
-            //
             // We only need to scale the proceeds in the case that we're closing
             // a long since `calculateShortProceeds` accounts for negative
             // interest.
