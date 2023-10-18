@@ -117,7 +117,10 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
 
     /// @notice Transfers base from the user and commits it to the yield source.
     /// @param _amount The amount of base to deposit.
-    /// @param _options The yield source options for the deposit.
+    /// @param _options The options that configure how the withdrawal is
+    ///        settled. In particular, the currency used in the deposit is
+    ///        specified here. Aside from those options, yield sources can
+    ///        choose to implement additional options.
     /// @return sharesMinted The shares created by this deposit.
     /// @return sharePrice The share price.
     function _deposit(
@@ -128,7 +131,10 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     /// @notice Withdraws shares from the yield source and sends the base
     ///         released to the destination.
     /// @param _shares The shares to withdraw from the yield source.
-    /// @param _options The yield source options for the withdrawal.
+    /// @param _options The options that configure how the withdrawal is
+    ///        settled. In particular, the destination and currency used in the
+    ///        withdrawal are specified here. Aside from those options, yield
+    ///        sources can choose to implement additional options.
     /// @return amountWithdrawn The amount of base released by the withdrawal.
     function _withdraw(
         uint256 _shares,

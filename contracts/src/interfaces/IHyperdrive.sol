@@ -192,8 +192,9 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
         /// @dev A boolean indicating that the trade or LP action should be
         ///      settled in base if true and in the yield source shares if false.
         bool asUnderlying;
-        /// @dev Additional data that is passed to the yield source.
-        bytes data;
+        /// @dev Additional data that can be used to implement custom logic in
+        ///      implementation contracts.
+        bytes extraData;
     }
 
     /// Errors ///

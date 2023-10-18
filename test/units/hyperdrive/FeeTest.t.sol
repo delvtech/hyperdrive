@@ -14,6 +14,9 @@ contract FeeTest is HyperdriveTest {
     using FixedPointMath for uint256;
     using Lib for *;
 
+    // FIXME: We need a test that fails if the destination that is provided to
+    // collectGovernanceFee isn't the zero address.
+
     function test_governanceFeeAccrual() public {
         uint256 apr = 0.05e18;
         // Initialize the pool with a large amount of capital.
@@ -39,8 +42,11 @@ contract FeeTest is HyperdriveTest {
         vm.stopPrank();
         vm.prank(feeCollector);
         MockHyperdrive(address(hyperdrive)).collectGovernanceFee(
-            true,
-            new bytes(0)
+            IHyperdrive.Options({
+                destination: address(0),
+                asUnderlying: true,
+                extraData: new bytes(0)
+            })
         );
         uint256 governanceBalanceAfter = baseToken.balanceOf(feeCollector);
         assertGt(governanceBalanceAfter, governanceFeesAfterOpenLong);
@@ -341,8 +347,11 @@ contract FeeTest is HyperdriveTest {
         vm.stopPrank();
         vm.prank(feeCollector);
         MockHyperdrive(address(hyperdrive)).collectGovernanceFee(
-            true,
-            new bytes(0)
+            IHyperdrive.Options({
+                destination: address(0),
+                asUnderlying: true,
+                extraData: new bytes(0)
+            })
         );
 
         // Ensure that governance fees after collection are zero.
@@ -400,14 +409,20 @@ contract FeeTest is HyperdriveTest {
         // collect governance fees
         vm.expectRevert(IHyperdrive.Unauthorized.selector);
         MockHyperdrive(address(hyperdrive)).collectGovernanceFee(
-            true,
-            new bytes(0)
+            IHyperdrive.Options({
+                destination: address(0),
+                asUnderlying: true,
+                extraData: new bytes(0)
+            })
         );
         vm.stopPrank();
         vm.prank(governance);
         MockHyperdrive(address(hyperdrive)).collectGovernanceFee(
-            true,
-            new bytes(0)
+            IHyperdrive.Options({
+                destination: address(0),
+                asUnderlying: true,
+                extraData: new bytes(0)
+            })
         );
 
         // Ensure that governance fees after collection are zero.

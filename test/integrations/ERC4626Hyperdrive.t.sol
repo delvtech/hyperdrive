@@ -117,8 +117,11 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         // Now we try a deposit
         (uint256 sharesMinted, uint256 sharePrice) = mockHyperdrive.deposit(
             1e18,
-            true,
-            new bytes(0)
+            IHyperdrive.Options({
+                destination: address(0),
+                asUnderlying: true,
+                extraData: new bytes(0)
+            })
         );
         assertEq(sharePrice, 1.5e18);
         // 0.6 repeating
@@ -129,8 +132,11 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         pool.approve(address(mockHyperdrive), type(uint256).max);
         (sharesMinted, sharePrice) = mockHyperdrive.deposit(
             3e18,
-            false,
-            new bytes(0)
+            IHyperdrive.Options({
+                destination: address(0),
+                asUnderlying: false,
+                extraData: new bytes(0)
+            })
         );
         assertEq(sharePrice, 1.5e18);
         assertApproxEqAbs(sharesMinted, 2e18, 1);
@@ -150,9 +156,11 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         // test an underlying withdraw
         uint256 amountWithdrawn = mockHyperdrive.withdraw(
             2e18,
-            alice,
-            true,
-            new bytes(0)
+            IHyperdrive.Options({
+                destination: alice,
+                asUnderlying: true,
+                extraData: new bytes(0)
+            })
         );
         uint256 balanceAfter = dai.balanceOf(alice);
         assertEq(balanceAfter, balanceBefore + 3e18);
@@ -161,9 +169,11 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         // Test a share withdraw
         amountWithdrawn = mockHyperdrive.withdraw(
             2e18,
-            alice,
-            false,
-            new bytes(0)
+            IHyperdrive.Options({
+                destination: alice,
+                asUnderlying: false,
+                extraData: new bytes(0)
+            })
         );
         assertEq(pool.balanceOf(alice), 2e18);
         assertEq(amountWithdrawn, 3e18);
