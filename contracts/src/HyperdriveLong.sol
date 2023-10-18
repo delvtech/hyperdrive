@@ -76,6 +76,8 @@ abstract contract HyperdriveLong is HyperdriveLP {
             totalGovernanceFee
         ) = _calculateOpenLong(shares, sharePrice);
 
+        // FIXME
+        //
         // If the ending spot price is greater than 1, we are in the negative
         // interest region of the trading function. The spot price is given by
         // ((mu * (z - zeta)) / y) ** tau, so all that we need to check is that
@@ -392,6 +394,26 @@ abstract contract HyperdriveLong is HyperdriveLP {
             _initialSharePrice,
             _timeStretch
         );
+
+        // FIXME: I think we should calculate the ending spot price using the
+        // _shareAmount and bondReservesDelta. The governance fee is something
+        // that updates the curve separately from the trade and doesn't give us
+        // good information about the trader's execution price.
+        {
+            uint256 endingSpotPrice = HyperdriveMath.calculateSpotPrice(
+                _effectiveShareReserves() + _shareAmount,
+                _marketState.bondReserves - bondReservesDelta,
+                _initialSharePrice,
+                _timeStretch
+            );
+            uint256 maxSpotPrice = HyperdriveMath.calculateOpenLongMaxSpotPrice(
+                spotPrice,
+                _curveFee
+            );
+            if (endingSpotPrice > maxSpotPrice) {
+                revert IHyperdrive.NegativeInterest();
+            }
+        }
 
         // Record an oracle update
         recordPrice(spotPrice);

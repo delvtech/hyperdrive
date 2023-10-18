@@ -157,6 +157,8 @@ abstract contract HyperdriveShort is HyperdriveLP {
             uint256 totalGovernanceFee
         ) = _calculateCloseShort(_bondAmount, sharePrice, _maturityTime);
 
+        // FIXME: Update this check. We may want to use HyperdriveMath.
+        //
         // If the ending spot price is greater than 1, we are in the negative
         // interest region of the trading function. The spot price is given by
         // ((mu * (z - zeta)) / y) ** tau, so all that we need to check is that

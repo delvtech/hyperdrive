@@ -104,6 +104,33 @@ library HyperdriveMath {
             );
     }
 
+    /// @dev Since traders pay a curve fee when they trade on YieldSpace, it is
+    ///      possible for traders to receive a negative interest rate even if
+    ///      curve's spot price is less than or equal to 1. In practice, this
+    ///      issue is only a problem when longs are being opened. When shorts
+    ///      are being opened and longs are being closed, the curve's spot price
+    ///      will decrease away from 1, avoiding negative interest scenarios.
+    ///      When shorts are closed, the curve's spot price increases; however,
+    ///      the curve fee is taken out of the short's proceeds, so if the spot
+    ///      price is 1, their realized price will be less than one.
+    ///
+    ///      Given the curve fee phi_c and the starting spot price p_0, the
+    ///      maximum spot price is given by:
+    ///
+    ///      p_max = 1 / (1 + phi_c * (1 / p_0 - 1))
+    /// @param _initialSpotPrice The initial spot price.
+    /// @param _curveFee The curve fee.
+    /// @return The maximum spot price.
+    function calculateOpenLongMaxSpotPrice(
+        uint256 _initialSpotPrice,
+        uint256 _curveFee
+    ) internal pure returns (uint256) {
+        return
+            ONE.divDown(
+                ONE + _curveFee.mulUp(ONE.divUp(_initialSpotPrice) - ONE)
+            );
+    }
+
     /// @dev Calculates the number of bonds a user will receive when opening a
     ///      long position.
     /// @param _effectiveShareReserves The pool's effective share reserves. The
@@ -422,16 +449,14 @@ library HyperdriveMath {
         uint256 absoluteMaxBaseAmount;
         uint256 absoluteMaxBondAmount;
         {
-            uint256 maxShareAmount;
-            (maxShareAmount, absoluteMaxBondAmount) = YieldSpaceMath
-                .calculateMaxBuy(
-                    effectiveShareReserves,
-                    _params.bondReserves,
-                    ONE - _params.timeStretch,
-                    _params.sharePrice,
-                    _params.initialSharePrice
-                );
-            absoluteMaxBaseAmount = maxShareAmount.mulDown(_params.sharePrice);
+            (
+                absoluteMaxBaseAmount,
+                absoluteMaxBondAmount
+            ) = calculateAbsoluteMaxLong(
+                _params,
+                effectiveShareReserves,
+                spotPrice
+            );
             absoluteMaxBondAmount -= calculateLongCurveFee(
                 absoluteMaxBaseAmount,
                 spotPrice,
@@ -538,6 +563,51 @@ library HyperdriveMath {
         }
 
         return (maxBaseAmount, maxBondAmount);
+    }
+
+    // FIXME
+    function calculateAbsoluteMaxLong(
+        MaxTradeParams memory _params,
+        uint256 _effectiveShareReserves,
+        uint256 _spotPrice
+    )
+        internal
+        pure
+        returns (uint256 absoluteMaxBaseAmount, uint256 absoluteMaxBondAmount)
+    {
+        // FIXME: Explain this math.
+        uint256 cDivMu = _params.sharePrice.divDown(_params.initialSharePrice);
+        uint256 k = YieldSpaceMath.modifiedYieldSpaceConstant(
+            cDivMu,
+            _params.initialSharePrice,
+            _effectiveShareReserves,
+            ONE - _params.timeStretch,
+            _params.bondReserves
+        );
+        uint256 curveFeeFactor = _params.curveFee.mulDown(
+            ONE.divDown(_spotPrice) - ONE
+        );
+        uint256 optimalShareReserves = k
+            .divDown(
+                cDivMu +
+                    (ONE +
+                        curveFeeFactor.pow(
+                            (ONE - _params.timeStretch).divUp(
+                                _params.timeStretch
+                            )
+                        ))
+            )
+            .pow(ONE.divUp(ONE - _params.timeStretch));
+        uint256 optimalBondReserves = curveFeeFactor
+            .pow(ONE.divUp(_params.timeStretch))
+            .mulDown(optimalShareReserves);
+        optimalShareReserves = optimalShareReserves.divDown(
+            _params.initialSharePrice
+        );
+
+        absoluteMaxBaseAmount = (optimalShareReserves - _effectiveShareReserves)
+            .mulDown(_params.sharePrice);
+        absoluteMaxBondAmount = _params.bondReserves - optimalBondReserves;
     }
 
     /// @dev Calculates an initial guess of the max long that can be opened.
