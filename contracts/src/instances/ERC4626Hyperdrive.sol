@@ -89,7 +89,7 @@ contract ERC4626Hyperdrive is Hyperdrive {
     ///         yield source immediately.
     /// @param _amount The amount of token to transfer
     /// @param _options The options that configure the deposit. The only option
-    ///        used in this implementation is "asUnderlying" which determines if
+    ///        used in this implementation is "asBase" which determines if
     ///        the deposit is settled in base or vault shares.
     /// @return sharesMinted The shares this deposit creates
     /// @return sharePrice The share price at time of deposit
@@ -97,7 +97,7 @@ contract ERC4626Hyperdrive is Hyperdrive {
         uint256 _amount,
         IHyperdrive.Options memory _options
     ) internal override returns (uint256 sharesMinted, uint256 sharePrice) {
-        if (_options.asUnderlying) {
+        if (_options.asBase) {
             // Take custody of the deposit in base.
             _baseToken.safeTransferFrom(msg.sender, address(this), _amount);
 
@@ -129,14 +129,14 @@ contract ERC4626Hyperdrive is Hyperdrive {
     /// @param _shares The amount of shares to withdraw from Hyperdrive.
     /// @param _options The options that configure the withdrawal. The options
     ///        used in this implementation are "destination" which specifies the
-    ///        recipient of the withdrawal and "asUnderlying" which determines
+    ///        recipient of the withdrawal and "asBase" which determines
     ///        if the withdrawal is settled in base or vault shares.
     /// @return amountWithdrawn The amount withdrawn from the yield source.
     function _withdraw(
         uint256 _shares,
         IHyperdrive.Options memory _options
     ) internal override returns (uint256 amountWithdrawn) {
-        if (_options.asUnderlying) {
+        if (_options.asBase) {
             // Redeem the shares from the yield source and transfer the
             // resulting base to the destination address.
             amountWithdrawn = pool.redeem(

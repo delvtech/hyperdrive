@@ -119,7 +119,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             1e18,
             IHyperdrive.Options({
                 destination: address(0),
-                asUnderlying: true,
+                asBase: true,
                 extraData: new bytes(0)
             })
         );
@@ -134,7 +134,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             3e18,
             IHyperdrive.Options({
                 destination: address(0),
-                asUnderlying: false,
+                asBase: false,
                 extraData: new bytes(0)
             })
         );
@@ -158,7 +158,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             2e18,
             IHyperdrive.Options({
                 destination: alice,
-                asUnderlying: true,
+                asBase: true,
                 extraData: new bytes(0)
             })
         );
@@ -171,7 +171,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             2e18,
             IHyperdrive.Options({
                 destination: alice,
-                asUnderlying: false,
+                asBase: false,
                 extraData: new bytes(0)
             })
         );

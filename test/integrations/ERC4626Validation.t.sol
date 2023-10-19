@@ -231,7 +231,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             0,
             IHyperdrive.Options({
                 destination: alice,
-                asUnderlying: true,
+                asBase: true,
                 extraData: new bytes(0)
             })
         );
@@ -281,7 +281,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             0,
             IHyperdrive.Options({
                 destination: alice,
-                asUnderlying: false,
+                asBase: false,
                 extraData: new bytes(0)
             })
         );
@@ -421,7 +421,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             0,
             IHyperdrive.Options({
                 destination: alice,
-                asUnderlying: true,
+                asBase: true,
                 extraData: new bytes(0)
             })
         );
@@ -493,7 +493,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
             0,
             IHyperdrive.Options({
                 destination: alice,
-                asUnderlying: false,
+                asBase: false,
                 extraData: new bytes(0)
             })
         );
@@ -513,13 +513,13 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
     function openLongERC4626(
         address trader,
         uint256 baseAmount,
-        bool asUnderlying
+        bool asBase
     ) internal returns (uint256 maturityTime, uint256 bondAmount) {
         vm.stopPrank();
         vm.startPrank(trader);
 
         // Open the long.
-        if (asUnderlying) {
+        if (asBase) {
             underlyingToken.approve(address(hyperdrive), baseAmount);
             (maturityTime, bondAmount) = hyperdrive.openLong(
                 baseAmount,
@@ -527,7 +527,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
                 0,
                 IHyperdrive.Options({
                     destination: trader,
-                    asUnderlying: asUnderlying,
+                    asBase: asBase,
                     extraData: new bytes(0)
                 })
             );
@@ -539,7 +539,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
                 0,
                 IHyperdrive.Options({
                     destination: trader,
-                    asUnderlying: asUnderlying,
+                    asBase: asBase,
                     extraData: new bytes(0)
                 })
             );
@@ -551,12 +551,12 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
     function openShortERC4626(
         address trader,
         uint256 bondAmount,
-        bool asUnderlying
+        bool asBase
     ) internal returns (uint256 maturityTime, uint256 baseAmount) {
         vm.stopPrank();
         vm.startPrank(trader);
         // Open the short
-        if (asUnderlying) {
+        if (asBase) {
             underlyingToken.approve(address(hyperdrive), bondAmount);
             (maturityTime, baseAmount) = hyperdrive.openShort(
                 bondAmount,
@@ -564,7 +564,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
                 0,
                 IHyperdrive.Options({
                     destination: trader,
-                    asUnderlying: asUnderlying,
+                    asBase: asBase,
                     extraData: new bytes(0)
                 })
             );
@@ -576,7 +576,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
                 0,
                 IHyperdrive.Options({
                     destination: trader,
-                    asUnderlying: asUnderlying,
+                    asBase: asBase,
                     extraData: new bytes(0)
                 })
             );

@@ -23,7 +23,7 @@ contract __MockHyperDrive__ {
         uint256 indexed _bondAmount,
         uint256 indexed _minOutput,
         address _destination,
-        bool _asUnderlying,
+        bool _asBase,
         bytes _extraData
     );
 
@@ -38,7 +38,7 @@ contract __MockHyperDrive__ {
             _bondAmount,
             _minOutput,
             _options.destination,
-            _options.asUnderlying,
+            _options.asBase,
             _options.extraData
         );
         return __closeLongReturnValue__;
@@ -268,7 +268,7 @@ contract BondWrapper_close is CombinatorialTest {
         uint256 indexed _bondAmount,
         uint256 indexed _minOutput,
         address _destination,
-        bool _asUnderlying,
+        bool _asBase,
         bytes _extraData
     );
 

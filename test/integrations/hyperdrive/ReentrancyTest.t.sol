@@ -149,7 +149,7 @@ contract ReentrancyTest is HyperdriveTest {
                 FIXED_RATE,
                 IHyperdrive.Options({
                     destination: _trader,
-                    asUnderlying: true,
+                    asBase: true,
                     extraData: new bytes(0)
                 })
             )
@@ -162,7 +162,7 @@ contract ReentrancyTest is HyperdriveTest {
                 1e18,
                 IHyperdrive.Options({
                     destination: _trader,
-                    asUnderlying: true,
+                    asBase: true,
                     extraData: new bytes(0)
                 })
             )
@@ -174,7 +174,7 @@ contract ReentrancyTest is HyperdriveTest {
                 0,
                 IHyperdrive.Options({
                     destination: _trader,
-                    asUnderlying: true,
+                    asBase: true,
                     extraData: new bytes(0)
                 })
             )
@@ -186,7 +186,7 @@ contract ReentrancyTest is HyperdriveTest {
                 0,
                 IHyperdrive.Options({
                     destination: _trader,
-                    asUnderlying: true,
+                    asBase: true,
                     extraData: new bytes(0)
                 })
             )
@@ -199,7 +199,7 @@ contract ReentrancyTest is HyperdriveTest {
                 0,
                 IHyperdrive.Options({
                     destination: _trader,
-                    asUnderlying: true,
+                    asBase: true,
                     extraData: new bytes(0)
                 })
             )
@@ -212,7 +212,7 @@ contract ReentrancyTest is HyperdriveTest {
                 0,
                 IHyperdrive.Options({
                     destination: _trader,
-                    asUnderlying: true,
+                    asBase: true,
                     extraData: new bytes(0)
                 })
             )
@@ -225,7 +225,7 @@ contract ReentrancyTest is HyperdriveTest {
                 0,
                 IHyperdrive.Options({
                     destination: _trader,
-                    asUnderlying: true,
+                    asBase: true,
                     extraData: new bytes(0)
                 })
             )
@@ -238,7 +238,7 @@ contract ReentrancyTest is HyperdriveTest {
                 0,
                 IHyperdrive.Options({
                     destination: _trader,
-                    asUnderlying: true,
+                    asBase: true,
                     extraData: new bytes(0)
                 })
             )
@@ -281,7 +281,7 @@ contract ReentrancyTest is HyperdriveTest {
             // NOTE: Depositing 1 wei more than the contribution to ensure that
             // the ETH receiver will receive a refund.
             DepositOverrides({
-                asUnderlying: true,
+                asBase: true,
                 depositAmount: CONTRIBUTION + 1,
                 minSharePrice: 0,
                 minSlippage: 0,
@@ -310,7 +310,7 @@ contract ReentrancyTest is HyperdriveTest {
             // NOTE: Depositing 1 wei more than the contribution to ensure that
             // the ETH receiver will receive a refund.
             DepositOverrides({
-                asUnderlying: true,
+                asBase: true,
                 depositAmount: CONTRIBUTION + 1,
                 minSharePrice: 0,
                 minSlippage: 0,
@@ -377,7 +377,7 @@ contract ReentrancyTest is HyperdriveTest {
             // NOTE: Depositing 1 wei more than the base payment to ensure that
             // the ETH receiver will receive a refund.
             DepositOverrides({
-                asUnderlying: true,
+                asBase: true,
                 depositAmount: BASE_PAID + 1,
                 minSharePrice: 0,
                 minSlippage: 0,
@@ -417,7 +417,7 @@ contract ReentrancyTest is HyperdriveTest {
             // NOTE: Depositing more than the base payment to ensure that the
             // ETH receiver will receive a refund.
             DepositOverrides({
-                asUnderlying: true,
+                asBase: true,
                 // NOTE: Roughly double deposit amount needed to cover 100% flat fee
                 depositAmount: BOND_AMOUNT * 2,
                 minSharePrice: 0,
@@ -436,7 +436,7 @@ contract ReentrancyTest is HyperdriveTest {
             _trader,
             BOND_AMOUNT,
             DepositOverrides({
-                asUnderlying: true,
+                asBase: true,
                 // NOTE: Roughly double deposit amount needed to cover 100% flat fee
                 depositAmount: BOND_AMOUNT * 2,
                 minSharePrice: 0,

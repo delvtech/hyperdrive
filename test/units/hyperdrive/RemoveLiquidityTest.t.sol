@@ -41,7 +41,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
             0,
             IHyperdrive.Options({
                 destination: alice,
-                asUnderlying: false,
+                asBase: false,
                 extraData: new bytes(0)
             })
         );
@@ -63,7 +63,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
             0,
             IHyperdrive.Options({
                 destination: alice,
-                asUnderlying: false,
+                asBase: false,
                 extraData: new bytes(0)
             })
         );

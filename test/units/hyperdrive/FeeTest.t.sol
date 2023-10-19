@@ -44,7 +44,7 @@ contract FeeTest is HyperdriveTest {
         MockHyperdrive(address(hyperdrive)).collectGovernanceFee(
             IHyperdrive.Options({
                 destination: address(0),
-                asUnderlying: true,
+                asBase: true,
                 extraData: new bytes(0)
             })
         );
@@ -84,7 +84,7 @@ contract FeeTest is HyperdriveTest {
                 bob,
                 basePaid,
                 DepositOverrides({
-                    asUnderlying: true,
+                    asBase: true,
                     depositAmount: basePaid,
                     minSharePrice: 0,
                     minSlippage: 0,
@@ -126,7 +126,7 @@ contract FeeTest is HyperdriveTest {
                 bob,
                 basePaid,
                 DepositOverrides({
-                    asUnderlying: true,
+                    asBase: true,
                     depositAmount: basePaid,
                     minSharePrice: 0,
                     minSlippage: 0,
@@ -191,7 +191,7 @@ contract FeeTest is HyperdriveTest {
                 bob,
                 basePaid,
                 DepositOverrides({
-                    asUnderlying: true,
+                    asBase: true,
                     depositAmount: basePaid,
                     minSharePrice: 0,
                     minSlippage: 0,
@@ -254,7 +254,7 @@ contract FeeTest is HyperdriveTest {
                 bob,
                 basePaid,
                 DepositOverrides({
-                    asUnderlying: true,
+                    asBase: true,
                     depositAmount: basePaid,
                     minSharePrice: 0,
                     minSlippage: 0,
@@ -349,7 +349,7 @@ contract FeeTest is HyperdriveTest {
         MockHyperdrive(address(hyperdrive)).collectGovernanceFee(
             IHyperdrive.Options({
                 destination: address(0),
-                asUnderlying: true,
+                asBase: true,
                 extraData: new bytes(0)
             })
         );
@@ -411,7 +411,7 @@ contract FeeTest is HyperdriveTest {
         MockHyperdrive(address(hyperdrive)).collectGovernanceFee(
             IHyperdrive.Options({
                 destination: address(0),
-                asUnderlying: true,
+                asBase: true,
                 extraData: new bytes(0)
             })
         );
@@ -420,7 +420,7 @@ contract FeeTest is HyperdriveTest {
         MockHyperdrive(address(hyperdrive)).collectGovernanceFee(
             IHyperdrive.Options({
                 destination: address(0),
-                asUnderlying: true,
+                asBase: true,
                 extraData: new bytes(0)
             })
         );

@@ -48,7 +48,7 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
             2 * expectedOutputPerShare,
             IHyperdrive.Options({
                 destination: alice,
-                asUnderlying: true,
+                asBase: true,
                 extraData: new bytes(0)
             })
         );
@@ -279,7 +279,7 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
             alice,
             withdrawalShares,
             WithdrawalOverrides({
-                asUnderlying: true,
+                asBase: true,
                 minSlippage: expectedSharePrice,
                 extraData: new bytes(0)
             })

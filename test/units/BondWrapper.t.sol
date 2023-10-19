@@ -25,7 +25,7 @@ contract __MockHyperDrive__ is MockMultiToken {
         uint256 indexed _bondAmount,
         uint256 indexed _minOutput,
         address _destination,
-        bool _asUnderlying,
+        bool _asBase,
         bytes _extraData
     );
 
@@ -40,7 +40,7 @@ contract __MockHyperDrive__ is MockMultiToken {
             _bondAmount,
             _minOutput,
             _options.destination,
-            _options.asUnderlying,
+            _options.asBase,
             _options.extraData
         );
         return __closeLongReturnValue__;

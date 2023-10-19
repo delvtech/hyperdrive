@@ -49,7 +49,7 @@ contract DevnetSmokeTest is Script {
                 0,
                 IHyperdrive.Options({
                     destination: msg.sender,
-                    asUnderlying: true,
+                    asBase: true,
                     extraData: new bytes(0)
                 })
             );
@@ -66,7 +66,7 @@ contract DevnetSmokeTest is Script {
                 0,
                 IHyperdrive.Options({
                     destination: msg.sender,
-                    asUnderlying: true,
+                    asBase: true,
                     extraData: new bytes(0)
                 })
             );
@@ -90,7 +90,7 @@ contract DevnetSmokeTest is Script {
             0,
             IHyperdrive.Options({
                 destination: msg.sender,
-                asUnderlying: true,
+                asBase: true,
                 extraData: new bytes(0)
             })
         );
@@ -109,7 +109,7 @@ contract DevnetSmokeTest is Script {
             0,
             IHyperdrive.Options({
                 destination: msg.sender,
-                asUnderlying: true,
+                asBase: true,
                 extraData: new bytes(0)
             })
         );
@@ -131,7 +131,7 @@ contract DevnetSmokeTest is Script {
             type(uint256).max,
             IHyperdrive.Options({
                 destination: msg.sender,
-                asUnderlying: true,
+                asBase: true,
                 extraData: new bytes(0)
             })
         );
@@ -149,7 +149,7 @@ contract DevnetSmokeTest is Script {
                 0,
                 IHyperdrive.Options({
                     destination: msg.sender,
-                    asUnderlying: true,
+                    asBase: true,
                     extraData: new bytes(0)
                 })
             );
@@ -172,7 +172,7 @@ contract DevnetSmokeTest is Script {
             0,
             IHyperdrive.Options({
                 destination: msg.sender,
-                asUnderlying: true,
+                asBase: true,
                 extraData: new bytes(0)
             })
         );
@@ -191,7 +191,7 @@ contract DevnetSmokeTest is Script {
             0,
             IHyperdrive.Options({
                 destination: msg.sender,
-                asUnderlying: true,
+                asBase: true,
                 extraData: new bytes(0)
             })
         );

@@ -43,7 +43,7 @@ contract InitializeTest is HyperdriveTest {
             fixedRate,
             IHyperdrive.Options({
                 destination: bob,
-                asUnderlying: true,
+                asBase: true,
                 extraData: new bytes(0)
             })
         );
@@ -64,7 +64,7 @@ contract InitializeTest is HyperdriveTest {
             fixedRate,
             IHyperdrive.Options({
                 destination: bob,
-                asUnderlying: true,
+                asBase: true,
                 extraData: new bytes(0)
             })
         );

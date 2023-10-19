@@ -44,7 +44,7 @@ contract CloseShortTest is HyperdriveTest {
             0,
             IHyperdrive.Options({
                 destination: bob,
-                asUnderlying: true,
+                asBase: true,
                 extraData: new bytes(0)
             })
         );
@@ -71,7 +71,7 @@ contract CloseShortTest is HyperdriveTest {
             0,
             IHyperdrive.Options({
                 destination: bob,
-                asUnderlying: true,
+                asBase: true,
                 extraData: new bytes(0)
             })
         );
@@ -98,7 +98,7 @@ contract CloseShortTest is HyperdriveTest {
             0,
             IHyperdrive.Options({
                 destination: bob,
-                asUnderlying: true,
+                asBase: true,
                 extraData: new bytes(0)
             })
         );
@@ -148,7 +148,7 @@ contract CloseShortTest is HyperdriveTest {
             0,
             IHyperdrive.Options({
                 destination: bob,
-                asUnderlying: true,
+                asBase: true,
                 extraData: new bytes(0)
             })
         );
@@ -513,7 +513,7 @@ contract CloseShortTest is HyperdriveTest {
             bob,
             10e18,
             DepositOverrides({
-                asUnderlying: false,
+                asBase: false,
                 // NOTE: Roughly double deposit amount needed to cover 100% flat fee
                 depositAmount: 10e18 * 2,
                 minSharePrice: 0,
@@ -544,7 +544,7 @@ contract CloseShortTest is HyperdriveTest {
             bob,
             10e18,
             DepositOverrides({
-                asUnderlying: false,
+                asBase: false,
                 // NOTE: Roughly double deposit amount needed to cover 100% flat fee
                 depositAmount: 10e18 * 2,
                 minSharePrice: 0,
@@ -584,7 +584,7 @@ contract CloseShortTest is HyperdriveTest {
             bob,
             10e18,
             DepositOverrides({
-                asUnderlying: false,
+                asBase: false,
                 // NOTE: Roughly double deposit amount needed to cover 100% flat fee
                 depositAmount: 10e18 * 2,
                 minSharePrice: 0,
@@ -614,7 +614,7 @@ contract CloseShortTest is HyperdriveTest {
             bob,
             10e18,
             DepositOverrides({
-                asUnderlying: false,
+                asBase: false,
                 // NOTE: Roughly double deposit amount needed to cover 100% flat fee
                 depositAmount: 10e18 * 2,
                 minSharePrice: 0,

@@ -38,7 +38,7 @@ contract AddLiquidityTest is HyperdriveTest {
             type(uint256).max,
             IHyperdrive.Options({
                 destination: bob,
-                asUnderlying: true,
+                asBase: true,
                 extraData: new bytes(0)
             })
         );
@@ -61,7 +61,7 @@ contract AddLiquidityTest is HyperdriveTest {
             type(uint256).max,
             IHyperdrive.Options({
                 destination: bob,
-                asUnderlying: true,
+                asBase: true,
                 extraData: new bytes(0)
             })
         );
@@ -85,7 +85,7 @@ contract AddLiquidityTest is HyperdriveTest {
             type(uint256).max,
             IHyperdrive.Options({
                 destination: bob,
-                asUnderlying: true,
+                asBase: true,
                 extraData: new bytes(0)
             })
         );
@@ -110,7 +110,7 @@ contract AddLiquidityTest is HyperdriveTest {
             type(uint256).max,
             IHyperdrive.Options({
                 destination: bob,
-                asUnderlying: true,
+                asBase: true,
                 extraData: new bytes(0)
             })
         );
@@ -125,7 +125,7 @@ contract AddLiquidityTest is HyperdriveTest {
             0.04e18,
             IHyperdrive.Options({
                 destination: bob,
-                asUnderlying: true,
+                asBase: true,
                 extraData: new bytes(0)
             })
         );
@@ -159,7 +159,7 @@ contract AddLiquidityTest is HyperdriveTest {
             0.04e18,
             IHyperdrive.Options({
                 destination: bob,
-                asUnderlying: true,
+                asBase: true,
                 extraData: new bytes(0)
             })
         );

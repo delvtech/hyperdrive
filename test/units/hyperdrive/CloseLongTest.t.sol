@@ -44,7 +44,7 @@ contract CloseLongTest is HyperdriveTest {
             0,
             IHyperdrive.Options({
                 destination: bob,
-                asUnderlying: true,
+                asBase: true,
                 extraData: new bytes(0)
             })
         );
@@ -70,7 +70,7 @@ contract CloseLongTest is HyperdriveTest {
             0,
             IHyperdrive.Options({
                 destination: bob,
-                asUnderlying: true,
+                asBase: true,
                 extraData: new bytes(0)
             })
         );
@@ -96,7 +96,7 @@ contract CloseLongTest is HyperdriveTest {
             0,
             IHyperdrive.Options({
                 destination: alice,
-                asUnderlying: true,
+                asBase: true,
                 extraData: new bytes(0)
             })
         );
@@ -122,7 +122,7 @@ contract CloseLongTest is HyperdriveTest {
             0,
             IHyperdrive.Options({
                 destination: bob,
-                asUnderlying: true,
+                asBase: true,
                 extraData: new bytes(0)
             })
         );
@@ -157,7 +157,7 @@ contract CloseLongTest is HyperdriveTest {
             0,
             IHyperdrive.Options({
                 destination: bob,
-                asUnderlying: true,
+                asBase: true,
                 extraData: new bytes(0)
             })
         );

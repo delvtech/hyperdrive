@@ -39,7 +39,7 @@ contract OpenShortTest is HyperdriveTest {
             0,
             IHyperdrive.Options({
                 destination: bob,
-                asUnderlying: true,
+                asBase: true,
                 extraData: new bytes(0)
             })
         );
@@ -62,7 +62,7 @@ contract OpenShortTest is HyperdriveTest {
             0,
             IHyperdrive.Options({
                 destination: bob,
-                asUnderlying: true,
+                asBase: true,
                 extraData: new bytes(0)
             })
         );
@@ -86,7 +86,7 @@ contract OpenShortTest is HyperdriveTest {
             0,
             IHyperdrive.Options({
                 destination: bob,
-                asUnderlying: true,
+                asBase: true,
                 extraData: new bytes(0)
             })
         );
@@ -114,7 +114,7 @@ contract OpenShortTest is HyperdriveTest {
             0,
             IHyperdrive.Options({
                 destination: bob,
-                asUnderlying: true,
+                asBase: true,
                 extraData: new bytes(0)
             })
         );
@@ -142,7 +142,7 @@ contract OpenShortTest is HyperdriveTest {
             minSharePrice,
             IHyperdrive.Options({
                 destination: bob,
-                asUnderlying: true,
+                asBase: true,
                 extraData: new bytes(0)
             })
         );
@@ -231,7 +231,7 @@ contract OpenShortTest is HyperdriveTest {
         // 5. Open a Short
         bondAmount = (hyperdrive.calculateMaxShort() * 90) / 100;
         DepositOverrides memory depositOverrides = DepositOverrides({
-            asUnderlying: false,
+            asBase: false,
             depositAmount: bondAmount * 2,
             minSharePrice: 0,
             minSlippage: 0,

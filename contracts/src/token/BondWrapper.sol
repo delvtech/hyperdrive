@@ -121,7 +121,7 @@ contract BondWrapper is ERC20 {
                 0,
                 IHyperdrive.Options({
                     destination: address(this),
-                    asUnderlying: true,
+                    asBase: true,
                     extraData: extraData
                 })
             );
@@ -179,7 +179,7 @@ contract BondWrapper is ERC20 {
                 balance,
                 IHyperdrive.Options({
                     destination: address(this),
-                    asUnderlying: true,
+                    asBase: true,
                     extraData: extraData
                 })
             );

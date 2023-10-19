@@ -220,7 +220,7 @@ contract ExtremeInputs is HyperdriveTest {
             0,
             IHyperdrive.Options({
                 destination: bob,
-                asUnderlying: true,
+                asBase: true,
                 extraData: new bytes(0)
             })
         );

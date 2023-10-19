@@ -308,7 +308,7 @@ abstract contract HyperdriveFactory {
             _apr,
             IHyperdrive.Options({
                 destination: msg.sender,
-                asUnderlying: true,
+                asBase: true,
                 extraData: _initializeExtraData
             })
         );
