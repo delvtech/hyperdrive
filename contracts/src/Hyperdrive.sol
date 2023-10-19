@@ -6,6 +6,7 @@ import { HyperdriveBase } from "./HyperdriveBase.sol";
 import { HyperdriveLong } from "./HyperdriveLong.sol";
 import { HyperdriveShort } from "./HyperdriveShort.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
+import { IHyperdriveWrite } from "./interfaces/IHyperdriveWrite.sol";
 import { AssetId } from "./libraries/AssetId.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
@@ -18,6 +19,7 @@ import { SafeCast } from "./libraries/SafeCast.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract Hyperdrive is
+    IHyperdriveWrite,
     HyperdriveBase,
     HyperdriveLong,
     HyperdriveShort
@@ -41,7 +43,7 @@ abstract contract Hyperdrive is
 
     /// @notice Allows anyone to mint a new checkpoint.
     /// @param _checkpointTime The time of the checkpoint to create.
-    function checkpoint(uint256 _checkpointTime) public override {
+    function checkpoint(uint256 _checkpointTime) public {
         // If the checkpoint has already been set, return early.
         if (_checkpoints[_checkpointTime].sharePrice != 0) {
             return;

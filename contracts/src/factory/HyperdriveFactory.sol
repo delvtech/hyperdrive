@@ -306,9 +306,11 @@ abstract contract HyperdriveFactory {
         hyperdrive.initialize(
             _contribution,
             _apr,
-            msg.sender,
-            true,
-            _initializeExtraData
+            IHyperdrive.Options({
+                destination: msg.sender,
+                asUnderlying: true,
+                extraData: _initializeExtraData
+            })
         );
 
         // Set the default pausers and transfer the governance status to the

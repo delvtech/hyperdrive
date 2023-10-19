@@ -38,7 +38,16 @@ contract CloseShortTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(IHyperdrive.MinimumTransactionAmount.selector);
-        hyperdrive.closeShort(maturityTime, 0, 0, bob, true, new bytes(0));
+        hyperdrive.closeShort(
+            maturityTime,
+            0,
+            0,
+            IHyperdrive.Options({
+                destination: bob,
+                asUnderlying: true,
+                extraData: new bytes(0)
+            })
+        );
     }
 
     function test_close_short_failure_invalid_amount() external {
@@ -60,9 +69,11 @@ contract CloseShortTest is HyperdriveTest {
             maturityTime,
             bondAmount + 1,
             0,
-            bob,
-            true,
-            new bytes(0)
+            IHyperdrive.Options({
+                destination: bob,
+                asUnderlying: true,
+                extraData: new bytes(0)
+            })
         );
     }
 
@@ -85,9 +96,11 @@ contract CloseShortTest is HyperdriveTest {
             uint256(type(uint248).max) + 1,
             MINIMUM_TRANSACTION_AMOUNT,
             0,
-            bob,
-            true,
-            new bytes(0)
+            IHyperdrive.Options({
+                destination: bob,
+                asUnderlying: true,
+                extraData: new bytes(0)
+            })
         );
     }
 
@@ -133,9 +146,11 @@ contract CloseShortTest is HyperdriveTest {
             maturityTime,
             finalShortAmount,
             0,
-            bob,
-            true,
-            new bytes(0)
+            IHyperdrive.Options({
+                destination: bob,
+                asUnderlying: true,
+                extraData: new bytes(0)
+            })
         );
     }
 

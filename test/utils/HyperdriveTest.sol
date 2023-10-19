@@ -217,9 +217,11 @@ contract HyperdriveTest is BaseTest {
                 hyperdrive.initialize{ value: overrides.depositAmount }(
                     contribution,
                     apr,
-                    lp,
-                    overrides.asUnderlying,
-                    overrides.extraData
+                    IHyperdrive.Options({
+                        destination: lp,
+                        asUnderlying: overrides.asUnderlying,
+                        extraData: overrides.extraData
+                    })
                 );
         } else {
             baseToken.mint(overrides.depositAmount);
@@ -228,9 +230,11 @@ contract HyperdriveTest is BaseTest {
                 hyperdrive.initialize(
                     contribution,
                     apr,
-                    lp,
-                    overrides.asUnderlying,
-                    overrides.extraData
+                    IHyperdrive.Options({
+                        destination: lp,
+                        asUnderlying: overrides.asUnderlying,
+                        extraData: overrides.extraData
+                    })
                 );
         }
     }
@@ -296,9 +300,11 @@ contract HyperdriveTest is BaseTest {
                     contribution,
                     overrides.minSlippage, // min spot rate
                     overrides.maxSlippage, // max spot rate
-                    lp,
-                    overrides.asUnderlying,
-                    overrides.extraData
+                    IHyperdrive.Options({
+                        destination: lp,
+                        asUnderlying: overrides.asUnderlying,
+                        extraData: overrides.extraData
+                    })
                 );
         } else {
             baseToken.mint(overrides.depositAmount);
@@ -308,9 +314,11 @@ contract HyperdriveTest is BaseTest {
                     contribution,
                     overrides.minSlippage, // min spot rate
                     overrides.maxSlippage, // max spot rate
-                    lp,
-                    overrides.asUnderlying,
-                    overrides.extraData
+                    IHyperdrive.Options({
+                        destination: lp,
+                        asUnderlying: overrides.asUnderlying,
+                        extraData: overrides.extraData
+                    })
                 );
         }
     }
@@ -367,9 +375,11 @@ contract HyperdriveTest is BaseTest {
             hyperdrive.removeLiquidity(
                 shares,
                 overrides.minSlippage, // min base proceeds
-                lp,
-                overrides.asUnderlying,
-                overrides.extraData
+                IHyperdrive.Options({
+                    destination: lp,
+                    asUnderlying: overrides.asUnderlying,
+                    extraData: overrides.extraData
+                })
             );
     }
 
@@ -419,9 +429,11 @@ contract HyperdriveTest is BaseTest {
             hyperdrive.redeemWithdrawalShares(
                 shares,
                 overrides.minSlippage, // min output per share
-                lp,
-                overrides.asUnderlying,
-                overrides.extraData
+                IHyperdrive.Options({
+                    destination: lp,
+                    asUnderlying: overrides.asUnderlying,
+                    extraData: overrides.extraData
+                })
             );
     }
 
@@ -476,9 +488,11 @@ contract HyperdriveTest is BaseTest {
                     baseAmount,
                     overrides.minSlippage, // min bond proceeds
                     overrides.minSharePrice,
-                    trader,
-                    overrides.asUnderlying,
-                    overrides.extraData
+                    IHyperdrive.Options({
+                        destination: trader,
+                        asUnderlying: overrides.asUnderlying,
+                        extraData: overrides.extraData
+                    })
                 );
         } else {
             baseToken.mint(baseAmount);
@@ -488,9 +502,11 @@ contract HyperdriveTest is BaseTest {
                     baseAmount,
                     overrides.minSlippage, // min bond proceeds
                     overrides.minSharePrice,
-                    trader,
-                    overrides.asUnderlying,
-                    overrides.extraData
+                    IHyperdrive.Options({
+                        destination: trader,
+                        asUnderlying: overrides.asUnderlying,
+                        extraData: overrides.extraData
+                    })
                 );
         }
     }
@@ -549,9 +565,11 @@ contract HyperdriveTest is BaseTest {
                 maturityTime,
                 bondAmount,
                 overrides.minSlippage, // min base proceeds
-                trader,
-                overrides.asUnderlying,
-                overrides.extraData
+                IHyperdrive.Options({
+                    destination: trader,
+                    asUnderlying: overrides.asUnderlying,
+                    extraData: overrides.extraData
+                })
             );
     }
 
@@ -614,9 +632,11 @@ contract HyperdriveTest is BaseTest {
                 bondAmount,
                 overrides.maxSlippage, // max base payment
                 overrides.minSharePrice,
-                trader,
-                overrides.asUnderlying,
-                overrides.extraData
+                IHyperdrive.Options({
+                    destination: trader,
+                    asUnderlying: overrides.asUnderlying,
+                    extraData: overrides.extraData
+                })
             );
         } else {
             baseToken.mint(overrides.depositAmount);
@@ -625,9 +645,11 @@ contract HyperdriveTest is BaseTest {
                 bondAmount,
                 overrides.maxSlippage, // max base payment
                 overrides.minSharePrice,
-                trader,
-                overrides.asUnderlying,
-                overrides.extraData
+                IHyperdrive.Options({
+                    destination: trader,
+                    asUnderlying: overrides.asUnderlying,
+                    extraData: overrides.extraData
+                })
             );
             baseToken.burn(overrides.depositAmount - baseAmount);
         }
@@ -689,9 +711,11 @@ contract HyperdriveTest is BaseTest {
                 maturityTime,
                 bondAmount,
                 overrides.minSlippage, // min base proceeds
-                trader,
-                overrides.asUnderlying,
-                overrides.extraData
+                IHyperdrive.Options({
+                    destination: trader,
+                    asUnderlying: overrides.asUnderlying,
+                    extraData: overrides.extraData
+                })
             );
     }
 

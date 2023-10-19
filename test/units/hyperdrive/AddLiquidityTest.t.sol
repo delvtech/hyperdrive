@@ -36,9 +36,11 @@ contract AddLiquidityTest is HyperdriveTest {
             0,
             0,
             type(uint256).max,
-            bob,
-            true,
-            new bytes(0)
+            IHyperdrive.Options({
+                destination: bob,
+                asUnderlying: true,
+                extraData: new bytes(0)
+            })
         );
     }
 
@@ -57,9 +59,11 @@ contract AddLiquidityTest is HyperdriveTest {
             0,
             0,
             type(uint256).max,
-            bob,
-            true,
-            new bytes(0)
+            IHyperdrive.Options({
+                destination: bob,
+                asUnderlying: true,
+                extraData: new bytes(0)
+            })
         );
     }
 
@@ -79,9 +83,11 @@ contract AddLiquidityTest is HyperdriveTest {
             0,
             0,
             type(uint256).max,
-            bob,
-            true,
-            new bytes(0)
+            IHyperdrive.Options({
+                destination: bob,
+                asUnderlying: true,
+                extraData: new bytes(0)
+            })
         );
         vm.stopPrank();
         pause(false);
@@ -102,16 +108,27 @@ contract AddLiquidityTest is HyperdriveTest {
             10e18,
             0.06e18,
             type(uint256).max,
-            bob,
-            true,
-            new bytes(0)
+            IHyperdrive.Options({
+                destination: bob,
+                asUnderlying: true,
+                extraData: new bytes(0)
+            })
         );
 
         // Attempt to add liquidity with a maximum APR that is too low.
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(IHyperdrive.InvalidApr.selector);
-        hyperdrive.addLiquidity(10e18, 0, 0.04e18, bob, true, new bytes(0));
+        hyperdrive.addLiquidity(
+            10e18,
+            0,
+            0.04e18,
+            IHyperdrive.Options({
+                destination: bob,
+                asUnderlying: true,
+                extraData: new bytes(0)
+            })
+        );
     }
 
     function test_add_liquidity_failure_zero_lp_total_supply() external {
@@ -140,9 +157,11 @@ contract AddLiquidityTest is HyperdriveTest {
             contribution,
             0,
             0.04e18,
-            bob,
-            true,
-            new bytes(0)
+            IHyperdrive.Options({
+                destination: bob,
+                asUnderlying: true,
+                extraData: new bytes(0)
+            })
         );
     }
 

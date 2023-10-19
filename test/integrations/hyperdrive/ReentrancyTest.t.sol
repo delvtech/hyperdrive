@@ -144,35 +144,104 @@ contract ReentrancyTest is HyperdriveTest {
         bytes[] memory data = new bytes[](8);
         data[0] = abi.encodeCall(
             hyperdrive.initialize,
-            (CONTRIBUTION, FIXED_RATE, _trader, true, new bytes(0))
+            (
+                CONTRIBUTION,
+                FIXED_RATE,
+                IHyperdrive.Options({
+                    destination: _trader,
+                    asUnderlying: true,
+                    extraData: new bytes(0)
+                })
+            )
         );
         data[1] = abi.encodeCall(
             hyperdrive.addLiquidity,
-            (CONTRIBUTION, 0, 1e18, _trader, true, new bytes(0))
+            (
+                CONTRIBUTION,
+                0,
+                1e18,
+                IHyperdrive.Options({
+                    destination: _trader,
+                    asUnderlying: true,
+                    extraData: new bytes(0)
+                })
+            )
         );
         data[2] = abi.encodeCall(
             hyperdrive.removeLiquidity,
-            (CONTRIBUTION, 0, _trader, true, new bytes(0))
+            (
+                CONTRIBUTION,
+                0,
+                IHyperdrive.Options({
+                    destination: _trader,
+                    asUnderlying: true,
+                    extraData: new bytes(0)
+                })
+            )
         );
         data[3] = abi.encodeCall(
             hyperdrive.redeemWithdrawalShares,
-            (BOND_AMOUNT, 0, _trader, true, new bytes(0))
+            (
+                BOND_AMOUNT,
+                0,
+                IHyperdrive.Options({
+                    destination: _trader,
+                    asUnderlying: true,
+                    extraData: new bytes(0)
+                })
+            )
         );
         data[4] = abi.encodeCall(
             hyperdrive.openLong,
-            (BASE_PAID, 0, 0, _trader, true, new bytes(0))
+            (
+                BASE_PAID,
+                0,
+                0,
+                IHyperdrive.Options({
+                    destination: _trader,
+                    asUnderlying: true,
+                    extraData: new bytes(0)
+                })
+            )
         );
         data[5] = abi.encodeCall(
             hyperdrive.closeLong,
-            (block.timestamp, BOND_AMOUNT, 0, _trader, true, new bytes(0))
+            (
+                block.timestamp,
+                BOND_AMOUNT,
+                0,
+                IHyperdrive.Options({
+                    destination: _trader,
+                    asUnderlying: true,
+                    extraData: new bytes(0)
+                })
+            )
         );
         data[6] = abi.encodeCall(
             hyperdrive.openShort,
-            (BOND_AMOUNT, type(uint256).max, 0, _trader, true, new bytes(0))
+            (
+                BOND_AMOUNT,
+                type(uint256).max,
+                0,
+                IHyperdrive.Options({
+                    destination: _trader,
+                    asUnderlying: true,
+                    extraData: new bytes(0)
+                })
+            )
         );
         data[7] = abi.encodeCall(
             hyperdrive.closeShort,
-            (block.timestamp, BOND_AMOUNT, 0, _trader, true, new bytes(0))
+            (
+                block.timestamp,
+                BOND_AMOUNT,
+                0,
+                IHyperdrive.Options({
+                    destination: _trader,
+                    asUnderlying: true,
+                    extraData: new bytes(0)
+                })
+            )
         );
 
         return data;

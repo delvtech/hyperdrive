@@ -37,7 +37,16 @@ contract OpenLongTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(IHyperdrive.MinimumTransactionAmount.selector);
-        hyperdrive.openLong(0, 0, 0, bob, true, new bytes(0));
+        hyperdrive.openLong(
+            0,
+            0,
+            0,
+            IHyperdrive.Options({
+                destination: bob,
+                asUnderlying: true,
+                extraData: new bytes(0)
+            })
+        );
     }
 
     function test_open_long_failure_not_payable() external {
@@ -51,7 +60,16 @@ contract OpenLongTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(IHyperdrive.NotPayable.selector);
-        hyperdrive.openLong{ value: 1 }(1, 0, 0, bob, true, new bytes(0));
+        hyperdrive.openLong{ value: 1 }(
+            1,
+            0,
+            0,
+            IHyperdrive.Options({
+                destination: bob,
+                asUnderlying: true,
+                extraData: new bytes(0)
+            })
+        );
     }
 
     function test_open_long_failure_pause() external {
@@ -66,7 +84,16 @@ contract OpenLongTest is HyperdriveTest {
         pause(true);
         vm.startPrank(bob);
         vm.expectRevert(IHyperdrive.Paused.selector);
-        hyperdrive.openLong(0, 0, 0, bob, true, new bytes(0));
+        hyperdrive.openLong(
+            0,
+            0,
+            0,
+            IHyperdrive.Options({
+                destination: bob,
+                asUnderlying: true,
+                extraData: new bytes(0)
+            })
+        );
         vm.stopPrank();
         pause(false);
     }
@@ -90,7 +117,16 @@ contract OpenLongTest is HyperdriveTest {
         baseToken.mint(bob, basePaid);
         baseToken.approve(address(hyperdrive), basePaid);
         vm.expectRevert(IHyperdrive.NegativeInterest.selector);
-        hyperdrive.openLong(basePaid, 0, 0, bob, true, new bytes(0));
+        hyperdrive.openLong(
+            basePaid,
+            0,
+            0,
+            IHyperdrive.Options({
+                destination: bob,
+                asUnderlying: true,
+                extraData: new bytes(0)
+            })
+        );
 
         // Ensure that the max long results in spot price very close to 1 to
         // make sure that the negative interest failure was appropriate.
@@ -123,7 +159,16 @@ contract OpenLongTest is HyperdriveTest {
         baseToken.mint(baseAmount);
         baseToken.approve(address(hyperdrive), baseAmount);
         vm.expectRevert(IHyperdrive.NegativeInterest.selector);
-        hyperdrive.openLong(baseAmount, 0, 0, bob, true, new bytes(0));
+        hyperdrive.openLong(
+            baseAmount,
+            0,
+            0,
+            IHyperdrive.Options({
+                destination: bob,
+                asUnderlying: true,
+                extraData: new bytes(0)
+            })
+        );
     }
 
     function test_open_long_failure_minimum_share_price() external {
@@ -146,9 +191,11 @@ contract OpenLongTest is HyperdriveTest {
             baseAmount,
             0,
             minSharePrice,
-            bob,
-            true,
-            new bytes(0)
+            IHyperdrive.Options({
+                destination: bob,
+                asUnderlying: true,
+                extraData: new bytes(0)
+            })
         );
     }
 
@@ -222,7 +269,16 @@ contract OpenLongTest is HyperdriveTest {
         baseToken.approve(address(hyperdrive), longAmount);
 
         vm.expectRevert(IHyperdrive.BaseBufferExceedsShareReserves.selector);
-        hyperdrive.openLong(longAmount, 0, 0, bob, true, new bytes(0));
+        hyperdrive.openLong(
+            longAmount,
+            0,
+            0,
+            IHyperdrive.Options({
+                destination: bob,
+                asUnderlying: true,
+                extraData: new bytes(0)
+            })
+        );
     }
 
     // Tests an edge case in `updateWeightedAverage` where the function output

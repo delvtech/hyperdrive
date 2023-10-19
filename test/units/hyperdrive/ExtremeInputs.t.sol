@@ -218,9 +218,11 @@ contract ExtremeInputs is HyperdriveTest {
             shortAmount,
             type(uint256).max,
             0,
-            bob,
-            true,
-            new bytes(0)
+            IHyperdrive.Options({
+                destination: bob,
+                asUnderlying: true,
+                extraData: new bytes(0)
+            })
         );
     }
 

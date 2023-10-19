@@ -289,9 +289,11 @@ contract LpWithdrawalTest is HyperdriveTest {
             maturityTime,
             shortAmount,
             0,
-            bob,
-            true,
-            new bytes(0)
+            IHyperdrive.Options({
+                destination: bob,
+                asUnderlying: true,
+                extraData: new bytes(0)
+            })
         );
     }
 

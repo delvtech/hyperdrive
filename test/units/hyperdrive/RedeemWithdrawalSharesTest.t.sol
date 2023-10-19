@@ -46,9 +46,11 @@ contract RedeemWithdrawalSharesTest is HyperdriveTest {
         hyperdrive.redeemWithdrawalShares(
             withdrawalShares,
             2 * expectedOutputPerShare,
-            alice,
-            true,
-            new bytes(0)
+            IHyperdrive.Options({
+                destination: alice,
+                asUnderlying: true,
+                extraData: new bytes(0)
+            })
         );
     }
 

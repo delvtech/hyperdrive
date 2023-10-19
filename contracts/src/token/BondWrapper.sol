@@ -119,9 +119,11 @@ contract BondWrapper is ERC20 {
                 maturityTime,
                 amount,
                 0,
-                address(this),
-                true,
-                extraData
+                IHyperdrive.Options({
+                    destination: address(this),
+                    asUnderlying: true,
+                    extraData: extraData
+                })
             );
         } else {
             // Sell all assets
@@ -175,9 +177,11 @@ contract BondWrapper is ERC20 {
                 maturityTime,
                 balance,
                 balance,
-                address(this),
-                true,
-                extraData
+                IHyperdrive.Options({
+                    destination: address(this),
+                    asUnderlying: true,
+                    extraData: extraData
+                })
             );
         }
     }

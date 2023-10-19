@@ -38,7 +38,16 @@ contract CloseLongTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(IHyperdrive.MinimumTransactionAmount.selector);
-        hyperdrive.closeLong(maturityTime, 0, 0, bob, true, new bytes(0));
+        hyperdrive.closeLong(
+            maturityTime,
+            0,
+            0,
+            IHyperdrive.Options({
+                destination: bob,
+                asUnderlying: true,
+                extraData: new bytes(0)
+            })
+        );
     }
 
     function test_close_long_failure_invalid_amount() external {
@@ -59,9 +68,11 @@ contract CloseLongTest is HyperdriveTest {
             maturityTime,
             bondAmount + 1,
             0,
-            bob,
-            true,
-            new bytes(0)
+            IHyperdrive.Options({
+                destination: bob,
+                asUnderlying: true,
+                extraData: new bytes(0)
+            })
         );
     }
 
@@ -79,7 +90,16 @@ contract CloseLongTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(alice);
         vm.expectRevert(stdError.arithmeticError);
-        hyperdrive.closeLong(0, lpShares, 0, alice, true, new bytes(0));
+        hyperdrive.closeLong(
+            0,
+            lpShares,
+            0,
+            IHyperdrive.Options({
+                destination: alice,
+                asUnderlying: true,
+                extraData: new bytes(0)
+            })
+        );
     }
 
     function test_close_long_failure_invalid_timestamp() external {
@@ -100,9 +120,11 @@ contract CloseLongTest is HyperdriveTest {
             uint256(type(uint248).max) + 1,
             MINIMUM_TRANSACTION_AMOUNT,
             0,
-            bob,
-            true,
-            new bytes(0)
+            IHyperdrive.Options({
+                destination: bob,
+                asUnderlying: true,
+                extraData: new bytes(0)
+            })
         );
     }
 
@@ -133,9 +155,11 @@ contract CloseLongTest is HyperdriveTest {
             maturityTime,
             longAmount,
             0,
-            bob,
-            true,
-            new bytes(0)
+            IHyperdrive.Options({
+                destination: bob,
+                asUnderlying: true,
+                extraData: new bytes(0)
+            })
         );
     }
 

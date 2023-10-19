@@ -33,7 +33,16 @@ contract OpenShortTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(IHyperdrive.MinimumTransactionAmount.selector);
-        hyperdrive.openShort(0, type(uint256).max, 0, bob, true, new bytes(0));
+        hyperdrive.openShort(
+            0,
+            type(uint256).max,
+            0,
+            IHyperdrive.Options({
+                destination: bob,
+                asUnderlying: true,
+                extraData: new bytes(0)
+            })
+        );
     }
 
     function test_open_short_failure_not_payable() external {
@@ -51,9 +60,11 @@ contract OpenShortTest is HyperdriveTest {
             1,
             type(uint256).max,
             0,
-            bob,
-            true,
-            new bytes(0)
+            IHyperdrive.Options({
+                destination: bob,
+                asUnderlying: true,
+                extraData: new bytes(0)
+            })
         );
     }
 
@@ -69,7 +80,16 @@ contract OpenShortTest is HyperdriveTest {
         pause(true);
         vm.startPrank(bob);
         vm.expectRevert(IHyperdrive.Paused.selector);
-        hyperdrive.openShort(0, type(uint256).max, 0, bob, true, new bytes(0));
+        hyperdrive.openShort(
+            0,
+            type(uint256).max,
+            0,
+            IHyperdrive.Options({
+                destination: bob,
+                asUnderlying: true,
+                extraData: new bytes(0)
+            })
+        );
         vm.stopPrank();
         pause(false);
     }
@@ -92,9 +112,11 @@ contract OpenShortTest is HyperdriveTest {
             shortAmount * 2,
             type(uint256).max,
             0,
-            bob,
-            true,
-            new bytes(0)
+            IHyperdrive.Options({
+                destination: bob,
+                asUnderlying: true,
+                extraData: new bytes(0)
+            })
         );
     }
 
@@ -118,9 +140,11 @@ contract OpenShortTest is HyperdriveTest {
             bondAmount,
             type(uint256).max,
             minSharePrice,
-            bob,
-            true,
-            new bytes(0)
+            IHyperdrive.Options({
+                destination: bob,
+                asUnderlying: true,
+                extraData: new bytes(0)
+            })
         );
     }
 

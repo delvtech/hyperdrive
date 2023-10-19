@@ -31,17 +31,15 @@ contract __MockHyperDrive__ {
         uint256 _maturityTime,
         uint256 _bondAmount,
         uint256 _minOutput,
-        address _destination,
-        bool _asUnderlying,
-        bytes memory _extraData
+        IHyperdrive.Options memory _options
     ) external returns (uint256) {
         emit __CloseLong__(
             _maturityTime,
             _bondAmount,
             _minOutput,
-            _destination,
-            _asUnderlying,
-            _extraData
+            _options.destination,
+            _options.asUnderlying,
+            _options.extraData
         );
         return __closeLongReturnValue__;
     }

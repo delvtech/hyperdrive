@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import { HyperdriveStorage } from "./HyperdriveStorage.sol";
 import { IERC20 } from "./interfaces/IERC20.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
+import { IHyperdriveWrite } from "./interfaces/IHyperdriveWrite.sol";
 import { AssetId } from "./libraries/AssetId.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
@@ -16,7 +17,11 @@ import { MultiToken } from "./token/MultiToken.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
+abstract contract HyperdriveBase is
+    IHyperdriveWrite,
+    MultiToken,
+    HyperdriveStorage
+{
     using FixedPointMath for uint256;
     using FixedPointMath for int256;
     using SafeCast for uint256;
@@ -187,10 +192,6 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     }
 
     /// Checkpoint ///
-
-    /// @notice Allows anyone to mint a new checkpoint.
-    /// @param _checkpointTime The time of the checkpoint to create.
-    function checkpoint(uint256 _checkpointTime) public virtual;
 
     /// @dev Creates a new checkpoint if necessary.
     /// @param _checkpointTime The time of the checkpoint to create.
