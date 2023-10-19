@@ -13,7 +13,7 @@ use hyperdrive_math::State;
 use hyperdrive_wrappers::wrappers::{
     erc20_mintable::ERC20Mintable,
     erc4626_data_provider::ERC4626DataProvider,
-    i_hyperdrive::{Checkpoint, IHyperdrive, IHyperdriveEvents, PoolConfig},
+    i_hyperdrive::{Checkpoint, IHyperdrive, IHyperdriveEvents, Options, PoolConfig},
     mock_erc4626::MockERC4626,
 };
 use rand::{Rng, SeedableRng};
@@ -138,9 +138,11 @@ impl Agent<ChainClient, ChaCha8Rng> {
                     base_paid.into(),
                     min_output.into(),
                     fixed!(0).into(), // TODO: This is fine for testing, but not prod.
-                    self.address,
-                    true,
-                    [].into(),
+                    Options {
+                        destination: self.address,
+                        as_base: true,
+                        extra_data: [].into(),
+                    },
                 )
                 .from(self.address);
             let logs = tx
@@ -204,9 +206,11 @@ impl Agent<ChainClient, ChaCha8Rng> {
                     maturity_time.into(),
                     bond_amount.into(),
                     uint256!(0),
-                    self.address,
-                    true,
-                    [].into(),
+                    Options {
+                        destination: self.address,
+                        as_base: true,
+                        extra_data: [].into(),
+                    },
                 )
                 .from(self.address);
             let logs = tx
@@ -253,9 +257,11 @@ impl Agent<ChainClient, ChaCha8Rng> {
                     bond_amount.into(),
                     max_deposit.into(),
                     fixed!(0).into(), // TODO: This is fine for testing, but not prod.
-                    self.address,
-                    true,
-                    [].into(),
+                    Options {
+                        destination: self.address,
+                        as_base: true,
+                        extra_data: [].into(),
+                    },
                 )
                 .from(self.address);
             let logs = tx
@@ -318,9 +324,11 @@ impl Agent<ChainClient, ChaCha8Rng> {
                     maturity_time.into(),
                     bond_amount.into(),
                     uint256!(0),
-                    self.address,
-                    true,
-                    [].into(),
+                    Options {
+                        destination: self.address,
+                        as_base: true,
+                        extra_data: [].into(),
+                    },
                 )
                 .from(self.address);
             let logs = tx
@@ -368,9 +376,11 @@ impl Agent<ChainClient, ChaCha8Rng> {
                 .initialize(
                     contribution.into(),
                     rate.into(),
-                    self.address,
-                    true,
-                    [].into(),
+                    Options {
+                        destination: self.address,
+                        as_base: true,
+                        extra_data: [].into(),
+                    },
                 )
                 .from(self.address);
             let logs = tx
@@ -417,9 +427,11 @@ impl Agent<ChainClient, ChaCha8Rng> {
                     contribution.into(),
                     uint256!(0),
                     U256::MAX,
-                    self.address,
-                    true,
-                    [].into(),
+                    Options {
+                        destination: self.address,
+                        as_base: true,
+                        extra_data: [].into(),
+                    },
                 )
                 .from(self.address);
             let logs = tx
@@ -465,7 +477,15 @@ impl Agent<ChainClient, ChaCha8Rng> {
         let log = {
             let tx = self
                 .hyperdrive
-                .remove_liquidity(shares.into(), uint256!(0), self.address, true, [].into())
+                .remove_liquidity(
+                    shares.into(),
+                    uint256!(0),
+                    Options {
+                        destination: self.address,
+                        as_base: true,
+                        extra_data: [].into(),
+                    },
+                )
                 .from(self.address);
             let logs = tx
                 .send()
@@ -508,7 +528,15 @@ impl Agent<ChainClient, ChaCha8Rng> {
         let log = {
             let tx = self
                 .hyperdrive
-                .redeem_withdrawal_shares(shares.into(), uint256!(0), self.address, true, [].into())
+                .redeem_withdrawal_shares(
+                    shares.into(),
+                    uint256!(0),
+                    Options {
+                        destination: self.address,
+                        as_base: true,
+                        extra_data: [].into(),
+                    },
+                )
                 .from(self.address);
             let logs = tx
                 .send()

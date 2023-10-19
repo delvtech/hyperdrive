@@ -146,7 +146,7 @@ abstract contract HyperdriveBase is
         IHyperdrive.Options memory _options
     ) internal virtual returns (uint256 amountWithdrawn);
 
-    /// @notice Loads the share price from the yield source
+    /// @notice Loads the share price from the yield source.
     /// @return sharePrice The current share price.
     function _pricePerShare()
         internal
@@ -158,9 +158,9 @@ abstract contract HyperdriveBase is
 
     event PauserUpdated(address indexed newPauser);
 
-    ///@notice Allows governance to set the ability of an address to pause deposits
-    ///@param who The address to change
-    ///@param status The new pauser status
+    /// @notice Allows governance to change the pauser status of an address.
+    /// @param who The address to change.
+    /// @param status The new pauser status.
     function setPauser(address who, bool status) external {
         if (msg.sender != _governance) revert IHyperdrive.Unauthorized();
         _pausers[who] = status;
@@ -169,8 +169,8 @@ abstract contract HyperdriveBase is
 
     event GovernanceUpdated(address indexed newGovernance);
 
-    /// @notice Allows governance to change governance
-    /// @param _who The new governance address
+    /// @notice Allows governance to change governance.
+    /// @param _who The new governance address.
     function setGovernance(address _who) external {
         if (msg.sender != _governance) revert IHyperdrive.Unauthorized();
         _governance = _who;
@@ -178,14 +178,14 @@ abstract contract HyperdriveBase is
         emit GovernanceUpdated(_who);
     }
 
-    /// @notice Allows an authorized address to pause this contract
-    /// @param _status True to pause all deposits and false to unpause them
+    /// @notice Allows an authorized address to pause this contract.
+    /// @param _status True to pause all deposits and false to unpause them.
     function pause(bool _status) external {
         if (!_pausers[msg.sender]) revert IHyperdrive.Unauthorized();
         _marketState.isPaused = _status;
     }
 
-    ///@notice Blocks a function execution if the contract is paused
+    /// @notice Blocks a function execution if the contract is paused.
     modifier isNotPaused() {
         if (_marketState.isPaused) revert IHyperdrive.Paused();
         _;

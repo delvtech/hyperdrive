@@ -270,7 +270,10 @@ impl TestChainWithMocks {
 #[cfg(test)]
 mod tests {
     use fixed_point_macros::uint256;
-    use hyperdrive_wrappers::wrappers::{erc20_mintable::ERC20Mintable, i_hyperdrive::IHyperdrive};
+    use hyperdrive_wrappers::wrappers::{
+        erc20_mintable::ERC20Mintable,
+        i_hyperdrive::{IHyperdrive, Options},
+    };
 
     use super::*;
 
@@ -318,9 +321,11 @@ mod tests {
             .initialize(
                 contribution,
                 uint256!(0.05e18),
-                client.address(),
-                true,
-                [].into(),
+                Options {
+                    destination: client.address(),
+                    as_base: true,
+                    extra_data: [].into(),
+                },
             )
             .send()
             .await?;
