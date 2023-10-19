@@ -150,7 +150,6 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
         );
 
         // Calculate the pool and user deltas using the trading function.
-        uint256 maturityTime = _maturityTime; // Avoid stack too deep error.
         (
             uint256 bondReservesDelta,
             uint256 shareProceeds,
@@ -158,17 +157,17 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
             uint256 shareCurveDelta,
             int256 shareAdjustmentDelta,
             uint256 totalGovernanceFee
-        ) = _calculateCloseLong(_bondAmount, sharePrice, maturityTime);
+        ) = _calculateCloseLong(_bondAmount, sharePrice, _maturityTime);
 
         // If the position hasn't matured, apply the accounting updates that
         // result from closing the long to the reserves and pay out the
         // withdrawal pool if necessary.
-        uint256 bondAmount = _bondAmount; // Avoid stack too deep error.
+        uint256 maturityTime = _maturityTime; // Avoid stack too deep error.
         if (block.timestamp < _maturityTime) {
             // Attribute the governance fee.
             _governanceFeesAccrued += totalGovernanceFee;
             _applyCloseLong(
-                bondAmount,
+                _bondAmount,
                 bondReservesDelta,
                 shareReservesDelta,
                 shareAdjustmentDelta,
@@ -180,14 +179,13 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
             int128 checkpointExposureBefore = int128(
                 _checkpoints[checkpointTime].longExposure
             );
-            uint256 sharePrice_ = sharePrice; // Avoid stack too deep error.
             _updateCheckpointLongExposureOnClose(
-                bondAmount,
+                _bondAmount,
                 shareCurveDelta,
                 bondReservesDelta,
                 shareReservesDelta,
                 maturityTime,
-                sharePrice_,
+                sharePrice,
                 true
             );
             _updateLongExposure(
@@ -196,7 +194,7 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
             );
 
             // Distribute the excess idle to the withdrawal pool.
-            _distributeExcessIdle(sharePrice_);
+            _distributeExcessIdle(sharePrice);
         }
 
         // Withdraw the profit to the trader.
@@ -206,6 +204,7 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
         if (_minOutput > baseProceeds) revert IHyperdrive.OutputLimit();
 
         // Emit a CloseLong event.
+        uint256 bondAmount = _bondAmount; // Avoid stack too deep error.
         emit CloseLong(
             _options.destination,
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
