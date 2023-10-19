@@ -147,9 +147,6 @@ contract ERC4626Hyperdrive is Hyperdrive {
         } else {
             // Transfer vault shares to the destination.
             IERC20(address(pool)).safeTransfer(_options.destination, _shares);
-            // TODO: Is this what we want? It seems like this could be confusing
-            // to the trader.
-            //
             // Estimate the amount of base that was withdrawn from the yield
             // source.
             uint256 estimated = pool.convertToAssets(_shares);
