@@ -95,7 +95,7 @@ contract ERC4626Hyperdrive is Hyperdrive {
     /// @return sharePrice The share price at time of deposit
     function _deposit(
         uint256 _amount,
-        IHyperdrive.Options memory _options
+        IHyperdrive.Options calldata _options
     ) internal override returns (uint256 sharesMinted, uint256 sharePrice) {
         if (_options.asBase) {
             // Take custody of the deposit in base.
@@ -134,7 +134,7 @@ contract ERC4626Hyperdrive is Hyperdrive {
     /// @return amountWithdrawn The amount withdrawn from the yield source.
     function _withdraw(
         uint256 _shares,
-        IHyperdrive.Options memory _options
+        IHyperdrive.Options calldata _options
     ) internal override returns (uint256 amountWithdrawn) {
         if (_options.asBase) {
             // Redeem the shares from the yield source and transfer the

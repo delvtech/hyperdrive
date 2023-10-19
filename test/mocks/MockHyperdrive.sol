@@ -298,7 +298,7 @@ contract MockHyperdrive is Hyperdrive {
 
     function _deposit(
         uint256 amount,
-        IHyperdrive.Options memory
+        IHyperdrive.Options calldata
     ) internal override returns (uint256, uint256) {
         // Transfer the specified amount of funds from the trader. If the trader
         // overpaid, we return the excess amount.
@@ -340,7 +340,7 @@ contract MockHyperdrive is Hyperdrive {
 
     function _withdraw(
         uint256 shares,
-        IHyperdrive.Options memory options
+        IHyperdrive.Options calldata options
     ) internal override returns (uint256 withdrawValue) {
         // If the shares to withdraw is greater than the total shares, we clamp
         // to the total shares.

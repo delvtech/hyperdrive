@@ -130,7 +130,7 @@ abstract contract HyperdriveBase is
     /// @return sharePrice The share price.
     function _deposit(
         uint256 _amount,
-        IHyperdrive.Options memory _options
+        IHyperdrive.Options calldata _options
     ) internal virtual returns (uint256 sharesMinted, uint256 sharePrice);
 
     /// @notice Withdraws shares from the yield source and sends the base
@@ -143,7 +143,7 @@ abstract contract HyperdriveBase is
     /// @return amountWithdrawn The amount of base released by the withdrawal.
     function _withdraw(
         uint256 _shares,
-        IHyperdrive.Options memory _options
+        IHyperdrive.Options calldata _options
     ) internal virtual returns (uint256 amountWithdrawn);
 
     /// @notice Loads the share price from the yield source.
@@ -206,21 +206,23 @@ abstract contract HyperdriveBase is
     /// @param _options The options that configure how the fees are settled.
     /// @return proceeds The amount of base collected.
     function collectGovernanceFee(
-        IHyperdrive.Options memory _options
+        IHyperdrive.Options calldata _options
     ) external nonReentrant returns (uint256 proceeds) {
-        // The destination option isn't used in this function, and we require
-        // that it is set to the zero address to prevent accidental use.
-        if (_options.destination != address(0)) {
-            revert IHyperdrive.InvalidOptions();
+        // Ensure that the destination is set to the fee collector.
+        if (_options.destination != _feeCollector) {
+            revert IHyperdrive.InvalidFeeDestination();
         }
-        _options.destination = _feeCollector;
 
-        // Must have been granted a role
+        // Ensure that the caller is authorized to collect fees.
         if (
             !_pausers[msg.sender] &&
             msg.sender != _feeCollector &&
             msg.sender != _governance
-        ) revert IHyperdrive.Unauthorized();
+        ) {
+            revert IHyperdrive.Unauthorized();
+        }
+
+        // Withdraw the accrued governance fees to the fee collector.
         uint256 governanceFeesAccrued = _governanceFeesAccrued;
         delete _governanceFeesAccrued;
         proceeds = _withdraw(governanceFeesAccrued, _options);

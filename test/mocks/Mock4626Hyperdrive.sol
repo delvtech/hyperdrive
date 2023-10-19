@@ -26,14 +26,14 @@ contract MockERC4626Hyperdrive is ERC4626Hyperdrive {
 
     function deposit(
         uint256 _amount,
-        IHyperdrive.Options memory _options
+        IHyperdrive.Options calldata _options
     ) public returns (uint256 sharesMinted, uint256 sharePrice) {
         return _deposit(_amount, _options);
     }
 
     function withdraw(
         uint256 _shares,
-        IHyperdrive.Options memory _options
+        IHyperdrive.Options calldata _options
     ) public returns (uint256 amountWithdrawn) {
         return _withdraw(_shares, _options);
     }

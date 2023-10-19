@@ -29,7 +29,7 @@ abstract contract HyperdriveLP is IHyperdriveWrite, HyperdriveTWAP {
     function initialize(
         uint256 _contribution,
         uint256 _apr,
-        IHyperdrive.Options memory _options
+        IHyperdrive.Options calldata _options
     ) external payable nonReentrant returns (uint256 lpShares) {
         // Check that the message value and base amount are valid.
         _checkMessageValue();
@@ -108,7 +108,7 @@ abstract contract HyperdriveLP is IHyperdriveWrite, HyperdriveTWAP {
         uint256 _contribution,
         uint256 _minApr,
         uint256 _maxApr,
-        IHyperdrive.Options memory _options
+        IHyperdrive.Options calldata _options
     ) external payable nonReentrant isNotPaused returns (uint256 lpShares) {
         // Check that the message value and base amount are valid.
         _checkMessageValue();
@@ -204,7 +204,7 @@ abstract contract HyperdriveLP is IHyperdriveWrite, HyperdriveTWAP {
     function removeLiquidity(
         uint256 _shares,
         uint256 _minOutput,
-        IHyperdrive.Options memory _options
+        IHyperdrive.Options calldata _options
     )
         external
         nonReentrant
@@ -280,7 +280,7 @@ abstract contract HyperdriveLP is IHyperdriveWrite, HyperdriveTWAP {
     function redeemWithdrawalShares(
         uint256 _shares,
         uint256 _minOutputPerShare,
-        IHyperdrive.Options memory _options
+        IHyperdrive.Options calldata _options
     )
         external
         nonReentrant

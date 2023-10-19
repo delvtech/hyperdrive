@@ -14,8 +14,30 @@ contract FeeTest is HyperdriveTest {
     using FixedPointMath for uint256;
     using Lib for *;
 
-    // FIXME: We need a test that fails if the destination that is provided to
-    // collectGovernanceFee isn't the zero address.
+    function test_governanceFeeAccrual_invalidFeeDestination_failure() public {
+        // Deploy and initialize a new pool with fees.
+        uint256 apr = 0.05e18;
+        uint256 contribution = 500_000_000e18;
+        deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18);
+        initialize(alice, apr, contribution);
+
+        // Open a long and ensure that the governance fees accrued are non-zero.
+        uint256 baseAmount = 10e18;
+        openLong(bob, baseAmount);
+        assertGt(hyperdrive.getUncollectedGovernanceFees(), 0);
+
+        // Attempt to collect fees with an invalid destination.
+        vm.stopPrank();
+        vm.prank(feeCollector);
+        vm.expectRevert(IHyperdrive.InvalidFeeDestination.selector);
+        hyperdrive.collectGovernanceFee(
+            IHyperdrive.Options({
+                destination: alice,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
+    }
 
     function test_governanceFeeAccrual() public {
         uint256 apr = 0.05e18;
@@ -41,9 +63,9 @@ contract FeeTest is HyperdriveTest {
         // Collect fees and test that the fees received in the governance address have earned interest.
         vm.stopPrank();
         vm.prank(feeCollector);
-        MockHyperdrive(address(hyperdrive)).collectGovernanceFee(
+        hyperdrive.collectGovernanceFee(
             IHyperdrive.Options({
-                destination: address(0),
+                destination: feeCollector,
                 asBase: true,
                 extraData: new bytes(0)
             })
@@ -346,9 +368,9 @@ contract FeeTest is HyperdriveTest {
         // Collect fees to governance address
         vm.stopPrank();
         vm.prank(feeCollector);
-        MockHyperdrive(address(hyperdrive)).collectGovernanceFee(
+        hyperdrive.collectGovernanceFee(
             IHyperdrive.Options({
-                destination: address(0),
+                destination: feeCollector,
                 asBase: true,
                 extraData: new bytes(0)
             })
@@ -408,18 +430,18 @@ contract FeeTest is HyperdriveTest {
 
         // collect governance fees
         vm.expectRevert(IHyperdrive.Unauthorized.selector);
-        MockHyperdrive(address(hyperdrive)).collectGovernanceFee(
+        hyperdrive.collectGovernanceFee(
             IHyperdrive.Options({
-                destination: address(0),
+                destination: feeCollector,
                 asBase: true,
                 extraData: new bytes(0)
             })
         );
         vm.stopPrank();
         vm.prank(governance);
-        MockHyperdrive(address(hyperdrive)).collectGovernanceFee(
+        hyperdrive.collectGovernanceFee(
             IHyperdrive.Options({
-                destination: address(0),
+                destination: feeCollector,
                 asBase: true,
                 extraData: new bytes(0)
             })

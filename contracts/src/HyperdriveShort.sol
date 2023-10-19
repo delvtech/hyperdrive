@@ -34,7 +34,7 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
         uint256 _bondAmount,
         uint256 _maxDeposit,
         uint256 _minSharePrice,
-        IHyperdrive.Options memory _options
+        IHyperdrive.Options calldata _options
     )
         external
         payable
@@ -121,7 +121,7 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
         uint256 _maturityTime,
         uint256 _bondAmount,
         uint256 _minOutput,
-        IHyperdrive.Options memory _options
+        IHyperdrive.Options calldata _options
     ) external nonReentrant returns (uint256) {
         if (_bondAmount < _minimumTransactionAmount) {
             revert IHyperdrive.MinimumTransactionAmount();
