@@ -18,3 +18,38 @@ pub fn get_effective_share_reserves(
     }
     effective_share_reserves.into()
 }
+
+/// Calculates the bond reserves assuming that the pool has a given
+/// share reserves and fixed rate APR.
+///
+/// r = ((1/p)-1)/t = (1-p)/(pt)
+/// p = ((u * z) / y) ** t
+///
+/// Arguments:
+///
+/// * effective_share_reserves : The pool's effective share reserves. The
+/// effective share reserves are a modified version of the share
+/// reserves used when pricing trades.
+/// * initial_share_price : The pool's initial share price.
+/// * apr : The pool's APR.
+/// * position_duration : The amount of time until maturity in seconds.
+/// * time_stretch : The time stretch parameter.
+///
+/// Returns:
+///
+/// * bond_reserves : The bond reserves (without adjustment) that make
+/// the pool have a specified APR.
+pub fn calculate_bonds_given_shares_and_rate(
+    effective_share_reserves: FixedPoint,
+    initial_share_price: FixedPoint,
+    apr: FixedPoint,
+    position_duration: FixedPoint,
+    time_stretch: FixedPoint,
+) -> FixedPoint {
+    let t = position_duration.div_down(fixed!(365e18));
+    // mu * (z - zeta) * (1 + apr * t) ** (1/tau)
+    return initial_share_price
+        .mul_down(effective_share_reserves)
+        .mul_down(fixed!(1e18) + apr.mul_down(t))
+        .pow(fixed!(1e18).div_up(time_stretch));
+}
