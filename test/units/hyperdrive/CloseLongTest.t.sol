@@ -38,7 +38,16 @@ contract CloseLongTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(IHyperdrive.MinimumTransactionAmount.selector);
-        hyperdrive.closeLong(maturityTime, 0, 0, bob, true);
+        hyperdrive.closeLong(
+            maturityTime,
+            0,
+            0,
+            IHyperdrive.Options({
+                destination: bob,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
     }
 
     function test_close_long_failure_invalid_amount() external {
@@ -55,7 +64,16 @@ contract CloseLongTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(stdError.arithmeticError);
-        hyperdrive.closeLong(maturityTime, bondAmount + 1, 0, bob, true);
+        hyperdrive.closeLong(
+            maturityTime,
+            bondAmount + 1,
+            0,
+            IHyperdrive.Options({
+                destination: bob,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
     }
 
     function test_close_long_failure_zero_maturity() external {
@@ -72,7 +90,16 @@ contract CloseLongTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(alice);
         vm.expectRevert(stdError.arithmeticError);
-        hyperdrive.closeLong(0, lpShares, 0, alice, true);
+        hyperdrive.closeLong(
+            0,
+            lpShares,
+            0,
+            IHyperdrive.Options({
+                destination: alice,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
     }
 
     function test_close_long_failure_invalid_timestamp() external {
@@ -93,8 +120,11 @@ contract CloseLongTest is HyperdriveTest {
             uint256(type(uint248).max) + 1,
             MINIMUM_TRANSACTION_AMOUNT,
             0,
-            bob,
-            true
+            IHyperdrive.Options({
+                destination: bob,
+                asBase: true,
+                extraData: new bytes(0)
+            })
         );
     }
 
@@ -121,7 +151,16 @@ contract CloseLongTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(IHyperdrive.InvalidShareReserves.selector);
-        hyperdrive.closeLong(maturityTime, longAmount, 0, bob, true);
+        hyperdrive.closeLong(
+            maturityTime,
+            longAmount,
+            0,
+            IHyperdrive.Options({
+                destination: bob,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
     }
 
     function test_close_long_immediately_with_regular_amount() external {

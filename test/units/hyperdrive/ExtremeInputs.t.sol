@@ -5,8 +5,8 @@ import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
-import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol";
-import { Lib } from "../../utils/Lib.sol";
+import { HyperdriveTest, HyperdriveUtils } from "test/utils/HyperdriveTest.sol";
+import { Lib } from "test/utils/Lib.sol";
 
 contract ExtremeInputs is HyperdriveTest {
     using FixedPointMath for uint256;
@@ -214,7 +214,16 @@ contract ExtremeInputs is HyperdriveTest {
         baseToken.mint(shortAmount);
         baseToken.approve(address(hyperdrive), shortAmount);
         vm.expectRevert(IHyperdrive.BaseBufferExceedsShareReserves.selector);
-        hyperdrive.openShort(shortAmount, type(uint256).max, 0, bob, true);
+        hyperdrive.openShort(
+            shortAmount,
+            type(uint256).max,
+            0,
+            IHyperdrive.Options({
+                destination: bob,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
     }
 
     // This test stresses the edge cases of the `_updateLiquidity` function

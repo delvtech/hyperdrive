@@ -97,12 +97,14 @@ contract BondWrapper is ERC20 {
     /// @param andBurn If true it will burn the number of erc20 minted by this deposited bond
     /// @param destination The address which gets credited with this withdraw
     /// @param minOutput The min amount the user expects transferred to them.
+    /// @param extraData Extra data to pass to the yield source.
     function close(
         uint256 maturityTime,
         uint256 amount,
         bool andBurn,
         address destination,
-        uint256 minOutput
+        uint256 minOutput,
+        bytes memory extraData
     ) external {
         // Encode the asset ID
         uint256 assetId = AssetId.encodeAssetId(
@@ -117,12 +119,15 @@ contract BondWrapper is ERC20 {
                 maturityTime,
                 amount,
                 0,
-                address(this),
-                true
+                IHyperdrive.Options({
+                    destination: address(this),
+                    asBase: true,
+                    extraData: extraData
+                })
             );
         } else {
             // Sell all assets
-            sweep(maturityTime);
+            sweep(maturityTime, extraData);
             // Sweep guarantees 1 to 1 conversion so the user gets exactly the amount they are closing
             receivedAmount = amount;
         }
@@ -155,7 +160,8 @@ contract BondWrapper is ERC20 {
     /// @notice Sells all assets from the contract if they are matured, has no affect if
     ///         the contract has no assets from a timestamp
     /// @param maturityTime The maturity time of the asset to sell
-    function sweep(uint256 maturityTime) public {
+    /// @param extraData Extra data to pass to the yield source.
+    function sweep(uint256 maturityTime, bytes memory extraData) public {
         // Require only sweeping after maturity
         if (maturityTime > block.timestamp) revert IHyperdrive.BondNotMatured();
         // Load the balance of this contract
@@ -171,8 +177,11 @@ contract BondWrapper is ERC20 {
                 maturityTime,
                 balance,
                 balance,
-                address(this),
-                true
+                IHyperdrive.Options({
+                    destination: address(this),
+                    asBase: true,
+                    extraData: extraData
+                })
             );
         }
     }
@@ -190,13 +199,19 @@ contract BondWrapper is ERC20 {
     /// @notice Calls both force close and redeem to enable easy liquidation of a user account
     /// @param  maturityTimes Maturity times which the caller would like to sweep before redeeming
     /// @param amount The amount of erc20 wrapper to burn.
+    /// @param extraDatas Extra data to pass to the yield source.
     function sweepAndRedeem(
         uint256[] calldata maturityTimes,
-        uint256 amount
+        uint256 amount,
+        bytes[] memory extraDatas
     ) external {
-        // Cycle through each maturity and sweep
+        if (maturityTimes.length != extraDatas.length) {
+            revert IHyperdrive.InputLengthMismatch();
+        }
+
+        // Cycle through each maturity and sweep.
         for (uint256 i = 0; i < maturityTimes.length; ) {
-            sweep(maturityTimes[i]);
+            sweep(maturityTimes[i], extraDatas[i]);
             unchecked {
                 ++i;
             }

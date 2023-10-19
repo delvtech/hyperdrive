@@ -120,6 +120,13 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
         uint256 governance;
     }
 
+    struct OracleState {
+        /// @notice The pointer to the most recent buffer entry
+        uint128 head;
+        /// @notice The last timestamp we wrote to the buffer
+        uint128 lastTimestamp;
+    }
+
     struct PoolConfig {
         /// @dev The address of the base token.
         IERC20 baseToken;
@@ -179,11 +186,15 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
         uint256 longExposure;
     }
 
-    struct OracleState {
-        /// @notice The pointer to the most recent buffer entry
-        uint128 head;
-        /// @notice The last timestamp we wrote to the buffer
-        uint128 lastTimestamp;
+    struct Options {
+        /// @dev The address that receives the proceeds of a trade or LP action.
+        address destination;
+        /// @dev A boolean indicating that the trade or LP action should be
+        ///      settled in base if true and in the yield source shares if false.
+        bool asBase;
+        /// @dev Additional data that can be used to implement custom logic in
+        ///      implementation contracts.
+        bytes extraData;
     }
 
     /// Errors ///
@@ -207,6 +218,7 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
     error InvalidPositionDuration();
     error InvalidShareReserves();
     error InvalidFeeAmounts();
+    error InvalidFeeDestination();
     error NegativeInterest();
     error NegativePresentValue();
     error NoAssetsToWithdraw();
@@ -266,6 +278,7 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
     error BondMatured();
     error BondNotMatured();
     error InsufficientPrice();
+    error InputLengthMismatch();
     error MintPercentTooHigh();
 
     /// ###############

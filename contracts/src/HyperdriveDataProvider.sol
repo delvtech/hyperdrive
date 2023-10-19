@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 
 import { HyperdriveStorage } from "./HyperdriveStorage.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
+import { IHyperdriveRead } from "./interfaces/IHyperdriveRead.sol";
 import { AssetId } from "./libraries/AssetId.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
@@ -15,6 +16,7 @@ import { MultiTokenDataProvider } from "./token/MultiTokenDataProvider.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveDataProvider is
+    IHyperdriveRead,
     HyperdriveStorage,
     MultiTokenDataProvider
 {

@@ -298,7 +298,7 @@ contract MockHyperdrive is Hyperdrive {
 
     function _deposit(
         uint256 amount,
-        bool
+        IHyperdrive.Options calldata
     ) internal override returns (uint256, uint256) {
         // Transfer the specified amount of funds from the trader. If the trader
         // overpaid, we return the excess amount.
@@ -340,8 +340,7 @@ contract MockHyperdrive is Hyperdrive {
 
     function _withdraw(
         uint256 shares,
-        address destination,
-        bool
+        IHyperdrive.Options calldata options
     ) internal override returns (uint256 withdrawValue) {
         // If the shares to withdraw is greater than the total shares, we clamp
         // to the total shares.
@@ -364,9 +363,11 @@ contract MockHyperdrive is Hyperdrive {
         totalShares -= shares;
         bool success;
         if (address(_baseToken) == ETH) {
-            (success, ) = payable(destination).call{ value: withdrawValue }("");
+            (success, ) = payable(options.destination).call{
+                value: withdrawValue
+            }("");
         } else {
-            success = _baseToken.transfer(destination, withdrawValue);
+            success = _baseToken.transfer(options.destination, withdrawValue);
         }
         if (!success) {
             revert IHyperdrive.TransferFailed();

@@ -905,7 +905,16 @@ contract HyperdriveMathTest is HyperdriveTest {
         baseToken.mint(bob, finalLongAmount);
         baseToken.approve(address(hyperdrive), finalLongAmount);
         vm.expectRevert();
-        hyperdrive.openLong(finalLongAmount, 0, 0, bob, true);
+        hyperdrive.openLong(
+            finalLongAmount,
+            0,
+            0,
+            IHyperdrive.Options({
+                destination: bob,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
 
         // Ensure that the long can be closed.
         closeLong(bob, maturityTime, longAmount);
@@ -1067,7 +1076,16 @@ contract HyperdriveMathTest is HyperdriveTest {
         baseToken.mint(bob, finalShortAmount);
         baseToken.approve(address(hyperdrive), finalShortAmount);
         vm.expectRevert();
-        hyperdrive.openShort(finalShortAmount, 0, 0, bob, true);
+        hyperdrive.openShort(
+            finalShortAmount,
+            0,
+            0,
+            IHyperdrive.Options({
+                destination: bob,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
 
         // Ensure that the short can be closed.
         closeShort(bob, maturityTime, maxShort);

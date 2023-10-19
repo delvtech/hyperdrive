@@ -127,12 +127,8 @@ impl State {
         // Assuming the budget is infinite, find the largest possible short that
         // can be opened. If the short satisfies the budget, this is the max
         // short amount.
-        let mut max_bond_amount = self.absolute_max_short(
-            spot_price,
-            open_share_price,
-            checkpoint_exposure,
-            maybe_max_iterations,
-        );
+        let mut max_bond_amount =
+            self.absolute_max_short(spot_price, checkpoint_exposure, maybe_max_iterations);
         let deposit = match self.get_short_deposit(max_bond_amount, spot_price, open_share_price) {
             Some(d) => d,
             None => return max_bond_amount,
@@ -263,7 +259,6 @@ impl State {
     fn absolute_max_short(
         &self,
         spot_price: FixedPoint,
-        open_share_price: FixedPoint,
         checkpoint_exposure: I256,
         maybe_max_iterations: Option<usize>,
     ) -> FixedPoint {
@@ -290,12 +285,7 @@ impl State {
             optimal_bond_reserves - self.bond_reserves()
         };
         if self
-            .solvency_after_short(
-                absolute_max_bond_amount,
-                spot_price,
-                open_share_price,
-                checkpoint_exposure,
-            )
+            .solvency_after_short(absolute_max_bond_amount, spot_price, checkpoint_exposure)
             .is_some()
         {
             return absolute_max_bond_amount;
@@ -319,12 +309,8 @@ impl State {
         // The guess that we make is very important in determining how quickly
         // we converge to the solution.
         let mut max_bond_amount = self.absolute_max_short_guess(spot_price, checkpoint_exposure);
-        let mut maybe_solvency = self.solvency_after_short(
-            max_bond_amount,
-            spot_price,
-            open_share_price,
-            checkpoint_exposure,
-        );
+        let mut maybe_solvency =
+            self.solvency_after_short(max_bond_amount, spot_price, checkpoint_exposure);
         if maybe_solvency.is_none() {
             panic!("Initial guess in `max_short` is insolvent.");
         }
@@ -353,7 +339,6 @@ impl State {
             maybe_solvency = self.solvency_after_short(
                 possible_max_bond_amount,
                 spot_price,
-                open_share_price,
                 checkpoint_exposure,
             );
             if let Some(s) = maybe_solvency {
@@ -469,7 +454,6 @@ impl State {
         &self,
         short_amount: FixedPoint,
         spot_price: FixedPoint,
-        open_share_price: FixedPoint,
         checkpoint_exposure: I256,
     ) -> Option<FixedPoint> {
         let principal = if let Some(p) = self.short_principal(short_amount) {
