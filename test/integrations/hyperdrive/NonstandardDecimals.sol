@@ -473,7 +473,6 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         ) = removeLiquidity(celine, celineLpShares);
         assertGe(bobBaseProceeds + 1e6, celineBaseProceeds);
         assertGe(bobBaseProceeds + 1e6, testParams.contribution);
-        uint256 _minimumTransactionAmount = minimumTransactionAmount;
         assertApproxEqAbs(bobWithdrawalShares, 0, 1);
         assertApproxEqAbs(celineWithdrawalShares, 0, 1);
         assertApproxEqAbs(
