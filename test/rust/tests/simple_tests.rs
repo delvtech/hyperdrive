@@ -1,11 +1,11 @@
-use ethers::types::Address;
+use ethers::{providers::Middleware, types::Address};
 use eyre::Result;
 use fixed_point::FixedPoint;
-use fixed_point_macros::fixed;
+use fixed_point_macros::{fixed, uint256};
 use hyperdrive_addresses::Addresses;
 use test_utils::{
     agent::Agent,
-    chain::{Chain, DevChain, TestChain, MNEMONIC},
+    chain::{Chain, TestChain},
 };
 
 // TODO: We should be able to run this in CI.
@@ -41,6 +41,9 @@ async fn test_simple() -> Result<()> {
 #[ignore]
 #[tokio::test]
 async fn test_repro() -> Result<()> {
+    // TODO: Role this up into `TestChain` so that we parse the crash report
+    // into a reproduction environment.
+    //
     // Set up the chain and agents. We load the state dump from a dump file.
     let state_dump = std::fs::read_to_string("./state_dump.json")?;
     let chain = TestChain::load(
@@ -58,6 +61,19 @@ async fn test_repro() -> Result<()> {
         None,
     )
     .await?;
+    let block_timestamp = {
+        let block_number = chain.provider().get_block_number().await?;
+        chain
+            .provider()
+            .get_block(block_number)
+            .await?
+            .unwrap()
+            .timestamp
+    };
+    // HACK(jalextowle): For some reason `increaseTime` is consistently off by 4.
+    chain
+        .increase_time(1697973315 - block_timestamp.low_u64() + 4)
+        .await?;
 
     // Attempt to reproduce the crash.
     alice

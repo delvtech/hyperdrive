@@ -371,9 +371,12 @@ impl TestChain {
         Ok(())
     }
 
-    pub async fn increase_time<U: Into<U256>>(&self, seconds: U) -> Result<()> {
+    pub async fn increase_time(&self, seconds: u64) -> Result<()> {
         self.provider
-            .request::<[U256; 1], bool>("evm_increaseTime", [seconds.into()])
+            .request::<[u64; 1], u64>("anvil_increaseTime", [seconds])
+            .await?;
+        self.provider
+            .request::<[u64; 1], ()>("anvil_mine", [1])
             .await?;
         Ok(())
     }

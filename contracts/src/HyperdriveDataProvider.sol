@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
+
 import { HyperdriveStorage } from "./HyperdriveStorage.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { IHyperdriveRead } from "./interfaces/IHyperdriveRead.sol";
@@ -89,15 +92,19 @@ abstract contract HyperdriveDataProvider is
     ///         important to evaluate potential trades.
     /// @return The PoolInfo struct.
     function getPoolInfo() external view returns (IHyperdrive.PoolInfo memory) {
+        console.log("getPoolInfo: 1");
         uint256 sharePrice = _pricePerShare();
+        console.log("getPoolInfo: 2");
         uint256 lpTotalSupply = _totalSupply[AssetId._LP_ASSET_ID] +
             _totalSupply[AssetId._WITHDRAWAL_SHARE_ASSET_ID] -
             _withdrawPool.readyToWithdraw;
+        console.log("getPoolInfo: 3");
         uint256 presentValue = sharePrice > 0
             ? HyperdriveMath
                 .calculatePresentValue(_getPresentValueParams(sharePrice))
                 .mulDown(sharePrice)
             : 0;
+        console.log("getPoolInfo: 4");
         IHyperdrive.PoolInfo memory poolInfo = IHyperdrive.PoolInfo({
             shareReserves: _marketState.shareReserves,
             shareAdjustment: _marketState.shareAdjustment,

@@ -3,7 +3,6 @@ pragma solidity 0.8.19;
 
 // FIXME
 import { console2 as console } from "forge-std/console2.sol";
-import { Lib } from "test/utils/Lib.sol";
 
 import { Authority } from "solmate/auth/Auth.sol";
 import { MultiRolesAuthority } from "solmate/auth/authorities/MultiRolesAuthority.sol";
@@ -92,7 +91,6 @@ contract MockERC4626 is ERC4626, MultiRolesAuthority {
     }
 
     function totalAssets() public view override returns (uint256) {
-        console.log("totalAssets");
         return asset.balanceOf(address(this)) + _getAccruedInterest();
     }
 
@@ -115,12 +113,11 @@ contract MockERC4626 is ERC4626, MultiRolesAuthority {
     function _getAccruedInterest() internal view returns (uint256) {
         // base_balance = base_balance * (1 + r * t)
         console.log("_getAccruedInterest: 1");
-        console.log("block.timestamp = %s", block.timestamp);
-        console.log("_lastUpdated = %s", _lastUpdated);
         console.log(
-            "block.timestamp < _lastUpdated = %s",
-            block.timestamp < _lastUpdated
+            "_getAccruedInterest: block.timestamp = %s",
+            block.timestamp
         );
+        console.log("_getAccruedInterest: _lastUpdated    = %s", _lastUpdated);
         uint256 timeElapsed = (block.timestamp - _lastUpdated).divDown(
             365 days
         );
