@@ -17,8 +17,6 @@ contract NonstandardDecimalsTest is HyperdriveTest {
     using HyperdriveUtils for IHyperdrive;
     using Lib for *;
 
-    uint8 constant BASE_DECIMALS = 6;
-
     function setUp() public override {
         super.setUp();
 
