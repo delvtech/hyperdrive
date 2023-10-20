@@ -885,25 +885,6 @@ contract HyperdriveTest is BaseTest {
         return shareProceeds.mulDown(poolInfo.sharePrice);
     }
 
-    function normalizeDecimals(
-        uint256 amount,
-        uint8 decimalsBefore,
-        uint8 decimalsAfter
-    ) internal pure returns (uint256) {
-        // If we need to increase the decimals
-        if (decimalsBefore > decimalsAfter) {
-            // Then we shift right the amount by the number of decimals
-            amount = amount / 10 ** (decimalsBefore - decimalsAfter);
-        }
-        // If we need to decrease the number
-        else if (decimalsBefore < decimalsAfter) {
-            // then we shift left by the difference
-            amount = amount * 10 ** (decimalsAfter - decimalsBefore);
-        }
-        // If nothing changed this is a no-op
-        return amount;
-    }
-
     /// Event Utils ///
 
     event Deployed(
