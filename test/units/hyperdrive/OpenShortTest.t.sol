@@ -33,7 +33,16 @@ contract OpenShortTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(IHyperdrive.MinimumTransactionAmount.selector);
-        hyperdrive.openShort(0, type(uint256).max, 0, bob, true);
+        hyperdrive.openShort(
+            0,
+            type(uint256).max,
+            0,
+            IHyperdrive.Options({
+                destination: bob,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
     }
 
     function test_open_short_failure_not_payable() external {
@@ -47,7 +56,16 @@ contract OpenShortTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(IHyperdrive.NotPayable.selector);
-        hyperdrive.openShort{ value: 1 }(1, type(uint256).max, 0, bob, true);
+        hyperdrive.openShort{ value: 1 }(
+            1,
+            type(uint256).max,
+            0,
+            IHyperdrive.Options({
+                destination: bob,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
     }
 
     function test_open_short_failure_pause() external {
@@ -62,7 +80,16 @@ contract OpenShortTest is HyperdriveTest {
         pause(true);
         vm.startPrank(bob);
         vm.expectRevert(IHyperdrive.Paused.selector);
-        hyperdrive.openShort(0, type(uint256).max, 0, bob, true);
+        hyperdrive.openShort(
+            0,
+            type(uint256).max,
+            0,
+            IHyperdrive.Options({
+                destination: bob,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
         vm.stopPrank();
         pause(false);
     }
@@ -81,7 +108,16 @@ contract OpenShortTest is HyperdriveTest {
         baseToken.mint(shortAmount);
         baseToken.approve(address(hyperdrive), shortAmount);
         vm.expectRevert(IHyperdrive.InvalidTradeSize.selector);
-        hyperdrive.openShort(shortAmount * 2, type(uint256).max, 0, bob, true);
+        hyperdrive.openShort(
+            shortAmount * 2,
+            type(uint256).max,
+            0,
+            IHyperdrive.Options({
+                destination: bob,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
     }
 
     function test_open_short_failure_minimum_share_price() external {
@@ -104,8 +140,11 @@ contract OpenShortTest is HyperdriveTest {
             bondAmount,
             type(uint256).max,
             minSharePrice,
-            bob,
-            true
+            IHyperdrive.Options({
+                destination: bob,
+                asBase: true,
+                extraData: new bytes(0)
+            })
         );
     }
 
@@ -192,11 +231,12 @@ contract OpenShortTest is HyperdriveTest {
         // 5. Open a Short
         bondAmount = (hyperdrive.calculateMaxShort() * 90) / 100;
         DepositOverrides memory depositOverrides = DepositOverrides({
-            asUnderlying: false,
+            asBase: false,
             depositAmount: bondAmount * 2,
             minSharePrice: 0,
             minSlippage: 0,
-            maxSlippage: type(uint128).max
+            maxSlippage: type(uint128).max,
+            extraData: new bytes(0)
         });
         openShort(bob, bondAmount, depositOverrides);
 

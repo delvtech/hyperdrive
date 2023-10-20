@@ -118,7 +118,11 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         // Now we try a deposit
         (uint256 sharesMinted, uint256 sharePrice) = mockHyperdrive.deposit(
             1e18,
-            true
+            IHyperdrive.Options({
+                destination: address(0),
+                asBase: true,
+                extraData: new bytes(0)
+            })
         );
         assertEq(sharePrice, 1.5e18);
         // 0.6 repeating
@@ -127,7 +131,14 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
 
         // Now we try to do a deposit from alice's shares
         pool.approve(address(mockHyperdrive), type(uint256).max);
-        (sharesMinted, sharePrice) = mockHyperdrive.deposit(3e18, false);
+        (sharesMinted, sharePrice) = mockHyperdrive.deposit(
+            3e18,
+            IHyperdrive.Options({
+                destination: address(0),
+                asBase: false,
+                extraData: new bytes(0)
+            })
+        );
         assertEq(sharePrice, 1.5e18);
         assertApproxEqAbs(sharesMinted, 2e18, 1);
         assertApproxEqAbs(
@@ -144,13 +155,27 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         pool.transfer(address(mockHyperdrive), 10e18);
         uint256 balanceBefore = dai.balanceOf(alice);
         // test an underlying withdraw
-        uint256 amountWithdrawn = mockHyperdrive.withdraw(2e18, alice, true);
+        uint256 amountWithdrawn = mockHyperdrive.withdraw(
+            2e18,
+            IHyperdrive.Options({
+                destination: alice,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
         uint256 balanceAfter = dai.balanceOf(alice);
         assertEq(balanceAfter, balanceBefore + 3e18);
         assertEq(amountWithdrawn, 3e18);
 
         // Test a share withdraw
-        amountWithdrawn = mockHyperdrive.withdraw(2e18, alice, false);
+        amountWithdrawn = mockHyperdrive.withdraw(
+            2e18,
+            IHyperdrive.Options({
+                destination: alice,
+                asBase: false,
+                extraData: new bytes(0)
+            })
+        );
         assertEq(pool.balanceOf(alice), 2e18);
         assertEq(amountWithdrawn, 3e18);
     }
@@ -179,7 +204,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             config,
             new bytes32[](0),
             contribution,
-            apr
+            apr,
+            new bytes(0)
         );
 
         // The initial price per share is one so the LP shares will initially
@@ -229,7 +255,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             config,
             new bytes32[](0),
             contribution,
-            apr
+            apr,
+            new bytes(0)
         );
 
         // Ensure the share price is 1 after initialization.
@@ -279,7 +306,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             config,
             new bytes32[](0),
             1_000e18,
-            0.05e18
+            0.05e18,
+            new bytes(0)
         );
         assert(
             !ERC4626DataProvider(address(mockHyperdrive)).isSweepable(
@@ -293,7 +321,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             config,
             new bytes32[](0),
             1_000e18,
-            0.05e18
+            0.05e18,
+            new bytes(0)
         );
         assert(
             !ERC4626DataProvider(address(mockHyperdrive)).isSweepable(
@@ -313,7 +342,13 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         // Ensure that a sweep target that isn't the base token or the pool
         // can be initialized and that the target can be swept successfully.
         vm.startPrank(alice);
-        ERC20Mintable otherToken = new ERC20Mintable();
+        ERC20Mintable otherToken = new ERC20Mintable(
+            "Other",
+            "OTHER",
+            18,
+            address(0),
+            false
+        );
         sweepTargets[0] = address(otherToken);
         factory.updateSweepTargets(sweepTargets);
         mockHyperdrive = MockERC4626Hyperdrive(
@@ -322,7 +357,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
                     config,
                     new bytes32[](0),
                     1_000e18,
-                    0.05e18
+                    0.05e18,
+                    new bytes(0)
                 )
             )
         );

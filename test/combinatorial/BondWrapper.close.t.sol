@@ -23,22 +23,23 @@ contract __MockHyperDrive__ {
         uint256 indexed _bondAmount,
         uint256 indexed _minOutput,
         address _destination,
-        bool _asUnderlying
+        bool _asBase,
+        bytes _extraData
     );
 
     function closeLong(
         uint256 _maturityTime,
         uint256 _bondAmount,
         uint256 _minOutput,
-        address _destination,
-        bool _asUnderlying
+        IHyperdrive.Options memory _options
     ) external returns (uint256) {
         emit __CloseLong__(
             _maturityTime,
             _bondAmount,
             _minOutput,
-            _destination,
-            _asUnderlying
+            _options.destination,
+            _options.asBase,
+            _options.extraData
         );
         return __closeLongReturnValue__;
     }
@@ -64,7 +65,7 @@ contract BondWrapper_close is CombinatorialTest {
         vm.startPrank(deployer);
 
         hyperdrive = new __MockHyperDrive__();
-        baseToken = new ERC20Mintable();
+        baseToken = new ERC20Mintable("Base", "BASE", 18, address(0), false);
     }
 
     struct TestCase {
@@ -231,7 +232,7 @@ contract BondWrapper_close is CombinatorialTest {
         } else if (userWrappedBondUnderflow) {
             __fail_error = stdError.arithmeticError;
         } else if (baseTokenTransferWillFail) {
-            __fail_error = bytes("ERC20: transfer amount exceeds balance");
+            __fail_error = stdError.arithmeticError;
         }
 
         if (
@@ -246,7 +247,8 @@ contract BondWrapper_close is CombinatorialTest {
                     testCase.amount,
                     testCase.andBurn,
                     testCase.destination,
-                    0
+                    0,
+                    new bytes(0)
                 )
             {
                 __log(unicode"❎", testCase);
@@ -266,7 +268,8 @@ contract BondWrapper_close is CombinatorialTest {
         uint256 indexed _bondAmount,
         uint256 indexed _minOutput,
         address _destination,
-        bool _asUnderlying
+        bool _asBase,
+        bytes _extraData
     );
 
     event Transfer(address indexed from, address indexed to, uint256 value);
@@ -285,7 +288,8 @@ contract BondWrapper_close is CombinatorialTest {
                 testCase.amount,
                 0,
                 address(bondWrapper),
-                true
+                true,
+                new bytes(0)
             );
         } else {
             emit __CloseLong__(
@@ -293,7 +297,8 @@ contract BondWrapper_close is CombinatorialTest {
                 1,
                 1,
                 address(bondWrapper),
-                true
+                true,
+                new bytes(0)
             );
         }
 
@@ -330,7 +335,8 @@ contract BondWrapper_close is CombinatorialTest {
                 testCase.amount,
                 testCase.andBurn,
                 testCase.destination,
-                0
+                0,
+                new bytes(0)
             )
         {} catch {
             __log(unicode"❎", testCase);

@@ -66,11 +66,13 @@ contract ERC4626HyperdriveFactory is HyperdriveFactory {
     /// @param _config The pool configuration.
     /// @param _contribution The contribution amount.
     /// @param _apr The initial spot rate.
+    /// @param _initializeExtraData The extra data for the `initialize` call.
     function deployAndInitialize(
         IHyperdrive.PoolConfig memory _config,
-        bytes32[] memory,
+        bytes32[] memory, // unused
         uint256 _contribution,
-        uint256 _apr
+        uint256 _apr,
+        bytes memory _initializeExtraData
     ) public payable override returns (IHyperdrive) {
         // Deploy and initialize the ERC4626 hyperdrive instance with the
         // default sweep targets provided as extra data.
@@ -83,7 +85,8 @@ contract ERC4626HyperdriveFactory is HyperdriveFactory {
             _config,
             extraData,
             _contribution,
-            _apr
+            _apr,
+            _initializeExtraData
         );
 
         // Return the hyperdrive instance.

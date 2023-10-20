@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import { HyperdriveStorage } from "./HyperdriveStorage.sol";
 import { IERC20 } from "./interfaces/IERC20.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
+import { IHyperdriveWrite } from "./interfaces/IHyperdriveWrite.sol";
 import { AssetId } from "./libraries/AssetId.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
@@ -16,7 +17,11 @@ import { MultiToken } from "./token/MultiToken.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
+abstract contract HyperdriveBase is
+    IHyperdriveWrite,
+    MultiToken,
+    HyperdriveStorage
+{
     using FixedPointMath for uint256;
     using FixedPointMath for int256;
     using SafeCast for uint256;
@@ -116,31 +121,33 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     }
 
     /// @notice Transfers base from the user and commits it to the yield source.
-    /// @param amount The amount of base to deposit.
-    /// @param asUnderlying If true the yield source will transfer underlying tokens
-    ///                     if false it will transfer the yielding asset directly
-    /// @return sharesMinted The shares this deposit creates.
-    /// @return sharePrice The share price at time of deposit.
+    /// @param _amount The amount of base to deposit.
+    /// @param _options The options that configure how the withdrawal is
+    ///        settled. In particular, the currency used in the deposit is
+    ///        specified here. Aside from those options, yield sources can
+    ///        choose to implement additional options.
+    /// @return sharesMinted The shares created by this deposit.
+    /// @return sharePrice The share price.
     function _deposit(
-        uint256 amount,
-        bool asUnderlying
+        uint256 _amount,
+        IHyperdrive.Options calldata _options
     ) internal virtual returns (uint256 sharesMinted, uint256 sharePrice);
 
     /// @notice Withdraws shares from the yield source and sends the base
     ///         released to the destination.
-    /// @param shares The shares to withdraw from the yield source.
-    /// @param destination The recipient of the withdrawal.
-    /// @param asUnderlying If true the yield source will transfer underlying tokens
-    ///                     if false it will transfer the yielding asset directly
+    /// @param _shares The shares to withdraw from the yield source.
+    /// @param _options The options that configure how the withdrawal is
+    ///        settled. In particular, the destination and currency used in the
+    ///        withdrawal are specified here. Aside from those options, yield
+    ///        sources can choose to implement additional options.
     /// @return amountWithdrawn The amount of base released by the withdrawal.
     function _withdraw(
-        uint256 shares,
-        address destination,
-        bool asUnderlying
+        uint256 _shares,
+        IHyperdrive.Options calldata _options
     ) internal virtual returns (uint256 amountWithdrawn);
 
-    ///@notice Loads the share price from the yield source
-    ///@return sharePrice The current share price.
+    /// @notice Loads the share price from the yield source.
+    /// @return sharePrice The current share price.
     function _pricePerShare()
         internal
         view
@@ -151,9 +158,9 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
 
     event PauserUpdated(address indexed newPauser);
 
-    ///@notice Allows governance to set the ability of an address to pause deposits
-    ///@param who The address to change
-    ///@param status The new pauser status
+    /// @notice Allows governance to change the pauser status of an address.
+    /// @param who The address to change.
+    /// @param status The new pauser status.
     function setPauser(address who, bool status) external {
         if (msg.sender != _governance) revert IHyperdrive.Unauthorized();
         _pausers[who] = status;
@@ -162,33 +169,29 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
 
     event GovernanceUpdated(address indexed newGovernance);
 
-    ///@notice Allows governance to change governance
-    ///@param who The new governance address
-    function setGovernance(address who) external {
+    /// @notice Allows governance to change governance.
+    /// @param _who The new governance address.
+    function setGovernance(address _who) external {
         if (msg.sender != _governance) revert IHyperdrive.Unauthorized();
-        _governance = who;
+        _governance = _who;
 
-        emit GovernanceUpdated(who);
+        emit GovernanceUpdated(_who);
     }
 
-    ///@notice Allows an authorized address to pause this contract
-    ///@param status True to pause all deposits and false to unpause them
-    function pause(bool status) external {
+    /// @notice Allows an authorized address to pause this contract.
+    /// @param _status True to pause all deposits and false to unpause them.
+    function pause(bool _status) external {
         if (!_pausers[msg.sender]) revert IHyperdrive.Unauthorized();
-        _marketState.isPaused = status;
+        _marketState.isPaused = _status;
     }
 
-    ///@notice Blocks a function execution if the contract is paused
+    /// @notice Blocks a function execution if the contract is paused.
     modifier isNotPaused() {
         if (_marketState.isPaused) revert IHyperdrive.Paused();
         _;
     }
 
     /// Checkpoint ///
-
-    /// @notice Allows anyone to mint a new checkpoint.
-    /// @param _checkpointTime The time of the checkpoint to create.
-    function checkpoint(uint256 _checkpointTime) public virtual;
 
     /// @dev Creates a new checkpoint if necessary.
     /// @param _checkpointTime The time of the checkpoint to create.
@@ -200,24 +203,29 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
     ) internal virtual returns (uint256 openSharePrice);
 
     /// @notice This function collects the governance fees accrued by the pool.
-    /// @param asUnderlying Indicates if the fees should be paid in underlying or yielding token
+    /// @param _options The options that configure how the fees are settled.
     /// @return proceeds The amount of base collected.
     function collectGovernanceFee(
-        bool asUnderlying
+        IHyperdrive.Options calldata _options
     ) external nonReentrant returns (uint256 proceeds) {
-        // Must have been granted a role
+        // Ensure that the destination is set to the fee collector.
+        if (_options.destination != _feeCollector) {
+            revert IHyperdrive.InvalidFeeDestination();
+        }
+
+        // Ensure that the caller is authorized to collect fees.
         if (
             !_pausers[msg.sender] &&
             msg.sender != _feeCollector &&
             msg.sender != _governance
-        ) revert IHyperdrive.Unauthorized();
+        ) {
+            revert IHyperdrive.Unauthorized();
+        }
+
+        // Withdraw the accrued governance fees to the fee collector.
         uint256 governanceFeesAccrued = _governanceFeesAccrued;
         delete _governanceFeesAccrued;
-        proceeds = _withdraw(
-            governanceFeesAccrued,
-            _feeCollector,
-            asUnderlying
-        );
+        proceeds = _withdraw(governanceFeesAccrued, _options);
     }
 
     /// Helpers ///

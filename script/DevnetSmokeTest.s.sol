@@ -31,6 +31,10 @@ contract DevnetSmokeTest is Script {
         // Execute all transactions with the ETH_FROM address.
         vm.startBroadcast(msg.sender);
 
+        console.log("Starting pool config:");
+        _logConfig();
+        console.log("");
+
         console.log("Starting pool info:");
         _logInfo();
         console.log("");
@@ -43,8 +47,11 @@ contract DevnetSmokeTest is Script {
                 bondAmount,
                 type(uint256).max,
                 0,
-                msg.sender,
-                true
+                IHyperdrive.Options({
+                    destination: msg.sender,
+                    asBase: true,
+                    extraData: new bytes(0)
+                })
             );
             BASE.burn(msg.sender, bondAmount - basePaid);
         }
@@ -53,7 +60,16 @@ contract DevnetSmokeTest is Script {
             uint256 basePaid = 300_000e18;
             BASE.mint(msg.sender, basePaid);
             BASE.approve(address(HYPERDRIVE), basePaid);
-            HYPERDRIVE.openLong(basePaid, 0, 0, msg.sender, true);
+            HYPERDRIVE.openLong(
+                basePaid,
+                0,
+                0,
+                IHyperdrive.Options({
+                    destination: msg.sender,
+                    asBase: true,
+                    extraData: new bytes(0)
+                })
+            );
         }
 
         console.log("Ending pool info:");
@@ -72,8 +88,11 @@ contract DevnetSmokeTest is Script {
             10_000e18,
             0,
             0,
-            msg.sender,
-            true
+            IHyperdrive.Options({
+                destination: msg.sender,
+                asBase: true,
+                extraData: new bytes(0)
+            })
         );
         console.log(
             "sender=%s: Opened a long position: maturity=%s, amount=%s",
@@ -88,8 +107,11 @@ contract DevnetSmokeTest is Script {
             maturityTime,
             bondAmount,
             0,
-            msg.sender,
-            true
+            IHyperdrive.Options({
+                destination: msg.sender,
+                asBase: true,
+                extraData: new bytes(0)
+            })
         );
         console.log(
             "sender=%s: Closed the long position: baseProceeds=%s",
@@ -107,8 +129,11 @@ contract DevnetSmokeTest is Script {
             10_000e18,
             0,
             type(uint256).max,
-            msg.sender,
-            true
+            IHyperdrive.Options({
+                destination: msg.sender,
+                asBase: true,
+                extraData: new bytes(0)
+            })
         );
         console.log(
             "sender=%s: Added liquidity: lpShares=%s",
@@ -119,7 +144,15 @@ contract DevnetSmokeTest is Script {
         // Removing liquidity.
         console.log("sender=%s: Removing liquidity...", msg.sender);
         (uint256 proceeds, uint256 withdrawalShares) = HYPERDRIVE
-            .removeLiquidity(lpShares, 0, msg.sender, true);
+            .removeLiquidity(
+                lpShares,
+                0,
+                IHyperdrive.Options({
+                    destination: msg.sender,
+                    asBase: true,
+                    extraData: new bytes(0)
+                })
+            );
         console.log(
             "sender=%s: Removed liquidity: proceeds=%s, withdrawalShares=%s",
             msg.sender,
@@ -137,8 +170,11 @@ contract DevnetSmokeTest is Script {
             10_000e18,
             type(uint256).max,
             0,
-            msg.sender,
-            true
+            IHyperdrive.Options({
+                destination: msg.sender,
+                asBase: true,
+                extraData: new bytes(0)
+            })
         );
         console.log(
             "sender=%s: Opened a short position: maturity=%s, amount=%s",
@@ -153,14 +189,49 @@ contract DevnetSmokeTest is Script {
             maturityTime,
             bondAmount,
             0,
-            msg.sender,
-            true
+            IHyperdrive.Options({
+                destination: msg.sender,
+                asBase: true,
+                extraData: new bytes(0)
+            })
         );
         console.log(
             "sender=%s: Closed the short position: baseProceeds=%s",
             msg.sender,
             baseProceeds.toString(18)
         );
+    }
+
+    function _logConfig() internal view {
+        IHyperdrive.PoolConfig memory config = HYPERDRIVE.getPoolConfig();
+        console.log(
+            "intialSharePrice: %s",
+            config.initialSharePrice.toString(18)
+        );
+        console.log(
+            "minimumShareReserves: %s",
+            config.minimumShareReserves.toString(18)
+        );
+        console.log(
+            "minimumTransactionAmount: %s",
+            config.minimumTransactionAmount.toString(18)
+        );
+        console.log(
+            "positionDuration: %s",
+            config.positionDuration.toString(18)
+        );
+        console.log(
+            "checkpointDuration: %s",
+            config.checkpointDuration.toString(18)
+        );
+        console.log("timeStretch: %s", config.timeStretch.toString(18));
+        console.log("governance: %s", config.governance);
+        console.log("feeCollector: %s", config.feeCollector);
+        console.log("curve fee: %s", config.fees.curve.toString(18));
+        console.log("flat fee: %s", config.fees.flat.toString(18));
+        console.log("governance fee: %s", config.fees.governance.toString(18));
+        console.log("oracleSize: %s", config.oracleSize.toString(18));
+        console.log("updateGap: %s", config.updateGap.toString(18));
     }
 
     function _logInfo() internal view {
