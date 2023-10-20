@@ -93,11 +93,7 @@ contract UsdcERC4626 is ERC4626ValidationTest {
         config.baseToken = underlyingToken;
         config.initialSharePrice = token.convertToAssets(FixedPointMath.ONE_18);
         config.minimumTransactionAmount = 1e6;
-        config.minimumShareReserves = normalizeDecimals(
-            config.minimumShareReserves,
-            18,
-            config.baseDecimals
-        );
+        config.minimumShareReserves = 1e6;
         uint256 contribution = 7_500e6;
         vm.stopPrank();
         vm.startPrank(alice);
@@ -110,7 +106,8 @@ contract UsdcERC4626 is ERC4626ValidationTest {
             config,
             new bytes32[](0),
             contribution,
-            FIXED_RATE
+            FIXED_RATE,
+            new bytes(0)
         );
 
         // Setup maximum approvals so transfers don't require further approval.

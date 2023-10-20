@@ -66,7 +66,6 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         // Deploy a MockHyperdrive instance.
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: dai,
-            baseDecimals: dai.decimals(),
             initialSharePrice: FixedPointMath.ONE_18,
             minimumShareReserves: FixedPointMath.ONE_18,
             minimumTransactionAmount: 0.001e18,
@@ -186,7 +185,6 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         uint256 contribution = 2_500e18;
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: dai,
-            baseDecimals: dai.decimals(),
             initialSharePrice: FixedPointMath.ONE_18,
             minimumShareReserves: FixedPointMath.ONE_18,
             minimumTransactionAmount: 0.001e18,
@@ -237,7 +235,6 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         uint256 contribution = 2_500e18;
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: dai,
-            baseDecimals: dai.decimals(),
             initialSharePrice: FixedPointMath.ONE_18,
             minimumShareReserves: FixedPointMath.ONE_18,
             minimumTransactionAmount: 0.001e18,
