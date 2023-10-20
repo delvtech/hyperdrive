@@ -47,6 +47,7 @@ contract UsdcERC4626 is ERC4626ValidationTest {
     function setUp() public override {
         super.setUp();
         vm.startPrank(deployer);
+        decimals = 6;
         underlyingToken = IERC20(address(new USDC()));
         token = IERC4626(
             address(
@@ -91,9 +92,8 @@ contract UsdcERC4626 is ERC4626ValidationTest {
         IHyperdrive.PoolConfig memory config = testConfig(FIXED_RATE);
         config.baseToken = underlyingToken;
         config.initialSharePrice = token.convertToAssets(FixedPointMath.ONE_18);
-        config.baseDecimals = 6;
         config.minimumTransactionAmount = 1e6;
-        config.minimumShareReserves = HyperdriveMath.normalizeDecimals(
+        config.minimumShareReserves = normalizeDecimals(
             config.minimumShareReserves,
             18,
             config.baseDecimals

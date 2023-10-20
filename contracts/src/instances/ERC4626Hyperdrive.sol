@@ -8,6 +8,8 @@ import { IERC4626 } from "../interfaces/IERC4626.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 
+// TODO: Polish the comments as part of #621.
+//
 /// @author DELV
 /// @title ERC4626Hyperdrive
 /// @notice An instance of Hyperdrive that utilizes ERC4626 vaults as a yield source.
@@ -60,9 +62,6 @@ contract ERC4626Hyperdrive is Hyperdrive {
         if (address(_config.baseToken) != _pool.asset()) {
             revert IHyperdrive.InvalidBaseToken();
         }
-        if(_config.baseToken.decimals() != _pool.decimals()) {
-            revert IHyperdrive.DecimalMismatch();
-        }
 
         // Set immutables and prepare for deposits by setting immutables
         if (!_config.baseToken.approve(address(pool), type(uint256).max)) {
@@ -85,58 +84,72 @@ contract ERC4626Hyperdrive is Hyperdrive {
 
     /// Yield Source ///
 
-    /// @notice Transfers amount of 'token' from the user and commits it to the yield source.
-    /// @param amount The amount of token to transfer
-    /// @param asUnderlying If true the yield source will transfer underlying tokens
-    ///                     if false it will transfer the yielding asset directly
+    /// @notice Accepts a trader's deposit in either base or vault shares. If
+    ///         the deposit is settled in base, the base is deposited into the
+    ///         yield source immediately.
+    /// @param _amount The amount of token to transfer
+    /// @param _options The options that configure the deposit. The only option
+    ///        used in this implementation is "asBase" which determines if
+    ///        the deposit is settled in base or vault shares.
     /// @return sharesMinted The shares this deposit creates
     /// @return sharePrice The share price at time of deposit
     function _deposit(
-        uint256 amount,
-        bool asUnderlying
+        uint256 _amount,
+        IHyperdrive.Options calldata _options
     ) internal override returns (uint256 sharesMinted, uint256 sharePrice) {
-        if (asUnderlying) {
-            // Transfer from user
-            _baseToken.safeTransferFrom(msg.sender, address(this), amount);
-            // Supply for the user
-            sharesMinted = pool.deposit(amount, address(this));
+        if (_options.asBase) {
+            // Take custody of the deposit in base.
+            _baseToken.safeTransferFrom(msg.sender, address(this), _amount);
+
+            // Deposit the base into the yield source.
+            sharesMinted = pool.deposit(_amount, address(this));
             sharePrice = _pricePerShare();
         } else {
-            // Calculate the current exchange rate for these
-            // WARN - IF an ERC4626 has significant differences between a
-            //        price perShare in aggregate vs one for individual users
-            //        then this can create bugs.
-            uint256 converted = pool.convertToShares(amount);
-            // Transfer erc4626 shares from the user
+            // WARN: This logic doesn't account for slippage in the conversion
+            // from base to shares. If deposits to the yield source incur
+            // slippage, this logic will be incorrect.
+            //
+            // Calculate the amount of vault shares that need to be deposited
+            // to equal the base amount as well as the current share price.
+            sharesMinted = pool.convertToShares(_amount);
+
+            // Take custody of the deposit in vault shares.
             IERC20(address(pool)).safeTransferFrom(
                 msg.sender,
                 address(this),
-                converted
+                sharesMinted
             );
-            sharesMinted = converted;
             sharePrice = _pricePerShare();
         }
     }
 
-    /// @notice Withdraws shares from the yield source and sends the resulting tokens to the destination
-    /// @param shares The shares to withdraw from the yield source
-    /// @param asUnderlying If true the yield source will transfer underlying tokens
-    ///                     if false it will transfer the yielding asset directly
-    /// @param destination The address which is where to send the resulting tokens
-    /// @return amountWithdrawn the amount of 'token' produced by this withdraw
+    /// @notice Processes a trader's withdrawal in either base or vault shares.
+    ///         If the withdrawal is settled in base, the base will need to be
+    ///         withdrawn from the yield source.
+    /// @param _shares The amount of shares to withdraw from Hyperdrive.
+    /// @param _options The options that configure the withdrawal. The options
+    ///        used in this implementation are "destination" which specifies the
+    ///        recipient of the withdrawal and "asBase" which determines
+    ///        if the withdrawal is settled in base or vault shares.
+    /// @return amountWithdrawn The amount withdrawn from the yield source.
     function _withdraw(
-        uint256 shares,
-        address destination,
-        bool asUnderlying
+        uint256 _shares,
+        IHyperdrive.Options calldata _options
     ) internal override returns (uint256 amountWithdrawn) {
-        if (asUnderlying) {
-            // In this case we simply withdraw
-            amountWithdrawn = pool.redeem(shares, destination, address(this));
+        if (_options.asBase) {
+            // Redeem the shares from the yield source and transfer the
+            // resulting base to the destination address.
+            amountWithdrawn = pool.redeem(
+                _shares,
+                _options.destination,
+                address(this)
+            );
         } else {
-            // Transfer erc4626 shares to the user
-            IERC20(address(pool)).safeTransfer(destination, shares);
-            // Now we calculate the price per share
-            uint256 estimated = pool.convertToAssets(shares);
+            // Transfer vault shares to the destination.
+            IERC20(address(pool)).safeTransfer(_options.destination, _shares);
+            // Estimate the amount of base that was withdrawn from the yield
+            // source.
+            uint256 estimated = pool.convertToAssets(_shares);
             amountWithdrawn = estimated;
         }
     }
@@ -151,13 +164,12 @@ contract ERC4626Hyperdrive is Hyperdrive {
     /// @notice Some yield sources [eg Morpho] pay rewards directly to this
     ///         contract but we can't handle distributing them internally so we
     ///         sweep to the fee collector address to then redistribute to users.
-    /// @dev WARNING: The entire balance of any of the sweep targets can be
-    ///      swept by governance. If these sweep targets provide access to the
-    ///      base or pool token, then governance has the ability to rug the pool.
-    /// @dev WARNING: It is unlikely but possible that there is a selector
-    ///      overlap with 'transferFrom'. Any integrating contracts should be
-    ///      checked for that, as it may result in an unexpected call from this
-    ///      address.
+    /// @dev WARN: The entire balance of any of the sweep targets can be swept
+    ///      by governance. If these sweep targets provide access to the base or
+    ///      pool token, then governance has the ability to rug the pool.
+    /// @dev WARN: It is unlikely but possible that there is a selector overlap
+    ///      with 'transferFrom'. Any integrating contracts should be checked
+    ///      for that, as it may result in an unexpected call from this address.
     /// @param _target The token to sweep.
     function sweep(IERC20 _target) external {
         // Ensure that the sender is the fee collector or a pauser.

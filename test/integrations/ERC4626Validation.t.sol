@@ -25,7 +25,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
     IERC20 internal underlyingToken;
     IERC4626 internal token;
     MockERC4626Hyperdrive hyperdriveInstance;
-
+    uint8 internal decimals = 18;
     uint256 internal constant FIXED_RATE = 0.05e18;
 
     function _setUp() internal {
@@ -149,7 +149,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
 
         vm.startPrank(alice);
 
-        uint256 maxLong = HyperdriveMath.normalizeDecimals(
+        uint256 maxLong = normalizeDecimals(
             HyperdriveUtils.calculateMaxLong(hyperdrive),
             18,
             hyperdrive.getPoolConfig().baseDecimals
@@ -175,7 +175,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
 
     function test_OpenLongWithShares(uint256 basePaid) external {
         vm.startPrank(alice);
-        uint256 maxLong = HyperdriveMath.normalizeDecimals(
+        uint256 maxLong = normalizeDecimals(
             HyperdriveUtils.calculateMaxLong(hyperdrive),
             18,
             hyperdrive.getPoolConfig().baseDecimals
@@ -216,7 +216,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
     function test_CloseLongWithUnderlying(uint256 basePaid) external {
         vm.startPrank(alice);
         // Alice opens a long.
-        uint256 maxLong = HyperdriveMath.normalizeDecimals(
+        uint256 maxLong = normalizeDecimals(
             HyperdriveUtils.calculateMaxLong(hyperdrive),
             18,
             hyperdrive.getPoolConfig().baseDecimals
@@ -263,7 +263,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
     function test_CloseLongWithShares(uint256 basePaid) external {
         vm.startPrank(alice);
         // Alice opens a long.
-        uint256 maxLong = HyperdriveMath.normalizeDecimals(
+        uint256 maxLong = normalizeDecimals(
             HyperdriveUtils.calculateMaxLong(hyperdrive),
             18,
             hyperdrive.getPoolConfig().baseDecimals
@@ -313,7 +313,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
     function test_OpenShortWithUnderlying() external {
         vm.startPrank(alice);
 
-        uint256 maxShort = HyperdriveMath.normalizeDecimals(
+        uint256 maxShort = normalizeDecimals(
             HyperdriveUtils.calculateMaxShort(hyperdrive),
             18,
             hyperdrive.getPoolConfig().baseDecimals
@@ -361,7 +361,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
 
     function test_OpenShortWithShares(uint256 shortAmount) external {
         vm.startPrank(alice);
-        uint256 maxShort = HyperdriveMath.normalizeDecimals(
+        uint256 maxShort = normalizeDecimals(
             HyperdriveUtils.calculateMaxShort(hyperdrive),
             18,
             hyperdrive.getPoolConfig().baseDecimals
@@ -412,7 +412,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         int256 variableRate
     ) external {
         vm.startPrank(alice);
-        uint256 maxShort = HyperdriveMath.normalizeDecimals(
+        uint256 maxShort = normalizeDecimals(
             HyperdriveUtils.calculateMaxShort(hyperdrive),
             18,
             hyperdrive.getPoolConfig().baseDecimals
@@ -474,7 +474,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         int256 variableRate
     ) internal {
         vm.startPrank(alice);
-        uint256 maxShort = HyperdriveMath.normalizeDecimals(
+        uint256 maxShort = normalizeDecimals(
             HyperdriveUtils.calculateMaxShort(hyperdrive),
             18,
             hyperdrive.getPoolConfig().baseDecimals

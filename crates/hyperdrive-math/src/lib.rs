@@ -12,7 +12,7 @@ use rand::{
     Rng,
 };
 pub use utils::*;
-use yield_space::YieldSpace;
+pub use yield_space::YieldSpace;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 pub enum Asset {
@@ -64,7 +64,6 @@ impl Distribution<State> for Standard {
                 .into(),
             oracle_size: fixed!(0).into(),
             update_gap: fixed!(0).into(),
-            base_decimals: 18,
         };
         // We need the spot price to be less than or equal to 1, so we need to
         // generate the bond reserves so that mu * z <= y

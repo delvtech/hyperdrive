@@ -22,9 +22,6 @@ abstract contract HyperdriveStorage is ReentrancyGuard, MultiTokenStorage {
     /// @notice The base asset.
     IERC20 internal immutable _baseToken;
 
-    /// @notice The number of decimals of the base and bond token.
-    uint8 internal immutable _baseDecimals;
-
     /// Time ///
 
     /// @notice The amount of seconds between share price checkpoints.
@@ -108,7 +105,6 @@ abstract contract HyperdriveStorage is ReentrancyGuard, MultiTokenStorage {
     constructor(IHyperdrive.PoolConfig memory _config) {
         // Initialize the base token address.
         _baseToken = _config.baseToken;
-        _baseDecimals = _config.baseDecimals;
 
         // Initialize the minimum share reserves. The minimum share reserves
         // defines the amount of shares that will be reserved to ensure that

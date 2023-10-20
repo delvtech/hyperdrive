@@ -6,6 +6,7 @@ import { HyperdriveBase } from "./HyperdriveBase.sol";
 import { HyperdriveLong } from "./HyperdriveLong.sol";
 import { HyperdriveShort } from "./HyperdriveShort.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
+import { IHyperdriveWrite } from "./interfaces/IHyperdriveWrite.sol";
 import { AssetId } from "./libraries/AssetId.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
@@ -18,6 +19,7 @@ import { SafeCast } from "./libraries/SafeCast.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract Hyperdrive is
+    IHyperdriveWrite,
     HyperdriveBase,
     HyperdriveLong,
     HyperdriveShort
@@ -41,7 +43,7 @@ abstract contract Hyperdrive is
 
     /// @notice Allows anyone to mint a new checkpoint.
     /// @param _checkpointTime The time of the checkpoint to create.
-    function checkpoint(uint256 _checkpointTime) public override {
+    function checkpoint(uint256 _checkpointTime) public {
         // If the checkpoint has already been set, return early.
         if (_checkpoints[_checkpointTime].sharePrice != 0) {
             return;
@@ -109,11 +111,11 @@ abstract contract Hyperdrive is
         uint256 openSharePrice = _checkpoints[
             _checkpointTime - _positionDuration
         ].sharePrice;
-        uint256 maturedShortsAmount = HyperdriveMath.normalizeDecimals(_totalSupply[
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _checkpointTime)], _baseDecimals, 18);
+        uint256 maturedShortsAmount = _totalSupply[
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _checkpointTime)
+        ];
         bool positionsClosed;
         if (maturedShortsAmount > 0) {
-            console2.log("maturedShortsAmount", maturedShortsAmount);
             (
                 uint256 shareProceeds,
                 uint256 governanceFee
@@ -136,9 +138,9 @@ abstract contract Hyperdrive is
 
         // Close out all of the long positions that matured at the beginning of
         // this checkpoint.
-        uint256 maturedLongsAmount =  HyperdriveMath.normalizeDecimals(_totalSupply[
+        uint256 maturedLongsAmount = _totalSupply[
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _checkpointTime)
-        ], _baseDecimals, 18);
+        ];
         if (maturedLongsAmount > 0) {
             (
                 uint256 shareProceeds,

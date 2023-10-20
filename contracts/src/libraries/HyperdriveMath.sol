@@ -1633,28 +1633,4 @@ library HyperdriveMath {
         require(effectiveShareReserves >= 0);
         return uint256(effectiveShareReserves);
     }
-
-    /// @dev Takes an 'amount' encoded with 'decimalsBefore' decimals and
-    ///      re-encodes it with 'decimalsAfter' decimals
-    /// @param amount The amount to normalize
-    /// @param decimalsBefore The decimal encoding before
-    /// @param decimalsAfter The decimal encoding after
-    function normalizeDecimals(
-        uint256 amount,
-        uint8 decimalsBefore,
-        uint8 decimalsAfter
-    ) internal pure returns (uint256) {
-        // If we need to increase the decimals
-        if (decimalsBefore > decimalsAfter) {
-            // Then we shift right the amount by the number of decimals
-            amount = amount / 10 ** (decimalsBefore - decimalsAfter);
-        }
-        // If we need to decrease the number
-        else if (decimalsBefore < decimalsAfter) {
-            // then we shift left by the difference
-            amount = amount * 10 ** (decimalsAfter - decimalsBefore);
-        }
-        // If nothing changed this is a no-op
-        return amount;
-    }
 }

@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 
 import { Script } from "forge-std/Script.sol";
 import { stdJson } from "forge-std/StdJson.sol";
+import { MultiRolesAuthority } from "solmate/auth/authorities/MultiRolesAuthority.sol";
 import { ERC4626HyperdriveDeployer } from "contracts/src/factory/ERC4626HyperdriveDeployer.sol";
 import { ERC4626HyperdriveFactory } from "contracts/src/factory/ERC4626HyperdriveFactory.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
@@ -29,37 +30,170 @@ contract DevnetMigration is Script {
 
     function setUp() external {}
 
+    struct Config {
+        // admin configuration
+        address admin;
+        bool isCompetitionMode;
+        // base token configuration
+        string baseTokenName;
+        string baseTokenSymbol;
+        uint8 baseTokenDecimals;
+        // vault configuration
+        string vaultName;
+        string vaultSymbol;
+        uint256 vaultStartingRate;
+        // factory configuration
+        uint256 factoryCurveFee;
+        uint256 factoryFlatFee;
+        uint256 factoryGovernanceFee;
+        uint256 factoryMaxCurveFee;
+        uint256 factoryMaxFlatFee;
+        uint256 factoryMaxGovernanceFee;
+        // hyperdrive configuration
+        uint256 hyperdriveContribution;
+        uint256 hyperdriveFixedRate;
+        uint256 hyperdriveInitialSharePrice;
+        uint256 hyperdriveMinimumShareReserves;
+        uint256 hyperdriveMinimumTransactionAmount;
+        uint256 hyperdrivePositionDuration;
+        uint256 hyperdriveCheckpointDuration;
+        uint256 hyperdriveTimeStretchApr;
+        uint256 hyperdriveOracleSize;
+        uint256 hyperdriveUpdateGap;
+    }
+
     function run() external {
         vm.startBroadcast();
 
-        // Deploy the base token and yield source.
-        ERC20Mintable baseToken = new ERC20Mintable();
+        // Get the migration configuration from the environment and the defaults.
+        uint256 baseTokenDecimals = vm.envOr(
+            "BASE_TOKEN_DECIMALS",
+            uint256(18)
+        );
+        if (baseTokenDecimals > type(uint8).max) {
+            revert("BASE_TOKEN_DECIMALS exceeds uint8");
+        }
+        Config memory config = Config({
+            admin: vm.envOr("ADMIN", msg.sender),
+            isCompetitionMode: vm.envOr("IS_COMPETITION_MODE", false),
+            baseTokenName: vm.envOr("BASE_TOKEN_NAME", string("Base")),
+            baseTokenSymbol: vm.envOr("BASE_TOKEN_SYMBOL", string("BASE")),
+            baseTokenDecimals: uint8(baseTokenDecimals),
+            vaultName: vm.envOr("VAULT_NAME", string("Delvnet Yield Source")),
+            vaultSymbol: vm.envOr("VAULT_SYMBOL", string("DELV")),
+            vaultStartingRate: vm.envOr(
+                "VAULT_STARTING_RATE",
+                uint256(0.05e18)
+            ),
+            factoryCurveFee: vm.envOr("FACTORY_CURVE_FEE", uint256(0.1e18)),
+            factoryFlatFee: vm.envOr("FACTORY_FLAT_FEE", uint256(0.0005e18)),
+            factoryGovernanceFee: vm.envOr(
+                "FACTORY_GOVERNANCE_FEE",
+                uint256(0.15e18)
+            ),
+            factoryMaxCurveFee: vm.envOr(
+                "FACTORY_MAX_CURVE_FEE",
+                uint256(0.3e18)
+            ),
+            factoryMaxFlatFee: vm.envOr(
+                "FACTORY_MAX_FLAT_FEE",
+                uint256(0.0015e18)
+            ),
+            factoryMaxGovernanceFee: vm.envOr(
+                "FACTORY_MAX_GOVERNANCE_FEE",
+                uint256(0.3e18)
+            ),
+            hyperdriveContribution: vm.envOr(
+                "HYPERDRIVE_CONTRIBUTION",
+                uint256(100_000_000e18)
+            ),
+            hyperdriveFixedRate: vm.envOr(
+                "HYPERDRIVE_FIXED_RATE",
+                uint256(0.05e18)
+            ),
+            hyperdriveInitialSharePrice: vm.envOr(
+                "HYPERDRIVE_INITIAL_SHARE_PRICE",
+                uint256(1e18)
+            ),
+            hyperdriveMinimumShareReserves: vm.envOr(
+                "HYPERDRIVE_MINIMUM_SHARE_RESERVES",
+                uint256(10e18)
+            ),
+            hyperdriveMinimumTransactionAmount: vm.envOr(
+                "HYPERDRIVE_MINIMUM_TRANSACTION_AMOUNT",
+                uint256(0.001e18)
+            ),
+            hyperdrivePositionDuration: vm.envOr(
+                "HYPERDRIVE_POSITION_DURATION",
+                uint256(1 weeks)
+            ),
+            hyperdriveCheckpointDuration: vm.envOr(
+                "HYPERDRIVE_CHECKPOINT_DURATION",
+                uint256(1 hours)
+            ),
+            hyperdriveTimeStretchApr: vm.envOr(
+                "HYPERDRIVE_TIME_STRETCH_APR",
+                uint256(0.05e18)
+            ),
+            hyperdriveOracleSize: vm.envOr(
+                "HYPERDRIVE_ORACLE_SIZE",
+                uint256(10)
+            ),
+            hyperdriveUpdateGap: vm.envOr(
+                "HYPERDRIVE_UPDATE_GAP",
+                uint256(1 hours)
+            )
+        });
+
+        // Deploy the base token and the vault.
+        ERC20Mintable baseToken = new ERC20Mintable(
+            config.baseTokenName,
+            config.baseTokenSymbol,
+            config.baseTokenDecimals,
+            msg.sender,
+            config.isCompetitionMode
+        );
         MockERC4626 pool = new MockERC4626(
             baseToken,
-            "Delvnet Yield Source",
-            "DELV",
-            0.05e18 // initial rate of 5%
+            config.vaultName,
+            config.vaultSymbol,
+            config.vaultStartingRate,
+            msg.sender,
+            config.isCompetitionMode
         );
+        if (config.isCompetitionMode) {
+            baseToken.setUserRole(address(pool), 1, true);
+            baseToken.setRoleCapability(
+                1,
+                bytes4(keccak256("mint(uint256)")),
+                true
+            );
+            baseToken.setRoleCapability(
+                1,
+                bytes4(keccak256("burn(uint256)")),
+                true
+            );
+        }
 
         // Deploy the Hyperdrive factory.
         ERC4626HyperdriveFactory factory;
         {
             address[] memory defaultPausers = new address[](1);
-            defaultPausers[0] = msg.sender;
+            defaultPausers[0] = config.admin;
             HyperdriveFactory.FactoryConfig
                 memory factoryConfig = HyperdriveFactory.FactoryConfig({
-                    governance: msg.sender,
-                    hyperdriveGovernance: msg.sender,
-                    feeCollector: msg.sender,
+                    governance: config.admin,
+                    hyperdriveGovernance: config.admin,
+                    feeCollector: config.admin,
                     fees: IHyperdrive.Fees({
-                        curve: 0.1e18, // 10%
-                        flat: 0.0005e18, // 0.05%
-                        governance: 0.15e18 // 15%
+                        curve: config.factoryCurveFee,
+                        flat: config.factoryFlatFee,
+                        governance: config.factoryGovernanceFee
                     }),
                     maxFees: IHyperdrive.Fees({
-                        curve: 0.3e18, // 30%
-                        flat: 0.0015e18, // 0.15%
-                        governance: 0.30e18 // 30%
+                        curve: config.factoryMaxCurveFee,
+                        flat: config.factoryMaxFlatFee,
+                        governance: config.factoryMaxGovernanceFee
                     }),
                     defaultPausers: defaultPausers
                 });
@@ -77,42 +211,50 @@ contract DevnetMigration is Script {
             );
         }
 
-        // Deploy and initialize a 1 week pool for the devnet.
+        // Deploy and initialize an initial Hyperdrive instance for the devnet.
         IHyperdrive hyperdrive;
         {
-            uint256 contribution = 100_000_000e18;
-            uint256 fixedRate = 0.05e18;
+            uint256 contribution = config.hyperdriveContribution;
+            uint256 fixedRate = config.hyperdriveFixedRate;
             baseToken.mint(msg.sender, contribution);
             baseToken.approve(address(factory), contribution);
             IHyperdrive.PoolConfig memory poolConfig = IHyperdrive.PoolConfig({
                 baseToken: IERC20(address(baseToken)),
-                baseDecimals: IERC20(address(baseToken)).decimals(),
-                initialSharePrice: 1e18,
-                minimumShareReserves: 10e18,
-                minimumTransactionAmount: 0.001e18,
-                positionDuration: 1 weeks,
-                checkpointDuration: 1 hours,
-                timeStretch: 0.05e18.calculateTimeStretch(),
-                governance: msg.sender,
-                feeCollector: msg.sender,
+                initialSharePrice: config.hyperdriveInitialSharePrice,
+                minimumShareReserves: config.hyperdriveMinimumShareReserves,
+                minimumTransactionAmount: config
+                    .hyperdriveMinimumTransactionAmount,
+                positionDuration: config.hyperdrivePositionDuration,
+                checkpointDuration: config.hyperdriveCheckpointDuration,
+                timeStretch: config
+                    .hyperdriveTimeStretchApr
+                    .calculateTimeStretch(),
+                governance: config.admin,
+                feeCollector: config.admin,
                 fees: IHyperdrive.Fees({
-                    curve: 0.1e18, // 10%
-                    flat: 0.0005e18, // 0.05%
-                    governance: 0.15e18 // 15%
+                    curve: config.factoryCurveFee,
+                    flat: config.factoryFlatFee,
+                    governance: config.factoryGovernanceFee
                 }),
-                oracleSize: 10,
-                updateGap: 1 hours
+                oracleSize: config.hyperdriveOracleSize,
+                updateGap: config.hyperdriveUpdateGap
             });
             hyperdrive = factory.deployAndInitialize(
                 poolConfig,
                 new bytes32[](0),
                 contribution,
-                fixedRate
+                fixedRate,
+                new bytes(0)
             );
         }
 
         // Deploy the MockHyperdriveMath contract.
         MockHyperdriveMath mockHyperdriveMath = new MockHyperdriveMath();
+
+        // Transfer ownership of the base token and vault to the admin address
+        // now that we're done minting tokens.
+        baseToken.transferOwnership(config.admin);
+        pool.transferOwnership(config.admin);
 
         vm.stopBroadcast();
 
