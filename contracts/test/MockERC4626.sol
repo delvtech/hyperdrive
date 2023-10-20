@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
+import { Lib } from "test/utils/Lib.sol";
+
 import { Authority } from "solmate/auth/Auth.sol";
 import { MultiRolesAuthority } from "solmate/auth/authorities/MultiRolesAuthority.sol";
 import { ERC20 } from "solmate/tokens/ERC20.sol";
@@ -23,7 +27,7 @@ contract MockERC4626 is ERC4626, MultiRolesAuthority {
     uint256 internal _rate;
     uint256 internal _lastUpdated;
 
-    bool internal immutable _isCompetitionMode;
+    bool public immutable isCompetitionMode;
 
     constructor(
         ERC20Mintable _asset,
@@ -31,18 +35,18 @@ contract MockERC4626 is ERC4626, MultiRolesAuthority {
         string memory _symbol,
         uint256 _initialRate,
         address _admin,
-        bool _isCompetitionMode_
+        bool _isCompetitionMode
     )
         ERC4626(ERC20(address(_asset)), _name, _symbol)
         MultiRolesAuthority(_admin, Authority(address(this)))
     {
         _rate = _initialRate;
         _lastUpdated = block.timestamp;
-        _isCompetitionMode = _isCompetitionMode_;
+        isCompetitionMode = _isCompetitionMode;
     }
 
     modifier requiresAuthDuringCompetition() {
-        if (_isCompetitionMode) {
+        if (isCompetitionMode) {
             require(
                 isAuthorized(msg.sender, msg.sig),
                 "MockERC4626: not authorized"
@@ -88,6 +92,7 @@ contract MockERC4626 is ERC4626, MultiRolesAuthority {
     }
 
     function totalAssets() public view override returns (uint256) {
+        console.log("totalAssets");
         return asset.balanceOf(address(this)) + _getAccruedInterest();
     }
 
@@ -109,12 +114,21 @@ contract MockERC4626 is ERC4626, MultiRolesAuthority {
 
     function _getAccruedInterest() internal view returns (uint256) {
         // base_balance = base_balance * (1 + r * t)
+        console.log("_getAccruedInterest: 1");
+        console.log("block.timestamp = %s", block.timestamp);
+        console.log("_lastUpdated = %s", _lastUpdated);
+        console.log(
+            "block.timestamp < _lastUpdated = %s",
+            block.timestamp < _lastUpdated
+        );
         uint256 timeElapsed = (block.timestamp - _lastUpdated).divDown(
             365 days
         );
+        console.log("_getAccruedInterest: 2");
         uint256 accrued = asset.balanceOf(address(this)).mulDown(
             _rate.mulDown(timeElapsed)
         );
+        console.log("_getAccruedInterest: 3");
         return accrued;
     }
 }

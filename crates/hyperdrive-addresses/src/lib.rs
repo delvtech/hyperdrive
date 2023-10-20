@@ -8,6 +8,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Default, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Addresses {
+    #[serde(rename = "baseToken")]
     pub base: Address,
+    #[serde(rename = "mockHyperdrive")]
     pub hyperdrive: Address,
 }

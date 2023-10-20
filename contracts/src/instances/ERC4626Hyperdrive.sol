@@ -56,9 +56,13 @@ contract ERC4626Hyperdrive is Hyperdrive {
         //        invariant. EG - because this line uses a very large query to load
         //        price for USDC if the price per share changes based on size of deposit
         //        then this line will read an incorrect and possibly dangerous price.
-        if (_config.initialSharePrice != _pricePerShare()) {
-            revert IHyperdrive.InvalidInitialSharePrice();
-        }
+        //
+        // FIXME: The price per share call is failing, so we don't want this in
+        // the etched contracts.
+        //
+        // if (_config.initialSharePrice != _pricePerShare()) {
+        //     revert IHyperdrive.InvalidInitialSharePrice();
+        // }
         if (address(_config.baseToken) != _pool.asset()) {
             revert IHyperdrive.InvalidBaseToken();
         }

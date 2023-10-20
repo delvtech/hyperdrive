@@ -5,7 +5,7 @@ use ethers::{
     middleware::SignerMiddleware,
     providers::{Http, Middleware, Provider},
     signers::{coins_bip39::English, LocalWallet, MnemonicBuilder, Signer},
-    types::{Address, H256, U256},
+    types::{Address, Bytes, H256, U256},
     utils::AnvilInstance,
 };
 use eyre::Result;
@@ -18,6 +18,7 @@ use hyperdrive_wrappers::wrappers::{
     erc4626_data_provider::ERC4626DataProvider,
     erc4626_hyperdrive::ERC4626Hyperdrive,
     i_hyperdrive::{Fees, PoolConfig},
+    ierc4626_hyperdrive::IERC4626Hyperdrive,
     mock_erc4626::MockERC4626,
     mock_fixed_point_math::MockFixedPointMath,
     mock_hyperdrive_math::MockHyperdriveMath,
@@ -108,6 +109,69 @@ impl TestChain {
         })
     }
 
+    // TODO: We should merge this with `new`. It should accept the file name of
+    // a crash report and load all of the information that it needs from that.
+    //
+    /// Loads a test chain from a provided state dump.
+    pub async fn load(state_dump: &str, addresses: Addresses, num_accounts: usize) -> Result<Self> {
+        if num_accounts == 0 {
+            panic!("cannot create a test chain with zero accounts");
+        }
+
+        // If an ethereum url is provided, use it. Otherwise, we spawn an
+        // in-process anvil node.
+        let (provider, _maybe_anvil) = if let Some(ethereum_url) = &*MAYBE_ETHEREUM_URL {
+            (
+                Provider::<Http>::try_from(ethereum_url)?.interval(Duration::from_millis(1)),
+                None,
+            )
+        } else {
+            let anvil = Anvil::new()
+                .arg("--code-size-limit")
+                .arg("120000")
+                .arg("--disable-block-gas-limit")
+                .spawn();
+            (
+                Provider::<Http>::try_from(anvil.endpoint())?.interval(Duration::from_millis(1)),
+                Some(Arc::new(anvil)),
+            )
+        };
+
+        // Load the chain state from the dump.
+        provider
+            .request::<[&str; 1], bool>("anvil_loadState", [state_dump])
+            .await?;
+
+        // Create a set of accounts using the default mnemonic and fund them
+        // with ether.
+        let mut accounts = vec![];
+        let mut builder = MnemonicBuilder::<English>::default().phrase(MNEMONIC);
+        for i in 0..num_accounts {
+            // Generate the account at the new index using the mnemonic.
+            builder = builder.index(i as u32).unwrap();
+            let account = builder.build()?;
+
+            // Fund the account with some ether and add it to the list of accounts..
+            provider
+                .request(
+                    "anvil_setBalance",
+                    (account.address(), uint256!(100_000e18)),
+                )
+                .await?;
+            accounts.push(account);
+        }
+
+        // Etch the latest contract bytecode onto the contract addresses.
+        Self::etch(&provider, accounts[0].clone(), &addresses).await?;
+
+        Ok(Self {
+            addresses,
+            accounts,
+            provider,
+            _maybe_anvil,
+        })
+    }
+
     async fn deploy(provider: Provider<Http>, signer: LocalWallet) -> Result<Addresses> {
         // Deploy the base token and vault.
         let client = Arc::new(SignerMiddleware::new(
@@ -188,6 +252,109 @@ impl TestChain {
             base: base.address(),
             hyperdrive: erc4626_hyperdrive.address(),
         })
+    }
+
+    // TODO: Put the TODOs into an issue for the v0.0.17 release.
+    async fn etch(
+        provider: &Provider<Http>,
+        signer: LocalWallet,
+        addresses: &Addresses,
+    ) -> Result<()> {
+        // Instantiate a hyperdrive contract wrapper to use during the etching
+        // process.
+        let client = Arc::new(SignerMiddleware::new(
+            provider.clone(),
+            signer.with_chain_id(provider.get_chainid().await?.low_u64()),
+        ));
+        let hyperdrive = IERC4626Hyperdrive::new(addresses.hyperdrive, client.clone());
+
+        // Get the contract addresses of the vault and the data provider.
+        //
+        // HACK(jalextowle): This getter is new, so we hardcode the address
+        // to the competition's data provider until the v0.0.17 release.
+        // let data_provider_address = hyperdrive.data_provider().call().await?;
+        let data_provider_address =
+            "0x9bd03768a7DCc129555dE410FF8E85528A4F88b5".parse::<Address>()?;
+        let vault_address = hyperdrive.pool().call().await?;
+
+        // Deploy templates for each of the contracts that should be etched and
+        // get a list of targets and templates. In order for the contracts to
+        // have the same behavior after etching, the storage layout needs to be
+        // identical, and we must faithfully copy over the immutables from the
+        // original contracts to the templates.
+        let etch_pairs = {
+            let mut pairs = Vec::new();
+
+            // TODO: We should set `isCompetitionMode` to the real value.
+            //
+            // Deploy the base token template.
+            let base = ERC20Mintable::new(addresses.base, client.clone());
+            let name = base.name().call().await?;
+            let symbol = base.symbol().call().await?;
+            let decimals = base.decimals().call().await?;
+            let base_template = ERC20Mintable::deploy(
+                client.clone(),
+                (name, symbol, decimals, Address::zero(), false),
+            )?
+            .send()
+            .await?;
+            pairs.push((addresses.base, base_template.address()));
+
+            // TODO: We should set `isCompetitionMode` to the real value.
+            //
+            // Deploy the vault template.
+            let vault = MockERC4626::new(vault_address, client.clone());
+            let asset = vault.asset().call().await?;
+            let name = vault.name().call().await?;
+            let symbol = vault.symbol().call().await?;
+            let vault_template = MockERC4626::deploy(
+                client.clone(),
+                (asset, name, symbol, uint256!(0), Address::zero(), false),
+            )?
+            .send()
+            .await?;
+            pairs.push((vault_address, vault_template.address()));
+
+            // Deploy the data provider template.
+            let config = hyperdrive.get_pool_config().call().await?;
+            let linker_code_hash = hyperdrive.linker_code_hash().call().await?;
+            let factory = hyperdrive.factory().call().await?;
+            let data_provider_template = ERC4626DataProvider::deploy(
+                client.clone(),
+                (config.clone(), linker_code_hash, factory, vault_address),
+            )?
+            .send()
+            .await?;
+            pairs.push((data_provider_address, data_provider_template.address()));
+
+            // Deploy the hyperdrive template.
+            let hyperdrive_template = ERC4626Hyperdrive::deploy(
+                client.clone(),
+                (
+                    config,
+                    data_provider_address,
+                    linker_code_hash,
+                    factory,
+                    vault_address,
+                    Vec::<Address>::new(),
+                ),
+            )?
+            .send()
+            .await?;
+            pairs.push((addresses.hyperdrive, hyperdrive_template.address()));
+
+            pairs
+        };
+
+        // Etch over the original contracts with the template contracts' code.
+        for (target, template) in etch_pairs {
+            let code = provider.get_code(template, None).await?;
+            provider
+                .request::<(Address, Bytes), ()>("anvil_setCode", (target, code))
+                .await?;
+        }
+
+        Ok(())
     }
 }
 

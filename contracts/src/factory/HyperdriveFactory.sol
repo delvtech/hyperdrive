@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
+
 import { HyperdriveDataProvider } from "../HyperdriveDataProvider.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
@@ -272,6 +275,7 @@ abstract contract HyperdriveFactory {
             _linkerCodeHash,
             _linkerFactory
         );
+        console.log("data provider = %s", dataProvider);
         IHyperdrive hyperdrive = IHyperdrive(
             hyperdriveDeployer.deploy(
                 _config,

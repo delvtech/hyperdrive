@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
+
 import { Script } from "forge-std/Script.sol";
 import { stdJson } from "forge-std/StdJson.sol";
 import { MultiRolesAuthority } from "solmate/auth/authorities/MultiRolesAuthority.sol";
@@ -162,6 +165,7 @@ contract DevnetMigration is Script {
             config.isCompetitionMode
         );
         if (config.isCompetitionMode) {
+            console.log("Competition mode enabled");
             baseToken.setUserRole(address(pool), 1, true);
             baseToken.setRoleCapability(
                 1,

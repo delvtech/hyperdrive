@@ -3132,6 +3132,7 @@ dependencies = [
  "eyre",
  "fixed-point",
  "fixed-point-macros",
+ "hyperdrive-addresses",
  "hyperdrive-math",
  "rand",
  "test-utils",
