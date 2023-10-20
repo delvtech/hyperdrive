@@ -8,7 +8,6 @@ import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { MockHyperdrive } from "../../mocks/MockHyperdrive.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
-import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { Lib } from "../../utils/Lib.sol";
 
 contract NonstandardDecimalsTest is HyperdriveTest {
