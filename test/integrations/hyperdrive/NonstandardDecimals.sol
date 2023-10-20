@@ -474,10 +474,8 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         assertGe(bobBaseProceeds + 1e6, celineBaseProceeds);
         assertGe(bobBaseProceeds + 1e6, testParams.contribution);
         uint256 _minimumTransactionAmount = minimumTransactionAmount;
-        assertApproxEqAbs(bobWithdrawalShares, 0, _minimumTransactionAmount);
-        assertApproxEqAbs(celineWithdrawalShares, 0, 1e6);
-
-        // Ensure that the ending base balance of Hyperdrive is zero.
+        assertApproxEqAbs(bobWithdrawalShares, 0, 1);
+        assertApproxEqAbs(celineWithdrawalShares, 0, 1);
         assertApproxEqAbs(
             hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID) -
                 hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw,
@@ -488,6 +486,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         // TODO: There is an edge case where the withdrawal pool doesn't receive
         // all of its portion of the available idle liquidity when a closed
         // position doesn't perform well.
-        //assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1);
+        // Ensure that the ending base balance of Hyperdrive is zero.
+        assertApproxEqAbs(baseToken.balanceOf(address(hyperdrive)), 0, 1);
     }
 }

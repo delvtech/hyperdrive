@@ -15,30 +15,11 @@ import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
 import { MockERC4626Hyperdrive } from "../mocks/Mock4626Hyperdrive.sol";
 import { Mock4626, ERC20 } from "../mocks/Mock4626.sol";
+import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { HyperdriveUtils } from "../utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
 import { ERC4626ValidationTest } from "./ERC4626Validation.t.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-
-contract USDC is ERC20 {
-    constructor() ERC20("usdc", "USDC", 6) {}
-
-    function mint(uint256 amount) external {
-        _mint(msg.sender, amount);
-    }
-
-    function mint(address destination, uint256 amount) external {
-        _mint(destination, amount);
-    }
-
-    function burn(uint256 amount) external {
-        _burn(msg.sender, amount);
-    }
-
-    function burn(address destination, uint256 amount) external {
-        _burn(destination, amount);
-    }
-}
 
 contract UsdcERC4626 is ERC4626ValidationTest {
     using FixedPointMath for *;
@@ -48,7 +29,9 @@ contract UsdcERC4626 is ERC4626ValidationTest {
         super.setUp();
         vm.startPrank(deployer);
         decimals = 6;
-        underlyingToken = IERC20(address(new USDC()));
+        underlyingToken = IERC20(
+            address(new ERC20Mintable("usdc", "USDC", 6, address(this), false))
+        );
         token = IERC4626(
             address(
                 new Mock4626(
@@ -59,9 +42,9 @@ contract UsdcERC4626 is ERC4626ValidationTest {
             )
         );
         uint256 monies = 1_000_000_000e6;
-        USDC(address(underlyingToken)).mint(deployer, monies);
-        USDC(address(underlyingToken)).mint(alice, monies);
-        USDC(address(underlyingToken)).mint(bob, monies);
+        ERC20Mintable(address(underlyingToken)).mint(deployer, monies);
+        ERC20Mintable(address(underlyingToken)).mint(alice, monies);
+        ERC20Mintable(address(underlyingToken)).mint(bob, monies);
 
         // Initialize deployer contracts and forwarder.
         ERC4626HyperdriveDeployer simpleDeployer = new ERC4626HyperdriveDeployer(
@@ -131,12 +114,12 @@ contract UsdcERC4626 is ERC4626ValidationTest {
             timeDelta
         );
         if (interest > 0) {
-            USDC(address(underlyingToken)).mint(
+            ERC20Mintable(address(underlyingToken)).mint(
                 address(token),
                 uint256(interest)
             );
         } else if (interest < 0) {
-            USDC(address(underlyingToken)).burn(
+            ERC20Mintable(address(underlyingToken)).burn(
                 address(token),
                 uint256(-interest)
             );
