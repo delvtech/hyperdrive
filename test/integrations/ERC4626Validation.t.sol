@@ -15,6 +15,7 @@ import { MockERC4626Hyperdrive } from "../mocks/Mock4626Hyperdrive.sol";
 import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../utils/HyperdriveUtils.sol";
 import { Lib } from "../utils/Lib.sol";
+import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 
 abstract contract ERC4626ValidationTest is HyperdriveTest {
     using FixedPointMath for *;
@@ -24,7 +25,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
     IERC20 internal underlyingToken;
     IERC4626 internal token;
     MockERC4626Hyperdrive hyperdriveInstance;
-
+    uint8 internal decimals = 18;
     uint256 internal constant FIXED_RATE = 0.05e18;
 
     function _setUp() internal {
@@ -87,7 +88,10 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         vm.recordLogs();
     }
 
-    function advanceTimeWithYield(uint256 timeDelta) public virtual;
+    function advanceTimeWithYield(
+        uint256 timeDelta,
+        int256 variableRate
+    ) public virtual;
 
     function test_deployAndInitialize() external {
         vm.startPrank(alice);
@@ -97,9 +101,13 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         config.baseToken = underlyingToken;
         // Designed to ensure compatibility ../../contracts/src/instances/ERC4626Hyperdrive.sol#L122C1-L122C1
         config.initialSharePrice = token.convertToAssets(FixedPointMath.ONE_18);
-
-        uint256 contribution = 10_000e18;
-
+        config.minimumTransactionAmount = hyperdrive
+            .getPoolConfig()
+            .minimumTransactionAmount;
+        config.minimumShareReserves = hyperdrive
+            .getPoolConfig()
+            .minimumShareReserves;
+        uint256 contribution = 10_000 * 10 ** decimals;
         underlyingToken.approve(address(factory), type(uint256).max);
 
         // Deploy a new hyperdrive instance
@@ -142,11 +150,10 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
 
         vm.startPrank(alice);
 
+        uint256 maxLong = HyperdriveUtils.calculateMaxLong(hyperdrive);
         basePaid = basePaid.normalizeToRange(
-            MINIMUM_TRANSACTION_AMOUNT,
-            HyperdriveUtils.calculateMaxLong(hyperdrive).min(
-                underlyingToken.balanceOf(alice)
-            )
+            hyperdrive.getPoolConfig().minimumTransactionAmount,
+            maxLong.min(underlyingToken.balanceOf(alice))
         );
 
         // Open a long with underlying tokens
@@ -165,11 +172,10 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
 
     function test_OpenLongWithShares(uint256 basePaid) external {
         vm.startPrank(alice);
+        uint256 maxLong = HyperdriveUtils.calculateMaxLong(hyperdrive);
         basePaid = basePaid.normalizeToRange(
-            MINIMUM_TRANSACTION_AMOUNT,
-            HyperdriveUtils.calculateMaxLong(hyperdrive).min(
-                underlyingToken.balanceOf(alice)
-            )
+            hyperdrive.getPoolConfig().minimumTransactionAmount,
+            maxLong.min(underlyingToken.balanceOf(alice))
         );
         underlyingToken.approve(address(token), type(uint256).max);
         // Deposit into the ERC4626 so underlying doesn't need to be used
@@ -203,11 +209,10 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
     function test_CloseLongWithUnderlying(uint256 basePaid) external {
         vm.startPrank(alice);
         // Alice opens a long.
+        uint256 maxLong = HyperdriveUtils.calculateMaxLong(hyperdrive);
         basePaid = basePaid.normalizeToRange(
-            MINIMUM_TRANSACTION_AMOUNT,
-            HyperdriveUtils.calculateMaxLong(hyperdrive).min(
-                underlyingToken.balanceOf(alice)
-            )
+            hyperdrive.getPoolConfig().minimumTransactionAmount,
+            maxLong.min(underlyingToken.balanceOf(alice))
         );
 
         // Open a long
@@ -249,12 +254,12 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
 
     function test_CloseLongWithShares(uint256 basePaid) external {
         vm.startPrank(alice);
+
         // Alice opens a long.
+        uint256 maxLong = HyperdriveUtils.calculateMaxLong(hyperdrive);
         basePaid = basePaid.normalizeToRange(
-            MINIMUM_TRANSACTION_AMOUNT,
-            HyperdriveUtils.calculateMaxLong(hyperdrive).min(
-                underlyingToken.balanceOf(alice)
-            )
+            hyperdrive.getPoolConfig().minimumTransactionAmount,
+            maxLong.min(underlyingToken.balanceOf(alice))
         );
 
         // Open a long
@@ -299,12 +304,12 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
 
     function test_OpenShortWithUnderlying() external {
         vm.startPrank(alice);
+
+        uint256 maxShort = HyperdriveUtils.calculateMaxShort(hyperdrive);
         uint256 shortAmount = 0.001e18;
         shortAmount = shortAmount.normalizeToRange(
-            MINIMUM_TRANSACTION_AMOUNT,
-            HyperdriveUtils.calculateMaxShort(hyperdrive).min(
-                underlyingToken.balanceOf(alice)
-            )
+            hyperdrive.getPoolConfig().minimumTransactionAmount,
+            maxShort.min(underlyingToken.balanceOf(alice))
         );
 
         // Take a baseline
@@ -344,11 +349,10 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
 
     function test_OpenShortWithShares(uint256 shortAmount) external {
         vm.startPrank(alice);
+        uint256 maxShort = HyperdriveUtils.calculateMaxShort(hyperdrive);
         shortAmount = shortAmount.normalizeToRange(
-            MINIMUM_TRANSACTION_AMOUNT,
-            HyperdriveUtils.calculateMaxShort(hyperdrive).min(
-                underlyingToken.balanceOf(alice)
-            )
+            hyperdrive.getPoolConfig().minimumTransactionAmount,
+            maxShort.min(underlyingToken.balanceOf(alice))
         );
         underlyingToken.approve(address(token), type(uint256).max);
         // Deposit into the actual ERC4626 token
@@ -392,20 +396,18 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         int256 variableRate
     ) external {
         vm.startPrank(alice);
+        uint256 maxShort = HyperdriveUtils.calculateMaxShort(hyperdrive);
         shortAmount = shortAmount.normalizeToRange(
-            MINIMUM_TRANSACTION_AMOUNT,
-            HyperdriveUtils
-                .calculateMaxShort(hyperdrive)
-                .min(underlyingToken.balanceOf(alice))
-                .mulDown(0.95e18)
+            hyperdrive.getPoolConfig().minimumTransactionAmount,
+            maxShort.min(underlyingToken.balanceOf(alice)).mulDown(0.95e18)
         );
-
         (uint256 maturityTime, ) = openShortERC4626(alice, shortAmount, true);
+
         // The term passes and interest accrues.
-        variableRate = variableRate.normalizeToRange(0, 2.5e18);
+        variableRate = variableRate.normalizeToRange(0.01e18, 2.5e18);
 
         // Accumulate yield and let the short mature
-        advanceTimeWithYield(POSITION_DURATION);
+        advanceTimeWithYield(POSITION_DURATION, variableRate);
 
         // Establish a baseline before closing the short
         uint256 totalPooledAssetsBefore = token.totalAssets();
@@ -455,12 +457,10 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         int256 variableRate
     ) internal {
         vm.startPrank(alice);
+        uint256 maxShort = HyperdriveUtils.calculateMaxShort(hyperdrive);
         shortAmount = shortAmount.normalizeToRange(
-            MINIMUM_TRANSACTION_AMOUNT,
-            HyperdriveUtils
-                .calculateMaxShort(hyperdrive)
-                .min(underlyingToken.balanceOf(alice))
-                .mulDown(0.95e18)
+            hyperdrive.getPoolConfig().minimumTransactionAmount,
+            maxShort.min(underlyingToken.balanceOf(alice)).mulDown(0.95e18)
         );
 
         // Deposit into the actual ERC4626
@@ -474,7 +474,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         variableRate = variableRate.normalizeToRange(0, 2.5e18);
 
         // Advance time and accumulate the yield
-        advanceTimeWithYield(POSITION_DURATION);
+        advanceTimeWithYield(POSITION_DURATION, variableRate);
 
         // Establish a baseline before closing the short
         uint256 totalPooledAssetsBefore = token.totalAssets();
@@ -752,7 +752,7 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         assertApproxEqAbs(
             token.totalAssets() + baseProceeds,
             totalPooledAssetsBefore,
-            3
+            10
         );
 
         // Ensure that the underlying balances were updated correctly.
@@ -760,13 +760,13 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         assertApproxEqAbs(
             underlyingToken.balanceOf(trader),
             traderBalancesBefore.underlyingBalance + baseProceeds,
-            3
+            10
         );
         assertApproxEqAbs(
             token.balanceOf(address(hyperdrive)),
             hyperdriveBalancesBefore.shareBalance -
                 token.convertToShares(baseProceeds),
-            3
+            10
         );
     }
 

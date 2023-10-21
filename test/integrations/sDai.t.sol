@@ -42,7 +42,10 @@ contract sDaiTest is ERC4626ValidationTest {
         _setUp();
     }
 
-    function advanceTimeWithYield(uint256 timeDelta) public override {
+    function advanceTimeWithYield(
+        uint256 timeDelta,
+        int256 variableRate
+    ) public override {
         vm.warp(block.timestamp + timeDelta);
         // Interest accumulates in the dsr based on time passed.
         // This may caused insolvency if too much interest accrues as no real dai is being

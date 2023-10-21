@@ -33,7 +33,10 @@ contract StethERC4626 is ERC4626ValidationTest {
         _setUp();
     }
 
-    function advanceTimeWithYield(uint256 timeDelta) public override {
+    function advanceTimeWithYield(
+        uint256 timeDelta,
+        int256 variableRate
+    ) public override {
         vm.warp(block.timestamp + timeDelta);
 
         // The Lido storage location that tracks buffered ether reserves. We can
@@ -41,8 +44,6 @@ contract StethERC4626 is ERC4626ValidationTest {
         bytes32 BUFFERED_ETHER_POSITION = keccak256("lido.Lido.bufferedEther");
 
         ILido LIDO = ILido(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
-
-        uint256 variableRate = 1.5e18;
 
         // Accrue interest in Lido. Since the share price is given by
         // `getTotalPooledEther() / getTotalShares()`, we can simulate the
