@@ -12,6 +12,7 @@ build = "build.rs"
 ethers = "2.0.8"
 eyre = "0.6.8"
 rand = "0.8.5"
+serde = { version = "1.0", features = ["derive"] }
 tokio = { version = "1", features = ["full"] }
 
 # Workspace dependencies
