@@ -115,10 +115,6 @@ impl TestChain {
         Self::etch(&provider, accounts[0].clone(), &crash_report.addresses).await?;
 
         // Advance the chain to the timestamp of the crash.
-        println!(
-            "advancing chain to timestamp {}",
-            crash_report.block_timestamp
-        );
         provider
             .request::<[U256; 1], _>(
                 "anvil_setNextBlockTimestamp",

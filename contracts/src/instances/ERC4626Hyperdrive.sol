@@ -34,7 +34,7 @@ contract ERC4626Hyperdrive is Hyperdrive {
     ///        constructor code.
     /// @param _linkerFactory The factory which is used to deploy the ERC20
     ///        linker contracts.
-    /// @param _pool The ERC4626 compatible yield source
+    /// @param _pool The ERC4626 compatible yield source.
     /// @param _targets The addresses that can be swept by governance. This
     ///        allows governance to collect rewards derived from incentive
     ///        programs while also preventing edge cases where `sweep` is used
@@ -51,18 +51,15 @@ contract ERC4626Hyperdrive is Hyperdrive {
         pool = _pool;
 
         // Ensure that the Hyperdrive pool was configured properly.
-        // WARN - 4626 implementations should be checked that if they use an asset
-        //        with decimals less than 18 that the preview deposit is scale
-        //        invariant. EG - because this line uses a very large query to load
-        //        price for USDC if the price per share changes based on size of deposit
-        //        then this line will read an incorrect and possibly dangerous price.
-        //
-        // FIXME: The price per share call is failing, so we don't want this in
-        // the etched contracts.
-        //
-        // if (_config.initialSharePrice != _pricePerShare()) {
-        //     revert IHyperdrive.InvalidInitialSharePrice();
-        // }
+        // WARN: 4626 implementations should be checked that if they use an
+        // asset with decimals less than 18 that the preview deposit is scale
+        // invariant. EG - because this line uses a very large query to load
+        // price for USDC if the price per share changes based on size of
+        // deposit then this line will read an incorrect and possibly dangerous
+        // price.
+        if (_config.initialSharePrice != _pricePerShare()) {
+            revert IHyperdrive.InvalidInitialSharePrice();
+        }
         if (address(_config.baseToken) != _pool.asset()) {
             revert IHyperdrive.InvalidBaseToken();
         }
@@ -72,8 +69,8 @@ contract ERC4626Hyperdrive is Hyperdrive {
             revert IHyperdrive.ApprovalFailed();
         }
 
-        // Set the sweep targets. The base and pool tokens can't be set as
-        // sweep targets to prevent governance from rugging the pool.
+        // Set the sweep targets. The base and pool tokens can't be set as sweep
+        // targets to prevent governance from rugging the pool.
         for (uint256 i = 0; i < _targets.length; i++) {
             address target = _targets[i];
             if (

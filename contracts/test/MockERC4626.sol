@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-// FIXME
-import { console2 as console } from "forge-std/console2.sol";
-
 import { Authority } from "solmate/auth/Auth.sol";
 import { MultiRolesAuthority } from "solmate/auth/authorities/MultiRolesAuthority.sol";
 import { ERC20 } from "solmate/tokens/ERC20.sol";
@@ -112,20 +109,12 @@ contract MockERC4626 is ERC4626, MultiRolesAuthority {
 
     function _getAccruedInterest() internal view returns (uint256) {
         // base_balance = base_balance * (1 + r * t)
-        console.log("_getAccruedInterest: 1");
-        console.log(
-            "_getAccruedInterest: block.timestamp = %s",
-            block.timestamp
-        );
-        console.log("_getAccruedInterest: _lastUpdated    = %s", _lastUpdated);
         uint256 timeElapsed = (block.timestamp - _lastUpdated).divDown(
             365 days
         );
-        console.log("_getAccruedInterest: 2");
         uint256 accrued = asset.balanceOf(address(this)).mulDown(
             _rate.mulDown(timeElapsed)
         );
-        console.log("_getAccruedInterest: 3");
         return accrued;
     }
 }

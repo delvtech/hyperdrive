@@ -1,10 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-// FIXME
-import { console2 as console } from "forge-std/console2.sol";
-import { Lib } from "test/utils/Lib.sol";
-
 import { HyperdriveDataProvider } from "../HyperdriveDataProvider.sol";
 import { IERC4626 } from "../interfaces/IERC4626.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
@@ -54,9 +50,7 @@ contract ERC4626DataProvider is MultiTokenDataProvider, HyperdriveDataProvider {
         override
         returns (uint256 sharePrice)
     {
-        console.log("_pricePerShare: 1");
         sharePrice = _pool.convertToAssets(FixedPointMath.ONE_18);
-        console.log("_pricePerShare: 2");
     }
 
     /// Getters ///
