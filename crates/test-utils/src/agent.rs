@@ -710,10 +710,10 @@ impl Agent<ChainClient, ChaCha8Rng> {
         // important because client's check the current block time by looking
         // at the latest block's timestamp.
         self.provider
-            .request::<[U256; 1], u64>("evm_increaseTime", [duration.into()])
+            .request::<[u128; 1], i128>("anvil_increaseTime", [duration.into()])
             .await?;
         self.provider
-            .request::<_, U256>("evm_mine", None::<()>)
+            .request::<[u128; 1], ()>("anvil_mine", [1])
             .await?;
 
         Ok(())

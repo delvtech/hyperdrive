@@ -1,8 +1,6 @@
-use ethers::{providers::Middleware, types::Address};
 use eyre::Result;
 use fixed_point::FixedPoint;
-use fixed_point_macros::{fixed, uint256};
-use hyperdrive_addresses::Addresses;
+use fixed_point_macros::fixed;
 use test_utils::{
     agent::Agent,
     chain::{Chain, TestChain},
@@ -34,26 +32,6 @@ async fn test_simple() -> Result<()> {
     for _ in 0..20 {
         bob.act().await?;
     }
-
-    Ok(())
-}
-
-#[ignore]
-#[tokio::test]
-async fn test_repro() -> Result<()> {
-    // Load a test chain from the crash report.
-    let chain = TestChain::load_crash("crash_report.json").await?;
-    let mut alice = Agent::new(
-        chain.client(chain.accounts()[0].clone()).await?,
-        chain.addresses().clone(),
-        None,
-    )
-    .await?;
-
-    // Attempt to reproduce the crash.
-    alice
-        .open_short(fixed!(8.753861575436865432e18), None)
-        .await?;
 
     Ok(())
 }

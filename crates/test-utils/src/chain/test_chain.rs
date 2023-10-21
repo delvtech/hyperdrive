@@ -357,9 +357,13 @@ impl TestChain {
             let anvil = Anvil::new()
                 .arg("--code-size-limit")
                 .arg("120000")
-                .arg("--timestamp")
-                .arg("946684800") // 12 AM UTC, January 1, 2000
                 .arg("--disable-block-gas-limit")
+                .arg("--timestamp")
+                // NOTE: Anvil can't increase the time or set the time of the
+                // next block to a time in the past, so we set the genesis block
+                // to 12 AM UTC, January 1, 2000 to avoid issues when reproducing
+                // old crash reports.
+                .arg("946684800")
                 .spawn();
             Ok((
                 Provider::<Http>::try_from(anvil.endpoint())?.interval(Duration::from_millis(1)),
@@ -382,12 +386,12 @@ impl TestChain {
         Ok(())
     }
 
-    pub async fn increase_time(&self, seconds: u64) -> Result<()> {
+    pub async fn increase_time(&self, duration: u128) -> Result<()> {
         self.provider
-            .request::<[u64; 1], u64>("anvil_increaseTime", [seconds])
+            .request::<[u128; 1], i128>("anvil_increaseTime", [duration])
             .await?;
         self.provider
-            .request::<[u64; 1], ()>("anvil_mine", [1])
+            .request::<[u128; 1], ()>("anvil_mine", [1])
             .await?;
         Ok(())
     }
