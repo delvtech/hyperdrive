@@ -5,13 +5,13 @@ use hyperdrive_addresses::Addresses;
 use hyperdrive_wrappers::wrappers::i_hyperdrive::{Checkpoint, Fees, PoolConfig, PoolInfo};
 use serde::{Deserialize, Deserializer};
 
-#[derive(Debug, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
 pub struct AgentInfo {
-    address: Address,
-    policy: String,
+    pub address: Address,
+    pub policy: String,
 }
 
-#[derive(Debug, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ActionType {
     // LP Actions
@@ -28,13 +28,13 @@ pub enum ActionType {
     CloseShort,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Trade {
-    market_type: String,
-    action_type: ActionType,
-    trade_amount: U256,
-    slippage_tolerance: Option<U256>,
-    maturity_time: u64,
+    pub market_type: String,
+    pub action_type: ActionType,
+    pub trade_amount: U256,
+    pub slippage_tolerance: Option<U256>,
+    pub maturity_time: u64,
 }
 
 #[derive(Deserialize)]
@@ -155,26 +155,26 @@ impl From<RawCheckpoint> for Checkpoint {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CrashReport {
-    // Crash Metadata
-    commit_hash: String,
-    log_time: String,
-    exception: String,
-    traceback: Vec<String>,
-    // Block Metadata
-    block_number: u64,
-    block_timestamp: u64,
-    // Agent Context
-    addresses: Addresses,
-    agent_info: AgentInfo,
-    trade: Trade,
-    // Pool Context
-    pool_config: PoolConfig,
-    pool_info: PoolInfo,
-    checkpoint: Checkpoint,
-    // State Dump
-    state_dump: Bytes,
+    /// Crash Metadata
+    pub commit_hash: String,
+    pub log_time: String,
+    pub exception: String,
+    pub traceback: Vec<String>,
+    /// Block Metadata
+    pub block_number: u64,
+    pub block_timestamp: u64,
+    /// Agent Context
+    pub addresses: Addresses,
+    pub agent_info: AgentInfo,
+    pub trade: Trade,
+    /// Pool Context
+    pub pool_config: PoolConfig,
+    pub pool_info: PoolInfo,
+    pub checkpoint: Checkpoint,
+    /// State Dump
+    pub state_dump: Bytes,
 }
 
 #[derive(Deserialize)]

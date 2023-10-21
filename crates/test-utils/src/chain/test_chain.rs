@@ -26,7 +26,7 @@ use hyperdrive_wrappers::wrappers::{
 };
 
 use super::{dev_chain::MNEMONIC, Chain, ChainClient};
-use crate::constants::MAYBE_ETHEREUM_URL;
+use crate::{constants::MAYBE_ETHEREUM_URL, crash_reports::CrashReport};
 
 /// A local anvil instance with the Hyperdrive contracts deployed.
 #[derive(Clone)]
@@ -34,6 +34,7 @@ pub struct TestChain {
     provider: Provider<Http>,
     addresses: Addresses,
     accounts: Vec<LocalWallet>,
+    maybe_crash: Option<CrashReport>,
     _maybe_anvil: Option<Arc<AnvilInstance>>,
 }
 
@@ -53,50 +54,17 @@ impl Chain for TestChain {
 }
 
 impl TestChain {
-    /// Deploys the Hyperdrive contracts to an anvil nodes and sets up some
-    /// funded accounts.
+    /// Instantiates a test chain with a fresh Hyperdrive deployment.
     pub async fn new(num_accounts: usize) -> Result<Self> {
         if num_accounts == 0 {
             panic!("cannot create a test chain with zero accounts");
         }
 
-        // If an ethereum url is provided, use it. Otherwise, we spawn an
-        // in-process anvil node.
-        let (provider, _maybe_anvil) = if let Some(ethereum_url) = &*MAYBE_ETHEREUM_URL {
-            (
-                Provider::<Http>::try_from(ethereum_url)?.interval(Duration::from_millis(1)),
-                None,
-            )
-        } else {
-            let anvil = Anvil::new()
-                .arg("--code-size-limit")
-                .arg("120000")
-                .arg("--disable-block-gas-limit")
-                .spawn();
-            (
-                Provider::<Http>::try_from(anvil.endpoint())?.interval(Duration::from_millis(1)),
-                Some(Arc::new(anvil)),
-            )
-        };
+        // Connect to the anvil node.
+        let (provider, _maybe_anvil) = Self::connect().await?;
 
-        // Create a set of accounts using the default mnemonic and fund them
-        // with ether.
-        let mut accounts = vec![];
-        let mut builder = MnemonicBuilder::<English>::default().phrase(MNEMONIC);
-        for i in 0..num_accounts {
-            // Generate the account at the new index using the mnemonic.
-            builder = builder.index(i as u32).unwrap();
-            let account = builder.build()?;
-
-            // Fund the account with some ether and add it to the list of accounts..
-            provider
-                .request(
-                    "anvil_setBalance",
-                    (account.address(), uint256!(100_000e18)),
-                )
-                .await?;
-            accounts.push(account);
-        }
+        // Generate a set of accounts from the default mnemonic and fund them.
+        let accounts = Self::fund_accounts(&provider, num_accounts).await?;
 
         // Deploy the Hyperdrive contracts.
         let addresses = Self::deploy(provider.clone(), accounts[0].clone()).await?;
@@ -105,69 +73,67 @@ impl TestChain {
             addresses,
             accounts,
             provider,
+            maybe_crash: None,
             _maybe_anvil,
         })
     }
 
-    // TODO: We should merge this with `new`. It should accept the file name of
-    // a crash report and load all of the information that it needs from that.
+    // TODO: It would be nice to have a function that reproduces the crash using
+    // the trade struct.
     //
-    /// Loads a test chain from a provided state dump.
-    pub async fn load(state_dump: &str, addresses: Addresses, num_accounts: usize) -> Result<Self> {
-        if num_accounts == 0 {
-            panic!("cannot create a test chain with zero accounts");
-        }
+    /// Attempts to reproduce a crash from a crash report.
+    ///
+    /// This function sets up a reproduction environment using the information
+    /// provided in the crash report. In particular, it has the following
+    /// features:
+    ///  - Connects to the anvil node specified by `HYPERDRIVE_ETHEREUM_URL`
+    ///    (or spawns a new one if no url is provided).
+    ///  - Loads the chain state from the dump file specified in the crash
+    ///    report.
+    ///  - Etches the latest compiled versions of the smart contracts onto the
+    ///    Hyperdrive instance and dependency contracts so that the contracts
+    ///    can easily be debugged in the reproduction environment.
+    /// -  Creates a set of accounts using the default mnemonic and funds them
+    ///    with ether.
+    pub async fn load_crash(crash_report_path: &str) -> Result<Self> {
+        // Connect to the anvil node.
+        let (provider, _maybe_anvil) = Self::connect().await?;
 
-        // If an ethereum url is provided, use it. Otherwise, we spawn an
-        // in-process anvil node.
-        let (provider, _maybe_anvil) = if let Some(ethereum_url) = &*MAYBE_ETHEREUM_URL {
-            (
-                Provider::<Http>::try_from(ethereum_url)?.interval(Duration::from_millis(1)),
-                None,
-            )
-        } else {
-            let anvil = Anvil::new()
-                .arg("--code-size-limit")
-                .arg("120000")
-                .arg("--disable-block-gas-limit")
-                .spawn();
-            (
-                Provider::<Http>::try_from(anvil.endpoint())?.interval(Duration::from_millis(1)),
-                Some(Arc::new(anvil)),
-            )
+        // Attempt to load the crash report from the provided path.
+        let crash_report = {
+            let file = std::fs::File::open(crash_report_path)?;
+            serde_json::from_reader::<_, CrashReport>(file)?
         };
 
         // Load the chain state from the dump.
         provider
-            .request::<[&str; 1], bool>("anvil_loadState", [state_dump])
+            .request::<[Bytes; 1], bool>("anvil_loadState", [crash_report.state_dump.clone()])
             .await?;
 
-        // Create a set of accounts using the default mnemonic and fund them
-        // with ether.
-        let mut accounts = vec![];
-        let mut builder = MnemonicBuilder::<English>::default().phrase(MNEMONIC);
-        for i in 0..num_accounts {
-            // Generate the account at the new index using the mnemonic.
-            builder = builder.index(i as u32).unwrap();
-            let account = builder.build()?;
-
-            // Fund the account with some ether and add it to the list of accounts..
-            provider
-                .request(
-                    "anvil_setBalance",
-                    (account.address(), uint256!(100_000e18)),
-                )
-                .await?;
-            accounts.push(account);
-        }
-
         // Etch the latest contract bytecode onto the contract addresses.
-        Self::etch(&provider, accounts[0].clone(), &addresses).await?;
+        let accounts = Self::fund_accounts(&provider, 1).await?;
+        Self::etch(&provider, accounts[0].clone(), &crash_report.addresses).await?;
+
+        // Advance the chain to the timestamp of the crash.
+        println!(
+            "advancing chain to timestamp {}",
+            crash_report.block_timestamp
+        );
+        provider
+            .request::<[U256; 1], _>(
+                "anvil_setNextBlockTimestamp",
+                [crash_report.block_timestamp.into()],
+            )
+            .await?;
+        provider
+            .request::<[U256; 1], _>("anvil_mine", [1.into()])
+            .await?;
 
         Ok(Self {
-            addresses,
+            addresses: crash_report.addresses.clone(),
             accounts,
             provider,
+            maybe_crash: Some(crash_report),
             _maybe_anvil,
         })
     }
@@ -355,6 +321,55 @@ impl TestChain {
         }
 
         Ok(())
+    }
+
+    async fn fund_accounts(
+        provider: &Provider<Http>,
+        num_accounts: usize,
+    ) -> Result<Vec<LocalWallet>> {
+        // Create a set of accounts using the default mnemonic and fund them
+        // with ether.
+        let mut accounts = vec![];
+        let mut builder = MnemonicBuilder::<English>::default().phrase(MNEMONIC);
+        for i in 0..num_accounts {
+            // Generate the account at the new index using the mnemonic.
+            builder = builder.index(i as u32).unwrap();
+            let account = builder.build()?;
+
+            // Fund the account with some ether and add it to the list of accounts..
+            provider
+                .request(
+                    "anvil_setBalance",
+                    (account.address(), uint256!(100_000e18)),
+                )
+                .await?;
+            accounts.push(account);
+        }
+
+        Ok(accounts)
+    }
+
+    async fn connect() -> Result<(Provider<Http>, Option<Arc<AnvilInstance>>)> {
+        // If an ethereum url is provided, use it. Otherwise, we spawn an
+        // in-process anvil node.
+        if let Some(ethereum_url) = &*MAYBE_ETHEREUM_URL {
+            Ok((
+                Provider::<Http>::try_from(ethereum_url)?.interval(Duration::from_millis(1)),
+                None,
+            ))
+        } else {
+            let anvil = Anvil::new()
+                .arg("--code-size-limit")
+                .arg("120000")
+                .arg("--timestamp")
+                .arg("946684800") // 12 AM UTC, January 1, 2000
+                .arg("--disable-block-gas-limit")
+                .spawn();
+            Ok((
+                Provider::<Http>::try_from(anvil.endpoint())?.interval(Duration::from_millis(1)),
+                Some(Arc::new(anvil)),
+            ))
+        }
     }
 }
 
