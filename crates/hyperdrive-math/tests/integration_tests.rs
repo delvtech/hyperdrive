@@ -263,19 +263,22 @@ pub async fn test_integration_calculate_bonds_given_shares_and_rate() -> Result<
     )
     .await?;
 
-    // Run the preamble.
-    let fixed_rate = fixed!(0.05e18);
-    preamble(&mut rng, &mut alice, &mut bob, &mut celine, fixed_rate).await?;
+    for _ in 0..*FUZZ_RUNS {
+        // Snapshot the chain.
+        let id = chain.snapshot().await?;
 
-    // get the on-chain pool state
-    let state = alice.get_state().await?;
+        // Run the preamble.
+        let fixed_rate = fixed!(0.05e18);
+        preamble(&mut rng, &mut alice, &mut bob, &mut celine, fixed_rate).await?;
 
-    let effective_share_reserves = get_effective_share_reserves(
-        state.info.share_reserves.into(),
-        state.info.share_adjustment.into(),
-    );
+        // get the on-chain pool state
+        let state = alice.get_state().await?;
 
-    let bond_reserves_match = {
+        let effective_share_reserves = get_effective_share_reserves(
+            state.info.share_reserves.into(),
+            state.info.share_adjustment.into(),
+        );
+
         let rust_reserves = calculate_bonds_given_shares_and_rate(
             effective_share_reserves,
             state.config.initial_share_price.into(),
@@ -284,10 +287,28 @@ pub async fn test_integration_calculate_bonds_given_shares_and_rate() -> Result<
             state.config.time_stretch.into(),
         );
         let sol_reserves = state.info.bond_reserves.into();
-        rust_reserves == sol_reserves
-    };
 
-    assert!(bond_reserves_match, "invalid bond reserve calculation");
+        let delta = if rust_reserves > sol_reserves {
+            rust_reserves - sol_reserves
+        } else {
+            sol_reserves - rust_reserves
+        };
+
+        // expect to lose some precision because we're going through the rate,
+        // which causes information loss
+        assert!(
+            delta < fixed!(1e12), // better than 1e-6 error
+            "Invalid bond reserve calculation.rust_reserves={} != sol_reserves={} within 1e12",
+            rust_reserves,
+            sol_reserves
+        );
+
+        // Revert to the snapshot and reset the agent's wallets.
+        chain.revert(id).await?;
+        alice.reset(Default::default());
+        bob.reset(Default::default());
+        celine.reset(Default::default());
+    }
 
     Ok(())
 }
