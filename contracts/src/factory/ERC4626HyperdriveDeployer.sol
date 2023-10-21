@@ -2,7 +2,6 @@
 pragma solidity 0.8.19;
 
 import { ERC4626Hyperdrive } from "../instances/ERC4626Hyperdrive.sol";
-import { IERC4626 } from "../interfaces/IERC4626.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
 
@@ -16,9 +15,9 @@ import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract ERC4626HyperdriveDeployer is IHyperdriveDeployer {
-    IERC4626 internal immutable pool;
+    address internal immutable pool;
 
-    constructor(IERC4626 _pool) {
+    constructor(address _pool) {
         pool = _pool;
     }
 

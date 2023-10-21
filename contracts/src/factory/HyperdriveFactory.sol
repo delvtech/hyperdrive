@@ -99,6 +99,13 @@ abstract contract HyperdriveFactory {
         address[] defaultPausers;
     }
 
+    // Array of all instances deployed by this factory.
+    // Can be manually updated by governance to add previous instances deployed.
+    address[] internal _instances;
+
+    // Mapping to check if an instance is in the _instances array.
+    mapping(address => bool) public isInstance;
+
     /// @notice Initializes the factory.
     /// @param _factoryConfig Configuration of the Hyperdrive Factory.
     /// @param _deployer The contract which holds the bytecode and deploys new versions.
@@ -224,6 +231,19 @@ abstract contract HyperdriveFactory {
         fees = _fees;
     }
 
+    function addInstance(address _instance) external onlyGovernance {
+        require(!isInstance[_instance], "Already added");
+        isInstance[_instance] = true;
+        _instances.push(_instance);
+    }
+
+    function removeInstance(address _instance, uint256 index) external onlyGovernance {
+        require(isInstance[_instance], "Not added");
+        isInstance[_instance] = false;
+        _instances[index] = _instances[_instances.length - 1];
+        _instances.pop();
+    }
+
     /// @notice Allows governance to change the default pausers.
     /// @param _defaultPausers_ The new list of default pausers.
     function updateDefaultPausers(
@@ -249,7 +269,8 @@ abstract contract HyperdriveFactory {
         bytes32[] memory _extraData,
         uint256 _contribution,
         uint256 _apr,
-        bytes memory _initializeExtraData
+        bytes memory _initializeExtraData,
+        address _pool
     ) public payable virtual returns (IHyperdrive) {
         if (msg.value > 0) {
             revert IHyperdrive.NonPayableInitialization();
@@ -270,7 +291,8 @@ abstract contract HyperdriveFactory {
             _config,
             _extraData,
             _linkerCodeHash,
-            _linkerFactory
+            _linkerFactory,
+            _pool
         );
         IHyperdrive hyperdrive = IHyperdrive(
             hyperdriveDeployer.deploy(
@@ -341,7 +363,8 @@ abstract contract HyperdriveFactory {
         IHyperdrive.PoolConfig memory _config,
         bytes32[] memory _extraData,
         bytes32 _linkerCodeHash,
-        address _linkerFactory
+        address _linkerFactory,
+        address _pool
     ) internal virtual returns (address);
 
     /// @notice Gets the default pausers.
@@ -349,4 +372,29 @@ abstract contract HyperdriveFactory {
     function getDefaultPausers() external view returns (address[] memory) {
         return _defaultPausers;
     }
+
+    /// @notice Gets the number of instances deployed by this factory.
+    /// @return The number of instances deployed by this factory.
+    function getNumberOfInstances() external view returns (uint256) {
+        return _instances.length;
+    }
+
+    /// @notice Gets the instance at the specified index.
+    /// @param index The index of the instance to get.
+    /// @return The instance at the specified index.
+    function getInstanceAtIndex(uint256 index)
+        external
+        view
+        returns (address)
+    {
+        return _instances[index];
+    }
+
+    /// @notice Returns the full _instances array.
+    /// @return The full _instances array.
+    function getAllInstances() external view returns (address[] memory) {
+        return _instances;
+    }
+
+
 }

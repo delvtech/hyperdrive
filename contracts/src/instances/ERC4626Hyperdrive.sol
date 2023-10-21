@@ -44,11 +44,11 @@ contract ERC4626Hyperdrive is Hyperdrive {
         address _dataProvider,
         bytes32 _linkerCodeHash,
         address _linkerFactory,
-        IERC4626 _pool,
+        address _pool,
         address[] memory _targets
     ) Hyperdrive(_config, _dataProvider, _linkerCodeHash, _linkerFactory) {
         // Initialize the pool immutable.
-        pool = _pool;
+        pool = IERC4626(_pool);
 
         // Ensure that the Hyperdrive pool was configured properly.
         // WARN: 4626 implementations should be checked that if they use an
@@ -60,7 +60,7 @@ contract ERC4626Hyperdrive is Hyperdrive {
         if (_config.initialSharePrice != _pricePerShare()) {
             revert IHyperdrive.InvalidInitialSharePrice();
         }
-        if (address(_config.baseToken) != _pool.asset()) {
+        if (address(_config.baseToken) != IERC4626(_pool).asset()) {
             revert IHyperdrive.InvalidBaseToken();
         }
 

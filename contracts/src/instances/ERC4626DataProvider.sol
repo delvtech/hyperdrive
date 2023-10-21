@@ -31,12 +31,12 @@ contract ERC4626DataProvider is MultiTokenDataProvider, HyperdriveDataProvider {
         IHyperdrive.PoolConfig memory _config,
         bytes32 _linkerCodeHash_,
         address _factory_,
-        IERC4626 _pool_
+        address _pool_
     )
         HyperdriveDataProvider(_config)
         MultiTokenDataProvider(_linkerCodeHash_, _factory_)
     {
-        _pool = _pool_;
+        _pool = IERC4626(_pool_);
     }
 
     /// Yield Source ///

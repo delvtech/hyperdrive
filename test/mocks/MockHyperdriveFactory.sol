@@ -25,6 +25,7 @@ contract MockHyperdriveFactory is HyperdriveFactory {
         IHyperdrive.PoolConfig memory _config,
         bytes32[] memory,
         bytes32,
+        address,
         address
     ) internal override returns (address) {
         MockHyperdriveDataProvider dataProvider = new MockHyperdriveDataProvider(

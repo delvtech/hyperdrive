@@ -37,9 +37,8 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             address(new Mock4626(ERC20(address(dai)), "yearn dai", "yDai"))
         );
 
-        ERC4626HyperdriveDeployer simpleDeployer = new ERC4626HyperdriveDeployer(
-                pool
-            );
+        ERC4626HyperdriveDeployer simpleDeployer
+            = new ERC4626HyperdriveDeployer(address(pool));
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
         forwarderFactory = new ForwarderFactory();
@@ -55,7 +54,6 @@ contract HyperdriveFactoryTest is HyperdriveTest {
             simpleDeployer,
             address(forwarderFactory),
             forwarderFactory.ERC20LINK_HASH(),
-            pool,
             new address[](0)
         );
 
