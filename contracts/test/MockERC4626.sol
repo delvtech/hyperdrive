@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
+
 import { Authority } from "solmate/auth/Auth.sol";
 import { MultiRolesAuthority } from "solmate/auth/authorities/MultiRolesAuthority.sol";
 import { ERC20 } from "solmate/tokens/ERC20.sol";
@@ -104,6 +107,11 @@ contract MockERC4626 is ERC4626, MultiRolesAuthority {
 
     function _accrue() internal {
         ERC20Mintable(address(asset)).mint(_getAccruedInterest());
+        console.log(
+            "_accrue: Updating `_lastUpdated` from %s to %s",
+            _lastUpdated,
+            block.timestamp
+        );
         _lastUpdated = block.timestamp;
     }
 
