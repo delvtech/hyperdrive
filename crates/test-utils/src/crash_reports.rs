@@ -105,7 +105,7 @@ impl From<RawPoolConfig> for PoolConfig {
 #[serde(rename_all = "camelCase")]
 struct RawPoolInfo {
     share_reserves: u128,
-    share_adjustment: u128,
+    share_adjustment: i128,
     bond_reserves: u128,
     lp_total_supply: u128,
     share_price: u128,
@@ -191,7 +191,7 @@ struct RawCrashReport {
     #[serde(rename = "contract_addresses")]
     addresses: Addresses,
     agent_info: AgentInfo,
-    #[serde(rename = "raw_trade")]
+    #[serde(rename = "raw_trade_object")]
     trade: RawTrade,
     // Pool Context
     #[serde(rename = "raw_pool_config")]

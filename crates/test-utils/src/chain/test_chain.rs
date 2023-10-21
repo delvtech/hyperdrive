@@ -8,7 +8,7 @@ use ethers::{
     types::{Address, Bytes, H256, U256},
     utils::AnvilInstance,
 };
-use eyre::Result;
+use eyre::{eyre, Result};
 use fixed_point::FixedPoint;
 use fixed_point_macros::{fixed, uint256};
 use hyperdrive_addresses::Addresses;
@@ -26,7 +26,11 @@ use hyperdrive_wrappers::wrappers::{
 };
 
 use super::{dev_chain::MNEMONIC, Chain, ChainClient};
-use crate::{constants::MAYBE_ETHEREUM_URL, crash_reports::CrashReport};
+use crate::{
+    agent::Agent,
+    constants::MAYBE_ETHEREUM_URL,
+    crash_reports::{ActionType, CrashReport},
+};
 
 /// A local anvil instance with the Hyperdrive contracts deployed.
 #[derive(Clone)]
@@ -132,6 +136,87 @@ impl TestChain {
             maybe_crash: Some(crash_report),
             _maybe_anvil,
         })
+    }
+
+    /// Attempts to reproduce the crash.
+    pub async fn reproduce_crash(&self) -> Result<()> {
+        let crash_report = if let Some(crash_report) = &self.maybe_crash {
+            crash_report
+        } else {
+            return Err(eyre!("cannot reproduce crash without a crash report"));
+        };
+
+        // Impersonate the agent that experienced the crash.
+        self.provider
+            .request::<[Address; 1], _>(
+                "anvil_impersonateAccount",
+                [crash_report.agent_info.address],
+            )
+            .await?;
+        let mut agent = Agent::new(
+            self.client(self.accounts()[0].clone()).await?,
+            crash_report.addresses.clone(),
+            None,
+        )
+        .await?;
+
+        // Attempt to reproduce the crash by running the trade that failed.
+        match crash_report.trade.action_type {
+            // Long
+            ActionType::OpenLong => {
+                agent
+                    .open_long(
+                        crash_report.trade.trade_amount.into(),
+                        crash_report.trade.slippage_tolerance.map(|u| u.into()),
+                    )
+                    .await?
+            }
+            ActionType::CloseLong => {
+                agent
+                    .close_long(
+                        U256::from(crash_report.trade.maturity_time).into(),
+                        crash_report.trade.trade_amount.into(),
+                    )
+                    .await?
+            }
+            // Short
+            ActionType::OpenShort => {
+                agent
+                    .open_short(
+                        crash_report.trade.trade_amount.into(),
+                        crash_report.trade.slippage_tolerance.map(|u| u.into()),
+                    )
+                    .await?
+            }
+            ActionType::CloseShort => {
+                agent
+                    .close_short(
+                        U256::from(crash_report.trade.maturity_time).into(),
+                        crash_report.trade.trade_amount.into(),
+                    )
+                    .await?
+            }
+            // LP
+            ActionType::AddLiquidity => {
+                agent
+                    .add_liquidity(crash_report.trade.trade_amount.into())
+                    .await?
+            }
+            ActionType::RemoveLiquidity => {
+                agent
+                    .remove_liquidity(crash_report.trade.trade_amount.into())
+                    .await?
+            }
+            ActionType::RedeemWithdrawalShares => {
+                agent
+                    .redeem_withdrawal_shares(crash_report.trade.trade_amount.into())
+                    .await?
+            }
+            // Failure
+            _ => return Err(eyre!("Unsupported reproduction action")),
+        }
+
+        Ok(())
     }
 
     async fn deploy(provider: Provider<Http>, signer: LocalWallet) -> Result<Addresses> {
