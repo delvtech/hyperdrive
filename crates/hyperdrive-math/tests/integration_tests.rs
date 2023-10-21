@@ -231,6 +231,7 @@ pub async fn test_integration_get_max_long() -> Result<()> {
     Ok(())
 }
 
+#[tokio::test]
 pub async fn test_integration_calculate_bonds_given_shares_and_rate() -> Result<()> {
     // Set up a random number generator. We use ChaCha8Rng with a randomly
     // generated seed, which makes it easy to reproduce test failures given
@@ -261,9 +262,6 @@ pub async fn test_integration_calculate_bonds_given_shares_and_rate() -> Result<
         None,
     )
     .await?;
-
-    // Snapshot the chain.
-    let id = chain.snapshot().await?;
 
     // Run the preamble.
     let fixed_rate = fixed!(0.05e18);

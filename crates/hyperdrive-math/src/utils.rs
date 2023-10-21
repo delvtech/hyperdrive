@@ -46,10 +46,10 @@ pub fn calculate_bonds_given_shares_and_rate(
     position_duration: FixedPoint,
     time_stretch: FixedPoint,
 ) -> FixedPoint {
-    let t = position_duration.div_down(fixed!(365e18));
+    let annualized_time = position_duration / FixedPoint::from(U256::from(60 * 60 * 24 * 365));
     // mu * (z - zeta) * (1 + apr * t) ** (1/tau)
     return initial_share_price
         .mul_down(effective_share_reserves)
-        .mul_down(fixed!(1e18) + apr.mul_down(t))
+        .mul_down(fixed!(1e18) + apr.mul_down(annualized_time))
         .pow(fixed!(1e18).div_up(time_stretch));
 }
