@@ -22,7 +22,7 @@ pub fn get_effective_share_reserves(
 /// Calculates the bond reserves assuming that the pool has a given
 /// share reserves and fixed rate APR.
 ///
-/// r = ((1/p)-1)/t = (1-p)/(pt)
+/// r = ((1 / p) - 1) / t = (1 - p) / (pt)
 /// p = ((u * z) / y) ** t
 ///
 /// Arguments:
@@ -47,7 +47,7 @@ pub fn calculate_bonds_given_shares_and_rate(
     time_stretch: FixedPoint,
 ) -> FixedPoint {
     let annualized_time = position_duration / FixedPoint::from(U256::from(60 * 60 * 24 * 365));
-    // mu * (z - zeta) * (1 + apr * t) ** (1/tau)
+    // mu * (z - zeta) * (1 + apr * t) ** (1 / tau)
     return initial_share_price
         .mul_down(effective_share_reserves)
         .mul_down(

@@ -264,21 +264,18 @@ pub async fn test_integration_calculate_bonds_given_shares_and_rate() -> Result<
     .await?;
 
     for _ in 0..*FUZZ_RUNS {
-        // Snapshot the chain.
+        // Snapshot the chain and run the preamble.
         let id = chain.snapshot().await?;
-
-        // Run the preamble.
         let fixed_rate = fixed!(0.05e18);
         preamble(&mut rng, &mut alice, &mut bob, &mut celine, fixed_rate).await?;
 
-        // get the on-chain pool state
+        // Calculate the bond reserves that target the current rate with the current
+        // share reserves.
         let state = alice.get_state().await?;
-
         let effective_share_reserves = get_effective_share_reserves(
             state.info.share_reserves.into(),
             state.info.share_adjustment.into(),
         );
-
         let rust_reserves = calculate_bonds_given_shares_and_rate(
             effective_share_reserves,
             state.config.initial_share_price.into(),
@@ -286,18 +283,18 @@ pub async fn test_integration_calculate_bonds_given_shares_and_rate() -> Result<
             state.config.position_duration.into(),
             state.config.time_stretch.into(),
         );
-        let sol_reserves = state.info.bond_reserves.into();
 
+        // Ensure that the calculated reserves are approximately equal
+        // to the starting reserves. These won't be exactly equal because
+        // compressing through "rate space" loses information.
+        let sol_reserves = state.info.bond_reserves.into();
         let delta = if rust_reserves > sol_reserves {
             rust_reserves - sol_reserves
         } else {
             sol_reserves - rust_reserves
         };
-
-        // expect to lose some precision because we're going through the rate,
-        // which causes information loss
         assert!(
-            delta < fixed!(1e12), // better than 1e-6 error
+            delta < fixed!(1e12), // Better than 1e-6 error.
             "Invalid bond reserve calculation.rust_reserves={} != sol_reserves={} within 1e12",
             rust_reserves,
             sol_reserves
