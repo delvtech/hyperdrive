@@ -565,7 +565,19 @@ library HyperdriveMath {
         return (maxBaseAmount, maxBondAmount);
     }
 
-    // FIXME
+    // FIXME: I think there is a an issue here where we are pushing too close to
+    // the max spot price. I either need to find a better way to round or I need
+    // to add a correction.
+    //
+    /// @dev Calculates the largest long that can be opened without buying bonds
+    ///      at a negative interest rate. This calculation does not take
+    ///      Hyperdrive's solvency constraints into account and shouldn't be
+    ///      used directly.
+    /// @param _params The parameters for the max long calculation.
+    /// @param _effectiveShareReserves The pool's effective share reserves.
+    /// @param _spotPrice The pool's spot price.
+    /// @return absoluteMaxBaseAmount The absolute maximum base amount.
+    /// @return absoluteMaxBondAmount The absolute maximum bond amount.
     function calculateAbsoluteMaxLong(
         MaxTradeParams memory _params,
         uint256 _effectiveShareReserves,
@@ -575,39 +587,73 @@ library HyperdriveMath {
         pure
         returns (uint256 absoluteMaxBaseAmount, uint256 absoluteMaxBondAmount)
     {
-        // FIXME: Explain this math.
-        uint256 cDivMu = _params.sharePrice.divDown(_params.initialSharePrice);
-        uint256 k = YieldSpaceMath.modifiedYieldSpaceConstant(
-            cDivMu,
-            _params.initialSharePrice,
-            _effectiveShareReserves,
-            ONE - _params.timeStretch,
-            _params.bondReserves
+        // We use the spot price calculation to get an identity that relates
+        // the target share reserves `z_target` and the target bond reserves
+        // `y_target`. Since a long is being opened, we know that zeta won't
+        // change:
+        //
+        // p_max = ((mu * (z_target - zeta)) / y_target) ** t_s
+        //                      =>
+        // mu * (z_target - zeta) = y_target * p_max ** (1 / t_s)
+        //
+        // Substituting this into YieldSpace allows us to calculate `y_target`:
+        //
+        // k = (c / mu) * (y_target * p_max ** (1 / t_s)) ** (1 - t_s) + y_target ** 1 - t_s
+        //                      =>
+        // y_target = (k / ((c / mu) * p_max ** ((1 - t_s) / t_s) + 1)) ** (1 / (1 - t_s))
+        uint256 maxSpotPrice = calculateOpenLongMaxSpotPrice(
+            _spotPrice,
+            _params.curveFee
         );
-        uint256 curveFeeFactor = _params.curveFee.mulDown(
-            ONE.divDown(_spotPrice) - ONE
-        );
-        uint256 optimalShareReserves = k
-            .divDown(
-                cDivMu +
-                    (ONE +
-                        curveFeeFactor.pow(
-                            (ONE - _params.timeStretch).divUp(
-                                _params.timeStretch
-                            )
-                        ))
-            )
-            .pow(ONE.divUp(ONE - _params.timeStretch));
-        uint256 optimalBondReserves = curveFeeFactor
-            .pow(ONE.divUp(_params.timeStretch))
-            .mulDown(optimalShareReserves);
-        optimalShareReserves = optimalShareReserves.divDown(
-            _params.initialSharePrice
-        );
+        uint256 targetBondReserves;
+        {
+            uint256 cDivMu = _params.sharePrice.divDown(
+                _params.initialSharePrice
+            );
+            uint256 k = YieldSpaceMath.modifiedYieldSpaceConstant(
+                cDivMu,
+                _params.initialSharePrice,
+                _effectiveShareReserves,
+                ONE - _params.timeStretch,
+                _params.bondReserves
+            );
+            // inner = k / ((c / mu) * p_max ** ((1 - t_s) / t_s) + 1)
+            targetBondReserves = k.divDown(
+                (_params.sharePrice.mulDivUp(
+                    maxSpotPrice.pow(
+                        (ONE - _params.timeStretch).divUp(_params.timeStretch)
+                    ),
+                    _params.initialSharePrice
+                ) + ONE)
+            );
+            // y_target = inner ** (1 / (1 - t_s))
+            targetBondReserves = targetBondReserves.pow(
+                ONE.divUp(ONE - _params.timeStretch)
+            );
+        }
 
-        absoluteMaxBaseAmount = (optimalShareReserves - _effectiveShareReserves)
+        // Now that we have `y_target`, we can substitute this value into our
+        // identify to calculate `z_target` as:
+        //
+        // z_target = zeta + (y_target * p_max ** (1 / t_s)) / mu
+        uint256 targetShareReserves;
+        {
+            // rhs = (y_target * p_max ** (1 / t_s)) / mu
+            uint256 rhs = targetBondReserves
+                .mulDown(maxSpotPrice.pow(ONE.divUp(_params.timeStretch)))
+                .divDown(_params.initialSharePrice);
+            // z_target = zeta + rhs
+            int256 maybeShareReserves = _params.shareAdjustment + int256(rhs);
+            require(
+                maybeShareReserves >= 0,
+                "calculateAbsoluteMaxLong: negative share reserves"
+            );
+            targetShareReserves = uint256(maybeShareReserves);
+        }
+
+        absoluteMaxBaseAmount = (targetShareReserves - _params.shareReserves)
             .mulDown(_params.sharePrice);
-        absoluteMaxBondAmount = _params.bondReserves - optimalBondReserves;
+        absoluteMaxBondAmount = _params.bondReserves - targetBondReserves;
     }
 
     /// @dev Calculates an initial guess of the max long that can be opened.
