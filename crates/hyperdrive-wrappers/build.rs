@@ -4,6 +4,26 @@ use ethers::prelude::Abigen;
 use eyre::Result;
 use heck::ToSnakeCase;
 
+const TARGETS: &[&str] = &[
+    // Interfaces
+    "IERC20",
+    "IERC4626Hyperdrive",
+    "IHyperdrive",
+    // Tokens
+    "ERC20Mintable",
+    // Hyperdrive
+    "ERC4626Hyperdrive",
+    "ERC4626DataProvider",
+    "ERC4626HyperdriveFactory",
+    // Test Contracts
+    "ERC20Mintable",
+    "EtchingVault",
+    "MockERC4626",
+    "MockFixedPointMath",
+    "MockHyperdriveMath",
+    "MockYieldSpaceMath",
+];
+
 fn get_artifacts(artifacts_path: &Path) -> Result<Vec<(String, String)>> {
     let mut artifacts = Vec::new();
     for entry in std::fs::read_dir(artifacts_path)? {
@@ -13,14 +33,10 @@ fn get_artifacts(artifacts_path: &Path) -> Result<Vec<(String, String)>> {
             let source = path.clone().into_os_string().into_string().unwrap();
             let name = String::from(path.file_stem().unwrap().to_str().unwrap());
 
-            // Skip some contracts that cause Rust compiler errors.
-            if name.eq("console") || name.eq("safeconsole") || name.ends_with("Deployer") {
-                // TODO: The Deployer contracts have a `deploy()` function that
-                // conflicts with ethers-rs `deploy()` function. We should
-                // update the deployer interface when we update the factory.
-                continue;
+            // If the artifact is one of our targets, add it to the list.
+            if TARGETS.contains(&name.as_str()) {
+                artifacts.push((source, name));
             }
-            artifacts.push((source, name));
         } else {
             artifacts.extend(get_artifacts(&path)?);
         }
@@ -60,6 +76,8 @@ fn main() -> Result<()> {
         let target = name.to_snake_case();
         let target_file = generated.join(format!("{}.rs", target));
         Abigen::new(name, source)?
+            .add_derive("serde::Serialize")?
+            .add_derive("serde::Deserialize")?
             .generate()?
             .write_to_file(target_file)?;
 

@@ -1557,6 +1557,7 @@ dependencies = [
  "fixed-point",
  "heck",
  "rand",
+ "serde",
  "tokio",
 ]
 
@@ -3120,6 +3121,8 @@ dependencies = [
  "rand",
  "rand_chacha",
  "reqwest",
+ "serde",
+ "serde_json",
  "tokio",
  "tracing",
 ]
@@ -3132,6 +3135,7 @@ dependencies = [
  "eyre",
  "fixed-point",
  "fixed-point-macros",
+ "hyperdrive-addresses",
  "hyperdrive-math",
  "rand",
  "test-utils",

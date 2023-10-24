@@ -6,23 +6,23 @@ import { MultiRolesAuthority } from "solmate/auth/authorities/MultiRolesAuthorit
 import { ERC20 } from "solmate/tokens/ERC20.sol";
 
 contract ERC20Mintable is ERC20, MultiRolesAuthority {
-    bool internal immutable _isCompetitionMode;
+    bool public immutable isCompetitionMode;
 
     constructor(
         string memory name,
         string memory symbol,
         uint8 decimals,
         address admin,
-        bool isCompetitionMode
+        bool isCompetitionMode_
     )
         ERC20(name, symbol, decimals)
         MultiRolesAuthority(admin, Authority(address(address(this))))
     {
-        _isCompetitionMode = isCompetitionMode;
+        isCompetitionMode = isCompetitionMode_;
     }
 
     modifier requiresAuthDuringCompetition() {
-        if (_isCompetitionMode) {
+        if (isCompetitionMode) {
             require(
                 isAuthorized(msg.sender, msg.sig),
                 "ERC20Mintable: not authorized"

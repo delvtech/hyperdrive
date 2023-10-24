@@ -499,10 +499,12 @@ mod tests {
             bob.fund(budget).await?;
 
             // Alice initializes the pool.
-            alice.initialize(fixed_rate, contribution).await?;
+            alice.initialize(fixed_rate, contribution, None).await?;
 
             // Some of the checkpoint passes and variable interest accrues.
-            alice.checkpoint(alice.latest_checkpoint().await?).await?;
+            alice
+                .checkpoint(alice.latest_checkpoint().await?, None)
+                .await?;
             let rate = rng.gen_range(fixed!(0)..=fixed!(0.5e18));
             alice
                 .advance_time(
@@ -513,7 +515,7 @@ mod tests {
 
             // Bob opens a max long.
             let max_long = bob.get_max_long(None).await?;
-            bob.open_long(max_long, None).await?;
+            bob.open_long(max_long, None, None).await?;
 
             // One of three things should be true after opening the long:
             //

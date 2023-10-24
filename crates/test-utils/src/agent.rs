@@ -1,9 +1,11 @@
 use std::{cmp::min, collections::BTreeMap, fmt, sync::Arc, time::Duration};
 
 use ethers::{
+    abi::Detokenize,
+    contract::ContractCall,
     prelude::EthLogDecode,
     providers::{Http, Middleware, Provider, RetryClient},
-    types::{Address, U256},
+    types::{Address, BlockId, U256},
 };
 use eyre::{eyre, Result};
 use fixed_point::FixedPoint;
@@ -75,6 +77,82 @@ impl<M, R: Rng + SeedableRng> fmt::Debug for Agent<M, R> {
     }
 }
 
+#[derive(Clone, Default, Debug)]
+pub struct TxOptions {
+    from: Option<Address>,
+    gas: Option<U256>,
+    gas_price: Option<U256>,
+    value: Option<U256>,
+    block: Option<BlockId>,
+    is_legacy: bool,
+}
+
+impl TxOptions {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn from(mut self, from: Address) -> Self {
+        self.from = Some(from);
+        self
+    }
+
+    pub fn gas(mut self, gas: U256) -> Self {
+        self.gas = Some(gas);
+        self
+    }
+
+    pub fn gas_price(mut self, gas_price: U256) -> Self {
+        self.gas_price = Some(gas_price);
+        self
+    }
+
+    pub fn value(mut self, value: U256) -> Self {
+        self.value = Some(value);
+        self
+    }
+
+    pub fn block(mut self, block: BlockId) -> Self {
+        self.block = Some(block);
+        self
+    }
+
+    pub fn legacy(mut self) -> Self {
+        self.is_legacy = true;
+        self
+    }
+}
+
+/// A helper struct that makes it easy to apply transaction options to a
+/// contract call.
+struct ContractCall_<M, D>(ContractCall<M, D>);
+
+impl<M, D: Detokenize> ContractCall_<M, D> {
+    fn apply(self, tx_options: TxOptions) -> Self {
+        let mut call = self.0;
+        if let Some(from) = tx_options.from {
+            call = call.from(from);
+        }
+        if let Some(gas) = tx_options.gas {
+            call = call.gas(gas);
+        }
+        if let Some(gas_price) = tx_options.gas_price {
+            call = call.gas_price(gas_price);
+        }
+        if let Some(value) = tx_options.value {
+            call = call.value(value);
+        }
+        if let Some(block) = tx_options.block {
+            call = call.block(block);
+        }
+        if tx_options.is_legacy {
+            call = call.legacy();
+        }
+
+        ContractCall_(call)
+    }
+}
+
 // TODO: This should crash gracefully and would ideally dump the replication
 // information to a file that can be read by the framework to easily debug what
 // happened.
@@ -113,6 +191,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
         &mut self,
         base_paid: FixedPoint,
         maybe_slippage_tolerance: Option<FixedPoint>,
+        maybe_tx_options: Option<TxOptions>,
     ) -> Result<()> {
         // Ensure that the agent has a sufficient base balance to open the long.
         if self.wallet.base < base_paid {
@@ -132,36 +211,34 @@ impl Agent<ChainClient, ChaCha8Rng> {
                 let slippage_tolerance = maybe_slippage_tolerance.unwrap_or(fixed!(0.01e18));
                 self.get_long_amount(base_paid).await? * (fixed!(1e18) - slippage_tolerance)
             };
-            let tx = self
-                .hyperdrive
-                .open_long(
-                    base_paid.into(),
-                    min_output.into(),
-                    fixed!(0).into(), // TODO: This is fine for testing, but not prod.
-                    Options {
-                        destination: self.address,
-                        as_base: true,
-                        extra_data: [].into(),
-                    },
-                )
-                .from(self.address);
-            let logs = tx
-                .send()
-                .await?
-                .await?
-                .unwrap()
-                .logs
-                .into_iter()
-                .filter_map(|log| {
-                    if let Ok(IHyperdriveEvents::OpenLongFilter(log)) =
-                        IHyperdriveEvents::decode_log(&log.into())
-                    {
-                        Some(log)
-                    } else {
-                        None
-                    }
-                })
-                .collect::<Vec<_>>();
+            let tx = ContractCall_(self.hyperdrive.open_long(
+                base_paid.into(),
+                min_output.into(),
+                fixed!(0).into(), // TODO: This is fine for testing, but not prod.
+                Options {
+                    destination: self.address,
+                    as_base: true,
+                    extra_data: [].into(),
+                },
+            ))
+            .apply(self.pre_process_options(maybe_tx_options));
+            let logs =
+                tx.0.send()
+                    .await?
+                    .await?
+                    .unwrap()
+                    .logs
+                    .into_iter()
+                    .filter_map(|log| {
+                        if let Ok(IHyperdriveEvents::OpenLongFilter(log)) =
+                            IHyperdriveEvents::decode_log(&log.into())
+                        {
+                            Some(log)
+                        } else {
+                            None
+                        }
+                    })
+                    .collect::<Vec<_>>();
             logs[0].clone()
         };
         *self
@@ -178,6 +255,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
         &mut self,
         maturity_time: FixedPoint,
         bond_amount: FixedPoint,
+        maybe_tx_options: Option<TxOptions>,
     ) -> Result<()> {
         // TODO: It would probably be better for this part of the agent to just
         // be a dumb wrapper around Hyperdrive. It's going to be useful to test
@@ -200,36 +278,34 @@ impl Agent<ChainClient, ChaCha8Rng> {
 
         // Close the long and increase the wallet's base balance.
         let log = {
-            let tx = self
-                .hyperdrive
-                .close_long(
-                    maturity_time.into(),
-                    bond_amount.into(),
-                    uint256!(0),
-                    Options {
-                        destination: self.address,
-                        as_base: true,
-                        extra_data: [].into(),
-                    },
-                )
-                .from(self.address);
-            let logs = tx
-                .send()
-                .await?
-                .await?
-                .unwrap()
-                .logs
-                .into_iter()
-                .filter_map(|log| {
-                    if let Ok(IHyperdriveEvents::CloseLongFilter(log)) =
-                        IHyperdriveEvents::decode_log(&log.into())
-                    {
-                        Some(log)
-                    } else {
-                        None
-                    }
-                })
-                .collect::<Vec<_>>();
+            let tx = ContractCall_(self.hyperdrive.close_long(
+                maturity_time.into(),
+                bond_amount.into(),
+                uint256!(0),
+                Options {
+                    destination: self.address,
+                    as_base: true,
+                    extra_data: [].into(),
+                },
+            ))
+            .apply(self.pre_process_options(maybe_tx_options));
+            let logs =
+                tx.0.send()
+                    .await?
+                    .await?
+                    .unwrap()
+                    .logs
+                    .into_iter()
+                    .filter_map(|log| {
+                        if let Ok(IHyperdriveEvents::CloseLongFilter(log)) =
+                            IHyperdriveEvents::decode_log(&log.into())
+                        {
+                            Some(log)
+                        } else {
+                            None
+                        }
+                    })
+                    .collect::<Vec<_>>();
             logs[0].clone()
         };
         self.wallet.base += log.base_amount.into();
@@ -244,6 +320,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
         &mut self,
         bond_amount: FixedPoint,
         maybe_slippage_tolerance: Option<FixedPoint>,
+        maybe_tx_options: Option<TxOptions>,
     ) -> Result<()> {
         // Open the short and record the trade in the wallet.
         let log = {
@@ -251,36 +328,34 @@ impl Agent<ChainClient, ChaCha8Rng> {
                 let slippage_tolerance = maybe_slippage_tolerance.unwrap_or(fixed!(0.01e18));
                 self.get_short_deposit(bond_amount).await? * (fixed!(1e18) + slippage_tolerance)
             };
-            let tx = self
-                .hyperdrive
-                .open_short(
-                    bond_amount.into(),
-                    max_deposit.into(),
-                    fixed!(0).into(), // TODO: This is fine for testing, but not prod.
-                    Options {
-                        destination: self.address,
-                        as_base: true,
-                        extra_data: [].into(),
-                    },
-                )
-                .from(self.address);
-            let logs = tx
-                .send()
-                .await?
-                .await?
-                .unwrap()
-                .logs
-                .into_iter()
-                .filter_map(|log| {
-                    if let Ok(IHyperdriveEvents::OpenShortFilter(log)) =
-                        IHyperdriveEvents::decode_log(&log.into())
-                    {
-                        Some(log)
-                    } else {
-                        None
-                    }
-                })
-                .collect::<Vec<_>>();
+            let tx = ContractCall_(self.hyperdrive.open_short(
+                bond_amount.into(),
+                max_deposit.into(),
+                fixed!(0).into(), // TODO: This is fine for testing, but not prod.
+                Options {
+                    destination: self.address,
+                    as_base: true,
+                    extra_data: [].into(),
+                },
+            ))
+            .apply(self.pre_process_options(maybe_tx_options));
+            let logs =
+                tx.0.send()
+                    .await?
+                    .await?
+                    .unwrap()
+                    .logs
+                    .into_iter()
+                    .filter_map(|log| {
+                        if let Ok(IHyperdriveEvents::OpenShortFilter(log)) =
+                            IHyperdriveEvents::decode_log(&log.into())
+                        {
+                            Some(log)
+                        } else {
+                            None
+                        }
+                    })
+                    .collect::<Vec<_>>();
             logs[0].clone()
         };
         *self
@@ -300,6 +375,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
         &mut self,
         maturity_time: FixedPoint,
         bond_amount: FixedPoint,
+        maybe_tx_options: Option<TxOptions>,
     ) -> Result<()> {
         // If the wallet has a sufficient balance of shorts, update the short
         // balance. Otherwise, return an error.
@@ -318,36 +394,34 @@ impl Agent<ChainClient, ChaCha8Rng> {
 
         // Close the long and increase the wallet's base balance.
         let log = {
-            let tx = self
-                .hyperdrive
-                .close_short(
-                    maturity_time.into(),
-                    bond_amount.into(),
-                    uint256!(0),
-                    Options {
-                        destination: self.address,
-                        as_base: true,
-                        extra_data: [].into(),
-                    },
-                )
-                .from(self.address);
-            let logs = tx
-                .send()
-                .await?
-                .await?
-                .unwrap()
-                .logs
-                .into_iter()
-                .filter_map(|log| {
-                    if let Ok(IHyperdriveEvents::CloseShortFilter(log)) =
-                        IHyperdriveEvents::decode_log(&log.into())
-                    {
-                        Some(log)
-                    } else {
-                        None
-                    }
-                })
-                .collect::<Vec<_>>();
+            let tx = ContractCall_(self.hyperdrive.close_short(
+                maturity_time.into(),
+                bond_amount.into(),
+                uint256!(0),
+                Options {
+                    destination: self.address,
+                    as_base: true,
+                    extra_data: [].into(),
+                },
+            ))
+            .apply(self.pre_process_options(maybe_tx_options));
+            let logs =
+                tx.0.send()
+                    .await?
+                    .await?
+                    .unwrap()
+                    .logs
+                    .into_iter()
+                    .filter_map(|log| {
+                        if let Ok(IHyperdriveEvents::CloseShortFilter(log)) =
+                            IHyperdriveEvents::decode_log(&log.into())
+                        {
+                            Some(log)
+                        } else {
+                            None
+                        }
+                    })
+                    .collect::<Vec<_>>();
             logs[0].clone()
         };
         self.wallet.base += log.base_amount.into();
@@ -358,7 +432,12 @@ impl Agent<ChainClient, ChaCha8Rng> {
     /// LPs ///
 
     #[instrument(skip(self))]
-    pub async fn initialize(&mut self, rate: FixedPoint, contribution: FixedPoint) -> Result<()> {
+    pub async fn initialize(
+        &mut self,
+        rate: FixedPoint,
+        contribution: FixedPoint,
+        maybe_tx_options: Option<TxOptions>,
+    ) -> Result<()> {
         // Ensure that the agent has a sufficient base balance to initialize the pool.
         if self.wallet.base < contribution {
             return Err(eyre::eyre!(
@@ -371,35 +450,33 @@ impl Agent<ChainClient, ChaCha8Rng> {
 
         // Initialize the pool and record the LP shares that were received in the wallet.
         let log = {
-            let tx = self
-                .hyperdrive
-                .initialize(
-                    contribution.into(),
-                    rate.into(),
-                    Options {
-                        destination: self.address,
-                        as_base: true,
-                        extra_data: [].into(),
-                    },
-                )
-                .from(self.address);
-            let logs = tx
-                .send()
-                .await?
-                .await?
-                .unwrap()
-                .logs
-                .into_iter()
-                .filter_map(|log| {
-                    if let Ok(IHyperdriveEvents::InitializeFilter(log)) =
-                        IHyperdriveEvents::decode_log(&log.into())
-                    {
-                        Some(log)
-                    } else {
-                        None
-                    }
-                })
-                .collect::<Vec<_>>();
+            let tx = ContractCall_(self.hyperdrive.initialize(
+                contribution.into(),
+                rate.into(),
+                Options {
+                    destination: self.address,
+                    as_base: true,
+                    extra_data: [].into(),
+                },
+            ))
+            .apply(self.pre_process_options(maybe_tx_options));
+            let logs =
+                tx.0.send()
+                    .await?
+                    .await?
+                    .unwrap()
+                    .logs
+                    .into_iter()
+                    .filter_map(|log| {
+                        if let Ok(IHyperdriveEvents::InitializeFilter(log)) =
+                            IHyperdriveEvents::decode_log(&log.into())
+                        {
+                            Some(log)
+                        } else {
+                            None
+                        }
+                    })
+                    .collect::<Vec<_>>();
             logs[0].clone()
         };
         self.wallet.lp_shares = log.lp_amount.into();
@@ -408,7 +485,11 @@ impl Agent<ChainClient, ChaCha8Rng> {
     }
 
     #[instrument(skip(self))]
-    pub async fn add_liquidity(&mut self, contribution: FixedPoint) -> Result<()> {
+    pub async fn add_liquidity(
+        &mut self,
+        contribution: FixedPoint,
+        maybe_tx_options: Option<TxOptions>,
+    ) -> Result<()> {
         // Ensure that the agent has a sufficient base balance to add liquidity.
         if self.wallet.base < contribution {
             return Err(eyre::eyre!(
@@ -421,36 +502,34 @@ impl Agent<ChainClient, ChaCha8Rng> {
 
         // Add liquidity and record the LP shares that were received in the wallet.
         let log = {
-            let tx = self
-                .hyperdrive
-                .add_liquidity(
-                    contribution.into(),
-                    uint256!(0),
-                    U256::MAX,
-                    Options {
-                        destination: self.address,
-                        as_base: true,
-                        extra_data: [].into(),
-                    },
-                )
-                .from(self.address);
-            let logs = tx
-                .send()
-                .await?
-                .await?
-                .unwrap()
-                .logs
-                .into_iter()
-                .filter_map(|log| {
-                    if let Ok(IHyperdriveEvents::AddLiquidityFilter(log)) =
-                        IHyperdriveEvents::decode_log(&log.into())
-                    {
-                        Some(log)
-                    } else {
-                        None
-                    }
-                })
-                .collect::<Vec<_>>();
+            let tx = ContractCall_(self.hyperdrive.add_liquidity(
+                contribution.into(),
+                uint256!(0),
+                U256::MAX,
+                Options {
+                    destination: self.address,
+                    as_base: true,
+                    extra_data: [].into(),
+                },
+            ))
+            .apply(self.pre_process_options(maybe_tx_options));
+            let logs =
+                tx.0.send()
+                    .await?
+                    .await?
+                    .unwrap()
+                    .logs
+                    .into_iter()
+                    .filter_map(|log| {
+                        if let Ok(IHyperdriveEvents::AddLiquidityFilter(log)) =
+                            IHyperdriveEvents::decode_log(&log.into())
+                        {
+                            Some(log)
+                        } else {
+                            None
+                        }
+                    })
+                    .collect::<Vec<_>>();
             logs[0].clone()
         };
         self.wallet.lp_shares += log.lp_amount.into();
@@ -459,7 +538,11 @@ impl Agent<ChainClient, ChaCha8Rng> {
     }
 
     #[instrument(skip(self))]
-    pub async fn remove_liquidity(&mut self, shares: FixedPoint) -> Result<()> {
+    pub async fn remove_liquidity(
+        &mut self,
+        shares: FixedPoint,
+        maybe_tx_options: Option<TxOptions>,
+    ) -> Result<()> {
         // Ensure that the agent has a sufficient balance of LP shares.
         if self.wallet.lp_shares < shares {
             return Err(eyre::eyre!(
@@ -475,35 +558,33 @@ impl Agent<ChainClient, ChaCha8Rng> {
         // Remove liquidity and record the base and withdrawal shares that were
         // received.
         let log = {
-            let tx = self
-                .hyperdrive
-                .remove_liquidity(
-                    shares.into(),
-                    uint256!(0),
-                    Options {
-                        destination: self.address,
-                        as_base: true,
-                        extra_data: [].into(),
-                    },
-                )
-                .from(self.address);
-            let logs = tx
-                .send()
-                .await?
-                .await?
-                .unwrap()
-                .logs
-                .into_iter()
-                .filter_map(|log| {
-                    if let Ok(IHyperdriveEvents::RemoveLiquidityFilter(log)) =
-                        IHyperdriveEvents::decode_log(&log.into())
-                    {
-                        Some(log)
-                    } else {
-                        None
-                    }
-                })
-                .collect::<Vec<_>>();
+            let tx = ContractCall_(self.hyperdrive.remove_liquidity(
+                shares.into(),
+                uint256!(0),
+                Options {
+                    destination: self.address,
+                    as_base: true,
+                    extra_data: [].into(),
+                },
+            ))
+            .apply(self.pre_process_options(maybe_tx_options));
+            let logs =
+                tx.0.send()
+                    .await?
+                    .await?
+                    .unwrap()
+                    .logs
+                    .into_iter()
+                    .filter_map(|log| {
+                        if let Ok(IHyperdriveEvents::RemoveLiquidityFilter(log)) =
+                            IHyperdriveEvents::decode_log(&log.into())
+                        {
+                            Some(log)
+                        } else {
+                            None
+                        }
+                    })
+                    .collect::<Vec<_>>();
             logs[0].clone()
         };
         self.wallet.base += log.base_amount.into();
@@ -513,7 +594,11 @@ impl Agent<ChainClient, ChaCha8Rng> {
     }
 
     #[instrument(skip(self))]
-    pub async fn redeem_withdrawal_shares(&mut self, shares: FixedPoint) -> Result<()> {
+    pub async fn redeem_withdrawal_shares(
+        &mut self,
+        shares: FixedPoint,
+        maybe_tx_options: Option<TxOptions>,
+    ) -> Result<()> {
         // Ensure that the agent has a sufficient balance of withdrawal shares.
         if self.wallet.withdrawal_shares < shares {
             return Err(eyre::eyre!(
@@ -526,35 +611,33 @@ impl Agent<ChainClient, ChaCha8Rng> {
         // Redeem the withdrawal shares and record the base and withdrawal
         // shares that were redeemed.
         let log = {
-            let tx = self
-                .hyperdrive
-                .redeem_withdrawal_shares(
-                    shares.into(),
-                    uint256!(0),
-                    Options {
-                        destination: self.address,
-                        as_base: true,
-                        extra_data: [].into(),
-                    },
-                )
-                .from(self.address);
-            let logs = tx
-                .send()
-                .await?
-                .await?
-                .unwrap()
-                .logs
-                .into_iter()
-                .filter_map(|log| {
-                    if let Ok(IHyperdriveEvents::RedeemWithdrawalSharesFilter(log)) =
-                        IHyperdriveEvents::decode_log(&log.into())
-                    {
-                        Some(log)
-                    } else {
-                        None
-                    }
-                })
-                .collect::<Vec<_>>();
+            let tx = ContractCall_(self.hyperdrive.redeem_withdrawal_shares(
+                shares.into(),
+                uint256!(0),
+                Options {
+                    destination: self.address,
+                    as_base: true,
+                    extra_data: [].into(),
+                },
+            ))
+            .apply(self.pre_process_options(maybe_tx_options));
+            let logs =
+                tx.0.send()
+                    .await?
+                    .await?
+                    .unwrap()
+                    .logs
+                    .into_iter()
+                    .filter_map(|log| {
+                        if let Ok(IHyperdriveEvents::RedeemWithdrawalSharesFilter(log)) =
+                            IHyperdriveEvents::decode_log(&log.into())
+                        {
+                            Some(log)
+                        } else {
+                            None
+                        }
+                    })
+                    .collect::<Vec<_>>();
             logs.get(0).cloned()
         };
         if let Some(log) = log {
@@ -568,8 +651,14 @@ impl Agent<ChainClient, ChaCha8Rng> {
     /// Checkpoint ///
 
     #[instrument(skip(self))]
-    pub async fn checkpoint(&self, checkpoint: U256) -> Result<()> {
-        self.hyperdrive.checkpoint(checkpoint).send().await?;
+    pub async fn checkpoint(
+        &self,
+        checkpoint: U256,
+        maybe_tx_options: Option<TxOptions>,
+    ) -> Result<()> {
+        let tx = ContractCall_(self.hyperdrive.checkpoint(checkpoint))
+            .apply(self.pre_process_options(maybe_tx_options));
+        tx.0.send().await?;
         Ok(())
     }
 
@@ -654,18 +743,19 @@ impl Agent<ChainClient, ChaCha8Rng> {
     async fn execute_action(&mut self, action: Action) -> Result<()> {
         match action {
             Action::Noop => (),
-            Action::AddLiquidity(contribution) => self.add_liquidity(contribution).await?,
-            Action::RemoveLiquidity(lp_shares) => self.remove_liquidity(lp_shares).await?,
+            Action::AddLiquidity(contribution) => self.add_liquidity(contribution, None).await?,
+            Action::RemoveLiquidity(lp_shares) => self.remove_liquidity(lp_shares, None).await?,
             Action::RedeemWithdrawalShares(withdrawal_shares) => {
-                self.redeem_withdrawal_shares(withdrawal_shares).await?
+                self.redeem_withdrawal_shares(withdrawal_shares, None)
+                    .await?
             }
-            Action::OpenLong(base_paid) => self.open_long(base_paid, None).await?,
+            Action::OpenLong(base_paid) => self.open_long(base_paid, None, None).await?,
             Action::CloseLong(maturity_time, bond_amount) => {
-                self.close_long(maturity_time, bond_amount).await?
+                self.close_long(maturity_time, bond_amount, None).await?
             }
-            Action::OpenShort(bond_amount) => self.open_short(bond_amount, None).await?,
+            Action::OpenShort(bond_amount) => self.open_short(bond_amount, None, None).await?,
             Action::CloseShort(maturity_time, bond_amount) => {
-                self.close_short(maturity_time, bond_amount).await?
+                self.close_short(maturity_time, bond_amount, None).await?
             }
         }
 
@@ -710,10 +800,10 @@ impl Agent<ChainClient, ChaCha8Rng> {
         // important because client's check the current block time by looking
         // at the latest block's timestamp.
         self.provider
-            .request::<[U256; 1], u64>("evm_increaseTime", [duration.into()])
+            .request::<[u128; 1], i128>("anvil_increaseTime", [duration.into()])
             .await?;
         self.provider
-            .request::<_, U256>("evm_mine", None::<()>)
+            .request::<[u128; 1], ()>("anvil_mine", [1])
             .await?;
 
         Ok(())
@@ -726,6 +816,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
         &self,
         rate: FixedPoint,
         mut duration: FixedPoint,
+        maybe_tx_options: Option<TxOptions>,
     ) -> Result<()> {
         // Set the new variable rate.
         self.pool.set_rate(rate.into()).send().await?;
@@ -742,7 +833,8 @@ impl Agent<ChainClient, ChaCha8Rng> {
             self.provider
                 .request::<_, U256>("evm_mine", None::<()>)
                 .await?;
-            self.checkpoint(self.latest_checkpoint().await?).await?;
+            self.checkpoint(self.latest_checkpoint().await?, maybe_tx_options.clone())
+                .await?;
             duration -= checkpoint_duration;
         }
 
@@ -754,7 +846,8 @@ impl Agent<ChainClient, ChaCha8Rng> {
         self.provider
             .request::<_, U256>("evm_mine", None::<()>)
             .await?;
-        self.checkpoint(self.latest_checkpoint().await?).await?;
+        self.checkpoint(self.latest_checkpoint().await?, maybe_tx_options)
+            .await?;
 
         Ok(())
     }
@@ -917,4 +1010,17 @@ impl Agent<ChainClient, ChaCha8Rng> {
 
     // TODO: We'll need to implement helpers that give us the maximum trade
     // for an older checkpoint. We'll need to use these when closig trades.
+
+    /// Helpers ///
+
+    fn pre_process_options(&self, maybe_tx_options: Option<TxOptions>) -> TxOptions {
+        maybe_tx_options
+            .map(|mut tx_options| {
+                if tx_options.from.is_none() {
+                    tx_options.from = Some(self.address);
+                }
+                tx_options
+            })
+            .unwrap_or_default()
+    }
 }

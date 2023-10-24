@@ -3,7 +3,7 @@ mod test_chain;
 
 use std::{sync::Arc, time::Duration};
 
-pub use dev_chain::DevChain;
+pub use dev_chain::{DevChain, MNEMONIC};
 use ethers::{
     middleware::SignerMiddleware,
     providers::{

@@ -26,7 +26,7 @@ async fn test_simple() -> Result<()> {
 
     // Initialize the pool.
     let rate = fixed!(0.05e18);
-    alice.initialize(rate, contribution).await?;
+    alice.initialize(rate, contribution, None).await?;
 
     // Bob performs 20 random actions.
     for _ in 0..20 {
