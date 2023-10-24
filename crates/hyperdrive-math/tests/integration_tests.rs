@@ -233,6 +233,8 @@ pub async fn test_integration_get_max_long() -> Result<()> {
     Ok(())
 }
 
+// TODO: Ignoring until we can speed up this test by removing prelude.
+#[ignore]
 #[tokio::test]
 pub async fn test_integration_calculate_bonds_given_shares_and_rate() -> Result<()> {
     // Set up a random number generator. We use ChaCha8Rng with a randomly
