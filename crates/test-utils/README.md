@@ -45,11 +45,11 @@ The second mode is more interesting and creates a reproduction environment from
 a specified crash report. Crash reports contain an anvil state dump, so the
 chain's state will be identical to the state at the time of the crash. The block
 timestamp is also replicated. To make it easy to debug, we etch the most
-recently deployed compiled smart contracts onto the Hyperdrive instance and
-dependency contracts implicated in the crash. This makes it possible to add
-arbitrary log statements to get a better understanding of the crash. Check
-out [this example](examples/test_chain_load_crash.rs) for some sample code. You
-can run this example with the command:
+recently compiled smart contracts onto the Hyperdrive instance and dependency
+contracts implicated in the crash. This makes it possible to add arbitrary log
+statements to get a better understanding of the crash. Check out
+[this example](examples/test_chain_load_crash.rs) for some sample code. You can
+run this example with the command:
 
 ```bash
 cargo run --example test_chain_load_crash

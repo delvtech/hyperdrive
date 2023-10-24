@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { ONE } from "../src/libraries/FixedPointMath.sol";
-
 /// @author DELV
 /// @title EtchingVault
 /// @dev This is a helper contract that is etched onto a `MockERC4626` vault
