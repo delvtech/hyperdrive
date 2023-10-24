@@ -30,7 +30,7 @@ async fn preamble(
         .await?;
 
     // Alice initializes the pool.
-    alice.initialize(fixed_rate, alice.base()).await?;
+    alice.initialize(fixed_rate, alice.base(), None).await?;
 
     // Advance the time for over a term and make trades in some of the checkpoints.
     let mut time_remaining = alice.get_config().position_duration;
@@ -38,13 +38,13 @@ async fn preamble(
         // Bob opens a long.
         let discount = rng.gen_range(fixed!(0.1e18)..=fixed!(0.5e18));
         let long_amount = rng.gen_range(fixed!(1e12)..=bob.get_max_long(None).await? * discount);
-        bob.open_long(long_amount, None).await?;
+        bob.open_long(long_amount, None, None).await?;
 
         // Celine opens a short.
         let discount = rng.gen_range(fixed!(0.1e18)..=fixed!(0.5e18));
         let short_amount =
             rng.gen_range(fixed!(1e12)..=celine.get_max_short(None).await? * discount);
-        celine.open_short(short_amount, None).await?;
+        celine.open_short(short_amount, None, None).await?;
 
         // Advance the time and mint all of the intermediate checkpoints.
         let multiplier = rng.gen_range(fixed!(5e18)..=fixed!(50e18));
@@ -61,7 +61,9 @@ async fn preamble(
 
     // Mint a checkpoint to close any matured positions from the first checkpoint
     // of trading.
-    alice.checkpoint(alice.latest_checkpoint().await?).await?;
+    alice
+        .checkpoint(alice.latest_checkpoint().await?, None)
+        .await?;
 
     Ok(())
 }
@@ -125,7 +127,7 @@ pub async fn test_integration_get_max_short() -> Result<()> {
         let budget = bob.base();
         let slippage_tolerance = fixed!(0.001e18);
         let max_short = bob.get_max_short(Some(slippage_tolerance)).await?;
-        bob.open_short(max_short, None).await?;
+        bob.open_short(max_short, None, None).await?;
 
         if max_short != global_max_short {
             // We currently allow up to a tolerance of 3%, which means
@@ -199,7 +201,7 @@ pub async fn test_integration_get_max_long() -> Result<()> {
         // we expect Bob's max long to bring the spot price close to 1, exhaust the
         // pool's solvency, or exhaust Bob's budget.
         let max_long = bob.get_max_long(None).await?;
-        bob.open_long(max_long, None).await?;
+        bob.open_long(max_long, None, None).await?;
         let is_max_price = {
             let state = bob.get_state().await?;
             fixed!(1e18) - state.get_spot_price() < fixed!(1e15)

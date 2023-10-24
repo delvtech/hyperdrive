@@ -269,7 +269,7 @@ mod tests {
         "hyperdrive_address": "0xd8058efe0198ae9dD7D563e1b4938Dcbc86A1F81",
         "base_token_address": "0x5FbDB2315678afecb367f032d93F642f64180aa3"
     },
-    "raw_trade": {
+    "raw_trade_object": {
         "market_type": "HYPERDRIVE",
         "action_type": "REDEEM_WITHDRAW_SHARE",
         "trade_amount": 1000000000000000000,

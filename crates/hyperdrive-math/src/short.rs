@@ -686,10 +686,12 @@ mod tests {
             bob.fund(budget).await?;
 
             // Alice initializes the pool.
-            alice.initialize(fixed_rate, contribution).await?;
+            alice.initialize(fixed_rate, contribution, None).await?;
 
             // Some of the checkpoint passes and variable interest accrues.
-            alice.checkpoint(alice.latest_checkpoint().await?).await?;
+            alice
+                .checkpoint(alice.latest_checkpoint().await?, None)
+                .await?;
             let rate = rng.gen_range(fixed!(0)..=fixed!(0.5e18));
             alice
                 .advance_time(
@@ -715,7 +717,7 @@ mod tests {
             // calculation is performed and the transaction is submitted.
             let slippage_tolerance = fixed!(0.0001e18);
             let max_short = bob.get_max_short(Some(slippage_tolerance)).await?;
-            bob.open_short(max_short, None).await?;
+            bob.open_short(max_short, None, None).await?;
 
             // The max short should either be equal to the global max short in
             // the case that the trader isn't budget constrained or the budget

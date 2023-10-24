@@ -27,7 +27,7 @@ use hyperdrive_wrappers::wrappers::{
 
 use super::{dev_chain::MNEMONIC, Chain, ChainClient};
 use crate::{
-    agent::Agent,
+    agent::{Agent, TxOptions},
     constants::MAYBE_ETHEREUM_URL,
     crash_reports::{ActionType, CrashReport},
 };
@@ -161,6 +161,7 @@ impl TestChain {
         .await?;
 
         // Attempt to reproduce the crash by running the trade that failed.
+        let tx_options = Some(TxOptions::new().from(crash_report.agent_info.address));
         match crash_report.trade.action_type {
             // Long
             ActionType::OpenLong => {
@@ -168,6 +169,7 @@ impl TestChain {
                     .open_long(
                         crash_report.trade.trade_amount.into(),
                         crash_report.trade.slippage_tolerance.map(|u| u.into()),
+                        tx_options,
                     )
                     .await?
             }
@@ -176,6 +178,7 @@ impl TestChain {
                     .close_long(
                         U256::from(crash_report.trade.maturity_time).into(),
                         crash_report.trade.trade_amount.into(),
+                        tx_options,
                     )
                     .await?
             }
@@ -185,6 +188,7 @@ impl TestChain {
                     .open_short(
                         crash_report.trade.trade_amount.into(),
                         crash_report.trade.slippage_tolerance.map(|u| u.into()),
+                        tx_options,
                     )
                     .await?
             }
@@ -193,23 +197,24 @@ impl TestChain {
                     .close_short(
                         U256::from(crash_report.trade.maturity_time).into(),
                         crash_report.trade.trade_amount.into(),
+                        tx_options,
                     )
                     .await?
             }
             // LP
             ActionType::AddLiquidity => {
                 agent
-                    .add_liquidity(crash_report.trade.trade_amount.into())
+                    .add_liquidity(crash_report.trade.trade_amount.into(), tx_options)
                     .await?
             }
             ActionType::RemoveLiquidity => {
                 agent
-                    .remove_liquidity(crash_report.trade.trade_amount.into())
+                    .remove_liquidity(crash_report.trade.trade_amount.into(), tx_options)
                     .await?
             }
             ActionType::RedeemWithdrawalShares => {
                 agent
-                    .redeem_withdrawal_shares(crash_report.trade.trade_amount.into())
+                    .redeem_withdrawal_shares(crash_report.trade.trade_amount.into(), tx_options)
                     .await?
             }
             // Failure
