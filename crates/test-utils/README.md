@@ -55,6 +55,16 @@ run this example with the command:
 cargo run --example test_chain_load_crash
 ```
 
+If you want to connect to a local anvil node to collect logs, you'll want to
+spawn the node with options like:
+
+```
+anvil --code-size-limit 100000 --timestamp 0
+```
+
+to ensure that you don't have issues with the crash timestamp occurring before
+the anvil genesis block.
+
 ## `Agent`
 
 `Agent` abstracts away the details of trading on Hyperdrive and provides several
