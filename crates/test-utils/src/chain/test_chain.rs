@@ -83,9 +83,6 @@ impl TestChain {
         })
     }
 
-    // TODO: It would be nice to have a function that reproduces the crash using
-    // the trade struct.
-    //
     /// Attempts to reproduce a crash from a crash report.
     ///
     /// This function sets up a reproduction environment using the information
@@ -139,7 +136,7 @@ impl TestChain {
         })
     }
 
-    /// Attempts to reproduce the crash.
+    /// Attempts to reproduce the crash that the TestChain was loaded with.
     pub async fn reproduce_crash(&self) -> Result<()> {
         let crash_report = if let Some(crash_report) = &self.maybe_crash {
             crash_report
@@ -225,6 +222,7 @@ impl TestChain {
         Ok(())
     }
 
+    /// Deploys a fresh instance of Hyperdrive.
     async fn deploy(provider: Provider<Http>, signer: LocalWallet) -> Result<Addresses> {
         // Deploy the base token and vault.
         let client = Arc::new(SignerMiddleware::new(
@@ -307,7 +305,7 @@ impl TestChain {
         })
     }
 
-    // TODO: Put the TODOs into an issue for the v0.0.17 release.
+    /// Etches the latest compiled bytecode onto a target instance of Hyperdrive.
     async fn etch(
         provider: &Provider<Http>,
         signer: LocalWallet,
@@ -426,6 +424,7 @@ impl TestChain {
         Ok(())
     }
 
+    /// Generates and funds a set of random accounts with ether.
     async fn fund_accounts(
         provider: &Provider<Http>,
         num_accounts: usize,
@@ -452,6 +451,9 @@ impl TestChain {
         Ok(accounts)
     }
 
+    /// Connect to the ethereum node specified by the `HYPERDRIVE_ETHEREUM_URL`
+    /// environment variable. If no url is provided, spawn an in-process anvil
+    /// node.
     async fn connect() -> Result<(Provider<Http>, Option<Arc<AnvilInstance>>)> {
         // If an ethereum url is provided, use it. Otherwise, we spawn an
         // in-process anvil node.
