@@ -24,3 +24,15 @@ fixed-point-macros = { path = "../fixed-point-macros" }
 hyperdrive-addresses = { path = "../hyperdrive-addresses" }
 hyperdrive-math = { path = "../hyperdrive-math" }
 hyperdrive-wrappers = { path = "../hyperdrive-wrappers" }
+
+[[example]]
+name = "dev_chain"
+
+[[example]]
+name = "max_short"
+
+[[example]]
+name = "test_chain_new"
+
+[[example]]
+name = "test_chain_load_crash"

@@ -17,6 +17,7 @@ const TARGETS: &[&str] = &[
     "ERC4626HyperdriveFactory",
     // Test Contracts
     "ERC20Mintable",
+    "EtchingVault",
     "MockERC4626",
     "MockFixedPointMath",
     "MockHyperdriveMath",

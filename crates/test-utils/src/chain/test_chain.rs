@@ -17,6 +17,7 @@ use hyperdrive_wrappers::wrappers::{
     erc20_mintable::ERC20Mintable,
     erc4626_data_provider::ERC4626DataProvider,
     erc4626_hyperdrive::ERC4626Hyperdrive,
+    etching_vault::EtchingVault,
     i_hyperdrive::{Fees, PoolConfig},
     ierc4626_hyperdrive::IERC4626Hyperdrive,
     mock_erc4626::MockERC4626,
@@ -378,6 +379,22 @@ impl TestChain {
             .send()
             .await?;
             pairs.push((data_provider_address, data_provider_template.address()));
+
+            // Etch the "etching vault" onto the current vault contract. The
+            // etching vault implements `convertToAssets` to return the immutable
+            // that was passed on deployment. This is necessary because the
+            // ERC4626Hyperdrive instance verifies that the initial share price
+            // is equal to the `_pricePerShare`.
+            let etching_vault_template =
+                EtchingVault::deploy(client.clone(), (addresses.base, config.initial_share_price))?
+                    .send()
+                    .await?;
+            let code = provider
+                .get_code(etching_vault_template.address(), None)
+                .await?;
+            provider
+                .request::<(Address, Bytes), ()>("anvil_setCode", (vault_address, code))
+                .await?;
 
             // Deploy the hyperdrive template.
             let hyperdrive_template = ERC4626Hyperdrive::deploy(
