@@ -62,4 +62,110 @@ library AssetId {
             ) // 248 bit-mask
         }
     }
+
+    /// @dev Converts an asset ID to a token name.
+    /// @param _id The asset ID.
+    /// @return _name The token name.
+    function assetIdToName(
+        uint256 _id
+    ) internal pure returns (string memory _name) {
+        (AssetIdPrefix prefix, uint256 timestamp) = decodeAssetId(_id);
+        string memory _timestamp = toString(int256(timestamp), 0);
+        if (prefix == AssetIdPrefix.LP) {
+            _name = "Hyperdrive LP";
+        } else if (prefix == AssetIdPrefix.Long) {
+            _name = string(
+                abi.encodePacked(string.concat("Hyperdrive Long: ", _timestamp))
+            );
+        } else if (prefix == AssetIdPrefix.Short) {
+            _name = string(abi.encodePacked("Hyperdrive Short: ", _timestamp));
+        } else if (prefix == AssetIdPrefix.WithdrawalShare) {
+            _name = string(
+                abi.encodePacked("Hyperdrive Withdrawal Share: ", _timestamp)
+            );
+        } else {
+            revert IHyperdrive.InvalidAssetId();
+        }
+    }
+
+    /// @dev Converts an asset ID to a token symbol.
+    /// @param _id The asset ID.
+    /// @return _name The token symbol.
+    function assetIdToSymbol(
+        uint256 _id
+    ) internal pure returns (string memory _name) {
+        (AssetIdPrefix prefix, uint256 timestamp) = decodeAssetId(_id);
+        string memory _timestamp = toString(int256(timestamp), 0);
+        if (prefix == AssetIdPrefix.LP) {
+            _name = "HYPERDRIVE-LP";
+        } else if (prefix == AssetIdPrefix.Long) {
+            _name = string(abi.encodePacked("HYPERDRIVE-LONG:", _timestamp));
+        } else if (prefix == AssetIdPrefix.Short) {
+            _name = string(abi.encodePacked("HYPERDRIVE-SHORT:", _timestamp));
+        } else if (prefix == AssetIdPrefix.WithdrawalShare) {
+            _name = string(abi.encodePacked("HYPERDRIVE-WS:", _timestamp));
+        } else {
+            revert IHyperdrive.InvalidAssetId();
+        }
+    }
+
+    /// @dev Converts a signed integer to a string with a specified amount of
+    ///      decimals. In the event that the integer doesn't have any digits to
+    ///      the left of the decimal place, zeros will be filled in.
+    /// @param num The integer to be converted.
+    /// @param decimals The number of decimal places to add. If zero, the the
+    ///        decimal point is excluded.
+    /// @return result The stringified integer.
+    function toString(
+        int256 num,
+        uint256 decimals
+    ) internal pure returns (string memory result) {
+        // We overallocate memory for the string. The maximum number of decimals
+        // that a int256 can hold is log_10(2 ^ 255) which is approximately
+        // 76.76. Thus, the string has a maximum length of 77 without the
+        // decimal point and minus sign.
+        uint256 maxStringLength = 79;
+        bytes memory rawResult = new bytes(maxStringLength);
+
+        // Negative integers don't play nicely with the EVM's modular arithmetic
+        // as the result of the modulus is either 0 or a negative number. With
+        // this in mind, we convert to a positive number to make string
+        // conversion easier.
+        bool isNegative = num < 0;
+        num = num < 0 ? -num : num;
+
+        // Loop through the integer and add each digit to the raw result,
+        // starting at the end of the string and working towards the beginning.
+        rawResult[maxStringLength - 1] = bytes1(
+            uint8(uint256((num % 10) + 48))
+        );
+        num /= 10;
+        uint256 digits = 1;
+        while (num != 0 || digits <= decimals + 1) {
+            if (decimals > 0 && digits == decimals) {
+                rawResult[maxStringLength - digits - 1] = ".";
+            } else {
+                rawResult[maxStringLength - digits - 1] = bytes1(
+                    uint8(uint256((num % 10) + 48))
+                );
+                num /= 10;
+            }
+            digits++;
+        }
+
+        // If necessary, add the minus sign to the beginning of the stringified
+        // integer.
+        if (isNegative) {
+            rawResult[maxStringLength - digits - 1] = "-";
+            digits++;
+        }
+
+        // Point the string result to the beginning of the stringified integer
+        // and update the length.
+        assembly {
+            result := add(rawResult, sub(sub(maxStringLength, digits), 1))
+            mstore(result, add(digits, 1))
+        }
+        return result;
+    }
 }

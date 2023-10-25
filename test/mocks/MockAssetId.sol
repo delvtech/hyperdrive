@@ -19,4 +19,16 @@ contract MockAssetId {
             .decodeAssetId(_id);
         return (prefix, timestamp);
     }
+
+    function assetIdToName(uint256 _id) external pure returns (string memory) {
+        string memory _name = AssetId.assetIdToName(_id);
+        return _name;
+    }
+
+    function assetIdToSymbol(
+        uint256 _id
+    ) external pure returns (string memory) {
+        string memory _symbol = AssetId.assetIdToSymbol(_id);
+        return _symbol;
+    }
 }
