@@ -83,7 +83,7 @@ library YieldSpaceMath {
     //
     /// @dev Calculates the amount of shares a user must provide the pool to
     ///      receive a specified amount of bonds. We overestimate the amount of
-    ///      shares are needed to buy the bonds.
+    ///      shares in.
     /// @param z Amount of share reserves in the pool
     /// @param y Amount of bond reserves in the pool
     /// @param dy Amount of bonds user wants to provide
@@ -129,7 +129,7 @@ library YieldSpaceMath {
     //
     /// @dev Calculates the amount of shares a user must provide the pool to
     ///      receive a specified amount of bonds. We underestimate the amount of
-    ///      shares are needed to buy the bonds.
+    ///      shares in.
     /// @param z Amount of share reserves in the pool
     /// @param y Amount of bond reserves in the pool
     /// @param dy Amount of bonds user wants to provide
@@ -174,8 +174,7 @@ library YieldSpaceMath {
     /// @dev Calculates the amount of shares a user will receive from the pool
     ///      by providing a specified amount of bonds. This function reverts if
     ///      an integer overflow or underflow occurs. We underestimate the
-    ///      amount of shares out which prevents sandwiches in the case of
-    ///      closing a long.
+    ///      amount of shares out.
     /// @param z Amount of share reserves in the pool
     /// @param y Amount of bond reserves in the pool
     /// @param dy Amount of bonds user wants to provide
@@ -207,9 +206,8 @@ library YieldSpaceMath {
 
     /// @dev Calculates the amount of shares a user will receive from the pool
     ///      by providing a specified amount of bonds. This function returns a
-    ///      success flag instead of reverting. We overestimate the amount of
-    ///      shares out which prevents sandwiches in the case of opening a short
-    ///      because it implies a higher fixed rate.
+    ///      success flag instead of reverting. We underestimate the amount of
+    ///      shares out.
     /// @param z Amount of share reserves in the pool
     /// @param y Amount of bond reserves in the pool
     /// @param dy Amount of bonds user wants to provide
