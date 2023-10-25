@@ -1,12 +1,16 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { MultiTokenDataProvider } from "contracts/src/token/MultiTokenDataProvider.sol";
+import { MockAssetId } from "../mocks/MockAssetId.sol";
 import { MockMultiToken, IMockMultiToken } from "contracts/test/MockMultiToken.sol";
 import { BaseTest } from "test/utils/BaseTest.sol";
+import { Lib } from "test/utils/Lib.sol";
 
 contract MultiTokenTest is BaseTest {
+    using Lib for *;
     IMockMultiToken multiToken;
 
     bytes32 public constant PERMIT_TYPEHASH =
@@ -44,11 +48,32 @@ contract MultiTokenTest is BaseTest {
     }
 
     function test__metadata() public {
+        // Create a real tokenId.
+        MockAssetId assetId = new MockAssetId();
+        uint256 maturityTime = block.timestamp + 365 days;
+        uint256 id = assetId.encodeAssetId(
+            AssetId.AssetIdPrefix.Long,
+            maturityTime
+        );
+
+        // Generate expected token name and symbol.
+        (, uint256 timestamp) = assetId.decodeAssetId(id);
+        string memory _timestamp = int256(timestamp).toString(0);
+        string memory expectedName = string.concat(
+            "Hyperdrive Long: ",
+            _timestamp
+        );
+        string memory expectedSymbol = string.concat(
+            "HYPERDRIVE-LONG:",
+            _timestamp
+        );
         vm.startPrank(alice);
-        multiToken.__setNameAndSymbol(5, "Token", "TKN");
+        multiToken.__setNameAndSymbol(id, expectedName, expectedSymbol);
         vm.stopPrank();
-        assertEq(multiToken.name(5), "Token");
-        assertEq(multiToken.symbol(5), "TKN");
+
+        // Test that the name and symbol are correct.
+        assertEq(multiToken.name(id), expectedName);
+        assertEq(multiToken.symbol(id), expectedSymbol);
     }
 
     function testPermitForAll() public {

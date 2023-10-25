@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import { AssetId } from "../libraries/AssetId.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IMultiTokenRead } from "../interfaces/IMultiTokenRead.sol";
 import { MultiTokenStorage } from "./MultiTokenStorage.sol";
@@ -82,8 +83,8 @@ contract MultiTokenDataProvider is MultiTokenStorage, IMultiTokenRead {
     /// @return The name.
     function name(
         uint256 tokenId
-    ) external view override returns (string memory) {
-        _revert(abi.encode(_name[tokenId]));
+    ) external pure override returns (string memory) {
+        _revert(abi.encode(AssetId.assetIdToName(tokenId)));
     }
 
     /// @notice Gets the symbol of a sub-token.
@@ -91,8 +92,8 @@ contract MultiTokenDataProvider is MultiTokenStorage, IMultiTokenRead {
     /// @return The symbol.
     function symbol(
         uint256 tokenId
-    ) external view override returns (string memory) {
-        _revert(abi.encode(_symbol[tokenId]));
+    ) external pure override returns (string memory) {
+        _revert(abi.encode(AssetId.assetIdToSymbol(tokenId)));
     }
 
     /// @notice Gets the permitForAll signature nonce for an account.

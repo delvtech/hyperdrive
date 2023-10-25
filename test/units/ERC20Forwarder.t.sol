@@ -1,14 +1,18 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 
+import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { IMultiToken } from "contracts/src/interfaces/IMultiToken.sol";
 import { ERC20Forwarder } from "contracts/src/token/ERC20Forwarder.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
+import { MockAssetId } from "../mocks/MockAssetId.sol";
 import { MultiTokenDataProvider } from "contracts/src/token/MultiTokenDataProvider.sol";
 import { MockMultiToken, IMockMultiToken } from "contracts/test/MockMultiToken.sol";
 import { BaseTest } from "test/utils/BaseTest.sol";
+import { Lib } from "test/utils/Lib.sol";
 
 contract ERC20ForwarderFactoryTest is BaseTest {
+    using Lib for *;
     IMockMultiToken multiToken;
     ERC20Forwarder forwarder;
 
@@ -76,15 +80,33 @@ contract ERC20ForwarderFactoryTest is BaseTest {
 
     // Test Forwarder contract
     function testForwarderMetadata() public {
-        forwarder = forwarderFactory.create(multiToken, 5);
+        // Create a real tokenId.
+        MockAssetId assetId = new MockAssetId();
+        uint256 maturityTime = block.timestamp + 365 days;
+        uint256 id = assetId.encodeAssetId(
+            AssetId.AssetIdPrefix.Long,
+            maturityTime
+        );
+
+        // Create a forwarder.
+        forwarder = forwarderFactory.create(multiToken, id);
         assertEq(forwarder.decimals(), 18);
 
-        vm.startPrank(alice);
-        multiToken.__setNameAndSymbol(5, "Token", "TKN");
-        vm.stopPrank();
+        // Generate expected token name and symbol.
+        (, uint256 timestamp) = assetId.decodeAssetId(id);
+        string memory _timestamp = int256(timestamp).toString(0);
+        string memory expectedName = string.concat(
+            "Hyperdrive Long: ",
+            _timestamp
+        );
+        string memory expectedSymbol = string.concat(
+            "HYPERDRIVE-LONG:",
+            _timestamp
+        );
 
-        assertEq(forwarder.name(), "Token");
-        assertEq(forwarder.symbol(), "TKN");
+        // Test that the name and symbol are correct.
+        assertEq(forwarder.name(), expectedName);
+        assertEq(forwarder.symbol(), expectedSymbol);
     }
 
     function testForwarderERC20() public {
