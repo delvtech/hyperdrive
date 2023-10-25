@@ -48,14 +48,12 @@ library YieldSpaceMath {
         uint256 c,
         uint256 mu
     ) internal pure returns (uint256) {
-        // c/µ
-        uint256 cDivMu = c.divDown(mu);
         // (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
-        uint256 k = modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
+        uint256 k = modifiedYieldSpaceConstant(c.divDown(mu), mu, z, t, y);
         // (µ * (z + dz))^(1 - t)
-        z = mu.mulDown(z + dz).pow(t);
+        z = mu.mulUp(z + dz).pow(t);
         // (c / µ) * (µ * (z + dz))^(1 - t)
-        z = cDivMu.mulDown(z);
+        z = c.mulDivUp(z, mu);
         // ((c / µ) * (µ * z)^(1 - t) + y^(1 - t) - (c / µ) * (µ * (z + dz))^(1 - t))^(1 / (1 - t)))
         uint256 _y = (k - z).pow(FixedPointMath.ONE_18.divUp(t));
         // Δy = y - ((c / µ) * (µ * z)^(1 - t) + y^(1 - t) - (c / µ) * (µ * (z + dz))^(1 - t))^(1 / (1 - t)))
@@ -79,14 +77,12 @@ library YieldSpaceMath {
         uint256 c,
         uint256 mu
     ) internal pure returns (uint256) {
-        // c/µ
-        uint256 cDivMu = c.divDown(mu);
         // (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
-        uint256 k = modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
+        uint256 k = modifiedYieldSpaceConstant(c.divDown(mu), mu, z, t, y);
         // (y - dy)^(1 - t)
         y = (y - dy).pow(t);
         // (((µ * z)^(1 - t) + y^(1 - t) - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))
-        uint256 _z = (k - y).divDown(cDivMu).pow(
+        uint256 _z = (k - y).mulDivDown(mu, c).pow(
             FixedPointMath.ONE_18.divUp(t)
         );
         // (((µ * z)^(1 - t) + y^(1 - t) - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
@@ -146,21 +142,19 @@ library YieldSpaceMath {
         uint256 c,
         uint256 mu
     ) internal pure returns (uint256 result, bool success) {
-        // c/µ
-        uint256 cDivMu = c.divDown(mu);
         // (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
-        uint256 k = modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
+        uint256 k = modifiedYieldSpaceConstant(c.divUp(mu), mu, z, t, y);
         // (y + dy)^(1 - t)
         y = (y + dy).pow(t);
         if (k < y) {
             return (0, false);
         }
         // (((µ * z)^(1 - t) + y^(1 - t) - (y + dy)^(1 - t)) / (c / µ))^(1 / (1 - t)))
-        uint256 _z = (k - y).divDown(cDivMu).pow(
+        uint256 _z = (k - y).mulDivUp(mu, c).pow(
             FixedPointMath.ONE_18.divUp(t)
         );
         // (((µ * z)^(1 - t) + y^(1 - t) - (y + dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
-        _z = _z.divDown(mu);
+        _z = _z.divUp(mu);
         // Δz = z - (((c / µ) * (µ * z)^(1 - t) + y^(1 - t) - (y + dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
         if (z > _z) {
             result = z - _z;
