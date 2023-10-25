@@ -83,8 +83,6 @@ library AssetId {
             _name = string(
                 abi.encodePacked("Hyperdrive Withdrawal Share: ", _timestamp)
             );
-        } else {
-            revert IHyperdrive.InvalidAssetId();
         }
     }
 
@@ -104,8 +102,6 @@ library AssetId {
             _name = string(abi.encodePacked("HYPERDRIVE-SHORT:", _timestamp));
         } else if (prefix == AssetIdPrefix.WithdrawalShare) {
             _name = string(abi.encodePacked("HYPERDRIVE-WS:", _timestamp));
-        } else {
-            revert IHyperdrive.InvalidAssetId();
         }
     }
 

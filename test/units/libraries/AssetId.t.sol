@@ -104,7 +104,6 @@ contract AssetIdTest is HyperdriveTest {
 
         // Test LP Asset ID
         {
-            // id = Long << 248 | 0
             uint256 id = assetId.encodeAssetId(AssetId.AssetIdPrefix.LP, 0);
             string memory expected = "Hyperdrive LP";
             string memory name = assetId.assetIdToName(id);
@@ -170,23 +169,6 @@ contract AssetIdTest is HyperdriveTest {
             string memory name = assetId.assetIdToName(id);
             assertEq(bytes(name), bytes(expected));
         }
-
-        // Test Invalid Asset ID
-        {
-            // id = WithdrawalShare << 248 | 126144000 = 126144000
-            uint256 maturityTime = block.timestamp + POSITION_DURATION;
-
-            // id = WithdrawalShare << 248 | 126144000 = 126144000
-            uint256 id = assetId.encodeAssetId(
-                AssetId.AssetIdPrefix.WithdrawalShare,
-                maturityTime
-            );
-            (, uint256 timestamp) = assetId.decodeAssetId(id);
-            string memory _timestamp = int256(timestamp).toString(0);
-            string memory expected = string.concat("FOO:", _timestamp);
-            vm.expectRevert(IHyperdrive.InvalidAssetId.selector);
-            string memory symbol = assetId.assetIdToName(id);
-        }
     }
 
     function test__assetIdToSymbol() external {
@@ -195,7 +177,6 @@ contract AssetIdTest is HyperdriveTest {
 
         // Test LP Asset ID
         {
-            // id = Long << 248 | 0
             uint256 id = assetId.encodeAssetId(AssetId.AssetIdPrefix.LP, 0);
             string memory expected = "HYPERDRIVE-LP";
             string memory symbol = assetId.assetIdToSymbol(id);
@@ -260,23 +241,6 @@ contract AssetIdTest is HyperdriveTest {
             );
             string memory symbol = assetId.assetIdToSymbol(id);
             assertEq(bytes(symbol), bytes(expected));
-        }
-
-        // Test Invalid Asset ID
-        {
-            // id = WithdrawalShare << 248 | 126144000 = 126144000
-            uint256 maturityTime = block.timestamp + POSITION_DURATION;
-
-            // id = WithdrawalShare << 248 | 126144000 = 126144000
-            uint256 id = assetId.encodeAssetId(
-                AssetId.AssetIdPrefix.WithdrawalShare,
-                maturityTime
-            );
-            (, uint256 timestamp) = assetId.decodeAssetId(id);
-            string memory _timestamp = int256(timestamp).toString(0);
-            string memory expected = string.concat("FOO:", _timestamp);
-            vm.expectRevert(IHyperdrive.InvalidAssetId.selector);
-            string memory symbol = assetId.assetIdToSymbol(id);
         }
     }
 }

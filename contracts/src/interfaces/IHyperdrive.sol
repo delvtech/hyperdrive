@@ -291,7 +291,6 @@ interface IHyperdrive is
     /// ### AssetId ###
     /// ###############
     error InvalidTimestamp();
-    error InvalidAssetId();
 
     /// ######################
     /// ### FixedPointMath ###
