@@ -726,7 +726,7 @@ contract CloseShortTest is HyperdriveTest {
                 FixedPointMath.ONE_18 - timeRemaining,
                 testCase.poolInfoBefore.sharePrice
             ) +
-                YieldSpaceMath.calculateSharesInGivenBondsOut(
+                YieldSpaceMath.calculateSharesInGivenBondsOutOverestimate(
                     testCase.poolInfoBefore.shareReserves,
                     testCase.poolInfoBefore.bondReserves,
                     testCase.bondAmount.mulDown(timeRemaining),

@@ -382,22 +382,18 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
             revert IHyperdrive.NegativeInterest();
         }
 
-        // Calculate the fees charged on the curve and flat parts of the trade.
-        // Since we calculate the amount of shares received given bonds in, we
-        // subtract the fee from the share deltas so that the trader receives
-        // less shares.
+        // Record an oracle update with the pre-trade spot price if enough time
+        // has passed since the last oracle update.
         uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
             _effectiveShareReserves(),
             _marketState.bondReserves,
             _initialSharePrice,
             _timeStretch
         );
-
-        // Add the spot price to the oracle if an oracle update is required
         recordPrice(spotPrice);
 
         // Calculate the fees charged to the user (totalCurveFee) and the portion
-        // of those fees that are paid to governance (governanceCurveFee).
+        // of those fees that are paid to governance (totalGovernanceFee).
         uint256 totalCurveFee;
         (
             totalCurveFee, // there is no flat fee on opening shorts
@@ -410,12 +406,17 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
             _sharePrice
         );
 
-        // ShareReservesDelta is the number of shares to remove from the
-        // shareReserves and since the totalCurveFee includes the
-        // totalGovernanceFee it needs to be added back to so that it is removed
-        // from the shareReserves. The shareReservesDelta, totalCurveFee and
-        // totalGovernanceFee are all in terms of shares:
-
+        // Subtract the total curve fee minus the governance curve fee to the
+        // amount that will be subtracted from the share reserves. This ensures
+        // that the LPs are credited with the fee the trader paid on the
+        // curve trade minus the portion of the curve fee that was paid to
+        // governance.
+        //
+        // shareReservesDelta, totalCurveFee and totalGovernanceFee are all
+        // denominated in shares so we just need to subtract out the
+        // totalGovernanceFee from the shareReservesDelta since that fee isn't
+        // reserved for the LPs.
+        //
         // shares -= shares - shares
         shareReservesDelta -= totalCurveFee - totalGovernanceFee;
 

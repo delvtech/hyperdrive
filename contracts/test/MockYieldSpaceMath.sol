@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import { YieldSpaceMath } from "../src/libraries/YieldSpaceMath.sol";
 
 contract MockYieldSpaceMath {
-    function calculateBondsOutGivenSharesIn(
+    function calculateBondsOutGivenSharesInUnderestimate(
         uint256 z,
         uint256 y,
         uint256 dz,
@@ -12,18 +12,12 @@ contract MockYieldSpaceMath {
         uint256 c,
         uint256 mu
     ) external pure returns (uint256) {
-        uint256 result = YieldSpaceMath.calculateBondsOutGivenSharesIn(
-            z,
-            y,
-            dz,
-            t,
-            c,
-            mu
-        );
+        uint256 result = YieldSpaceMath
+            .calculateBondsOutGivenSharesInUnderestimate(z, y, dz, t, c, mu);
         return result;
     }
 
-    function calculateSharesInGivenBondsOut(
+    function calculateSharesInGivenBondsOutOverestimate(
         uint256 z,
         uint256 y,
         uint256 dy,
@@ -31,18 +25,12 @@ contract MockYieldSpaceMath {
         uint256 c,
         uint256 mu
     ) external pure returns (uint256) {
-        uint256 result = YieldSpaceMath.calculateSharesInGivenBondsOut(
-            z,
-            y,
-            dy,
-            t,
-            c,
-            mu
-        );
+        uint256 result = YieldSpaceMath
+            .calculateSharesInGivenBondsOutOverestimate(z, y, dy, t, c, mu);
         return result;
     }
 
-    function calculateSharesOutGivenBondsIn(
+    function calculateSharesInGivenBondsOutUnderestimate(
         uint256 z,
         uint256 y,
         uint256 dy,
@@ -50,14 +38,21 @@ contract MockYieldSpaceMath {
         uint256 c,
         uint256 mu
     ) external pure returns (uint256) {
-        uint256 result = YieldSpaceMath.calculateSharesOutGivenBondsIn(
-            z,
-            y,
-            dy,
-            t,
-            c,
-            mu
-        );
+        uint256 result = YieldSpaceMath
+            .calculateSharesInGivenBondsOutUnderestimate(z, y, dy, t, c, mu);
+        return result;
+    }
+
+    function calculateSharesOutGivenBondsInUnderestimate(
+        uint256 z,
+        uint256 y,
+        uint256 dy,
+        uint256 t,
+        uint256 c,
+        uint256 mu
+    ) external pure returns (uint256) {
+        uint256 result = YieldSpaceMath
+            .calculateSharesOutGivenBondsInUnderestimate(z, y, dy, t, c, mu);
         return result;
     }
 

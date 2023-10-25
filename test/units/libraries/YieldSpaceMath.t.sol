@@ -20,50 +20,54 @@ contract YieldSpaceMathTest is Test {
             22.186877016851916266e18
         );
         // test small amount of shares in
-        uint256 result1 = yieldSpaceMath.calculateBondsOutGivenSharesIn(
-            100000e18, // shareReserves
-            100000e18 + 200000e18, // bondReserves + s
-            100e18, // amountIn
-            1e18 - FixedPointMath.ONE_18.divDown(2e18).mulDown(timeStretch), // stretchedTimeElapsed
-            1e18, // c
-            1e18 // mu
-        );
+        uint256 result1 = yieldSpaceMath
+            .calculateBondsOutGivenSharesInUnderestimate(
+                100000e18, // shareReserves
+                100000e18 + 200000e18, // bondReserves + s
+                100e18, // amountIn
+                1e18 - FixedPointMath.ONE_18.divDown(2e18).mulDown(timeStretch), // stretchedTimeElapsed
+                1e18, // c
+                1e18 // mu
+            );
         uint256 pythonResult1 = 102.50516899477225e18;
         assertApproxEqAbs(result1, pythonResult1, 1e9);
 
         // test large amount shares in
-        uint256 result2 = yieldSpaceMath.calculateBondsOutGivenSharesIn(
-            100000e18, // shareReserves
-            100000e18 + 200000e18, // bondReserves + s
-            80000e18, // amountIn
-            1e18 - FixedPointMath.ONE_18.divDown(2e18).mulDown(timeStretch), // stretchedTimeElapsed
-            1e18, // c
-            1e18 // mu
-        );
+        uint256 result2 = yieldSpaceMath
+            .calculateBondsOutGivenSharesInUnderestimate(
+                100000e18, // shareReserves
+                100000e18 + 200000e18, // bondReserves + s
+                80000e18, // amountIn
+                1e18 - FixedPointMath.ONE_18.divDown(2e18).mulDown(timeStretch), // stretchedTimeElapsed
+                1e18, // c
+                1e18 // mu
+            );
         uint256 pythonResult2 = 81138.27602200207e18;
         assertApproxEqAbs(result2, pythonResult2, 1e9);
 
         // test small amount bond in
-        uint256 result3 = yieldSpaceMath.calculateSharesOutGivenBondsIn(
-            100000e18, // shareReserves
-            100000e18 + 200000e18, // bondReserves + s
-            100e18, // amountIn
-            1e18 - FixedPointMath.ONE_18.divDown(2e18).mulDown(timeStretch), // stretchedTimeElapsed
-            1e18, // c
-            1e18 // mu
-        );
+        uint256 result3 = yieldSpaceMath
+            .calculateSharesOutGivenBondsInUnderestimate(
+                100000e18, // shareReserves
+                100000e18 + 200000e18, // bondReserves + s
+                100e18, // amountIn
+                1e18 - FixedPointMath.ONE_18.divDown(2e18).mulDown(timeStretch), // stretchedTimeElapsed
+                1e18, // c
+                1e18 // mu
+            );
         uint256 pythonResult3 = 97.55314236719278e18;
         assertApproxEqAbs(result3, pythonResult3, 1e9);
 
         // test large amount bond in
-        uint256 result4 = yieldSpaceMath.calculateSharesOutGivenBondsIn(
-            100000e18, // shareReserves
-            100000e18 + 200000e18, // bondReserves + s
-            80000e18, // amountIn
-            1e18 - FixedPointMath.ONE_18.divDown(2e18).mulDown(timeStretch), // stretchedTimeElapsed
-            1e18, // c
-            1e18 // mu
-        );
+        uint256 result4 = yieldSpaceMath
+            .calculateSharesOutGivenBondsInUnderestimate(
+                100000e18, // shareReserves
+                100000e18 + 200000e18, // bondReserves + s
+                80000e18, // amountIn
+                1e18 - FixedPointMath.ONE_18.divDown(2e18).mulDown(timeStretch), // stretchedTimeElapsed
+                1e18, // c
+                1e18 // mu
+            );
         uint256 pythonResult4 = 76850.14470187116e18;
         assertApproxEqAbs(result4, pythonResult4, 1e9);
     }
@@ -76,26 +80,28 @@ contract YieldSpaceMathTest is Test {
         );
 
         // test small amount bond in
-        uint256 result3 = yieldSpaceMath.calculateSharesInGivenBondsOut(
-            100000e18, // shareReserves
-            100000e18 + 200000e18, // bondReserves + s
-            100e18, // amountIn
-            1e18 - FixedPointMath.ONE_18.divDown(2e18).mulDown(timeStretch), // stretchedTimeElapsed
-            1e18, // c
-            1e18 // mu
-        );
+        uint256 result3 = yieldSpaceMath
+            .calculateSharesInGivenBondsOutOverestimate(
+                100000e18, // shareReserves
+                100000e18 + 200000e18, // bondReserves + s
+                100e18, // amountIn
+                1e18 - FixedPointMath.ONE_18.divDown(2e18).mulDown(timeStretch), // stretchedTimeElapsed
+                1e18, // c
+                1e18 // mu
+            );
         uint256 pythonResult3 = 97.55601990513969e18;
         assertApproxEqAbs(result3, pythonResult3, 1e9);
 
         // test large amount bond in
-        uint256 result4 = yieldSpaceMath.calculateSharesInGivenBondsOut(
-            100000e18, // shareReserves
-            100000e18 + 200000e18, // bondReserves + s
-            80000e18, // amountIn
-            1e18 - FixedPointMath.ONE_18.divDown(2e18).mulDown(timeStretch), // stretchedTimeElapsed
-            1e18, // c
-            1e18 // mu
-        );
+        uint256 result4 = yieldSpaceMath
+            .calculateSharesInGivenBondsOutOverestimate(
+                100000e18, // shareReserves
+                100000e18 + 200000e18, // bondReserves + s
+                80000e18, // amountIn
+                1e18 - FixedPointMath.ONE_18.divDown(2e18).mulDown(timeStretch), // stretchedTimeElapsed
+                1e18, // c
+                1e18 // mu
+            );
         uint256 pythonResult4 = 78866.87433323538e18;
         assertApproxEqAbs(result4, pythonResult4, 1e9);
     }
@@ -139,10 +145,10 @@ contract YieldSpaceMathTest is Test {
                         timeStretch
                     );
                 {
-                    (uint256 maxBasePaid, ) = HyperdriveMath.calculateMaxLong(
+                    (, uint256 maxBondAmount) = HyperdriveMath.calculateMaxLong(
                         HyperdriveMath.MaxTradeParams({
                             shareReserves: shareReserves,
-                            shareAdjustment: 0, // FIXME: Test non-trivial values for this.
+                            shareAdjustment: 0,
                             bondReserves: bondReserves,
                             longsOutstanding: 0,
                             longExposure: 0,
@@ -158,17 +164,18 @@ contract YieldSpaceMathTest is Test {
                     );
                     tradeSize = tradeSize.normalizeToRange(
                         10 ** j,
-                        maxBasePaid
+                        maxBondAmount
                     );
                 }
-                uint256 result = yieldSpaceMath.calculateSharesInGivenBondsOut(
-                    shareReserves,
-                    bondReserves,
-                    tradeSize,
-                    1e18 - FixedPointMath.ONE_18.mulDown(timeStretch),
-                    sharePrice,
-                    initialSharePrice
-                );
+                uint256 result = yieldSpaceMath
+                    .calculateSharesInGivenBondsOutUnderestimate(
+                        shareReserves,
+                        bondReserves,
+                        tradeSize,
+                        1e18 - FixedPointMath.ONE_18.mulDown(timeStretch),
+                        sharePrice,
+                        initialSharePrice
+                    );
                 assertGt(result, 0);
             }
         }

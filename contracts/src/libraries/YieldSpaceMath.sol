@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
-import { FixedPointMath } from "./FixedPointMath.sol";
+import { FixedPointMath, ONE } from "./FixedPointMath.sol";
 import { HyperdriveMath } from "./HyperdriveMath.sol";
 
 /// @author DELV
@@ -31,7 +31,7 @@ import { HyperdriveMath } from "./HyperdriveMath.sol";
 library YieldSpaceMath {
     using FixedPointMath for uint256;
 
-    // FIXME: Account for the exponent when over or underestimating.
+    // FIXME: Re-visit the use of `modifiedYieldSpaceConstant`.
     //
     /// @dev Calculates the amount of bonds a user will receive from the pool by
     ///      providing a specified amount of shares. We underestimate the amount
@@ -43,7 +43,7 @@ library YieldSpaceMath {
     /// @param c Conversion rate between base and shares
     /// @param mu Interest normalization factor for shares
     /// @return The amount of bonds the user will receive
-    function calculateBondsOutGivenSharesIn(
+    function calculateBondsOutGivenSharesInUnderestimate(
         uint256 z,
         uint256 y,
         uint256 dz,
@@ -51,23 +51,39 @@ library YieldSpaceMath {
         uint256 c,
         uint256 mu
     ) internal pure returns (uint256) {
-        // (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
-        uint256 k = modifiedYieldSpaceConstant(c.divDown(mu), mu, z, t, y);
+        // NOTE: We round k up to make the rhs of the equation larger.
+        //
+        // k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
+        uint256 k = modifiedYieldSpaceConstant(c.divUp(mu), mu, z, t, y);
+
+        // NOTE: We round z down to make the rhs of the equation larger.
+        //
         // (µ * (z + dz))^(1 - t)
-        z = mu.mulUp(z + dz).pow(t);
+        z = mu.mulDown(z + dz).pow(t);
         // (c / µ) * (µ * (z + dz))^(1 - t)
-        z = c.mulDivUp(z, mu);
-        // ((c / µ) * (µ * z)^(1 - t) + y^(1 - t) - (c / µ) * (µ * (z + dz))^(1 - t))^(1 / (1 - t)))
-        uint256 _y = (k - z).pow(FixedPointMath.ONE_18.divUp(t));
-        // Δy = y - ((c / µ) * (µ * z)^(1 - t) + y^(1 - t) - (c / µ) * (µ * (z + dz))^(1 - t))^(1 / (1 - t)))
+        z = c.mulDivDown(z, mu);
+
+        // NOTE: We round _y up to make the rhs of the equation larger.
+        //
+        // k - (c / µ) * (µ * (z + dz))^(1 - t))^(1 / (1 - t)))
+        uint256 _y = k - z;
+        if (_y >= ONE) {
+            // Rounding up the exponent results in a larger result.
+            _y = _y.pow(FixedPointMath.ONE_18.divUp(t));
+        } else {
+            // Rounding down the exponent results in a larger result.
+            _y = _y.pow(FixedPointMath.ONE_18.divDown(t));
+        }
+
+        // Δy = y - (k - (c / µ) * (µ * (z + dz))^(1 - t))^(1 / (1 - t)))
         return y - _y;
     }
 
-    // FIXME: Account for the exponent when over or underestimating.
+    // FIXME: Re-visit the use of `modifiedYieldSpaceConstant`.
     //
     /// @dev Calculates the amount of shares a user must provide the pool to
-    ///      receive a specified amount of bonds. We overestimate the shares the
-    ///      trader will need to provide to prevent sandwiches.
+    ///      receive a specified amount of bonds. We overestimate the amount of
+    ///      shares are needed to buy the bonds.
     /// @param z Amount of share reserves in the pool
     /// @param y Amount of bond reserves in the pool
     /// @param dy Amount of bonds user wants to provide
@@ -75,7 +91,7 @@ library YieldSpaceMath {
     /// @param c Conversion rate between base and shares
     /// @param mu Interest normalization factor for shares
     /// @return The amount of shares the user will pay
-    function calculateSharesInGivenBondsOut(
+    function calculateSharesInGivenBondsOutOverestimate(
         uint256 z,
         uint256 y,
         uint256 dy,
@@ -83,100 +99,78 @@ library YieldSpaceMath {
         uint256 c,
         uint256 mu
     ) internal pure returns (uint256) {
-        // (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
+        // NOTE: We round k up to make the lhs of the equation larger.
+        //
+        // k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
         uint256 k = modifiedYieldSpaceConstant(c.divUp(mu), mu, z, t, y);
+
         // (y - dy)^(1 - t)
         y = (y - dy).pow(t);
-        // (((µ * z)^(1 - t) + y^(1 - t) - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))
-        uint256 _z = (k - y).mulDivUp(mu, c).pow(
-            FixedPointMath.ONE_18.divUp(t)
-        );
-        // (((µ * z)^(1 - t) + y^(1 - t) - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
+
+        // NOTE: We round _z up to make the lhs of the equation larger.
+        //
+        // ((k - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))
+        uint256 _z = (k - y).mulDivUp(mu, c);
+        if (_z >= ONE) {
+            // Rounding up the exponent results in a larger result.
+            _z = _z.pow(FixedPointMath.ONE_18.divUp(t));
+        } else {
+            // Rounding down the exponent results in a larger result.
+            _z = _z.pow(FixedPointMath.ONE_18.divDown(t));
+        }
+        // ((k - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
         _z = _z.divUp(mu);
-        // Δz = ((((c / µ) * (µ * z)^(1 - t) + y^(1 - t) - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ) - z
+
+        // Δz = (((k - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ - z
         return _z - z;
     }
 
-    // FIXME: Account for the exponent when over or underestimating.
+    // FIXME: Re-visit the use of `modifiedYieldSpaceConstant`.
     //
-    /// @dev Calculates the amount of shares a user will receive from the pool
-    ///      by providing a specified amount of bonds. This function reverts if
-    ///      an integer overflow or underflow occurs. We overestimate the amount
-    ///      of shares out which prevents sandwiches in the case of opening a
-    ///      short.
+    /// @dev Calculates the amount of shares a user must provide the pool to
+    ///      receive a specified amount of bonds. We underestimate the amount of
+    ///      shares are needed to buy the bonds.
     /// @param z Amount of share reserves in the pool
     /// @param y Amount of bond reserves in the pool
     /// @param dy Amount of bonds user wants to provide
     /// @param t Amount of time elapsed since term start
     /// @param c Conversion rate between base and shares
     /// @param mu Interest normalization factor for shares
-    /// @return result The amount of shares the user will receive
-    function calculateSharesOutGivenBondsOverestimateIn(
+    /// @return The amount of shares the user will pay
+    function calculateSharesInGivenBondsOutUnderestimate(
         uint256 z,
         uint256 y,
         uint256 dy,
         uint256 t,
         uint256 c,
         uint256 mu
-    ) internal pure returns (uint256 result) {
-        bool success;
-        (result, success) = calculateSharesOutGivenBondsInOverestimateSafe(
-            z,
-            y,
-            dy,
-            t,
-            c,
-            mu
-        );
-        if (!success) {
-            revert IHyperdrive.InvalidTradeSize();
-        }
-    }
-
-    // FIXME: Account for the exponent when over or underestimating.
-    //
-    /// @dev Calculates the amount of shares a user will receive from the pool
-    ///      by providing a specified amount of bonds. This function returns a
-    ///      success flag instead of reverting. We overestimate the amount of
-    ///      shares out which prevents sandwiches in the case of opening a short.
-    /// @param z Amount of share reserves in the pool
-    /// @param y Amount of bond reserves in the pool
-    /// @param dy Amount of bonds user wants to provide
-    /// @param t Amount of time elapsed since term start
-    /// @param c Conversion rate between base and shares
-    /// @param mu Interest normalization factor for shares
-    /// @return result The amount of shares the user will receive
-    /// @return success A flag indicating whether or not the calculation succeeded.
-    function calculateSharesOutGivenBondsInOverestimateSafe(
-        uint256 z,
-        uint256 y,
-        uint256 dy,
-        uint256 t,
-        uint256 c,
-        uint256 mu
-    ) internal pure returns (uint256 result, bool success) {
-        // (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
+    ) internal pure returns (uint256) {
+        // NOTE: We round k down to make the lhs of the equation smaller.
+        //
+        // k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
         uint256 k = modifiedYieldSpaceConstant(c.divDown(mu), mu, z, t, y);
-        // (y + dy)^(1 - t)
-        y = (y + dy).pow(t);
-        if (k < y) {
-            return (0, false);
+
+        // (y - dy)^(1 - t)
+        y = (y - dy).pow(t);
+
+        // NOTE: We round _z down to make the lhs of the equation smaller.
+        //
+        // ((k - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))
+        uint256 _z = (k - y).mulDivDown(mu, c);
+        if (_z >= ONE) {
+            // Rounding down the exponent results in a smaller result.
+            _z = _z.pow(FixedPointMath.ONE_18.divDown(t));
+        } else {
+            // Rounding up the exponent results in a smaller result.
+            _z = _z.pow(FixedPointMath.ONE_18.divUp(t));
         }
-        // (((µ * z)^(1 - t) + y^(1 - t) - (y + dy)^(1 - t)) / (c / µ))^(1 / (1 - t)))
-        uint256 _z = (k - y).mulDivDown(mu, c).pow(
-            FixedPointMath.ONE_18.divUp(t)
-        );
-        // (((µ * z)^(1 - t) + y^(1 - t) - (y + dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
+        // ((k - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
         _z = _z.divDown(mu);
-        // Δz = z - (((c / µ) * (µ * z)^(1 - t) + y^(1 - t) - (y + dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
-        if (z > _z) {
-            result = z - _z;
-        }
-        success = true;
+
+        // Δz = (((k - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ - z
+        return _z - z;
     }
 
-    // FIXME: Account for the exponent when over or underestimating.
-    //
     /// @dev Calculates the amount of shares a user will receive from the pool
     ///      by providing a specified amount of bonds. This function reverts if
     ///      an integer overflow or underflow occurs. We underestimate the
@@ -189,7 +183,7 @@ library YieldSpaceMath {
     /// @param c Conversion rate between base and shares
     /// @param mu Interest normalization factor for shares
     /// @return result The amount of shares the user will receive
-    function calculateSharesOutGivenBondsUnderestimateIn(
+    function calculateSharesOutGivenBondsInUnderestimate(
         uint256 z,
         uint256 y,
         uint256 dy,
@@ -211,8 +205,6 @@ library YieldSpaceMath {
         }
     }
 
-    // FIXME: Account for the exponent when over or underestimating.
-    //
     /// @dev Calculates the amount of shares a user will receive from the pool
     ///      by providing a specified amount of bonds. This function returns a
     ///      success flag instead of reverting. We overestimate the amount of
@@ -234,26 +226,42 @@ library YieldSpaceMath {
         uint256 c,
         uint256 mu
     ) internal pure returns (uint256 result, bool success) {
-        // (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
+        // NOTE: We round k up to make the rhs of the equation larger.
+        //
+        // k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
         uint256 k = modifiedYieldSpaceConstant(c.divUp(mu), mu, z, t, y);
+
         // (y + dy)^(1 - t)
         y = (y + dy).pow(t);
+
+        // If k is less than y, we return with a failure flag.
         if (k < y) {
             return (0, false);
         }
-        // (((µ * z)^(1 - t) + y^(1 - t) - (y + dy)^(1 - t)) / (c / µ))^(1 / (1 - t)))
-        uint256 _z = (k - y).mulDivUp(mu, c).pow(
-            FixedPointMath.ONE_18.divUp(t)
-        );
-        // (((µ * z)^(1 - t) + y^(1 - t) - (y + dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
+
+        // NOTE: We round _z up to make the rhs of the equation larger.
+        //
+        // ((k - (y + dy)^(1 - t)) / (c / µ))^(1 / (1 - t)))
+        uint256 _z = (k - y).mulDivUp(mu, c);
+        if (_z >= ONE) {
+            // Rounding the exponent up results in a larger outcome.
+            _z = _z.pow(FixedPointMath.ONE_18.divUp(t));
+        } else {
+            // Rounding the exponent down results in a larger outcome.
+            _z = _z.pow(FixedPointMath.ONE_18.divDown(t));
+        }
+        // ((k - (y + dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
         _z = _z.divUp(mu);
-        // Δz = z - (((c / µ) * (µ * z)^(1 - t) + y^(1 - t) - (y + dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
+
+        // Δz = z - ((k - (y + dy)^(1 - t) ) / (c / µ))^(1 / (1 - t)) / µ
         if (z > _z) {
             result = z - _z;
         }
         success = true;
     }
 
+    // FIXME: Consider rounding more seriously.
+    //
     /// @dev Calculates the maximum amount of bonds that can be purchased with
     ///      the specified reserves.
     /// @param z Amount of share reserves in the pool
@@ -287,6 +295,8 @@ library YieldSpaceMath {
         return (optimalZ - z, y - optimalY);
     }
 
+    // FIXME: Consider rounding more seriously.
+    //
     /// @dev Calculates the maximum amount of bonds that can be sold with the
     ///      specified reserves.
     /// @param z Amount of share reserves in the pool
@@ -321,6 +331,9 @@ library YieldSpaceMath {
         return (z - zMin, optimalY - y);
     }
 
+    // FIXME: There should be a variant of this that rounds up and another that
+    // rounds down.
+    //
     // FIXME: Rename this to k.
     //
     /// @dev Helper function to derive invariant constant C

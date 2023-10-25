@@ -464,7 +464,7 @@ contract CloseLongTest is HyperdriveTest {
             // Portion of immature bonds are sold on the YieldSpace curve
             uint256 immatureBonds = bondAmount - matureBonds;
             bondsValue += YieldSpaceMath
-                .calculateSharesOutGivenBondsIn(
+                .calculateSharesOutGivenBondsInUnderestimate(
                     poolInfoBefore.shareReserves,
                     poolInfoBefore.bondReserves,
                     immatureBonds,
