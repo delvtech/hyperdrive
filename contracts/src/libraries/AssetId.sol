@@ -78,9 +78,7 @@ library AssetId {
         } else if (prefix == AssetIdPrefix.Short) {
             _name = string(abi.encodePacked("Hyperdrive Short: ", _timestamp));
         } else if (prefix == AssetIdPrefix.WithdrawalShare) {
-            _name = string(
-                abi.encodePacked("Hyperdrive Withdrawal Share")
-            );
+            _name = string(abi.encodePacked("Hyperdrive Withdrawal Share"));
         }
     }
 

@@ -57,7 +57,7 @@ contract MultiTokenTest is BaseTest {
         );
 
         // Generate expected token name and symbol.
-        string memory expectedName =  "Hyperdrive Long: 126144000";
+        string memory expectedName = "Hyperdrive Long: 126144000";
         string memory expectedSymbol = "HYPERDRIVE-LONG:126144000";
         vm.startPrank(alice);
         multiToken.__setNameAndSymbol(id, expectedName, expectedSymbol);

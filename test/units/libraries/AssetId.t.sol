@@ -142,7 +142,10 @@ contract AssetIdTest is HyperdriveTest {
 
         // Test WithdrawalShare Asset ID
         {
-            uint256 id = assetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0);
+            uint256 id = assetId.encodeAssetId(
+                AssetId.AssetIdPrefix.WithdrawalShare,
+                0
+            );
             string memory expected = "Hyperdrive Withdrawal Share";
             string memory name = assetId.assetIdToName(id);
             assertEq(bytes(name), bytes(expected));
@@ -193,7 +196,10 @@ contract AssetIdTest is HyperdriveTest {
 
         // Test WithdrawalShare Asset ID
         {
-            uint256 id = assetId.encodeAssetId(AssetId.AssetIdPrefix.WithdrawalShare, 0);
+            uint256 id = assetId.encodeAssetId(
+                AssetId.AssetIdPrefix.WithdrawalShare,
+                0
+            );
             string memory expected = "HYPERDRIVE-WS";
             string memory symbol = assetId.assetIdToSymbol(id);
             assertEq(bytes(symbol), bytes(expected));

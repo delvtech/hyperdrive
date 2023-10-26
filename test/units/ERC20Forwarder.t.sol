@@ -93,7 +93,7 @@ contract ERC20ForwarderFactoryTest is BaseTest {
         assertEq(forwarder.decimals(), 18);
 
         // Generate expected token name and symbol.
-        string memory expectedName =  "Hyperdrive Long: 126144000";
+        string memory expectedName = "Hyperdrive Long: 126144000";
         string memory expectedSymbol = "HYPERDRIVE-LONG:126144000";
 
         // Test that the name and symbol are correct.
