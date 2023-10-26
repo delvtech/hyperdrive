@@ -82,7 +82,7 @@ contract ERC20ForwarderFactoryTest is BaseTest {
     function testForwarderMetadata() public {
         // Create a real tokenId.
         MockAssetId assetId = new MockAssetId();
-        uint256 maturityTime = block.timestamp + 365 days;
+        uint256 maturityTime = 126144000;
         uint256 id = assetId.encodeAssetId(
             AssetId.AssetIdPrefix.Long,
             maturityTime
@@ -93,16 +93,8 @@ contract ERC20ForwarderFactoryTest is BaseTest {
         assertEq(forwarder.decimals(), 18);
 
         // Generate expected token name and symbol.
-        (, uint256 timestamp) = assetId.decodeAssetId(id);
-        string memory _timestamp = int256(timestamp).toString(0);
-        string memory expectedName = string.concat(
-            "Hyperdrive Long: ",
-            _timestamp
-        );
-        string memory expectedSymbol = string.concat(
-            "HYPERDRIVE-LONG:",
-            _timestamp
-        );
+        string memory expectedName =  "Hyperdrive Long: 126144000";
+        string memory expectedSymbol = "HYPERDRIVE-LONG:126144000";
 
         // Test that the name and symbol are correct.
         assertEq(forwarder.name(), expectedName);

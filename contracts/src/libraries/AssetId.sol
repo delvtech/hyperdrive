@@ -74,14 +74,12 @@ library AssetId {
         if (prefix == AssetIdPrefix.LP) {
             _name = "Hyperdrive LP";
         } else if (prefix == AssetIdPrefix.Long) {
-            _name = string(
-                abi.encodePacked(string.concat("Hyperdrive Long: ", _timestamp))
-            );
+            _name = string(abi.encodePacked("Hyperdrive Long: ", _timestamp));
         } else if (prefix == AssetIdPrefix.Short) {
             _name = string(abi.encodePacked("Hyperdrive Short: ", _timestamp));
         } else if (prefix == AssetIdPrefix.WithdrawalShare) {
             _name = string(
-                abi.encodePacked("Hyperdrive Withdrawal Share: ", _timestamp)
+                abi.encodePacked("Hyperdrive Withdrawal Share")
             );
         }
     }
@@ -101,7 +99,7 @@ library AssetId {
         } else if (prefix == AssetIdPrefix.Short) {
             _name = string(abi.encodePacked("HYPERDRIVE-SHORT:", _timestamp));
         } else if (prefix == AssetIdPrefix.WithdrawalShare) {
-            _name = string(abi.encodePacked("HYPERDRIVE-WS:", _timestamp));
+            _name = string(abi.encodePacked("HYPERDRIVE-WS"));
         }
     }
 
@@ -111,8 +109,8 @@ library AssetId {
     function toString(
         uint256 _num
     ) internal pure returns (string memory result) {
-        // We overallocate memory for the string. The maximum number of decimals
-        // that a int256 can hold is log_10(2 ^ 255) which is approximately
+        // We overallocate memory for the string. The maximum number of digits
+        // that a uint256 can hold is log_10(2 ^ 255) which is approximately
         // 76.
         uint256 maxStringLength = 77;
         bytes memory rawResult = new bytes(maxStringLength);
@@ -135,8 +133,8 @@ library AssetId {
         // Point the string result to the beginning of the stringified integer
         // and update the length.
         assembly {
-            result := add(rawResult, sub(sub(maxStringLength, digits), 1))
-            mstore(result, add(digits, 1))
+            result := add(rawResult, sub(maxStringLength, digits))
+            mstore(result, digits)
         }
         return result;
     }
