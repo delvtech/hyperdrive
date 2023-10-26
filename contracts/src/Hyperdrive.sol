@@ -136,14 +136,6 @@ abstract contract Hyperdrive is
                 _checkpointTime
             );
             positionsClosed = true;
-
-            // Emit a MaturedShorts event.
-            emit MaturedShorts(
-                shortAssetId,
-                _checkpointTime,
-                maturedShortsAmount,
-                governanceFee
-            );
         }
 
         // Close out all of the long positions that matured at the beginning of
@@ -173,14 +165,6 @@ abstract contract Hyperdrive is
                 checkpointTime
             );
             positionsClosed = true;
-
-            // Emit a MaturedLongs event.
-            emit MaturedLongs(
-                longAssetId,
-                checkpointTime,
-                maturedLongsAmount,
-                governanceFee
-            );
         }
 
         // Update the checkpoint and global longExposure

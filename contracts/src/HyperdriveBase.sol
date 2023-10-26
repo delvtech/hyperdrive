@@ -85,20 +85,6 @@ abstract contract HyperdriveBase is
         uint256 bondAmount
     );
 
-    event MaturedLongs(
-        uint256 indexed assetId,
-        uint256 indexed maturityTime,
-        uint256 bondAmount,
-        uint256 totalGovernanceFee
-    );
-
-    event MaturedShorts(
-        uint256 indexed assetId,
-        uint256 indexed maturityTime,
-        uint256 bondAmount,
-        uint256 totalGovernanceFee
-    );
-
     event CreateCheckpoint(
         uint256 indexed checkpointTime,
         uint256 sharePrice,
