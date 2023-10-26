@@ -372,8 +372,8 @@ library HyperdriveUtils {
         IHyperdrive.PoolConfig memory config = hyperdrive.getPoolConfig();
         IHyperdrive.PoolInfo memory info = hyperdrive.getPoolInfo();
         return
-            YieldSpaceMath.modifiedYieldSpaceConstant(
-                info.sharePrice.divDown(config.initialSharePrice),
+            YieldSpaceMath.modifiedYieldSpaceConstantUnderestimate(
+                info.sharePrice,
                 config.initialSharePrice,
                 HyperdriveMath.calculateEffectiveShareReserves(
                     info.shareReserves,

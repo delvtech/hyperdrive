@@ -62,26 +62,37 @@ contract MockYieldSpaceMath {
         uint256 t,
         uint256 c,
         uint256 mu
-    ) external pure returns (uint256, uint256) {
-        (uint256 result1, uint256 result2) = YieldSpaceMath.calculateMaxBuy(
-            z,
-            y,
-            t,
-            c,
-            mu
-        );
-        return (result1, result2);
+    ) external pure returns (uint256) {
+        uint256 result1 = YieldSpaceMath.calculateMaxBuy(z, y, t, c, mu);
+        return result1;
     }
 
-    function modifiedYieldSpaceConstant(
-        uint256 cDivMu,
+    function modifiedYieldSpaceConstantOverestimate(
+        uint256 c,
         uint256 mu,
         uint256 z,
         uint256 t,
         uint256 y
     ) external pure returns (uint256) {
-        uint256 result = YieldSpaceMath.modifiedYieldSpaceConstant(
-            cDivMu,
+        uint256 result = YieldSpaceMath.modifiedYieldSpaceConstantOverestimate(
+            c,
+            mu,
+            z,
+            t,
+            y
+        );
+        return result;
+    }
+
+    function modifiedYieldSpaceConstantUnderestimate(
+        uint256 c,
+        uint256 mu,
+        uint256 z,
+        uint256 t,
+        uint256 y
+    ) external pure returns (uint256) {
+        uint256 result = YieldSpaceMath.modifiedYieldSpaceConstantUnderestimate(
+            c,
             mu,
             z,
             t,

@@ -208,27 +208,32 @@ contract YieldSpaceMathTest is Test {
         );
 
         // Calculate the difference in share and bond reserves caused by the max
-        // purchase.
-        (uint256 maxDz, uint256 maxDy) = yieldSpaceMath.calculateMaxBuy(
+        // purchase. Since calculateMaxBuy only outputs the bond amount, we
+        // calculate the share amount using the formula that z' = y' / mu.
+        // We can calculate y' from the output as y' = y - maxDy. Finally, we
+        // can calculate the max share amount as maxDz = z' - z.
+        uint256 maxDy = yieldSpaceMath.calculateMaxBuy(
             shareReserves,
             bondReserves,
             1e18 - FixedPointMath.ONE_18.mulDown(timeStretch),
             sharePrice,
             initialSharePrice
         );
+        uint256 maxDz = (bondReserves - maxDy).divDown(initialSharePrice) -
+            shareReserves;
 
         // Ensure that the maximum buy is a valid trade on this invariant and
         // that the ending spot price is close to 1.
         assertApproxEqAbs(
-            yieldSpaceMath.modifiedYieldSpaceConstant(
-                sharePrice.divDown(initialSharePrice),
+            yieldSpaceMath.modifiedYieldSpaceConstantUnderestimate(
+                sharePrice,
                 initialSharePrice,
                 shareReserves,
                 FixedPointMath.ONE_18 - timeStretch,
                 bondReserves
             ),
-            yieldSpaceMath.modifiedYieldSpaceConstant(
-                sharePrice.divDown(initialSharePrice),
+            yieldSpaceMath.modifiedYieldSpaceConstantUnderestimate(
+                sharePrice,
                 initialSharePrice,
                 shareReserves + maxDz,
                 FixedPointMath.ONE_18 - timeStretch,

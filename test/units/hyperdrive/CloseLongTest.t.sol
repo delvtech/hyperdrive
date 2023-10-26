@@ -862,8 +862,8 @@ contract CloseLongTest is HyperdriveTest {
                     int256(shareAdjustmentDelta)
             );
             assertApproxEqAbs(
-                YieldSpaceMath.modifiedYieldSpaceConstant(
-                    poolInfoAfter.sharePrice.divDown(initialSharePrice),
+                YieldSpaceMath.modifiedYieldSpaceConstantUnderestimate(
+                    poolInfoAfter.sharePrice,
                     initialSharePrice,
                     HyperdriveMath.calculateEffectiveShareReserves(
                         poolInfoAfter.shareReserves,
@@ -872,10 +872,8 @@ contract CloseLongTest is HyperdriveTest {
                     ONE - hyperdrive.getPoolConfig().timeStretch,
                     poolInfoAfter.bondReserves
                 ),
-                YieldSpaceMath.modifiedYieldSpaceConstant(
-                    testCase.poolInfoBefore.sharePrice.divDown(
-                        initialSharePrice
-                    ),
+                YieldSpaceMath.modifiedYieldSpaceConstantUnderestimate(
+                    testCase.poolInfoBefore.sharePrice,
                     initialSharePrice,
                     HyperdriveMath.calculateEffectiveShareReserves(
                         testCase.poolInfoBefore.shareReserves,

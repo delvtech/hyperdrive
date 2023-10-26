@@ -443,14 +443,16 @@ library HyperdriveMath {
         uint256 absoluteMaxBondAmount;
         {
             uint256 maxShareAmount;
-            (maxShareAmount, absoluteMaxBondAmount) = YieldSpaceMath
-                .calculateMaxBuy(
-                    effectiveShareReserves,
-                    _params.bondReserves,
-                    ONE - _params.timeStretch,
-                    _params.sharePrice,
-                    _params.initialSharePrice
-                );
+            (
+                maxShareAmount,
+                absoluteMaxBondAmount
+            ) = calculateAbsoluteMaxLongAmount(
+                effectiveShareReserves,
+                _params.bondReserves,
+                ONE - _params.timeStretch,
+                _params.sharePrice,
+                _params.initialSharePrice
+            );
             absoluteMaxBaseAmount = maxShareAmount.mulDown(_params.sharePrice);
             absoluteMaxBondAmount -= calculateLongCurveFee(
                 absoluteMaxBaseAmount,
@@ -558,6 +560,53 @@ library HyperdriveMath {
         }
 
         return (maxBaseAmount, maxBondAmount);
+    }
+
+    // TODO: In the max spot price PR, we will update this to use the style of
+    // these tools.
+    //
+    /// @dev Gets the max long that could be opened if solvency wasn't a
+    ///      constraint.
+    /// @param z The share reserves.
+    /// @param y The bond reserves.
+    /// @param t The time elapsed.
+    /// @param c The share price.
+    /// @param mu The initial share price.
+    /// @return The max share amount.
+    /// @return The max bond amount.
+    function calculateAbsoluteMaxLongAmount(
+        uint256 z,
+        uint256 y,
+        uint256 t,
+        uint256 c,
+        uint256 mu
+    ) internal pure returns (uint256, uint256) {
+        // We can calculate the maximum share reserves as z' = y' / mu; however,
+        // we do the computation from scratch to ensure that we're rounding so
+        // that the max share amount is rounded up. You can find the details of
+        // the calculation for y' in YieldSpaceMath.calculateMaxBuy.
+        uint256 optimalZ;
+        {
+            uint256 k = YieldSpaceMath.modifiedYieldSpaceConstantUnderestimate(
+                c,
+                mu,
+                z,
+                t,
+                y
+            );
+            optimalZ = k.divDown(c.divUp(mu) + ONE);
+            if (optimalZ >= ONE) {
+                // Rounding the exponent down results in a smaller outcome.
+                optimalZ = optimalZ.pow(ONE.divDown(t));
+            } else {
+                // Rounding the exponent up results in a smaller outcome.
+                optimalZ = optimalZ.pow(ONE.divUp(t));
+            }
+            optimalZ = optimalZ.divDown(mu);
+        }
+
+        // The optimal trade sizes are given by dz = z' - z and dy = y - y'.
+        return (optimalZ - z, YieldSpaceMath.calculateMaxBuy(z, y, t, c, mu));
     }
 
     /// @dev Calculates an initial guess of the max long that can be opened.
@@ -904,9 +953,8 @@ library HyperdriveMath {
         uint256 inner = _params.initialSharePrice.mulDown(
             _effectiveShareReserves + shareAmount
         );
-        uint256 cDivMu = _params.sharePrice.divDown(_params.initialSharePrice);
-        uint256 k = YieldSpaceMath.modifiedYieldSpaceConstant(
-            cDivMu,
+        uint256 k = YieldSpaceMath.modifiedYieldSpaceConstantUnderestimate(
+            _params.sharePrice,
             _params.initialSharePrice,
             _effectiveShareReserves,
             ONE - _params.timeStretch,
@@ -917,7 +965,10 @@ library HyperdriveMath {
         // It's possible that k is slightly larger than the rhs in the inner
         // calculation. If this happens, we are close to the root, and we short
         // circuit.
-        uint256 rhs = cDivMu.mulDown(inner.pow(_params.timeStretch));
+        uint256 rhs = _params.sharePrice.mulDivDown(
+            inner.pow(_params.timeStretch),
+            _params.initialSharePrice
+        );
         if (k < rhs) {
             return (0, false);
         }
@@ -1133,19 +1184,11 @@ library HyperdriveMath {
         // reserves that is implied by the optimal share reserves. We can do
         // this as follows:
         //
-        // $$
-        // k = \tfrac{c}{\mu} \cdot \left(
-        //          \mu \cdot \left( z_{optimal} - \zeta \right)
-        //      \right)^{1 - t_s} + y_{optimal}^{1 - t_s} \\
-        // \implies \\
-        // y_{optimal} = \left(
-        //                   k - \tfrac{c}{\mu} \cdot \left(
-        //                       \mu \cdot \left( z_{optimal} - \zeta \right)
-        //                   \right)^{1 - t_s}
-        //               \right)^{\tfrac{1}{1 - t_s}}
-        // $$
-        uint256 k = YieldSpaceMath.modifiedYieldSpaceConstant(
-            _params.sharePrice.divDown(_params.initialSharePrice),
+        // k = (c / mu) * (mu * (z' - zeta)) ** (1 - t_s) + y' ** (1 - t_s)
+        //                              =>
+        // y' = (k - (c / mu) * (mu * (z' - zeta)) ** (1 - t_s)) ** (1 / (1 - t_s))
+        uint256 k = YieldSpaceMath.modifiedYieldSpaceConstantUnderestimate(
+            _params.sharePrice,
             _params.initialSharePrice,
             _effectiveShareReserves,
             ONE - _params.timeStretch,
@@ -1374,8 +1417,8 @@ library HyperdriveMath {
         uint256 _shortAmount,
         uint256 _effectiveShareReserves
     ) internal pure returns (uint256) {
-        uint256 k = YieldSpaceMath.modifiedYieldSpaceConstant(
-            _params.sharePrice.divDown(_params.initialSharePrice),
+        uint256 k = YieldSpaceMath.modifiedYieldSpaceConstantUnderestimate(
+            _params.sharePrice,
             _params.initialSharePrice,
             _effectiveShareReserves,
             ONE - _params.timeStretch,
@@ -1474,7 +1517,7 @@ library HyperdriveMath {
             // are only stuck when there is no idle remaining. With this in
             // mind, we mark the longs to zero for simplicity and to avoid
             // unnecessary computation.
-            (, uint256 maxCurveTrade) = YieldSpaceMath.calculateMaxSell(
+            uint256 maxCurveTrade = YieldSpaceMath.calculateMaxSell(
                 effectiveShareReserves,
                 _params.bondReserves,
                 _params.minimumShareReserves,
@@ -1508,7 +1551,7 @@ library HyperdriveMath {
             // amount of withdrawal shares than they should. With this in mind,
             // we value the stuck shorts at exactly the face value.
             netCurveTrade = -netCurveTrade; // Switch to a positive value for convenience.
-            (, uint256 maxCurveTrade) = YieldSpaceMath.calculateMaxBuy(
+            uint256 maxCurveTrade = YieldSpaceMath.calculateMaxBuy(
                 effectiveShareReserves,
                 _params.bondReserves,
                 ONE - _params.timeStretch,
