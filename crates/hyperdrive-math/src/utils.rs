@@ -54,3 +54,59 @@ pub fn calculate_bonds_given_shares_and_rate(
             (fixed!(1e18) + apr.mul_down(annualized_time)).pow(fixed!(1e18).div_up(time_stretch)),
         );
 }
+
+#[cfg(test)]
+mod tests {
+    use std::panic;
+
+    use eyre::Result;
+    use rand::{thread_rng, Rng};
+    use test_utils::{chain::TestChainWithMocks, constants::FAST_FUZZ_RUNS};
+
+    use super::*;
+    use crate::State;
+
+    #[tokio::test]
+    async fn fuzz_calculate_bonds_given_shares_and_rate() -> Result<()> {
+        // Spin up a fake chain & deploy mock hyperdrive math.
+        let chain = TestChainWithMocks::new(1).await?;
+        let mock = chain.mock_hyperdrive_math();
+
+        // Fuzz the rust and solidity implementations against each other.
+        let mut rng = thread_rng();
+        for _ in 0..*FAST_FUZZ_RUNS {
+            // Get the current state of the mock contract
+            let state = rng.gen::<State>();
+            let effective_share_reserves = get_effective_share_reserves(
+                state.info.share_reserves.into(),
+                state.info.share_adjustment.into(),
+            );
+            // Calculate the bonds
+            let actual = calculate_bonds_given_shares_and_rate(
+                effective_share_reserves,
+                state.config.initial_share_price.into(),
+                fixed!(0.01e18),
+                state.config.position_duration.into(),
+                state.config.time_stretch.into(),
+            );
+            match mock
+                .calculate_initial_bond_reserves(
+                    effective_share_reserves.into(),
+                    state.config.initial_share_price,
+                    fixed!(0.01e18).into(),
+                    state.config.position_duration,
+                    state.config.time_stretch,
+                )
+                .call()
+                .await
+            {
+                Ok(expected_y) => {
+                    assert_eq!(actual, FixedPoint::from(expected_y));
+                }
+                Err(_) => panic!("Test failed."),
+            }
+        }
+
+        Ok(())
+    }
+}
