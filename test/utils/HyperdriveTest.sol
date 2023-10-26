@@ -927,7 +927,8 @@ contract HyperdriveTest is BaseTest {
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
-        uint256 bondAmount
+        uint256 bondAmount,
+        uint256 totalGovernanceFee
     );
 
     event OpenShort(
@@ -935,7 +936,8 @@ contract HyperdriveTest is BaseTest {
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
-        uint256 bondAmount
+        uint256 bondAmount,
+        uint256 totalGovernanceFee
     );
 
     event CloseLong(
@@ -943,7 +945,8 @@ contract HyperdriveTest is BaseTest {
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
-        uint256 bondAmount
+        uint256 bondAmount,
+        uint256 totalGovernanceFee
     );
 
     event CloseShort(
@@ -951,9 +954,32 @@ contract HyperdriveTest is BaseTest {
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
-        uint256 bondAmount
+        uint256 bondAmount,
+        uint256 totalGovernanceFee
     );
 
+    event MaturedLongs(
+        uint256 indexed assetId,
+        uint256 indexed maturityTime,
+        uint256 bondAmount,
+        uint256 totalGovernanceFee
+    );
+
+    event MaturedShorts(
+        uint256 indexed assetId,
+        uint256 indexed maturityTime,
+        uint256 bondAmount,
+        uint256 totalGovernanceFee
+    );
+
+    event CreateCheckpoint(
+        uint256 indexed checkpointTime,
+        uint256 sharePrice,
+        uint256 maturedShorts,
+        uint256 maturedLongs,
+        uint256 lpSharePrice
+    );
+    
     function verifyFactoryEvents(
         HyperdriveFactory factory,
         address deployer,
