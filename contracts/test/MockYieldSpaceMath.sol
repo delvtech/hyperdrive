@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import { YieldSpaceMath } from "../src/libraries/YieldSpaceMath.sol";
 
 contract MockYieldSpaceMath {
-    function calculateBondsOutGivenSharesInUnderestimate(
+    function calculateBondsOutGivenSharesInDown(
         uint256 z,
         uint256 y,
         uint256 dz,
@@ -12,12 +12,18 @@ contract MockYieldSpaceMath {
         uint256 c,
         uint256 mu
     ) external pure returns (uint256) {
-        uint256 result = YieldSpaceMath
-            .calculateBondsOutGivenSharesInUnderestimate(z, y, dz, t, c, mu);
+        uint256 result = YieldSpaceMath.calculateBondsOutGivenSharesInDown(
+            z,
+            y,
+            dz,
+            t,
+            c,
+            mu
+        );
         return result;
     }
 
-    function calculateSharesInGivenBondsOutOverestimate(
+    function calculateSharesInGivenBondsOutUp(
         uint256 z,
         uint256 y,
         uint256 dy,
@@ -25,12 +31,18 @@ contract MockYieldSpaceMath {
         uint256 c,
         uint256 mu
     ) external pure returns (uint256) {
-        uint256 result = YieldSpaceMath
-            .calculateSharesInGivenBondsOutOverestimate(z, y, dy, t, c, mu);
+        uint256 result = YieldSpaceMath.calculateSharesInGivenBondsOutUp(
+            z,
+            y,
+            dy,
+            t,
+            c,
+            mu
+        );
         return result;
     }
 
-    function calculateSharesInGivenBondsOutUnderestimate(
+    function calculateSharesInGivenBondsOutDown(
         uint256 z,
         uint256 y,
         uint256 dy,
@@ -38,12 +50,18 @@ contract MockYieldSpaceMath {
         uint256 c,
         uint256 mu
     ) external pure returns (uint256) {
-        uint256 result = YieldSpaceMath
-            .calculateSharesInGivenBondsOutUnderestimate(z, y, dy, t, c, mu);
+        uint256 result = YieldSpaceMath.calculateSharesInGivenBondsOutDown(
+            z,
+            y,
+            dy,
+            t,
+            c,
+            mu
+        );
         return result;
     }
 
-    function calculateSharesOutGivenBondsInUnderestimate(
+    function calculateSharesOutGivenBondsInDown(
         uint256 z,
         uint256 y,
         uint256 dy,
@@ -51,8 +69,14 @@ contract MockYieldSpaceMath {
         uint256 c,
         uint256 mu
     ) external pure returns (uint256) {
-        uint256 result = YieldSpaceMath
-            .calculateSharesOutGivenBondsInUnderestimate(z, y, dy, t, c, mu);
+        uint256 result = YieldSpaceMath.calculateSharesOutGivenBondsInDown(
+            z,
+            y,
+            dy,
+            t,
+            c,
+            mu
+        );
         return result;
     }
 
@@ -67,37 +91,25 @@ contract MockYieldSpaceMath {
         return result1;
     }
 
-    function modifiedYieldSpaceConstantOverestimate(
+    function kUp(
         uint256 z,
         uint256 y,
         uint256 t,
         uint256 c,
         uint256 mu
     ) external pure returns (uint256) {
-        uint256 result = YieldSpaceMath.modifiedYieldSpaceConstantOverestimate(
-            z,
-            y,
-            t,
-            c,
-            mu
-        );
+        uint256 result = YieldSpaceMath.kUp(z, y, t, c, mu);
         return result;
     }
 
-    function modifiedYieldSpaceConstantUnderestimate(
+    function kDown(
         uint256 z,
         uint256 y,
         uint256 t,
         uint256 c,
         uint256 mu
     ) external pure returns (uint256) {
-        uint256 result = YieldSpaceMath.modifiedYieldSpaceConstantUnderestimate(
-            z,
-            y,
-            t,
-            c,
-            mu
-        );
+        uint256 result = YieldSpaceMath.kDown(z, y, t, c, mu);
         return result;
     }
 }

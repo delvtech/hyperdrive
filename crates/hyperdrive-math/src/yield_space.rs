@@ -1,8 +1,8 @@
+use eyre::{eyre, Result};
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
 
-use crate::Asset;
-
+// FIXME:
 pub trait YieldSpace {
     /// Info ///
 
@@ -22,100 +22,216 @@ pub trait YieldSpace {
         ((self.mu() * self.z()) / self.y()).pow(self.t())
     }
 
-    fn get_out_for_in(&self, in_: Asset) -> FixedPoint {
-        match in_ {
-            Asset::Shares(in_) => self.get_bonds_out_for_shares_in(in_, private::Seal),
-            Asset::Bonds(in_) => self.get_shares_out_for_bonds_in(in_, private::Seal),
+    /// Calculates the amount of bonds a user will receive from the pool by
+    /// providing a specified amount of shares. We underestimate the amount of
+    /// bonds out to prevent sandwiches.
+    fn calculate_bonds_out_given_shares_in_underestimate(&self, dz: FixedPoint) -> FixedPoint {
+        // NOTE: We round k up to make the rhs of the equation larger.
+        //
+        // k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
+        let k = self.k_overestimate();
+
+        // NOTE: We round z down to make the rhs of the equation larger.
+        //
+        // (µ * (z + dz))^(1 - t)
+        let mut z = self.mu() * (self.z() + dz).pow(fixed!(1e18) - self.t());
+        // (c / µ) * (µ * (z + dz))^(1 - t)
+        z = self.c().mul_div_down(z, self.mu());
+
+        // NOTE: We round _y up to make the rhs of the equation larger.
+        //
+        // k - (c / µ) * (µ * (z + dz))^(1 - t))^(1 / (1 - t)))
+        let mut y = k - z;
+        if y >= fixed!(1e18) {
+            // Rounding up the exponent results in a larger result.
+            y = y.pow(fixed!(1e18).div_up(fixed!(1e18) - self.t()));
+        } else {
+            // Rounding down the exponent results in a larger result.
+            y = y.pow(fixed!(1e18) / (fixed!(1e18) - self.t()));
+        }
+
+        // Δy = y - (k - (c / µ) * (µ * (z + dz))^(1 - t))^(1 / (1 - t)))
+        self.y() - y
+    }
+
+    /// Calculates the amount of shares a user must provide the pool to receive
+    /// a specified amount of bonds. We overestimate the amount of shares in.
+    fn calculate_shares_in_given_bonds_out_overestimate(&self, dy: FixedPoint) -> FixedPoint {
+        // NOTE: We round k up to make the lhs of the equation larger.
+        //
+        // k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
+        let k = self.k_overestimate();
+
+        // (y - dy)^(1 - t)
+        let y = (self.y() - dy).pow(fixed!(1e18) - self.t());
+
+        // NOTE: We round _z up to make the lhs of the equation larger.
+        //
+        // ((k - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))
+        let mut z = (k - y).mul_div_up(self.mu(), self.c());
+        if z >= fixed!(1e18) {
+            // Rounding up the exponent results in a larger result.
+            z = z.pow(fixed!(1e18).div_up(fixed!(1e18) - self.t()));
+        } else {
+            // Rounding down the exponent results in a larger result.
+            z = z.pow(fixed!(1e18) / (fixed!(1e18) - self.t()));
+        }
+        // ((k - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
+        z = z.div_up(self.mu());
+
+        // Δz = (((k - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ - z
+        z - self.z()
+    }
+
+    /// Calculates the amount of shares a user must provide the pool to receive
+    /// a specified amount of bonds. We underestimate the amount of shares in.
+    fn calculate_shares_in_given_bonds_out_underestimate(&self, dy: FixedPoint) -> FixedPoint {
+        // NOTE: We round k down to make the lhs of the equation smaller.
+        //
+        // k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
+        let k = self.k_underestimate();
+
+        // (y - dy)^(1 - t)
+        let y = (self.y() - dy).pow(fixed!(1e18) - self.t());
+
+        // NOTE: We round _z down to make the lhs of the equation smaller.
+        //
+        // ((k - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))
+        let z = (k - y).mul_div_down(self.mu(), self.c());
+        if z >= fixed!(1e18) {
+            // Rounding down the exponent results in a smaller result.
+            z = z.pow(fixed!(1e18) / (fixed!(1e18) - self.t()));
+        } else {
+            // Rounding up the exponent results in a smaller result.
+            z = z.pow(fixed!(1e18).div_up(fixed!(1e18) - self.t()));
+        }
+        // ((k - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
+        z /= self.mu();
+
+        // Δz = (((k - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ - z
+        z - self.z()
+    }
+
+    /// Calculates the amount of shares a user will receive from the pool by
+    /// providing a specified amount of bonds. This function reverts if an
+    /// integer overflow or underflow occurs. We underestimate the amount of
+    /// shares out.
+    fn calculate_shares_out_given_bonds_in_underestimate(&self, dy: FixedPoint) -> FixedPoint {
+        self.calculate_shares_out_given_bonds_in_underestimate_safe(dy)
+            .unwrap()
+    }
+
+    /// Calculates the amount of shares a user will receive from the pool by
+    /// providing a specified amount of bonds. This function returns a Result
+    /// instead of panicking. We underestimate the amount of shares out.
+    fn calculate_shares_out_given_bonds_in_underestimate_safe(
+        &self,
+        dy: FixedPoint,
+    ) -> Result<FixedPoint> {
+        // NOTE: We round k up to make the rhs of the equation larger.
+        //
+        // k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
+        let k = self.k_overestimate();
+
+        // (y + dy)^(1 - t)
+        let y = (self.y() + dy).pow(fixed!(1e18) - self.t());
+
+        // If k is less than y, we return with a failure flag.
+        if k < y {
+            return Err(eyre!(
+                "calculate_shares_out_given_bonds_in_underestimate_safe: k = {} < {} = y",
+                k,
+                y
+            ));
+        }
+
+        // NOTE: We round _z up to make the rhs of the equation larger.
+        //
+        // ((k - (y + dy)^(1 - t)) / (c / µ))^(1 / (1 - t)))
+        let z = (k - y).mul_div_up(self.mu(), self.c());
+        if z >= fixed!(1e18) {
+            // Rounding the exponent up results in a larger outcome.
+            z = z.pow(fixed!(1e18).div_up(fixed!(1e18) - self.t()));
+        } else {
+            // Rounding the exponent down results in a larger outcome.
+            z = z.pow(fixed!(1e18) / (fixed!(1e18) - self.t()));
+        }
+        // ((k - (y + dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
+        z = z.div_up(self.mu());
+
+        // Δz = z - ((k - (y + dy)^(1 - t) ) / (c / µ))^(1 / (1 - t)) / µ
+        if self.z() > z {
+            Ok(self.z() - z)
+        } else {
+            Ok(fixed!(0))
         }
     }
 
-    fn get_out_for_in_safe(&self, in_: Asset) -> Option<FixedPoint> {
-        match in_ {
-            // TODO: Make this safer as needed.
-            Asset::Shares(in_) => Some(self.get_bonds_out_for_shares_in(in_, private::Seal)),
-            Asset::Bonds(in_) => self.get_shares_out_for_bonds_in_safe(in_, private::Seal),
-        }
-    }
-
-    fn get_in_for_out(&self, out: Asset) -> FixedPoint {
-        match out {
-            Asset::Shares(out) => self.get_bonds_in_for_shares_out(out, private::Seal),
-            Asset::Bonds(out) => self.get_shares_in_for_bonds_out(out, private::Seal),
-        }
-    }
-
-    fn get_max_buy(&self) -> (FixedPoint, FixedPoint) {
+    /// Calculates the maximum amount of bonds that can be purchased with the
+    /// specified reserves. We round so that the max buy amount is
+    /// underestimated.
+    fn calculate_max_buy(&self) -> FixedPoint {
         // We solve for the maximum buy using the constraint that the pool's
         // spot price can never exceed 1. We do this by noting that a spot price
         // of 1, (mu * z) / y ** tau = 1, implies that mu * z = y. This
-        // simplifies YieldSpace to k = ((c / mu) + 1) * y ** (1 - tau), and
-        // gives us the maximum bond reserves of y' = (k / ((c / mu) + 1)) ** (1 / (1 - tau))
-        // and the maximum share reserves of z' = y/mu.
-        let optimal_y = (self.k() / (self.c() / self.mu() + fixed!(1e18)))
-            .pow(fixed!(1e18) / (fixed!(1e18) - self.t()));
-        let optimal_z = optimal_y / self.mu();
+        // simplifies YieldSpace to k = ((c / mu) + 1) * y' ** (1 - tau), and
+        // gives us the maximum bond reserves of
+        // y' = (k / ((c / mu) + 1)) ** (1 / (1 - tau)) and the maximum share
+        // reserves of z' = y/mu.
+        let k = self.k_overestimate();
+        let mut optimal_y = k.div_up(self.c() / self.mu() + fixed!(1e18));
+        if optimal_y >= fixed!(1e18) {
+            // Rounding the exponent up results in a larger outcome.
+            optimal_y = optimal_y.pow(fixed!(1e18).div_up(fixed!(1e18) - self.t()));
+        } else {
+            // Rounding the exponent down results in a larger outcome.
+            optimal_y = optimal_y.pow(fixed!(1e18) / (fixed!(1e18) - self.t()));
+        }
 
-        // The optimal trade sizes are given by dz = z' - z and dy = y - y'.
-        (optimal_z - self.z(), self.y() - optimal_y)
+        // The optimal trade size is given by dy = y - y'.
+        self.y() - optimal_y
     }
 
-    fn k(&self) -> FixedPoint {
+    /// Calculates the maximum amount of bonds that can be sold with the
+    /// specified reserves. We round so that the max sell amount is
+    /// underestimated.
+    fn calculate_max_sell(&self, z_min: FixedPoint) -> FixedPoint {
+        // We solve for the maximum sell using the constraint that the pool's
+        // share reserves can never fall below the minimum share reserves zMin.
+        // Substituting z = zMin simplifies YieldSpace to
+        // k = (c / mu) * (mu * (zMin)) ** (1 - tau) + y' ** (1 - tau), and
+        // gives us the maximum bond reserves of
+        // y' = (k - (c / mu) * (mu * (zMin)) ** (1 - tau)) ** (1 / (1 - tau)).
+        let k = self.k_underestimate();
+        let mut optimal_y = k - self.c().mul_div_up(
+            self.mu().mul_up(z_min).pow(fixed!(1e18) - self.t()),
+            self.mu(),
+        );
+        if optimal_y >= fixed!(1e18) {
+            // Rounding the exponent down results in a smaller outcome.
+            optimal_y = optimal_y.pow(fixed!(1e18) / (fixed!(1e18) - self.t()));
+        } else {
+            // Rounding the exponent up results in a smaller outcome.
+            optimal_y = optimal_y.pow(fixed!(1e18).div_up(fixed!(1e18) - self.t()));
+        }
+
+        // The optimal trade size is given by dy = y' - y.
+        optimal_y - self.y()
+    }
+
+    // FIXME: Should I change this or the one in YieldSpaceMath
+    fn k_overestimate(&self) -> FixedPoint {
         (self.c() / self.mu()) * (self.mu() * self.z()).pow(fixed!(1e18) - self.t())
             + self.y().pow(fixed!(1e18) - self.t())
     }
 
-    /// Helpers ///
-
-    fn get_bonds_out_for_shares_in(&self, in_: FixedPoint, _: private::Seal) -> FixedPoint {
-        let z =
-            (self.c() / self.mu()) * (self.mu() * (self.z() + in_)).pow(fixed!(1e18) - self.t());
-        let y = (self.k() - z).pow(fixed!(1e18).div_up(fixed!(1e18) - self.t()));
-        self.y() - y
-    }
-
-    fn get_shares_out_for_bonds_in(&self, in_: FixedPoint, seal: private::Seal) -> FixedPoint {
-        self.get_shares_out_for_bonds_in_safe(in_, seal).unwrap()
-    }
-
-    fn get_shares_out_for_bonds_in_safe(
-        &self,
-        in_: FixedPoint,
-        _: private::Seal,
-    ) -> Option<FixedPoint> {
-        let y = (self.y() + in_).pow(fixed!(1e18) - self.t());
-        if self.k() < y {
-            return None;
-        }
-        let mut z = (self.k() - y) / (self.c() / self.mu());
-        z = z.pow(fixed!(1e18).div_up(fixed!(1e18) - self.t()));
-        z /= self.mu();
-        if self.z() > z {
-            Some(self.z() - z)
-        } else {
-            Some(fixed!(0))
-        }
-    }
-
-    fn get_bonds_in_for_shares_out(&self, out: FixedPoint, _: private::Seal) -> FixedPoint {
-        let z =
-            (self.c() / self.mu()) * (self.mu() * (self.z() - out)).pow(fixed!(1e18) - self.t());
-        let y = (self.k() - z).pow(fixed!(1e18).div_up(fixed!(1e18) - self.t()));
-        y - self.y()
-    }
-
-    fn get_shares_in_for_bonds_out(&self, out: FixedPoint, _: private::Seal) -> FixedPoint {
-        let y = (self.y() - out).pow(fixed!(1e18) - self.t());
-        let mut z = (self.k() - y) / (self.c() / self.mu());
-        z = z.pow(fixed!(1e18).div_up(fixed!(1e18) - self.t()));
-        z /= self.mu();
-        z - self.z()
+    fn k_underestimate(&self) -> FixedPoint {
+        (self.c() / self.mu()) * (self.mu() * self.z()).pow(fixed!(1e18) - self.t())
+            + self.y().pow(fixed!(1e18) - self.t())
     }
 }
 
-mod private {
-    pub struct Seal;
-}
-
+// FIXME: Fix these tests.
 #[cfg(test)]
 mod tests {
     use std::panic;
@@ -169,39 +285,6 @@ mod tests {
                 Err(_) => assert!(actual.is_err()),
             }
         }
-    }
-
-    #[tokio::test]
-    async fn fuzz_get_max_buy() -> Result<()> {
-        let chain = TestChainWithMocks::new(1).await?;
-        let mock = chain.mock_yield_space_math();
-
-        // Fuzz the rust and solidity implementations against each other.
-        let mut rng = thread_rng();
-        for _ in 0..*FAST_FUZZ_RUNS {
-            let state = rng.gen::<State>();
-            let actual = panic::catch_unwind(|| state.get_max_buy());
-            match mock
-                .calculate_max_buy(
-                    state.z().into(),
-                    state.y().into(),
-                    (fixed!(1e18) - state.t()).into(),
-                    state.c().into(),
-                    state.mu().into(),
-                )
-                .call()
-                .await
-            {
-                Ok((expected_dz, expected_dy)) => {
-                    let (actual_dz, actual_dy) = actual.unwrap();
-                    assert_eq!(actual_dz, FixedPoint::from(expected_dz));
-                    assert_eq!(actual_dy, FixedPoint::from(expected_dy));
-                }
-                Err(_) => assert!(actual.is_err()),
-            }
-        }
-
-        Ok(())
     }
 
     #[tokio::test]
@@ -302,8 +385,10 @@ mod tests {
         Ok(())
     }
 
+    // FIXME: Every test above this line needs to be fixed.
+
     #[tokio::test]
-    async fn fuzz_k() -> Result<()> {
+    async fn fuzz_calculate_max_buy() -> Result<()> {
         let chain = TestChainWithMocks::new(1).await?;
         let mock = chain.mock_yield_space_math();
 
@@ -311,14 +396,107 @@ mod tests {
         let mut rng = thread_rng();
         for _ in 0..*FAST_FUZZ_RUNS {
             let state = rng.gen::<State>();
-            let actual = panic::catch_unwind(|| state.k());
+            let actual = panic::catch_unwind(|| state.calculate_max_buy());
             match mock
-                .modified_yield_space_constant(
-                    (state.c() / state.mu()).into(),
-                    state.mu().into(),
+                .calculate_max_buy(
                     state.z().into(),
-                    (fixed!(1e18) - state.t()).into(),
                     state.y().into(),
+                    (fixed!(1e18) - state.t()).into(),
+                    state.c().into(),
+                    state.mu().into(),
+                )
+                .call()
+                .await
+            {
+                Ok(expected) => {
+                    assert_eq!(actual.unwrap(), FixedPoint::from(expected));
+                }
+                Err(_) => assert!(actual.is_err()),
+            }
+        }
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn fuzz_calculate_max_sell() -> Result<()> {
+        let chain = TestChainWithMocks::new(1).await?;
+        let mock = chain.mock_yield_space_math();
+
+        // Fuzz the rust and solidity implementations against each other.
+        let mut rng = thread_rng();
+        for _ in 0..*FAST_FUZZ_RUNS {
+            let state = rng.gen::<State>();
+            let z_min = rng.gen::<FixedPoint>();
+            let actual = panic::catch_unwind(|| state.calculate_max_sell(z_min));
+            match mock
+                .calculate_max_sell(
+                    state.z().into(),
+                    state.y().into(),
+                    z_min.into(),
+                    (fixed!(1e18) - state.t()).into(),
+                    state.c().into(),
+                    state.mu().into(),
+                )
+                .call()
+                .await
+            {
+                Ok(expected) => {
+                    assert_eq!(actual.unwrap(), FixedPoint::from(expected));
+                }
+                Err(_) => assert!(actual.is_err()),
+            }
+        }
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn fuzz_k_underestimate() -> Result<()> {
+        let chain = TestChainWithMocks::new(1).await?;
+        let mock = chain.mock_yield_space_math();
+
+        // Fuzz the rust and solidity implementations against each other.
+        let mut rng = thread_rng();
+        for _ in 0..*FAST_FUZZ_RUNS {
+            let state = rng.gen::<State>();
+            let actual = panic::catch_unwind(|| state.k_underestimate());
+            match mock
+                .modified_yield_space_constant_underestimate(
+                    state.z().into(),
+                    state.y().into(),
+                    (fixed!(1e18) - state.t()).into(),
+                    state.c().into(),
+                    state.mu().into(),
+                )
+                .call()
+                .await
+            {
+                Ok(expected) => assert_eq!(actual.unwrap(), FixedPoint::from(expected)),
+                Err(_) => assert!(actual.is_err()),
+            }
+        }
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn fuzz_k_overestimate() -> Result<()> {
+        let chain = TestChainWithMocks::new(1).await?;
+        let mock = chain.mock_yield_space_math();
+
+        // Fuzz the rust and solidity implementations against each other.
+        let mut rng = thread_rng();
+        for _ in 0..*FAST_FUZZ_RUNS {
+            let state = rng.gen::<State>();
+            let actual = panic::catch_unwind(|| state.k_overestimate());
+            match mock
+                .modified_yield_space_constant_overestimate(
+                    state.z().into(),
+                    state.y().into(),
+                    (fixed!(1e18) - state.t()).into(),
+                    state.c().into(),
+                    state.mu().into(),
                 )
                 .call()
                 .await

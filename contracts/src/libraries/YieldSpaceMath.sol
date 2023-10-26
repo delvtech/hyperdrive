@@ -33,7 +33,7 @@ library YieldSpaceMath {
 
     /// @dev Calculates the amount of bonds a user will receive from the pool by
     ///      providing a specified amount of shares. We underestimate the amount
-    ///      of bonds out to prevent sandwiches.
+    ///      of bonds out.
     /// @param z Amount of share reserves in the pool
     /// @param y Amount of bond reserves in the pool
     /// @param dz Amount of shares user wants to provide
@@ -41,7 +41,7 @@ library YieldSpaceMath {
     /// @param c Conversion rate between base and shares
     /// @param mu Interest normalization factor for shares
     /// @return The amount of bonds the user will receive
-    function calculateBondsOutGivenSharesInUnderestimate(
+    function calculateBondsOutGivenSharesInDown(
         uint256 z,
         uint256 y,
         uint256 dz,
@@ -52,7 +52,7 @@ library YieldSpaceMath {
         // NOTE: We round k up to make the rhs of the equation larger.
         //
         // k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
-        uint256 k = modifiedYieldSpaceConstantOverestimate(z, y, t, c, mu);
+        uint256 k = kUp(z, y, t, c, mu);
 
         // NOTE: We round z down to make the rhs of the equation larger.
         //
@@ -87,7 +87,7 @@ library YieldSpaceMath {
     /// @param c Conversion rate between base and shares
     /// @param mu Interest normalization factor for shares
     /// @return The amount of shares the user will pay
-    function calculateSharesInGivenBondsOutOverestimate(
+    function calculateSharesInGivenBondsOutUp(
         uint256 z,
         uint256 y,
         uint256 dy,
@@ -98,7 +98,7 @@ library YieldSpaceMath {
         // NOTE: We round k up to make the lhs of the equation larger.
         //
         // k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
-        uint256 k = modifiedYieldSpaceConstantOverestimate(z, y, t, c, mu);
+        uint256 k = kUp(z, y, t, c, mu);
 
         // (y - dy)^(1 - t)
         y = (y - dy).pow(t);
@@ -131,7 +131,7 @@ library YieldSpaceMath {
     /// @param c Conversion rate between base and shares
     /// @param mu Interest normalization factor for shares
     /// @return The amount of shares the user will pay
-    function calculateSharesInGivenBondsOutUnderestimate(
+    function calculateSharesInGivenBondsOutDown(
         uint256 z,
         uint256 y,
         uint256 dy,
@@ -142,7 +142,7 @@ library YieldSpaceMath {
         // NOTE: We round k down to make the lhs of the equation smaller.
         //
         // k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
-        uint256 k = modifiedYieldSpaceConstantUnderestimate(z, y, t, c, mu);
+        uint256 k = kDown(z, y, t, c, mu);
 
         // (y - dy)^(1 - t)
         y = (y - dy).pow(t);
@@ -176,7 +176,7 @@ library YieldSpaceMath {
     /// @param c Conversion rate between base and shares
     /// @param mu Interest normalization factor for shares
     /// @return result The amount of shares the user will receive
-    function calculateSharesOutGivenBondsInUnderestimate(
+    function calculateSharesOutGivenBondsInDown(
         uint256 z,
         uint256 y,
         uint256 dy,
@@ -185,7 +185,7 @@ library YieldSpaceMath {
         uint256 mu
     ) internal pure returns (uint256 result) {
         bool success;
-        (result, success) = calculateSharesOutGivenBondsInUnderestimateSafe(
+        (result, success) = calculateSharesOutGivenBondsInDownSafe(
             z,
             y,
             dy,
@@ -210,7 +210,7 @@ library YieldSpaceMath {
     /// @param mu Interest normalization factor for shares
     /// @return result The amount of shares the user will receive
     /// @return success A flag indicating whether or not the calculation succeeded.
-    function calculateSharesOutGivenBondsInUnderestimateSafe(
+    function calculateSharesOutGivenBondsInDownSafe(
         uint256 z,
         uint256 y,
         uint256 dy,
@@ -221,7 +221,7 @@ library YieldSpaceMath {
         // NOTE: We round k up to make the rhs of the equation larger.
         //
         // k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
-        uint256 k = modifiedYieldSpaceConstantOverestimate(z, y, t, c, mu);
+        uint256 k = kUp(z, y, t, c, mu);
 
         // (y + dy)^(1 - t)
         y = (y + dy).pow(t);
@@ -275,11 +275,11 @@ library YieldSpaceMath {
         // gives us the maximum bond reserves of
         // y' = (k / ((c / mu) + 1)) ** (1 / (1 - tau)) and the maximum share
         // reserves of z' = y/mu.
-        uint256 k = modifiedYieldSpaceConstantOverestimate(z, y, t, c, mu);
+        uint256 k = kUp(z, y, t, c, mu);
         uint256 optimalY = k.divUp(c.divDown(mu) + ONE);
         if (optimalY >= ONE) {
             // Rounding the exponent up results in a larger outcome.
-            optimalY = optimalY.pow(ONE.divDown(t));
+            optimalY = optimalY.pow(ONE.divUp(t));
         } else {
             // Rounding the exponent down results in a larger outcome.
             optimalY = optimalY.pow(ONE.divDown(t));
@@ -313,7 +313,7 @@ library YieldSpaceMath {
         // k = (c / mu) * (mu * (zMin)) ** (1 - tau) + y' ** (1 - tau), and
         // gives us the maximum bond reserves of
         // y' = (k - (c / mu) * (mu * (zMin)) ** (1 - tau)) ** (1 / (1 - tau)).
-        uint256 k = modifiedYieldSpaceConstantUnderestimate(z, y, t, c, mu);
+        uint256 k = kDown(z, y, t, c, mu);
         uint256 optimalY = k - c.mulDivUp(mu.mulUp(zMin).pow(t), mu);
         if (optimalY >= ONE) {
             // Rounding the exponent down results in a smaller outcome.
@@ -335,7 +335,7 @@ library YieldSpaceMath {
     /// @param c Conversion rate between base and shares.
     /// @param mu Interest normalization factor for shares.
     /// @return The modified YieldSpace Constant.
-    function modifiedYieldSpaceConstantOverestimate(
+    function kUp(
         uint256 z,
         uint256 y,
         uint256 t,
@@ -354,7 +354,7 @@ library YieldSpaceMath {
     /// @param c Conversion rate between base and shares.
     /// @param mu Interest normalization factor for shares.
     /// @return The modified YieldSpace Constant.
-    function modifiedYieldSpaceConstantUnderestimate(
+    function kDown(
         uint256 z,
         uint256 y,
         uint256 t,

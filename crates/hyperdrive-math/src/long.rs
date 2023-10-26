@@ -3,7 +3,7 @@ use fixed_point::FixedPoint;
 use fixed_point_macros::{fixed, int256};
 
 use super::State;
-use crate::{Asset, YieldSpace};
+use crate::YieldSpace;
 
 impl State {
     /// Gets the pool's solvency.
@@ -34,7 +34,8 @@ impl State {
     /// $$
     pub fn get_long_amount<F: Into<FixedPoint>>(&self, base_amount: F) -> FixedPoint {
         let base_amount = base_amount.into();
-        let long_amount = self.get_out_for_in(Asset::Shares(base_amount / self.share_price()));
+        let long_amount = self
+            .calculate_bonds_out_given_shares_in_underestimate(base_amount / self.share_price());
         long_amount - self.long_curve_fee(base_amount)
     }
 
@@ -355,7 +356,7 @@ impl State {
         // It's possible that k is slightly larger than the rhs in the inner
         // calculation. If this happens, we are close to the root, and we short
         // circuit.
-        let k = self.k();
+        let k = self.k_underestimate();
         let rhs =
             (self.share_price() / self.initial_share_price()) * inner.pow(self.time_stretch());
         if k < rhs {

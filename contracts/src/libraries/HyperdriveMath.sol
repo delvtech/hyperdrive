@@ -126,7 +126,7 @@ library HyperdriveMath {
         // NOTE: We underestimate the trader's bond proceeds to avoid sandwich
         // attacks.
         return
-            YieldSpaceMath.calculateBondsOutGivenSharesInUnderestimate(
+            YieldSpaceMath.calculateBondsOutGivenSharesInDown(
                 _effectiveShareReserves,
                 _bondReserves,
                 _shareAmount,
@@ -187,18 +187,17 @@ library HyperdriveMath {
 
             // NOTE: We underestimate the trader's share proceeds to avoid
             // sandwich attacks.
-            shareCurveDelta = YieldSpaceMath
-                .calculateSharesOutGivenBondsInUnderestimate(
-                    _effectiveShareReserves,
-                    _bondReserves,
-                    bondCurveDelta,
-                    // NOTE: Since the bonds traded on the curve are newly minted,
-                    // we use a time remaining of 1. This means that we can use
-                    // `_timeStretch = t * _timeStretch`.
-                    ONE - _timeStretch,
-                    _sharePrice,
-                    _initialSharePrice
-                );
+            shareCurveDelta = YieldSpaceMath.calculateSharesOutGivenBondsInDown(
+                _effectiveShareReserves,
+                _bondReserves,
+                bondCurveDelta,
+                // NOTE: Since the bonds traded on the curve are newly minted,
+                // we use a time remaining of 1. This means that we can use
+                // `_timeStretch = t * _timeStretch`.
+                ONE - _timeStretch,
+                _sharePrice,
+                _initialSharePrice
+            );
             shareProceeds += shareCurveDelta;
         }
     }
@@ -224,7 +223,7 @@ library HyperdriveMath {
     ) internal pure returns (uint256) {
         // NOTE: We underestimate the LP's share payment to avoid sandwiches.
         return
-            YieldSpaceMath.calculateSharesOutGivenBondsInUnderestimate(
+            YieldSpaceMath.calculateSharesOutGivenBondsInDown(
                 _effectiveShareReserves,
                 _bondReserves,
                 _amountIn,
@@ -285,18 +284,17 @@ library HyperdriveMath {
         if (bondCurveDelta > 0) {
             // NOTE: We overestimate the trader's share payment to avoid
             // sandwiches.
-            shareCurveDelta = YieldSpaceMath
-                .calculateSharesInGivenBondsOutOverestimate(
-                    _effectiveShareReserves,
-                    _bondReserves,
-                    bondCurveDelta,
-                    // NOTE: Since the bonds traded on the curve are newly minted,
-                    // we use a time remaining of 1. This means that we can use
-                    // `_timeStretch = t * _timeStretch`.
-                    ONE - _timeStretch,
-                    _sharePrice,
-                    _initialSharePrice
-                );
+            shareCurveDelta = YieldSpaceMath.calculateSharesInGivenBondsOutUp(
+                _effectiveShareReserves,
+                _bondReserves,
+                bondCurveDelta,
+                // NOTE: Since the bonds traded on the curve are newly minted,
+                // we use a time remaining of 1. This means that we can use
+                // `_timeStretch = t * _timeStretch`.
+                ONE - _timeStretch,
+                _sharePrice,
+                _initialSharePrice
+            );
             sharePayment += shareCurveDelta;
         }
     }
@@ -587,13 +585,7 @@ library HyperdriveMath {
         // the calculation for y' in YieldSpaceMath.calculateMaxBuy.
         uint256 optimalZ;
         {
-            uint256 k = YieldSpaceMath.modifiedYieldSpaceConstantUnderestimate(
-                z,
-                y,
-                t,
-                c,
-                mu
-            );
+            uint256 k = YieldSpaceMath.kDown(z, y, t, c, mu);
             optimalZ = k.divDown(c.divUp(mu) + ONE);
             if (optimalZ >= ONE) {
                 // Rounding the exponent down results in a smaller outcome.
@@ -953,7 +945,7 @@ library HyperdriveMath {
         uint256 inner = _params.initialSharePrice.mulDown(
             _effectiveShareReserves + shareAmount
         );
-        uint256 k = YieldSpaceMath.modifiedYieldSpaceConstantUnderestimate(
+        uint256 k = YieldSpaceMath.kDown(
             _effectiveShareReserves,
             _params.bondReserves,
             ONE - _params.timeStretch,
@@ -1187,7 +1179,7 @@ library HyperdriveMath {
         // k = (c / mu) * (mu * (z' - zeta)) ** (1 - t_s) + y' ** (1 - t_s)
         //                              =>
         // y' = (k - (c / mu) * (mu * (z' - zeta)) ** (1 - t_s)) ** (1 / (1 - t_s))
-        uint256 k = YieldSpaceMath.modifiedYieldSpaceConstantUnderestimate(
+        uint256 k = YieldSpaceMath.kDown(
             _effectiveShareReserves,
             _params.bondReserves,
             ONE - _params.timeStretch,
@@ -1318,7 +1310,7 @@ library HyperdriveMath {
         // NOTE: We underestimate here to match the behavior of
         // `calculateOpenShort`.
         (uint256 shareAmount, bool success) = YieldSpaceMath
-            .calculateSharesOutGivenBondsInUnderestimateSafe(
+            .calculateSharesOutGivenBondsInDownSafe(
                 _effectiveShareReserves,
                 _params.bondReserves,
                 _shortAmount,
@@ -1417,7 +1409,7 @@ library HyperdriveMath {
         uint256 _shortAmount,
         uint256 _effectiveShareReserves
     ) internal pure returns (uint256) {
-        uint256 k = YieldSpaceMath.modifiedYieldSpaceConstantUnderestimate(
+        uint256 k = YieldSpaceMath.kDown(
             _effectiveShareReserves,
             _params.bondReserves,
             ONE - _params.timeStretch,
@@ -1530,7 +1522,7 @@ library HyperdriveMath {
                 // NOTE: We underestimate here to match the behavior of
                 // `calculateCloseLong`.
                 _params.shareReserves -= YieldSpaceMath
-                    .calculateSharesOutGivenBondsInUnderestimate(
+                    .calculateSharesOutGivenBondsInDown(
                         effectiveShareReserves,
                         _params.bondReserves,
                         maxCurveTrade,
@@ -1563,7 +1555,7 @@ library HyperdriveMath {
                 // NOTE: We overestimate here to match the behavior of
                 // `calculateCloseShort`.
                 _params.shareReserves += YieldSpaceMath
-                    .calculateSharesInGivenBondsOutOverestimate(
+                    .calculateSharesInGivenBondsOutUp(
                         effectiveShareReserves,
                         _params.bondReserves,
                         maxCurveTrade,

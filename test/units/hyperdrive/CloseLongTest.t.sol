@@ -464,7 +464,7 @@ contract CloseLongTest is HyperdriveTest {
             // Portion of immature bonds are sold on the YieldSpace curve
             uint256 immatureBonds = bondAmount - matureBonds;
             bondsValue += YieldSpaceMath
-                .calculateSharesOutGivenBondsInUnderestimate(
+                .calculateSharesOutGivenBondsInDown(
                     poolInfoBefore.shareReserves,
                     poolInfoBefore.bondReserves,
                     immatureBonds,
@@ -862,7 +862,7 @@ contract CloseLongTest is HyperdriveTest {
                     int256(shareAdjustmentDelta)
             );
             assertApproxEqAbs(
-                YieldSpaceMath.modifiedYieldSpaceConstantUnderestimate(
+                YieldSpaceMath.kDown(
                     HyperdriveMath.calculateEffectiveShareReserves(
                         poolInfoAfter.shareReserves,
                         poolInfoAfter.shareAdjustment
@@ -872,7 +872,7 @@ contract CloseLongTest is HyperdriveTest {
                     poolInfoAfter.sharePrice,
                     initialSharePrice
                 ),
-                YieldSpaceMath.modifiedYieldSpaceConstantUnderestimate(
+                YieldSpaceMath.kDown(
                     HyperdriveMath.calculateEffectiveShareReserves(
                         testCase.poolInfoBefore.shareReserves,
                         testCase.poolInfoBefore.shareAdjustment

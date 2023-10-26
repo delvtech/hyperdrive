@@ -14,23 +14,6 @@ use rand::{
 pub use utils::*;
 pub use yield_space::YieldSpace;
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
-pub enum Asset {
-    Shares(FixedPoint),
-    Bonds(FixedPoint),
-}
-
-impl Distribution<Asset> for Standard {
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Asset {
-        let content = rng.gen::<FixedPoint>();
-        if rng.gen::<bool>() {
-            Asset::Shares(content)
-        } else {
-            Asset::Bonds(content)
-        }
-    }
-}
-
 #[derive(Debug)]
 pub struct State {
     pub config: PoolConfig,
