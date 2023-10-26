@@ -63,9 +63,6 @@ abstract contract HyperdriveLP is IHyperdriveWrite, HyperdriveTWAP {
         }
         lpShares = shares - 2 * _minimumShareReserves;
 
-        // Create an initial checkpoint.
-        _applyCheckpoint(_latestCheckpoint(), sharePrice);
-
         // Set the initialized state to true.
         _marketState.isInitialized = true;
 
@@ -91,6 +88,9 @@ abstract contract HyperdriveLP is IHyperdriveWrite, HyperdriveTWAP {
         // in practice.
         _mint(AssetId._LP_ASSET_ID, address(0), _minimumShareReserves);
         _mint(AssetId._LP_ASSET_ID, _options.destination, lpShares);
+
+        // Create an initial checkpoint.
+        _applyCheckpoint(_latestCheckpoint(), sharePrice);
 
         // Emit an Initialize event.
         emit Initialize(_options.destination, lpShares, _contribution, _apr);

@@ -979,7 +979,7 @@ contract HyperdriveTest is BaseTest {
         uint256 maturedLongs,
         uint256 lpSharePrice
     );
-    
+
     function verifyFactoryEvents(
         HyperdriveFactory factory,
         address deployer,
