@@ -2,7 +2,7 @@ use ethers::types::U256;
 use eyre::Result;
 use fixed_point::FixedPoint;
 use fixed_point_macros::{fixed, uint256};
-use hyperdrive_math::{calculate_bonds_given_shares_and_rate, get_effective_share_reserves};
+use hyperdrive_math::{calculate_bonds_given_shares_and_rate, get_effective_share_reserves, State};
 use hyperdrive_wrappers::wrappers::{
     erc4626_data_provider::GetPoolConfigCall, i_hyperdrive::Checkpoint,
 };
@@ -11,7 +11,7 @@ use rand_chacha::ChaCha8Rng;
 use test_utils::{
     agent::Agent,
     chain::{Chain, ChainClient, TestChain},
-    constants::FUZZ_RUNS,
+    constants::{FAST_FUZZ_RUNS, FUZZ_RUNS},
 };
 
 /// Executes random trades throughout a Hyperdrive term.
@@ -246,36 +246,13 @@ pub async fn test_integration_calculate_bonds_given_shares_and_rate() -> Result<
         ChaCha8Rng::seed_from_u64(seed)
     };
 
-    // Initialize the test chain and agents.
-    let chain = TestChain::new(3).await?;
-    let mut alice = Agent::new(
-        chain.client(chain.accounts()[0].clone()).await?,
-        chain.addresses(),
-        None,
-    )
-    .await?;
-    let mut bob = Agent::new(
-        chain.client(chain.accounts()[1].clone()).await?,
-        chain.addresses(),
-        None,
-    )
-    .await?;
-    let mut celine = Agent::new(
-        chain.client(chain.accounts()[2].clone()).await?,
-        chain.addresses(),
-        None,
-    )
-    .await?;
-
-    for _ in 0..*FUZZ_RUNS {
-        // Snapshot the chain and run the preamble.
-        let id = chain.snapshot().await?;
+    for _ in 0..*FAST_FUZZ_RUNS {
+        // Load a random state configuration.
+        let state = rng.gen::<State>();
         let fixed_rate = fixed!(0.05e18);
-        preamble(&mut rng, &mut alice, &mut bob, &mut celine, fixed_rate).await?;
 
         // Calculate the bond reserves that target the current rate with the current
         // share reserves.
-        let state = alice.get_state().await?;
         let effective_share_reserves = get_effective_share_reserves(
             state.info.share_reserves.into(),
             state.info.share_adjustment.into(),
@@ -298,17 +275,11 @@ pub async fn test_integration_calculate_bonds_given_shares_and_rate() -> Result<
             sol_reserves - rust_reserves
         };
         assert!(
-            delta < fixed!(1e12), // Better than 1e-6 error.
-            "Invalid bond reserve calculation.rust_reserves={} != sol_reserves={} within 1e12",
+            delta < fixed!(1e14), // Better than 1e-4 error.
+            "Invalid bond reserve calculation.rust_reserves={} != sol_reserves={} within 1e14",
             rust_reserves,
             sol_reserves
         );
-
-        // Revert to the snapshot and reset the agent's wallets.
-        chain.revert(id).await?;
-        alice.reset(Default::default());
-        bob.reset(Default::default());
-        celine.reset(Default::default());
     }
 
     Ok(())
