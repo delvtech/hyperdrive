@@ -114,8 +114,7 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
             assetId,
             maturityTime,
             baseAmount,
-            bondProceeds,
-            totalGovernanceFee
+            bondProceeds
         );
 
         return (maturityTime, bondProceeds);
@@ -211,8 +210,7 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
             maturityTime,
             baseProceeds,
-            bondAmount,
-            totalGovernanceFee
+            bondAmount
         );
 
         return (baseProceeds);

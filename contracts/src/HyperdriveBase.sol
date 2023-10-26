@@ -58,8 +58,7 @@ abstract contract HyperdriveBase is
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
-        uint256 bondAmount,
-        uint256 totalGovernanceFee
+        uint256 bondAmount
     );
 
     event OpenShort(
@@ -67,8 +66,7 @@ abstract contract HyperdriveBase is
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
-        uint256 bondAmount,
-        uint256 totalGovernanceFee
+        uint256 bondAmount
     );
 
     event CloseLong(
@@ -76,8 +74,7 @@ abstract contract HyperdriveBase is
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
-        uint256 bondAmount,
-        uint256 totalGovernanceFee
+        uint256 bondAmount
     );
 
     event CloseShort(
@@ -85,8 +82,7 @@ abstract contract HyperdriveBase is
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
-        uint256 bondAmount,
-        uint256 totalGovernanceFee
+        uint256 bondAmount
     );
 
     event MaturedLongs(
@@ -110,6 +106,8 @@ abstract contract HyperdriveBase is
         uint256 maturedLongs,
         uint256 lpSharePrice
     );
+
+    event CollectGovernanceFee(address indexed collector, uint256 fees);
 
     /// @notice Initializes a Hyperdrive pool.
     /// @param _config The configuration of the Hyperdrive pool.
@@ -252,6 +250,7 @@ abstract contract HyperdriveBase is
         uint256 governanceFeesAccrued = _governanceFeesAccrued;
         delete _governanceFeesAccrued;
         proceeds = _withdraw(governanceFeesAccrued, _options);
+        emit CollectGovernanceFee(_feeCollector, proceeds);
     }
 
     /// Helpers ///

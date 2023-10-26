@@ -46,8 +46,7 @@ interface IHyperdrive is
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
-        uint256 bondAmount,
-        uint256 totalGovernanceFee
+        uint256 bondAmount
     );
 
     event OpenShort(
@@ -55,8 +54,7 @@ interface IHyperdrive is
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
-        uint256 bondAmount,
-        uint256 totalGovernanceFee
+        uint256 bondAmount
     );
 
     event CloseLong(
@@ -64,8 +62,7 @@ interface IHyperdrive is
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
-        uint256 bondAmount,
-        uint256 totalGovernanceFee
+        uint256 bondAmount
     );
 
     event CloseShort(
@@ -73,8 +70,7 @@ interface IHyperdrive is
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
-        uint256 bondAmount,
-        uint256 totalGovernanceFee
+        uint256 bondAmount
     );
 
     event MaturedLongs(
@@ -98,6 +94,8 @@ interface IHyperdrive is
         uint256 maturedLongs,
         uint256 lpSharePrice
     );
+
+    event CollectGovernanceFee(address indexed collector, uint256 fees);
 
     /// Structs ///
 

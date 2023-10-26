@@ -63,15 +63,17 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
         // backdate the bonds sold to the beginning of the checkpoint.
         maturityTime = latestCheckpoint + _positionDuration;
         uint256 shareReservesDelta;
-        uint256 totalGovernanceFee;
-        (
-            traderDeposit,
-            shareReservesDelta,
-            totalGovernanceFee
-        ) = _calculateOpenShort(_bondAmount, sharePrice, openSharePrice);
+        {
+            uint256 totalGovernanceFee;
+            (
+                traderDeposit,
+                shareReservesDelta,
+                totalGovernanceFee
+            ) = _calculateOpenShort(_bondAmount, sharePrice, openSharePrice);
 
-        // Attribute the governance fees.
-        _governanceFeesAccrued += totalGovernanceFee;
+            // Attribute the governance fees.
+            _governanceFeesAccrued += totalGovernanceFee;
+        }
 
         // Take custody of the trader's deposit and ensure that the trader
         // doesn't pay more than their max deposit. The trader's deposit is
@@ -103,8 +105,7 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
             assetId,
             maturityTime,
             traderDeposit,
-            bondAmount,
-            totalGovernanceFee
+            bondAmount
         );
 
         return (maturityTime, traderDeposit);
@@ -220,8 +221,7 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, maturityTime),
             maturityTime,
             baseProceeds,
-            bondAmount,
-            totalGovernanceFee
+            bondAmount
         );
 
         return baseProceeds;
