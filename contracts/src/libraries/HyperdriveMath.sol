@@ -588,11 +588,11 @@ library HyperdriveMath {
         uint256 optimalZ;
         {
             uint256 k = YieldSpaceMath.modifiedYieldSpaceConstantUnderestimate(
-                c,
-                mu,
                 z,
+                y,
                 t,
-                y
+                c,
+                mu
             );
             optimalZ = k.divDown(c.divUp(mu) + ONE);
             if (optimalZ >= ONE) {
@@ -954,11 +954,11 @@ library HyperdriveMath {
             _effectiveShareReserves + shareAmount
         );
         uint256 k = YieldSpaceMath.modifiedYieldSpaceConstantUnderestimate(
-            _params.sharePrice,
-            _params.initialSharePrice,
             _effectiveShareReserves,
+            _params.bondReserves,
             ONE - _params.timeStretch,
-            _params.bondReserves
+            _params.sharePrice,
+            _params.initialSharePrice
         );
         derivative = ONE.divDown(inner.pow(_params.timeStretch));
 
@@ -1188,11 +1188,11 @@ library HyperdriveMath {
         //                              =>
         // y' = (k - (c / mu) * (mu * (z' - zeta)) ** (1 - t_s)) ** (1 / (1 - t_s))
         uint256 k = YieldSpaceMath.modifiedYieldSpaceConstantUnderestimate(
-            _params.sharePrice,
-            _params.initialSharePrice,
             _effectiveShareReserves,
+            _params.bondReserves,
             ONE - _params.timeStretch,
-            _params.bondReserves
+            _params.sharePrice,
+            _params.initialSharePrice
         );
         uint256 optimalBondReserves = (k -
             (_params.sharePrice.divDown(_params.initialSharePrice)).mulDown(
@@ -1418,11 +1418,11 @@ library HyperdriveMath {
         uint256 _effectiveShareReserves
     ) internal pure returns (uint256) {
         uint256 k = YieldSpaceMath.modifiedYieldSpaceConstantUnderestimate(
-            _params.sharePrice,
-            _params.initialSharePrice,
             _effectiveShareReserves,
+            _params.bondReserves,
             ONE - _params.timeStretch,
-            _params.bondReserves
+            _params.sharePrice,
+            _params.initialSharePrice
         );
         uint256 lhs = ONE.divDown(
             _params.sharePrice.mulUp(

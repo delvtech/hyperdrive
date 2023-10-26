@@ -68,35 +68,35 @@ contract MockYieldSpaceMath {
     }
 
     function modifiedYieldSpaceConstantOverestimate(
-        uint256 c,
-        uint256 mu,
         uint256 z,
+        uint256 y,
         uint256 t,
-        uint256 y
+        uint256 c,
+        uint256 mu
     ) external pure returns (uint256) {
         uint256 result = YieldSpaceMath.modifiedYieldSpaceConstantOverestimate(
-            c,
-            mu,
             z,
+            y,
             t,
-            y
+            c,
+            mu
         );
         return result;
     }
 
     function modifiedYieldSpaceConstantUnderestimate(
-        uint256 c,
-        uint256 mu,
         uint256 z,
+        uint256 y,
         uint256 t,
-        uint256 y
+        uint256 c,
+        uint256 mu
     ) external pure returns (uint256) {
         uint256 result = YieldSpaceMath.modifiedYieldSpaceConstantUnderestimate(
-            c,
-            mu,
             z,
+            y,
             t,
-            y
+            c,
+            mu
         );
         return result;
     }

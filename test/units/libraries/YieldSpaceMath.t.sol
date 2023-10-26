@@ -226,18 +226,18 @@ contract YieldSpaceMathTest is Test {
         // that the ending spot price is close to 1.
         assertApproxEqAbs(
             yieldSpaceMath.modifiedYieldSpaceConstantUnderestimate(
-                sharePrice,
-                initialSharePrice,
                 shareReserves,
+                bondReserves,
                 FixedPointMath.ONE_18 - timeStretch,
-                bondReserves
+                sharePrice,
+                initialSharePrice
             ),
             yieldSpaceMath.modifiedYieldSpaceConstantUnderestimate(
-                sharePrice,
-                initialSharePrice,
                 shareReserves + maxDz,
+                bondReserves - maxDy,
                 FixedPointMath.ONE_18 - timeStretch,
-                bondReserves - maxDy
+                sharePrice,
+                initialSharePrice
             ),
             1e12 // TODO: Investigate this bound.
         );

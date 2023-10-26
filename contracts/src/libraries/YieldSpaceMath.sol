@@ -52,7 +52,7 @@ library YieldSpaceMath {
         // NOTE: We round k up to make the rhs of the equation larger.
         //
         // k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
-        uint256 k = modifiedYieldSpaceConstantOverestimate(c, mu, z, t, y);
+        uint256 k = modifiedYieldSpaceConstantOverestimate(z, y, t, c, mu);
 
         // NOTE: We round z down to make the rhs of the equation larger.
         //
@@ -98,7 +98,7 @@ library YieldSpaceMath {
         // NOTE: We round k up to make the lhs of the equation larger.
         //
         // k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
-        uint256 k = modifiedYieldSpaceConstantOverestimate(c, mu, z, t, y);
+        uint256 k = modifiedYieldSpaceConstantOverestimate(z, y, t, c, mu);
 
         // (y - dy)^(1 - t)
         y = (y - dy).pow(t);
@@ -142,7 +142,7 @@ library YieldSpaceMath {
         // NOTE: We round k down to make the lhs of the equation smaller.
         //
         // k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
-        uint256 k = modifiedYieldSpaceConstantUnderestimate(c, mu, z, t, y);
+        uint256 k = modifiedYieldSpaceConstantUnderestimate(z, y, t, c, mu);
 
         // (y - dy)^(1 - t)
         y = (y - dy).pow(t);
@@ -221,7 +221,7 @@ library YieldSpaceMath {
         // NOTE: We round k up to make the rhs of the equation larger.
         //
         // k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
-        uint256 k = modifiedYieldSpaceConstantOverestimate(c, mu, z, t, y);
+        uint256 k = modifiedYieldSpaceConstantOverestimate(z, y, t, c, mu);
 
         // (y + dy)^(1 - t)
         y = (y + dy).pow(t);
@@ -275,7 +275,7 @@ library YieldSpaceMath {
         // gives us the maximum bond reserves of
         // y' = (k / ((c / mu) + 1)) ** (1 / (1 - tau)) and the maximum share
         // reserves of z' = y/mu.
-        uint256 k = modifiedYieldSpaceConstantOverestimate(c, mu, z, t, y);
+        uint256 k = modifiedYieldSpaceConstantOverestimate(z, y, t, c, mu);
         uint256 optimalY = k.divUp(c.divDown(mu) + ONE);
         if (optimalY >= ONE) {
             // Rounding the exponent up results in a larger outcome.
@@ -313,7 +313,7 @@ library YieldSpaceMath {
         // k = (c / mu) * (mu * (zMin)) ** (1 - tau) + y' ** (1 - tau), and
         // gives us the maximum bond reserves of
         // y' = (k - (c / mu) * (mu * (zMin)) ** (1 - tau)) ** (1 / (1 - tau)).
-        uint256 k = modifiedYieldSpaceConstantUnderestimate(c, mu, z, t, y);
+        uint256 k = modifiedYieldSpaceConstantUnderestimate(z, y, t, c, mu);
         uint256 optimalY = k - c.mulDivUp(mu.mulUp(zMin).pow(t), mu);
         if (optimalY >= ONE) {
             // Rounding the exponent down results in a smaller outcome.
@@ -327,43 +327,39 @@ library YieldSpaceMath {
         return optimalY - y;
     }
 
-    // FIXME: Change the parameter order.
-    //
     /// @dev Helper function to derive the invariant constant k. This variant
     ///      overestimates the result.
+    /// @param z Amount of share reserves in the pool.
+    /// @param y Amount of bond reserves in the pool.
+    /// @param t Amount of time elapsed since term start.
     /// @param c Conversion rate between base and shares.
     /// @param mu Interest normalization factor for shares.
-    /// @param z Amount of share reserves in the pool.
-    /// @param t Amount of time elapsed since term start.
-    /// @param y Amount of bond reserves in the pool.
     /// @return The modified YieldSpace Constant.
     function modifiedYieldSpaceConstantOverestimate(
-        uint256 c,
-        uint256 mu,
         uint256 z,
+        uint256 y,
         uint256 t,
-        uint256 y
+        uint256 c,
+        uint256 mu
     ) internal pure returns (uint256) {
         /// k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
         return c.mulDivUp(mu.mulUp(z).pow(t), mu) + y.pow(t);
     }
 
-    // FIXME: Change the parameter order.
-    //
     /// @dev Helper function to derive the invariant constant k. This variant
     ///      underestimates the result.
+    /// @param z Amount of share reserves in the pool.
+    /// @param y Amount of bond reserves in the pool.
+    /// @param t Amount of time elapsed since term start.
     /// @param c Conversion rate between base and shares.
     /// @param mu Interest normalization factor for shares.
-    /// @param z Amount of share reserves in the pool.
-    /// @param t Amount of time elapsed since term start.
-    /// @param y Amount of bond reserves in the pool.
     /// @return The modified YieldSpace Constant.
     function modifiedYieldSpaceConstantUnderestimate(
-        uint256 c,
-        uint256 mu,
         uint256 z,
+        uint256 y,
         uint256 t,
-        uint256 y
+        uint256 c,
+        uint256 mu
     ) internal pure returns (uint256) {
         /// k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
         return c.mulDivDown(mu.mulDown(z).pow(t), mu) + y.pow(t);
