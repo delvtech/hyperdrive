@@ -366,12 +366,9 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
             _timeStretch
         );
 
-        // FIXME: Document this.
-        //
-        // FIXME: I think we should calculate the ending spot price using the
-        // _shareAmount and bondReservesDelta. The governance fee is something
-        // that updates the curve separately from the trade and doesn't give us
-        // good information about the trader's execution price.
+        // Simulate the ending spot price after making the trade on the curve.
+        // We revert if the ending spot price is greater than the max spot price
+        // to prevent users from buying bonds at negative interest rates.
         {
             uint256 endingSpotPrice = HyperdriveMath.calculateSpotPrice(
                 _effectiveShareReserves() + _shareAmount,
@@ -388,7 +385,7 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
             }
         }
 
-        // Record an oracle update
+        // Record an oracle update if enough time has elapsed.
         recordPrice(spotPrice);
 
         // Calculate the fees charged to the user (totalCurveFee) and the portion

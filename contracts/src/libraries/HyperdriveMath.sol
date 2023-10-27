@@ -578,8 +578,6 @@ library HyperdriveMath {
         return (maxBaseAmount, maxBondAmount);
     }
 
-    // FIXME: Document this.
-    //
     /// @dev Calculates the largest long that can be opened without buying bonds
     ///      at a negative interest rate. This calculation does not take
     ///      Hyperdrive's solvency constraints into account and shouldn't be
@@ -598,7 +596,31 @@ library HyperdriveMath {
         pure
         returns (uint256 absoluteMaxBaseAmount, uint256 absoluteMaxBondAmount)
     {
-        // FIXME: Document this.
+        // We are targeting the pool's max spot price of:
+        //
+        // p_max = 1 / (1 + curveFee * (1 / p_0 - 1))
+        //
+        // We can derive a formula for the target bond reserves y_t in
+        // terms of the target share reserves z_t as follows:
+        //
+        // p_max = ((mu * (z_t - zeta)) / y_t) ** t_s
+        //
+        //                       =>
+        //
+        // y_t = (mu * (z_t - zeta)) * (1 + curveFee * (1 / p_0 - 1)) ** (1 / t_s)
+        //
+        // We can use this formula to solve our YieldSpace invariant for z_t:
+        //
+        // k = (c / mu) * (mu * (z_t - zeta)) ** (1 - t_s) +
+        //     (
+        //         (mu * (z_t - zeta)) * (1 + curveFee * (1 / p_0 - 1)) ** (1 / t_s)
+        //     ) ** (1 - t_s)
+        //
+        //                       =>
+        //
+        // z_t = zeta + (1 / mu) * (
+        //           k / ((c / mu) + curveFee * ((1 / p_0) - 1) + 1)
+        //       ) ** (1 / (1 - t_s))
         uint256 targetShareReserves;
         uint256 k = YieldSpaceMath.kDown(
             _effectiveShareReserves,
@@ -622,15 +644,24 @@ library HyperdriveMath {
         );
         targetShareReserves = uint256(targetShareReserves_);
 
-        // FIXME
+        // Now that we have the target share reserves, we can calculate the
+        // target bond reserves using the formula:
+        //
+        // y_t = (mu * (z_t - zeta)) * (1 + curveFee * (1 / p_0 - 1)) ** (1 / t_s)
         uint256 targetBondReserves = (ONE +
             _params.curveFee.mulDown(ONE.divDown(_spotPrice) - ONE))
             .pow(ONE.divUp(_params.timeStretch))
             .mulDown(inner);
 
-        // FIXME
+        // The absolute max base amount is given by:
+        //
+        // absoluteMaxBaseAmount = c * (z_t - z)
         absoluteMaxBaseAmount = (targetShareReserves - _params.shareReserves)
             .mulDown(_params.sharePrice);
+
+        // The absolute max bond amount is given by:
+        //
+        // absoluteMaxBondAmount = y - y_t
         absoluteMaxBondAmount = _params.bondReserves - targetBondReserves;
     }
 
