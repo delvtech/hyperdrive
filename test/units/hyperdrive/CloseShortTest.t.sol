@@ -726,7 +726,7 @@ contract CloseShortTest is HyperdriveTest {
                 FixedPointMath.ONE_18 - timeRemaining,
                 testCase.poolInfoBefore.sharePrice
             ) +
-                YieldSpaceMath.calculateSharesInGivenBondsOut(
+                YieldSpaceMath.calculateSharesInGivenBondsOutUp(
                     testCase.poolInfoBefore.shareReserves,
                     testCase.poolInfoBefore.bondReserves,
                     testCase.bondAmount.mulDown(timeRemaining),
@@ -774,27 +774,25 @@ contract CloseShortTest is HyperdriveTest {
                     int256(shareAdjustmentDelta)
             );
             assertApproxEqAbs(
-                YieldSpaceMath.modifiedYieldSpaceConstant(
-                    poolInfoAfter.sharePrice.divDown(initialSharePrice),
-                    initialSharePrice,
+                YieldSpaceMath.kDown(
                     HyperdriveMath.calculateEffectiveShareReserves(
                         poolInfoAfter.shareReserves,
                         poolInfoAfter.shareAdjustment
                     ),
+                    poolInfoAfter.bondReserves,
                     ONE - hyperdrive.getPoolConfig().timeStretch,
-                    poolInfoAfter.bondReserves
+                    poolInfoAfter.sharePrice,
+                    initialSharePrice
                 ),
-                YieldSpaceMath.modifiedYieldSpaceConstant(
-                    testCase.poolInfoBefore.sharePrice.divDown(
-                        initialSharePrice
-                    ),
-                    initialSharePrice,
+                YieldSpaceMath.kDown(
                     HyperdriveMath.calculateEffectiveShareReserves(
                         testCase.poolInfoBefore.shareReserves,
                         testCase.poolInfoBefore.shareAdjustment
                     ),
+                    testCase.poolInfoBefore.bondReserves,
                     ONE - hyperdrive.getPoolConfig().timeStretch,
-                    testCase.poolInfoBefore.bondReserves
+                    testCase.poolInfoBefore.sharePrice,
+                    initialSharePrice
                 ),
                 1e10
             );

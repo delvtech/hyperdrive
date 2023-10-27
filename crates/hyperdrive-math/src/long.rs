@@ -3,7 +3,7 @@ use fixed_point::FixedPoint;
 use fixed_point_macros::{fixed, int256};
 
 use super::State;
-use crate::{Asset, YieldSpace};
+use crate::YieldSpace;
 
 impl State {
     /// Gets the pool's solvency.
@@ -34,7 +34,8 @@ impl State {
     /// $$
     pub fn get_long_amount<F: Into<FixedPoint>>(&self, base_amount: F) -> FixedPoint {
         let base_amount = base_amount.into();
-        let long_amount = self.get_out_for_in(Asset::Shares(base_amount / self.share_price()));
+        let long_amount =
+            self.calculate_bonds_out_given_shares_in_down(base_amount / self.share_price());
         long_amount - self.long_curve_fee(base_amount)
     }
 
@@ -55,7 +56,7 @@ impl State {
         // Get the maximum long that brings the spot price to 1. If the pool is
         // solvent after opening this long, then we're done.
         let (absolute_max_base_amount, absolute_max_bond_amount) = {
-            let (share_amount, mut bond_amount) = self.get_max_buy();
+            let (share_amount, mut bond_amount) = self.absolute_max_long();
             let base_amount = self.share_price() * share_amount;
             bond_amount -= self.long_curve_fee(base_amount);
             (base_amount, bond_amount)
@@ -142,6 +143,29 @@ impl State {
         }
 
         max_base_amount
+    }
+
+    fn absolute_max_long(&self) -> (FixedPoint, FixedPoint) {
+        // We can calculate the maximum share reserves as z' = y' / mu; however,
+        // we do the computation from scratch to ensure that we're rounding so
+        // that the max share amount is rounded up. You can find the details of
+        // the calculation for y' in YieldSpaceMath.calculateMaxBuy.
+        let mut optimal_z =
+            self.k_down() / (self.share_price().div_up(self.initial_share_price()) + fixed!(1e18));
+        if optimal_z >= fixed!(1e18) {
+            // Rounding the exponent down results in a smaller outcome.
+            optimal_z = optimal_z.pow(fixed!(1e18) / (fixed!(1e18) - self.time_stretch()));
+        } else {
+            // Rounding the exponent up results in a smaller outcome.
+            optimal_z = optimal_z.pow(fixed!(1e18).div_up(fixed!(1e18) - self.time_stretch()));
+        }
+        optimal_z /= self.initial_share_price();
+
+        // The optimal trade sizes are given by dz = z' - z and dy = y - y'.
+        (
+            optimal_z - self.effective_share_reserves(),
+            self.calculate_max_buy(),
+        )
     }
 
     /// Gets an initial guess of the max long that can be opened. This is a
@@ -355,9 +379,10 @@ impl State {
         // It's possible that k is slightly larger than the rhs in the inner
         // calculation. If this happens, we are close to the root, and we short
         // circuit.
-        let k = self.k();
-        let rhs =
-            (self.share_price() / self.initial_share_price()) * inner.pow(self.time_stretch());
+        let k = self.k_down();
+        let rhs = self
+            .share_price()
+            .mul_div_down(inner.pow(self.time_stretch()), self.initial_share_price());
         if k < rhs {
             return None;
         }
@@ -401,10 +426,13 @@ impl State {
 mod tests {
     use std::panic;
 
-    use ethers::types::U256;
+    use ethers::types::{Address, U256};
     use eyre::Result;
     use fixed_point_macros::uint256;
-    use hyperdrive_wrappers::wrappers::mock_hyperdrive_math::MaxTradeParams;
+    use hyperdrive_wrappers::wrappers::{
+        i_hyperdrive::{Fees, PoolConfig, PoolInfo},
+        mock_hyperdrive_math::MaxTradeParams,
+    };
     use rand::{thread_rng, Rng};
     use test_utils::{
         agent::Agent,

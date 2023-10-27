@@ -1155,7 +1155,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                 });
             uint256 presentValue = hyperdriveMath.calculatePresentValue(params);
             params.shareReserves -= YieldSpaceMath
-                .calculateSharesOutGivenBondsIn(
+                .calculateSharesOutGivenBondsInDown(
                     params.shareReserves,
                     params.bondReserves,
                     params.longsOutstanding,
@@ -1225,7 +1225,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                 });
             uint256 presentValue = hyperdriveMath.calculatePresentValue(params);
             params.shareReserves += YieldSpaceMath
-                .calculateSharesInGivenBondsOut(
+                .calculateSharesInGivenBondsOutUp(
                     params.shareReserves,
                     params.bondReserves,
                     params.shortsOutstanding,
@@ -1324,7 +1324,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                 });
             uint256 presentValue = hyperdriveMath.calculatePresentValue(params);
             params.shareReserves += YieldSpaceMath
-                .calculateSharesInGivenBondsOut(
+                .calculateSharesInGivenBondsOutUp(
                     uint256(
                         int256(params.shareReserves) - params.shareAdjustment
                     ),
@@ -1367,7 +1367,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                 });
             uint256 presentValue = hyperdriveMath.calculatePresentValue(params);
             params.shareReserves -= YieldSpaceMath
-                .calculateSharesOutGivenBondsIn(
+                .calculateSharesOutGivenBondsInDown(
                     uint256(
                         int256(params.shareReserves) - params.shareAdjustment
                     ),
@@ -1412,7 +1412,7 @@ contract HyperdriveMathTest is HyperdriveTest {
 
             // net curve short and net flat short
             params.shareReserves += YieldSpaceMath
-                .calculateSharesInGivenBondsOut(
+                .calculateSharesInGivenBondsOutUp(
                     uint256(
                         int256(params.shareReserves) - params.shareAdjustment
                     ),
@@ -1468,7 +1468,7 @@ contract HyperdriveMathTest is HyperdriveTest {
 
             // net curve long and net flat long
             params.shareReserves -= YieldSpaceMath
-                .calculateSharesOutGivenBondsIn(
+                .calculateSharesOutGivenBondsInDown(
                     uint256(
                         int256(params.shareReserves) - params.shareAdjustment
                     ),
@@ -1533,7 +1533,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                 params.longsOutstanding.mulDown(
                     params.longAverageTimeRemaining
                 );
-            (, uint256 maxCurveTrade) = YieldSpaceMath.calculateMaxBuy(
+            uint256 maxCurveTrade = YieldSpaceMath.calculateMaxBuy(
                 uint256(int256(params.shareReserves) - params.shareAdjustment),
                 params.bondReserves,
                 FixedPointMath.ONE_18 - params.timeStretch,
@@ -1541,7 +1541,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                 params.initialSharePrice
             );
             params.shareReserves += YieldSpaceMath
-                .calculateSharesInGivenBondsOut(
+                .calculateSharesInGivenBondsOutUp(
                     uint256(
                         int256(params.shareReserves) - params.shareAdjustment
                     ),
@@ -1601,7 +1601,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                 params.longsOutstanding.mulDown(
                     params.longAverageTimeRemaining
                 );
-            (, uint256 maxCurveTrade) = YieldSpaceMath.calculateMaxBuy(
+            uint256 maxCurveTrade = YieldSpaceMath.calculateMaxBuy(
                 uint256(int256(params.shareReserves) - params.shareAdjustment),
                 params.bondReserves,
                 FixedPointMath.ONE_18 - params.timeStretch,
@@ -1609,7 +1609,7 @@ contract HyperdriveMathTest is HyperdriveTest {
                 params.initialSharePrice
             );
             params.shareReserves += YieldSpaceMath
-                .calculateSharesInGivenBondsOut(
+                .calculateSharesInGivenBondsOutUp(
                     uint256(
                         int256(params.shareReserves) - params.shareAdjustment
                     ),
