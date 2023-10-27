@@ -7,7 +7,7 @@ use ethers::{
     providers::{Http, Middleware, Provider, RetryClient},
     types::{Address, BlockId, U256},
 };
-use eyre::{eyre, Result};
+use eyre::Result;
 use fixed_point::FixedPoint;
 use fixed_point_macros::{fixed, uint256};
 use hyperdrive_addresses::Addresses;
@@ -939,13 +939,11 @@ impl Agent<ChainClient, ChaCha8Rng> {
             .hyperdrive
             .get_checkpoint(state.to_checkpoint(self.now().await?))
             .await?;
-        Ok(state
-            .get_short_deposit(
-                short_amount,
-                state.get_spot_price(),
-                open_share_price.into(),
-            )
-            .ok_or(eyre!("invalid short amount"))?)
+        Ok(state.get_short_deposit(
+            short_amount,
+            state.get_spot_price(),
+            open_share_price.into(),
+        )?)
     }
 
     /// Gets the max long that can be opened in the current checkpoint.

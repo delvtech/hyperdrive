@@ -1,6 +1,10 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
+import { Lib } from "test/utils/Lib.sol";
+
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { FixedPointMath, ONE } from "./FixedPointMath.sol";
 import { YieldSpaceMath } from "./YieldSpaceMath.sol";
@@ -13,6 +17,9 @@ import { SafeCast } from "./SafeCast.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 library HyperdriveMath {
+    // FIXME
+    using Lib for *;
+
     using FixedPointMath for uint256;
     using FixedPointMath for int256;
     using SafeCast for uint256;
@@ -427,6 +434,7 @@ library HyperdriveMath {
     ) internal pure returns (uint256 maxBaseAmount, uint256 maxBondAmount) {
         // Get the maximum long that brings the spot price to 1. If the pool is
         // solvent after opening this long, then we're done.
+        console.log("test: 1");
         uint256 effectiveShareReserves = calculateEffectiveShareReserves(
             _params.shareReserves,
             _params.shareAdjustment
@@ -439,17 +447,22 @@ library HyperdriveMath {
         );
         uint256 absoluteMaxBaseAmount;
         uint256 absoluteMaxBondAmount;
+        console.log("test: 2");
         {
             uint256 maxShareAmount;
-            (
-                maxShareAmount,
-                absoluteMaxBondAmount
-            ) = calculateAbsoluteMaxLongAmount(
+            console.log("test: 3");
+            (maxShareAmount, absoluteMaxBondAmount) = calculateAbsoluteMaxLong(
                 effectiveShareReserves,
                 _params.bondReserves,
                 ONE - _params.timeStretch,
                 _params.sharePrice,
                 _params.initialSharePrice
+            );
+            console.log("test: 4");
+            console.log("maxShareAmount = %s", maxShareAmount.toString(18));
+            console.log(
+                "maxBondAmount = %s",
+                absoluteMaxBondAmount.toString(18)
             );
             absoluteMaxBaseAmount = maxShareAmount.mulDown(_params.sharePrice);
             absoluteMaxBondAmount -= calculateLongCurveFee(
@@ -457,6 +470,12 @@ library HyperdriveMath {
                 spotPrice,
                 _params.curveFee
             );
+            console.log("curve fee = %s", _params.curveFee.toString(18));
+            console.log(
+                "maxBondAmount = %s",
+                absoluteMaxBondAmount.toString(18)
+            );
+            console.log("test: 5");
             (, bool isSolvent_) = calculateSolvencyAfterLong(
                 _params,
                 _checkpointLongExposure,
@@ -464,7 +483,9 @@ library HyperdriveMath {
                 absoluteMaxBondAmount,
                 spotPrice
             );
+            console.log("test: 6");
             if (isSolvent_) {
+                console.log("test: 7");
                 return (absoluteMaxBaseAmount, absoluteMaxBondAmount);
             }
         }
@@ -486,18 +507,30 @@ library HyperdriveMath {
         //
         // The guess that we make is very important in determining how quickly
         // we converge to the solution.
+        console.log("test: 8");
+        console.log(
+            "absoluteMaxBaseAmount = %s",
+            absoluteMaxBaseAmount.toString(18)
+        );
+        console.log(
+            "_checkpointLongExposure = %s",
+            _checkpointLongExposure.toString(18)
+        );
         maxBaseAmount = calculateMaxLongGuess(
             _params,
             absoluteMaxBaseAmount,
             _checkpointLongExposure,
             spotPrice
         );
+        console.log("maxBaseAmount = %s", maxBaseAmount.toString(18));
+        console.log("test: 9");
         maxBondAmount = calculateLongAmount(
             _params,
             maxBaseAmount,
             effectiveShareReserves,
             spotPrice
         );
+        console.log("test: 10");
         (uint256 solvency, bool success) = calculateSolvencyAfterLong(
             _params,
             _checkpointLongExposure,
@@ -505,15 +538,19 @@ library HyperdriveMath {
             maxBondAmount,
             spotPrice
         );
+        console.log("test: 11");
         require(success, "Initial guess in `calculateMaxLong` is insolvent.");
+        console.log("test: 12");
         for (uint256 i = 0; i < _maxIterations; ++i) {
             // If the max base amount is equal to or exceeds the absolute max,
             // we've gone too far and the calculation deviated from reality at
             // some point.
+            console.log("test: 13");
             require(
                 maxBaseAmount < absoluteMaxBaseAmount,
                 "Reached absolute max bond amount in `get_max_long`."
             );
+            console.log("test: 14");
 
             // TODO: It may be better to gracefully handle crossing over the
             // root by extending the fixed point math library to handle negative
@@ -525,23 +562,29 @@ library HyperdriveMath {
             // a long is opened with the candidate amount. If the pool isn't
             // solvent, then we're done.
             uint256 derivative;
+            console.log("test: 15");
             (derivative, success) = calculateSolvencyAfterLongDerivative(
                 _params,
                 maxBaseAmount,
                 effectiveShareReserves,
                 spotPrice
             );
+            console.log("test: 16");
             if (!success) {
+                console.log("test: 17");
                 break;
             }
+            console.log("test: 18");
             uint256 possibleMaxBaseAmount = maxBaseAmount +
                 solvency.divDown(derivative);
+            console.log("test: 19");
             uint256 possibleMaxBondAmount = calculateLongAmount(
                 _params,
                 possibleMaxBaseAmount,
                 effectiveShareReserves,
                 spotPrice
             );
+            console.log("test: 20");
             (solvency, success) = calculateSolvencyAfterLong(
                 _params,
                 _checkpointLongExposure,
@@ -549,13 +592,16 @@ library HyperdriveMath {
                 possibleMaxBondAmount,
                 spotPrice
             );
+            console.log("test: 21");
             if (success) {
                 maxBaseAmount = possibleMaxBaseAmount;
                 maxBondAmount = possibleMaxBondAmount;
             } else {
+                console.log("test: 22");
                 break;
             }
         }
+        console.log("test: 23");
 
         return (maxBaseAmount, maxBondAmount);
     }
@@ -572,7 +618,7 @@ library HyperdriveMath {
     /// @param mu The initial share price.
     /// @return The max share amount.
     /// @return The max bond amount.
-    function calculateAbsoluteMaxLongAmount(
+    function calculateAbsoluteMaxLong(
         uint256 z,
         uint256 y,
         uint256 t,
@@ -778,15 +824,33 @@ library HyperdriveMath {
             _params.curveFee,
             _params.governanceFee
         );
+        console.log("governanceFee = %s", governanceFee.toString(18));
         uint256 shareReserves = _params.shareReserves +
             _baseAmount.divDown(_params.sharePrice) -
             governanceFee.divDown(_params.sharePrice);
+        console.log("share_reserves = %s", _params.shareReserves.toString(18));
+        console.log("share_price = %s", _params.sharePrice.toString(18));
+        console.log(
+            "base_amount / self.share_price() = %s",
+            _baseAmount.divDown(_params.sharePrice).toString(18)
+        );
+        console.log(
+            "governance_fee / self.share_price() = %s",
+            governanceFee.divDown(_params.sharePrice).toString(18)
+        );
+        console.log("shareReserves = %s", shareReserves.toString(18));
         uint256 exposure = _params.longExposure +
             2 *
             _bondAmount -
             _baseAmount +
             governanceFee;
+        console.log("long_exposure = %s", _params.longExposure.toString(18));
+        console.log("bond_amount = %s", _bondAmount.toString(18));
+        console.log("base_amount = %s", _baseAmount.toString(18));
+        console.log("governance_fee = %s", governanceFee.toString(18));
+        console.log("exposure = %s", exposure.toString(18));
         uint256 checkpointExposure = uint256(-_checkpointLongExposure.min(0));
+        console.log("checkpointExposure = %s", checkpointExposure.toString(18));
         if (
             shareReserves + checkpointExposure.divDown(_params.sharePrice) >=
             exposure.divDown(_params.sharePrice) + _params.minimumShareReserves

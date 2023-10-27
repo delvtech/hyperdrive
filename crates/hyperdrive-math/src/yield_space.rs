@@ -2,7 +2,6 @@ use eyre::{eyre, Result};
 use fixed_point::FixedPoint;
 use fixed_point_macros::fixed;
 
-// FIXME:
 pub trait YieldSpace {
     /// Info ///
 
@@ -23,20 +22,24 @@ pub trait YieldSpace {
     }
 
     /// Calculates the amount of bonds a user will receive from the pool by
-    /// providing a specified amount of shares. We underestimate the amount of
+    /// providing a specified amount of shares. We down the amount of
     /// bonds out to prevent sandwiches.
-    fn calculate_bonds_out_given_shares_in_underestimate(&self, dz: FixedPoint) -> FixedPoint {
+    fn calculate_bonds_out_given_shares_in_down(&self, dz: FixedPoint) -> FixedPoint {
         // NOTE: We round k up to make the rhs of the equation larger.
         //
         // k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
-        let k = self.k_overestimate();
+        println!("test: calculate_bonds_out_given_shares_in_down 1");
+        let k = self.k_up();
+        println!("test: calculate_bonds_out_given_shares_in_down 2");
 
         // NOTE: We round z down to make the rhs of the equation larger.
         //
         // (µ * (z + dz))^(1 - t)
         let mut z = self.mu() * (self.z() + dz).pow(fixed!(1e18) - self.t());
+        println!("test: calculate_bonds_out_given_shares_in_down 3");
         // (c / µ) * (µ * (z + dz))^(1 - t)
         z = self.c().mul_div_down(z, self.mu());
+        println!("test: calculate_bonds_out_given_shares_in_down 4");
 
         // NOTE: We round _y up to make the rhs of the equation larger.
         //
@@ -45,22 +48,25 @@ pub trait YieldSpace {
         if y >= fixed!(1e18) {
             // Rounding up the exponent results in a larger result.
             y = y.pow(fixed!(1e18).div_up(fixed!(1e18) - self.t()));
+            println!("test: calculate_bonds_out_given_shares_in_down 5");
         } else {
             // Rounding down the exponent results in a larger result.
             y = y.pow(fixed!(1e18) / (fixed!(1e18) - self.t()));
+            println!("test: calculate_bonds_out_given_shares_in_down 6");
         }
+        println!("test: calculate_bonds_out_given_shares_in_down 7");
 
         // Δy = y - (k - (c / µ) * (µ * (z + dz))^(1 - t))^(1 / (1 - t)))
         self.y() - y
     }
 
     /// Calculates the amount of shares a user must provide the pool to receive
-    /// a specified amount of bonds. We overestimate the amount of shares in.
-    fn calculate_shares_in_given_bonds_out_overestimate(&self, dy: FixedPoint) -> FixedPoint {
+    /// a specified amount of bonds. We up the amount of shares in.
+    fn calculate_shares_in_given_bonds_out_up(&self, dy: FixedPoint) -> FixedPoint {
         // NOTE: We round k up to make the lhs of the equation larger.
         //
         // k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
-        let k = self.k_overestimate();
+        let k = self.k_up();
 
         // (y - dy)^(1 - t)
         let y = (self.y() - dy).pow(fixed!(1e18) - self.t());
@@ -84,12 +90,12 @@ pub trait YieldSpace {
     }
 
     /// Calculates the amount of shares a user must provide the pool to receive
-    /// a specified amount of bonds. We underestimate the amount of shares in.
-    fn calculate_shares_in_given_bonds_out_underestimate(&self, dy: FixedPoint) -> FixedPoint {
+    /// a specified amount of bonds. We down the amount of shares in.
+    fn calculate_shares_in_given_bonds_out_down(&self, dy: FixedPoint) -> FixedPoint {
         // NOTE: We round k down to make the lhs of the equation smaller.
         //
         // k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
-        let k = self.k_underestimate();
+        let k = self.k_down();
 
         // (y - dy)^(1 - t)
         let y = (self.y() - dy).pow(fixed!(1e18) - self.t());
@@ -97,7 +103,7 @@ pub trait YieldSpace {
         // NOTE: We round _z down to make the lhs of the equation smaller.
         //
         // ((k - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))
-        let z = (k - y).mul_div_down(self.mu(), self.c());
+        let mut z = (k - y).mul_div_down(self.mu(), self.c());
         if z >= fixed!(1e18) {
             // Rounding down the exponent results in a smaller result.
             z = z.pow(fixed!(1e18) / (fixed!(1e18) - self.t()));
@@ -114,24 +120,21 @@ pub trait YieldSpace {
 
     /// Calculates the amount of shares a user will receive from the pool by
     /// providing a specified amount of bonds. This function reverts if an
-    /// integer overflow or underflow occurs. We underestimate the amount of
+    /// integer overflow or underflow occurs. We down the amount of
     /// shares out.
-    fn calculate_shares_out_given_bonds_in_underestimate(&self, dy: FixedPoint) -> FixedPoint {
-        self.calculate_shares_out_given_bonds_in_underestimate_safe(dy)
+    fn calculate_shares_out_given_bonds_in_down(&self, dy: FixedPoint) -> FixedPoint {
+        self.calculate_shares_out_given_bonds_in_down_safe(dy)
             .unwrap()
     }
 
     /// Calculates the amount of shares a user will receive from the pool by
     /// providing a specified amount of bonds. This function returns a Result
-    /// instead of panicking. We underestimate the amount of shares out.
-    fn calculate_shares_out_given_bonds_in_underestimate_safe(
-        &self,
-        dy: FixedPoint,
-    ) -> Result<FixedPoint> {
+    /// instead of panicking. We down the amount of shares out.
+    fn calculate_shares_out_given_bonds_in_down_safe(&self, dy: FixedPoint) -> Result<FixedPoint> {
         // NOTE: We round k up to make the rhs of the equation larger.
         //
         // k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
-        let k = self.k_overestimate();
+        let k = self.k_up();
 
         // (y + dy)^(1 - t)
         let y = (self.y() + dy).pow(fixed!(1e18) - self.t());
@@ -139,7 +142,7 @@ pub trait YieldSpace {
         // If k is less than y, we return with a failure flag.
         if k < y {
             return Err(eyre!(
-                "calculate_shares_out_given_bonds_in_underestimate_safe: k = {} < {} = y",
+                "calculate_shares_out_given_bonds_in_down_safe: k = {} < {} = y",
                 k,
                 y
             ));
@@ -148,7 +151,7 @@ pub trait YieldSpace {
         // NOTE: We round _z up to make the rhs of the equation larger.
         //
         // ((k - (y + dy)^(1 - t)) / (c / µ))^(1 / (1 - t)))
-        let z = (k - y).mul_div_up(self.mu(), self.c());
+        let mut z = (k - y).mul_div_up(self.mu(), self.c());
         if z >= fixed!(1e18) {
             // Rounding the exponent up results in a larger outcome.
             z = z.pow(fixed!(1e18).div_up(fixed!(1e18) - self.t()));
@@ -169,7 +172,7 @@ pub trait YieldSpace {
 
     /// Calculates the maximum amount of bonds that can be purchased with the
     /// specified reserves. We round so that the max buy amount is
-    /// underestimated.
+    /// downd.
     fn calculate_max_buy(&self) -> FixedPoint {
         // We solve for the maximum buy using the constraint that the pool's
         // spot price can never exceed 1. We do this by noting that a spot price
@@ -178,23 +181,28 @@ pub trait YieldSpace {
         // gives us the maximum bond reserves of
         // y' = (k / ((c / mu) + 1)) ** (1 / (1 - tau)) and the maximum share
         // reserves of z' = y/mu.
-        let k = self.k_overestimate();
+        let k = self.k_up();
+        println!("k = {}", k);
         let mut optimal_y = k.div_up(self.c() / self.mu() + fixed!(1e18));
+        println!("optimal_y = {}", optimal_y);
         if optimal_y >= fixed!(1e18) {
             // Rounding the exponent up results in a larger outcome.
             optimal_y = optimal_y.pow(fixed!(1e18).div_up(fixed!(1e18) - self.t()));
+            println!("optimal_y = {}", optimal_y);
         } else {
             // Rounding the exponent down results in a larger outcome.
             optimal_y = optimal_y.pow(fixed!(1e18) / (fixed!(1e18) - self.t()));
+            println!("optimal_y = {}", optimal_y);
         }
 
         // The optimal trade size is given by dy = y - y'.
+        println!("y - optimal_y = {}", self.y() - optimal_y);
         self.y() - optimal_y
     }
 
     /// Calculates the maximum amount of bonds that can be sold with the
     /// specified reserves. We round so that the max sell amount is
-    /// underestimated.
+    /// downd.
     fn calculate_max_sell(&self, z_min: FixedPoint) -> FixedPoint {
         // We solve for the maximum sell using the constraint that the pool's
         // share reserves can never fall below the minimum share reserves zMin.
@@ -202,7 +210,7 @@ pub trait YieldSpace {
         // k = (c / mu) * (mu * (zMin)) ** (1 - tau) + y' ** (1 - tau), and
         // gives us the maximum bond reserves of
         // y' = (k - (c / mu) * (mu * (zMin)) ** (1 - tau)) ** (1 / (1 - tau)).
-        let k = self.k_underestimate();
+        let k = self.k_down();
         let mut optimal_y = k - self.c().mul_div_up(
             self.mu().mul_up(z_min).pow(fixed!(1e18) - self.t()),
             self.mu(),
@@ -219,19 +227,31 @@ pub trait YieldSpace {
         optimal_y - self.y()
     }
 
-    // FIXME: Should I change this or the one in YieldSpaceMath
-    fn k_overestimate(&self) -> FixedPoint {
-        (self.c() / self.mu()) * (self.mu() * self.z()).pow(fixed!(1e18) - self.t())
-            + self.y().pow(fixed!(1e18) - self.t())
+    /// Calculates the YieldSpace invariant k. This invariant is given by:
+    ///
+    /// k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
+    ///
+    /// This variant of the calculation overestimates the result.
+    fn k_up(&self) -> FixedPoint {
+        self.c().mul_div_up(
+            (self.mu().mul_up(self.z())).pow(fixed!(1e18) - self.t()),
+            self.mu(),
+        ) + self.y().pow(fixed!(1e18) - self.t())
     }
 
-    fn k_underestimate(&self) -> FixedPoint {
-        (self.c() / self.mu()) * (self.mu() * self.z()).pow(fixed!(1e18) - self.t())
-            + self.y().pow(fixed!(1e18) - self.t())
+    /// Calculates the YieldSpace invariant k. This invariant is given by:
+    ///
+    /// k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
+    ///
+    /// This variant of the calculation underestimates the result.
+    fn k_down(&self) -> FixedPoint {
+        self.c().mul_div_down(
+            (self.mu() * self.z()).pow(fixed!(1e18) - self.t()),
+            self.mu(),
+        ) + self.y().pow(fixed!(1e18) - self.t())
     }
 }
 
-// FIXME: Fix these tests.
 #[cfg(test)]
 mod tests {
     use std::panic;
@@ -243,52 +263,8 @@ mod tests {
     use super::*;
     use crate::State;
 
-    #[test]
-    fn fuzz_get_out_for_in() {
-        let mut rng = thread_rng();
-        for _ in 0..*FAST_FUZZ_RUNS {
-            let state = rng.gen::<State>();
-            let in_ = rng.gen::<Asset>();
-            let expected = match in_ {
-                Asset::Shares(in_) => {
-                    panic::catch_unwind(|| state.get_bonds_out_for_shares_in(in_, private::Seal))
-                }
-                Asset::Bonds(in_) => {
-                    panic::catch_unwind(|| state.get_shares_out_for_bonds_in(in_, private::Seal))
-                }
-            };
-            let actual = panic::catch_unwind(|| state.get_out_for_in(in_));
-            match expected {
-                Ok(expected) => assert_eq!(actual.unwrap(), expected),
-                Err(_) => assert!(actual.is_err()),
-            }
-        }
-    }
-
-    #[test]
-    fn fuzz_get_in_for_out() {
-        let mut rng = thread_rng();
-        for _ in 0..*FAST_FUZZ_RUNS {
-            let state = rng.gen::<State>();
-            let out = rng.gen::<Asset>();
-            let expected = match out {
-                Asset::Shares(out) => {
-                    panic::catch_unwind(|| state.get_bonds_in_for_shares_out(out, private::Seal))
-                }
-                Asset::Bonds(out) => {
-                    panic::catch_unwind(|| state.get_shares_in_for_bonds_out(out, private::Seal))
-                }
-            };
-            let actual = panic::catch_unwind(|| state.get_in_for_out(out));
-            match expected {
-                Ok(expected) => assert_eq!(actual.unwrap(), expected),
-                Err(_) => assert!(actual.is_err()),
-            }
-        }
-    }
-
     #[tokio::test]
-    async fn fuzz_get_bonds_out_for_shares_in() -> Result<()> {
+    async fn fuzz_calculate_bonds_out_given_shares_in() -> Result<()> {
         let chain = TestChainWithMocks::new(1).await?;
         let mock = chain.mock_yield_space_math();
 
@@ -298,9 +274,9 @@ mod tests {
             let state = rng.gen::<State>();
             let in_ = rng.gen::<FixedPoint>();
             let actual =
-                panic::catch_unwind(|| state.get_bonds_out_for_shares_in(in_, private::Seal));
+                panic::catch_unwind(|| state.calculate_bonds_out_given_shares_in_down(in_));
             match mock
-                .calculate_bonds_out_given_shares_in(
+                .calculate_bonds_out_given_shares_in_down(
                     state.z().into(),
                     state.y().into(),
                     in_.into(),
@@ -320,7 +296,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn fuzz_get_shares_out_for_bonds_in() -> Result<()> {
+    async fn fuzz_calculate_shares_in_given_bonds_out_up() -> Result<()> {
         let chain = TestChainWithMocks::new(1).await?;
         let mock = chain.mock_yield_space_math();
 
@@ -329,10 +305,9 @@ mod tests {
         for _ in 0..*FAST_FUZZ_RUNS {
             let state = rng.gen::<State>();
             let in_ = rng.gen::<FixedPoint>();
-            let actual =
-                panic::catch_unwind(|| state.get_shares_out_for_bonds_in(in_, private::Seal));
+            let actual = panic::catch_unwind(|| state.calculate_shares_in_given_bonds_out_up(in_));
             match mock
-                .calculate_shares_out_given_bonds_in(
+                .calculate_shares_in_given_bonds_out_up(
                     state.z().into(),
                     state.y().into(),
                     in_.into(),
@@ -354,7 +329,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn fuzz_get_shares_in_for_bonds_out() -> Result<()> {
+    async fn fuzz_calculate_shares_in_given_bonds_out_down() -> Result<()> {
         let chain = TestChainWithMocks::new(1).await?;
         let mock = chain.mock_yield_space_math();
 
@@ -364,9 +339,9 @@ mod tests {
             let state = rng.gen::<State>();
             let out = rng.gen::<FixedPoint>();
             let actual =
-                panic::catch_unwind(|| state.get_shares_in_for_bonds_out(out, private::Seal));
+                panic::catch_unwind(|| state.calculate_shares_in_given_bonds_out_down(out));
             match mock
-                .calculate_shares_in_given_bonds_out(
+                .calculate_shares_in_given_bonds_out_down(
                     state.z().into(),
                     state.y().into(),
                     out.into(),
@@ -377,7 +352,9 @@ mod tests {
                 .call()
                 .await
             {
-                Ok(expected) => assert_eq!(actual.unwrap(), FixedPoint::from(expected)),
+                Ok(expected) => {
+                    assert_eq!(actual.unwrap(), FixedPoint::from(expected));
+                }
                 Err(_) => assert!(actual.is_err()),
             }
         }
@@ -385,7 +362,75 @@ mod tests {
         Ok(())
     }
 
-    // FIXME: Every test above this line needs to be fixed.
+    #[tokio::test]
+    async fn fuzz_calculate_shares_out_given_bonds_in_down() -> Result<()> {
+        let chain = TestChainWithMocks::new(1).await?;
+        let mock = chain.mock_yield_space_math();
+
+        // Fuzz the rust and solidity implementations against each other.
+        let mut rng = thread_rng();
+        for _ in 0..*FAST_FUZZ_RUNS {
+            let state = rng.gen::<State>();
+            let in_ = rng.gen::<FixedPoint>();
+            let actual =
+                panic::catch_unwind(|| state.calculate_shares_out_given_bonds_in_down(in_));
+            match mock
+                .calculate_shares_out_given_bonds_in_down(
+                    state.z().into(),
+                    state.y().into(),
+                    in_.into(),
+                    (fixed!(1e18) - state.t()).into(),
+                    state.c().into(),
+                    state.mu().into(),
+                )
+                .call()
+                .await
+            {
+                Ok(expected) => {
+                    assert_eq!(actual.unwrap(), FixedPoint::from(expected));
+                }
+                Err(_) => assert!(actual.is_err()),
+            }
+        }
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn fuzz_calculate_shares_out_given_bonds_in_down_safe() -> Result<()> {
+        let chain = TestChainWithMocks::new(1).await?;
+        let mock = chain.mock_yield_space_math();
+
+        // Fuzz the rust and solidity implementations against each other.
+        let mut rng = thread_rng();
+        for _ in 0..*FAST_FUZZ_RUNS {
+            let state = rng.gen::<State>();
+            let in_ = rng.gen::<FixedPoint>();
+            let actual =
+                panic::catch_unwind(|| state.calculate_shares_out_given_bonds_in_down_safe(in_));
+            match mock
+                .calculate_shares_out_given_bonds_in_down_safe(
+                    state.z().into(),
+                    state.y().into(),
+                    in_.into(),
+                    (fixed!(1e18) - state.t()).into(),
+                    state.c().into(),
+                    state.mu().into(),
+                )
+                .call()
+                .await
+            {
+                Ok((expected_out, expected_status)) => {
+                    let actual = actual.unwrap();
+                    assert_eq!(actual.is_ok(), expected_status);
+                    assert_eq!(actual.unwrap_or(fixed!(0)), FixedPoint::from(expected_out));
+                }
+                Err(_) => assert!(actual.is_err()),
+            }
+        }
+
+        Ok(())
+    }
 
     #[tokio::test]
     async fn fuzz_calculate_max_buy() -> Result<()> {
@@ -452,7 +497,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn fuzz_k_underestimate() -> Result<()> {
+    async fn fuzz_k_down() -> Result<()> {
         let chain = TestChainWithMocks::new(1).await?;
         let mock = chain.mock_yield_space_math();
 
@@ -460,9 +505,9 @@ mod tests {
         let mut rng = thread_rng();
         for _ in 0..*FAST_FUZZ_RUNS {
             let state = rng.gen::<State>();
-            let actual = panic::catch_unwind(|| state.k_underestimate());
+            let actual = panic::catch_unwind(|| state.k_down());
             match mock
-                .modified_yield_space_constant_underestimate(
+                .k_down(
                     state.z().into(),
                     state.y().into(),
                     (fixed!(1e18) - state.t()).into(),
@@ -481,7 +526,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn fuzz_k_overestimate() -> Result<()> {
+    async fn fuzz_k_up() -> Result<()> {
         let chain = TestChainWithMocks::new(1).await?;
         let mock = chain.mock_yield_space_math();
 
@@ -489,9 +534,9 @@ mod tests {
         let mut rng = thread_rng();
         for _ in 0..*FAST_FUZZ_RUNS {
             let state = rng.gen::<State>();
-            let actual = panic::catch_unwind(|| state.k_overestimate());
+            let actual = panic::catch_unwind(|| state.k_up());
             match mock
-                .modified_yield_space_constant_overestimate(
+                .k_up(
                     state.z().into(),
                     state.y().into(),
                     (fixed!(1e18) - state.t()).into(),
