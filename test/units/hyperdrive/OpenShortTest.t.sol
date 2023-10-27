@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import "forge-std/console2.sol";
 import { stdError } from "forge-std/StdError.sol";
 import { VmSafe } from "forge-std/Vm.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
@@ -171,6 +172,27 @@ contract OpenShortTest is HyperdriveTest {
             maturityTime,
             apr
         );
+    }
+
+    function testNumberTooBig() external {
+        uint256 apr = 1e18; // 100% APR
+        console2.log("starting APR = %s", apr.toString(18));
+
+        // Initialize the pool with a large amount of capital.
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Get the reserves before opening the short.
+        IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
+
+        // Short a small amount of bonds.
+        uint256 shortAmount = 10e18;
+        (uint256 maturityTime, uint256 basePaid) = openShort(bob, shortAmount);
+        console2.log("bob sold   %s bonds for %s base", shortAmount.toString(18), basePaid.toString(18));
+        uint256 effectivePrice = basePaid.divDown(shortAmount);
+        console2.log("he got a price of %s", effectivePrice.toString(18));
+        uint256 effectiveRate = (1e18 - effectivePrice).divDown(effectivePrice);
+        console2.log("for an effective rate of %s", effectiveRate.toString(18));
     }
 
     function test_open_short_with_small_amount() external {
