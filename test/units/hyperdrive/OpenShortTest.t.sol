@@ -187,6 +187,22 @@ contract OpenShortTest is HyperdriveTest {
         console2.log("  / starting_APR = %s", rateDeltaAsPercent.toString(18));
     }
 
+    function compareExposure(
+        IHyperdrive.Checkpoint memory checkpointBefore,
+        IHyperdrive.Checkpoint memory checkpointAfter
+    ) internal pure {
+        int128 checkpointNetExposureBefore = checkpointBefore.longExposure;
+        int128 checkpointNetExposureAfter = checkpointAfter.longExposure;
+        console2.log("checkpointNetExposureBefore = %s", checkpointNetExposureBefore.toString(18));
+        console2.log("checkpointNetExposureAfter  = %s", checkpointNetExposureAfter.toString(18));
+        int128 checkpointNetExposureDelta = (checkpointNetExposureAfter - checkpointNetExposureBefore);
+        console2.log("checkpointNetExposureDelta  = %s", checkpointNetExposureDelta.toString(18));
+        if (checkpointNetExposureBefore > 0) {
+            int128 checkpointNetExposureDeltaAsPercent = checkpointNetExposureDelta / checkpointNetExposureBefore;
+            console2.log("  / checkpointNetExposureBefore = %s", checkpointNetExposureDeltaAsPercent.toString(18));
+        }
+    }
+
     function testNumberTooBig() external {
         uint256 apr = 0.25e18;
         console2.log("starting APR = %s", apr.toString(18));
@@ -199,6 +215,7 @@ contract OpenShortTest is HyperdriveTest {
 
         // Get the reserves before opening the short.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
+        IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(hyperdrive.latestCheckpoint());
 
         // Short a small amount of bonds.
         uint256 shortAmount = TEN.divDown(spotPrice);
@@ -219,6 +236,7 @@ contract OpenShortTest is HyperdriveTest {
         uint256 effectiveMarketRate = (1e18 - effectiveMarketPrice).divDown(effectiveMarketPrice);
         console2.log("effectiveMarketRate  = %s", effectiveMarketRate.toString(18));
         logRateDelta(effectiveMarketRate, apr);
+        compareExposure(checkpoint, hyperdrive.getCheckpoint(hyperdrive.latestCheckpoint()));
 
         // User perspective
         console2.log("=== USER PERSPECTIVE ===");
