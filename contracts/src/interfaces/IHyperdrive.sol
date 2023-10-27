@@ -73,6 +73,16 @@ interface IHyperdrive is
         uint256 bondAmount
     );
 
+    event CreateCheckpoint(
+        uint256 indexed checkpointTime,
+        uint256 sharePrice,
+        uint256 maturedShorts,
+        uint256 maturedLongs,
+        uint256 lpSharePrice
+    );
+
+    event CollectGovernanceFee(address indexed collector, uint256 fees);
+
     /// Structs ///
 
     // TODO: Re-evaluate the order of these fields to optimize gas usage.

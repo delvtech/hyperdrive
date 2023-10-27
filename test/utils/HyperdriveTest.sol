@@ -954,6 +954,16 @@ contract HyperdriveTest is BaseTest {
         uint256 bondAmount
     );
 
+    event CreateCheckpoint(
+        uint256 indexed checkpointTime,
+        uint256 sharePrice,
+        uint256 maturedShorts,
+        uint256 maturedLongs,
+        uint256 lpSharePrice
+    );
+
+    event CollectGovernanceFee(address indexed collector, uint256 fees);
+
     function verifyFactoryEvents(
         HyperdriveFactory factory,
         address deployer,

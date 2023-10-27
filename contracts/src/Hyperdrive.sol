@@ -111,9 +111,11 @@ abstract contract Hyperdrive is
         uint256 openSharePrice = _checkpoints[
             _checkpointTime - _positionDuration
         ].sharePrice;
-        uint256 maturedShortsAmount = _totalSupply[
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _checkpointTime)
-        ];
+        uint256 shortAssetId = AssetId.encodeAssetId(
+            AssetId.AssetIdPrefix.Short,
+            _checkpointTime
+        );
+        uint256 maturedShortsAmount = _totalSupply[shortAssetId];
         bool positionsClosed;
         if (maturedShortsAmount > 0) {
             (
@@ -138,9 +140,11 @@ abstract contract Hyperdrive is
 
         // Close out all of the long positions that matured at the beginning of
         // this checkpoint.
-        uint256 maturedLongsAmount = _totalSupply[
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _checkpointTime)
-        ];
+        uint256 longAssetId = AssetId.encodeAssetId(
+            AssetId.AssetIdPrefix.Long,
+            _checkpointTime
+        );
+        uint256 maturedLongsAmount = _totalSupply[longAssetId];
         if (maturedLongsAmount > 0) {
             (
                 uint256 shareProceeds,
@@ -152,12 +156,13 @@ abstract contract Hyperdrive is
                     true
                 );
             _governanceFeesAccrued += governanceFee;
+            uint256 checkpointTime = _checkpointTime; // avoid stack too deep error
             _applyCloseLong(
                 maturedLongsAmount,
                 0,
                 shareProceeds,
                 int256(shareProceeds), // keep the effective share reserves constant
-                _checkpointTime
+                checkpointTime
             );
             positionsClosed = true;
         }
@@ -177,6 +182,25 @@ abstract contract Hyperdrive is
             // Distribute the excess idle to the withdrawal pool.
             _distributeExcessIdle(_sharePrice);
         }
+
+        uint256 presentValue = _sharePrice > 0
+            ? HyperdriveMath
+                .calculatePresentValue(_getPresentValueParams(_sharePrice))
+                .mulDown(_sharePrice)
+            : 0;
+        uint256 lpTotalSupply = _totalSupply[AssetId._LP_ASSET_ID] +
+            _totalSupply[AssetId._WITHDRAWAL_SHARE_ASSET_ID] -
+            _withdrawPool.readyToWithdraw;
+        uint256 lpSharePrice = lpTotalSupply == 0
+            ? 0
+            : presentValue.divDown(lpTotalSupply);
+        emit CreateCheckpoint(
+            _checkpointTime,
+            _sharePrice,
+            maturedShortsAmount,
+            maturedLongsAmount,
+            lpSharePrice
+        );
 
         return _sharePrice;
     }

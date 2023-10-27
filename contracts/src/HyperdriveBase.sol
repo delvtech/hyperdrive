@@ -85,6 +85,16 @@ abstract contract HyperdriveBase is
         uint256 bondAmount
     );
 
+    event CreateCheckpoint(
+        uint256 indexed checkpointTime,
+        uint256 sharePrice,
+        uint256 maturedShorts,
+        uint256 maturedLongs,
+        uint256 lpSharePrice
+    );
+
+    event CollectGovernanceFee(address indexed collector, uint256 fees);
+
     /// @notice Initializes a Hyperdrive pool.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _dataProvider The address of the data provider.
@@ -226,6 +236,7 @@ abstract contract HyperdriveBase is
         uint256 governanceFeesAccrued = _governanceFeesAccrued;
         delete _governanceFeesAccrued;
         proceeds = _withdraw(governanceFeesAccrued, _options);
+        emit CollectGovernanceFee(_feeCollector, proceeds);
     }
 
     /// Helpers ///
