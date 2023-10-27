@@ -203,7 +203,7 @@ contract OpenLongTest is HyperdriveTest {
     function test_open_long() external {
         uint256 apr = 0.05e18;
 
-        // Initialize the pools with a large amount of capital.
+        // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
 
@@ -225,13 +225,25 @@ contract OpenLongTest is HyperdriveTest {
         );
     }
 
+    function logRateDelta(
+        uint256 effectiveMarketRate,
+        uint256 apr
+    ) internal pure {
+        uint256 rateDelta = apr - effectiveMarketRate;
+        console2.log("rateDelta = -%s", rateDelta.toString(18));
+        uint256 rateDeltaAsPercent = rateDelta.divDown(apr);
+        console2.log("  / starting_APR = -%s", rateDeltaAsPercent.toString(18));
+    }
+
     function testNumberTooBig() external {
-        uint256 apr = 1e18;  // 100% APR
+        uint256 apr = 0.25e18;
         console2.log("starting APR = %s", apr.toString(18));
 
-        // Initialize the pools with a large amount of capital.
+        // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
         initialize(alice, apr, contribution);
+        uint256 spotPrice = hyperdrive.calculateSpotPrice();
+        console2.log("spot price   = %s", spotPrice.toString(18));
 
         // Get the reserves before opening the long.
         IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
@@ -239,11 +251,26 @@ contract OpenLongTest is HyperdriveTest {
         // Open a long.
         uint256 baseAmount = 10e18;
         (uint256 maturityTime, uint256 bondAmount) = openLong(bob, baseAmount);
+
+        // Market perspective
+        console2.log("=== MARKET PERSPECTIVE ===");
         console2.log("bob bought %s bonds for %s base", bondAmount.toString(18), baseAmount.toString(18));
-        uint256 effectivePrice = baseAmount.divDown(bondAmount);
-        console2.log("he got a price of %s", effectivePrice.toString(18));
-        uint256 effectiveRate = (1e18 - effectivePrice).divDown(effectivePrice);
-        console2.log("for an effective rate of %s", effectiveRate.toString(18));
+        uint256 effectiveMarketPrice = baseAmount.divDown(bondAmount);
+        console2.log("effectiveMarketPrice = %s", effectiveMarketPrice.toString(18));
+        uint256 effectiveMarketRate = (1e18 - effectiveMarketPrice).divDown(effectiveMarketPrice);
+        console2.log("effectiveMarketRate  = %s", effectiveMarketRate.toString(18));
+        logRateDelta(effectiveMarketRate, apr);
+
+        // User's perspective
+        console2.log("=== USER PERSPECTIVE ===");
+        console2.log("bob bought %s bonds for %s base", bondAmount.toString(18), baseAmount.toString(18));
+        uint256 expectedBonds = baseAmount.divDown(spotPrice);
+        console2.log("expectedBonds = %s (baseAmount / p)", expectedBonds.toString(18));
+        uint256 feePaid = expectedBonds - bondAmount;
+        console2.log("feePaid = %s", feePaid.toString(18));
+        console2.log("  expectedBonds(%s) - bondAmount(%s) = %s", expectedBonds.toString(18), bondAmount.toString(18), feePaid.toString(18));
+        uint256 feePaidAsPercent = feePaid.divDown(expectedBonds);
+        console2.log("  / expectedBonds = %s", feePaidAsPercent.toString(18));
     }
 
     function test_open_long_with_small_amount() external {
