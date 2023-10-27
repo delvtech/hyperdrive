@@ -8,6 +8,10 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Default, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Addresses {
+    #[serde(alias = "baseToken")]
+    #[serde(alias = "base_token_address")]
     pub base: Address,
+    #[serde(alias = "mockHyperdrive")]
+    #[serde(alias = "hyperdrive_address")]
     pub hyperdrive: Address,
 }

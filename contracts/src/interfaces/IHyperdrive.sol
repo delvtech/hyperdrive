@@ -1,12 +1,18 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import { IDataProvider } from "./IDataProvider.sol";
 import { IERC20 } from "./IERC20.sol";
 import { IHyperdriveRead } from "./IHyperdriveRead.sol";
 import { IHyperdriveWrite } from "./IHyperdriveWrite.sol";
 import { IMultiToken } from "./IMultiToken.sol";
 
-interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
+interface IHyperdrive is
+    IDataProvider,
+    IHyperdriveRead,
+    IHyperdriveWrite,
+    IMultiToken
+{
     /// Events ///
 
     event Initialize(
@@ -67,6 +73,16 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
         uint256 bondAmount
     );
 
+    event CreateCheckpoint(
+        uint256 indexed checkpointTime,
+        uint256 sharePrice,
+        uint256 maturedShorts,
+        uint256 maturedLongs,
+        uint256 lpSharePrice
+    );
+
+    event CollectGovernanceFee(address indexed collector, uint256 fees);
+
     /// Structs ///
 
     // TODO: Re-evaluate the order of these fields to optimize gas usage.
@@ -118,6 +134,13 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
         uint256 flat;
         /// @dev The portion of the LP fee that goes to governance.
         uint256 governance;
+    }
+
+    struct OracleState {
+        /// @notice The pointer to the most recent buffer entry
+        uint128 head;
+        /// @notice The last timestamp we wrote to the buffer
+        uint128 lastTimestamp;
     }
 
     struct PoolConfig {
@@ -179,11 +202,15 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
         uint256 longExposure;
     }
 
-    struct OracleState {
-        /// @notice The pointer to the most recent buffer entry
-        uint128 head;
-        /// @notice The last timestamp we wrote to the buffer
-        uint128 lastTimestamp;
+    struct Options {
+        /// @dev The address that receives the proceeds of a trade or LP action.
+        address destination;
+        /// @dev A boolean indicating that the trade or LP action should be
+        ///      settled in base if true and in the yield source shares if false.
+        bool asBase;
+        /// @dev Additional data that can be used to implement custom logic in
+        ///      implementation contracts.
+        bytes extraData;
     }
 
     /// Errors ///
@@ -207,6 +234,7 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
     error InvalidPositionDuration();
     error InvalidShareReserves();
     error InvalidFeeAmounts();
+    error InvalidFeeDestination();
     error NegativeInterest();
     error NegativePresentValue();
     error NoAssetsToWithdraw();
@@ -266,6 +294,7 @@ interface IHyperdrive is IHyperdriveRead, IHyperdriveWrite, IMultiToken {
     error BondMatured();
     error BondNotMatured();
     error InsufficientPrice();
+    error InputLengthMismatch();
     error MintPercentTooHigh();
 
     /// ###############

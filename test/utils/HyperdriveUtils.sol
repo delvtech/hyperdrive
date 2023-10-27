@@ -372,15 +372,15 @@ library HyperdriveUtils {
         IHyperdrive.PoolConfig memory config = hyperdrive.getPoolConfig();
         IHyperdrive.PoolInfo memory info = hyperdrive.getPoolInfo();
         return
-            YieldSpaceMath.modifiedYieldSpaceConstant(
-                info.sharePrice.divDown(config.initialSharePrice),
-                config.initialSharePrice,
+            YieldSpaceMath.kDown(
                 HyperdriveMath.calculateEffectiveShareReserves(
                     info.shareReserves,
                     info.shareAdjustment
                 ),
+                info.bondReserves,
                 ONE - config.timeStretch,
-                info.bondReserves
+                info.sharePrice,
+                config.initialSharePrice
             );
     }
 
@@ -442,6 +442,9 @@ library HyperdriveUtils {
         }
         if (_selector == IHyperdrive.InvalidFeeAmounts.selector) {
             return "InvalidFeeAmounts";
+        }
+        if (_selector == IHyperdrive.InvalidFeeDestination.selector) {
+            return "InvalidFeeDestination";
         }
         if (_selector == IHyperdrive.NegativeInterest.selector) {
             return "NegativeInterest";

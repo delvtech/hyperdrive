@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 
 import { HyperdriveLP } from "./HyperdriveLP.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
+import { IHyperdriveWrite } from "./interfaces/IHyperdriveWrite.sol";
 import { AssetId } from "./libraries/AssetId.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
@@ -14,7 +15,7 @@ import { SafeCast } from "./libraries/SafeCast.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract HyperdriveShort is HyperdriveLP {
+abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
     using FixedPointMath for uint256;
     using FixedPointMath for int256;
     using SafeCast for uint256;
@@ -26,18 +27,14 @@ abstract contract HyperdriveShort is HyperdriveLP {
     /// @param _minSharePrice The minium share price at which to open the long.
     ///        This allows traders to protect themselves from opening a long in
     ///        a checkpoint where negative interest has accrued.
-    /// @param _destination The address which gets credited with share tokens
-    /// @param _asUnderlying A flag indicating whether the sender will pay in
-    ///        base or using another currency. Implementations choose which
-    ///        currencies they accept.
+    /// @param _options The options that configure how the trade is settled.
     /// @return maturityTime The maturity time of the short.
     /// @return traderDeposit The amount the user deposited for this trade.
     function openShort(
         uint256 _bondAmount,
         uint256 _maxDeposit,
         uint256 _minSharePrice,
-        address _destination,
-        bool _asUnderlying
+        IHyperdrive.Options calldata _options
     )
         external
         payable
@@ -83,7 +80,7 @@ abstract contract HyperdriveShort is HyperdriveLP {
         // equal to the proceeds that they would receive if they closed
         // immediately (without fees).
         if (_maxDeposit < traderDeposit) revert IHyperdrive.OutputLimit();
-        _deposit(traderDeposit, _asUnderlying);
+        _deposit(traderDeposit, _options);
 
         // Apply the state updates caused by opening the short.
         _applyOpenShort(
@@ -99,12 +96,12 @@ abstract contract HyperdriveShort is HyperdriveLP {
             AssetId.AssetIdPrefix.Short,
             maturityTime
         );
-        _mint(assetId, _destination, _bondAmount);
+        _mint(assetId, _options.destination, _bondAmount);
 
         // Emit an OpenShort event.
         uint256 bondAmount = _bondAmount; // Avoid stack too deep error.
         emit OpenShort(
-            _destination,
+            _options.destination,
             assetId,
             maturityTime,
             traderDeposit,
@@ -118,17 +115,13 @@ abstract contract HyperdriveShort is HyperdriveLP {
     /// @param _maturityTime The maturity time of the short.
     /// @param _bondAmount The amount of shorts to close.
     /// @param _minOutput The minimum output of this trade.
-    /// @param _destination The address that receives the short proceeds.
-    /// @param _asUnderlying A flag indicating whether the sender will pay in
-    ///        base or using another currency. Implementations choose which
-    ///        currencies they accept.
+    /// @param _options The options that configure how the trade is settled.
     /// @return The amount of base tokens produced by closing this short
     function closeShort(
         uint256 _maturityTime,
         uint256 _bondAmount,
         uint256 _minOutput,
-        address _destination,
-        bool _asUnderlying
+        IHyperdrive.Options calldata _options
     ) external nonReentrant returns (uint256) {
         if (_bondAmount < _minimumTransactionAmount) {
             revert IHyperdrive.MinimumTransactionAmount();
@@ -211,24 +204,22 @@ abstract contract HyperdriveShort is HyperdriveLP {
             );
 
             // Distribute the excess idle to the withdrawal pool.
-            _distributeExcessIdle(sharePrice);
+            _distributeExcessIdle(sharePrice_);
         }
 
         // Withdraw the profit to the trader. This includes the proceeds from
         // the short sale as well as the variable interest that was collected
         // on the face value of the bonds.
-        uint256 baseProceeds = _withdraw(
-            shareProceeds,
-            _destination,
-            _asUnderlying
-        );
+        uint256 baseProceeds = _withdraw(shareProceeds, _options);
 
         // Enforce the user's minimum output.
-        if (baseProceeds < _minOutput) revert IHyperdrive.OutputLimit();
+        if (baseProceeds < _minOutput) {
+            revert IHyperdrive.OutputLimit();
+        }
 
         // Emit a CloseShort event.
         emit CloseShort(
-            _destination,
+            _options.destination,
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, maturityTime),
             maturityTime,
             baseProceeds,
@@ -393,22 +384,18 @@ abstract contract HyperdriveShort is HyperdriveLP {
             revert IHyperdrive.NegativeInterest();
         }
 
-        // Calculate the fees charged on the curve and flat parts of the trade.
-        // Since we calculate the amount of shares received given bonds in, we
-        // subtract the fee from the share deltas so that the trader receives
-        // less shares.
+        // Record an oracle update with the pre-trade spot price if enough time
+        // has passed since the last oracle update.
         uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
             _effectiveShareReserves(),
             _marketState.bondReserves,
             _initialSharePrice,
             _timeStretch
         );
-
-        // Add the spot price to the oracle if an oracle update is required
         recordPrice(spotPrice);
 
         // Calculate the fees charged to the user (totalCurveFee) and the portion
-        // of those fees that are paid to governance (governanceCurveFee).
+        // of those fees that are paid to governance (totalGovernanceFee).
         uint256 totalCurveFee;
         (
             totalCurveFee, // there is no flat fee on opening shorts
@@ -421,12 +408,17 @@ abstract contract HyperdriveShort is HyperdriveLP {
             _sharePrice
         );
 
-        // ShareReservesDelta is the number of shares to remove from the
-        // shareReserves and since the totalCurveFee includes the
-        // totalGovernanceFee it needs to be added back to so that it is removed
-        // from the shareReserves. The shareReservesDelta, totalCurveFee and
-        // totalGovernanceFee are all in terms of shares:
-
+        // Subtract the total curve fee minus the governance curve fee to the
+        // amount that will be subtracted from the share reserves. This ensures
+        // that the LPs are credited with the fee the trader paid on the
+        // curve trade minus the portion of the curve fee that was paid to
+        // governance.
+        //
+        // shareReservesDelta, totalCurveFee and totalGovernanceFee are all
+        // denominated in shares so we just need to subtract out the
+        // totalGovernanceFee from the shareReservesDelta since that fee isn't
+        // reserved for the LPs.
+        //
         // shares -= shares - shares
         shareReservesDelta -= totalCurveFee - totalGovernanceFee;
 

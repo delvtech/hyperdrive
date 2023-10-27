@@ -144,35 +144,104 @@ contract ReentrancyTest is HyperdriveTest {
         bytes[] memory data = new bytes[](8);
         data[0] = abi.encodeCall(
             hyperdrive.initialize,
-            (CONTRIBUTION, FIXED_RATE, _trader, true)
+            (
+                CONTRIBUTION,
+                FIXED_RATE,
+                IHyperdrive.Options({
+                    destination: _trader,
+                    asBase: true,
+                    extraData: new bytes(0)
+                })
+            )
         );
         data[1] = abi.encodeCall(
             hyperdrive.addLiquidity,
-            (CONTRIBUTION, 0, 1e18, _trader, true)
+            (
+                CONTRIBUTION,
+                0,
+                1e18,
+                IHyperdrive.Options({
+                    destination: _trader,
+                    asBase: true,
+                    extraData: new bytes(0)
+                })
+            )
         );
         data[2] = abi.encodeCall(
             hyperdrive.removeLiquidity,
-            (CONTRIBUTION, 0, _trader, true)
+            (
+                CONTRIBUTION,
+                0,
+                IHyperdrive.Options({
+                    destination: _trader,
+                    asBase: true,
+                    extraData: new bytes(0)
+                })
+            )
         );
         data[3] = abi.encodeCall(
             hyperdrive.redeemWithdrawalShares,
-            (BOND_AMOUNT, 0, _trader, true)
+            (
+                BOND_AMOUNT,
+                0,
+                IHyperdrive.Options({
+                    destination: _trader,
+                    asBase: true,
+                    extraData: new bytes(0)
+                })
+            )
         );
         data[4] = abi.encodeCall(
             hyperdrive.openLong,
-            (BASE_PAID, 0, 0, _trader, true)
+            (
+                BASE_PAID,
+                0,
+                0,
+                IHyperdrive.Options({
+                    destination: _trader,
+                    asBase: true,
+                    extraData: new bytes(0)
+                })
+            )
         );
         data[5] = abi.encodeCall(
             hyperdrive.closeLong,
-            (block.timestamp, BOND_AMOUNT, 0, _trader, true)
+            (
+                block.timestamp,
+                BOND_AMOUNT,
+                0,
+                IHyperdrive.Options({
+                    destination: _trader,
+                    asBase: true,
+                    extraData: new bytes(0)
+                })
+            )
         );
         data[6] = abi.encodeCall(
             hyperdrive.openShort,
-            (BOND_AMOUNT, type(uint256).max, 0, _trader, true)
+            (
+                BOND_AMOUNT,
+                type(uint256).max,
+                0,
+                IHyperdrive.Options({
+                    destination: _trader,
+                    asBase: true,
+                    extraData: new bytes(0)
+                })
+            )
         );
         data[7] = abi.encodeCall(
             hyperdrive.closeShort,
-            (block.timestamp, BOND_AMOUNT, 0, _trader, true)
+            (
+                block.timestamp,
+                BOND_AMOUNT,
+                0,
+                IHyperdrive.Options({
+                    destination: _trader,
+                    asBase: true,
+                    extraData: new bytes(0)
+                })
+            )
         );
 
         return data;
@@ -212,11 +281,12 @@ contract ReentrancyTest is HyperdriveTest {
             // NOTE: Depositing 1 wei more than the contribution to ensure that
             // the ETH receiver will receive a refund.
             DepositOverrides({
-                asUnderlying: true,
+                asBase: true,
                 depositAmount: CONTRIBUTION + 1,
                 minSharePrice: 0,
                 minSlippage: 0,
-                maxSlippage: type(uint256).max
+                maxSlippage: type(uint256).max,
+                extraData: new bytes(0)
             })
         );
         assert(tester.isSuccess());
@@ -240,11 +310,12 @@ contract ReentrancyTest is HyperdriveTest {
             // NOTE: Depositing 1 wei more than the contribution to ensure that
             // the ETH receiver will receive a refund.
             DepositOverrides({
-                asUnderlying: true,
+                asBase: true,
                 depositAmount: CONTRIBUTION + 1,
                 minSharePrice: 0,
                 minSlippage: 0,
-                maxSlippage: type(uint256).max
+                maxSlippage: type(uint256).max,
+                extraData: new bytes(0)
             })
         );
         assert(tester.isSuccess());
@@ -306,11 +377,12 @@ contract ReentrancyTest is HyperdriveTest {
             // NOTE: Depositing 1 wei more than the base payment to ensure that
             // the ETH receiver will receive a refund.
             DepositOverrides({
-                asUnderlying: true,
+                asBase: true,
                 depositAmount: BASE_PAID + 1,
                 minSharePrice: 0,
                 minSlippage: 0,
-                maxSlippage: type(uint256).max
+                maxSlippage: type(uint256).max,
+                extraData: new bytes(0)
             })
         );
         assert(tester.isSuccess());
@@ -345,12 +417,13 @@ contract ReentrancyTest is HyperdriveTest {
             // NOTE: Depositing more than the base payment to ensure that the
             // ETH receiver will receive a refund.
             DepositOverrides({
-                asUnderlying: true,
+                asBase: true,
                 // NOTE: Roughly double deposit amount needed to cover 100% flat fee
                 depositAmount: BOND_AMOUNT * 2,
                 minSharePrice: 0,
                 minSlippage: 0,
-                maxSlippage: type(uint256).max
+                maxSlippage: type(uint256).max,
+                extraData: new bytes(0)
             })
         );
         assert(tester.isSuccess());
@@ -363,12 +436,13 @@ contract ReentrancyTest is HyperdriveTest {
             _trader,
             BOND_AMOUNT,
             DepositOverrides({
-                asUnderlying: true,
+                asBase: true,
                 // NOTE: Roughly double deposit amount needed to cover 100% flat fee
                 depositAmount: BOND_AMOUNT * 2,
                 minSharePrice: 0,
                 minSlippage: 0,
-                maxSlippage: type(uint256).max
+                maxSlippage: type(uint256).max,
+                extraData: new bytes(0)
             })
         );
 

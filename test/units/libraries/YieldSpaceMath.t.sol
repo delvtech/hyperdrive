@@ -20,7 +20,7 @@ contract YieldSpaceMathTest is Test {
             22.186877016851916266e18
         );
         // test small amount of shares in
-        uint256 result1 = yieldSpaceMath.calculateBondsOutGivenSharesIn(
+        uint256 result1 = yieldSpaceMath.calculateBondsOutGivenSharesInDown(
             100000e18, // shareReserves
             100000e18 + 200000e18, // bondReserves + s
             100e18, // amountIn
@@ -32,7 +32,7 @@ contract YieldSpaceMathTest is Test {
         assertApproxEqAbs(result1, pythonResult1, 1e9);
 
         // test large amount shares in
-        uint256 result2 = yieldSpaceMath.calculateBondsOutGivenSharesIn(
+        uint256 result2 = yieldSpaceMath.calculateBondsOutGivenSharesInDown(
             100000e18, // shareReserves
             100000e18 + 200000e18, // bondReserves + s
             80000e18, // amountIn
@@ -44,7 +44,7 @@ contract YieldSpaceMathTest is Test {
         assertApproxEqAbs(result2, pythonResult2, 1e9);
 
         // test small amount bond in
-        uint256 result3 = yieldSpaceMath.calculateSharesOutGivenBondsIn(
+        uint256 result3 = yieldSpaceMath.calculateSharesOutGivenBondsInDown(
             100000e18, // shareReserves
             100000e18 + 200000e18, // bondReserves + s
             100e18, // amountIn
@@ -56,7 +56,7 @@ contract YieldSpaceMathTest is Test {
         assertApproxEqAbs(result3, pythonResult3, 1e9);
 
         // test large amount bond in
-        uint256 result4 = yieldSpaceMath.calculateSharesOutGivenBondsIn(
+        uint256 result4 = yieldSpaceMath.calculateSharesOutGivenBondsInDown(
             100000e18, // shareReserves
             100000e18 + 200000e18, // bondReserves + s
             80000e18, // amountIn
@@ -76,7 +76,7 @@ contract YieldSpaceMathTest is Test {
         );
 
         // test small amount bond in
-        uint256 result3 = yieldSpaceMath.calculateSharesInGivenBondsOut(
+        uint256 result3 = yieldSpaceMath.calculateSharesInGivenBondsOutUp(
             100000e18, // shareReserves
             100000e18 + 200000e18, // bondReserves + s
             100e18, // amountIn
@@ -88,7 +88,7 @@ contract YieldSpaceMathTest is Test {
         assertApproxEqAbs(result3, pythonResult3, 1e9);
 
         // test large amount bond in
-        uint256 result4 = yieldSpaceMath.calculateSharesInGivenBondsOut(
+        uint256 result4 = yieldSpaceMath.calculateSharesInGivenBondsOutUp(
             100000e18, // shareReserves
             100000e18 + 200000e18, // bondReserves + s
             80000e18, // amountIn
@@ -139,10 +139,10 @@ contract YieldSpaceMathTest is Test {
                         timeStretch
                     );
                 {
-                    (uint256 maxBasePaid, ) = HyperdriveMath.calculateMaxLong(
+                    (, uint256 maxBondAmount) = HyperdriveMath.calculateMaxLong(
                         HyperdriveMath.MaxTradeParams({
                             shareReserves: shareReserves,
-                            shareAdjustment: 0, // FIXME: Test non-trivial values for this.
+                            shareAdjustment: 0,
                             bondReserves: bondReserves,
                             longsOutstanding: 0,
                             longExposure: 0,
@@ -158,17 +158,18 @@ contract YieldSpaceMathTest is Test {
                     );
                     tradeSize = tradeSize.normalizeToRange(
                         10 ** j,
-                        maxBasePaid
+                        maxBondAmount
                     );
                 }
-                uint256 result = yieldSpaceMath.calculateSharesInGivenBondsOut(
-                    shareReserves,
-                    bondReserves,
-                    tradeSize,
-                    1e18 - FixedPointMath.ONE_18.mulDown(timeStretch),
-                    sharePrice,
-                    initialSharePrice
-                );
+                uint256 result = yieldSpaceMath
+                    .calculateSharesInGivenBondsOutDown(
+                        shareReserves,
+                        bondReserves,
+                        tradeSize,
+                        1e18 - FixedPointMath.ONE_18.mulDown(timeStretch),
+                        sharePrice,
+                        initialSharePrice
+                    );
                 assertGt(result, 0);
             }
         }
@@ -201,31 +202,36 @@ contract YieldSpaceMathTest is Test {
         );
 
         // Calculate the difference in share and bond reserves caused by the max
-        // purchase.
-        (uint256 maxDz, uint256 maxDy) = yieldSpaceMath.calculateMaxBuy(
+        // purchase. Since calculateMaxBuy only outputs the bond amount, we
+        // calculate the share amount using the formula that z' = y' / mu.
+        // We can calculate y' from the output as y' = y - maxDy. Finally, we
+        // can calculate the max share amount as maxDz = z' - z.
+        uint256 maxDy = yieldSpaceMath.calculateMaxBuy(
             shareReserves,
             bondReserves,
             1e18 - FixedPointMath.ONE_18.mulDown(timeStretch),
             sharePrice,
             initialSharePrice
         );
+        uint256 maxDz = (bondReserves - maxDy).divDown(initialSharePrice) -
+            shareReserves;
 
         // Ensure that the maximum buy is a valid trade on this invariant and
         // that the ending spot price is close to 1.
         assertApproxEqAbs(
-            yieldSpaceMath.modifiedYieldSpaceConstant(
-                sharePrice.divDown(initialSharePrice),
-                initialSharePrice,
+            yieldSpaceMath.kDown(
                 shareReserves,
+                bondReserves,
                 FixedPointMath.ONE_18 - timeStretch,
-                bondReserves
+                sharePrice,
+                initialSharePrice
             ),
-            yieldSpaceMath.modifiedYieldSpaceConstant(
-                sharePrice.divDown(initialSharePrice),
-                initialSharePrice,
+            yieldSpaceMath.kDown(
                 shareReserves + maxDz,
+                bondReserves - maxDy,
                 FixedPointMath.ONE_18 - timeStretch,
-                bondReserves - maxDy
+                sharePrice,
+                initialSharePrice
             ),
             1e12 // TODO: Investigate this bound.
         );

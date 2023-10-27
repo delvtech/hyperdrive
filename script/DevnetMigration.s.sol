@@ -243,7 +243,8 @@ contract DevnetMigration is Script {
                 poolConfig,
                 new bytes32[](0),
                 contribution,
-                fixedRate
+                fixedRate,
+                new bytes(0)
             );
         }
 

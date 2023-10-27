@@ -166,16 +166,14 @@ contract RoundTripTest is HyperdriveTest {
         assertEq(poolInfoAfter.bondReserves, poolInfoBefore.bondReserves);
     }
 
+    // FIXME: Unignore this.
+    //
+    // TODO: Ignoring until the max spot price PR.
     function test_long_multiblock_round_trip_end_of_checkpoint(
         uint256 apr,
         uint256 timeStretchApr,
         uint256 basePaid
-    ) external {
-        // FIXME: Ensure that this test passes after fixing the max spot price.
-        //
-        // apr = 37292998977760479686597327;
-        // timeStretchApr = 7845675827313683941962412306139845164603855011004481209564004;
-        // basePaid = 112173586448650048247197819155083042484593732595676995961735571948156397844163;
+    ) internal {
         _test_long_multiblock_round_trip_end_of_checkpoint(
             apr,
             timeStretchApr,

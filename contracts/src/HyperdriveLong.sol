@@ -7,6 +7,7 @@ import { Lib } from "test/utils/Lib.sol";
 
 import { HyperdriveLP } from "./HyperdriveLP.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
+import { IHyperdriveWrite } from "./interfaces/IHyperdriveWrite.sol";
 import { AssetId } from "./libraries/AssetId.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
@@ -18,7 +19,7 @@ import { SafeCast } from "./libraries/SafeCast.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract HyperdriveLong is HyperdriveLP {
+abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
     // FIXME
     using Lib for *;
 
@@ -33,18 +34,14 @@ abstract contract HyperdriveLong is HyperdriveLP {
     /// @param _minSharePrice The minium share price at which to open the long.
     ///        This allows traders to protect themselves from opening a long in
     ///        a checkpoint where negative interest has accrued.
-    /// @param _destination The address which will receive the bonds
-    /// @param _asUnderlying A flag indicating whether the sender will pay in
-    ///        base or using another currency. Implementations choose which
-    ///        currencies they accept.
+    /// @param _options The options that configure how the trade is settled.
     /// @return maturityTime The maturity time of the bonds.
     /// @return bondProceeds The amount of bonds the user received
     function openLong(
         uint256 _baseAmount,
         uint256 _minOutput,
         uint256 _minSharePrice,
-        address _destination,
-        bool _asUnderlying
+        IHyperdrive.Options calldata _options
     )
         external
         payable
@@ -59,10 +56,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         }
 
         // Deposit the user's base.
-        (uint256 shares, uint256 sharePrice) = _deposit(
-            _baseAmount,
-            _asUnderlying
-        );
+        (uint256 shares, uint256 sharePrice) = _deposit(_baseAmount, _options);
         if (sharePrice < _minSharePrice) {
             revert IHyperdrive.MinimumSharePrice();
         }
@@ -105,12 +99,12 @@ abstract contract HyperdriveLong is HyperdriveLP {
             AssetId.AssetIdPrefix.Long,
             maturityTime
         );
-        _mint(assetId, _destination, bondProceeds);
+        _mint(assetId, _options.destination, bondProceeds);
 
         // Emit an OpenLong event.
         uint256 baseAmount = _baseAmount; // Avoid stack too deep error.
         emit OpenLong(
-            _destination,
+            _options.destination,
             assetId,
             maturityTime,
             baseAmount,
@@ -123,18 +117,14 @@ abstract contract HyperdriveLong is HyperdriveLP {
     /// @notice Closes a long position with a specified maturity time.
     /// @param _maturityTime The maturity time of the short.
     /// @param _bondAmount The amount of longs to close.
-    /// @param _minOutput The minimum base the user should receive from this trade
-    /// @param _destination The address which will receive the proceeds of this sale
-    /// @param _asUnderlying A flag indicating whether the sender will pay in
-    ///        base or using another currency. Implementations choose which
-    ///        currencies they accept.
+    /// @param _minOutput The minimum amount of base the trader will accept.
+    /// @param _options The options that configure how the trade is settled.
     /// @return The amount of underlying the user receives.
     function closeLong(
         uint256 _maturityTime,
         uint256 _bondAmount,
         uint256 _minOutput,
-        address _destination,
-        bool _asUnderlying
+        IHyperdrive.Options calldata _options
     ) external nonReentrant returns (uint256) {
         if (_bondAmount < _minimumTransactionAmount) {
             revert IHyperdrive.MinimumTransactionAmount();
@@ -202,11 +192,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         }
 
         // Withdraw the profit to the trader.
-        uint256 baseProceeds = _withdraw(
-            shareProceeds,
-            _destination,
-            _asUnderlying
-        );
+        uint256 baseProceeds = _withdraw(shareProceeds, _options);
 
         // Enforce min user outputs
         if (_minOutput > baseProceeds) revert IHyperdrive.OutputLimit();
@@ -214,7 +200,7 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // Emit a CloseLong event.
         uint256 bondAmount = _bondAmount; // Avoid stack too deep error.
         emit CloseLong(
-            _destination,
+            _options.destination,
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
             maturityTime,
             baseProceeds,

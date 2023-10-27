@@ -23,7 +23,7 @@ contract MockERC4626 is ERC4626, MultiRolesAuthority {
     uint256 internal _rate;
     uint256 internal _lastUpdated;
 
-    bool internal immutable _isCompetitionMode;
+    bool public immutable isCompetitionMode;
 
     constructor(
         ERC20Mintable _asset,
@@ -31,18 +31,18 @@ contract MockERC4626 is ERC4626, MultiRolesAuthority {
         string memory _symbol,
         uint256 _initialRate,
         address _admin,
-        bool _isCompetitionMode_
+        bool _isCompetitionMode
     )
         ERC4626(ERC20(address(_asset)), _name, _symbol)
         MultiRolesAuthority(_admin, Authority(address(this)))
     {
         _rate = _initialRate;
         _lastUpdated = block.timestamp;
-        _isCompetitionMode = _isCompetitionMode_;
+        isCompetitionMode = _isCompetitionMode;
     }
 
     modifier requiresAuthDuringCompetition() {
-        if (_isCompetitionMode) {
+        if (isCompetitionMode) {
             require(
                 isAuthorized(msg.sender, msg.sig),
                 "MockERC4626: not authorized"

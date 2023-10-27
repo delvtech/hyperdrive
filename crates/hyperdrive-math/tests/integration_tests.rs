@@ -2,6 +2,7 @@ use ethers::types::U256;
 use eyre::Result;
 use fixed_point::FixedPoint;
 use fixed_point_macros::{fixed, uint256};
+use hyperdrive_math::{calculate_bonds_given_shares_and_rate, get_effective_share_reserves};
 use hyperdrive_wrappers::wrappers::i_hyperdrive::Checkpoint;
 use rand::{thread_rng, Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
@@ -30,7 +31,7 @@ async fn preamble(
         .await?;
 
     // Alice initializes the pool.
-    alice.initialize(fixed_rate, alice.base()).await?;
+    alice.initialize(fixed_rate, alice.base(), None).await?;
 
     // Advance the time for over a term and make trades in some of the checkpoints.
     let mut time_remaining = alice.get_config().position_duration;
@@ -38,13 +39,13 @@ async fn preamble(
         // Bob opens a long.
         let discount = rng.gen_range(fixed!(0.1e18)..=fixed!(0.5e18));
         let long_amount = rng.gen_range(fixed!(1e12)..=bob.get_max_long(None).await? * discount);
-        bob.open_long(long_amount, None).await?;
+        bob.open_long(long_amount, None, None).await?;
 
         // Celine opens a short.
         let discount = rng.gen_range(fixed!(0.1e18)..=fixed!(0.5e18));
         let short_amount =
             rng.gen_range(fixed!(1e12)..=celine.get_max_short(None).await? * discount);
-        celine.open_short(short_amount, None).await?;
+        celine.open_short(short_amount, None, None).await?;
 
         // Advance the time and mint all of the intermediate checkpoints.
         let multiplier = rng.gen_range(fixed!(5e18)..=fixed!(50e18));
@@ -61,7 +62,9 @@ async fn preamble(
 
     // Mint a checkpoint to close any matured positions from the first checkpoint
     // of trading.
-    alice.checkpoint(alice.latest_checkpoint().await?).await?;
+    alice
+        .checkpoint(alice.latest_checkpoint().await?, None)
+        .await?;
 
     Ok(())
 }
@@ -125,7 +128,7 @@ pub async fn test_integration_get_max_short() -> Result<()> {
         let budget = bob.base();
         let slippage_tolerance = fixed!(0.001e18);
         let max_short = bob.get_max_short(Some(slippage_tolerance)).await?;
-        bob.open_short(max_short, None).await?;
+        bob.open_short(max_short, None, None).await?;
 
         if max_short != global_max_short {
             // We currently allow up to a tolerance of 3%, which means
@@ -199,7 +202,7 @@ pub async fn test_integration_get_max_long() -> Result<()> {
         // we expect Bob's max long to bring the spot price close to 1, exhaust the
         // pool's solvency, or exhaust Bob's budget.
         let max_long = bob.get_max_long(None).await?;
-        bob.open_long(max_long, None).await?;
+        bob.open_long(max_long, None, None).await?;
         let is_max_price = {
             let state = bob.get_state().await?;
             fixed!(1e18) - state.get_spot_price() < fixed!(1e15)
@@ -225,5 +228,70 @@ pub async fn test_integration_get_max_long() -> Result<()> {
         celine.reset(Default::default());
     }
 
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_calculate_bonds_given_shares_and_rate() -> Result<()> {
+    // Set up a random number generator. We use ChaCha8Rng with a randomly
+    // generated seed, which makes it easy to reproduce test failures given
+    // the seed.
+    let mut rng = {
+        let mut rng = thread_rng();
+        let seed = rng.gen();
+        ChaCha8Rng::seed_from_u64(seed)
+    };
+    // Initialize the test chain and agents.
+    let chain = TestChain::new(3).await?;
+    let mut alice = Agent::new(
+        chain.client(chain.accounts()[0].clone()).await?,
+        chain.addresses(),
+        None,
+    )
+    .await?;
+    let mut bob = Agent::new(
+        chain.client(chain.accounts()[1].clone()).await?,
+        chain.addresses(),
+        None,
+    )
+    .await?;
+    let mut celine = Agent::new(
+        chain.client(chain.accounts()[2].clone()).await?,
+        chain.addresses(),
+        None,
+    )
+    .await?;
+    // Snapshot the chain and run the preamble.
+    let fixed_rate = fixed!(0.05e18);
+    preamble(&mut rng, &mut alice, &mut bob, &mut celine, fixed_rate).await?;
+    // Calculate the bond reserves that target the current rate with the current
+    // share reserves.
+    let state = alice.get_state().await?;
+    let effective_share_reserves = get_effective_share_reserves(
+        state.info.share_reserves.into(),
+        state.info.share_adjustment.into(),
+    );
+    let rust_reserves = calculate_bonds_given_shares_and_rate(
+        effective_share_reserves,
+        state.config.initial_share_price.into(),
+        state.get_spot_rate(),
+        state.config.position_duration.into(),
+        state.config.time_stretch.into(),
+    );
+    // Ensure that the calculated reserves are approximately equal
+    // to the starting reserves. These won't be exactly equal because
+    // compressing through "rate space" loses information.
+    let sol_reserves = state.info.bond_reserves.into();
+    let delta = if rust_reserves > sol_reserves {
+        rust_reserves - sol_reserves
+    } else {
+        sol_reserves - rust_reserves
+    };
+    assert!(
+        delta < fixed!(1e12), // Better than 1e-6 error.
+        "Invalid bond reserve calculation.rust_reserves={} != sol_reserves={} within 1e12",
+        rust_reserves,
+        sol_reserves
+    );
     Ok(())
 }

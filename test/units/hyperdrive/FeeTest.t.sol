@@ -14,6 +14,31 @@ contract FeeTest is HyperdriveTest {
     using FixedPointMath for uint256;
     using Lib for *;
 
+    function test_governanceFeeAccrual_invalidFeeDestination_failure() public {
+        // Deploy and initialize a new pool with fees.
+        uint256 apr = 0.05e18;
+        uint256 contribution = 500_000_000e18;
+        deploy(alice, apr, 0.1e18, 0.1e18, 0.5e18);
+        initialize(alice, apr, contribution);
+
+        // Open a long and ensure that the governance fees accrued are non-zero.
+        uint256 baseAmount = 10e18;
+        openLong(bob, baseAmount);
+        assertGt(hyperdrive.getUncollectedGovernanceFees(), 0);
+
+        // Attempt to collect fees with an invalid destination.
+        vm.stopPrank();
+        vm.prank(feeCollector);
+        vm.expectRevert(IHyperdrive.InvalidFeeDestination.selector);
+        hyperdrive.collectGovernanceFee(
+            IHyperdrive.Options({
+                destination: alice,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
+    }
+
     function test_governanceFeeAccrual() public {
         uint256 apr = 0.05e18;
         // Initialize the pool with a large amount of capital.
@@ -38,7 +63,13 @@ contract FeeTest is HyperdriveTest {
         // Collect fees and test that the fees received in the governance address have earned interest.
         vm.stopPrank();
         vm.prank(feeCollector);
-        MockHyperdrive(address(hyperdrive)).collectGovernanceFee(true);
+        hyperdrive.collectGovernanceFee(
+            IHyperdrive.Options({
+                destination: feeCollector,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
         uint256 governanceBalanceAfter = baseToken.balanceOf(feeCollector);
         assertGt(governanceBalanceAfter, governanceFeesAfterOpenLong);
     }
@@ -75,11 +106,12 @@ contract FeeTest is HyperdriveTest {
                 bob,
                 basePaid,
                 DepositOverrides({
-                    asUnderlying: true,
+                    asBase: true,
                     depositAmount: basePaid,
                     minSharePrice: 0,
                     minSlippage: 0,
-                    maxSlippage: type(uint256).max
+                    maxSlippage: type(uint256).max,
+                    extraData: new bytes(0)
                 })
             );
             bondsPurchased = bondAmount;
@@ -116,11 +148,12 @@ contract FeeTest is HyperdriveTest {
                 bob,
                 basePaid,
                 DepositOverrides({
-                    asUnderlying: true,
+                    asBase: true,
                     depositAmount: basePaid,
                     minSharePrice: 0,
                     minSlippage: 0,
-                    maxSlippage: type(uint256).max
+                    maxSlippage: type(uint256).max,
+                    extraData: new bytes(0)
                 })
             );
 
@@ -180,11 +213,12 @@ contract FeeTest is HyperdriveTest {
                 bob,
                 basePaid,
                 DepositOverrides({
-                    asUnderlying: true,
+                    asBase: true,
                     depositAmount: basePaid,
                     minSharePrice: 0,
                     minSlippage: 0,
-                    maxSlippage: type(uint256).max
+                    maxSlippage: type(uint256).max,
+                    extraData: new bytes(0)
                 })
             );
             bondsPurchased = bondAmount;
@@ -242,11 +276,12 @@ contract FeeTest is HyperdriveTest {
                 bob,
                 basePaid,
                 DepositOverrides({
-                    asUnderlying: true,
+                    asBase: true,
                     depositAmount: basePaid,
                     minSharePrice: 0,
                     minSlippage: 0,
-                    maxSlippage: type(uint256).max
+                    maxSlippage: type(uint256).max,
+                    extraData: new bytes(0)
                 })
             );
 
@@ -333,7 +368,13 @@ contract FeeTest is HyperdriveTest {
         // Collect fees to governance address
         vm.stopPrank();
         vm.prank(feeCollector);
-        MockHyperdrive(address(hyperdrive)).collectGovernanceFee(true);
+        hyperdrive.collectGovernanceFee(
+            IHyperdrive.Options({
+                destination: feeCollector,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
 
         // Ensure that governance fees after collection are zero.
         uint256 governanceFeesAfterCollection = IMockHyperdrive(
@@ -389,10 +430,22 @@ contract FeeTest is HyperdriveTest {
 
         // collect governance fees
         vm.expectRevert(IHyperdrive.Unauthorized.selector);
-        MockHyperdrive(address(hyperdrive)).collectGovernanceFee(true);
+        hyperdrive.collectGovernanceFee(
+            IHyperdrive.Options({
+                destination: feeCollector,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
         vm.stopPrank();
         vm.prank(governance);
-        MockHyperdrive(address(hyperdrive)).collectGovernanceFee(true);
+        hyperdrive.collectGovernanceFee(
+            IHyperdrive.Options({
+                destination: feeCollector,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
 
         // Ensure that governance fees after collection are zero.
         uint256 governanceFeesAfterCollection = IMockHyperdrive(

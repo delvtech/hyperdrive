@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import { IDataProvider } from "./interfaces/IDataProvider.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 
 /// @author DELV
@@ -10,8 +11,8 @@ import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract DataProvider {
-    address internal immutable dataProvider;
+contract DataProvider is IDataProvider {
+    address public immutable dataProvider;
 
     /// @notice Initializes the data provider.
     /// @param _dataProvider The address of the data provider.

@@ -32,7 +32,16 @@ contract AddLiquidityTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(IHyperdrive.MinimumTransactionAmount.selector);
-        hyperdrive.addLiquidity(0, 0, type(uint256).max, bob, true);
+        hyperdrive.addLiquidity(
+            0,
+            0,
+            type(uint256).max,
+            IHyperdrive.Options({
+                destination: bob,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
     }
 
     function test_add_liquidity_failure_not_payable() external {
@@ -46,7 +55,16 @@ contract AddLiquidityTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(IHyperdrive.NotPayable.selector);
-        hyperdrive.addLiquidity{ value: 1 }(0, 0, type(uint256).max, bob, true);
+        hyperdrive.addLiquidity{ value: 1 }(
+            0,
+            0,
+            type(uint256).max,
+            IHyperdrive.Options({
+                destination: bob,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
     }
 
     function test_add_liquidity_failure_pause() external {
@@ -61,7 +79,16 @@ contract AddLiquidityTest is HyperdriveTest {
         pause(true);
         vm.startPrank(bob);
         vm.expectRevert(IHyperdrive.Paused.selector);
-        hyperdrive.addLiquidity(0, 0, type(uint256).max, bob, true);
+        hyperdrive.addLiquidity(
+            0,
+            0,
+            type(uint256).max,
+            IHyperdrive.Options({
+                destination: bob,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
         vm.stopPrank();
         pause(false);
     }
@@ -77,13 +104,31 @@ contract AddLiquidityTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(IHyperdrive.InvalidApr.selector);
-        hyperdrive.addLiquidity(10e18, 0.06e18, type(uint256).max, bob, true);
+        hyperdrive.addLiquidity(
+            10e18,
+            0.06e18,
+            type(uint256).max,
+            IHyperdrive.Options({
+                destination: bob,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
 
         // Attempt to add liquidity with a maximum APR that is too low.
         vm.stopPrank();
         vm.startPrank(bob);
         vm.expectRevert(IHyperdrive.InvalidApr.selector);
-        hyperdrive.addLiquidity(10e18, 0, 0.04e18, bob, true);
+        hyperdrive.addLiquidity(
+            10e18,
+            0,
+            0.04e18,
+            IHyperdrive.Options({
+                destination: bob,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
     }
 
     function test_add_liquidity_failure_zero_lp_total_supply() external {
@@ -108,7 +153,16 @@ contract AddLiquidityTest is HyperdriveTest {
         baseToken.mint(contribution);
         baseToken.approve(address(hyperdrive), contribution);
         vm.expectRevert();
-        hyperdrive.addLiquidity(contribution, 0, 0.04e18, bob, true);
+        hyperdrive.addLiquidity(
+            contribution,
+            0,
+            0.04e18,
+            IHyperdrive.Options({
+                destination: bob,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
     }
 
     function test_add_liquidity_identical_lp_shares() external {
