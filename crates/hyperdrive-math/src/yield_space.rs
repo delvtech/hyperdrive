@@ -22,7 +22,7 @@ pub trait YieldSpace {
     }
 
     /// Calculates the amount of bonds a user will receive from the pool by
-    /// providing a specified amount of shares. We down the amount of
+    /// providing a specified amount of shares. We underestimate the amount of
     /// bonds out to prevent sandwiches.
     fn calculate_bonds_out_given_shares_in_down(&self, dz: FixedPoint) -> FixedPoint {
         // NOTE: We round k up to make the rhs of the equation larger.
@@ -54,7 +54,7 @@ pub trait YieldSpace {
     }
 
     /// Calculates the amount of shares a user must provide the pool to receive
-    /// a specified amount of bonds. We up the amount of shares in.
+    /// a specified amount of bonds. We overestimate the amount of shares in.
     fn calculate_shares_in_given_bonds_out_up(&self, dy: FixedPoint) -> FixedPoint {
         // NOTE: We round k up to make the lhs of the equation larger.
         //
@@ -83,7 +83,7 @@ pub trait YieldSpace {
     }
 
     /// Calculates the amount of shares a user must provide the pool to receive
-    /// a specified amount of bonds. We down the amount of shares in.
+    /// a specified amount of bonds. We underestimate the amount of shares in.
     fn calculate_shares_in_given_bonds_out_down(&self, dy: FixedPoint) -> FixedPoint {
         // NOTE: We round k down to make the lhs of the equation smaller.
         //
@@ -113,7 +113,7 @@ pub trait YieldSpace {
 
     /// Calculates the amount of shares a user will receive from the pool by
     /// providing a specified amount of bonds. This function reverts if an
-    /// integer overflow or underflow occurs. We down the amount of
+    /// integer overflow or underflow occurs. We underestimate the amount of
     /// shares out.
     fn calculate_shares_out_given_bonds_in_down(&self, dy: FixedPoint) -> FixedPoint {
         self.calculate_shares_out_given_bonds_in_down_safe(dy)
@@ -122,7 +122,7 @@ pub trait YieldSpace {
 
     /// Calculates the amount of shares a user will receive from the pool by
     /// providing a specified amount of bonds. This function returns a Result
-    /// instead of panicking. We down the amount of shares out.
+    /// instead of panicking. We underestimate the amount of shares out.
     fn calculate_shares_out_given_bonds_in_down_safe(&self, dy: FixedPoint) -> Result<FixedPoint> {
         // NOTE: We round k up to make the rhs of the equation larger.
         //
@@ -165,7 +165,7 @@ pub trait YieldSpace {
 
     /// Calculates the maximum amount of bonds that can be purchased with the
     /// specified reserves. We round so that the max buy amount is
-    /// downd.
+    /// underestimated.
     fn calculate_max_buy(&self) -> FixedPoint {
         // We solve for the maximum buy using the constraint that the pool's
         // spot price can never exceed 1. We do this by noting that a spot price
@@ -190,7 +190,7 @@ pub trait YieldSpace {
 
     /// Calculates the maximum amount of bonds that can be sold with the
     /// specified reserves. We round so that the max sell amount is
-    /// downd.
+    /// underestimated.
     fn calculate_max_sell(&self, z_min: FixedPoint) -> FixedPoint {
         // We solve for the maximum sell using the constraint that the pool's
         // share reserves can never fall below the minimum share reserves zMin.
