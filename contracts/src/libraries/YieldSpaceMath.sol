@@ -53,7 +53,7 @@ library YieldSpaceMath {
         // (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
         uint256 k = modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
         // (µ * (z + dz))^(1 - t)
-        z = mu.mulDown(z + dz).pow(t);
+        z = mu.mulUp(z + dz).pow(t);
         // (c / µ) * (µ * (z + dz))^(1 - t)
         z = cDivMu.mulDown(z);
         // ((c / µ) * (µ * z)^(1 - t) + y^(1 - t) - (c / µ) * (µ * (z + dz))^(1 - t))^(1 / (1 - t)))

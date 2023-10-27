@@ -392,6 +392,11 @@ abstract contract HyperdriveLong is HyperdriveLP {
         // that updates the curve separately from the trade and doesn't give us
         // good information about the trader's execution price.
         {
+            console.log("_shareAmount = %s", _shareAmount.toString(18));
+            console.log(
+                "_bondReservesDelta = %s",
+                bondReservesDelta.toString(18)
+            );
             uint256 endingSpotPrice = HyperdriveMath.calculateSpotPrice(
                 _effectiveShareReserves() + _shareAmount,
                 _marketState.bondReserves - bondReservesDelta,
