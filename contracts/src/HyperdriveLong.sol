@@ -1,10 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-// FIXME
-import { console2 as console } from "forge-std/console2.sol";
-import { Lib } from "test/utils/Lib.sol";
-
 import { HyperdriveLP } from "./HyperdriveLP.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { IHyperdriveWrite } from "./interfaces/IHyperdriveWrite.sol";
@@ -20,9 +16,6 @@ import { SafeCast } from "./libraries/SafeCast.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
-    // FIXME
-    using Lib for *;
-
     using FixedPointMath for uint256;
     using FixedPointMath for int256;
     using SafeCast for uint256;
@@ -373,16 +366,13 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
             _timeStretch
         );
 
+        // FIXME: Document this.
+        //
         // FIXME: I think we should calculate the ending spot price using the
         // _shareAmount and bondReservesDelta. The governance fee is something
         // that updates the curve separately from the trade and doesn't give us
         // good information about the trader's execution price.
         {
-            console.log("_shareAmount = %s", _shareAmount.toString(18));
-            console.log(
-                "_bondReservesDelta = %s",
-                bondReservesDelta.toString(18)
-            );
             uint256 endingSpotPrice = HyperdriveMath.calculateSpotPrice(
                 _effectiveShareReserves() + _shareAmount,
                 _marketState.bondReserves - bondReservesDelta,
@@ -393,8 +383,6 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
                 spotPrice,
                 _curveFee
             );
-            console.log("endingSpotPrice = %s", endingSpotPrice.toString(18));
-            console.log("maxSpotPrice = %s", maxSpotPrice.toString(18));
             if (endingSpotPrice > maxSpotPrice) {
                 revert IHyperdrive.NegativeInterest();
             }

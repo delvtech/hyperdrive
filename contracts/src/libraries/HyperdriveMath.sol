@@ -1,11 +1,6 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-// FIXME
-import { console2 as console } from "forge-std/console2.sol";
-import { Lib } from "test/utils/Lib.sol";
-import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { FixedPointMath, ONE } from "./FixedPointMath.sol";
 import { YieldSpaceMath } from "./YieldSpaceMath.sol";
@@ -18,9 +13,6 @@ import { SafeCast } from "./SafeCast.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 library HyperdriveMath {
-    // FIXME
-    using Lib for *;
-
     using FixedPointMath for uint256;
     using FixedPointMath for int256;
     using SafeCast for uint256;
@@ -491,7 +483,6 @@ library HyperdriveMath {
                 spotPrice
             );
             if (isSolvent_) {
-                console.log("taking the absolute");
                 return (absoluteMaxBaseAmount, absoluteMaxBondAmount);
             }
         }
@@ -587,14 +578,7 @@ library HyperdriveMath {
         return (maxBaseAmount, maxBondAmount);
     }
 
-    // FIXME: Update the use of YieldSpaceMath here.
-    //
-    // FIXME: Revert to a simpler estimation method. I need to really go through
-    // the logs to make sure that I understand the issue.
-    //
-    // FIXME: I think there is a an issue here where we are pushing too close to
-    // the max spot price. I either need to find a better way to round or I need
-    // to add a correction.
+    // FIXME: Document this.
     //
     /// @dev Calculates the largest long that can be opened without buying bonds
     ///      at a negative interest rate. This calculation does not take
@@ -614,107 +598,14 @@ library HyperdriveMath {
         pure
         returns (uint256 absoluteMaxBaseAmount, uint256 absoluteMaxBondAmount)
     {
-        // FIXME: There were some problems with this implementation.
-        //
-        // // FIXME: I should try overestimating.
-        // //
-        // // We use the spot price calculation to get an identity that relates
-        // // the target share reserves `z_target` and the target bond reserves
-        // // `y_target`. Since a long is being opened, we know that zeta won't
-        // // change:
-        // //
-        // // p_max = ((mu * (z_target - zeta)) / y_target) ** t_s
-        // //                      =>
-        // // mu * (z_target - zeta) = y_target * p_max ** (1 / t_s)
-        // //
-        // // Substituting this into YieldSpace allows us to calculate `y_target`:
-        // //
-        // // k = (c / mu) * (y_target * p_max ** (1 / t_s)) ** (1 - t_s) + y_target ** 1 - t_s
-        // //                      =>
-        // // y_target = (k / ((c / mu) * p_max ** ((1 - t_s) / t_s) + 1)) ** (1 / (1 - t_s))
-        // uint256 maxSpotPrice = calculateOpenLongMaxSpotPrice(
-        //     _spotPrice,
-        //     _params.curveFee
-        // );
-        // uint256 targetBondReserves;
-        // {
-        //     uint256 cDivMu = _params.sharePrice.divUp(
-        //         _params.initialSharePrice
-        //     );
-        //     uint256 k = YieldSpaceMath.modifiedYieldSpaceConstant(
-        //         cDivMu,
-        //         _params.initialSharePrice,
-        //         _effectiveShareReserves,
-        //         ONE - _params.timeStretch,
-        //         _params.bondReserves
-        //     );
-        //     // inner = k / ((c / mu) * p_max ** ((1 - t_s) / t_s) + 1)
-        //     targetBondReserves = k.divUp(
-        //         (_params.sharePrice.mulDivDown(
-        //             maxSpotPrice.pow(
-        //                 (ONE - _params.timeStretch).divUp(_params.timeStretch)
-        //             ),
-        //             _params.initialSharePrice
-        //         ) + ONE)
-        //     );
-        //     // y_target = inner ** (1 / (1 - t_s))
-        //     targetBondReserves = targetBondReserves.pow(
-        //         ONE.divUp(ONE - _params.timeStretch)
-        //     );
-        // }
-        //
-        // // FIXME: I really need to underestimate here.
-        // //
-        // // Now that we have `y_target`, we can substitute this value into our
-        // // identify to calculate `z_target` as:
-        // //
-        // // z_target = zeta + (y_target * p_max ** (1 / t_s)) / mu
-        // uint256 targetShareReserves;
-        // {
-        //     // rhs = (y_target * p_max ** (1 / t_s)) / mu
-        //     uint256 rhs = targetBondReserves
-        //         .mulDivDown(
-        //             maxSpotPrice.pow(ONE.divUp(_params.timeStretch)),
-        //             _params.initialSharePrice
-        //         );
-        //     // z_target = zeta + rhs
-        //     int256 maybeShareReserves = _params.shareAdjustment + int256(rhs);
-        //     require(
-        //         maybeShareReserves >= 0,
-        //         "calculateAbsoluteMaxLong: negative share reserves"
-        //     );
-        //     targetShareReserves = uint256(maybeShareReserves);
-        // }
-        //
-        // absoluteMaxBaseAmount = (targetShareReserves - _params.shareReserves)
-        //     .mulDown(_params.sharePrice);
-        // absoluteMaxBondAmount = _params.bondReserves - targetBondReserves;
-
-        // // FIXME: What's the difference between this and what we do in Solidity?
-        // // Is the bond amount different?
-        // //
-        // // FIXME: Calculate the spot price after.
-        // console.log("calculateAbsoluteMaxLong: absoluteMaxBaseAmount = %s", absoluteMaxBaseAmount.toString(18));
-        // console.log("calculateAbsoluteMaxLong: absoluteMaxShareAmount = %s", absoluteMaxBaseAmount.divDown(_params.sharePrice).toString(18));
-        // console.log("calculateAbsoluteMaxLong: absoluteMaxBondAmount = %s", absoluteMaxBondAmount.toString(18));
-        // console.log(
-        //     "calculateAbsoluteMaxLong: ending spot price = %s",
-        //     calculateSpotPrice(
-        //         _effectiveShareReserves + absoluteMaxBaseAmount.divDown(_params.sharePrice),
-        //         _params.bondReserves - absoluteMaxBondAmount,
-        //         _params.initialSharePrice,
-        //         _params.timeStretch
-        //     ).toString(18)
-        // );
-
-        // FIXME
+        // FIXME: Document this.
         uint256 targetShareReserves;
-        uint256 k = YieldSpaceMath.modifiedYieldSpaceConstant(
-            _params.sharePrice.divDown(_params.initialSharePrice),
-            _params.initialSharePrice,
+        uint256 k = YieldSpaceMath.kDown(
             _effectiveShareReserves,
+            _params.bondReserves,
             ONE - _params.timeStretch,
-            _params.bondReserves
+            _params.sharePrice,
+            _params.initialSharePrice
         );
         uint256 inner = k
             .divDown(
@@ -741,10 +632,6 @@ library HyperdriveMath {
         absoluteMaxBaseAmount = (targetShareReserves - _params.shareReserves)
             .mulDown(_params.sharePrice);
         absoluteMaxBondAmount = _params.bondReserves - targetBondReserves;
-        console.log(
-            "calculateAbsoluteMaxLong: absoluteMaxBondAmount = %s",
-            absoluteMaxBondAmount.toString(18)
-        );
     }
 
     /// @dev Calculates an initial guess of the max long that can be opened.

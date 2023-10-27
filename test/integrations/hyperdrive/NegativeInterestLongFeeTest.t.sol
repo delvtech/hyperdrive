@@ -22,7 +22,7 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
         // variableInterest [-50,0]
         initialSharePrice = initialSharePrice.normalizeToRange(.5e18, 10e18);
         variableInterest = -variableInterest.normalizeToRange(0, .5e18);
-        uint256 curveFee = 1e18;
+        uint256 curveFee = 0.1e18;
         uint256 flatFee = 0.000e18;
         uint256 governanceFee = 1e18;
         test_negative_interest_long_immediate_open_close_fees(
@@ -39,12 +39,13 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
         // - initial_share_price > 1
         // - negative interest causes the share price to go down
         // - a long is opened and immediately closed
-        // - set the curve fee and governance fee to 100% to make the test easier to verify
+        // - set the curve fee to 10% and the governance fee to 100% to make the
+        //   test easier to verify
         {
             uint256 initialSharePrice = 1.5e18;
             int256 variableInterest = -0.1e18;
-            uint256 curveFee = 1e18;
-            uint256 flatFee = 0.000e18;
+            uint256 curveFee = 0.1e18;
+            uint256 flatFee = 0;
             uint256 governanceFee = 1e18;
             test_negative_interest_long_immediate_open_close_fees(
                 initialSharePrice,
@@ -59,12 +60,13 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
         // - initial_share_price = 1
         // - negative interest causes the share price to go down
         // - a long is opened and immediately closed
-        // - set the curve fee and governance fee to 100% to make the test easier to verify
+        // - set the curve fee to 10% and the governance fee to 100% to make the
+        //   test easier to verify
         {
             uint256 initialSharePrice = 1e18;
             int256 variableInterest = -0.1e18;
-            uint256 curveFee = 1e18;
-            uint256 flatFee = 0.000e18;
+            uint256 curveFee = 0.1e18;
+            uint256 flatFee = 0;
             uint256 governanceFee = 1e18;
             test_negative_interest_long_immediate_open_close_fees(
                 initialSharePrice,
@@ -79,12 +81,13 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
         // - initial_share_price < 1
         // - negative interest causes the share price to go down
         // - a long is opened and immediately closed
-        // - set the curve fee and governance fee to 100% to make the test easier to verify
+        // - set the curve fee to 10% and the governance fee to 100% to make the
+        //   test easier to verify
         {
             uint256 initialSharePrice = 0.95e18;
             int256 variableInterest = -0.1e18;
-            uint256 curveFee = 1e18;
-            uint256 flatFee = 0.000e18;
+            uint256 curveFee = 0.1e18;
+            uint256 flatFee = 0;
             uint256 governanceFee = 1e18;
             test_negative_interest_long_immediate_open_close_fees(
                 initialSharePrice,
@@ -155,12 +158,14 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
         ).getGovernanceFeesAccrued();
 
         // Calculate the expected fees from opening the long
-        uint256 expectedGovernanceFees = (FixedPointMath.ONE_18.divDown(
-            calculatedSpotPrice
-        ) - FixedPointMath.ONE_18).mulDown(basePaid).mulDivDown(
-                calculatedSpotPrice,
-                sharePrice
-            );
+        uint256 curveFee_ = curveFee; // avoid stack too deep
+        uint256 expectedGovernanceFees = curveFee_
+            .mulDown(
+                FixedPointMath.ONE_18.divDown(calculatedSpotPrice) -
+                    FixedPointMath.ONE_18
+            )
+            .mulDown(basePaid)
+            .mulDivDown(calculatedSpotPrice, sharePrice);
         assertApproxEqAbs(
             governanceFeesAfterOpenLong,
             expectedGovernanceFees,
@@ -176,13 +181,9 @@ contract NegativeInterestLongFeeTest is HyperdriveTest {
         ).getGovernanceFeesAccrued() - governanceFeesAfterOpenLong;
 
         // Calculate the expected fees from closing the long
-        expectedGovernanceFees = (FixedPointMath.ONE_18.divDown(
-            calculatedSpotPrice
-        ) - FixedPointMath.ONE_18).mulDown(basePaid).mulDivDown(
-                calculatedSpotPrice,
-                sharePrice
-            );
-
+        expectedGovernanceFees = curveFee_
+            .mulDown(FixedPointMath.ONE_18 - calculatedSpotPrice)
+            .mulDivDown(bondAmount, sharePrice);
         assertApproxEqAbs(
             governanceFeesAfterCloseLong,
             expectedGovernanceFees,
