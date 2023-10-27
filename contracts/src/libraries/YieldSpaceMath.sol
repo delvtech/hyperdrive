@@ -1,10 +1,6 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-// FIXME
-import { console2 as console } from "forge-std/console2.sol";
-import { Lib } from "test/utils/Lib.sol";
-
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { FixedPointMath, ONE } from "./FixedPointMath.sol";
 import { HyperdriveMath } from "./HyperdriveMath.sol";
@@ -33,9 +29,6 @@ import { HyperdriveMath } from "./HyperdriveMath.sol";
 ///
 ///      https://yieldprotocol.com/YieldSpace.pdf
 library YieldSpaceMath {
-    // FIXME
-    using Lib for *;
-
     using FixedPointMath for uint256;
 
     /// @dev Calculates the amount of bonds a user will receive from the pool by
@@ -283,21 +276,16 @@ library YieldSpaceMath {
         // y' = (k / ((c / mu) + 1)) ** (1 / (1 - tau)) and the maximum share
         // reserves of z' = y/mu.
         uint256 k = kUp(z, y, t, c, mu);
-        console.log("k = %s", k.toString(18));
         uint256 optimalY = k.divUp(c.divDown(mu) + ONE);
-        console.log("optimalY = %s", optimalY.toString(18));
         if (optimalY >= ONE) {
             // Rounding the exponent up results in a larger outcome.
             optimalY = optimalY.pow(ONE.divUp(t));
-            console.log("optimalY = %s", optimalY.toString(18));
         } else {
             // Rounding the exponent down results in a larger outcome.
             optimalY = optimalY.pow(ONE.divDown(t));
-            console.log("optimalY = %s", optimalY.toString(18));
         }
 
         // The optimal trade size is given by dy = y - y'.
-        console.log("y - optimalY = %s", (y - optimalY).toString(18));
         return y - optimalY;
     }
 

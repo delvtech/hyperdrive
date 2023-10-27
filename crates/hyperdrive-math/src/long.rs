@@ -33,12 +33,9 @@ impl State {
     ///            \right)^{\tfrac{1}{1 - t_s}}
     /// $$
     pub fn get_long_amount<F: Into<FixedPoint>>(&self, base_amount: F) -> FixedPoint {
-        println!("get_long_amount: 1");
         let base_amount = base_amount.into();
-        println!("get_long_amount: 2");
         let long_amount =
             self.calculate_bonds_out_given_shares_in_down(base_amount / self.share_price());
-        println!("get_long_amount: 3");
         long_amount - self.long_curve_fee(base_amount)
     }
 
@@ -58,21 +55,12 @@ impl State {
 
         // Get the maximum long that brings the spot price to 1. If the pool is
         // solvent after opening this long, then we're done.
-        println!("test: 1");
         let (absolute_max_base_amount, absolute_max_bond_amount) = {
-            println!("test: 2");
             let (share_amount, mut bond_amount) = self.absolute_max_long();
-            println!("test: 3");
-            println!("share_amount: {}", share_amount);
-            println!("bond_amount: {}", bond_amount);
             let base_amount = self.share_price() * share_amount;
             bond_amount -= self.long_curve_fee(base_amount);
-            println!("curve fee: {}", self.curve_fee());
-            println!("bond_amount: {}", bond_amount);
-            println!("test: 4");
             (base_amount, bond_amount)
         };
-        println!("test: 5");
         if self
             .solvency_after_long(
                 absolute_max_base_amount,
@@ -81,7 +69,6 @@ impl State {
             )
             .is_some()
         {
-            println!("test: 6");
             return absolute_max_base_amount.min(budget);
         }
 
@@ -102,19 +89,13 @@ impl State {
         //
         // The guess that we make is very important in determining how quickly
         // we converge to the solution.
-        println!("test: 7");
-        println!("absolute_max_base_amount = {}", absolute_max_base_amount);
-        println!("checkpoint_exposure = {}", checkpoint_exposure);
         let mut max_base_amount =
             self.max_long_guess(absolute_max_base_amount, checkpoint_exposure);
-        println!("max_base_amount = {}", max_base_amount);
-        println!("test: 8");
         let mut maybe_solvency = self.solvency_after_long(
             max_base_amount,
             self.get_long_amount(max_base_amount),
             checkpoint_exposure,
         );
-        println!("test: 9");
         if maybe_solvency.is_none() {
             panic!("Initial guess in `get_max_long` is insolvent.");
         }
@@ -123,7 +104,6 @@ impl State {
             // If the max base amount is equal to or exceeds the absolute max,
             // we've gone too far and the calculation deviated from reality at
             // some point.
-            println!("test: 10");
             if max_base_amount >= absolute_max_base_amount {
                 panic!("Reached absolute max bond amount in `get_max_long`.");
             }
@@ -131,9 +111,7 @@ impl State {
             // If the max base amount exceeds the budget, we know that the
             // entire budget can be consumed without running into solvency
             // constraints.
-            println!("test: 11");
             if max_base_amount >= budget {
-                println!("test: 12");
                 return budget;
             }
 
@@ -146,31 +124,23 @@ impl State {
             // candidate solution, we check to see if the pool is solvent if
             // a long is opened with the candidate amount. If the pool isn't
             // solvent, then we're done.
-            println!("test: 13");
             let maybe_derivative = self.solvency_after_long_derivative(max_base_amount);
             if maybe_derivative.is_none() {
-                println!("test: 14");
                 break;
             }
             let possible_max_base_amount = max_base_amount + solvency / maybe_derivative.unwrap();
-            println!("test: 15");
             maybe_solvency = self.solvency_after_long(
                 possible_max_base_amount,
                 self.get_long_amount(possible_max_base_amount),
                 checkpoint_exposure,
             );
-            println!("test: 16");
             if let Some(s) = maybe_solvency {
-                println!("test: 17");
                 solvency = s;
                 max_base_amount = possible_max_base_amount;
-                println!("test: 18");
             } else {
-                println!("test: 19");
                 break;
             }
         }
-        println!("test: 20");
 
         max_base_amount
     }
@@ -330,29 +300,11 @@ impl State {
         checkpoint_exposure: I256,
     ) -> Option<FixedPoint> {
         let governance_fee = self.long_governance_fee(base_amount);
-        println!("governance_fee = {}", governance_fee);
         let share_reserves = self.share_reserves() + base_amount / self.share_price()
             - governance_fee / self.share_price();
-        println!("share_reserves = {}", self.share_reserves());
-        println!("share_price = {}", self.share_price());
-        println!(
-            "base_amount / self.share_price() = {}",
-            base_amount / self.share_price()
-        );
-        println!(
-            "governance_fee / self.share_price() = {}",
-            governance_fee / self.share_price()
-        );
-        println!("share_reserves = {}", share_reserves);
         let exposure =
             self.long_exposure() + fixed!(2e18) * bond_amount - base_amount + governance_fee;
-        println!("long_exposure = {}", self.long_exposure());
-        println!("bond_amount = {}", bond_amount);
-        println!("base_amount = {}", base_amount);
-        println!("governance_fee = {}", governance_fee);
-        println!("exposure = {}", exposure);
         let checkpoint_exposure = FixedPoint::from(-checkpoint_exposure.min(int256!(0)));
-        println!("checkpoint_exposure = {}", checkpoint_exposure);
         if share_reserves + checkpoint_exposure / self.share_price()
             >= exposure / self.share_price() + self.minimum_share_reserves()
         {
@@ -428,8 +380,9 @@ impl State {
         // calculation. If this happens, we are close to the root, and we short
         // circuit.
         let k = self.k_down();
-        let rhs =
-            (self.share_price() / self.initial_share_price()) * inner.pow(self.time_stretch());
+        let rhs = self
+            .share_price()
+            .mul_div_down(inner.pow(self.time_stretch()), self.initial_share_price());
         if k < rhs {
             return None;
         }
@@ -473,10 +426,13 @@ impl State {
 mod tests {
     use std::panic;
 
-    use ethers::types::U256;
+    use ethers::types::{Address, U256};
     use eyre::Result;
     use fixed_point_macros::uint256;
-    use hyperdrive_wrappers::wrappers::mock_hyperdrive_math::MaxTradeParams;
+    use hyperdrive_wrappers::wrappers::{
+        i_hyperdrive::{Fees, PoolConfig, PoolInfo},
+        mock_hyperdrive_math::MaxTradeParams,
+    };
     use rand::{thread_rng, Rng};
     use test_utils::{
         agent::Agent,

@@ -28,18 +28,14 @@ pub trait YieldSpace {
         // NOTE: We round k up to make the rhs of the equation larger.
         //
         // k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
-        println!("test: calculate_bonds_out_given_shares_in_down 1");
         let k = self.k_up();
-        println!("test: calculate_bonds_out_given_shares_in_down 2");
 
         // NOTE: We round z down to make the rhs of the equation larger.
         //
         // (µ * (z + dz))^(1 - t)
-        let mut z = self.mu() * (self.z() + dz).pow(fixed!(1e18) - self.t());
-        println!("test: calculate_bonds_out_given_shares_in_down 3");
+        let mut z = (self.mu() * (self.z() + dz)).pow(fixed!(1e18) - self.t());
         // (c / µ) * (µ * (z + dz))^(1 - t)
         z = self.c().mul_div_down(z, self.mu());
-        println!("test: calculate_bonds_out_given_shares_in_down 4");
 
         // NOTE: We round _y up to make the rhs of the equation larger.
         //
@@ -48,13 +44,10 @@ pub trait YieldSpace {
         if y >= fixed!(1e18) {
             // Rounding up the exponent results in a larger result.
             y = y.pow(fixed!(1e18).div_up(fixed!(1e18) - self.t()));
-            println!("test: calculate_bonds_out_given_shares_in_down 5");
         } else {
             // Rounding down the exponent results in a larger result.
             y = y.pow(fixed!(1e18) / (fixed!(1e18) - self.t()));
-            println!("test: calculate_bonds_out_given_shares_in_down 6");
         }
-        println!("test: calculate_bonds_out_given_shares_in_down 7");
 
         // Δy = y - (k - (c / µ) * (µ * (z + dz))^(1 - t))^(1 / (1 - t)))
         self.y() - y
@@ -182,21 +175,16 @@ pub trait YieldSpace {
         // y' = (k / ((c / mu) + 1)) ** (1 / (1 - tau)) and the maximum share
         // reserves of z' = y/mu.
         let k = self.k_up();
-        println!("k = {}", k);
         let mut optimal_y = k.div_up(self.c() / self.mu() + fixed!(1e18));
-        println!("optimal_y = {}", optimal_y);
         if optimal_y >= fixed!(1e18) {
             // Rounding the exponent up results in a larger outcome.
             optimal_y = optimal_y.pow(fixed!(1e18).div_up(fixed!(1e18) - self.t()));
-            println!("optimal_y = {}", optimal_y);
         } else {
             // Rounding the exponent down results in a larger outcome.
             optimal_y = optimal_y.pow(fixed!(1e18) / (fixed!(1e18) - self.t()));
-            println!("optimal_y = {}", optimal_y);
         }
 
         // The optimal trade size is given by dy = y - y'.
-        println!("y - optimal_y = {}", self.y() - optimal_y);
         self.y() - optimal_y
     }
 
