@@ -303,7 +303,8 @@ abstract contract HyperdriveFactory {
                 dataProvider,
                 _linkerCodeHash,
                 _linkerFactory,
-                _extraData
+                _extraData,
+                _pool
             )
         );
         isOfficial[address(hyperdrive)] = versionCounter;
@@ -316,6 +317,9 @@ abstract contract HyperdriveFactory {
             _linkerCodeHash,
             _extraData
         );
+
+        _instances.push(address(hyperdrive));
+        isInstance[address(hyperdrive)] = true;
 
         // Initialize the Hyperdrive instance.
         _config.baseToken.transferFrom(

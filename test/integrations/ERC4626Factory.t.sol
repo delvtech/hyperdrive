@@ -19,13 +19,17 @@ import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../utils/HyperdriveUtils.sol";
 
 contract ERC4626HyperdriveTest is HyperdriveTest {
+
     using FixedPointMath for *;
 
     ERC4626HyperdriveFactory factory;
+
     IERC20 dai = IERC20(address(0x6B175474E89094C44Da98b954EedeAC495271d0F));
-    IERC4626 pool;
+
+    IERC4626 pool1;
+    IERC4626 pool2;
+
     uint256 aliceShares;
-    MockERC4626Hyperdrive mockHyperdrive;
 
     function setUp() public override __mainnet_fork(16_685_972) {
         alice = createUser("alice");
@@ -34,94 +38,50 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         vm.startPrank(deployer);
 
         // Deploy the ERC4626Hyperdrive factory and deployer.
-        pool = IERC4626(
+        pool1 = IERC4626(
             address(new Mock4626(ERC20(address(dai)), "yearn dai", "yDai"))
         );
-        ERC4626HyperdriveDeployer simpleDeployer = new ERC4626HyperdriveDeployer(
-                address(pool)
-            );
+        pool2 = IERC4626(
+            address(new Mock4626(ERC20(address(dai)), "savings dai", "sDai"))
+        );
+        ERC4626HyperdriveDeployer simpleDeployer = new ERC4626HyperdriveDeployer();
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
         forwarderFactory = new ForwarderFactory();
         factory = new ERC4626HyperdriveFactory(
-            HyperdriveFactory.FactoryConfig(
-                alice,
-                bob,
-                bob,
-                IHyperdrive.Fees(0, 0, 0),
-                IHyperdrive.Fees(0, 0, 0),
-                defaults
-            ),
+            HyperdriveFactory.FactoryConfig({
+                governance: alice,
+                hyperdriveGovernance: bob,
+                feeCollector: bob,
+                fees: IHyperdrive.Fees(0, 0, 0),
+                maxFees: IHyperdrive.Fees(0, 0, 0),
+                defaultPausers: defaults
+            }),
             simpleDeployer,
             address(forwarderFactory),
             forwarderFactory.ERC20LINK_HASH(),
             new address[](0)
         );
 
-        // Transfer a large amount of DAI to Alice.
-        address daiWhale = 0x075e72a5eDf65F0A5f44699c7654C1a76941Ddc8;
-        whaleTransfer(daiWhale, dai, alice);
-
-        // Deploy a MockHyperdrive instance.
-        IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
-            baseToken: dai,
-            initialSharePrice: FixedPointMath.ONE_18,
-            minimumShareReserves: FixedPointMath.ONE_18,
-            minimumTransactionAmount: 0.001e18,
-            positionDuration: 365 days,
-            checkpointDuration: 1 days,
-            timeStretch: FixedPointMath.ONE_18.divDown(
-                22.186877016851916266e18
-            ),
-            governance: alice,
-            feeCollector: bob,
-            fees: IHyperdrive.Fees(0, 0, 0),
-            oracleSize: 2,
-            updateGap: 0
-        });
-        address dataProvider = address(
-            new ERC4626DataProvider(
-                config,
-                bytes32(0),
-                address(0),
-                address(pool)
-            )
-        );
-        mockHyperdrive = new MockERC4626Hyperdrive(
-            config,
-            dataProvider,
-            bytes32(0),
-            address(0),
-            address(pool),
-            new address[](0)
-        );
-
-        vm.stopPrank();
-        vm.startPrank(alice);
-        dai.approve(address(factory), type(uint256).max);
-        dai.approve(address(hyperdrive), type(uint256).max);
-        dai.approve(address(mockHyperdrive), type(uint256).max);
-        dai.approve(address(pool), type(uint256).max);
-        aliceShares = pool.deposit(10e18, alice);
-
-        vm.stopPrank();
-        vm.startPrank(bob);
-        dai.approve(address(hyperdrive), type(uint256).max);
-        dai.approve(address(mockHyperdrive), type(uint256).max);
-        vm.stopPrank();
-
         // Start recording events.
         vm.recordLogs();
     }
 
-    function test_erc4626_testDeploy() external {
-        vm.startPrank(alice);
+    function test_erc464FactoryDeploy() external {
+        address charlie = createUser("charlie"); // External user 1
+        address dan     = createUser("dan");     // External user 2
+
+        vm.startPrank(charlie);
+
         uint256 apr = 0.01e18; // 1% apr
         uint256 contribution = 2_500e18;
+
+        deal(address(dai), charlie, contribution);
+
         IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
             baseToken: dai,
-            initialSharePrice: FixedPointMath.ONE_18,
-            minimumShareReserves: FixedPointMath.ONE_18,
+            initialSharePrice: 1e18,
+            minimumShareReserves: 1e18,
             minimumTransactionAmount: 0.001e18,
             positionDuration: 365 days,
             checkpointDuration: 1 days,
@@ -132,34 +92,150 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             oracleSize: 2,
             updateGap: 0
         });
-        dai.approve(address(factory), type(uint256).max);
-        hyperdrive = factory.deployAndInitialize(
+
+        // 1. Charlie deploys factory with yDAI as yield source
+
+        dai.approve(address(factory), contribution);
+
+        assertEq(dai.balanceOf(charlie),        contribution);
+        assertEq(dai.balanceOf(address(pool1)), 0);
+
+        IHyperdrive hyperdrive1 = factory.deployAndInitialize(
             config,
             new bytes32[](0),
             contribution,
             apr,
             new bytes(0),
-            address(pool)
+            address(pool1)
         );
+
+        assertEq(dai.balanceOf(charlie),        0);
+        assertEq(dai.balanceOf(address(pool1)), contribution);
 
         // The initial price per share is one so the LP shares will initially
         // be worth one base. Alice should receive LP shares equaling her
         // contribution minus the shares that she set aside for the minimum
         // share reserves and the zero address's initial LP contribution.
         assertEq(
-            hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
+            hyperdrive1.balanceOf(AssetId._LP_ASSET_ID, charlie),
             contribution - 2 * config.minimumShareReserves
         );
 
         // Verify that the correct events were emitted.
         verifyFactoryEvents(
             factory,
-            alice,
+            hyperdrive1,
+            charlie,
             contribution,
             apr,
             config.minimumShareReserves,
             new bytes32[](0),
             0
         );
+
+        assertEq(factory.getNumberOfInstances(), 1);
+        assertEq(factory.getInstanceAtIndex(0), address(hyperdrive1));
+
+        address[] memory instances = factory.getAllInstances();
+        assertEq(instances.length, 1);
+        assertEq(instances[0], address(hyperdrive1));
+
+        // 2. Charlie deploys factory with sDAI as yield source
+
+        deal(address(dai), charlie, contribution);
+
+        dai.approve(address(factory), contribution);
+
+        IHyperdrive hyperdrive2 = factory.deployAndInitialize(
+            config,
+            new bytes32[](0),
+            contribution,
+            apr,
+            new bytes(0),
+            address(pool2)
+        );
+
+        assertEq(dai.balanceOf(charlie),        0);
+        assertEq(dai.balanceOf(address(pool2)), contribution);
+
+        // The initial price per share is one so the LP shares will initially
+        // be worth one base. Alice should receive LP shares equaling her
+        // contribution minus the shares that she set aside for the minimum
+        // share reserves and the zero address's initial LP contribution.
+        assertEq(
+            hyperdrive2.balanceOf(AssetId._LP_ASSET_ID, charlie),
+            contribution - 2 * config.minimumShareReserves
+        );
+
+        // Verify that the correct events were emitted.
+        verifyFactoryEvents(
+            factory,
+            hyperdrive2,
+            charlie,
+            contribution,
+            apr,
+            config.minimumShareReserves,
+            new bytes32[](0),
+            0
+        );
+
+        assertEq(factory.getNumberOfInstances(), 2);
+        assertEq(factory.getInstanceAtIndex(1), address(hyperdrive2));
+
+        instances = factory.getAllInstances();
+        assertEq(instances.length, 2);
+        assertEq(instances[1], address(hyperdrive2));
+
+        // 3. Dan deploys factory with sDAI as yield source
+
+        deal(address(dai), dan, contribution);
+
+        vm.startPrank(dan);
+
+        dai.approve(address(factory), contribution);
+
+        assertEq(dai.balanceOf(dan),            contribution);
+        assertEq(dai.balanceOf(address(pool2)), contribution);  // From Charlie
+
+        IHyperdrive hyperdrive3 = factory.deployAndInitialize(
+            config,
+            new bytes32[](0),
+            contribution,
+            apr,
+            new bytes(0),
+            address(pool2)
+        );
+
+        assertEq(dai.balanceOf(dan),            0);
+        assertEq(dai.balanceOf(address(pool2)), contribution * 2);
+
+        // The initial price per share is one so the LP shares will initially
+        // be worth one base. Alice should receive LP shares equaling her
+        // contribution minus the shares that she set aside for the minimum
+        // share reserves and the zero address's initial LP contribution.
+        assertEq(
+            hyperdrive3.balanceOf(AssetId._LP_ASSET_ID, dan),
+            contribution - 2 * config.minimumShareReserves
+        );
+
+        // Verify that the correct events were emitted.
+        verifyFactoryEvents(
+            factory,
+            hyperdrive3,
+            dan,
+            contribution,
+            apr,
+            config.minimumShareReserves,
+            new bytes32[](0),
+            0
+        );
+
+        assertEq(factory.getNumberOfInstances(), 3);
+        assertEq(factory.getInstanceAtIndex(2), address(hyperdrive3));
+
+        instances = factory.getAllInstances();
+        assertEq(instances.length, 3);
+        assertEq(instances[2], address(hyperdrive3));
     }
+
 }

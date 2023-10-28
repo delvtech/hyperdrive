@@ -47,9 +47,7 @@ contract UsdcERC4626 is ERC4626ValidationTest {
         ERC20Mintable(address(underlyingToken)).mint(bob, monies);
 
         // Initialize deployer contracts and forwarder.
-        ERC4626HyperdriveDeployer simpleDeployer = new ERC4626HyperdriveDeployer(
-                address(token)
-            );
+        ERC4626HyperdriveDeployer simpleDeployer = new ERC4626HyperdriveDeployer();
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
         forwarderFactory = new ForwarderFactory();

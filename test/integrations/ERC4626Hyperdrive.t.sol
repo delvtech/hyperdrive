@@ -37,9 +37,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         pool = IERC4626(
             address(new Mock4626(ERC20(address(dai)), "yearn dai", "yDai"))
         );
-        ERC4626HyperdriveDeployer simpleDeployer = new ERC4626HyperdriveDeployer(
-                address(pool)
-            );
+        ERC4626HyperdriveDeployer simpleDeployer = new ERC4626HyperdriveDeployer();
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
         forwarderFactory = new ForwarderFactory();
@@ -223,6 +221,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         // Verify that the correct events were emitted.
         verifyFactoryEvents(
             factory,
+            hyperdrive,
             alice,
             contribution,
             apr,

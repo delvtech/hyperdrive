@@ -26,20 +26,9 @@ contract HyperdriveFactoryTest is HyperdriveTest {
         alice = createUser("alice");
         bob = createUser("bob");
 
-        IERC20 dai = IERC20(
-            address(0x6B175474E89094C44Da98b954EedeAC495271d0F)
-        );
-
         vm.startPrank(deployer);
 
-        // Deploy the ERC4626Hyperdrive factory and deployer.
-        IERC4626 pool = IERC4626(
-            address(new Mock4626(ERC20(address(dai)), "yearn dai", "yDai"))
-        );
-
-        ERC4626HyperdriveDeployer simpleDeployer = new ERC4626HyperdriveDeployer(
-                address(pool)
-            );
+        ERC4626HyperdriveDeployer simpleDeployer = new ERC4626HyperdriveDeployer();
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
         forwarderFactory = new ForwarderFactory();

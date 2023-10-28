@@ -198,9 +198,7 @@ contract DevnetMigration is Script {
                     defaultPausers: defaultPausers
                 });
             ForwarderFactory forwarderFactory = new ForwarderFactory();
-            ERC4626HyperdriveDeployer deployer = new ERC4626HyperdriveDeployer(
-                address(pool)
-            );
+            ERC4626HyperdriveDeployer deployer = new ERC4626HyperdriveDeployer();
             factory = new ERC4626HyperdriveFactory(
                 factoryConfig,
                 deployer,

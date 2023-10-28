@@ -966,6 +966,7 @@ contract HyperdriveTest is BaseTest {
 
     function verifyFactoryEvents(
         HyperdriveFactory factory,
+        IHyperdrive _hyperdrive,
         address deployer,
         uint256 contribution,
         uint256 apr,
@@ -982,11 +983,10 @@ contract HyperdriveTest is BaseTest {
                 Deployed.selector
             );
             assertEq(filteredLogs.length, 1);
-            VmSafe.Log memory log = filteredLogs[0];
 
             // Verify the event topics.
-            assertEq(log.topics[0], Deployed.selector);
-            assertEq(uint256(log.topics[1]), factory.versionCounter());
+            assertEq(filteredLogs[0].topics[0], Deployed.selector);
+            assertEq(uint256(filteredLogs[0].topics[1]), factory.versionCounter());
 
             // Verify the event data.
             (
@@ -996,7 +996,7 @@ contract HyperdriveTest is BaseTest {
                 bytes32 eventLinkerCodeHash,
                 bytes32[] memory eventExtraData
             ) = abi.decode(
-                    log.data,
+                    filteredLogs[0].data,
                     (
                         address,
                         IHyperdrive.PoolConfig,
@@ -1005,10 +1005,10 @@ contract HyperdriveTest is BaseTest {
                         bytes32[]
                     )
                 );
-            assertEq(eventHyperdrive, address(hyperdrive));
+            assertEq(eventHyperdrive, address(_hyperdrive));
             assertEq(
                 keccak256(abi.encode(eventConfig)),
-                keccak256(abi.encode(hyperdrive.getPoolConfig()))
+                keccak256(abi.encode(_hyperdrive.getPoolConfig()))
             );
             assertEq(eventLinkerFactory, address(forwarderFactory));
             assertEq(eventLinkerCodeHash, forwarderFactory.ERC20LINK_HASH());
@@ -1025,22 +1025,21 @@ contract HyperdriveTest is BaseTest {
                 Initialize.selector
             );
             assertEq(filteredLogs.length, 1);
-            VmSafe.Log memory log = filteredLogs[0];
 
             // Verify the event topics.
-            assertEq(log.topics[0], Initialize.selector);
-            assertEq(address(uint160(uint256(log.topics[1]))), deployer);
+            assertEq(filteredLogs[0].topics[0], Initialize.selector);
+            assertEq(address(uint160(uint256(filteredLogs[0].topics[1]))), deployer);
 
             // Verify the event data.
             (
                 uint256 eventLpAmount,
                 uint256 eventBaseAmount,
                 uint256 eventApr
-            ) = abi.decode(log.data, (uint256, uint256, uint256));
+            ) = abi.decode(filteredLogs[0].data, (uint256, uint256, uint256));
             assertApproxEqAbs(
                 eventLpAmount,
                 contribution.divDown(
-                    hyperdrive.getPoolConfig().initialSharePrice
+                    _hyperdrive.getPoolConfig().initialSharePrice
                 ) - 2 * minimumShareReserves,
                 tolerance
             );

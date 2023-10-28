@@ -15,11 +15,7 @@ import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract ERC4626HyperdriveDeployer is IHyperdriveDeployer {
-    address internal immutable pool;
 
-    constructor(address _pool) {
-        pool = _pool;
-    }
 
     /// @notice Deploys a copy of hyperdrive with the given params.
     /// @param _config The configuration of the Hyperdrive pool.
@@ -35,7 +31,8 @@ contract ERC4626HyperdriveDeployer is IHyperdriveDeployer {
         address _dataProvider,
         bytes32 _linkerCodeHash,
         address _linkerFactory,
-        bytes32[] memory _extraData
+        bytes32[] memory _extraData,
+        address _pool
     ) external override returns (address) {
         // Convert the extra data to an array of addresses.
         address[] memory sweepTargets;
@@ -51,7 +48,7 @@ contract ERC4626HyperdriveDeployer is IHyperdriveDeployer {
                     _dataProvider,
                     _linkerCodeHash,
                     _linkerFactory,
-                    pool,
+                    _pool,
                     sweepTargets
                 )
             )
