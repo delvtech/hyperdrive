@@ -237,7 +237,10 @@ abstract contract HyperdriveFactory {
         _instances.push(_instance);
     }
 
-    function removeInstance(address _instance, uint256 index) external onlyGovernance {
+    function removeInstance(
+        address _instance,
+        uint256 index
+    ) external onlyGovernance {
         require(isInstance[_instance], "Not added");
         isInstance[_instance] = false;
         _instances[index] = _instances[_instances.length - 1];
@@ -382,11 +385,7 @@ abstract contract HyperdriveFactory {
     /// @notice Gets the instance at the specified index.
     /// @param index The index of the instance to get.
     /// @return The instance at the specified index.
-    function getInstanceAtIndex(uint256 index)
-        external
-        view
-        returns (address)
-    {
+    function getInstanceAtIndex(uint256 index) external view returns (address) {
         return _instances[index];
     }
 
@@ -395,6 +394,4 @@ abstract contract HyperdriveFactory {
     function getAllInstances() external view returns (address[] memory) {
         return _instances;
     }
-
-
 }

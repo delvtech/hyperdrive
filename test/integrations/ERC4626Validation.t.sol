@@ -34,8 +34,9 @@ abstract contract ERC4626ValidationTest is HyperdriveTest {
         vm.startPrank(deployer);
 
         // Initialize deployer contracts and forwarder
-        ERC4626HyperdriveDeployer simpleDeployer
-            = new ERC4626HyperdriveDeployer(address(token));
+        ERC4626HyperdriveDeployer simpleDeployer = new ERC4626HyperdriveDeployer(
+                address(token)
+            );
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
         forwarderFactory = new ForwarderFactory();

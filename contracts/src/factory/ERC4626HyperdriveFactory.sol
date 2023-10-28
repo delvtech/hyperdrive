@@ -15,7 +15,6 @@ import { HyperdriveFactory } from "./HyperdriveFactory.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract ERC4626HyperdriveFactory is HyperdriveFactory {
-
     /// @notice The sweep targets used in deployed instances. This specifies
     ///         the addresses that the fee collector can sweep to collect
     ///         incentives and redistribute them.
