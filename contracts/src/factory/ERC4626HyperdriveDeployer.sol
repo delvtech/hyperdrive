@@ -15,8 +15,6 @@ import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract ERC4626HyperdriveDeployer is IHyperdriveDeployer {
-
-
     /// @notice Deploys a copy of hyperdrive with the given params.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _dataProvider The address of the data provider.

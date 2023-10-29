@@ -242,7 +242,8 @@ abstract contract HyperdriveFactory {
         uint256 index
     ) external onlyGovernance {
         if (!isInstance[_instance]) revert IHyperdrive.InstanceNotAdded();
-        if (_instances[index] != _instance) revert IHyperdrive.InstanceIndexMismatch();
+        if (_instances[index] != _instance)
+            revert IHyperdrive.InstanceIndexMismatch();
         isInstance[_instance] = false;
         _instances[index] = _instances[_instances.length - 1];
         _instances.pop();

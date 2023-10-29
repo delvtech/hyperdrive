@@ -986,7 +986,10 @@ contract HyperdriveTest is BaseTest {
 
             // Verify the event topics.
             assertEq(filteredLogs[0].topics[0], Deployed.selector);
-            assertEq(uint256(filteredLogs[0].topics[1]), factory.versionCounter());
+            assertEq(
+                uint256(filteredLogs[0].topics[1]),
+                factory.versionCounter()
+            );
 
             // Verify the event data.
             (
@@ -1028,7 +1031,10 @@ contract HyperdriveTest is BaseTest {
 
             // Verify the event topics.
             assertEq(filteredLogs[0].topics[0], Initialize.selector);
-            assertEq(address(uint160(uint256(filteredLogs[0].topics[1]))), deployer);
+            assertEq(
+                address(uint160(uint256(filteredLogs[0].topics[1]))),
+                deployer
+            );
 
             // Verify the event data.
             (
