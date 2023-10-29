@@ -18,7 +18,7 @@ import { MockERC4626Hyperdrive } from "../mocks/Mock4626Hyperdrive.sol";
 import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../utils/HyperdriveUtils.sol";
 
-contract ERC4626HyperdriveTest is HyperdriveTest {
+contract ERC4626FactoryBaseTest is HyperdriveTest {
 
     using FixedPointMath for *;
 
@@ -31,7 +31,25 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
 
     uint256 aliceShares;
 
-    function setUp() public override __mainnet_fork(16_685_972) {
+    uint256 constant APR = 0.01e18; // 1% apr
+    uint256 constant CONTRIBUTION = 2_500e18;
+
+    IHyperdrive.PoolConfig config = IHyperdrive.PoolConfig({
+        baseToken: dai,
+        initialSharePrice: 1e18,
+        minimumShareReserves: 1e18,
+        minimumTransactionAmount: 0.001e18,
+        positionDuration: 365 days,
+        checkpointDuration: 1 days,
+        timeStretch: HyperdriveUtils.calculateTimeStretch(APR),
+        governance: alice,
+        feeCollector: bob,
+        fees: IHyperdrive.Fees(0, 0, 0),
+        oracleSize: 2,
+        updateGap: 0
+    });
+
+    function setUp() public virtual override __mainnet_fork(16_685_972) {
         alice = createUser("alice");
         bob = createUser("bob");
 
@@ -63,54 +81,63 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             new address[](0)
         );
 
+        vm.stopPrank();
+
         // Start recording events.
         vm.recordLogs();
     }
 
-    function test_erc464FactoryDeploy() external {
+    function _deployInstance(address deployerUser, address pool) internal returns (IHyperdrive) {
+        deal(address(dai), deployerUser, CONTRIBUTION);
+
+        vm.startPrank(deployerUser);
+
+        dai.approve(address(factory), CONTRIBUTION);
+
+        IHyperdrive hyperdrive = factory.deployAndInitialize(
+            config,
+            new bytes32[](0),
+            CONTRIBUTION,
+            APR,
+            new bytes(0),
+            address(pool)
+        );
+
+        vm.stopPrank();
+
+        return hyperdrive;
+    }
+
+}
+
+contract ERC4626FactoryMultiDeployTest is ERC4626FactoryBaseTest {
+
+    function test_erc464FactoryDeploy_multiDeploy_multiPool() external {
         address charlie = createUser("charlie"); // External user 1
         address dan     = createUser("dan");     // External user 2
 
         vm.startPrank(charlie);
 
-        uint256 apr = 0.01e18; // 1% apr
-        uint256 contribution = 2_500e18;
-
-        deal(address(dai), charlie, contribution);
-
-        IHyperdrive.PoolConfig memory config = IHyperdrive.PoolConfig({
-            baseToken: dai,
-            initialSharePrice: 1e18,
-            minimumShareReserves: 1e18,
-            minimumTransactionAmount: 0.001e18,
-            positionDuration: 365 days,
-            checkpointDuration: 1 days,
-            timeStretch: HyperdriveUtils.calculateTimeStretch(apr),
-            governance: alice,
-            feeCollector: bob,
-            fees: IHyperdrive.Fees(0, 0, 0),
-            oracleSize: 2,
-            updateGap: 0
-        });
+        deal(address(dai), charlie, CONTRIBUTION);
 
         // 1. Charlie deploys factory with yDAI as yield source
 
-        dai.approve(address(factory), contribution);
+        dai.approve(address(factory), CONTRIBUTION);
 
-        assertEq(dai.balanceOf(charlie),        contribution);
+        assertEq(dai.balanceOf(charlie),        CONTRIBUTION);
         assertEq(dai.balanceOf(address(pool1)), 0);
 
         IHyperdrive hyperdrive1 = factory.deployAndInitialize(
             config,
             new bytes32[](0),
-            contribution,
-            apr,
+            CONTRIBUTION,
+            APR,
             new bytes(0),
             address(pool1)
         );
 
         assertEq(dai.balanceOf(charlie),        0);
-        assertEq(dai.balanceOf(address(pool1)), contribution);
+        assertEq(dai.balanceOf(address(pool1)), CONTRIBUTION);
 
         // The initial price per share is one so the LP shares will initially
         // be worth one base. Alice should receive LP shares equaling her
@@ -118,7 +145,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         // share reserves and the zero address's initial LP contribution.
         assertEq(
             hyperdrive1.balanceOf(AssetId._LP_ASSET_ID, charlie),
-            contribution - 2 * config.minimumShareReserves
+            CONTRIBUTION - 2 * config.minimumShareReserves
         );
 
         // Verify that the correct events were emitted.
@@ -126,8 +153,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             factory,
             hyperdrive1,
             charlie,
-            contribution,
-            apr,
+            CONTRIBUTION,
+            APR,
             config.minimumShareReserves,
             new bytes32[](0),
             0
@@ -142,21 +169,21 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
 
         // 2. Charlie deploys factory with sDAI as yield source
 
-        deal(address(dai), charlie, contribution);
+        deal(address(dai), charlie, CONTRIBUTION);
 
-        dai.approve(address(factory), contribution);
+        dai.approve(address(factory), CONTRIBUTION);
 
         IHyperdrive hyperdrive2 = factory.deployAndInitialize(
             config,
             new bytes32[](0),
-            contribution,
-            apr,
+            CONTRIBUTION,
+            APR,
             new bytes(0),
             address(pool2)
         );
 
         assertEq(dai.balanceOf(charlie),        0);
-        assertEq(dai.balanceOf(address(pool2)), contribution);
+        assertEq(dai.balanceOf(address(pool2)), CONTRIBUTION);
 
         // The initial price per share is one so the LP shares will initially
         // be worth one base. Alice should receive LP shares equaling her
@@ -164,7 +191,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         // share reserves and the zero address's initial LP contribution.
         assertEq(
             hyperdrive2.balanceOf(AssetId._LP_ASSET_ID, charlie),
-            contribution - 2 * config.minimumShareReserves
+            CONTRIBUTION - 2 * config.minimumShareReserves
         );
 
         // Verify that the correct events were emitted.
@@ -172,8 +199,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             factory,
             hyperdrive2,
             charlie,
-            contribution,
-            apr,
+            CONTRIBUTION,
+            APR,
             config.minimumShareReserves,
             new bytes32[](0),
             0
@@ -188,26 +215,26 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
 
         // 3. Dan deploys factory with sDAI as yield source
 
-        deal(address(dai), dan, contribution);
+        deal(address(dai), dan, CONTRIBUTION);
 
         vm.startPrank(dan);
 
-        dai.approve(address(factory), contribution);
+        dai.approve(address(factory), CONTRIBUTION);
 
-        assertEq(dai.balanceOf(dan),            contribution);
-        assertEq(dai.balanceOf(address(pool2)), contribution);  // From Charlie
+        assertEq(dai.balanceOf(dan),            CONTRIBUTION);
+        assertEq(dai.balanceOf(address(pool2)), CONTRIBUTION);  // From Charlie
 
         IHyperdrive hyperdrive3 = factory.deployAndInitialize(
             config,
             new bytes32[](0),
-            contribution,
-            apr,
+            CONTRIBUTION,
+            APR,
             new bytes(0),
             address(pool2)
         );
 
         assertEq(dai.balanceOf(dan),            0);
-        assertEq(dai.balanceOf(address(pool2)), contribution * 2);
+        assertEq(dai.balanceOf(address(pool2)), CONTRIBUTION * 2);
 
         // The initial price per share is one so the LP shares will initially
         // be worth one base. Alice should receive LP shares equaling her
@@ -215,7 +242,7 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         // share reserves and the zero address's initial LP contribution.
         assertEq(
             hyperdrive3.balanceOf(AssetId._LP_ASSET_ID, dan),
-            contribution - 2 * config.minimumShareReserves
+            CONTRIBUTION - 2 * config.minimumShareReserves
         );
 
         // Verify that the correct events were emitted.
@@ -223,8 +250,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
             factory,
             hyperdrive3,
             dan,
-            contribution,
-            apr,
+            CONTRIBUTION,
+            APR,
             config.minimumShareReserves,
             new bytes32[](0),
             0
@@ -236,6 +263,130 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         instances = factory.getAllInstances();
         assertEq(instances.length, 3);
         assertEq(instances[2], address(hyperdrive3));
+    }
+}
+
+contract ERC4626FactoryAddInstanceTest is ERC4626FactoryBaseTest {
+
+    IHyperdrive hyperdrive1;
+
+    // Manually added instance, could be from another factory
+    address manualInstance = makeAddr("manually added instance");
+
+    function setUp() public override __mainnet_fork(16_685_972) {
+        super.setUp();
+
+        hyperdrive1 = _deployInstance(createUser("charlie"), address(pool1)); // External user
+    }
+
+    function test_erc464FactoryDeploy_addInstance_notGovernance() external {
+        vm.expectRevert(IHyperdrive.Unauthorized.selector);
+        factory.addInstance(manualInstance);
+
+        vm.prank(alice);
+        factory.addInstance(manualInstance);
+    }
+
+    function test_erc464FactoryDeploy_addInstance_alreadyAdded() external {
+        vm.startPrank(alice);
+        factory.addInstance(manualInstance);
+
+        vm.expectRevert(IHyperdrive.InstanceAlreadyAdded.selector);
+        factory.addInstance(manualInstance);
+    }
+
+    function test_erc464FactoryDeploy_addInstance() external {
+        assertEq(factory.getNumberOfInstances(), 1);
+        assertEq(factory.getInstanceAtIndex(0), address(hyperdrive1));
+
+        address[] memory instances = factory.getAllInstances();
+        assertEq(instances.length, 1);
+        assertEq(instances[0], address(hyperdrive1));
+
+        vm.prank(alice);
+        factory.addInstance(manualInstance);
+
+        assertEq(factory.getNumberOfInstances(), 2);
+        assertEq(factory.getInstanceAtIndex(0), address(hyperdrive1));
+        assertEq(factory.getInstanceAtIndex(1), manualInstance);
+
+        instances = factory.getAllInstances();
+        assertEq(instances.length, 2);
+        assertEq(instances[0], address(hyperdrive1));
+        assertEq(instances[1], manualInstance);
+    }
+
+}
+
+contract ERC4626FactoryRemoveInstanceTest is ERC4626FactoryBaseTest {
+
+    IHyperdrive hyperdrive1;
+    IHyperdrive hyperdrive2;
+    IHyperdrive hyperdrive3;
+
+    function setUp() public override __mainnet_fork(16_685_972) {
+        super.setUp();
+
+        hyperdrive1 = _deployInstance(createUser("charlie"), address(pool1));
+        hyperdrive2 = _deployInstance(createUser("dan"),     address(pool2));
+        hyperdrive3 = _deployInstance(createUser("eric"),    address(pool1));
+    }
+
+    function test_erc464FactoryDeploy_removeInstance_notGovernance() external {
+        vm.expectRevert(IHyperdrive.Unauthorized.selector);
+        factory.removeInstance(address(hyperdrive1), 0);
+
+        vm.startPrank(alice);
+        factory.removeInstance(address(hyperdrive1), 0);
+    }
+
+    function test_erc464FactoryDeploy_removeInstance_notAdded() external {
+        vm.startPrank(alice);
+
+        vm.expectRevert(IHyperdrive.InstanceNotAdded.selector);
+        factory.removeInstance(address(makeAddr("not added address")), 0);
+
+        factory.removeInstance(address(hyperdrive1), 0);
+    }
+
+    function test_erc464FactoryDeploy_removeInstance_indexMismatch() external {
+        vm.startPrank(alice);
+
+        vm.expectRevert(IHyperdrive.InstanceIndexMismatch.selector);
+        factory.removeInstance(address(hyperdrive1), 1);
+
+        factory.removeInstance(address(hyperdrive1), 0);
+    }
+
+    function test_erc464FactoryDeploy_removeInstance() external {
+        assertEq(factory.getNumberOfInstances(), 3);
+        assertEq(factory.getInstanceAtIndex(0), address(hyperdrive1));
+        assertEq(factory.getInstanceAtIndex(1), address(hyperdrive2));
+        assertEq(factory.getInstanceAtIndex(2), address(hyperdrive3));
+
+        address[] memory instances = factory.getAllInstances();
+        assertEq(instances.length, 3);
+        assertEq(instances[0], address(hyperdrive1));
+        assertEq(instances[1], address(hyperdrive2));
+        assertEq(instances[2], address(hyperdrive3));
+
+        assertEq(factory.isInstance(address(hyperdrive1)), true);
+
+        vm.prank(alice);
+        factory.removeInstance(address(hyperdrive1), 0);
+
+        // NOTE: Demonstrate that array order is NOT preserved after removal.
+
+        assertEq(factory.getNumberOfInstances(), 2);
+        assertEq(factory.getInstanceAtIndex(0), address(hyperdrive3));
+        assertEq(factory.getInstanceAtIndex(1), address(hyperdrive2));
+
+        instances = factory.getAllInstances();
+        assertEq(instances.length, 2);
+        assertEq(instances[0], address(hyperdrive3));
+        assertEq(instances[1], address(hyperdrive2));
+
+        assertEq(factory.isInstance(address(hyperdrive1)), false);
     }
 
 }

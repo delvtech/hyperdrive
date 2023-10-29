@@ -272,6 +272,9 @@ interface IHyperdrive is
     error MaxFeeTooHigh();
     error FeeTooHigh();
     error NonPayableInitialization();
+    error InstanceAlreadyAdded();
+    error InstanceNotAdded();
+    error InstanceIndexMismatch();
 
     /// ######################
     /// ### ERC20Forwarder ###

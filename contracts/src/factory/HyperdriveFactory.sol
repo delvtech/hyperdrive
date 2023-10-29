@@ -232,7 +232,7 @@ abstract contract HyperdriveFactory {
     }
 
     function addInstance(address _instance) external onlyGovernance {
-        require(!isInstance[_instance], "Already added");
+        if (isInstance[_instance]) revert IHyperdrive.InstanceAlreadyAdded();
         isInstance[_instance] = true;
         _instances.push(_instance);
     }
@@ -241,7 +241,8 @@ abstract contract HyperdriveFactory {
         address _instance,
         uint256 index
     ) external onlyGovernance {
-        require(isInstance[_instance], "Not added");
+        if (!isInstance[_instance]) revert IHyperdrive.InstanceNotAdded();
+        if (_instances[index] != _instance) revert IHyperdrive.InstanceIndexMismatch();
         isInstance[_instance] = false;
         _instances[index] = _instances[_instances.length - 1];
         _instances.pop();
