@@ -790,15 +790,6 @@ contract HyperdriveMathTest is HyperdriveTest {
         uint256 initialShortAmount,
         uint256 finalLongAmount
     ) external {
-        // FIXME
-        //
-        // // FIXME
-        // fixedRate = 28932879774886559464760909005595155189606879815570736389107879618554061301591;
-        // contribution = 25624389788424218365249;
-        // initialLongAmount = 73543453987677678880071858086261713446825289458815834995355262610;
-        // initialShortAmount = 35013330576;
-        // finalLongAmount = 0;
-
         _test__calculateMaxLong(
             fixedRate,
             contribution,

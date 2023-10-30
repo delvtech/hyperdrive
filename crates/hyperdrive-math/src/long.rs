@@ -508,7 +508,7 @@ mod tests {
     use crate::get_effective_share_reserves;
 
     /// This test differentially fuzzes the `absolute_max_long` function against
-    /// the Solidity analogue `calculateAbsoluteMaxLong`.     #[tokio::test]
+    /// the Solidity analogue `calculateAbsoluteMaxLong`.
     #[tokio::test]
     async fn fuzz_absolute_max_long() -> Result<()> {
         let chain = TestChainWithMocks::new(1).await?;

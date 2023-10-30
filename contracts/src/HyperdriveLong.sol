@@ -366,9 +366,10 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
             _timeStretch
         );
 
-        // Simulate the ending spot price after making the trade on the curve.
-        // We revert if the ending spot price is greater than the max spot price
-        // to prevent users from buying bonds at negative interest rates.
+        // Calculate the spot price after making the trade on the curve but
+        // before accounting for fees. Revert if the ending spot price is large
+        // enough that the trader will receive a negative interest rate on some
+        // of their bonds after applying fees.
         {
             uint256 endingSpotPrice = HyperdriveMath.calculateSpotPrice(
                 _effectiveShareReserves() + _shareAmount,

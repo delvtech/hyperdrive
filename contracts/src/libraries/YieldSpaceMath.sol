@@ -57,7 +57,7 @@ library YieldSpaceMath {
         // NOTE: We round z down to make the rhs of the equation larger.
         //
         // (µ * (z + dz))^(1 - t)
-        z = mu.mulUp(z + dz).pow(t);
+        z = mu.mulDown(z + dz).pow(t);
         // (c / µ) * (µ * (z + dz))^(1 - t)
         z = c.mulDivDown(z, mu);
 
