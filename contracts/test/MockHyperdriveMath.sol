@@ -175,6 +175,20 @@ contract MockHyperdriveMath {
         return (result1, result2);
     }
 
+    function calculateAbsoluteMaxLong(
+        HyperdriveMath.MaxTradeParams memory _params,
+        uint256 _effectiveShareReserves,
+        uint256 _spotPrice
+    ) external pure returns (uint256, uint256) {
+        (uint256 result1, uint256 result2) = HyperdriveMath
+            .calculateAbsoluteMaxLong(
+                _params,
+                _effectiveShareReserves,
+                _spotPrice
+            );
+        return (result1, result2);
+    }
+
     function calculateMaxShort(
         HyperdriveMath.MaxTradeParams memory _params,
         int256 _checkpointExposure,

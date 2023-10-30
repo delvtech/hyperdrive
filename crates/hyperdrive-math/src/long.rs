@@ -505,12 +505,62 @@ mod tests {
     use tracing_test::traced_test;
 
     use super::*;
+    use crate::get_effective_share_reserves;
+
+    /// This test differentially fuzzes the `absolute_max_long` function against
+    /// the Solidity analogue `calculateAbsoluteMaxLong`.     #[tokio::test]
+    #[tokio::test]
+    async fn fuzz_absolute_max_long() -> Result<()> {
+        let chain = TestChainWithMocks::new(1).await?;
+        let mock = chain.mock_hyperdrive_math();
+
+        // Fuzz the rust and solidity implementations against each other.
+        let mut rng = thread_rng();
+        for _ in 0..*FAST_FUZZ_RUNS {
+            let state = rng.gen::<State>();
+            let actual = panic::catch_unwind(|| state.absolute_max_long());
+            match mock
+                .calculate_absolute_max_long(
+                    MaxTradeParams {
+                        share_reserves: state.info.share_reserves,
+                        bond_reserves: state.info.bond_reserves,
+                        longs_outstanding: state.info.longs_outstanding,
+                        long_exposure: state.info.long_exposure,
+                        share_adjustment: state.info.share_adjustment,
+                        time_stretch: state.config.time_stretch,
+                        share_price: state.info.share_price,
+                        initial_share_price: state.config.initial_share_price,
+                        minimum_share_reserves: state.config.minimum_share_reserves,
+                        curve_fee: state.config.fees.curve,
+                        governance_fee: state.config.fees.governance,
+                    },
+                    get_effective_share_reserves(
+                        state.info.share_reserves.into(),
+                        state.info.share_adjustment,
+                    )
+                    .into(),
+                    state.get_spot_price().into(),
+                )
+                .call()
+                .await
+            {
+                Ok((expected_base_amount, expected_bond_amount)) => {
+                    let (actual_base_amount, actual_bond_amount) = actual.unwrap();
+                    assert_eq!(actual_base_amount, FixedPoint::from(expected_base_amount));
+                    assert_eq!(actual_bond_amount, FixedPoint::from(expected_bond_amount));
+                }
+                Err(_) => assert!(actual.is_err()),
+            }
+        }
+
+        Ok(())
+    }
 
     /// This test differentially fuzzes the `get_max_long` function against the
-    /// Solidity analogue `calculateMaxShort`. `calculateMaxShort` doesn't take
+    /// Solidity analogue `calculateMaxLong`. `calculateMaxLong` doesn't take
     /// a trader's budget into account, so it only provides a subset of
-    /// `get_max_short`'s functionality. With this in mind, we provide
-    /// `get_max_short` with a budget of `U256::MAX` to ensure that the two
+    /// `get_max_long`'s functionality. With this in mind, we provide
+    /// `get_max_long` with a budget of `U256::MAX` to ensure that the two
     /// functions are equivalent.
     #[tokio::test]
     async fn fuzz_get_max_long() -> Result<()> {

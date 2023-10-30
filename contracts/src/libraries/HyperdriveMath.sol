@@ -603,51 +603,55 @@ library HyperdriveMath {
         // We can derive a formula for the target bond reserves y_t in
         // terms of the target share reserves z_t as follows:
         //
-        // p_max = ((mu * (z_t - zeta)) / y_t) ** t_s
+        // p_max = ((mu * z_t) / y_t) ** t_s
         //
         //                       =>
         //
-        // y_t = (mu * (z_t - zeta)) * (1 + curveFee * (1 / p_0 - 1)) ** (1 / t_s)
+        // y_t = (mu * z_t) * (1 + curveFee * (1 / p_0 - 1)) ** (1 / t_s)
         //
         // We can use this formula to solve our YieldSpace invariant for z_t:
         //
-        // k = (c / mu) * (mu * (z_t - zeta)) ** (1 - t_s) +
+        // k = (c / mu) * (mu * z_t) ** (1 - t_s) +
         //     (
-        //         (mu * (z_t - zeta)) * (1 + curveFee * (1 / p_0 - 1)) ** (1 / t_s)
+        //         (mu * z_t) * (1 + curveFee * (1 / p_0 - 1)) ** (1 / t_s)
         //     ) ** (1 - t_s)
         //
         //                       =>
         //
-        // z_t = zeta + (1 / mu) * (
-        //           k / ((c / mu) + curveFee * ((1 / p_0) - 1) + 1)
+        // z_t = (1 / mu) * (
+        //           k / (
+        //               (c / mu) +
+        //               (1 + curveFee * ((1 / p_0) - 1) ** ((1 - t_s) / t_s))
+        //           )
         //       ) ** (1 / (1 - t_s))
-        uint256 targetShareReserves;
-        uint256 k = YieldSpaceMath.kDown(
-            _effectiveShareReserves,
-            _params.bondReserves,
-            ONE - _params.timeStretch,
-            _params.sharePrice,
-            _params.initialSharePrice
-        );
-        uint256 inner = k
-            .divDown(
-                _params.sharePrice.divUp(_params.initialSharePrice) +
-                    _params.curveFee.mulUp(ONE.divUp(_spotPrice) - ONE) +
-                    ONE
-            )
-            .pow(ONE.divDown(ONE - _params.timeStretch));
-        int256 targetShareReserves_ = _params.shareAdjustment +
-            int256(inner.divDown(_params.initialSharePrice));
-        require(
-            targetShareReserves_ >= 0,
-            "calculateAbsoluteMaxLong: negative share reserves"
-        );
-        targetShareReserves = uint256(targetShareReserves_);
+        uint256 inner;
+        {
+            uint256 k = YieldSpaceMath.kDown(
+                _effectiveShareReserves,
+                _params.bondReserves,
+                ONE - _params.timeStretch,
+                _params.sharePrice,
+                _params.initialSharePrice
+            );
+            inner = k
+                .divDown(
+                    _params.sharePrice.divUp(_params.initialSharePrice) +
+                        (ONE +
+                            _params.curveFee.mulUp(ONE.divUp(_spotPrice) - ONE))
+                            .pow(
+                                (ONE - _params.timeStretch).divDown(
+                                    _params.timeStretch
+                                )
+                            )
+                )
+                .pow(ONE.divDown(ONE - _params.timeStretch));
+        }
+        uint256 targetShareReserves = inner.divDown(_params.initialSharePrice);
 
         // Now that we have the target share reserves, we can calculate the
         // target bond reserves using the formula:
         //
-        // y_t = (mu * (z_t - zeta)) * (1 + curveFee * (1 / p_0 - 1)) ** (1 / t_s)
+        // y_t = (mu * z_t) * (1 + curveFee * (1 / p_0 - 1)) ** (1 / t_s)
         uint256 targetBondReserves = (ONE +
             _params.curveFee.mulDown(ONE.divDown(_spotPrice) - ONE))
             .pow(ONE.divUp(_params.timeStretch))
@@ -656,7 +660,7 @@ library HyperdriveMath {
         // The absolute max base amount is given by:
         //
         // absoluteMaxBaseAmount = c * (z_t - z)
-        absoluteMaxBaseAmount = (targetShareReserves - _params.shareReserves)
+        absoluteMaxBaseAmount = (targetShareReserves - _effectiveShareReserves)
             .mulDown(_params.sharePrice);
 
         // The absolute max bond amount is given by:
