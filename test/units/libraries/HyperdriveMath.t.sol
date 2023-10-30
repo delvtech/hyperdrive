@@ -882,7 +882,7 @@ contract HyperdriveMathTest is HyperdriveTest {
         // Ensure that opening another long fails. We fuzz in the range of
         // 10% to 1000x the max long.
         //
-        // NOTE: Since the max spot price increases after we open the first long
+        // NOTE: The max spot price increases after we open the first long
         // because the spot price increases. In some cases, this could cause
         // a small trade to suceed after the large trade, so we use relatively
         // large amounts for the second trade.
