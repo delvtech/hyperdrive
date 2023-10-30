@@ -98,7 +98,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
 
         // Initialize the pool and ensure that the APR is correct.
         initialize(alice, apr, contribution);
-        assertApproxEqAbs(hyperdrive.calculateAPRFromReserves(), apr, 1e12);
+        assertApproxEqAbs(hyperdrive.calculateSpotAPR(), apr, 1e12);
     }
 
     function test_nonstandard_decimals_long(

@@ -208,7 +208,7 @@ contract AddLiquidityTest is HyperdriveTest {
         );
 
         // Ensure the pool APR is still approximately equal to the target APR.
-        uint256 poolApr = HyperdriveUtils.calculateAPRFromReserves(hyperdrive);
+        uint256 poolApr = HyperdriveUtils.calculateSpotAPR(hyperdrive);
         assertApproxEqAbs(poolApr, apr, 1);
     }
 
@@ -427,7 +427,7 @@ contract AddLiquidityTest is HyperdriveTest {
         uint256 contribution
     ) internal returns (uint256 lpShares) {
         // Get the state before adding liquidity.
-        uint256 spotRate = HyperdriveUtils.calculateAPRFromReserves(hyperdrive);
+        uint256 spotRate = HyperdriveUtils.calculateSpotAPR(hyperdrive);
         uint256 lpSupply = hyperdrive.totalSupply(AssetId._LP_ASSET_ID);
         uint256 lpBalance = hyperdrive.balanceOf(AssetId._LP_ASSET_ID, lp);
         uint256 baseBalance = baseToken.balanceOf(address(hyperdrive));
@@ -455,10 +455,7 @@ contract AddLiquidityTest is HyperdriveTest {
         );
 
         // Ensure the spot rate and the LP share price haven't changed.
-        assertEq(
-            HyperdriveUtils.calculateAPRFromReserves(hyperdrive),
-            spotRate
-        );
+        assertEq(HyperdriveUtils.calculateSpotAPR(hyperdrive), spotRate);
         assertEq(hyperdrive.lpSharePrice(), lpSharePrice);
 
         return lpShares;

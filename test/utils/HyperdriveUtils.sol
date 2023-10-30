@@ -57,13 +57,13 @@ library HyperdriveUtils {
             );
     }
 
-    function calculateAPRFromReserves(
+    function calculateSpotAPR(
         IHyperdrive _hyperdrive
     ) internal view returns (uint256) {
         IHyperdrive.PoolConfig memory poolConfig = _hyperdrive.getPoolConfig();
         IHyperdrive.PoolInfo memory poolInfo = _hyperdrive.getPoolInfo();
         return
-            HyperdriveMath.calculateAPRFromReserves(
+            HyperdriveMath.calculateSpotAPR(
                 HyperdriveMath.calculateEffectiveShareReserves(
                     poolInfo.shareReserves,
                     poolInfo.shareAdjustment
