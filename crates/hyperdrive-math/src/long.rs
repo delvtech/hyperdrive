@@ -6,6 +6,34 @@ use super::State;
 use crate::YieldSpace;
 
 impl State {
+    /// Gets the pool's max spot price.
+    ///
+    /// Hyperdrive has assertions to ensure that traders don't purchase bonds at
+    /// negative interest rates. The maximum spot price that longs can push the
+    /// market to is given by:
+    ///
+    /// $$
+    /// p_max = \frac{1}{1 + \phi_c * \left( p_0^{-1} - 1 \right)}
+    /// $$
+    pub fn get_max_spot_price(&self) -> FixedPoint {
+        fixed!(1e18)
+            / (fixed!(1e18)
+                + self
+                    .curve_fee()
+                    .mul_up(fixed!(1e18).div_up(self.get_spot_price()) - fixed!(1e18)))
+    }
+
+    /// Gets the spot price after opening the long on the YieldSpace curve and
+    /// before calculating the fees.
+    pub fn get_spot_price_after_long(&self, long_amount: FixedPoint) -> FixedPoint {
+        let mut state: State = self.clone();
+        state.info.bond_reserves -= state
+            .calculate_bonds_out_given_shares_in_down(long_amount / state.share_price())
+            .into();
+        state.info.share_reserves += (long_amount / state.share_price()).into();
+        state.get_spot_price()
+    }
+
     /// Gets the pool's solvency.
     pub fn get_solvency(&self) -> FixedPoint {
         self.share_reserves()
@@ -55,12 +83,7 @@ impl State {
 
         // Get the maximum long that brings the spot price to 1. If the pool is
         // solvent after opening this long, then we're done.
-        let (absolute_max_base_amount, absolute_max_bond_amount) = {
-            let (share_amount, mut bond_amount) = self.absolute_max_long();
-            let base_amount = self.share_price() * share_amount;
-            bond_amount -= self.long_curve_fee(base_amount);
-            (base_amount, bond_amount)
-        };
+        let (absolute_max_base_amount, absolute_max_bond_amount) = self.absolute_max_long();
         if self
             .solvency_after_long(
                 absolute_max_base_amount,
@@ -145,27 +168,70 @@ impl State {
         max_base_amount
     }
 
+    /// Calculates the largest long that can be opened without buying bonds at a
+    /// negative interest rate. This calculation does not take Hyperdrive's
+    /// solvency constraints into account and shouldn't be used directly.
     fn absolute_max_long(&self) -> (FixedPoint, FixedPoint) {
-        // We can calculate the maximum share reserves as z' = y' / mu; however,
-        // we do the computation from scratch to ensure that we're rounding so
-        // that the max share amount is rounded up. You can find the details of
-        // the calculation for y' in YieldSpaceMath.calculateMaxBuy.
-        let mut optimal_z =
-            self.k_down() / (self.share_price().div_up(self.initial_share_price()) + fixed!(1e18));
-        if optimal_z >= fixed!(1e18) {
-            // Rounding the exponent down results in a smaller outcome.
-            optimal_z = optimal_z.pow(fixed!(1e18) / (fixed!(1e18) - self.time_stretch()));
-        } else {
-            // Rounding the exponent up results in a smaller outcome.
-            optimal_z = optimal_z.pow(fixed!(1e18).div_up(fixed!(1e18) - self.time_stretch()));
-        }
-        optimal_z /= self.initial_share_price();
+        // We are targeting the pool's max spot price of:
+        //
+        // p_max = 1 / (1 + curveFee * (1 / p_0 - 1))
+        //
+        // We can derive a formula for the target bond reserves y_t in
+        // terms of the target share reserves z_t as follows:
+        //
+        // p_max = ((mu * z_t) / y_t) ** t_s
+        //
+        //                       =>
+        //
+        // y_t = (mu * z_t) * (1 + curveFee * (1 / p_0 - 1)) ** (1 / t_s)
+        //
+        // We can use this formula to solve our YieldSpace invariant for z_t:
+        //
+        // k = (c / mu) * (mu * z_t) ** (1 - t_s) +
+        //     (
+        //         (mu * z_t) * (1 + curveFee * (1 / p_0 - 1)) ** (1 / t_s)
+        //     ) ** (1 - t_s)
+        //
+        //                       =>
+        //
+        // z_t = (1 / mu) * (
+        //           k / (
+        //               (c / mu) +
+        //               (1 + curveFee * ((1 / p_0) - 1) ** ((1 - t_s) / t_s))
+        //           )
+        //       ) ** (1 / (1 - t_s))
+        let inner = (self.k_down()
+            / (self.share_price().div_up(self.initial_share_price())
+                + (fixed!(1e18)
+                    + self
+                        .curve_fee()
+                        .mul_up(fixed!(1e18).div_up(self.get_spot_price()) - fixed!(1e18)))
+                .pow((fixed!(1e18) - self.time_stretch()) / self.time_stretch())))
+        .pow(fixed!(1e18) / (fixed!(1e18) - self.time_stretch()));
+        let target_share_reserves = inner / self.initial_share_price();
 
-        // The optimal trade sizes are given by dz = z' - z and dy = y - y'.
-        (
-            optimal_z - self.effective_share_reserves(),
-            self.calculate_max_buy(),
-        )
+        // Now that we have the target share reserves, we can calculate the
+        // target bond reserves using the formula:
+        //
+        // y_t = (mu * z_t) * (1 + curveFee * (1 / p_0 - 1)) ** (1 / t_s)
+        let target_bond_reserves = (fixed!(1e18)
+            + self.curve_fee() * (fixed!(1e18) / self.get_spot_price() - fixed!(1e18)))
+        .pow(fixed!(1e18).div_up(self.time_stretch()))
+            * inner;
+
+        // The absolute max base amount is given by:
+        //
+        // absoluteMaxBaseAmount = c * (z_t - z)
+        let absolute_max_base_amount =
+            (target_share_reserves - self.effective_share_reserves()) * self.share_price();
+
+        // The absolute max bond amount is given by:
+        //
+        // absoluteMaxBondAmount = (y - y_t) - c(x)
+        let absolute_max_bond_amount = (self.bond_reserves() - target_bond_reserves)
+            - self.long_curve_fee(absolute_max_base_amount);
+
+        (absolute_max_base_amount, absolute_max_bond_amount)
     }
 
     /// Gets an initial guess of the max long that can be opened. This is a
@@ -426,13 +492,10 @@ impl State {
 mod tests {
     use std::panic;
 
-    use ethers::types::{Address, U256};
+    use ethers::types::U256;
     use eyre::Result;
     use fixed_point_macros::uint256;
-    use hyperdrive_wrappers::wrappers::{
-        i_hyperdrive::{Fees, PoolConfig, PoolInfo},
-        mock_hyperdrive_math::MaxTradeParams,
-    };
+    use hyperdrive_wrappers::wrappers::mock_hyperdrive_math::MaxTradeParams;
     use rand::{thread_rng, Rng};
     use test_utils::{
         agent::Agent,
@@ -542,18 +605,18 @@ mod tests {
                 .await?;
 
             // Bob opens a max long.
+            let max_spot_price = bob.get_state().await?.get_max_spot_price();
             let max_long = bob.get_max_long(None).await?;
+            let spot_price_after_long = bob.get_state().await?.get_spot_price_after_long(max_long);
             bob.open_long(max_long, None, None).await?;
 
             // One of three things should be true after opening the long:
             //
-            // 1. Bob's budget is consumed.
+            // 1. The pool's spot price reached the max spot price prior to
+            //    considering fees.
             // 2. The pool's solvency is close to zero.
-            // 3. The pool's spot price is equal to 1.
-            let is_max_price = {
-                let state = bob.get_state().await?;
-                fixed!(1e18) - state.get_spot_price() < fixed!(1e15)
-            };
+            // 3. Bob's budget is consumed.
+            let is_max_price = max_spot_price - spot_price_after_long < fixed!(1e15);
             let is_solvency_consumed = {
                 let state = bob.get_state().await?;
                 let error_tolerance = fixed!(1_000e18).mul_div_down(fixed_rate, fixed!(0.1e18));

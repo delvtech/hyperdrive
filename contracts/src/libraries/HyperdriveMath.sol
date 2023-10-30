@@ -661,8 +661,14 @@ library HyperdriveMath {
 
         // The absolute max bond amount is given by:
         //
-        // absoluteMaxBondAmount = y - y_t
-        absoluteMaxBondAmount = _params.bondReserves - targetBondReserves;
+        // absoluteMaxBondAmount = (y - y_t) - c(x)
+        absoluteMaxBondAmount =
+            (_params.bondReserves - targetBondReserves) -
+            calculateLongCurveFee(
+                absoluteMaxBaseAmount,
+                _spotPrice,
+                _params.curveFee
+            );
     }
 
     /// @dev Calculates an initial guess of the max long that can be opened.

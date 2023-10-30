@@ -14,7 +14,7 @@ use rand::{
 pub use utils::*;
 pub use yield_space::YieldSpace;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct State {
     pub config: PoolConfig,
     pub info: PoolInfo,
