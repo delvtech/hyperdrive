@@ -56,12 +56,6 @@ contract ERC4626FactoryBaseTest is HyperdriveTest {
         vm.startPrank(deployer);
 
         // Deploy the ERC4626Hyperdrive factory and deployer.
-        pool1 = IERC4626(
-            address(new Mock4626(ERC20(address(dai)), "yearn dai", "yDai"))
-        );
-        pool2 = IERC4626(
-            address(new Mock4626(ERC20(address(dai)), "savings dai", "sDai"))
-        );
         ERC4626HyperdriveDeployer simpleDeployer = new ERC4626HyperdriveDeployer();
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
@@ -82,6 +76,14 @@ contract ERC4626FactoryBaseTest is HyperdriveTest {
         );
 
         vm.stopPrank();
+
+        // Deploy yield sources
+        pool1 = IERC4626(
+            address(new Mock4626(ERC20(address(dai)), "yearn dai", "yDai"))
+        );
+        pool2 = IERC4626(
+            address(new Mock4626(ERC20(address(dai)), "savings dai", "sDai"))
+        );
 
         // Start recording events.
         vm.recordLogs();
@@ -208,10 +210,12 @@ contract ERC4626FactoryMultiDeployTest is ERC4626FactoryBaseTest {
         );
 
         assertEq(factory.getNumberOfInstances(), 2);
+        assertEq(factory.getInstanceAtIndex(0), address(hyperdrive1));
         assertEq(factory.getInstanceAtIndex(1), address(hyperdrive2));
 
         instances = factory.getAllInstances();
         assertEq(instances.length, 2);
+        assertEq(instances[0], address(hyperdrive1));
         assertEq(instances[1], address(hyperdrive2));
 
         // 3. Dan deploys factory with sDAI as yield source
@@ -259,10 +263,14 @@ contract ERC4626FactoryMultiDeployTest is ERC4626FactoryBaseTest {
         );
 
         assertEq(factory.getNumberOfInstances(), 3);
+        assertEq(factory.getInstanceAtIndex(0), address(hyperdrive1));
+        assertEq(factory.getInstanceAtIndex(1), address(hyperdrive2));
         assertEq(factory.getInstanceAtIndex(2), address(hyperdrive3));
 
         instances = factory.getAllInstances();
         assertEq(instances.length, 3);
+        assertEq(instances[0], address(hyperdrive1));
+        assertEq(instances[1], address(hyperdrive2));
         assertEq(instances[2], address(hyperdrive3));
     }
 }
@@ -369,6 +377,8 @@ contract ERC4626FactoryRemoveInstanceTest is ERC4626FactoryBaseTest {
         assertEq(instances[2], address(hyperdrive3));
 
         assertEq(factory.isInstance(address(hyperdrive1)), true);
+        assertEq(factory.isInstance(address(hyperdrive2)), true);
+        assertEq(factory.isInstance(address(hyperdrive3)), true);
 
         vm.prank(alice);
         factory.removeInstance(address(hyperdrive1), 0);
@@ -385,5 +395,7 @@ contract ERC4626FactoryRemoveInstanceTest is ERC4626FactoryBaseTest {
         assertEq(instances[1], address(hyperdrive2));
 
         assertEq(factory.isInstance(address(hyperdrive1)), false);
+        assertEq(factory.isInstance(address(hyperdrive2)), true);
+        assertEq(factory.isInstance(address(hyperdrive3)), true);
     }
 }
