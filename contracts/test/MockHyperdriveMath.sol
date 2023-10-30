@@ -163,7 +163,6 @@ contract MockHyperdriveMath {
         );
     }
 
-    // TODO: Consider moving this out when we re-organize the test contracts.
     function calculateMaxLong(
         HyperdriveUtils.MaxTradeParams memory _params,
         int256 _checkpointLongExposure,
@@ -177,7 +176,6 @@ contract MockHyperdriveMath {
         return (result1, result2);
     }
 
-    // TODO: Consider moving this out when we re-organize the test contracts.
     function calculateAbsoluteMaxLong(
         HyperdriveUtils.MaxTradeParams memory _params,
         uint256 _effectiveShareReserves,
@@ -192,7 +190,6 @@ contract MockHyperdriveMath {
         return (result1, result2);
     }
 
-    // TODO: Consider moving this out when we re-organize the test contracts.
     function calculateMaxShort(
         HyperdriveUtils.MaxTradeParams memory _params,
         int256 _checkpointExposure,
