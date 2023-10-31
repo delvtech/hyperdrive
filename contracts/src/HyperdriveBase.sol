@@ -243,9 +243,12 @@ abstract contract HyperdriveBase is
 
     /// @dev Calculates the checkpoint exposure when a position is closed
     /// @param _bondAmount The amount of bonds that the user is closing.
-    /// @param _shareReservesDelta The amount of shares that the reserves will change by.
-    /// @param _bondReservesDelta The amount of bonds that the reserves will change by.
-    /// @param _shareUserDelta The amount of shares that the user will receive (long) or pay (short).
+    /// @param _shareReservesDelta The amount of shares that the reserves will
+    ///        change by.
+    /// @param _bondReservesDelta The amount of bonds that the reserves will
+    ///        change by.
+    /// @param _shareUserDelta The amount of shares that the user will receive
+    ///        (long) or pay (short).
     /// @param _maturityTime The maturity time of the position being closed.
     /// @param _sharePrice The current share price.
     /// @param _isLong True if the position being closed is long.
@@ -270,7 +273,9 @@ abstract contract HyperdriveBase is
         if (checkpointLongs == 0 && checkpointShorts == 0) {
             _checkpoints[checkpointTime].longExposure = 0;
         } else {
-            // The long exposure delta is flat + curve amount + the bonds the user is closing:
+            // The long exposure delta is flat + curve amount + the bonds the
+            // user is closing:
+            //
             // (dz_user*c - dz*c) + (dy - dz*c) + dy_user
             // = dz_user*c + dy - 2*dz*c + dy_user
             int128 delta = int128(
@@ -281,8 +286,9 @@ abstract contract HyperdriveBase is
                     _bondAmount).toUint128()
             );
 
-            // If the position being closed is long, then the long exposure decreases
-            // by the delta. If it's short, then the long exposure increases by the delta.
+            // If the position being closed is long, then the long exposure
+            // decreases by the delta. If it's short, then the long exposure
+            // increases by the delta.
             if (_isLong) {
                 _checkpoints[checkpointTime].longExposure -= delta;
             } else {
@@ -298,7 +304,8 @@ abstract contract HyperdriveBase is
         // LongExposure is decreasing (OpenShort/CloseLong)
         if (_before > _after && _before >= 0) {
             int256 delta = int256(_before - _after.max(0));
-            // Since the longExposure can't be negative, we need to make sure we don't underflow
+            // Since the longExposure can't be negative, we need to make sure we
+            // don't underflow.
             _marketState.longExposure -= uint128(
                 delta.min(int128(_marketState.longExposure)).toInt128()
             );
@@ -315,7 +322,8 @@ abstract contract HyperdriveBase is
         }
     }
 
-    /// @dev Calculates the number of share reserves that are not reserved by open positions
+    /// @dev Calculates the number of share reserves that are not reserved by
+    ///      open positions
     /// @param _sharePrice The current share price.
     function _calculateIdleShareReserves(
         uint256 _sharePrice
@@ -332,9 +340,11 @@ abstract contract HyperdriveBase is
         return idleShares;
     }
 
-    /// @dev Check solvency by verifying that the share reserves are greater than the exposure plus the minimum share reserves.
+    /// @dev Check solvency by verifying that the share reserves are greater
+    ///      than the exposure plus the minimum share reserves.
     /// @param _sharePrice The current share price.
-    /// @return True if the share reserves are greater than the exposure plus the minimum share reserves.
+    /// @return True if the share reserves are greater than the exposure plus
+    ///         the minimum share reserves.
     function _isSolvent(uint256 _sharePrice) internal view returns (bool) {
         return
             (int256(
@@ -345,10 +355,13 @@ abstract contract HyperdriveBase is
 
     /// @dev Calculates the fees that go to the LPs and governance.
     /// @param _amountIn Amount in shares.
-    /// @param _spotPrice The price without slippage of bonds in terms of base (base/bonds).
-    /// @param _sharePrice The current price of shares in terms of base (base/shares).
+    /// @param _spotPrice The price without slippage of bonds in terms of base
+    ///         (base/bonds).
+    /// @param _sharePrice The current price of shares in terms of base
+    ///        (base/shares).
     /// @return totalCurveFee The total curve fee. The fee is in terms of bonds.
-    /// @return governanceCurveFee The curve fee that goes to governance. The fee is in terms of bonds.
+    /// @return governanceCurveFee The curve fee that goes to governance. The
+    ///         fee is in terms of bonds.
     function _calculateFeesOutGivenSharesIn(
         uint256 _amountIn,
         uint256 _spotPrice,
@@ -361,13 +374,18 @@ abstract contract HyperdriveBase is
         // Fixed Rate (r) = (value at maturity - purchase price)/(purchase price)
         //                = (1-p)/p
         //                = ((1 / p) - 1)
-        //                = the return on investment at maturity of a bond purchased at price p
+        //                = the ROI at maturity of a bond purchased at price p
         //
         // Another way to think about it:
+        //
         // p (spot price) tells us how many base a bond is worth -> p = base/bonds
         // 1/p tells us how many bonds a base is worth -> 1/p = bonds/base
-        // 1/p - 1 tells us how many additional bonds we get for each base -> (1/p - 1) = additional bonds/base
-        // the curve fee is taken from the additional bonds the user gets for each base
+        // 1/p - 1 tells us how many additional bonds we get for each
+        // base -> (1/p - 1) = additional bonds/base
+        //
+        // The curve fee is taken from the additional bonds the user gets for
+        // each base:
+        //
         // total curve fee = ((1 / p) - 1) * phi_curve * c * dz
         //                 = r * phi_curve * base/shares * shares
         //                 = bonds/base * phi_curve * base
@@ -387,11 +405,13 @@ abstract contract HyperdriveBase is
     /// @dev Calculates the fees that go to the LPs and governance.
     /// @param _amountIn Amount in terms of bonds.
     /// @param _normalizedTimeRemaining The normalized amount of time until maturity.
-    /// @param _spotPrice The price without slippage of bonds in terms of base (base/bonds).
+    /// @param _spotPrice The price without slippage of bonds in terms of base
+    ///        (base/bonds).
     /// @param _sharePrice The current price of shares in terms of base (base/shares).
     /// @return totalCurveFee The curve fee. The fee is in terms of shares.
     /// @return totalFlatFee The flat fee. The fee is in terms of shares.
-    /// @return totalGovernanceFee The total fee that goes to governance. The fee is in terms of shares.
+    /// @return totalGovernanceFee The total fee that goes to governance. The
+    ///         fee is in terms of shares.
     function _calculateFeesOutGivenBondsIn(
         uint256 _amountIn,
         uint256 _normalizedTimeRemaining,
@@ -407,9 +427,12 @@ abstract contract HyperdriveBase is
         )
     {
         // p (spot price) tells us how many base a bond is worth -> p = base/bonds
-        // 1 - p tells us how many additional base a bond is worth at maturity -> (1 - p) = additional base/bonds
+        // 1 - p tells us how many additional base a bond is worth at
+        // maturity -> (1 - p) = additional base/bonds
 
-        // The curve fee is taken from the additional base the user gets for each bond at maturity
+        // The curve fee is taken from the additional base the user gets for
+        // each bond at maturity:
+        //
         // total curve fee = ((1 - p) * phi_curve * d_y * t)/c
         //                 = (base/bonds * phi_curve * bonds * t) / (base/shares)
         //                 = (base/bonds * phi_curve * bonds * t) * (shares/base)
@@ -451,12 +474,15 @@ abstract contract HyperdriveBase is
     /// @dev Calculates the fees that go to the LPs and governance.
     /// @param _amountOut Amount in terms of bonds.
     /// @param _normalizedTimeRemaining The normalized amount of time until maturity.
-    /// @param _spotPrice The price without slippage of bonds in terms of base (base/bonds).
+    /// @param _spotPrice The price without slippage of bonds in terms of base
+    ///        (base/bonds).
     /// @param _sharePrice The current price of shares in terms of base (base/shares).
     /// @return totalCurveFee The total curve fee. Fee is in terms of shares.
     /// @return totalFlatFee The total flat fee.  Fee is in terms of shares.
-    /// @return governanceCurveFee The curve fee that goes to governance.  Fee is in terms of shares.
-    /// @return governanceFlatFee The flat fee that goes to governance.  Fee is in terms of shares.
+    /// @return governanceCurveFee The curve fee that goes to governance.  Fee
+    ///         is in terms of shares.
+    /// @return governanceFlatFee The flat fee that goes to governance.  Fee is
+    ///         in terms of shares.
     function _calculateFeesInGivenBondsOut(
         uint256 _amountOut,
         uint256 _normalizedTimeRemaining,
@@ -473,9 +499,12 @@ abstract contract HyperdriveBase is
         )
     {
         // p (spot price) tells us how many base a bond is worth -> p = base/bonds
-        // 1 - p tells us how many additional base a bond is worth at maturity -> (1 - p) = additional base/bonds
+        // 1 - p tells us how many additional base a bond is worth at
+        // maturity -> (1 - p) = additional base/bonds
 
-        // The curve fee is taken from the additional base the user gets for each bond at maturity
+        // The curve fee is taken from the additional base the user gets for
+        // each bond at maturity:
+        //
         // total curve fee = ((1 - p) * phi_curve * d_y * t)/c
         //                 = (base/bonds * phi_curve * bonds * t) / (base/shares)
         //                 = (base/bonds * phi_curve * bonds * t) * (shares/base)
@@ -487,14 +516,16 @@ abstract contract HyperdriveBase is
             .mulDown(_amountOut)
             .mulDivDown(_normalizedTimeRemaining, _sharePrice);
 
-        // Calculate the curve portion of the governance fee
+        // Calculate the curve portion of the governance fee:
+        //
         // governanceCurveFee = total_curve_fee * phi_gov
         //                    = shares * phi_gov
         governanceCurveFee = totalCurveFee.mulDown(_governanceFee);
 
         // The flat portion of the fee is taken from the matured bonds.
         // Since a matured bond is worth 1 base, it is appropriate to consider
-        // d_y in units of base.
+        // d_y in units of base:
+        //
         // flat fee = (d_y * (1 - t) * phi_flat) / c
         //          = (base * (1 - t) * phi_flat) / (base/shares)
         //          = (base * (1 - t) * phi_flat) * (shares/base)
@@ -505,7 +536,8 @@ abstract contract HyperdriveBase is
         );
         totalFlatFee = flat.mulDown(_flatFee);
 
-        // Calculate the flat portion of the governance fee
+        // Calculate the flat portion of the governance fee:
+        //
         // governanceFlatFee = total_flat_fee * phi_gov
         //                   = shares * phi_gov
         governanceFlatFee = totalFlatFee.mulDown(_governanceFee);
