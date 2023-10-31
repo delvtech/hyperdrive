@@ -31,16 +31,11 @@ contract CheckpointTest is HyperdriveTest {
         MockHyperdrive(address(hyperdrive)).accrue(CHECKPOINT_DURATION, 0.1e18);
 
         // Create a checkpoint.
-        uint256 aprBefore = HyperdriveUtils.calculateAPRFromReserves(
-            hyperdrive
-        );
+        uint256 aprBefore = HyperdriveUtils.calculateSpotAPR(hyperdrive);
         hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
 
         // Ensure that the pool's APR wasn't changed by the checkpoint.
-        assertEq(
-            HyperdriveUtils.calculateAPRFromReserves(hyperdrive),
-            aprBefore
-        );
+        assertEq(HyperdriveUtils.calculateSpotAPR(hyperdrive), aprBefore);
 
         // Ensure that the checkpoint contains the share price prior to the
         // share price update.
@@ -68,16 +63,11 @@ contract CheckpointTest is HyperdriveTest {
         uint256 sharePrice = hyperdrive.getPoolInfo().sharePrice;
 
         // Create a checkpoint.
-        uint256 aprBefore = HyperdriveUtils.calculateAPRFromReserves(
-            hyperdrive
-        );
+        uint256 aprBefore = HyperdriveUtils.calculateSpotAPR(hyperdrive);
         hyperdrive.checkpoint(HyperdriveUtils.latestCheckpoint(hyperdrive));
 
         // Ensure that the pool's APR wasn't changed by the checkpoint.
-        assertEq(
-            HyperdriveUtils.calculateAPRFromReserves(hyperdrive),
-            aprBefore
-        );
+        assertEq(HyperdriveUtils.calculateSpotAPR(hyperdrive), aprBefore);
 
         // Ensure that the checkpoint contains the latest share price.
         IHyperdrive.Checkpoint memory checkpoint = hyperdrive.getCheckpoint(
@@ -106,7 +96,7 @@ contract CheckpointTest is HyperdriveTest {
         // the market rate.
         //
         // Ensure that the pool's APR wasn't changed by the checkpoint.
-        // assertEq(calculateAPRFromReserves(hyperdrive), aprBefore);
+        // assertEq(calculateSpotAPR(hyperdrive), aprBefore);
 
         // Ensure that the checkpoint contains the share price prior to the
         // share price update.
@@ -147,7 +137,7 @@ contract CheckpointTest is HyperdriveTest {
         // the market rate.
         //
         // Ensure that the pool's APR wasn't changed by the checkpoint.
-        // assertEq(calculateAPRFromReserves(hyperdrive), aprBefore);
+        // assertEq(calculateSpotAPR(hyperdrive), aprBefore);
 
         // Ensure that the checkpoint contains the share price prior to the
         // share price update.

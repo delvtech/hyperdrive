@@ -444,8 +444,8 @@ contract OpenShortTest is HyperdriveTest {
         // transferred; however, the pool's APR should be identical to the APR
         // that the bond amount transfer implies.
         assertApproxEqAbs(
-            HyperdriveUtils.calculateAPRFromReserves(hyperdrive),
-            HyperdriveMath.calculateAPRFromReserves(
+            HyperdriveUtils.calculateSpotAPR(hyperdrive),
+            HyperdriveMath.calculateSpotAPR(
                 poolInfoAfter.shareReserves,
                 poolInfoBefore.bondReserves + shortAmount,
                 INITIAL_SHARE_PRICE,

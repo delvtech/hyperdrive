@@ -117,7 +117,7 @@ abstract contract HyperdriveLP is IHyperdriveWrite, HyperdriveTWAP {
         }
 
         // Enforce the slippage guard.
-        uint256 apr = HyperdriveMath.calculateAPRFromReserves(
+        uint256 apr = HyperdriveMath.calculateSpotAPR(
             _effectiveShareReserves(),
             _marketState.bondReserves,
             _initialSharePrice,

@@ -49,7 +49,7 @@ contract HyperdriveMathTest is HyperdriveTest {
 
         // equal reserves should make 0% APR
         assertEq(
-            hyperdriveMath.calculateAPRFromReserves(
+            hyperdriveMath.calculateSpotAPR(
                 1 ether, // shareReserves
                 1 ether, // bondReserves
                 1 ether, // initialSharePrice
@@ -61,7 +61,7 @@ contract HyperdriveMathTest is HyperdriveTest {
 
         // target a 10% APR
         assertApproxEqAbs(
-            hyperdriveMath.calculateAPRFromReserves(
+            hyperdriveMath.calculateSpotAPR(
                 1 ether, // shareReserves
                 1.1 ether, // bondReserves
                 1 ether, // initialSharePrice
@@ -74,7 +74,7 @@ contract HyperdriveMathTest is HyperdriveTest {
 
         // target a 10% APR with a 6 month term
         assertApproxEqAbs(
-            hyperdriveMath.calculateAPRFromReserves(
+            hyperdriveMath.calculateSpotAPR(
                 1 ether, // shareReserves
                 1.05 ether, // bondReserves
                 1 ether, // initialSharePrice
@@ -105,7 +105,7 @@ contract HyperdriveMathTest is HyperdriveTest {
             positionDuration,
             timeStretch
         );
-        uint256 result = hyperdriveMath.calculateAPRFromReserves(
+        uint256 result = hyperdriveMath.calculateSpotAPR(
             shareReserves,
             bondReserves,
             initialSharePrice,
@@ -124,7 +124,7 @@ contract HyperdriveMathTest is HyperdriveTest {
             positionDuration,
             timeStretch
         );
-        result = hyperdriveMath.calculateAPRFromReserves(
+        result = hyperdriveMath.calculateSpotAPR(
             shareReserves,
             bondReserves,
             initialSharePrice,
@@ -143,7 +143,7 @@ contract HyperdriveMathTest is HyperdriveTest {
             positionDuration,
             timeStretch
         );
-        result = hyperdriveMath.calculateAPRFromReserves(
+        result = hyperdriveMath.calculateSpotAPR(
             shareReserves,
             bondReserves,
             initialSharePrice,
@@ -162,7 +162,7 @@ contract HyperdriveMathTest is HyperdriveTest {
             positionDuration,
             timeStretch
         );
-        result = hyperdriveMath.calculateAPRFromReserves(
+        result = hyperdriveMath.calculateSpotAPR(
             shareReserves,
             bondReserves,
             initialSharePrice,
@@ -181,7 +181,7 @@ contract HyperdriveMathTest is HyperdriveTest {
             positionDuration,
             timeStretch
         );
-        result = hyperdriveMath.calculateAPRFromReserves(
+        result = hyperdriveMath.calculateSpotAPR(
             shareReserves,
             bondReserves,
             initialSharePrice,
@@ -200,7 +200,7 @@ contract HyperdriveMathTest is HyperdriveTest {
             positionDuration,
             timeStretch
         );
-        result = hyperdriveMath.calculateAPRFromReserves(
+        result = hyperdriveMath.calculateSpotAPR(
             shareReserves,
             bondReserves,
             initialSharePrice,
@@ -236,7 +236,7 @@ contract HyperdriveMathTest is HyperdriveTest {
         );
         bondReserves -= bondReservesDelta;
         shareReserves += amountIn;
-        uint256 result = hyperdriveMath.calculateAPRFromReserves(
+        uint256 result = hyperdriveMath.calculateSpotAPR(
             shareReserves,
             bondReserves,
             initialSharePrice,
@@ -281,7 +281,7 @@ contract HyperdriveMathTest is HyperdriveTest {
         assertEq(bondReservesDelta, amountIn.mulDown(normalizedTimeRemaining));
         shareReserves -= shareReservesDelta;
         bondReserves += bondReservesDelta;
-        uint256 result = hyperdriveMath.calculateAPRFromReserves(
+        uint256 result = hyperdriveMath.calculateSpotAPR(
             shareReserves,
             bondReserves,
             1 ether,
@@ -355,7 +355,7 @@ contract HyperdriveMathTest is HyperdriveTest {
             bondReserves += amountIn;
             shareReserves -= shareReservesDelta;
         }
-        uint256 result = hyperdriveMath.calculateAPRFromReserves(
+        uint256 result = hyperdriveMath.calculateSpotAPR(
             shareReserves,
             bondReserves,
             1 ether,
@@ -433,7 +433,7 @@ contract HyperdriveMathTest is HyperdriveTest {
         assertEq(bondReservesDelta, amountOut.mulDown(normalizedTimeRemaining));
         shareReserves += shareReservesDelta;
         bondReserves -= bondReservesDelta;
-        uint256 result = hyperdriveMath.calculateAPRFromReserves(
+        uint256 result = hyperdriveMath.calculateSpotAPR(
             shareReserves,
             bondReserves,
             1 ether,

@@ -97,7 +97,7 @@ contract InitializeTest is HyperdriveTest {
 
         // Ensure that the pool's spot rate is approximately equal to the target
         // spot rate.
-        uint256 spotRate = hyperdrive.calculateAPRFromReserves();
+        uint256 spotRate = hyperdrive.calculateSpotAPR();
         assertApproxEqAbs(spotRate, targetRate, 1e10); // 8 decimals of precision
 
         // Ensure that Alice's base balance has been depleted and that Alice

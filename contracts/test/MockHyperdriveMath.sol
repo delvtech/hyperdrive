@@ -5,14 +5,14 @@ import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 
 contract MockHyperdriveMath {
-    function calculateAPRFromReserves(
+    function calculateSpotAPR(
         uint256 _effectiveShareReserves,
         uint256 _bondReserves,
         uint256 _initialSharePrice,
         uint256 _positionDuration,
         uint256 _timeStretch
     ) external pure returns (uint256) {
-        uint256 result = HyperdriveMath.calculateAPRFromReserves(
+        uint256 result = HyperdriveMath.calculateSpotAPR(
             _effectiveShareReserves,
             _bondReserves,
             _initialSharePrice,

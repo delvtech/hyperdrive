@@ -38,9 +38,7 @@ library HyperdriveMath {
             .pow(_timeStretch);
     }
 
-    // FIXME: Rename this to calculateSpotRate.
-    //
-    /// @dev Calculates the APR from the pool's reserves.
+    /// @dev Calculates the spot APR of the pool.
     /// @param _effectiveShareReserves The pool's effective share reserves. The
     ///        effective share reserves are a modified version of the share
     ///        reserves used when pricing trades.
@@ -48,8 +46,8 @@ library HyperdriveMath {
     /// @param _initialSharePrice The pool's initial share price.
     /// @param _positionDuration The amount of time until maturity in seconds.
     /// @param _timeStretch The time stretch parameter.
-    /// @return apr The pool's APR.
-    function calculateAPRFromReserves(
+    /// @return apr The pool's spot APR.
+    function calculateSpotAPR(
         uint256 _effectiveShareReserves,
         uint256 _bondReserves,
         uint256 _initialSharePrice,

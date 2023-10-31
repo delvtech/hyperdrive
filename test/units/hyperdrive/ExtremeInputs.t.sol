@@ -28,7 +28,7 @@ contract ExtremeInputs is HyperdriveTest {
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
 
         // Ensure that the ending APR is approximately 0%.
-        uint256 apr = hyperdrive.calculateAPRFromReserves();
+        uint256 apr = hyperdrive.calculateSpotAPR();
         assertApproxEqAbs(
             apr,
             0,
@@ -42,8 +42,8 @@ contract ExtremeInputs is HyperdriveTest {
         // transferred; however, the pool's APR should be identical to the APR
         // that the bond amount transfer implies.
         assertApproxEqAbs(
-            hyperdrive.calculateAPRFromReserves(),
-            HyperdriveMath.calculateAPRFromReserves(
+            hyperdrive.calculateSpotAPR(),
+            HyperdriveMath.calculateSpotAPR(
                 poolInfoAfter.shareReserves,
                 poolInfoBefore.bondReserves - bondAmount,
                 INITIAL_SHARE_PRICE,
@@ -65,9 +65,9 @@ contract ExtremeInputs is HyperdriveTest {
         uint256 bondAmount = hyperdrive.calculateMaxShort();
 
         // Open short with max base amount
-        uint256 aprBefore = hyperdrive.calculateAPRFromReserves();
+        uint256 aprBefore = hyperdrive.calculateSpotAPR();
         openShort(bob, bondAmount);
-        uint256 aprAfter = hyperdrive.calculateAPRFromReserves();
+        uint256 aprAfter = hyperdrive.calculateSpotAPR();
 
         // Ensure the spot rate increased and that either the share reserves are
         // approximately equal to the minimum share reserves or the pool's
@@ -84,8 +84,8 @@ contract ExtremeInputs is HyperdriveTest {
 
         // Ensure that the bond reserves were updated to have the correct APR.
         assertApproxEqAbs(
-            hyperdrive.calculateAPRFromReserves(),
-            HyperdriveMath.calculateAPRFromReserves(
+            hyperdrive.calculateSpotAPR(),
+            HyperdriveMath.calculateSpotAPR(
                 poolInfoAfter.shareReserves,
                 poolInfoBefore.bondReserves + bondAmount,
                 INITIAL_SHARE_PRICE,
@@ -107,8 +107,8 @@ contract ExtremeInputs is HyperdriveTest {
 
         // Ensure that the bond reserves were updated to have the correct APR.
         assertApproxEqAbs(
-            hyperdrive.calculateAPRFromReserves(),
-            HyperdriveMath.calculateAPRFromReserves(
+            hyperdrive.calculateSpotAPR(),
+            HyperdriveMath.calculateSpotAPR(
                 poolInfoAfter.shareReserves,
                 poolInfoBefore.bondReserves - bondAmountLong,
                 INITIAL_SHARE_PRICE,
@@ -130,9 +130,9 @@ contract ExtremeInputs is HyperdriveTest {
         uint256 bondAmount = hyperdrive.calculateMaxShort();
 
         // Open short with max base amount
-        uint256 aprBefore = hyperdrive.calculateAPRFromReserves();
+        uint256 aprBefore = hyperdrive.calculateSpotAPR();
         openShort(bob, bondAmount);
-        uint256 aprAfter = hyperdrive.calculateAPRFromReserves();
+        uint256 aprAfter = hyperdrive.calculateSpotAPR();
 
         // Ensure the spot rate increased and that either the share reserves are
         // approximately equal to the minimum share reserves or the pool's
@@ -153,8 +153,8 @@ contract ExtremeInputs is HyperdriveTest {
         // transferred; however, the pool's APR should be identical to the APR
         // that the bond amount transfer implies.
         assertApproxEqAbs(
-            hyperdrive.calculateAPRFromReserves(),
-            HyperdriveMath.calculateAPRFromReserves(
+            hyperdrive.calculateSpotAPR(),
+            HyperdriveMath.calculateSpotAPR(
                 poolInfoAfter.shareReserves,
                 poolInfoBefore.bondReserves + bondAmount,
                 INITIAL_SHARE_PRICE,
@@ -575,10 +575,10 @@ contract ExtremeInputs is HyperdriveTest {
             // Verify that the ending bond reserves are greater than zero and
             // that the ending spot rate is the same as it was before the trade
             // is closed.
-            uint256 aprBefore = hyperdrive.calculateAPRFromReserves();
+            uint256 aprBefore = hyperdrive.calculateSpotAPR();
             closeLong(bob, maturityTime0, longAmount);
             assertApproxEqAbs(
-                hyperdrive.calculateAPRFromReserves(),
+                hyperdrive.calculateSpotAPR(),
                 aprBefore,
                 tolerance
             );
@@ -628,10 +628,10 @@ contract ExtremeInputs is HyperdriveTest {
             // Verify that the ending bond reserves are greater than zero and
             // that the ending spot rate is the same as it was before the trade
             // is closed.
-            uint256 aprBefore = hyperdrive.calculateAPRFromReserves();
+            uint256 aprBefore = hyperdrive.calculateSpotAPR();
             closeShort(bob, maturityTime0, shortAmount);
             assertApproxEqAbs(
-                hyperdrive.calculateAPRFromReserves(),
+                hyperdrive.calculateSpotAPR(),
                 aprBefore,
                 tolerance
             );
@@ -733,10 +733,10 @@ contract ExtremeInputs is HyperdriveTest {
             // Verify that the ending bond reserves are greater than zero and
             // that the ending spot rate is the same as it was before the trade
             // is closed.
-            uint256 aprBefore = hyperdrive.calculateAPRFromReserves();
+            uint256 aprBefore = hyperdrive.calculateSpotAPR();
             closeLong(bob, maturityTime0, longAmount);
             assertApproxEqAbs(
-                hyperdrive.calculateAPRFromReserves(),
+                hyperdrive.calculateSpotAPR(),
                 aprBefore,
                 tolerance
             );
@@ -786,10 +786,10 @@ contract ExtremeInputs is HyperdriveTest {
             // Verify that the ending bond reserves are greater than zero and
             // that the ending spot rate is the same as it was before the trade
             // is closed.
-            uint256 aprBefore = hyperdrive.calculateAPRFromReserves();
+            uint256 aprBefore = hyperdrive.calculateSpotAPR();
             closeShort(bob, maturityTime0, shortAmount);
             assertApproxEqAbs(
-                hyperdrive.calculateAPRFromReserves(),
+                hyperdrive.calculateSpotAPR(),
                 aprBefore,
                 tolerance
             );

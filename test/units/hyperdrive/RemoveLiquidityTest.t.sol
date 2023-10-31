@@ -237,7 +237,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
         );
 
         // Read from the state before removing liquidity.
-        uint256 fixedRateBefore = hyperdrive.calculateAPRFromReserves();
+        uint256 fixedRateBefore = hyperdrive.calculateSpotAPR();
         uint256 lpTotalSupplyBefore = lpTotalSupply();
         uint256 startingPresentValue = hyperdrive.presentValue();
         uint256 expectedBaseProceeds = calculateBaseLpProceeds(
@@ -295,7 +295,7 @@ contract RemoveLiquidityTest is HyperdriveTest {
             );
 
             // Ensure that the fixed rate stayed the same after removing liquidity.
-            assertEq(hyperdrive.calculateAPRFromReserves(), fixedRateBefore);
+            assertEq(hyperdrive.calculateSpotAPR(), fixedRateBefore);
 
             // Ensure that the initializer's shares were burned and that the total
             // LP supply is just the minimum share reserves.
