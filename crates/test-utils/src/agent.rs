@@ -921,6 +921,11 @@ impl Agent<ChainClient, ChaCha8Rng> {
         Ok(self.hyperdrive.get_checkpoint(id).await?)
     }
 
+    /// Gets the spot price.
+    pub async fn get_spot_price(&self) -> Result<FixedPoint> {
+        Ok(self.get_state().await?.get_spot_price())
+    }
+
     /// Gets the amount of longs that will be opened for a given amount of base
     /// with the current market state.
     pub async fn get_long_amount(&self, base_amount: FixedPoint) -> Result<FixedPoint> {

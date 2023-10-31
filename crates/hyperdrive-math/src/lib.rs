@@ -5,7 +5,7 @@ mod yield_space;
 
 use ethers::types::{Address, I256, U256};
 use fixed_point::FixedPoint;
-use fixed_point_macros::{fixed, uint256};
+use fixed_point_macros::fixed;
 use hyperdrive_wrappers::wrappers::i_hyperdrive::{Fees, PoolConfig, PoolInfo};
 use rand::{
     distributions::{Distribution, Standard},
@@ -14,7 +14,7 @@ use rand::{
 pub use utils::*;
 pub use yield_space::YieldSpace;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct State {
     pub config: PoolConfig,
     pub info: PoolInfo,
@@ -29,9 +29,9 @@ impl Distribution<State> for Standard {
             governance: Address::zero(),
             fee_collector: Address::zero(),
             fees: Fees {
-                curve: uint256!(0),
-                flat: uint256!(0),
-                governance: uint256!(0),
+                curve: rng.gen_range(fixed!(0.0001e18)..=fixed!(0.2e18)).into(),
+                flat: rng.gen_range(fixed!(0.0001e18)..=fixed!(0.2e18)).into(),
+                governance: rng.gen_range(fixed!(0.0001e18)..=fixed!(0.2e18)).into(),
             },
             initial_share_price: rng.gen_range(fixed!(0.5e18)..=fixed!(2.5e18)).into(),
             minimum_share_reserves: rng.gen_range(fixed!(0.1e18)..=fixed!(1e18)).into(),

@@ -194,8 +194,8 @@ contract ExtremeInputs is HyperdriveTest {
             config.minimumTransactionAmount,
             poolConfig.minimumShareReserves - 1
         );
-        uint256 shortAmount = HyperdriveMath.calculateMaxShort(
-            HyperdriveMath.MaxTradeParams({
+        uint256 shortAmount = HyperdriveUtils.calculateMaxShort(
+            HyperdriveUtils.MaxTradeParams({
                 shareReserves: poolInfo.shareReserves,
                 shareAdjustment: poolInfo.shareAdjustment,
                 bondReserves: poolInfo.bondReserves,

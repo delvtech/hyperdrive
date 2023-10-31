@@ -139,23 +139,24 @@ contract YieldSpaceMathTest is Test {
                         timeStretch
                     );
                 {
-                    (, uint256 maxBondAmount) = HyperdriveMath.calculateMaxLong(
-                        HyperdriveMath.MaxTradeParams({
-                            shareReserves: shareReserves,
-                            shareAdjustment: 0,
-                            bondReserves: bondReserves,
-                            longsOutstanding: 0,
-                            longExposure: 0,
-                            timeStretch: timeStretch,
-                            sharePrice: sharePrice,
-                            initialSharePrice: initialSharePrice,
-                            minimumShareReserves: minimumShareReserves,
-                            curveFee: 0,
-                            governanceFee: 0
-                        }),
-                        0,
-                        15
-                    );
+                    (, uint256 maxBondAmount) = HyperdriveUtils
+                        .calculateMaxLong(
+                            HyperdriveUtils.MaxTradeParams({
+                                shareReserves: shareReserves,
+                                shareAdjustment: 0,
+                                bondReserves: bondReserves,
+                                longsOutstanding: 0,
+                                longExposure: 0,
+                                timeStretch: timeStretch,
+                                sharePrice: sharePrice,
+                                initialSharePrice: initialSharePrice,
+                                minimumShareReserves: minimumShareReserves,
+                                curveFee: 0,
+                                governanceFee: 0
+                            }),
+                            0,
+                            15
+                        );
                     tradeSize = tradeSize.normalizeToRange(
                         10 ** j,
                         maxBondAmount
