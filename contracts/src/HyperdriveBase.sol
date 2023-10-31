@@ -360,7 +360,7 @@ abstract contract HyperdriveBase is
     }
 
     /// @dev Calculates the number of share reserves that are not reserved by
-    ///      open positions
+    ///      open positions.
     /// @param _sharePrice The current share price.
     function _calculateIdleShareReserves(
         uint256 _sharePrice
