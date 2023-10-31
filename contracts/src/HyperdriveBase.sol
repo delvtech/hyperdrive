@@ -241,6 +241,43 @@ abstract contract HyperdriveBase is
 
     /// Helpers ///
 
+    /// @dev Checks if any of the bonds the trader purchased on the curve
+    ///      were purchased above price of 1 base per bonds.
+    /// @param _shareCurveDelta The amount of shares the trader pays the curve.
+    /// @param _bondCurveDelta The amount of bonds the trader receives from the
+    ///        curve.
+    /// @param _maxSpotPrice The maximum allowable spot price for the trade.
+    /// @return A flag indicating whether the trade was negative interest.
+    function _isNegativeInterest(
+        uint256 _shareCurveDelta,
+        uint256 _bondCurveDelta,
+        uint256 _maxSpotPrice
+    ) internal view returns (bool) {
+        // Calculate the spot price after making the trade on the curve but
+        // before accounting for fees. Compare this to the max spot price to
+        // determine if the trade is negative interest.
+        uint256 endingSpotPrice = HyperdriveMath.calculateSpotPrice(
+            _effectiveShareReserves() + _shareCurveDelta,
+            _marketState.bondReserves - _bondCurveDelta,
+            _initialSharePrice,
+            _timeStretch
+        );
+        return endingSpotPrice > _maxSpotPrice;
+    }
+
+    /// @dev Check solvency by verifying that the share reserves are greater
+    ///      than the exposure plus the minimum share reserves.
+    /// @param _sharePrice The current share price.
+    /// @return True if the share reserves are greater than the exposure plus
+    ///         the minimum share reserves.
+    function _isSolvent(uint256 _sharePrice) internal view returns (bool) {
+        return
+            (int256(
+                (uint256(_marketState.shareReserves).mulDown(_sharePrice))
+            ) - int128(_marketState.longExposure)).max(0) >=
+            int256(_minimumShareReserves.mulDown(_sharePrice));
+    }
+
     /// @dev Calculates the checkpoint exposure when a position is closed
     /// @param _bondAmount The amount of bonds that the user is closing.
     /// @param _shareReservesDelta The amount of shares that the reserves will
@@ -338,19 +375,6 @@ abstract contract HyperdriveBase is
                 _minimumShareReserves;
         }
         return idleShares;
-    }
-
-    /// @dev Check solvency by verifying that the share reserves are greater
-    ///      than the exposure plus the minimum share reserves.
-    /// @param _sharePrice The current share price.
-    /// @return True if the share reserves are greater than the exposure plus
-    ///         the minimum share reserves.
-    function _isSolvent(uint256 _sharePrice) internal view returns (bool) {
-        return
-            (int256(
-                (uint256(_marketState.shareReserves).mulDown(_sharePrice))
-            ) - int128(_marketState.longExposure)).max(0) >=
-            int256(_minimumShareReserves.mulDown(_sharePrice));
     }
 
     /// @dev Calculates the fees that go to the LPs and governance.
