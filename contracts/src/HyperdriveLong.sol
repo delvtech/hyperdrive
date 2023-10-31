@@ -379,12 +379,12 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
         // Record an oracle update if enough time has elapsed.
         recordPrice(spotPrice);
 
-        // Calculate the fees charged to the user (totalCurveFee) and the portion
+        // Calculate the fees charged to the user (curveFee) and the portion
         // of those fees that are paid to governance (governanceCurveFee).
         (
-            uint256 totalCurveFee, // bonds
+            uint256 curveFee, // bonds
             uint256 governanceCurveFee // bonds
-        ) = _calculateFeesOutGivenSharesIn(
+        ) = _calculateFeesGivenShares(
                 _shareAmount,
                 spotPrice,
                 _sharePrice
@@ -392,13 +392,13 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
 
         // Calculate the number of bonds the trader receives.
         // This is the amount of bonds the trader receives minus the fees.
-        bondProceeds = bondReservesDelta - totalCurveFee;
+        bondProceeds = bondReservesDelta - curveFee;
 
         // Calculate how many bonds to remove from the bondReserves.
         // The bondReservesDelta represents how many bonds to remove
-        // This should be the number of bonds the trader
-        // receives plus the number of bonds we need to pay to governance.
-        // In other words, we want to keep the totalCurveFee in the bondReserves;
+        // This should be the number of bonds the trader receives plus
+        // the number of bonds we need to pay to governance.
+        // In other words, we want to keep the curveFee in the bondReserves;
         // however, since the governanceCurveFee will be paid from the
         // sharesReserves we don't need it removed from the bondReserves.
         // bondProceeds and governanceCurveFee are already in bonds so no
@@ -497,13 +497,15 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
             // Calculate the fees that should be paid by the trader. The trader
             // pays a fee on the curve and flat parts of the trade. Most of the
             // fees go the LPs, but a portion goes to governance.
-            uint256 totalCurveFee;
-            uint256 totalFlatFee;
+            uint256 curveFee;
+            uint256 flatFee;
             (
-                totalCurveFee, // shares
-                totalFlatFee, // shares
+                curveFee, // shares
+                flatFee, // shares
+                , // governanceCurveFee
+                , // governanceFlatFee
                 totalGovernanceFee // shares
-            ) = _calculateFeesOutGivenBondsIn(
+            ) = _calculateFeesGivenBonds(
                 _bondAmount,
                 timeRemaining,
                 spotPrice,
@@ -513,12 +515,12 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
             // The curve fee (shares) is paid to the LPs, so we subtract it from
             // the share curve delta (shares) to prevent it from being debited
             // from the reserves when the state is updated.
-            shareCurveDelta -= totalCurveFee;
+            shareCurveDelta -= curveFee;
 
             // The trader pays the curve fee (shares) and flat fee (shares) to
             // the pool, so we debit them from the trader's share proceeds
             // (shares).
-            shareProceeds -= totalCurveFee + totalFlatFee;
+            shareProceeds -= curveFee + flatFee;
 
             // We applied the full curve and flat fees to the share proceeds,
             // which reduce the trader's proceeds. To calculate the payment that
