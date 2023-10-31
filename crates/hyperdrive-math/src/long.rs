@@ -666,7 +666,8 @@ mod tests {
             //    considering fees.
             // 2. The pool's solvency is close to zero.
             // 3. Bob's budget is consumed.
-            let is_max_price = max_spot_price - spot_price_after_long < fixed!(1e15);
+            let is_max_price =
+                max_spot_price - spot_price_after_long.min(max_spot_price) < fixed!(1e15);
             let is_solvency_consumed = {
                 let state = bob.get_state().await?;
                 let error_tolerance = fixed!(1_000e18).mul_div_down(fixed_rate, fixed!(0.1e18));
