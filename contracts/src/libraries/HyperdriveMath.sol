@@ -102,31 +102,45 @@ library HyperdriveMath {
             );
     }
 
-    /// @dev Since traders pay a curve fee when they trade on YieldSpace, it is
-    ///      possible for traders to receive a negative interest rate even if
-    ///      curve's spot price is less than or equal to 1. In practice, this
-    ///      issue is only a problem when longs are being opened. When shorts
-    ///      are being opened and longs are being closed, the curve's spot price
-    ///      will decrease away from 1, avoiding negative interest scenarios.
-    ///      When shorts are closed, the curve's spot price increases; however,
-    ///      the curve fee is taken out of the short's proceeds, so if the spot
-    ///      price is 1, their realized price will be less than one.
+    /// @dev Since traders pay a curve fee when they open longs on Hyperdrive,
+    ///      it is possible for traders to receive a negative interest rate even
+    ///      if curve's spot price is less than or equal to 1.
     ///
-    ///      Given the curve fee phi_c and the starting spot price p_0, the
+    ///      Given the curve fee `phi_c` and the starting spot price `p_0`, the
     ///      maximum spot price is given by:
     ///
     ///      p_max = 1 / (1 + phi_c * (1 / p_0 - 1))
-    /// @param _initialSpotPrice The initial spot price.
+    ///
+    /// @param _startingSpotPrice The spot price at the start of the trade.
     /// @param _curveFee The curve fee.
     /// @return The maximum spot price.
     function calculateOpenLongMaxSpotPrice(
-        uint256 _initialSpotPrice,
+        uint256 _startingSpotPrice,
         uint256 _curveFee
     ) internal pure returns (uint256) {
         return
             ONE.divDown(
-                ONE + _curveFee.mulUp(ONE.divUp(_initialSpotPrice) - ONE)
+                ONE + _curveFee.mulUp(ONE.divUp(_startingSpotPrice) - ONE)
             );
+    }
+
+    /// @dev Since traders pay a curve fee when they close shorts on Hyperdrive,
+    ///      it is possible for traders to receive a negative interest rate even
+    ///      if curve's spot price is less than or equal to 1.
+    ///
+    ///      Given the curve fee `phi_c` and the starting spot price `p_0`, the
+    ///      maximum spot price is given by:
+    ///
+    ///      p_max = 1 - phi_c * (1 - p_0)
+    ///
+    /// @param _startingSpotPrice The spot price at the start of the trade.
+    /// @param _curveFee The curve fee.
+    /// @return The maximum spot price.
+    function calculateCloseShortMaxSpotPrice(
+        uint256 _startingSpotPrice,
+        uint256 _curveFee
+    ) internal pure returns (uint256) {
+        return ONE - _curveFee.mulUp(ONE - _startingSpotPrice);
     }
 
     /// @dev Calculates the number of bonds a user will receive when opening a

@@ -150,19 +150,6 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
             uint256 totalGovernanceFee
         ) = _calculateCloseShort(_bondAmount, sharePrice, _maturityTime);
 
-        // If the ending spot price is greater than 1, we are in the negative
-        // interest region of the trading function. The spot price is given by
-        // ((mu * (z - zeta)) / y) ** tau, so all that we need to check is that
-        // (mu * (z - zeta)) / y <= 1. With this in mind, we can use a revert
-        // condition of mu * (z - zeta) > y.
-        if (
-            _initialSharePrice.mulDown(
-                _effectiveShareReserves() + shareCurveDelta
-            ) > _marketState.bondReserves - bondReservesDelta
-        ) {
-            revert IHyperdrive.NegativeInterest();
-        }
-
         // If the position hasn't matured, apply the accounting updates that
         // result from closing the short to the reserves and pay out the
         // withdrawal pool if necessary.
@@ -497,13 +484,28 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
                 _initialSharePrice
             );
 
-            // Record an oracle update
+            // Ensure that the trader didn't purchase bonds at a negative interest
+            // rate after accounting for fees.
             uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
                 _effectiveShareReserves(),
                 _marketState.bondReserves,
                 _initialSharePrice,
                 _timeStretch
             );
+            if (
+                _isNegativeInterest(
+                    shareCurveDelta,
+                    bondReservesDelta,
+                    HyperdriveMath.calculateCloseShortMaxSpotPrice(
+                        spotPrice,
+                        _curveFee
+                    )
+                )
+            ) {
+                revert IHyperdrive.NegativeInterest();
+            }
+
+            // Record an oracle update if enough time has elapsed.
             recordPrice(spotPrice);
 
             // Calculate the fees charged to the user (totalCurveFee and

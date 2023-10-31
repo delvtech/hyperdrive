@@ -355,19 +355,14 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
             _initialSharePrice
         );
 
-        // Calculate the fees charged on the curve and flat parts of the trade.
-        // Since we calculate the amount of bonds received given shares in, we
-        // subtract the fee from the bond deltas so that the trader receives
-        // less bonds.
+        // Ensure that the trader didn't purchase bonds at a negative interest
+        // rate after accounting for fees.
         uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
             _effectiveShareReserves(),
             _marketState.bondReserves,
             _initialSharePrice,
             _timeStretch
         );
-
-        // Ensure that the trader didn't purchase bonds at a negative interest
-        // rate after accounting for fees.
         if (
             _isNegativeInterest(
                 _shareAmount,
