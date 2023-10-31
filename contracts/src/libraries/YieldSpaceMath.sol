@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
-import { FixedPointMath } from "./FixedPointMath.sol";
+import { FixedPointMath, ONE } from "./FixedPointMath.sol";
 import { HyperdriveMath } from "./HyperdriveMath.sol";
 
 /// @author DELV
@@ -31,8 +31,9 @@ import { HyperdriveMath } from "./HyperdriveMath.sol";
 library YieldSpaceMath {
     using FixedPointMath for uint256;
 
-    /// Calculates the amount of bonds a user will receive from the pool by
-    /// providing a specified amount of shares
+    /// @dev Calculates the amount of bonds a user will receive from the pool by
+    ///      providing a specified amount of shares. We underestimate the amount
+    ///      of bonds out.
     /// @param z Amount of share reserves in the pool
     /// @param y Amount of bond reserves in the pool
     /// @param dz Amount of shares user wants to provide
@@ -40,7 +41,7 @@ library YieldSpaceMath {
     /// @param c Conversion rate between base and shares
     /// @param mu Interest normalization factor for shares
     /// @return The amount of bonds the user will receive
-    function calculateBondsOutGivenSharesIn(
+    function calculateBondsOutGivenSharesInDown(
         uint256 z,
         uint256 y,
         uint256 dz,
@@ -48,22 +49,37 @@ library YieldSpaceMath {
         uint256 c,
         uint256 mu
     ) internal pure returns (uint256) {
-        // c/µ
-        uint256 cDivMu = c.divDown(mu);
-        // (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
-        uint256 k = modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
+        // NOTE: We round k up to make the rhs of the equation larger.
+        //
+        // k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
+        uint256 k = kUp(z, y, t, c, mu);
+
+        // NOTE: We round z down to make the rhs of the equation larger.
+        //
         // (µ * (z + dz))^(1 - t)
         z = mu.mulDown(z + dz).pow(t);
         // (c / µ) * (µ * (z + dz))^(1 - t)
-        z = cDivMu.mulDown(z);
-        // ((c / µ) * (µ * z)^(1 - t) + y^(1 - t) - (c / µ) * (µ * (z + dz))^(1 - t))^(1 / (1 - t)))
-        uint256 _y = (k - z).pow(FixedPointMath.ONE_18.divUp(t));
-        // Δy = y - ((c / µ) * (µ * z)^(1 - t) + y^(1 - t) - (c / µ) * (µ * (z + dz))^(1 - t))^(1 / (1 - t)))
+        z = c.mulDivDown(z, mu);
+
+        // NOTE: We round _y up to make the rhs of the equation larger.
+        //
+        // k - (c / µ) * (µ * (z + dz))^(1 - t))^(1 / (1 - t)))
+        uint256 _y = k - z;
+        if (_y >= ONE) {
+            // Rounding up the exponent results in a larger result.
+            _y = _y.pow(ONE.divUp(t));
+        } else {
+            // Rounding down the exponent results in a larger result.
+            _y = _y.pow(ONE.divDown(t));
+        }
+
+        // Δy = y - (k - (c / µ) * (µ * (z + dz))^(1 - t))^(1 / (1 - t)))
         return y - _y;
     }
 
-    /// Calculates the amount of shares a user must provide the pool to receive
-    /// a specified amount of bonds
+    /// @dev Calculates the amount of shares a user must provide the pool to
+    ///      receive a specified amount of bonds. We overestimate the amount of
+    ///      shares in.
     /// @param z Amount of share reserves in the pool
     /// @param y Amount of bond reserves in the pool
     /// @param dy Amount of bonds user wants to provide
@@ -71,7 +87,7 @@ library YieldSpaceMath {
     /// @param c Conversion rate between base and shares
     /// @param mu Interest normalization factor for shares
     /// @return The amount of shares the user will pay
-    function calculateSharesInGivenBondsOut(
+    function calculateSharesInGivenBondsOutUp(
         uint256 z,
         uint256 y,
         uint256 dy,
@@ -79,25 +95,80 @@ library YieldSpaceMath {
         uint256 c,
         uint256 mu
     ) internal pure returns (uint256) {
-        // c/µ
-        uint256 cDivMu = c.divDown(mu);
-        // (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
-        uint256 k = modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
+        // NOTE: We round k up to make the lhs of the equation larger.
+        //
+        // k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
+        uint256 k = kUp(z, y, t, c, mu);
+
         // (y - dy)^(1 - t)
         y = (y - dy).pow(t);
-        // (((µ * z)^(1 - t) + y^(1 - t) - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))
-        uint256 _z = (k - y).divDown(cDivMu).pow(
-            FixedPointMath.ONE_18.divUp(t)
-        );
-        // (((µ * z)^(1 - t) + y^(1 - t) - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
+
+        // NOTE: We round _z up to make the lhs of the equation larger.
+        //
+        // ((k - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))
+        uint256 _z = (k - y).mulDivUp(mu, c);
+        if (_z >= ONE) {
+            // Rounding up the exponent results in a larger result.
+            _z = _z.pow(ONE.divUp(t));
+        } else {
+            // Rounding down the exponent results in a larger result.
+            _z = _z.pow(ONE.divDown(t));
+        }
+        // ((k - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
+        _z = _z.divUp(mu);
+
+        // Δz = (((k - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ - z
+        return _z - z;
+    }
+
+    /// @dev Calculates the amount of shares a user must provide the pool to
+    ///      receive a specified amount of bonds. We underestimate the amount of
+    ///      shares in.
+    /// @param z Amount of share reserves in the pool
+    /// @param y Amount of bond reserves in the pool
+    /// @param dy Amount of bonds user wants to provide
+    /// @param t Amount of time elapsed since term start
+    /// @param c Conversion rate between base and shares
+    /// @param mu Interest normalization factor for shares
+    /// @return The amount of shares the user will pay
+    function calculateSharesInGivenBondsOutDown(
+        uint256 z,
+        uint256 y,
+        uint256 dy,
+        uint256 t,
+        uint256 c,
+        uint256 mu
+    ) internal pure returns (uint256) {
+        // NOTE: We round k down to make the lhs of the equation smaller.
+        //
+        // k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
+        uint256 k = kDown(z, y, t, c, mu);
+
+        // (y - dy)^(1 - t)
+        y = (y - dy).pow(t);
+
+        // NOTE: We round _z down to make the lhs of the equation smaller.
+        //
+        // ((k - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))
+        uint256 _z = (k - y).mulDivDown(mu, c);
+        if (_z >= ONE) {
+            // Rounding down the exponent results in a smaller result.
+            _z = _z.pow(ONE.divDown(t));
+        } else {
+            // Rounding up the exponent results in a smaller result.
+            _z = _z.pow(ONE.divUp(t));
+        }
+        // ((k - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
         _z = _z.divDown(mu);
-        // Δz = ((((c / µ) * (µ * z)^(1 - t) + y^(1 - t) - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ) - z
+
+        // Δz = (((k - (y - dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ - z
         return _z - z;
     }
 
     /// @dev Calculates the amount of shares a user will receive from the pool
     ///      by providing a specified amount of bonds. This function reverts if
-    ///      an integer overflow or underflow occurs.
+    ///      an integer overflow or underflow occurs. We underestimate the
+    ///      amount of shares out.
     /// @param z Amount of share reserves in the pool
     /// @param y Amount of bond reserves in the pool
     /// @param dy Amount of bonds user wants to provide
@@ -105,7 +176,7 @@ library YieldSpaceMath {
     /// @param c Conversion rate between base and shares
     /// @param mu Interest normalization factor for shares
     /// @return result The amount of shares the user will receive
-    function calculateSharesOutGivenBondsIn(
+    function calculateSharesOutGivenBondsInDown(
         uint256 z,
         uint256 y,
         uint256 dy,
@@ -114,7 +185,7 @@ library YieldSpaceMath {
         uint256 mu
     ) internal pure returns (uint256 result) {
         bool success;
-        (result, success) = calculateSharesOutGivenBondsInSafe(
+        (result, success) = calculateSharesOutGivenBondsInDownSafe(
             z,
             y,
             dy,
@@ -129,7 +200,8 @@ library YieldSpaceMath {
 
     /// @dev Calculates the amount of shares a user will receive from the pool
     ///      by providing a specified amount of bonds. This function returns a
-    ///      success flag instead of reverting.
+    ///      success flag instead of reverting. We underestimate the amount of
+    ///      shares out.
     /// @param z Amount of share reserves in the pool
     /// @param y Amount of bond reserves in the pool
     /// @param dy Amount of bonds user wants to provide
@@ -138,7 +210,7 @@ library YieldSpaceMath {
     /// @param mu Interest normalization factor for shares
     /// @return result The amount of shares the user will receive
     /// @return success A flag indicating whether or not the calculation succeeded.
-    function calculateSharesOutGivenBondsInSafe(
+    function calculateSharesOutGivenBondsInDownSafe(
         uint256 z,
         uint256 y,
         uint256 dy,
@@ -146,22 +218,34 @@ library YieldSpaceMath {
         uint256 c,
         uint256 mu
     ) internal pure returns (uint256 result, bool success) {
-        // c/µ
-        uint256 cDivMu = c.divDown(mu);
-        // (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
-        uint256 k = modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
+        // NOTE: We round k up to make the rhs of the equation larger.
+        //
+        // k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
+        uint256 k = kUp(z, y, t, c, mu);
+
         // (y + dy)^(1 - t)
         y = (y + dy).pow(t);
+
+        // If k is less than y, we return with a failure flag.
         if (k < y) {
             return (0, false);
         }
-        // (((µ * z)^(1 - t) + y^(1 - t) - (y + dy)^(1 - t)) / (c / µ))^(1 / (1 - t)))
-        uint256 _z = (k - y).divDown(cDivMu).pow(
-            FixedPointMath.ONE_18.divUp(t)
-        );
-        // (((µ * z)^(1 - t) + y^(1 - t) - (y + dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
-        _z = _z.divDown(mu);
-        // Δz = z - (((c / µ) * (µ * z)^(1 - t) + y^(1 - t) - (y + dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
+
+        // NOTE: We round _z up to make the rhs of the equation larger.
+        //
+        // ((k - (y + dy)^(1 - t)) / (c / µ))^(1 / (1 - t)))
+        uint256 _z = (k - y).mulDivUp(mu, c);
+        if (_z >= ONE) {
+            // Rounding the exponent up results in a larger outcome.
+            _z = _z.pow(ONE.divUp(t));
+        } else {
+            // Rounding the exponent down results in a larger outcome.
+            _z = _z.pow(ONE.divDown(t));
+        }
+        // ((k - (y + dy)^(1 - t) ) / (c / µ))^(1 / (1 - t))) / µ
+        _z = _z.divUp(mu);
+
+        // Δz = z - ((k - (y + dy)^(1 - t) ) / (c / µ))^(1 / (1 - t)) / µ
         if (z > _z) {
             result = z - _z;
         }
@@ -169,13 +253,13 @@ library YieldSpaceMath {
     }
 
     /// @dev Calculates the maximum amount of bonds that can be purchased with
-    ///      the specified reserves.
+    ///      the specified reserves. We round so that the max buy amount is
+    ///      underestimated.
     /// @param z Amount of share reserves in the pool
     /// @param y Amount of bond reserves in the pool
     /// @param t Amount of time elapsed since term start
     /// @param c Conversion rate between base and shares
     /// @param mu Interest normalization factor for shares
-    /// @return The cost in shares of the maximum bond purchase.
     /// @return The maximum amount of bonds that can be purchased.
     function calculateMaxBuy(
         uint256 z,
@@ -183,33 +267,37 @@ library YieldSpaceMath {
         uint256 t,
         uint256 c,
         uint256 mu
-    ) internal pure returns (uint256, uint256) {
+    ) internal pure returns (uint256) {
         // We solve for the maximum buy using the constraint that the pool's
         // spot price can never exceed 1. We do this by noting that a spot price
         // of 1, (mu * z) / y ** tau = 1, implies that mu * z = y. This
         // simplifies YieldSpace to k = ((c / mu) + 1) * y' ** (1 - tau), and
-        // gives us the maximum bond reserves of y' = (k / ((c / mu) + 1)) ** (1 / (1 - tau))
-        // and the maximum share reserves of z' = y/mu.
-        uint256 cDivMu = c.divDown(mu);
-        uint256 k = modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
-        uint256 optimalY = (k.divDown(cDivMu + FixedPointMath.ONE_18)).pow(
-            FixedPointMath.ONE_18.divDown(t)
-        );
-        uint256 optimalZ = optimalY.divDown(mu);
+        // gives us the maximum bond reserves of
+        // y' = (k / ((c / mu) + 1)) ** (1 / (1 - tau)) and the maximum share
+        // reserves of z' = y/mu.
+        uint256 k = kUp(z, y, t, c, mu);
+        uint256 optimalY = k.divUp(c.divDown(mu) + ONE);
+        if (optimalY >= ONE) {
+            // Rounding the exponent up results in a larger outcome.
+            optimalY = optimalY.pow(ONE.divUp(t));
+        } else {
+            // Rounding the exponent down results in a larger outcome.
+            optimalY = optimalY.pow(ONE.divDown(t));
+        }
 
-        // The optimal trade sizes are given by dz = z' - z and dy = y - y'.
-        return (optimalZ - z, y - optimalY);
+        // The optimal trade size is given by dy = y - y'.
+        return y - optimalY;
     }
 
     /// @dev Calculates the maximum amount of bonds that can be sold with the
-    ///      specified reserves.
+    ///      specified reserves. We round so that the max sell amount is
+    ///      underestimated.
     /// @param z Amount of share reserves in the pool
     /// @param y Amount of bond reserves in the pool
     /// @param zMin The minimum share reserves.
     /// @param t Amount of time elapsed since term start
     /// @param c Conversion rate between base and shares
     /// @param mu Interest normalization factor for shares
-    /// @return The proceeds in shares of the maximum bond sale.
     /// @return The maximum amount of bonds that can be sold.
     function calculateMaxSell(
         uint256 z,
@@ -218,40 +306,68 @@ library YieldSpaceMath {
         uint256 t,
         uint256 c,
         uint256 mu
-    ) internal pure returns (uint256, uint256) {
+    ) internal pure returns (uint256) {
         // We solve for the maximum sell using the constraint that the pool's
         // share reserves can never fall below the minimum share reserves zMin.
         // Substituting z = zMin simplifies YieldSpace to
-        // k = (c / mu) * (mu * (zMin)) ** (1 - tau) + y' ** (1 - tau), and gives
-        // us the maximum bond reserves of
+        // k = (c / mu) * (mu * (zMin)) ** (1 - tau) + y' ** (1 - tau), and
+        // gives us the maximum bond reserves of
         // y' = (k - (c / mu) * (mu * (zMin)) ** (1 - tau)) ** (1 / (1 - tau)).
-        uint256 cDivMu = c.divDown(mu);
-        uint256 k = modifiedYieldSpaceConstant(cDivMu, mu, z, t, y);
-        uint256 optimalY = (k - cDivMu.mulDown(mu.mulDown(zMin).pow(t))).pow(
-            FixedPointMath.ONE_18.divDown(t)
-        );
+        uint256 k = kDown(z, y, t, c, mu);
+        uint256 optimalY = k - c.mulDivUp(mu.mulUp(zMin).pow(t), mu);
+        if (optimalY >= ONE) {
+            // Rounding the exponent down results in a smaller outcome.
+            optimalY = optimalY.pow(ONE.divDown(t));
+        } else {
+            // Rounding the exponent up results in a smaller outcome.
+            optimalY = optimalY.pow(ONE.divUp(t));
+        }
 
-        // The optimal trade sizes are given by dz = z - zMin and dy = y' - y.
-        return (z - zMin, optimalY - y);
+        // The optimal trade size is given by dy = y' - y.
+        return optimalY - y;
     }
 
-    // FIXME: Rename this to k.
-    //
-    /// @dev Helper function to derive invariant constant C
-    /// @param cDivMu Normalized price of shares in terms of base
-    /// @param mu Interest normalization factor for shares
-    /// returns C The modified YieldSpace Constant
-    /// @param z Amount of share reserves in the pool
-    /// @param t Amount of time elapsed since term start
-    /// @param y Amount of bond reserves in the pool
-    function modifiedYieldSpaceConstant(
-        uint256 cDivMu,
-        uint256 mu,
+    /// @dev Calculates the YieldSpace invariant k. This invariant is given by:
+    ///
+    ///      k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
+    ///
+    ///      This variant of the calculation overestimates the result.
+    /// @param z Amount of share reserves in the pool.
+    /// @param y Amount of bond reserves in the pool.
+    /// @param t Amount of time elapsed since term start.
+    /// @param c Conversion rate between base and shares.
+    /// @param mu Interest normalization factor for shares.
+    /// @return The modified YieldSpace Constant.
+    function kUp(
         uint256 z,
+        uint256 y,
         uint256 t,
-        uint256 y
+        uint256 c,
+        uint256 mu
     ) internal pure returns (uint256) {
         /// k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
-        return cDivMu.mulDown(mu.mulDown(z).pow(t)) + y.pow(t);
+        return c.mulDivUp(mu.mulUp(z).pow(t), mu) + y.pow(t);
+    }
+
+    /// @dev Calculates the YieldSpace invariant k. This invariant is given by:
+    ///
+    ///      k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
+    ///
+    ///      This variant of the calculation underestimates the result.
+    /// @param z Amount of share reserves in the pool.
+    /// @param y Amount of bond reserves in the pool.
+    /// @param t Amount of time elapsed since term start.
+    /// @param c Conversion rate between base and shares.
+    /// @param mu Interest normalization factor for shares.
+    /// @return The modified YieldSpace Constant.
+    function kDown(
+        uint256 z,
+        uint256 y,
+        uint256 t,
+        uint256 c,
+        uint256 mu
+    ) internal pure returns (uint256) {
+        /// k = (c / µ) * (µ * z)^(1 - t) + y^(1 - t)
+        return c.mulDivDown(mu.mulDown(z).pow(t), mu) + y.pow(t);
     }
 }

@@ -27,6 +27,30 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         deploy(deployer, config);
     }
 
+    function test_nonstandard_decimals_symmetry() external {
+        // Deploy and initialize the pool.
+        IHyperdrive.PoolConfig memory config = testConfig(1e18);
+        config.initialSharePrice = 0.7348e18;
+        config.minimumShareReserves = 1e6;
+        config.minimumTransactionAmount = 1e6;
+        deploy(deployer, config);
+        initialize(alice, 0.05e18, 10_000_000e6);
+
+        // Bob opens a long.
+        uint256 longBasePaid = 1e6;
+        (, uint256 bondAmount) = openLong(bob, longBasePaid);
+
+        // Deploy and initialize a pool.
+        deploy(deployer, config);
+        initialize(alice, 0.05e18, 10_000_000e6);
+
+        // Celine opens a short.
+        (, uint256 shortBasePaid) = openShort(celine, bondAmount);
+
+        // Ensure that the long and short fixed interest are equal.
+        assertApproxEqAbs(bondAmount - longBasePaid, shortBasePaid, 2);
+    }
+
     function test_nonstandard_decimals_longs_outstanding() external {
         // Deploy and initialize the pool.
         IHyperdrive.PoolConfig memory config = testConfig(0.02e18);

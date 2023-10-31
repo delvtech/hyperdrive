@@ -70,19 +70,6 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
             totalGovernanceFee
         ) = _calculateOpenLong(shares, sharePrice);
 
-        // If the ending spot price is greater than 1, we are in the negative
-        // interest region of the trading function. The spot price is given by
-        // ((mu * (z - zeta)) / y) ** tau, so all that we need to check is that
-        // (mu * (z - zeta)) / y <= 1. With this in mind, we can use a revert
-        // condition of mu * (z - zeta) > y.
-        if (
-            _initialSharePrice.mulDown(
-                _effectiveShareReserves() + shareReservesDelta
-            ) > _marketState.bondReserves - bondReservesDelta
-        ) {
-            revert IHyperdrive.NegativeInterest();
-        }
-
         // Enforce min user outputs
         if (_minOutput > bondProceeds) revert IHyperdrive.OutputLimit();
 
@@ -379,7 +366,27 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
             _timeStretch
         );
 
-        // Record an oracle update
+        // Calculate the spot price after making the trade on the curve but
+        // before accounting for fees. Revert if the ending spot price is large
+        // enough that the trader will receive a negative interest rate on some
+        // of their bonds after applying fees.
+        {
+            uint256 endingSpotPrice = HyperdriveMath.calculateSpotPrice(
+                _effectiveShareReserves() + _shareAmount,
+                _marketState.bondReserves - bondReservesDelta,
+                _initialSharePrice,
+                _timeStretch
+            );
+            uint256 maxSpotPrice = HyperdriveMath.calculateOpenLongMaxSpotPrice(
+                spotPrice,
+                _curveFee
+            );
+            if (endingSpotPrice > maxSpotPrice) {
+                revert IHyperdrive.NegativeInterest();
+            }
+        }
+
+        // Record an oracle update if enough time has elapsed.
         recordPrice(spotPrice);
 
         // Calculate the fees charged to the user (totalCurveFee) and the portion
