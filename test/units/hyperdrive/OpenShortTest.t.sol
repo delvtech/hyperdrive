@@ -204,8 +204,17 @@ contract OpenShortTest is HyperdriveTest {
     }
 
     function testNumberTooBig() external {
-        uint256 apr = 0.25e18;
+        uint256 apr = 5e18;
         console2.log("starting APR = %s", apr.toString(18));
+
+        // Deploy a pool with fees
+        IHyperdrive.PoolConfig memory config = testConfig(apr);
+        config.fees = IHyperdrive.Fees({
+            curve: 1e18,
+            flat: 1e18,
+            governance: 1e18
+        });
+        deploy(address(deployer), config);
 
         // Initialize the pool with a large amount of capital.
         uint256 contribution = 500_000_000e18;
