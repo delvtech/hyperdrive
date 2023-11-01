@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { MultiTokenDataProvider } from "contracts/src/token/MultiTokenDataProvider.sol";
-import { MockAssetId } from "../mocks/MockAssetId.sol";
+import { MockAssetId } from "contracts/test/MockAssetId.sol";
 import { MockMultiToken, IMockMultiToken } from "contracts/test/MockMultiToken.sol";
 import { BaseTest } from "test/utils/BaseTest.sol";
 import { Lib } from "test/utils/Lib.sol";

@@ -103,11 +103,18 @@ contract MockERC4626 is ERC4626, MultiRolesAuthority {
     }
 
     function _accrue() internal {
-        ERC20Mintable(address(asset)).mint(_getAccruedInterest());
+        uint256 interest = _getAccruedInterest();
+        if (interest > 0) {
+            ERC20Mintable(address(asset)).mint(interest);
+        }
         _lastUpdated = block.timestamp;
     }
 
     function _getAccruedInterest() internal view returns (uint256) {
+        if (_rate == 0) {
+            return 0;
+        }
+
         // base_balance = base_balance * (1 + r * t)
         uint256 timeElapsed = (block.timestamp - _lastUpdated).divDown(
             365 days

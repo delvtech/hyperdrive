@@ -13,10 +13,10 @@ import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { Mock4626, ERC20 } from "../mocks/Mock4626.sol";
-import { MockERC4626Hyperdrive } from "../mocks/Mock4626Hyperdrive.sol";
-import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
-import { HyperdriveUtils } from "../utils/HyperdriveUtils.sol";
+import { MockERC4626 } from "contracts/test/MockERC4626.sol";
+import { MockERC4626Hyperdrive } from "contracts/test/MockERC4626Hyperdrive.sol";
+import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
+import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 
 contract ERC4626HyperdriveTest is HyperdriveTest {
     using FixedPointMath for *;
@@ -35,7 +35,16 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
 
         // Deploy the ERC4626Hyperdrive factory and deployer.
         pool = IERC4626(
-            address(new Mock4626(ERC20(address(dai)), "yearn dai", "yDai"))
+            address(
+                new MockERC4626(
+                    ERC20Mintable(address(dai)),
+                    "yearn dai",
+                    "yDai",
+                    0,
+                    address(0),
+                    false
+                )
+            )
         );
         ERC4626HyperdriveDeployer simpleDeployer = new ERC4626HyperdriveDeployer(
                 pool
