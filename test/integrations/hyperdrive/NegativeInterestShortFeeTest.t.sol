@@ -20,10 +20,10 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
         // Fuzz inputs
         // initialSharePrice [0.5,10]
         // variableInterest [-50,0]
-        initialSharePrice = initialSharePrice.normalizeToRange(.5e18, 10e18);
-        variableInterest = -variableInterest.normalizeToRange(0, .5e18);
-        uint256 curveFee = 1e18;
-        uint256 flatFee = 0.000e18;
+        initialSharePrice = initialSharePrice.normalizeToRange(0.5e18, 10e18);
+        variableInterest = -variableInterest.normalizeToRange(0, 0.5e18);
+        uint256 curveFee = 0.1e18;
+        uint256 flatFee = 0;
         uint256 governanceFee = 1e18;
         test_negative_interest_short_immediate_open_close_fees(
             initialSharePrice,
@@ -43,8 +43,8 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
         {
             uint256 initialSharePrice = 1.5e18;
             int256 variableInterest = -0.1e18;
-            uint256 curveFee = 1e18;
-            uint256 flatFee = 0.000e18;
+            uint256 curveFee = 0.1e18;
+            uint256 flatFee = 0;
             uint256 governanceFee = 1e18;
             test_negative_interest_short_immediate_open_close_fees(
                 initialSharePrice,
@@ -63,8 +63,8 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
         {
             uint256 initialSharePrice = 1e18;
             int256 variableInterest = -0.1e18;
-            uint256 curveFee = 1e18;
-            uint256 flatFee = 0.000e18;
+            uint256 curveFee = 0.1e18;
+            uint256 flatFee = 0;
             uint256 governanceFee = 1e18;
             test_negative_interest_short_immediate_open_close_fees(
                 initialSharePrice,
@@ -83,8 +83,8 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
         {
             uint256 initialSharePrice = 0.95e18;
             int256 variableInterest = -0.1e18;
-            uint256 curveFee = 1e18;
-            uint256 flatFee = 0.000e18;
+            uint256 curveFee = 0.1e18;
+            uint256 flatFee = 0;
             uint256 governanceFee = 1e18;
             test_negative_interest_short_immediate_open_close_fees(
                 initialSharePrice,
@@ -141,14 +141,17 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
         ).getGovernanceFeesAccrued();
 
         // Calculate the expected fees from opening the short
+        uint256 curveFee_ = curveFee; // avoid stack too deep error
+        uint256 flatFee_ = flatFee; // avoid stack too deep error
+        uint256 governanceFee_ = governanceFee; // avoid stack too deep error
         uint256 expectedGovernanceFees = expectedOpenShortFees(
             shortAmount,
             HyperdriveUtils.calculateTimeRemaining(hyperdrive, maturityTime),
             calculatedSpotPrice,
             sharePrice,
-            1e18,
-            0,
-            1e18
+            curveFee_,
+            flatFee_,
+            governanceFee_
         );
         assertEq(governanceFeesAfterOpenShort, expectedGovernanceFees);
 
@@ -168,9 +171,9 @@ contract NegativeInterestShortFeeTest is HyperdriveTest {
             calculatedSpotPrice,
             sharePrice,
             sharePrice,
-            1e18,
-            0,
-            1e18
+            curveFee_,
+            flatFee_,
+            governanceFee_
         );
         assertApproxEqAbs(
             governanceFeesAfterCloseShort,

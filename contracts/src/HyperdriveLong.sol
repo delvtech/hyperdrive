@@ -355,35 +355,25 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
             _initialSharePrice
         );
 
-        // Calculate the fees charged on the curve and flat parts of the trade.
-        // Since we calculate the amount of bonds received given shares in, we
-        // subtract the fee from the bond deltas so that the trader receives
-        // less bonds.
+        // Ensure that the trader didn't purchase bonds at a negative interest
+        // rate after accounting for fees.
         uint256 spotPrice = HyperdriveMath.calculateSpotPrice(
             _effectiveShareReserves(),
             _marketState.bondReserves,
             _initialSharePrice,
             _timeStretch
         );
-
-        // Calculate the spot price after making the trade on the curve but
-        // before accounting for fees. Revert if the ending spot price is large
-        // enough that the trader will receive a negative interest rate on some
-        // of their bonds after applying fees.
-        {
-            uint256 endingSpotPrice = HyperdriveMath.calculateSpotPrice(
-                _effectiveShareReserves() + _shareAmount,
-                _marketState.bondReserves - bondReservesDelta,
-                _initialSharePrice,
-                _timeStretch
-            );
-            uint256 maxSpotPrice = HyperdriveMath.calculateOpenLongMaxSpotPrice(
-                spotPrice,
-                _curveFee
-            );
-            if (endingSpotPrice > maxSpotPrice) {
-                revert IHyperdrive.NegativeInterest();
-            }
+        if (
+            _isNegativeInterest(
+                _shareAmount,
+                bondReservesDelta,
+                HyperdriveMath.calculateOpenLongMaxSpotPrice(
+                    spotPrice,
+                    _curveFee
+                )
+            )
+        ) {
+            revert IHyperdrive.NegativeInterest();
         }
 
         // Record an oracle update if enough time has elapsed.
