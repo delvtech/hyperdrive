@@ -76,3 +76,34 @@ example with the command:
 ```bash
 cargo run --example max_short
 ```
+
+# Scripts
+
+Along with the test utilities, this crate also contains scripts for interacting
+with live versions of the protocol. In order to make use of these scripts, add
+the following fields to your root level `.env` file:
+
+```bash
+HYPERDRIVE_ETHEREUM_URL=
+HYPERDRIVE_ARTIFACTS_URL=
+HYPERDRIVE_PRIVATE_KEY=
+```
+
+These variables will be overwritten by variables already present in the
+environment which makes it easy to use alternate variables as follows:
+
+```bash
+ENVVAR=ENVVAR_VALUE cargo run --bin SCRIPT
+```
+
+## Pause
+
+The `pause` script pauses the Hyperdrive pool, which puts the pool into a state
+where `openLong`, `openShort`, and `addLiquidity` are disabled. For competition
+pools, only the admin can call `pause`, so make sure that you are using the
+correct private key in your environment. You can run the `pause` script with the
+command:
+
+```bash
+cargo run --bin pause
+```

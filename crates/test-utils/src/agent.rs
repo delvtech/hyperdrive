@@ -658,7 +658,7 @@ impl Agent<ChainClient, ChaCha8Rng> {
     ) -> Result<()> {
         let tx = ContractCall_(self.hyperdrive.checkpoint(checkpoint))
             .apply(self.pre_process_options(maybe_tx_options));
-        tx.0.send().await?;
+        tx.0.send().await?.await?;
         Ok(())
     }
 
