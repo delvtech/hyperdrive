@@ -22,9 +22,9 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
     using SafeCast for int256;
 
     /// @notice Opens a long position.
-    /// @param _amount The amount of base to use when trading. TODO: inputAmount
-    /// @param _minOutput The minium number of bonds to receive.
-    /// @param _minSharePrice The minium share price at which to open the long.
+    /// @param _amount The amount to open a long with.
+    /// @param _minOutput The minimum number of bonds to receive.
+    /// @param _minSharePrice The minimum share price at which to open the long.
     ///        This allows traders to protect themselves from opening a long in
     ///        a checkpoint where negative interest has accrued.
     /// @param _options The options that configure how the trade is settled.
@@ -42,15 +42,24 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
         isNotPaused
         returns (uint256 maturityTime, uint256 bondProceeds)
     {
-        // Check that the message value and base amount are valid.
+        // Check that the message value is valid.
         _checkMessageValue();
-        if (_amount < _minimumTransactionAmount) {
+
+        // Deposit the user's input amount.
+        // TODO: why don't we checkpoint first and get the sharePrice from _pricePerShare()?
+        (uint256 amountDeposited, uint256 sharePrice) = _deposit(
+            _amount,
+            _options
+        );
+        uint256 baseAmount = _options.asBase
+            ? amountDeposited
+            : amountDeposited.mulDown(sharePrice);
+
+        // Enforce min user inputs
+        if (baseAmount < _minimumTransactionAmount) {
             revert IHyperdrive.MinimumTransactionAmount();
         }
 
-        // Deposit the user's base.
-        // TODO: We wanna return shares and sharePrice from this function
-        (uint256 shares, uint256 sharePrice) = _deposit(_amount, _options);
         if (sharePrice < _minSharePrice) {
             revert IHyperdrive.MinimumSharePrice();
         }
@@ -69,7 +78,7 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
             bondReservesDelta,
             bondProceeds,
             totalGovernanceFee
-        ) = _calculateOpenLong(shares, sharePrice);
+        ) = _calculateOpenLong(baseAmount.mulDown(sharePrice), sharePrice);
 
         // Enforce min user outputs
         if (_minOutput > bondProceeds) revert IHyperdrive.OutputLimit();
@@ -100,7 +109,7 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
             _options.destination,
             assetId,
             maturityTime,
-            shares.mulDown(sharePrice),
+            baseAmount,
             sharePrice,
             bondProceeds
         );
@@ -186,7 +195,10 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
         }
 
         // Withdraw the profit to the trader.
-        uint256 baseProceeds = _withdraw(shareProceeds, _options);
+        uint256 proceeds = _withdraw(shareProceeds, _options);
+        uint256 baseProceeds = _options.asBase
+            ? proceeds
+            : proceeds.mulDown(sharePrice);
 
         // Enforce min user outputs
         if (_minOutput > baseProceeds) revert IHyperdrive.OutputLimit();
@@ -202,7 +214,7 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
             bondAmount
         );
 
-        return (baseProceeds);
+        return proceeds;
     }
 
     /// @dev Applies an open long to the state. This includes updating the

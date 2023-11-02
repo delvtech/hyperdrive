@@ -29,7 +29,7 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
     ///        a checkpoint where negative interest has accrued.
     /// @param _options The options that configure how the trade is settled.
     /// @return maturityTime The maturity time of the short.
-    /// @return traderDeposit The amount the user deposited for this trade. // TODO: should match options
+    /// @return traderDeposit The amount the user deposited for this trade.
     function openShort(
         uint256 _bondAmount,
         uint256 _maxDeposit,
@@ -79,8 +79,13 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
         // doesn't pay more than their max deposit. The trader's deposit is
         // equal to the proceeds that they would receive if they closed
         // immediately (without fees).
-        if (_maxDeposit < traderDeposit) revert IHyperdrive.OutputLimit();
-        _deposit(traderDeposit, _options);
+        (uint256 amountDeposited, ) = _deposit(traderDeposit, _options);
+        if (_maxDeposit < amountDeposited) {
+            revert IHyperdrive.OutputLimit();
+        }
+        uint256 baseAmount = _options.asBase
+            ? amountDeposited
+            : amountDeposited.mulDown(sharePrice);
 
         // Apply the state updates caused by opening the short.
         _applyOpenShort(
@@ -104,12 +109,12 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
             _options.destination,
             assetId,
             maturityTime,
-            traderDeposit.mulDown(sharePrice),
+            baseAmount,
             sharePrice,
             bondAmount
         );
 
-        return (maturityTime, traderDeposit);
+        return (maturityTime, amountDeposited);
     }
 
     /// @notice Closes a short position with a specified maturity time.
@@ -196,7 +201,10 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
         // Withdraw the profit to the trader. This includes the proceeds from
         // the short sale as well as the variable interest that was collected
         // on the face value of the bonds.
-        uint256 baseProceeds = _withdraw(shareProceeds, _options);
+        uint256 proceeds = _withdraw(shareProceeds, _options);
+        uint256 baseProceeds = _options.asBase
+            ? proceeds
+            : proceeds.mulDown(sharePrice);
 
         // Enforce the user's minimum output.
         if (baseProceeds < _minOutput) {
@@ -213,7 +221,7 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
             bondAmount
         );
 
-        return baseProceeds;
+        return proceeds;
     }
 
     /// @dev Applies an open short to the state. This includes updating the
