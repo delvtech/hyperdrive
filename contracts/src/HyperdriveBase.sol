@@ -93,8 +93,9 @@ abstract contract HyperdriveBase is
         uint256 lpSharePrice
     );
 
-    /// @notice Initializes a Hyperdrive pool.
+    /// @notice Instantiates Hyperdrive.
     /// @param _config The configuration of the Hyperdrive pool.
+    /// @param _extras The address of the extras contract.
     /// @param _dataProvider The address of the data provider.
     /// @param _linkerCodeHash The hash of the ERC20 linker contract's
     ///        constructor code.
@@ -102,11 +103,12 @@ abstract contract HyperdriveBase is
     ///        the ERC20 linker contracts.
     constructor(
         IHyperdrive.PoolConfig memory _config,
+        address _extras,
         address _dataProvider,
         bytes32 _linkerCodeHash,
         address _linkerFactory
     )
-        MultiToken(_dataProvider, _linkerCodeHash, _linkerFactory)
+        MultiToken(_extras, _dataProvider, _linkerCodeHash, _linkerFactory)
         HyperdriveStorage(_config)
     {
         // Initialize the oracle.

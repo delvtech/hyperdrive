@@ -100,7 +100,7 @@ abstract contract HyperdriveStorage is ReentrancyGuard, MultiTokenStorage {
     /// @notice The struct holding the head and last timestamp.
     IHyperdrive.OracleState internal _oracle;
 
-    /// @notice Initializes Hyperdrive's storage.
+    /// @notice Instantiates Hyperdrive's storage.
     /// @param _config The configuration of the Hyperdrive pool.
     constructor(IHyperdrive.PoolConfig memory _config) {
         // Initialize the base token address.

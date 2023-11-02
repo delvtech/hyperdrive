@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { DataProvider } from "../DataProvider.sol";
+import { Proxy } from "../Proxy.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
-import { IMultiTokenWrite } from "../interfaces/IMultiTokenWrite.sol";
+import { IMultiTokenCore } from "../interfaces/IMultiTokenCore.sol";
 import { MultiTokenStorage } from "./MultiTokenStorage.sol";
 
 /// @author DELV
@@ -16,7 +16,7 @@ import { MultiTokenStorage } from "./MultiTokenStorage.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract MultiToken is DataProvider, MultiTokenStorage, IMultiTokenWrite {
+contract MultiToken is Proxy, MultiTokenStorage, IMultiTokenCore {
     // EIP712
     // DOMAIN_SEPARATOR changes based on token name
     bytes32 public immutable DOMAIN_SEPARATOR; // solhint-disable-line var-name-mixedcase
@@ -26,15 +26,20 @@ contract MultiToken is DataProvider, MultiTokenStorage, IMultiTokenWrite {
             "PermitForAll(address owner,address spender,bool _approved,uint256 nonce,uint256 deadline)"
         );
 
-    /// @notice Runs the initial deployment code
-    /// @param _dataProvider The address of the data provider
-    /// @param _linkerCodeHash The hash of the erc20 linker contract deploy code
-    /// @param _factory The factory which is used to deploy the linking contracts
+    /// @notice Deploys the MultiToken.
+    /// @param _extras The address of the extras contract.
+    /// @param _dataProvider The address of the data provider.
+    /// @param _linkerCodeHash The hash of the erc20 linker contract deploy code.
+    /// @param _factory The factory which is used to deploy the linking contracts.
     constructor(
+        address _extras,
         address _dataProvider,
         bytes32 _linkerCodeHash,
         address _factory
-    ) DataProvider(_dataProvider) MultiTokenStorage(_linkerCodeHash, _factory) {
+    )
+        Proxy(_extras, _dataProvider)
+        MultiTokenStorage(_linkerCodeHash, _factory)
+    {
         // Computes the EIP 712 domain separator which prevents user signed messages for
         // this contract to be replayed in other contracts.
         // https://eips.ethereum.org/EIPS/eip-712
@@ -49,6 +54,19 @@ contract MultiToken is DataProvider, MultiTokenStorage, IMultiTokenWrite {
             )
         );
     }
+
+    /// Proxy ///
+
+    /// @dev Always returns false since the MultiToken doesn't have any
+    ///      functionality in extras.
+    /// @return False so that the call isn't delegated to extras.
+    function _isExtrasSelector(
+        bytes4
+    ) internal pure virtual override returns (bool) {
+        return false;
+    }
+
+    /// MultiToken ///
 
     //  Our architecture maintains ERC20 compatibility by allowing the option
     //  of the factory deploying ERC20 compatibility bridges which forward ERC20 calls

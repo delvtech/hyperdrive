@@ -2,6 +2,8 @@
 pragma solidity 0.8.19;
 
 import { HyperdriveStorage } from "./HyperdriveStorage.sol";
+import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
+import { MultiTokenStorage } from "./token/MultiTokenStorage.sol";
 
 // FIXME: If we don't end up needing to add things to this, we should rename this
 // to HyperdriveAdmin.
@@ -16,7 +18,7 @@ import { HyperdriveStorage } from "./HyperdriveStorage.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract HyperdriveExtras is HyperdriveStorage {
+abstract contract HyperdriveExtras is MultiTokenStorage, HyperdriveStorage {
     event CollectGovernanceFee(address indexed collector, uint256 fees);
 
     event GovernanceUpdated(address indexed newGovernance);
@@ -25,9 +27,18 @@ contract HyperdriveExtras is HyperdriveStorage {
 
     /// @notice Initializes a Hyperdrive extras instance.
     /// @param _config The configuration for the pool.
+    /// @param _linkerCodeHash The hash of the ERC20 linker contract's
+    ///        constructor code.
+    /// @param _linkerFactory The address of the factory which is used to deploy
+    ///        the ERC20 linker contracts.
     constructor(
-        IHyperdrive.PoolConfig memory _config
-    ) HyperdriveStorage(_config) {}
+        IHyperdrive.PoolConfig memory _config,
+        bytes32 _linkerCodeHash,
+        address _linkerFactory
+    )
+        HyperdriveStorage(_config)
+        MultiTokenStorage(_linkerCodeHash, _linkerFactory)
+    {}
 
     /// Yield Source ///
 

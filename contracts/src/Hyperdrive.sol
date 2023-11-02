@@ -7,6 +7,7 @@ import { HyperdriveLong } from "./HyperdriveLong.sol";
 import { HyperdriveShort } from "./HyperdriveShort.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { IHyperdriveCore } from "./interfaces/IHyperdriveCore.sol";
+import { IHyperdriveExtras } from "./interfaces/IHyperdriveExtras.sol";
 import { AssetId } from "./libraries/AssetId.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
@@ -27,8 +28,9 @@ abstract contract Hyperdrive is
     using FixedPointMath for uint256;
     using SafeCast for uint256;
 
-    /// @notice Initializes a Hyperdrive pool.
+    /// @notice Instantiates Hyperdrive.
     /// @param _config The configuration of the Hyperdrive pool.
+    /// @param _extras The address of the extras contract.
     /// @param _dataProvider The address of the data provider.
     /// @param _linkerCodeHash The hash of the ERC20 linker contract's
     ///        constructor code.
@@ -36,10 +38,37 @@ abstract contract Hyperdrive is
     ///        the ERC20 linker contracts.
     constructor(
         IHyperdrive.PoolConfig memory _config,
+        address _extras,
         address _dataProvider,
         bytes32 _linkerCodeHash,
         address _linkerFactory
-    ) HyperdriveBase(_config, _dataProvider, _linkerCodeHash, _linkerFactory) {} // solhint-disable-line no-empty-blocks
+    )
+        HyperdriveBase(
+            _config,
+            _extras,
+            _dataProvider,
+            _linkerCodeHash,
+            _linkerFactory
+        )
+    {} // solhint-disable-line no-empty-blocks
+
+    /// Proxy ///
+
+    /// @dev Checks whether the selector is one of Hyperdrive's extra functions.
+    /// @param _selector The selector to check.
+    /// @return A flag indicating if the selector is in HyperdriveExtras.
+    function _isExtrasSelector(
+        bytes4 _selector
+    ) internal pure virtual override returns (bool) {
+        return
+            _selector == IHyperdriveExtras.collectGovernanceFee.selector ||
+            _selector == IHyperdriveExtras.pause.selector ||
+            _selector == IHyperdriveExtras.setGovernance.selector ||
+            _selector == IHyperdriveExtras.setPauser.selector ||
+            super._isExtrasSelector(_selector);
+    }
+
+    /// Checkpoints ///
 
     /// @notice Allows anyone to mint a new checkpoint.
     /// @param _checkpointTime The time of the checkpoint to create.

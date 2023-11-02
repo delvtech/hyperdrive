@@ -10,7 +10,7 @@ interface IHyperdriveExtras {
 
     function pause(bool _status) external;
 
-    function setPauser(address who, bool status) external;
-
     function setGovernance(address _who) external;
+
+    function setPauser(address who, bool status) external;
 }

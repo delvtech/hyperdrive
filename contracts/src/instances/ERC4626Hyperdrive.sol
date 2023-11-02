@@ -6,13 +6,14 @@ import { Hyperdrive } from "../Hyperdrive.sol";
 import { IERC20 } from "../interfaces/IERC20.sol";
 import { IERC4626 } from "../interfaces/IERC4626.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
+import { IERC4626Hyperdrive } from "../interfaces/IERC4626Hyperdrive.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 
 // TODO: Polish the comments as part of #621.
 //
 /// @author DELV
 /// @title ERC4626Hyperdrive
-/// @notice An instance of Hyperdrive that utilizes ERC4626 vaults as a yield source.
+/// @notice A Hyperdrive instance that uses a ERC4626 vault as the yield source.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
@@ -27,8 +28,9 @@ contract ERC4626Hyperdrive is Hyperdrive {
     ///      mapping does not change after construction.
     mapping(address target => bool canSweep) internal isSweepable;
 
-    /// @notice Initializes a Hyperdrive pool.
+    /// @notice Instantiates Hyperdrive with a ERC4626 vault as the yield source.
     /// @param _config The configuration of the Hyperdrive pool.
+    /// @param _extras The address of the extras contract.
     /// @param _dataProvider The address of the data provider.
     /// @param _linkerCodeHash The hash of the ERC20 linker contract's
     ///        constructor code.
@@ -41,12 +43,21 @@ contract ERC4626Hyperdrive is Hyperdrive {
     ///        to access the pool or base tokens.
     constructor(
         IHyperdrive.PoolConfig memory _config,
+        address _extras,
         address _dataProvider,
         bytes32 _linkerCodeHash,
         address _linkerFactory,
         IERC4626 _pool,
         address[] memory _targets
-    ) Hyperdrive(_config, _dataProvider, _linkerCodeHash, _linkerFactory) {
+    )
+        Hyperdrive(
+            _config,
+            _extras,
+            _dataProvider,
+            _linkerCodeHash,
+            _linkerFactory
+        )
+    {
         // Initialize the pool immutable.
         pool = _pool;
 
@@ -81,6 +92,20 @@ contract ERC4626Hyperdrive is Hyperdrive {
             }
             isSweepable[target] = true;
         }
+    }
+
+    /// Proxy ///
+
+    /// @dev Checks whether the selector is one of the extras function in the
+    ///      base version of Hyperdrive or the `sweep` function.
+    /// @param _selector The selector to check.
+    /// @return A flag indicating if the selector is one of the extras function.
+    function _isExtrasSelector(
+        bytes4 _selector
+    ) internal pure override returns (bool) {
+        return
+            _selector == IERC4626Hyperdrive.sweep.selector ||
+            super._isExtrasSelector(_selector);
     }
 
     /// Yield Source ///
@@ -160,30 +185,5 @@ contract ERC4626Hyperdrive is Hyperdrive {
     /// @dev must remain consistent with the impl inside of the DataProvider
     function _pricePerShare() internal view override returns (uint256) {
         return pool.convertToAssets(FixedPointMath.ONE_18);
-    }
-
-    /// @notice Some yield sources [eg Morpho] pay rewards directly to this
-    ///         contract but we can't handle distributing them internally so we
-    ///         sweep to the fee collector address to then redistribute to users.
-    /// @dev WARN: The entire balance of any of the sweep targets can be swept
-    ///      by governance. If these sweep targets provide access to the base or
-    ///      pool token, then governance has the ability to rug the pool.
-    /// @dev WARN: It is unlikely but possible that there is a selector overlap
-    ///      with 'transferFrom'. Any integrating contracts should be checked
-    ///      for that, as it may result in an unexpected call from this address.
-    /// @param _target The token to sweep.
-    function sweep(IERC20 _target) external {
-        // Ensure that the sender is the fee collector or a pauser.
-        if (msg.sender != _feeCollector && !_pausers[msg.sender])
-            revert IHyperdrive.Unauthorized();
-
-        // Ensure that thet target can be swept by governance.
-        if (!isSweepable[address(_target)]) {
-            revert IHyperdrive.UnsupportedToken();
-        }
-
-        // Transfer the entire balance of the sweep target to the fee collector.
-        uint256 balance = _target.balanceOf(address(this));
-        _target.safeTransfer(_feeCollector, balance);
     }
 }
