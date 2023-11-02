@@ -276,8 +276,9 @@ contract ERC4626FactoryMultiDeployTest is ERC4626FactoryBaseTest {
 }
 
 contract ERC4626InstanceGetterTest is ERC4626FactoryBaseTest {
-
-    function testFuzz_erc464Factory_getNumberOfInstances(uint256 numberOfInstances) external {
+    function testFuzz_erc464Factory_getNumberOfInstances(
+        uint256 numberOfInstances
+    ) external {
         address charlie = createUser("charlie");
 
         numberOfInstances = _bound(numberOfInstances, 1, 10);
@@ -289,7 +290,9 @@ contract ERC4626InstanceGetterTest is ERC4626FactoryBaseTest {
         assertEq(factory.getNumberOfInstances(), numberOfInstances);
     }
 
-    function testFuzz_erc464Factory_getInstanceAtIndex(uint256 numberOfInstances) external {
+    function testFuzz_erc464Factory_getInstanceAtIndex(
+        uint256 numberOfInstances
+    ) external {
         address charlie = createUser("charlie");
 
         numberOfInstances = _bound(numberOfInstances, 1, 10);
@@ -312,9 +315,9 @@ contract ERC4626InstanceGetterTest is ERC4626FactoryBaseTest {
     ) external {
         address charlie = createUser("charlie");
 
-        numberOfInstances = _bound(numberOfInstances, 1,             10);
-        startingIndex     = _bound(startingIndex,     0,             numberOfInstances - 1);
-        endingIndex       = _bound(endingIndex,       startingIndex, numberOfInstances - 1);
+        numberOfInstances = _bound(numberOfInstances, 1, 10);
+        startingIndex = _bound(startingIndex, 0, numberOfInstances - 1);
+        endingIndex = _bound(endingIndex, startingIndex, numberOfInstances - 1);
 
         IHyperdrive[] memory hyperdrives = new IHyperdrive[](numberOfInstances);
 
@@ -322,7 +325,10 @@ contract ERC4626InstanceGetterTest is ERC4626FactoryBaseTest {
             hyperdrives[i] = _deployInstance(charlie, address(pool1));
         }
 
-        address[] memory instances = factory.getInstancesInRange(startingIndex, endingIndex);
+        address[] memory instances = factory.getInstancesInRange(
+            startingIndex,
+            endingIndex
+        );
 
         assertEq(instances.length, endingIndex - startingIndex + 1);
 
