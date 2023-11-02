@@ -166,7 +166,7 @@ contract ERC4626FactoryMultiDeployTest is ERC4626FactoryBaseTest {
         assertEq(factory.getNumberOfInstances(), 1);
         assertEq(factory.getInstanceAtIndex(0), address(hyperdrive1));
 
-        address[] memory instances = factory.getAllInstances();
+        address[] memory instances = factory.getInstancesInRange(0, 0);
         assertEq(instances.length, 1);
         assertEq(instances[0], address(hyperdrive1));
 
@@ -213,7 +213,7 @@ contract ERC4626FactoryMultiDeployTest is ERC4626FactoryBaseTest {
         assertEq(factory.getInstanceAtIndex(0), address(hyperdrive1));
         assertEq(factory.getInstanceAtIndex(1), address(hyperdrive2));
 
-        instances = factory.getAllInstances();
+        instances = factory.getInstancesInRange(0, 1);
         assertEq(instances.length, 2);
         assertEq(instances[0], address(hyperdrive1));
         assertEq(instances[1], address(hyperdrive2));
@@ -267,7 +267,7 @@ contract ERC4626FactoryMultiDeployTest is ERC4626FactoryBaseTest {
         assertEq(factory.getInstanceAtIndex(1), address(hyperdrive2));
         assertEq(factory.getInstanceAtIndex(2), address(hyperdrive3));
 
-        instances = factory.getAllInstances();
+        instances = factory.getInstancesInRange(0, 2);
         assertEq(instances.length, 3);
         assertEq(instances[0], address(hyperdrive1));
         assertEq(instances[1], address(hyperdrive2));
@@ -275,127 +275,59 @@ contract ERC4626FactoryMultiDeployTest is ERC4626FactoryBaseTest {
     }
 }
 
-contract ERC4626FactoryAddInstanceTest is ERC4626FactoryBaseTest {
-    IHyperdrive hyperdrive1;
+contract ERC4626InstanceGetterTest is ERC4626FactoryBaseTest {
 
-    // Manually added instance, could be from another factory
-    address manualInstance = makeAddr("manually added instance");
+    function testFuzz_erc464Factory_getNumberOfInstances(uint256 numberOfInstances) external {
+        address charlie = createUser("charlie");
 
-    function setUp() public override __mainnet_fork(16_685_972) {
-        super.setUp();
+        numberOfInstances = _bound(numberOfInstances, 1, 10);
 
-        hyperdrive1 = _deployInstance(createUser("charlie"), address(pool1)); // External user
+        for (uint256 i; i < numberOfInstances; i++) {
+            _deployInstance(charlie, address(pool1));
+        }
+
+        assertEq(factory.getNumberOfInstances(), numberOfInstances);
     }
 
-    function test_erc464FactoryDeploy_addInstance_notGovernance() external {
-        vm.expectRevert(IHyperdrive.Unauthorized.selector);
-        factory.addInstance(manualInstance);
+    function testFuzz_erc464Factory_getInstanceAtIndex(uint256 numberOfInstances) external {
+        address charlie = createUser("charlie");
 
-        vm.prank(alice);
-        factory.addInstance(manualInstance);
+        numberOfInstances = _bound(numberOfInstances, 1, 10);
+
+        IHyperdrive[] memory hyperdrives = new IHyperdrive[](numberOfInstances);
+
+        for (uint256 i; i < numberOfInstances; i++) {
+            hyperdrives[i] = _deployInstance(charlie, address(pool1));
+        }
+
+        for (uint256 i; i < numberOfInstances; i++) {
+            assertEq(factory.getInstanceAtIndex(i), address(hyperdrives[i]));
+        }
     }
 
-    function test_erc464FactoryDeploy_addInstance_alreadyAdded() external {
-        vm.startPrank(alice);
-        factory.addInstance(manualInstance);
+    function testFuzz_erc4626Factory_getInstancesInRange(
+        uint256 numberOfInstances,
+        uint256 startingIndex,
+        uint256 endingIndex
+    ) external {
+        address charlie = createUser("charlie");
 
-        vm.expectRevert(IHyperdrive.InstanceAlreadyAdded.selector);
-        factory.addInstance(manualInstance);
-    }
+        numberOfInstances = _bound(numberOfInstances, 1,             10);
+        startingIndex     = _bound(startingIndex,     0,             numberOfInstances - 1);
+        endingIndex       = _bound(endingIndex,       startingIndex, numberOfInstances - 1);
 
-    function test_erc464FactoryDeploy_addInstance() external {
-        assertEq(factory.getNumberOfInstances(), 1);
-        assertEq(factory.getInstanceAtIndex(0), address(hyperdrive1));
+        IHyperdrive[] memory hyperdrives = new IHyperdrive[](numberOfInstances);
 
-        address[] memory instances = factory.getAllInstances();
-        assertEq(instances.length, 1);
-        assertEq(instances[0], address(hyperdrive1));
+        for (uint256 i; i < numberOfInstances; i++) {
+            hyperdrives[i] = _deployInstance(charlie, address(pool1));
+        }
 
-        vm.prank(alice);
-        factory.addInstance(manualInstance);
+        address[] memory instances = factory.getInstancesInRange(startingIndex, endingIndex);
 
-        assertEq(factory.getNumberOfInstances(), 2);
-        assertEq(factory.getInstanceAtIndex(0), address(hyperdrive1));
-        assertEq(factory.getInstanceAtIndex(1), manualInstance);
+        assertEq(instances.length, endingIndex - startingIndex + 1);
 
-        instances = factory.getAllInstances();
-        assertEq(instances.length, 2);
-        assertEq(instances[0], address(hyperdrive1));
-        assertEq(instances[1], manualInstance);
-    }
-}
-
-contract ERC4626FactoryRemoveInstanceTest is ERC4626FactoryBaseTest {
-    IHyperdrive hyperdrive1;
-    IHyperdrive hyperdrive2;
-    IHyperdrive hyperdrive3;
-
-    function setUp() public override __mainnet_fork(16_685_972) {
-        super.setUp();
-
-        hyperdrive1 = _deployInstance(createUser("charlie"), address(pool1));
-        hyperdrive2 = _deployInstance(createUser("dan"), address(pool2));
-        hyperdrive3 = _deployInstance(createUser("eric"), address(pool1));
-    }
-
-    function test_erc464FactoryDeploy_removeInstance_notGovernance() external {
-        vm.expectRevert(IHyperdrive.Unauthorized.selector);
-        factory.removeInstance(address(hyperdrive1), 0);
-
-        vm.startPrank(alice);
-        factory.removeInstance(address(hyperdrive1), 0);
-    }
-
-    function test_erc464FactoryDeploy_removeInstance_notAdded() external {
-        vm.startPrank(alice);
-
-        vm.expectRevert(IHyperdrive.InstanceNotAdded.selector);
-        factory.removeInstance(address(makeAddr("not added address")), 0);
-
-        factory.removeInstance(address(hyperdrive1), 0);
-    }
-
-    function test_erc464FactoryDeploy_removeInstance_indexMismatch() external {
-        vm.startPrank(alice);
-
-        vm.expectRevert(IHyperdrive.InstanceIndexMismatch.selector);
-        factory.removeInstance(address(hyperdrive1), 1);
-
-        factory.removeInstance(address(hyperdrive1), 0);
-    }
-
-    function test_erc464FactoryDeploy_removeInstance() external {
-        assertEq(factory.getNumberOfInstances(), 3);
-        assertEq(factory.getInstanceAtIndex(0), address(hyperdrive1));
-        assertEq(factory.getInstanceAtIndex(1), address(hyperdrive2));
-        assertEq(factory.getInstanceAtIndex(2), address(hyperdrive3));
-
-        address[] memory instances = factory.getAllInstances();
-        assertEq(instances.length, 3);
-        assertEq(instances[0], address(hyperdrive1));
-        assertEq(instances[1], address(hyperdrive2));
-        assertEq(instances[2], address(hyperdrive3));
-
-        assertEq(factory.isInstance(address(hyperdrive1)), true);
-        assertEq(factory.isInstance(address(hyperdrive2)), true);
-        assertEq(factory.isInstance(address(hyperdrive3)), true);
-
-        vm.prank(alice);
-        factory.removeInstance(address(hyperdrive1), 0);
-
-        // NOTE: Demonstrate that array order is NOT preserved after removal.
-
-        assertEq(factory.getNumberOfInstances(), 2);
-        assertEq(factory.getInstanceAtIndex(0), address(hyperdrive3));
-        assertEq(factory.getInstanceAtIndex(1), address(hyperdrive2));
-
-        instances = factory.getAllInstances();
-        assertEq(instances.length, 2);
-        assertEq(instances[0], address(hyperdrive3));
-        assertEq(instances[1], address(hyperdrive2));
-
-        assertEq(factory.isInstance(address(hyperdrive1)), false);
-        assertEq(factory.isInstance(address(hyperdrive2)), true);
-        assertEq(factory.isInstance(address(hyperdrive3)), true);
+        for (uint256 i; i < instances.length; i++) {
+            assertEq(instances[i], address(hyperdrives[i + startingIndex]));
+        }
     }
 }

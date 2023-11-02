@@ -275,6 +275,8 @@ interface IHyperdrive is
     error InstanceAlreadyAdded();
     error InstanceNotAdded();
     error InstanceIndexMismatch();
+    error InvalidIndexes();
+    error EndIndexTooLarge();
 
     /// ######################
     /// ### ERC20Forwarder ###

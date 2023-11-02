@@ -231,24 +231,6 @@ abstract contract HyperdriveFactory {
         fees = _fees;
     }
 
-    function addInstance(address _instance) external onlyGovernance {
-        if (isInstance[_instance]) revert IHyperdrive.InstanceAlreadyAdded();
-        isInstance[_instance] = true;
-        _instances.push(_instance);
-    }
-
-    function removeInstance(
-        address _instance,
-        uint256 index
-    ) external onlyGovernance {
-        if (!isInstance[_instance]) revert IHyperdrive.InstanceNotAdded();
-        if (_instances[index] != _instance)
-            revert IHyperdrive.InstanceIndexMismatch();
-        isInstance[_instance] = false;
-        _instances[index] = _instances[_instances.length - 1];
-        _instances.pop();
-    }
-
     /// @notice Allows governance to change the default pausers.
     /// @param _defaultPausers_ The new list of default pausers.
     function updateDefaultPausers(
@@ -397,7 +379,17 @@ abstract contract HyperdriveFactory {
 
     /// @notice Returns the full _instances array.
     /// @return The full _instances array.
-    function getAllInstances() external view returns (address[] memory) {
-        return _instances;
+    function getInstancesInRange(uint256 startIndex, uint256 endIndex)
+        external view returns (address[] memory)
+    {
+        if (startIndex > endIndex)        revert IHyperdrive.InvalidIndexes();
+        if (endIndex > _instances.length) revert IHyperdrive.EndIndexTooLarge();
+
+        address[] memory range = new address[](endIndex - startIndex + 1);
+        for (uint256 i = startIndex; i <= endIndex; i++) {
+            range[i - startIndex] = _instances[i];
+        }
+
+        return range;
     }
 }
