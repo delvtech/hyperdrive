@@ -31,26 +31,30 @@ abstract contract HyperdriveBase is
         address indexed provider,
         uint256 lpAmount,
         uint256 baseAmount,
+        uint256 sharePrice,
         uint256 apr
     );
 
     event AddLiquidity(
         address indexed provider,
         uint256 lpAmount,
-        uint256 baseAmount
+        uint256 baseAmount,
+        uint256 sharePrice
     );
 
     event RemoveLiquidity(
         address indexed provider,
         uint256 lpAmount,
         uint256 baseAmount,
+        uint256 sharePrice,
         uint256 withdrawalShareAmount
     );
 
     event RedeemWithdrawalShares(
         address indexed provider,
         uint256 withdrawalShareAmount,
-        uint256 baseAmount
+        uint256 baseAmount,
+        uint256 sharePrice
     );
 
     event OpenLong(
@@ -58,6 +62,7 @@ abstract contract HyperdriveBase is
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
+        uint256 sharePrice,
         uint256 bondAmount
     );
 
@@ -66,6 +71,7 @@ abstract contract HyperdriveBase is
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
+        uint256 sharePrice,
         uint256 bondAmount
     );
 
@@ -74,6 +80,7 @@ abstract contract HyperdriveBase is
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
+        uint256 sharePrice,
         uint256 bondAmount
     );
 
@@ -82,6 +89,7 @@ abstract contract HyperdriveBase is
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
+        uint256 sharePrice,
         uint256 bondAmount
     );
 
@@ -93,7 +101,11 @@ abstract contract HyperdriveBase is
         uint256 lpSharePrice
     );
 
-    event CollectGovernanceFee(address indexed collector, uint256 fees);
+    event CollectGovernanceFee(
+        address indexed collector,
+        uint256 baseFees,
+        uint256 sharePrice
+    );
 
     /// @notice Initializes a Hyperdrive pool.
     /// @param _config The configuration of the Hyperdrive pool.
@@ -236,7 +248,7 @@ abstract contract HyperdriveBase is
         uint256 governanceFeesAccrued = _governanceFeesAccrued;
         delete _governanceFeesAccrued;
         proceeds = _withdraw(governanceFeesAccrued, _options);
-        emit CollectGovernanceFee(_feeCollector, proceeds);
+        emit CollectGovernanceFee(_feeCollector, proceeds, _pricePerShare());
     }
 
     /// Helpers ///

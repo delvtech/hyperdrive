@@ -23,13 +23,13 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
 
     /// @notice Opens a short position.
     /// @param _bondAmount The amount of bonds to short.
-    /// @param _maxDeposit The most the user expects to deposit for this trade
+    /// @param _maxDeposit The most the user expects to deposit for this trade.
     /// @param _minSharePrice The minium share price at which to open the long.
     ///        This allows traders to protect themselves from opening a long in
     ///        a checkpoint where negative interest has accrued.
     /// @param _options The options that configure how the trade is settled.
     /// @return maturityTime The maturity time of the short.
-    /// @return traderDeposit The amount the user deposited for this trade.
+    /// @return traderDeposit The amount the user deposited for this trade. // TODO: should match options
     function openShort(
         uint256 _bondAmount,
         uint256 _maxDeposit,
@@ -104,7 +104,8 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
             _options.destination,
             assetId,
             maturityTime,
-            traderDeposit,
+            traderDeposit.mulDown(sharePrice),
+            sharePrice,
             bondAmount
         );
 
@@ -208,6 +209,7 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, maturityTime),
             maturityTime,
             baseProceeds,
+            sharePrice_,
             bondAmount
         );
 
@@ -335,7 +337,7 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
     /// @param _bondAmount The amount of bonds being sold to open the short.
     /// @param _sharePrice The current share price.
     /// @param _openSharePrice The share price at the beginning of the checkpoint.
-    /// @return traderDeposit The deposit required to open the short.
+    /// @return traderDeposit The deposit, in shares, required to open the short.
     /// @return shareReservesDelta The change in the share reserves.
     /// @return totalGovernanceFee The governance fee in shares.
     function _calculateOpenShort(

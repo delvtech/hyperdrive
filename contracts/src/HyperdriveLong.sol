@@ -22,7 +22,7 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
     using SafeCast for int256;
 
     /// @notice Opens a long position.
-    /// @param _baseAmount The amount of base to use when trading.
+    /// @param _amount The amount of base to use when trading. TODO: inputAmount
     /// @param _minOutput The minium number of bonds to receive.
     /// @param _minSharePrice The minium share price at which to open the long.
     ///        This allows traders to protect themselves from opening a long in
@@ -31,7 +31,7 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
     /// @return maturityTime The maturity time of the bonds.
     /// @return bondProceeds The amount of bonds the user received
     function openLong(
-        uint256 _baseAmount,
+        uint256 _amount,
         uint256 _minOutput,
         uint256 _minSharePrice,
         IHyperdrive.Options calldata _options
@@ -44,12 +44,13 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
     {
         // Check that the message value and base amount are valid.
         _checkMessageValue();
-        if (_baseAmount < _minimumTransactionAmount) {
+        if (_amount < _minimumTransactionAmount) {
             revert IHyperdrive.MinimumTransactionAmount();
         }
 
         // Deposit the user's base.
-        (uint256 shares, uint256 sharePrice) = _deposit(_baseAmount, _options);
+        // TODO: We wanna return shares and sharePrice from this function
+        (uint256 shares, uint256 sharePrice) = _deposit(_amount, _options);
         if (sharePrice < _minSharePrice) {
             revert IHyperdrive.MinimumSharePrice();
         }
@@ -95,12 +96,12 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
         _mint(assetId, _options.destination, bondProceeds);
 
         // Emit an OpenLong event.
-        uint256 baseAmount = _baseAmount; // Avoid stack too deep error.
         emit OpenLong(
             _options.destination,
             assetId,
             maturityTime,
-            baseAmount,
+            shares.mulDown(sharePrice),
+            sharePrice,
             bondProceeds
         );
 
@@ -197,6 +198,7 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
             AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
             maturityTime,
             baseProceeds,
+            sharePrice,
             bondAmount
         );
 

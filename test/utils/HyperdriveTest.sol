@@ -900,26 +900,30 @@ contract HyperdriveTest is BaseTest {
         address indexed provider,
         uint256 lpAmount,
         uint256 baseAmount,
+        uint256 sharePrice,
         uint256 apr
     );
 
     event AddLiquidity(
         address indexed provider,
         uint256 lpAmount,
-        uint256 baseAmount
+        uint256 baseAmount,
+        uint256 sharePrice
     );
 
     event RemoveLiquidity(
         address indexed provider,
         uint256 lpAmount,
         uint256 baseAmount,
+        uint256 sharePrice,
         uint256 withdrawalShareAmount
     );
 
     event RedeemWithdrawalShares(
         address indexed provider,
         uint256 withdrawalShareAmount,
-        uint256 baseAmount
+        uint256 baseAmount,
+        uint256 sharePrice
     );
 
     event OpenLong(
@@ -927,6 +931,7 @@ contract HyperdriveTest is BaseTest {
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
+        uint256 sharePrice,
         uint256 bondAmount
     );
 
@@ -935,6 +940,7 @@ contract HyperdriveTest is BaseTest {
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
+        uint256 sharePrice,
         uint256 bondAmount
     );
 
@@ -943,6 +949,7 @@ contract HyperdriveTest is BaseTest {
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
+        uint256 sharePrice,
         uint256 bondAmount
     );
 
@@ -951,6 +958,7 @@ contract HyperdriveTest is BaseTest {
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
+        uint256 sharePrice,
         uint256 bondAmount
     );
 
@@ -962,7 +970,11 @@ contract HyperdriveTest is BaseTest {
         uint256 lpSharePrice
     );
 
-    event CollectGovernanceFee(address indexed collector, uint256 fees);
+    event CollectGovernanceFee(
+        address indexed collector,
+        uint256 baseFees,
+        uint256 sharePrice
+    );
 
     function verifyFactoryEvents(
         HyperdriveFactory factory,

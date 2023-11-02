@@ -22,7 +22,7 @@ abstract contract HyperdriveLP is IHyperdriveWrite, HyperdriveTWAP {
     using SafeCast for uint256;
 
     /// @notice Allows the first LP to initialize the market with a target APR.
-    /// @param _contribution The amount of base to supply.
+    /// @param _contribution The amount to supply.
     /// @param _apr The target APR.
     /// @param _options The options that configure how the operation is settled.
     /// @return lpShares The initial number of LP shares created.
@@ -93,13 +93,19 @@ abstract contract HyperdriveLP is IHyperdriveWrite, HyperdriveTWAP {
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
 
         // Emit an Initialize event.
-        emit Initialize(_options.destination, lpShares, _contribution, _apr);
+        emit Initialize(
+            _options.destination,
+            lpShares,
+            _contribution,
+            sharePrice,
+            _apr
+        );
 
         return lpShares;
     }
 
     /// @notice Allows LPs to supply liquidity for LP shares.
-    /// @param _contribution The amount of base to supply.
+    /// @param _contribution The amount to supply.
     /// @param _minApr The minimum APR at which the LP is willing to supply.
     /// @param _maxApr The maximum APR at which the LP is willing to supply.
     /// @param _options The options that configure how the operation is settled.
@@ -184,7 +190,12 @@ abstract contract HyperdriveLP is IHyperdriveWrite, HyperdriveTWAP {
         _distributeExcessIdle(sharePrice);
 
         // Emit an AddLiquidity event.
-        emit AddLiquidity(_options.destination, lpShares, _contribution);
+        emit AddLiquidity(
+            _options.destination,
+            lpShares,
+            _contribution,
+            sharePrice
+        );
     }
 
     /// @notice Allows an LP to burn shares and withdraw from the pool.
@@ -259,8 +270,9 @@ abstract contract HyperdriveLP is IHyperdriveWrite, HyperdriveTWAP {
         uint256 shares = _shares;
         emit RemoveLiquidity(
             _options.destination,
-            shares,
+            shares, // lp shares
             baseProceeds,
+            sharePrice, // vault share price
             uint256(withdrawalShares)
         );
 
@@ -330,8 +342,9 @@ abstract contract HyperdriveLP is IHyperdriveWrite, HyperdriveTWAP {
         // Emit a RedeemWithdrawalShares event.
         emit RedeemWithdrawalShares(
             _options.destination,
-            sharesRedeemed,
-            baseProceeds
+            sharesRedeemed, // withdrawal shares
+            baseProceeds,
+            sharePrice // vault share price
         );
 
         return (baseProceeds, sharesRedeemed);
