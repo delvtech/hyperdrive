@@ -377,8 +377,10 @@ abstract contract HyperdriveFactory {
         return _instances[index];
     }
 
-    /// @notice Returns the full _instances array.
-    /// @return The full _instances array.
+    /// @notice Returns the _instances array according to specified indices.
+    /// @param startIndex The starting index of the instances to get.
+    /// @param endIndex The ending index of the instances to get.
+    /// @return The resulting custom portion of the _instances array.
     function getInstancesInRange(uint256 startIndex, uint256 endIndex)
         external view returns (address[] memory)
     {
