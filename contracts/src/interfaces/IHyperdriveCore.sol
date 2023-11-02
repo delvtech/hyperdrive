@@ -2,14 +2,14 @@
 pragma solidity 0.8.19;
 
 import { IHyperdrive } from "./IHyperdrive.sol";
-import { IMultiTokenWrite } from "./IMultiTokenWrite.sol";
+import { IMultiTokenCore } from "./IMultiTokenCore.sol";
 
-interface IHyperdriveWrite is IMultiTokenWrite {
+interface IHyperdriveCore is IMultiTokenCore {
+    /// Checkpoints ///
+
     function checkpoint(uint256 _checkpointTime) external;
 
-    function setPauser(address _who, bool _status) external;
-
-    function pause(bool _status) external;
+    /// LPs ///
 
     function initialize(
         uint256 _contribution,
@@ -36,6 +36,8 @@ interface IHyperdriveWrite is IMultiTokenWrite {
         IHyperdrive.Options calldata _options
     ) external returns (uint256 proceeds, uint256 sharesRedeemed);
 
+    /// Longs ///
+
     function openLong(
         uint256 _baseAmount,
         uint256 _minOutput,
@@ -50,6 +52,8 @@ interface IHyperdriveWrite is IMultiTokenWrite {
         IHyperdrive.Options calldata _options
     ) external returns (uint256);
 
+    /// Shorts ///
+
     function openShort(
         uint256 _bondAmount,
         uint256 _maxDeposit,
@@ -63,10 +67,4 @@ interface IHyperdriveWrite is IMultiTokenWrite {
         uint256 _minOutput,
         IHyperdrive.Options calldata _options
     ) external returns (uint256);
-
-    function setGovernance(address _who) external;
-
-    function collectGovernanceFee(
-        IHyperdrive.Options calldata _options
-    ) external returns (uint256 proceeds);
 }

@@ -6,7 +6,7 @@ import { HyperdriveBase } from "./HyperdriveBase.sol";
 import { HyperdriveLong } from "./HyperdriveLong.sol";
 import { HyperdriveShort } from "./HyperdriveShort.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
-import { IHyperdriveWrite } from "./interfaces/IHyperdriveWrite.sol";
+import { IHyperdriveCore } from "./interfaces/IHyperdriveCore.sol";
 import { AssetId } from "./libraries/AssetId.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
@@ -19,7 +19,7 @@ import { SafeCast } from "./libraries/SafeCast.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract Hyperdrive is
-    IHyperdriveWrite,
+    IHyperdriveCore,
     HyperdriveBase,
     HyperdriveLong,
     HyperdriveShort
@@ -183,6 +183,8 @@ abstract contract Hyperdrive is
             _distributeExcessIdle(_sharePrice);
         }
 
+        // Emit an event about the checkpoint creation that includes the LP
+        // share price.
         uint256 presentValue = _sharePrice > 0
             ? HyperdriveMath
                 .calculatePresentValue(_getPresentValueParams(_sharePrice))

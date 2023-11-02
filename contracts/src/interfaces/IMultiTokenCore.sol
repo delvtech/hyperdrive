@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-interface IMultiTokenWrite {
+interface IMultiTokenCore {
     event TransferSingle(
         address indexed operator,
         address indexed from,

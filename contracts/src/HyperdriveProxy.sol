@@ -1,31 +1,42 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { IDataProvider } from "./interfaces/IDataProvider.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
+import { IHyperdriveExtras } from "./interfaces/IHyperdriveExtras.sol";
+import { IHyperdriveProxy } from "./interfaces/IHyperdriveProxy.sol";
 
 /// @author DELV
-/// @title DataProvider
-/// @notice Implements a fallback function that serves as a generalized getter.
-///         This helps contracts stay under the code size limit.
+/// @title HyperdriveProxy
+/// @notice The Hyperdrive proxy contract. This contract delegates write access
+///         to a pre-defined set of functions in a HyperdriveExtras logic
+///         contract. In addition to this, it also delegates read access to the
+///         HyperdriveDataProvider.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract DataProvider is IDataProvider {
+contract HyperdriveProxy is IHyperdriveProxy {
+    address public immutable extras;
     address public immutable dataProvider;
 
-    /// @notice Initializes the data provider.
-    /// @param _dataProvider The address of the data provider.
-    constructor(address _dataProvider) {
+    // FIXME: Update the documentation
+    //
+    /// @notice Initializes the Hyperdrive proxy.
+    /// @param _extras The address of extras contract.
+    /// @param _dataProvider The address of the data provider contract.
+    constructor(address _extras, address _dataProvider) {
+        extras = _extras;
         dataProvider = _dataProvider;
     }
 
     // solhint-disable payable-fallback
     // solhint-disable no-complex-fallback
-    /// @notice Fallback function that delegates calls to the data provider.
-    /// @param _data The data to be passed to the data provider.
-    /// @return The return data from the data provider.
+    /// @notice Fallback function that delegates to the extras and data provider
+    ///         contracts.
+    /// @param _data The calldata to forward in the delegated call.
+    /// @return The return data from the delegated call.
     fallback(bytes calldata _data) external returns (bytes memory) {
+        // FIXME: Add the routing logic to HyperdriveExtras.
+
         // Delegatecall into the data provider. We use a force-revert
         // delegatecall pattern to ensure that no state changes were made
         // during the call to the data provider.

@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { IDataProvider } from "./IDataProvider.sol";
 import { IERC20 } from "./IERC20.sol";
+import { IHyperdriveCore } from "./IHyperdriveCore.sol";
+import { IHyperdriveProxy } from "./IHyperdriveProxy.sol";
 import { IHyperdriveRead } from "./IHyperdriveRead.sol";
-import { IHyperdriveWrite } from "./IHyperdriveWrite.sol";
 import { IMultiToken } from "./IMultiToken.sol";
 
 interface IHyperdrive is
-    IDataProvider,
+    IHyperdriveProxy,
     IHyperdriveRead,
-    IHyperdriveWrite,
+    IHyperdriveCore,
     IMultiToken
 {
     /// Events ///

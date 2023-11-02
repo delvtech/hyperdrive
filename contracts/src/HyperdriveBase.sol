@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import { HyperdriveStorage } from "./HyperdriveStorage.sol";
 import { IERC20 } from "./interfaces/IERC20.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
-import { IHyperdriveWrite } from "./interfaces/IHyperdriveWrite.sol";
+import { IHyperdriveCore } from "./interfaces/IHyperdriveCore.sol";
 import { AssetId } from "./libraries/AssetId.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
@@ -18,7 +18,7 @@ import { MultiToken } from "./token/MultiToken.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveBase is
-    IHyperdriveWrite,
+    IHyperdriveCore,
     MultiToken,
     HyperdriveStorage
 {
@@ -93,8 +93,6 @@ abstract contract HyperdriveBase is
         uint256 lpSharePrice
     );
 
-    event CollectGovernanceFee(address indexed collector, uint256 fees);
-
     /// @notice Initializes a Hyperdrive pool.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _dataProvider The address of the data provider.
@@ -166,35 +164,6 @@ abstract contract HyperdriveBase is
 
     /// Pause ///
 
-    event PauserUpdated(address indexed newPauser);
-
-    /// @notice Allows governance to change the pauser status of an address.
-    /// @param who The address to change.
-    /// @param status The new pauser status.
-    function setPauser(address who, bool status) external {
-        if (msg.sender != _governance) revert IHyperdrive.Unauthorized();
-        _pausers[who] = status;
-        emit PauserUpdated(who);
-    }
-
-    event GovernanceUpdated(address indexed newGovernance);
-
-    /// @notice Allows governance to change governance.
-    /// @param _who The new governance address.
-    function setGovernance(address _who) external {
-        if (msg.sender != _governance) revert IHyperdrive.Unauthorized();
-        _governance = _who;
-
-        emit GovernanceUpdated(_who);
-    }
-
-    /// @notice Allows an authorized address to pause this contract.
-    /// @param _status True to pause all deposits and false to unpause them.
-    function pause(bool _status) external {
-        if (!_pausers[msg.sender]) revert IHyperdrive.Unauthorized();
-        _marketState.isPaused = _status;
-    }
-
     /// @notice Blocks a function execution if the contract is paused.
     modifier isNotPaused() {
         if (_marketState.isPaused) revert IHyperdrive.Paused();
@@ -211,33 +180,6 @@ abstract contract HyperdriveBase is
         uint256 _checkpointTime,
         uint256 _sharePrice
     ) internal virtual returns (uint256 openSharePrice);
-
-    /// @notice This function collects the governance fees accrued by the pool.
-    /// @param _options The options that configure how the fees are settled.
-    /// @return proceeds The amount of base collected.
-    function collectGovernanceFee(
-        IHyperdrive.Options calldata _options
-    ) external nonReentrant returns (uint256 proceeds) {
-        // Ensure that the destination is set to the fee collector.
-        if (_options.destination != _feeCollector) {
-            revert IHyperdrive.InvalidFeeDestination();
-        }
-
-        // Ensure that the caller is authorized to collect fees.
-        if (
-            !_pausers[msg.sender] &&
-            msg.sender != _feeCollector &&
-            msg.sender != _governance
-        ) {
-            revert IHyperdrive.Unauthorized();
-        }
-
-        // Withdraw the accrued governance fees to the fee collector.
-        uint256 governanceFeesAccrued = _governanceFeesAccrued;
-        delete _governanceFeesAccrued;
-        proceeds = _withdraw(governanceFeesAccrued, _options);
-        emit CollectGovernanceFee(_feeCollector, proceeds);
-    }
 
     /// Helpers ///
 
