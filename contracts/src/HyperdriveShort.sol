@@ -381,12 +381,15 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
 
         // Calculate the fees charged to the user (totalCurveFee) and the portion
         // of those fees that are paid to governance (totalGovernanceFee).
-        uint256 totalCurveFee;
+        uint256 curveFee;
+        uint256 governanceCurveFee;
         (
-            totalCurveFee, // there is no flat fee on opening shorts
-            ,
-            totalGovernanceFee
-        ) = _calculateFeesOutGivenBondsIn(
+            curveFee,
+            , // flatFee
+            governanceCurveFee,
+            , // governanceFlatFee (flat fee is always 0 on open)
+            // totalGovernanceFee (equal to governanceCurveFee)
+        )  = _calculateFeesGivenBonds(
             _bondAmount,
             FixedPointMath.ONE_18, // shorts are opened at the beginning of the term
             spotPrice,
@@ -399,13 +402,13 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
         // curve trade minus the portion of the curve fee that was paid to
         // governance.
         //
-        // shareReservesDelta, totalCurveFee and totalGovernanceFee are all
+        // shareReservesDelta, curveFee and governanceCurveFee are all
         // denominated in shares so we just need to subtract out the
-        // totalGovernanceFee from the shareReservesDelta since that fee isn't
+        // governanceCurveFee from the shareReservesDelta since that fee isn't
         // reserved for the LPs.
         //
         // shares -= shares - shares
-        shareReservesDelta -= totalCurveFee - totalGovernanceFee;
+        shareReservesDelta -= curveFee - governanceCurveFee;
 
         // The trader will need to deposit capital to pay for the fixed rate,
         // the curve fee, the flat fee, and any back-paid interest that will be
@@ -419,7 +422,7 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
                 // NOTE: We add the governance fee back to the share reserves
                 // delta here because the trader will need to provide this in
                 // their deposit.
-                shareReservesDelta - totalGovernanceFee,
+                shareReservesDelta - governanceCurveFee,
                 _openSharePrice,
                 _sharePrice.max(_openSharePrice),
                 _sharePrice,
@@ -427,7 +430,7 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
             )
             .mulDown(_sharePrice);
 
-        return (traderDeposit, shareReservesDelta, totalGovernanceFee);
+        return (traderDeposit, shareReservesDelta, governanceCurveFee);
     }
 
     /// @dev Calculate the pool reserve and trader deltas that result from
@@ -439,8 +442,8 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
     /// @return bondReservesDelta The change in the bond reserves.
     /// @return shareProceeds The proceeds in shares of closing the short.
     /// @return shareReservesDelta The shares added to the reserves.
-    /// @return shareCurveDelta The The curve portion of the proceeds that
-    ///         LPs receive from the trader in shares.
+    /// @return shareCurveDelta The curve portion of the proceeds that LPs
+    ///         receive from the trader in shares.
     /// @return shareAdjustmentDelta The change in the share adjustment.
     /// @return totalGovernanceFee The governance fee in shares.
     function _calculateCloseShort(
@@ -513,18 +516,21 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
             // governance (governanceCurveFee and governanceFlatFee).
             uint256 bondAmount = _bondAmount; // Avoid stack too deep.
             uint256 sharePrice = _sharePrice; // Avoid stack too deep.
+            uint256 curveFee;
+            uint256 flatFee;
+            uint256 governanceCurveFee;
             (
-                uint256 totalCurveFee,
-                uint256 totalFlatFee,
-                uint256 governanceCurveFee,
-                uint256 governanceFlatFee
-            ) = _calculateFeesInGivenBondsOut(
+                curveFee,
+                flatFee,
+                governanceCurveFee,
+                , // governanceFlatFee
+                totalGovernanceFee
+            ) = _calculateFeesGivenBonds(
                     bondAmount,
                     timeRemaining,
                     spotPrice,
                     sharePrice
                 );
-            totalGovernanceFee = governanceCurveFee + governanceFlatFee;
 
             // Add the total curve fee minus the governance curve fee to the
             // amount that will be added to the share reserves. This ensures
@@ -532,19 +538,16 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
             // curve trade minus the portion of the curve fee that was paid to
             // governance.
             //
-            // shareCurveDelta, totalGovernanceFee and governanceCurveFee
-            // are all denominated in shares so we just need to subtract out
-            // the governanceCurveFees from the shareCurveDelta since that
-            // fee isn't reserved for the LPs
-            // shares += shares - shares
-            shareCurveDelta += totalCurveFee - governanceCurveFee;
+            // shareCurveDelta, curveFee and governanceCurveFee are all
+            // denominated in shares so we just need to subtract out the
+            // governanceCurveFees from the shareCurveDelta since that fee isn't
+            // reserved for the LPs
+            shareCurveDelta += curveFee - governanceCurveFee;
 
             // Calculate the shareReservesDelta that the user must make to close
-            // out the short. We add the totalCurveFee (shares) and totalFlatFee
-            // (shares) to the shareReservesDelta to ensure that fees are
-            // collected.
-            // shares += shares + shares
-            shareReservesDelta += totalCurveFee + totalFlatFee;
+            // out the short. We add the curveFee (shares) and flatFee (shares)
+            // to the shareReservesDelta to ensure that fees are collected.
+            shareReservesDelta += curveFee + flatFee;
         }
 
         // Calculate the share proceeds owed to the short and account for
