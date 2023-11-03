@@ -387,8 +387,8 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
             curveFee,
             , // flatFee
             governanceCurveFee,
-            , // governanceFlatFee
-            // totalGovernanceFee
+            , // governanceFlatFee (flat fee is always 0 on open)
+            // totalGovernanceFee (equal to governanceCurveFee)
         )  = _calculateFeesGivenBonds(
             _bondAmount,
             FixedPointMath.ONE_18, // shorts are opened at the beginning of the term
