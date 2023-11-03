@@ -13,13 +13,15 @@ import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
 import { SafeCast } from "./libraries/SafeCast.sol";
 
+// FIXME: Update the Natspec
+//
 /// @author DELV
 /// @title Hyperdrive
 /// @notice A fixed-rate AMM that mints bonds on demand for longs and shorts.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract Hyperdrive is
+abstract contract HyperdriveCheckpoint is
     IHyperdriveCore,
     HyperdriveBase,
     HyperdriveLong,
@@ -54,6 +56,8 @@ abstract contract Hyperdrive is
 
     /// Proxy ///
 
+    // FIXME: Eliminate this pattern
+    //
     /// @dev Checks whether the selector is one of Hyperdrive's extra functions.
     /// @param _selector The selector to check.
     /// @return A flag indicating if the selector is in HyperdriveExtras.
