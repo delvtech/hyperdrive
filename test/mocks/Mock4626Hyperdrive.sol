@@ -8,6 +8,7 @@ import { ERC4626Hyperdrive, IHyperdrive, IERC4626 } from "contracts/src/instance
 contract MockERC4626Hyperdrive is ERC4626Hyperdrive {
     constructor(
         IHyperdrive.PoolConfig memory _config,
+        address _extras,
         address _dataProvider,
         bytes32 _linkerCodeHash,
         address _linkerFactory,
@@ -16,6 +17,7 @@ contract MockERC4626Hyperdrive is ERC4626Hyperdrive {
     )
         ERC4626Hyperdrive(
             _config,
+            _extras,
             _dataProvider,
             _linkerCodeHash,
             _linkerFactory,

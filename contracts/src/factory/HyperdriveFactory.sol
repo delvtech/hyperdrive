@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import { HyperdriveDataProvider } from "../HyperdriveDataProvider.sol";
+import { HyperdriveExtras } from "../HyperdriveExtras.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
@@ -266,16 +267,21 @@ abstract contract HyperdriveFactory {
         _config.fees = fees;
         bytes32 _linkerCodeHash = linkerCodeHash;
         address _linkerFactory = linkerFactory;
-        address dataProvider = deployDataProvider(
-            _config,
-            _extraData,
-            _linkerCodeHash,
-            _linkerFactory
-        );
         IHyperdrive hyperdrive = IHyperdrive(
             hyperdriveDeployer.deploy(
                 _config,
-                dataProvider,
+                deployExtras(
+                    _config,
+                    _extraData,
+                    _linkerCodeHash,
+                    _linkerFactory
+                ),
+                deployDataProvider(
+                    _config,
+                    _extraData,
+                    _linkerCodeHash,
+                    _linkerFactory
+                ),
                 _linkerCodeHash,
                 _linkerFactory,
                 _extraData
@@ -326,18 +332,36 @@ abstract contract HyperdriveFactory {
         return hyperdrive;
     }
 
-    // TODO: We should be able to update the data providers bytecode when we
-    // up the deployer; however, this change should be made in the context of
-    // our mainnet proxy design.
+    // FIXME: Change this if it doesn't conflict with the Factory milestones.
     //
-    /// @notice Deploys a Hyperdrive instance with the factory's configuration.
+    /// @notice Deploys a Hyperdrive data provider instance with the factory's
+    ///         configuration.
     /// @dev This should be overrided so that the data provider corresponding
     ///      to an individual instance is used.
     /// @param _config The configuration of the pool we are deploying
     /// @param _extraData The extra data from the pool deployment
     /// @param _linkerCodeHash The code hash from the multitoken deployer
     /// @param _linkerFactory The factory of the multitoken deployer
+    /// @return The address of the new data provider contract.
     function deployDataProvider(
+        IHyperdrive.PoolConfig memory _config,
+        bytes32[] memory _extraData,
+        bytes32 _linkerCodeHash,
+        address _linkerFactory
+    ) internal virtual returns (address);
+
+    // FIXME: Change this if it doesn't conflict with the Factory milestones.
+    //
+    /// @notice Deploys a Hyperdrive extras instance with the factory's
+    ///         configuration.
+    /// @dev This should be overrided so that the data provider corresponding
+    ///      to an individual instance is used.
+    /// @param _config The configuration of the pool we are deploying
+    /// @param _extraData The extra data from the pool deployment
+    /// @param _linkerCodeHash The code hash from the multitoken deployer
+    /// @param _linkerFactory The factory of the multitoken deployer
+    /// @return The address of the new extras contract.
+    function deployExtras(
         IHyperdrive.PoolConfig memory _config,
         bytes32[] memory _extraData,
         bytes32 _linkerCodeHash,

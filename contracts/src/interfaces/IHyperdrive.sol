@@ -3,11 +3,18 @@ pragma solidity 0.8.19;
 
 import { IERC20 } from "./IERC20.sol";
 import { IHyperdriveCore } from "./IHyperdriveCore.sol";
+import { IHyperdriveExtras } from "./IHyperdriveExtras.sol";
 import { IHyperdriveRead } from "./IHyperdriveRead.sol";
 import { IMultiToken } from "./IMultiToken.sol";
 import { IProxy } from "./IProxy.sol";
 
-interface IHyperdrive is IProxy, IHyperdriveRead, IHyperdriveCore, IMultiToken {
+interface IHyperdrive is
+    IProxy,
+    IHyperdriveRead,
+    IHyperdriveExtras,
+    IHyperdriveCore,
+    IMultiToken
+{
     /// Events ///
 
     event Initialize(

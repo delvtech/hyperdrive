@@ -5,8 +5,10 @@ import { ERC4626HyperdriveDeployer } from "contracts/src/factory/ERC4626Hyperdri
 import { ERC4626HyperdriveFactory } from "contracts/src/factory/ERC4626HyperdriveFactory.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { ERC4626DataProvider } from "contracts/src/instances/ERC4626DataProvider.sol";
+import { ERC4626Extras } from "contracts/src/instances/ERC4626Extras.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "contracts/src/interfaces/IERC4626.sol";
+import { IERC4626Hyperdrive } from "contracts/src/interfaces/IERC4626Hyperdrive.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
@@ -83,8 +85,12 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         address dataProvider = address(
             new ERC4626DataProvider(config, bytes32(0), address(0), pool)
         );
+        address extras = address(
+            new ERC4626Extras(config, bytes32(0), address(0), pool)
+        );
         mockHyperdrive = new MockERC4626Hyperdrive(
             config,
+            extras,
             dataProvider,
             bytes32(0),
             address(0),
@@ -331,9 +337,11 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         // Ensure that the base token and the pool cannot be swept.
         vm.startPrank(bob);
         vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
-        mockHyperdrive.sweep(dai);
+        IERC4626Hyperdrive(address(mockHyperdrive)).sweep(dai);
         vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
-        mockHyperdrive.sweep(IERC20(address(pool)));
+        IERC4626Hyperdrive(address(mockHyperdrive)).sweep(
+            IERC20(address(pool))
+        );
         vm.stopPrank();
 
         // Ensure that a sweep target that isn't the base token or the pool
@@ -367,25 +375,31 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
         vm.stopPrank();
         vm.startPrank(bob);
         otherToken.mint(address(mockHyperdrive), 1e18);
-        mockHyperdrive.sweep(IERC20(address(otherToken)));
+        IERC4626Hyperdrive(address(mockHyperdrive)).sweep(
+            IERC20(address(otherToken))
+        );
         assertEq(otherToken.balanceOf(bob), 1e18);
         vm.stopPrank();
 
         // Alice should not be able to sweep the target since she isn't a pauser.
         vm.startPrank(alice);
         vm.expectRevert(IHyperdrive.Unauthorized.selector);
-        mockHyperdrive.sweep(IERC20(address(otherToken)));
+        IERC4626Hyperdrive(address(mockHyperdrive)).sweep(
+            IERC20(address(otherToken))
+        );
         vm.stopPrank();
 
         // Bob adds Alice as a pauser.
         vm.startPrank(bob);
-        mockHyperdrive.setPauser(alice, true);
+        IERC4626Hyperdrive(address(mockHyperdrive)).setPauser(alice, true);
         vm.stopPrank();
 
         // Alice should be able to sweep the target successfully.
         vm.startPrank(alice);
         otherToken.mint(address(mockHyperdrive), 1e18);
-        mockHyperdrive.sweep(IERC20(address(otherToken)));
+        IERC4626Hyperdrive(address(mockHyperdrive)).sweep(
+            IERC20(address(otherToken))
+        );
         assertEq(otherToken.balanceOf(bob), 2e18);
         vm.stopPrank();
     }

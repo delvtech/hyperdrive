@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import { ERC20PresetMinterPauser } from "openzeppelin-contracts/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
 import { Hyperdrive } from "contracts/src/Hyperdrive.sol";
 import { HyperdriveDataProvider } from "contracts/src/HyperdriveDataProvider.sol";
+import { HyperdriveExtras } from "contracts/src/HyperdriveExtras.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
@@ -98,8 +99,9 @@ contract MockHyperdrive is Hyperdrive {
 
     constructor(
         IHyperdrive.PoolConfig memory _config,
+        address _extras,
         address _dataProvider
-    ) Hyperdrive(_config, _dataProvider, bytes32(0), address(0)) {}
+    ) Hyperdrive(_config, _extras, _dataProvider, bytes32(0), address(0)) {}
 
     /// Mocks ///
 
@@ -393,6 +395,56 @@ contract MockHyperdrive is Hyperdrive {
         // The share price is the total amount of base divided by the total
         // amount of shares.
         sharePrice = totalShares != 0 ? assets.divDown(totalShares) : 0;
+    }
+}
+
+contract MockHyperdriveExtras is HyperdriveExtras {
+    using FixedPointMath for uint256;
+
+    uint256 internal totalShares;
+
+    constructor(
+        IHyperdrive.PoolConfig memory _config
+    ) HyperdriveExtras(_config, bytes32(0), address(0)) {}
+
+    /// Overrides ///
+
+    function _withdraw(
+        uint256 shares,
+        IHyperdrive.Options calldata options
+    ) internal override returns (uint256 withdrawValue) {
+        // If the shares to withdraw is greater than the total shares, we clamp
+        // to the total shares.
+        shares = shares > totalShares ? totalShares : shares;
+
+        // Get the total amount of assets held in the pool.
+        uint256 assets;
+        if (address(_baseToken) == ETH) {
+            assets = address(this).balance;
+        } else {
+            assets = _baseToken.balanceOf(address(this));
+        }
+
+        // Calculate the base proceeds.
+        withdrawValue = totalShares != 0
+            ? shares.mulDown(assets.divDown(totalShares))
+            : 0;
+
+        // Transfer the base proceeds to the destination and burn the shares.
+        totalShares -= shares;
+        bool success;
+        if (address(_baseToken) == ETH) {
+            (success, ) = payable(options.destination).call{
+                value: withdrawValue
+            }("");
+        } else {
+            success = _baseToken.transfer(options.destination, withdrawValue);
+        }
+        if (!success) {
+            revert IHyperdrive.TransferFailed();
+        }
+
+        return withdrawValue;
     }
 }
 

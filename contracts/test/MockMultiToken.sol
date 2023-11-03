@@ -36,7 +36,7 @@ contract MockMultiToken is MultiToken {
         address _dataProvider,
         bytes32 _linkerCodeHash,
         address _factory
-    ) MultiToken(_dataProvider, _linkerCodeHash, _factory) {}
+    ) MultiToken(address(0), _dataProvider, _linkerCodeHash, _factory) {}
 
     function __setNameAndSymbol(
         uint256 tokenId,

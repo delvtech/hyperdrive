@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
-import { MockHyperdriveDataProvider } from "test/mocks/MockHyperdrive.sol";
+import { MockHyperdriveDataProvider, MockHyperdriveExtras } from "test/mocks/MockHyperdrive.sol";
 
 contract MockHyperdriveFactory is HyperdriveFactory {
     constructor(
@@ -31,5 +31,15 @@ contract MockHyperdriveFactory is HyperdriveFactory {
                 _config
             );
         return address(dataProvider);
+    }
+
+    function deployExtras(
+        IHyperdrive.PoolConfig memory _config,
+        bytes32[] memory,
+        bytes32,
+        address
+    ) internal override returns (address) {
+        MockHyperdriveExtras extras = new MockHyperdriveExtras(_config);
+        return address(extras);
     }
 }

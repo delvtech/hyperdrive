@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import { ERC4626DataProvider } from "../instances/ERC4626DataProvider.sol";
+import { ERC4626Extras } from "../instances/ERC4626Extras.sol";
 import { IERC20 } from "../interfaces/IERC20.sol";
 import { IERC4626 } from "../interfaces/IERC4626.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
@@ -97,6 +98,7 @@ contract ERC4626HyperdriveFactory is HyperdriveFactory {
     /// @param _config The configuration of the pool we are deploying
     /// @param _linkerCodeHash The code hash from the multitoken deployer
     /// @param _linkerFactory The factory of the multitoken deployer
+    /// @return The address of the new data provider contract.
     function deployDataProvider(
         IHyperdrive.PoolConfig memory _config,
         bytes32[] memory,
@@ -106,6 +108,29 @@ contract ERC4626HyperdriveFactory is HyperdriveFactory {
         return (
             address(
                 new ERC4626DataProvider(
+                    _config,
+                    _linkerCodeHash,
+                    _linkerFactory,
+                    pool
+                )
+            )
+        );
+    }
+
+    /// @notice This deploys a data provider for the ERC4626 hyperdrive instance
+    /// @param _config The configuration of the pool we are deploying
+    /// @param _linkerCodeHash The code hash from the multitoken deployer
+    /// @param _linkerFactory The factory of the multitoken deployer
+    /// @return The address of the new extras contract.
+    function deployExtras(
+        IHyperdrive.PoolConfig memory _config,
+        bytes32[] memory,
+        bytes32 _linkerCodeHash,
+        address _linkerFactory
+    ) internal override returns (address) {
+        return (
+            address(
+                new ERC4626Extras(
                     _config,
                     _linkerCodeHash,
                     _linkerFactory,

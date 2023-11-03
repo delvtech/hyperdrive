@@ -12,7 +12,7 @@ import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { MockHyperdrive, MockHyperdriveDataProvider } from "../mocks/MockHyperdrive.sol";
+import { MockHyperdrive, MockHyperdriveDataProvider, MockHyperdriveExtras } from "../mocks/MockHyperdrive.sol";
 import { BaseTest } from "test/utils/BaseTest.sol";
 import { ETH } from "test/utils/Constants.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
@@ -62,8 +62,9 @@ contract HyperdriveTest is BaseTest {
             updateGap: UPDATE_GAP
         });
         address dataProvider = address(new MockHyperdriveDataProvider(config));
+        address extras = address(new MockHyperdriveExtras(config));
         hyperdrive = IHyperdrive(
-            address(new MockHyperdrive(config, dataProvider))
+            address(new MockHyperdrive(config, extras, dataProvider))
         );
         vm.stopPrank();
         vm.startPrank(governance);
@@ -85,8 +86,9 @@ contract HyperdriveTest is BaseTest {
         vm.stopPrank();
         vm.startPrank(deployer);
         address dataProvider = address(new MockHyperdriveDataProvider(_config));
+        address extras = address(new MockHyperdriveExtras(_config));
         hyperdrive = IHyperdrive(
-            address(new MockHyperdrive(_config, dataProvider))
+            address(new MockHyperdrive(_config, extras, dataProvider))
         );
     }
 

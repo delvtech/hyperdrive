@@ -5,7 +5,7 @@ import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { MockHyperdrive, MockHyperdriveDataProvider } from "test/mocks/MockHyperdrive.sol";
+import { MockHyperdrive, MockHyperdriveDataProvider, MockHyperdriveExtras } from "test/mocks/MockHyperdrive.sol";
 import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
 import { Lib } from "test/utils/Lib.sol";
@@ -28,7 +28,12 @@ contract UpdateLiquidityTest is HyperdriveTest {
         MockHyperdriveDataProvider dataProvider = new MockHyperdriveDataProvider(
                 config
             );
-        mockHyperdrive = new MockHyperdrive(config, address(dataProvider));
+        MockHyperdriveExtras extras = new MockHyperdriveExtras(config);
+        mockHyperdrive = new MockHyperdrive(
+            config,
+            address(extras),
+            address(dataProvider)
+        );
         hyperdrive = IHyperdrive(address(mockHyperdrive));
     }
 
