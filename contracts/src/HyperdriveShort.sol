@@ -169,6 +169,9 @@ abstract contract HyperdriveShort is IHyperdriveCore, HyperdriveLP {
                 maturityTime
             );
 
+            // FIXME: This code is duplicated in HyperdriveLong. This is a
+            // candidate for reducing the codesize.
+            //
             // Update the checkpoint and global longExposure
             uint256 checkpointTime = maturityTime - _positionDuration;
             int128 checkpointExposureBefore = int128(

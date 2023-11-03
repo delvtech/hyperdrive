@@ -215,6 +215,7 @@ abstract contract HyperdriveBase is
     /// @return True if the share reserves are greater than the exposure plus
     ///         the minimum share reserves.
     function _isSolvent(uint256 _sharePrice) internal view returns (bool) {
+        // TODO: Can we remove the `.max(0)` here?
         return
             (int256(
                 (uint256(_marketState.shareReserves).mulDown(_sharePrice))
@@ -439,6 +440,8 @@ abstract contract HyperdriveBase is
         totalGovernanceFee += totalFlatFee.mulDown(_governanceFee);
     }
 
+    // FIXME: There is a lot of code duplication here that Mihai's PR will address.
+    //
     /// @dev Calculates the fees that go to the LPs and governance.
     /// @param _amountOut Amount in terms of bonds.
     /// @param _normalizedTimeRemaining The normalized amount of time until maturity.

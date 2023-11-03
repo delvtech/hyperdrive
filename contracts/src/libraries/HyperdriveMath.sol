@@ -615,37 +615,6 @@ library HyperdriveMath {
         return shareProceeds;
     }
 
-    /// @dev Calculates the interest in shares earned by a short position. The
-    ///      math for the short's interest in shares is given by:
-    ///
-    ///      interest = ((c1 / c0 - 1) * dy) / c
-    ///               = (((c1 - c0) / c0) * dy) / c
-    ///               = ((c1 - c0) / (c0 * c)) * dy
-    ///
-    ///      In the event that the interest is negative, we mark the interest
-    ///      to zero.
-    /// @param _bondAmount The amount of bonds underlying the closed short.
-    /// @param _openSharePrice The share price at the short's open.
-    /// @param _closeSharePrice The share price at the short's close.
-    /// @param _sharePrice The current share price.
-    /// @return shareInterest The short interest in shares.
-    function calculateShortInterest(
-        uint256 _bondAmount,
-        uint256 _openSharePrice,
-        uint256 _closeSharePrice,
-        uint256 _sharePrice
-    ) internal pure returns (uint256 shareInterest) {
-        // If the interest is negative, we mark it to zero.
-        if (_closeSharePrice > _openSharePrice) {
-            // interest = dy * ((c1 - c0) / (c0 * c))
-            shareInterest = _bondAmount.mulDivDown(
-                _closeSharePrice - _openSharePrice,
-                // We round up here do avoid overestimating the share interest.
-                _openSharePrice.mulUp(_sharePrice)
-            );
-        }
-    }
-
     /// @dev Calculates the effective share reserves. The effective share
     ///      reserves are the share reserves minus the share adjustment or
     ///      z - zeta. We use the effective share reserves as the z-parameter

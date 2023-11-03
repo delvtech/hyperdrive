@@ -141,6 +141,8 @@ abstract contract HyperdriveLP is IHyperdriveCore, HyperdriveTWAP {
         // supply of active LP shares, `l_w` is the total supply of withdrawal
         // shares, and `l_r` is the amount of withdrawal shares ready for
         // withdrawal.
+        //
+        // FIXME: Can we use a `_calculateLPTotalSupply` function?
         uint256 withdrawalSharesOutstanding = _totalSupply[
             AssetId._WITHDRAWAL_SHARE_ASSET_ID
         ] - _withdrawPool.readyToWithdraw;
@@ -324,8 +326,9 @@ abstract contract HyperdriveLP is IHyperdriveCore, HyperdriveTWAP {
         baseProceeds = _withdraw(shareProceeds, _options);
 
         // Enforce the minimum user output per share.
-        if (_minOutputPerShare.mulDown(sharesRedeemed) > baseProceeds)
+        if (_minOutputPerShare.mulDown(sharesRedeemed) > baseProceeds) {
             revert IHyperdrive.OutputLimit();
+        }
 
         // Emit a RedeemWithdrawalShares event.
         emit RedeemWithdrawalShares(

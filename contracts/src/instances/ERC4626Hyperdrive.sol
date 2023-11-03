@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import { ERC20 } from "solmate/tokens/ERC20.sol";
+import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
 import { Hyperdrive } from "../Hyperdrive.sol";
 import { IERC20 } from "../interfaces/IERC20.sol";
 import { IERC4626 } from "../interfaces/IERC4626.sol";
@@ -19,7 +20,7 @@ import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 ///                    particular legal or regulatory significance.
 contract ERC4626Hyperdrive is Hyperdrive {
     using FixedPointMath for uint256;
-    using SafeERC20 for IERC20;
+    using SafeTransferLib for IERC20;
 
     /// @dev The yield source contract for this hyperdrive
     IERC4626 internal immutable pool;
@@ -125,7 +126,12 @@ contract ERC4626Hyperdrive is Hyperdrive {
     ) internal override returns (uint256 sharesMinted, uint256 sharePrice) {
         if (_options.asBase) {
             // Take custody of the deposit in base.
-            _baseToken.safeTransferFrom(msg.sender, address(this), _amount);
+            SafeTransferLib.safeTransferFrom(
+                ERC20(address(_baseToken)),
+                msg.sender,
+                address(this),
+                _amount
+            );
 
             // Deposit the base into the yield source.
             sharesMinted = pool.deposit(_amount, address(this));
@@ -140,7 +146,8 @@ contract ERC4626Hyperdrive is Hyperdrive {
             sharesMinted = pool.convertToShares(_amount);
 
             // Take custody of the deposit in vault shares.
-            IERC20(address(pool)).safeTransferFrom(
+            SafeTransferLib.safeTransferFrom(
+                ERC20(address(pool)),
                 msg.sender,
                 address(this),
                 sharesMinted
@@ -172,7 +179,11 @@ contract ERC4626Hyperdrive is Hyperdrive {
             );
         } else {
             // Transfer vault shares to the destination.
-            IERC20(address(pool)).safeTransfer(_options.destination, _shares);
+            SafeTransferLib.safeTransfer(
+                ERC20(address(pool)),
+                _options.destination,
+                _shares
+            );
             // Estimate the amount of base that was withdrawn from the yield
             // source.
             uint256 estimated = pool.convertToAssets(_shares);
