@@ -3,8 +3,8 @@ pragma solidity 0.8.19;
 
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
-import { MockAssetId } from "../../mocks/MockAssetId.sol";
-import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
+import { MockAssetId } from "contracts/test/MockAssetId.sol";
+import { HyperdriveTest } from "test/utils/HyperdriveTest.sol";
 import { Lib } from "test/utils/Lib.sol";
 
 contract AssetIdTest is HyperdriveTest {
