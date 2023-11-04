@@ -103,11 +103,10 @@ contract ERC4626FactoryBaseTest is HyperdriveTest {
 
         IHyperdrive hyperdrive = factory.deployAndInitialize(
             config,
-            new bytes32[](0),
+            abi.encode(address(pool), new address[](0)),  // TODO: Add test with sweeps
             CONTRIBUTION,
             APR,
             new bytes(0),
-            address(pool),
             hyperdriveDeployer,
             dataProviderDeployer
         );
@@ -136,11 +135,10 @@ contract ERC4626FactoryMultiDeployTest is ERC4626FactoryBaseTest {
 
         IHyperdrive hyperdrive1 = factory.deployAndInitialize(
             config,
-            new bytes32[](0),
+            abi.encode(address(pool1), new address[](0)),
             CONTRIBUTION,
             APR,
             new bytes(0),
-            address(pool1),
             hyperdriveDeployer,
             dataProviderDeployer
         );
@@ -165,7 +163,7 @@ contract ERC4626FactoryMultiDeployTest is ERC4626FactoryBaseTest {
             CONTRIBUTION,
             APR,
             config.minimumShareReserves,
-            new bytes32[](0),
+            abi.encode(address(pool1), new address[](0)),
             0
         );
 
@@ -184,11 +182,10 @@ contract ERC4626FactoryMultiDeployTest is ERC4626FactoryBaseTest {
 
         IHyperdrive hyperdrive2 = factory.deployAndInitialize(
             config,
-            new bytes32[](0),
+            abi.encode(address(pool2), new address[](0)),
             CONTRIBUTION,
             APR,
             new bytes(0),
-            address(pool2),
             hyperdriveDeployer,
             dataProviderDeployer
         );
@@ -213,7 +210,7 @@ contract ERC4626FactoryMultiDeployTest is ERC4626FactoryBaseTest {
             CONTRIBUTION,
             APR,
             config.minimumShareReserves,
-            new bytes32[](0),
+            abi.encode(address(pool2), new address[](0)),
             0
         );
 
@@ -239,11 +236,10 @@ contract ERC4626FactoryMultiDeployTest is ERC4626FactoryBaseTest {
 
         IHyperdrive hyperdrive3 = factory.deployAndInitialize(
             config,
-            new bytes32[](0),
+            abi.encode(address(pool2), new address[](0)),
             CONTRIBUTION,
             APR,
             new bytes(0),
-            address(pool2),
             hyperdriveDeployer,
             dataProviderDeployer
         );
@@ -268,7 +264,7 @@ contract ERC4626FactoryMultiDeployTest is ERC4626FactoryBaseTest {
             CONTRIBUTION,
             APR,
             config.minimumShareReserves,
-            new bytes32[](0),
+            abi.encode(address(pool2), new address[](0)),
             0
         );
 

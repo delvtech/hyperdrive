@@ -252,7 +252,6 @@ contract HyperdriveFactory {
     /// @return The hyperdrive address deployed
     function deployAndInitialize(
         IHyperdrive.PoolConfig memory _config,
-        // TODO: We should use raw bytes instead of bytes32.
         bytes memory _extraData,
         uint256 _contribution,
         uint256 _apr,
