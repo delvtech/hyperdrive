@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import { HyperdriveDataProvider } from "../HyperdriveDataProvider.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "../interfaces/IHyperdriveDeployer.sol";
+import { IDataProviderDeployer } from "../interfaces/IDataProviderDeployer.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 
 /// @author DELV
@@ -13,7 +14,7 @@ import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract HyperdriveFactory {
+contract HyperdriveFactory {
     using FixedPointMath for uint256;
 
     /// @notice Emitted when governance is transferred.
@@ -108,12 +109,10 @@ abstract contract HyperdriveFactory {
 
     /// @notice Initializes the factory.
     /// @param _factoryConfig Configuration of the Hyperdrive Factory.
-    /// @param _deployer The contract which holds the bytecode and deploys new versions.
     /// @param _linkerFactory The address of the linker factory.
     /// @param _linkerCodeHash The hash of the linker contract's constructor code.
     constructor(
         FactoryConfig memory _factoryConfig,
-        IHyperdriveDeployer _deployer,
         address _linkerFactory,
         bytes32 _linkerCodeHash
     ) {
@@ -144,7 +143,6 @@ abstract contract HyperdriveFactory {
         hyperdriveGovernance = _factoryConfig.hyperdriveGovernance;
         feeCollector = _factoryConfig.feeCollector;
         _defaultPausers = _factoryConfig.defaultPausers;
-        hyperdriveDeployer = _deployer;
         linkerFactory = _linkerFactory;
         linkerCodeHash = _linkerCodeHash;
     }
@@ -249,6 +247,8 @@ abstract contract HyperdriveFactory {
     /// @param _contribution Base token to call init with
     /// @param _apr The apr to call init with
     /// @param _initializeExtraData The extra data for the `initialize` call.
+    /// @param _hyperdriveDeployer Address of the hyperdrive deployer.
+    /// @param _dataProviderDeployer Address of the hyperdrive data provider deployer.
     /// @return The hyperdrive address deployed
     function deployAndInitialize(
         IHyperdrive.PoolConfig memory _config,
@@ -257,7 +257,9 @@ abstract contract HyperdriveFactory {
         uint256 _contribution,
         uint256 _apr,
         bytes memory _initializeExtraData,
-        address _pool
+        address _pool,
+        address _hyperdriveDeployer,
+        address _dataProviderDeployer
     ) public payable virtual returns (IHyperdrive) {
         if (msg.value > 0) {
             revert IHyperdrive.NonPayableInitialization();
@@ -272,21 +274,21 @@ abstract contract HyperdriveFactory {
         _config.feeCollector = feeCollector;
         _config.governance = address(this);
         _config.fees = fees;
-        bytes32 _linkerCodeHash = linkerCodeHash;
-        address _linkerFactory = linkerFactory;
-        address dataProvider = deployDataProvider(
+        // bytes32 _linkerCodeHash = linkerCodeHash;  // TODO: See if we can add back without STD
+        // address _linkerFactory = linkerFactory;
+        address dataProvider = IDataProviderDeployer(_dataProviderDeployer).deploy(
             _config,
+            linkerCodeHash,
+            linkerFactory,
             _extraData,
-            _linkerCodeHash,
-            _linkerFactory,
             _pool
         );
         IHyperdrive hyperdrive = IHyperdrive(
-            hyperdriveDeployer.deploy(
+            IHyperdriveDeployer(_hyperdriveDeployer).deploy(
                 _config,
                 dataProvider,
-                _linkerCodeHash,
-                _linkerFactory,
+                linkerCodeHash,
+                linkerFactory,
                 _extraData,
                 _pool
             )
@@ -297,8 +299,8 @@ abstract contract HyperdriveFactory {
             versionCounter,
             address(hyperdrive),
             _config,
-            _linkerFactory,
-            _linkerCodeHash,
+            linkerFactory,
+            linkerCodeHash,
             _extraData
         );
 
@@ -338,25 +340,6 @@ abstract contract HyperdriveFactory {
 
         return hyperdrive;
     }
-
-    // TODO: We should be able to update the data providers bytecode when we
-    // up the deployer; however, this change should be made in the context of
-    // our mainnet proxy design.
-    //
-    /// @notice Deploys a Hyperdrive instance with the factory's configuration.
-    /// @dev This should be overrided so that the data provider corresponding
-    ///      to an individual instance is used.
-    /// @param _config The configuration of the pool we are deploying
-    /// @param _extraData The extra data from the pool deployment
-    /// @param _linkerCodeHash The code hash from the multitoken deployer
-    /// @param _linkerFactory The factory of the multitoken deployer
-    function deployDataProvider(
-        IHyperdrive.PoolConfig memory _config,
-        bytes32[] memory _extraData,
-        bytes32 _linkerCodeHash,
-        address _linkerFactory,
-        address _pool
-    ) internal virtual returns (address);
 
     /// @notice Gets the default pausers.
     /// @return The default pausers.

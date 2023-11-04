@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import { ERC4626HyperdriveDeployer } from "contracts/src/factory/ERC4626HyperdriveDeployer.sol";
-import { ERC4626HyperdriveFactory } from "contracts/src/factory/ERC4626HyperdriveFactory.sol";
+import { ERC4626DataProviderDeployer } from "contracts/src/factory/ERC4626DataProviderDeployer.sol";
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { ERC4626DataProvider } from "contracts/src/instances/ERC4626DataProvider.sol";
 import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
@@ -21,7 +21,10 @@ import { HyperdriveUtils } from "../utils/HyperdriveUtils.sol";
 contract ERC4626FactoryBaseTest is HyperdriveTest {
     using FixedPointMath for *;
 
-    ERC4626HyperdriveFactory factory;
+    HyperdriveFactory factory;
+
+    address hyperdriveDeployer;
+    address dataProviderDeployer;
 
     IERC20 dai = IERC20(address(0x6B175474E89094C44Da98b954EedeAC495271d0F));
 
@@ -56,11 +59,12 @@ contract ERC4626FactoryBaseTest is HyperdriveTest {
         vm.startPrank(deployer);
 
         // Deploy the ERC4626Hyperdrive factory and deployer.
-        ERC4626HyperdriveDeployer simpleDeployer = new ERC4626HyperdriveDeployer();
+        hyperdriveDeployer = address(new ERC4626HyperdriveDeployer());
+        dataProviderDeployer = address(new ERC4626DataProviderDeployer());
         address[] memory defaults = new address[](1);
         defaults[0] = bob;
         forwarderFactory = new ForwarderFactory();
-        factory = new ERC4626HyperdriveFactory(
+        factory = new HyperdriveFactory(
             HyperdriveFactory.FactoryConfig({
                 governance: alice,
                 hyperdriveGovernance: bob,
@@ -69,10 +73,8 @@ contract ERC4626FactoryBaseTest is HyperdriveTest {
                 maxFees: IHyperdrive.Fees(0, 0, 0),
                 defaultPausers: defaults
             }),
-            simpleDeployer,
             address(forwarderFactory),
-            forwarderFactory.ERC20LINK_HASH(),
-            new address[](0)
+            forwarderFactory.ERC20LINK_HASH()
         );
 
         vm.stopPrank();
@@ -105,7 +107,9 @@ contract ERC4626FactoryBaseTest is HyperdriveTest {
             CONTRIBUTION,
             APR,
             new bytes(0),
-            address(pool)
+            address(pool),
+            hyperdriveDeployer,
+            dataProviderDeployer
         );
 
         vm.stopPrank();
@@ -136,7 +140,9 @@ contract ERC4626FactoryMultiDeployTest is ERC4626FactoryBaseTest {
             CONTRIBUTION,
             APR,
             new bytes(0),
-            address(pool1)
+            address(pool1),
+            hyperdriveDeployer,
+            dataProviderDeployer
         );
 
         assertEq(dai.balanceOf(charlie), 0);
@@ -182,7 +188,9 @@ contract ERC4626FactoryMultiDeployTest is ERC4626FactoryBaseTest {
             CONTRIBUTION,
             APR,
             new bytes(0),
-            address(pool2)
+            address(pool2),
+            hyperdriveDeployer,
+            dataProviderDeployer
         );
 
         assertEq(dai.balanceOf(charlie), 0);
@@ -235,7 +243,9 @@ contract ERC4626FactoryMultiDeployTest is ERC4626FactoryBaseTest {
             CONTRIBUTION,
             APR,
             new bytes(0),
-            address(pool2)
+            address(pool2),
+            hyperdriveDeployer,
+            dataProviderDeployer
         );
 
         assertEq(dai.balanceOf(dan), 0);
