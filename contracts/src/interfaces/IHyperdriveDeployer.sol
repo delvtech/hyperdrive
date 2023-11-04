@@ -9,7 +9,6 @@ interface IHyperdriveDeployer {
         address _dataProvider,
         bytes32 _linkerCodeHash,
         address _linkerFactory,
-        bytes32[] memory _extraData,
-        address _pool
+        bytes memory _extraData
     ) external returns (address);
 }

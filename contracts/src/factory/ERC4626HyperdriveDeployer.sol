@@ -29,14 +29,10 @@ contract ERC4626HyperdriveDeployer is IHyperdriveDeployer {
         address _dataProvider,
         bytes32 _linkerCodeHash,
         address _linkerFactory,
-        bytes32[] memory _extraData,
-        address _pool
+        bytes memory _extraData
     ) external override returns (address) {
-        // Convert the extra data to an array of addresses.
-        address[] memory sweepTargets;
-        assembly ("memory-safe") {
-            sweepTargets := _extraData
-        }
+
+        (address pool, address[] memory sweepTargets) = abi.decode(_extraData, (address, address[]));
 
         // Deploy the ERC4626Hyperdrive instance.
         return (
@@ -46,7 +42,7 @@ contract ERC4626HyperdriveDeployer is IHyperdriveDeployer {
                     _dataProvider,
                     _linkerCodeHash,
                     _linkerFactory,
-                    _pool,
+                    pool,
                     sweepTargets
                 )
             )

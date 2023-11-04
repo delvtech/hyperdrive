@@ -42,7 +42,7 @@ contract HyperdriveFactory {
         IHyperdrive.PoolConfig config,
         address linkerFactory,
         bytes32 linkerCodeHash,
-        bytes32[] extraData
+        bytes extraData
     );
 
     /// @notice The governance address that updates the factory's configuration.
@@ -253,11 +253,10 @@ contract HyperdriveFactory {
     function deployAndInitialize(
         IHyperdrive.PoolConfig memory _config,
         // TODO: We should use raw bytes instead of bytes32.
-        bytes32[] memory _extraData,
+        bytes memory _extraData,
         uint256 _contribution,
         uint256 _apr,
         bytes memory _initializeExtraData,
-        address _pool,
         address _hyperdriveDeployer,
         address _dataProviderDeployer
     ) public payable virtual returns (IHyperdrive) {
@@ -280,8 +279,7 @@ contract HyperdriveFactory {
             _config,
             linkerCodeHash,
             linkerFactory,
-            _extraData,
-            _pool
+            _extraData
         );
         IHyperdrive hyperdrive = IHyperdrive(
             IHyperdriveDeployer(_hyperdriveDeployer).deploy(
@@ -289,8 +287,7 @@ contract HyperdriveFactory {
                 dataProvider,
                 linkerCodeHash,
                 linkerFactory,
-                _extraData,
-                _pool
+                _extraData
             )
         );
         isOfficial[address(hyperdrive)] = versionCounter;

@@ -27,17 +27,16 @@ contract ERC4626DataProviderDeployer is IDataProviderDeployer {
         IHyperdrive.PoolConfig memory _config,
         bytes32 _linkerCodeHash,
         address _linkerFactory,
-        bytes32[] memory _extraData,
-        address _pool
+        bytes memory _extraData
     ) external returns (address) {
-        // Deploy the ERC4626DataProvider instance.
+        address pool = abi.decode(_extraData, (address));
         return (
             address(
                 new ERC4626DataProvider(
                     _config,
                     _linkerCodeHash,
                     _linkerFactory,
-                    _pool
+                    pool
                 )
             )
         );
