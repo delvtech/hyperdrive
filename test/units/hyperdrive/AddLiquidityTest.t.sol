@@ -93,6 +93,33 @@ contract AddLiquidityTest is HyperdriveTest {
         pause(false);
     }
 
+    function test_add_liquidity_failure_too_few_lp_shares_minted() external {
+        uint256 apr = 0.05e18;
+
+        // Initialize the pool
+        uint256 contribution = 2e18;
+        initialize(alice, apr, contribution);
+
+        // Donate funds to pool to ensure that
+        // the lpShares minted is small enough to cause a revert.
+        baseToken.mint(address(hyperdrive), 100000000000e18);
+        vm.stopPrank();
+        vm.startPrank(bob);
+        baseToken.mint(1e18);
+        baseToken.approve(address(hyperdrive), 1e18);
+        vm.expectRevert(IHyperdrive.MinimumTransactionAmount.selector);
+        hyperdrive.addLiquidity(
+            1e18,
+            0,
+            type(uint256).max,
+            IHyperdrive.Options({
+                destination: bob,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
+    }
+
     function test_add_liquidity_failure_invalid_apr() external {
         uint256 apr = 0.05e18;
 
