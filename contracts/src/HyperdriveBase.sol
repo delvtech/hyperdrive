@@ -514,4 +514,38 @@ abstract contract HyperdriveBase is
         // The totalGovernanceFee is the sum of the curve and flat governance fees
         totalGovernanceFee = governanceCurveFee + governanceFlatFee;
     }
+
+    /// @dev Converts input to base if necessary according to what is specified in options.
+    /// @param _amount The amount to convert.
+    /// @param _sharePrice The current share price.
+    /// @param _options The options that configure the conversion.
+    /// @return The converted amount.
+    function _convertToBaseFromOption(
+        uint256 _amount,
+        uint256 _sharePrice,
+        IHyperdrive.Options calldata _options
+    ) internal pure returns (uint256) {
+        if (_options.asBase) {
+            return _amount;
+        } else {
+            return _amount.mulDown(_sharePrice);
+        }
+    }
+
+    /// @dev Converts input to what is specified in the options from shares.
+    /// @param _amount The amount to convert.
+    /// @param _sharePrice The current share price.
+    /// @param _options The options that configure the conversion.
+    /// @return The converted amount.
+    function _convertToOptionFromShares(
+        uint256 _amount,
+        uint256 _sharePrice,
+        IHyperdrive.Options calldata _options
+    ) internal pure returns (uint256) {
+        if (_options.asBase) {
+            return _amount.mulDown(_sharePrice);
+        } else {
+            return _amount;
+        }
+    }
 }

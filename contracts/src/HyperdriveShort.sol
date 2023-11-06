@@ -68,9 +68,11 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
 
             // Trader deposit is in shares, so we need to ensure it matches the
             // options specified by the user.
-            traderDeposit = _options.asBase
-                ? traderDeposit.mulDown(sharePrice)
-                : traderDeposit;
+            traderDeposit = _convertToOptionFromShares(
+                traderDeposit,
+                sharePrice,
+                _options
+            );
 
             // Attribute the governance fees.
             _governanceFeesAccrued += totalGovernanceFee;
@@ -200,11 +202,14 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
         // the short sale as well as the variable interest that was collected
         // on the face value of the bonds.
         uint256 proceeds = _withdraw(shareProceeds, _options);
-        uint256 baseProceeds = _options.asBase
-            ? proceeds
-            : proceeds.mulDown(sharePrice);
 
         // Enforce the user's minimum output.
+        IHyperdrive.Options calldata options = _options; // Avoid stack too deep error.
+        uint256 baseProceeds = _convertToBaseFromOption(
+            proceeds,
+            sharePrice,
+            options
+        );
         if (baseProceeds < _minOutput) {
             revert IHyperdrive.OutputLimit();
         }

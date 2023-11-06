@@ -93,9 +93,11 @@ abstract contract HyperdriveLP is IHyperdriveWrite, HyperdriveTWAP {
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
 
         // Emit an Initialize event.
-        uint256 baseContribution = _options.asBase
-            ? _contribution
-            : _contribution.mulDown(sharePrice);
+        uint256 baseContribution = _convertToBaseFromOption(
+            _contribution,
+            sharePrice,
+            _options
+        );
         emit Initialize(
             _options.destination,
             lpShares,
@@ -273,11 +275,13 @@ abstract contract HyperdriveLP is IHyperdriveWrite, HyperdriveTWAP {
 
         // Withdraw the shares from the yield source.
         proceeds = _withdraw(shareProceeds, _options);
-        uint256 baseProceeds = _options.asBase
-            ? proceeds
-            : proceeds.mulDown(sharePrice);
 
         // Enforce min user outputs
+        uint256 baseProceeds = _convertToBaseFromOption(
+            proceeds,
+            sharePrice,
+            _options
+        );
         if (_minOutput > proceeds) revert IHyperdrive.OutputLimit();
 
         // Emit a RemoveLiquidity event.

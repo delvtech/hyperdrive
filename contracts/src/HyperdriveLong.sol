@@ -50,15 +50,16 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
             _amount,
             _options
         );
-        uint256 baseDeposited = _options.asBase
-            ? _amount
-            : _amount.mulDown(sharePrice);
 
-        // Enforce min user inputs
+        // Enforce min user inputs and min share price
+        uint256 baseDeposited = _convertToBaseFromOption(
+            _amount,
+            sharePrice,
+            _options
+        );
         if (baseDeposited < _minimumTransactionAmount) {
             revert IHyperdrive.MinimumTransactionAmount();
         }
-
         if (sharePrice < _minSharePrice) {
             revert IHyperdrive.MinimumSharePrice();
         }
@@ -195,11 +196,13 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
 
         // Withdraw the profit to the trader.
         uint256 proceeds = _withdraw(shareProceeds, _options);
-        uint256 baseProceeds = _options.asBase
-            ? proceeds
-            : proceeds.mulDown(sharePrice);
 
         // Enforce min user outputs
+        uint256 baseProceeds = _convertToBaseFromOption(
+            proceeds,
+            sharePrice,
+            _options
+        );
         if (_minOutput > baseProceeds) revert IHyperdrive.OutputLimit();
 
         // Emit a CloseLong event.
