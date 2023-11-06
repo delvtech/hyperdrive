@@ -111,25 +111,25 @@ contract VariableInterestShortTest is HyperdriveTest {
             immediate_open_close(initialSharePrice, variableInterest);
         }
 
-        // // This tests the following scenario:
-        // // - initial_share_price = 1
-        // // - positive interest causes the share price to go up
-        // // - a short is opened and immediately closed
-        // {
-        //     uint256 initialSharePrice = 1e18;
-        //     int256 variableInterest = 0.05e18;
-        //     immediate_open_close(initialSharePrice, variableInterest);
-        // }
+        // This tests the following scenario:
+        // - initial_share_price = 1
+        // - positive interest causes the share price to go up
+        // - a short is opened and immediately closed
+        {
+            uint256 initialSharePrice = 1e18;
+            int256 variableInterest = 0.05e18;
+            immediate_open_close(initialSharePrice, variableInterest);
+        }
 
-        // // This tests the following scenario:
-        // // - initial_share_price < 1
-        // // - positive interest causes the share price to go up
-        // // - a short is opened and immediately closed
-        // {
-        //     uint256 initialSharePrice = 0.95e18;
-        //     int256 variableInterest = 0.10e18;
-        //     immediate_open_close(initialSharePrice, variableInterest);
-        // }
+        // This tests the following scenario:
+        // - initial_share_price < 1
+        // - positive interest causes the share price to go up
+        // - a short is opened and immediately closed
+        {
+            uint256 initialSharePrice = 0.95e18;
+            int256 variableInterest = 0.10e18;
+            immediate_open_close(initialSharePrice, variableInterest);
+        }
     }
 
     function test_negative_interest_short_immediate_open_close() external {
