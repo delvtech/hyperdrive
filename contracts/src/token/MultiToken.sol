@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { DataProvider } from "../DataProvider.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
-import { IMultiTokenCore } from "../interfaces/IMultiTokenCore.sol";
 import { MultiTokenStorage } from "./MultiTokenStorage.sol";
 
 // FIXME: It probably makes sense to move MultiTokenStorage into
@@ -20,11 +18,7 @@ import { MultiTokenStorage } from "./MultiTokenStorage.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract MultiToken is
-    DataProvider,
-    MultiTokenStorage,
-    IMultiTokenCore
-{
+abstract contract MultiToken is MultiTokenStorage {
     // FIXME: We need to calculate the DOMAIN_SEPARATOR in the transaction to
     // ensure that we're using the right contract address.
     //
@@ -37,15 +31,35 @@ abstract contract MultiToken is
             "PermitForAll(address owner,address spender,bool _approved,uint256 nonce,uint256 deadline)"
         );
 
-    /// @notice Deploys the MultiToken.
-    /// @param _dataProvider The address of the data provider.
+    event TransferSingle(
+        address indexed operator,
+        address indexed from,
+        address indexed to,
+        uint256 id,
+        uint256 value
+    );
+
+    event Approval(
+        address indexed owner,
+        address indexed spender,
+        uint256 value
+    );
+
+    event ApprovalForAll(
+        address indexed account,
+        address indexed operator,
+        bool approved
+    );
+
+    /// @notice Instantiates the MultiToken.
     /// @param _linkerCodeHash The hash of the erc20 linker contract deploy code.
     /// @param _factory The factory which is used to deploy the linking contracts.
     constructor(
-        address _dataProvider,
         bytes32 _linkerCodeHash,
         address _factory
-    ) DataProvider(_dataProvider) MultiTokenStorage(_linkerCodeHash, _factory) {
+    ) MultiTokenStorage(_linkerCodeHash, _factory) {
+        // FIXME: Update this.
+        //
         // Computes the EIP 712 domain separator which prevents user signed messages for
         // this contract to be replayed in other contracts.
         // https://eips.ethereum.org/EIPS/eip-712

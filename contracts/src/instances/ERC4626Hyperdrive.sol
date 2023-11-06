@@ -23,9 +23,6 @@ contract ERC4626Hyperdrive is Hyperdrive, ERC4626Base {
     using FixedPointMath for uint256;
     using SafeTransferLib for IERC20;
 
-    /// @dev The yield source contract for this hyperdrive
-    IERC4626 internal immutable pool;
-
     /// @dev A mapping from addresses to their status as a sweep target. This
     ///      mapping does not change after construction.
     mapping(address target => bool canSweep) internal isSweepable;
@@ -79,7 +76,7 @@ contract ERC4626Hyperdrive is Hyperdrive, ERC4626Base {
         }
 
         // Set immutables and prepare for deposits by setting immutables
-        if (!_config.baseToken.approve(address(pool), type(uint256).max)) {
+        if (!_config.baseToken.approve(address(_pool), type(uint256).max)) {
             revert IHyperdrive.ApprovalFailed();
         }
 
@@ -88,7 +85,7 @@ contract ERC4626Hyperdrive is Hyperdrive, ERC4626Base {
         for (uint256 i = 0; i < _targets.length; i++) {
             address target = _targets[i];
             if (
-                address(target) == address(pool) ||
+                address(target) == address(_pool) ||
                 address(target) == address(_baseToken)
             ) {
                 revert IHyperdrive.UnsupportedToken();

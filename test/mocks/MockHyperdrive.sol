@@ -9,7 +9,6 @@ import { HyperdriveExtras } from "contracts/src/HyperdriveExtras.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
-import { MultiTokenDataProvider } from "contracts/src/token/MultiTokenDataProvider.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
 import { ETH } from "test/utils/Constants.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
@@ -401,43 +400,23 @@ contract MockHyperdrive is Hyperdrive, MockHyperdriveBase {
     }
 }
 
-contract MockHyperdriveExtras is MockHyperdriveBase, HyperdriveExtras {
+contract MockHyperdriveExtras is HyperdriveExtras, MockHyperdriveBase {
     constructor(
         IHyperdrive.PoolConfig memory _config
-    ) HyperdriveExtras(_config, address(0), bytes32(0), address(0)) {}
+    ) HyperdriveExtras(_config, bytes32(0), address(0)) {}
 }
 
 contract MockHyperdriveDataProvider is
-    MultiTokenDataProvider,
-    HyperdriveDataProvider
+    HyperdriveDataProvider,
+    MockHyperdriveBase
 {
-    using FixedPointMath for uint256;
-
-    uint256 internal totalShares;
-
     constructor(
         IHyperdrive.PoolConfig memory _config
-    )
-        HyperdriveDataProvider(_config)
-        MultiTokenDataProvider(bytes32(0), address(0))
-    {}
+    ) HyperdriveDataProvider(_config, bytes32(0), address(0)) {}
 
     /// Mocks ///
 
     function getGovernanceFeesAccrued() external view returns (uint256) {
         _revert(abi.encode(_governanceFeesAccrued));
-    }
-
-    /// Overrides ///
-
-    function _pricePerShare()
-        internal
-        view
-        override
-        returns (uint256 sharePrice)
-    {
-        uint256 assets = _baseToken.balanceOf(address(this));
-        sharePrice = totalShares != 0 ? assets.divDown(totalShares) : 0;
-        return sharePrice;
     }
 }

@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
+import { DataProvider } from "./DataProvider.sol";
 import { HyperdriveAdmin } from "./HyperdriveAdmin.sol";
 import { HyperdriveBase } from "./HyperdriveBase.sol";
 import { HyperdriveCheckpoint } from "./HyperdriveCheckpoint.sol";
@@ -13,6 +14,7 @@ import { HyperdriveShort } from "./HyperdriveShort.sol";
 //
 // FIXME: Natspec
 abstract contract Hyperdrive is
+    DataProvider,
     HyperdriveBase,
     HyperdriveAdmin,
     HyperdriveLP,
@@ -36,7 +38,10 @@ abstract contract Hyperdrive is
         address _dataProvider,
         bytes32 _linkerCodeHash,
         address _linkerFactory
-    ) HyperdriveBase(_config, _dataProvider, _linkerCodeHash, _linkerFactory) {
+    )
+        HyperdriveBase(_config, _linkerCodeHash, _linkerFactory)
+        DataProvider(_dataProvider)
+    {
         extras = _extras;
     }
 
@@ -245,12 +250,7 @@ abstract contract Hyperdrive is
 
     /// @notice Allows the compatibility linking contract to forward calls to
     ///         set asset approvals.
-    function setApprovalBridge(
-        uint256,
-        address,
-        uint256,
-        address
-    ) external override {
+    function setApprovalBridge(uint256, address, uint256, address) external {
         // FIXME: DRY This up into a function.
         (bool success, bytes memory result) = extras.delegatecall(msg.data);
         if (!success) {
@@ -261,7 +261,7 @@ abstract contract Hyperdrive is
     }
 
     /// @notice Allows a user to approve an operator to use all of their assets.
-    function setApprovalForAll(address, bool) external override {
+    function setApprovalForAll(address, bool) external {
         // FIXME: DRY This up into a function.
         (bool success, bytes memory result) = extras.delegatecall(msg.data);
         if (!success) {
@@ -273,7 +273,7 @@ abstract contract Hyperdrive is
 
     /// @notice Allows a user to set an approval for an individual asset with
     ///         specific amount.
-    function setApproval(uint256, address, uint256) external override {
+    function setApproval(uint256, address, uint256) external {
         // FIXME: DRY This up into a function.
         (bool success, bytes memory result) = extras.delegatecall(msg.data);
         if (!success) {

@@ -1,13 +1,16 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { HyperdriveStorage } from "./HyperdriveStorage.sol";
+import { HyperdriveBase } from "./HyperdriveBase.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
 import { IHyperdriveRead } from "./interfaces/IHyperdriveRead.sol";
 import { AssetId } from "./libraries/AssetId.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
-import { MultiTokenDataProvider } from "./token/MultiTokenDataProvider.sol";
+// FIXME: We shouldn't need these.
+import { HyperdriveCheckpoint } from "./HyperdriveCheckpoint.sol";
+import { HyperdriveLong } from "./HyperdriveLong.sol";
+import { HyperdriveShort } from "./HyperdriveShort.sol";
 
 /// @author DELV
 /// @title HyperdriveDataProvider
@@ -15,32 +18,32 @@ import { MultiTokenDataProvider } from "./token/MultiTokenDataProvider.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
+//
+// FIXME: We shouldn't need to inherit `HyperdriveLong`, `HyperdriveShort`, and
+// and `HyperdriveCheckpoint` here. Instead of defining `_applyCheckpoint` in
+// HyperdriveBase, we could add this as a requirement to the contracts that
+// require it with a `IHyperdriveCheckpoint` interface.
 abstract contract HyperdriveDataProvider is
     IHyperdriveRead,
-    HyperdriveStorage,
-    MultiTokenDataProvider
+    HyperdriveBase,
+    HyperdriveLong,
+    HyperdriveShort,
+    HyperdriveCheckpoint
 {
     using FixedPointMath for uint256;
 
     // solhint-disable no-empty-blocks
     /// @notice Initializes Hyperdrive's data provider.
     /// @param _config The configuration of the Hyperdrive pool.
+    /// @param _linkerCodeHash The hash of the ERC20 linker contract's
+    ///        constructor code.
+    /// @param _linkerFactory The address of the factory which is used to deploy
+    ///        the ERC20 linker contracts.
     constructor(
-        IHyperdrive.PoolConfig memory _config
-    ) HyperdriveStorage(_config) {}
-
-    /// Yield Source ///
-
-    // FIXME: I think that including functions inline like this is causing
-    // problems for us.
-    //
-    ///@notice Loads the share price from the yield source
-    ///@return sharePrice The current share price.
-    function _pricePerShare()
-        internal
-        view
-        virtual
-        returns (uint256 sharePrice);
+        IHyperdrive.PoolConfig memory _config,
+        bytes32 _linkerCodeHash,
+        address _linkerFactory
+    ) HyperdriveBase(_config, _linkerCodeHash, _linkerFactory) {}
 
     /// Getters ///
 
@@ -121,6 +124,7 @@ abstract contract HyperdriveDataProvider is
         _revert(abi.encode(poolInfo));
     }
 
+    // FIXME: Comment this.
     function getWithdrawPool()
         external
         view
@@ -142,6 +146,7 @@ abstract contract HyperdriveDataProvider is
         _revert(abi.encode(_governanceFeesAccrued));
     }
 
+    // FIXME: Comment this.
     function getMarketState()
         external
         view
@@ -175,6 +180,8 @@ abstract contract HyperdriveDataProvider is
         _revert(abi.encode(loaded));
     }
 
+    // FIXME: This should be removed.
+    //
     /// @notice Returns the average price between the last recorded timestamp looking a user determined
     ///         time into the past
     /// @dev Any integrations should assert the returned value is not equal to the QueryOutOfRange() selector
@@ -213,5 +220,97 @@ abstract contract HyperdriveDataProvider is
         uint256 deltaTime = uint256(currentData.timestamp) -
             uint256(oldData.timestamp);
         _revert(abi.encode(deltaSum / deltaTime));
+    }
+
+    /// Token ///
+
+    /// @notice Gets the code hash of the erc20 linker contract.
+    /// @return The code hash.
+    function linkerCodeHash() external view returns (bytes32) {
+        _revert(abi.encode(_linkerCodeHash));
+    }
+
+    /// @notice Gets the factory which is used to deploy the linking contracts.
+    /// @return The linking factory.
+    function factory() external view returns (address) {
+        _revert(abi.encode(_factory));
+    }
+
+    /// @notice Gets an account's balance of a sub-token.
+    /// @param tokenId The sub-token id.
+    /// @param account The account.
+    /// @return The balance.
+    function balanceOf(
+        uint256 tokenId,
+        address account
+    ) external view override returns (uint256) {
+        _revert(abi.encode(_balanceOf[tokenId][account]));
+    }
+
+    /// @notice Gets the total supply of a sub-token.
+    /// @param tokenId The sub-token id.
+    /// @return The total supply.
+    function totalSupply(
+        uint256 tokenId
+    ) external view override returns (uint256) {
+        _revert(abi.encode(_totalSupply[tokenId]));
+    }
+
+    /// @notice Gets the approval status of an operator for an account.
+    /// @param account The account.
+    /// @param operator The operator.
+    /// @return The approval status.
+    function isApprovedForAll(
+        address account,
+        address operator
+    ) external view override returns (bool) {
+        _revert(abi.encode(_isApprovedForAll[account][operator]));
+    }
+
+    /// @notice Gets the approval status of an operator for an account.
+    /// @param tokenId The sub-token id.
+    /// @param account The account.
+    /// @param spender The spender.
+    /// @return The approval status.
+    function perTokenApprovals(
+        uint256 tokenId,
+        address account,
+        address spender
+    ) external view override returns (uint256) {
+        _revert(abi.encode(_perTokenApprovals[tokenId][account][spender]));
+    }
+
+    /// @notice Gets the name of a sub-token.
+    /// @param tokenId The sub-token id.
+    /// @return The name.
+    function name(
+        uint256 tokenId
+    ) external pure override returns (string memory) {
+        _revert(abi.encode(AssetId.assetIdToName(tokenId)));
+    }
+
+    /// @notice Gets the symbol of a sub-token.
+    /// @param tokenId The sub-token id.
+    /// @return The symbol.
+    function symbol(
+        uint256 tokenId
+    ) external pure override returns (string memory) {
+        _revert(abi.encode(AssetId.assetIdToSymbol(tokenId)));
+    }
+
+    /// @notice Gets the permitForAll signature nonce for an account.
+    /// @param account The account.
+    /// @return The signature nonce.
+    function nonces(address account) external view override returns (uint256) {
+        _revert(abi.encode(_nonces[account]));
+    }
+
+    /// Helpers ///
+
+    /// @dev Reverts with the provided bytes. This is useful in getters used
+    ///      with the force-revert delegatecall pattern.
+    /// @param _bytes The bytes to revert with.
+    function _revert(bytes memory _bytes) internal pure {
+        revert IHyperdrive.ReturnData(_bytes);
     }
 }

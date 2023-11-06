@@ -27,10 +27,9 @@ interface IMockMultiToken is IMultiToken {
 
 contract MockMultiToken is MultiToken {
     constructor(
-        address _dataProvider,
         bytes32 _linkerCodeHash,
         address _factory
-    ) MultiToken(address(0), _dataProvider, _linkerCodeHash, _factory) {}
+    ) MultiToken(_linkerCodeHash, _factory) {}
 
     function __setBalanceOf(
         uint256 _tokenId,

@@ -4,7 +4,6 @@ pragma solidity 0.8.19;
 import { HyperdriveStorage } from "./HyperdriveStorage.sol";
 import { IERC20 } from "./interfaces/IERC20.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
-import { IHyperdriveCore } from "./interfaces/IHyperdriveCore.sol";
 import { AssetId } from "./libraries/AssetId.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
@@ -91,20 +90,15 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
 
     /// @notice Instantiates Hyperdrive.
     /// @param _config The configuration of the Hyperdrive pool.
-    /// @param _dataProvider The address of the data provider.
     /// @param _linkerCodeHash The hash of the ERC20 linker contract's
     ///        constructor code.
     /// @param _linkerFactory The address of the factory which is used to deploy
     ///        the ERC20 linker contracts.
     constructor(
         IHyperdrive.PoolConfig memory _config,
-        address _dataProvider,
         bytes32 _linkerCodeHash,
         address _linkerFactory
-    )
-        MultiToken(_dataProvider, _linkerCodeHash, _linkerFactory)
-        HyperdriveStorage(_config)
-    {
+    ) MultiToken(_linkerCodeHash, _linkerFactory) HyperdriveStorage(_config) {
         // Initialize the oracle.
         for (uint256 i = 0; i < _config.oracleSize; ) {
             _buffer.push(OracleData(uint32(block.timestamp), 0));
@@ -116,15 +110,11 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
 
     /// Yield Source ///
 
-    /// @notice A YieldSource dependent check that prevents ether from being
+    /// @dev A YieldSource dependent check that prevents ether from being
     ///         transferred to Hyperdrive instances that don't accept ether.
-    function _checkMessageValue() internal view virtual {
-        if (msg.value != 0) {
-            revert IHyperdrive.NotPayable();
-        }
-    }
+    function _checkMessageValue() internal view virtual;
 
-    /// @notice Transfers base from the user and commits it to the yield source.
+    /// @dev Transfers base from the user and commits it to the yield source.
     /// @param _amount The amount of base to deposit.
     /// @param _options The options that configure how the withdrawal is
     ///        settled. In particular, the currency used in the deposit is
@@ -137,7 +127,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
         IHyperdrive.Options calldata _options
     ) internal virtual returns (uint256 sharesMinted, uint256 sharePrice);
 
-    /// @notice Withdraws shares from the yield source and sends the base
+    /// @dev Withdraws shares from the yield source and sends the base
     ///         released to the destination.
     /// @param _shares The shares to withdraw from the yield source.
     /// @param _options The options that configure how the withdrawal is
@@ -150,7 +140,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
         IHyperdrive.Options calldata _options
     ) internal virtual returns (uint256 amountWithdrawn);
 
-    /// @notice Loads the share price from the yield source.
+    /// @dev Loads the share price from the yield source.
     /// @return sharePrice The current share price.
     function _pricePerShare()
         internal
@@ -160,7 +150,7 @@ abstract contract HyperdriveBase is MultiToken, HyperdriveStorage {
 
     /// Pause ///
 
-    /// @notice Blocks a function execution if the contract is paused.
+    /// @dev Blocks a function execution if the contract is paused.
     modifier isNotPaused() {
         if (_marketState.isPaused) revert IHyperdrive.Paused();
         _;

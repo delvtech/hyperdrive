@@ -20,24 +20,13 @@ abstract contract HyperdriveExtras is
 {
     /// @notice Instantiates a Hyperdrive extras contract.
     /// @param _config The configuration of the pool.
-    /// @param _dataProvider The address of the data provider.
     /// @param _linkerCodeHash The code hash of the linker contract.
     /// @param _linkerFactory The address of the linker factory.
     constructor(
         IHyperdrive.PoolConfig memory _config,
-        // FIXME
-        address _dataProvider,
         bytes32 _linkerCodeHash,
         address _linkerFactory
-    )
-        HyperdriveBase(
-            _config,
-            // FIXME: This shouldn't be a parameter of HyperdriveBase
-            _dataProvider,
-            _linkerCodeHash,
-            _linkerFactory
-        )
-    {}
+    ) HyperdriveBase(_config, _linkerCodeHash, _linkerFactory) {}
 
     /// Admin ///
 
@@ -117,17 +106,14 @@ abstract contract HyperdriveExtras is
         address operator,
         uint256 amount,
         address caller
-    ) external override onlyLinker(tokenID) {
+    ) external onlyLinker(tokenID) {
         _setApproval(tokenID, operator, amount, caller);
     }
 
     /// @notice Allows a user to approve an operator to use all of their assets.
     /// @param operator The eth address which can access the caller's assets.
     /// @param approved True to approve, false to remove approval.
-    function setApprovalForAll(
-        address operator,
-        bool approved
-    ) external override {
+    function setApprovalForAll(address operator, bool approved) external {
         // set the appropriate state
         _isApprovedForAll[msg.sender][operator] = approved;
         // Emit an event to track approval
@@ -145,7 +131,7 @@ abstract contract HyperdriveExtras is
         uint256 tokenID,
         address operator,
         uint256 amount
-    ) external override {
+    ) external {
         _setApproval(tokenID, operator, amount, msg.sender);
     }
 

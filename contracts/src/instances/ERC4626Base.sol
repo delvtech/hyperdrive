@@ -124,4 +124,12 @@ abstract contract ERC4626Base is HyperdriveBase {
     function _pricePerShare() internal view override returns (uint256) {
         return _pool.convertToAssets(FixedPointMath.ONE_18);
     }
+
+    /// @dev Ensure that ether wasn't sent because ERC4626 vaults don't support
+    ///      deposits of ether.
+    function _checkMessageValue() internal view override {
+        if (msg.value != 0) {
+            revert IHyperdrive.NotPayable();
+        }
+    }
 }

@@ -6,8 +6,6 @@ import { HyperdriveBase } from "./HyperdriveBase.sol";
 import { HyperdriveLong } from "./HyperdriveLong.sol";
 import { HyperdriveShort } from "./HyperdriveShort.sol";
 import { IHyperdrive } from "./interfaces/IHyperdrive.sol";
-import { IHyperdriveCore } from "./interfaces/IHyperdriveCore.sol";
-import { IHyperdriveExtras } from "./interfaces/IHyperdriveExtras.sol";
 import { AssetId } from "./libraries/AssetId.sol";
 import { FixedPointMath } from "./libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "./libraries/HyperdriveMath.sol";
@@ -22,7 +20,6 @@ import { SafeCast } from "./libraries/SafeCast.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveCheckpoint is
-    IHyperdriveCore,
     HyperdriveBase,
     HyperdriveLong,
     HyperdriveShort

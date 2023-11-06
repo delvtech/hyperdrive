@@ -4,7 +4,6 @@ pragma solidity 0.8.19;
 import { HyperdriveDataProvider } from "../HyperdriveDataProvider.sol";
 import { IERC4626 } from "../interfaces/IERC4626.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
-import { MultiTokenDataProvider } from "../token/MultiTokenDataProvider.sol";
 import { ERC4626Base } from "./ERC4626Base.sol";
 
 /// @author DELV
@@ -13,11 +12,7 @@ import { ERC4626Base } from "./ERC4626Base.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract ERC4626DataProvider is
-    MultiTokenDataProvider,
-    HyperdriveDataProvider,
-    ERC4626Base
-{
+contract ERC4626DataProvider is HyperdriveDataProvider, ERC4626Base {
     /// @notice Initializes the data provider.
     /// @param _linkerCodeHash_ The hash of the erc20 linker contract deploy code
     /// @param _factory_ The factory which is used to deploy the linking contracts
@@ -28,8 +23,7 @@ contract ERC4626DataProvider is
         address _factory_,
         IERC4626 _pool_
     )
-        HyperdriveDataProvider(_config)
-        MultiTokenDataProvider(_linkerCodeHash_, _factory_)
+        HyperdriveDataProvider(_config, _linkerCodeHash_, _factory_)
         ERC4626Base(_pool_)
     {}
 

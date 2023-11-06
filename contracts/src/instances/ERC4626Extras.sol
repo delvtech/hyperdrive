@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import { SafeTransferLib } from "solmate/utils/SafeTransferLib.sol";
+import { ERC20 } from "solmate/tokens/ERC20.sol";
 import { HyperdriveExtras } from "../HyperdriveExtras.sol";
 import { IERC20 } from "../interfaces/IERC20.sol";
 import { IERC4626 } from "../interfaces/IERC4626.sol";
@@ -18,9 +19,6 @@ import { ERC4626Base } from "./ERC4626Base.sol";
 ///                    particular legal or regulatory significance.
 contract ERC4626Extras is HyperdriveExtras, ERC4626Base {
     using SafeTransferLib for IERC20;
-
-    /// @dev The yield source contract for this hyperdrive
-    IERC4626 internal immutable pool;
 
     /// @dev A mapping from addresses to their status as a sweep target. This
     ///      mapping does not change after construction.
@@ -39,12 +37,9 @@ contract ERC4626Extras is HyperdriveExtras, ERC4626Base {
         address _linkerFactory,
         IERC4626 _pool
     )
-        HyperdriveExtras(_config, address(0), _linkerCodeHash, _linkerFactory)
+        HyperdriveExtras(_config, _linkerCodeHash, _linkerFactory)
         ERC4626Base(_pool)
-    {
-        // Initialize the pool immutable.
-        pool = _pool;
-    }
+    {}
 
     /// Extras ///
 
@@ -70,6 +65,10 @@ contract ERC4626Extras is HyperdriveExtras, ERC4626Base {
 
         // Transfer the entire balance of the sweep target to the fee collector.
         uint256 balance = _target.balanceOf(address(this));
-        _target.safeTransfer(_feeCollector, balance);
+        SafeTransferLib.safeTransfer(
+            ERC20(address(_target)),
+            _feeCollector,
+            balance
+        );
     }
 }
