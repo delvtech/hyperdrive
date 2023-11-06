@@ -399,11 +399,7 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
         (
             uint256 curveFee, // bonds
             uint256 governanceCurveFee // bonds
-        ) = _calculateFeesGivenShares(
-                _shareAmount,
-                spotPrice,
-                _sharePrice
-            );
+        ) = _calculateFeesGivenShares(_shareAmount, spotPrice, _sharePrice);
 
         // Calculate the number of bonds the trader receives.
         // This is the amount of bonds the trader receives minus the fees.
@@ -517,8 +513,8 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
             (
                 curveFee, // shares
                 flatFee, // shares
-                , // governanceCurveFee
-                , // governanceFlatFee
+                ,
+                ,
                 totalGovernanceFee // shares
             ) = _calculateFeesGivenBonds(
                 _bondAmount,

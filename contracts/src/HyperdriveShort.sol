@@ -392,12 +392,13 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
         uint256 curveFee;
         uint256 governanceCurveFee;
         (
-            curveFee,
-            , // flatFee
-            governanceCurveFee,
-            , // governanceFlatFee (flat fee is always 0 on open)
+            curveFee, // flatFee
+            ,
+            governanceCurveFee, // governanceFlatFee (flat fee is always 0 on open)
             // totalGovernanceFee (equal to governanceCurveFee)
-        )  = _calculateFeesGivenBonds(
+            ,
+
+        ) = _calculateFeesGivenBonds(
             _bondAmount,
             FixedPointMath.ONE_18, // shorts are opened at the beginning of the term
             spotPrice,
@@ -424,18 +425,17 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
         // accrued during the current checkpoint, we set close share price to
         // equal the open share price. This ensures that shorts don't benefit
         // from negative interest that accrued during the current checkpoint.
-        traderDeposit = HyperdriveMath
-            .calculateShortProceeds(
-                _bondAmount,
-                // NOTE: We add the governance fee back to the share reserves
-                // delta here because the trader will need to provide this in
-                // their deposit.
-                shareReservesDelta - governanceCurveFee,
-                _openSharePrice,
-                _sharePrice.max(_openSharePrice),
-                _sharePrice,
-                _flatFee
-            );
+        traderDeposit = HyperdriveMath.calculateShortProceeds(
+            _bondAmount,
+            // NOTE: We add the governance fee back to the share reserves
+            // delta here because the trader will need to provide this in
+            // their deposit.
+            shareReservesDelta - governanceCurveFee,
+            _openSharePrice,
+            _sharePrice.max(_openSharePrice),
+            _sharePrice,
+            _flatFee
+        );
 
         return (traderDeposit, shareReservesDelta, governanceCurveFee);
     }
@@ -529,15 +529,15 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
             (
                 curveFee,
                 flatFee,
-                governanceCurveFee,
-                , // governanceFlatFee
+                governanceCurveFee, // governanceFlatFee
+                ,
                 totalGovernanceFee
             ) = _calculateFeesGivenBonds(
-                    bondAmount,
-                    timeRemaining,
-                    spotPrice,
-                    sharePrice
-                );
+                bondAmount,
+                timeRemaining,
+                spotPrice,
+                sharePrice
+            );
 
             // Add the total curve fee minus the governance curve fee to the
             // amount that will be added to the share reserves. This ensures
