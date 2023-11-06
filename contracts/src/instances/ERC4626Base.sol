@@ -46,7 +46,7 @@ abstract contract ERC4626Base is HyperdriveBase {
     ///        used in this implementation is "asBase" which determines if
     ///        the deposit is settled in base or vault shares.
     /// @return sharesMinted The shares this deposit creates
-    /// @return sharePrice The share price at time of deposit
+    /// @return sharePrice The share price at time of deposit.
     function _deposit(
         uint256 _amount,
         IHyperdrive.Options calldata _options
@@ -67,10 +67,7 @@ abstract contract ERC4626Base is HyperdriveBase {
             // WARN: This logic doesn't account for slippage in the conversion
             // from base to shares. If deposits to the yield source incur
             // slippage, this logic will be incorrect.
-            //
-            // Calculate the amount of vault shares that need to be deposited
-            // to equal the base amount as well as the current share price.
-            sharesMinted = _pool.convertToShares(_amount);
+            sharesMinted = _amount;
 
             // Take custody of the deposit in vault shares.
             SafeTransferLib.safeTransferFrom(
@@ -97,7 +94,7 @@ abstract contract ERC4626Base is HyperdriveBase {
         IHyperdrive.Options calldata _options
     ) internal override returns (uint256 amountWithdrawn) {
         if (_options.asBase) {
-            // Redeem the shares from the yield source and transfer the
+            // Redeem from the yield source and transfer the
             // resulting base to the destination address.
             amountWithdrawn = _pool.redeem(
                 _shares,
@@ -111,10 +108,7 @@ abstract contract ERC4626Base is HyperdriveBase {
                 _options.destination,
                 _shares
             );
-            // Estimate the amount of base that was withdrawn from the yield
-            // source.
-            uint256 estimated = _pool.convertToAssets(_shares);
-            amountWithdrawn = estimated;
+            amountWithdrawn = _shares;
         }
     }
 

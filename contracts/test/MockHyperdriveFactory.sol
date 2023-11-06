@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import { HyperdriveFactory } from "contracts/src/factory/HyperdriveFactory.sol";
 import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployer } from "contracts/src/interfaces/IHyperdriveDeployer.sol";
-import { MockHyperdriveDataProvider, MockHyperdriveExtras } from "test/mocks/MockHyperdrive.sol";
+import { MockHyperdriveDataProvider, MockHyperdriveExtras } from "contracts/test/MockHyperdrive.sol";
 
 contract MockHyperdriveFactory is HyperdriveFactory {
     constructor(

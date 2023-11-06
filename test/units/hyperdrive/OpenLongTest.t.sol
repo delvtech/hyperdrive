@@ -7,11 +7,11 @@ import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
-import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol";
-import { MockHyperdrive, IMockHyperdrive } from "../../mocks/MockHyperdrive.sol";
 import { SafeCast } from "contracts/src/libraries/SafeCast.sol";
-import { Lib } from "../../utils/Lib.sol";
+import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
+import { MockHyperdrive, IMockHyperdrive } from "contracts/test/MockHyperdrive.sol";
+import { HyperdriveTest, HyperdriveUtils } from "test/utils/HyperdriveTest.sol";
+import { Lib } from "test/utils/Lib.sol";
 
 contract OpenLongTest is HyperdriveTest {
     using FixedPointMath for uint256;
@@ -346,10 +346,12 @@ contract OpenLongTest is HyperdriveTest {
             (
                 uint256 eventMaturityTime,
                 uint256 eventBaseAmount,
+                uint256 eventSharePrice,
                 uint256 eventBondAmount
-            ) = abi.decode(log.data, (uint256, uint256, uint256));
+            ) = abi.decode(log.data, (uint256, uint256, uint256, uint256));
             assertEq(eventMaturityTime, maturityTime);
             assertEq(eventBaseAmount, baseAmount);
+            assertEq(eventSharePrice, hyperdrive.getPoolInfo().sharePrice);
             assertEq(eventBondAmount, bondAmount);
         }
 

@@ -7,9 +7,9 @@ import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "contracts/src/libraries/AssetId.sol";
 import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
-import { MockHyperdrive } from "../../mocks/MockHyperdrive.sol";
-import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "../../utils/HyperdriveTest.sol";
-import { Lib } from "../../utils/Lib.sol";
+import { MockHyperdrive } from "contracts/test/MockHyperdrive.sol";
+import { HyperdriveTest, HyperdriveUtils, IHyperdrive } from "test/utils/HyperdriveTest.sol";
+import { Lib } from "test/utils/Lib.sol";
 
 contract RemoveLiquidityTest is HyperdriveTest {
     using FixedPointMath for uint256;
@@ -360,10 +360,15 @@ contract RemoveLiquidityTest is HyperdriveTest {
         assertEq(logs.length, 1);
         VmSafe.Log memory log = logs[0];
         assertEq(address(uint160(uint256(log.topics[1]))), alice);
-        (uint256 lpShares, uint256 baseAmount, uint256 withdrawalShares) = abi
-            .decode(log.data, (uint256, uint256, uint256));
+        (
+            uint256 lpShares,
+            uint256 baseAmount,
+            uint256 sharePrice,
+            uint256 withdrawalShares
+        ) = abi.decode(log.data, (uint256, uint256, uint256, uint256));
         assertEq(lpShares, expectedLpShares);
         assertEq(baseAmount, expectedBaseAmount);
+        assertEq(sharePrice, hyperdrive.getPoolInfo().sharePrice);
         assertEq(withdrawalShares, expectedWithdrawalShares);
     }
 

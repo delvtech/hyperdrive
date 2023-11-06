@@ -12,7 +12,7 @@ import { HyperdriveMath } from "contracts/src/libraries/HyperdriveMath.sol";
 import { YieldSpaceMath } from "contracts/src/libraries/YieldSpaceMath.sol";
 import { ForwarderFactory } from "contracts/src/token/ForwarderFactory.sol";
 import { ERC20Mintable } from "contracts/test/ERC20Mintable.sol";
-import { MockHyperdrive, MockHyperdriveDataProvider, MockHyperdriveExtras } from "../mocks/MockHyperdrive.sol";
+import { MockHyperdrive, MockHyperdriveDataProvider, MockHyperdriveExtras } from "contracts/test/MockHyperdrive.sol";
 import { BaseTest } from "test/utils/BaseTest.sol";
 import { ETH } from "test/utils/Constants.sol";
 import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
@@ -902,26 +902,32 @@ contract HyperdriveTest is BaseTest {
         address indexed provider,
         uint256 lpAmount,
         uint256 baseAmount,
+        uint256 sharePrice,
         uint256 apr
     );
 
     event AddLiquidity(
         address indexed provider,
         uint256 lpAmount,
-        uint256 baseAmount
+        uint256 baseAmount,
+        uint256 sharePrice,
+        uint256 lpSharePrice
     );
 
     event RemoveLiquidity(
         address indexed provider,
         uint256 lpAmount,
         uint256 baseAmount,
-        uint256 withdrawalShareAmount
+        uint256 sharePrice,
+        uint256 withdrawalShareAmount,
+        uint256 lpSharePrice
     );
 
     event RedeemWithdrawalShares(
         address indexed provider,
         uint256 withdrawalShareAmount,
-        uint256 baseAmount
+        uint256 baseAmount,
+        uint256 sharePrice
     );
 
     event OpenLong(
@@ -929,6 +935,7 @@ contract HyperdriveTest is BaseTest {
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
+        uint256 sharePrice,
         uint256 bondAmount
     );
 
@@ -937,6 +944,7 @@ contract HyperdriveTest is BaseTest {
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
+        uint256 sharePrice,
         uint256 bondAmount
     );
 
@@ -945,6 +953,7 @@ contract HyperdriveTest is BaseTest {
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
+        uint256 sharePrice,
         uint256 bondAmount
     );
 
@@ -953,6 +962,7 @@ contract HyperdriveTest is BaseTest {
         uint256 indexed assetId,
         uint256 maturityTime,
         uint256 baseAmount,
+        uint256 sharePrice,
         uint256 bondAmount
     );
 
@@ -964,7 +974,11 @@ contract HyperdriveTest is BaseTest {
         uint256 lpSharePrice
     );
 
-    event CollectGovernanceFee(address indexed collector, uint256 fees);
+    event CollectGovernanceFee(
+        address indexed collector,
+        uint256 baseFees,
+        uint256 sharePrice
+    );
 
     function verifyFactoryEvents(
         HyperdriveFactory factory,
@@ -1037,16 +1051,19 @@ contract HyperdriveTest is BaseTest {
             (
                 uint256 eventLpAmount,
                 uint256 eventBaseAmount,
+                uint256 eventSharePrice,
                 uint256 eventApr
-            ) = abi.decode(log.data, (uint256, uint256, uint256));
+            ) = abi.decode(log.data, (uint256, uint256, uint256, uint256));
+            uint256 _contribution = contribution;
             assertApproxEqAbs(
                 eventLpAmount,
-                contribution.divDown(
+                _contribution.divDown(
                     hyperdrive.getPoolConfig().initialSharePrice
                 ) - 2 * minimumShareReserves,
                 tolerance
             );
-            assertEq(eventBaseAmount, contribution);
+            assertEq(eventBaseAmount, _contribution);
+            assertEq(eventSharePrice, hyperdrive.getPoolInfo().sharePrice);
             assertEq(eventApr, apr);
         }
     }
