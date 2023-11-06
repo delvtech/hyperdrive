@@ -907,7 +907,8 @@ contract HyperdriveTest is BaseTest {
         address indexed provider,
         uint256 lpAmount,
         uint256 baseAmount,
-        uint256 sharePrice
+        uint256 sharePrice,
+        uint256 lpSharePrice
     );
 
     event RemoveLiquidity(
@@ -915,7 +916,8 @@ contract HyperdriveTest is BaseTest {
         uint256 lpAmount,
         uint256 baseAmount,
         uint256 sharePrice,
-        uint256 withdrawalShareAmount
+        uint256 withdrawalShareAmount,
+        uint256 lpSharePrice
     );
 
     event RedeemWithdrawalShares(

@@ -93,14 +93,10 @@ abstract contract HyperdriveLP is IHyperdriveWrite, HyperdriveTWAP {
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
 
         // Emit an Initialize event.
-        // TODO: should we add lpSharePrice too?
-        uint256 baseContribution = _options.asBase
-            ? _contribution
-            : _contribution.mulDown(sharePrice);
         emit Initialize(
             _options.destination,
             lpShares,
-            baseContribution,
+            vaultShares.mulDown(sharePrice),
             sharePrice,
             _apr
         );
@@ -194,12 +190,15 @@ abstract contract HyperdriveLP is IHyperdriveWrite, HyperdriveTWAP {
         _distributeExcessIdle(sharePrice);
 
         // Emit an AddLiquidity event.
-        // TODO: should we add lpSharePrice too?
+        uint256 lpSharePrice = lpTotalSupply == 0
+            ? 0
+            : endingPresentValue.divDown(lpTotalSupply);
         emit AddLiquidity(
             _options.destination,
             lpShares,
             vaultShares.mulDown(sharePrice),
-            sharePrice
+            sharePrice,
+            lpSharePrice
         );
     }
 
@@ -275,13 +274,22 @@ abstract contract HyperdriveLP is IHyperdriveWrite, HyperdriveTWAP {
         if (_minOutput > proceeds) revert IHyperdrive.OutputLimit();
 
         // Emit a RemoveLiquidity event.
-        // TODO: should we add lpSharePrice too?
+        HyperdriveMath.PresentValueParams
+            memory params = _getPresentValueParams(sharePrice);
+        params.shareReserves = _marketState.shareReserves;
+        params.shareAdjustment = _marketState.shareAdjustment;
+        params.bondReserves = _marketState.bondReserves;
+        uint256 presentValue = HyperdriveMath.calculatePresentValue(params);
+        uint256 lpSharePrice = totalLpSupply == 0
+            ? 0
+            : presentValue.divDown(totalLpSupply);
         emit RemoveLiquidity(
             _options.destination,
             _lpShares,
             baseProceeds,
             sharePrice, // vault share price
-            uint256(withdrawalShares)
+            uint256(withdrawalShares),
+            lpSharePrice
         );
 
         return (proceeds, withdrawalShares);
@@ -346,9 +354,6 @@ abstract contract HyperdriveLP is IHyperdriveWrite, HyperdriveTWAP {
 
         // Withdraw for the user
         proceeds = _withdraw(shareProceeds, _options);
-        uint256 baseProceeds = _options.asBase
-            ? proceeds
-            : proceeds.mulDown(sharePrice);
 
         // Enforce the minimum user output per share.
         if (_minOutputPerShare.mulDown(withdrawalSharesRedeemed) > proceeds)
@@ -358,7 +363,7 @@ abstract contract HyperdriveLP is IHyperdriveWrite, HyperdriveTWAP {
         emit RedeemWithdrawalShares(
             _options.destination,
             withdrawalSharesRedeemed, // withdrawal shares
-            baseProceeds,
+            shareProceeds.mulDown(sharePrice),
             sharePrice // vault share price
         );
 

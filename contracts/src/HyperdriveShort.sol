@@ -28,8 +28,8 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
     ///        This allows traders to protect themselves from opening a long in
     ///        a checkpoint where negative interest has accrued.
     /// @param _options The options that configure how the trade is settled.
-    /// @return maturityTime The maturity time of the short.
-    /// @return traderDeposit The amount the user deposited for this trade.
+    /// @return The maturity time of the short.
+    /// @return The amount the user deposited for this trade.
     function openShort(
         uint256 _bondAmount,
         uint256 _maxDeposit,

@@ -27,7 +27,8 @@ interface IHyperdrive is
         address indexed provider,
         uint256 lpAmount,
         uint256 baseAmount,
-        uint256 sharePrice
+        uint256 sharePrice,
+        uint256 lpSharePrice
     );
 
     event RemoveLiquidity(
@@ -35,7 +36,8 @@ interface IHyperdrive is
         uint256 lpAmount,
         uint256 baseAmount,
         uint256 sharePrice,
-        uint256 withdrawalShareAmount
+        uint256 withdrawalShareAmount,
+        uint256 lpSharePrice
     );
 
     event RedeemWithdrawalShares(
