@@ -118,16 +118,13 @@ abstract contract Hyperdrive is
     /// LPs ///
 
     /// @notice Allows the first LP to initialize the market with a target APR.
-    /// @param _contribution The amount of base to supply.
-    /// @param _apr The target APR.
-    /// @param _options The options that configure how the operation is settled.
-    /// @return lpShares The initial number of LP shares created.
+    /// @return The initial number of LP shares created.
     function initialize(
-        uint256 _contribution,
-        uint256 _apr,
-        IHyperdrive.Options calldata _options
-    ) external payable returns (uint256 lpShares) {
-        return _initialize(_contribution, _apr, _options);
+        uint256,
+        uint256,
+        IHyperdrive.Options calldata
+    ) external payable returns (uint256) {
+        _delegateToExtras();
     }
 
     /// @notice Allows LPs to supply liquidity for LP shares.
@@ -163,8 +160,9 @@ abstract contract Hyperdrive is
 
     /// Checkpoints ///
 
-    function checkpoint(uint256 _checkpointTime) external {
-        _checkpoint(_checkpointTime);
+    // FIXME: Comment this.
+    function checkpoint(uint256) external {
+        _delegateToExtras();
     }
 
     /// Admin ///
@@ -173,61 +171,30 @@ abstract contract Hyperdrive is
     /// @return proceeds The amount of base collected.
     function collectGovernanceFee(
         IHyperdrive.Options calldata
-    ) external returns (uint256 proceeds) {
-        // FIXME: DRY This up into a function.
-        (bool success, bytes memory result) = extras.delegatecall(msg.data);
-        if (!success) {
-            assembly {
-                revert(add(result, 32), mload(result))
-            }
-        }
-        return abi.decode(result, (uint256));
+    ) external returns (uint256) {
+        _delegateToExtras();
     }
 
     /// @notice Allows an authorized address to pause this contract.
     function pause(bool) external {
-        // FIXME: DRY This up into a function.
-        (bool success, bytes memory result) = extras.delegatecall(msg.data);
-        if (!success) {
-            assembly {
-                revert(add(result, 32), mload(result))
-            }
-        }
+        _delegateToExtras();
     }
 
     /// @notice Allows governance to change governance.
     function setGovernance(address) external {
-        // FIXME: DRY This up into a function.
-        (bool success, bytes memory result) = extras.delegatecall(msg.data);
-        if (!success) {
-            assembly {
-                revert(add(result, 32), mload(result))
-            }
-        }
+        _delegateToExtras();
     }
 
     /// @notice Allows governance to change the pauser status of an address.
     function setPauser(address, bool) external {
-        // FIXME: DRY This up into a function.
-        (bool success, bytes memory result) = extras.delegatecall(msg.data);
-        if (!success) {
-            assembly {
-                revert(add(result, 32), mload(result))
-            }
-        }
+        _delegateToExtras();
     }
 
     /// Token ///
 
     /// @notice Transfers an amount of assets from the source to the destination.
     function transferFrom(uint256, address, address, uint256) external {
-        // FIXME: DRY This up into a function.
-        (bool success, bytes memory result) = extras.delegatecall(msg.data);
-        if (!success) {
-            assembly {
-                revert(add(result, 32), mload(result))
-            }
-        }
+        _delegateToExtras();
     }
 
     /// @notice Permissioned transfer for the bridge to access, only callable by
@@ -239,48 +206,24 @@ abstract contract Hyperdrive is
         uint256,
         address
     ) external {
-        // FIXME: DRY This up into a function.
-        (bool success, bytes memory result) = extras.delegatecall(msg.data);
-        if (!success) {
-            assembly {
-                revert(add(result, 32), mload(result))
-            }
-        }
+        _delegateToExtras();
     }
 
     /// @notice Allows the compatibility linking contract to forward calls to
     ///         set asset approvals.
     function setApprovalBridge(uint256, address, uint256, address) external {
-        // FIXME: DRY This up into a function.
-        (bool success, bytes memory result) = extras.delegatecall(msg.data);
-        if (!success) {
-            assembly {
-                revert(add(result, 32), mload(result))
-            }
-        }
+        _delegateToExtras();
     }
 
     /// @notice Allows a user to approve an operator to use all of their assets.
     function setApprovalForAll(address, bool) external {
-        // FIXME: DRY This up into a function.
-        (bool success, bytes memory result) = extras.delegatecall(msg.data);
-        if (!success) {
-            assembly {
-                revert(add(result, 32), mload(result))
-            }
-        }
+        _delegateToExtras();
     }
 
     /// @notice Allows a user to set an approval for an individual asset with
     ///         specific amount.
     function setApproval(uint256, address, uint256) external {
-        // FIXME: DRY This up into a function.
-        (bool success, bytes memory result) = extras.delegatecall(msg.data);
-        if (!success) {
-            assembly {
-                revert(add(result, 32), mload(result))
-            }
-        }
+        _delegateToExtras();
     }
 
     /// @notice Transfers several assets from one account to another
@@ -290,17 +233,12 @@ abstract contract Hyperdrive is
         uint256[] calldata,
         uint256[] calldata
     ) external {
-        // FIXME: DRY This up into a function.
-        (bool success, bytes memory result) = extras.delegatecall(msg.data);
-        if (!success) {
-            assembly {
-                revert(add(result, 32), mload(result))
-            }
-        }
+        _delegateToExtras();
     }
 
-    /// @notice Allows a caller who is not the owner of an account to execute the
-    ///      functionality of 'approve' for all assets with the owners signature.
+    /// @notice Allows a caller who is not the owner of an account to execute
+    ///         the functionality of 'approve' for all assets with the owners
+    ///         signature.
     function permitForAll(
         address,
         address,
@@ -310,12 +248,23 @@ abstract contract Hyperdrive is
         bytes32,
         bytes32
     ) external {
-        // FIXME: DRY This up into a function.
+        _delegateToExtras();
+    }
+
+    /// Helpers ///
+
+    /// @dev Makes a delegatecall to the extras contract with the provided
+    ///      calldata. This will revert if the call is unsuccessful.
+    /// @return result The result of the delegatecall.
+    function _delegateToExtras() internal returns (bytes memory) {
         (bool success, bytes memory result) = extras.delegatecall(msg.data);
         if (!success) {
             assembly {
                 revert(add(result, 32), mload(result))
             }
+        }
+        assembly {
+            return(add(result, 32), mload(result))
         }
     }
 }

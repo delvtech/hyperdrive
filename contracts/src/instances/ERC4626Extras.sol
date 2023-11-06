@@ -20,10 +20,6 @@ import { ERC4626Base } from "./ERC4626Base.sol";
 contract ERC4626Extras is HyperdriveExtras, ERC4626Base {
     using SafeTransferLib for IERC20;
 
-    /// @dev A mapping from addresses to their status as a sweep target. This
-    ///      mapping does not change after construction.
-    mapping(address target => bool canSweep) internal isSweepable;
-
     /// @notice Initializes a Hyperdrive pool.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _linkerCodeHash The hash of the ERC20 linker contract's
@@ -59,7 +55,7 @@ contract ERC4626Extras is HyperdriveExtras, ERC4626Base {
             revert IHyperdrive.Unauthorized();
 
         // Ensure that thet target can be swept by governance.
-        if (!isSweepable[address(_target)]) {
+        if (!_isSweepable[address(_target)]) {
             revert IHyperdrive.UnsupportedToken();
         }
 

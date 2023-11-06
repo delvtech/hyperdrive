@@ -23,10 +23,6 @@ contract ERC4626Hyperdrive is Hyperdrive, ERC4626Base {
     using FixedPointMath for uint256;
     using SafeTransferLib for IERC20;
 
-    /// @dev A mapping from addresses to their status as a sweep target. This
-    ///      mapping does not change after construction.
-    mapping(address target => bool canSweep) internal isSweepable;
-
     /// @notice Instantiates Hyperdrive with a ERC4626 vault as the yield source.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _extras The address of the extras contract.
@@ -90,7 +86,20 @@ contract ERC4626Hyperdrive is Hyperdrive, ERC4626Base {
             ) {
                 revert IHyperdrive.UnsupportedToken();
             }
-            isSweepable[target] = true;
+            _isSweepable[target] = true;
         }
+    }
+
+    /// @notice Some yield sources [eg Morpho] pay rewards directly to this
+    ///         contract but we can't handle distributing them internally so we
+    ///         sweep to the fee collector address to then redistribute to users.
+    /// @dev WARN: The entire balance of any of the sweep targets can be swept
+    ///      by governance. If these sweep targets provide access to the base or
+    ///      pool token, then governance has the ability to rug the pool.
+    /// @dev WARN: It is unlikely but possible that there is a selector overlap
+    ///      with 'transferFrom'. Any integrating contracts should be checked
+    ///      for that, as it may result in an unexpected call from this address.
+    function sweep(IERC20) external {
+        _delegateToExtras();
     }
 }
