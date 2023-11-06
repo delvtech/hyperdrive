@@ -35,13 +35,7 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
         uint256 _maxDeposit,
         uint256 _minSharePrice,
         IHyperdrive.Options calldata _options
-    )
-        external
-        payable
-        nonReentrant
-        isNotPaused
-        returns (uint256 maturityTime, uint256 traderDeposit)
-    {
+    ) external payable nonReentrant isNotPaused returns (uint256, uint256) {
         // Check that the message value and base amount are valid.
         _checkMessageValue();
         if (_bondAmount < _minimumTransactionAmount) {
@@ -61,8 +55,9 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
 
         // Calculate the pool and user deltas using the trading function. We
         // backdate the bonds sold to the beginning of the checkpoint.
-        maturityTime = latestCheckpoint + _positionDuration;
+        uint256 maturityTime = latestCheckpoint + _positionDuration;
         uint256 shareReservesDelta;
+        uint256 traderDeposit;
         {
             uint256 totalGovernanceFee;
             (
@@ -70,6 +65,12 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
                 shareReservesDelta,
                 totalGovernanceFee
             ) = _calculateOpenShort(_bondAmount, sharePrice, openSharePrice);
+
+            // Trader deposit is in shares, so we need to ensure it matches the
+            // options specified by the user.
+            traderDeposit = _options.asBase
+                ? traderDeposit.mulDown(sharePrice)
+                : traderDeposit;
 
             // Attribute the governance fees.
             _governanceFeesAccrued += totalGovernanceFee;
@@ -79,13 +80,10 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
         // doesn't pay more than their max deposit. The trader's deposit is
         // equal to the proceeds that they would receive if they closed
         // immediately (without fees).
-        (uint256 amountDeposited, ) = _deposit(traderDeposit, _options);
-        if (_maxDeposit < amountDeposited) {
+        if (_maxDeposit < traderDeposit) {
             revert IHyperdrive.OutputLimit();
         }
-        uint256 baseAmount = _options.asBase
-            ? amountDeposited
-            : amountDeposited.mulDown(sharePrice);
+        (uint256 sharesDeposited, ) = _deposit(traderDeposit, _options);
 
         // Apply the state updates caused by opening the short.
         _applyOpenShort(
@@ -101,20 +99,20 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
             AssetId.AssetIdPrefix.Short,
             maturityTime
         );
-        _mint(assetId, _options.destination, _bondAmount);
+        uint256 bondAmount = _bondAmount; // Avoid stack too deep error.
+        _mint(assetId, _options.destination, bondAmount);
 
         // Emit an OpenShort event.
-        uint256 bondAmount = _bondAmount; // Avoid stack too deep error.
         emit OpenShort(
             _options.destination,
             assetId,
             maturityTime,
-            baseAmount,
+            sharesDeposited.mulDown(sharePrice),
             sharePrice,
             bondAmount
         );
 
-        return (maturityTime, amountDeposited);
+        return (maturityTime, traderDeposit);
     }
 
     /// @notice Closes a short position with a specified maturity time.
@@ -437,8 +435,7 @@ abstract contract HyperdriveShort is IHyperdriveWrite, HyperdriveLP {
                 _sharePrice.max(_openSharePrice),
                 _sharePrice,
                 _flatFee
-            )
-            .mulDown(_sharePrice);
+            );
 
         return (traderDeposit, shareReservesDelta, governanceCurveFee);
     }

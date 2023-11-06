@@ -41,13 +41,10 @@ abstract contract HyperdriveLP is IHyperdriveWrite, HyperdriveTWAP {
 
         // Deposit the users contribution and get the amount of shares that
         // their contribution was worth.
-        (uint256 amountDeposited, uint256 sharePrice) = _deposit(
+        (uint256 vaultShares, uint256 sharePrice) = _deposit(
             _contribution,
             _options
         );
-        uint256 vaultShares = _options.asBase
-            ? amountDeposited.divDown(sharePrice)
-            : amountDeposited;
 
         // Ensure that the contribution is large enough to set aside the minimum
         // share reserves permanently. After initialization, none of the LPs
@@ -97,10 +94,13 @@ abstract contract HyperdriveLP is IHyperdriveWrite, HyperdriveTWAP {
 
         // Emit an Initialize event.
         // TODO: should we add lpSharePrice too?
+        uint256 baseContribution = _options.asBase
+            ? _contribution
+            : _contribution.mulDown(sharePrice);
         emit Initialize(
             _options.destination,
             lpShares,
-            amountDeposited,
+            baseContribution,
             sharePrice,
             _apr
         );
@@ -137,13 +137,10 @@ abstract contract HyperdriveLP is IHyperdriveWrite, HyperdriveTWAP {
         if (apr < _minApr || apr > _maxApr) revert IHyperdrive.InvalidApr();
 
         // Deposit for the user, this call also transfers from them
-        (uint256 amountDeposited, uint256 sharePrice) = _deposit(
+        (uint256 vaultShares, uint256 sharePrice) = _deposit(
             _contribution,
             _options
         );
-        uint256 vaultShares = _options.asBase
-            ? amountDeposited.divDown(sharePrice)
-            : amountDeposited;
 
         // Perform a checkpoint.
         _applyCheckpoint(_latestCheckpoint(), sharePrice);
@@ -201,7 +198,7 @@ abstract contract HyperdriveLP is IHyperdriveWrite, HyperdriveTWAP {
         emit AddLiquidity(
             _options.destination,
             lpShares,
-            amountDeposited,
+            vaultShares.mulDown(sharePrice),
             sharePrice
         );
     }

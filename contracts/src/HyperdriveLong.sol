@@ -47,16 +47,17 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
 
         // Deposit the user's input amount.
         // TODO: why don't we checkpoint first and get the sharePrice from _pricePerShare()?
-        (uint256 amountDeposited, uint256 sharePrice) = _deposit(
+        // in test_CloseLongWithUnderlying() sharesDeposited is slightly less than amount input
+        (uint256 sharesDeposited, uint256 sharePrice) = _deposit(
             _amount,
             _options
         );
-        uint256 baseAmount = _options.asBase
-            ? amountDeposited
-            : amountDeposited.mulDown(sharePrice);
+        uint256 baseDeposited = _options.asBase
+            ? _amount
+            : _amount.mulDown(sharePrice);
 
         // Enforce min user inputs
-        if (baseAmount < _minimumTransactionAmount) {
+        if (baseDeposited < _minimumTransactionAmount) {
             revert IHyperdrive.MinimumTransactionAmount();
         }
 
@@ -78,7 +79,7 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
             bondReservesDelta,
             bondProceeds,
             totalGovernanceFee
-        ) = _calculateOpenLong(baseAmount.mulDown(sharePrice), sharePrice);
+        ) = _calculateOpenLong(sharesDeposited, sharePrice);
 
         // Enforce min user outputs
         if (_minOutput > bondProceeds) revert IHyperdrive.OutputLimit();
@@ -109,7 +110,7 @@ abstract contract HyperdriveLong is IHyperdriveWrite, HyperdriveLP {
             _options.destination,
             assetId,
             maturityTime,
-            baseAmount,
+            baseDeposited,
             sharePrice,
             bondProceeds
         );

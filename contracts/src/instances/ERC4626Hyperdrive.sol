@@ -92,61 +92,60 @@ contract ERC4626Hyperdrive is Hyperdrive {
     /// @param _options The options that configure the deposit. The only option
     ///        used in this implementation is "asBase" which determines if
     ///        the deposit is settled in base or vault shares.
-    /// @return amountMinted The amount to deposit into Hyperdrive.
+    /// @return sharesMinted The shares this deposit creates
     /// @return sharePrice The share price at time of deposit.
     function _deposit(
         uint256 _amount,
         IHyperdrive.Options calldata _options
-    ) internal override returns (uint256 amountMinted, uint256 sharePrice) {
+    ) internal override returns (uint256 sharesMinted, uint256 sharePrice) {
         if (_options.asBase) {
             // Take custody of the deposit in base.
             _baseToken.safeTransferFrom(msg.sender, address(this), _amount);
 
             // Deposit the base into the yield source.
-            pool.deposit(_amount, address(this));
+            sharesMinted = pool.deposit(_amount, address(this));
             sharePrice = _pricePerShare();
-            amountMinted = _amount;
         } else {
             // WARN: This logic doesn't account for slippage in the conversion
             // from base to shares. If deposits to the yield source incur
             // slippage, this logic will be incorrect.
+            sharesMinted = _amount;
 
             // Take custody of the deposit in vault shares.
             IERC20(address(pool)).safeTransferFrom(
                 msg.sender,
                 address(this),
-                _amount
+                sharesMinted
             );
             sharePrice = _pricePerShare();
-            amountMinted = _amount;
         }
     }
 
     /// @notice Processes a trader's withdrawal in either base or vault shares.
     ///         If the withdrawal is settled in base, the base will need to be
     ///         withdrawn from the yield source.
-    /// @param _amount The amount to withdraw from Hyperdrive.
+    /// @param _shares The amount of shares to withdraw from Hyperdrive.
     /// @param _options The options that configure the withdrawal. The options
     ///        used in this implementation are "destination" which specifies the
     ///        recipient of the withdrawal and "asBase" which determines
     ///        if the withdrawal is settled in base or vault shares.
     /// @return amountWithdrawn The amount withdrawn from the yield source.
     function _withdraw(
-        uint256 _amount,
+        uint256 _shares,
         IHyperdrive.Options calldata _options
     ) internal override returns (uint256 amountWithdrawn) {
         if (_options.asBase) {
             // Redeem from the yield source and transfer the
             // resulting base to the destination address.
             amountWithdrawn = pool.redeem(
-                _amount,
+                _shares,
                 _options.destination,
                 address(this)
             );
         } else {
             // Transfer vault shares to the destination.
-            IERC20(address(pool)).safeTransfer(_options.destination, _amount);
-            amountWithdrawn = _amount;
+            IERC20(address(pool)).safeTransfer(_options.destination, _shares);
+            amountWithdrawn = _shares;
         }
     }
 
